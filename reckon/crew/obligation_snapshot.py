@@ -1007,37 +1007,53 @@ def _with_unreadable_records(rows: Any, findings: Any) -> list[dict[str, Any]]:
     return kept
 
 
-# The one duty kind whose evidence is a live pointer, and only a live pointer.
+# The duty kinds whose obligation ends when the run's live pointer does.
 #
-# Named as the literal ``reckon.crew.obligations`` spells it, because this
+# Named as the literals ``reckon.crew.obligations`` spells them, because this
 # module must not import that derivation: the hook loads this file by path so
-# the prompt path reaches no plan, backend or ledger module. The kind is raised
-# only from ``obligations._run_duty_row`` holding a live pointer and reading the
-# refusal out of that pointer's own ``admission_landing``, so a run with no
-# pointer raises no refusal. That is what makes a ``stat`` sufficient here, and
-# it is not sufficient anywhere else.
+# the prompt path reaches no plan, backend or ledger module. Each kind here
+# names an action taken only against the run's own live pointer, so a run whose
+# pointer file has been removed has nothing left for the action to act on.
+#
+# A ``landing-refused`` row is raised only from ``obligations._run_duty_row``
+# holding a live pointer and reading the refusal out of that pointer's own
+# ``admission_landing``, so a run with no pointer raises no refusal: the
+# pointer itself is the evidence, and its removal is the landing the refusal
+# was about.
+#
+# A ``review-ready`` or ``promotable-stale`` row is a promotion duty, the two
+# kinds the derivation assigns a reviewed run that is ready to land. Promotion
+# itself unlinks the pointer as it writes the run's ledger row, so the duty
+# asks for a ``crew complete`` against a run that has already been completed:
+# it would be refused, and until it is settled it holds a coordinator's turn
+# open over work nobody can do. A run discarded out of the lane loses its
+# pointer the same way and leaves the same impossible duty, so the ``stat``
+# answers both without reading whether a ledger row or a promotion commit
+# recorded the landing — which is what keeps this module free of the ledger
+# read its banner forbids.
 #
 # Every other kind is left alone, whatever its run's pointer state. A
 # ``worktree-held`` row is raised from the project's retained ledger records, a
-# queued or stalled row from the queue and the admission verdicts, and a review,
-# hold or blocked row names state the run's record still carries after its
-# pointer is gone. A missing pointer says nothing about any of them, and hiding
-# one on a ``stat`` would be a silent omission rather than a settlement. A
-# landing refusal is the case where the pointer itself is the evidence: the
-# station stored the refusal that pointer carried, so the pointer's removal is
-# the landing the refusal was about.
-LIVE_POINTER_DUTY_KINDS = frozenset({"landing-refused"})
+# queued or stalled row from the queue and the admission verdicts, and a review
+# the derivation finds missing, a hold, a refusal or a blocked row names state
+# the run's record still carries after its pointer is gone. A missing pointer
+# says nothing about any of them, and hiding one on a ``stat`` would be a
+# silent omission rather than a settlement.
+LIVE_POINTER_DUTY_KINDS = frozenset(
+    {"landing-refused", "review-ready", "promotable-stale"}
+)
 
 
 def without_departed_run_duties(payload: Mapping[str, Any]) -> dict[str, Any]:
     """A held payload minus the duties of runs that hold no live pointer now.
 
-    A duty of one of :data:`LIVE_POINTER_DUTY_KINDS` names a held run because a
-    live pointer carried the state it was derived from, so a run whose pointer
-    file has been removed has landed or ended and owes nothing. The answer that
-    still names it was computed before the removal, when that pointer was
-    there; a station can hold such an answer for as long as its tick runs,
-    which is minutes. One ``stat`` per such duty answers it at read time.
+    A duty of one of :data:`LIVE_POINTER_DUTY_KINDS` names a held run through
+    state only its live pointer carries or an action only its live pointer can
+    perform, so a run whose pointer file has been removed has landed or ended
+    and owes nothing. The answer that still names it was computed before the
+    removal, when that pointer was there; a station can hold such an answer for
+    as long as its tick runs, which is minutes. One ``stat`` per such duty
+    answers it at read time.
 
     A duty of any other kind is kept, whatever its pointer state: its evidence
     is a ledger record, a queue request or nothing at all, so a missing pointer

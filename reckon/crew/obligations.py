@@ -1096,7 +1096,11 @@ def _review_duty_item(
     deliverable, so its kind stays the classifier's. A row whose live pointer
     is gone keeps the classifier's reading too, there being no tree left to
     ask, and a review the store cannot answer for reads missing rather than
-    ready, because the safe direction is to ask for evidence.
+    ready, because the safe direction is to ask for evidence. That reading is
+    what a snapshot keeps for a run that has already departed: a ready or stale
+    promotion duty it still names is settled at read time, on a ``stat`` of the
+    run's pointer, by
+    :func:`reckon.crew.obligation_snapshot.without_departed_run_duties`.
 
     A missing review whose most recent attempt the lane refused as paused reads
     review-queued while the refusal is inside its bound, naming when the lane
