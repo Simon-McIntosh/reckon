@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-03T01:16:31.810Z",
+  "dispatched_at": "2026-11-03T01:10:35Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:90",
+      "id": "reasoning-1",
+      "reason": "the memo key must carry the exemption inputs (`node.role` and `node.id`, or the exemption verdict itself) as well as the section, and case 2's fixture must queue a review-role and an implement request on one section, otherwise the node ships a coverage memo that silently reads the wrong answer for the one request the gate is for.",
+      "text": "the deliverable says the dispatch-gate fallback \"is memoized in the same record, keyed additionally by the section the request builds\", but `_dispatch_gate_owed` (`reckon/crew/queue_admission.py:3216`) calls `routing.require_plan_reviewed`, whose verdict is decided by `_plan_review_exempt(node)` \u2014 true for `role` in `{\"investigate\",\"review\",\"test\"}` or for a node id that `_is_review_node` reads as a reviewer (`reckon/crew/routing.py:2420,2454-2468`) \u2014 as well as by `plan_review_units(node.section)`; a plan's own review request and the implement request it exists to unblock are routinely queued on the same plan and section at the same time, so a section-only key makes whichever is judged first the answer for both \u2014 an exempt review request's `None` is reused for the implement request and the plan-review gate fails open, which is the exact class of shortcut the unit says it will not build",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "2645e1b2222ccf8d403ea0fe4ebc7b0ccdd66e7d",
+  "plan_fingerprint": "0be2bc4f6653c8bdd3763a6b4da8d3203b84bbe89bc6e6d8876235ca09a61b9c",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 168,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261103T010826754501-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "8f68c2f7c1939f2c69d0273fe8adb6ad380c4ade",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited module and symbol resolves (`_plan_review_owed` at 3244, `_section_digests` at 3319, `read_state_file` at 3328, the document-contract check at 3329\u20133337, `advance_waiting_requests` and `_release_plan_review_holds` at 3683\u20133684 inside `admit_once`); the fallback returns sit at 3302 and 3316 against the unit's \"near lines 3315 and 3325\", which is line drift only, and the extensionless `a-read-costs-what-changed` href resolves as `.html`.",
+    "done_when": "a finding \u2014 case 2 of the five counts `routing.require_plan_reviewed` \"once per section those requests build\", but that gate's verdict also varies by `node.role` and `node.id` (`reckon/crew/routing.py:2454-2468`), so the key the measure asserts is not the key the gate reads; the four declared controls otherwise map correctly onto cases 1, 2, 3 and 5, and case 4 is covered only indirectly by the third control.",
+    "evidence_paths": "pass \u2014 the timing arm lands under the run's own `logs/` directory, which is durable under `~/.config/reckon/crew/runs/<run>/`, not a scratchpad; the unit test writes no external state.",
+    "naming": "pass \u2014 the new test file and record are named for what they do, and no plan label, stage name or ticket number reaches a symbol or a comment.",
+    "reasoning": "a finding \u2014 the dispatch-gate fallback is memoized \"keyed additionally by the section the request builds\", but `require_plan_reviewed` answers differently for two requests on one plan and one section that differ in role or node id, so the memo can hand an exempt review node's `None` to an implement request and switch the gate off.",
+    "single_goal": "pass \u2014 s4 names two mechanisms (the per-plan review-read record and the `waits_seconds` stage split), but one done-when with five cases and one named test file closes both on one verdict.",
+    "wiring": "pass \u2014 s4's declared `depends-on` (`a-read-costs-what-changed#s6`) resolves: `docs/plans/a-read-costs-what-changed.html` exists and carries s1\u2013s7, and s4 names no relationship it does not need."
+  },
+  "section_digests": {
+    "_document": "d9fe47a1e0fd65aa8c4bf3eb8aaf21e958e6b5860db22a3c6b74a23a53529665",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s11": "64172d367078831447521db5db6f564603855f46c387c906413737be38d7cefa",
+    "s12": "a326ddd2ee6a25d3a5bd7e7faf7faebb13b159435640d33f4c6c5edcca238229",
+    "s13": "43c63cb3547e9638882e45af647c6eca92cdbd77c8006cbf416ed717619a79d5",
+    "s14": "8ad0ca2171f9b9e5d1a4402bed0ba51d908267ec88069268c781013864f569fa",
+    "s15": "97b76e836bce15b65611e3a1c12d5628da0992c3b604881d88f2e406aec3097b",
+    "s16": "de7130b93ad47423ed1f2ac37f7d700e9e1875834a26a33af10a97e2476eafa7",
+    "s17": "e0db3dac4c8e5a22f059034f39cf37bf8c5bd249834f218c25bdec42bc4151ed",
+    "s18": "dac73bb15e3a6db1d4fce585091868e67027d7235101498beef9a59ec2d88363",
+    "s19": "c1cb9323a74f953649b86e65f30cfa320b3f38079883c2a62230fe0b33e58fac",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s20": "132bce7e7e2e5612ff43da2f5ac5d14df2686c95a8118525bacac4349e87cb1b",
+    "s21": "ee777267cd96cff6866d857040b00da4e88084663ba40545bb4727aa3450d15c",
+    "s22": "ded37e8e903c88b4c4ba24e9bcfd1cc917e8112037b46dcbbf603bc8a83b9c4b",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s4": "0a647a5397c64a8391e984d8e8076e7f557180c2f763873b0376e234baafe683",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "2f92e5358487aabaeb8d2b0c54fdf9a0407281e571a7eadaef0a2509754e3666",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T01:39:25.038932+00:00"
+}
