@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-costs-what-changed-landed">
+  <meta name="plan-title" content="A Read Costs What Changed — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Read Costs What Changed: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-read-costs-what-changed">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Read Costs What Changed — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Read Costs What Changed — landed record</h1>
+  <p>Closure synthesis for A Read Costs What Changed: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s2-every-read-enters-the-existing-scopes">
+    <h2>§2 — Every read enters the existing scopes</h2>
+    <p>Landed as merge <code>901325c5a6</code> of head <code>21c435f075</code>, run <code>r-20261103T021938516080-every-read-enters-the-existing-scopes</code>, after one repair round.</p><ul><li>Every read enters the discovery and resource scopes that already existed, so one request validates the covered tree once instead of walking it per call. The async wrapper, the CLI roadmap reads and the infra-directory skip all enter the same scope.</li><li>The armed test <code>tests/test_a_request_validates_the_tree_once.py</code> fails 5 and errors 4 at base and passes 9 of 9 at head.</li><li>On the merge candidate <code>1cf1ef17fc</code>, the importer population of the changed modules failed 37 at main <code>8dfcb8ecfa</code> and 27 at the candidate: no added failure and 10 removed, among them the drain and MCP deadline cases and the picker-latency case. The first candidate's three regressions in the cold-discovery, warm-read and cached-index tests pass 3 of 3.</li><li>Before this landing, an admission pass spent 87 minutes, 73 of them in launch, inside <code>_walk_discovery_signature</code> stat-ing the plan tree file by file. The admit service was restarted onto this merge at 08:54Z.</li></ul>
+  </section>
+
+</main>
+</body>
+</html>
