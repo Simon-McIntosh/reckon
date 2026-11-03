@@ -1,0 +1,665 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 230144,
+    "effort": "high",
+    "launch": "cli",
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 230144
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "3d0ed7f1496e017b2095ee6f2eb57e16bb925d75",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 20016430,
+      "input_tokens_cumulative": 20016430,
+      "output_tokens": 59475,
+      "output_tokens_cumulative": 59475,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 438,
+    "files": 4,
+    "removed": 3
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 248,
+        "name": "_refuse_unknown_live_fields",
+        "path": "reckon/crew/query.py"
+      },
+      "run_function": {
+        "line": 191,
+        "name": "_refuse_unknown_fields",
+        "path": "reckon/crew/query.py"
+      },
+      "window_line": 196
+    },
+    {
+      "existing_function": {
+        "line": 191,
+        "name": "_refuse_unknown_fields",
+        "path": "reckon/crew/query.py"
+      },
+      "run_function": {
+        "line": 248,
+        "name": "_refuse_unknown_live_fields",
+        "path": "reckon/crew/query.py"
+      },
+      "window_line": 257
+    },
+    {
+      "existing_function": {
+        "line": 978,
+        "name": "runs_view",
+        "path": "reckon/crew/query.py"
+      },
+      "run_function": {
+        "line": 399,
+        "name": "project_live_rows",
+        "path": "reckon/crew/query.py"
+      },
+      "window_line": 444
+    },
+    {
+      "existing_function": {
+        "line": 399,
+        "name": "project_live_rows",
+        "path": "reckon/crew/query.py"
+      },
+      "run_function": {
+        "line": 978,
+        "name": "runs_view",
+        "path": "reckon/crew/query.py"
+      },
+      "window_line": 1065
+    },
+    {
+      "existing_function": {
+        "line": 3844,
+        "name": "serve_crew_view",
+        "path": "reckon/mcp_views.py"
+      },
+      "run_function": {
+        "line": 1147,
+        "name": "keep",
+        "path": "reckon/crew/query.py"
+      },
+      "window_line": 1150
+    },
+    {
+      "existing_function": {
+        "line": 230,
+        "name": "mark_used",
+        "path": "reckon/crew/budget_reset.py"
+      },
+      "run_function": {
+        "line": 780,
+        "name": "classify_pointer",
+        "path": "reckon/crew/recovery_classification.py"
+      },
+      "window_line": 1425
+    },
+    {
+      "existing_function": {
+        "line": 1102,
+        "name": "external_wait",
+        "path": "reckon/crew/recovery_liveness.py"
+      },
+      "run_function": {
+        "line": 780,
+        "name": "classify_pointer",
+        "path": "reckon/crew/recovery_classification.py"
+      },
+      "window_line": 1098
+    },
+    {
+      "existing_function": {
+        "line": 131,
+        "name": "_write_stream",
+        "path": "tests/test_billing_readers_use_the_project.py"
+      },
+      "run_function": {
+        "line": 31,
+        "name": "_lane_document",
+        "path": "tests/test_one_live_read_one_lane_reading.py"
+      },
+      "window_line": 36
+    },
+    {
+      "existing_function": {
+        "line": 112,
+        "name": "_write_stream",
+        "path": "tests/test_crew_placed_promotion.py"
+      },
+      "run_function": {
+        "line": 31,
+        "name": "_lane_document",
+        "path": "tests/test_one_live_read_one_lane_reading.py"
+      },
+      "window_line": 37
+    }
+  ],
+  "commit_resolution": null,
+  "commits": [
+    "b5bb82561b44eb8fcafe55452d849cb752cd4052",
+    "b5b0ebe1d45c9f333dc5d0b2c09eb10159ab5771",
+    "8e87eaf284ba6b12594a10843b82b1bb57f3d757"
+  ],
+  "completed_at": "2026-11-03T06:32:06.665Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-11-03T05:24:31Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "domain_waiver": null,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "gate": "passed",
+  "gate_check": {
+    "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_one_live_read_one_lane_reading.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T052020111669-one-live-read-one-lane-reading/logs/armed-scoped/head.log"
+  },
+  "impl_move": {
+    "at_complete": 0.8066037735849056,
+    "at_dispatch": 0.8144578313253013,
+    "plan": "the-monitor-shows-the-work-it-watches",
+    "verdict": "moved"
+  },
+  "lane": "clive",
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-11-03T06:22:43.212692+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": "clive",
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-11-03T05:22:43Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 18,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 10,
+    "headroom": 2,
+    "mean_context": 133333,
+    "observed_at": "2026-11-03T05:22:36Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": 18,
+      "aggregate_tokens_per_second": 370.194,
+      "detail": "",
+      "mean_tokens_per_second": 43.046,
+      "observed_at": "2026-11-03T05:22:36Z",
+      "runs": 8.6,
+      "state": "measured"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-11-03T06:32:06.665Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": false,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T052020111669-one-live-read-one-lane-reading/manifest.md",
+  "member": "disposable-r-20261103T052020111669-one-live-read-one-lane-reading",
+  "model_key": "flash",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_one_live_read_one_lane_reading.py::test_each_stored_sentence_is_shown_with_its_recorded_time",
+      "tests/test_one_live_read_one_lane_reading.py::test_one_lane_reading_composes_one_allowance"
+    ],
+    "baseline_failure_ids": [
+      "tests/test_one_live_read_one_lane_reading.py::test_each_stored_sentence_is_shown_with_its_recorded_time",
+      "tests/test_one_live_read_one_lane_reading.py::test_one_lane_reading_composes_one_allowance"
+    ],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_one_live_read_one_lane_reading.py::test_each_stored_sentence_is_shown_with_its_recorded_time",
+      "tests/test_one_live_read_one_lane_reading.py::test_one_lane_reading_composes_one_allowance"
+    ],
+    "declaration": "replaying the stored sentences fails the first case",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T052020111669-one-live-read-one-lane-reading/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T052020111669-one-live-read-one-lane-reading/negative-control.log",
+    "test_paths": [
+      "tests/test_one_live_read_one_lane_reading.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "one-live-read-one-lane-reading",
+  "node_definition": {
+    "after": [],
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "capability": {
+      "class": "general",
+      "requirements": {
+        "reasoning": "standard",
+        "risk": "moderate",
+        "verification": "strict"
+      },
+      "version": "1.0"
+    },
+    "compares_with": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 880,
+          "cached_input_tokens": 860469,
+          "input_tokens": 861351,
+          "output_tokens": 2107,
+          "reasoning_output_tokens": 361,
+          "total_tokens": 863458,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "session_id": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd"
+    },
+    "done_when": "The two cases and the negative control in the plan's s98 done-when hold in tests/test_one_live_read_one_lane_reading.py, run on the fleet node with -p no:cacheprovider; the test files importing reckon.crew.query, reckon.crew.recovery_classification and reckon.crew.dispatch_plan add no failure against the base revision; ruff check and ruff format --check add no findings on the staged paths",
+    "estimated_hours": null,
+    "goal": "One live read composes every row's lane-admission detail from one lane document reading",
+    "id": "one-live-read-one-lane-reading",
+    "images": [],
+    "inputs": [],
+    "lane_declaration": {
+      "backend": "clive",
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-11-03T05:22:43Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 18,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 10,
+      "headroom": 2,
+      "mean_context": 133333,
+      "observed_at": "2026-11-03T05:22:36Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": 18,
+        "aggregate_tokens_per_second": 370.194,
+        "detail": "",
+        "mean_tokens_per_second": 43.046,
+        "observed_at": "2026-11-03T05:22:36Z",
+        "runs": 8.6,
+        "state": "measured"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T052020111669-one-live-read-one-lane-reading/manifest.md",
+    "negative_control": "replaying the stored sentences fails the first case",
+    "plan": "the-monitor-shows-the-work-it-watches",
+    "regenerate_paths": [],
+    "requested_backend": "clive",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§98",
+    "spec_level": "guided",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/query.py",
+      "reckon/crew/recovery_classification.py",
+      "tests/test_one_live_read_one_lane_reading.py",
+      "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/one-live-read-one-lane-reading.html",
+      "docs/figures/the-monitor-shows-the-work-it-watches/one-live-read-one-lane-reading"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": 5721477.0,
+  "outcome": "",
+  "outside_scope_paths": [
+    "reckon/mcp_views.py::_crew",
+    "reckon/mcp_views.py",
+    "query.py"
+  ],
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "lift_id": null,
+    "member": null,
+    "node": "one-live-read-one-lane-reading",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-11-03T05:23:39.212090+00:00",
+    "score": 0.7375,
+    "session": null,
+    "source": null,
+    "state": "unknown"
+  },
+  "picker_selection": {
+    "action": "fallback",
+    "backend": null,
+    "comment": "",
+    "confidence": null,
+    "effort": null,
+    "excluded": [],
+    "fallback_reason": "timeout in pick:capability",
+    "family": null,
+    "jev_model": "typesafe/jev-1.13",
+    "latency_ms": 5000.429,
+    "model": null,
+    "offered": [],
+    "probabilities": {},
+    "stage_ms": {
+      "budget-snapshot": 1152.605,
+      "context-estimate": 25.419,
+      "records": 1266.418,
+      "verdict-inputs": 1209.381
+    }
+  },
+  "plan": "the-monitor-shows-the-work-it-watches",
+  "plan_impl_at_dispatch": 0.8144578313253013,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "8e87eaf284ba6b12594a10843b82b1bb57f3d757",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "3d0ed7f1496e017b2095ee6f2eb57e16bb925d75",
+    "reviewed_head_sha": "8e87eaf284ba6b12594a10843b82b1bb57f3d757",
+    "scores": {
+      "durability": 16,
+      "evidence": 16,
+      "fit": 17,
+      "goal_fidelity": 17,
+      "reuse": 15,
+      "scope_discipline": 18
+    },
+    "status": "parsed",
+    "total": 99
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "route_mode": "shadow",
+  "run_id": "r-20261103T052020111669-one-live-read-one-lane-reading",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§98",
+  "session": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+  "session_harness": "claude",
+  "session_id": "7b5a7a5f-e39a-4b66-a1a6-7f2f61abaca1",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": false,
+  "suite_delta": {
+    "added_failure_ids": [],
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_one_live_read_one_lane_reading.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_digest": null,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T052020111669-one-live-read-one-lane-reading/logs/armed-scoped/head.log",
+      "revision": "8e87eaf284ba6b12594a10843b82b1bb57f3d757"
+    },
+    "baseline_measured_nothing": true,
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_one_live_read_one_lane_reading.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 2,
+      "failure_ids": [
+        "tests/test_one_live_read_one_lane_reading.py::test_each_stored_sentence_is_shown_with_its_recorded_time",
+        "tests/test_one_live_read_one_lane_reading.py::test_one_lane_reading_composes_one_allowance"
+      ],
+      "log_digest": null,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T052020111669-one-live-read-one-lane-reading/logs/armed-scoped/base.log",
+      "revision": "3d0ed7f1496e017b2095ee6f2eb57e16bb925d75"
+    },
+    "failure_attribution": {},
+    "status": "clean",
+    "suite_command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_one_live_read_one_lane_reading.py",
+    "waiver_reason": null
+  },
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 20016430,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 230144",
+    "elapsed_seconds": 4025.225,
+    "generated_tokens": 59475,
+    "generation_seconds": 1392.471,
+    "input_budget_tokens": 230144,
+    "input_utilisation_pct": 84.7,
+    "machine_seconds": 2632.754,
+    "peak_input_tokens": 195030,
+    "tokens_per_second": 42.71,
+    "wall_tokens_per_second": 14.78
+  },
+  "time_budget": "60m",
+  "tool_steps": 158.0,
+  "unplanned_reason": null,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": [
+      {
+        "backend": "clive",
+        "budget_overrun": false,
+        "budget_overrun_seconds": 0,
+        "budget_seconds": 3600,
+        "classification": "promotable",
+        "commits_beyond_base": 0,
+        "detail": "the worker manifest reports completion and an independent parsed review is attached; the run is ready for promotion",
+        "effective_phase": "complete",
+        "elapsed_seconds": 2098,
+        "exit_record": {
+          "attempt": 4,
+          "ended_during": "working",
+          "ended_pids": [],
+          "exit_code": 0,
+          "exited_at": "2026-11-03T04:52:16Z",
+          "last_record_type": "result",
+          "launched_at": "2026-11-03T04:48:28Z",
+          "recorded_by": "supervisor",
+          "removed_harness_caches": [],
+          "run_id": "r-20261103T012525018363-a-finding-blocks-its-own-section",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 11601,
+          "worker_pid": 2451486
+        },
+        "external_wait": null,
+        "fleet_verdict": {
+          "detail": "",
+          "lifting_condition": null,
+          "recovery": "promote",
+          "recovery_classification": "promotable",
+          "stall_base_detail": null,
+          "stall_base_state": null,
+          "stall_pause_reason": null,
+          "stall_process_state": null,
+          "stall_quiet_seconds": null,
+          "stall_window_seconds": 900,
+          "state": "complete"
+        },
+        "interruption": null,
+        "lane": "clive",
+        "lane_cause": null,
+        "lane_ended_at": "2026-11-03T04:52:16Z",
+        "lane_event": null,
+        "lifting_condition": null,
+        "liveness_proven": true,
+        "log_age_seconds": 1844,
+        "log_fresh": false,
+        "manifest_commits": [
+          "0609e28519",
+          "ba46e6c513",
+          "dd7a21aa76",
+          "e490487d4c",
+          "4fec14bbd0"
+        ],
+        "manifest_derived": false,
+        "manifest_digest": "23bb52665afc555e74d12801c58dda6064ecb86af2443cee523a145fbea72e5d",
+        "manifest_error": null,
+        "manifest_file_present": true,
+        "manifest_fresh": true,
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T012525018363-a-finding-blocks-its-own-section/manifest.md",
+        "manifest_present": true,
+        "manifest_reported_status": "complete",
+        "manifest_status": "complete",
+        "marker": null,
+        "model_key": "flash",
+        "needs_help_complete": null,
+        "next_action": "reckon crew complete --run r-20261103T012525018363-a-finding-blocks-its-own-section --gate <verdict> --commit 0609e285191c1c83f20162c0014ffc1bd33c79ee --commit ba46e6c513d7917e19b07612bb37bd139c9a368e --commit dd7a21aa760f04896e960c01c1adae4aaef82dd9 --commit e490487d4c6f513beee2103c56fbae338e20d6cc --commit 4fec14bbd00e4ceb4965bc0405026a18361d9cbd",
+        "node": "a-finding-blocks-its-own-section",
+        "phase": "complete",
+        "plan": "a-review-gate-judges-what-it-covers",
+        "process_alive": false,
+        "process_descendant_alive": null,
+        "project": "reckon",
+        "recovery": "promote",
+        "recovery_classification": "promotable",
+        "resets_at": null,
+        "review_error": null,
+        "review_present": true,
+        "review_run_id": null,
+        "review_run_phase": null,
+        "review_status": "parsed",
+        "run_id": "r-20261103T012525018363-a-finding-blocks-its-own-section",
+        "session": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+        "stored_phase": "complete",
+        "terminal_age_seconds": 1861,
+        "terminal_at": "2026-11-03T04:51:58Z",
+        "wait_age_seconds": null,
+        "wait_condition_state": null,
+        "wait_key_defect": null,
+        "wait_observed": null,
+        "wait_overdue": null,
+        "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/404513fc-8e68-4a0f-8060-29ac9ff3d5fd/a-finding-blocks-its-own-section"
+      }
+    ]
+  },
+  "wall_seconds": 4055,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "ended_pids": [],
+    "exit_code": 0,
+    "exited_at": "2026-11-03T06:32:10Z",
+    "last_record_type": "result",
+    "launched_at": "2026-11-03T05:24:40Z",
+    "recorded_by": "supervisor",
+    "removed_harness_caches": [],
+    "run_id": "r-20261103T052020111669-one-live-read-one-lane-reading",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 10289,
+    "worker_pid": 2645307
+  },
+  "worker_seconds": 3999,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
