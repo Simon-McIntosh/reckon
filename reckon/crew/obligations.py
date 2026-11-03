@@ -29,6 +29,7 @@ from typing import Any
 from reckon import _store, file_memo, flight, ledger, review_tiers
 from reckon._timestamps import parse_utc
 from reckon.crew import (
+    budget_reset,
     queue_admission,
     recovery,
     recovery_classification,
@@ -1724,6 +1725,20 @@ def _sub_floor_items(
     return _sub_floor_items_by_session(project, floors, now=now).get(session, [])
 
 
+def recent_limit_resets(session: str) -> list[dict[str, Any]]:
+    """The recent limit resets that apply to one session, newest first.
+
+    Read through the store's own reader with the horizon a re-armed producer
+    announces by, so a session's limits are the ones its pane would still draw
+    and the coordinator hook's prompt line cannot disagree with this view. The
+    horizon is imported here rather than at module level: the watch module that
+    owns it reaches back into this one.
+    """
+    from reckon.crew.lift_watch import RESET_HORIZON
+
+    return budget_reset.recent_resets(session=session, horizon=RESET_HORIZON)
+
+
 def obligations(
     project: str, session: str, *, fields: Iterable[str] | None = None
 ) -> dict[str, Any]:
@@ -1974,6 +1989,7 @@ def _obligations_view(
     return {
         "project": project,
         "session": session,
+        "limit_resets": recent_limit_resets(session),
         "obligations": project_run_rows(
             items,
             fields=fields,

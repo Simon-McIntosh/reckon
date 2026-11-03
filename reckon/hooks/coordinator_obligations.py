@@ -502,15 +502,24 @@ def duty_digest(
     *,
     reloading: bool = False,
     model_notices: int = 0,
+    limit_resets: Sequence[str] = (),
+    reading: str = "",
 ) -> str:
-    """A digest over the ``(kind, run_id)`` pairs, tagged with reload and notices.
+    """A digest over the ``(kind, run_id)`` pairs, tagged with what else spoke.
 
     The pairs alone would silence a reloading producer's list, because it is
     the same list the session was already shown. The tag makes entering a
     reload and coming back from one each read as the change they are, while
     two turns inside one reload, and two ordinary turns, stay equal. The
     unacknowledged-notice count is carried too, so a notice appearing or being
-    acknowledged while the duty set stands still is still spoken once.
+    acknowledged while the duty set stands still is still spoken once. The ids
+    of the limit resets the session is told of are carried for the same reason:
+    a reset arriving while the duty set stands still is news, and a reset that
+    ages past the horizon is news because it stops being said.
+
+    ``reading`` tags a prompt answered by something other than a duty list — a
+    not-fresh reason — so a repeated reason stays quiet while a different one
+    speaks, and a reset arriving underneath it still speaks.
     """
     pairs = sorted(
         (str(item.get("kind") or ""), str(item.get("run_id") or "")) for item in items
@@ -520,6 +529,10 @@ def duty_digest(
         body = f"reloading\n{body}"
     if model_notices:
         body = f"{body}\nmodels\t{model_notices}"
+    if reading:
+        body = f"{body}\nreading\t{reading}"
+    if limit_resets:
+        body = f"{body}\nresets\t" + ",".join(sorted(str(one) for one in limit_resets))
     return hashlib.sha256(body.encode()).hexdigest()
 
 
@@ -629,6 +642,128 @@ def model_notice_line(count: int) -> str:
     )
 
 
+# How far back the prompt reads limit resets, in seconds. It matches the horizon
+# a re-armed producer announces by, so a session without a pane learns of
+# exactly the resets a pane would still draw. Exercised through an override by
+# the gate's negative control, which drops the horizon: the older event is then
+# named too, so the line is shown to be bounded by it rather than by the store's
+# contents.
+LIMIT_RESET_HORIZON_SECONDS = 3_600.0
+LIMIT_RESET_HORIZON_ENV = "RECKON_LIMIT_RESET_HORIZON_SECONDS"
+
+#: The closing clause a reset line carries. A reset is not work to clear: it is
+#: permission to carry on, which is why the line is rendered beside the duty
+#: list rather than as a duty item.
+LIMIT_RESET_INSTRUCTION = "sessions stopped at the usage limit can continue"
+
+
+def limit_reset_horizon_seconds() -> float:
+    """The reset horizon in seconds, honouring the test override."""
+    from reckon.env_duration import read_duration_override
+
+    return read_duration_override(
+        LIMIT_RESET_HORIZON_ENV, LIMIT_RESET_HORIZON_SECONDS, 0, False
+    )
+
+
+def budget_reset_store_path() -> Path:
+    """The banked-reset store the announcement is written to."""
+    return snapshot_module().crew_home() / "budget-resets.json"
+
+
+def _instant(value: Any) -> datetime | None:
+    """One stored UTC instant, or None when it cannot be read."""
+    text = str(value or "").strip()
+    if not text:
+        return None
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=UTC)
+
+
+def limit_reset_events(
+    session: str | None, *, now: datetime | None = None
+) -> list[dict[str, Any]]:
+    """The recent limit resets that apply to one session, newest first.
+
+    The store is read here rather than through the module that owns it, for the
+    same reason :func:`pending_model_notices` reads the catalogue's own
+    snapshot: the line must show even when the obligations snapshot is absent,
+    and reaching ``reckon.crew.budget_reset`` would import the crew facade and
+    every derivation module with it, which is the cost this hook exists to keep
+    off a turn's opening. The reading therefore mirrors the owner's
+    :func:`reckon.crew.budget_reset.recent_resets` exactly — an event older than
+    the horizon is not due, a session sees every global event and only the ones
+    scoped to itself, and the newest comes first — and a test pins the two
+    together so they cannot drift.
+
+    ``None`` asks for every event, which a sweep wants; naming a session selects
+    what applies to it.
+    """
+    moment = now or datetime.now(tz=UTC)
+    floor = moment - _datetime.timedelta(seconds=limit_reset_horizon_seconds())
+    try:
+        document = json.loads(budget_reset_store_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    groups = document.get("groups") if isinstance(document, dict) else None
+    if not isinstance(groups, dict):
+        return []
+    rows: list[dict[str, Any]] = []
+    for group, found in groups.items():
+        if not isinstance(found, Mapping):
+            continue
+        events = found.get("events")
+        if not isinstance(events, list):
+            continue
+        for event in events:
+            if not isinstance(event, Mapping):
+                continue
+            stamp = _instant(event.get("detected_at"))
+            if stamp is None or stamp < floor:
+                continue
+            owner = event.get("session")
+            if session is not None and owner and owner != session:
+                continue
+            row = {**event, "group": str(group)}
+            if not row.get("id"):
+                row["id"] = f"reset-{group}-{stamp.strftime('%Y%m%dT%H%M%SZ')}"
+            rows.append(row)
+    rows.sort(key=lambda row: (_instant(row["detected_at"]), str(row.get("id"))))
+    rows.reverse()
+    return rows
+
+
+def limit_reset_line(event: Mapping[str, Any]) -> str:
+    """One reset as the single line a prompt is told.
+
+    It names the group and clock the reset belongs to, the instant it is for in
+    UTC, and who announced it and why — or, for an event the window readings
+    detected, that it was detected rather than announced. The closing clause is
+    what a session stopped at the limit acts on.
+    """
+    group = str(event.get("group") or "")
+    clock = str(event.get("clock") or "").strip() or "seven_day"
+    where = f" ({group}, {clock})" if group else f" ({clock})"
+    stamp = _instant(event.get("detected_at"))
+    at = stamp.strftime("%H:%M") if stamp is not None else "an unreadable instant"
+    if str(event.get("kind") or "") == "consumed":
+        provenance = "detected from the window readings"
+    else:
+        provenance = (
+            f"announced by {event.get('by') or 'unknown'}: "
+            f"{event.get('reason') or 'marked used'}"
+        )
+    return (
+        f"- [limit-reset] usage limit reset{where} at {at} UTC, "
+        f"{provenance}; {LIMIT_RESET_INSTRUCTION}"
+    )
+
+
 def _work_lines(items: Sequence[Mapping[str, Any]]) -> list[str]:
     """One counted line per shared remedy, and one line per run for the rest.
 
@@ -669,12 +804,22 @@ def _work_lines(items: Sequence[Mapping[str, Any]]) -> list[str]:
     return lines
 
 
-def format_checklist(payload: dict[str, Any], *, note: str = "") -> str:
+def format_checklist(
+    payload: dict[str, Any],
+    *,
+    note: str = "",
+    limit_resets: Sequence[Mapping[str, Any]] | None = None,
+) -> str:
     """Render one obligations payload as the checklist the hook emits.
 
     ``note`` is the state the list is shown under, placed in the header before
     the counts: a reload shows the last snapshot's list with the words
     ``producer reloading`` and its age there, in place of any remedy.
+
+    The limit resets due to this session ride beside the list rather than in it,
+    the way an unacknowledged model notice does, because a reset asks a session
+    to continue rather than to clear anything. ``limit_resets`` is the caller's
+    own read of them; a caller that passes none has the store read here.
     """
     items = payload.get("obligations") or ()
     summary = payload.get("summary") or {}
@@ -696,6 +841,8 @@ def format_checklist(payload: dict[str, Any], *, note: str = "") -> str:
     pending = pending_model_notices()
     if pending:
         lines.append(model_notice_line(pending))
+    resets = limit_reset_events(session) if limit_resets is None else list(limit_resets)
+    lines.extend(limit_reset_line(event) for event in resets)
     unreconciled = f"unreconciled runs: {summary.get('unreconciled_runs', 0)}"
     lines.append(unreconciled + "; work the list to empty before ending the turn.")
     lines.append(AUTHORITY_LINE)
@@ -1002,29 +1149,69 @@ def _inject_list(
     items = obligations.get("obligations") or ()
     digest_file = digest_path(project, session)
     notices = pending_model_notices()
-    if not items and not reloading and not notices:
-        if _read_digest(digest_file):
-            try:
-                from reckon._store import write_atomically
-
-                digest_file.parent.mkdir(parents=True, exist_ok=True)
-                write_atomically(
-                    digest_file, lambda handle: handle.write("\n"), fsync=False
-                )
-            except OSError:
-                pass
+    resets = limit_reset_events(session)
+    if not items and not reloading and not notices and not resets:
+        _clear_digest(digest_file)
         return
-    digest = duty_digest(items, reloading=reloading, model_notices=notices)
+    digest = duty_digest(
+        items,
+        reloading=reloading,
+        model_notices=notices,
+        limit_resets=[str(event.get("id") or "") for event in resets],
+    )
     if _read_digest(digest_file) == digest:
         return
-    inject(payload, format_checklist(obligations, note=note))
+    inject(payload, format_checklist(obligations, note=note, limit_resets=resets))
+    _write_digest(digest_file, digest)
+
+
+def _inject_reading(
+    payload: dict[str, Any],
+    *,
+    project: str,
+    session: str,
+    line: str,
+    reading: str,
+) -> None:
+    """Speak a not-fresh reading once per change, carrying any limit reset.
+
+    A prompt the snapshot cannot answer is still a turn a session may be stopped
+    at a limit over, so the resets due to it are said here too, beside the
+    reason. The change record is the one the checklist writes: the reading's own
+    tag is compared alongside the reset ids, so the same reason repeated is
+    quiet, a different reason speaks, and a reset arriving underneath a reason
+    already given is still the news that matters. It is written as a digest like
+    any other rather than injected every turn, because a sentence repeated at
+    the open of every turn is one a coordinator learns to skip.
+    """
+    resets = limit_reset_events(session)
+    digest_file = digest_path(project, session)
+    digest = duty_digest(
+        (),
+        reading=reading,
+        limit_resets=[str(event.get("id") or "") for event in resets],
+    )
+    if _read_digest(digest_file) == digest:
+        return
+    lines = [line, *(limit_reset_line(event) for event in resets)]
+    inject(payload, "\n".join(lines))
+    _write_digest(digest_file, digest)
+
+
+def _clear_digest(path: Path) -> None:
+    """Forget what was last injected, so whatever returns next is spoken."""
+    if not _read_digest(path):
+        return
+    _write_digest(path, "")
+
+
+def _write_digest(path: Path, digest: str) -> None:
+    """Record the digest last injected, tolerating an unwritable home."""
     try:
         from reckon._store import write_atomically
 
-        digest_file.parent.mkdir(parents=True, exist_ok=True)
-        write_atomically(
-            digest_file, lambda handle: handle.write(digest + "\n"), fsync=False
-        )
+        path.parent.mkdir(parents=True, exist_ok=True)
+        write_atomically(path, lambda handle: handle.write(digest + "\n"), fsync=False)
     except OSError:
         pass
 
@@ -1050,9 +1237,14 @@ def _prompt(payload: dict[str, Any]) -> int:
     station = module.read_station_answer(project, session)
     if station is not None:
         if station.get("stale"):
-            inject(
+            _inject_reading(
                 payload,
-                stale_station_line(project=project, session=session, answer=station),
+                project=project,
+                session=session,
+                line=stale_station_line(
+                    project=project, session=session, answer=station
+                ),
+                reading="station-stale",
             )
             return 0
         if station.get("state") == module.STATION_SLOW:
@@ -1093,9 +1285,14 @@ def _prompt(payload: dict[str, Any]) -> int:
         return 0
     reload_started_at, deferral = module.watch_reload_state(project)
     if deferral is not None:
-        inject(
+        _inject_reading(
             payload,
-            deferred_reload_line(project=project, session=session, deferral=deferral),
+            project=project,
+            session=session,
+            line=deferred_reload_line(
+                project=project, session=session, deferral=deferral
+            ),
+            reading="deferred-reload",
         )
         return 0
     if document is not None and module.reload_in_progress(
@@ -1115,15 +1312,18 @@ def _prompt(payload: dict[str, Any]) -> int:
             note=f"producer reloading, last snapshot {_format_age(age)} old",
         )
         return 0
-    inject(
+    _inject_reading(
         payload,
-        not_fresh_line(
+        project=project,
+        session=session,
+        line=not_fresh_line(
             state,
             project=project,
             session=session,
             document=document,
             foreign_host=foreign_host,
         ),
+        reading=f"not-fresh:{state}",
     )
     return 0
 
@@ -1386,16 +1586,7 @@ def _stop(payload: dict[str, Any]) -> int:
         # that can notice it went away: a duty drained over a stop and returned
         # before the next prompt is exactly the case a prompt-only clear would
         # swallow.
-        if _read_digest(digest_file):
-            try:
-                from reckon._store import write_atomically
-
-                digest_file.parent.mkdir(parents=True, exist_ok=True)
-                write_atomically(
-                    digest_file, lambda handle: handle.write("\n"), fsync=False
-                )
-            except OSError:
-                pass
+        _clear_digest(digest_file)
         return 0
     if not _blocking_items(items):
         # Only duties some reflex already owns: they are listed, and they do
