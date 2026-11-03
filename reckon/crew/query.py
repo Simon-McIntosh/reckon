@@ -767,6 +767,10 @@ def _lane_config_for(
     view whose other rows are readable.
     """
     key = (str(record.get("project") or ""), str(record.get("repo") or ""))
+    # Configuration is resolved per project, so a pointer that names no project
+    # has nothing to resolve and no lane document to read.
+    if not key[0]:
+        return {}
     from click import ClickException
 
     from reckon.crew.queue_admission import _resolve_lane_config
