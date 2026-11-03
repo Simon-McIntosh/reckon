@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/mcp_views.py:4049",
+    "reckon/hooks/coordinator_obligations.py:1242"
+  ],
+  "completed_at": "2026-11-03T06:57:41.151Z",
+  "dispatched_at": "2026-11-03T06:38:25Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T052920940353-a-promoted-run-owes-no-promotion/manifest.md",
+      "line": 16,
+      "severity": "non-blocking",
+      "text": "after_suite names only the new four-case file while baseline_suite names the five-file importing population, so the done-when's comparison over the files importing reckon.crew.obligations and reckon.crew.obligation_snapshot cannot be derived from the recorded suite pair; it survives only as prose in artifacts and in logs/importing-tests-head.log, which I read and which does show the identical nine failures."
+    },
+    {
+      "file": "tests/test_a_promoted_run_owes_no_promotion.py",
+      "line": 305,
+      "severity": "non-blocking",
+      "text": "the discard case's hook assertion only checks that the run id is absent from the checklist string, which a checklist that is empty for any reason satisfies, so it adds no failing condition beyond the view assertion at line 302; the negative-control run reddens the case at line 302 and never reaches line 305."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit from 79c62d09744e50a1942d7b593713188b90f7807c to 4431f940b753e5e2430348350981bb8b66706ee5; one commit changing four files: the kind set and its comment at reckon/crew/obligation_snapshot.py:1010-1045, a five-line docstring addition at reckon/crew/obligations.py:1099-1103, a 334-line test, and a 26-line evidence fragment.",
+    "done_when": "the done-when names tests/test_a_promoted_run_owes_no_promotion.py and four cases read through without_departed_run_duties; logs/head-gate.log records 4 passed EXIT=0 at 4431f940b7, logs/negative-control.log records 2 failed 2 passed EXIT=1, and I re-ran the file myself for 4 passed in 13.82s.",
+    "goal": "the goal is that a promotion duty for a run whose live pointer is gone is dropped from the stop hook's snapshot; reckon/crew/obligation_snapshot.py:1042-1045 adds review-ready and promotable-stale to the set that without_departed_run_duties drops, and that function is called from reckon/hooks/coordinator_obligations.py:1242 and reckon/mcp_views.py:4049.",
+    "manifest": "read; status complete, commits 4431f940b753e5e2430348350981bb8b66706ee5, after_suite records the four-case gate at head with exit 0, and artifacts record the importing-test population at the same nine failures on base (logs/importing-tests-base.log) and head (logs/importing-tests-head.log).",
+    "write_paths": "the reviewed run's dispatch fenced reckon/crew/obligation_snapshot.py, reckon/crew/obligations.py, tests/test_a_promoted_run_owes_no_promotion.py, the evidence fragment and a figures directory; the four changed paths all sit inside that list and the figures directory is unused."
+  },
+  "justifications": {
+    "durability": "reverting LIVE_POINTER_DUTY_KINDS to the landing-refused singleton reddens tests/test_a_promoted_run_owes_no_promotion.py:261 and :302, which the recorded negative-control run demonstrates rather than asserts.",
+    "evidence": "logs/head-gate.log records 4 passed EXIT=0 at 4431f940b7 and I re-ran the same file independently (4 passed in 13.82s); logs/negative-control.log records F.F. EXIT=1 with exactly the promoted and discarded cases red, so the guard is shown to fire, but the recorded baseline and after suite arms name different populations so an added-failure count cannot be derived from them alone.",
+    "fit": "reckon/crew/obligation_snapshot.py:1010-1045 keeps the module's no-ledger banner, states the mechanism, and carries no plan, stage or ticket identifier.",
+    "goal_fidelity": "reckon/crew/obligation_snapshot.py:1042 adds review-ready and promotable-stale to LIVE_POINTER_DUTY_KINDS, and without_departed_run_duties at :1047 drops them once the run's live pointer is gone, which is what the stop hook renders.",
+    "reuse": "no owner was forked: the change extends without_departed_run_duties at reckon/crew/obligation_snapshot.py:1047 and its kind set at :1042, while the only sibling settlement, the worktree-held drop at reckon/hooks/coordinator_obligations.py:1250, settles a different kind on a different fact and is untouched.",
+    "scope_discipline": "the four paths in the diff are the two source files, the new test and the evidence fragment, all inside the declared write paths, and the source change is confined to the kind set and the prose around it."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a promotion duty for a run whose live pointer is gone is dropped from the stop hook's snapshot; reckon/crew/obligation_snapshot.py:1042-1045 adds review-ready and promotable-stale to LIVE_POINTER_DUTY_KINDS, which without_departed_run_duties at :1047 drops on a stat of the run's pointer.\nVERDICT done_when: the done-when names tests/test_a_promoted_run_owes_no_promotion.py and four cases read through the settlement; logs/head-gate.log records 4 passed EXIT=0 at 4431f940b7, logs/negative-control.log records 2 failed 2 passed EXIT=1, and I re-ran the file myself for 4 passed in 13.82s.\nVERDICT write_paths: the reviewed run's dispatch fenced reckon/crew/obligation_snapshot.py, reckon/crew/obligations.py, tests/test_a_promoted_run_owes_no_promotion.py, the evidence fragment and a figures directory; the four changed paths all sit inside that list and the figures directory is unused.\nVERDICT manifest: read; status complete, commits 4431f940b753e5e2430348350981bb8b66706ee5, after_suite records the four-case gate at head with exit 0, and artifacts record the importing-test population at the same nine failures on base (logs/importing-tests-base.log) and head (logs/importing-tests-head.log).\nVERDICT diff: read commit by commit from 79c62d09744e50a1942d7b593713188b90f7807c to 4431f940b753e5e2430348350981bb8b66706ee5; one commit changing four files: the kind set and its comment at reckon/crew/obligation_snapshot.py:1010-1045, a five-line docstring addition at reckon/crew/obligations.py:1099-1103, a 334-line test, and a 26-line evidence fragment.\nCALL_SITES: reckon/mcp_views.py:4049, reckon/hooks/coordinator_obligations.py:1242\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligation_snapshot.py:1042 adds review-ready and promotable-stale to LIVE_POINTER_DUTY_KINDS, and without_departed_run_duties at :1047 drops them once the run's live pointer is gone, which is what the stop hook renders.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/head-gate.log records 4 passed EXIT=0 at 4431f940b7 and I re-ran the same file independently (4 passed in 13.82s); logs/negative-control.log records F.F. EXIT=1 with exactly the promoted and discarded cases red, so the guard is shown to fire, but the recorded baseline and after suite arms name different populations so an added-failure count cannot be derived from them alone.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the four paths in the diff are the two source files, the new test and the evidence fragment, all inside the declared write paths, and the source change is confined to the kind set and the prose around it.\nSCORE durability: 19\nJUSTIFICATION durability: reversion of LIVE_POINTER_DUTY_KINDS to the landing-refused singleton reddens tests/test_a_promoted_run_owes_no_promotion.py:261 and :302, which the recorded negative-control run demonstrates rather than asserts.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/obligation_snapshot.py:1010-1045 keeps the module's no-ledger banner, states the mechanism, and carries no plan, stage or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner was forked: the change extends without_departed_run_duties at reckon/crew/obligation_snapshot.py:1047 and its kind set at :1042, while the only sibling settlement, the worktree-held drop at reckon/hooks/coordinator_obligations.py:1250, settles a different kind on a different fact, is untouched and remains the owner of its own.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T052920940353-a-promoted-run-owes-no-promotion/manifest.md:16 non-blocking: after_suite names only the new four-case file while baseline_suite names the five-file importing population, so the done-when's comparison over the files importing reckon.crew.obligations and reckon.crew.obligation_snapshot cannot be derived from the recorded suite pair; it survives only as prose in artifacts and in logs/importing-tests-head.log, which I read and which does show the identical nine failures.\nFINDING tests/test_a_promoted_run_owes_no_promotion.py:305 non-blocking: the discard case's hook assertion only checks that the run id is absent from the checklist string, which a checklist that is empty for any reason satisfies, so it adds no failing condition beyond the view assertion at line 302; the negative-control run reddens the case at line 302 and never reaches line 305.\n",
+  "review_run_id": "r-20261103T061724230349-review-of-a-promoted-run-owes-no-promotion-4431f940b753",
+  "reviewed_base_sha": "79c62d09744e50a1942d7b593713188b90f7807c",
+  "reviewed_head_sha": "4431f940b753e5e2430348350981bb8b66706ee5",
+  "reviewed_run_id": "r-20261103T052920940353-a-promoted-run-owes-no-promotion",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T07:21:50.188819+00:00",
+  "total": 113
+}
