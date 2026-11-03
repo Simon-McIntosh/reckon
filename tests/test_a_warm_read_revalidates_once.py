@@ -70,7 +70,11 @@ DRIVER = dedent(
     metadata_index._dir_identity = counting_dir_identity
 
     def roadmap():
-        report = mcp._roadmap("probe", checkout_path=str(checkout), view="raw")
+        # The read's scope belongs to its boundary, not its body: a registered
+        # tool gets it from the executor wrapper, and a direct caller opens it
+        # as the CLI verbs do. This driver is a direct caller.
+        with metadata_index.discovery_file_scope():
+            report = mcp._roadmap("probe", checkout_path=str(checkout), view="raw")
         return report["data"] if "data" in report else report
 
     result = {"mode": mode}
