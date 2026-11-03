@@ -596,15 +596,16 @@ def _recorded_release(
     root: str | Path | None,
     run_id: str,
     per_run: bool,
-) -> dict[str, Any] | None:
-    """The release a run's record already carries, or ``None`` when it carries none.
+) -> tuple[dict[str, Any], dict[str, Any]] | None:
+    """The release a run's record already carries, and that record, or ``None``.
 
     A release pass is not always the first: promotion over an already-promoted
     run, a second ``crew release``, and a recovery sweep all reach this step
     after a truthful release was recorded. That record is history rather than a
     cache — it names the worktree and scratch copy the host actually removed —
     so a later pass reads it instead of writing over it with a fresh reading
-    that can only say those paths were already gone. An unreadable record is
+    that can only say those paths were already gone. The record comes back with
+    the release because a caller reports both, and an unreadable record is
     treated as carrying none, so a damaged row is repaired rather than frozen.
     """
     try:
@@ -625,7 +626,7 @@ def _recorded_release(
         return None
     release = row.get("release") if isinstance(row, Mapping) else None
     if isinstance(release, Mapping) and release:
-        return dict(release)
+        return dict(release), dict(row)
     return None
 
 
@@ -658,7 +659,7 @@ def _record_release_on_ledger(
         path, project=project, root=root, run_id=run_id, per_run=per_run
     )
     if already is not None:
-        return already, None
+        return already
     # The receipt is written beside the run's own record before the ledger
     # write, because the ledger write is not durable on its own: a landing
     # commit that cannot stage restores the row it wrote to HEAD, and the
