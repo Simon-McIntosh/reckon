@@ -285,10 +285,12 @@ def test_a_recreated_lock_file_records_its_new_inode(home, monkeypatch):
 
     The first copy records the inode of the lock file it held. That file is
     deleted, a new one is made in its place, and the next start must record the
-    inode now on disk beside the new pid rather than the one the previous copy
-    recorded. The wrapper is replaced by the declared argv so the record under
-    test is the supervisor's own, and with the previous inode preferred this
-    case fails.
+    inode now on disk beside the new pid. The wrapper is replaced by the
+    declared argv so the record under test is the supervisor's own, and with
+    the previous inode preferred this case fails. The assertion is on the
+    live file's inode rather than on the two inodes differing: a filesystem
+    may hand the freed inode straight back, and a case that required a
+    different number would red on a correct record.
     """
     manager, first = _start(home)
     first_inode = fleet_supervisor.recorded_service_lock_inode(home.runtime, "demo")
@@ -305,7 +307,6 @@ def test_a_recreated_lock_file_records_its_new_inode(home, monkeypatch):
     lock_path.unlink()
     lock_path.write_text("", encoding="utf-8")
     new_inode = lock_path.stat().st_ino
-    assert new_inode != first_inode
 
     monkeypatch.setattr(
         fleet_supervisor, "service_wrapper_argv", lambda name, argv: list(argv)
