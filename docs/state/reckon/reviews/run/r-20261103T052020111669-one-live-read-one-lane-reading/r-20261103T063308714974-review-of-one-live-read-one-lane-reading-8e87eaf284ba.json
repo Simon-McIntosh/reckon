@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-03T07:01:29.262Z",
+  "dispatched_at": "2026-11-03T06:40:55Z",
+  "findings": [
+    {
+      "file": "reckon/crew/query.py",
+      "id": "fbb4af04a38",
+      "line": 799,
+      "severity": "non-blocking",
+      "text": "non-blocking: _read_lane_document re-implements the lane-document read-and-parse that reckon/crew/dispatch_plan.py:1618-1635 already performs inline in _dispatch_lane_allowance; it does not extend that owner, and a shared raw-document reader in reckon/crew/lane_document.py would keep one reader. The allowance capability itself is correctly reused (_lane_worker_allowance), so this is a small duplication rather than a fork."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T052020111669-one-live-read-one-lane-reading/manifest.md",
+      "id": "f1664025032",
+      "line": 12,
+      "severity": "non-blocking",
+      "text": "non-blocking: retry_failures and failure_attribution both name tests/test_a_malformed_request_is_refused_before_storage.py::test_a_served_field_is_accepted_where_it_is_served, an id that exists nowhere in the tree; the test the evidence fragment names is test_a_live_read_of_a_served_field_is_not_refused (tests/test_a_malformed_request_is_refused_before_storage.py:99). An attribution keyed on a nonexistent id cannot be attached to the failure it claims to explain."
+    },
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "id": "f8c381c6a34",
+      "line": 766,
+      "severity": "non-blocking",
+      "text": "non-blocking: the deliverable's 'the response states the reading's observed_at once' holds only for the runs view; the live view's per-row detail repeats 'the lane document was read at <stamp>' on every row because the live response wrapper is reckon/mcp_views.py (out of this node's write paths, declared under outside_scope). Rows still agree on the value, so the defect the plan names is fixed; only the once-per-response statement is deferred."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/mcp_views.py:4256 (crew view live -> project_live_rows) and reckon/mcp_views.py:4088 (crew view runs -> runs_view) are the production surfaces that reach the change; reckon/crew/queue_admission.py:483 composes the dispatch-time sentence through the same _lane_worker_allowance.",
+    "diff": "Read commit by commit against 3d0ed7f149: b5bb82561b adds the one-reading composition and the detail composer, b5b0ebe1d4 guards a pointer with no project, 8e87eaf284 adds the evidence fragment; four files, 438 insertions, 3 deletions.",
+    "done_when": "The done_when names tests/test_one_live_read_one_lane_reading.py; it asserts one read (a patch-counted list) and one allowance of 4 across three rows whose stored sentences read 0, 63 and 65, which is the stated measure.",
+    "goal": "The node's goal is that the live view makes one lane-document read per response and every row reports that reading: reckon/crew/query.py:811 (_live_lane_readings) performs the one read and reckon/crew/query.py:436 passes the result to each classify_pointer.",
+    "manifest": "Read; it records status complete, the three commits, the gate (2 passed, EXIT=0), base 9 failed/597 passed/1 error against head 8 failed/598 passed/4 errors, and the negative control.",
+    "write_paths": "The declared write paths are reckon/crew/query.py, reckon/crew/recovery_classification.py, the new test and the evidence fragment; every path in the diff is inside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is one lane reading per live response; reckon/crew/query.py:811 _live_lane_readings takes it once and query.py:436 hands it to every classify_pointer.\nVERDICT done_when: tests/test_one_live_read_one_lane_reading.py asserts one patch-counted read and one allowance of 4 across three rows whose stored sentences read 0, 63 and 65, which is the done_when's measure.\nVERDICT write_paths: reckon/crew/query.py, reckon/crew/recovery_classification.py, the new test and the evidence fragment are all inside the declared write paths.\nVERDICT manifest: read; status complete, gate 2 passed EXIT=0, base 9 failed/597 passed/1 error, head 8 failed/598 passed/4 errors, negative control 2 failed EXIT=1.\nVERDICT diff: read commit by commit from 3d0ed7f149 to 8e87eaf284; b5bb82561b composes from one reading, b5b0ebe1d4 guards a pointer naming no project, 8e87eaf284 records the evidence; four files, 438 insertions, 3 deletions.\nCALL_SITES: reckon/mcp_views.py:4256, reckon/mcp_views.py:4088, reckon/crew/queue_admission.py:483\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/query.py:436 composes every row from one _live_lane_readings result, so rows of one session cannot disagree; the once-per-response statement is on the runs view only (reckon/crew/query.py:1208).\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate tests/test_one_live_read_one_lane_reading.py re-ran green at 8e87eaf284 (2 passed) and the base/after arms are recorded, giving 0 added failures from after(8) minus base(9); the head arm's 4 errors against the base's 1 are not in failure_ids and rest on an attribution keyed to a nonexistent test id.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/query.py, reckon/crew/recovery_classification.py, tests/test_one_live_read_one_lane_reading.py, the evidence fragment) is inside the declared write paths and nothing else changed.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_one_live_read_one_lane_reading.py:110 fails if the document is read more than once and :112 fails if a stored sentence is replayed, and returning no reading reddens both (negative-control.log, EXIT=1); the file monkeypatches _lane_config_for and _read_lane_document, so the real resolution and file read are not guarded here.\nSCORE fit: 17\nJUSTIFICATION fit: the new helpers at reckon/crew/query.py:758-899 follow the module's private-helper and long-docstring idiom, and reckon/crew/query.py:112-124 adds the row fields into the existing alphabetical LIVE_CLASSIFICATION_FIELDS tuple with no plan or ticket labels.\nSCORE reuse: 15\nJUSTIFICATION reuse: reckon/crew/query.py:836 reuses dispatch_plan._lane_worker_allowance and lane_document.read_lane_reading_fields rather than forking the allowance, but reckon/crew/query.py:799 _read_lane_document duplicates the read-and-parse dispatch_plan.py:1618-1635 already does.\nFINDING reckon/crew/query.py:799 non-blocking: _read_lane_document duplicates the lane-document read and parse already performed inline by dispatch_plan._dispatch_lane_allowance at reckon/crew/dispatch_plan.py:1618-1635 instead of extending a shared reader.\nFINDING manifest.md:12 non-blocking: retry_failures and failure_attribution name test_a_served_field_is_accepted_where_it_is_served, which exists in no test file; the real id is test_a_live_read_of_a_served_field_is_not_refused.\nFINDING reckon/crew/recovery_classification.py:766 non-blocking: the live view repeats the lane document's observed_at on every row's detail because the live response wrapper (reckon/mcp_views.py) is outside this node's write paths; the once-per-response statement holds on the runs view only.",
+  "review_run_id": "r-20261103T063308714974-review-of-one-live-read-one-lane-reading-8e87eaf284ba",
+  "reviewed_base_sha": "3d0ed7f1496e017b2095ee6f2eb57e16bb925d75",
+  "reviewed_head_sha": "8e87eaf284ba6b12594a10843b82b1bb57f3d757",
+  "reviewed_run_id": "r-20261103T052020111669-one-live-read-one-lane-reading",
+  "rubric": "review",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 15,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T07:24:20.005058+00:00",
+  "total": 99
+}
