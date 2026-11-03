@@ -23,8 +23,8 @@
   <title>A plan is reviewed before it is built | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="301">
-<meta name="plan-modified" content="2026-10-23">
+<meta name="plan-version" content="302">
+<meta name="plan-modified" content="2026-11-03">
 <meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;deferred&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;done&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;done&quot;,&quot;s30&quot;:&quot;done&quot;,&quot;s31&quot;:&quot;done&quot;,&quot;s32&quot;:&quot;done&quot;,&quot;s33&quot;:&quot;done&quot;,&quot;s34&quot;:&quot;done&quot;,&quot;s35&quot;:&quot;done&quot;,&quot;s36&quot;:&quot;done&quot;,&quot;s37&quot;:&quot;implementable&quot;,&quot;s38&quot;:&quot;implementable&quot;,&quot;s39&quot;:&quot;implementable&quot;,&quot;s40&quot;:&quot;done&quot;,&quot;s41&quot;:&quot;done&quot;,&quot;s42&quot;:&quot;done&quot;}">
 <meta name="plan-section-depends-on" content="{&quot;s37&quot;:[&quot;a-plan-is-reviewed-before-it-is-built#s36&quot;],&quot;s39&quot;:[&quot;a-plan-is-reviewed-before-it-is-built#s37&quot;],&quot;s42&quot;:[&quot;a-plan-is-reviewed-before-it-is-built#s41&quot;]}">
 </head>
@@ -807,6 +807,9 @@ _review_is_complete reads the record as complete (no absent dimensions).</p></di
 </div>
 <div class="r-comment" data-section="s42" data-id="c-close-s42" data-who="reckon-build" data-when="2026-10-23T10:35:00Z">
     <div class="r-comment-body"><p>§42 landed at <code>5756376d4</code>: a partial design review is stored incomplete, the dispatch gate refuses on it, and its findings stay answerable. The 133-file population adds no failure; the one queue test that failed under load passes alone at both revisions. <a href="/reckon/evidence/archive/a-plan-is-reviewed-before-it-is-built-landed.html#s42">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s38" data-id="c-run-r-20261103T084246799502-review-of-every-launch-of-a-queued-plan-review-is-joined-to-its-ab6177672897" data-who="reckon-build" data-when="2026-11-03T08:57:16.658Z">
+    <div class="r-comment-body"><p>§38 reviewed: the join moved into `_launch_queued` and all three launch callers reach it (`dispatch.py:519`, `queue_admission.py:459`, `queue_admission.py:4192/4208`); added failures against base 0 (base 4 failed/624 passed, head 2 failed/626 passed, the two reds identical on both arms and on the reviewed run&#x27;s own test-code paths).</p></div>
 </div>
 </section>
 </main>
