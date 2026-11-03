@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/routing.py:2752 unanswered_findings_by_unit inside require_plan_reviewed",
+    "reckon/crew/dispatch_plan.py:872 require_plan_reviewed",
+    "reckon/crew/queue_admission.py:3228 routing.require_plan_reviewed",
+    "reckon/crew/plan_review.py:2060 finding_units(record, finding_id) in the response writer",
+    "reckon/crew/dispatch_plan.py:744 carried_findings_for_section"
+  ],
+  "completed_at": "2026-11-03T04:38:37.474Z",
+  "dispatched_at": "2026-11-03T04:30:44Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": 2446,
+      "severity": "non-blocking",
+      "text": "The line-anchor-before-text reordering this commit introduces has no test: every plan-file line anchor in tests/test_a_finding_blocks_its_own_section.py (the _two_section_findings fixture at line 152) carries text that itself names its section, so both the old and the new order return the same unit. Reverting the reordering leaves all eight cases green, and the defect it repairs - a plan-line anchor with section-free text falling to the document unit and blocking every section - would return undetected."
+    },
+    {
+      "file": "docs/evidence/fragments/a-review-gate-judges-what-it-covers/a-finding-blocks-its-own-section.html",
+      "line": 27,
+      "severity": "non-blocking",
+      "text": "The fragment reads the base arm as the recorded 'base run is in fact worse than the head' because it fails [gc] and [verify-gate] while the head passes them; no commit in the gained range touches tests/test_run_verbs_share_one_identity_grammar.py or the code it exercises, so that difference is an environment or ordering artefact of the git-archive tree in /tmp rather than an improvement at the head, and the base arm is therefore not strictly comparable to the head arm it is set against."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified require_plan_reviewed at reckon/crew/routing.py:2752 through dispatch_plan.py:872 and queue_admission.py:3228, finding_units at plan_review.py:2060 and dispatch_plan.py:744, and _finding_units at plan_review.py:2537/2559/2594.",
+    "diff": "read commit by commit (ba46e6c513, dd7a21aa76, e490487d4c) against 0609e285; two fix the resolver identity and the line-anchor order, one records the importer arm.",
+    "done_when": "read the done_when's five cases; tests/test_a_finding_blocks_its_own_section.py holds one per case plus two identity cases, and after-suite.log records 8 passed EXIT=0 at dd7a21aa76.",
+    "goal": "read plan \u00a713 (docs/plans/a-review-gate-judges-what-it-covers.html:198-200) and the three gained commit messages.",
+    "manifest": "read; it records the gate at 8 passed EXIT=0, the base arm at 54 passed EXIT=0, the negative control at 5 failed EXIT=1, and thirteen importer failure ids each attributed to base), with nine log paths.",
+    "write_paths": "read the manifest's declared paths; the four paths in the gained commits are all inside them and none touches routing.py in these three commits."
+  },
+  "justifications": {
+    "durability": "The two new identity tests at tests/test_a_finding_blocks_its_own_section.py:326 and :349 redden if the regex or fragment normalisation is reverted, but the line-anchor reordering at reckon/crew/plan_review.py:2446 has no case in the test file, so reverting dd7a21aa76 leaves all eight green.",
+    "evidence": "The importer claim at docs/evidence/fragments/a-review-gate-judges-what-it-covers/a-finding-blocks-its-own-section.html:27 reconciles with the logs (253+639+510=1402 passed, 8 failed and 5 errors; six ids in baseline-unrelated.log and seven in importers-base-serial-attribution.log), but that base tree also fails [gc] and [verify-gate] which pass at the head, so the two arms are not strictly comparable.",
+    "fit": "The gained change reorders an existing branch and extends the module's own docstring vocabulary (plan_review.py:2428-2438), with no new name and no plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/plan_review.py:2446-2456 now resolves a plan-file line anchor before the finding's text, so a finding whose line sits in a section blocks that section rather than the document unit, which is the \u00a713 deliverable's rule that a line anchor resolves through the reviewed snapshot when its path is the plan file.",
+    "reuse": "The gained commits route section identity through reckon/_plan_html.py:90 section_record_id rather than rebuilding ids, retiring the duplication the previous review scored 11 for; _section_identities reads the parser's own headings.",
+    "scope_discipline": "All four paths in the three gained commits (reckon/crew/plan_review.py, tests/test_a_finding_blocks_its_own_section.py, the evidence fragment) are inside the node's declared write paths and match the \u00a713 deliverable."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read plan \u00a713 (docs/plans/a-review-gate-judges-what-it-covers.html:198-200) and the three gained commits; they fix a section-identity derivation and a line-anchor ordering in the resolver the gate calls.\nVERDICT done_when: the done_when's five cases are each held by tests/test_a_finding_blocks_its_own_section.py, which after-suite.log records at 8 passed EXIT=0 for revision dd7a21aa76.\nVERDICT write_paths: the manifest declares five paths; the four paths the three gained commits touch are all inside them.\nVERDICT manifest: read; it records the gate, the base arm, the negative control and the thirteen-id importer attribution with nine log paths.\nVERDICT diff: read commit by commit against 0609e285; ba46e6c513 resolves section identity through _plan_html.section_record_id, dd7a21aa76 resolves a plan line anchor before the finding's text, e490487d4c records the importer arm.\nCALL_SITES: reckon/crew/routing.py:2752, reckon/crew/dispatch_plan.py:872, reckon/crew/queue_admission.py:3228, reckon/crew/plan_review.py:2060, reckon/crew/dispatch_plan.py:744\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:2446-2456 makes a plan-file line anchor block the section its line sits in, which is \u00a713's line-anchor rule.\nSCORE evidence: 16\nJUSTIFICATION evidence: the importer totals at docs/evidence/fragments/a-review-gate-judges-what-it-covers/a-finding-blocks-its-own-section.html:27 reconcile with the three part logs, but the base tree arm fails two cases the head passes, so the arms are not comparable.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the four paths in ba46e6c513, dd7a21aa76 and e490487d4c are all inside the manifest's declared write paths.\nSCORE durability: 11\nJUSTIFICATION durability: tests/test_a_finding_blocks_its_own_section.py:326 and :349 redden on the identity fixes, but no case exercises the line-anchor order changed at reckon/crew/plan_review.py:2446.\nSCORE fit: 18\nJUSTIFICATION fit: the reordered branch keeps the module's docstring vocabulary at reckon/crew/plan_review.py:2428-2438 and adds no new name.\nSCORE reuse: 19\nJUSTIFICATION reuse: identity now routes through reckon/_plan_html.py:90 section_record_id instead of rebuilding ids.\nFINDING reckon/crew/plan_review.py:2446 non-blocking: the line-anchor-before-text reordering has no test, so reverting dd7a21aa76 leaves all eight cases green and the regression undetected.\nFINDING docs/evidence/fragments/a-review-gate-judges-what-it-covers/a-finding-blocks-its-own-section.html:27 non-blocking: the base tree arm fails [gc] and [verify-gate] which pass at the head with no code in the gained range touching them, so it is not a like-for-like comparison.\n",
+  "review_run_id": "r-20261103T042825775239-review-of-a-finding-blocks-its-own-section-e490487d4c6f",
+  "reviewed_base_sha": "0609e285191c1c83f20162c0014ffc1bd33c79ee",
+  "reviewed_head_sha": "e490487d4c6f513beee2103c56fbae338e20d6cc",
+  "reviewed_run_id": "r-20261103T012525018363-a-finding-blocks-its-own-section",
+  "scores": {
+    "durability": 11,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T04:42:39.076262+00:00",
+  "total": 102
+}
