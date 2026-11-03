@@ -1237,11 +1237,18 @@ def _walk_covered(
             for entry in entries:
                 try:
                     if entry.is_dir(follow_symlinks=False):
+                        # The infra rule is decided from the directory's name
+                        # and its parent's relative path, so a rejected
+                        # directory costs no resolved path.
+                        if _skips_infra_dir(
+                            (PurePosixPath(relative_dir) / entry.name).as_posix()
+                        ):
+                            continue
                         try:
                             child = Path(entry.path).relative_to(docs_dir).as_posix()
                         except ValueError:
                             continue
-                        if child in skip_subtrees or _skips_infra_dir(child):
+                        if child in skip_subtrees:
                             continue
                         pending.append(entry.path)
                         continue
