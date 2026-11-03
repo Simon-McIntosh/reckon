@@ -101,6 +101,186 @@ def _remember_commits(key: tuple[str, str], head: str, count: int) -> None:
     cache[key] = (head, count)
 
 
+# A fresh process asks git again about answers it cannot change, so the answers
+# that are functions of immutable object ids are kept under the crew home. The
+# count between two revisions never changes, and a full revision resolves to
+# the same commit forever, so an entry keyed on those ids cannot go stale.
+_GIT_ANSWER_STORE_FILENAME = "git-object-answers.json"
+_GIT_ANSWER_STORE_VERSION = 1
+_GIT_ANSWER_STORE_WORKTREES = 256
+_GIT_ANSWER_STORE_CANDIDATES = 512
+
+
+def _git_answer_store_path() -> Path:
+    """Where git's answers about immutable object ids are kept between runs."""
+    return runs.crew_home() / _GIT_ANSWER_STORE_FILENAME
+
+
+def _empty_git_answer_store() -> dict[str, Any]:
+    return {"version": _GIT_ANSWER_STORE_VERSION, "commits": {}, "counts": {}}
+
+
+def _read_git_answer_store() -> dict[str, Any]:
+    """The stored git answers, or an empty store when none can be read.
+
+    A store that is absent, half-written or corrupt yields no answer at all,
+    which costs one git call and rewrites the entry; it can never offer a wrong
+    one, because the only answers offered are ones a previous git run gave for
+    these exact object ids. Anything the reader does not recognise is treated
+    as corrupt rather than guessed at.
+    """
+    try:
+        payload = json.loads(_git_answer_store_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError, UnicodeDecodeError):
+        return _empty_git_answer_store()
+    if (
+        not isinstance(payload, dict)
+        or payload.get("version") != _GIT_ANSWER_STORE_VERSION
+    ):
+        return _empty_git_answer_store()
+    raw_commits = payload.get("commits")
+    raw_counts = payload.get("counts")
+    if not isinstance(raw_commits, dict) or not isinstance(raw_counts, dict):
+        return _empty_git_answer_store()
+    store = _empty_git_answer_store()
+    for tree, answers in raw_commits.items():
+        if not isinstance(tree, str) or not isinstance(answers, dict):
+            continue
+        kept = {
+            str(candidate): str(sha)
+            for candidate, sha in answers.items()
+            if isinstance(candidate, str) and isinstance(sha, str) and sha
+        }
+        if kept:
+            store["commits"][tree] = kept
+    for tree, answers in raw_counts.items():
+        if not isinstance(tree, str) or not isinstance(answers, dict):
+            continue
+        kept_counts = {
+            str(key): value
+            for key, value in answers.items()
+            if isinstance(key, str)
+            and isinstance(value, int)
+            and not isinstance(value, bool)
+        }
+        if kept_counts:
+            store["counts"][tree] = kept_counts
+    return store
+
+
+def _live_pointer_worktrees() -> set[str] | None:
+    """The worktrees this crew home's live pointers name, or None if unread."""
+    try:
+        records = runs.list_live()
+    except (OSError, ValueError, KeyError, CrewError):
+        return None
+    named = {str(record.get("worktree") or "").strip() for record in records}
+    named.discard("")
+    return named
+
+
+def _bound_git_answer_store(store: dict[str, Any]) -> None:
+    """Keep the store bounded by the fleet it describes.
+
+    An entry whose worktree is gone can never be read again, so it is dropped
+    first. Past the ceiling, entries whose worktree no live pointer names are
+    dropped, and only then are the oldest trees evicted, so a long-lived
+    producer carries a store bounded by the fleet rather than by every worktree
+    it has ever classified.
+    """
+    for bucket in ("commits", "counts"):
+        for tree in [tree for tree in store[bucket] if not Path(tree).is_dir()]:
+            del store[bucket][tree]
+    if max(len(store["commits"]), len(store["counts"])) > _GIT_ANSWER_STORE_WORKTREES:
+        live = _live_pointer_worktrees()
+        if live is not None:
+            for bucket in ("commits", "counts"):
+                for tree in [tree for tree in store[bucket] if tree not in live]:
+                    del store[bucket][tree]
+    for bucket in ("commits", "counts"):
+        entries = store[bucket]
+        while len(entries) > _GIT_ANSWER_STORE_WORKTREES:
+            entries.pop(next(iter(entries)), None)
+        for answers in entries.values():
+            while len(answers) > _GIT_ANSWER_STORE_CANDIDATES:
+                answers.pop(next(iter(answers)), None)
+
+
+def _update_git_answer_store(mutate: Callable[[dict[str, Any]], None]) -> None:
+    """Apply one change to the store under an exclusive lock.
+
+    The store is shared by every process reading this crew home, so the read,
+    the change and the write happen under one lock; a lost update would cost a
+    git call, but a torn file would cost one on every read. A home that cannot
+    be written is not an error: the answer is still returned to the caller.
+    """
+    path = _git_answer_store_path()
+    lock_path = path.with_name(f"{path.name}.lock")
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        lock = lock_path.open("a+")
+    except OSError:
+        return
+    with lock:
+        try:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+            store = _read_git_answer_store()
+            mutate(store)
+            _bound_git_answer_store(store)
+            payload = json.dumps(store, sort_keys=True)
+            temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+            temporary.write_text(payload, encoding="utf-8")
+            os.replace(temporary, path)
+        except OSError:
+            return
+        finally:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+
+
+def _stored_commit_answer(tree: Path, candidate: str) -> str:
+    """The commit a stored answer resolves ``candidate`` to, or empty."""
+    return str(
+        _read_git_answer_store()["commits"].get(str(tree), {}).get(candidate, "")
+    )
+
+
+def _remember_commit_answer(tree: Path, candidate: str, sha: str) -> None:
+    """Record that ``candidate`` resolved to ``sha`` in ``tree``.
+
+    An unresolved candidate is never stored: an object the repository does not
+    hold yet it may hold later, so "names no commit" is not an immutable fact.
+    """
+    if not sha:
+        return
+
+    def mutate(store: dict[str, Any]) -> None:
+        store["commits"].setdefault(str(tree), {})[candidate] = sha
+
+    _update_git_answer_store(mutate)
+
+
+def _stored_count_answer(tree: Path, head: str, base: str) -> int | None:
+    """The stored count for this worktree head and base, or None."""
+    key = _count_answer_key(head, base)
+    answer = _read_git_answer_store()["counts"].get(str(tree), {}).get(key)
+    return answer if isinstance(answer, int) else None
+
+
+def _remember_count_answer(tree: Path, head: str, base: str, count: int) -> None:
+    """Record the commit count for this worktree head and base."""
+    key = _count_answer_key(head, base)
+
+    def mutate(store: dict[str, Any]) -> None:
+        store["counts"].setdefault(str(tree), {})[key] = count
+
+    _update_git_answer_store(mutate)
+
+
+def _count_answer_key(head: str, base: str) -> str:
+    """One store key for the pair of object ids the count is a function of."""
+    return f"{head}\x00{base}"
+
+
 def _commits_beyond_base(record: Mapping[str, Any]) -> int:
     """Count commits in the worktree past the pointer's recorded base.
 
@@ -114,7 +294,9 @@ def _commits_beyond_base(record: Mapping[str, Any]) -> int:
     The count is a function of the worktree's revision, which is read from the
     git directory as files rather than by a subprocess, so it is cached against
     that revision. A run whose tree has not moved is answered without spawning
-    git again; when the head moves the count is taken afresh.
+    git again; when the head moves the count is taken afresh. The same answer
+    is stored under the crew home against the head and base revisions, so a
+    fresh process is answered without git at all.
     """
     worktree_value = str(record.get("worktree") or "").strip()
     base = str(record.get("base_sha") or record.get("base") or "").strip()
@@ -130,6 +312,10 @@ def _commits_beyond_base(record: Mapping[str, Any]) -> int:
         cached = _COMMITS_BEYOND_BASE_CACHE.get(key)
         if cached is not None and cached[0] == head:
             return cached[1]
+        stored = _stored_count_answer(worktree, head, base)
+        if stored is not None:
+            _remember_commits(key, head, stored)
+            return stored
     count = subprocess.run(
         ["git", "rev-list", "--count", f"{base}..HEAD"],
         cwd=worktree,
@@ -144,6 +330,7 @@ def _commits_beyond_base(record: Mapping[str, Any]) -> int:
         return 0
     if cacheable:
         _remember_commits(key, head, resolved)
+        _remember_count_answer(worktree, head, base, resolved)
     return resolved
 
 

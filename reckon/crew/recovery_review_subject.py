@@ -200,6 +200,43 @@ def _reviewed_run_head(record: Mapping[str, Any]) -> str:
     return head
 
 
+_FULL_REVISION = re.compile(r"[0-9A-Fa-f]{40,64}")
+
+# A full revision resolves to the same commit for as long as the repository
+# holds it, so its answer is kept for the life of the process and, through the
+# crew home's store, across processes. The key carries the tree because an
+# object id resolves only in a repository that has it; a ref name or an
+# abbreviation can move, so neither is ever kept.
+_RESOLVE_COMMIT_CACHE: dict[tuple[str, str], str] = {}
+_RESOLVE_COMMIT_CACHE_LIMIT = 256
+
+
+def _stored_commit_answer(tree: Path, candidate: str) -> str:
+    """The commit a store holds for this full revision in this tree, or empty."""
+    if not _FULL_REVISION.fullmatch(candidate):
+        return ""
+    key = (str(tree), candidate)
+
+    cached = _RESOLVE_COMMIT_CACHE.get(key)
+    if cached is not None:
+        return cached
+    from reckon.crew.recovery_watch import _stored_commit_answer as stored
+
+    answer = stored(tree, candidate)
+    if answer:
+        _remember_resolved_commit(key, answer)
+    return answer
+
+
+def _remember_resolved_commit(key: tuple[str, str], sha: str) -> None:
+    """Keep one resolved revision, bounded so a long-lived process cannot grow."""
+    if len(_RESOLVE_COMMIT_CACHE) >= _RESOLVE_COMMIT_CACHE_LIMIT and key not in (
+        _RESOLVE_COMMIT_CACHE
+    ):
+        _RESOLVE_COMMIT_CACHE.pop(next(iter(_RESOLVE_COMMIT_CACHE)), None)
+    _RESOLVE_COMMIT_CACHE[key] = sha
+
+
 def _resolve_commit(tree: Path, candidate: str, *, strict: bool = False) -> str:
     """The canonical object id ``candidate`` names in ``tree``, or empty.
 
@@ -221,6 +258,9 @@ def _resolve_commit(tree: Path, candidate: str, *, strict: bool = False) -> str:
     """
     if not candidate:
         return ""
+    stored = _stored_commit_answer(tree, candidate)
+    if stored:
+        return stored
     try:
         completed = subprocess.run(
             [
@@ -256,6 +296,11 @@ def _resolve_commit(tree: Path, candidate: str, *, strict: bool = False) -> str:
     sha = completed.stdout.strip()
     if completed.returncode or not re.fullmatch(r"[0-9A-Fa-f]{40,64}", sha):
         return ""
+    if _FULL_REVISION.fullmatch(candidate):
+        _remember_resolved_commit((str(tree), candidate), sha)
+        from reckon.crew.recovery_watch import _remember_commit_answer
+
+        _remember_commit_answer(tree, candidate, sha)
     return sha
 
 

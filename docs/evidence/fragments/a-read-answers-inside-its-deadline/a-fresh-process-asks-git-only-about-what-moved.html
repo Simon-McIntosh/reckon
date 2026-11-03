@@ -1,0 +1,10 @@
+<article class="r-evidence" id="a-fresh-process-asks-git-only-about-what-moved">
+  <h3 id="a-fresh-process-asks-git-only-about-what-moved-title">A fresh process asks git only about what moved</h3>
+  <p id="a-fresh-process-asks-git-only-about-what-moved-what">The two git answers a derivation takes that are functions of immutable object ids — the commit a full revision resolves to, and the count of commits between a worktree head and its base — are now read from and written to a store under the crew home, keyed on those ids. A ref name or abbreviation still asks git, because a ref moves. A corrupt or absent store falls back to git, returns the same answer, and rewrites the entry.</p>
+  <p id="a-fresh-process-asks-git-only-about-what-moved-measure">With the store populated and the in-process caches cleared, a derivation over four unmoved worktrees spawned no <code>git rev-parse --verify</code> and no <code>git rev-list --count</code>, and reported the answers git gives. With the store's read disabled, the same derivation spawned both: one test id fails there and none fails at head.</p>
+  <ul id="a-fresh-process-asks-git-only-about-what-moved-paths">
+    <li><code>reckon/crew/recovery_watch.py</code> — the store, its bound, and <code>_commits_beyond_base</code>'s read and write of it.</li>
+    <li><code>reckon/crew/recovery_review_subject.py</code> — <code>_resolve_commit</code> takes a stored answer for a full revision, in-process and across processes.</li>
+    <li><code>tests/test_a_fresh_process_asks_git_only_what_moved.py</code> — the six cases above.</li>
+  </ul>
+</article>
