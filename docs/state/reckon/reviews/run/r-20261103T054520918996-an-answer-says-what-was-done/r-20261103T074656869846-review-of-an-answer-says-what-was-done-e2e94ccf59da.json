@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_crew_session_delivery.py::test_a_follower_waits_for_a_producer_instead_of_refusing"
+  ],
+  "added_failures_note": "derived by comparing the reviewed run's own importer arms: importers-base-00-serial.log (8 failed) against importers-head-00-rerun.log (8 failed); the single head-only id is an unrelated RecursionError in recovery classification, and the head arm's own first pass carried nine failures, so the arm is flaky. The reviewed manifest names no baseline_suite field, so the suite pair the record contract usually reads is absent for this node.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:2675",
+    "reckon/crew_run_commands.py:77",
+    "reckon/mcp_crew_actions.py:316",
+    "reckon/mcp.py:2763",
+    "reckon/crew/recovery_review_subject.py:779"
+  ],
+  "completed_at": "2026-11-03T08:12:08.763Z",
+  "dispatched_at": "2026-11-03T08:00:26Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_session_delivery.py",
+      "id": "f1a2c3d4e01",
+      "line": "365",
+      "severity": "non-blocking",
+      "text": "the head arm fails test_a_follower_waits_for_a_producer_instead_of_refusing with a RecursionError the base arm does not fail, so the manifest's 'head adds no failure there' is contradicted; the fault sits in the unrelated recovery-classification watch path and the arm is flaky, but the claim as recorded is not what the logs show."
+    },
+    {
+      "file": "docs/plans/a-review-gate-judges-what-it-covers.html",
+      "id": "f2b3d4e5f02",
+      "line": "202",
+      "severity": "non-blocking",
+      "text": "the done_when names tests/test_cited_commands_exist.py, tests/test_option_keys_are_unique.py and tests/test_crew_help_names_its_state.py as base-revision no-added-failure arms, and none of the three was run, so that part of the measure is unmeasured rather than passed."
+    },
+    {
+      "file": "reckon/crew_dispatch_commands.py",
+      "id": "f3c4e5f6a03",
+      "line": "2562",
+      "severity": "non-blocking",
+      "text": "`--note` supplied without `--answer` reaches only the answer branch, so `reckon crew review --project p --plan s --session x --local --note \"...\"` dispatches a review and drops the note without complaint."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call sites, listed on the CALL_SITES line.",
+    "diff": "read commit by commit from 25d6b4f7e0a0 to e2e94ccf59 across three commits and 18 files.",
+    "done_when": "the done_when names tests/test_an_answer_says_what_was_done.py with four cases plus two negative controls; the gate and both controls are recorded, but the three named base-revision arms were never run.",
+    "goal": "the node's goal is that an acted answer says what the fix changed; reckon/crew_dispatch_commands.py:2553-2563 refuses `--acted` without `--note` and reckon/crew/plan_review.py:2073 stores it on the response.",
+    "manifest": "read; the gate is 5 passed, both negative controls red, but the head/base importer claim is contradicted by the failure-id sets.",
+    "write_paths": "all 18 changed paths in the diff fall inside the manifest's orientation_write_paths."
+  },
+  "justifications": {
+    "durability": "tests/test_an_answer_says_what_was_done.py:62 reddens when the requirement is dropped and :163 reddens when a skill example loses its note, both shown by the recorded negative controls.",
+    "evidence": "gate-after-3.log records 5 passed with EXIT=0 and both negative controls are red, but no log runs the three test files the done_when names and the manifest records no ruff result.",
+    "fit": "the option at reckon/crew_dispatch_commands.py:2424 and the stored key at reckon/crew/plan_review.py:2073 follow the surrounding idiom, with no plan or ticket name in the diff.",
+    "goal_fidelity": "reckon/crew/plan_review.py:2073 stores the note on the response and :1893 folds it into the brief's account, so the next review brief prints what was done rather than only 'acted'.",
+    "reuse": "the note extends the existing response record written by reckon/crew/plan_review.py:2038 rather than adding a parallel store, and the brief reuses _stored_response at :1940.",
+    "scope_discipline": "every changed path is inside the declared write paths, but tests/test_review_plan_command.py:221 and tests/test_plan_review_gate.py:460 carry formatter reflows of untouched regions."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that an acted answer says what the fix changed; reckon/crew_dispatch_commands.py:2553-2563 refuses `--acted` without `--note` and reckon/crew/plan_review.py:2073-2079 stores the note on the response, so an acted answer can no longer be action-only.\nVERDICT done_when: the done_when names tests/test_an_answer_says_what_was_done.py with four cases plus two named negative controls; the manifest records the gate as 5 passed (gate-after-3.log, EXIT=0) and negative-control-1.log and negative-control-2.log are each red, but the three test files the done_when also names (tests/test_cited_commands_exist.py, tests/test_option_keys_are_unique.py, tests/test_crew_help_names_its_state.py) were never run and no log in the run directory contains them.\nVERDICT write_paths: read the manifest's orientation_write_paths; all 18 changed paths in the diff fall inside them \u2014 reckon/crew_dispatch_commands.py, reckon/mcp.py, reckon/mcp_crew_actions.py, reckon/crew/plan_review.py, the four skills, eight test files and the evidence fragment.\nVERDICT manifest: read; it states the gate tests/test_an_answer_says_what_was_done.py passed 5 tests, the blast-radius set ran 123 passed, and the importer arms were head 8 failed / 234 passed against base 8 failed / 209 passed \u2014 but its claim that head adds no failure there is contradicted by the failure-id sets.\nVERDICT diff: read commit by commit from 25d6b4f7e0a0 to e2e94ccf59; 476c39b75d adds the CLI requirement, the stored note and the brief's account line, ab805b3ede adds the evidence fragment, and e2e94ccf59 carries the parameter through the MCP signature and updates the fixtures and skills.\nCALL_SITES: reckon/crew_dispatch_commands.py:2675, reckon/crew_run_commands.py:77, reckon/mcp_crew_actions.py:316, reckon/mcp.py:2763, reckon/crew/recovery_review_subject.py:779\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:2073 stores the note on the response and :1893 folds it into the brief's account, so the next review brief prints what was done rather than only \"acted\".\nSCORE evidence: 12\nJUSTIFICATION evidence: gate-after-3.log records 5 passed with EXIT=0 and both negative controls are red, but no log runs the three test files the done_when names and the manifest records no ruff result (I measured `ruff check` clean on the changed paths at the reviewed head).\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every changed path is inside the declared write paths, but tests/test_review_plan_command.py:221 and tests/test_plan_review_gate.py:460 carry formatter reflows of regions the goal never touches.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_an_answer_says_what_was_done.py:62 reddens when the requirement is dropped (negative-control-1.log, EXIT=1) and :163 reddens when a skill example loses its note (negative-control-2.log, EXIT=1).\nSCORE fit: 18\nJUSTIFICATION fit: the option at reckon/crew_dispatch_commands.py:2424 and the stored key at reckon/crew/plan_review.py:2073 follow the surrounding idiom, and no plan, ticket or version name appears in the diff.\nSCORE reuse: 17\nJUSTIFICATION reuse: the note extends the existing response record written by reckon/crew/plan_review.py:2038 rather than adding a parallel store, and the brief reuses _stored_response at :1940.\nFINDING tests/test_crew_session_delivery.py:365 non-blocking: the head arm fails test_a_follower_waits_for_a_producer_instead_of_refusing with a RecursionError that the base arm does not fail, so the manifest's \"head adds no failure there\" is contradicted; the fault sits in the unrelated recovery-classification watch path and the arm is flaky, but the claim as recorded is not what the logs show.\nFINDING docs/plans/a-review-gate-judges-what-it-covers.html:202 non-blocking: the done_when names tests/test_cited_commands_exist.py, tests/test_option_keys_are_unique.py and tests/test_crew_help_names_its_state.py as base-revision no-added-failure arms, and none of the three was run \u2014 no log in the run directory mentions them \u2014 so that part of the measure is unmeasured rather than passed.\nFINDING reckon/crew_dispatch_commands.py:2562 non-blocking: `--note` supplied without `--answer` reaches only the answer branch, so `reckon crew review --project p --plan s --session x --local --note \"...\"` dispatches a review and drops the note without complaint.\n",
+  "review_run_id": "r-20261103T074656869846-review-of-an-answer-says-what-was-done-e2e94ccf59da",
+  "reviewed_base_sha": "25d6b4f7e0a094504a1636127ca5215345b6fc43",
+  "reviewed_head_sha": "e2e94ccf59da91967ad7002b39461245dc0cf253",
+  "reviewed_run_id": "r-20261103T054520918996-an-answer-says-what-was-done",
+  "scores": {
+    "durability": 18,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T08:09:00Z",
+  "total": 99
+}
