@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-plan-is-reviewed-before-it-is-built">
+  <meta name="plan-title" content="A plan review's receipt says whether the review was stored">
+  <meta name="plan-summary" content="The promotion receipt carries plan_review_store for a plan review, read back off the delivery the store recorded: written when a record carries the delivery's id, the store's own refusal reason when it refused, and the composed directory with the run id it fails to name when the composed report names no run. The store field is unchanged and a run that is not a plan review carries no such field.">
+  <meta name="plan-evidence-for" content="reckon:a-plan-is-reviewed-before-it-is-built">
+  <meta name="plan-verifies" content="reckon:a-plan-is-reviewed-before-it-is-built#s37">
+  <meta name="plan-recorded-at" content="2026-11-03">
+  <meta name="plan-verdict" content="passed">
+    <meta name="plan-tags" content="crew,promotion,plan-review,receipt,store">
+  <title>A plan review's receipt says whether the review was stored — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-plan-reviews-receipt-says-whether-the-review-was-stored" data-reckon="landed" data-when="2026-11-03">
+  <h2 id="a-plan-reviews-receipt-says-whether-the-review-was-stored-landed">A plan review's receipt says whether the review was stored</h2>
+
+  <p id="a-plan-reviews-receipt-says-whether-the-review-was-stored-mechanism">The receipt's <code>store</code> field is the promoted run's own ledger index append — <code>_index_append</code> in <code>reckon/ledger.py</code> — so a plan review whose record never reached the plan-review store still read <code>store: written</code>. The receipt now carries <code>plan_review_store</code>, present only when the promoting run's node id carries the plan-review prefix. Its value is read back off the delivery the store recorded, through the same join promotion already uses: <code>_delivered_plan_review_for_run</code> resolves the report directory whose <code>dispatch.json</code> names the promoting run, and the sidecar's <code>stored</code> and <code>store_error</code> keys are the outcome and the reason. <code>written</code> means a stored record carries the delivery's id; <code>failed</code> carries the store's own reason. A promoting plan review whose composed report names no run — the silent miss — is reported from the composed directory the run's write paths name, with the run id that directory fails to name, because that is exactly the delivery promotion could not join and therefore never stored. The computation lives in <code>reckon/crew/promotion_checks.py</code> beside <code>_plan_review_record_for_promoting_run</code>, whose store call produces the outcome, and <code>reckon/crew/promotion.py</code> attaches the field to the receipt it assembles. <code>store</code> is unchanged.</p>
+
+  <h2 id="a-plan-reviews-receipt-says-whether-the-review-was-stored-measure-heading">Measure</h2>
+  <p id="a-plan-reviews-receipt-says-whether-the-review-was-stored-measure">The gate runs a test in a temporary home at the base revision and at the head, each from a git checkout under the run's own scratch directory, in place on the fleet node with <code>pytest -n 8</code> and the four follower variables unset. Both arms run the new test beside every test file importing <code>reckon/crew/promotion.py</code>, so the population is identical and judged by delta. At the head the new test finds: a plan review the store wrote reads <code>plan_review_store.status == "written"</code> while <code>store.status</code> is <code>written</code>; a review whose rubric the store refuses reads <code>failed</code> with <code>unknown review rubric</code> in its error, the same reason the store recorded on the delivery's sidecar, while <code>store</code> still reads <code>written</code>; a composed report whose dispatch names no run reads <code>failed</code> naming the composed directory and the promoting run id; and a run review's receipt carries no <code>plan_review_store</code> key at all. At the base revision the plan-review cases fail with <code>KeyError: 'plan_review_store'</code> — the field does not exist — and only the run-review case passes, which is the negative control: with the field dropped the refusal case reads only <code>store: written</code>.
+
+  <p id="a-plan-reviews-receipt-says-whether-the-review-was-stored-figures">Measured at base revision <code>4da2af6c05</code>: <code>3 failed, 753 passed, 7 warnings, 6 errors in 760.53s</code>, <code>EXIT=1</code>; at head revision <code>31ab20badf</code>: <code>2 failed, 758 passed, 7 warnings, 6 errors in 624.71s</code>, <code>EXIT=1</code>. The four added tests are the four passing head-only cases, and the head adds no failing id: the two failures and six errors it keeps are present at base in the same files. The base-only failure, <code>tests/test_promotion_records_the_pick.py::test_promotion_waits_from_the_pick_start_not_the_run_start</code>, passed at head; both arms ran concurrently for part of their span, and the case is a timing measurement that this change does not touch. Logs: <code>gate-base.log</code> and <code>gate-head.log</code> under the run directory; each begins with its revision, tree, resolved <code>model.__file__</code> and the literal command, and ends in a bare <code>EXIT=</code> line.</p>
+
+  <p id="a-plan-reviews-receipt-says-whether-the-review-was-stored-lint">Lint is judged by delta on the two staged paths against the base arm's copies: <code>ruff check on the head: 7 concise lines, base: 7</code>, the same five pre-existing findings, and <code>ruff format --check</code> reports <code>1 file would be reformatted, 1 file already formatted</code> at both revisions, so the change adds no finding.</p></p>
+</article>
+</body>
+</html>
