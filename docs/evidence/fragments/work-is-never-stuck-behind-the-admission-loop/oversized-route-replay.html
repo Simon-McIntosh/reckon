@@ -1,0 +1,125 @@
+<article class="r-evidence" data-node="replay-the-two-oversizednode-routing-refusals">
+<h3>Why an oversized node did not reach the reserved lane, reproduced</h3>
+
+<p id="replay-the-two-oversizednode-routing-refusals-reproduction">Both recorded
+refusals reproduce in process, from the dispatch that made them.
+<code>replay_oversized_route.py</code> rebuilds node
+<code>an-admission-pass-reads-each-project-once</code> from the coordinator's
+own command line, resolves the flight configuration from the four layers
+committed at the moment, and asks <code>reckon.crew.picker</code> the same
+question. The 02:29:07Z attempt replays to eleven exclusion rows — four
+<code>claude</code> <code>reserved-lane</code>, clive's two
+<code>context-fit</code> and one <code>competence</code>, three
+<code>codex</code> <code>reserved-lane</code> and one
+<code>native</code> <code>in-harness-backend</code> — in the picker's own
+order, and the 02:34:43Z attempt replays to the three
+<code>codex</code> <code>reserved-lane</code> rows alone. Both read
+<code>action: refuse</code>, <code>decision_source: refused</code>,
+<code>fallback_reason: no-eligible-candidates; default-backend-ineligible</code>,
+and the run exits 0.</p>
+
+<p id="replay-the-two-oversizednode-routing-refusals-inputs">What each input
+cost the attribution. <strong>Recorded</strong>: the node definition (the
+dispatch command line), the plan section and its declared capability
+(<code>a-read-costs-what-changed</code> §6 declares
+<code>data-capability-reasoning="deep"</code>), the context estimate
+(234021 in both pick-timing rows), and the flight configuration, reconstructed
+from <code>shipped</code> and <code>project</code> at <code>9bdaea5ab6</code>
+and the host layer at <code>dotfiles@2892816</code>.
+<strong>Unrecorded, reconstructed</strong>: the budget window reading. A
+pick-timing row keeps each reason code and the context estimate and nothing of
+the budget verdict the reason was judged on, so every attribution below that
+rests on the window percentage is <em>conditional on that reading</em>. The
+replay therefore runs both branches — no reading, and a fresh reading at 72% —
+and both produce the recorded rows unchanged, so the refusal does not rest on
+which one it was. <strong>Unrecorded, not decisive</strong>: the lane document,
+which feeds worker slots and congestion and is read by no exclusion.
+<strong>Never reached</strong>: the serving probe. Every candidate carried a
+reason before the probe, so availability reads <code>not-probed</code> and no
+probe result entered either refusal.</p>
+
+<p id="replay-the-two-oversizednode-routing-refusals-codex">The code path that
+withheld codex is the lane-window term of the reserved-lane policy,
+<code>reckon/crew/picker/snapshot.py:1259</code>, reached from the candidate
+loop at <code>snapshot.py:1748</code>. The policy is
+<code>picker_reserved_lanes.codex</code> in the host layer:
+<code>floor: {reasoning: [deep]}, or_after_attempts: 2, window_ceiling: 0.6</code>.
+The node declares <code>reasoning: deep</code>, so
+<code>_reserved_lane_floor_met</code> is satisfied and the tier term
+(<code>snapshot.py:1300</code>) never withheld the lane; the reason the record
+carries is the window term, which withholds when the lane's window percentage
+is absent or at or above the 60% ceiling (<code>snapshot.py:1315</code>,
+<code>snapshot.py:1320</code>). <code>claude</code> was withheld on the same
+term: its project-layer floor names reasoning, verification and risk, and the
+section meets all three. A lift in force would have released that term
+(<code>snapshot.py:1310</code>), so the refusal itself establishes that no lift
+governed either lane's group at either moment.</p>
+
+<p id="replay-the-two-oversizednode-routing-refusals-local">Why the local lane
+was absent from the later attempt: that dispatch named a lane.
+<code>crew dispatch … --backend codex</code> reaches
+<code>lane_model_selection</code> (<code>reckon/crew/dispatch_picker.py:1061</code>,
+called from <code>reckon/crew_dispatch_commands.py:1604</code>), which asks the
+picker with the configuration narrowed by
+<code>_config_within_lane(config, "codex")</code>
+(<code>dispatch_picker.py:979</code>). That narrowing keeps only the named
+lane's backends, so <code>clive</code>, <code>claude</code> and
+<code>native</code> were never candidates and could not appear as rows. The
+three-row record is the fingerprint of that path, and the replay produces it by
+calling the same function rather than by narrowing a configuration by hand. It
+also means the fourth attempt could not have reached the local lane whatever
+the window reading was: the lane was not offered.</p>
+
+<p id="replay-the-two-oversizednode-routing-refusals-waiver">The oversize waiver
+never fired, and on this configuration it cannot. It requires every unreserved
+candidate to be excluded on context fit alone
+(<code>snapshot.py:1896</code>–<code>1899</code>):
+<code>all(_excluded_only_on_context(c.reasons) for c in unreserved)</code>.
+<code>unreserved</code> is every candidate whose family is not
+<code>clive</code>'s or <code>codex</code>'s reserved family, which takes in
+the <code>native</code> backend, and that candidate's reason is
+<code>in-harness-backend</code> (<code>snapshot.py:1668</code>) — never a
+context fit. So the population the waiver tests can never be
+context-excluded-only, and the waiver is unreachable on every host that
+declares an in-harness backend, not merely missed on this node. The attempt's
+own set carries a second, independent blocker: clive's third reason is
+<code>competence</code> rather than <code>context-fit</code>, which alone would
+also fail the same <code>all()</code>. Either fact by itself is sufficient.</p>
+
+<p id="replay-the-two-oversizednode-routing-refusals-reroute">The dispatch
+reroute could not have moved the node either, and on these attempts it never
+ran. <code>_reroute_oversized_request</code>
+(<code>reckon/crew/dispatch.py:633</code>) chooses through
+<code>widest_fitting_candidate</code>
+(<code>snapshot.py:612</code>), which admits only candidates carrying no
+reasons (<code>snapshot.py:639</code>–<code>644</code>). Codex carries
+<code>reserved-lane</code>, so the reroute cannot select it even when the
+dispatch has the picker's snapshot in hand. In both recorded attempts the
+refusal came from the pick's own answer rather than from a router-free
+placement, so the reroute was not the path under test.</p>
+
+<p id="replay-the-two-oversizednode-routing-refusals-change">What would have to
+change for the node to reach codex. <strong>The waiver</strong>
+(<code>snapshot.py:1896</code>–<code>1899</code>): judge the unreserved
+population as the lanes that could serve the node at all — an in-harness
+backend cannot be launched by a dispatch, so it is not evidence that some
+ordinary lane could run the work — and read a <code>competence</code> refusal
+for the same window shortfall as a context exclusion, since the scan reports
+one shortfall as two codes depending on which verdict measured it.
+<strong>The candidate scan</strong>: nothing here needs to widen.
+<code>_reserved_lane_exclusion</code> withholds a reserved lane on a rule, not
+on a measurement, and that rule is the lead's; the waiver is the one place that
+is allowed to override its tier and attempts terms, and it applies its own
+context fit to any lane it admits. <strong>The reroute</strong>
+(<code>snapshot.py:612</code>, <code>dispatch.py:633</code>): if the reroute is
+to move an oversized request onto a reserved lane, it has to run the same
+waiver before filtering, because it excludes every candidate that carries a
+reason and a released reserved lane still carries the policy's reason.</p>
+
+<p id="replay-the-two-oversizednode-routing-refusals-measure">Measure: the
+replay log records two attempts replayed, eleven and three exclusion rows
+reproduced in order, both outcomes reproduced, and ends on a bare
+<code>EXIT=0</code> line. The negative control replaces
+<code>_reserved_lane_exclusion</code> with one that withholds nothing; the
+first case then fails and the log records the failing test ids.</p>
+</article>
