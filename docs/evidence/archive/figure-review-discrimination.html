@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="figure-review-discrimination">
+  <meta name="plan-title" content="Figure-review discrimination with paired inputs">
+  <meta name="plan-summary" content="The local lane judged five known good/bad figure pairs on PNG input and discriminated all five; an SVG is delivered as markup, not as a picture.">
+  <meta name="plan-evidence-for" content="a-review-can-see-the-figure">
+  <meta name="plan-verdict" content="qualified">
+  <title>Figure-review discrimination with paired inputs | reckon">
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>Figure-review discrimination with paired inputs</h1>
+  <p><strong>Verdict: all five known pairs discriminate on PNG input; an SVG is delivered as markup, not as a picture.</strong> The five pairs of <a href="/reckon/plans/a-review-can-see-the-figure#s3">&sect;3</a> were presented one figure at a time to the local lane, each against its own rule, with the ten figures copied to neutral names in a fresh shuffle so a role could not be read from a file name.</p>
+
+  <section id="figure-review-discrimination-verdicts">
+   <h2>Verdicts</h2>
+   <table>
+    <thead><tr><th>pair</th><th>rule</th><th>bad figure</th><th>good figure</th><th>discriminates</th></tr></thead>
+    <tbody>
+     <tr><td>1</td><td>a continuous curve, not a table of values</td><td><code>FAIL</code> &mdash; two columns of &rho; and electron-temperature values, no curve</td><td><code>PASS</code> &mdash; a continuous curve over normalised radius</td><td>yes</td></tr>
+     <tr><td>2</td><td>contrast on a saturated ground</td><td><code>FAIL</code> &mdash; <code>marfe</code> in mid-grey on saturated blue</td><td><code>PASS</code> &mdash; the same label near-white</td><td>yes</td></tr>
+     <tr><td>3</td><td>20 pt legibility floor</td><td><code>FAIL</code> &mdash; tick labels far below the axis titles</td><td><code>PASS</code> &mdash; tick labels at the axis-title size</td><td>yes</td></tr>
+     <tr><td>4</td><td>no gradient, shadow, decorative fill or gridline</td><td><code>FAIL</code> &mdash; vertical bar gradient, drop shadow, tinted panel, gridlines</td><td><code>PASS</code> &mdash; flat bars, one dotted limit rule, direct value labels, white ground</td><td>yes</td></tr>
+     <tr><td>5</td><td>colour axis labelled <code>poloidal flux [Wb]</code></td><td><code>FAIL</code> &mdash; numeric ticks and no quantity or unit</td><td><code>PASS</code> &mdash; labelled <code>poloidal flux [Wb]</code></td><td>yes</td></tr>
+    </tbody>
+   </table>
+   <p><strong>5 of 5 pairs discriminate on PNG input.</strong> The profile is enabled for this lane on all five rules, and no rule is carved out.</p>
+  </section>
+
+  <section id="figure-review-discrimination-format">
+   <h2>The format boundary</h2>
+   <p>Two of the same figures were opened as SVG through the same reader. Each returned the SVG document as XML text &mdash; prolog, <code>&lt;svg&gt;</code>, path and glyph data &mdash; and no rendered image block. An SVG figure therefore never reaches the lane as a picture, which is the measured fact behind the locked <code>render-to-png</code> decision: the repository keeps one SVG per figure and the dispatch rasterises it before attaching it.</p>
+  </section>
+
+  <section id="figure-review-discrimination-limits">
+   <h2>What this measurement does not establish</h2>
+   <p>The observer is the run's own lane model, that is, the lane under test, and the harness refuses nested agents inside a crew run, so no second independent judge could be spawned. The image-withheld controls could not be re-run on the same terms for the same reason: an operator who designs a control cannot answer it blindly. Each verdict is recorded beside the observation it rests on, so a reader can confirm the observation against the image; the five image-withheld controls of <a href="/reckon/evidence/archive/a-review-can-see-the-figure-landed#s21-the-local-lane-discriminates-the-five-pairs">&sect;21</a> remain the control evidence for this lane.</p>
+  </section>
+
+  <section id="figure-review-discrimination-record">
+   <h2>Inputs and record</h2>
+   <p>The figures are the committed pairs under <a href="/reckon/figures/figure-review-pairs/">figure-review-pairs</a>: <code>pair-N-a.png</code> and <code>pair-N-b.png</code>, whose drawing script and rule table sit beside them. The shuffle key, the sha256 of every neutral copy, the per-figure observation behind each verdict and the SVG probe record are in this run's <code>measurement/report.md</code>.</p>
+  </section>
+ </main>
+</body>
+</html>
