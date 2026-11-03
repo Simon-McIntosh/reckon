@@ -1780,7 +1780,12 @@ def _mounted_project_roots(project: str | None) -> dict[str, Path]:
     return {name: docs.parent.resolve() for name, docs in mounted.items()}
 
 
-def _promoted_record_project(run_id: str, project: str | None) -> str | None:
+def _promoted_record_project(
+    run_id: str,
+    project: str | None,
+    *,
+    roots: Mapping[str, Path] | None = None,
+) -> str | None:
     """Name the project whose run store holds a promoted run's record.
 
     The record is read from the run's own file beside the project's ledger,
@@ -1788,10 +1793,17 @@ def _promoted_record_project(run_id: str, project: str | None) -> str | None:
     ledger's split moves runs out of: naming one run must not load the whole
     history, and a presence check on the file is the same evidence the reader
     itself would find.
+
+    ``roots`` is the mount registry already read, mapping a project name to its
+    checkout root. A caller resolving several runs hands the same mapping to
+    every lookup so the registry is parsed once, and one registry it could not
+    read is reported as an empty mapping rather than re-read per run. Omitted,
+    the registry is read here as before.
     """
     from reckon import ledger
 
-    for name, root in sorted(_mounted_project_roots(project).items()):
+    mounted = _mounted_project_roots(project) if roots is None else dict(roots)
+    for name, root in sorted(mounted.items()):
         try:
             path = ledger.run_path(name, run_id, root)
         except ledger.LedgerError:

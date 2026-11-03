@@ -208,6 +208,28 @@ def test_an_open_upstream_still_reads_as_waiting(
     assert not queue_admission.unresolvable_wait_obligations(pointer)
 
 
+def _count_registry_reads(
+    monkeypatch: pytest.MonkeyPatch, contents: dict[str, Path]
+) -> list[int]:
+    """Count reads of the mount registry through the seam the code reads it at.
+
+    Patching ``flight.mounted_project_docs`` rather than a local helper is what
+    makes the count meaningful: it is the one call every reader of the registry
+    goes through, including the mounted-ledger scan this derivation hands its
+    mapping to.
+    """
+    from reckon import flight
+
+    reads: list[int] = []
+
+    def counting_read() -> dict[str, Path]:
+        reads.append(1)
+        return dict(contents)
+
+    monkeypatch.setattr(flight, "mounted_project_docs", counting_read)
+    return reads
+
+
 def test_three_run_refs_read_the_mount_registry_once(
     projects: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -221,13 +243,7 @@ def test_three_run_refs_read_the_mount_registry_once(
     a ref that misses the owner project consults it rather than re-reading.
     """
     first, _ = projects
-    reads: list[int] = []
-
-    def counting_read() -> tuple[str, ...]:
-        reads.append(1)
-        return ()
-
-    monkeypatch.setattr(queue_admission, "_mounted_projects", counting_read)
+    reads = _count_registry_reads(monkeypatch, {})
 
     projects_by_run = queue_admission.wait_projects_for(
         ["run:r-a", "run:r-b", "run:r-c"], owner_project=PROJECT, live=[]
@@ -266,7 +282,10 @@ def test_an_unreadable_registry_leaves_the_wait_unresolved(
     first, _ = projects
     from reckon import flight
 
+    reads: list[int] = []
+
     def unreadable() -> dict[str, Path]:
+        reads.append(1)
         raise flight.FlightConfigError("mounts.json", "projects", "unreadable")
 
     monkeypatch.setattr(flight, "mounted_project_docs", unreadable)
@@ -275,7 +294,7 @@ def test_an_unreadable_registry_leaves_the_wait_unresolved(
         "run_id": "r-waiting",
         "project": PROJECT,
         "phase": queue_admission.AWAITING_UPSTREAM_PHASE,
-        "waits": ["run:r-a"],
+        "waits": ["run:r-a", "run:r-b", "run:r-c"],
         "node": {"plan": fixtures.PLAN, "section": "s2"},
     }
 
@@ -289,6 +308,7 @@ def test_an_unreadable_registry_leaves_the_wait_unresolved(
     )
     issues = list(pointer.get("upstream_obligations") or ())
     assert any("mount registry could not be read" in issue for issue in issues), issues
+    assert len(reads) == 1, "an unreadable registry is read once for the whole pass"
 
 
 def test_the_registry_is_read_only_when_a_wait_names_a_run(
@@ -302,13 +322,7 @@ def test_the_registry_is_read_only_when_a_wait_names_a_run(
     a path that runs for every queued request.
     """
     first, _ = projects
-    reads: list[int] = []
-
-    def counting_read() -> tuple[str, ...]:
-        reads.append(1)
-        return ()
-
-    monkeypatch.setattr(queue_admission, "_mounted_projects", counting_read)
+    reads = _count_registry_reads(monkeypatch, {})
 
     fixtures._declare_wait_refs(first, section="s2", refs=[f"gate:{fixtures.PLAN}#g1"])
     queue_admission.unmet_waits(
