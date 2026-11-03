@@ -1,0 +1,75 @@
+{
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/_store.py:read_plan (_read_state called at reckon/_store.py:1660)",
+    "reckon/_store.py:1177",
+    "reckon/_store.py:2334",
+    "reckon/serve.py:1605"
+  ],
+  "completed_at": "2026-11-03T09:55:02.695Z",
+  "dispatched_at": "2026-11-03T09:40:49Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking, noted at landing",
+      "recorded_at": "2026-11-03T10:23:39.358560+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking, noted at landing",
+      "recorded_at": "2026-11-03T10:23:39.386693+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/_store.py",
+      "line": "780",
+      "severity": "non-blocking",
+      "text": "non-blocking: build=False is the property the fragment and manifest both assert (\"a single-document read does not pay for a whole-tree build\"), and no case reddens if it is dropped \u2014 with a corrupt store the fourth case sees a fall-back parse on either path \u2014 so a later refactor could put a whole-tree build back on every cold plan read with the gate still green."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T022300314104-a-persisted-answer-carries-its-code-version/manifest.md",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fence's ruff condition is met only in the worker stream (ruff check and ruff format --check returned 0), and test_logs names no log for it, so a coordinator reading the manifest alone cannot see that condition was checked."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "pass \u2014 read commit by commit; 2d8ede95f1 adds persisted_memo and rewrites _load_persisted, _load_dir_stamps and _store_persisted onto it, adds _seed_parsed_state and its call in _read_state, and adds the 206-line test, while 63a95a3887 adds only the landing fragment.",
+    "done_when": "pass \u2014 the done_when's four cases are at tests/test_a_persisted_answer_carries_its_code_version.py:135, :149, :166 and :190, the manifest's baseline_suite records 3 failures on the base arm and after_suite records 4 passed at head, and both named negative controls have their own red logs.",
+    "goal": "pass \u2014 the goal is that a persisted parse carries the version of the code that made it and every read path seeds from it; reckon/metadata_index.py:1891 persisted_memo stores each value beside the source digests of its producers at reckon/metadata_index.py:1874, and reckon/_store.py:754 _seed_parsed_state seeds _plan_html's shared parse before reckon/_store.py:808 reads.",
+    "manifest": "pass \u2014 read; it states 4 passed in 5.39s at 2d8ede95f1 with logs/after_suite.log, 3 failed on the base arm at ea1765, and names both negative-control logs, though it records no log for the ruff condition.",
+    "write_paths": "pass \u2014 the declared paths are reckon/metadata_index.py, reckon/_store.py, the new test and the landing fragment; `git show --stat 2d8ede95f1` and `63a95a3887` carry exactly those four and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_persisted_answer_carries_its_code_version.py:166 reddens when the producer digest is dropped (logs/negative_control_2_digest_dropped.log) and :135 and :149 redden when the seed is removed (logs/negative_control_1_seed_removed.log), but nothing reddens if build=False at reckon/_store.py:780 is deleted.",
+    "evidence": "logs/baseline_suite.log ends `3 failed, 1 passed ... EXIT=1` on the base revision and logs/after_suite.log ends `4 passed in 5.39s ... EXIT=0` at head, so each case's outcome is recorded rather than claimed.",
+    "fit": "the helper sits beside the persisted-cache path owner at reckon/metadata_index.py:1851 as the plan fixes, reuses file_memo.content_digest and write_json_atomically, and every added name states its mechanism (persisted_memo, _seed_parsed_state, _module_source_digest).",
+    "goal_fidelity": "reckon/_store.py:808 seeds _plan_html.reuse_parsed_state from metadata_index.discovery_state before read_state_and_text_file at the next line, so a read_plan or edit_plan that reaches _read_state answers from the persisted parse and a producer change discards it.",
+    "reuse": "a capability search over reckon/ for a value persisted with its producers' source digests (all uses of _persisted_cache_path, write_json_atomically, content_digest and every source-digest helper) found no such owner \u2014 only the cache-path owner at reckon/metadata_index.py:1851 and the digest owner at reckon/file_memo.py:310, both extended by this change rather than forked.",
+    "scope_discipline": "the two commits in `git show --stat` touch only reckon/metadata_index.py, reckon/_store.py, tests/test_a_persisted_answer_carries_its_code_version.py and the declared fragment, with no figure and no plan edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: pass \u2014 the goal is that a persisted parse carries the version of the code that made it and every read path seeds from it; reckon/metadata_index.py:1891 persisted_memo stores each value beside the source digests of its producers at reckon/metadata_index.py:1874, and reckon/_store.py:754 _seed_parsed_state seeds _plan_html's shared parse before reckon/_store.py:808 reads.\nVERDICT done_when: pass \u2014 the done_when's four cases are at tests/test_a_persisted_answer_carries_its_code_version.py:135, :149, :166 and :190, the manifest's baseline_suite records 3 failures on the base arm and after_suite records 4 passed at head, and both named negative controls have their own red logs.\nVERDICT write_paths: pass \u2014 the declared paths are reckon/metadata_index.py, reckon/_store.py, the new test and the landing fragment; `git show --stat 2d8ede95f1` and `63a95a3887` carry exactly those four and nothing else.\nVERDICT manifest: pass \u2014 read; it states 4 passed in 5.39s at 2d8ede95f1 with logs/after_suite.log, 3 failed on the base arm at ea1765, and names both negative-control logs, though it records no log for the ruff condition.\nVERDICT diff: pass \u2014 read commit by commit; 2d8ede95f1 adds persisted_memo and rewrites _load_persisted, _load_dir_stamps and _store_persisted onto it, adds _seed_parsed_state and its call in _read_state, and adds the 206-line test, while 63a95a3887 adds only the landing fragment.\nCALL_SITES: reckon/_store.py:read_plan (_read_state called at reckon/_store.py:1660), reckon/_store.py:1177, reckon/_store.py:2334, reckon/serve.py:1605\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_store.py:808 seeds _plan_html.reuse_parsed_state from metadata_index.discovery_state before read_state_and_text_file at the next line, so a read_plan or edit_plan that reaches _read_state answers from the persisted parse and a producer change discards it.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/baseline_suite.log ends `3 failed, 1 passed ... EXIT=1` on the base revision and logs/after_suite.log ends `4 passed in 5.39s ... EXIT=0` at head, so each case's outcome is recorded rather than claimed.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the two commits in `git show --stat` touch only reckon/metadata_index.py, reckon/_store.py, tests/test_a_persisted_answer_carries_its_code_version.py and the declared fragment, with no figure and no plan edit.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_persisted_answer_carries_its_code_version.py:166 reddens when the producer digest is dropped (logs/negative_control_2_digest_dropped.log) and :135 and :149 redden when the seed is removed (logs/negative_control_1_seed_removed.log), but nothing reddens if build=False at reckon/_store.py:780 is deleted.\nSCORE fit: 18\nJUSTIFICATION fit: the helper sits beside the persisted-cache path owner at reckon/metadata_index.py:1851 as the plan fixes, reuses file_memo.content_digest and write_json_atomically, and every added name states its mechanism (persisted_memo, _seed_parsed_state, _module_source_digest).\nSCORE reuse: 19\nJUSTIFICATION reuse: a capability search over reckon/ for a value persisted with its producers' source digests (all uses of _persisted_cache_path, write_json_atomically, content_digest and every source-digest helper) found no such owner \u2014 only the cache-path owner at reckon/metadata_index.py:1851 and the digest owner at reckon/file_memo.py:310, both extended by this change rather than forked.\nFINDING reckon/_store.py:780 non-blocking: build=False is the property the fragment and manifest both assert (\"a single-document read does not pay for a whole-tree build\"), and no case reddens if it is dropped \u2014 with a corrupt store the fourth case sees a fall-back parse on either path \u2014 so a later refactor could put a whole-tree build back on every cold plan read with the gate still green.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T022300314104-a-persisted-answer-carries-its-code-version/manifest.md:12 non-blocking: the fence's ruff condition is met only in the worker stream (ruff check and ruff format --check returned 0), and test_logs names no log for it, so a coordinator reading the manifest alone cannot see that condition was checked.",
+  "review_run_id": "r-20261103T092551274176-review-of-a-persisted-answer-carries-its-code-version-63a95a388751",
+  "reviewed_base_sha": "ea17651313186e182875ce570d061ffae4785f3b",
+  "reviewed_head_sha": "63a95a388751efcf9cc8af5c9e55467186b5ab95",
+  "reviewed_run_id": "r-20261103T022300314104-a-persisted-answer-carries-its-code-version",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T11:19:33.972510+00:00",
+  "total": 106
+}

@@ -25,7 +25,7 @@
   <title>A Read Costs What Changed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="23">
 <meta name="plan-modified" content="2026-11-03">
 </head>
 <body>
@@ -112,6 +112,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261103T022300314104-a-persisted-answer-carries-its-code-version" data-who="reckon-build" data-when="2026-11-03T09:22:39.771Z">
     <div class="r-comment-body"><p>Persisted parses now carry the source digest of every module that produced them through one persisted-memo helper, and _store._read_state seeds the shared parse from discovery_state before reading; measured on a 40-plan store a fresh process reads one plan with 0 parses (base 1), an edited plan parses once while an untouched read parses 0, a changed _plan_html digest makes all 40 stored parses absent (40 parses on the rebuilding pass, 0 on the next), and a corrupt store still yields the parsed value, with both declared negative controls turning their named case red.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261103T092551274176-review-of-a-persisted-answer-carries-its-code-version-63a95a388751" data-who="reckon-build" data-when="2026-11-03T09:55:02.695Z">
+    <div class="r-comment-body"><p>Reviewed a-persisted-*carries-its-code-version at head 63a95a3887 against base ea176513: `persisted_memo` plus the `_store._read_state` seed are present and the four cases reproduce the plan&#x27;s done-when (head 4 passed, base arm 3 failed), scored goal_fidelity 19, evidence 16, scope_discipline 19, durability 15, fit 18, reuse 19; two non-blocking findings (the untested `build=False` no-build property, and no ruff log named in the manifest), and added_failure_count 0 against the reviewed run&#x27;s 3-failure base arm.</p></div>
 </div>
 </section>
 </main>
