@@ -1,0 +1,14 @@
+<section data-reckon="section" data-id="every-read-enters-the-existing-scopes">
+<h3 id="every-read-enters-the-existing-scopes-landed">Every read enters the existing scopes once</h3>
+<p>Source landed: <code>mcp_deadlines._deadline_tool</code> gains <code>request_scope</code>, entering
+<code>metadata_index.discovery_file_scope</code> and <code>resources.resource_scan_scope</code> on the executor
+thread around the tool body; the read tools register with it, the roadmap's per-tool entry is removed, and
+<code>mcp_edit_plan._edit_plan_tool</code> enters both scopes itself around its pre-write and post-write reads.
+<code>metadata_index</code> skips <code>resources.INFRA_DIRS</code> directories other than <code>figures</code>
+in both the covered walk and the revalidation, and memoises one covered-tree validation per read scope.</p>
+<p>Measured on the new synthetic tree (40 plans, 5 figures, 2,000 review-record directories):
+<code>read_plan(view="summary")</code> stats 65 distinct paths and validates the covered tree once;
+<code>edit_plan</code>, <code>roadmap</code> and <code>audit</code> once each; <code>crew(view="live")</code> zero.
+The base arm (no boundary scope, state records back in the walk) reaches about 2,050 distinct paths.
+Six of the seven done-when cases pass; the review-store change case is open (see the manifest).</p>
+</section>

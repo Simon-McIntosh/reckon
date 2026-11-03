@@ -2221,16 +2221,15 @@ def _roadmap(
         )
         if served is not None:
             return served
-    with metadata_index.discovery_file_scope():
-        result = _roadmap_scoped(
-            project,
-            checkout_path=checkout_path,
-            sprint=sprint,
-            max_paths=max_paths,
-            view=view,
-            cursor=cursor,
-            limit=limit,
-        )
+    result = _roadmap_scoped(
+        project,
+        checkout_path=checkout_path,
+        sprint=sprint,
+        max_paths=max_paths,
+        view=view,
+        cursor=cursor,
+        limit=limit,
+    )
     if scoped is not None:
         from reckon import serve as serve_module
 
@@ -2470,6 +2469,7 @@ def _roadmap_deadline_tool() -> Callable[..., Any]:
         response_budget=True,
         stale=_roadmap_stale_answer,
         stale_present=_roadmap_has_stale_answer,
+        request_scope=True,
     )
 
 
@@ -3692,6 +3692,7 @@ if mcp is not None:
                 kind="read",
                 path_hint=_plan_path_hint,
                 response_budget=True,
+                request_scope=True,
             ),
             name="read_plan",
         )
@@ -3712,13 +3713,19 @@ if mcp is not None:
                 kind="read",
                 path_hint=_document_path_hint,
                 response_budget=True,
+                request_scope=True,
             ),
             name="audit",
         )
     )
     crew_tool = mcp.tool(name="crew")(
         _refuse_when_stale(
-            _deadline_tool(_crew, kind=_crew_call_kind, response_budget=True),
+            _deadline_tool(
+                _crew,
+                kind=_crew_call_kind,
+                response_budget=True,
+                request_scope=True,
+            ),
             name="crew",
         )
     )

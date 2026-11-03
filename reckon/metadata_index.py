@@ -91,6 +91,10 @@ _DISCOVERY_FILES: ContextVar[
 _DISCOVERY_DIRS: ContextVar[dict[str, list[int] | None] | None] = ContextVar(
     "reckon_discovery_dirs", default=None
 )
+_REUSE_COVERED: ContextVar[
+    dict[tuple[str, str], tuple[list[tuple[str, Path]], dict[str, Path], dict[str, list[int]]] | None]
+    | None
+] = ContextVar("reckon_reuse_covered", default=None)
 _RESOURCE_CANDIDATES: ContextVar[bool] = ContextVar(
     "reckon_resource_candidates", default=False
 )
@@ -113,11 +117,13 @@ def discovery_file_scope():
         return
     files_token = _DISCOVERY_FILES.set({})
     dirs_token = _DISCOVERY_DIRS.set({})
+    reused_token = _REUSE_COVERED.set({})
     try:
         yield
     finally:
         _DISCOVERY_FILES.reset(files_token)
         _DISCOVERY_DIRS.reset(dirs_token)
+        _REUSE_COVERED.reset(reused_token)
 
 
 @contextmanager
@@ -357,6 +363,22 @@ def _may_be_covered(name: str) -> bool:
     """
 
     return name.endswith(_COVERED_SUFFIXES)
+
+
+def _skips_infra_dir(relative: str) -> bool:
+    """Whether a docs-relative directory holds nothing the covered set keeps.
+
+    ``resources.INFRA_DIRS`` names the directories that hold infrastructure
+    rather than documents, and the covered set keeps no document from any of
+    them — with one exception, the figure root, whose images the index does
+    carry rows for. The walk and the revalidation both read the constant, so a
+    directory added to it is skipped by both without a second list to maintain.
+    """
+
+    return any(
+        part in resources.INFRA_DIRS and part != _FIGURE_DIR
+        for part in PurePosixPath(relative).parts
+    )
 
 
 def covered_name(relative: str) -> bool:
@@ -893,6 +915,21 @@ def _reuse_covered(
     from the whole shape rather than scanning the same directory again.
     """
 
+    memo = _REUSE_COVERED.get()
+    memo_key = (os.fspath(docs_dir), project)
+    if memo is not None and memo_key in memo:
+        return memo[memo_key]
+    result = _reuse_covered_once(docs_dir, project)
+    if memo is not None:
+        memo[memo_key] = result
+    return result
+
+
+def _reuse_covered_once(
+    docs_dir: Path, project: str
+) -> tuple[list[tuple[str, Path]], dict[str, Path], dict[str, list[int]]] | None:
+    """Validate one docs tree against its persisted shape, once."""
+
     stamps = _load_dir_stamps(docs_dir, project)
     entries = _load_persisted(docs_dir, project)
     if not stamps or not entries:
@@ -907,6 +944,8 @@ def _reuse_covered(
     moved: list[Path] = []
     identities: dict[str, list[int]] = {}
     for relative, identity in stamps.items():
+        if _skips_infra_dir(relative):
+            continue
         path = docs_dir / relative
         observed = covered_dir_identity(path)
         if observed is None:
@@ -1202,7 +1241,7 @@ def _walk_covered(
                             child = Path(entry.path).relative_to(docs_dir).as_posix()
                         except ValueError:
                             continue
-                        if child in skip_subtrees:
+                        if child in skip_subtrees or _skips_infra_dir(child):
                             continue
                         pending.append(entry.path)
                         continue
