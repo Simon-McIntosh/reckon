@@ -3,6 +3,7 @@ from __future__ import annotations
 # Imports below the definitions resolve sibling cycles after names are bound.
 # ruff: noqa: E402
 import json
+import shlex
 import subprocess
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -241,6 +242,64 @@ def _command_from_gate_log(log_text: str) -> str:
     return ""
 
 
+def _review_role_run(record: Mapping[str, Any]) -> bool:
+    """Whether this run is a reviewer, by its role or by its minted node id."""
+    from reckon.crew.recovery_review_delivery import _is_review_run
+
+    return _is_review_run(record)
+
+
+def _review_record_evidence(record: Mapping[str, Any]) -> dict[str, Any] | None:
+    """The stored review record a review-role run promotes on, or None.
+
+    A review run's deliverable is the record it stores for the run it read, so
+    that record — its status, its findings and the report path it names — is
+    the evidence a promotion of the run rests on. It is read through the same
+    delivery reader the review loop's self-promotion uses, so the hand path and
+    the automatic one cannot disagree about whether a review has delivered.
+    """
+    project = str(record.get("project") or "").strip()
+    if not project:
+        return None
+    from reckon.crew.recovery_review_delivery import _delivered_review_record
+
+    stored = _delivered_review_record(record, project)
+    if stored is None:
+        return None
+    _, path = stored
+    try:
+        body = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(body, Mapping):
+        return None
+    findings = body.get("findings")
+    return {
+        "path": str(path),
+        "status": str(body.get("status") or "").strip(),
+        "findings": len(findings) if isinstance(findings, list) else 0,
+        "report_path": str(body.get("report_path") or "").strip(),
+    }
+
+
+def _review_record_check(evidence: Mapping[str, Any]) -> dict[str, Any]:
+    """The gate check a stored review record stands as.
+
+    A review run changes no code, so there is no suite for the integration
+    re-run to execute at the integrated head. What a reader can re-execute is
+    that the record this promotion rests on is still on disk holding its
+    content — that is the review run's whole check. The record is also the log:
+    it carries the status and the record's findings, which is the evidence the
+    verdict was read from.
+    """
+    record_path = str(evidence["path"])
+    return {
+        "command": f"test -s {shlex.quote(record_path)}",
+        "exit_status": 0,
+        "log_path": record_path,
+    }
+
+
 def _default_gate_evidence_from_manifest(
     record: Mapping[str, Any],
     *,
@@ -288,6 +347,24 @@ def _default_gate_evidence_from_manifest(
         except OSError:
             log_text = ""
     declared_command = str(manifest.get("tests") or "").strip()
+    # A review run's evidence is the record it stored, so its manifest's
+    # ``tests`` line describes a check rather than naming one. Reading it as
+    # the gate command refuses a review whose evidence is already on disk, so
+    # the record stands as the check instead and the prose line is not
+    # consulted at all.
+    review_evidence: dict[str, Any] | None = None
+    if _review_role_run(record):
+        review_evidence = _review_record_evidence(record)
+        if review_evidence is None:
+            raise CrewError(
+                f"run {record.get('run_id') or ''!r} is a review run promoting "
+                "on a passed gate, and no stored review record was delivered "
+                "for it: a review run's evidence is the record it stores, so "
+                "there is nothing here a promotion can read. Promote the run "
+                "once its review is stored (the review loop promotes a "
+                "delivered review on its record alone), or record the "
+                "non-passing verdict its delivery reached"
+            )
     command_unset = not str(resolved_gate.get("command") or "").strip()
     if command_unset and declared_command and not _gate_command_prose(declared_command):
         resolved_gate["command"] = declared_command
@@ -303,6 +380,9 @@ def _default_gate_evidence_from_manifest(
         recovered = _command_from_gate_log(log_text)
         if recovered:
             resolved_gate["command"] = recovered
+        elif review_evidence is not None:
+            for key, value in _review_record_check(review_evidence).items():
+                resolved_gate.setdefault(key, value)
         elif declared_command:
             resolved_gate["command"] = declared_command
     if resolved_gate.get("exit_status") is None:
