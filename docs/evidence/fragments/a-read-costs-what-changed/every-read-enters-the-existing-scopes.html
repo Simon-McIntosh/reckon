@@ -23,4 +23,12 @@ entry. Each declared negative control ran red against this head and was reverted
 async wrapper fails the first case and the identity-index case, restoring the state records to the covered walk
 fails the first case, and skipping every <code>INFRA_DIRS</code> directory including <code>figures</code> fails
 the third.</p>
+<p>Each of the two CLI callers now has its own case, run on a cold synthetic store so neither arm's
+build can serve the other. The case asserts the read looks the covered tree up more than once and
+validates it exactly once; with the entry deleted the lookups outside the nested scope each
+revalidate, and both cases fail on their own entry removal alone. The revalidation counter is kept
+separate from the scoped count the tool cases use, because a lookup outside any scope is what the
+entry exists to prevent. <code>ruff format</code> over the changed paths leaves
+<code>resources.py</code> clean where the base carried one reflow hunk, and the two files' lint
+finding count is unchanged against the base.</p>
 </section>
