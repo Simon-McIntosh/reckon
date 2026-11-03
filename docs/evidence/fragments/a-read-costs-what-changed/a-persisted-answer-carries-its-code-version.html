@@ -1,0 +1,69 @@
+<section id="a-persisted-answer-carries-its-code-version-landing">
+  <h2>A persisted parse carries the version of the code that made it, and every read seeds from it</h2>
+
+  <p><strong>What changed.</strong> <code>reckon/metadata_index.py</code> gains one
+  persisted-memo helper, <code>persisted_memo</code>, beside
+  <code>_persisted_cache_path</code>. It keeps one value per identity in that cache file,
+  beside the source digest of every module that produced it, and treats an entry whose
+  digests differ as absent — so a value is only ever reused by the code that made it. The
+  metadata index's own store, and the parse each unchanged file records through it, now go
+  through that helper with <code>_plan_html</code>'s and <code>metadata_index</code>'s
+  source digests: a parser change invalidates every stored parse instead of serving a value
+  older code made. <code>reckon/_store.py</code> gains <code>_seed_parsed_state</code>, which
+  seeds the shared parse from <code>metadata_index.discovery_state</code> through
+  <code>_plan_html.reuse_parsed_state</code> before the state read behind
+  <code>read_plan</code> and <code>edit_plan</code> parses anything, as the served discovery
+  payload already did. It seeds from an existing store and never builds one
+  (<code>discovery_state(..., build=False)</code>), so a single-document read does not pay
+  for a whole-tree build, and a store that cannot answer leaves the read parsing as before.</p>
+
+  <h3>Measured</h3>
+
+  <p>Gate: <code>tests/test_a_persisted_answer_carries_its_code_version.py</code> over a
+  synthetic 40-plan store mounted in a temporary configuration home, with
+  <code>_plan_html.read_state</code> counted through a patch. Each probe below clears
+  <code>file_memo</code> and the in-process caches first, so it runs as a fresh process
+  would. Each arm is a log whose first line names its revision and its tree and whose last
+  line reads <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table>
+    <thead><tr><th>case</th><th>head</th><th>base revision</th></tr></thead>
+    <tbody>
+      <tr><td>one-plan read in a fresh process</td>
+        <td><strong>0 parses</strong> of unchanged plans</td>
+        <td>1 parse per read</td></tr>
+      <tr><td>one edited plan</td>
+        <td><strong>1 parse</strong>, and the untouched plan read in the same process parses 0</td>
+        <td>parsed by every read</td></tr>
+      <tr><td>changed <code>_plan_html</code> source digest</td>
+        <td><strong>40 parses</strong> on the rebuilding pass, <strong>0</strong> on the next</td>
+        <td>no such helper: the case errors</td></tr>
+      <tr><td>corrupt stored entry</td>
+        <td>the parsed value, no error</td>
+        <td>same (already correct)</td></tr>
+    </tbody>
+  </table>
+
+  <p>The instrument's positive control is inside each case: the pass that builds the store
+  asserts its own parse count before the zero is asserted, and the corrupt-store case
+  asserts that a fall-back parse happened, so an absence is never read off a counter that
+  never fired.</p>
+
+  <h3>Negative controls</h3>
+
+  <ul>
+    <li><strong>Removing the seed from <code>_store._read_state</code></strong> turns
+    <code>test_a_second_process_parses_no_unchanged_plan</code> and
+    <code>test_one_edited_plan_is_parsed_once</code> red (<code>2 failed</code>, exit 1) —
+    the seeded read parses the whole file again.</li>
+    <li><strong>Leaving the code digest out of the helper's key</strong> turns only
+    <code>test_a_changed_parser_source_digest_invalidates_every_stored_parse</code> red
+    (<code>1 failed</code>, exit 1): the stored parse is reused across a parser change, so
+    the rebuilding pass parses 0 rather than 40.</li>
+  </ul>
+
+  <p><strong>What is not measured here.</strong> The per-call cost of seeding one plan read
+  is a store load plus a stat per recorded entry, not the whole-tree parse it stood in for;
+  the read's wall-clock at the merged head is measured by the plan's measurement section,
+  not here.</p>
+</section>

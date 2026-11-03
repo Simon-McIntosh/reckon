@@ -31,7 +31,7 @@ import json
 import logging
 import os
 import threading
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
@@ -73,7 +73,6 @@ ROW_FIELDS = (
     "impl",
 )
 
-_SCHEMA = "reckon.metadata-index"
 #: Bumped when an entry gains a field, so an index written by the previous
 #: shape is rebuilt rather than reused with the new field absent.
 _VERSION = 6
@@ -1564,7 +1563,9 @@ def readiness_from_state(state: Mapping, text: str) -> list:
     return [gates, decision_rows, followups, declarations]
 
 
-def discovery_state(docs_dir: Path, project: str) -> dict[str, dict]:
+def discovery_state(
+    docs_dir: Path, project: str, *, build: bool = True
+) -> dict[str, dict]:
     """Return each file's persisted discovery state whose bytes are unchanged.
 
     A discovery read needs, per file, the ``<meta>`` record and the parsed
@@ -1586,11 +1587,17 @@ def discovery_state(docs_dir: Path, project: str) -> dict[str, dict]:
     process reports nothing to a change watch, so that cache still holds a parse
     of the file as it was. The digest check is what makes an entry current, and it
     runs only over the persisted entries.
+
+    With ``build`` false an absent or unusable store answers empty rather than
+    being rebuilt: a caller that seeds one document's parse from the store must
+    not make a single read pay for parsing the whole tree.
     """
 
     key = _cache_key(docs_dir, project, False)
     known = _load_persisted(docs_dir, project)
     if not known:
+        if not build:
+            return {}
         built = _build_and_cache(key, docs_dir, project, repo_dir=None)
         return {relative: dict(entry) for relative, entry in built.discovery.items()}
     fresh: dict[str, dict] = {}
@@ -1855,35 +1862,148 @@ def _persisted_cache_path(kind: str, version: int, *identity: str) -> Path:
     return _config_home() / "cache" / kind / f"{digest}-v{version}.json"
 
 
+#: Returned by :func:`persisted_memo` when nothing usable is stored and no
+#: computation was asked for. A sentinel rather than ``None`` so a stored
+#: ``null`` is a value like any other.
+_PERSISTED_MISSING: object = object()
+
+#: The envelope a persisted memo carries beside its value.
+_PERSISTED_SCHEMA = "reckon.persisted-memo"
+
+
+def _module_source_digest(module: object) -> str:
+    """Return the byte digest of the source file that defines ``module``.
+
+    A persisted value is a reuse of the code that produced it, so the digest of
+    that code rides beside it and a source change discards the value. A module
+    with no source file digests as empty, which still compares equal to itself.
+    """
+
+    source = getattr(module, "__file__", None)
+    if not source:
+        return ""
+    try:
+        return file_memo.content_digest(Path(source))
+    except OSError:
+        return ""
+
+
+def persisted_memo(
+    kind: str,
+    version: int,
+    identity: Sequence[str],
+    modules: Sequence[object],
+    *,
+    compute: Callable[[], object] | None = None,
+    store: object = _PERSISTED_MISSING,
+) -> object:
+    """Return a value persisted for ``identity``, guarded by its producers' sources.
+
+    One entry per identity, in the cache file :func:`_persisted_cache_path`
+    names, carrying the value together with the source digest of every module
+    that produced it, so a value is only ever reused by the code that made it:
+    an entry recorded by an older parser is treated as absent rather than read
+    as a stale answer.
+
+    With ``compute`` the value is derived, persisted and returned when no usable
+    entry is stored. With ``store`` the given value is persisted and returned.
+    With neither, the stored value is returned, or :data:`_PERSISTED_MISSING`
+    when none is usable — a caller that must not build what it seeds from takes
+    this form.
+    """
+
+    sources = {
+        str(getattr(module, "__name__", module)): _module_source_digest(module)
+        for module in modules
+    }
+    path = _persisted_cache_path(kind, version, *identity)
+    if store is not _PERSISTED_MISSING:
+        _write_persisted_memo(path, sources, store)
+        return store
+    held = _read_persisted_memo(path, sources)
+    if held is not _PERSISTED_MISSING:
+        return held
+    if compute is None:
+        return _PERSISTED_MISSING
+    value = compute()
+    _write_persisted_memo(path, sources, value)
+    return value
+
+
+def _read_persisted_memo(path: Path, sources: Mapping[str, str]) -> object:
+    """Return a stored value whose producer sources still match, else absent."""
+
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return _PERSISTED_MISSING
+    except (OSError, json.JSONDecodeError) as exc:
+        LOGGER.warning("Ignoring unreadable persisted memo %s: %s", path, exc)
+        return _PERSISTED_MISSING
+    if (
+        not isinstance(raw, dict)
+        or raw.get("schema") != _PERSISTED_SCHEMA
+        or not isinstance(raw.get("sources"), dict)
+        or raw["sources"] != dict(sources)
+        or "value" not in raw
+    ):
+        return _PERSISTED_MISSING
+    return raw["value"]
+
+
+def _write_persisted_memo(
+    path: Path, sources: Mapping[str, str], value: object
+) -> None:
+    """Persist ``value`` with the source digests of the modules that made it."""
+
+    payload = {
+        "schema": _PERSISTED_SCHEMA,
+        "sources": dict(sources),
+        "value": value,
+    }
+    try:
+        write_json_atomically(path, payload, fsync=False, ensure_ascii=False)
+    except (OSError, TypeError, ValueError) as exc:
+        LOGGER.warning("Could not persist %s: %s", path, exc)
+
+
+def _discovery_producers() -> tuple[object, ...]:
+    """Return the modules whose source produces a persisted discovery parse."""
+
+    import sys
+
+    return (_plan_html, sys.modules[__name__])
+
+
 def _index_path(docs_dir: Path, project: str) -> Path:
     return _persisted_cache_path(
         "metadata-index", _VERSION, project, str(Path(docs_dir).resolve())
     )
 
 
+def _persisted_payload(docs_dir: Path, project: str) -> Mapping:
+    """Return the store's whole persisted value, or empty when unusable.
+
+    The store is one :func:`persisted_memo` value under the project and docs
+    directory's identity, guarded by the source digests of the modules that
+    parsed it, so an index written by a different parser is treated as absent
+    and rebuilt rather than served as a stale parse.
+    """
+
+    held = persisted_memo(
+        "metadata-index",
+        _VERSION,
+        (project, str(Path(docs_dir).resolve())),
+        _discovery_producers(),
+    )
+    return held if isinstance(held, Mapping) else {}
+
+
 def _load_persisted(docs_dir: Path, project: str) -> dict[str, dict]:
     """Return the persisted entries by relative path, or none when unusable."""
 
-    path = _index_path(docs_dir, project)
-    try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
-    except FileNotFoundError:
-        return {}
-    except (OSError, json.JSONDecodeError) as exc:
-        LOGGER.warning("Ignoring unreadable metadata index %s: %s", path, exc)
-        return {}
-    if (
-        not isinstance(raw, dict)
-        or raw.get("schema") != _SCHEMA
-        or raw.get("version") != _VERSION
-        or raw.get("project") != project
-        or raw.get("docs_dir") != str(Path(docs_dir).resolve())
-        or not isinstance(raw.get("entries"), list)
-    ):
-        LOGGER.warning("Ignoring incompatible metadata index %s", path)
-        return {}
     entries: dict[str, dict] = {}
-    for entry in raw["entries"]:
+    for entry in _persisted_payload(docs_dir, project).get("entries") or []:
         if isinstance(entry, dict) and isinstance(entry.get("path"), str):
             entries[entry["path"]] = entry
     return entries
@@ -1892,24 +2012,8 @@ def _load_persisted(docs_dir: Path, project: str) -> dict[str, dict]:
 def _load_dir_stamps(docs_dir: Path, project: str) -> dict[str, list[int]]:
     """Return the persisted directories' stat identities, or none when absent."""
 
-    path = _index_path(docs_dir, project)
-    try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
-    except FileNotFoundError:
-        return {}
-    except (OSError, json.JSONDecodeError) as exc:
-        LOGGER.warning("Ignoring unreadable metadata index %s: %s", path, exc)
-        return {}
-    if (
-        not isinstance(raw, dict)
-        or raw.get("schema") != _SCHEMA
-        or raw.get("version") != _VERSION
-        or raw.get("project") != project
-        or raw.get("docs_dir") != str(Path(docs_dir).resolve())
-    ):
-        return {}
-    stamps = raw.get("dirs")
-    if not isinstance(stamps, dict):
+    stamps = _persisted_payload(docs_dir, project).get("dirs")
+    if not isinstance(stamps, Mapping):
         return {}
     return {
         relative: identity
@@ -1926,17 +2030,10 @@ def _store_persisted(
     entries: list[dict],
     dir_stamps: Mapping[str, list[int]] | None = None,
 ) -> None:
-    payload = {
-        "schema": _SCHEMA,
-        "version": _VERSION,
-        "project": project,
-        "docs_dir": str(Path(docs_dir).resolve()),
-        "entries": entries,
-        "dirs": dict(dir_stamps or {}),
-    }
-    try:
-        write_json_atomically(
-            _index_path(docs_dir, project), payload, fsync=False, ensure_ascii=False
-        )
-    except (OSError, TypeError, ValueError) as exc:
-        LOGGER.warning("Could not persist the metadata index for %s: %s", project, exc)
+    persisted_memo(
+        "metadata-index",
+        _VERSION,
+        (project, str(Path(docs_dir).resolve())),
+        _discovery_producers(),
+        store={"entries": entries, "dirs": dict(dir_stamps or {})},
+    )

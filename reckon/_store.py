@@ -751,6 +751,40 @@ def _state_with_diagnostics(
     return state
 
 
+def _seed_parsed_state(
+    html_file: Path,
+    project: str,
+    root: str | Path | None,
+) -> None:
+    """Seed the shared parse from the persisted one before a plan is read.
+
+    A fresh process re-parsed every plan file a read touched, because the parse
+    it had already made and persisted in the metadata index was only ever read
+    by the served discovery payload. The state read behind ``read_plan`` and
+    ``edit_plan`` seeds from that same store through
+    ``_plan_html.reuse_parsed_state``, so a process that has never parsed a file
+    answers from the parse it recorded, and only a file whose bytes moved is
+    parsed again. A store that cannot answer seeds nothing and the file is
+    parsed as before, so a read never pays for a whole-tree build to seed one
+    document.
+    """
+
+    from reckon import _plan_html, metadata_index
+
+    docs_dir = _docs_dir_for_project(project, root)
+    if docs_dir is None:
+        return
+    relative = _docs_relative(html_file, docs_dir)
+    if relative is None:
+        return
+    stored = metadata_index.discovery_state(docs_dir, project, build=False).get(
+        relative
+    )
+    if not isinstance(stored, Mapping) or stored.get("state") is None:
+        return
+    _plan_html.reuse_parsed_state(html_file, stored["state"])
+
+
 def _read_state(
     project: str,
     slug: str,
@@ -771,6 +805,7 @@ def _read_state(
         return {}, 0
     from reckon import _plan_html
 
+    _seed_parsed_state(html_file, project, root)
     state, text = _plan_html.read_state_and_text_file(html_file)
     _RECENT_PLAN_HTML.set(((project, slug), text))
     state = _state_with_diagnostics(project, text, state, root)
