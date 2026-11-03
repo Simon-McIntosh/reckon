@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/metadata_index.py:_covered_files",
+    "reckon/metadata_index.py:_covered_files_for_project",
+    "reckon/resources.py:resource_scan_scope",
+    "reckon/serve.py:discover_plans",
+    "reckon/serve.py:_discovery_files"
+  ],
+  "completed_at": "2026-11-03T07:26:05.563Z",
+  "dispatched_at": "2026-11-03T07:10:56Z",
+  "findings": [
+    {
+      "file": "tests/test_a_cold_discovery_walks_the_tree_once.py",
+      "line": "188",
+      "severity": "non-blocking",
+      "text": "the ceiling rose from 1.5x to 6x the covered count while the comment names three phases that each observe a file once, so two further full re-observation passes would still pass and the record carries no measured total at the head to show how much of the six is real."
+    },
+    {
+      "file": "tests/test_a_cold_discovery_walks_the_tree_once.py",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "this round edits two test files outside the manifest's declared write paths and records them only under outside_scope and blockers, so promotion sees edits with no granted path behind them even though the coordinator's resume advice authorised updating them."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit against b244a3f57e; three commits over four files, all inside the four paths the review names.",
+    "done_when": "the node's done-when names the seven cases and three controls in tests/test_a_request_validates_the_tree_once.py plus importer populations and ruff; the manifest records that file at 9 passed, the three regressed files at 13 passed and 41 importers at 209 passed, all at ba26c18048.",
+    "goal": "the reviewed range is the merge round for the covered-walk rule; reckon/metadata_index.py:1243 makes the infra decision before any resolved path, which is the goal's covered walk skipping the state records.",
+    "manifest": "read; it states the merge round's three failures, their two adaptations and one defect fix, names each commit and records the gates with their log paths.",
+    "write_paths": "the declared scope omits tests/test_a_cold_discovery_walks_the_tree_once.py and tests/test_a_warm_read_revalidates_once.py, which the diff changes and the manifest records under outside_scope and blockers."
+  },
+  "justifications": {
+    "durability": "tests/test_the_cached_index_absorbs_each_change.py:test_a_non_covered_entry_is_rejected_before_its_path_is_built spies on relative_to and reddens if the infra decision moves back after resolution, but the loosened ceiling at tests/test_a_cold_discovery_walks_the_tree_once.py:188 admits two extra full observation passes over the three its comment names.",
+    "evidence": "tests/test_a_cold_discovery_walks_the_tree_once.py:188 raises the ceiling to six observations per covered file with no recorded measured total to justify the headroom, while the file's green result is recorded in s2-regressed-files.log.",
+    "fit": "reckon/metadata_index.py:1240-1242 and tests/test_a_cold_discovery_walks_the_tree_once.py:180-188 comment the mechanism rather than a plan item, and ruff check and ruff format --check are clean on all three changed Python files at 21c435f075.",
+    "goal_fidelity": "reckon/metadata_index.py:1243-1250 decides the infra rule from the directory's name and its parent's relative path before Path.relative_to, so the state tree is rejected without a resolved path as the deliverable states.",
+    "reuse": "the delta adds only a local _document fixture builder at tests/test_a_cold_discovery_walks_the_tree_once.py:30, and my search of tests/ and tests/conftest.py for a shared document builder found only per-test local helpers, while metadata_index._skips_infra_dir and resources.is_infra_path are reused rather than duplicated.",
+    "scope_discipline": "tests/test_a_cold_discovery_walks_the_tree_once.py:1 and tests/test_a_warm_read_revalidates_once.py:1 are outside the declared write paths and recorded only under outside_scope and blockers."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed range is the merge round for the covered-walk rule; reckon/metadata_index.py:1243 makes the infra decision before any resolved path, which is the goal's \"covered walk skips the state records\".\nVERDICT done_when: the node's done-when names the seven cases and three controls in tests/test_a_request_validates_the_tree_once.py plus importer populations and ruff; the manifest records that file at 9 passed (s2-test.log), the three regressed files at 13 passed (s2-regressed-files.log) and 41 importers at 209 passed (importers-metadata-index.log), all at ba26c18048.\nVERDICT write_paths: the declared scope is reckon/mcp_deadlines.py, reckon/mcp.py, reckon/mcp_edit_plan.py, reckon/metadata_index.py, tests/test_a_request_validates_the_tree_once.py and the evidence fragment; the diff adds tests/test_a_cold_discovery_walks_the_tree_once.py and tests/test_a_warm_read_revalidates_once.py, which the manifest names under outside_scope and blockers rather than claiming as granted.\nVERDICT manifest: read; it states the merge round's three failures, their two adaptations and one defect fix, names each commit, and records the gates with their log paths; its status is complete and its blockers field names the two ungranted test paths.\nVERDICT diff: read commit by commit against b244a3f57e; three commits over four files \u2014 metadata_index.py's ordering fix, the two test adaptations and the evidence fragment \u2014 with no change outside those four paths.\nCALL_SITES: reckon/metadata_index.py:_covered_files, reckon/metadata_index.py:_covered_files_for_project, reckon/resources.py:resource_scan_scope, reckon/serve.py:discover_plans, reckon/serve.py:_discovery_files\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/metadata_index.py:1243-1250 decides the infra rule from the directory's name and its parent's relative path before Path.relative_to, so the state tree is rejected without a resolved path as the deliverable states.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_a_cold_discovery_walks_the_tree_once.py:188 raises the ceiling to six observations per covered file with no recorded measured total to justify the headroom, while the file's green result is recorded in s2-regressed-files.log.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: tests/test_a_cold_discovery_walks_the_tree_once.py:1 and tests/test_a_warm_read_revalidates_once.py:1 are outside the declared write paths and recorded only under outside_scope and blockers.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_the_cached_index_absorbs_each_change.py:test_a_non_covered_entry_is_rejected_before_its_path_is_built spies on relative_to and reddens if the infra decision moves back after resolution, but the loosened ceiling at tests/test_a_cold_discovery_walks_the_tree_once.py:188 admits two extra full observation passes over the three its comment names.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/metadata_index.py:1240-1242 and tests/test_a_cold_discovery_walks_the_tree_once.py:180-188 comment the mechanism rather than a plan item, and ruff check and ruff format --check are clean on all three changed Python files at 21c435f075.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds only a local _document fixture builder at tests/test_a_cold_discovery_walks_the_tree_once.py:30, and my search of tests/ and tests/conftest.py for a shared document builder found only per-test local helpers, while metadata_index._skips_infra_dir and resources.is_infra_path are reused rather than duplicated.\nFINDING tests/test_a_cold_discovery_walks_the_tree_once.py:188 non-blocking: the ceiling rose from 1.5x to 6x the covered count while the comment names three phases that each observe a file once, so two further full re-observation passes would still pass and the record carries no measured total at the head to show how much of the six is real.\nFINDING tests/test_a_cold_discovery_walks_the_tree_once.py:1 non-blocking: this round edits two test files outside the manifest's declared write paths and records them only under outside_scope and blockers, so promotion sees edits with no granted path behind them even though the coordinator's resume advice authorised updating them.\n",
+  "review_run_id": "r-20261103T070556386365-review-of-every-read-enters-the-existing-scopes-21c435f075c3",
+  "reviewed_base_sha": "b244a3f57e406a2923a86cc5f0d20c8cf6d28df9",
+  "reviewed_head_sha": "21c435f075c3fdc80e8578643f4f1279f9403961",
+  "reviewed_run_id": "r-20261103T021938516080-every-read-enters-the-existing-scopes",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T07:51:17.432639+00:00",
+  "total": 100
+}
