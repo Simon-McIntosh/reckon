@@ -5,15 +5,22 @@
 thread around the tool body; the read tools register with it, the roadmap's per-tool entry is removed, and
 <code>mcp_edit_plan._edit_plan_tool</code> enters both scopes itself around its pre-write and post-write reads.
 <code>metadata_index</code> skips <code>resources.INFRA_DIRS</code> directories other than <code>figures</code>
-in both the covered walk and the revalidation, and memoises one covered-tree validation per read scope.</p>
+in both the covered walk and the revalidation, and memoises one covered-tree validation per read scope.
+<code>resources.is_infra_path</code> names that predicate once, beside <code>INFRA_DIRS</code>, and the covered
+walk, the resource scan and the routing tree walk all call it. The two CLI callers of the roadmap read —
+<code>project_brief._load_payload</code> and the maintenance roadmap verb — enter the discovery scope
+themselves, since the roadmap's own entry now lives in the deadline wrapper.</p>
 <p>Measured on the new synthetic tree (40 plans, 5 figures, 2,000 review-record directories):
 <code>read_plan(view="summary")</code> stats 65 distinct paths and validates the covered tree once;
 <code>edit_plan</code>, <code>roadmap</code> and <code>audit</code> once each; <code>crew(view="live")</code> zero.
 The base arm (no boundary scope, state records back in the walk) reaches about 2,050 distinct paths.
 All seven done-when cases pass. The review-store case stores its record through
-<code>crew.plan_review.store_plan_review</code> against a temporary crew home and then sees it change
-<code>edit_plan</code>'s <code>review_owed</code>, asserting the real crew home is untouched. Each declared
-negative control ran red against this head and was reverted: entering the scopes in the async wrapper fails the
-first case, restoring the state records to the covered walk fails the first case, and skipping every
-<code>INFRA_DIRS</code> directory including <code>figures</code> fails the third.</p>
+<code>crew.plan_review.store_plan_review</code> against a temporary crew home, then drives a single
+<code>edit_plan</code> call and reads the owed set that call returns — a post-write read serving a memo built
+before the write would return an empty set — and asserts the real crew home is untouched. The crew live view is
+asserted to reach the covered-tree memo not at all, which separates a reused validation from a missing scope
+entry. Each declared negative control ran red against this head and was reverted: entering the scopes in the
+async wrapper fails the first case and the identity-index case, restoring the state records to the covered walk
+fails the first case, and skipping every <code>INFRA_DIRS</code> directory including <code>figures</code> fails
+the third.</p>
 </section>
