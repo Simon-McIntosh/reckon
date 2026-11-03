@@ -2441,8 +2441,6 @@ def _finding_units(
         return [DOCUMENT_UNIT]
     finding_text = str(finding.get("text") or "")
     names = _section_references(finding_text)
-    if not names:
-        return [DOCUMENT_UNIT]
     read = reviewed_text or (lambda: _reviewed_plan_text(record, plan_path))
     locator = _line_locator(anchor)
     if locator is not None and _anchor_names_plan(record, anchor, plan_path):
@@ -2450,10 +2448,12 @@ def _finding_units(
         unit = _line_unit_map(text).get(locator) if text is not None else None
         if unit:
             return [unit]
-        known = _section_identities(text)
-    else:
-        known = _section_identities(read())
-    return _units_named_in(finding_text, known)
+        if not names:
+            return [DOCUMENT_UNIT]
+        return _units_named_in(finding_text, _section_identities(text))
+    if not names:
+        return [DOCUMENT_UNIT]
+    return _units_named_in(finding_text, _section_identities(read()))
 
 
 def _memoised_reviewed_text(
