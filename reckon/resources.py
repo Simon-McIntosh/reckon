@@ -59,6 +59,8 @@ def is_infra_path(parts: Iterable[str], *, keep: Iterable[str] = ()) -> bool:
     """
     kept = frozenset(keep)
     return any(part in INFRA_DIRS and part not in kept for part in parts)
+
+
 #: A node's landing record is written as its own fragment under
 #: ``evidence/fragments/<plan>/<node>.html`` and composed into that plan's
 #: cumulative record at read time. A fragment is not a typed resource in its own
