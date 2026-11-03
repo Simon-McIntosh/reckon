@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="599">
+<meta name="plan-version" content="600">
 <meta name="plan-modified" content="2026-11-03">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -2227,6 +2227,9 @@ Both cases run under the file's existing temporary crew home.</li>
 </div>
 <div class="r-comment" data-section="s97" data-id="c-run-r-20261102T232822454784-review-of-a-starting-review-is-visible-45ba80a6d326" data-who="reckon-build" data-when="2026-11-02T23:45:51.641Z">
     <div class="r-comment-body"><p>Review of r-20261102T215409121985-a-starting-review-is-visible at 45ba80a6d326c97caced378c2e1746b288ff71df (base 0a750cc551b0aa5180d5e10f8f767b99ab59e9ab): scores goal_fidelity 15, evidence 17, scope_discipline 19, durability 15, fit 18, reuse 19; 0 added failures; one non-blocking finding at reckon/crew/query.py:890 (the pointer snapshot is the narrowed view list, so a hand-dispatched in-flight review is not recognised on single-run and filtered reads).</p></div>
+</div>
+<div class="r-comment" data-section="s97" data-id="c-run-r-20261103T004347425770-review-of-a-starting-review-is-visible-3ae6f9f9f758" data-who="reckon-build" data-when="2026-11-03T00:55:38.810Z">
+    <div class="r-comment-body"><p>Reviewed r-20261102T215409121985-a-starting-review-is-visible over 45ba80a6d326..3ae6f9f9f758 without changing the tree: the two commits since the prior review close its single non-blocking finding by classifying narrowed rows against the project&#x27;s whole live pointer set, the gate passes 9/9 at the reviewed head and I re-ran it to 9 passed at EXIT=0, and the record stores scores goal_fidelity 19, evidence 17, scope_discipline 14, durability 18, fit 19, reuse 19 with two non-blocking findings (the mcp_views.py edit is outside the declared write paths; the head importer log names the base revision).</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">

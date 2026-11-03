@@ -1,0 +1,40 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-03T00:55:38.810Z",
+  "dispatched_at": "2026-11-03T00:46:46Z",
+  "findings": [
+    {
+      "file": "reckon/mcp_views.py",
+      "id": "f5db68a0d1d",
+      "line": 4259,
+      "severity": "non-blocking",
+      "summary": "the fix reads the project's full pointer set in a file outside the node's declared write paths, and the worker could not widen the claim because the fence makes the crew lock directory read-only, so the coordinator must widen the claim or reject this commit."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261102T215409121985-a-starting-review-is-visible/head-importers-3.log",
+      "id": "ff479cb37d1",
+      "line": 1,
+      "severity": "non-blocking",
+      "summary": "the head importer arm's header names revision 45ba80a6d326, the same revision line the base arm carries, and separates the two trees only by a parenthetical, so a reader checking provenance cannot tell the changed tree from the pre-change one without the manifest."
+    }
+  ],
+  "project": "reckon",
+  "review": "VERDICT goal: the node goal is that a starting, queued or working review counts as its subject's review in flight on every live surface, and the delta closes exactly the gap the prior review named \u2014 reckon/crew/query.py:911 and reckon/mcp_views.py:4259 now classify each rendered row against the project's whole live pointer set while rendering only the narrowed rows.\nVERDICT done_when: the source done-when names the cases in tests/test_a_starting_review_is_visible.py, no added failures in the files importing reckon.crew.recovery_classification and reckon.crew.query, and clean ruff on the staged paths; head-arm-3.log records 9 passed at EXIT=0 on revision 64c0b2d3b6, and I re-ran that file against the extracted 3ae6f9f9 tree to 9 passed at EXIT=0 in this run's review-gate.log.\nVERDICT write_paths: declared are reckon/crew/recovery_classification.py, reckon/crew/query.py, tests/test_a_starting_review_is_visible.py, the evidence fragment and a figures directory; the delta touches query.py, the test file and the fragment inside that set, and reckon/mcp_views.py outside it.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261102T215409121985-a-starting-review-is-visible/manifest.md; it reads status complete with six commits, both suite arms naming their logs, three negative controls, and six rubric lines including an outside_scope entry that discloses the mcp_views edit.\nVERDICT diff: read 45ba80a6d3..3ae6f9f9f7 commit by commit; 64c0b2d3b6 adds pointers= to project_live_rows (reckon/crew/query.py:398-440), keeps the project's live set in runs_view (query.py:890-915) and in the live view (reckon/mcp_views.py:4219-4260), declares review_run_id and review_run_phase on the compact row (query.py:51 and :672-683), and adds two cases; 3ae6f9f9f7 rewrites only the evidence fragment.\nCALL_SITES: reckon/mcp_views.py:4088 (runs_view), reckon/mcp_views.py:4256 (project_live_rows), reckon/crew/obligations.py:638, reckon/crew/directory.py:97, reckon/crew/promotion.py:387\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/query.py:911 and reckon/mcp_views.py:4259 classify every rendered row from the project's full pointer snapshot, so a phase-narrowed live view and a single-run runs view both name the subject's starting review.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_a_starting_review_is_visible.py records 9 passed at EXIT=0 in head-arm-3.log and again in this run's review-gate.log, the importer arms carry the identical 19 failing ids I compared by id, and ruff at the reviewed head reports no finding in the changed hunks.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: reckon/mcp_views.py:4219-4260 is outside the node's declared write paths and is edited here for the second time, though the edit is fifteen lines and the manifest discloses it under outside_scope.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_starting_review_is_visible.py:211 and :244 both redden when the narrowed rows are classified instead of the full set, shown by negative-control-narrowed.log (2 failed, EXIT=1), and both assert against the REVIEW_RUN constant rather than a value the code under test returns.\nSCORE fit: 19\nJUSTIFICATION fit: review_run_id and review_run_phase join the existing review_present and review_status vocabulary at reckon/crew/query.py:142-147, the comments state the mechanism rather than a ticket, and no added name carries a plan or release label.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change extends the owner at reckon/crew/query.py:396 by adding a pointers= keyword and reuses the reflex's own recogniser at reckon/crew/recovery_classification.py:643, introducing no second mechanism for the same capability.\nFINDING reckon/mcp_views.py:4259 non-blocking: the fix reads the project's full pointer set in a file outside the node's declared write paths, and the worker could not widen the claim because the fence makes the crew lock directory read-only, so the coordinator must widen the claim or reject this commit.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261102T215409121985-a-starting-review-is-visible/head-importers-3.log:1 non-blocking: the head importer arm's header names revision 45ba80a6d326, the same revision line the base arm carries, and separates the two trees only by a parenthetical, so a reader checking provenance cannot tell the changed tree from the pre-change one without the manifest.\n",
+  "review_run_id": "r-20261103T004347425770-review-of-a-starting-review-is-visible-3ae6f9f9f758",
+  "reviewed_base_sha": "45ba80a6d326c97caced378c2e1746b288ff71df",
+  "reviewed_head_sha": "3ae6f9f9f758278ca3a7bb56cc42bd0003b3d082",
+  "reviewed_run_id": "r-20261102T215409121985-a-starting-review-is-visible",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T01:07:50.971711+00:00",
+  "total": 106
+}
