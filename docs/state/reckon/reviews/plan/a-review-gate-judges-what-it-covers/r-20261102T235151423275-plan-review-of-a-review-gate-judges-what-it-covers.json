@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-03T00:21:45.169Z",
+  "dispatched_at": "2026-11-03T00:15:02Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-review-gate-judges-what-it-covers.html:200",
+      "id": "reasoning-1",
+      "reason": "the clause needs its own rule for source-anchored design findings (attribute them from the finding text or hold them on the document unit deliberately) and the fourth arm must be built from a real design-record anchor; without both, the one node implementing s13 produces a gate that blocks every section \u2014 the defect the section was written to fix.",
+      "text": "s13 says the existing `_anchor_unit` \"maps a finding's anchor to the unit it names, or to the document unit when it names none\" and that design-review findings are grouped \"the same way\", but a real design record anchors to source files by line: `plan-the-monitor-shows-the-work-it-watches.v5.json` (rubric `design`) carries `reckon/crew/recovery_watch.py:1264`, `reckon/crew/ticker.py:2138` and `reckon/crew_follow_commands.py:567`. Reproduced against that plan's own text with the shipped `_anchor_unit`: `reckon/crew/recovery_watch.py:1264 -> _document`, `reckon/crew/ticker.py:2138 -> _document`, `reckon/crew_follow_commands.py:567 -> s66` (line 567 of the plan file happens to fall inside that plan's \u00a766, a section unrelated to that source line), while `\u2026html#s5 -> s5`. So \"the same way\" either blocks every section (two of three anchors) or refuses an unrelated section (the third), which is precisely the plan-wide behaviour s13 exists to remove, and the done-when's fourth arm can only be written by hand-fabricating a `#s4` anchor that no design review produces, so it passes while the shipped grouping misattributes every source-anchored design finding.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "89fd47f44c89df4b20c12982adb5a779cc7c5401",
+  "plan_fingerprint": "23456ea02daaa4b6d74d7d08326dd5e202add228a0a1c6c53b873f8ccc839bd3",
+  "plan_slug": "a-review-gate-judges-what-it-covers",
+  "plan_version": 45,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261102T235151423275-plan-review-of-a-review-gate-judges-what-it-covers",
+  "reviewed_blob_sha": "5466d48ad57ebfb7a0690bdc47c4f45fcb5c25a2",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 checked in the worktree at `d383053f`: `plan_review._anchor_unit` is at `reckon/crew/plan_review.py:2314`; `require_plan_reviewed` starts at `reckon/crew/routing.py:2586` and its plan-wide unanswered block at 2747\u20132762; `plan_review._stored_response` is at `plan_review.py:1940`; `--acted` is the option at `reckon/crew_dispatch_commands.py:2423` and the answer validation sits at 2534\u20132546 in the same file; `crew(action=\"answer\")` exists at `reckon/mcp_crew_actions.py:123`; `--carried` exists at `reckon/crew_run_commands.py:128`. The four run ids s14 cites resolve and their finding counts match the prose: `r-20261102T204048561479` 5 findings, `r-20261102T204231991462` 3, and the two second-round citations are the defects claimed (`r-20261102T210623271168` is \u00a77's mtime control, `r-20261102T210839798173` is \u00a74's launch fast path).",
+    "done_when": "pass \u2014 s13 states one negative control (\"The negative control collects unanswered findings plan-wide, and the first case fails\") that discriminates its first arm, and s14 states two (drop the requirement \u2192 arm 1 fails; restore one skill example without `--note` \u2192 arm 4 fails); every declared deliverable has an arm.",
+    "evidence_paths": "pass \u2014 neither unit claims a fleet-scale measurement; the only evidence named is a new test under `tests/`, which survives the run, and no gate log is asserted.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach a symbol, file or comment; `--note`/`note` name the mechanism, and the run ids appear only in plan prose as evidence pointers.",
+    "reasoning": "a finding \u2014 \u00a713's clause \"Unanswered design-review findings are grouped the same way\" sends a design finding's source-path line anchor through `_anchor_unit` against the plan text, so the finding is attributed to whatever plan section occupies that line number, or to the document unit when the line is past the plan's end.",
+    "single_goal": "pass \u2014 s13 delivers one gate change (unanswered findings attributed to the unit they are about) and s14 one requirement (`--acted` carries a note), with the skill examples as the teaching of that same requirement rather than a second deliverable.",
+    "wiring": "pass \u2014 `plan-section-depends-on` (plan.html:30) gives s14 `s13` and s15 both `s13` and `s14`; s13 needs nothing more because \u00a72, the coverage gate its Why leans on, is already `done` (plan.html:24), and the two source modules each node edits (`reckon/crew/routing.py`, `reckon/crew/plan_review.py`) exist."
+  },
+  "section_digests": {
+    "_document": "7bff2d36d32d8a8df5ffa990890142ff483878bacd9bb363ae182507cd2c0d4f",
+    "s1": "2f80e3c4526e5da0f46c438dc82b2880b0fa395a71a3807823c00850eb9622b9",
+    "s10": "0347256131d51d907a02af2f58beaa7a22b5537fdced1660d95567b2a3ff101d",
+    "s11": "2010b138f0e5041018c272b7dc46ddae5a5ec3a681dd94f345d06ffffce39f24",
+    "s12": "b9d85c58fba665a6ec6d382c6c08e4af211a0068675727b775a65fd42dc39899",
+    "s13": "1282ba66b7b9db574bb7a527b9eb727dd6946f7f8b6a02212f3d1607d4cbe17e",
+    "s14": "660f5637f37ee6d85140e7a387143ce1f0b905838d7b132490f19ba18456d601",
+    "s15": "ef459cfd9660ce89a49e0abcc0d6151f4bd1a20eab8c53bc3582e25acd73d7c3",
+    "s2": "b003c30eb192f0dfa86d4e6518b4deede24bf6b15c0b15ba5784a6066d3da870",
+    "s3": "7df7d94c9d011998671062ddf1072ba44b1c08d7172f92e43f18961813f1d434",
+    "s4": "491337ffa1e3dbb35aed0b41de9bfb17126787d7b0a08c15bb12879faa1a9b43",
+    "s5": "f21e5477c01ae1e8fb4da7b3d607da52313f50d700b6b7dc3d5a2adb8d9f8956",
+    "s6": "534a6debaffa16edfc0cb75f6488191af897e1ff0b9ad32ecdaaa28148c119ff",
+    "s7": "ce6bf11980ac24dc184e5bd2aa6fd813667fe40e90c0ea97a60a56d649f3fd30",
+    "s8": "fd5dc1e3777871755eeeb65dc14935764ea25a67e2902dd8de2e8831cb64fa78",
+    "s9": "6237a98697d0fead79a4d109178e3da581fa42f7bd6e8028527f46a167cb259e"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T00:25:01.257839+00:00"
+}
