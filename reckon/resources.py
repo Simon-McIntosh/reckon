@@ -48,6 +48,19 @@ INFRA_DIRS = frozenset(
         ".reckon",
     }
 )
+
+
+def is_infra_path(parts: Iterable[str], *, keep: Iterable[str] = ()) -> bool:
+    """True when one of ``parts`` names an infrastructure directory.
+
+    ``keep`` names directories that are infrastructure but whose files a
+    caller still wants, such as the figure store for a caller that indexes
+    figures.
+    """
+    kept = frozenset(keep)
+    return any(part in INFRA_DIRS and part not in kept for part in parts)
+
+
 #: A node's landing record is written as its own fragment under
 #: ``evidence/fragments/<plan>/<node>.html`` and composed into that plan's
 #: cumulative record at read time. A fragment is not a typed resource in its own
@@ -317,7 +330,7 @@ def _identify_resource(docs_dir: Path, path: Path, project: str) -> Resource | N
         return None
     if path.name in NON_RESOURCE_FILES:
         return None
-    if any(part in INFRA_DIRS for part in relative.parts[:-1]):
+    if is_infra_path(relative.parts[:-1]):
         return None
     if _is_evidence_fragment(relative):
         return None
@@ -747,7 +760,9 @@ def _resolve_canonical(
         return None
     archived_values = (False, True) if include_archived else (False,)
     candidates = [
-        _canonical_resource_at(docs_dir, project, artifact_type, slug, archived=archived)
+        _canonical_resource_at(
+            docs_dir, project, artifact_type, slug, archived=archived
+        )
         for artifact_type in types
         for archived in archived_values
     ]

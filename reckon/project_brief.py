@@ -120,9 +120,11 @@ def project_brief(
 def _load_payload(project: str) -> Mapping[str, Any]:
     """Read one project's roadmap payload the way the CLI's verb does."""
 
+    from reckon import metadata_index
     from reckon.mcp import _roadmap
 
-    result = _roadmap(project)
+    with metadata_index.discovery_file_scope():
+        result = _roadmap(project)
     if not result.get("ok", True):
         raise ValueError(str(result.get("detail") or result.get("error")))
     return result

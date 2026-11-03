@@ -5,9 +5,11 @@ import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
+from collections.abc import Callable
 from typing import Any, Literal
 
 # ── SDK import ─────────────────────────────────────────────────────────────
+from reckon import metadata_index
 from reckon import (
     velocity as velocity_module,
 )
@@ -63,6 +65,7 @@ from reckon.resources import (
     canonical_type,
     content_provenance,
     resolve_resource,
+    resource_scan_scope,
 )
 from reckon.serve import _resolve_plan_file
 from reckon.mcp_deadlines import (
@@ -86,6 +89,21 @@ from reckon.mcp_discovery import (
 
 #: Sentinel for a path that does not resolve, distinct from a stored ``None``.
 _ABSENT = object()
+
+
+def _with_read_scopes(read: Callable[[], Any]) -> Any:
+    """Run one group of reads inside the request's shared scopes.
+
+    A write tool is registered without the boundary scope the read tools get,
+    because a scope opened by the wrapper cannot be closed before the write.
+    Its reads are therefore grouped either side of the write, each group
+    entering the covered-tree and identity-index scopes for its own duration so
+    the group validates the tree once and the post-write group sees the file
+    the write just produced.
+    """
+
+    with metadata_index.discovery_file_scope(), resource_scan_scope():
+        return read()
 
 
 def _patch_plan(
@@ -2222,7 +2240,11 @@ def _edit_plan_tool(
     # what destroys it: ``review_owed`` on the answer is the plan's whole debt,
     # and only the difference against this set is the write's own doing.
     uncovered_before = (
-        _uncovered_before_write(project, slug, checkout_path, doc_type, create=create)
+        _with_read_scopes(
+            lambda: _uncovered_before_write(
+                project, slug, checkout_path, doc_type, create=create
+            )
+        )
         if _document_type(slug, doc_type) == "plan"
         else None
     )
@@ -2243,14 +2265,18 @@ def _edit_plan_tool(
     # A plan write reports the review it owes; a doc write and an index write
     # do not, so the note is attached only to a plan.
     if result.get("ok") and result.get("resource", {}).get("type") == "plan":
-        result.update(
-            _review_owed_fields(
-                project, slug, result.get("path"), uncovered_before=uncovered_before
+
+        def _post_write_reads() -> None:
+            result.update(
+                _review_owed_fields(
+                    project, slug, result.get("path"), uncovered_before=uncovered_before
+                )
             )
-        )
-        # A write that moves a section declaration can be the one that leaves
-        # the plan finished, so that write also answers with the plan's
-        # readiness and what still stands before its close.
-        if mode == "state" and _changes_section_declarations(ops):
-            result.update(_plan_readiness_fields(project, slug, checkout_path))
+            # A write that moves a section declaration can be the one that
+            # leaves the plan finished, so that write also answers with the
+            # plan's readiness and what still stands before its close.
+            if mode == "state" and _changes_section_declarations(ops):
+                result.update(_plan_readiness_fields(project, slug, checkout_path))
+
+        _with_read_scopes(_post_write_reads)
     return result

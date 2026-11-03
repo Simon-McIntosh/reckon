@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, get_type_hints
 
 # ── SDK import ─────────────────────────────────────────────────────────────
+from reckon import metadata_index
 from reckon._mcp_tools import StorageSlowResult
 from reckon._store import (
     OpError,
@@ -25,6 +26,7 @@ from reckon.lifecycle import TERMINAL_STATUSES
 from reckon.mcp_budget import bound_response
 from reckon.resources import (
     canonical_type,
+    resource_scan_scope,
 )
 # ── Storage deadlines ──────────────────────────────────────────────────────
 #
@@ -323,12 +325,19 @@ def _start_body(
     label: str,
     path: str | None = None,
     path_hint: Callable[[], str | None] | None = None,
+    request_scope: bool = False,
 ) -> _InflightBody:
     """Submit one synchronous storage body to the thread pool, undeadlined.
 
     The future is the pool's own, so it survives the wait that bounds the call
     and is available to a later join. Path resolution, the baseline stat and
     the CPU/run-queue baselines all run on the worker thread.
+
+    ``request_scope`` enters the shared covered-tree and identity-index scopes
+    around the body. Both are context variables, and a pool thread starts with
+    no context of the caller's, so this is the only place they hold for the
+    body: entering them in the async wrapper would leave the worker thread —
+    and the storage work that runs on it — outside the scopes.
     """
 
     waiting: dict[str, Any] = {
@@ -361,6 +370,9 @@ def _start_body(
         # starved on an oversubscribed node burns little CPU but sits runnable.
         waiting["cpu_base"] = _thread_cpu_seconds(waiting["tid"])
         waiting["run_base"] = _thread_run_wait_seconds(waiting["tid"])
+        if request_scope:
+            with metadata_index.discovery_file_scope(), resource_scan_scope():
+                return body()
         return body()
 
     loop = asyncio.get_running_loop()
@@ -474,6 +486,7 @@ async def _read_joining_running(
     path_hint: Callable[[], str | None] | None = None,
     stale: Callable[[Mapping[str, Any]], Any] | None = None,
     stale_present: Callable[[Mapping[str, Any]], bool] | None = None,
+    request_scope: bool = False,
 ) -> Any:
     """Run a read under its deadline, joining a body already answering it.
 
@@ -515,7 +528,13 @@ async def _read_joining_running(
     inflight = _INFLIGHT_READS.get(key)
     join_started: float | None = None
     if inflight is None:
-        inflight = _start_body(body, kind="read", label=label, path_hint=path_hint)
+        inflight = _start_body(
+            body,
+            kind="read",
+            label=label,
+            path_hint=path_hint,
+            request_scope=request_scope,
+        )
         _INFLIGHT_READS[key] = inflight
         inflight.future.add_done_callback(
             lambda _future, _key=key, _body=inflight: _forget_read(_key, _body)
@@ -561,8 +580,16 @@ def _deadline_tool(
     response_budget: bool = False,
     stale: Callable[[Mapping[str, Any]], Any] | None = None,
     stale_present: Callable[[Mapping[str, Any]], bool] | None = None,
+    request_scope: bool = False,
 ) -> Callable[..., Any]:
     """Wrap one synchronous tool body as the async entry FastMCP registers.
+
+    ``request_scope`` marks a read-only tool whose body shares one covered-tree
+    observation and one identity index for the whole call. The scopes are
+    entered where the body runs — on its executor thread — so a read that
+    resolves many refs validates the tree once rather than once per lookup, and
+    a write tool declares no scope, because a scope opened by the wrapper
+    cannot be closed by the body that must write inside it.
 
     ``stale`` is the read's fallback for a call whose body outlives the reserve
     its deadline keeps: it answers the call from a stored result rather than
@@ -586,6 +613,7 @@ def _deadline_tool(
                 path_hint=hint,
                 stale=stale,
                 stale_present=stale_present,
+                request_scope=request_scope and resolved_kind == "read",
             )
         else:
             result = await _run_under_deadline(
