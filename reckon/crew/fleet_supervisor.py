@@ -581,11 +581,9 @@ def announce_requeue(environ: Mapping[str, str] | None = None) -> str | None:
     notice = requeue_notice(environ)
     if notice is None:
         return None
+    alert(notice, environ)
     state = state_directory(environ)
-    with open(state / ALERTS_NAME, "a", encoding="utf-8") as alerts:
-        alerts.write(notice + "\n")
     (state / NOTICE_NAME).write_text(notice + "\n", encoding="utf-8")
-    log(notice)
     return notice
 
 
@@ -761,12 +759,112 @@ def service_pid_path(runtime: Path, name: str) -> Path:
     return runtime / f"{name}{SERVICE_PID_SUFFIX}"
 
 
+def service_lock_path(runtime: Path, name: str) -> Path:
+    """The lock file a running copy of the service holds."""
+    return runtime / f"{name}{SERVICE_LOCK_SUFFIX}"
+
+
+def _lock_inode(runtime: Path, name: str) -> int | None:
+    try:
+        return service_lock_path(runtime, name).stat().st_ino
+    except OSError:
+        return None
+
+
+def _pid_record(runtime: Path, name: str) -> list[str]:
+    try:
+        return service_pid_path(runtime, name).read_text(encoding="utf-8").split()
+    except OSError:
+        return []
+
+
 def recorded_service_pid(runtime: Path, name: str) -> int | None:
     """The pid recorded for a service, or None when none could be read."""
+    fields = _pid_record(runtime, name)
     try:
-        return int(service_pid_path(runtime, name).read_text(encoding="utf-8").strip())
-    except (OSError, ValueError):
+        return int(fields[0])
+    except (IndexError, ValueError):
         return None
+
+
+def recorded_service_lock_inode(runtime: Path, name: str) -> int | None:
+    """The inode of the lock file the recorded copy held, or None if unrecorded.
+
+    A lock path whose inode differs from this names a file the running copy
+    never took: the original was removed and a new one made beside it.
+    """
+    fields = _pid_record(runtime, name)
+    try:
+        return int(fields[1])
+    except (IndexError, ValueError):
+        return None
+
+
+def write_service_pid(
+    runtime: Path, name: str, pid: int, inode: int | None = None
+) -> None:
+    """Record a copy's pid, and the lock inode it holds when that is known."""
+    record = f"{pid}" if inode is None else f"{pid} {inode}"
+    service_pid_path(runtime, name).write_text(record + "\n", encoding="utf-8")
+
+
+def process_cmdline(pid: int) -> list[str] | None:
+    """The command line of a live process, or None when it cannot be read."""
+    try:
+        raw = Path(f"/proc/{pid}/cmdline").read_bytes()
+    except OSError:
+        return None
+    return [os.fsdecode(item) for item in raw.split(b"\0") if item]
+
+
+def all_process_cmdlines() -> dict[int, list[str]]:
+    """Every live process's command line, read from one walk of ``/proc``.
+
+    One walk serves all declared services, so a supervision tick pays for one
+    listing rather than one per service. This process is left out: it carries
+    the module's own argv and is not a copy of anything.
+    """
+    cmdlines: dict[int, list[str]] = {}
+    try:
+        entries = os.listdir("/proc")
+    except OSError:
+        return cmdlines
+    me = os.getpid()
+    for entry in entries:
+        if not entry.isdigit():
+            continue
+        pid = int(entry)
+        if pid == me:
+            continue
+        cmdline = process_cmdline(pid)
+        if cmdline:
+            cmdlines[pid] = cmdline
+    return cmdlines
+
+
+def process_runs_service(pid: int, name: str, argv: Sequence[str]) -> bool:
+    """Whether ``pid`` is a process running this service, by its command line.
+
+    A copy's command line is the declared argv once the wrapper has exec'd it,
+    and the wrapper's own argv before that. Either one names the same service,
+    and neither can be inherited by an unrelated process that later reused the
+    pid the way a bare "the process exists" check would mistake for the copy.
+    """
+    cmdline = process_cmdline(pid)
+    if cmdline is None:
+        return False
+    return cmdline == list(argv) or cmdline == service_wrapper_argv(name, argv)
+
+
+def alert(message: str, environ: Mapping[str, str] | None = None) -> Path:
+    """Record an alert where a reader of the fleet sees it, and log it."""
+    state = state_directory(environ)
+    state.mkdir(parents=True, exist_ok=True)
+    path = state / ALERTS_NAME
+    with open(path, "a", encoding="utf-8") as alerts:
+        alerts.write(message + "\n")
+    log(message)
+    return path
 
 
 def next_backoff(delay: float, ran_seconds: float) -> tuple[float, float]:
@@ -1163,6 +1261,10 @@ class _ServiceState:
     next_attempt: float | None = None
     started_at: float | None = None
     last_renewed: float | None = None
+    # Whether this copy's lock file was seen while it ran. A copy just started
+    # has not created it yet, and that is not a vanished file.
+    lock_seen: bool = False
+    lock_missing_reported: bool = False
 
 
 class DeclaredServices:
@@ -1246,9 +1348,13 @@ class DeclaredServices:
                     state.next_attempt = self._clock() + LEASE_RENEW_SECONDS
                     continue
                 pid = recorded_service_pid(self._runtime, name)
-                if pid is not None and lock_held(name, self._runtime):
+                if pid is not None and (
+                    lock_held(name, self._runtime)
+                    or process_runs_service(pid, name, state.argv)
+                ):
                     state.pid = pid
                     state.owned = False
+                    state.lock_seen = True
                     state.started_at = self._clock()
                     state.last_renewed = self._clock()
                     log(f"declared service {name} already running as pid {pid}")
@@ -1291,9 +1397,14 @@ class DeclaredServices:
             lease.release()
             log(f"declared service {name} could not start: {exc}")
             return None
-        service_pid_path(self._runtime, name).write_text(
-            f"{process.pid}\n", encoding="utf-8"
-        )
+        if recorded_service_pid(self._runtime, name) != process.pid:
+            write_service_pid(
+                self._runtime,
+                name,
+                process.pid,
+                _lock_inode(self._runtime, name)
+                or recorded_service_lock_inode(self._runtime, name),
+            )
         log(f"declared service {name} started as pid {process.pid}")
         state = self._states.get(name)
         if state is None:
@@ -1302,6 +1413,8 @@ class DeclaredServices:
         state.argv = list(argv)
         state.pid = process.pid
         state.owned = True
+        state.lock_seen = _lock_inode(self._runtime, name) is not None
+        state.lock_missing_reported = False
         state.started_at = self._clock()
         state.last_renewed = self._clock()
         state.next_attempt = None
@@ -1336,9 +1449,15 @@ class DeclaredServices:
         lease = self._leases.pop(name, None)
         pid_path = service_pid_path(self._runtime, name)
         pid = state.pid if state is not None else None
+        argv = state.argv if state is not None else None
         if pid is None:
             pid = recorded_service_pid(self._runtime, name)
-        if not lock_held(name, self._runtime):
+        running = lock_held(name, self._runtime) or (
+            pid is not None
+            and argv is not None
+            and process_runs_service(pid, name, argv)
+        )
+        if not running:
             pid_path.unlink(missing_ok=True)
             if lease is not None:
                 lease.release()
@@ -1349,7 +1468,9 @@ class DeclaredServices:
         log(f"stopping declared service {name} (pid {pid})")
         signal_worker(pid, signal.SIGTERM, reason="fleet-service-stop")
         deadline = time.monotonic() + SERVICE_STOP_GRACE_SECONDS
-        while lock_held(name, self._runtime):
+        while lock_held(name, self._runtime) or (
+            argv is not None and process_runs_service(pid, name, argv)
+        ):
             if time.monotonic() >= deadline:
                 log(f"declared service {name} did not stop; killing pid {pid}")
                 signal_worker(pid, signal.SIGKILL, reason="fleet-service-stop")
@@ -1382,7 +1503,10 @@ class DeclaredServices:
         """
         now = self._clock() if now is None else now
         with self._guard:
-            for name, state in list(self._states.items()):
+            states = list(self._states.items())
+            cmdlines = all_process_cmdlines() if states else {}
+            for name, state in states:
+                self._stop_extra_copies(name, state, cmdlines)
                 lease = self._leases.get(name)
                 if (
                     state.pid is not None
@@ -1429,10 +1553,11 @@ class DeclaredServices:
         """Whether a copy of the service is still running.
 
         A child this image started is checked by waitpid, which also collects
-        it; the check falls back to the service's lock when another reader has
-        already collected it. The recorded pid alone is never the answer: the
-        lock is what a running copy holds and what the kernel drops when it
-        ends.
+        it. A recorded pid whose command line is this service's is alive whatever
+        the lock file says: the lock is held on an inode, and a lock path that
+        was removed while the copy ran is not an ended service. A lock that is
+        merely free is therefore never read as an exit until the process is gone
+        too, which is what keeps a vanished file from starting a second copy.
         """
         pid = state.pid
         if pid is None:
@@ -1446,8 +1571,89 @@ class DeclaredServices:
                 if reaped == pid:
                     return False
                 if reaped == 0:
+                    self._recorded_process_runs(name, state)
                     return True
+        if self._recorded_process_runs(name, state):
+            return True
         return lock_held(name, self._runtime)
+
+    def _recorded_process_runs(self, name: str, state: _ServiceState) -> bool:
+        """Whether the recorded pid is this service, and report a vanished lock.
+
+        The lock file is checked only to report it: a path that was seen and has
+        since gone is recorded as an alert naming the service once per
+        disappearance, and the running copy is kept rather than restarted. A
+        copy that has not created its lock file yet reports nothing.
+        """
+        pid = state.pid
+        if pid is None:
+            return False
+        if not process_runs_service(pid, name, state.argv):
+            return False
+        lock_path = service_lock_path(self._runtime, name)
+        if lock_path.exists():
+            state.lock_seen = True
+            state.lock_missing_reported = False
+            return True
+        if not state.lock_seen or state.lock_missing_reported:
+            return True
+        state.lock_missing_reported = True
+        alert(
+            f"{_utc_now()} declared service {name} (pid {pid}) is still "
+            f"running but its lock file {lock_path} has vanished; the "
+            "running copy is kept and no second copy is started",
+            self._environ,
+        )
+        return True
+
+    def _stop_extra_copies(
+        self, name: str, state: _ServiceState, cmdlines: Mapping[int, list[str]]
+    ) -> None:
+        """Stop every copy of the service but the recorded one, by pid.
+
+        The list is logged before anything is signalled, so a reader can see
+        what was chosen and what was spared. The recorded copy is kept even when
+        it is not first in the list, and an unrecognised listing changes nothing.
+        """
+        expected = {tuple(state.argv), tuple(service_wrapper_argv(name, state.argv))}
+        # A second declared service may share this argv, and its own copy is not
+        # a duplicate of this one.
+        peers = {
+            recorded_service_pid(self._runtime, other)
+            for other in self._states
+            if other != name
+        }
+        copies = sorted(
+            pid
+            for pid, cmdline in cmdlines.items()
+            if tuple(cmdline) in expected and pid not in peers
+        )
+        if len(copies) <= 1:
+            return
+        recorded = (
+            state.pid
+            if state.pid is not None
+            else recorded_service_pid(self._runtime, name)
+        )
+        keep = recorded if recorded in copies else copies[0]
+        extra = [pid for pid in copies if pid != keep]
+        log(
+            f"declared service {name} has {len(copies)} copies {copies}; "
+            f"keeping pid {keep}; stopping {extra}"
+        )
+        for pid in extra:
+            self._stop_duplicate(name, state.argv, pid)
+
+    def _stop_duplicate(self, name: str, argv: Sequence[str], pid: int) -> None:
+        """Signal one extra copy and wait for it to end, by that pid only."""
+        signal_worker(pid, signal.SIGTERM, reason="fleet-service-duplicate")
+        deadline = time.monotonic() + SERVICE_STOP_GRACE_SECONDS
+        while process_runs_service(pid, name, argv):
+            if time.monotonic() >= deadline:
+                log(f"extra copy of declared service {name} (pid {pid}) did not stop")
+                signal_worker(pid, signal.SIGKILL, reason="fleet-service-duplicate")
+                break
+            time.sleep(SERVICE_POLL_SECONDS)
 
 
 def run_declared_service(
@@ -1476,6 +1682,7 @@ def run_declared_service(
         os.close(descriptor)
         return 1
     os.set_inheritable(descriptor, True)
+    write_service_pid(runtime, name, os.getpid(), os.fstat(descriptor).st_ino)
     os.execvp(argv[0], list(argv))  # noqa: S606 - replaces this image, no shell
     raise AssertionError("execvp returned")
 
