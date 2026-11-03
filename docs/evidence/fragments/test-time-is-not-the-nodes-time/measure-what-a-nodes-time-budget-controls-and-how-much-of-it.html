@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="plan-slug" content="test-time-is-not-the-nodes-time">
+  <title>Measure what a node's time budget controls and what its gates spend | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+<main class="plan-doc">
+
+<h3 id="measure-what-a-nodes-time-budget-controls-and-how-much-of-it-outcome">What the budget controls, and what gates cost</h3>
+
+<p id="measure-what-a-nodes-time-budget-controls-and-how-much-of-it-scan">The
+deadline scan names every path that acts on a node deadline with its file and
+line &mdash; dispatch fence (<code>reckon/crew/node.py:1310</code>), fence
+resolution (<code>reckon/crew/routing.py:500</code>, <code>:511</code>), prompt
+statement and grace (<code>reckon/crew/prompts.py:537</code>, <code>:502</code>,
+<code>:514</code>, stop rule at <code>:946</code>), post-hoc timing
+(<code>reckon/crew/recovery_stream.py:285</code>, <code>:190</code>), the stall
+label (<code>reckon/crew/promotion_scope.py:1038</code>, used at
+<code>reckon/crew/promotion.py:1280</code>) &mdash; and finds
+<code>_apply_budget_watchdog</code> (<code>reckon/crew/recovery_stream.py:359</code>,
+called from <code>reckon/crew/dispatch_sessions.py:337</code>) to be the only path
+that can stop a live worker.</p>
+
+<p id="measure-what-a-nodes-time-budget-controls-and-how-much-of-it-fence">That
+watchdog resolves <code>false</code> for every mounted project, so the budget is a
+soft limit on this host and a worker that cuts its gate short is answering the
+prompt, not an enforcement.</p>
+
+<p id="measure-what-a-nodes-time-budget-controls-and-how-much-of-it-share">Over the
+14 days to 2026-11-03T08:58Z, across 901 implement runs, gates take a median
+<strong>8.4%</strong> of wall time on the clive lane (292 measurable runs) and
+<strong>7.9%</strong> on codex (49 measurable runs). 190 runs had every gate
+duration from a log; 560 runs had no measurable share and 146 showed a visibly
+truncated gate &mdash; all listed by id in
+<a href="/reckon/research/how-much-of-a-node-is-its-gate">How Much Of A Node Is Its Gate</a>.</p>
+
+<p id="measure-what-a-nodes-time-budget-controls-and-how-much-of-it-control">Both
+scanners see a known positive: the deadline scan reports
+<code>_apply_budget_watchdog</code>, and the timing scan reads
+<code>r-20261018T084035535944-a-paired-arm-review-names-its-run</code>'s
+after-arm gate at 543.02 s against the 543 s its own log records.</p>
+
+</main>
+</body>
+</html>
