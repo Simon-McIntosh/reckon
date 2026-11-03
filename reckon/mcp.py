@@ -2593,6 +2593,7 @@ def _crew(
     priority: int | None = None,
     finding: str | None = None,
     acted: bool = False,
+    note: str | None = None,
     declined: str | None = None,
 ) -> dict[str, Any]:
     """Read crew state or perform one recovery action through the crew surface.
@@ -2759,6 +2760,7 @@ def _crew(
             session=session,
             finding=finding,
             acted=acted,
+            note=note,
             declined=declined,
         )
     if action is not None:

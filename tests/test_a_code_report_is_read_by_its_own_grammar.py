@@ -187,6 +187,8 @@ def test_a_bulleted_plan_report_is_admitted_and_its_finding_answerable(section_p
             "--answer",
             "anchors_resolve-1",
             "--acted",
+            "--note",
+            "The fix the finding asked for is recorded in this review.",
         ],
     )
     assert result.exit_code == 0, result.output

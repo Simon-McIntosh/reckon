@@ -691,6 +691,8 @@ def test_a_finding_answered_on_a_stored_record_is_not_named_open(
             "--answer",
             "reasoning-1",
             "--acted",
+            "--note",
+            "The fix the finding asked for is recorded in this review.",
         ],
     )
     assert answered.exit_code == 0, answered.output
@@ -742,7 +744,9 @@ def test_a_carried_answer_keeps_an_earlier_answer_that_names_an_action(
         )
         assert result.exit_code == 0, result.output
 
-    answer("--acted")
+    answer(
+        "--acted", "--note", "The fix the finding asked for is recorded in this review."
+    )
     # A carry hands the finding to a node; it is not a later judgement about
     # the prose, so it must leave the answer already on the record alone. A
     # carry that replaced an acted answer would erase a decision the author

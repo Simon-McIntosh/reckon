@@ -221,67 +221,73 @@ def test_gate_accepts_a_stored_or_delivered_review(project, legacy, stored):
 
 def test_plan_review_in_flight_is_shared_across_sessions(project, monkeypatch):
     subject = _subject()
-    (monkeypatch.setattr(
-        recovery_review_delivery,
-        "list_live",
-        lambda **kw: [
-            {
-                "run_id": "standing-review",
-                "project": "sample",
-                "session": "another-coordinator",
-                "node": {"id": "plan-review-of-fixture"},
-                "phase": "working",
-            }
-        ],
-    ), monkeypatch.setattr(
-        recovery_review_dispatch,
-        "list_live",
-        lambda **kw: [
-            {
-                "run_id": "standing-review",
-                "project": "sample",
-                "session": "another-coordinator",
-                "node": {"id": "plan-review-of-fixture"},
-                "phase": "working",
-            }
-        ],
-    ), monkeypatch.setattr(
-        recovery_repair_dispatch,
-        "list_live",
-        lambda **kw: [
-            {
-                "run_id": "standing-review",
-                "project": "sample",
-                "session": "another-coordinator",
-                "node": {"id": "plan-review-of-fixture"},
-                "phase": "working",
-            }
-        ],
-    ), monkeypatch.setattr(
-        recovery_review_acceptance,
-        "list_live",
-        lambda **kw: [
-            {
-                "run_id": "standing-review",
-                "project": "sample",
-                "session": "another-coordinator",
-                "node": {"id": "plan-review-of-fixture"},
-                "phase": "working",
-            }
-        ],
-    ), monkeypatch.setattr(
-        recovery_watch,
-        "list_live",
-        lambda **kw: [
-            {
-                "run_id": "standing-review",
-                "project": "sample",
-                "session": "another-coordinator",
-                "node": {"id": "plan-review-of-fixture"},
-                "phase": "working",
-            }
-        ],
-    ))
+    (
+        monkeypatch.setattr(
+            recovery_review_delivery,
+            "list_live",
+            lambda **kw: [
+                {
+                    "run_id": "standing-review",
+                    "project": "sample",
+                    "session": "another-coordinator",
+                    "node": {"id": "plan-review-of-fixture"},
+                    "phase": "working",
+                }
+            ],
+        ),
+        monkeypatch.setattr(
+            recovery_review_dispatch,
+            "list_live",
+            lambda **kw: [
+                {
+                    "run_id": "standing-review",
+                    "project": "sample",
+                    "session": "another-coordinator",
+                    "node": {"id": "plan-review-of-fixture"},
+                    "phase": "working",
+                }
+            ],
+        ),
+        monkeypatch.setattr(
+            recovery_repair_dispatch,
+            "list_live",
+            lambda **kw: [
+                {
+                    "run_id": "standing-review",
+                    "project": "sample",
+                    "session": "another-coordinator",
+                    "node": {"id": "plan-review-of-fixture"},
+                    "phase": "working",
+                }
+            ],
+        ),
+        monkeypatch.setattr(
+            recovery_review_acceptance,
+            "list_live",
+            lambda **kw: [
+                {
+                    "run_id": "standing-review",
+                    "project": "sample",
+                    "session": "another-coordinator",
+                    "node": {"id": "plan-review-of-fixture"},
+                    "phase": "working",
+                }
+            ],
+        ),
+        monkeypatch.setattr(
+            recovery_watch,
+            "list_live",
+            lambda **kw: [
+                {
+                    "run_id": "standing-review",
+                    "project": "sample",
+                    "session": "another-coordinator",
+                    "node": {"id": "plan-review-of-fixture"},
+                    "phase": "working",
+                }
+            ],
+        ),
+    )
     result = recovery.dispatch_review_for_run(subject, config=CONFIG)
     assert result["dispatched"] is False
     assert result["review_run_id"] == "standing-review"
@@ -448,7 +454,10 @@ def test_answer_refuses_missing_reason_or_ambiguous_action(project, options):
     "options,action",
     [
         (["--declined", "The existing owner already covers this."], "declined"),
-        (["--acted"], "acted"),
+        (
+            ["--acted", "--note", "The fix the finding asked for is recorded here."],
+            "acted",
+        ),
     ],
 )
 def test_answer_records_response_through_store(project, options, action):

@@ -2545,7 +2545,12 @@ def _run_review(
     elif answer:
         if acted == (declined is not None):
             detail = "--answer requires exactly one of --acted or --declined REASON"
-        elif acted and not str(note or "").strip():
+        elif (
+            acted
+            and str(plan_review._ANSWER_OVERRIDE.get() or "")
+            != plan_review.CARRIED_ACTION
+            and not str(note or "").strip()
+        ):
             # An acted answer is the record of a change, and "acted" alone says
             # nothing about what changed: the next reviewer has to re-derive the
             # fix from the diff and cannot tell a defect it introduced from one

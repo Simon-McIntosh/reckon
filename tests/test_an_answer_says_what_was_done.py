@@ -27,7 +27,7 @@ SKILLS = Path(__file__).resolve().parents[1] / "skills"
 
 #: The skills whose examples this case holds: the three that describe answering
 #: a plan-review finding while building, editing and reviewing a plan.
-ANSWER_SKILLS = ("reckon-build", "reckon-edit", "reckon-review")
+ANSWER_SKILLS = ("reckon-build", "reckon-create", "reckon-edit", "reckon-review")
 
 
 def _store_review() -> None:

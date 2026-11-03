@@ -460,7 +460,9 @@ def test_dry_run_in_report_only_mode_admits_and_carries_the_warning(
     reviewed_project: tuple[Path, Path, Path], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _config_home, repo, _plan_path = reviewed_project
-    monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *args, **kwargs: CONFIG)
+    monkeypatch.setattr(
+        crew_dispatch_commands, "_resolved_flight", lambda *args, **kwargs: CONFIG
+    )
 
     result = CliRunner().invoke(
         cli_module.main,
@@ -677,6 +679,8 @@ def test_an_unanswered_design_finding_stays_owed_past_a_newer_content_review(
             "--answer",
             "reuse-1",
             "--acted",
+            "--note",
+            "The fix the finding asked for is recorded in this review.",
         ],
     )
     assert answered.exit_code == 0, answered.output

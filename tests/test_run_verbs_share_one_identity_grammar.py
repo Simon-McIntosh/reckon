@@ -318,6 +318,8 @@ def test_a_finding_carried_by_two_covering_reviews_is_refused_naming_both(
             "--answer",
             finding,
             "--acted",
+            "--note",
+            "The fix the finding asked for is recorded in this review.",
         ],
     )
     assert result.exit_code != 0, result.output
@@ -345,6 +347,8 @@ def test_review_run_selects_which_covering_review_answers_the_finding(
             "--answer",
             finding,
             "--acted",
+            "--note",
+            "The fix the finding asked for is recorded in this review.",
             "--review-run",
             "r-design-0",
         ],
