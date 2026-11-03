@@ -1,0 +1,46 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-03T01:33:43.114Z",
+  "dispatched_at": "2026-11-03T01:24:49Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-costs-what-changed.html:58",
+      "id": "reasoning-1",
+      "reason": "the node cannot implement the section as written, and the two shapes it could choose instead (wrapper enters the scopes for reads only and write tools own their own entry, or a new close helper that reaches into the private ContextVars) differ in which paths get one boundary, so the write paths, case 1 and case 7 all move with the choice.",
+      "text": "\u00a72 says the scopes are entered inside the executor callable \"around the tool body\", and in the next sentence that \"`edit_plan` closes both scopes before it writes, and any read after the write in the same call opens them afresh\"; but the scope is a `@contextmanager` (`metadata_index.discovery_file_scope`, reckon/metadata_index.py:100-119; `resources.resource_scan_scope`, reckon/resources.py:507-538) whose token is held by whoever entered it, and the body holds no token, so it cannot exit a scope the wrapper opened \u2014 and a re-entry after the write would join the still-open region rather than open afresh, because the scope's documented rule is that \"a nested entry joins the region already open\" (metadata_index.py:105-107) and \"nested scopes share the outermost one\" (resources.py:518). `_edit_plan_tool` does read after the write today (`_review_owed_fields` and `_plan_readiness_fields`, reckon/mcp_edit_plan.py:2247-2255), and `resource_scan_scope`'s own docstring says a resource created inside the scope \"stays invisible until the scope exits\" (resources.py:516-517), so the post-write read returns the pre-write covered observation and the seventh case (\"a read after the write returns the written value\") fails; the same contradiction makes case 1's \"validates the covered tree once\" unmeetable for `edit_plan`, since a close-and-reopen must validate a second time",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "97985df6b7c77b30f295ea7b6e5a7ae17abc02a6",
+  "plan_fingerprint": "c19069cb9016e24c215f3e052cb80a0707585a2b69956ff7b5833933e8fc9c6d",
+  "plan_slug": "a-read-costs-what-changed",
+  "plan_version": 10,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261103T012325894709-plan-review-of-a-read-costs-what-changed",
+  "reviewed_blob_sha": "fec2cd8bbb34200ee4a61f3745b1848bd9ed5bd5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 resources.py:39/507, metadata_index.py:80/362, mcp_deadlines.py:555/367/438-449, mcp.py:2224 and 3688-3720, and tests/test_a_slug_uniqueness_is_one_lookup.py all resolve.",
+    "done_when": "pass \u2014 \u00a72 declares seven measurable cases with three named mutations, and each mutation is tied to the case it must redden; the remaining cases are no-regression checks that need no control.",
+    "evidence_paths": "pass \u2014 \u00a72's evidence is a gate log and the test files it names, not a scratch path.",
+    "naming": "pass \u2014 \u00a72 introduces no plan label, stage name or ticket number; `tests/test_a_request_validates_the_tree_once.py` names what it measures.",
+    "reasoning": "a finding \u2014 the section requires the wrapper to enter both scopes around the whole tool body and requires `edit_plan` to close them before its write, and those two cannot both hold, so its seventh case cannot pass under the stated mechanism.",
+    "single_goal": "pass \u2014 the two bullets (one scope boundary, one covered-walk skip) are one goal, because case 1's stat budget requires both and neither can close alone.",
+    "wiring": "pass \u2014 \u00a72's declared dependents (s3, s4, s6 on s2; s5 and s6 on s3) match the design the section states, and s4's descope records that it folded into \u00a72's boundary."
+  },
+  "section_digests": {
+    "_document": "e06439d77c5c2e04f373383acdf2aaa703f5a4a53fda8efcaf5985936cb46a8e",
+    "s1": "f8fb0fbbfbbc79977a59ec9d78c0d66f47803aa96db83e4d628a1dfb6b40e6c3",
+    "s2": "7fa8ad1b1a019ee5168eb31f221257be0dbb14cc6906822b6b2f7a8781a0bf69",
+    "s3": "d11cdceab942c4935f32d292e26f2111b011ca4571980a6c54ef6ae23894aadb",
+    "s4": "d14b5fa9a6b6ef26da6f95b50c43aa782fdbe679ca28020a3095af71cd579417",
+    "s5": "ba22eff9814ea16ac19404864f9a2d1ec8da449b3011fba623d0d1856b2c6ecf",
+    "s6": "b0053663cc25e5e7e15595ae342d21c4c467abe74f06c8c4db86982b276898cc",
+    "s7": "2c7c6fb207a002d2bb1e223ebf1f770570f6b06942edf9ac6647253b410a67b7"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T01:43:45.683330+00:00"
+}
