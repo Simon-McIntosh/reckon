@@ -70,6 +70,11 @@
     <p>Landed as merge <code>cf392cfbc8</code> of head <code>4fec14bbd0</code>, run <code>r-20261103T012525018363-a-finding-blocks-its-own-section</code>, after two repair rounds. The admit service's landing pass landed it; the coordinator's measurement ran as a post-landing check.</p><ul><li><code>require_plan_reviewed</code> refuses a node only for unanswered findings on the units it builds, or on the document unit.</li><li>A plan-file line anchor resolves through the reviewed snapshot. A source-file anchor resolves to the sections its text names, through <code>section_record_id</code>, so dotted sub-sections and case-folded fragments resolve. A finding that names no section blocks the document unit.</li><li>Finding delivery is multi-valued, through <code>finding_units</code>.</li></ul><p><strong>Measured on the merge candidate</strong> <code>cff4e5e377</code>, on main <code>3d0ed7f149</code>:</p><ul><li>Armed pair: base <code>97985df6b7</code>, with the node's test copied in, failed 8 of 9. The head passed 9 of 9.</li><li>Importer population of <code>reckon.crew.routing</code> and <code>reckon.crew.plan_review</code>: 7 failed, 1 error and 1,401 passed on main, against 7 failed, 1 error and 1,410 passed on the candidate. No failure was added.</li></ul>
   </section>
 
+  <section id="s4-a-review-run-is-promoted-on-its-record">
+    <h2>§4 — A review run is promoted on its record</h2>
+    <p>Landed as merge <code>daeb474a42</code> of head <code>5821e82539</code>, run <code>r-20261103T055147640892-a-review-run-is-promoted-on-its-record</code>.</p><ul><li>A review run is promoted on its stored record: the gate accepts a review run whose record is complete and recognised, without a suite of its own.</li><li>The armed test <code>tests/test_a_review_run_is_promoted_on_its_record.py</code> fails 1 at base and passes 3 at head. The <code>promotion_records</code> importer population on the merge candidate <code>5ea8723950</code> passes 36 at main and 36 at the candidate.</li><li>Three non-blocking review findings were exempted: surplus evidence fields the gate does not read, a small local duplicate of <code>_read_review_record</code>, and no test yet for the recognised-status filter.</li></ul>
+  </section>
+
 </main>
 </body>
 </html>
