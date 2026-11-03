@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s97">
+  <meta name="plan-recorded-at" content="2026-11-02">
+  <title>A starting review is visible | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-starting-review-is-visible-landing" data-node="a-starting-review-is-visible" data-reckon="landed" data-when="2026-11-02">
+  <h2>A review run that has started counts as its subject's review in flight</h2>
+  <p>A composed review is dispatched before it files anything. In that window the store holds no record for it, so <code>review_present</code> read false, the subject's row printed the composed dispatch anyway, and the command came back <code>already starting</code> — the review run existed and no surface named it.</p>
+  <p><code>classify_pointer</code> now asks the reflex's own recogniser (<code>_review_in_flight</code>) whether a review already stands for the run at its current head, and reads that review run's own pointer for its phase. When the phase is starting, queued or working, the row carries <code>review_run_id</code> and <code>review_run_phase</code>, <code>review_present</code> is true, and <code>next_action</code> is the read of that run (<code>reckon crew observe --run &lt;id&gt;</code>) instead of a dispatch. A review whose phase is terminal is not in flight: the store answers for a filed record, and a review that died without one leaves the run owed a review again. The two names join <code>LIVE_CLASSIFICATION_FIELDS</code> in <code>reckon/crew/query.py</code>, so the live view and the pre-flight read one vocabulary. The live view already listed <code>starting</code> pointers; the new test pins that.</p>
+  <p>A view classifying several rows has already read the live pointers, so <code>project_live_rows</code> and the runs view hand that snapshot to <code>classify_pointer</code>, which passes it to the recogniser. Without it the sweep ran once per row and a view over N rows read the directory N more times after its own read; a case counting the reads sees six against one when the snapshot argument is dropped.</p>
+  <p>Narrowing the rows must not narrow what they are classified against. The live view filters by phase and the runs view can be asked for one run, so the review run itself is often not among the rows rendered; whether it stands for its subject is still a fact about the project. Each view now keeps the project's whole live set for classification and renders its narrowed rows from it, reading the directory once per view, and the compact runs row declares <code>review_run_id</code> and <code>review_run_phase</code> so it can report the review it read.</p>
+  <p><code>tests/test_a_starting_review_is_visible.py</code> (9 passed) covers the subject naming its starting review with no dispatch printed, the live view listing the starting review with the subject pointing at it, a subject with no review run still printing the dispatch, the four phases at the edge of in-flight (queued and working count, complete and failed do not), one pointer read for a five-row view, and the two narrowed views still naming the subject's starting review from one read each. Negative controls at <code>EXIT=1</code>: <code>_review_run_in_flight</code> returning <code>("", "")</code> reddens the first two cases, dropping the snapshot argument reddens the read count at six against one, and classifying the narrowed rows instead of the full set reddens the two narrowed-view cases.</p>
+</article>
+</body>
+</html>

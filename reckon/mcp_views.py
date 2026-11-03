@@ -4219,11 +4219,17 @@ def serve_crew_view(
                         "there is nobody to compare against"
                     ),
                 }
-            live_records = [
+            # The project's whole live set, read once. The filters below narrow
+            # which rows this read renders, but a row's classification still
+            # consults the whole set: whether another live run stands as its
+            # review is a fact about the project, and the review run is exactly
+            # what the narrowing drops.
+            project_pointers = [
                 record
                 for record in crew_module.list_live()
                 if str(record.get("project") or "") == project
             ]
+            live_records = project_pointers
             # `phase` and `mine` are the `live` view's two pointer filters: both
             # narrow the pointers themselves, before classification, so the
             # rows that remain are the ones the caller asked for. `mine`
@@ -4247,7 +4253,12 @@ def serve_crew_view(
             # block can answer whether this caller will be told anything.
             # `fields` narrows each row to what was asked for, so a caller
             # reading one fact no longer receives the whole classification.
-            runs = project_live_rows(live_records, fields=fields, session=session)
+            runs = project_live_rows(
+                live_records,
+                fields=fields,
+                session=session,
+                pointers=project_pointers,
+            )
             return {
                 "ok": True,
                 "project": project,
