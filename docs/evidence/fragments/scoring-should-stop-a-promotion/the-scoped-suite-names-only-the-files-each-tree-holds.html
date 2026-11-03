@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="The scoped suite names only the files each tree holds">
+  <meta name="plan-summary" content="A write path is not a file that exists, so one resolution of the scoped suite template named a different file list from each tree: the head command named a test the change deleted and pytest stopped with exit 4 having run nothing, and a pair in which neither arm ran a test read as a clean observation. The command is now resolved over the files each arm's own tree holds, the arm comparison is made against that per-tree resolution of the same template, and an arm left naming no file or that exited having collected none is refused as unmeasured. The behaviour was already present at the base revision; this node verified the done-when against it, reproduced the exit 4 the defect produced, and removed a test helper that had been defined twice.">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-11-03">
+  <meta name="plan-verdict" content="passed">
+  <title>The scoped suite names only the files each tree holds | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The scoped suite names only the files each tree holds</h1>
+
+    <section id="the-scoped-suite-names-only-the-files-each-tree-holds-defect">
+      <h2>The defect</h2>
+      <p>The armed suite declaration is scoped with a placeholder that stood for the node's
+        fence write paths. A write path is not a file that exists: a node that replaces a
+        test deletes one file and creates another, so the same fence names a different file
+        list in the base tree and in the head tree. Resolving it once, over the write paths
+        alone, produced a head command naming a deleted file. Reproduced in a scratch
+        repository holding the head tree — one kept test, the deleted test, the added one —
+        the old command ran nothing:</p>
+      <pre><code>ERROR: file or directory not found: tests/test_deleted.py
+
+no tests ran in 0.00s
+EXIT=4</code></pre>
+      <p>Because the suite delta is computed from failure ids alone, a pair in which neither
+        arm ran a test carried an empty failure list and was credited as a clean
+        observation.</p>
+    </section>
+
+    <section id="the-scoped-suite-names-only-the-files-each-tree-holds-change">
+      <h2>The change</h2>
+      <p><code>_scoped_suite_command</code> in <code>reckon/crew/promotion_records.py</code>
+        takes the revision the command will run against and keeps only the scoped files
+        that revision's tree holds, read from the tree's own object store rather than from a
+        working directory, which is the head's content whichever arm is being resolved. An
+        unanswered probe falls back to the declared scope as written, and the arm-level
+        checks below still refuse a pair that measured nothing.</p>
+      <p>The comparison accepts the per-tree resolution of the same template for each arm,
+        and still accepts the whole-scope spelling a run dispatched before the rule recorded.
+        An after arm left naming no file, or either arm exiting 4 or 5 with no failure,
+        is refused as unmeasured; a base arm whose own tree holds none of the scope's tests
+        is recorded explicitly as an empty baseline rather than refused, because a scope
+        whose tests the change creates has nothing to measure against.</p>
+    </section>
+
+    <section id="the-scoped-suite-names-only-the-files-each-tree-holds-evidence">
+      <h2>Evidence</h2>
+      <p>The node inherited this behaviour at its base revision and verified it rather than
+        reimplementing it: the five cases in
+        <code>tests/test_a_scoped_suite_names_only_present_files.py</code> pass at the base
+        (5 passed, EXIT=0) and after the node's change (5 passed, EXIT=0). The same test
+        file fails against the pre-rule module (5 failed, EXIT=1), so the cases are
+        sensitive to the behaviour they describe.</p>
+      <p>The declared negative control removed the presence check from
+        <code>_scoped_suite_command</code>, resolving over the write paths alone again.
+        Three cases reddened (3 failed, EXIT=1): the per-tree resolution case, the accepted
+        pair, and the collected-nothing refusal, which then reported a missing file rather
+        than a run that collected nothing.</p>
+      <p>The node's own change removes a helper the review of the landing work had flagged
+        as duplicated: <code>_write_suite_manifest</code> was defined twice, the second
+        shadowing the first byte for byte.</p>
+    </section>
+  </main>
+</body>
+</html>
