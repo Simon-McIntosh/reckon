@@ -1,0 +1,74 @@
+<section id="a-review-run-is-promoted-on-its-record-landed" data-reckon-node="a-review-run-is-promoted-on-its-record">
+  <h2 id="a-review-run-is-promoted-on-its-record-heading">A review run promotes on the record it stored</h2>
+  <p id="a-review-run-is-promoted-on-its-record-summary">
+    The hand promotion path required an executable gate command of every role.
+    A review run has none: its deliverable is the record it stores for the run
+    it reads, and its manifest's <code>tests</code> line is a summary of what it
+    did. A review whose record was already on disk was therefore refused with
+    <em>“describes the check rather than running it”</em>, and a coordinator
+    blanked the line by hand each time.
+  </p>
+  <p id="a-review-run-is-promoted-on-its-record-rule">
+    A review-role run now reads the stored record — its status, its findings,
+    its report path — through the same delivery reader the review loop's own
+    self-promotion uses, so the hand path and the automatic path cannot
+    disagree. A delivered record of a recognised status stands as the gate
+    check. A review run with no delivered record keeps the rules it had,
+    because the code-review path stores its record <em>during</em> promotion and
+    has none on disk beforehand. Every other role keeps the executable-gate
+    rule unchanged.
+  </p>
+  <h3 id="a-review-run-is-promoted-on-its-record-cases">Cases held</h3>
+  <table id="a-review-run-is-promoted-on-its-record-table">
+    <thead>
+      <tr><th>Case</th><th>Outcome</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th id="a-review-run-is-promoted-on-its-record-case-promotes">
+          Review run, prose <code>tests</code> line, stored record of a
+          recognised status
+        </th>
+        <td id="a-review-run-is-promoted-on-its-record-case-promotes-out">Promoted as passed, no commits, pointer cleared</td>
+      </tr>
+      <tr>
+        <th id="a-review-run-is-promoted-on-its-record-case-refused">
+          The same run with no stored record
+        </th>
+        <td id="a-review-run-is-promoted-on-its-record-case-refused-out">Refused on the executable-gate rule</td>
+      </tr>
+      <tr>
+        <th id="a-review-run-is-promoted-on-its-record-case-other-roles">
+          Implement run with a prose <code>tests</code> line
+        </th>
+        <td id="a-review-run-is-promoted-on-its-record-case-other-roles-out">Still refused</td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="a-review-run-is-promoted-on-its-record-evidence">Evidence</h3>
+  <ul id="a-review-run-is-promoted-on-its-record-evidence-list">
+    <li id="a-review-run-is-promoted-on-its-record-evidence-after">
+      After arm: 241 passed, 0 failed —
+      <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+      tests/test_a_review_run_is_promoted_on_its_record.py &lt;24 importing test
+      files&gt;</code>.
+    </li>
+    <li id="a-review-run-is-promoted-on-its-record-evidence-baseline">
+      Baseline arm at the base revision over the same importing files: 238
+      passed, 0 failed. The node's test file does not exist at base, so it is
+      dropped from that arm. Added failures: none.
+    </li>
+    <li id="a-review-run-is-promoted-on-its-record-evidence-negative">
+      Negative control: with the review-role branch removed, exactly
+      <code>test_a_review_run_with_a_stored_record_promotes_as_passed</code>
+      fails — the record no longer stands as evidence — and the other two cases
+      still pass.
+    </li>
+    <li id="a-review-run-is-promoted-on-its-record-evidence-lint">
+      <code>ruff check</code> passes on both staged paths. <code>ruff format
+      --check</code> reports the same three hunks in
+      <code>promotion_records.py</code> at the base revision and at this head,
+      so the change adds no format finding.
+    </li>
+  </ul>
+</section>
