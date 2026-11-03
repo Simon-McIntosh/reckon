@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-03T00:03:45.842Z",
+  "dispatched_at": "2026-11-02T23:54:13Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261102T213931926007-a-vanished-lock-starts-no-second-copy/head-importers.log",
+      "id": "f96258ccc33",
+      "line": "4",
+      "severity": "non-blocking",
+      "text": "The importer gate log named in the manifest's test_logs ends mid-progress at 26% with no pytest summary and no EXIT= line, so the 268 passed / 1 failed result it is cited for is not readable from the log; the figures are recoverable only from the worker's stream (resume-1.jsonl carries '1 failed, 268 passed, 1 warning in 355.92s'), and the log is also mislabelled as revision eca23f33d2 while its mtime is the run's own end at 23:28:51Z. Re-run the importer arm to a log that reaches its summary line, since a promotion receipt that reads this path finds an unread status."
+    },
+    {
+      "file": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-vanished-lock-starts-no-second-copy.html",
+      "id": "f53fe226324",
+      "line": "31",
+      "severity": "non-blocking",
+      "text": "The fragment states 'four more tests pass at head than at base', but the counts it gives either side (261 passed at base, 268 passed at head) are seven more passing; four is the number of tests the file gained. Say 'four more tests exist and pass at head, and the three base failures and errors now pass' so the recorded delta matches the numbers beside it."
+    },
+    {
+      "file": "tests/test_a_vanished_lock_starts_no_second_copy.py",
+      "id": "f8480164caa",
+      "line": "308",
+      "severity": "non-blocking",
+      "text": "The case asserts 'new_inode != first_inode' after unlinking and recreating the lock file; a filesystem that reuses the freed inode would red this case on correct code. The assertion it exists to support, recorded_service_lock_inode(...) == new_inode at :317) reads new_inode from the live file, so the guard does not depend on this inequality; deriving an expected differ or skipping when the inode is reused would keep the case stable."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed increment (b4838498fc..138a7a3ff92b) carries no new deliverable; it closes the two findings of the prior review against the section's goal, and reckon/crew/fleet_supervisor.py:1405 now prefers the live lock file's inode and :585 routes the requeue notice through the single alert() helper.\nVERDICT done_when: the section's done-when is the four-case test file, the declared negative control, the untouched real directories, no added importer failure and clean ruff; after.log ends '4 passed in 11.20s' EXIT=0 at eca23f33d2, inode-negative-control.log reds test_a_recreated_lock_file_records_its_new_inode EXIT=1 under the reverted order, and head-importers.log itself carries no summary or EXIT= line so its 268/1 figures come from the worker's stream rather than the named log.\nVERDICT write_paths: the declared paths are reckon/crew/fleet_supervisor.py, tests/test_a_vanished_lock_starts_no_second_copy.py, the evidence fragment and the figures directory; the increment touches exactly the first three and no figure.\nVERDICT manifest: read; it names commits 33dcdfc6ce, b4838498fc, eca23f33d2 and 138a7a3ff9, after_suite 4 passed / exit 0 at eca23f33d2, baseline_suite 4 failure ids at 27dca04b11, and two negative-control logs; after.log, baseline.log and both negative-control logs match its claims, while head-importers.log does not.\nVERDICT diff: read commit by commit against b4838498fc: eca23f33d2 changes 8 lines in fleet_supervisor.py (announce_requeue delegating to alert(), and the inode order swapped at :1405) plus the 38-line fourth case, and 138a7a3ff9 rewrites 21 lines of the evidence fragment; no path outside the declaration.\nCALL_SITES: reckon/crew/fleet_supervisor.py:2338 supervise_loop thread target -> :1547 supervise_loop -> :1495 supervise_once -> :1401 write_service_pid, reckon/crew/fleet_supervisor.py:2303 announce_requeue(environ) in the supervisor entry, reckon/crew/fleet_supervisor.py:1685 the service wrapper's own write_service_pid with fstat inode\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: fleet_supervisor.py:1405 now takes the live lock file's inode with the prior record as fallback, and :585 gives the alerts log one writer, closing both prior findings without changing the section's behaviour.\nSCORE evidence: 15\nJUSTIFICATION evidence: after.log records '4 passed' EXIT=0 at eca23f33d2 and inode-negative-control.log reds the new case EXIT=1, but the named head-importers.log stops at 26% with no summary or EXIT= line so its cited 268 passed figures are unread from that log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff b4838498fc..138a7a3ff9 touches only fleet_supervisor.py, tests/test_a_vanished_lock_starts_no_second_copy.py and the declared evidence fragment.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_vanished_lock_starts_no_second_copy.py:317 compares the recorded inode against lock_path.stat().st_ino and inode-negative-control.log shows it fails under the previous-inode preference, though :308 rests on an inode-reuse assumption.\nSCORE fit: 19\nJUSTIFICATION fit: the increment reuses the module's own alert() at fleet_supervisor.py:859 and the new case follows the file's FakeClock/_wait_for idiom, with no plan or ticket identifier in the source or the commit messages.\nSCORE reuse: 19\nJUSTIFICATION reuse: fleet_supervisor.py:585 replaces the inlined alerts-log append with the module's alert() helper, removing the duplicate writer rather than adding a mechanism.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261102T213931926007-a-vanished-lock-starts-no-second-copy/head-importers.log:4 non-blocking: the named importer gate log ends mid-progress with no summary or EXIT= line, so the 268 passed / 1 failed result is readable only from the worker's stream.\nFINDING docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-vanished-lock-starts-no-second-copy.html:31 non-blocking: 'four more tests pass at head than at base' disagrees with its own 261 -> 268 passing counts, which is seven more.\nFINDING tests/test_a_vanished_lock_starts_no_second_copy.py:308 non-blocking: 'new_inode != first_inode' can flake where the filesystem reuses the freed inode, and the guard at :317 does not depend on it.\n",
+  "review_run_id": "r-20261102T234655941697-review-of-a-vanished-lock-starts-no-second-copy-138a7a3ff92b",
+  "reviewed_base_sha": "b4838498fc280300753dc7b72830ae1ac5be8859",
+  "reviewed_head_sha": "138a7a3ff92b0efb74921493788b7f816b6da06d",
+  "reviewed_run_id": "r-20261102T213931926007-a-vanished-lock-starts-no-second-copy",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T00:11:17.925116+00:00",
+  "total": 110
+}
