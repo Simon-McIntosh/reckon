@@ -82,6 +82,67 @@ def test_shared_slug_cli_exits_nonzero(tmp_path, monkeypatch, capsys):
     assert "research/shared.html" in out
 
 
+def test_bare_audit_refuses_a_research_record_carrying_a_plans_slug(
+    tmp_path, monkeypatch, capsys
+):
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    _write_doc(docs_dir, "shared", "plan", "plans/shared.html")
+    research = _write_doc(docs_dir, "shared", "research", "research/shared.html")
+
+    mounts = tmp_path / "mounts.json"
+    mounts.write_text(json.dumps({"proj": str(docs_dir.resolve())}), encoding="utf-8")
+    monkeypatch.setenv("RECKON_MOUNTS_PATH", str(mounts))
+
+    exit_code = doccheck.main([str(research)])
+
+    out = capsys.readouterr().out
+    assert exit_code == 1, out
+    assert "slug-collision" in out
+    assert "plans/shared.html" in out
+    assert "research/shared.html" in out
+
+
+def test_bare_audit_passes_a_research_record_with_its_own_slug(
+    tmp_path, monkeypatch, capsys
+):
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    _write_doc(docs_dir, "alpha", "plan", "plans/alpha.html")
+    _write_doc(docs_dir, "beta", "research", "research/beta.html")
+
+    mounts = tmp_path / "mounts.json"
+    mounts.write_text(json.dumps({"proj": str(docs_dir.resolve())}), encoding="utf-8")
+    monkeypatch.setenv("RECKON_MOUNTS_PATH", str(mounts))
+
+    research = docs_dir / "research" / "beta.html"
+    exit_code = doccheck.main([str(research)])
+
+    out = capsys.readouterr().out
+    assert exit_code == 0, out
+    assert "slug-collision" not in out
+
+
+def test_bare_audit_falls_back_to_the_declared_project(tmp_path, monkeypatch, capsys):
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    _write_doc(docs_dir, "shared", "plan", "plans/shared.html")
+    outside = tmp_path / "elsewhere" / "research"
+    outside.mkdir(parents=True)
+    research = _write_doc(outside, "shared", "research", "shared.html")
+
+    mounts = tmp_path / "mounts.json"
+    mounts.write_text(json.dumps({"proj": str(docs_dir.resolve())}), encoding="utf-8")
+    monkeypatch.setenv("RECKON_MOUNTS_PATH", str(mounts))
+
+    exit_code = doccheck.main([str(research)])
+
+    out = capsys.readouterr().out
+    assert exit_code == 1, out
+    assert "slug-collision" in out
+    assert "plans/shared.html" in out
+
+
 def test_unique_slugs_produce_no_collision(tmp_path, monkeypatch, capsys):
     docs_dir = tmp_path / "docs"
     docs_dir.mkdir()

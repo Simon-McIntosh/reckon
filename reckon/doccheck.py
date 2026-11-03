@@ -2760,16 +2760,15 @@ def _declared_project(path: Path) -> str:
     if not path.is_file():
         return ""
     try:
-        text = _plan_html._read_plan_text(path)
+        project = _plan_html.parse_plan(path).get("project")
     except OSError:
         return ""
-    meta = BeautifulSoup(text, "html.parser").find(
-        "meta", attrs={"name": "docs-project"}
-    )
-    return ((meta.get("content") if meta else "") or "").strip()
+    return (project or "").strip()
 
 
-def _collision_context(path: Path, project: str | None) -> tuple[str, Path] | None:
+def _collision_context(
+    path: Path, project: str | None, mounts: Mapping[str, Path]
+) -> tuple[str, Path] | None:
     """Resolve the project and docs root the slug-collision check reads.
 
     The collision check compares the audited document against every resource in
@@ -2779,7 +2778,6 @@ def _collision_context(path: Path, project: str | None) -> tuple[str, Path] | No
     document under a mounted tree skips the check entirely and passes a
     colliding slug.
     """
-    mounts = _load_mounts()
     if project is not None:
         docs_dir = mounts.get(project)
         return (project, docs_dir) if docs_dir and docs_dir.is_dir() else None
@@ -2815,8 +2813,9 @@ def run(
     # supplies the key and docs root, so a bare per-file audit still catches a
     # slug a plan and another resource type share.
     collision_findings: dict[Path, list[Finding]] = {}
+    mounts = _load_mounts()
     for p in path_objs:
-        context = _collision_context(p, project)
+        context = _collision_context(p, project, mounts)
         if context is None:
             continue
         key, docs_dir = context
