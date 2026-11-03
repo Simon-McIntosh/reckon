@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-03T00:39:34.038Z",
+  "dispatched_at": "2026-11-03T00:31:12Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:58",
+      "id": "reasoning-1",
+      "reason": "a worker applying the constant as stated drops figure rows from the metadata index and changes the discovery change signature, a regression that none of \u00a72's six cases or two negative controls exercises because they never place a figure in the tree.",
+      "text": "\u00a72 makes `covered_name` and the covered walk read `resources.INFRA_DIRS` and stop descending into those directories, but that constant contains `figures` (reckon/resources.py:39-48) while the covered set is defined as every HTML file plus the figure images under the top-level figures directory (`_FIGURE_DIR = \"figures\"`, reckon/metadata_index.py:80, and `covered_name` at :362-375), so the rule as written removes `docs/figures/**` from the covered set and from discovery's counted set",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:58",
+      "id": "reasoning-2",
+      "reason": "the deliverable must name the worker-thread callable as the scope entry point (or copy the context into the executor call), otherwise the boundary has no effect and the node only discovers it after its gate fails.",
+      "text": "\u00a72 says `mcp_deadlines._deadline_tool` \"enters `discovery_file_scope` and `resource_scan_scope` once around the tool body\", but that wrapper runs every body on a worker thread via `loop.run_in_executor` (reckon/mcp_deadlines.py:365-367, `_run_under_deadline` at :438-449), and both scopes are ContextVar-based (metadata_index.py:100-120, resources.py:507-535); `run_in_executor` does not copy the context, so a scope opened in the async entry is empty inside the body (reproduced: a ContextVar set before `run_in_executor` reads its default in the body, while `asyncio.to_thread` reads the set value)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:86",
+      "id": "wiring-1",
+      "reason": "a coordinator or worker reading the followup dispatches \u00a75 in parallel with \u00a72 against a declared dependency and plans work for a \u00a74 that will never be built.",
+      "text": "followup f-arcwc-001 still reads \"\u00a72 and \u00a75 start at once; \u00a73 and \u00a74 follow \u00a72; \u00a76 follows \u00a72, \u00a73 and work-is-never-stuck-behind-the-admission-loop \u00a719; \u00a77 follows all five\", while `plan-section-depends-on` now descopes s4 (folded into \u00a72), adds s5 \u2192 s3, and leaves s7 with s2, s3, s5 and s6",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "b37c778b4a0c99d92905ae08722ef27be1e35d82",
+  "plan_fingerprint": "b65deefc529c37eb90c4988cdf876d03bb57263f241d2ecb666b482fcb1a6b20",
+  "plan_slug": "a-read-costs-what-changed",
+  "plan_version": 9,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261103T002957649577-plan-review-of-a-read-costs-what-changed",
+  "reviewed_blob_sha": "5c794deb3282e90db3cd22dfedb122bf0e0ca8c9",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves at the stated place: `reckon/metadata_index.py` 100, 362, 1521, 1616, 1805; `reckon/resources.py` 39, 507; `reckon/mcp_deadlines.py` 555; `reckon/mcp.py` 2224 and the 3688\u20133720 registration block; `reckon/_plan_html.py` 1579 and `_structural_spans` at 394; `reckon/serve.py` 1632; `reckon/_store.py` 2419; `reckon/project_state.py` 1590; `reckon/crew/plan_review.py` 445, 465, 877, 899; and both cited test files exist.",
+    "done_when": "pass \u2014 each implementable section (s2, s3, s5, s6, s7) states countable measures and names negative controls that fail the case each is paired with, and the base-revision comparison is recorded rather than assumed.",
+    "evidence_paths": "pass \u2014 \u00a77 writes its log under the run's `logs/` and its fragments under `docs/evidence/fragments/a-read-costs-what-changed/`, and no section sends evidence to a session scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 the new test names describe what they demonstrate (`test_a_request_validates_the_tree_once`, `test_a_persisted_answer_carries_its_code_version`, `test_a_one_plan_read_composes_one_plan`, `test_an_admission_pass_reads_each_project_once`), no section name, stage label, ticket number or version tag reaches a symbol or comment, and no section carries changelog prose.",
+    "reasoning": "two findings \u2014 \u00a72 reuses `resources.INFRA_DIRS` as the rule that \"this directory holds no documents\", but that set also contains `figures`, so the rule as written drops the figure images the covered set includes; and \u00a72 names the async deadline entry as the point where the request scope is opened, while the tool body executes on a fresh-context worker thread that never sees a ContextVar set there.",
+    "single_goal": "pass \u2014 s2, s3, s5, s6 and s7 each carry one goal (one boundary for every read; a persisted parse carrying its parser's version; a one-plan read composing one plan; every hot path reading through the memo; five seconds on the real store); \u00a72's two bullets and \u00a76's four changes are mechanisms of that one goal, not independent deliverables.",
+    "wiring": "a finding \u2014 the followup body still reads \"\u00a72 and \u00a75 start at once; \u00a73 and \u00a74 follow \u00a72 \u2026 \u00a77 follows all five\", while the declarations now descope s4, make s5 depend on s3, and give s7 four prerequisites."
+  },
+  "section_digests": {
+    "_document": "e06439d77c5c2e04f373383acdf2aaa703f5a4a53fda8efcaf5985936cb46a8e",
+    "s1": "f8fb0fbbfbbc79977a59ec9d78c0d66f47803aa96db83e4d628a1dfb6b40e6c3",
+    "s2": "c749510536332f8698e221a01a71f694cd6865d113ae5db27d419da988eb3f9e",
+    "s3": "d11cdceab942c4935f32d292e26f2111b011ca4571980a6c54ef6ae23894aadb",
+    "s4": "d14b5fa9a6b6ef26da6f95b50c43aa782fdbe679ca28020a3095af71cd579417",
+    "s5": "ba22eff9814ea16ac19404864f9a2d1ec8da449b3011fba623d0d1856b2c6ecf",
+    "s6": "b0053663cc25e5e7e15595ae342d21c4c467abe74f06c8c4db86982b276898cc",
+    "s7": "2c7c6fb207a002d2bb1e223ebf1f770570f6b06942edf9ac6647253b410a67b7"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T01:02:14.418249+00:00"
+}
