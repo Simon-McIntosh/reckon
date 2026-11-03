@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": "reckon/cli.py:552, reckon/doccheck.py:2889",
+  "completed_at": "2026-11-03T08:35:55.649Z",
+  "dispatched_at": "2026-11-03T08:28:44Z",
+  "findings": [
+    {
+      "id": "f03d6fd137e",
+      "severity": "blocking",
+      "text": "tests/test_doccheck_slug_collision.py:59 blocking: the landed change carries no committed test. The only guard is /tmp/reckon-crew-scratch/r-20261103T073250723891-a-research-or-evidence-document-cannot-carry-a-plans-slug/test_default_audit_slug_collision.py, which dies with the run's scratch, so nothing in the repository fails if _collision_context is removed and the collision check silently stops firing again."
+    },
+    {
+      "id": "f036d90323d",
+      "severity": "non-blocking",
+      "text": "reckon/doccheck.py:2758 non-blocking: _declared_project re-reads the docs-project meta from a path, a read that reckon/_plan_html.py:1372 already exposes as parse_plan(path)[\"project\"]; the second implementation can drift from the parser it mirrors."
+    },
+    {
+      "id": "fbd431f39af",
+      "severity": "non-blocking",
+      "text": "reckon/doccheck.py:2818 non-blocking: _load_mounts() is now called once per audited path inside the loop rather than once per run, so a bare audit of many documents re-reads and re-parses mounts.json N times."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against base 327ce7a6: 0d7db2ae adds _declared_project and _collision_context and rewrites the collision loop in reckon/doccheck.py; d060a1bd adds only the landing fragment; 64 insertions, 10 deletions across two files.",
+    "done_when": "the done_when names a test that finds audit-doc refusing the colliding record and passing an own-slug one plus a negative control and a base/head suite pair; the manifest's gate ran exactly that and logs/evidence-base.log, evidence-head.log, evidence-neg.log, suite-base.log and suite-head.log record each arm with a revision header and an EXIT= line.",
+    "goal": "the node goal is that a research or evidence document cannot carry a plan's slug; reckon/doccheck.py:2818-2825 now resolves a project per document so a bare audit reaches slug_collision_findings, which is the goal's mechanism.",
+    "manifest": "the manifest states status complete, commits 0d7db2ae0e71 and d060a1bdc2, the four evidence/suite logs, and itself records under outside_scope and rubric.tests-in-repo that the evidence test is not committed.",
+    "write_paths": "the declared write paths are reckon/doccheck.py and the node's landing fragment under docs/evidence/fragments/the-crew-does-its-own-bookkeeping/; every path in the diff is one of those two, but the plan section \u00a712 also declares 'the new test' and the dispatch's fence omitted it."
+  },
+  "justifications": {
+    "durability": "no test file in the diff; the only guard is /tmp/reckon-crew-scratch/r-20261103T073250723891-a-research-or-evidence-document-cannot-carry-a-plans-slug/test_default_audit_slug_collision.py, which the run's scratch removal deletes.",
+    "evidence": "the gate command in the manifest drove the bare-audit test at both revisions, and logs/evidence-base.log (1 failed, 1 passed, EXIT=1) and logs/evidence-head.log (2 passed, EXIT=0) record the result rather than claiming it.",
+    "fit": "reckon/doccheck.py:2772 follows the module's private-helper idiom and docstring style and adds no plan, section or ticket identifier.",
+    "goal_fidelity": "reckon/doccheck.py:2818 resolves a project per document so run reaches slug_collision_findings for a bare audit, and the head arm at logs/evidence-head.log shows the colliding record refused.",
+    "reuse": "reckon/doccheck.py:2758 re-reads a docs-project meta that reckon/_plan_html.py:1372 already exposes as parse_plan(path)[\"project\"], a small duplicated read rather than a new capability.",
+    "scope_discipline": "the diff at d060a1bd touches only reckon/doccheck.py and the node's own landing fragment, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a research or evidence document cannot carry a plan's slug; reckon/doccheck.py:2818-2825 now resolves a project per document so a bare audit reaches slug_collision_findings.\nVERDICT done_when: the done_when names a test finding audit-doc refusing the colliding record and passing an own-slug one, a negative control and a base/head suite pair; logs/evidence-base.log, evidence-head.log, evidence-neg.log, suite-base.log and suite-head.log record each arm with a revision header and an EXIT= line.\nVERDICT write_paths: the declared paths are reckon/doccheck.py and the landing fragment; every path in the diff is one of those two, though plan section 12 also declares 'the new test' and the dispatch fence omitted it.\nVERDICT manifest: read; it states status complete, commits 0d7db2ae0e71 and d060a1bdc2, the five logs, and itself records under outside_scope that the evidence test is not committed.\nVERDICT diff: read commit by commit against base 327ce7a6; 0d7db2ae adds _declared_project and _collision_context and rewrites the collision loop, d060a1bd adds the landing fragment, 64 insertions and 10 deletions in two files.\nCALL_SITES: reckon/cli.py:552, reckon/doccheck.py:2889\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/doccheck.py:2818 resolves a project per document so run reaches slug_collision_findings for a bare audit, and logs/evidence-head.log shows the colliding record refused.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate command in the manifest drove the bare-audit test at both revisions, and logs/evidence-base.log (1 failed, 1 passed, EXIT=1) and logs/evidence-head.log (2 passed, EXIT=0) record the result.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff at d060a1bd touches only reckon/doccheck.py and the node's own landing fragment, both inside the declared write paths.\nSCORE durability: 4\nJUSTIFICATION durability: no test file in the diff; the only guard is the run-scratch file test_default_audit_slug_collision.py, which the run's scratch removal deletes.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/doccheck.py:2772 follows the module's private-helper idiom and adds no plan, section or ticket identifier.\nSCORE reuse: 12\nJUSTIFICATION reuse: reckon/doccheck.py:2758 re-reads a docs-project meta that reckon/_plan_html.py:1372 already exposes as parse_plan(path)[\"project\"].\nFINDING tests/test_doccheck_slug_collision.py:59 blocking: the landed change carries no committed test; the only guard lives in the run's scratch and dies with it.\nFINDING reckon/doccheck.py:2758 non-blocking: _declared_project duplicates the docs-project read that reckon/_plan_html.py:1372 already exposes.\nFINDING reckon/doccheck.py:2818 non-blocking: _load_mounts() is called once per audited path rather than once per run.\n",
+  "review_run_id": "r-20261103T081407226111-review-of-a-research-or-evidence-document-cannot-carry-a-plans-slug-d060a1bdc29d",
+  "reviewed_base_sha": "327ce7a6bbd9bb2db4f178ec00aadbc1262c11cc",
+  "reviewed_head_sha": "d060a1bdc29d968943687893bdfe12d04f2db75f",
+  "reviewed_run_id": "r-20261103T073250723891-a-research-or-evidence-document-cannot-carry-a-plans-slug",
+  "scores": {
+    "durability": 4,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 12,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T09:50:47.308659+00:00",
+  "total": 91
+}
