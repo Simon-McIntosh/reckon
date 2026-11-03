@@ -439,6 +439,11 @@ EXIT=0</pre>
     <p>Landed as merge <code>ed68902fba</code> of head <code>3ae6f9f9f7</code>, run <code>r-20261102T215409121985-a-starting-review-is-visible</code>, after three repair rounds.</p><ul><li>A review run that names a subject and is starting, queued or working counts as that subject's review in flight. The subject's row names the review run and its phase and prints no dispatch command.</li><li>Every view (the live view, the narrowed MCP view and the runs view) takes the project's full live set once and passes it to each row. A narrowed view still recognises the review, with one pointer listing per view.</li><li>The coordinator widened the run's claim to <code>reckon/mcp_views.py</code>, which the worker's fence prevented it from doing.</li></ul><p><strong>Measured on the merge candidate</strong> <code>0a0b9019d1</code>, on main <code>d5d8d8709c</code>:</p><ul><li>Armed pair: base <code>7982557bec</code>, with the node's test copied in, failed 8 of 9. The head passed 9 of 9.</li><li>Importer population of <code>reckon.crew.recovery_classification</code>, <code>reckon.crew.query</code> and <code>reckon.mcp_views</code>: 1 failed, 902 passed on main, against 1 failed, 911 passed on the candidate. No failure was added.</li></ul>
   </section>
 
+  <section id="s102-a-promoted-run-owes-no-promotion">
+    <h2>§102 — A promoted run owes no promotion</h2>
+    <p>Landed as merge <code>8dfcb8ecfa</code> of head <code>4431f940b7</code>, run <code>r-20261103T052920940353-a-promoted-run-owes-no-promotion</code>, by the admit service's automatic landing pass after the code review filed no blocking finding.</p><ul><li><code>review-ready</code> and <code>promotable-stale</code> join <code>LIVE_POINTER_DUTY_KINDS</code>, so <code>without_departed_run_duties</code> drops a promotion duty whose run's pointer is gone, whether it was promoted or discarded.</li><li><code>tests/test_a_promoted_run_owes_no_promotion.py</code> covers the four cases the section names; a <code>review-missing</code> row for a gone pointer is still listed.</li><li>Two non-blocking review findings were exempted: the suite fields name only the new file, and the coordinator measures the importer population itself; the discard case's hook-string assertion duplicates the view assertion.</li></ul>
+  </section>
+
 </main>
 </body>
 </html>
