@@ -1,0 +1,96 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The reviewed node is suite-unarmed: its manifest declares tests: none (no test file in its write scope) and carries no baseline_suite or after_suite arm, so no gate-log pair exists from which an added failure id could be derived. Zero is read from the absence of any suite arm, not from a green run.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-03T08:37:14.228Z",
+  "dispatched_at": "2026-11-03T08:24:05Z",
+  "findings": [
+    {
+      "file": "scripts/gate_share_of_run_time.py",
+      "id": "f98bf6d55fc",
+      "line": 1,
+      "severity": "blocking",
+      "text": "the new file adds seven ruff findings (EXE001, UP035, FURB162, RUF021, SIM114, PERF401, W292) and fails ruff format --check under ruff 0.16.4, the version uv.lock pins, against reckon/AGENTS.md's rule that a commit adds no findings; it also carries an unused module constant _TRUNCATION_FLAGS at :48."
+    },
+    {
+      "file": "scripts/gate_share_of_run_time.py",
+      "id": "f5bc1307cfc",
+      "line": 239,
+      "severity": "non-blocking",
+      "text": "_log_seconds re-implements reckon/crew/promotion_gate.py:508 _recorded_gate_seconds and drops its preserved-log fallback, so a released log reads as unmeasurable where the owner still finds a duration."
+    },
+    {
+      "file": "scripts/gate_share_of_run_time.py",
+      "id": "f7771a2d718",
+      "line": 155,
+      "severity": "non-blocking",
+      "text": "_bash_calls_with_timing reads only the message dialect, returning zero bash calls on every codex stream (measured 100 vs 0 and 134 vs 0 against reckon/shadow_reads.py:66); codex events carry no timestamp, so the lane cannot yield a tool-call gate and section 6 does not say so."
+    },
+    {
+      "file": "docs/research/how-much-of-a-node-is-its-gate.html",
+      "id": "f2afbd545e7",
+      "line": 62,
+      "severity": "non-blocking",
+      "text": "the stated instant 07:56:55Z is the scan's completion time while the corpus window ends at 07:51:45, the since and until stamps in the payload it cites."
+    },
+    {
+      "file": "docs/research/how-much-of-a-node-is-its-gate.html",
+      "id": "ff556db1afd",
+      "line": 67,
+      "severity": "non-blocking",
+      "text": "one command is said to produce every figure, but the section 1 fence table comes from --fences and the section 3 control from --control-run, and neither invocation is named."
+    },
+    {
+      "file": "docs/evidence/fragments/test-time-is-not-the-nodes-time/measure-what-a-nodes-time-budget-controls-and-how-much-of-it.html",
+      "id": "fe4c8fea905",
+      "line": 34,
+      "severity": "non-blocking",
+      "text": "the window is stated as the 14 days to 2026-11-03T08:58Z against a payload read_at of 07:56:55Z and a window ending 07:51:45; 08:58 is a local clock reading stamped Z."
+    },
+    {
+      "file": "docs/research/how-much-of-a-node-is-its-gate.html",
+      "id": "f6f4259fc3f",
+      "line": 96,
+      "severity": "non-blocking",
+      "text": "the timing control compares the scanner's read of gate-after.log with that same log's text, so it cannot fail on a duration error."
+    },
+    {
+      "file": "docs/research/how-much-of-a-node-is-its-gate.html",
+      "id": "f86ab77a6d9",
+      "line": 32,
+      "severity": "non-blocking",
+      "text": "two citations are one line off: prompts.py:502 is the docstring of _continuation_multiple (def at 501) and dispatch_sessions.py:337 is blank, the call being at :338."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production module imports the added script; it is a module-level entry point run with python -m.",
+    "diff": "two commits, 682 insertions, three files: the research document, the script and the landing fragment.",
+    "done_when": "the per-lane table, the by-id lists, the resolved fence and both controls are present, and every figure reconciles with out/gate-share.json and out/fences.json; I re-ran the 543.02 s control myself.",
+    "goal": "the goal is to measure what a node's time budget controls and how much gates spend; docs/research/how-much-of-a-node-is-its-gate.html:26-39 answers the first half by file and line and :105-109 the second by lane.",
+    "manifest": "read the reviewed manifest; status complete, tests: none, negative_control_log: none, and its 901/560/146 figures reconcile with the payload.",
+    "write_paths": "the manifest declares four paths and git diff --stat c941de7658..916b9c8c48 shows exactly three files changed, all inside them."
+  },
+  "node": "review-of-measure-what-a-nodes-time-budget-controls-and-how-much-of-it-916b9c8c4808",
+  "node:reviewed": "measure-what-a-nodes-time-budget-controls-and-how-much-of-it",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to measure what a node's time budget controls and how much of it the gates spend; docs/research/how-much-of-a-node-is-its-gate.html:26-39 answers the first half with a deadline-path table whose every cited line I resolved in the reviewed tree, and :105-109 answers the second with a per-lane gate-share table.\nVERDICT done_when: the done_when's table columns, by-id lists, resolved watchdog fence and both positive controls are present, and the figures reconcile with the stored payload: out/gate-share.json gives clive 737 runs / 7.16% over 143 / 8.35% over 292 / fallback 0.431 and codex 164 / 7.89 over 47 / 7.89 over 49 / 0.024, and out/fences.json holds 18 projects all resolving false.\nVERDICT write_paths: the manifest declares docs/research/how-much-of-a-node-is-its-gate.html, scripts/gate_share_of_run_time.py, the landing fragment and a figures directory; git diff --stat c941de7658..916b9c8c48 lists exactly the first three, and the figures directory is unused.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T072523194588-measure-what-a-nodes-time-budget-controls-and-how-much-of-it/manifest.md; it states status complete, tests: none, negative_control_log: none, and its 901-run, 560-unmeasurable and 146-truncated figures reconcile with the payload at out/gate-share.json.\nVERDICT diff: read both commits against base c941de7658 - 5dbf6b0455 adds the research document (134 lines) and the script (499 lines), 916b9c8c48 adds the 49-line fragment, 682 insertions and no other file.\nCALL_SITES: none\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: docs/research/how-much-of-a-node-is-its-gate.html:35 names _apply_budget_watchdog as the only acting path and :52 resolves the fence false for all 18 mounted projects, which is the goal's first half, while :107 carries the second half's per-lane share.\nSCORE evidence: 15\nJUSTIFICATION evidence: the document's figures reproduce exactly from out/gate-share.json and its 543.02 s control reproduces when re-run, but scripts/gate_share_of_run_time.py:155 cannot read any codex stream so the codex fallback and background zeros rest on an unstated structural limit, and docs/research/how-much-of-a-node-is-its-gate.html:67 names a command for only one of the three figures groups.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat c941de7658..916b9c8c48 changes only docs/research/how-much-of-a-node-is-its-gate.html, scripts/gate_share_of_run_time.py and the landing fragment, all inside the four declared paths.\nSCORE durability: 4\nJUSTIFICATION durability: no test covers scripts/gate_share_of_run_time.py and the node is suite-unarmed, so nothing reddens if the join or the median regresses; the only check is the one-shot control at docs/research/how-much-of-a-node-is-its-gate.html:96, which compares the scanner's read of gate-after.log with that same log's text and therefore cannot fail on a duration error.\nSCORE fit: 8\nJUSTIFICATION fit: scripts/gate_share_of_run_time.py:1 is a new file that adds seven ruff findings and fails ruff format --check at the 0.16.4 the lock pins, against reckon/AGENTS.md's rule that a commit adds no findings; its names and structure otherwise follow the surrounding scripts.\nSCORE reuse: 5\nJUSTIFICATION reuse: scripts/gate_share_of_run_time.py:239 re-implements reckon/crew/promotion_gate.py:508 _recorded_gate_seconds and drops its preserved-log fallback, and :155 re-reads streams beside reckon/shadow_reads.py:66 stream_tool_calls, which already owns both dialects; the module docstring at :17-22 claims both owners as reused.\nFINDING scripts/gate_share_of_run_time.py:1 blocking: the new file adds seven ruff findings (EXE001, UP035, FURB162, RUF021, SIM114, PERF401, W292) and fails ruff format --check under ruff 0.16.4, the version uv.lock pins, so the commit adds findings where reckon/AGENTS.md requires none; it also carries an unused module constant _TRUNCATION_FLAGS at :48 that nothing reads.\nFINDING scripts/gate_share_of_run_time.py:239 non-blocking: _log_seconds re-implements reckon/crew/promotion_gate.py:508 _recorded_gate_seconds - same read, same _GATE_LOG_DURATION.findall, same last-match float - and drops the owner's preserved-log fallback, so a gate whose worktree log was released reports unmeasurable where the owner would still find a duration.\nFINDING scripts/gate_share_of_run_time.py:155 non-blocking: _bash_calls_with_timing parses only the message/content dialect, so it returns zero calls on every codex stream (measured: r-20261020T112748325543 gives 100 bash calls through reckon/shadow_reads.py:66 and 0 here, r-20261103T064034359291 gives 134 and 0); codex item events carry no timestamp key at all, so the codex lane is structurally unable to yield a tool-call gate, and docs/research/how-much-of-a-node-is-its-gate.html:120-130 never says so, leaving the codex fallback and background zeros readable as observations.\nFINDING docs/research/how-much-of-a-node-is-its-gate.html:62 non-blocking: the stated measurement instant 2026-11-03T07:56:55Z is the scan's completion time while the corpus window ends at 07:51:45, the since and until stamps in the payload it cites, so a reader cannot tell which instant the counts belong to.\nFINDING docs/research/how-much-of-a-node-is-its-gate.html:67 non-blocking: the command given is said to produce every figure below, but the section 1 fence table comes from --fences (out/fences.json) and the section 3 control from --control-run, and neither invocation is named anywhere, though the done_when requires the command for every figure.\nFINDING docs/evidence/fragments/test-time-is-not-the-nodes-time/measure-what-a-nodes-time-budget-controls-and-how-much-of-it.html:34 non-blocking: the fragment states the window as the 14 days to 2026-11-03T08:58Z, but the payload records read_at 07:56:55.586892+00:00 and a window ending 07:51:45; 08:58 is a local (UTC+1) clock reading of a file write stamped as Z, a 61-minute overstatement of the window end.\nFINDING docs/research/how-much-of-a-node-is-its-gate.html:96 non-blocking: the timing control is not independent of the value under test - it compares the scanner's read of gate-after.log with that same log's own text, so it proves the join found the file, not that the duration extraction is right; a control that could fail would compare that log's duration with the foreground tool-call span of the same gate.\nFINDING docs/research/how-much-of-a-node-is-its-gate.html:32 non-blocking: two citations in the file-and-line table resolve one line off the construct they name - prompts.py:502 is the docstring of _continuation_multiple whose def is at :501, and the watchdog call cited at dispatch_sessions.py:337 is on the blank line before the call at :338.",
+  "review_run_id": "r-20261103T080457426850-review-of-measure-what-a-nodes-time-budget-controls-and-how-much-of-it-916b9c8c4808",
+  "reviewed_base_sha": "c941de76581355bc73970d0d90b47ca6a88aeacf",
+  "reviewed_head_sha": "916b9c8c480855059f43de8644290961eafcc626",
+  "reviewed_run_id": "r-20261103T072523194588-measure-what-a-nodes-time-budget-controls-and-how-much-of-it",
+  "scores": {
+    "durability": 4,
+    "evidence": 15,
+    "fit": 8,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T09:55:02.027581+00:00",
+  "total": 69
+}
