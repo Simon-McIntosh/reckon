@@ -1,0 +1,29 @@
+<article class="r-landing" id="an-answer-says-what-was-done">
+  <h3 id="an-answer-says-what-was-done-title">An answer says what was done</h3>
+  <p id="an-answer-says-what-was-done-body">
+    <code>reckon crew review --answer &lt;id&gt; --acted</code> now requires
+    <code>--note "&lt;what changed&gt;"</code>, and the MCP answer action takes the
+    same note as <code>note</code>. The note is stored on the finding's response,
+    read back by <code>plan_review._stored_response</code>, and printed by the next
+    review brief in place of a bare <code>-&gt; acted</code>, so a reviewer reads
+    what the fix changed instead of re-deriving it from the diff. Every
+    acted-answer example in the build, edit and review skills names the note.
+  </p>
+  <p id="an-answer-says-what-was-done-measure">
+    <strong>Measure.</strong> <code>tests/test_an_answer_says_what_was_done.py</code>:
+    5 passed. The declared controls both go red: dropping the requirement fails
+    <code>test_an_acted_answer_without_a_note_is_refused</code> (EXIT=1), and
+    restoring one skill example without <code>--note</code> fails
+    <code>test_every_skill_example_of_an_acted_answer_shows_the_note</code> (EXIT=1).
+  </p>
+  <p id="an-answer-says-what-was-done-open">
+    <strong>Open.</strong> Fifteen cases in eight pre-existing test files answer
+    findings with <code>--acted</code> and no note, so they now fail on the
+    intended refusal. Those files are outside this node's write scope and the
+    scope widen is refused by the read-only run lock, so the node is blocked on
+    a scope extension (see the manifest's <code>blockers</code>).
+    <code>reckon/mcp.py</code>'s <code>_crew</code> signature and
+    <code>skills/reckon-create/SKILL.md</code> need the same one-line change and
+    are likewise outside the scope.
+  </p>
+</article>
