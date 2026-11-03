@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Measure how much of an implement run's wall time its gates spend.
 
 A run's gates are found in two places and joined. Cited log paths
@@ -31,9 +30,10 @@ import shlex
 import statistics
 import sys
 from collections import defaultdict
+from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any
 
 from reckon import flight, ledger
 from reckon.crew import promotion_gate
@@ -41,11 +41,6 @@ from reckon.crew.reports import parse_manifest
 from reckon.crew.runs import run_dir
 from reckon.shadow_reads import stream_tool_calls
 
-_GATE_COMMAND = re.compile(
-    r"\b(pytest|py\.test|ctest|nosetests)\b|\bgate[_./-]|\bgates?\.sh\b",
-    re.IGNORECASE,
-)
-_TRUNCATION_FLAGS = (" -x", " --maxfail", "timeout ")
 _PARTIAL_COUNT = re.compile(r"\b(\d+) of (\d+)\b")
 _STREAM_GLOBS = ("stream.jsonl", "resume-*.jsonl", "attempt-*.jsonl")
 
@@ -55,7 +50,7 @@ def _stamp(value: Any) -> datetime | None:
     if not text:
         return None
     try:
-        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(text)
     except ValueError:
         return None
     return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
@@ -76,8 +71,25 @@ def _stream_paths(run_id: str) -> list[Path]:
 
 
 _NON_RUNNERS = frozenset(
-    {"grep", "rg", "cat", "head", "tail", "less", "sed", "awk", "find", "ls",
-     "echo", "git", "ruff", "which", "command", "test", "wc"}
+    {
+        "grep",
+        "rg",
+        "cat",
+        "head",
+        "tail",
+        "less",
+        "sed",
+        "awk",
+        "find",
+        "ls",
+        "echo",
+        "git",
+        "ruff",
+        "which",
+        "command",
+        "test",
+        "wc",
+    }
 )
 
 
@@ -90,13 +102,15 @@ def _is_gate_command(command: str) -> bool:
     optional ``timeout N``, name a test runner or the run's own gate script.
     """
     tokens = _tokens(command)
-    if tokens and Path(tokens[0]).name in {"bash", "sh"} and any(
-        t in {"-c", "-lc"} for t in tokens[1:2]
+    if (
+        tokens
+        and Path(tokens[0]).name in {"bash", "sh"}
+        and any(t in {"-c", "-lc"} for t in tokens[1:2])
     ):
         tokens = _tokens(tokens[-1])
     index = 0
     while index < len(tokens) and (
-        "=" in tokens[index] and not tokens[index].startswith("-")
+        ("=" in tokens[index] and not tokens[index].startswith("-"))
         or tokens[index] in {"env", "cd", "nohup", "time", "exec", "bash", "-lc", "-c"}
         or tokens[index].startswith("-")
     ):
@@ -153,7 +167,9 @@ def _bash_calls_with_timing(run_id: str) -> list[dict[str, Any]]:
                 if not isinstance(event, Mapping):
                     continue
                 message = event.get("message")
-                content = message.get("content") if isinstance(message, Mapping) else None
+                content = (
+                    message.get("content") if isinstance(message, Mapping) else None
+                )
                 if not isinstance(content, list):
                     continue
                 when = _stamp(event.get("timestamp"))
@@ -180,13 +196,20 @@ def _bash_calls_with_timing(run_id: str) -> list[dict[str, Any]]:
                         if entry is not None and entry["end"] is None:
                             entry["end"] = when
                             text = block.get("content")
-                            if isinstance(text, str) and "running in background" in text:
+                            if (
+                                isinstance(text, str)
+                                and "running in background" in text
+                            ):
                                 entry["background"] = True
     result = []
     for call_id in order:
         entry = calls[call_id]
         start, end = entry["start"], entry["end"]
-        seconds = (end - start).total_seconds() if start is not None and end is not None else None
+        seconds = (
+            (end - start).total_seconds()
+            if start is not None and end is not None
+            else None
+        )
         result.append(
             {
                 "command": entry["command"],
@@ -236,18 +259,15 @@ def _cited_logs(record: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[
     return out
 
 
-def _log_seconds(path: Path) -> float | None:
-    try:
-        text = path.read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return None
-    matches = promotion_gate._GATE_LOG_DURATION.findall(text)
-    if not matches:
-        return None
-    try:
-        return float(matches[-1])
-    except ValueError:
-        return None
+def _log_seconds(run_id: str, path: Path) -> float | None:
+    """The duration a cited gate log records, reusing the promotion reader.
+
+    ``_recorded_gate_seconds`` reads the cited path and, when it cannot, the
+    copy promotion preserves under the run directory, so a run whose worktree
+    was released still carries a duration. Reading it here rather than
+    open-coding the pattern keeps one definition of "the runner's duration".
+    """
+    return promotion_gate._recorded_gate_seconds(run_id, {"log_path": str(path)})
 
 
 def _partial_test_count(path: Path) -> bool:
@@ -274,17 +294,15 @@ def _truncation_markers(commands: Iterable[str], logs: Iterable[Path]) -> list[s
             continue
         tokens = _tokens(command)
         joined = " ".join(tokens)
-        if tokens and Path(tokens[0]).name == "timeout":
-            markers.append("timeout")
-        elif " timeout " in f" {joined}":
+        if (
+            tokens and Path(tokens[0]).name == "timeout"
+        ) or " timeout " in f" {joined}":
             markers.append("timeout")
         if "-x" in tokens or any(t.startswith("--exitfirst") for t in tokens):
             markers.append("-x")
         if any(t.startswith("--maxfail") for t in tokens):
             markers.append("--maxfail")
-    for log in logs:
-        if _partial_test_count(log):
-            markers.append("partial test count")
+    markers.extend("partial test count" for log in logs if _partial_test_count(log))
     return sorted(set(markers))
 
 
@@ -293,12 +311,26 @@ def measure_run(record: Mapping[str, Any]) -> dict[str, Any]:
     manifest = _manifest_of(record)
     logs = _cited_logs(record, manifest)
     calls = _bash_calls_with_timing(run_id)
-    stream_commands = [text for kind, text in stream_tool_calls(_stream_paths(run_id)) if kind == "bash"]
+    stream_commands = [
+        text
+        for kind, text in stream_tool_calls(_stream_paths(run_id))
+        if kind == "bash"
+    ]
+    # A codex stream records each shell call as a completed item with no
+    # timestamp, so its calls are visible to the stream reader but carry no
+    # span. Reporting that as "no tool-call timing" keeps it distinct from a
+    # run that simply made no gate call.
+    if calls:
+        tool_call_timing = "timestamped"
+    elif stream_commands:
+        tool_call_timing = "none: streams carry no timestamps"
+    else:
+        tool_call_timing = "no tool calls"
 
     gates: list[dict[str, Any]] = []
     joined_call_ids: set[int] = set()
     for log in logs:
-        seconds = _log_seconds(log)
+        seconds = _log_seconds(run_id, log)
         gates.append(
             {
                 "source": "log",
@@ -331,7 +363,9 @@ def measure_run(record: Mapping[str, Any]) -> dict[str, Any]:
     wall = record.get("wall_seconds")
     measured = [g["seconds"] for g in gates if g["seconds"] is not None]
     unmeasured = [g for g in gates if g["seconds"] is None]
-    all_from_logs = bool(gates) and all(g["source"] == "log" and g["seconds"] is not None for g in gates)
+    all_from_logs = bool(gates) and all(
+        g["source"] == "log" and g["seconds"] is not None for g in gates
+    )
     measurable = bool(gates) and not unmeasured and wall
     fallback_used = any(g["source"] == "tool-call" for g in gates)
     truncated = _truncation_markers(stream_commands, logs)
@@ -353,6 +387,7 @@ def measure_run(record: Mapping[str, Any]) -> dict[str, Any]:
         "unmeasurable": not measurable,
         "truncated": truncated,
         "background": any(g["background"] for g in gates),
+        "tool_call_timing": tool_call_timing,
         "wall_covers_attempts": _wall_covers_attempts(record),
     }
 
@@ -382,7 +417,9 @@ def _wall_covers_attempts(record: Mapping[str, Any]) -> bool | None:
     finished = _stamp(record.get("completed_at"))
     if started is None or finished is None:
         return None
-    return min(stamps) >= started - timedelta(seconds=5) and max(stamps) <= finished + timedelta(seconds=5)
+    return min(stamps) >= started - timedelta(seconds=5) and max(
+        stamps
+    ) <= finished + timedelta(seconds=5)
 
 
 def _median(values: list[float]) -> float | None:
@@ -414,7 +451,9 @@ def summarise(results: list[dict[str, Any]]) -> dict[str, Any]:
             by_lane[entry["lane"] or "unknown"].append(entry)
     table = []
     for lane, entries in sorted(by_lane.items()):
-        all_log = [e["share"] for e in entries if e["all_from_logs"] and e["share"] is not None]
+        all_log = [
+            e["share"] for e in entries if e["all_from_logs"] and e["share"] is not None
+        ]
         every = [e["share"] for e in entries if e["share"] is not None]
         table.append(
             {
@@ -425,11 +464,23 @@ def summarise(results: list[dict[str, Any]]) -> dict[str, Any]:
                 "median_measurable": _median(every),
                 "measurable_runs": len(every),
                 "fallback_share": (
-                    round(sum(1 for e in entries if e["fallback_used"]) / len(entries), 3)
+                    round(
+                        sum(1 for e in entries if e["fallback_used"]) / len(entries), 3
+                    )
                     if entries
                     else None
                 ),
-                "unmeasurable": sorted(e["run_id"] for e in entries if e["unmeasurable"]),
+                "tool_call_timing": {
+                    "no_timestamps": sum(
+                        1 for e in entries if e["tool_call_timing"].startswith("none")
+                    ),
+                    "no_calls": sum(
+                        1 for e in entries if e["tool_call_timing"] == "no tool calls"
+                    ),
+                },
+                "unmeasurable": sorted(
+                    e["run_id"] for e in entries if e["unmeasurable"]
+                ),
                 "truncated": sorted(e["run_id"] for e in entries if e["truncated"]),
                 "background": sorted(e["run_id"] for e in entries if e["background"]),
                 "wall_misses_attempts": sorted(
@@ -462,16 +513,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--now", default=None, help="ISO instant the window ends at")
     parser.add_argument("--project", action="append", default=None)
     parser.add_argument("--json", default=None, help="write the full result here")
-    parser.add_argument("--control-run", default=None, help="report one run's own gate seconds")
-    parser.add_argument("--fences", action="store_true", help="report the resolved watchdog fence")
+    parser.add_argument(
+        "--control-run", default=None, help="report one run's own gate seconds"
+    )
+    parser.add_argument(
+        "--fences", action="store_true", help="report the resolved watchdog fence"
+    )
     args = parser.parse_args(argv)
 
     now = _stamp(args.now) or datetime.now(UTC)
     if args.control_run:
-        record = _control_record(args.control_run)
-        entry = measure_run(record)
-        print(json.dumps(entry, indent=2))
-        return 0
+        return _report_control(args.control_run)
     if args.fences:
         print(json.dumps(_watchdog_fences(), indent=2))
         return 0
@@ -479,11 +531,77 @@ def main(argv: list[str] | None = None) -> int:
     projects = args.project or sorted(flight.mounted_project_docs())
     results = [measure(project, days=args.days, now=now) for project in projects]
     summary = summarise(results)
-    payload = {"read_at": datetime.now(UTC).isoformat(), "summary": summary, "projects": results}
+    payload = {
+        "read_at": datetime.now(UTC).isoformat(),
+        "summary": summary,
+        "projects": results,
+    }
     print(json.dumps(summary, indent=2))
     if args.json:
         Path(args.json).write_text(json.dumps(payload, indent=2), encoding="utf-8")
     return 0
+
+
+_BRACKET_DURATION = re.compile(r"\((\d+):(\d{2}):(\d{2})\)")
+
+
+def _bracket_seconds(path: Path) -> float | None:
+    """The h:mm:ss figure a runner prints beside its seconds summary.
+
+    It is a second, independently formatted field of the same log line, so a
+    scanner that read the wrong number (a test count, a date) would disagree
+    with it rather than agree with itself.
+    """
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    matches = _BRACKET_DURATION.findall(text)
+    if not matches:
+        return None
+    hours, minutes, seconds = matches[-1]
+    return int(hours) * 3600 + int(minutes) * 60 + int(seconds)
+
+
+def _report_control(run_id: str) -> int:
+    """Show the timing scanner agreeing with an independent figure, or failing.
+
+    The scanned figure comes from the runner's ``in N s`` summary; the
+    comparison is the ``(h:mm:ss)`` field the same log prints beside it. Two
+    differently formatted fields must agree within 5%, so the control can fail.
+    """
+    record = _control_record(run_id)
+    entry = measure_run(record)
+    manifest = _manifest_of(record)
+    logs = _cited_logs(record, manifest)
+    findings = []
+    ok = True
+    for log in logs:
+        scanned = _log_seconds(run_id, log)
+        independent = _bracket_seconds(log)
+        if scanned is None or independent is None:
+            continue
+        delta = abs(scanned - independent) / independent if independent else 1.0
+        within = delta <= 0.05
+        ok = ok and within
+        findings.append(
+            {
+                "log": str(log),
+                "scanned_seconds": scanned,
+                "independent_bracket_seconds": independent,
+                "relative_delta": round(delta, 5),
+                "within_5pct": within,
+            }
+        )
+    if not findings:
+        ok = False
+    print(
+        json.dumps(
+            {"run_id": run_id, "run": entry, "control": findings, "passes": ok},
+            indent=2,
+        )
+    )
+    return 0 if ok else 1
 
 
 def _control_record(run_id: str) -> dict[str, Any]:
@@ -492,7 +610,11 @@ def _control_record(run_id: str) -> dict[str, Any]:
         for row in reversed(rows):
             if row.get("run_id") == run_id:
                 return {**row, "_project": project}
-    return {"run_id": run_id, "manifest_path": str(run_dir(run_id) / "manifest.md"), "wall_seconds": None}
+    return {
+        "run_id": run_id,
+        "manifest_path": str(run_dir(run_id) / "manifest.md"),
+        "wall_seconds": None,
+    }
 
 
 if __name__ == "__main__":
