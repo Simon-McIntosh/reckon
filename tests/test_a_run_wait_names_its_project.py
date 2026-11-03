@@ -311,6 +311,41 @@ def test_an_unreadable_registry_leaves_the_wait_unresolved(
     assert len(reads) == 1, "an unreadable registry is read once for the whole pass"
 
 
+def test_both_readers_report_the_same_unreadable_registry(
+    projects: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """One registry, one reader, one verdict: both callers name the same failure.
+
+    The wait derivation and the promoted-record scan both resolve a run through
+    the mounted ledgers, and only some writers recorded the project beside the
+    ref, so both readers meet the registry. A registry that could not be read
+    must not read as "no project holds this run" through one reader while it
+    reads as a re-read through the other: that is the difference between a
+    coordinator dropping work and re-running it.
+    """
+    from reckon import flight
+
+    reads: list[int] = []
+
+    def unreadable() -> dict[str, Path]:
+        reads.append(1)
+        raise flight.FlightConfigError("mounts.json", "projects", "unreadable")
+
+    monkeypatch.setattr(flight, "mounted_project_docs", unreadable)
+
+    project, failure = queue_admission.wait_project_lookup(
+        "r-a", owner_project=PROJECT, live=[]
+    )
+    assert project == ""
+    assert failure, "the derivation reports the registry it could not read"
+    assert len(reads) == 1, "one derivation reads the registry once"
+
+    reported: list[str] = []
+    assert runs._promoted_record_project("r-a", None, failures=reported) is None
+    assert reported == [failure], "both readers name the same failure"
+    assert len(reads) == 2, "one read per derivation, not per run scanned"
+
+
 def test_the_registry_is_read_only_when_a_wait_names_a_run(
     projects: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
 ) -> None:

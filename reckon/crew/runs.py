@@ -1760,24 +1760,42 @@ def recorded_promoted_acknowledgements(
     return records
 
 
-def _mounted_project_roots(project: str | None) -> dict[str, Path]:
-    """Each mounted project's checkout root, keyed by project name.
+def _mounted_project_roots_and_failure(
+    project: str | None,
+) -> tuple[dict[str, Path], str]:
+    """Each mounted project's checkout root, and why the registry went unread.
 
     A promoted run's record lives beside the project it was promoted for, and
     the mount registry is what resolves a project name to a checkout from
     outside it. The optional ``project`` narrows the search to one registry
     entry; an unknown name resolves to no root rather than a guess.
+
+    A registry that names nothing and one that could not be read both resolve
+    to no root, and they are not the same fact: the first says no mounted
+    project holds the run, the second says this lookup failed and a later one
+    may succeed. The failure is returned rather than swallowed so a caller can
+    tell them apart instead of reporting the first for the second.
     """
     from reckon import flight
 
     try:
         mounted = flight.mounted_project_docs()
-    except flight.FlightConfigError:
-        return {}
+    except flight.FlightConfigError as exc:
+        return {}, str(exc) or type(exc).__name__
     if project is not None:
         docs = mounted.get(str(project))
-        return {str(project): docs.parent.resolve()} if docs is not None else {}
-    return {name: docs.parent.resolve() for name, docs in mounted.items()}
+        return ({str(project): docs.parent.resolve()} if docs is not None else {}), ""
+    return {name: docs.parent.resolve() for name, docs in mounted.items()}, ""
+
+
+def _mounted_project_roots(project: str | None) -> dict[str, Path]:
+    """Each mounted project's checkout root, keyed by project name.
+
+    Callers that only need the roots treat an unreadable registry as naming no
+    project; one that must report the difference calls
+    :func:`_mounted_project_roots_and_failure` instead.
+    """
+    return _mounted_project_roots_and_failure(project)[0]
 
 
 def _promoted_record_project(
@@ -1785,6 +1803,7 @@ def _promoted_record_project(
     project: str | None,
     *,
     roots: Mapping[str, Path] | None = None,
+    failures: list[str] | None = None,
 ) -> str | None:
     """Name the project whose run store holds a promoted run's record.
 
@@ -1798,11 +1817,18 @@ def _promoted_record_project(
     checkout root. A caller resolving several runs hands the same mapping to
     every lookup so the registry is parsed once, and one registry it could not
     read is reported as an empty mapping rather than re-read per run. Omitted,
-    the registry is read here as before.
+    the registry is read here, and ``failures`` then collects the reason it
+    could not be read, so a caller can report a failed lookup as a failed
+    lookup rather than as a run nothing holds.
     """
     from reckon import ledger
 
-    mounted = _mounted_project_roots(project) if roots is None else dict(roots)
+    if roots is None:
+        mounted, failure = _mounted_project_roots_and_failure(project)
+        if failure and failures is not None:
+            failures.append(failure)
+    else:
+        mounted = dict(roots)
     for name, root in sorted(mounted.items()):
         try:
             path = ledger.run_path(name, run_id, root)

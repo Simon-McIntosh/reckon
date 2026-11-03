@@ -1765,17 +1765,21 @@ MountView = tuple[Mapping[str, Path] | None, str]
 def _mount_view() -> MountView:
     """Read the mount registry once: each project's tree root, or the failure.
 
-    The roots are the same ones a promotion resolves a run's record through, so
-    a caller hands this mapping to :func:`_promoted_record_project` rather than
-    letting it read the registry again per run.
+    The roots are the same ones a promotion resolves a run's record through, and
+    they are resolved by that owner rather than re-derived here: a caller hands
+    this mapping to :func:`_promoted_record_project` rather than letting it read
+    the registry again per run, and the two readers of one registry cannot then
+    disagree about what an unreadable one means.
     """
-    try:
-        from reckon import flight
+    from reckon.crew import runs as runs_module
 
-        docs = flight.mounted_project_docs()
+    try:
+        roots, failure = runs_module._mounted_project_roots_and_failure(None)
     except Exception as exc:  # noqa: BLE001 - the failure is the value reported
         return None, f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__
-    return {str(name): path.parent.resolve() for name, path in docs.items()}, ""
+    if failure:
+        return None, failure
+    return roots, ""
 
 
 def wait_project_lookup(
