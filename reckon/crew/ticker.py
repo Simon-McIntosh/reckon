@@ -3173,14 +3173,14 @@ class Ticker:
         key = (group, project)
         if key not in self._paced_groups:
             self._paced_groups[key] = group_is_paced(group, project)
-        job = elide(_job_name(group, event.get("role")), NODE)
-        room = self._grid_width() - CLOCK - GAP - ROLE - GAP - len(job) - GAP - tail
+        job = _job_name(group, event.get("role"))
+        room = self._grid_width() - CLOCK - GAP - ROLE - GAP - NODE - GAP - tail
         cells: list[tuple[str, Any]] = [
             (f"{local_clock(event.get('observed_at')):<{CLOCK}}", "dim"),
             (" " * GAP, None),
             (f"{LIMIT_STAGE:<{ROLE}}", "dim"),
             (" " * GAP, None),
-            (job, self.hue(group)),
+            (f"{self._job_cell(job, LIMIT_STAGE, group, ''):<{NODE}}", self.hue(group)),
             (" " * GAP, None),
             (elide(limit_reset_text(event, paced=self._paced_groups[key]), room), None),
             (" " * GAP, None),

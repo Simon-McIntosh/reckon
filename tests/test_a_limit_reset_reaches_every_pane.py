@@ -191,8 +191,7 @@ def test_an_orchestrator_reset_says_continue_and_opens_no_worker_lane(tmp_path):
     transition it said nothing — ``limit claude-orchestrators new → working`` —
     so a session stopped at the limit was never told to continue. The row is
     the instruction instead, and it closes by naming what it did not release:
-    the worker lanes keep their own limits, which is the reading that once had
-    to be corrected to thirteen sessions by hand.
+    a worker-lane group must not read as freeing a lane it never named.
     """
     (tmp_path / "flight.yaml").write_text(HOST_LAYER)
     _announce(group=ORCHESTRATOR_GROUP, clock="five_hour")
@@ -205,7 +204,7 @@ def test_an_orchestrator_reset_says_continue_and_opens_no_worker_lane(tmp_path):
     assert rendered.split()[1] == ticker.LIMIT_STAGE, rendered
     assert ORCHESTRATOR_GROUP in rendered, rendered
     assert "limits reset" in rendered, rendered
-    assert "continue" in rendered, rendered
+    assert "orchestrator sessions continue" in rendered, rendered
     assert "worker lanes keep their limits" in rendered, rendered
     assert "new → working" not in rendered, rendered
 

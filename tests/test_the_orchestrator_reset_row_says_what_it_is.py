@@ -132,8 +132,9 @@ def test_the_recorded_orchestrator_reset_row_says_what_it_is(tmp_path: Path):
         assert "limits reset" in rendered, rendered
         assert GROUP in rendered, rendered
         assert CLOCK in rendered, rendered
-        assert ticker.RESET_ORCHESTRATOR_INSTRUCTION in rendered, rendered
-        assert ticker.RESET_WORKER_LANE_CLAUSE in rendered, rendered
+        assert (
+            "orchestrator sessions continue; worker lanes keep their limits" in rendered
+        ), rendered
         assert "new → working" not in rendered, rendered
         assert "→" not in rendered, f"a reset row carries no transition: {rendered}"
 
@@ -164,7 +165,9 @@ def test_a_reset_with_no_reason_still_says_what_it_asks(tmp_path: Path):
     row = lift_watch._reset_row(PROJECTS[0], detected, moment=NOW)
     for rendered in _rendered(row):
         assert "limits reset" in rendered, rendered
-        assert ticker.RESET_ORCHESTRATOR_INSTRUCTION in rendered, rendered
+        assert (
+            "orchestrator sessions continue; worker lanes keep their limits" in rendered
+        ), rendered
         assert "announced by" not in rendered, rendered
 
 
@@ -217,7 +220,7 @@ def test_a_worker_lanes_reset_claims_nothing_about_orchestrator_sessions():
     for rendered in _rendered(_reset(LANE_GROUP)):
         assert "limits reset" in rendered, rendered
         assert LANE_GROUP in rendered, rendered
-        assert ticker.RESET_LANE_INSTRUCTION in rendered, rendered
+        assert "worker lanes keep their limits" in rendered, rendered
         assert "orchestrator" not in rendered, rendered
 
 
@@ -234,9 +237,11 @@ def test_a_config_declaring_no_group_names_no_lane(tmp_path: Path, monkeypatch):
     assert ticker.group_is_paced(LANE_GROUP) is None
     assert ticker.group_is_paced(GROUP) is None
     for rendered in _rendered(_reset(GROUP)):
-        assert ticker.RESET_NEUTRAL_INSTRUCTION in rendered, rendered
-        assert ticker.RESET_ORCHESTRATOR_INSTRUCTION not in rendered, rendered
-        assert ticker.RESET_WORKER_LANE_CLAUSE in rendered, rendered
+        assert (
+            "sessions stopped at the usage limit continue; worker lanes keep "
+            "their limits" in rendered
+        ), rendered
+        assert "orchestrator sessions continue" not in rendered, rendered
 
 
 def test_the_row_stays_on_one_line_at_the_panes_minimum_width():
