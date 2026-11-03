@@ -1,0 +1,83 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:3270",
+    "reckon/crew_follow_commands.py:3506",
+    "reckon/crew/recovery_watch.py:2443",
+    "reckon/crew/ticker.py:3052",
+    "reckon/crew/lift_watch.py:308"
+  ],
+  "completed_at": "2026-11-03T08:57:37.694Z",
+  "dispatched_at": "2026-11-03T08:48:07Z",
+  "findings": [
+    {
+      "file": "tests/test_the_orchestrator_reset_row_says_what_it_is.py",
+      "line": "135",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion compares the rendered row against `ticker.RESET_ORCHESTRATOR_INSTRUCTION`, the same module constant the renderer composes the row from at reckon/crew/ticker.py:318-320, so both sides move together and the assertion passes whatever wording the constant holds; the same shape recurs at :167, :220 and :237-239, so a change that emptied or reversed the instruction would leave these green."
+    },
+    {
+      "file": "tests/test_a_limit_reset_reaches_every_pane.py",
+      "line": "208",
+      "severity": "non-blocking",
+      "text": "non-blocking: `assert \"continue\" in rendered` is satisfied by the base revision's own row, which printed `orchestrator sessions may continue` (logs/reproduction-base.log), so this line does not fail on the regression the new case exists to catch; only :207's `limits reset` and :209's `worker lanes keep their limits` discriminate."
+    },
+    {
+      "file": "tests/test_every_module_fits_a_worker_window.py",
+      "line": "69",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done-when states this file passes at head and it fails at both arms naming five modules over the token bound (reckon/crew/dispatch.py 51632, plan_review.py 70614, queue_admission.py 54432, runs.py 52413, roadmap.py 52669), so a coordinator reading the done-when as met would mistake a pre-existing red file for a green gate; the manifest reports it under outside_scope, which is the right disposition but does not make the done-when true."
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "3183",
+      "severity": "non-blocking",
+      "text": "non-blocking: the reset row's job cell is `elide(_job_name(group, event.get(\"role\")), NODE)`, unpadded and without `_job_cell`, so the clause starts at column 34 for `claude-sub` and 44 for `claude-orchestrators` while every fleet row and the adjacent `_lift_line` at :3224 pad the job cell to NODE and start their next cell at a fixed column \u2014 the docstring at :3157 claims the row \"lines up with the fleet rows above and beneath it\" and it does not."
+    },
+    {
+      "file": "tests/test_a_limit_reset_reaches_every_pane.py",
+      "line": "194",
+      "severity": "non-blocking",
+      "text": "non-blocking: the test docstring justifies the clause by an incident count (\"the reading that once had to be corrected to thirteen sessions by hand\"), a transient RCA reference in code the naming rules keep out of docstrings because it means nothing without the tracker entry; the mechanism \u2014 a worker-lane group must not read as freeing a lane it never named \u2014 states the same reason and stands alone."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read both commits against e43d47a8cb \u2014 five files, 146 insertions and 52 deletions; the product change moves the instruction out of lift_watch._reset_detail and composes it once in ticker.limit_reset_text, adds a stage and job cell to the reset row, and supersedes the surviving \"may continue\" assertions.",
+    "done_when": "the done-when names a follower-driven test over one recorded claude-orchestrators reset, a base/head arm with no added failure, both arms from run-scratch checkouts at `-n 8`, and that tests/test_every_module_fits_a_worker_window.py passes at head; tests/test_a_limit_reset_reaches_every_pane.py:187 is that test and the arms are logged at logs/base-node-suite.log and logs/head-node-suite.log, but the module-window claim is false at head \u2014 that file fails at both arms with the same five out-of-scope module ids.",
+    "goal": "the node's goal is that a reset row tells orchestrator sessions to continue and opens no worker lane; reckon/crew/ticker.py:315-322 now closes every reset row with `worker lanes keep their limits` and gives the orchestrator wallet `orchestrator sessions continue; worker lanes keep their limits` alongside a `limits reset` headline, which is the goal's wording.",
+    "manifest": "read; status is complete, it records both commits ec65874c93 and 90c8167f15, the literal gate command, seven log paths including the red negative control, both arms' baseline_suite/after_suite JSON with one identical failure id on each, and it states the out-of-enumerated-fence test edit in evidence_inputs rather than hiding it.",
+    "write_paths": "read the dispatch's FENCE \u2014 SCOPE and plan \u00a79's own write-path clause; the diff touches reckon/crew/ticker.py, reckon/crew/lift_watch.py, tests/test_a_limit_reset_reaches_every_pane.py, tests/test_the_orchestrator_reset_row_says_what_it_is.py and the evidence fragment, and tests/test_the_orchestrator_reset_row_says_what_it_is.py is the one path the dispatch's enumerated fence omits, which \u00a79 grants as \"any other test asserting the superseded row, named from the failure ids\"."
+  },
+  "justifications": {
+    "durability": "tests/test_a_limit_reset_reaches_every_pane.py:207 and :209 assert the literals `limits reset` and `worker lanes keep their limits`, which the base revision's row does not print and which logs/negative-control.log shows reddening when the reset branch is removed, but five assertions in tests/test_the_orchestrator_reset_row_says_what_it_is.py compare the output to the same module constant the renderer builds it from.",
+    "evidence": "logs/base-node-suite.log and logs/head-node-suite.log both carry 1 failed / 16 and 17 passed with the identical id tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window, so the delta is zero, but \u00a79's explicit \"tests/test_every_module_fits_a_worker_window.py passes at head\" is false at head and the node suite ran without the `-n 8` the done-when names.",
+    "fit": "the change follows reckon/crew/ticker.py's own constant-and-clause idiom and carries no plan label or ticket reference, but reckon/crew/ticker.py:3154-3158 claims the row \"lines up with the fleet rows\" and it does not, and tests/test_a_limit_reset_reaches_every_pane.py:194 cites an incident count in a docstring.",
+    "goal_fidelity": "reckon/crew/ticker.py:318-322 gives the orchestrator wallet `orchestrator sessions continue; worker lanes keep their limits` and :317 gives the worker lane `worker lanes keep their limits`, against a headline of `limits reset` at :315.",
+    "reuse": "reckon/crew/ticker.py:3176-3183 rebuilds the leading cells by hand and calls `elide(_job_name(...), NODE)` where the adjacent reckon/crew/ticker.py:3224-3227 already owns that cell as `self._job_cell(...)` padded to NODE, so the padding and the middle-cut are both dropped rather than extended.",
+    "scope_discipline": "every path in the diff is inside plan \u00a79's write-path grant including the added test, but tests/test_the_orchestrator_reset_row_says_what_it_is.py sits outside the dispatch's enumerated FENCE \u2014 SCOPE list, so `reckon crew check` flags the delivery the manifest already predicted."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a reset row tells orchestrator sessions to continue and opens no worker lane; reckon/crew/ticker.py:315-322 now closes every reset row with `worker lanes keep their limits` and gives the orchestrator wallet `orchestrator sessions continue; worker lanes keep their limits` alongside a `limits reset` headline, which is the goal's wording.\nVERDICT done_when: the done-when names a follower-driven test over one recorded claude-orchestrators reset, a base/head arm with no added failure, both arms from run-scratch checkouts at `-n 8`, and that tests/test_every_module_fits_a_worker_window.py passes at head; tests/test_a_limit_reset_reaches_every_pane.py:187 is that test and the arms are logged at logs/base-node-suite.log and logs/head-node-suite.log, but the module-window claim is false at head \u2014 that file fails at both arms with the same five out-of-scope module ids.\nVERDICT write_paths: read the dispatch's FENCE \u2014 SCOPE and plan \u00a79's own write-path clause; the diff touches reckon/crew/ticker.py, reckon/crew/lift_watch.py, tests/test_a_limit_reset_reaches_every_pane.py, tests/test_the_orchestrator_reset_row_says_what_it_is.py and the evidence fragment, and tests/test_the_orchestrator_reset_row_says_what_it_is.py is the one path the dispatch's enumerated fence omits, which \u00a79 grants as \"any other test asserting the superseded row, named from the failure ids\".\nVERDICT manifest: read; status is complete, it records both commits ec65874c93 and 90c8167f15, the literal gate command, seven log paths including the red negative control, both arms' baseline_suite/after_suite JSON with one identical failure id on each, and it states the out-of-enumerated-fence test edit in evidence_inputs rather than hiding it.\nVERDICT diff: read both commits against e43d47a8cb \u2014 five files, 146 insertions and 52 deletions; the product change moves the instruction out of lift_watch._reset_detail and composes it once in ticker.limit_reset_text, adds a stage and job cell to the reset row, and supersedes the surviving \"may continue\" assertions.\nCALL_SITES: reckon/crew_follow_commands.py:3270, reckon/crew_follow_commands.py:3506, reckon/crew/recovery_watch.py:2443, reckon/crew/ticker.py:3052, reckon/crew/lift_watch.py:308\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:318-322 gives the orchestrator wallet `orchestrator sessions continue; worker lanes keep their limits` and :317 gives the worker lane `worker lanes keep their limits`, against a headline of `limits reset` at :315.\nSCORE evidence: 13\nJUSTIFICATION evidence: logs/base-node-suite.log and logs/head-node-suite.log both carry 1 failed / 16 and 17 passed with the identical id tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window, so the delta is zero, but \u00a79's explicit \"tests/test_every_module_fits_a_worker_window.py passes at head\" is false at head and the node suite ran without the `-n 8` the done-when names.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every path in the diff is inside plan \u00a79's write-path grant including the added test, but tests/test_the_orchestrator_reset_row_says_what_it_is.py sits outside the dispatch's enumerated FENCE \u2014 SCOPE list, so `reckon crew check` flags the delivery the manifest already predicted.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_limit_reset_reaches_every_pane.py:207 and :209 assert the literals `limits reset` and `worker lanes keep their limits`, which the base revision's row does not print and which logs/negative-control.log shows reddening when the reset branch is removed, but five assertions in tests/test_the_orchestrator_reset_row_says_what_it_is.py compare the output to the same module constant the renderer builds it from.\nSCORE fit: 15\nJUSTIFICATION fit: the change follows reckon/crew/ticker.py's own constant-and-clause idiom and carries no plan label or ticket reference, but reckon/crew/ticker.py:3154-3158 claims the row \"lines up with the fleet rows\" and it does not, and tests/test_a_limit_reset_reaches_every_pane.py:194 cites an incident count in a docstring.\nSCORE reuse: 11\nJUSTIFICATION reuse: reckon/crew/ticker.py:3176-3183 rebuilds the leading cells by hand and calls `elide(_job_name(...), NODE)` where the adjacent reckon/crew/ticker.py:3224-3227 already owns that cell as `self._job_cell(...)` padded to NODE, so the padding and the middle-cut are both dropped rather than extended.\nFINDING tests/test_the_orchestrator_reset_row_says_what_it_is.py:135 non-blocking: the assertion compares the rendered row against `ticker.RESET_ORCHESTRATOR_INSTRUCTION`, the same module constant the renderer composes the row from at reckon/crew/ticker.py:318-320, so both sides move together and the assertion passes whatever wording the constant holds; the same shape recurs at :167, :220 and :237-239, so a change that emptied or reversed the instruction would leave these green.\nFINDING tests/test_a_limit_reset_reaches_every_pane.py:208 non-blocking: `assert \"continue\" in rendered` is satisfied by the base revision's own row, which printed `orchestrator sessions may continue` (logs/reproduction-base.log), so this line does not fail on the regression the new case exists to catch; only :207's `limits reset` and :209's `worker lanes keep their limits` discriminate.\nFINDING tests/test_every_module_fits_a_worker_window.py:69 non-blocking: the done-when states this file passes at head and it fails at both arms naming five modules over the token bound (reckon/crew/dispatch.py 51632, plan_review.py 70614, queue_admission.py 54432, runs.py 52413, roadmap.py 52669), so a coordinator reading the done-when as met would mistake a pre-existing red file for a green gate; the manifest reports it under outside_scope, which is the right disposition but does not make the done-when true.\nFINDING reckon/crew/ticker.py:3176 non-blocking: the reset row's job cell is `elide(_job_name(group, event.get(\"role\")), NODE)`, unpadded and without `_job_cell`, so the clause starts at column 34 for `claude-sub` and 44 for `claude-orchestrators` while every fleet row and the adjacent `_lift_line` at :3224 pad the job cell to NODE and start their next cell at a fixed column \u2014 the docstring at :3157 claims the row \"lines up with the fleet rows above and beneath it\" and it does not.\nFINDING tests/test_a_limit_reset_reaches_every_pane.py:194 non-blocking: the test docstring justifies the clause by an incident count (\"the reading that once had to be corrected to thirteen sessions by hand\"), a transient RCA reference in code the naming rules keep out of docstrings because it means nothing without the tracker entry; the mechanism \u2014 a worker-lane group must not read as freeing a lane it never named \u2014 states the same reason and stands alone.",
+  "review_run_id": "r-20261103T083218876764-review-of-a-reset-row-tells-orchestrator-sessions-to-continue-and-no-90c8167f1592",
+  "reviewed_base_sha": "e43d47a8cbf304de01737ddaeff146d98a1def5a",
+  "reviewed_head_sha": "90c8167f1592de27b74c3cfa4977f5f264b23b3c",
+  "reviewed_run_id": "r-20261103T070912242908-a-reset-row-tells-orchestrator-sessions-to-continue-and-no",
+  "scores": {
+    "durability": 14,
+    "evidence": 13,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 11,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T10:04:16.399015+00:00",
+  "total": 87
+}
