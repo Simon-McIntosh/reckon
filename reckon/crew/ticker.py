@@ -300,15 +300,27 @@ GATE_STATES = frozenset({GATE_RUNNING, GATE_ENDED})
 #
 # The closing clause is chosen by what the group's own declaration establishes,
 # never by the row alone. A group some configured backend draws on is a worker
-# lane's wallet: its reset says that lane's work may go on and says nothing
-# about orchestrator sessions. A group no backend declares is the orchestrator
-# wallet — the reset a coordinator acts on. Config unreadable leaves the group
-# unknown, so the row falls back to the words that name no lane at all rather
-# than asserting a scope the record cannot support.
-RESET_HEADLINE = f"{LIMIT_STAGE} reset"
-RESET_LANE_INSTRUCTION = "worker lanes may continue"
-RESET_ORCHESTRATOR_INSTRUCTION = "orchestrator sessions may continue"
-RESET_NEUTRAL_INSTRUCTION = "sessions stopped at the usage limit may continue"
+# lane's wallet: its reset frees that lane and says nothing about orchestrator
+# sessions. A group no backend declares is the orchestrator wallet — the reset
+# a coordinator acts on, because a limit reset is announced for the sessions
+# that stopped on it rather than for the workers their own lane paces. Config
+# unreadable leaves the group unknown, so the row falls back to the words that
+# name no lane at all rather than asserting a scope the record cannot support.
+#
+# The worker-lane clause closes every row, whatever its group. A reset recorded
+# under a lane's own group states that lane's work may go on; one recorded under
+# the orchestrator wallet must state both that those sessions continue and that
+# no worker lane was opened by it. No row therefore reads as releasing a worker
+# lane it never named.
+RESET_HEADLINE = "limits reset"
+RESET_WORKER_LANE_CLAUSE = "worker lanes keep their limits"
+RESET_LANE_INSTRUCTION = RESET_WORKER_LANE_CLAUSE
+RESET_ORCHESTRATOR_INSTRUCTION = (
+    f"orchestrator sessions continue; {RESET_WORKER_LANE_CLAUSE}"
+)
+RESET_NEUTRAL_INSTRUCTION = (
+    f"sessions stopped at the usage limit continue; {RESET_WORKER_LANE_CLAUSE}"
+)
 
 # The facts the clause reads out of the sentence the producer composes. That
 # sentence names the group, the clock, the instant, who announced it and why,
@@ -359,29 +371,29 @@ def group_is_paced(group: str, project: str | None = None) -> bool | None:
 def limit_reset_text(event: Mapping[str, Any], *, paced: bool | None = None) -> str:
     """One limit-reset row as the single clause a reader acts on.
 
-    The group is the row's own ``node``: a broadcast row carries no run, and the
-    producer puts the budget group there. ``paced`` is
-    :func:`group_is_paced` for that group — True for a worker lane's wallet,
-    False for the orchestrator wallet, None when the config could not say.
+    The row's stage cell names the row's family and its job cell the budget
+    group, so the clause carries what those cells cannot: the clock the reset
+    clears, the instruction the row issues, and the announcer's reason.
+    ``paced`` is :func:`group_is_paced` for that group — True for a worker
+    lane's wallet, False for the orchestrator wallet, None when the config
+    could not say.
     """
     clause = str(event.get("detail") or "")
-    parts = [RESET_HEADLINE]
-    group = str(event.get("node") or "").strip()
-    if group:
-        parts.append(group)
     clock = RESET_CLOCK_CLAUSE.search(clause)
+    headline = RESET_HEADLINE
     if clock:
-        parts.append(clock.group("clock").strip())
+        headline = f"{headline} ({clock.group('clock').strip()})"
     if paced is None:
-        parts.append(RESET_NEUTRAL_INSTRUCTION)
+        instruction = RESET_NEUTRAL_INSTRUCTION
     elif paced:
-        parts.append(RESET_LANE_INSTRUCTION)
+        instruction = RESET_LANE_INSTRUCTION
     else:
-        parts.append(RESET_ORCHESTRATOR_INSTRUCTION)
+        instruction = RESET_ORCHESTRATOR_INSTRUCTION
+    text = f"{headline}: {instruction}"
     reason = RESET_REASON_CLAUSE.search(clause)
     if reason:
-        parts.append(reason.group("reason").strip())
-    return " · ".join(part for part in parts if part)
+        text = f"{text} — {reason.group('reason').strip()}"
+    return text
 
 
 def lift_clause(event: Mapping[str, Any]) -> str:
@@ -3139,12 +3151,14 @@ class Ticker:
     def _reset_line(self, event: Mapping[str, Any]) -> str:
         """One limit reset as a clause, in place of the transition's two words.
 
-        The clause takes the room the stage, job and transition columns give it,
-        and the elapsed cell and the counters keep their places after it, so a
-        reset row lines up with the fleet rows beneath it. It is the one row
-        carrying free text, so it is cut to the pane like every other cell: the
-        cut is what keeps a long reason from wrapping the row, which would cost
-        a quarter of the visible history.
+        The stage cell names the row's family and the job cell the budget group
+        it concerns; the clause then takes the room the transition columns give
+        it, and the elapsed cell and the counters keep their places after it, so
+        a reset row lines up with the fleet rows above and beneath it while
+        still saying what it is, which clock it clears and what it asks. It is
+        the one row carrying free text, so it is cut to the pane like every
+        other cell: the cut is what keeps a long reason from wrapping the row,
+        which would cost a quarter of the visible history.
         """
         spend = self._spend_cells(event, LIMIT_RESET)
         stats = self._stats(event)
@@ -3154,14 +3168,19 @@ class Ticker:
             + GAP
             + sum(len(text) for text, _ in stats)
         )
-        room = self._grid_width() - CLOCK - GAP - tail
         group = str(event.get("node") or "").strip()
         project = str(event.get("project") or "").strip() or self._project
         key = (group, project)
         if key not in self._paced_groups:
             self._paced_groups[key] = group_is_paced(group, project)
+        job = elide(_job_name(group, event.get("role")), NODE)
+        room = self._grid_width() - CLOCK - GAP - ROLE - GAP - len(job) - GAP - tail
         cells: list[tuple[str, Any]] = [
             (f"{local_clock(event.get('observed_at')):<{CLOCK}}", "dim"),
+            (" " * GAP, None),
+            (f"{LIMIT_STAGE:<{ROLE}}", "dim"),
+            (" " * GAP, None),
+            (job, self.hue(group)),
             (" " * GAP, None),
             (elide(limit_reset_text(event, paced=self._paced_groups[key]), room), None),
             (" " * GAP, None),

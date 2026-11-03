@@ -1,7 +1,8 @@
 """A limit reset reaches every session's pane once, through the watch stream.
 
-A budget reset is workstation-wide: every session stopped at its usage limit
-may continue. Nothing about it is visible on the watch stream a follower reads
+A budget reset is workstation-wide: every orchestrator session stopped at its
+usage limit continues, and no worker lane is opened by it. Nothing about it is
+visible on the watch stream a follower reads
 unless a producer writes it, so ``lift_watch.sweep_resets`` folds the recent
 reset events into each project's stream and the pane draws one row per event.
 
@@ -167,12 +168,46 @@ def test_a_pane_following_both_projects_draws_the_reset_once(tmp_path):
     assert len(drawn) == 1, f"session A's pane drew the reset {len(drawn)} times"
     for rendered in _rendered(drawn[0]):
         assert ticker.LIMIT_STAGE in rendered, "the stage cell names the reset"
-        assert "may continue" in rendered, (
+        assert "worker lanes keep their limits" in rendered, (
             "the row carries the instruction, not a state word"
         )
         assert "orchestrator" not in rendered, (
             "a worker lane's wallet claims nothing about orchestrator sessions"
         )
+
+
+# A host layer declaring one worker lane's wallet, so the pane's reading of the
+# config is a declared fact rather than an accident of which machine runs the
+# test: with a wallet declared, a group the config does not name is the
+# orchestrator wallet.
+ORCHESTRATOR_GROUP = "claude-orchestrators"
+HOST_LAYER = f"version: 1\n\nbackends:\n  claude:\n    budget_group: {GROUP}\n"
+
+
+def test_an_orchestrator_reset_says_continue_and_opens_no_worker_lane(tmp_path):
+    """The line a coordinator acts on: continue, and no worker lane opened.
+
+    The reset reaches every session as one broadcast row. Read as a state
+    transition it said nothing — ``limit claude-orchestrators new → working`` —
+    so a session stopped at the limit was never told to continue. The row is
+    the instruction instead, and it closes by naming what it did not release:
+    the worker lanes keep their own limits, which is the reading that once had
+    to be corrected to thirteen sessions by hand.
+    """
+    (tmp_path / "flight.yaml").write_text(HOST_LAYER)
+    _announce(group=ORCHESTRATOR_GROUP, clock="five_hour")
+    stream = tmp_path / "alpha.events"
+    _sweep(PROJECTS[0], stream, seen=None)
+
+    printed = _feed(_follower(SESSION_A), _reset_rows(_rows(stream)))
+    assert len(printed) == 1, "the pane drew the orchestrator reset once"
+    rendered = ticker.Ticker(width=WIDE).render(printed[0])
+    assert rendered.split()[1] == ticker.LIMIT_STAGE, rendered
+    assert ORCHESTRATOR_GROUP in rendered, rendered
+    assert "limits reset" in rendered, rendered
+    assert "continue" in rendered, rendered
+    assert "worker lanes keep their limits" in rendered, rendered
+    assert "new → working" not in rendered, rendered
 
 
 def test_a_second_sessions_pane_draws_it_once_too(tmp_path):

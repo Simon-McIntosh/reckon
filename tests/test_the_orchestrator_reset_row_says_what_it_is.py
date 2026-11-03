@@ -9,12 +9,13 @@ limit reset or that it asks a stopped session to continue, so each reader had to
 work it out for themselves.
 
 The row is now drawn as its own clause — what it is, the group, the clock it
-resets, and whose work may continue — with the announcer's reason after it when
-the record carries one. The closing clause is chosen by the group: a wallet no
-configured backend draws on is the orchestrator wallet, so its reset frees
-orchestrator sessions; a group a backend draws on frees that worker lane and
-claims nothing above it; a config that declares no wallet names no lane at all.
-These tests drive the real
+resets, and whose work may continue, with the announcer's reason when the
+record carries one. Every row closes with the worker-lane clause, so none of
+them reads as releasing a lane it never named. The opening clause is chosen by
+the group: a wallet no configured backend draws on is the orchestrator wallet,
+so its reset frees orchestrator sessions; a group a backend draws on frees that
+worker lane and claims nothing above it; a config that declares no wallet names
+no lane at all beyond the worker-lane clause. These tests drive the real
 producer path (``budget_reset.mark_used`` into ``lift_watch.sweep_resets``,
 through the real pane claim) so the measurement counts the line a pane prints
 rather than a fixture's opinion of it.
@@ -39,7 +40,7 @@ CLOCK = "five_hour"
 REASON = "the lead reports the usage limits have reset"
 PROJECTS = ("alpha", "beta")
 NOW = datetime(2026, 10, 14, 18, 30, tzinfo=UTC)
-WIDE = 200
+WIDE = 240
 
 # A host layer declaring one worker lane's wallet. Its purpose here is to make
 # the pane's reading of the config a declared fact rather than an accident of
@@ -128,11 +129,11 @@ def test_the_recorded_orchestrator_reset_row_says_what_it_is(tmp_path: Path):
     drawn = _reset_rows(_drawn(tmp_path))
     assert len(drawn) == 1, f"one pane drew the reset {len(drawn)} times"
     for rendered in _rendered(drawn[0]):
-        assert "limit reset" in rendered, rendered
+        assert "limits reset" in rendered, rendered
         assert GROUP in rendered, rendered
         assert CLOCK in rendered, rendered
         assert ticker.RESET_ORCHESTRATOR_INSTRUCTION in rendered, rendered
-        assert ticker.RESET_LANE_INSTRUCTION not in rendered, rendered
+        assert ticker.RESET_WORKER_LANE_CLAUSE in rendered, rendered
         assert "new → working" not in rendered, rendered
         assert "→" not in rendered, f"a reset row carries no transition: {rendered}"
 
@@ -162,7 +163,7 @@ def test_a_reset_with_no_reason_still_says_what_it_asks(tmp_path: Path):
     }
     row = lift_watch._reset_row(PROJECTS[0], detected, moment=NOW)
     for rendered in _rendered(row):
-        assert "limit reset" in rendered, rendered
+        assert "limits reset" in rendered, rendered
         assert ticker.RESET_ORCHESTRATOR_INSTRUCTION in rendered, rendered
         assert "announced by" not in rendered, rendered
 
@@ -214,7 +215,7 @@ def test_a_worker_lanes_reset_claims_nothing_about_orchestrator_sessions():
     """
     assert ticker.group_is_paced(LANE_GROUP) is True
     for rendered in _rendered(_reset(LANE_GROUP)):
-        assert "limit reset" in rendered, rendered
+        assert "limits reset" in rendered, rendered
         assert LANE_GROUP in rendered, rendered
         assert ticker.RESET_LANE_INSTRUCTION in rendered, rendered
         assert "orchestrator" not in rendered, rendered
@@ -235,7 +236,7 @@ def test_a_config_declaring_no_group_names_no_lane(tmp_path: Path, monkeypatch):
     for rendered in _rendered(_reset(GROUP)):
         assert ticker.RESET_NEUTRAL_INSTRUCTION in rendered, rendered
         assert ticker.RESET_ORCHESTRATOR_INSTRUCTION not in rendered, rendered
-        assert ticker.RESET_LANE_INSTRUCTION not in rendered, rendered
+        assert ticker.RESET_WORKER_LANE_CLAUSE in rendered, rendered
 
 
 def test_the_row_stays_on_one_line_at_the_panes_minimum_width():
@@ -256,7 +257,7 @@ def test_the_row_stays_on_one_line_at_the_panes_minimum_width():
     )
     rendered = ticker.Ticker(width=ticker.MIN_WIDTH).render(row)
     assert "\n" not in rendered, rendered
-    assert "limit reset" in rendered, rendered
+    assert "limits reset" in rendered, rendered
     assert len(rendered) <= ticker.MIN_WIDTH, (
         f"{len(rendered)} columns for a {ticker.MIN_WIDTH}-column pane"
     )
