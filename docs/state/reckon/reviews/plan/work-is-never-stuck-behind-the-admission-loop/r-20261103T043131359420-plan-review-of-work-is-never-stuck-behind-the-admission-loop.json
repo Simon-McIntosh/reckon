@@ -1,0 +1,78 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-03T04:41:23.091Z",
+  "dispatched_at": "2026-11-03T04:32:33Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:213",
+      "id": "done_when-1",
+      "reason": "without forbidding those stubs the base arm proves the test can manufacture a refusal rather than that the recorded refusal reproduces, so the node's only real negative control measures nothing.",
+      "text": "the first case (\"built from the 02:29:07Z record's inputs ... refused on the base revision, exit 5 with `no-eligible-candidates`\") can be satisfied by stubbing `routing._context_fit_verdict` and `routing._competence_verdict` to refuse, which is exactly the fault the plan's own \u00a716 records against the existing test (`tests/test_an_oversize_node_reaches_a_reserved_lane.py:114,134`), and the phrase \"no hand-built candidate set\" constrains only the candidate list, not those verdicts",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:213",
+      "id": "done_when-2",
+      "reason": "without naming the runtime inputs it stubs for case 1, the base-revision refusal is not deterministic and the node can spend its trace budget then find the replay routes instead of refusing.",
+      "text": "the first case fixes the estimate, the flight-config windows and the node's role but leaves the runtime lane state (lane documents, budget verdicts, serving probes) unspecified, while the record itself shows the same config and the same `estimated_context: 234021` producing eleven exclusion rows at 02:29:07Z and only three codex rows at 02:34:43Z, so the candidate set evidently depends on state the record does not carry",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:213",
+      "id": "done_when-3",
+      "reason": "naming the interface turns an ambiguous two-layer assertion into one a worker can implement and the base arm can check.",
+      "text": "\"refused on the base revision, exit 5 with `no-eligible-candidates`\" joins a CLI exit code (`click.exceptions.Exit(5)` in `reckon/crew_dispatch_commands.py:1718`) with a picker fallback token (`picker/__init__.py:506`), and the case does not say which interface the test drives, so an in-process picker assertion can never see the exit code and a CLI run reports the picker answer only through `picker_selection`",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "e4443220a2c7b38e4351e647938c2295caead160",
+  "plan_fingerprint": "31c5fe7e70dd0886dc0394db6e75f5d2425dcdcf55986747cd0ede81d66576df",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 179,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261103T043131359420-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "547f42d5252a16f96f5247430b32752374f0354d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `#s15` and `#s16` resolve in the plan, both cited test modules exist (`tests/test_an_oversize_node_reaches_a_reserved_lane.py`, `tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py`), and `snapshot.py:612` (`widest_fitting_candidate`), `snapshot.py:1884-1933` (the waiver), `picker/__init__.py:115-144` (the refusal record) and `dispatch.py:633-694` (the reroute) all resolve to the code described.",
+    "done_when": "a finding \u2014 s23's first case can be satisfied without reproducing anything, because \"no hand-built candidate set\" does not forbid stubbing the routing verdicts that create the exclusions the case is about.",
+    "evidence_paths": "pass \u2014 the replay log and the named code paths are delivered in the run's manifest under the crew run directory, not in a scratch or node-local path.",
+    "naming": "pass \u2014 `tests/test_a_recorded_oversize_refusal_reaches_codex.py` names the behaviour it reproduces and carries no plan label, stage name or ticket number.",
+    "reasoning": "pass \u2014 the quoted evidence matches the pick-timing records exactly, the plan states no cause it cannot support, and both mechanisms it names are on the production path (`snapshot.candidates` builds the waiver; `_reroute_oversized_request` is called at `reckon/crew/dispatch.py:1763` and `:3908`).",
+    "single_goal": "pass \u2014 trace, fix and test all serve one deliverable: an oversized node reaches the reserved lane its window fits.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `\"s23\": []`, and the two sections s23 consumes (`#s15`, `#s16`) are both `done`, so no ordering is lost by the empty list."
+  },
+  "section_digests": {
+    "_document": "c0e7173544ef722a3161a781028a6a345c8369c8083b951435c3d371d48c2234",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s11": "64172d367078831447521db5db6f564603855f46c387c906413737be38d7cefa",
+    "s12": "a326ddd2ee6a25d3a5bd7e7faf7faebb13b159435640d33f4c6c5edcca238229",
+    "s13": "43c63cb3547e9638882e45af647c6eca92cdbd77c8006cbf416ed717619a79d5",
+    "s14": "8ad0ca2171f9b9e5d1a4402bed0ba51d908267ec88069268c781013864f569fa",
+    "s15": "97b76e836bce15b65611e3a1c12d5628da0992c3b604881d88f2e406aec3097b",
+    "s16": "de7130b93ad47423ed1f2ac37f7d700e9e1875834a26a33af10a97e2476eafa7",
+    "s17": "e0db3dac4c8e5a22f059034f39cf37bf8c5bd249834f218c25bdec42bc4151ed",
+    "s18": "dac73bb15e3a6db1d4fce585091868e67027d7235101498beef9a59ec2d88363",
+    "s19": "c1cb9323a74f953649b86e65f30cfa320b3f38079883c2a62230fe0b33e58fac",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s20": "132bce7e7e2e5612ff43da2f5ac5d14df2686c95a8118525bacac4349e87cb1b",
+    "s21": "ee777267cd96cff6866d857040b00da4e88084663ba40545bb4727aa3450d15c",
+    "s22": "ded37e8e903c88b4c4ba24e9bcfd1cc917e8112037b46dcbbf603bc8a83b9c4b",
+    "s23": "2370359ef7d28ad2b5feff374202676d19a6de018baf9de56223d42dd40cd3d7",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s4": "8220f4acb86bde075d194dffed5ce2cf67af7ba21c21fd4e67d63a215ff7f5c6",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "2f92e5358487aabaeb8d2b0c54fdf9a0407281e571a7eadaef0a2509754e3666",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T05:06:57.105512+00:00"
+}
