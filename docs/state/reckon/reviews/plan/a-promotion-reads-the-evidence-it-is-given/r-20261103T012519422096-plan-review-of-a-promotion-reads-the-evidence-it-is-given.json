@@ -1,0 +1,43 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-03T01:35:53.867Z",
+  "dispatched_at": "2026-11-03T01:26:52Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-promotion-reads-the-evidence-it-is-given/r-20261103T012519422096-plan-review-of-a-promotion-reads-the-evidence-it-is-given/plan.html:46",
+      "id": "done_when-1",
+      "reason": "the missing positive case is the admission of `test_charge[1]` against `tests/x.py::test_charge[1]`, and without it the section can close with the bracketed-base refusal it exists to remove still in place, one parametrisation over from the refusal case 5 covers.",
+      "text": "\u00a72 declares that a bare base name carrying a bracket \"matches only that parametrisation\", but no done-when case requires such a name to match anything: case 5 only requires `test_charge[1]` to be refused against `tests/x.py::test_charge[2]`, and the unfixed code already refuses it (a direct probe of `_zero_added_against_a_red_base` with base `[\"test_charge[1]\"]` and a head log naming `tests/x.py::test_charge[2]` returned `False`), so an implementation that makes bracketed bare base names match nothing passes all six cases and both controls while a bracketed base id keeps refusing every head id it should cover",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "97985df6b7c77b30f295ea7b6e5a7ae17abc02a6",
+  "plan_fingerprint": "679833f5eef5269ef555b8ffc53fc9a1a6697a5fa9ea8cf9c38b25adff4b2518",
+  "plan_slug": "a-promotion-reads-the-evidence-it-is-given",
+  "plan_version": 5,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261103T012519422096-plan-review-of-a-promotion-reads-the-evidence-it-is-given",
+  "reviewed_blob_sha": "cfb26bb4fe8977baa1e73c16e6ba86cbb04191ff",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 both cited ctest files exist and assert the claimed values at the claimed lines (`tests/test_a_ctest_id_names_its_test.py:90,102`, `tests/test_a_ctest_gate_is_read_at_promotion.py:91,105`), `_require_verdict_matches_exit_status` lies inside the cited 1281\u20131294 span (actual body 1248\u20131299), and the new test path does not yet exist so it does not collide with a real file.",
+    "done_when": "a finding \u2014 \u00a72's rule \"A bare name that itself carries a bracket matches only that parametrisation\" has no done-when case for its positive half, and case 5's refusal already holds on the unfixed code.",
+    "evidence_paths": "pass \u2014 the section's evidence is `tests/test_a_red_base_matches_bare_names.py`, a durable path in the repository, and no gate output is directed to a scratch or node-local path.",
+    "naming": "pass \u2014 `_red_base_uncovered_ids` and `tests/test_a_red_base_matches_bare_names.py`-style names describe the mechanism; no plan label, stage name or ticket number appears in the section.",
+    "reasoning": "pass \u2014 `canonical_node_id` (`reckon/crew/review.py:1966`) returns `::` segments and parametrisation brackets untouched, so a bare base id never equals a qualified head id and the s1 refusal follows; the new refusal runs on the production path through the existing caller `reckon/crew/promotion.py:579`, and the stated rule can produce each of the six done-when cases.",
+    "single_goal": "pass \u2014 \u00a72's matching rule and the refusal sentence it feeds are one admission mechanism closed by one verdict.",
+    "wiring": "pass \u2014 the snapshot's `plan-section-depends-on` places s4 after s2, the followup \"Build \u00a72, then \u00a74\" agrees, and no node needs a relationship it does not declare."
+  },
+  "section_digests": {
+    "_document": "410d83b372a5a6d73708db0334bd8df619548db33f283ddc7451ea1e589cc213",
+    "s1": "5eac0eb57fbf9fccaeee6fb2da59c42ca24c4433f0cffcb4b7de1b6b04324b6c",
+    "s2": "a6c64d63915753e413b4b1387da32f5bd9078b76acf9b3eb6263cfbf43df4bae",
+    "s3": "479c8ebc617467c2744513e850433e87af52a3d22110620dcfdfb48f9975d081",
+    "s4": "6b34455efa5ea745d1bf5093edebda7d474a87de71de654e6cdcc55114110fd6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T02:02:08.753905+00:00"
+}
