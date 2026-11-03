@@ -2002,6 +2002,26 @@ def _write_attempt_artifact(
     attempt: int,
 ) -> bool:
     """Write an immutable receipt and expose it only while its attempt is current."""
+    if name == WORKER_RECORD_NAME:
+        try:
+            current = json.loads((run_directory / name).read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            current = None
+        if (
+            isinstance(current, Mapping)
+            and isinstance(current.get("attempt"), int)
+            and current["attempt"] >= attempt
+            and current.get("run_id") == payload.get("run_id")
+            and current.get("pid") is not None
+            and current.get("pid") == payload.get("pid")
+            and current.get("pid_start_time") == payload.get("pid_start_time")
+            and _attempt_is_current(run_directory, attempt)
+            and _attempt_artifact_path(run_directory, name, current["attempt"]).exists()
+        ):
+            # The spawn callback already filed this worker. The supervisor's
+            # later confirmation must not turn the same process into a new
+            # attempt merely because its immutable receipt exists.
+            return True
     number = _free_attempt_number(run_directory, name, attempt)
     record = {**payload, "attempt": number}
     written = _supervisor_write(
