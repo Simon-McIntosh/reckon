@@ -1,0 +1,78 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-03T03:19:37.843Z",
+  "dispatched_at": "2026-11-03T03:03:21Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:213",
+      "id": "reasoning-1",
+      "reason": "the plan builds its whole repair on \"an answered pick chose a lane the node does not fit\", a branch that never ran, so a node dispatched with this brief aims at code the incident never reached.",
+      "text": "s23 says \"The router, Jev, answered with `clive` (action `route`)\", but the pick-timing record for that node (`an-admission-pass-reads-each-project-once`, project reckon) holds four attempts, at 02:29:07Z, 02:30:52Z, 02:31:37Z and 02:34:43Z on 3 November, every one reading `outcome: refuse`, `decision_source: refused`, `fallback_reason: no-eligible-candidates; default-backend-ineligible`, and none of them a `route`; the same record lists clive among the excluded with reason `context-fit`, so clive was never offered and the router never answered with it \u2014 the refusal the plan is repairing came from a pick that found no eligible candidate at all",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:213",
+      "id": "reasoning-2",
+      "reason": "part one adds what exists and part two guards a case the picker cannot produce, so the observed failure (a `refuse` answer that skips the reroute and lands on local) would survive the node as written.",
+      "text": "s23's first deliverable (\"The candidate scan the router reads carries the node's context estimate\") is already true at the base revision: `dispatch_picker.py:517` measures the estimate into the `PickRequest`, `picker/__init__.py:420` carries it through `snapshot_request`, and `picker/snapshot.py:787` charges `request.estimated_context` against each candidate's window \u2014 the failing dispatch's own record confirms it, holding `estimated_context: 234021` on every refusal \u2014 while the second deliverable (\"when the router's answer is a lane the node does not fit\") cannot occur, because that same check at `snapshot.py:787` keeps an oversized lane out of the offered set, and the action that did happen (`refuse`) is not router-free under `_router_free_resolution` (`dispatch.py:578-600`, which treats only `fallback` as a validated pick's answer)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:213",
+      "id": "done_when-1",
+      "reason": "without the `competence` reason in the control, the node can pass its own gate while leaving the waiver as unfireable as it was.",
+      "text": "s23's second case (\"the router's scan built from its real estimate is offered codex by the picker itself, through the waiver\") and its control (\"Dropping the estimate from the router's scan fails the second\") name the wrong mechanism: the estimate is already in the scan, and the waiver fails to fire because `_excluded_only_on_context` (`picker/snapshot.py:1402-1406`) requires every reason on every unreserved candidate to begin `context-fit: `, while the record shows the only unreserved lane carried `competence` as well \u2014 so the arm fails at base for a reason the unit neither states nor controls, and the named control cannot show the unit's change is what makes it pass",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "9e04e4d19fddaa2d12556ff6840dd344bc825b49",
+  "plan_fingerprint": "553742055cd2bc58cdb40d30ae5be85db9381b93d892900a882e2741e1b9ded7",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 174,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261103T030119513584-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "26d8ed263790e3758693e6eb63e8d8379f1776fb",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves: `reckon/crew/dispatch.py:633` (`_reroute_oversized_request`), `:578` (`_router_free_resolution`), `reckon/crew/picker/snapshot.py:1884` (oversize waiver), `reckon/crew/queue_admission.py:3244` (`_plan_review_owed`), `:3318` (`_section_digests` call), `:3332` (`read_state_file`), `:3216` (`_dispatch_gate_owed`), and `reckon/crew/routing.py:2454` (`_plan_review_exempt`).",
+    "done_when": "a finding \u2014 s23's second case and its second negative control test a mechanism that already exists at the base revision, and both name the wrong thing that keeps the waiver from firing.",
+    "evidence_paths": "pass \u2014 s4's timing arm logs under the run's `logs/`, which sits in the durable run record, and neither unit names a scratchpad or node-local temp path.",
+    "naming": "pass \u2014 s23's and s4's new symbols are mechanism-named (`waits_seconds`, the per-plan record, the moved-selection reason); no plan labels, ticket numbers or version tags reach code, and the \u00a715/\u00a716 references are prose in a plan document, which is where they belong.",
+    "reasoning": "a finding \u2014 s23's stated root cause is contradicted by the record of the very dispatch it cites, and its repair targets a branch that branch cannot reach.",
+    "single_goal": "pass \u2014 s23 carries one deliverable (an oversized routed node is moved rather than refused); its three parts are the scan, the check and the named-lane exception to that one behaviour.",
+    "wiring": "pass \u2014 the unit's only new relationship, `plan-section-depends-on.s23 = [\"a-read-costs-what-changed#s6\"]`, resolves to a section that exists (`docs/plans/a-read-costs-what-changed.html:72`) and shares `reckon/crew/dispatch.py` with s23's write paths, so it is a real write-collision wait rather than a wrong pointer; s23's declaration is present in `plan-section-declarations`."
+  },
+  "section_digests": {
+    "_document": "c0e7173544ef722a3161a781028a6a345c8369c8083b951435c3d371d48c2234",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s11": "64172d367078831447521db5db6f564603855f46c387c906413737be38d7cefa",
+    "s12": "a326ddd2ee6a25d3a5bd7e7faf7faebb13b159435640d33f4c6c5edcca238229",
+    "s13": "43c63cb3547e9638882e45af647c6eca92cdbd77c8006cbf416ed717619a79d5",
+    "s14": "8ad0ca2171f9b9e5d1a4402bed0ba51d908267ec88069268c781013864f569fa",
+    "s15": "97b76e836bce15b65611e3a1c12d5628da0992c3b604881d88f2e406aec3097b",
+    "s16": "de7130b93ad47423ed1f2ac37f7d700e9e1875834a26a33af10a97e2476eafa7",
+    "s17": "e0db3dac4c8e5a22f059034f39cf37bf8c5bd249834f218c25bdec42bc4151ed",
+    "s18": "dac73bb15e3a6db1d4fce585091868e67027d7235101498beef9a59ec2d88363",
+    "s19": "c1cb9323a74f953649b86e65f30cfa320b3f38079883c2a62230fe0b33e58fac",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s20": "132bce7e7e2e5612ff43da2f5ac5d14df2686c95a8118525bacac4349e87cb1b",
+    "s21": "ee777267cd96cff6866d857040b00da4e88084663ba40545bb4727aa3450d15c",
+    "s22": "ded37e8e903c88b4c4ba24e9bcfd1cc917e8112037b46dcbbf603bc8a83b9c4b",
+    "s23": "c77e69238cf530014d3904ba7ea29876553e016d487e6e3efad5d72c30bc726f",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s4": "8220f4acb86bde075d194dffed5ce2cf67af7ba21c21fd4e67d63a215ff7f5c6",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "2f92e5358487aabaeb8d2b0c54fdf9a0407281e571a7eadaef0a2509754e3666",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T03:32:48.147887+00:00"
+}
