@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="project-picture-landed">
+  <meta name="plan-title" content="A Project Reads as One Picture — landed record">
+  <meta name="plan-summary" content="Cumulative record: what each section of a-project-reads-as-one-picture changed, and the measurement that shows it.">
+  <meta name="plan-evidence-for" content="a-project-reads-as-one-picture">
+  <meta name="plan-verifies" content="a-project-reads-as-one-picture#s8">
+  <title>A Project Reads as One Picture — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Project Reads as One Picture — landed record</h1>
+  <p>Cumulative. Each section lands its own article below; a later reader is meant to see every one. Add, do not replace.</p>
+
+  <section id="s8">
+   <h2>§8 — Measured on power_convertor and two other mounts</h2>
+   <article data-node="measure-portfolio-answers-on-three-mounts" data-when="2026-11-03">
+    <h3>The four coordinator questions on three mounts</h3>
+    <p>Measured 2026-11-03 through the MCP tool surface, so the 30 s read deadline applies as a coordinator's call meets it. Every call was timed around <code>await mcp.call_tool(...)</code>.</p>
+    <table id="project-picture-landed-s8-table">
+      <thead><tr><th>Question</th><th>Call</th><th>power_convertor</th><th>nova</th><th>reckon</th></tr></thead>
+      <tbody>
+        <tr><td>What is critical</td><td><code>roadmap(project)</code></td><td>9.15 s, answered</td><td>28.70 s, answered</td><td>30.0 s, storage-slow</td></tr>
+        <tr><td>What blocks a named section</td><td><code>read_plan(view="why")</code></td><td>5.10 s, answered</td><td>30.03 s, storage-slow</td><td>not reached</td></tr>
+        <tr><td>Who holds a named file</td><td><code>crew(view="scopes")</code></td><td>3.65 s, answered</td><td>8.16 s, answered</td><td>refused, 374,443 vs 80,000 chars</td></tr>
+        <tr><td>What should run next</td><td><code>roadmap --brief</code></td><td>14.30 s</td><td>28.95 s</td><td>128.27 s</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Answers that landed.</strong> <code>power_convertor</code>: critical path <code>pf2-pf5-vs1-coupled-qualification#s7 → #s3 → #s4 → coil-supply-report-rebuild#s8</code>, 13 worker-hours over two plans; <code>#s7</code> is <code>implementable</code> with no runs, no holds and both waits satisfied, and is first on the ranked rows; no claim exists on <code>switched_circuit.py</code>, while the same call names <code>r-20261103T033124395248-ef1-sequence-and-onset-voltage</code> as binding holder of the ef1 sequence record, so the empty answer was read by an instrument shown to see a holder. <code>nova</code>: critical path <code>converged-forward-solve → single-grid-solver-cutover</code> with an empty <code>sections</code> list, so that mount's path still names plans; whether nova declares no cross-plan section edge or the lift misses one was not adjudicated.</p>
+    <p><strong>Where the reads do not answer inside the deadline.</strong> <code>nova</code>'s why read and <code>reckon</code>'s roadmap read each return <code>storage-slow</code> at the 30 s boundary (6.37 s CPU on the latter). <code>reckon</code>'s scopes view is refused at 374,443 characters against an 80,000 ceiling, and its one narrowing hint is <code>candidates</code> — not the file the reader asked about, so the question cannot be narrowed on the surface that asks it.</p>
+    <p><strong>Disagreement.</strong> The 2026-10-21 coordinator testimony (§1) put the head of the chain at <code>iter-switched-terminal-transients#s6</code> with <code>shared-coil-supply-model#s4</code> as an undeclared wait. Today's head is <code>pf2-pf5-vs1-coupled-qualification#s7</code>. Cause: the plans moved in thirteen days and <code>iter-switched-terminal-transients</code> now reports no runs and no ready sections — a stale comparison, not a derivation defect. No new derivation defect was found on the two mounts that answered.</p>
+    <p><strong>Negative control — edge removal (ran).</strong> A copy of <code>power_convertor</code>'s docs had one declared cross-plan edge removed, <code>coil-supply-report-rebuild#s8</code>'s wait on <code>pf2-pf5-vs1-coupled-qualification#s4</code>. The critical path moved from <code>pf2#s7 → pf2#s3 → pf2#s4 → coil#s8</code> across two plans to <code>coil-supply-report-rebuild#s24 → coil#s8</code> within one. The second half did not fire: <code>undeclared-wait</code> stayed at zero because no blocked run, gate or followup on this snapshot names the removed ref. That half remains unproven and needs a snapshot whose blocked manifest names the edge.</p>
+    <p><strong>Negative control — base commit (not re-run).</strong> The same four questions against the base commit over the same snapshot were not run in this node's window. The plan-level measurement already recorded in §1 at <code>7b793eaa</code> stands in its place: one plan (<code>coil-supply-report-rebuild</code>, 35 h), every <code>unlocks</code> empty, ordering by ROI and effort with 16 of 17 plans at ROI <code>high</code> and every open plan at effort <code>M</code>. It disagrees with the coordinators on both the critical path and the first-ranked item, but it is a 2026-10-21 reading rather than today's.</p>
+   </article>
+  </section>
+ </main>
+</body>
+</html>

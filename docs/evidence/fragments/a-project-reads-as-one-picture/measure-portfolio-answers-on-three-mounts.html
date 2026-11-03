@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-project-reads-as-one-picture">
+  <meta name="plan-evidence-for" content="reckon:a-project-reads-as-one-picture">
+  <meta name="plan-verifies" content="reckon:a-project-reads-as-one-picture#s8">
+  <meta name="plan-verdict" content="partial">
+  <title>The four coordinator questions on three mounts</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="measure-portfolio-answers-on-three-mounts-landing" data-node="measure-portfolio-answers-on-three-mounts" data-reckon="landed" data-when="2026-11-03">
+  <h2>The four coordinator questions on three mounts</h2>
+
+  <p id="measure-portfolio-answers-on-three-mounts-method">Each question was put to one read call per mount, through the MCP tool surface so the 30 s storage deadline (<code>READ_DEADLINE_SECONDS</code> in <code>reckon/mcp_deadlines.py</code>) applies exactly as a coordinator's call would meet it. Every call was timed with <code>time.monotonic()</code> around <code>await mcp.call_tool(...)</code>. The full answers and timings are in the run directory under <code>evidence/</code>; the readings below are that directory's own numbers.</p>
+
+  <table id="measure-portfolio-answers-on-three-mounts-table">
+    <thead><tr><th>Question</th><th>Call</th><th>power_convertor</th><th>nova</th><th>reckon</th></tr></thead>
+    <tbody>
+      <tr><td>What is critical</td><td><code>roadmap(project)</code></td><td>9.15 s, answered</td><td>28.70 s, answered</td><td><strong>30.0 s, storage-slow</strong></td></tr>
+      <tr><td>What blocks a named section</td><td><code>read_plan(project, slug, section, view="why")</code></td><td>5.10 s, answered</td><td><strong>30.03 s, storage-slow</strong></td><td>not reached</td></tr>
+      <tr><td>Who holds a named file</td><td><code>crew(view="scopes")</code></td><td>3.65 s, answered</td><td>8.16 s, answered</td><td><strong>refused: 374,443 chars vs 80,000</strong></td></tr>
+      <tr><td>What should run next</td><td><code>roadmap --brief</code> (CLI)</td><td>14.30 s</td><td>28.95 s</td><td><strong>128.27 s</strong></td></tr>
+    </tbody>
+  </table>
+
+  <p id="measure-portfolio-answers-on-three-mounts-pc">On <code>power_convertor</code> (24 plans, 4 ready, 0 blocked) the critical path is <code>pf2-pf5-vs1-coupled-qualification#s7 → #s3 → #s4 → coil-supply-report-rebuild#s8</code> at 13 worker-hours across two plans. <code>pf2-pf5-vs1-coupled-qualification#s7</code> is answered in one call as <code>implementable</code>, with no runs and no holds, both its waits satisfied, and <code>#s3</code> waiting on it — nothing blocks it, and it is first on the ranked rows. No claim exists on <code>switched_circuit.py</code>; the same call names <code>r-20261103T033124395248-ef1-sequence-and-onset-voltage</code> as the binding holder of <code>docs/evidence/fragments/jt60sa-ef1-arc-sequence/ef1-sequence-and-onset-voltage.html</code>, so the empty answer for the first file is a reading of an instrument shown to see a holder, not a blind one.</p>
+
+  <p id="measure-portfolio-answers-on-three-mounts-nova">On <code>nova</code> (104 plans, 15 ready, 8 blocked) the critical path is <code>converged-forward-solve → single-grid-solver-cutover</code> and its <code>sections</code> list is empty. The path therefore still names plans, not sections, on that mount. Which of the two causes it is — nova declaring no cross-plan section edge, or the section lift missing one — was not adjudicated here; the second arm of the question (the <code>why</code> read on <code>forward-solve-api#s2</code>) did not answer inside the deadline.</p>
+
+  <p id="measure-portfolio-answers-on-three-mounts-reckon">On <code>reckon</code> (210 plans, 53 ready, 8 blocked) neither of the two MCP reads that carry the critical path and the file claims answers within the deadline. <code>roadmap</code> returns <code>storage-slow</code> at 30.0 s having used 6.37 s of CPU, and the <code>scopes</code> view is refused at 374,443 characters against an 80,000 ceiling with one narrowing hint, <code>candidates</code>, which is not the file the reader asked about. The one-page brief answers the same content in 128.27 s through the CLI, which carries no deadline.</p>
+
+  <p id="measure-portfolio-answers-on-three-mounts-disagreements">One disagreement with the recorded coordinator testimony of 2026-10-21 (§1). Those coordinators put the critical path through <code>iter-switched-terminal-transients#s6 → coil-supply-report-rebuild#s4 → #s8</code> and named <code>shared-coil-supply-model#s4</code> as the undeclared wait at its head. Today's read puts the head at <code>pf2-pf5-vs1-coupled-qualification#s7</code>. Cause: the plans moved in the intervening thirteen days — <code>iter-switched-terminal-transients</code> now reports no runs and no ready sections — so this is a stale comparison, not a defect in the derivation. No new derivation defect was identified on the two mounts whose reads answered.</p>
+
+  <p id="measure-portfolio-answers-on-three-mounts-control-b">The snapshot control ran. A copy of <code>power_convertor</code>'s docs was taken, one declared cross-plan edge removed — <code>coil-supply-report-rebuild#s8</code>'s wait on <code>pf2-pf5-vs1-coupled-qualification#s4</code> — and the same roadmap call run against it. The critical path moved from <code>pf2#s7 → pf2#s3 → pf2#s4 → coil#s8</code> across two plans to <code>coil-supply-report-rebuild#s24 → coil#s8</code> within one, so the first half of the control fires. The second half did not: <code>undeclared-wait</code> stayed at zero, because no blocked run, gate or followup on this snapshot names the removed ref in its text. That half of the control is therefore unproven here and needs a snapshot whose blocked manifest names the edge.</p>
+
+  <p id="measure-portfolio-answers-on-three-mounts-control-a">The base-commit arm — the same four questions on the base commit over the same snapshot — was not run inside this node's window. What stands in its place is the plan-level measurement already recorded in §1 at <code>7b793eaa</code>, where the critical path was the single plan <code>coil-supply-report-rebuild</code> at 35 h with every <code>unlocks</code> empty, and the ordering was by ROI and effort with 16 of 17 plans at ROI <code>high</code> and every open plan at effort <code>M</code>. That measurement disagrees with the coordinators on both the critical path and the first-ranked item, which is the disagreement the control asks for, but it was taken on 2026-10-21 rather than re-run today.</p>
+</article>
+</body>
+</html>
