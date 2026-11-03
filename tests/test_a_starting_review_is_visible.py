@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pytest
 
+from reckon import crew, mcp_views
 from reckon.crew import query, recovery, recovery_review_dispatch, runs
 
 PROJECT = "sample-project"
@@ -206,4 +207,72 @@ def test_one_live_read_lists_pointers_once(
     rows = query.project_live_rows(records)
 
     assert len(rows) == 5
+    assert len(reads) == 1
+
+
+def test_a_phase_narrowed_live_view_still_names_the_review(
+    config_home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Narrowing the rows does not narrow what a row is classified against.
+
+    The live view's phase filter keeps the rows a caller asked for, so the
+    review run itself is not among them. Whether the subject's review stands for
+    it is still a fact about the project, and the view keeps the whole set to
+    answer with while rendering the narrowed rows.
+    """
+    subject = _subject_pointer(config_home)
+    review = _review_pointer(config_home, phase="starting")
+    _write_pointer(subject)
+    _write_pointer(review)
+    reads: list[str] = []
+
+    def live(*_args: object, **_kwargs: object) -> list[dict]:
+        reads.append("read")
+        return [subject, review]
+
+    monkeypatch.setattr(crew, "list_live", live)
+    # The watcher block counts the project's pointers for its own liveness
+    # answer. That read is not the classification's, so it is stubbed here and
+    # the count below measures what classifying the rows costs.
+    monkeypatch.setattr(runs, "project_watch_visibility", lambda *_a, **_k: {})
+
+    answered = mcp_views.serve_crew_view("live", project=PROJECT, phase="complete")
+
+    rows = {row["run_id"]: row for row in answered["runs"]}
+    assert REVIEW_RUN not in rows
+    assert rows[SUBJECT_RUN]["review_run_id"] == REVIEW_RUN
+    assert rows[SUBJECT_RUN]["review_run_phase"] == "starting"
+    assert len(reads) == 1
+
+
+def test_the_runs_view_of_one_run_still_names_the_review(
+    config_home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A single-run view reads the project's pointers once, not the one run's.
+
+    Rendering one run does not make that run the whole context: its review is
+    another live pointer, and a read narrowed to the run itself would lose it.
+    """
+    subject = _subject_pointer(config_home)
+    review = _review_pointer(config_home, phase="starting")
+    _write_pointer(subject)
+    _write_pointer(review)
+    reads: list[str] = []
+
+    def live(*_args: object, **_kwargs: object) -> list[dict]:
+        reads.append("read")
+        return [subject, review]
+
+    monkeypatch.setattr(query, "list_live", live)
+
+    answered = query.runs_view(
+        PROJECT,
+        run_id=SUBJECT_RUN,
+        source="live",
+        fields=["review_run_id", "review_run_phase"],
+    )
+
+    assert [row["run_id"] for row in answered["rows"]] == [SUBJECT_RUN]
+    assert answered["rows"][0]["review_run_id"] == REVIEW_RUN
+    assert answered["rows"][0]["review_run_phase"] == "starting"
     assert len(reads) == 1

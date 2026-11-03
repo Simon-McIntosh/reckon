@@ -51,6 +51,8 @@ OPTIONAL_RUN_FIELDS = (
     "commits_beyond_base",
     "log_age_seconds",
     "manifest_reported_status",
+    "review_run_id",
+    "review_run_phase",
 )
 
 #: Every field a runs row declares: the ones the view serves by default and the
@@ -396,6 +398,7 @@ def project_live_rows(
     *,
     fields: Iterable[str] | None = None,
     session: str | None = None,
+    pointers: Iterable[Mapping[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     """Classify each live pointer and project it to the requested fields.
 
@@ -418,13 +421,20 @@ def project_live_rows(
     place is derived once, in :func:`reckon.crew.queue_admission
     .queued_placements`, so this view and any other surface that reports it
     answer from one order rather than each ordering the queue itself.
+
+    ``pointers`` is the project's whole live set, when it differs from the rows
+    being rendered. A caller that narrows — by phase, by session, by run — still
+    hands the classification the full set, because whether a run's review is in
+    flight is a fact about the project, not about the rows the caller asked to
+    see: narrowed to one phase, the review run itself is not among the rows, and
+    a subject read without it lost the review standing for it. Passing none
+    classifies from ``records``, which is the full set for a caller that did not
+    narrow.
     """
     records = list(records)
-    # Every row is classified from this one read of the live pointers, so the
-    # classification is handed the snapshot rather than listing the project's
-    # pointers again per row: one live-view read, one directory read.
+    snapshot = records if pointers is None else list(pointers)
     classified = group_terminal_lane_events(
-        [classify_pointer(record, pointers=records) for record in records]
+        [classify_pointer(record, pointers=snapshot) for record in records]
     )
     from reckon.crew.queue_admission import queued_placements
 
@@ -662,6 +672,12 @@ def _compact_row(
             if source == "live"
             else record.get("manifest_reported_status")
         ),
+        "review_run_id": (
+            classified.get("review_run_id") if source == "live" else None
+        ),
+        "review_run_phase": (
+            classified.get("review_run_phase") if source == "live" else None
+        ),
     }
     row = {field: complete[field] for field in selected_fields}
     if not with_path_fields:
@@ -830,12 +846,12 @@ def runs_view(
 ) -> dict[str, Any]:
     """Return compact live and committed run rows, newest first.
 
-    ``run_id`` selects one run by identity. Identity is known before the read,
-    so it narrows the read rather than filtering its result: the live arm reads
-    that run's single pointer through :func:`read_pointer` instead of walking
-    every pointer in the fleet, and the ledger arm keeps only that run's row
-    before any compact row is built. The answer is the same rows the identity
-    filter would have kept, without paying for the fleet to read one run.
+    ``run_id`` selects one run by identity, and the ledger arm keeps only that
+    run's row before any compact row is built. The live arm still reads the
+    project's pointers once: a row's classification asks whether another live
+    run stands as this one's review, which is a fact about the project rather
+    than about the run rendered, so the read cannot be narrowed to the one
+    pointer without losing the review that was dispatched for it.
     """
     selected_source = normalize_runs_source(source)
     selected_scope = normalize_runs_scope(scope)
@@ -874,20 +890,25 @@ def runs_view(
     rows: list[dict[str, Any]] = []
     live_records: list[Mapping[str, Any]] = []
     if selected_source in {"all", "live"}:
+        # One read of the project's live pointers serves both the rows rendered
+        # and the classification: whether a run's review stands for it is a fact
+        # about the project, so a view narrowed to one run still classifies
+        # against the whole set rather than the one pointer it renders.
+        snapshot: list[Mapping[str, Any]] = list_live()
+        if selected_scope == "project":
+            snapshot = [
+                record
+                for record in snapshot
+                if str(record.get("project") or "") == project
+            ]
         if selected_run_id:
             live_records = _live_records_for_run(
                 selected_run_id, project, scope=selected_scope
             )
         else:
-            live_records = list_live()
-            if selected_scope == "project":
-                live_records = [
-                    record
-                    for record in live_records
-                    if str(record.get("project") or "") == project
-                ]
+            live_records = snapshot
         classified_live = group_terminal_lane_events(
-            [classify_pointer(record, pointers=live_records) for record in live_records]
+            [classify_pointer(record, pointers=snapshot) for record in live_records]
         )
         records_by_id = {
             str(record.get("run_id") or ""): record for record in live_records
