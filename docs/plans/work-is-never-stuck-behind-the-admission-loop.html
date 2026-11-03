@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="165">
+<meta name="plan-version" content="166">
 <meta name="plan-modified" content="2026-11-03">
 </head>
 <body>
@@ -380,7 +380,10 @@
     <div class="r-comment-body"><p>Reviewed run r-20261102T213931926007-a-vanished-lock-starts-no-second-copy at b4838498fc..138a7a3ff9: goal 19, evidence 15, scope 20, durability 18, fit 19, reuse 19, added failure count 0, three non-blocking findings (truncated head-importers.log; fragment's four-versus-seven passing delta; inode-reuse flake at test line 308); ruff clean on both staged head files.</p></div>
 </div>
 <div class="r-comment" data-section="s20" data-id="c-run-r-20261103T003109505835-review-of-a-vanished-lock-starts-no-second-copy-fbaa51c15f50" data-who="reckon-build" data-when="2026-11-03T00:41:20.962Z">
-    <div class="r-comment-body"><p>Reviewed run r-20261102T213931926007-a-vanished-lock-starts-no-second-copy at 138a7a3ff9..fbaa51c15f: parsed record scoring goal_fidelity 18, evidence 19, scope_discipline 20, durability 16, fit 20, reuse 20 (total 113), added_failure_count 0 with added_failure_ids empty from the run&#x27;s own baseline_suite (4 failure ids, EXIT=1 at 27dca04b11) and after_suite (0 failures, EXIT=0 at fbaa51c15f), one non-blocking finding (the recreated-lock case now passes vacuously where a filesystem reuses the freed inode) and no blocking one, so the node can land.</p></div>
+    <div class="r-comment-body"><p>Reviewed run r-20261102T213931926007-a-vanished-lock-starts-no-second-copy at 138a7a3ff9..fbaa51c15f: parsed record scoring goal_fidelity 18, evidence 19, scope_discipline 20, durability 16, fit 20, reuse 20 (total 113), added_failure_count 0 with added_failure_ids empty from the run's own baseline_suite (4 failure ids, EXIT=1 at 27dca04b11) and after_suite (0 failures, EXIT=0 at fbaa51c15f), one non-blocking finding (the recreated-lock case now passes vacuously where a filesystem reuses the freed inode) and no blocking one, so the node can land.</p></div>
+</div>
+<div class="r-comment" data-section="s20" data-id="c-run-r-20261102T213931926007-a-vanished-lock-starts-no-second-copy" data-who="reckon-build" data-when="2026-11-03T00:27:54Z">
+    <div class="r-comment-body"><p>Landed 33dcdfc6ce, b4838498fc, eca23f33d2, 138a7a3ff9 and fbaa51c15f: `_alive` keeps a copy alive while its recorded pid names a process whose command line is that service&#x27;s (alert once per vanished lock, no restart), each supervision pass stops every copy but the recorded one by pid after logging the list, the pid record carries the live lock file&#x27;s inode with the previous record only as fallback, `announce_requeue` writes the alerts log through the one `alert()` appender, and the recreated-lock case asserts the inode of the file on disk rather than requiring the number to change; 4 cases in `tests/test_a_vanished_lock_starts_no_second_copy.py`, head arm 4 passed / exit 0 at fbaa51c15f.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261029T134712468009-review-of-landing-runs-beside-admission-619610fcf9fe" data-who="reckon-build" data-when="2026-10-29T13:57:43.710Z">
     <div class="r-comment-body"><p>Reviewed r-20261028T222632387609-landing-runs-beside-admission at head 619610fcf9fe against base 13b5e629: six dimensions scored (goal_fidelity 18, evidence 18, scope_discipline 15, durability 16, fit 18, reuse 5) with four non-blocking findings — _LandingWorker duplicates the SweepBeat off-tick-path worker, the --no-impl-change waiver is broader than the section and unobserved afterwards, a land step in flight at service stop is orphaned past the 1 s join, and one assertion was updated in a file outside the declared write paths. The record is parsed and accepted; nothing blocks.</p></div>
