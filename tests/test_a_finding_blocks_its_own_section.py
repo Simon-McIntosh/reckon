@@ -346,6 +346,44 @@ def test_a_dotted_subsection_name_blocks_its_own_record(many_section_plan):
     assert _gate(many_section_plan[1], "s5") is None
 
 
+def test_a_plan_line_anchor_outranks_the_sections_its_text_names(many_section_plan):
+    """A plan-file line settles the unit; text names only the ones it can settle.
+
+    Both findings below sit on a §4 line. The first names no section, so only
+    the line can place it; the second names §5, which the line contradicts.
+    Resolving the text first would send the first to the document unit and the
+    second to §5, so this case fails if the line is not read before the text.
+    """
+    _empty_design(many_section_plan[2])
+    record = _store(
+        many_section_plan[2],
+        rubric="content",
+        run_id="review-content",
+        version=CONTENT_VERSION,
+        findings=[
+            {
+                "id": "reasoning-1",
+                "type": "reasoning",
+                "anchor": f"{PLAN}:{_line_of(many_section_plan[2], PROSE['s4'])}",
+                "text": "the premise names a counter the code cannot observe.",
+            },
+            {
+                "id": "duplicate_owner-3",
+                "type": "duplicate_owner",
+                "anchor": f"{PLAN}:{_line_of(many_section_plan[2], PROSE['s4'])}",
+                "text": "§5 re-derives the charge its owner already makes.",
+            },
+        ],
+    )
+    assert plan_review.finding_units(record, "reasoning-1") == ["s4"]
+    assert plan_review.finding_units(record, "duplicate_owner-3") == ["s4"]
+    with pytest.raises(PlanReviewMissingError, match="reasoning-1"):
+        _gate(many_section_plan[1], "s4")
+    with pytest.raises(PlanReviewMissingError, match="duplicate_owner-3"):
+        _gate(many_section_plan[1], "s4")
+    assert _gate(many_section_plan[1], "s5") is None
+
+
 def test_a_mixed_case_anchor_fragment_names_its_section(many_section_plan):
     """#Delivery addresses the section whose record id is delivery."""
     _empty_design(many_section_plan[2])
