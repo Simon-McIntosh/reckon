@@ -6,24 +6,38 @@
     same note as <code>note</code>. The note is stored on the finding's response,
     read back by <code>plan_review._stored_response</code>, and printed by the next
     review brief in place of a bare <code>-&gt; acted</code>, so a reviewer reads
-    what the fix changed instead of re-deriving it from the diff. Every
-    acted-answer example in the build, edit and review skills names the note.
+    what the fix changed instead of re-deriving it from the diff. A note without
+    an answer is refused naming <code>--answer</code>: composing a review with
+    one dropped it silently and reported a review of a finding nobody answered.
+    Every acted-answer example in the build, create, edit and review skills names
+    the note.
   </p>
   <p id="an-answer-says-what-was-done-measure">
     <strong>Measure.</strong> <code>tests/test_an_answer_says_what_was_done.py</code>:
-    5 passed. The declared controls both go red: dropping the requirement fails
-    <code>test_an_acted_answer_without_a_note_is_refused</code> (EXIT=1), and
+    6 passed. The declared controls go red: dropping the note requirement fails
+    <code>test_an_acted_answer_without_a_note_is_refused</code>, removing the
+    note-without-answer refusal fails
+    <code>test_a_note_without_an_answer_is_refused</code> (the control's run
+    dispatched a review and discarded the note, which is the defect), and
     restoring one skill example without <code>--note</code> fails
-    <code>test_every_skill_example_of_an_acted_answer_shows_the_note</code> (EXIT=1).
+    <code>test_every_skill_example_of_an_acted_answer_shows_the_note</code>. The
+    blast radius — the eight pre-existing files that answer findings through the
+    CLI plus the tool-parity file — is 123 passed. The three no-added-failure
+    arm files are 1 failed / 12 passed at both the node revision and the base,
+    the shared failure being
+    <code>test_crew_help_names_its_state_or_condition</code> on the attach verb's
+    help line.
   </p>
   <p id="an-answer-says-what-was-done-open">
-    <strong>Open.</strong> Fifteen cases in eight pre-existing test files answer
-    findings with <code>--acted</code> and no note, so they now fail on the
-    intended refusal. Those files are outside this node's write scope and the
-    scope widen is refused by the read-only run lock, so the node is blocked on
-    a scope extension (see the manifest's <code>blockers</code>).
-    <code>reckon/mcp.py</code>'s <code>_crew</code> signature and
-    <code>skills/reckon-create/SKILL.md</code> need the same one-line change and
-    are likewise outside the scope.
+    <strong>Open.</strong> The 156-file importer arm was split by the time fence.
+    The chunk holding every file that reaches the changed surfaces ran at both
+    arms: 8 failed / 234 passed at the node revision and 8 failed / 209 passed at
+    the base, both red only inside <code>test_crew.py</code> and
+    <code>test_crew_session_delivery.py</code>, whose failures include a
+    <code>RecursionError</code> in <code>reckon/crew/runs.py</code>'s watch
+    publisher — the unrelated follow path, and flaky — so that comparison
+    records no added failure outside it rather than a clean arm. The remaining
+    116 importer files did not run; the parameter-surface subset that could
+    notice a new tool argument did, and adds none.
   </p>
 </article>
