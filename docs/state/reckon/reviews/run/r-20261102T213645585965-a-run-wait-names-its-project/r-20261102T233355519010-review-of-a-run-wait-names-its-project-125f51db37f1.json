@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-03T00:07:25.529Z",
+  "dispatched_at": "2026-11-02T23:57:08Z",
+  "findings": [
+    {
+      "id": "f475587d229",
+      "line": 10,
+      "path": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-run-wait-names-its-project.html",
+      "severity": "blocking",
+      "text": "the fragment states '1 failed, 4 passed, EXIT=1' for the reader control and '2 failed, 3 passed, EXIT=1' for the writer control, but negative-control-reader.log contains only 'F....' with no pytest summary or exit line and negative-control-writer.log ends at its summary with no exit line; the manifest's negative_control_log names the writer log, so a promotion reading exit status from that log finds none. The repair is a re-run of both controls with a bare EXIT= last line, not a code change."
+    },
+    {
+      "id": "f8f928326bc",
+      "line": 1754,
+      "path": "reckon/crew/queue_admission.py",
+      "severity": "non-blocking",
+      "text": "_mounted_projects swallows every exception into () and _run_record_held (:1742) into False, and the delta makes that empty tuple authoritative for a whole list at :1820, so an unreadable mount registry is indistinguishable from a registry naming no projects; the reader then records a wait-unresolvable duty whose next_command at obligations.py:1818 advises discarding the request."
+    },
+    {
+      "id": "f19fe5a2ea7",
+      "line": 2657,
+      "path": "reckon/crew/queue_admission.py",
+      "severity": "non-blocking",
+      "text": "dispatch_waits calls _mounted_projects() unconditionally, unlike wait_projects_for at :1820 which guards on a run ref being present, so every dispatch pays a config-home registry read even when no wait names a run."
+    },
+    {
+      "id": "f60726829d6",
+      "line": 1792,
+      "path": "reckon/crew/queue_admission.py",
+      "severity": "non-blocking",
+      "text": "the mounted-project scan forks runs._promoted_record_project (reckon/crew/runs.py:1783, used at reckon/crew_dispatch_commands.py:78) which already searches each mounted project's ledger for a run's row, and it resolves the ledger through the default root while the owner resolves it through each mounted checkout; the fork predates this delta (already reviewed at ce0f36c449) and the delta deepens its reach."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a request's run: wait always names the project its landing is read from; the delta threads one parsed mount registry through wait_project_for_run (reckon/crew/queue_admission.py:1764), wait_projects_for (:1800), _wait_state (:2468), resolve_waits (:2811) and advance_waiting_requests (:3102), so a pass reads the registry once and the reader/writer contract is unchanged.\nVERDICT done_when: the plan's five cases are asserted in tests/test_a_run_wait_names_its_project.py:90,118,141,164,192 and the folded registry-read case at :211; gate-head-2.log records 6 passed, EXIT=0, and negative-control-registry.log records the counting case red at 4 reads with EXIT=1.\nVERDICT write_paths: the node declared reckon/crew/queue_admission.py, reckon/crew/obligations.py, tests/test_a_run_wait_names_its_project.py, the landing fragment and a docs/figures directory; the delta ce0f36c449..125f51db37 touches only queue_admission.py, the test file and the fragment, all inside that set.\nVERDICT manifest: read the reviewed run's manifest; it names the gate command verbatim, three controls with the ids each mutation reddens, and the 60-file importer set at 2 failed/415 passed with both ids reproduced at the base revision; its baseline_suite log is exit 4 because the test file does not exist at 27dca04b11, which it attributes honestly.\nVERDICT diff: read both commits against ce0f36c4499ff57bfb30fba7406066d5be4ff164; bad91a03c5 adds a mounted parameter to five functions and a guard at queue_admission.py:1820 so the registry is parsed once per list, plus tests/test_a_run_wait_names_its_project.py:211; 125f51db37 records the sixth case and the widened importer set in the landing fragment.\nCALL_SITES: reckon/crew/dispatch.py:2188, reckon/crew/dispatch.py:1946, reckon/crew/queue_admission.py:3007, reckon/crew/queue_admission.py:3854, reckon/crew/queue_admission.py:2866, reckon/crew/queue_admission.py:2470, reckon/crew/obligations.py:1744, reckon/crew/obligations.py:1803, reckon/hooks/coordinator_obligations.py:214\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:1820 and :2657 make the registry read per list and per pass rather than per ref, which is the folded finding the node was dispatched for, and the reader at :2470 still resolves a missing wait_projects entry through the same derivation.\nSCORE evidence: 14\nJUSTIFICATION evidence: gate-head-2.log records 6 passed EXIT=0 and negative-control-registry.log records the counting case red with EXIT=1, but negative-control-reader.log ends at 'F....' with no summary and negative-control-writer.log ends at '2 failed, 3 passed in 7.35s' with no exit line, so two of the three control receipts the fragment cites carry no status.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat ce0f36c449 125f51db37 names only reckon/crew/queue_admission.py, tests/test_a_run_wait_names_its_project.py and docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-run-wait-names-its-project.html, all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_run_wait_names_its_project.py:236 asserts len(reads) == 1, and restoring the per-ref read in wait_projects_for makes it read 4 and fail (negative-control-registry.log, 1 failed, EXIT=1), so the guard reddens on exactly the regression it exists for.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/queue_admission.py:1764-1834 follows the module's docstring style and names the mechanism, the added symbols carry no plan or ticket identifier, but the mounted parameter is documented on two of the five signatures it was added to.\nSCORE reuse: 17\nJUSTIFICATION reuse: the delta adds parameters rather than definitions, but it threads metadata through reckon/crew/queue_admission.py:1792's mounted-project scan, which forks the capability runn/crew/runs.py:1783 _promoted_record_project already owns rather than extending it.\nFINDING docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-run-wait-names-its-project.html:10 blocking: the fragment states '1 failed, 4 passed, EXIT=1' for the reader control and '2 failed, 3 passed, EXIT=1' for the writer control, but negative-control-reader.log contains only 'F....' and no pytest summary or exit line, and negative-control-writer.log ends at its summary with no exit line; the manifest's negative_control_log names the writer log, so a promotion reading exit status from that log finds none, and the cited receipts have to be re-run with a bare EXIT= last line rather than the code changed.\nFINDING reckon/crew/queue_admission.py:1754 non-blocking: _mounted_projects swallows every exception into () and _run_record_held (:1742) into False, and the delta makes that empty tuple authoritative for a whole list at :1820, so an unreadable mount registry is indistinguishable from a registry naming no projects; the reader then records a wait-unresolvable duty whose next_command at obligations.py:1818 advises discarding the request, so a transient config-home fault can instruct a coordinator to drop a healthy request instead of reporting the failed instrument.\nFINDING reckon/crew/queue_admission.py:2657 non-blocking: dispatch_waits now calls _mounted_projects() unconditionally, unlike wait_projects_for at :1820 which guards on the refs containing a run ref, so every dispatch pays a config-home registry read even when no wait names a run, reversing part of the per-pass saving the delta exists to make.\nFINDING reckon/crew/queue_admission.py:1792 non-blocking: the mounted-project scan forks runs._promoted_record_project (reckon/crew/runs.py:1783, used at reckon/crew_dispatch_commands.py:78), which already searches each mounted project's ledger for a run's row, and it resolves the ledger through the default root while the owner resolves it through each mounted checkout, so the two can name different projects for one run; the fork predates this delta and was scored 16 at ce0f36c449, so it is recorded here rather than charged against this change.\n",
+  "review_run_id": "r-20261102T233355519010-review-of-a-run-wait-names-its-project-125f51db37f1",
+  "reviewed_base_sha": "ce0f36c4499ff57bfb30fba7406066d5be4ff164",
+  "reviewed_head_sha": "125f51db37f1029aa4673a473817db30bf67a584",
+  "reviewed_run_id": "r-20261102T213645585965-a-run-wait-names-its-project",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T00:09:01.973331+00:00",
+  "total": 104
+}
