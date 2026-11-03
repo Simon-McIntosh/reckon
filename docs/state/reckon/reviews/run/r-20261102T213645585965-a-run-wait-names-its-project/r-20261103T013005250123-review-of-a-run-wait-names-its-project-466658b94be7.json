@@ -1,0 +1,40 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-03T01:41:42.082Z",
+  "dispatched_at": "2026-11-03T01:32:27Z",
+  "findings": [
+    {
+      "id": "fb79e6d2a7b",
+      "line": 1783,
+      "path": "reckon/crew/runs.py",
+      "severity": "blocking",
+      "text": "the delta modifies reckon/crew/runs.py, which is not among the node's declared write paths (queue_admission.py, obligations.py, the test file, the landing fragment and a figures directory), so the landed change crosses the fence it was dispatched under; the change itself is additive (an optional roots keyword defaulting to a registry read, so every existing caller is unchanged) and is the only way to repair the blocking per-ref read recorded at f5cd6f37ef, since reverting it restores the defect. The repair is a coordinator-recorded scope widen for reckon/crew/runs.py, not a code revert."
+    },
+    {
+      "id": "f348fe6a127",
+      "line": 1765,
+      "path": "reckon/crew/queue_admission.py",
+      "severity": "non-blocking",
+      "text": "_mount_view re-derives the mount registry's project-to-checkout-root mapping ({str(name): path.parent.resolve()}) that the owner reckon/crew/runs.py:1763 _mounted_project_roots already computes, and the two disagree on failure: _mount_view catches every Exception into a reported read failure while the owner catches only FlightConfigError and returns an empty mapping, so the same unreadable registry reads as 'could not be read, retry' through the queue path and as 'no project holds this run, discard' through every other caller of _promoted_record_project. The mapping could have been exposed once from the owner rather than computed twice."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that every run: wait a request holds resolves through its project so a landed upstream releases it; the delta repairs the blocking finding recorded at f5cd6f37ef by adding _mount_view (reckon/crew/queue_admission.py:1765), which parses the registry once and threads the mapping through wait_project_lookup, wait_projects_for, resolve_waits, _rederive_waits and advance_waiting_requests, and by giving runs._promoted_record_project a roots keyword (reckon/crew/runs.py:1783) so the mounted-ledger scan no longer re-reads the registry per ref.\nVERDICT done_when: the node's measure is the plan's five cases plus two controls in tests/test_a_run_wait_names_its_project.py, with the importer sets adding no failure; the manifest names the gate command, gate-head-2.log records REVISION 4879eeb731 with 8 passed EXIT=0, and I re-ran the same command in the reviewed worktree and reproduced 8 passed EXIT=0.\nVERDICT write_paths: the dispatch fenced the node to reckon/crew/queue_admission.py, reckon/crew/obligations.py, tests/test_a_run_wait_names_its_project.py, the landing fragment and a figures directory; the delta touches queue_admission.py, the test file and the fragment, all inside that set, plus reckon/crew/runs.py which is outside it.\nVERDICT manifest: read; it names the gate command verbatim, the four controls with the ids each mutation reddens, the 60-file importer set at 2 failed/417 passed with both ids reproduced at the base revision, and it records the reckon/crew/runs.py write under outside_scope rather than hiding it, asking the coordinator to record a widen.\nVERDICT diff: read both commits against f5cd6f37ef; 4879eeb731 replaces _mounted_projects_and_failure with _mount_view returning roots plus failure, renames the mounted parameter to mount across six functions, and adds the roots keyword to runs._promoted_record_project; 466658b94b moves the counting case onto flight.mounted_project_docs and rewrites two fragment sentences to the figures the rerun logs carry.\nCALL_SITES: reckon/crew/dispatch.py:278, reckon/crew/dispatch.py:1946, reckon/crew/dispatch.py:2188, reckon/crew/queue_admission.py:3066, reckon/crew/queue_admission.py:3913, reckon/crew/obligations.py:1803, reckon/crew_dispatch_commands.py:78\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:1801-1812 reads the registry once and hands that mapping to runs_module._promoted_record_project, so every run: ref of a pass resolves against one registry read and the release path the goal names is unchanged.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head-2.log carries REVISION 4879eeb731 and 8 passed EXIT=0, which I reproduced; consumers-head-5.log runs at 466658b94b at 2 failed/417 passed with both ids reproducing at base (overlap-base.log 1 failed/10 passed), and the fragment's control figures match the four logs line for line.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: reckon/crew/runs.py:1783-1810 is modified although reckon/crew/runs.py is absent from the dispatch's FENCE \u2014 SCOPE list; every other path in the delta is inside the fence.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_run_wait_names_its_project.py:252 asserts len(reads) == 1 over three refs patched at flight.mounted_project_docs, and negative-control-registry.log shows that assertion failing at 4 reads when the per-ref read is restored, so the guard reddens on exactly the regression the node was sent to repair; :311 adds the same independent count for the unreadable path.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/queue_admission.py:1754-1780 keeps the module's mechanism-first docstrings and the noqa-annotated swallow, but the new MountView alias is threaded through parameters still typed object at :1786 and :1823, so the alias is documented rather than used as the type callers see.\nSCORE reuse: 14\nJUSTIFICATION reuse: reckon/crew/queue_admission.py:1765 recomputes the project-to-root mapping that reckon/crew/runs.py:1763 _mounted_project_roots already owns and diverges from it on which exceptions count as an unreadable registry, though the delta does extend the owner by giving _promoted_record_project a roots keyword rather than forking the scan again.\nFINDING reckon/crew/runs.py:1783 blocking: the delta modifies a file outside the node's declared write paths; the change is additive and is the only repair for the blocking per-ref read at f5cd6f37ef, so the remedy is a coordinator-recorded scope widen for reckon/crew/runs.py rather than a revert.\nFINDING reckon/crew/queue_admission.py:1765 non-blocking: _mount_view re-derives the registry-to-roots mapping owned by reckon/crew/runs.py:1763 and catches every Exception where the owner catches only FlightConfigError, so one unreadable registry reads as 'retry' through the queue path and as 'no project holds this run' through the owner's other callers.",
+  "review_run_id": "r-20261103T013005250123-review-of-a-run-wait-names-its-project-466658b94be7",
+  "reviewed_base_sha": "f5cd6f37ef26299a29fc87eedfbef042c7bdfa1f",
+  "reviewed_head_sha": "466658b94be7f51b1ce998ece2ad8a7b70b4c1f4",
+  "reviewed_run_id": "r-20261102T213645585965-a-run-wait-names-its-project",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 14,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T01:52:29.305058+00:00",
+  "total": 95
+}
