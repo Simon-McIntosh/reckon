@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:357",
+    "reckon/crew/promotion.py:877",
+    "reckon/crew/recovery_review_acceptance.py:175"
+  ],
+  "completed_at": "2026-11-03T07:48:25.603Z",
+  "dispatched_at": "2026-11-03T07:31:15Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_records.py",
+      "line": "285",
+      "severity": "non-blocking",
+      "text": "_review_record_evidence computes findings and report_path, but its only caller _review_record_check reads only evidence[\"path\"], so the findings and report-path evidence the plan names is collected and discarded, which reads as if the gate judged it."
+    },
+    {
+      "file": "reckon/crew/promotion_records.py",
+      "line": "273",
+      "severity": "non-blocking",
+      "text": "the record-body read re-implements _read_review_record at reckon/crew/recovery_review_delivery.py:325, in the module this file already imports from twice, and widens its except clause from json.JSONDecodeError to ValueError."
+    },
+    {
+      "file": "tests/test_a_review_run_is_promoted_on_its_record.py",
+      "line": "251",
+      "severity": "non-blocking",
+      "text": "no test covers the recognised-status filter at reckon/crew/promotion_records.py:279, so deleting it and accepting an unparsed or incomplete record as gate evidence would leave all three tests green."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit from 07470ff1b3 to 5821e82539: f86538cd61 adds the review-role evidence path, c0abe15681 narrows it to delivered records, 5821e82539 adds only the evidence fragment.",
+    "done_when": "the done_when names tests/test_a_review_run_is_promoted_on_its_record.py with the three cases, no added failure over the importing files and no new ruff finding; the manifest records that run and its logs confirm it.",
+    "goal": "the goal is that promotion of a review-role run reads its stored review record as its gate evidence; reckon/crew/promotion_records.py:252 supplies exactly that through the shared delivery reader.",
+    "manifest": "read; it states status complete, three commits, both arm counts, the negative control's single failure and zero added failures, and I verified each claim against the logs on disk.",
+    "write_paths": "the manifest declares reckon/crew/promotion_records.py, tests/test_a_review_run_is_promoted_on_its_record.py and the evidence fragment; all three changed files are inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_review_run_is_promoted_on_its_record.py:251 reddens under the declared mutation (logs/negative-control.log, EXIT=1), but nothing covers the recognised-status filter at reckon/crew/promotion_records.py:279.",
+    "evidence": "the done_when gate is tests/test_a_review_run_is_promoted_on_its_record.py and logs/after-suite.log ends '241 passed ... EXIT=0' against logs/baseline-arm.log '238 passed ... EXIT=0'; I re-measured the ruff delta over both staged files myself.",
+    "fit": "reckon/crew/promotion_records.py:245-306 follows the module's deferred-import idiom and mechanism-first docstrings and introduces no plan, ticket or phase name.",
+    "goal_fidelity": "reckon/crew/promotion_records.py:252 reads the stored record through _delivered_review_record, so a review run with a delivered recognised-status record promotes on prose tests while every other role keeps the executable-gate refusal.",
+    "reuse": "reckon/crew/promotion_records.py:268 reuses _is_review_run, _delivered_review_record and RECOGNISED_REVIEW_STATUSES but re-reads the record body that _read_review_record at reckon/crew/recovery_review_delivery.py:325 already owns.",
+    "scope_discipline": "every file in the diff at reckon/crew/promotion_records.py, tests/test_a_review_run_is_promoted_on_its_record.py and docs/evidence/fragments/a-review-gate-judges-what-it-covers/a-review-run-is-promoted-on-its-record.html sits inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that promotion of a review-role run reads its stored review record as its gate evidence; reckon/crew/promotion_records.py:252 supplies exactly that through the shared delivery reader.\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_records.py:252 reads the stored record through _delivered_review_record, so a review run with a delivered recognised-status record promotes on prose tests while every other role keeps the executable-gate refusal.\nVERDICT done_when: the done_when names tests/test_a_review_run_is_promoted_on_its_record.py with the three cases, no added failure over the importing files and no new ruff finding; the manifest records that run and its logs confirm it.\nSCORE evidence: 19\nJUSTIFICATION evidence: the done_when gate is tests/test_a_review_run_is_promoted_on_its_record.py and logs/after-suite.log ends '241 passed ... EXIT=0' against logs/baseline-arm.log '238 passed ... EXIT=0'; I re-measured the ruff delta over both staged files myself.\nVERDICT write_paths: the manifest declares reckon/crew/promotion_records.py, tests/test_a_review_run_is_promoted_on_its_record.py and the evidence fragment; all three changed files are inside them.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every file in the diff at reckon/crew/promotion_records.py, tests/test_a_review_run_is_promoted_on_its_record.py and docs/evidence/fragments/a-review-gate-judges-what-it-covers/a-review-run-is-promoted-on-its-record.html sits inside the declared write paths.\nVERDICT manifest: read; it states status complete, three commits, both arm counts, the negative control's single failure and zero added failures, and I verified each claim against the logs on disk.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_review_run_is_promoted_on_its_record.py:251 reddens under the declared mutation (logs/negative-control.log, EXIT=1), but nothing covers the recognised-status filter at reckon/crew/promotion_records.py:279.\nVERDICT diff: read commit by commit from 07470ff1b3 to 5821e82539: f86538cd61 adds the review-role evidence path, c0abe15681 narrows it to delivered records, 5821e82539 adds only the evidence fragment.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/promotion_records.py:245-306 follows the module's deferred-import idiom and mechanism-first docstrings and introduces no plan, ticket or phase name.\nCALL_SITES: reckon/crew/promotion.py:357, reckon/crew/promotion.py:877, reckon/crew/recovery_review_acceptance.py:175\nSCORE reuse: 15\nJUSTIFICATION reuse: reckon/crew/promotion_records.py:268 reuses _is_review_run, _delivered_review_record and RECOGNISED_REVIEW_STATUSES but re-reads the record body that _read_review_record at reckon/crew/recovery_review_delivery.py:325 already owns.\nFINDING reckon/crew/promotion_records.py:285 non-blocking: _review_record_evidence computes findings and report_path, but its only caller _review_record_check reads only evidence[\"path\"], so the findings and report-path evidence the plan names is collected and discarded, which reads as if the gate judged it.\nFINDING reckon/crew/promotion_records.py:273 non-blocking: the record-body read re-implements _read_review_record at reckon/crew/recovery_review_delivery.py:325, in the module this file already imports from twice, and widens its except clause from json.JSONDecodeError to ValueError.\nFINDING tests/test_a_review_run_is_promoted_on_its_record.py:251 non-blocking: no test covers the recognised-status filter at reckon/crew/promotion_records.py:279, so deleting it and accepting an unparsed or incomplete record as gate evidence would leave all three tests green.\n",
+  "review_run_id": "r-20261103T072409445613-review-of-a-review-run-is-promoted-on-its-record-5821e8253933",
+  "reviewed_base_sha": "07470ff1b349069d60f08bf94f4efdd1f8183393",
+  "reviewed_head_sha": "5821e82539335c1737bb6ce260425da8c2922dce",
+  "reviewed_run_id": "r-20261103T055147640892-a-review-run-is-promoted-on-its-record",
+  "scores": {
+    "durability": 15,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T08:50:00Z",
+  "total": 103
+}
