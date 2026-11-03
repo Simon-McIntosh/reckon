@@ -2571,6 +2571,10 @@ def _run_review(
             detail = "--answer requires --plan PLAN"
     elif acted or declined is not None:
         detail = "--acted and --declined require --answer FINDING_ID"
+    elif str(note or "").strip():
+        # A note is part of an answer. Composing a review with one would discard
+        # it, and the command would report a review of a finding nobody answered.
+        detail = "--note requires --answer FINDING_ID"
     elif not plan_slug and not code_subject and not portfolio_subject:
         detail = (
             "name a subject: --plan PLAN, --around PLAN, --path PATH or --portfolio"

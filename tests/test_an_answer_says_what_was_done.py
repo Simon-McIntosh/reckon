@@ -77,6 +77,34 @@ def test_an_acted_answer_without_a_note_is_refused(project) -> None:
     assert record["responses"] == {}, "a refused answer still wrote a response"
 
 
+def test_a_note_without_an_answer_is_refused(project) -> None:
+    """A note belongs to an answer: composing a review must not swallow it."""
+    result = CliRunner().invoke(
+        cli.main,
+        [
+            "crew",
+            "review",
+            "--project",
+            "sample",
+            "--plan",
+            "fixture",
+            "--session",
+            "coordinator",
+            "--local",
+            "--note",
+            NOTE,
+        ],
+    )
+
+    assert result.exit_code != 0, result.output
+    assert "--answer" in result.output, (
+        f"the refusal did not name --answer:\n{result.output}"
+    )
+    assert plan_review.read_plan_review("sample", "fixture") is None, (
+        "a refused command still composed a review"
+    )
+
+
 def test_an_acted_answer_stores_its_note(project) -> None:
     """The note lands on the response, where the next brief reads it."""
     _store_review()
