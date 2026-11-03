@@ -1,0 +1,69 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-03T00:31:28.086Z",
+  "dispatched_at": "2026-11-03T00:24:23Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:90",
+      "id": "done_when-1",
+      "reason": "the node runs the named controls as its proof, so a control aimed at the wrong case either blocks the node or leaves the record-key and stage-split guards unshown to fire.",
+      "text": "s4's done-when says \"shows four things\" but lists five bullets (the per-section fallback memo case was inserted second without renumbering), and its negative controls still reference the old positions: \"leaving the review records out of the record's key fails the second case\" names the fallback-memo case (bullet 2), which does not depend on the record key, while the record-key case is bullet 3; \"timing `advance_waiting_requests` inside `launch_seconds` fails the fourth case\" names the verdict-equivalence arm (bullet 4) instead of the `waits_seconds` arm (bullet 5) \u2014 under SPEC exact a worker applying those controls finds them passing and cannot satisfy the done-when as written",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:209",
+      "id": "done_when-2",
+      "reason": "the discovery gate is the section's only defence against fixing the wrong path, and it currently makes the node block before it can land either fix, so the citation source for the refused attempt has to name where that refusal actually survives.",
+      "text": "s22's done-when requires that each of the two attempts \"is cited with the run record that shows it: the run's `attempt.json`, `supervisor.json`, `stderr.log` or stream line\", but the 22:43:56Z attempt was refused at worktree creation and never launched, so it left no run record: `attempt.json` in the cited run directory reads `{\"attempt\": 1, \"attempt_kind\": \"dispatch\", \"attempt_started_at\": \"2026-11-02T22:45:22Z\"}` \u2014 one attempt, the successful one \u2014 leaving the refusal's only trace in the pointer's `failure`/`failure_attempts` keys and the dispatch call's error text, both of which promotion has since rewritten; by the section's own rule (\"If a named path is not one the fixes touch, the node stops and reports blocked\") the node blocks on a requirement no record can satisfy",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "5297dd3dcccbe02d82ab51941a058ee44a036d2b",
+  "plan_fingerprint": "2aa91680c28be285c39e531c8647fdc9b682bba8267e871d6120f4e5f14f96db",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 161,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261103T002315319623-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "8dc87042baa328acf96e14e67abb72838c819f99",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `routing._stale_launch_tree_refusal` is at `reckon/crew/routing.py:2179`, `QUEUED_LIFE_KEYS` at `reckon/crew/queue_admission.py:4134`, `_plan_review_owed` at 3244 with `_section_digests` at 3319, `read_state_file` at 3328 and the contract check at 3329-3337; the cross-plan href `a-read-costs-what-changed#s6` resolves to a section that exists.",
+    "done_when": "a finding \u2014 s4's done-when lists five cases under \"shows four things\" and its two later negative controls are numbered against the pre-insertion list, so each names a case it cannot fail; s22's done-when requires a run record for an attempt that never launched.",
+    "evidence_paths": "pass \u2014 s4's timing arm is logged under the run's `logs/` on the crew run directory and its unit gate is a repository test file; s22's evidence lands in the manifest and the run's own record directory, both durable.",
+    "naming": "pass \u2014 the two new test files are named by what they measure (`test_a_successful_launch_is_recorded.py`, `test_a_pass_computes_coverage_once.py`), and the new symbols named in the sections (`waits_seconds`, `wait-unresolvable`) carry mechanism rather than plan labels.",
+    "reasoning": "pass \u2014 s22 fixes the outcome its evidence shows (the launched pointer carried no `argv`/`worktree`/`base_sha` while the refused attempt's `failure` keys survived) through deliverable part 3, and its discover-first gate keeps it from asserting an unestablished cause; s4's memo keyed by plan digest plus the stored-review identities is what makes the stored-record case detectable, and the timing arm is the caller-visible measurement of the same pass in `admit_once`.",
+    "single_goal": "pass \u2014 s4 pairs a per-pass memo with the `waits_seconds` split, but the split is the instrument that shows the reads moved out of launch and both land in one new test file and one verdict row; s22's three parts are one outcome (a launch recorded whatever a refused attempt wrote).",
+    "wiring": "pass \u2014 s4's `depends-on` `a-read-costs-what-changed#s6` resolves to that plan's admission/landing read-caching section, s22's `#s19` resolves and both sections edit the same pointer-mutation writers in `reckon/crew/queue_admission.py`, and the plan-level `informs` target `a-queue-holds-the-whole-plan.html` exists."
+  },
+  "section_digests": {
+    "_document": "d9fe47a1e0fd65aa8c4bf3eb8aaf21e958e6b5860db22a3c6b74a23a53529665",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s11": "64172d367078831447521db5db6f564603855f46c387c906413737be38d7cefa",
+    "s12": "a326ddd2ee6a25d3a5bd7e7faf7faebb13b159435640d33f4c6c5edcca238229",
+    "s13": "43c63cb3547e9638882e45af647c6eca92cdbd77c8006cbf416ed717619a79d5",
+    "s14": "8ad0ca2171f9b9e5d1a4402bed0ba51d908267ec88069268c781013864f569fa",
+    "s15": "97b76e836bce15b65611e3a1c12d5628da0992c3b604881d88f2e406aec3097b",
+    "s16": "de7130b93ad47423ed1f2ac37f7d700e9e1875834a26a33af10a97e2476eafa7",
+    "s17": "e0db3dac4c8e5a22f059034f39cf37bf8c5bd249834f218c25bdec42bc4151ed",
+    "s18": "dac73bb15e3a6db1d4fce585091868e67027d7235101498beef9a59ec2d88363",
+    "s19": "c1cb9323a74f953649b86e65f30cfa320b3f38079883c2a62230fe0b33e58fac",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s20": "132bce7e7e2e5612ff43da2f5ac5d14df2686c95a8118525bacac4349e87cb1b",
+    "s21": "ee777267cd96cff6866d857040b00da4e88084663ba40545bb4727aa3450d15c",
+    "s22": "ded37e8e903c88b4c4ba24e9bcfd1cc917e8112037b46dcbbf603bc8a83b9c4b",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s4": "63f2882cb37a555c4cf85cc61ba6adfbc172358d0fbadc06516c5150c68a2df6",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "2f92e5358487aabaeb8d2b0c54fdf9a0407281e571a7eadaef0a2509754e3666",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T00:39:27.872432+00:00"
+}
