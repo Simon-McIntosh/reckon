@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="167">
+<meta name="plan-version" content="168">
 <meta name="plan-modified" content="2026-11-03">
 </head>
 <body>
@@ -369,6 +369,9 @@
 </div>
 <div class="r-comment" data-section="s19" data-id="c-run-r-20261102T233355519010-review-of-a-run-wait-names-its-project-125f51db37f1" data-who="reckon-build" data-when="2026-11-03T00:07:25.529Z">
     <div class="r-comment-body"><p>an independent review of r-20261102T213645585965-a-run-wait-names-its-project at 125f51db37f1 is stored as a parsed record: scores goal_fidelity 17, evidence 13, scope_discipline 20, durability 18, fit 17, reuse 5; added failures 0; three findings, one blocking (the landing fragment quotes EXIT=1 for two negative controls whose logs carry no exit line and the manifest's named negative-control log is unreadable to crew check --manifest).</p></div>
+</div>
+<div class="r-comment" data-section="s19" data-id="c-run-r-20261103T004055346735-review-of-a-run-wait-names-its-project-f5cd6f37ef26" data-who="reckon-build" data-when="2026-11-03T00:50:10.507Z">
+    <div class="r-comment-body"><p>The review of r-20261102T213645585965-a-run-wait-names-its-project scores the delta 125f51db37..f5cd6f37ef at goal_fidelity 15, evidence 14, scope_discipline 20, durability 12, fit 15, reuse 18, with one blocking finding: reckon/crew/queue_admission.py:1804 now scans through runs._promoted_record_project, which re-reads the mount registry per ref (measured 4 reads for three refs, 7 when unreadable) against the one-read-per-pass promise at :1853.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261029T121052223132-review-of-a-landed-section-releases-its-waiters-5558b4e7d52c" data-who="reckon-build" data-when="2026-10-29T12:21:19.973Z">
     <div class="r-comment-body"><p>Reviewed the landed node at head 5558b4e7d5 against base c9aab06ac87; scores goal_fidelity 18, evidence 18, scope_discipline 19, durability 17, fit 18, reuse 16 (total 106); added_failure_count 0 from the reviewed run's own arms (baseline 0/62 passed, after 0/62 passed); three non-blocking findings (queue_admission.py:2403 partial duplication of the advance_waiting_requests scan and no _rederive_waits, promotion.py:684 inline release needs the landing beat's declaration, tests:248 dead helper).</p></div>

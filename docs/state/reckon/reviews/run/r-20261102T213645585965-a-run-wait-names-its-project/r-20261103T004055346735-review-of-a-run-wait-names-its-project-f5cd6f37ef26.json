@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-03T00:50:10.507Z",
+  "dispatched_at": "2026-11-03T00:42:53Z",
+  "findings": [
+    {
+      "id": "febe6b01a83",
+      "line": 1804,
+      "path": "reckon/crew/queue_admission.py",
+      "severity": "blocking",
+      "text": "the run-to-project scan now calls runs._promoted_record_project, which resolves the registry again through runs._mounted_project_roots -> flight.mounted_project_docs, so a derivation costs one parse per ref instead of one per pass; instrumenting flight.mounted_project_docs and calling wait_projects_for over three run refs measured 4 reads, and 7 when the registry is unreadable, against the docstring promise at :1853 of one read for the whole list and the commit's claim of one read per derivation. This regresses the exact economy the node was previously reviewed on and makes every admission pass grow with the number of unresolved run refs."
+    },
+    {
+      "id": "f7eb387078c",
+      "line": 324,
+      "path": "tests/test_a_run_wait_names_its_project.py",
+      "severity": "non-blocking",
+      "text": "the assertion counts queue_admission._mounted_projects while the delta routes the scan through flight.mounted_project_docs, so it holds at 1 whatever the real read count is; widening it to the flight seam is what would have caught the regression above, and the durability score is docked because this guard is blind to it."
+    },
+    {
+      "id": "f7adc5d8881",
+      "line": 9,
+      "path": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-run-wait-names-its-project.html",
+      "severity": "non-blocking",
+      "text": "the fragment states a pass costs one registry parse rather than one per unresolved ref, and that the eighth case shows a run wait parses the registry once; measured through the seam the code actually uses, three refs cost four parses, so the landed evidence asserts a figure the code contradicts."
+    },
+    {
+      "id": "fb958a4e3a6",
+      "line": 1807,
+      "path": "reckon/crew/queue_admission.py",
+      "severity": "non-blocking",
+      "text": "when a caller passes mounted=None, meaning the registry could not be read, wait_project_lookup calls _mounted_projects_and_failure again for every ref, so the unreadable path pays a second read per ref (7 attempts for three refs, measured) and can resolve different refs of one pass against different read outcomes if the registry recovers mid-pass, which the docstring at :1855 says does not happen."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that every run: wait resolves through its project so a landed upstream releases it; the delta at reckon/crew/queue_admission.py:1781 keeps that resolution path and separates an unreadable mount registry from a registry naming no project, so the wait stays pending with a re-read issue instead of a discard verdict.\nVERDICT done_when: the plan's five cases plus the folded registry-read case are asserted in tests/test_a_run_wait_names_its_project.py; I re-ran the exact command the manifest's tests line names and reproduced gate-head-2.log at 8 passed, EXIT=0, and negative-control-unreadable.log records the new case red at 1 failed, EXIT=1.\nVERDICT write_paths: the reviewed run declared reckon/crew/queue_admission.py, reckon/crew/obligations.py, tests/test_a_run_wait_names_its_project.py, the landing fragment and a docs/figures directory; the delta 125f51db37..f5cd6f37ef touches only queue_admission.py, the test file and the fragment, all inside that set.\nVERDICT manifest: read; it names the gate command verbatim, four controls, and the importer set at 8 passed head; its baseline_suite is exit 4 because the test file does not exist at 27dca04b11, which it attributes rather than hides, and its after_suite names gate-head-2.log with exit 0.\nVERDICT diff: read both commits against 125f51db37; 0e115d5aec replaces the mounted-project loop with runs._promoted_record_project, threads a sentinel distinguishing an unset registry from an unreadable one, and adds two cases; f5cd6f37ef corrects the fragment's control counts to the measured logs and stops claiming the 60-file importer set passed, which is a faithful correction.\nCALL_SITES: reckon/crew/dispatch.py:2188, reckon/crew/dispatch.py:1946, reckon/crew/dispatch.py:278, reckon/crew/queue_admission.py:2744, reckon/crew/queue_admission.py:3066, reckon/crew/queue_admission.py:3913\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:1804 keeps the run-to-project resolution working and adds the unreadable-registry distinction, but it re-reads the mount registry per ref on the path the node's folded requirement at :1853 promises costs one read for the whole derivation.\nSCORE evidence: 14\nJUSTIFICATION evidence: gate-head-2.log reproduces at 8 passed EXIT=0 and all four control logs now end in a bare EXIT=1 line, but docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-run-wait-names-its-project.html:9 asserts a pass costs one registry parse, which I measured at four.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 125f51db37 f5cd6f37ef names only reckon/crew/queue_admission.py, tests/test_a_run_wait_names_its_project.py and the landing fragment, all inside the declared write paths.\nSCORE durability: 12\nJUSTIFICATION durability: tests/test_a_run_wait_names_its_project.py:324 asserts a run wait reads the registry once by patching queue_admission._mounted_projects, while the delta's own scan at queue_admission.py:1804 enters through runs._mounted_project_roots and flight.mounted_project_docs, so the guard cannot redden on the per-ref read it exists to catch; only :317's gate-only assertion is independent.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/queue_admission.py:1756 widens five typed mounted parameters to a bare object sentinel, which drops the Sequence[str] | None contract callers read today, while the cross-module call to runs._promoted_record_project at :1804 matches the existing use at reckon/crew_dispatch_commands.py:78.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/queue_admission.py:1804 replaces the delta's own forked walk of the mounted checkouts with the owner runs._promoted_record_project (reckon/crew/runs.py:1783), which is the repair the previous review asked for.\nFINDING reckon/crew/queue_admission.py:1804 blocking: the run-to-project scan now calls runs._promoted_record_project, which resolves the registry again through runs._mounted_project_roots -> flight.mounted_project_docs, so a derivation costs one parse per ref instead of one per pass; instrumenting flight.mounted_project_docs and calling wait_projects_for over three run refs measured 4 reads, and 7 when the registry is unreadable, against the docstring promise at :1853 of one read for the whole list and the commit's claim of one read per derivation. This regresses the exact economy the node was previously reviewed on and makes every admission pass grow with the number of unresolved run refs.\nFINDING tests/test_a_run_wait_names_its_project.py:324 non-blocking: the assertion counts queue_admission._mounted_projects while the delta routes the scan through flight.mounted_project_docs, so it holds at 1 whatever the real read count is; widening it to the flight seam is what would have caught the regression above, and the durability score is docked because this guard is blind to it.\nFINDING docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-run-wait-names-its-project.html:9 non-blocking: the fragment states a pass costs one registry parse rather than one per unresolved ref, and that the eighth case shows a run wait parses the registry once; measured through the seam the code actually uses, three refs cost four parses, so the landed evidence asserts a figure the code contradicts.\nFINDING reckon/crew/queue_admission.py:1807 non-blocking: when a caller passes mounted=None, meaning the registry could not be read, wait_project_lookup calls _mounted_projects_and_failure again for every ref, so the unreadable path pays a second read per ref (7 attempts for three refs, measured) and can resolve different refs of one pass against different read outcomes if the registry recovers mid-pass, which the docstring at :1855 says does not happen.\n",
+  "review_run_id": "r-20261103T004055346735-review-of-a-run-wait-names-its-project-f5cd6f37ef26",
+  "reviewed_base_sha": "125f51db37f1029aa4673a473817db30bf67a584",
+  "reviewed_head_sha": "f5cd6f37ef26299a29fc87eedfbef042c7bdfa1f",
+  "reviewed_run_id": "r-20261102T213645585965-a-run-wait-names-its-project",
+  "scores": {
+    "durability": 12,
+    "evidence": 14,
+    "fit": 15,
+    "goal_fidelity": 15,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T00:54:16.645013+00:00",
+  "total": 94
+}
