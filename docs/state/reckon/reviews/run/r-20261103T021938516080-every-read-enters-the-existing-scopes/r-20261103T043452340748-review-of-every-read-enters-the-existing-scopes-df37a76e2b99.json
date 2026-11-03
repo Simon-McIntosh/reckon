@@ -1,0 +1,89 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 8,
+  "added_failure_ids": [
+    "tests/test_project_state.py::test_concurrent_recovery_readers_restore_once_without_errors",
+    "tests/test_project_state.py::test_concurrent_sprint_status_updates_both_succeed",
+    "tests/test_roadmap_endpoints.py::test_graph_endpoint_rows_equal_the_project_roadmap_rows",
+    "tests/test_spa_composition.py::test_plans_surface_never_exceeds_its_window[1440]",
+    "tests/test_spa_home_geometry.py::test_home_has_no_horizontal_scroll_and_lower_panels_share_a_row[1374]",
+    "tests/test_spa_viewport_containment.py::test_every_routable_surface_is_horizontally_contained",
+    "tests/test_spa_viewport_containment.py::test_stale_readiness_selector_is_reported_loudly",
+    "tests/test_the_figure_list_renders_the_rows_on_screen.py::test_the_figure_list_mounts_only_the_rows_near_the_viewport"
+  ],
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/mcp_deadlines.py:374",
+    "reckon/mcp_edit_plan.py:105",
+    "reckon/project_brief.py:126",
+    "reckon/project_maintenance_commands.py:1581",
+    "reckon/crew/routing.py:3676",
+    "reckon/resources.py:331",
+    "reckon/metadata_index.py:381",
+    "reckon/roadmap.py:3244"
+  ],
+  "completed_at": "2026-11-03T04:47:34.496Z",
+  "dispatched_at": "2026-11-03T04:36:42Z",
+  "findings": [
+    {
+      "file": "reckon/resources.py",
+      "line": "62",
+      "severity": "blocking",
+      "text": "blocking: the new is_infra_path function leaves two blank lines missing before the module comment at line 63, so ruff format --check reports two hunks on resources.py at the head against one at the base (the added hunk is at line 59) -- the commit adds a format finding on a staged path, which the plan's done-when forbids."
+    },
+    {
+      "file": "tests/test_a_request_validates_the_tree_once.py",
+      "line": "266",
+      "severity": "non-blocking",
+      "text": "non-blocking: no case asserts that the two new CLI scope entries exist, so deleting the with metadata_index.discovery_file_scope() at reckon/project_brief.py:126 and reckon/project_maintenance_commands.py:1581 leaves all seven cases green and the repair this commit makes has no failing test behind it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T021938516080-every-read-enters-the-existing-scopes/manifest.md",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "non-blocking: the recorded tests/test_logs pair names s2-test.log, whose header revision reads cab4f52430 while the delivered head is df37a76e2b (the log was written seven seconds before 8c7df9fd90 landed), so the record cannot establish which version of the test file it exercised; a re-run at the head is green."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T021938516080-every-read-enters-the-existing-scopes/manifest.md",
+      "line": "16",
+      "severity": "non-blocking",
+      "text": "non-blocking: the recorded baseline_suite.command omits the extra grep -v 'test_a_request_validates_the_tree_once.py' that importers-base.log's own header line carries, so the recorded command is not the literal command that ran and promotion's receipt cannot reproduce it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "read commit by commit against cab4f52430; 8c7df9fd90 changes six files (+59/-28) and df37a76e2b changes only the landing fragment (+13/-6), and every change in both is inside the six files named for review.",
+    "done_when": "the plan's done-when names tests/test_a_request_validates_the_tree_once.py; the manifest's recorded log is at revision cab4f52430 so I re-ran the file at the delivered head (7 passed, EXIT=0, review-gate-head.log), while the done-when's ruff clause is not met at reckon/resources.py:62.",
+    "goal": "the node goal is that every read enters the existing covered-tree and identity-index scopes once and the covered walk skips the state records; reckon/project_brief.py:126 and reckon/project_maintenance_commands.py:1581 now enter discovery_file_scope around the roadmap read and reckon/resources.py:53 defines is_infra_path beside INFRA_DIRS for the three walk call sites.",
+    "manifest": "read; it reports the four review findings landed in 8c7df9fd90 with the seven cases green and three negative controls red, but it records no ruff run and its tests/test_logs pair points at a log labelled with a revision older than the head.",
+    "write_paths": "the manifest declares reckon/mcp_deadlines.py, reckon/mcp.py, reckon/mcp_edit_plan.py, reckon/metadata_index.py, the test, the landing fragment and a figures directory; the diff additionally changes reckon/crew/routing.py, reckon/project_brief.py, reckon/project_maintenance_commands.py and reckon/resources.py, which the manifest records only under outside_scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_request_validates_the_tree_once.py:281 and :423 fail if the read boundary or the post-write read regresses, but no assertion fails if the new CLI scope entries at reckon/project_brief.py:126 are removed.",
+    "evidence": "the gate passes at the delivered head when re-run (7 passed, EXIT=0, review-gate-head.log), but the manifest's test_logs names s2-test.log whose header revision is cab4f52430, no ruff run is recorded at all, and the done-when's ruff clause fails on reckon/resources.py:62.",
+    "fit": "the change follows the module's lazy-import and context-manager idiom at reckon/project_brief.py:123, with the one blemish that reckon/resources.py:62 leaves a blank-line difference ruff format would rewrite.",
+    "goal_fidelity": "reckon/project_brief.py:126 and reckon/project_maintenance_commands.py:1581 now enter discovery_file_scope around the roadmap read, which is the read the goal's scope entry had left behind, and reckon/resources.py:53 single-homes the walk predicate beside INFRA_DIRS.",
+    "reuse": "reckon/resources.py:53 extends the owner of INFRA_DIRS rather than forking it, and reckon/metadata_index.py:381, reckon/resources.py:331 and reckon/crew/routing.py:3676 all call it; the two inline predicates that remain keep their own exclude-figures semantics.",
+    "scope_discipline": "four of the six files the diff changes -- reckon/crew/routing.py, reckon/project_brief.py, reckon/project_maintenance_commands.py and reckon/resources.py -- are outside the manifest's declared write paths and are disclosed only under outside_scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that every read enters the existing covered-tree and identity-index scopes once and the covered walk skips the state records; reckon/project_brief.py:126 and reckon/project_maintenance_commands.py:1581 now enter discovery_file_scope around the roadmap read, and reckon/resources.py:53 defines is_infra_path beside INFRA_DIRS for the three walk call sites.\nVERDICT done_when: the plan's done-when names tests/test_a_request_validates_the_tree_once.py; the manifest's recorded log is labelled cab4f52430, so I re-ran the file at the delivered head and got 7 passed, EXIT=0 (review-gate-head.log), while the done-when's ruff clause is not met at reckon/resources.py:62.\nVERDICT write_paths: the manifest declares four modules, the new test and the landing fragment; the diff touches four further files (routing.py, project_brief.py, project_maintenance_commands.py, resources.py) that the manifest records only under outside_scope, and nothing else outside the declaration.\nVERDICT manifest: read; it reports the review findings landed in 8c7df9fd90 with the seven cases green and three negative controls red, but it records no ruff run and its tests/test_logs pair points at a log older than the head.\nVERDICT diff: read commit by commit against cab4f52430; 8c7df9fd90 changes six files (+59/-28) and df37a76e2b changes only the landing fragment (+13/-6).\nCALL_SITES: reckon/mcp_deadlines.py:374, reckon/mcp_edit_plan.py:105, reckon/project_brief.py:126, reckon/project_maintenance_commands.py:1581, reckon/crew/routing.py:3676, reckon/resources.py:331, reckon/metadata_index.py:381, reckon/roadmap.py:3244\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/project_brief.py:126 and reckon/project_maintenance_commands.py:1581 now enter discovery_file_scope around the roadmap read, which is the read the goal's scope entry had left behind.\nSCORE evidence: 12\nJUSTIFICATION evidence: the gate is green at the delivered head when re-run, but the manifest's test_logs names s2-test.log at cab4f52430, no ruff run is recorded, and the done-when's ruff clause fails at reckon/resources.py:62.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: four of the six changed files -- reckon/crew/routing.py, reckon/project_brief.py, reckon/project_maintenance_commands.py and reckon/resources.py -- are outside the manifest's declared write paths.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_request_validates_the_tree_once.py:281 and :423 fail if the read boundary or the post-write read regresses, but nothing fails if the new CLI entries at reckon/project_brief.py:126 are removed.\nSCORE fit: 15\nJUSTIFICATION fit: the change follows the module's lazy-import and context-manager idiom at reckon/project_brief.py:123, though reckon/resources.py:62 leaves a blank-line difference ruff would rewrite.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/resources.py:53 extends the owner of INFRA_DIRS and reckon/metadata_index.py:381, reckon/resources.py:331 and reckon/crew/routing.py:3676 all call it, with the remaining inline predicates keeping exclude-figures semantics.\nFINDING reckon/resources.py:62 blocking: the new is_infra_path function leaves two blank lines missing before the module comment at line 63, so ruff format --check reports two hunks on resources.py at the head against one at the base, adding a format finding on a staged path that the plan's done-when forbids.\nFINDING tests/test_a_request_validates_the_tree_once.py:266 non-blocking: no case asserts that the two new CLI scope entries exist, so deleting the with metadata_index.discovery_file_scope() at reckon/project_brief.py:126 and reckon/project_maintenance_commands.py:1581 leaves all seven cases green.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T021938516080-every-read-enters-the-existing-scopes/manifest.md:12 non-blocking: the recorded tests/test_logs pair names s2-test.log, whose header revision reads cab4f52430 while the delivered head is df37a76e2b, so the record cannot establish which version of the test file it exercised.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T021938516080-every-read-enters-the-existing-scopes/manifest.md:16 non-blocking: the recorded baseline_suite.command omits the extra grep -v 'test_a_request_validates_the_tree_once.py' that importers-base.log's own header carries, so the recorded command is not the literal command that ran.\n",
+  "review_run_id": "r-20261103T043452340748-review-of-every-read-enters-the-existing-scopes-df37a76e2b99",
+  "reviewed_base_sha": "cab4f5243072442017349026c625d92f7cc6c4d3",
+  "reviewed_head_sha": "df37a76e2b9931738c522fb66c6af2e619d24611",
+  "reviewed_run_id": "r-20261103T021938516080-every-read-enters-the-existing-scopes",
+  "scores": {
+    "durability": 14,
+    "evidence": 12,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T04:53:42.151074+00:00",
+  "total": 89
+}
