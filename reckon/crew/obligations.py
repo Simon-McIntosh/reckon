@@ -1986,10 +1986,9 @@ def _obligations_view(
         ),
         "unreconciled_runs": int(closure["unreconciled_runs"]),
     }
-    return {
+    view = {
         "project": project,
         "session": session,
-        "limit_resets": recent_limit_resets(session),
         "obligations": project_run_rows(
             items,
             fields=fields,
@@ -2006,3 +2005,12 @@ def _obligations_view(
         ),
         "summary": summary,
     }
+    # Carried only when the session has one. The published snapshot is sliced
+    # from fleet state and compared with this view field for field, and a
+    # prompt reads the reset store itself rather than the payload, so a key
+    # present on one surface and absent from the other would read as a
+    # divergence where there is no difference.
+    resets = recent_limit_resets(session)
+    if resets:
+        view["limit_resets"] = resets
+    return view
