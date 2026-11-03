@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch_plan.py:872 require_plan_reviewed",
+    "reckon/crew/queue_admission.py:3228 routing.require_plan_reviewed",
+    "reckon/crew/plan_review.py:1144 _acted_finding_units",
+    "reckon/crew/dispatch.py:147 require_plan_reviewed re-export"
+  ],
+  "completed_at": "2026-11-03T05:05:55.464Z",
+  "dispatched_at": "2026-11-03T04:57:42Z",
+  "findings": [
+    {
+      "failure_scenario": "A reader at 4fec14bbd0 treats the 1402-passed figure as covering the new test case; it does not, and no run at the final revision exists.",
+      "file": "docs/evidence/fragments/a-review-gate-judges-what-it-covers/a-finding-blocks-its-own-section.html",
+      "line": 27,
+      "severity": "non-blocking",
+      "summary": "Importer arm cited as run at the head was measured one commit earlier",
+      "text": "The paragraph states the 154-file importer population 'was run at the head: 8 failed, 5 errors, 1402 passed, EXIT=1', but that arm ran at dd7a21aa76 and the final head 4fec14bbd0 changes one file in that population (tests/test_a_finding_blocks_its_own_section.py), so the 'adds no failure' figure is inherited from an earlier revision and not measured at the revision the review records."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified reckon/crew/dispatch_plan.py:872 require_plan_reviewed, reckon/crew/queue_admission.py:3228 routing.require_plan_reviewed, and reckon/crew/plan_review.py:1144 _acted_finding_units; production code is unchanged by this commit so the set is the same one the prior review verified.",
+    "diff": "read 4fec14bbd0 against e490487d4c commit by commit; it adds one test case and updates two paragraphs of the evidence fragment, with no production change (40 insertions, 2 deletions across 2 files).",
+    "done_when": "read the done-when (prompt line 125); it names the five cases plus a negative control in tests/test_a_finding_blocks_its_own_section.py, and after-suite-line-anchor.log records 9 passed EXIT=0 at 4fec14bbd0 while negative-control-line-anchor.log records the precedence reversion failing.",
+    "goal": "read the reviewed node's goal (prompt line 38, 'An unanswered plan-review finding blocks only the sections it is about') and plan section s13; the gained commit strengthens the line-anchor rule that goal's second sentence depends on.",
+    "manifest": "read; it records the gate at 9 passed EXIT=0 (after-suite-line-anchor.log), the base arm at 54 passed EXIT=0, the declared negative control at 5 failed EXIT=1 plus the second control at 1 failed EXIT=1, and thirteen importer failure ids each attributed to the base revision.",
+    "write_paths": "read the manifest's declared paths; the gained commit touches only tests/test_a_finding_blocks_its_own_section.py and docs/evidence/fragments/a-review-gate-judges-what-it-covers/a-finding-blocks-its-own-section.html, both inside them."
+  },
+  "justifications": {
+    "durability": "The negative-control log shows the added case reddens (1 failed EXIT=1 at ['_document'] != ['s4']) when the line-before-text order is reverted, and every expected unit is an independent literal ('s4', 's5') rather than a value the test handed in, so the assertion guards the regression it was added for.",
+    "evidence": "after-suite-line-anchor.log records 9 passed EXIT=0 at revision 4fec14bbd0 and negative-control-line-anchor.log records the declared reversion failing at tests/test_a_finding_blocks_its_own_section.py:378 with ['_document'] != ['s4'], so the gate measures the done_when at the reviewed head rather than restating it.",
+    "fit": "The added case at tests/test_a_finding_blocks_its_own_section.py:349-384 follows the file's existing fixture and helper idiom (_store, _gate, _line_of, _empty_design) and introduces no plan, sprint or ticket identifier.",
+    "goal_fidelity": "tests/test_a_finding_blocks_its_own_section.py:349 pins the plan-file line anchor outranking the finding's text, which is the rule reckon/crew/plan_review.py:2446-2453 implements for the goal's 'blocks only the sections it is about'.",
+    "reuse": "The commit adds no production definition; it exercises the existing plan_review.finding_units at reckon/crew/plan_review.py:2543 and the file's own helpers, so no capability is forked.",
+    "scope_discipline": "The single gained commit changes only tests/test_a_finding_blocks_its_own_section.py and docs/evidence/fragments/a-review-gate-judges-what-it-covers/a-finding-blocks-its-own-section.html, both inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the reviewed node's goal (prompt line 38) and plan section s13; the gained commit strengthens the line-anchor rule the goal depends on at tests/test_a_finding_blocks_its_own_section.py:349.\nVERDICT done_when: read the done-when (prompt line 125) against after-suite-line-anchor.log, which records 9 passed EXIT=0 at 4fec14bbd0, and negative-control-line-anchor.log, which records the precedence reversion failing EXIT=1.\nVERDICT write_paths: read the manifest's declared paths; the gained commit touches only tests/test_a_finding_blocks_its_own_section.py and docs/evidence/fragments/a-review-gate-judges-what-it-covers/a-finding-blocks-its-own-section.html, both declared.\nVERDICT manifest: read; it records the gate at 9 passed EXIT=0, the base arm at 54 passed EXIT=0, the declared negative control at 5 failed EXIT=1, a second control at 1 failed EXIT=1, and thirteen importer failure ids each attributed to base.\nVERDICT diff: read 4fec14bbd0 against e490487d4c commit by commit; one new test case and two updated evidence-fragment paragraphs, 40 insertions and 2 deletions, no production change.\nCALL_SITES: reckon/crew/dispatch_plan.py:872 require_plan_reviewed, reckon/crew/queue_admission.py:3228 routing.require_plan_reviewed, reckon/crew/plan_review.py:1144 _acted_finding_units\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_finding_blocks_its_own_section.py:349 pins the plan-file line anchor outranking the text, the rule at reckon/crew/plan_review.py:2446-2453.\nSCORE evidence: 17\nJUSTIFICATION evidence: after-suite-line-anchor.log records 9 passed EXIT=0 at 4fec14bbd0 and negative-control-line-anchor.log records the reversion failing at tests/test_a_finding_blocks_its_own_section.py:378.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained commit changes only tests/test_a_finding_blocks_its_own_section.py and docs/evidence/fragments/a-review-gate-judges-what-it-covers/a-finding-blocks-its-own-section.html, both declared write paths.\nSCORE durability: 20\nJUSTIFICATION durability: the negative-control log shows the case reddens with ['_document'] != ['s4'] when the line-before-text order is reverted.\nSCORE fit: 19\nJUSTIFICATION fit: the added case at tests/test_a_finding_blocks_its_own_section.py:349-384 follows the file's _store, _gate and _line_of idiom and carries no plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: no production definition is added; the case exercises plan_review.finding_units at reckon/crew/plan_review.py:2543 and the file's own helpers.\nFINDING docs/evidence/fragments/a-review-gate-judges-what-it-covers/a-finding-blocks-its-own-section.html:27 non-blocking: the importer arm is cited as run at the head but was measured at dd7a21aa76, one commit before the reviewed head 4fec14bbd0.\n",
+  "review_run_id": "r-20261103T045552534079-review-of-a-finding-blocks-its-own-section-4fec14bbd00e",
+  "reviewed_base_sha": "e490487d4c6f513beee2103c56fbae338e20d6cc",
+  "reviewed_head_sha": "4fec14bbd00e4ceb4965bc0405026a18361d9cbd",
+  "reviewed_run_id": "r-20261103T012525018363-a-finding-blocks-its-own-section",
+  "scores": {
+    "durability": 20,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T05:09:51.286968+00:00",
+  "total": 114
+}
