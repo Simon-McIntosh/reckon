@@ -257,11 +257,13 @@ def _review_record_evidence(record: Mapping[str, Any]) -> dict[str, Any] | None:
     the evidence a promotion of the run rests on. It is read through the same
     delivery reader the review loop's self-promotion uses, so the hand path and
     the automatic one cannot disagree about whether a review has delivered.
+    A record whose status is outside the recognised set stands as no evidence.
     """
     project = str(record.get("project") or "").strip()
     if not project:
         return None
     from reckon.crew.recovery_review_delivery import _delivered_review_record
+    from reckon.crew.review import RECOGNISED_REVIEW_STATUSES
 
     stored = _delivered_review_record(record, project)
     if stored is None:
@@ -273,10 +275,13 @@ def _review_record_evidence(record: Mapping[str, Any]) -> dict[str, Any] | None:
         return None
     if not isinstance(body, Mapping):
         return None
+    status = str(body.get("status") or "").strip()
+    if status not in RECOGNISED_REVIEW_STATUSES:
+        return None
     findings = body.get("findings")
     return {
         "path": str(path),
-        "status": str(body.get("status") or "").strip(),
+        "status": status,
         "findings": len(findings) if isinstance(findings, list) else 0,
         "report_path": str(body.get("report_path") or "").strip(),
     }
@@ -350,21 +355,13 @@ def _default_gate_evidence_from_manifest(
     # A review run's evidence is the record it stored, so its manifest's
     # ``tests`` line describes a check rather than naming one. Reading it as
     # the gate command refuses a review whose evidence is already on disk, so
-    # the record stands as the check instead and the prose line is not
-    # consulted at all.
+    # the record stands as the check instead. A review run with no delivered
+    # record is left to the ordinary rules below: a review that stores its
+    # record during promotion has nothing on disk yet, and a prose line still
+    # reaches the executable-gate refusal.
     review_evidence: dict[str, Any] | None = None
     if _review_role_run(record):
         review_evidence = _review_record_evidence(record)
-        if review_evidence is None:
-            raise CrewError(
-                f"run {record.get('run_id') or ''!r} is a review run promoting "
-                "on a passed gate, and no stored review record was delivered "
-                "for it: a review run's evidence is the record it stores, so "
-                "there is nothing here a promotion can read. Promote the run "
-                "once its review is stored (the review loop promotes a "
-                "delivered review on its record alone), or record the "
-                "non-passing verdict its delivery reached"
-            )
     command_unset = not str(resolved_gate.get("command") or "").strip()
     if command_unset and declared_command and not _gate_command_prose(declared_command):
         resolved_gate["command"] = declared_command
@@ -378,11 +375,11 @@ def _default_gate_evidence_from_manifest(
     # so a run with no recoverable evidence still reaches the ordinary refusal.
     if not str(resolved_gate.get("command") or "").strip():
         recovered = _command_from_gate_log(log_text)
-        if recovered:
-            resolved_gate["command"] = recovered
-        elif review_evidence is not None:
+        if review_evidence is not None:
             for key, value in _review_record_check(review_evidence).items():
                 resolved_gate.setdefault(key, value)
+        elif recovered:
+            resolved_gate["command"] = recovered
         elif declared_command:
             resolved_gate["command"] = declared_command
     if resolved_gate.get("exit_status") is None:

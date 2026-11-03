@@ -265,13 +265,13 @@ def test_a_review_run_with_a_stored_record_promotes_as_passed(
 def test_a_review_run_with_no_stored_record_is_refused(
     repository: Path, tmp_path: Path, run_tree: tuple[Path, str]
 ) -> None:
-    """With no record there is no evidence, so the run is refused naming it."""
+    """With no record there is no evidence, so the prose line is refused."""
     tree, base = run_tree
     _review_run(repository, tmp_path, tree, base, with_record=False)
 
     refusal = _refusal(REVIEW_RUN_ID, repository)
 
-    assert "no stored review record was delivered" in refusal, refusal
+    assert "describes the check rather than running it" in refusal, refusal
     assert pointer_path(REVIEW_RUN_ID).exists()
 
 
