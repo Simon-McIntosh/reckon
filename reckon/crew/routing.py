@@ -2601,7 +2601,11 @@ def require_plan_reviewed(
     authored edit demands a fresh one. Every finding of the review must
     be answered — acted on or declined with a reason — because the findings are
     advisory and the answer is the record; an unanswered finding is an unread
-    one, and the gate refuses a plan whose review nobody read.
+    one. The answer is owed by the section the finding is about: an unanswered
+    finding refuses a dispatch only for the units it blocks — the section its
+    anchor names, the sections its text names when it is anchored in a source
+    file, or the document unit, which blocks every section. One plan's findings
+    on one section therefore never hold a node building another.
 
     Only a hot review's findings refuse: the gate reads each review's derived
     lifecycle (:mod:`reckon.crew.review_lifecycle`) and counts a finding only
@@ -2732,27 +2736,37 @@ def require_plan_reviewed(
         )
     plan_state = _plan_html.read_state_file(resource.path)
     plan_records = plan_review.list_plan_reviews(project)
-    unanswered = (
-        plan_review.unanswered_findings(record)
-        if review_lifecycle.is_hot(
-            record, plan_state=plan_state, later_records=plan_records
-        )
-        else []
-    )
+    hot = []
+    if review_lifecycle.is_hot(
+        record, plan_state=plan_state, later_records=plan_records
+    ):
+        hot.append(record)
     if design.get("review_path") != record.get("review_path") and (
         review_lifecycle.is_hot(
             design, plan_state=plan_state, later_records=plan_records
         )
     ):
-        unanswered += [
-            finding
-            for finding in plan_review.unanswered_findings(design)
-            if finding not in unanswered
-        ]
-    # A finding's identity names no unit, so an unanswered one cannot be
-    # attributed to the caller's scope: narrowing the coverage judgment to the
-    # units a request reads says nothing about whether the review that carried
-    # the finding was read, so the refusal stands whatever the scope.
+        hot.append(design)
+    unanswered: list[str] = []
+    for source in hot:
+        blocked = plan_review.unanswered_findings_by_unit(
+            source, plan_path=resource.path
+        )
+        for unit, ids in blocked.items():
+            # A finding blocks only the section it is about, plus the document
+            # unit, which is about the plan as a whole and so blocks every
+            # section. A dispatch narrowed to the units it builds is held only
+            # by the findings on those units; another section's finding is that
+            # section's business and waits for whoever builds it.
+            if (
+                scope is not None
+                and unit not in scope
+                and unit != plan_review.DOCUMENT_UNIT
+            ):
+                continue
+            for finding in ids:
+                if finding not in unanswered:
+                    unanswered.append(finding)
     if unanswered:
         return _plan_review_verdict(
             enforce,
