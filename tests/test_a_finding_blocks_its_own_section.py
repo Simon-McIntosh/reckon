@@ -10,15 +10,17 @@ from reckon.crew import plan_review, recovery, review, routing
 from reckon.crew.node import PlanReviewMissingError, TaskNode
 from tests.test_review_plan_command import project as project  # noqa: PLC0414
 
-SECTIONS = ("s2", "s4", "s5", "s7", "s19", "s21")
+SECTIONS = ("s2", "s4", "s5", "s5-1", "s7", "s19", "s21", "delivery")
 
 PROSE = {
     "s2": "Read the plan once.",
     "s4": "Cache the parse.",
     "s5": "Charge each named path.",
+    "s5-1": "Charge a directory once.",
     "s7": "Measure the cost.",
     "s19": "Admit the urgent fix.",
     "s21": "Report the count.",
+    "delivery": "Extend the existing mechanism.",
 }
 
 PLAN = "docs/plans/fixture.html"
@@ -31,7 +33,7 @@ def _report(items) -> str:
 
 @pytest.fixture
 def many_section_plan(project):
-    """A plan of six implementable sections sharing one introduction."""
+    """A plan of seven implementable sections sharing one introduction."""
     home, repo, path = project
     body = "".join(
         f'<h2 id="{name}">Section {name}</h2><p>{PROSE[name]}</p>' for name in SECTIONS
@@ -319,3 +321,49 @@ def test_a_source_line_does_not_resolve_to_the_plan_section_it_falls_in(
         plan_review.DOCUMENT_UNIT
     ]
     assert "s4" not in plan_review.unanswered_findings_by_unit(record)
+
+
+def test_a_dotted_subsection_name_blocks_its_own_record(many_section_plan):
+    """§5.1 addresses the section whose record id is s5-1, and not s5."""
+    _empty_design(many_section_plan[2])
+    record = _store(
+        many_section_plan[2],
+        rubric="content",
+        run_id="review-content",
+        version=CONTENT_VERSION,
+        findings=[
+            {
+                "id": "duplicate_owner-3",
+                "type": "duplicate_owner",
+                "anchor": "reckon/crew/routing.py:3122",
+                "text": "§5.1 re-derives the directory charge its owner already makes.",
+            }
+        ],
+    )
+    assert plan_review.finding_units(record, "duplicate_owner-3") == ["s5-1"]
+    with pytest.raises(PlanReviewMissingError, match="duplicate_owner-3"):
+        _gate(many_section_plan[1], "s5-1")
+    assert _gate(many_section_plan[1], "s5") is None
+
+
+def test_a_mixed_case_anchor_fragment_names_its_section(many_section_plan):
+    """#Delivery addresses the section whose record id is delivery."""
+    _empty_design(many_section_plan[2])
+    record = _store(
+        many_section_plan[2],
+        rubric="content",
+        run_id="review-content",
+        version=CONTENT_VERSION,
+        findings=[
+            {
+                "id": "reasoning-1",
+                "type": "reasoning",
+                "anchor": f"{PLAN}#Delivery",
+                "text": "the delivery step names no owner.",
+            }
+        ],
+    )
+    assert plan_review.finding_units(record, "reasoning-1") == ["delivery"]
+    with pytest.raises(PlanReviewMissingError, match="reasoning-1"):
+        _gate(many_section_plan[1], "delivery")
+    assert _gate(many_section_plan[1], "s4") is None

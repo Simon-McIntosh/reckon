@@ -2315,13 +2315,21 @@ def _reviewed_plan_text(
         return None
 
 
-_SECTION_REFERENCE = re.compile(r"§\s*(\d+)(?![0-9])|(?<![0-9A-Za-z_])s(\d+)(?![0-9])")
+_SECTION_REFERENCE = re.compile(
+    r"§\s*(\d+(?:[.-]\d+)*)|(?<![0-9A-Za-z_])s(\d+(?:[.-]\d+)*)(?![0-9])"
+)
 
 
 def _fragment_unit(anchor: str) -> str | None:
-    """The unit an anchor's ``#<name>`` fragment names, or ``None``."""
-    named = re.search(r"#([A-Za-z0-9][A-Za-z0-9_-]*)\s*$", anchor or "")
-    return named.group(1) if named else None
+    """The unit an anchor's ``#<name>`` fragment names, or ``None``.
+
+    A fragment is written in whatever spelling the plan author used, so it is
+    resolved through the parser's own identity derivation: ``#Delivery``
+    addresses the section whose record id is ``delivery``, exactly as
+    ``<h2 id="Delivery">`` does.
+    """
+    named = re.search(r"#([A-Za-z0-9][A-Za-z0-9_.-]*)\s*$", anchor or "")
+    return _plan_html.section_record_id(named.group(1)) if named else None
 
 
 def _line_locator(anchor: str) -> int | None:
@@ -2364,18 +2372,47 @@ def _anchor_names_plan(
     )
 
 
-def _units_named_in(text: str | None) -> list[str]:
-    """The sections a finding's text names, or the document unit when it names none.
+def _section_references(text: str | None) -> list[str]:
+    """The section record ids a finding's text names, in the order it names them.
 
-    A finding anchored outside the plan has no line to resolve, so the sections
-    it blocks are the ones it says it is about. One that names none is about the
-    document as a whole, which blocks every section rather than no section.
+    Every spelling is resolved through the parser's identity derivation, so a
+    dotted sub-section reference and its hyphenated record id are one section.
     """
     units: list[str] = []
     for match in _SECTION_REFERENCE.finditer(text or ""):
-        unit = f"s{int(match.group(1) or match.group(2))}"
+        unit = _plan_html.section_record_id("§" + (match.group(1) or match.group(2)))
         if unit not in units:
             units.append(unit)
+    return units
+
+
+def _section_identities(text: str | None) -> set[str] | None:
+    """The record ids of the sections the reviewed snapshot carries.
+
+    ``None`` when there is no readable snapshot, which is the answer that
+    filters nothing: a name cannot be checked against sections nobody can see.
+    """
+    if text is None:
+        return None
+    return {
+        heading.identity
+        for heading in _plan_html.plan_headings(text)
+        if heading.level == 2 and heading.identity and not heading.machinery
+    }
+
+
+def _units_named_in(text: str | None, known: set[str] | None) -> list[str]:
+    """The sections a finding's text names, or the document unit when it names none.
+
+    A finding anchored outside the plan has no line to resolve, so the sections
+    it blocks are the ones it says it is about — the ones the plan actually
+    carries, since a name that resolves to no section there blocks nothing. One
+    that names none is about the document as a whole, which blocks every section
+    rather than no section.
+    """
+    units = [
+        unit for unit in _section_references(text) if known is None or unit in known
+    ]
     return units or [DOCUMENT_UNIT]
 
 
@@ -2402,17 +2439,21 @@ def _finding_units(
         return [named]
     if not _anchor_path(anchor):
         return [DOCUMENT_UNIT]
+    finding_text = str(finding.get("text") or "")
+    names = _section_references(finding_text)
+    if not names:
+        return [DOCUMENT_UNIT]
+    read = reviewed_text or (lambda: _reviewed_plan_text(record, plan_path))
     locator = _line_locator(anchor)
     if locator is not None and _anchor_names_plan(record, anchor, plan_path):
-        text = (
-            reviewed_text()
-            if reviewed_text is not None
-            else _reviewed_plan_text(record, plan_path)
-        )
+        text = read()
         unit = _line_unit_map(text).get(locator) if text is not None else None
         if unit:
             return [unit]
-    return _units_named_in(str(finding.get("text") or ""))
+        known = _section_identities(text)
+    else:
+        known = _section_identities(read())
+    return _units_named_in(finding_text, known)
 
 
 def _memoised_reviewed_text(
