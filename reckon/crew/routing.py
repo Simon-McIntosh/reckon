@@ -3673,13 +3673,13 @@ def _docs_scan_inputs(docs: Path) -> tuple[list[str], list[str]]:
     for current, subdirs, names in os.walk(docs):
         relative = PurePosixPath(Path(current).relative_to(docs).as_posix())
         parts = relative.parts
-        if parts[:2] == resources.EVIDENCE_FRAGMENTS_SUBTREE or any(
-            part in resources.INFRA_DIRS for part in parts
+        if parts[:2] == resources.EVIDENCE_FRAGMENTS_SUBTREE or resources.is_infra_path(
+            parts
         ):
             subdirs[:] = []
             continue
         directories.append(relative.as_posix())
-        subdirs[:] = [name for name in subdirs if name not in resources.INFRA_DIRS]
+        subdirs[:] = [name for name in subdirs if not resources.is_infra_path([name])]
         for name in names:
             if name.endswith(".html"):
                 files.append(str(relative / name))

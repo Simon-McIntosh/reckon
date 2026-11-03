@@ -378,10 +378,7 @@ def _skips_infra_dir(relative: str) -> bool:
     directory added to it is skipped by both without a second list to maintain.
     """
 
-    return any(
-        part in resources.INFRA_DIRS and part != _FIGURE_DIR
-        for part in PurePosixPath(relative).parts
-    )
+    return resources.is_infra_path(PurePosixPath(relative).parts, keep=(_FIGURE_DIR,))
 
 
 def covered_name(relative: str) -> bool:

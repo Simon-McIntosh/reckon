@@ -1575,14 +1575,16 @@ def roadmap(project, sprint, checkout_path, max_paths, json_output, brief, since
             "--since describes a change window, and only --brief reads one"
         )
 
+    from reckon import metadata_index
     from reckon.mcp import _roadmap
 
-    result = _roadmap(
-        project,
-        str(checkout_path.resolve()) if checkout_path else None,
-        sprint,
-        max_paths,
-    )
+    with metadata_index.discovery_file_scope():
+        result = _roadmap(
+            project,
+            str(checkout_path.resolve()) if checkout_path else None,
+            sprint,
+            max_paths,
+        )
     if not result.get("ok", True):
         raise click.ClickException(str(result.get("detail") or result.get("error")))
     if json_output:

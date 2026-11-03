@@ -134,11 +134,11 @@ class Counter:
         self.stat = 0
         self.stat_paths: set[str] = set()
         self.reuse = 0
-        self.scoped_reuse = 0
+        self.validations = 0
         self.identity_index = 0
 
     def reset(self) -> None:
-        self.stat = self.reuse = self.scoped_reuse = self.identity_index = 0
+        self.stat = self.reuse = self.validations = self.identity_index = 0
         self.stat_paths.clear()
 
     def as_dict(self) -> dict[str, object]:
@@ -146,7 +146,7 @@ class Counter:
             "stat": self.stat,
             "stat_paths": len(self.stat_paths),
             "reuse": self.reuse,
-            "scoped_reuse": self.scoped_reuse,
+            "validations": self.validations,
             "identity_index": self.identity_index,
         }
 
@@ -155,7 +155,8 @@ class Counter:
 def counted(monkeypatch: pytest.MonkeyPatch) -> Counter:
     counter = Counter()
     real_stat = os.stat
-    real_reuse = metadata_index._reuse_covered_once
+    real_reuse = metadata_index._reuse_covered
+    real_once = metadata_index._reuse_covered_once
     real_index = resources._identity_listing
 
     def counting_stat(*args: object, **kwargs: object):
@@ -165,16 +166,20 @@ def counted(monkeypatch: pytest.MonkeyPatch) -> Counter:
 
     def counting_reuse(*args: object, **kwargs: object):
         counter.reuse += 1
-        if metadata_index._DISCOVERY_FILES.get() is not None:
-            counter.scoped_reuse += 1
         return real_reuse(*args, **kwargs)
+
+    def counting_once(*args: object, **kwargs: object):
+        if metadata_index._DISCOVERY_FILES.get() is not None:
+            counter.validations += 1
+        return real_once(*args, **kwargs)
 
     def counting_index(*args: object, **kwargs: object):
         counter.identity_index += 1
         return real_index(*args, **kwargs)
 
     monkeypatch.setattr(os, "stat", counting_stat)
-    monkeypatch.setattr(metadata_index, "_reuse_covered_once", counting_reuse)
+    monkeypatch.setattr(metadata_index, "_reuse_covered", counting_reuse)
+    monkeypatch.setattr(metadata_index, "_reuse_covered_once", counting_once)
     monkeypatch.setattr(resources, "_identity_listing", counting_index)
     return counter
 
@@ -212,7 +217,9 @@ def test_each_read_validates_the_covered_tree_once(
 
     ``edit_plan`` is a write, so it enters the scopes around its reads either
     side of the write and validates at most twice. A tool that reads no document
-    validates nothing at all.
+    reaches the covered-tree memo not at all, which is the stronger statement —
+    a reused validation and an absent scope entry both read as zero validations,
+    so the count of calls to the memo separates them.
     """
 
     calls = {
@@ -264,9 +271,14 @@ def test_each_read_validates_the_covered_tree_once(
             _call(tool, **kwargs)
         observed[name] = counted.as_dict()
         assert observed[name]["stat_paths"] < STAT_BUDGET, (name, observed[name])
-        assert observed[name]["scoped_reuse"] <= reuse_limit, (name, observed[name])
+        assert observed[name]["validations"] <= reuse_limit, (name, observed[name])
 
-    assert observed["crew"]["scoped_reuse"] == 0, observed
+    # The crew live view reads no document, so it reaches the covered-tree memo
+    # not at all: a zero validation count alone would also hold if the boundary
+    # scope were simply missing, and this count cannot.
+    assert observed["crew"]["reuse"] == 0, observed
+    assert observed["crew"]["validations"] == 0, observed
+    assert observed["read_plan"]["reuse"] == 1, observed
 
     # The base revision's count for the same call: no boundary scope and the
     # state records back inside the covered walk, which is what the base
@@ -374,6 +386,10 @@ def test_the_review_store_and_state_pages_are_still_read(store: Store):
     assert "s1" in owed_before, before
 
     plan_path = store.docs / "plans" / "plan-00.html"
+    # The record covers the content as it stands now, so the next write makes
+    # the section owed again. A single request then has to report that from its
+    # own post-write read; a read that served the pre-write memo would report
+    # nothing owed.
     state = review_module._as_document(plan_path)
     text = plan_path.read_text(encoding="utf-8")
     digests = review_module._section_digests(text)
@@ -382,7 +398,7 @@ def test_the_review_store_and_state_pages_are_still_read(store: Store):
     record = {
         "project": PROJECT,
         "plan_slug": "plan-00",
-        "plan_version": 1,
+        "plan_version": 2,
         "rubric": "plan_review",
         "reviewed_blob_sha": "a" * 40,
         "plan_fingerprint": review_module._fingerprint_forms(state)[0],
@@ -398,10 +414,13 @@ def test_the_review_store_and_state_pages_are_still_read(store: Store):
     assert Path(stored).is_file(), stored
     assert str(stored).startswith(str(_store._config_home())), stored
 
-    answer = _set_title(store, "plan-00", "Before the review", version=2)
+    answer = _set_title(store, "plan-00", "Written in the same request", version=2)
     assert answer.get("ok"), answer
     owed_after = {row["unit"] for row in answer.get("review_owed") or []}
-    assert "s1" not in owed_after, answer
+    # A title write changes no section's text, so the section stays reviewed
+    # and the document itself becomes owed. What matters is that the owed set
+    # is non-empty: a post-write read serving the pre-write memo reports none.
+    assert "_document" in owed_after, answer
     assert owed_after != owed_before, (owed_before, owed_after)
 
     timeline = serve.safe_join(store.docs, f"state/{PROJECT}/timeline.html")
