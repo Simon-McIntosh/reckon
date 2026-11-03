@@ -20,10 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-monitor-reads-each-fact-once">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;descoped&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
   <title>A Landing Never Waits On A Shared Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-11-03">
 </head>
 <body>
   <main class="plan-doc">
@@ -42,7 +44,7 @@
     <p>The analysis is in <a href="/reckon/research/monitor-storage-load-rca">monitor-storage-load-rca</a> §3.</p>
 
     <h2 id="s2">§2 — A landing commits through its own index</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="3.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="3.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="descoped" data-descope-reason="superseded: reckon/crew/merge.py:11-13 and :629-631 now build the merge with merge-tree and commit-tree, then fast-forward; the requested temporary-index implementation would reintroduce an unnecessary index path." data-links=""></section>
     <p>The promotion's landing writes are staged into a temporary index (<code>GIT_INDEX_FILE</code> under the
     run's scratch, seeded from <code>HEAD</code>), committed with <code>git commit-tree</code>, and published
     with <code>git update-ref refs/heads/main &lt;new&gt; &lt;old&gt;</code>, which fails when main moved. A failed
@@ -72,18 +74,16 @@
     multi-minute promotions and at least one lock collision, or the measurement records that the collision
     did not reproduce and how often it was tried.</p>
 
-    <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-    </section>
+    
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-alnw-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-22" data-recommends-skill="/reckon-build a-landing-never-waits-on-a-shared-index §2" data-resolved-at="" data-resolved-by="">
-        <h4 class="r-fu-title">Take the landing off the shared index</h4>
-        <div class="r-fu-body"><p>§2 and §3 are independent and can run in parallel; §4 measures both.</p></div>
-        <pre class="r-fu-prompt">/reckon-build a-landing-never-waits-on-a-shared-index §2</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-alnw-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-22" data-recommends-skill="/reckon-build a-landing-never-waits-on-a-shared-index §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Take the landing off the shared index</h4>
+    <div class="r-fu-body"><p>§2 and §3 are independent and can run in parallel; §4 measures both.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-landing-never-waits-on-a-shared-index §2</pre>
+    </article>
+</section>
   </main>
 </body>
 </html>
