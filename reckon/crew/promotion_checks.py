@@ -2560,6 +2560,109 @@ def _plan_review_record_for_promoting_run(
     return found[1] if found is not None else None
 
 
+def _composed_plan_review_directory(
+    project: str, plan_slug: str, record: Mapping[str, Any]
+) -> tuple[Path | None, str]:
+    """The composed report directory the run's write paths name, and its run id.
+
+    A plan review's write paths name the report directory it was composed, which
+    is the identity it keeps whether or not the directory's ``dispatch.json``
+    names the run that launched it. A path naming a file inside a directory
+    under the report root resolves to that directory, so either spelling of the
+    grant is read. The second element is the run the directory's own sidecar
+    names, empty when it names none. A run whose write paths name no directory
+    under the plan's report root yields ``None``.
+    """
+    root = plan_review._plan_review_report_root(project, plan_slug)
+    for declared in (record.get("node") or {}).get("write_paths") or ():
+        candidate = Path(str(declared))
+        directory = (
+            candidate
+            if candidate.parent == root
+            else candidate.parent
+            if candidate.parent.parent == root
+            else None
+        )
+        if directory is None or not directory.name:
+            continue
+        return directory, review_module._plan_review_crew_run_id(
+            project, plan_slug, directory.name
+        )
+    return None, ""
+
+
+def _plan_review_store_outcome(
+    project: str, run_id: str, record: Mapping[str, Any]
+) -> dict[str, Any] | None:
+    """What the plan-review store did with a promoting plan review's report.
+
+    A plan review's promotion reaches the store through
+    :func:`_plan_review_record_for_promoting_run`, and the store records its
+    outcome on the delivery it read: ``stored`` once a record carries the
+    delivery's id, ``store_error`` with the reason when it refused. The outcome
+    is read back off that delivery, so the receipt reports what the store wrote
+    rather than a second inference over the same files.
+
+    A run that is not a plan review yields ``None``, so its receipt carries no
+    such field. A promoting plan review whose composed report names no run —
+    where promotion finds no delivery to join at all — yields the composed
+    directory and the run id it fails to name, which is what a review that
+    never reached the store leaves behind.
+    """
+    from reckon.crew import recovery
+
+    node_id = str((record.get("node") or {}).get("id") or "")
+    prefix = recovery.PLAN_REVIEW_NODE_PREFIX
+    if not node_id.startswith(prefix):
+        return None
+    plan_slug = node_id[len(prefix) :]
+    if not plan_slug:
+        return None
+    delivery = _delivered_plan_review_for_run(project, plan_slug, run_id)
+    if delivery is not None:
+        if delivery.get("stored"):
+            return {"status": "written"}
+        reason = str(delivery.get("store_error") or "").strip()
+        if not reason:
+            reason = (
+                f"the delivered report {delivery.get('report_path')} carries no "
+                "record in the plan-review store, and the store recorded no "
+                "refusal for it"
+            )
+        return {"status": "failed", "error": reason}
+    directory, named = _composed_plan_review_directory(project, plan_slug, record)
+    if directory is None:
+        return {
+            "status": "failed",
+            "error": (
+                "the plan review's write paths name no composed report directory "
+                f"under {plan_review._plan_review_report_root(project, plan_slug)}, "
+                "so promotion never reached the plan-review store"
+            ),
+        }
+    if not named:
+        error = (
+            f"the composed report directory {directory} names no run id, so "
+            f"promotion could not join it to run {run_id!r} and the review was "
+            "not stored"
+        )
+    elif named != run_id:
+        error = (
+            f"the composed report directory {directory} names run {named!r} "
+            f"rather than run {run_id!r}, so the review was not stored"
+        )
+    else:
+        error = (
+            f"the composed report directory {directory} names run {run_id!r} "
+            "but carries no delivered report, so there was no review to store"
+        )
+    return {
+        "status": "failed",
+        "error": error,
+        "composed_directory": str(directory),
+    }
+
+
 def _misdelivered_plan_review_directories(
     project: str, run_id: str, record: Mapping[str, Any]
 ) -> tuple[Path, Path] | None:

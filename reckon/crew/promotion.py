@@ -1409,10 +1409,17 @@ def _complete_locked(
     # a review, or a review run that delivered no readable round, leaves the
     # row's review block as the review gate resolved it.
     committed_review_payloads: list[dict[str, Any]] = []
+    # A plan review's record reaches the plan-review store from the same call
+    # that reads its rounds, so its outcome is read back after that call and
+    # reported on the receipt beside the run store's own outcome. The two say
+    # different things: ``store`` is the ledger's index append, and a plan
+    # review that never reached the review store still shows it as written.
+    plan_review_store: dict[str, Any] | None = None
     if not shadow:
         committed_review_payloads = _delivered_review_payloads_for_commit(
             record, project, run_id, root=ledger_root
         )
+        plan_review_store = _plan_review_store_outcome(project, run_id, record)
     committed_review_payload = next(
         (
             payload
@@ -1809,7 +1816,7 @@ def _complete_locked(
         # This is a bounded fleet reading, not a readiness recommendation: the
         # result states only what promotion observed, and the orchestrator owns
         # every decision about what to do next.
-        return {
+        receipt = {
             "run_id": run_id,
             "project": project,
             "ledger_path": written["path"],
@@ -1833,6 +1840,13 @@ def _complete_locked(
             # leaving it in a bucket no roadmap reads.
             "outside_scope": outside_scope_entries,
         }
+        # A plan review's receipt names what the plan-review store did with the
+        # review it delivered. A run that is not a plan review carries no such
+        # field, so the field's absence itself states the run had no review to
+        # store.
+        if plan_review_store is not None:
+            receipt["plan_review_store"] = plan_review_store
+        return receipt
 
 
 DISCARD_RECORD_NAME = "discard.json"
@@ -2318,6 +2332,7 @@ from reckon.crew.promotion_checks import (
     _plan_impl_from_state,
     _plan_remaining_sections,
     _plan_review_record_for_promoting_run,
+    _plan_review_store_outcome,
     _plan_state_for_run,
     _promotion_terminal_observation,
     _PromotionRefusalError,
