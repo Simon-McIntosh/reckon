@@ -1,0 +1,77 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-03T00:02:13.001Z",
+  "dispatched_at": "2026-11-02T23:54:40Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:208",
+      "id": "done_when-1",
+      "reason": "the unidentified second path is exactly what decides whether the fix's write paths are the right ones, so the plan should carry a done-when case that requires the two paths to be named (in the manifest and in the run's verdict record) before the code cases count.",
+      "text": "`s22`'s deliverable part 1 (\"Find the paths first. From the run's records, name the code paths that made the two attempts. Record them in the manifest before changing code\") is the plan's own statement that the cause is not yet known \u2014 its Why says \"the verdict log holds no row for the request, so which two paths attempted the launch is not yet known\" \u2014 yet no done-when case measures it, so a node can land both code fixes, pass all four cases, and never have determined whether the second attempt came through `_launch_queued`/`_stamp_failure` at all; if it did not, the two fixes are repairing a path that is not the one that lost the fields.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:88",
+      "id": "reasoning-1",
+      "reason": "the claim is either narrowed to the covered path or the dispatch-gate read must be brought inside the per-pass record, and until one is chosen a node can satisfy every case while the reads the section exists to remove survive on the fallback.",
+      "text": "`s4` concludes \"so a pass reads each plan once however many requests name it\", but `_plan_review_owed` returns to `_dispatch_gate_owed` for every request whose pointer records no current contract and for every request whose units no stored review covers (`reckon/crew/queue_admission.py:3315`, :3325), and that fallback calls `routing.require_plan_reviewed`, which itself runs `plan_review.review_coverage`, `read_plan_review`, `_plan_html.read_state_file` and `list_plan_reviews` (`reckon/crew/routing.py:2704\u20132741`) \u2014 per request, outside the per-pass record; done-when case 1 only counts the covered path, so the section's central claim and its gate disagree on precisely the unreviewed-plan case the reported 1,250\u20132,980 s launch stage would still be paying for.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:204",
+      "id": "reasoning-2",
+      "reason": "the implementer will write the case on a lane-full pass, which does compute an order, so the code is unchanged; only the sentence overstates, and narrowing it to \"each pass that computes an admission order\" is a one-word edit.",
+      "text": "`s21`'s deliverable says \"Each pass writes the request's queue position, rank key and last attempt verdict onto its pointer\", but a pass whose gate is waiting (`local_gated`) records gated verdicts and then filters the queued list to nothing (`reckon/crew/queue_admission.py:3665`, :3709\u20133735), so no order is computed and no position exists to write; done-when case 4 is worded \"after a pass that launches nothing\", which a gated pass satisfies while writing nothing, so the claim and its case describe different passes.",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "378d868721aea797c275d5ed3355493a8241777b",
+  "plan_fingerprint": "d43552021429b2edc4240fe592f90e3f9d480730d81993a88915155413da8031",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 155,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261102T235111608770-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "77d4fd1df6b7e66cd444e236698c20a2a96b638c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves in the base tree: `_plan_review_owed` `reckon/crew/queue_admission.py:3244`, `plan_review._section_digests` :3319, `plan_html.read_state_file` :3328, the document-contract block :3329\u20133337, `admit_once`'s `advance_waiting_requests` :3683, `admit_until_stopped(once=True)` :4381\u20134404 (the cited range lands on the once-branch body that runs `_release_tick` and `_LandingWorker`), `_stale_launch_tree_refusal` `reckon/crew/routing.py:2179`, `QUEUED_LIFE_KEYS` :4134, and the quoted refusal \"records no argv and its backend is not in the supplied config\" at `reckon/crew/dispatch_sessions.py:967`.",
+    "done_when": "a finding \u2014 `s22`'s first deliverable part (name the two code paths that attempted the launch, recorded in the manifest before any code change) appears in no done-when case, so the gate can pass with the plan's own stated prerequisite skipped.",
+    "evidence_paths": "pass \u2014 `s4`'s timing arm is logged under the run's `logs/` in the crew home (durable on GPFS), and the other units name test files and gate logs rather than any scratchpad or node-local path.",
+    "naming": "pass \u2014 `queue_position`, `rank_key`, `last_admission` and `waits_seconds` name what they measure; no plan labels, stage names, ticket numbers or changelog prose reach any symbol, file or comment the units propose.",
+    "reasoning": "two findings \u2014 `s4`'s deliverable claims a pass reads each plan once however many requests name it, but the per-request fallback to the dispatch gate still reads the plan outside the memo; `s21`'s deliverable claims each pass writes the queue position onto every queued pointer, but a gated pass computes no order and walks no queued list.",
+    "single_goal": "pass \u2014 each unit names one operational outcome (s4: one plan read and an honest stage clock per pass; s21: a coordinator can launch one named request and read its place; s22: a successful launch survives a refused attempt's write); their multi-part deliverables serve that one verdict.",
+    "wiring": "pass \u2014 the added `s22 -> work-is-never-stuck-behind-the-admission-loop#s19` dependency resolves (`id=\"s19\"` exists) and `s21` and `s4` keep their `a-read-costs-what-changed#s6` dependency (the target section exists in that plan); the four units' declared write paths all exist (`reckon/crew/queue_admission.py`, `reckon/crew/routing.py`, `reckon/crew/runs.py`, `reckon/crew_run_commands.py`), and `admit_once`'s release-before-queue ordering that `s21` relies on is real (`reckon/crew/queue_admission.py:3683` runs `advance_waiting_requests` before the queued list is built from the same `live` at :3694)."
+  },
+  "section_digests": {
+    "_document": "d9fe47a1e0fd65aa8c4bf3eb8aaf21e958e6b5860db22a3c6b74a23a53529665",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s11": "64172d367078831447521db5db6f564603855f46c387c906413737be38d7cefa",
+    "s12": "a326ddd2ee6a25d3a5bd7e7faf7faebb13b159435640d33f4c6c5edcca238229",
+    "s13": "43c63cb3547e9638882e45af647c6eca92cdbd77c8006cbf416ed717619a79d5",
+    "s14": "8ad0ca2171f9b9e5d1a4402bed0ba51d908267ec88069268c781013864f569fa",
+    "s15": "97b76e836bce15b65611e3a1c12d5628da0992c3b604881d88f2e406aec3097b",
+    "s16": "de7130b93ad47423ed1f2ac37f7d700e9e1875834a26a33af10a97e2476eafa7",
+    "s17": "e0db3dac4c8e5a22f059034f39cf37bf8c5bd249834f218c25bdec42bc4151ed",
+    "s18": "dac73bb15e3a6db1d4fce585091868e67027d7235101498beef9a59ec2d88363",
+    "s19": "c1cb9323a74f953649b86e65f30cfa320b3f38079883c2a62230fe0b33e58fac",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s20": "132bce7e7e2e5612ff43da2f5ac5d14df2686c95a8118525bacac4349e87cb1b",
+    "s21": "e878dba7a65e31e5b07d319d5ce765b58fd49ba3819fbd3b26ddaf876d5cd1f6",
+    "s22": "bb0ed4751d74018e18c7dee637ebe397d3051553f8f6a9d27b2a6b8b9d128c89",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s4": "fabfc864b9a4046a99fe8c3991017da03e5a3a03695c7995ebdd231d9bae3261",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "2f92e5358487aabaeb8d2b0c54fdf9a0407281e571a7eadaef0a2509754e3666",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T00:07:13.927071+00:00"
+}
