@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest records no baseline_suite, so the contract's suite pair is absent and the delta is read from the arms that exist. Its after_suite gate (tests/test_an_answer_says_what_was_done.py) is 0 failures at 020b77c265, the code head the two gained commits produced; arm-head-named.log is 1 failed / 12 passed at 020b77c265 and arm-base-named.log is the same 1 failed / 12 passed at 25d6b4f7e0 with the identical id, so the head adds none there. The importer arms are not a delta for this window: importers-head-00-rerun.log ran at e2e94ccf59, which is this review's base, not its head, and its one head-only id (tests/test_crew_session_delivery.py::test_a_follower_waits_for_a_producer_instead_of_refusing) is the unrelated flaky follower failure a prior review already recorded, not a product of 020b77c265. The extraction is not blind: the same reading sees 1 failure in arm-head-named.log and 8 in importers-head-00-rerun.log, so the zero is a measured zero.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:2463",
+    "reckon/crew_run_commands.py:78",
+    "reckon/mcp_crew_actions.py:316",
+    "reckon/mcp.py:2763"
+  ],
+  "completed_at": "2026-11-03T10:14:50.825Z",
+  "dispatched_at": "2026-11-03T10:04:04Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-review-gate-judges-what-it-covers/an-answer-says-what-was-done.html",
+      "id": "g1a2b3c4e01",
+      "line": "42",
+      "severity": "non-blocking",
+      "text": "the fragment's final </article> loses the trailing newline the base revision carried, so the evidence file no longer ends with one."
+    },
+    {
+      "file": "docs/evidence/fragments/a-review-gate-judges-what-it-covers/an-answer-says-what-was-done.html",
+      "id": "g2b3c4d5f02",
+      "line": "24",
+      "severity": "non-blocking",
+      "text": "the measure paragraph cites a 123-passed blast radius as this node's evidence, but blast-radius-3.log and blast-radius-3b.log both record their run at 'uncommitted working tree on top of e2e94ccf59', i.e. before 020b77c265, so the blast radius does not cover the fix it is cited for."
+    },
+    {
+      "file": "reckon/crew_dispatch_commands.py",
+      "id": "g3c4d5e6a03",
+      "line": "2574",
+      "severity": "non-blocking",
+      "text": "`str(note or \"\").strip()` means `--note \"   \"` with no `--answer` passes the guard and is silently discarded, which is the same silent drop the branch exists to refuse."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T054520918996-an-answer-says-what-was-done/manifest.md",
+      "id": "g4d5e6f7b04",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "the manifest records after_suite at 020b77c265 and no baseline_suite field at all, so the contract's before/after suite pair cannot be read from it; the no-added-failure delta is only derivable from the arm logs."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call sites that reach _run_review, listed on the CALL_SITES line.",
+    "diff": "read commit by commit from e2e94ccf59 to 37c9b24a6a; 020b77c265 adds the note-without-answer refusal and its 28-line test, and 37c9b24a6a rewrites the evidence fragment's body, measure and open paragraphs.",
+    "done_when": "the done_when names tests/test_an_answer_says_what_was_done.py with its cases, two negative controls and three no-added-failure arm files; the manifest records the gate at 6 passed (gate-after-4.log, EXIT=0) and both controls red, and a re-run of the file at 37c9b24a6a in a scratch tree is 6 passed, EXIT=0.",
+    "goal": "the source node's goal is that an acted answer to a plan-review finding carries a note saying what changed; the gained commits close the converse hole at reckon/crew_dispatch_commands.py:2574-2577, refusing a note that names no answer, so the note is never silently discarded.",
+    "manifest": "read; it states the gate at 6 passed, both controls red, a 123-passed blast radius and the three named arm files at 1 failed / 12 passed at both revisions, but records no baseline_suite and its after_suite names 020b77c265 rather than the reviewed head 37c9b24a6a.",
+    "write_paths": "read the source node's FENCE-SCOPE list; the two gained commits touch only docs/evidence/fragments/a-review-gate-judges-what-it-covers/an-answer-says-what-was-done.html, reckon/crew_dispatch_commands.py and tests/test_an_answer_says_what_was_done.py, every one inside it."
+  },
+  "justifications": {
+    "durability": "tests/test_an_answer_says_what_was_done.py:99 reddens when the branch is removed (negative-control-2.log: 1 failed, 1 failing id), and it asserts the command's exit code and the absent stored review rather than a value the test itself passed in.",
+    "evidence": "gate-after-4.log records 6 passed with EXIT=0 and negative-control-2.log reddens the fix's own case, but blast-radius-3.log and importers-head-00-rerun.log both ran at e2e94ccf59, before 020b77c265, so the done_when's importer clause is unmeasured for the gained fix.",
+    "fit": "the branch follows the surrounding `detail = ...` refusal chain at reckon/crew_dispatch_commands.py:2550-2560 and introduces no plan, ticket or version name, though the fragment ends without a newline at line 42.",
+    "goal_fidelity": "reckon/crew_dispatch_commands.py:2574 refuses a note that names no answer, so the note the goal attaches to an answer can no longer be dropped in a review composition.",
+    "reuse": "no shared option-combination refusal helper exists \u2014 a search over reckon/*.py and reckon/crew/*.py found only inline `detail` strings \u2014 and the branch extends that chain at reckon/crew_dispatch_commands.py:2574 rather than adding a parallel mechanism.",
+    "scope_discipline": "every path in the two gained commits is inside the source node's FENCE-SCOPE list, and the fragment edited is the node's own landing record."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that an acted answer to a plan-review finding carries a note saying what changed; the gained commits close the converse hole at reckon/crew_dispatch_commands.py:2574-2577, refusing a note that names no answer, so the note is never silently discarded.\nVERDICT done_when: the done_when names tests/test_an_answer_says_what_was_done.py with its cases, two negative controls and three no-added-failure arm files; the manifest records the gate at 6 passed (gate-after-4.log, EXIT=0) and both controls red (negative-control-1.log, negative-control-2.log), and a re-run of the file at 37c9b24a6a in a scratch tree is 6 passed, EXIT=0.\nVERDICT write_paths: read the source node's FENCE-SCOPE list; the two gained commits touch only docs/evidence/fragments/a-review-gate-judges-what-it-covers/an-answer-says-what-was-done.html, reckon/crew_dispatch_commands.py and tests/test_an_answer_says_what_was_done.py, every one inside it.\nVERDICT manifest: read; it states the gate at 6 passed, both controls red, a 123-passed blast radius and the three named arm files at 1 failed / 12 passed at both revisions, but records no baseline_suite and its after_suite names 020b77c265 rather than the reviewed head 37c9b24a6a.\nVERDICT diff: read commit by commit from e2e94ccf59 to 37c9b24a6a; 020b77c265 adds the note-without-answer refusal and its 28-line test, and 37c9b24a6a rewrites the evidence fragment's body, measure and open paragraphs.\nCALL_SITES: reckon/crew_dispatch_commands.py:2463, reckon/crew_run_commands.py:78, reckon/mcp_crew_actions.py:316, reckon/mcp.py:2763\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew_dispatch_commands.py:2574 refuses a note that names no answer, so the note the goal attaches to an answer can no longer be dropped in a review composition.\nSCORE evidence: 13\nJUSTIFICATION evidence: gate-after-4.log records 6 passed with EXIT=0 and negative-control-2.log reddens the fix's own case, but blast-radius-3.log and importers-head-00-rerun.log both ran at e2e94ccf59, before 020b77c265, so the done_when's importer clause is unmeasured for the gained fix.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the two gained commits is inside the source node's FENCE-SCOPE list, and the fragment edited is the node's own landing record.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_an_answer_says_what_was_done.py:99 reddens when the branch is removed (negative-control-2.log: 1 failed, 1 failing id), and it asserts the command's exit code and the absent stored review rather than a value the test itself passed in.\nSCORE fit: 17\nJUSTIFICATION fit: the branch follows the surrounding `detail = ...` refusal chain at reckon/crew_dispatch_commands.py:2550-2560 and introduces no plan, ticket or version name, though the fragment ends without a newline at line 42.\nSCORE reuse: 20\nJUSTIFICATION reuse: no shared option-combination refusal helper exists \u2014 a search over reckon/*.py and reckon/crew/*.py found only inline `detail` strings \u2014 and the branch extends that chain at reckon/crew_dispatch_commands.py:2574 rather than adding a parallel mechanism.\nFINDING docs/evidence/fragments/a-review-gate-judges-what-it-covers/an-answer-says-what-was-done.html:42 non-blocking: the fragment's final </article> loses the trailing newline the base revision carried, so the evidence file no longer ends with one.\nFINDING docs/evidence/fragments/a-review-gate-judges-what-it-covers/an-answer-says-what-was-done.html:24 non-blocking: the measure paragraph cites a 123-passed blast radius as this node's evidence, but blast-radius-3.log and blast-radius-3b.log both record their run at 'uncommitted working tree on top of e2e94ccf59', i.e. before 020b77c265, so the blast radius does not cover the fix it is cited for.\nFINDING reckon/crew_dispatch_commands.py:2574 non-blocking: `str(note or \"\").strip()` means `--note \"   \"` with no `--answer` passes the guard and is silently discarded, which is the same silent drop the branch exists to refuse.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T054520918996-an-answer-says-what-was-done/manifest.md:15 non-blocking: the manifest records after_suite at 020b77c265 and no baseline_suite field at all, so the contract's before/after suite pair cannot be read from it; the no-added-failure delta is only derivable from the arm logs.\n",
+  "review_run_id": "r-20261103T093500946673-review-of-an-answer-says-what-was-done-37c9b24a6aab",
+  "reviewed_base_sha": "e2e94ccf59da91967ad7002b39461245dc0cf253",
+  "reviewed_head_sha": "37c9b24a6aab255ccfee8c9bca1dc4f24b99cc76",
+  "reviewed_run_id": "r-20261103T054520918996-an-answer-says-what-was-done",
+  "scores": {
+    "durability": 19,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T10:14:32Z",
+  "total": 106
+}
