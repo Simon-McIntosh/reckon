@@ -1,0 +1,46 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:2183",
+    "reckon/crew/recovery_stream.py:431",
+    "reckon/crew/recovery.py:297",
+    "reckon/crew.py:179"
+  ],
+  "completed_at": "2026-11-03T06:18:38.064Z",
+  "dispatched_at": "2026-11-03T06:06:35Z",
+  "findings": [
+    {
+      "file": "reckon/crew/query.py",
+      "id": "f56ef93e9b0",
+      "line": 100,
+      "severity": "non-blocking",
+      "text": "non-blocking: the change produces waiting_seconds on the classification row (recovery_classification.py:2330 spreads the timing mapping into the returned row), but the key is absent from LIVE_CLASSIFICATION_FIELDS (query.py:100) and therefore from LIVE_FIELD_VOCABULARY (query.py:279), so a caller asking `crew view live --fields waiting_seconds` is refused and no declared surface names the new field; the parked wait reaches the row but cannot be requested or advertised."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T052451076906-a-parked-request-spends-no-budget/manifest.md",
+      "id": "f842d152820",
+      "line": 20,
+      "severity": "non-blocking",
+      "text": "non-blocking: the after_suite revision reads 3d0ed7f1496e017b2095ee6f2eb57e16bb925d75, the base revision, although that arm ran in the head worktree and collected tests/test_a_parked_request_spends_no_budget.py, which exists only at the head (after-suite.log:1 names the head tree with the same base revision in its header); the arm's two revisions cannot be told apart from the field, so a later reader must open the log to learn which code it measured."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that a request which never launched reports no elapsed budget time and no overrun; reckon/crew/recovery_stream.py:328 _budget_timing now starts elapsed at attempt_started_at or launched_at and hands a pointer in WAITING_REQUEST_PHASES with no launch stamp to _parked_budget_timing (recovery_stream.py:286), which returns elapsed_seconds None, budget_overrun false and waiting_seconds measured from creation time.\nVERDICT done_when: The plan's done-when asks that an awaiting-upstream pointer a week old reports budget_overrun false with waiting_seconds recorded, that a run launched four hours ago on a three-hour budget still reports the overrun, and that a negative control restoring the created_at fallback reddens the first case; gate-head.log records 6 passed EXIT=0, repro-base.log records the same 6 failing at the base revision 3d0ed7f1 EXIT=1, and negative-control.log records FFFF.. (4 failed, 2 passed) EXIT=1 under the declared mutation.\nVERDICT write_paths: The reviewed manifest declares reckon/crew/recovery_stream.py, tests/test_a_parked_request_spends_no_budget.py, the docs/evidence fragment and an unused docs/figures directory; commit 0c71326e47 changes exactly the first two and 87a5a0c023 adds exactly the fragment, so every landed path sits inside the declared scope.\nVERDICT manifest: Read; it states status complete with gate-head.log 6 passed, six base failures in repro-base.log, the negative control EXIT=1, and a baseline/after pair over four related suites at 4 failed 132 passed and 4 failed 138 passed, the same four pre-existing follow-watch failures either side.\nVERDICT diff: Read commit by commit against 3d0ed7f1; 0c71326e47 adds _parked_budget_timing, the launch-stamp ordering and the waiting-phase branch in _budget_timing, plus a 108-line test module, and 87a5a0c023 adds only the eight-line evidence fragment, with no unrelated change in either.\nCALL_SITES: reckon/crew/recovery_classification.py:2183, reckon/crew/recovery_stream.py:431, reckon/crew/recovery.py:297, reckon/crew.py:179\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_stream.py:373-377 falls through to _parked_budget_timing exactly when the pointer is in WAITING_REQUEST_PHASES and carries no launch stamp, and line 355 now reads launched_at so a launched run is charged from its launch rather than its creation.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_a_parked_request_spends_no_budget.py is recorded passing 6/6 in gate-head.log and failing 6/6 at the base source in repro-base.log with the negative control reddening the four parked cases, though the after arm's manifest line 20 names the base revision for a run made in the head tree and the arm set covers four related suites rather than every file importing the touched modules.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in both commits (reckon/crew/recovery_stream.py, tests/test_a_parked_request_spends_no_budget.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-parked-request-spends-no-budget.html) is inside the four paths the manifest declares.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_parked_request_spends_no_budget.py:65-69 asserts elapsed_seconds is None, budget_overrun false and waiting_seconds==604800 for a week-parked pointer, which reddens under the declared mutation (negative-control.log) and would also redden if the created_at fallback returned; :107 reddens if charging reverts to creation time.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/recovery_stream.py:286 follows the surrounding _token_budget_timing idiom of a small helper returning a plain dict, and the identifiers _parked_budget_timing and waiting_seconds describe the mechanism with no plan or ticket label.\nSCORE reuse: 18\nJUSTIFICATION reuse: the new function imports WAITING_REQUEST_PHASES from reckon/crew/node.py:1529 instead of restating the four phases and reuses _token_budget_timing for the token-denominated case, with no existing owner of a parked-wait measure found in reckon/crew.\nFINDING reckon/crew/query.py:100 non-blocking: the change produces waiting_seconds on the classification row (recovery_classification.py:2330 spreads the timing mapping into the returned row), but the key is absent from LIVE_CLASSIFICATION_FIELDS (query.py:100) and therefore from LIVE_FIELD_VOCABULARY (query.py:279), so a caller asking `crew view live --fields waiting_seconds` is refused and no declared surface names the new field; the parked wait reaches the row but cannot be requested or advertised.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T052451076906-a-parked-request-spends-no-budget/manifest.md:20 non-blocking: the after_suite revision reads 3d0ed7f1496e017b2095ee6f2eb57e16bb925d75, the base revision, although that arm ran in the head worktree and collected tests/test_a_parked_request_spends_no_budget.py, which exists only at the head (after-suite.log:1 names the head tree with the same base revision in its header); the arm's two revisions cannot be told apart from the field, so a later reader must open the log to learn which code it measured.\n",
+  "review_run_id": "r-20261103T055034877536-review-of-a-parked-request-spends-no-budget-87a5a0c023e6",
+  "reviewed_base_sha": "3d0ed7f1496e017b2095ee6f2eb57e16bb925d75",
+  "reviewed_head_sha": "87a5a0c023e6514b69cee88d7adf94cf1ca640ad",
+  "reviewed_run_id": "r-20261103T052451076906-a-parked-request-spends-no-budget",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T06:36:42.532465+00:00",
+  "total": 111
+}
