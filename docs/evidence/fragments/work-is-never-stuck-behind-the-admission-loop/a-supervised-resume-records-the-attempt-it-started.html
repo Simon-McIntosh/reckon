@@ -1,0 +1,32 @@
+<!doctype html>
+<title>A supervised resume records the attempt it started</title>
+<section
+  id="a-supervised-resume-records-the-attempt-it-started-landing"
+  data-node="a-supervised-resume-records-the-attempt-it-started"
+>
+  <h2>A supervised resume records the attempt it started</h2>
+
+  <p><strong>What changed.</strong> A worker receipt written when the process
+  starts is reused when its supervisor confirms the same process. That second
+  confirmation no longer creates another numbered receipt. Resume and
+  redispatch both retain attempt 2 after the first continuation; a second
+  resume records attempt 3 and keeps the earlier receipts. The attempt-number
+  path is <code>supervised_launch</code> followed by
+  <code>record_resumption</code> for resume, and
+  <code>change_lane</code> for redispatch. Both reach the worker writer twice.</p>
+
+  <p><strong>Measure.</strong> The two named resume and redispatch cases passed
+  4 of 4 variants in each of three serial runs. The full node test file passed
+  7 of 7. Restoring the duplicate writer made all 4 variants fail with
+  <code>assert 3 == 2</code>. The tests drive the existing bounded supervisor
+  confirmation through a controlled event, with no added wall-clock wait.</p>
+
+  <p><strong>Importer comparison.</strong> The same 73 referencing test files
+  ran against extracted base and head trees. Base: 832 passed, 9 failed, 6
+  setup errors, 1 skipped. Head: 836 passed, 7 failed, the same 6 setup
+  errors, 1 skipped. No failure ID was added; the two removed failures were
+  the resume and redispatch cases. The six shared setup errors came from the
+  worker fence's read-only <code>/tmp</code>; a matched rerun under the granted
+  temporary root passed all 6 on both revisions. Shared watch failures remain
+  present on both revisions.</p>
+</section>
