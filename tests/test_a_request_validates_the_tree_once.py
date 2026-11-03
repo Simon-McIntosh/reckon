@@ -135,10 +135,12 @@ class Counter:
         self.stat_paths: set[str] = set()
         self.reuse = 0
         self.validations = 0
+        self.covered_validations = 0
         self.identity_index = 0
 
     def reset(self) -> None:
         self.stat = self.reuse = self.validations = self.identity_index = 0
+        self.covered_validations = 0
         self.stat_paths.clear()
 
     def as_dict(self) -> dict[str, object]:
@@ -147,6 +149,7 @@ class Counter:
             "stat_paths": len(self.stat_paths),
             "reuse": self.reuse,
             "validations": self.validations,
+            "covered_validations": self.covered_validations,
             "identity_index": self.identity_index,
         }
 
@@ -169,6 +172,7 @@ def counted(monkeypatch: pytest.MonkeyPatch) -> Counter:
         return real_reuse(*args, **kwargs)
 
     def counting_once(*args: object, **kwargs: object):
+        counter.covered_validations += 1
         if metadata_index._DISCOVERY_FILES.get() is not None:
             counter.validations += 1
         return real_once(*args, **kwargs)
@@ -430,6 +434,40 @@ def test_the_review_store_and_state_pages_are_still_read(store: Store):
         sorted(real_home_reviews.glob("**/*")) if real_home_reviews.is_dir() else []
     )
     assert untouched_after == untouched_before, "the real crew home was written"
+
+
+def test_the_brief_entry_point_validates_the_tree_once(store: Store, counted: Counter):
+    """The CLI brief enters the scope the deadline wrapper cannot give it.
+
+    It calls ``reckon.mcp._roadmap`` directly, which is not a registered tool, so
+    the boundary the wrapper installs never runs for it. Without its own entry
+    the same read validates the covered tree once per lookup.
+    """
+
+    from reckon import project_brief
+
+    counted.reset()
+    payload = project_brief._load_payload(PROJECT)
+    assert payload.get("ok", True), payload
+    # The read looks the covered tree up several times; without the entry only
+    # one of those lookups sits inside a scope, so the rest revalidate.
+    assert counted.reuse > 1, counted.as_dict()
+    assert counted.covered_validations == 1, counted.as_dict()
+
+
+def test_the_maintenance_roadmap_validates_the_tree_once(
+    store: Store, counted: Counter
+):
+    """The maintenance roadmap verb enters the same scope for the same reason."""
+
+    from reckon import project_maintenance_commands
+
+    counted.reset()
+    project_maintenance_commands.roadmap.callback(
+        PROJECT, None, None, 5, True, False, None
+    )
+    assert counted.reuse > 1, counted.as_dict()
+    assert counted.covered_validations == 1, counted.as_dict()
 
 
 def test_a_new_plan_is_seen_by_the_next_read(store: Store):
