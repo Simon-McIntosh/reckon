@@ -1,0 +1,40 @@
+<article class="r-evidence" data-node="a-reset-row-tells-orchestrator-sessions-to-continue-and-no">
+<h3 id="a-reset-row-tells-orchestrator-sessions-to-continue-and-no-what">A reset row says "continue", and says no worker lane opened</h3>
+<p id="a-reset-row-tells-orchestrator-sessions-to-continue-and-no-body">At the base revision a limit-reset row was composed as a free-text clause with the
+group, clock and instruction in it, and the two groups read
+<code>limit reset · claude-orchestrators · five_hour · orchestrator sessions may continue · …</code>
+and <code>limit reset · claude-sub · five_hour · worker lanes may continue · …</code>. The second is
+the reading the lead ruled against: a reset recorded under the worker lane's own budget group said
+that lane had no limit, which is not what an announcer broadcasting a lead-reported reset recorded.
+The row also carried no stage cell of its own, so nothing on the line separated a reset from a lift
+beyond the clause's first two words.</p>
+<p id="a-reset-row-tells-orchestrator-sessions-to-continue-and-no-fix">The row now prints the stage
+cell <code>limit</code>, the budget group in the job cell, and the instruction where the transition
+words would go:
+<code>09:06  limit  claude-orchestrators  limits reset (five_hour): orchestrator sessions continue;
+worker lanes keep their limits — &lt;the announcer's reason&gt;</code>. Every reset row closes with
+the worker-lane clause whatever group it was recorded under, so a reset recorded on
+<code>claude-sub</code> reads <code>limits reset (five_hour): worker lanes keep their limits</code>
+and no row reads as opening a lane it never named. The wording is composed once, in
+<code>ticker.limit_reset_text</code>, which the pane prints; <code>lift_watch._reset_detail</code>
+now composes the event's own facts only — group, clock, instant, announcer, reason — because which
+instruction applies depends on the group's wallet, which only the rendering pane resolves.</p>
+<h3 id="a-reset-row-tells-orchestrator-sessions-to-continue-and-no-measure">Measure</h3>
+<p id="a-reset-row-tells-orchestrator-sessions-to-continue-and-no-figures">Both arms were built from
+git checkouts under the run's scratch directory with the four follower variables unset and run in
+place on the fleet node at <code>-n 8</code>. Node suite (the two test files this node's write scope
+names): base <code>e43d47a8c</code> <strong>1 failed, 16 passed</strong>, head <code>ec65874c9</code>
+<strong>1 failed, 17 passed</strong> — the one failure is
+<code>tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window</code>,
+present in both arms and naming five modules outside this node's scope
+(<code>dispatch.py</code>, <code>plan_review.py</code>, <code>queue_admission.py</code>,
+<code>runs.py</code>, <code>roadmap.py</code>). The added pass is the new case driving a follower
+over one recorded <code>claude-orchestrators</code> reset. Every test file importing
+<code>reckon/crew/ticker.py</code> or <code>reckon/crew/lift_watch.py</code> (24 files): base
+<strong>1 failed, 158 passed</strong>, head <strong>160 passed, EXIT=0</strong> — head adds no failure,
+and the base failure (<code>test_an_image_without_the_catalogue_reverts_to_the_fallback</code>) does
+not reproduce at head. The negative control removes the renderer's reset branch, so a reset row
+falls through to the ordinary transition path: <strong>3 failed, 11 passed, EXIT=1</strong>, the
+first case printing
+<code>lift  claude-sub  new → working  …</code> with no instruction on the line.</p>
+</article>
