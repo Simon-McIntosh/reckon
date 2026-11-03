@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-codebase-is-reviewed-between-nodes">
+  <meta name="plan-slug" content="promotion-family-review">
+  <meta name="plan-title" content="The promotion family review — health review record">
+  <meta name="plan-status" content="active">
+  <title>The promotion family review — health review record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The promotion family review</h1>
+    <p>Execution record for <a href="/reckon/plans/the-codebase-is-reviewed-between-nodes">the-codebase-is-reviewed-between-nodes</a> §11. A health review of the three modules the review store cites most — <code>reckon/crew/promotion_scope.py</code>, <code>reckon/crew/promotion_gate.py</code> and <code>reckon/crew/promotion_checks.py</code> — at <code>12c5565c7c5d06d6bd8a2189eef1f0ec2a075c46</code>.</p>
+
+    <section id="review" data-reckon="section">
+      <h2>What the review read</h2>
+      <p>Six rubric items, eight findings, one treatment. Three of the eight findings are <em>stale rows</em>: stored findings whose cited symbol no longer exists at HEAD, which a review that reads the store without opening the tree reports as live defects. The remaining five are live, and one of them is a defect in the instrument rather than the code.</p>
+
+      <table>
+        <thead><tr><th>Item</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><th>known_findings</th><td>a finding — eight stored rows, two classes: duplicated capability (the recurring class) and stale anchor</td></tr>
+          <tr><th>duplicate_capability</th><td>a finding — the blob-id reader is implemented twice</td></tr>
+          <tr><th>unreached</th><td>pass — all three modules are imported by live callers</td></tr>
+          <tr><th>interface_growth</th><td>a finding — two public names added in 14 days, none retired</td></tr>
+          <tr><th>width</th><td>pass — 29.8k, 13.7k and 36.4k estimated tokens against the 50k bound</td></tr>
+          <tr><th>test_debt</th><td>a finding — <code>_write_resource</code> copied into six promotion tests</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="stale" data-reckon="section">
+      <h2>Three stored rows the tree has already repaired</h2>
+      <p>Each was checked against the code at HEAD before repair was considered, per the reproduce-before-repair rule. None needed a change; what they needed was a disposition, not a second repair.</p>
+      <table>
+        <thead><tr><th>Stored row</th><th>What it claims</th><th>What HEAD holds</th></tr></thead>
+        <tbody>
+          <tr><td><code>promotion_checks.py:118</code></td><td><code>_codex_session_of_stream</code> duplicates the backend's thread-id read at <code>reckon/_backends.py:1314</code></td><td>no such function; <code>_terminal_stream_data</code> reads <code>observation.session_id</code> directly at <code>:186</code> and <code>:190</code></td></tr>
+          <tr><td><code>promotion_scope.py:2210</code></td><td><code>_staging_names_a_held_index_lock</code> re-implements <code>merge._index_lock_held</code></td><td>no such function; the surviving import is <code>_run_waiting_out_a_held_index_lock</code> at <code>:2449</code></td></tr>
+          <tr><td><code>promotion_checks.py:1504</code></td><td><code>_control_failure_ids</code> reads a gate log through <code>review._pytest_failure_ids</code> alone, missing a ctest failure block</td><td><code>_control_failure_ids</code> at <code>:1878</code> reads through the format-aware reader and its docstring states the ctest case; <code>_head_arm_log_failure_ids</code> at <code>promotion_evidence.py:1147</code> does the same</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="treatment" data-reckon="section">
+      <h2>The treatment</h2>
+      <p><strong>Delete <code>_revision_blob</code> from <code>reckon/crew/promotion_scope.py</code></strong> and route its two call sites (<code>:1987</code> and <code>:2015</code>) through <code>reckon/crew/merge.py:252</code> <code>_blob_id</code>, so one module owns the blob-id capability. Expected delta: −7 lines.</p>
+      <p>The duplication is live and the two readers already differ in strictness: <code>_blob_id</code> passes <code>--verify --quiet</code> to <code>git rev-parse</code>, <code>_revision_blob</code> does not, so an absent path resolves to <code>None</code> on one by its guard and on the other only by the return code. <code>promotion_scope</code> already imports from <code>merge</code> at line 2449, so the single owner is reachable without a new module or a circular import.</p>
+      <p>Done when <code>grep -c _revision_blob reckon/crew/promotion_scope.py</code> is 0 and the promotion test files that exercise the landing path pass. Negative control: removing <code>_blob_id</code> from <code>reckon/crew/merge.py</code> turns the landing-path tests red, which shows the surviving reader is the one under test.</p>
+    </section>
+
+    <section id="clones" data-reckon="section">
+      <h2>The clone census, and why 107 is not reproduced</h2>
+      <p>§1 reports 107 function pairs over these three modules at <code>646bbacf5</code>, 60 of them from <code>promotion_scope.py</code>. That figure is not reproducible with the detector at HEAD: <code>reckon/clones.py</code> has not changed since <code>646bbacf5</code> (no commit touches it in the window), yet none of the natural invocations returns 107.</p>
+      <table>
+        <thead><tr><th>Invocation</th><th><code>646bbacf5</code></th><th><code>12c5565c</code> (HEAD)</th></tr></thead>
+        <tbody>
+          <tr><td>corpus <code>reckon/</code> + <code>tests/</code>, the three modules as every changed path, empty base</td><td>787 (scope 477, gate 190, checks 120)</td><td>1051 (scope 656, gate 244, checks 151)</td></tr>
+          <tr><td>corpus and changed paths both the three modules</td><td>26 (8 / 10 / 8)</td><td>26 (8 / 10 / 8)</td></tr>
+          <tr><td>changed functions only, base = <code>646bbacf5^</code> → <code>646bbacf5</code></td><td>0</td><td>—</td></tr>
+          <tr><td>changed functions only, base = <code>646bbacf5</code> → HEAD</td><td>—</td><td>810 (scope 656, gate 3, checks 151)</td></tr>
+        </tbody>
+      </table>
+      <p>Two readings are stable and both are reported beside the baseline rather than in place of it. The family-internal census is <strong>26 pairs at both revisions</strong> (8 in <code>promotion_scope.py</code>, 10 in <code>promotion_gate.py</code>, 8 in <code>promotion_checks.py</code>) — no new copy inside the family in the window. The whole-corpora census is <strong>787 → 1051</strong>, driven almost entirely by <code>promotion_scope.py</code> (477 → 656), which is where the promotion family's shared idiom against the rest of the repository has grown.</p>
+      <p>The disagreement is recorded as a finding rather than smoothed: a baseline quoted as a fixed number, measured by a method nobody wrote down, cannot be reproduced by the section that has to report beside it.</p>
+    </section>
+
+    <section id="blocker" data-reckon="section">
+      <h2>What this node could not do</h2>
+      <p>A stored review requires a delivered <code>report.md</code> and its <code>code-review.json</code> sidecar under <code>~/.config/reckon/crew/reports/&lt;project&gt;/code-review/&lt;neighbourhood-key&gt;/</code>. This run's fence mounts that root read-only: <code>reckon crew review</code> fails with <code>[Errno 30] Read-only file system</code> on the composed directory, so the review can be neither composed, dispatched nor stored from inside the node.</p>
+      <p>The review itself is produced and held at <code>&lt;run&gt;/code-review/16d8dbaf3cd2/report.md</code> with its sidecar. The coordinator, whose shell is unfenced, lands it with:</p>
+      <pre><code>install -D &lt;run&gt;/code-review/16d8dbaf3cd2/report.md \
+  ~/.config/reckon/crew/reports/reckon/code-review/16d8dbaf3cd2/report.md
+install -D &lt;run&gt;/code-review/16d8dbaf3cd2/code-review.json \
+  ~/.config/reckon/crew/reports/reckon/code-review/16d8dbaf3cd2/code-review.json</code></pre>
+      <p>then stores it through <code>reckon.crew.plan_review.store_delivered_reviews("reckon", &lt;any-live-slug&gt;)</code>, which walks every delivered code review for the project. The findings then appear at <code>crew(view="findings", path="reckon/crew/promotion_")</code> and are disposed with <code>reckon crew dispose --run &lt;review-run&gt; --finding &lt;n&gt; --kind exempted|folded</code>: the three stale rows are <em>exempted</em> as already repaired, the interface-growth and test-debt rows are <em>folded</em> into follow-on nodes, and the duplicate-capability row is <em>folded</em> into the treatment node named above.</p>
+    </section>
+  </main>
+</body>
+</html>
