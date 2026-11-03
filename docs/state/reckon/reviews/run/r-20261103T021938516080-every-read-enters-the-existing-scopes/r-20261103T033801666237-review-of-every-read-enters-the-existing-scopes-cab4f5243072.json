@@ -1,0 +1,113 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_spa_shell_geometry.py::test_rendered_topbar_children_follow_the_canvas_order"
+  ],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/mcp.py:_roadmap_tool registration",
+    "reckon/mcp_edit_plan.py:_edit_plan_tool",
+    "reckon/crew/queue_landing.py:_landing_beat",
+    "reckon/project_brief.py:_load_payload",
+    "reckon/project_maintenance_commands.py:roadmap",
+    "reckon/mcp_deadlines.py:_plan_readiness_fields"
+  ],
+  "completed_at": "2026-11-03T03:55:09.358Z",
+  "dispatched_at": "2026-11-03T03:40:31Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "every-read-enters-the-existing-scopes",
+      "recorded_at": "2026-11-03T03:56:24.009281+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "every-read-enters-the-existing-scopes",
+      "recorded_at": "2026-11-03T03:56:33.844477+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "every-read-enters-the-existing-scopes",
+      "recorded_at": "2026-11-03T03:56:41.463902+00:00"
+    },
+    "3": {
+      "kind": "folded",
+      "node": "every-read-enters-the-existing-scopes",
+      "recorded_at": "2026-11-03T03:56:48.103179+00:00"
+    },
+    "4": {
+      "kind": "exempted",
+      "reason": "the coordinator reruns that browser test serially three times on the merge candidate; a readiness timeout that passes on rerun is load, not this change",
+      "recorded_at": "2026-11-03T03:56:55.884295+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/mcp.py",
+      "line": "2223",
+      "severity": "non-blocking",
+      "text": "non-blocking: dropping the scope from _roadmap leaves its non-MCP callers at reckon/project_brief.py:125 and reckon/project_maintenance_commands.py:1580 unscoped, so those reads now revalidate the covered tree per lookup where they previously shared one observation."
+    },
+    {
+      "file": "tests/test_a_request_validates_the_tree_once.py",
+      "line": "269",
+      "severity": "non-blocking",
+      "text": "non-blocking: observed[\"crew\"][\"scoped_reuse\"] == 0 counts only validations made while a scope is open, so it also holds when crew's boundary scope is absent and cannot guard the done-when's \"validates zero times\" claim."
+    },
+    {
+      "file": "tests/test_a_request_validates_the_tree_once.py",
+      "line": "436",
+      "severity": "non-blocking",
+      "text": "non-blocking: the post-write case issues a second request on a fresh executor thread, so it cannot detect edit_plan's own post-write group serving a memo built before the write, which is the risk the new memo introduces."
+    },
+    {
+      "file": "reckon/metadata_index.py",
+      "line": "371",
+      "severity": "non-blocking",
+      "text": "non-blocking: _skips_infra_dir restates the \"any path part in INFRA_DIRS\" predicate already written inline at reckon/resources.py:320 and reckon/crew/routing.py:3677, leaving a third copy that could diverge from those two."
+    },
+    {
+      "file": "tests/spa_browser_harness.py",
+      "line": "948",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head arm adds tests/test_spa_shell_geometry.py::test_rendered_topbar_children_follow_the_canvas_order, which fails here on a BrowserProbeError readiness timeout while passing twice at base, and is recorded as an added failure rather than absorbed."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit against 9bdaea5 (34c0cd0, 6fa5392, cab4f52430; +588/-24 over six files); the scope entries, the registration flags, the edit_plan read groups and the INFRA_DIRS skip all match the design the plan's \u00a72 fixes.",
+    "done_when": "the plan's seven cases are each asserted in tests/test_a_request_validates_the_tree_once.py, which I re-ran at cab4f52430 (7 passed, EXIT=0); the file also carries the base-arm contrast at line 300 and the per-tool counts at line 262.",
+    "goal": "the node goal is that every MCP read enters the existing covered-tree and identity-index scopes once and the covered walk skips the state records; reckon/mcp_deadlines.py:374 enters both scopes inside the executor callable and reckon/mcp.py:3691-3730 registers read_plan, audit, roadmap and crew with request_scope=True while edit_plan stays without it.",
+    "manifest": "read; it records status complete, seven cases green, three declared negative controls run red and reverted, and ruff clean on the staged paths, and my own re-run of the named gate reproduces 7 passed in 10 s.",
+    "write_paths": "the manifest declares reckon/mcp_deadlines.py, reckon/mcp.py, reckon/mcp_edit_plan.py, reckon/metadata_index.py, the new test, the landing fragment and a figures directory; the diff touches the first six and nothing else."
+  },
+  "justifications": {
+    "durability": "the three declared negative controls were run red and reverted, while tests/test_a_request_validates_the_tree_once.py:436 cannot fail on a post-write group that reused a pre-write memo.",
+    "evidence": "tests/test_a_request_validates_the_tree_once.py:262 asserts the stat budget and validation count per tool, but line 269's zero-validation claim for crew is measured only inside an open scope.",
+    "fit": "reckon/metadata_index.py:371 and reckon/mcp_deadlines.py:374 follow the module's context-manager and ContextVar idiom, though mcp_edit_plan.py:8 places the new collections.abc import after pathlib.",
+    "goal_fidelity": "reckon/mcp_deadlines.py:374 puts both scopes around the tool body on the executor thread and reckon/mcp.py:3694/3715/3722 declare the boundary on the read tools only.",
+    "reuse": "the change reuses discovery_file_scope, resource_scan_scope and INFRA_DIRS rather than forking them, but reckon/metadata_index.py:371 restates the inline INFRA_DIRS predicate at reckon/resources.py:320 and reckon/mcp_edit_plan.py:91 duplicates the two-scope idiom at reckon/mcp_deadlines.py:374.",
+    "scope_discipline": "all six changed files sit inside the manifest's declared write paths and the diff carries no unrelated edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that every MCP read enters the existing covered-tree and identity-index scopes once and the covered walk skips the state records; reckon/mcp_deadlines.py:374 enters both scopes inside the executor callable and reckon/mcp.py:3691-3730 registers read_plan, audit, roadmap and crew with request_scope=True while edit_plan stays without it.\nVERDICT done_when: the plan's seven cases are each asserted in tests/test_a_request_validates_the_tree_once.py, which I re-ran at cab4f52430 (7 passed, EXIT=0); the file also carries the base-arm contrast at line 300 and the per-tool counts at line 262.\nVERDICT write_paths: the manifest declares reckon/mcp_deadlines.py, reckon/mcp.py, reckon/mcp_edit_plan.py, reckon/metadata_index.py, the new test, the landing fragment and a figures directory; the diff touches the first six and nothing else.\nVERDICT manifest: read; it records status complete, seven cases green, three declared negative controls run red and reverted, and ruff clean on the staged paths, and my own re-run of the named gate reproduces 7 passed in 10 s.\nVERDICT diff: read commit by commit against 9bdaea5 (34c0cd0, 6fa5392, cab4f52430; +588/-24 over six files); the scope entries, the registration flags, the edit_plan read groups and the INFRA_DIRS skip all match the design the plan's \u00a72 fixes.\nCALL_SITES: reckon/mcp.py:_roadmap_tool registration, reckon/mcp_edit_plan.py:_edit_plan_tool, reckon/crew/queue_landing.py:_landing_beat, reckon/project_brief.py:_load_payload, reckon/project_maintenance_commands.py:roadmap, reckon/mcp_deadlines.py:_plan_readiness_fields\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/mcp_deadlines.py:374 puts both scopes around the tool body on the executor thread and reckon/mcp.py:3694/3715/3722 declare the boundary on the read tools only.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_a_request_validates_the_tree_once.py:262 asserts the stat budget and validation count per tool, but line 269's zero-validation claim for crew is measured only inside an open scope.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: all six changed files sit inside the manifest's declared write paths and the diff carries no unrelated edit.\nSCORE durability: 16\nJUSTIFICATION durability: the three declared negative controls were run red and reverted, while tests/test_a_request_validates_the_tree_once.py:436 cannot fail on a post-write group that reused a pre-write memo.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/metadata_index.py:371 and reckon/mcp_deadlines.py:374 follow the module's context-manager and ContextVar idiom, though mcp_edit_plan.py:8 places the new collections.abc import after pathlib.\nSCORE reuse: 14\nJUSTIFICATION reuse: the change reuses discovery_file_scope, resource_scan_scope and INFRA_DIRS rather than forking them, but reckon/metadata_index.py:371 restates the inline INFRA_DIRS predicate at reckon/resources.py:320 and reckon/mcp_edit_plan.py:91 duplicates the two-scope idiom at reckon/mcp_deadlines.py:374.\nFINDING reckon/mcp.py:2223 non-blocking: dropping the scope from _roadmap leaves its non-MCP callers at reckon/project_brief.py:125 and reckon/project_maintenance_commands.py:1580 unscoped, so those reads now revalidate the covered tree per lookup where they previously shared one observation.\nFINDING tests/test_a_request_validates_the_tree_once.py:269 non-blocking: observed[\"crew\"][\"scoped_reuse\"] == 0 counts only validations made while a scope is open, so it also holds when crew's boundary scope is absent and cannot guard the done-when's \"validates zero times\" claim.\nFINDING tests/test_a_request_validates_the_tree_once.py:436 non-blocking: the post-write case issues a second request on a fresh executor thread, so it cannot detect edit_plan's own post-write group serving a memo built before the write, which is the risk the new memo introduces.\nFINDING reckon/metadata_index.py:371 non-blocking: _skips_infra_dir restates the \"any path part in INFRA_DIRS\" predicate already written inline at reckon/resources.py:320 and reckon/crew/routing.py:3677, leaving a third copy that could diverge from those two.\nFINDING tests/spa_browser_harness.py:948 non-blocking: the head arm adds tests/test_spa_shell_geometry.py::test_rendered_topbar_children_follow_the_canvas_order, which fails here on a BrowserProbeError readiness timeout while passing twice at base, and is recorded as an added failure rather than absorbed.",
+  "review_run_id": "r-20261103T033801666237-review-of-every-read-enters-the-existing-scopes-cab4f5243072",
+  "reviewed_base_sha": "9bdaea5ab66855a2cfc131c4c673be14b59024fc",
+  "reviewed_head_sha": "cab4f5243072442017349026c625d92f7cc6c4d3",
+  "reviewed_run_id": "r-20261103T021938516080-every-read-enters-the-existing-scopes",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T03:58:47.365005+00:00",
+  "total": 99
+}
