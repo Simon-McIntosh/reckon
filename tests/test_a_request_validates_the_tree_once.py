@@ -45,7 +45,9 @@ STAT_BUDGET = 300
 BASE_STAT_PATHS_FLOOR = 1_000
 
 
-def _plan_html(slug: str, *, title: str | None = None, section_deps: object = None) -> str:
+def _plan_html(
+    slug: str, *, title: str | None = None, section_deps: object = None
+) -> str:
     head = [
         '<!doctype html><html lang="en"><head><meta charset="utf-8">',
         f'<meta name="docs-project" content="{PROJECT}">',
@@ -178,9 +180,7 @@ def counted(monkeypatch: pytest.MonkeyPatch) -> Counter:
 
 
 def _tool(body, *, kind: str, scope: bool, **kwargs):
-    return mcp_deadlines._deadline_tool(
-        body, kind=kind, request_scope=scope, **kwargs
-    )
+    return mcp_deadlines._deadline_tool(body, kind=kind, request_scope=scope, **kwargs)
 
 
 def _call(tool, **kwargs):
@@ -232,7 +232,9 @@ def test_each_read_validates_the_covered_tree_once(
             ("write", 2),
         ),
         "roadmap": (
-            _tool(mcp_module._roadmap_tool, kind="read", scope=True, response_budget=False),
+            _tool(
+                mcp_module._roadmap_tool, kind="read", scope=True, response_budget=False
+            ),
             {"project": PROJECT, "view": "summary"},
             ("read", 1),
         ),
@@ -284,7 +286,9 @@ def test_each_read_validates_the_covered_tree_once(
         # what made one read validate the tree twenty-one times.
         monkeypatch.setattr(metadata_index, "_CACHE", NoStore())
         counted.reset()
-        _call(_read_plan(scope=False), project=PROJECT, view="summary", limit=PLAN_COUNT)
+        _call(
+            _read_plan(scope=False), project=PROJECT, view="summary", limit=PLAN_COUNT
+        )
         base = counted.as_dict()
     finally:
         serve._resolve_paths(store.mounts)
@@ -306,7 +310,9 @@ def test_twenty_section_refs_build_one_identity_index(store: Store, counted: Cou
     counted.reset()
     result = _call(_read_plan(), project=PROJECT, slug="holder")
 
-    waits = sum(len(row.get("waits_on") or []) for row in result.get("section_blocking") or [])
+    waits = sum(
+        len(row.get("waits_on") or []) for row in result.get("section_blocking") or []
+    )
     assert waits == REF_COUNT, result.get("section_blocking")
     assert counted.identity_index == 1, counted.as_dict()
 
@@ -352,51 +358,59 @@ def test_state_records_stay_out_of_the_document_views(store: Store):
 
 
 def test_the_review_store_and_state_pages_are_still_read(store: Store):
-    """The state tree keeps its own readers and its own served files."""
+    """The review store keeps its own readers, and the state pages stay served."""
 
-    from reckon import _plan_html
+    from reckon import _store
     from reckon.crew import plan_review as review_module
+
+    real_home_reviews = Path.home() / ".config" / "reckon" / "crew" / "reviews"
+    untouched_before = (
+        sorted(real_home_reviews.glob("**/*")) if real_home_reviews.is_dir() else []
+    )
 
     before = _set_title(store, "plan-00", "Before the review")
     assert before.get("ok"), before
     owed_before = {row["unit"] for row in before.get("review_owed") or []}
+    assert "s1" in owed_before, before
 
     plan_path = store.docs / "plans" / "plan-00.html"
+    state = review_module._as_document(plan_path)
+    text = plan_path.read_text(encoding="utf-8")
+    digests = review_module._section_digests(text)
+    prose = review_module._prose_texts(text)
+    declarations = review_module._snapshot_declarations(text)
     record = {
         "project": PROJECT,
         "plan_slug": "plan-00",
         "plan_version": 1,
         "rubric": "plan_review",
         "reviewed_blob_sha": "a" * 40,
-        "plan_fingerprint": review_module._fingerprint_forms(
-            review_module._as_document(plan_path)
-        )[0],
+        "plan_fingerprint": review_module._fingerprint_forms(state)[0],
+        "section_digests": digests,
+        "prose_texts": prose,
+        "declarations": declarations,
         "findings": [],
         "responses": {},
         "status": "ready",
         "review_run_id": "r-every-read-enters-the-existing-scopes",
     }
-    committed = store.docs / "state" / PROJECT / "reviews" / "plan"
-    committed.mkdir(parents=True)
-    (committed / "plan-plan-00.v1.json").write_text(
-        json.dumps(record), encoding="utf-8"
-    )
-    path_form = dict(record)
-    path_form["plan_fingerprint"] = review_module.plan_fingerprint(plan_path)
-    path_form["review_run_id"] = "r-every-read-enters-the-existing-scopes-path"
-    (committed / "plan-plan-00.v2.json").write_text(
-        json.dumps(path_form), encoding="utf-8"
-    )
+    stored = review_module.store_plan_review(record)
+    assert Path(stored).is_file(), stored
+    assert str(stored).startswith(str(_store._config_home())), stored
 
     answer = _set_title(store, "plan-00", "Before the review", version=2)
     assert answer.get("ok"), answer
     owed_after = {row["unit"] for row in answer.get("review_owed") or []}
-    assert "s1" in owed_before, before
     assert "s1" not in owed_after, answer
     assert owed_after != owed_before, (owed_before, owed_after)
 
     timeline = serve.safe_join(store.docs, f"state/{PROJECT}/timeline.html")
     assert timeline is not None and timeline.is_file(), timeline
+
+    untouched_after = (
+        sorted(real_home_reviews.glob("**/*")) if real_home_reviews.is_dir() else []
+    )
+    assert untouched_after == untouched_before, "the real crew home was written"
 
 
 def test_a_new_plan_is_seen_by_the_next_read(store: Store):

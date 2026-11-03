@@ -63,7 +63,6 @@ from reckon import (
 # substitute the ledger a view reads, so the module object must stay reachable
 # from here even though this file no longer calls it directly.
 from reckon import ledger as ledger_module  # noqa: F401
-from reckon import metadata_index
 from reckon._schema import (
     PlanState,
     gen_json_schema,

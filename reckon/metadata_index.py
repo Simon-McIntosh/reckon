@@ -92,7 +92,10 @@ _DISCOVERY_DIRS: ContextVar[dict[str, list[int] | None] | None] = ContextVar(
     "reckon_discovery_dirs", default=None
 )
 _REUSE_COVERED: ContextVar[
-    dict[tuple[str, str], tuple[list[tuple[str, Path]], dict[str, Path], dict[str, list[int]]] | None]
+    dict[
+        tuple[str, str],
+        tuple[list[tuple[str, Path]], dict[str, Path], dict[str, list[int]]] | None,
+    ]
     | None
 ] = ContextVar("reckon_reuse_covered", default=None)
 _RESOURCE_CANDIDATES: ContextVar[bool] = ContextVar(

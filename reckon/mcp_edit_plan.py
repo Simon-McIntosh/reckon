@@ -5,7 +5,8 @@ import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Literal
+from collections.abc import Callable
+from typing import Any, Literal
 
 # ── SDK import ─────────────────────────────────────────────────────────────
 from reckon import metadata_index
