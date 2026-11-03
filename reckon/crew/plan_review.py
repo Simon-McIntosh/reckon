@@ -2019,9 +2019,9 @@ def record_response(
     must carry a one-line ``reason``: the decision makes the reason the record, so a
     reasonless decline is refused before anything is written — the stored file
     is left untouched and the raise names what was missing. A carried answer
-    records the unit the finding is about — the section named by its anchor, or
-    the document unit when the anchor names none — under ``section``, so a
-    later dispatch of that section reads it back. The response is keyed by
+    records every unit the finding blocks under ``sections``, and the first of
+    them under ``section``, so a later dispatch of any of those sections reads
+    it back and a reader that takes one unit still finds it under ``section``. The response is keyed by
     ``finding_id``, which must name a finding the record carries, so an answer
     can never attach to a finding nobody can read back. An ``acted`` answer also
     records the commit of the edit it answers for — named by ``commit`` or, when
@@ -2055,7 +2055,11 @@ def record_response(
         "when": when or datetime.now(UTC).isoformat(),
     }
     if action_value == "carried":
-        response["section"] = finding_unit(record, str(finding_id))
+        # A finding can block several sections, so every one is recorded. The
+        # first stays under ``section`` for readers that take a single unit.
+        blocked = finding_units(record, str(finding_id))
+        response["sections"] = blocked
+        response["section"] = blocked[0]
     elif action_value == "acted":
         # The edit is what the answer is evidence of, so the answer names the
         # commit that wrote it. A caller may name the commit outright; otherwise
@@ -2311,24 +2315,124 @@ def _reviewed_plan_text(
         return None
 
 
-def _anchor_unit(record: Mapping[str, Any], anchor: str, text: str | None) -> str:
-    """The unit a finding anchor names, or the document unit when it names none.
+_SECTION_REFERENCE = re.compile(r"§\s*(\d+)(?![0-9])|(?<![0-9A-Za-z_])s(\d+)(?![0-9])")
 
-    An anchor shaped ``<path>#<section>`` names its unit outright. One shaped
-    ``<path>:<line>`` names a line, resolved through the reviewed text's own
-    section spans. An anchor with neither, or a line past the text, is the
-    document unit: the finding is about the plan's document state rather than a
-    section, and carrying it to a section would deliver it where it is not owed.
-    """
+
+def _fragment_unit(anchor: str) -> str | None:
+    """The unit an anchor's ``#<name>`` fragment names, or ``None``."""
     named = re.search(r"#([A-Za-z0-9][A-Za-z0-9_-]*)\s*$", anchor or "")
-    if named:
-        return named.group(1)
+    return named.group(1) if named else None
+
+
+def _line_locator(anchor: str) -> int | None:
+    """The 1-based line an anchor names, or ``None`` when it names no line."""
     locator = re.search(r":(\d+)\s*$", anchor or "")
-    if locator and text is not None:
-        unit = _line_unit_map(text).get(int(locator.group(1)))
+    return int(locator.group(1)) if locator else None
+
+
+def _anchor_path(anchor: str) -> str:
+    """The file part of a ``<path>:<line>`` or ``<path>#<unit>`` anchor."""
+    return re.split(r"[:#]", str(anchor or ""), maxsplit=1)[0].strip()
+
+
+def _anchor_names_plan(
+    record: Mapping[str, Any], anchor: str, plan_path: str | Path | None
+) -> bool:
+    """Whether a line anchor names the plan file itself.
+
+    Only the plan file's own lines have the section spans a line number is
+    resolved through. A line number in a source file is that file's line, and a
+    source file's line 567 says nothing about the plan's section 66.
+    """
+    named = _anchor_path(anchor).replace("\\", "/")
+    if not named:
+        return False
+    location = _plan_location(
+        str(record.get("project") or "").strip(),
+        str(record.get("plan_slug") or "").strip(),
+        plan_path,
+    )
+    if location is None:
+        return False
+    _repo, path, relative = location
+    candidates = {str(path).replace("\\", "/"), relative.replace("\\", "/")}
+    if "/" not in named:
+        candidates = {candidate.rsplit("/", 1)[-1] for candidate in candidates}
+    return any(
+        named == candidate or named.endswith("/" + candidate.lstrip("/"))
+        for candidate in candidates
+    )
+
+
+def _units_named_in(text: str | None) -> list[str]:
+    """The sections a finding's text names, or the document unit when it names none.
+
+    A finding anchored outside the plan has no line to resolve, so the sections
+    it blocks are the ones it says it is about. One that names none is about the
+    document as a whole, which blocks every section rather than no section.
+    """
+    units: list[str] = []
+    for match in _SECTION_REFERENCE.finditer(text or ""):
+        unit = f"s{int(match.group(1) or match.group(2))}"
+        if unit not in units:
+            units.append(unit)
+    return units or [DOCUMENT_UNIT]
+
+
+def _finding_units(
+    record: Mapping[str, Any],
+    finding: Mapping[str, Any],
+    *,
+    plan_path: str | Path | None = None,
+    reviewed_text: Callable[[], str | None] | None = None,
+) -> list[str]:
+    """Every unit a finding blocks, in the order its anchor and text name them.
+
+    An anchor naming ``#<unit>`` blocks that unit outright. A line anchor
+    blocks the section that line falls in only when it names the plan file
+    itself: the reviewed snapshot's spans are the plan's, so a line number in a
+    source file resolves to nothing of the plan's. A finding anchored in
+    another file, at a line the plan's sections do not cover, or with no line
+    at all blocks the sections its own text names, and one that names none
+    belongs to the document unit, which blocks every section.
+    """
+    anchor = str(finding.get("anchor") or "")
+    named = _fragment_unit(anchor)
+    if named:
+        return [named]
+    if not _anchor_path(anchor):
+        return [DOCUMENT_UNIT]
+    locator = _line_locator(anchor)
+    if locator is not None and _anchor_names_plan(record, anchor, plan_path):
+        text = (
+            reviewed_text()
+            if reviewed_text is not None
+            else _reviewed_plan_text(record, plan_path)
+        )
+        unit = _line_unit_map(text).get(locator) if text is not None else None
         if unit:
-            return unit
-    return DOCUMENT_UNIT
+            return [unit]
+    return _units_named_in(str(finding.get("text") or ""))
+
+
+def _memoised_reviewed_text(
+    record: Mapping[str, Any],
+    reviewed_text: Callable[[], str | None] | None,
+    plan_path: str | Path | None,
+) -> Callable[[], str | None]:
+    """A reviewed-text reader that walks the plan's history at most once."""
+    cache: list[str | None] = []
+
+    def read() -> str | None:
+        if not cache:
+            cache.append(
+                reviewed_text()
+                if reviewed_text is not None
+                else _reviewed_plan_text(record, plan_path)
+            )
+        return cache[0]
+
+    return read
 
 
 def _acted_findings(record: Mapping[str, Any]) -> list[Mapping[str, Any]]:
@@ -2386,26 +2490,32 @@ def _acted_finding_units(
     the caller only consults this set for a unit no digest has covered.
     """
     done = frozenset(covered)
+    text = _memoised_reviewed_text(record, reviewed_text, None)
     units: set[str] = set()
-    line_anchors: list[str] = []
     for finding in _acted_findings(record):
-        anchor = str(finding.get("anchor") or "")
-        named = _anchor_unit(record, anchor, None)
-        if named != DOCUMENT_UNIT:
-            if named not in done:
-                units.add(named)
-        elif re.search(r":\d+\s*$", anchor):
-            line_anchors.append(anchor)
-        # An anchor naming neither a section nor a line is the document unit,
-        # which only an exact digest match covers, so no text is read for it.
-    if not line_anchors or reviewed_text is None:
-        return units
-    text = reviewed_text()
-    for anchor in line_anchors:
-        unit = _anchor_unit(record, anchor, text)
-        if unit not in done:
-            units.add(unit)
+        for unit in _finding_units(record, finding, reviewed_text=text):
+            if unit not in done:
+                units.add(unit)
     return units
+
+
+def finding_units(
+    record: Mapping[str, Any],
+    finding_id: str,
+    *,
+    plan_path: str | Path | None = None,
+) -> list[str]:
+    """Every unit the named finding blocks, the first being its primary unit.
+
+    A finding can block more than one section: one anchored in a source file
+    blocks each section its text names. A finding nobody can read back blocks
+    the document unit, which blocks every section — the conservative answer for
+    an id the record does not carry.
+    """
+    finding = _finding_by_id(record, finding_id)
+    if finding is None:
+        return [DOCUMENT_UNIT]
+    return _finding_units(record, finding, plan_path=plan_path)
 
 
 def finding_unit(
@@ -2414,20 +2524,41 @@ def finding_unit(
     *,
     plan_path: str | Path | None = None,
 ) -> str:
-    """The unit the named finding is about, as a carried answer records it.
+    """The first unit the named finding blocks, as a carried answer records it.
 
     An anchor that names its section outright resolves without reading the
-    reviewed text, so it costs no git lookup; only a line anchor is resolved
-    against the text the review read.
+    reviewed text, so it costs no git lookup; only a line anchor into the plan
+    file is resolved against the text the review read.
     """
-    finding = _finding_by_id(record, finding_id)
-    if finding is None:
-        return DOCUMENT_UNIT
-    anchor = str(finding.get("anchor") or "")
-    named = _anchor_unit(record, anchor, None)
-    if named != DOCUMENT_UNIT:
-        return named
-    return _anchor_unit(record, anchor, _reviewed_plan_text(record, plan_path))
+    return finding_units(record, finding_id, plan_path=plan_path)[0]
+
+
+def unanswered_findings_by_unit(
+    record: Mapping[str, Any],
+    *,
+    plan_path: str | Path | None = None,
+) -> dict[str, list[str]]:
+    """The record's unanswered findings, grouped by every unit they block.
+
+    A finding appears under each unit it blocks, so a finding naming two
+    sections holds both and a finding naming none appears under the document
+    unit, which holds every section. The reviewed plan text is read at most
+    once however many line anchors the record carries.
+    """
+    text = _memoised_reviewed_text(record, None, plan_path)
+    grouped: dict[str, list[str]] = {}
+    for finding_id in unanswered_findings(record):
+        finding = _finding_by_id(record, finding_id)
+        units = (
+            _finding_units(record, finding, plan_path=plan_path, reviewed_text=text)
+            if finding is not None
+            else [DOCUMENT_UNIT]
+        )
+        for unit in units:
+            ids = grouped.setdefault(unit, [])
+            if finding_id not in ids:
+                ids.append(finding_id)
+    return grouped
 
 
 def _finding_by_id(
@@ -2514,7 +2645,13 @@ def carried_findings_for_section(
                 continue
             if str(response.get("action") or "").strip().lower() != "carried":
                 continue
-            if str(response.get("section") or DOCUMENT_UNIT) != wanted:
+            recorded = response.get("sections")
+            units = (
+                [str(unit) for unit in recorded]
+                if isinstance(recorded, list) and recorded
+                else [str(response.get("section") or DOCUMENT_UNIT)]
+            )
+            if wanted not in units:
                 continue
             if finding_id in seen:
                 continue
