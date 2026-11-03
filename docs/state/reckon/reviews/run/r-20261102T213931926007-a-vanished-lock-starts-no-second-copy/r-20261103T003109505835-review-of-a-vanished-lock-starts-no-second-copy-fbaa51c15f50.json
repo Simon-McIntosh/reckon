@@ -1,0 +1,33 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-03T00:41:20.962Z",
+  "dispatched_at": "2026-11-03T00:33:24Z",
+  "findings": [
+    {
+      "file": "tests/test_a_vanished_lock_starts_no_second_copy.py",
+      "id": "fdc7e03b017",
+      "line": "317",
+      "severity": "non-blocking",
+      "text": "Removing 'assert new_inode != first_inode' fixes the flake the prior review named, but leaves the case vacuous on exactly the filesystems that motivated the removal: where the kernel hands the freed inode back, first_inode == new_inode, so recorded_service_lock_inode(...) == new_inode holds even under the previous-inode preference this case exists to catch. inode-negative-control.log shows the assertion fires only because that run's filesystem allocated 207179 for the remade file against the recorded 207169. Skip rather than pass when the inode was reused \u2014 `if new_inode == first_inode: pytest.skip(...)` \u2014 so a silent pass cannot be read as the guard having run."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a service whose lock file vanishes keeps exactly one running copy (source dispatch prompt, GOAL line); the increment under review is the test-and-evidence commit tests/test_a_vanished_lock_starts_no_second_copy.py:283 and its fragment paragraph, not a new deliverable.\nVERDICT done_when: the done_when names the cases in tests/test_a_vanished_lock_starts_no_second_copy.py, the real runtime asserted untouched, no importer failure added against base, and clean ruff on the staged paths; after.log records '4 passed in 9.77s' EXIT=0 at fbaa51c15f and head-importers.log now reaches '1 failed, 268 passed' EXIT=1 at the same revision, its one failure being test_station_reloads_from_a_node_local_image, which is among baseline.log's failure ids at 27dca04b11.\nVERDICT write_paths: the declared paths are reckon/crew/fleet_supervisor.py, tests/test_a_vanished_lock_starts_no_second_copy.py and docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-vanished-lock-starts-no-second-copy.html plus the figures directory; this commit touches the second and third only, both declared, and no figure.\nVERDICT manifest: read; it records commits 33dcdfc6ce, b4838498fc, eca23f33d2, 138a7a3ff9 and fbaa51c15f, after_suite 4 passed / exit 0 at fbaa51c15f, baseline_suite 4 failure ids / exit 1 at 27dca04b11, two negative-control logs and a rubric line per dimension; its cited logs after.log, baseline.log, head-importers.log, inode-negative-control.log and negative-control.log all now carry a pytest summary and a bare EXIT= line, closing the truncated-log finding the prior round raised.\nVERDICT diff: read the single gained commit fbaa51c15f against 138a7a3ff9: it deletes 'assert new_inode != first_inode' at tests/test_a_vanished_lock_starts_no_second_copy.py:308, extends that case's docstring, and rewords five lines of the evidence fragment so its delta agrees with its own 261/268 counts; no production code and no path outside the declaration.\nCALL_SITES: reckon/crew/fleet_supervisor.py:recorded_service_lock_inode (the record the case asserts on), reckon/crew/fleet_supervisor.py:supervise_once via the manager.start path the case drives; no production code path reaches this commit, which changes a test and a doc fragment.\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the increment advances no behaviour of its own but keeps tests/test_a_vanished_lock_starts_no_second_copy.py:317 aligned with the vanished-lock goal by dropping an assertion that could red a correct record.\nSCORE evidence: 19\nJUSTIFICATION evidence: head-importers.log:1 now names revision fbaa51c15f and its last two lines read '1 failed, 268 passed' and 'EXIT=1', so the done_when's importer arm is readable from the named log rather than only from the worker stream.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show fbaa51c15f touches only tests/test_a_vanished_lock_starts_no_second_copy.py and the declared evidence fragment, both inside the source node's declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_vanished_lock_starts_no_second_copy.py:317-319 fails when the previous inode is preferred, as inode-negative-control.log:47 records (assert 207169 == 207179), but passes vacuously when the filesystem reuses the freed inode because the inequality that used to force a distinct inode is gone.\nSCORE fit: 20\nJUSTIFICATION fit: the docstring at tests/test_a_vanished_lock_starts_no_second_copy.py:284-293 states why the assertion is on the live file rather than on the difference, matching the file's surrounding rationale comments, and the commit carries a conventional subject and a body with no identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition and no mechanism; it calls the existing fleet_supervisor.recorded_service_lock_inode and recorded_service_pid that the module already owns.\nFINDING tests/test_a_vanished_lock_starts_no_second_copy.py:317 non-blocking: with 'assert new_inode != first_inode' removed, the case passes vacuously on a filesystem that reuses the freed inode, holding even under the previous-inode preference it exists to catch; skip on new_inode == first_inode instead of passing.\n",
+  "review_run_id": "r-20261103T003109505835-review-of-a-vanished-lock-starts-no-second-copy-fbaa51c15f50",
+  "reviewed_base_sha": "138a7a3ff92b0efb74921493788b7f816b6da06d",
+  "reviewed_head_sha": "fbaa51c15f5045bf7ee2e9f05371c7822fe5100d",
+  "reviewed_run_id": "r-20261102T213931926007-a-vanished-lock-starts-no-second-copy",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T00:46:44.652536+00:00",
+  "total": 113
+}
