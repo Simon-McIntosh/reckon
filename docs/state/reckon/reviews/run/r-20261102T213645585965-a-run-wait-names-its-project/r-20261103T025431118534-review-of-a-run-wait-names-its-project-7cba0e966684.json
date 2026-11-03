@@ -1,0 +1,33 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-03T03:11:53.748Z",
+  "dispatched_at": "2026-11-03T02:58:34Z",
+  "findings": [
+    {
+      "id": "feef539c7c8",
+      "line": 1,
+      "path": "manifest.md",
+      "severity": "non-blocking",
+      "text": "the reviewed run's manifest test_logs field carries two malformed entries in which a second absolute path is concatenated onto the run directory, so a reader opening those two entries finds nothing; the same logs are named correctly elsewhere in the field so no evidence is lost, but the field should name openable paths."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that every run: wait a request holds resolves through its project so a landed upstream releases it; this delta takes the one registry read the previous review found duplicated and makes reckon/crew/runs.py:1763 the single owner of the project-to-checkout-root mapping, with queue_admission._mount_view (reckon/crew/queue_admission.py:1765) delegating to it.\nVERDICT done_when: the node's measure is the plan's five cases and two controls in tests/test_a_run_wait_names_its_project.py; the manifest names the gate command and gate-head-3.log records REVISION 417784c569 with 9 passed EXIT=0, and the single-reader control log shows the added case reddening.\nVERDICT write_paths: the delta touches four files \u2014 reckon/crew/queue_admission.py, reckon/crew/runs.py, tests/test_a_run_wait_names_its_project.py and the landing fragment \u2014 and all four are named by this review's own scope; the dispatch's original fence omitted reckon/crew/runs.py, and the manifest records the coordinator's widen of the claim.\nVERDICT manifest: read; it names the gate command and its logs, five negative controls each with a bare EXIT= last line, and states the consumer sweep as partial rather than complete.\nVERDICT diff: read all three commits against 466658b94b \u2014 4879eeb731 threads one MountView through the derivation and gives runs._promoted_record_project a roots keyword, 417784c569 replaces _mount_view's re-derivation with a call to runs._mounted_project_roots_and_failure and adds the failures out-parameter, 7cba0e9666 is docs-only.\nVERDICT correctness: the readers now share one mapping and one failure string; an unreadable registry reaches the wait derivation as a re-read and is not turned into a discard verdict, and a readable one resolves as before.\nVERDICT completeness: the fold is complete \u2014 the duplication and the divergent exception handling the prior review named are both gone, with a case asserting both readers report the same reason from separate derivations.\nVERDICT scope: every changed path is inside the four paths this review covers and inside the coordinator's widened claim; no unrelated code moved.\nVERDICT evidence: gate-head-3.log is at 417784c569 with 9 passed EXIT=0, and the head commit 7cba0e9666 changes only the fragment, so the recorded gate covers the code at head.\nVERDICT naming: no plan, sprint, ticket or version identifiers appear in the added symbols, docstrings, test names or fragment ids.\nCALL_SITES: reckon/crew/queue_admission.py:1777, reckon/crew/queue_admission.py:1816, reckon/crew/queue_admission.py:2720, reckon/crew/queue_admission.py:2875, reckon/crew/runs.py:1798, reckon/crew/runs.py:1827, reckon/crew/runs.py:1859, reckon/crew_dispatch_commands.py:78\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:1777 now reads the registry through runs._mounted_project_roots_and_failure, so the wait release path resolves every ref through the one mapping a promotion uses.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head-3.log records REVISION 417784c569 with 9 passed EXIT=0, and negative-control-single-reader.log records 2 failed, 7 passed, EXIT=1 with both ids named.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every line in 466658b94b..7cba0e9666 is in the four paths this review covers, and the widen that brings reckon/crew/runs.py into the node's claim is recorded in the manifest check_note.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_run_wait_names_its_project.py:311 asserts runs._promoted_record_project reports the same failure string the derivation reported, which fails if queue_admission re-derives its own mapping as at 466658b94b, and the single-reader control shows the same test failing when the reason is swallowed.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/runs.py:1763 keeps the module's mechanism-first docstrings and the ordinary raise-to-empty dispatch of failures, though the _mount_view docstring still carries an unqualified :func: reference to a symbol in another module.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/runs.py:1763 is now the only place that maps a project to its checkout root and queue_admission._mount_view extends it rather than duplicating it, resolving the duplication the prior review scored 14.\nFINDING manifest.md:1 non-blocking: the reviewed run's manifest test_logs field carries two concatenated absolute paths a reader cannot open, so two of its log references name nothing.",
+  "review_run_id": "r-20261103T025431118534-review-of-a-run-wait-names-its-project-7cba0e966684",
+  "reviewed_base_sha": "466658b94be7f51b1ce998ece2ad8a7b70b4c1f4",
+  "reviewed_head_sha": "7cba0e966684a20fbf885b6d38c254d67a121a67",
+  "reviewed_run_id": "r-20261102T213645585965-a-run-wait-names-its-project",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T03:25:45.828340+00:00",
+  "total": 109
+}
