@@ -1751,14 +1751,63 @@ def _run_record_held(project: str, run_id: str) -> bool:
         return False
 
 
-def _mounted_projects() -> tuple[str, ...]:
-    """Every project the mount registry names, or none when it is unreadable."""
+#: A caller that does not supply a mount registry, distinct from one that read
+#: it and found it unreadable (``None``).
+_MOUNTED_UNSET = object()
+
+
+def _mounted_projects_and_failure() -> tuple[tuple[str, ...] | None, str]:
+    """The projects the mount registry names, and why it could not be read.
+
+    ``None`` projects with a reason means the registry itself is unreadable,
+    which is not the same fact as a registry that names no project: the first
+    leaves a wait unresolved and unexplained, the second leaves it unresolvable.
+    """
     try:
         from reckon import flight
 
-        return tuple(str(name) for name in flight.mounted_project_docs())
-    except Exception:  # noqa: BLE001 - a registry read that fails names nothing
-        return ()
+        return tuple(str(name) for name in flight.mounted_project_docs()), ""
+    except Exception as exc:  # noqa: BLE001 - the failure is the value reported
+        return None, f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__
+
+
+def _mounted_projects() -> tuple[str, ...] | None:
+    """Every project the mount registry names, or ``None`` when it cannot be read."""
+    return _mounted_projects_and_failure()[0]
+
+
+def wait_project_lookup(
+    run_id: str,
+    *,
+    owner_project: str,
+    live: Sequence[Mapping[str, Any]] = (),
+    mounted: object = _MOUNTED_UNSET,
+) -> tuple[str, str]:
+    """The project a ``run:`` wait lands in, and why it could not be found.
+
+    Returns ``(project, "")`` when a project holds the run, ``("", reason)``
+    when the mount registry could not be read so the question is unanswered,
+    and ``("", "")`` when every source was read and none holds the run.
+    """
+    if not run_id:
+        return "", ""
+    for pointer in live:
+        if str(pointer.get("run_id") or "") == run_id:
+            return str(pointer.get("project") or owner_project), ""
+    if _run_record_held(owner_project, run_id):
+        return owner_project, ""
+    from reckon.crew import runs as runs_module
+
+    # The owner of the mounted-ledger scan: the same search a promotion uses to
+    # name the project holding a run's record, rather than a second walk of the
+    # mounted checkouts.
+    name = runs_module._promoted_record_project(run_id, None)
+    if name:
+        return str(name), ""
+    if mounted is _MOUNTED_UNSET or mounted is None:
+        _projects, failure = _mounted_projects_and_failure()
+        return "", failure
+    return "", ""
 
 
 def wait_project_for_run(
@@ -1766,7 +1815,7 @@ def wait_project_for_run(
     *,
     owner_project: str,
     live: Sequence[Mapping[str, Any]] = (),
-    mounted: Sequence[str] | None = None,
+    mounted: object = _MOUNTED_UNSET,
 ) -> str:
     """The project a ``run:`` wait lands in, or "" when no project holds it.
 
@@ -1782,19 +1831,9 @@ def wait_project_for_run(
     admission pass resolving many refs reads it once and threads it here,
     rather than parsing it again for every ref that misses the owner project.
     """
-    if not run_id:
-        return ""
-    for pointer in live:
-        if str(pointer.get("run_id") or "") == run_id:
-            return str(pointer.get("project") or owner_project)
-    if _run_record_held(owner_project, run_id):
-        return owner_project
-    for project in _mounted_projects() if mounted is None else mounted:
-        if project == owner_project:
-            continue
-        if _run_record_held(project, run_id):
-            return project
-    return ""
+    return wait_project_lookup(
+        run_id, owner_project=owner_project, live=live, mounted=mounted
+    )[0]
 
 
 def wait_projects_for(
@@ -1802,7 +1841,7 @@ def wait_projects_for(
     *,
     owner_project: str,
     live: Sequence[Mapping[str, Any]] = (),
-    mounted: Sequence[str] | None = None,
+    mounted: object = _MOUNTED_UNSET,
 ) -> dict[str, str]:
     """The project of every resolvable ``run:`` ref in ``refs``.
 
@@ -1813,11 +1852,15 @@ def wait_projects_for(
 
     The mount registry is parsed at most once for the whole list, so a request
     waiting on many runs costs one registry read rather than one per ref.
-    An empty ``mounted`` is a caller saying the registry names nothing.
+    An empty ``mounted`` is a caller saying the registry names nothing; a
+    ``None`` says it could not be read, and every ref then resolves to nothing
+    without a second read.
     """
     projects: dict[str, str] = {}
     refs = [str(ref) for ref in refs]
-    if mounted is None and any(ref.startswith(REQUEST_REF_PREFIX) for ref in refs):
+    if mounted is _MOUNTED_UNSET and any(
+        ref.startswith(REQUEST_REF_PREFIX) for ref in refs
+    ):
         mounted = _mounted_projects()
     for ref in refs:
         if not ref.startswith(REQUEST_REF_PREFIX):
@@ -1826,7 +1869,7 @@ def wait_projects_for(
         if not run_id:
             continue
         project = wait_project_for_run(
-            run_id, owner_project=owner_project, live=live, mounted=mounted or ()
+            run_id, owner_project=owner_project, live=live, mounted=mounted
         )
         if project:
             projects[run_id] = project
@@ -2445,7 +2488,7 @@ def _wait_state(
     cache: dict[str, Any] | None = None,
     wait_projects: Mapping[str, str] | None = None,
     issues: list[str] | None = None,
-    mounted: Sequence[str] | None = None,
+    mounted: object = _MOUNTED_UNSET,
 ) -> str:
     """Resolve one wait ref of any of the three kinds."""
     kind = wait_ref_kind(ref)
@@ -2467,16 +2510,30 @@ def _wait_state(
         # that names nothing: an empty project never resolves, so the request
         # would sit awaiting-upstream for as long as the pointer exists.
         recorded = str((wait_projects or {}).get(run_id) or "")
-        project_for_ref = recorded or wait_project_for_run(
-            run_id, owner_project=project, live=live, mounted=mounted
-        )
+        project_for_ref = recorded
+        unreadable = ""
+        if not recorded:
+            project_for_ref, unreadable = wait_project_lookup(
+                run_id, owner_project=project, live=live, mounted=mounted
+            )
         if not project_for_ref:
             if issues is not None:
-                issues.append(
-                    f"{WAIT_UNRESOLVABLE_PREFIX} {ref} — the wait names no "
-                    "project and no project holds this run, so the landing "
-                    "that would release this request can never be read"
-                )
+                if unreadable:
+                    # An unreadable registry answers nothing about this run, so
+                    # the wait is unresolved rather than unresolvable: telling a
+                    # coordinator to discard a request here would throw away
+                    # work a readable registry would have released.
+                    issues.append(
+                        f"{run_id}: the mount registry could not be read "
+                        f"({unreadable}), so this wait cannot be resolved until "
+                        "it can be read again"
+                    )
+                else:
+                    issues.append(
+                        f"{WAIT_UNRESOLVABLE_PREFIX} {ref} — the wait names no "
+                        "project and no project holds this run, so the landing "
+                        "that would release this request can never be read"
+                    )
             return PENDING
         return _request_state(
             ref,
@@ -2787,7 +2844,7 @@ def resolve_waits(
     docs_dir: str | Path | None,
     cache: dict[str, Any],
     dead_sections: set[tuple[str, str]] = frozenset(),  # type: ignore[assignment]
-    mounted: Sequence[str] | None = None,
+    mounted: object = _MOUNTED_UNSET,
 ) -> str:
     """The phase one waiting request takes, from the roadmap's own readiness.
 
@@ -2808,7 +2865,9 @@ def resolve_waits(
     )
     issues: list[str] = []
     owner_project = str(pointer.get("project") or "") or _project_of_docs_dir(docs_dir)
-    if mounted is None and any(wait_ref_kind(ref) == "request" for ref in refs):
+    if mounted is _MOUNTED_UNSET and any(
+        wait_ref_kind(ref) == "request" for ref in refs
+    ):
         mounted = _mounted_projects()
     states = [
         _wait_state(
@@ -2848,7 +2907,7 @@ def _resolve_and_move(
     cache: dict[str, Any],
     dead_sections: set[tuple[str, str]] = frozenset(),  # type: ignore[assignment]
     run_id: str = "",
-    mounted: Sequence[str] | None = None,
+    mounted: object = _MOUNTED_UNSET,
 ) -> str:
     """Resolve one request's waits and move its pointer to the phase they justify.
 
@@ -3013,7 +3072,7 @@ def _rederive_waits(
     *,
     cache: dict[tuple[str, str, str], list[str]] | None = None,
     live: Sequence[Mapping[str, Any]] | None = None,
-    mounted: Sequence[str] | None = None,
+    mounted: object = _MOUNTED_UNSET,
 ) -> bool:
     """Re-read a stored request's waits from the plan and rewrite them.
 

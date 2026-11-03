@@ -251,3 +251,74 @@ def test_three_run_refs_read_the_mount_registry_once(
     assert phase == queue_admission.AWAITING_UPSTREAM_PHASE
     assert len(reads) == 1, "one resolve pass must parse the registry once"
     assert len(queue_admission.unresolvable_wait_obligations(pointer)) == 3
+
+
+def test_an_unreadable_registry_leaves_the_wait_unresolved(
+    projects: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A registry that cannot be read says so, and never says discard the request.
+
+    "No project holds this run" is a verdict about the run. "The registry could
+    not be read" is a verdict about this pass, and the request is very likely
+    resolvable once the registry is readable again. Reporting the second as the
+    first hands a coordinator a duty to drop work that only needed re-reading.
+    """
+    first, _ = projects
+    from reckon import flight
+
+    def unreadable() -> dict[str, Path]:
+        raise flight.FlightConfigError("mounts.json", "projects", "unreadable")
+
+    monkeypatch.setattr(flight, "mounted_project_docs", unreadable)
+
+    pointer = {
+        "run_id": "r-waiting",
+        "project": PROJECT,
+        "phase": queue_admission.AWAITING_UPSTREAM_PHASE,
+        "waits": ["run:r-a"],
+        "node": {"plan": fixtures.PLAN, "section": "s2"},
+    }
+
+    phase = queue_admission.resolve_waits(
+        pointer, live=[], docs_dir=first / "docs", cache={}, dead_sections=set()
+    )
+
+    assert phase == queue_admission.AWAITING_UPSTREAM_PHASE
+    assert not queue_admission.unresolvable_wait_obligations(pointer), (
+        "an unreadable registry is not evidence that no project holds the run"
+    )
+    issues = list(pointer.get("upstream_obligations") or ())
+    assert any("mount registry could not be read" in issue for issue in issues), issues
+
+
+def test_the_registry_is_read_only_when_a_wait_names_a_run(
+    projects: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A dispatch whose waits name no run never parses the mount registry.
+
+    Most waits are plan sections and gates, which need no project: only a
+    ``run:`` ref is read against the mounted ledgers. Parsing the registry on
+    every dispatch, including the ones that cannot use it, puts a file read on
+    a path that runs for every queued request.
+    """
+    first, _ = projects
+    reads: list[int] = []
+
+    def counting_read() -> tuple[str, ...]:
+        reads.append(1)
+        return ()
+
+    monkeypatch.setattr(queue_admission, "_mounted_projects", counting_read)
+
+    fixtures._declare_wait_refs(first, section="s2", refs=[f"gate:{fixtures.PLAN}#g1"])
+    queue_admission.unmet_waits(
+        dag._node("waiting", "s2"), repo_root=first, project=PROJECT
+    )
+    assert reads == [], "a gate-only wait must not parse the mount registry"
+
+    dag._upstream_record(first, "r-prior", status="running", revision=None)
+    fixtures._declare_wait_refs(first, section="s2", refs=["run:r-prior"])
+    queue_admission.unmet_waits(
+        dag._node("waiting", "s2"), repo_root=first, project=PROJECT
+    )
+    assert len(reads) == 1, "a run wait reads the registry once"
