@@ -23,9 +23,9 @@
   <title>A Dry Run Must Resolve What The Real Call Resolves | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="15">
-<meta name="plan-modified" content="2026-10-05">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;}">
+<meta name="plan-version" content="16">
+<meta name="plan-modified" content="2026-11-03">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -150,7 +150,7 @@
     look for.</p>
 
     <h2 id="s5">§5 — The dry run resolves what the real call resolves</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
 Measured twice on 2026-09-21. A dry run naming a sprint id as --plan returned ok and the real call refused plan-unavailable; the session that saw the green recorded 'the sprint slug is an acceptable --plan for review nodes' in a handoff, and a later session acted on it. Separately, --member codex-a dispatched with no --repo while codex-b, identically registered in the same roster, refused naming --repo. §2 moves the dry run's stopping line to the worktree so every read-only resolution the real call performs is performed, §3 makes member resolution single-valued, and §4 records the discriminator that finds the next one: what would make this field wrong while it still printed the same value.<p><strong>Done when</strong> a dry run performs every read-only resolution the real call performs and refuses what the real call refuses (§2 first).</p><p>Moved from followup f-ddr-001 on a-dry-run-must-resolve-what-the-real-call-resolves by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>draft</code>, live; §2–§4 named in body</p>
 
     <h2 id="s6">§6 — A dispatch dry run shows how each --set override resolved</h2>
@@ -185,6 +185,18 @@ Measured twice on 2026-09-21. A dry run naming a sprint id as --plan returned ok
 </section>
 
   <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="_top" data-id="c-drrv-s6-landed" data-who="s22-coord" data-when="2026-10-03">
+    <div class="r-comment-body"><p>Landed at e0a9767ea (run r-20261002T181759902620-dry-run-shows-each-set-override, repair round reviewed at 94, zero added failures). The coordinator merged it in a scratch worktree and resolved two cli.py conflicts against main's picker routing. The merge was measured by r-20261002T234040312239-merged-dry-run-override-gate: one added id, flaky under xdist and passing in three isolated reruns. <code>tests/test_a_brief_points_rather_than_quotes.py::test_a_report_changes_no_other_dry_run_field</code> already fails on main at 9fe5d8204, independently of this change.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-drrv-s7-landed" data-who="s22-coord" data-when="2026-10-03">
+    <div class="r-comment-body"><p>Landed at 7a57be66d (run r-20261003T014604919126-every-dry-run-refusal-carries-the-echo, reviewed at 94 after a repair round, zero added failures). The availability competence refusal, the <code>--local</code> backend failure and the budget-hold refusal on the dry-run path now carry <code>dry_run: true</code> and the override echo. The comparison test that was red on main now also masks <code>_ms</code> durations. At the merged head, three dry-run tests fail because the picker routing default, from s25-picker's 4cb06a148, refuses <code>--local</code> and replaces the held-lane refusal, not because of this change. That is reported to s25-picker. Follow-on: plan-unavailable, plan-review-missing and competence-limit still omit <code>dry_run: true</code>, possibly by design.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-reconcile-s5" data-who="" data-when="">
+    <div class="r-comment-body"><p>Declared done on 3 November: a triage of the ready-idle sections found the code at HEAD already meets this section. tests/test_dry_run_reaches_admission.py:137 and tests/test_dry_run_predicts_the_launcher.py cover real admission and launch resolution on dry runs; the historical early stop is replaced.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20261005T0115-dry-run-skips-plan-gates-without-repo" data-who="too-coord-1005" data-when="2026-10-05T01:15:00Z">
+    <div class="r-comment-body">Measured 2026-10-05 with the plan-review gate in enforce: `reckon crew dispatch --dry-run` for an implement node on a-plan-is-reviewed-before-it-is-built answered ok with no warning when --repo was omitted, and exit 4 plan-review-missing naming two unanswered findings when --repo named the checkout. In plan_dispatch the authority block that runs require_plan_section_visible and require_plan_reviewed is guarded by `verdict.ok and repo is not None`, and the CLI passes the --repo option through unresolved, so a dry run without --repo skips the committed-section and plan-review gates entirely while a real dispatch resolves the mount and meets them. The dry run should resolve the project's mount the way the real call does before judging.</div>
+</div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261002T201929125165-review-of-dry-run-shows-each-set-override" data-who="reckon-build" data-when="2026-10-02T20:38:18.277Z">
     <div class="r-comment-body"><p>independent review of run r-20261002T181759902620-dry-run-shows-each-set-override stored for base a326205d5b8173815b4b839fc651b4f49ce6156e head baf499dfd0163f686aa32175a301c80d6c278201 - goal_fidelity 19, evidence 18, scope_discipline 20, durability 17, fit 19 (total 93); three follow-on findings; added_failure_count 0 with no ids over the reviewed run's own base/head arms (521 passed/1 skipped base, 524 passed/1 skipped head, both EXIT=0)</p></div>
 </div>
@@ -197,12 +209,6 @@ Measured twice on 2026-09-21. A dry run naming a sprint id as --plan returned ok
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261002T234040312239-merged-dry-run-override-gate" data-who="reckon-build" data-when="2026-10-03T00:21:45.616Z">
     <div class="r-comment-body"><p>measured the merged dry-run override head 1a89125cb against main 9fe5d8204 over the dispatch test files (35 at head, 34 at base, the difference being the merge's own new test file, absent at the base revision): base 1 failed/545 passed/1 skipped EXIT=1, head 2 failed/552 passed/1 skipped EXIT=1, one added failure id (tests/test_every_attempt_is_supervised.py::test_a_killed_resumed_worker_leaves_its_attempt_exit_record) that did not reproduce in three isolated reruns and touches no dry-run path; record at docs/evidence/fragments/a-dry-run-must-resolve-what-the-real-call-resolves/merged-dry-run-override-gate.html</p></div>
 </div>
-<div class="r-comment" data-section="_top" data-id="c-drrv-s6-landed" data-who="s22-coord" data-when="2026-10-03">
-    <div class="r-comment-body"><p>Landed at e0a9767ea (run r-20261002T181759902620-dry-run-shows-each-set-override, repair round reviewed at 94, zero added failures). The coordinator merged it in a scratch worktree and resolved two cli.py conflicts against main's picker routing. The merge was measured by r-20261002T234040312239-merged-dry-run-override-gate: one added id, flaky under xdist and passing in three isolated reruns. <code>tests/test_a_brief_points_rather_than_quotes.py::test_a_report_changes_no_other_dry_run_field</code> already fails on main at 9fe5d8204, independently of this change.</p></div>
-</div>
-<div class="r-comment" data-section="_top" data-id="c-drrv-s7-landed" data-who="s22-coord" data-when="2026-10-03">
-    <div class="r-comment-body"><p>Landed at 7a57be66d (run r-20261003T014604919126-every-dry-run-refusal-carries-the-echo, reviewed at 94 after a repair round, zero added failures). The availability competence refusal, the <code>--local</code> backend failure and the budget-hold refusal on the dry-run path now carry <code>dry_run: true</code> and the override echo. The comparison test that was red on main now also masks <code>_ms</code> durations. At the merged head, three dry-run tests fail because the picker routing default, from s25-picker's 4cb06a148, refuses <code>--local</code> and replaces the held-lane refusal, not because of this change. That is reported to s25-picker. Follow-on: plan-unavailable, plan-review-missing and competence-limit still omit <code>dry_run: true</code>, possibly by design.</p></div>
-</div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261003T023940873974-review-of-every-dry-run-refusal-carries-the-echo" data-who="reckon-build" data-when="2026-10-03T02:52:29.409Z">
     <div class="r-comment-body"><p>every-dry-run-refusal-carries-the-echo — independent review stored at the revision-keyed path and the legacy path: status parsed, five dimensions scored (goal_fidelity 15, evidence 16, scope_discipline 18, durability 15, fit 19), total 83, reviewed_base_sha 41e6fc48f5b7f9293694519d4c13c4e8c146bb82 and reviewed_head_sha baddc6cef37d5fee913ca844a825c3bcc844daaa, added_failure_count 1 with added_failure_ids derived from the reviewed run's own gate logs; two findings: cli.py:1782 blocking (the budget-hold dry-run refusal carries dry_run:true but omits the --set echo) and cli.py:1796 follow-on (plan-unavailable, plan-review-missing and competence-limit dry-run refusals carry the echo but omit dry_run:true).</p></div>
 </div>
@@ -211,9 +217,6 @@ Measured twice on 2026-09-21. A dry run naming a sprint id as --plan returned ok
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261003T031838905998-review-of-every-dry-run-refusal-carries-the-echo" data-who="reckon-build" data-when="2026-10-03T03:30:43.465Z">
     <div class="r-comment-body"><p>independent review of run r-20261003T014604919126-every-dry-run-refusal-carries-the-echo stored at base baddc6cef37d5fee913ca844a825c3bcc844daaa head 2fb76078b735869223c4c0d3d68d788d3dc9daee - goal_fidelity 17, evidence 18, scope_discipline 20, durability 19, fit 20 (total 94); one follow-on finding (plan-unavailable/plan-review-missing/CompetenceLimit dry-run refusals still omit dry_run: true); added_failure_count 0 with no added ids over the reviewed run's own baseline_suite/after_suite arms (base 41e6fc48f 6 failed/494 passed, head d21d94bff 5 failed/498 passed)</p></div>
-</div>
-<div class="r-comment" data-section="s5" data-id="c-20261005T0115-dry-run-skips-plan-gates-without-repo" data-who="too-coord-1005" data-when="2026-10-05T01:15:00Z">
-    <div class="r-comment-body">Measured 2026-10-05 with the plan-review gate in enforce: `reckon crew dispatch --dry-run` for an implement node on a-plan-is-reviewed-before-it-is-built answered ok with no warning when --repo was omitted, and exit 4 plan-review-missing naming two unanswered findings when --repo named the checkout. In plan_dispatch the authority block that runs require_plan_section_visible and require_plan_reviewed is guarded by `verdict.ok and repo is not None`, and the CLI passes the --repo option through unresolved, so a dry run without --repo skips the committed-section and plan-review gates entirely while a real dispatch resolves the mount and meets them. The dry run should resolve the project's mount the way the real call does before judging.</div>
 </div>
 </section>
 </main>
