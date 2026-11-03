@@ -354,12 +354,18 @@ def _launch_queued(
         )
     finally:
         routing.ADMISSION_REVIEW_UNITS.reset(units_token)
-    # A sidecar that cannot be written must not report the launch as refused:
-    # every caller writes the request back when this raises, which would queue
-    # a second copy of a request that did launch.
-    if isinstance(launched, Mapping):
+    # The join resolves only for a record the launch check accepts: a dispatch
+    # that returned a request still queued names no run that ran the review.
+    # A sidecar that cannot be written must not report the launch as refused
+    # either, because every caller writes the request back when this raises,
+    # which would queue a second copy of a request that did launch.
+    try:
+        _require_launched_record(launched)
+    except CrewError:
+        pass
+    else:
         with contextlib.suppress(OSError):
-            _join_admitted_plan_review(pointer, str(launched.get("run_id") or ""))
+            _join_admitted_plan_review(pointer, str(launched["run_id"]))
     return launched
 
 
