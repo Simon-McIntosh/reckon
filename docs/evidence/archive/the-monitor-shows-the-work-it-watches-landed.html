@@ -444,6 +444,11 @@ EXIT=0</pre>
     <p>Landed as merge <code>8dfcb8ecfa</code> of head <code>4431f940b7</code>, run <code>r-20261103T052920940353-a-promoted-run-owes-no-promotion</code>, by the admit service's automatic landing pass after the code review filed no blocking finding.</p><ul><li><code>review-ready</code> and <code>promotable-stale</code> join <code>LIVE_POINTER_DUTY_KINDS</code>, so <code>without_departed_run_duties</code> drops a promotion duty whose run's pointer is gone, whether it was promoted or discarded.</li><li><code>tests/test_a_promoted_run_owes_no_promotion.py</code> covers the four cases the section names; a <code>review-missing</code> row for a gone pointer is still listed.</li><li>Two non-blocking review findings were exempted: the suite fields name only the new file, and the coordinator measures the importer population itself; the discard case's hook-string assertion duplicates the view assertion.</li></ul>
   </section>
 
+  <section id="s98-one-live-read-one-lane-reading">
+    <h2>§98 — One live read, one lane reading</h2>
+    <p>Landed as merge <code>4821817528</code> of head <code>8e87eaf284</code>, run <code>r-20261103T052020111669-one-live-read-one-lane-reading</code>.</p><ul><li>One live read and one lane-document reading per view, so every row agrees on the reading's <code>observed_at</code>.</li><li>The armed test <code>tests/test_one_live_read_one_lane_reading.py</code> fails 2 at base and passes 2 at head. The importer population of <code>query.py</code> and <code>recovery_classification.py</code> on the merge candidate <code>05c919ebf9</code> passes 252 at main and 254 at the candidate, with no failure added.</li><li>Three non-blocking review findings were exempted: a small duplicate of the raw lane-document read, a misnamed test id in the manifest (the coordinator wrote the landing's test fields), and the live view still stating observed_at once per row, which needs <code>mcp_views.py</code>, outside this node's paths.</li></ul>
+  </section>
+
 </main>
 </body>
 </html>
