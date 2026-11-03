@@ -31,4 +31,15 @@ separate from the scoped count the tool cases use, because a lookup outside any 
 entry exists to prevent. <code>ruff format</code> over the changed paths leaves
 <code>resources.py</code> clean where the base carried one reflow hunk, and the two files' lint
 finding count is unchanged against the base.</p>
+<p>Three existing measurements read the new covered rule as a regression on the merge candidate. Two were
+built on the old rule: the cold-discovery fixture parked two thousand documents in <code>_shared</code>
+and counted them as covered, where the walk now skips the infra directories, so the bulk moved to an
+ordinary page directory and the cold-pass ceiling states the per-file bound the covered rule implies;
+the warm-read driver called the roadmap read with no boundary, which the section moves out of the body
+and into the boundary — the executor wrapper for a registered tool, the caller for a direct call — so
+the driver opens the region its own docstring describes. The third was a real defect the new rule
+exposed: the walk decided the infra rule on a directory's resolved relative path, so a rejected
+directory still cost a <code>relative_to</code> call. The rule needs only the directory's name and its
+parent's relative path, so the decision now precedes the resolution and the state tree is skipped
+without a path being built for it.</p>
 </section>
