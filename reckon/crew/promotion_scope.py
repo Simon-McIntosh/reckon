@@ -23,7 +23,9 @@ from reckon._plan_html import section_anchor
 from reckon._timestamps import parse_iso, parse_utc
 from reckon.crew.node import (
     STALL_BUDGET_MULTIPLE,
+    WAITING_REQUEST_PHASES,
     CrewError,
+    claim_disposition,
     parse_duration,
 )
 from reckon.crew.plan_review import RUN_COMMENT_PREFIX
@@ -544,8 +546,12 @@ def _accepted_scope_exceptions(
     ledger record of a landing that has happened, not a concurrent edit. A
     claim held by a peer whose process has ended and whose manifest is terminal
     is admitted too: that peer is editing nothing, its worktree is fixed, and
-    whichever run lands second merges on top. Both admissions are written on
-    the acceptance, and the peer's claim and pointer are left untouched.
+    whichever run lands second merges on top. A claim held by a request that
+    has never launched — queued, upstream-waiting or held — is admitted by
+    ``claim_disposition``, which judges it by its phase: with no worker and no
+    worktree it edits nothing, so its claim protects nothing until it launches.
+    Every admission is written on the acceptance, and the peer's claim and
+    pointer are left untouched.
     """
     from reckon.crew.dispatch_claims import stopped_with_terminal_manifest
 
@@ -596,6 +602,7 @@ def _accepted_scope_exceptions(
     shared_files = _shared_write_paths(str(record.get("project") or ""), repository)
     integrated_claims: dict[str, list[dict[str, str]]] = {}
     stopped_claims: dict[str, list[dict[str, str]]] = {}
+    parked_claims: dict[str, list[dict[str, str]]] = {}
     stopped_peers: dict[str, bool] = {}
     path_integrated: dict[str, bool] = {}
     for pointer in list_live():
@@ -632,6 +639,23 @@ def _accepted_scope_exceptions(
                     # resolves the same list through this same helper.
                     if candidate == claim and path in shared_files:
                         continue
+                    if str(pointer.get("phase") or "") in WAITING_REQUEST_PHASES:
+                        # A queued, upstream-waiting or held request has no
+                        # worker and no worktree, so it edits nothing and its
+                        # claim protects nothing. It is judged by the same rule
+                        # every other claim walk uses, and its pointer is left
+                        # untouched: the claim still fences the path when the
+                        # request reaches launch.
+                        disposition = claim_disposition(pointer)
+                        if not disposition.binding:
+                            parked_claims.setdefault(path, []).append(
+                                {
+                                    "run_id": peer_run,
+                                    "claim": claim.as_posix(),
+                                    "phase": str(pointer.get("phase") or ""),
+                                }
+                            )
+                            continue
                     if peer_run not in stopped_peers:
                         stopped_peers[peer_run] = stopped_with_terminal_manifest(
                             pointer
@@ -681,6 +705,17 @@ def _accepted_scope_exceptions(
             )
             entry["stopped_peer_claims"] = [
                 {"run_id": peer_run, "claim": claim} for peer_run, claim in stopped
+            ]
+        if path in parked_claims:
+            parked = sorted(
+                {
+                    (row["run_id"], row["claim"], row["phase"])
+                    for row in parked_claims[path]
+                }
+            )
+            entry["waiting_request_claims"] = [
+                {"run_id": peer_run, "claim": claim, "phase": phase}
+                for peer_run, claim, phase in parked
             ]
         accepted.append(entry)
     return accepted
