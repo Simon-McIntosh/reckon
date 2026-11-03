@@ -122,9 +122,11 @@ producer's backstop compose it. Dispatch waits for the answer — a section
 dispatched over an unanswered review is a gate bypassed, not a wave started.
 
 Answer the design review's findings before dispatching, acted on or declined
-with a reason:
-`reckon crew review --project <project> --plan <slug> --answer <finding> --acted`,
-or `--declined "<reason>"` in place of `--acted`. **Answer rather than edit.**
+with a reason — an acted answer says what changed, so the next reviewer reads
+it rather than re-deriving the fix from the diff:
+`reckon crew review --project <project> --plan <slug> --answer <finding> --acted --note "<what changed>"`,
+or `--declined "<reason>"` in place of `--acted --note "<what changed>"`.
+**Answer rather than edit.**
 Edit the plan only for findings about the sections you are about to build;
 answer a finding an existing section already meets `--acted`, naming it, and
 one on a landed section `--declined` with the honest reason; then dispatch at
@@ -259,7 +261,7 @@ reckon crew recover    reckon crew resume --run <id> --backend <backend> --model
 reckon crew repair --run <id> --status <verdict> --reason <text>    # replaces a manifest's status word, keeping the file as delivered
 reckon crew repair --review --run <id> --record <path> --set <field=value> --reason <text>
 reckon crew resume --run <id> --advice <text>    reckon crew resume --ready --project <project>    reckon crew resume --run <id> --reopen --write-path <path>
-reckon crew review --project <project> --plan <slug> --rubric <rubric> --session <session> --local --answer <finding> --acted --declined <reason>
+reckon crew review --project <project> --plan <slug> --rubric <rubric> --session <session> --local --answer <finding> --acted --note <what-changed> --declined <reason>
 reckon crew shadow    reckon crew stop    reckon crew watch --stop --project <project>
 reckon crew supersede-review --project <project> --run <id> --reason <text>    # call it when a promoted row's review block names another round: it appends a correction the readers honour and leaves the recorded fields in place
 reckon crew verify-gate --project <project> --run <id> --checkout-path <path>

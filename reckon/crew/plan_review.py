@@ -1890,10 +1890,21 @@ def review_scope(
                     f"{text} -> (unanswered)"
                 )
                 continue
-            reason = str(response.get("reason") or "").strip()
+            # A decline's reason and an act's note are both the account of the
+            # answer, so the brief prints whichever the response carries. An
+            # answer given as nothing but its action tells the reviewer what to
+            # re-derive, which is the work the note exists to spare.
+            account = " ".join(
+                part
+                for part in (
+                    str(response.get("reason") or "").strip(),
+                    str(response.get("note") or "").strip(),
+                )
+                if part
+            )
             answered.append(
                 f"- {finding.get('id')} [{finding.get('anchor') or 'plan'}] "
-                f"{text} -> {response.get('action')}{': ' + reason if reason else ''}"
+                f"{text} -> {response.get('action')}{': ' + account if account else ''}"
             )
     lines = [
         (
@@ -2012,6 +2023,7 @@ def record_response(
     when: str | None = None,
     commit: str | None = None,
     base_dir: str | Path | None = None,
+    note: str = "",
 ) -> Path:
     """Answer one finding on a stored review and persist the updated record.
 
@@ -2026,7 +2038,11 @@ def record_response(
     can never attach to a finding nobody can read back. An ``acted`` answer also
     records the commit of the edit it answers for — named by ``commit`` or, when
     the caller names none, the newest commit touching the plan — so the coverage
-    that answer earns carries its own evidence. That commit records beside it
+    that answer earns carries its own evidence. An ``acted`` answer also carries
+    its ``note``, the one- or two-sentence account of what the fix changed, so a
+    reader of the answer learns what was done rather than only that something
+    was; the note is stored on the response and read back by
+    :func:`_stored_response`. That commit records beside it
     what it is evidence of: an answer given before its edit landed cites the
     plan's newest commit at that moment, which is recorded as the plan commit at
     answer time rather than presented as the edit's commit. The returned path is the
@@ -2054,6 +2070,13 @@ def record_response(
         "by": str(by or ""),
         "when": when or datetime.now(UTC).isoformat(),
     }
+    # What the fix changed travels with the answer, so the next review brief
+    # says what was done rather than only that something was. A caller that
+    # names no note leaves the key out, which reads the same as an answer given
+    # before the note was recorded.
+    note_value = str(note or "").strip()
+    if note_value:
+        response["note"] = note_value
     if action_value == "carried":
         # A finding can block several sections, so every one is recorded. The
         # first stays under ``section`` for readers that take a single unit.

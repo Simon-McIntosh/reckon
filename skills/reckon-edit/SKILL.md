@@ -148,7 +148,7 @@ hid it. Canonical rule: `reckon-build` SKILL.md §7a-bis.
    every finding the review raises, acted on or declined with a one-line reason:
 
    ```bash
-   reckon crew review --project <project> --plan <slug> --answer <finding> --acted
+   reckon crew review --project <project> --plan <slug> --answer <finding> --acted --note "<what changed>"
    reckon crew review --project <project> --plan <slug> --answer <finding> --declined "<reason>"
    ```
 

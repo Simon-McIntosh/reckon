@@ -2422,6 +2422,14 @@ def _review_options(callback):
         ),
         click.option("--acted", is_flag=True),
         click.option(
+            "--note",
+            default="",
+            help=(
+                "What an --acted fix changed, in one or two sentences; required "
+                "with --acted."
+            ),
+        ),
+        click.option(
             "--declined", default=None, help="Decline a finding with this reason."
         ),
     ):
@@ -2448,6 +2456,7 @@ def crew_review(
     acted,
     declined,
     review_run="",
+    note="",
 ):
     """Review one plan's content, a code neighbourhood or a portfolio, or answer a finding.
 
@@ -2476,6 +2485,7 @@ def crew_review(
         review_run=review_run,
         sprint_id=sprint_id,
         portfolio=portfolio,
+        note=note,
     )
 
 
@@ -2496,6 +2506,7 @@ def _run_review(
     review_run="",
     sprint_id="",
     portfolio=False,
+    note="",
 ):
     """Compose and dispatch one review, or answer a plan finding.
 
@@ -2534,6 +2545,17 @@ def _run_review(
     elif answer:
         if acted == (declined is not None):
             detail = "--answer requires exactly one of --acted or --declined REASON"
+        elif acted and not str(note or "").strip():
+            # An acted answer is the record of a change, and "acted" alone says
+            # nothing about what changed: the next reviewer has to re-derive the
+            # fix from the diff and cannot tell a defect it introduced from one
+            # the first round missed. A decline already carries its reason.
+            detail = (
+                '--acted requires --note "<what changed>", one or two sentences '
+                "saying what the fix changed"
+            )
+        elif str(note or "").strip() and not acted:
+            detail = "--note applies only to --acted"
         elif dry_run or local:
             detail = "--dry-run and --local apply only to review dispatch"
         elif code_subject or portfolio_subject:
@@ -2651,6 +2673,7 @@ def _run_review(
                 action="acted" if acted else "declined",
                 reason=declined,
                 by=session,
+                note=note,
             )
             updated = json.loads(path.read_text(encoding="utf-8"))
             _emit(

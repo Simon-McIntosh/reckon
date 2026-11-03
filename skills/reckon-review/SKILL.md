@@ -62,7 +62,7 @@ an MCP form. Use the MCP form first, and say in the report when you fell back.
 | Stored code findings by path | `crew(project, view="findings", path=<prefix>)` |
 | Who is working on a plan now, and which paths they hold | `crew(project, view="live")`, `crew(project, view="scopes")`, `crew(view="directory")` |
 | Review yield for the stop rule | `crew(project, view="velocity", fields=["health_reviews"], since=<date>)` |
-| Answer a plan-review finding | `crew(action="answer", project, plan, finding, acted=true)` or `declined="<reason>"` |
+| Answer a plan-review finding | `crew(action="answer", project, plan, finding, acted=true, note="<what changed>")` or `declined="<reason>"` |
 | Dispose a code finding | `crew(action="dispose", project, run_id, finding_index, kind, node \| reason)` |
 | Change a link, a gate or a plan's status | `edit_plan` through `reckon-edit` (ops in §Links) |
 
