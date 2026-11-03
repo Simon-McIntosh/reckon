@@ -1,0 +1,72 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_plan.py:872 require_plan_reviewed",
+    "reckon/crew/queue_admission.py:3228 require_plan_reviewed",
+    "reckon/crew/dispatch_plan.py:744 carried_findings_for_section"
+  ],
+  "completed_at": "2026-11-03T02:07:29.942Z",
+  "dispatched_at": "2026-11-03T01:52:51Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": 2376,
+      "severity": "non-blocking",
+      "text": "_units_named_in rebuilds the unit id as f\"s{int(...)}\" instead of resolving through reckon/_plan_html.py:90 section_record_id, whose SECTION_NUMBER_PATTERN at reckon/_plan_html.py:83 accepts dotted sub-sections; a finding naming \u00a75.1 therefore blocks s5 (or, where the plan carries only s5-1, blocks nothing at all and the finding never holds its section)."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": 2321,
+      "severity": "non-blocking",
+      "text": "_fragment_unit returns the anchor fragment verbatim, so an anchor such as #Delivery names no unit in a plan whose section identity is the casefolded 'delivery' (reckon/_plan_html.py:103), and the finding silently blocks nothing."
+    },
+    {
+      "file": "docs/evidence/fragments/a-review-gate-judges-what-it-covers/a-finding-blocks-its-own-section.html",
+      "line": 27,
+      "severity": "non-blocking",
+      "text": "The fragment states the importer population gives 54 passed at the head arm, but the run records only after-suite.log, baseline-suite.log and negative-control.log, and none of them carries a head importer run, so the head figure cannot be checked by a reader."
+    },
+    {
+      "file": "docs/evidence/fragments/a-review-gate-judges-what-it-covers/a-finding-blocks-its-own-section.html",
+      "line": 26,
+      "severity": "non-blocking",
+      "text": "The done_when names the stored design review plan-a-read-costs-what-changed.v7.json as the fixture input, and the node substitutes findings worded after a-project-reads-as-one-picture because that record is absent from the tree and its history; the disclosure is honest and the resolver behaviour is measured, but the input the plan named is not the one exercised."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified require_plan_reviewed at reckon/crew/dispatch_plan.py:872 and reckon/crew/queue_admission.py:3228 and carried_findings_for_section at reckon/crew/dispatch_plan.py:744.",
+    "diff": "read commit by commit (one commit, 0609e285191c); it changes reckon/crew/plan_review.py and reckon/crew/routing.py, adds the test file and the evidence fragment.",
+    "done_when": "read the done_when's five cases; tests/test_a_finding_blocks_its_own_section.py holds a test for each and after-suite.log records 6 passed EXIT=0 at 0609e285191c.",
+    "goal": "read plan \u00a713 (docs/plans/a-review-gate-judges-what-it-covers.html:198-200) and the commit message; the gate now refuses a node only for unanswered findings on the units it builds plus the document unit.",
+    "manifest": "read; it states the gate at 6 passed EXIT=0, the base arm at 54 passed EXIT=0 and the negative control at 3 failed EXIT=1, with three log paths.",
+    "write_paths": "read the manifest's five declared paths; the four paths in the commit are all inside them, the declared figures directory being unused."
+  },
+  "justifications": {
+    "durability": "The declared negative control reinstates plan-wide collection and reddens three cases including the \u00a719 pass, so a regression in the gate's scope filter is caught at tests/test_a_finding_blocks_its_own_section.py:172.",
+    "evidence": "tests/test_a_finding_blocks_its_own_section.py:172-299 covers the done_when's five cases and the run records 6 passed EXIT=0 at 0609e28519 in after-suite.log, but the head importer arm is claimed without a log.",
+    "fit": "The new helpers read as the surrounding module does, with mechanism-first docstrings, though plan_review.py:2376 hand-builds a unit id where reckon/_plan_html.py:90 owns that derivation.",
+    "goal_fidelity": "reckon/crew/routing.py:2746-2767 refuses a node only for findings whose unit is in scope, or the document unit, so a plan's finding on one section no longer holds another section's dispatch.",
+    "reuse": "reckon/_plan_html.py:90 section_record_id is the declared owner of section identity and the new prose scanner at reckon/crew/plan_review.py:2318 re-specifies the \u00a7/s spelling and rebuilds the id rather than routing through it.",
+    "scope_discipline": "Every path in the commit is one of the manifest's declared write paths; the only addition beyond plan_review.py and routing.py is the test file and its evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is plan \u00a713, a finding blocks only the section it is about; reckon/crew/routing.py:2746-2767 now collects unanswered findings per unit and refuses only for those in the dispatch's scope or the document unit.\nVERDICT done_when: the done_when names five cases at docs/plans/a-review-gate-judges-what-it-covers.html:200; tests/test_a_finding_blocks_its_*own_section.py carries one test per case and after-suite.log records 6 passed EXIT=0 at 0609e285191c.\nVERDICT write_paths: the manifest declares five paths and the commit touches four of them (reckon/crew/plan_review.py, reckon/crew/routing.py, tests/test_a_finding_blocks_its_own_section.py, docs/evidence/fragments/a-review-gate-judges-what-it-covers/a-finding-blocks-its-own-section.html), all inside the grant.\nVERDICT manifest: read; it records the gate at 6 passed EXIT=0, the base arm at 54 passed EXIT=0, the negative control at 3 failed EXIT=1, and three log paths.\nVERDICT diff: read commit by commit against base 97985df6b7; one commit adds finding_units and unanswered_findings_by_unit in reckon/crew/plan_review.py, narrows reckon/crew/routing.py:2746, and adds the test and evidence fragment.\nCALL_SITES: reckon/crew/dispatch_plan.py:872 require_plan_reviewed, reckon/crew/queue_admission.py:3228 require_plan_reviewed, reckon/crew/dispatch_plan.py:744 carried_findings_for_section\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:2746-2767 refuses a node only for findings whose unit is in scope, or the document unit, so one section's finding no longer holds another.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_a_finding_blocks_its_own_section.py:172-299 covers the five done_when cases and after-suite.log records 6 passed EXIT=0, but the head importer arm has no log.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in 0609e285191c is one of the manifest's declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: the declared mutation reinstates plan-wide collection and reddens tests/test_a_finding_blocks_its_own_section.py:172, so the gate's narrowing is guarded.\nSCORE fit: 17\nJUSTIFICATION fit: the helpers at reckon/crew/plan_review.py:2318-2430 follow the module's mechanism-first docstrings, though line 2376 hand-builds an id the plan-html owner derives.\nSCORE reuse: 11\nJUSTIFICATION reuse: reckon/_plan_html.py:90 section_record_id owns section identity and the new scanner at reckon/crew/plan_review.py:2318 duplicates its spelling and derivation instead of extending it.\nFINDING reckon/crew/plan_review.py:2376 non-blocking: _units_named_in rebuilds the unit id rather than resolving through reckon/_plan_html.py:90, so a dotted reference such as \u00a75.1 truncates to s5.\nFINDING reckon/crew/plan_review.py:2321 non-blocking: _fragment_unit returns the fragment verbatim, so a case-differing fragment names no unit.\nFINDING docs/evidence/fragments/a-review-gate-judges-what-it-covers/a-finding-blocks-its-own-section.html:27 non-blocking: the head importer arm's 54-passed figure has no log in the run directory.\nFINDING docs/evidence/fragments/a-review-gate-judges-what-it-covers/a-finding-blocks-its-own-section.html:26 non-blocking: the design-review record the done_when names was substituted; the substitution is disclosed in outside_scope.\n",
+  "review_run_id": "r-20261103T015016181896-review-of-a-finding-blocks-its-own-section-0609e285191c",
+  "reviewed_base_sha": "97985df6b7c77b30f295ea7b6e5a7ae17abc02a6",
+  "reviewed_head_sha": "0609e285191c1c83f20162c0014ffc1bd33c79ee",
+  "reviewed_run_id": "r-20261103T012525018363-a-finding-blocks-its-own-section",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 11,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T02:13:27.974171+00:00",
+  "total": 94
+}
