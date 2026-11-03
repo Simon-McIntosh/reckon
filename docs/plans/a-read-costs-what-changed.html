@@ -25,7 +25,7 @@
   <title>A Read Costs What Changed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="16">
+<meta name="plan-version" content="17">
 <meta name="plan-modified" content="2026-11-03">
 </head>
 <body>
@@ -93,6 +93,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261103T043452340748-review-of-every-read-enters-the-existing-scopes-df37a76e2b99" data-who="reckon-build" data-when="2026-11-03T04:47:34.496Z">
     <div class="r-comment-body"><p>Reviewed commits 8c7df9fd90 (scopes for the two CLI roadmap callers and one is_infra_path owner) and df37a76e2b (landing fragment) against base cab4f52430; the parsed record scores all six dimensions, records reviewed_base_sha cab4f5243072442017349026c625d92f7cc6c4d3 and reviewed_head_sha df37a76e2b9931738c522fb66c6af2e619d24611, and carries 8 added failures derived from importers-base.log and importers-head.log. Four findings: one blocking (ruff format adds a hunk on resources.py that the base did not carry) and three non-blocking.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261103T051455045207-review-of-every-read-enters-the-existing-scopes-b244a3f57e40" data-who="reckon-build" data-when="2026-11-03T05:28:25.616Z">
+    <div class="r-comment-body"><p>The delta since the last review (df37a76e2b → b244a3f57e) is accepted: the ruff format defect on reckon/resources.py is repaired (format --check exit 0 at head against one reflow hunk at the base; ruff check 4 lines at both ends), the two CLI scope entries now have their own cases (tests/test_a_request_validates_the_tree_once.py:439, :458) and both fail when their own with-block is removed (negative-control-cli-scope.log, pytest exit=1 each), the gate runs 9 passed at 251db84a0c against 7 at b6aa5ef074, and the one finding is non-blocking (reckon/resources.py sits outside the recorded fence, disclosed under outside_scope).</p></div>
 </div>
 </section>
 </main>

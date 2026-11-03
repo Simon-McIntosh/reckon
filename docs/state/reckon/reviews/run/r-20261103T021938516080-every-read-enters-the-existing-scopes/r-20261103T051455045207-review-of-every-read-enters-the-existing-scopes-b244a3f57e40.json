@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/project_brief.py:126",
+    "reckon/project_maintenance_commands.py:1581",
+    "reckon/resources.py:760"
+  ],
+  "completed_at": "2026-11-03T05:28:25.616Z",
+  "dispatched_at": "2026-11-03T05:16:39Z",
+  "findings": [
+    {
+      "file": "reckon/resources.py",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "this round edits reckon/resources.py, which is outside the manifest's declared write paths and recorded only under outside_scope; the manifest states the widening could not be written because the pointer lock under ~/.config/reckon/crew/locks is read-only in the fenced home, so promotion sees an edit with no granted path behind it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the landed change is test and formatting only, and I verified it against the production entry points the new cases reach: reckon/project_brief.py:126 (_load_payload's scope entry), reckon/project_maintenance_commands.py:1581 (the roadmap verb's scope entry), and reckon/resources.py:760 (_resolve_canonical, the reformatted call).",
+    "diff": "read commit by commit from df37a76e2b to b244a3f57e: b6aa5ef074 and e66889ba96 are blank-line and wrapping fixes to reckon/resources.py, 251db84a0c adds the two cases and the covered_validations counter, and b244a3f57e adds the fragment paragraph; three files, +51/-1.",
+    "done_when": "the done-when names the seven cases and three negative controls in tests/test_a_request_validates_the_tree_once.py, an importer population against the base, and ruff clean on the staged paths; s2-test.log records 9 passed at 251db84a0c, s2-after.log 7 passed at b6aa5ef074, and I re-measured the ruff clauses myself (format --check exit 0 at head against one reflow hunk at the base; ruff check 4 lines at both ends).",
+    "goal": "the source goal is that every MCP read enters the covered-tree and identity-index scopes once; this delta closes the two folded findings, and tests/test_a_request_validates_the_tree_once.py:439 and :458 add the cases the CLI entries at reckon/project_brief.py:126 and reckon/project_maintenance_commands.py:1581 lacked.",
+    "manifest": "read; it reports the two folded findings landed as 251db84a0c and e66889ba96 with b6aa5ef074 and b244a3f57e carrying the separation fix and the evidence, the 7-to-9 pass delta, the CLI scope negative control, and the format and lint delta.",
+    "write_paths": "the recorded paths are reckon/mcp_deadlines.py, reckon/mcp.py, reckon/mcp_edit_plan.py, reckon/metadata_index.py, tests/test_a_request_validates_the_tree_once.py and the landing fragment; the diff also changes reckon/resources.py, which the manifest discloses under outside_scope as a widening the pointer lock would not record."
+  },
+  "justifications": {
+    "durability": "negative-control-cli-scope.log shows each new case failing (pytest exit=1) when its own with metadata_index.discovery_file_scope() is replaced by if True, so both assertions are guards on the entry rather than on the read, and the format clause is held by the format gate I re-ran.",
+    "evidence": "the worker's gate is the single test file at 251db84a0c (9 passed, EXIT=0 in s2-test.log) and I re-ran it at the delivered head for 9 passed; the importer population clause is recorded separately under failure_attribution rather than re-measured this round.",
+    "fit": "reckon/resources.py:59-62 restores the two blank lines the module uses between top-level declarations and reclaims the formatter's own wrapping at line 763, and the new cases follow the Counter fixture idiom at tests/test_a_request_validates_the_tree_once.py:169.",
+    "goal_fidelity": "tests/test_a_request_validates_the_tree_once.py:439 and :458 assert the covered tree is validated exactly once through each CLI entry, which is the half of reckon/project_brief.py:120 that no case covered before.",
+    "reuse": "the delta adds no production definition; it extends the existing Counter at tests/test_a_request_validates_the_tree_once.py:134 with a covered_validations field, and my search of reckon/ for an existing covered-tree validation counter found only metadata_index._reuse_covered_once at reckon/metadata_index.py:928, which the fixture wraps rather than copies.",
+    "scope_discipline": "reckon/resources.py is outside the manifest's declared write paths and appears only under outside_scope, while the test file and the fragment are inside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source goal is that every MCP read enters the covered-tree and identity-index scopes once; this delta closes the two folded findings, and tests/test_a_request_validates_the_tree_once.py:439 and :458 add the cases the CLI entries at reckon/project_brief.py:126 and reckon/project_maintenance_commands.py:1581 lacked.\nVERDICT done_when: the done-when names the seven cases and three negative controls in tests/test_a_request_validates_the_tree_once.py, an importer population against the base, and ruff clean on the staged paths; s2-test.log records 9 passed at 251db84a0c, s2-after.log 7 passed at b6aa5ef074, and I re-measured the ruff clauses myself (format --check exit 0 at head against one reflow hunk at the base; ruff check 4 lines at both ends).\nVERDICT write_paths: the recorded paths are reckon/mcp_deadlines.py, reckon/mcp.py, reckon/mcp_edit_plan.py, reckon/metadata_index.py, tests/test_a_request_validates_the_tree_once.py and the landing fragment; the diff also changes reckon/resources.py, which the manifest discloses under outside_scope as a widening the pointer lock would not record.\nVERDICT manifest: read; it reports the two folded findings landed as 251db84a0c and e66889ba96 with b6aa5ef074 and b244a3f57e carrying the separation fix and the evidence, the 7-to-9 pass delta, the CLI scope negative control, and the format and lint delta.\nVERDICT diff: read commit by commit from df37a76e2b to b244a3f57e: b6aa5ef074 and e66889ba96 are blank-line and wrapping fixes to reckon/resources.py, 251db84a0c adds the two cases and the covered_validations counter, and b244a3f57e adds the fragment paragraph; three files, +51/-1.\nCALL_SITES: reckon/project_brief.py:126, reckon/project_maintenance_commands.py:1581, reckon/resources.py:760\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_request_validates_the_tree_once.py:439 and :458 assert the covered tree is validated exactly once through each CLI entry, which is the half of reckon/project_brief.py:120 that no case covered before.\nSCORE evidence: 17\nJUSTIFICATION evidence: the worker's gate is the single test file at 251db84a0c (9 passed, EXIT=0 in s2-test.log) and I re-ran it at the delivered head for 9 passed; the importer population clause is recorded separately under failure_attribution rather than re-measured this round.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: reckon/resources.py is outside the manifest's declared write paths and appears only under outside_scope, while the test file and the fragment are inside them.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control-cli-scope.log shows each new case failing (pytest exit=1) when its own with metadata_index.discovery_file_scope() is replaced by if True, so both assertions are guards on the entry rather than on the read, and the format clause is held by the format gate I re-ran.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/resources.py:59-62 restores the two blank lines the module uses between top-level declarations and reclaims the formatter's own wrapping at line 763, and the new cases follow the Counter fixture idiom at tests/test_a_request_validates_the_tree_once.py:169.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no production definition; it extends the existing Counter at tests/test_a_request_validates_the_tree_once.py:134 with a covered_validations field, and my search of reckon/ for an existing covered-tree validation counter found only metadata_index._reuse_covered_once at reckon/metadata_index.py:928, which the fixture wraps rather than copies.\nFINDING reckon/resources.py:1 non-blocking: this round edits reckon/resources.py, which is outside the manifest's declared write paths and recorded only under outside_scope; the manifest states the widening could not be written because the pointer lock under ~/.config/reckon/crew/locks is read-only in the fenced home, so promotion sees an edit with no granted path behind it.\n",
+  "review_run_id": "r-20261103T051455045207-review-of-every-read-enters-the-existing-scopes-b244a3f57e40",
+  "reviewed_base_sha": "df37a76e2b9931738c522fb66c6af2e619d24611",
+  "reviewed_head_sha": "b244a3f57e406a2923a86cc5f0d20c8cf6d28df9",
+  "reviewed_run_id": "r-20261103T021938516080-every-read-enters-the-existing-scopes",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T05:35:48.644011+00:00",
+  "total": 105
+}
