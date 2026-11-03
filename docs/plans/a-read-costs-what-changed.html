@@ -25,7 +25,7 @@
   <title>A Read Costs What Changed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="21">
 <meta name="plan-modified" content="2026-11-03">
 </head>
 <body>
@@ -105,6 +105,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-close-s2" data-who="" data-when="">
     <div class="r-comment-body"><p>§2 landed as merge <code>901325c5a6</code>. No added failure over the importer population on the merge candidate, 10 removed. <a href="/reckon/evidence/archive/a-read-costs-what-changed-landed.html#s2-every-read-enters-the-existing-scopes">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261103T022300314104-a-persisted-answer-carries-its-code-version" data-who="reckon-build" data-when="2026-11-03T09:22:39.771Z">
+    <div class="r-comment-body"><p>Persisted parses now carry the source digest of every module that produced them through one persisted-memo helper, and _store._read_state seeds the shared parse from discovery_state before reading; measured on a 40-plan store a fresh process reads one plan with 0 parses (base 1), an edited plan parses once while an untouched read parses 0, a changed _plan_html digest makes all 40 stored parses absent (40 parses on the rebuilding pass, 0 on the next), and a corrupt store still yields the parsed value, with both declared negative controls turning their named case red.</p></div>
 </div>
 </section>
 </main>
