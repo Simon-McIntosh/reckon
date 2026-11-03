@@ -706,6 +706,77 @@ def _missing_pointer_recorded(exit_record: Mapping[str, Any] | None) -> str | No
     return str(block.get("pointer_path") or "").strip()
 
 
+def _stored_lane_sentence(
+    record: Mapping[str, Any], classification: str
+) -> tuple[str, str]:
+    """The lane's verdict sentence as the request stored it, and when.
+
+    A queued request carries it under ``reason``, dated by the moment it was
+    queued; a held request carries the hold's own reason beside the stamp the
+    hold started at. The stamp is what makes a stored sentence readable: the
+    same words describe a different lane at a different moment, so a sentence
+    shown beside a current reading has to say when it was recorded.
+    """
+    from reckon.crew.queue_admission import HELD_PHASE
+
+    if classification == HELD_PHASE:
+        hold = record.get("queue_hold")
+        hold_mapping = hold if isinstance(hold, Mapping) else {}
+        sentence = str(hold_mapping.get("reason") or "").strip()
+        stamp = hold_mapping.get("started_at")
+    else:
+        sentence = str(record.get("reason") or "").strip()
+        stamp = record.get("queued_at")
+    recorded_at = str(stamp or record.get("created_at") or "").strip()
+    return sentence, recorded_at
+
+
+def _lane_admission_detail(
+    record: Mapping[str, Any],
+    classification: str,
+    detail: str,
+    lane_reading: Mapping[str, Any] | None,
+) -> dict[str, Any] | None:
+    """Compose one waiting request's lane-admission detail.
+
+    With the view's reading in hand, the row states the allowance the lane
+    publishes now, and keeps its stored sentence only as the record of what it
+    said when it was written, dated by the moment it was recorded. Without a
+    reading there is nothing current to report, so the stored sentence stands
+    alone, dated; it is never shown undated, because an undated sentence read a
+    day later is indistinguishable from a present one.
+    """
+    sentence, recorded_at = _stored_lane_sentence(record, classification)
+    if lane_reading is None:
+        if not sentence:
+            return None
+        when = recorded_at or "an unrecorded time"
+        return {
+            "detail": f"{detail} (recorded at {when})",
+            "allowance": None,
+            "source": "",
+            "observed_at": None,
+        }
+    parts: list[str] = []
+    composed = str(lane_reading.get("detail") or "").strip()
+    if composed:
+        parts.append(composed)
+    observed_at = str(lane_reading.get("observed_at") or "").strip()
+    if observed_at:
+        parts.append(f"the lane document was read at {observed_at}")
+    if sentence:
+        when = recorded_at or "an unrecorded time"
+        parts.append(f"the verdict recorded at {when} read: {sentence}")
+    if not parts:
+        return None
+    return {
+        "detail": "; ".join(parts),
+        "allowance": lane_reading.get("allowance"),
+        "source": str(lane_reading.get("source") or ""),
+        "observed_at": observed_at or None,
+    }
+
+
 def classify_pointer(
     record: Mapping[str, Any],
     *,
@@ -713,6 +784,7 @@ def classify_pointer(
     now_seconds: float | None = None,
     condition_test: Callable[[Mapping[str, Any], Mapping[str, Any]], Any] | None = None,
     pointers: Sequence[Mapping[str, Any]] | None = None,
+    lane_reading: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Classify one live pointer, without touching it.
 
@@ -729,6 +801,14 @@ def classify_pointer(
     rows from, so recognising an already-dispatched review reads that snapshot
     instead of listing the directory once per row. A caller with one record and
     no snapshot passes none and every read is taken itself.
+
+    ``lane_reading`` is the one reading of the lane document a view took for the
+    whole response it is composing. A request that is waiting on a lane records
+    the sentence the dispatcher composed at that moment, and replaying it later
+    reports the row against a lane that has moved since. Given the view's own
+    reading, the row's lane-admission detail is composed from it; the stored
+    sentence is kept beside it, dated by the moment it was recorded, so a reader
+    can still see what the row said when it was stored.
     """
     run_id = str(record.get("run_id") or "")
     phase = str(record.get("phase") or "")
@@ -2366,6 +2446,15 @@ def classify_pointer(
         if wait
         else None,
     }
+    if classification in {QUEUED_PHASE, HELD_PHASE} and session_refusal is None:
+        lane_detail = _lane_admission_detail(
+            record, classification, classified["detail"], lane_reading
+        )
+        if lane_detail is not None:
+            classified["detail"] = lane_detail["detail"]
+            classified["lane_allowance"] = lane_detail["allowance"]
+            classified["lane_allowance_source"] = lane_detail["source"]
+            classified["lane_reading_observed_at"] = lane_detail["observed_at"]
     if wait is not None and wait_verdict is not None:
         # The evidence behind a producer-gone reading. It travels inside the
         # wait the row already carries rather than as a new row field, because

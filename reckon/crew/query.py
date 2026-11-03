@@ -112,9 +112,12 @@ LIVE_CLASSIFICATION_FIELDS = (
     "fleet_verdict",
     "interruption",
     "lane",
+    "lane_allowance",
+    "lane_allowance_source",
     "lane_cause",
     "lane_ended_at",
     "lane_event",
+    "lane_reading_observed_at",
     "lifting_condition",
     "liveness_proven",
     "log_age_seconds",
@@ -433,8 +436,19 @@ def project_live_rows(
     """
     records = list(records)
     snapshot = records if pointers is None else list(pointers)
+    # One reading of each lane document serves every row, so rows of one session
+    # report the lane's present allowance rather than the sentence each row
+    # recorded when it was dispatched.
+    lane_readings, _documents = _live_lane_readings(records)
     classified = group_terminal_lane_events(
-        [classify_pointer(record, pointers=snapshot) for record in records]
+        [
+            classify_pointer(
+                record,
+                pointers=snapshot,
+                lane_reading=lane_readings.get(str(record.get("run_id") or "")),
+            )
+            for record in records
+        ]
     )
     from reckon.crew.queue_admission import queued_placements
 
@@ -741,6 +755,141 @@ def _record_repository(
     return mounted_projects.get(str(record.get("project") or ""))
 
 
+def _lane_config_for(
+    record: Mapping[str, Any], configs: dict[tuple[str, str], Mapping[str, Any]]
+) -> Mapping[str, Any]:
+    """Resolve one live row's project configuration, once per project and tree.
+
+    A lane row's allowance is published by the backend the row records, so the
+    configuration that names that backend has to be resolved before anything
+    can be read. Rows of one project share the resolution; a configuration that
+    cannot be resolved leaves the row with no reading rather than failing a
+    view whose other rows are readable.
+    """
+    key = (str(record.get("project") or ""), str(record.get("repo") or ""))
+    # Configuration is resolved per project, so a pointer that names no project
+    # has nothing to resolve and no lane document to read.
+    if not key[0]:
+        return {}
+    from click import ClickException
+
+    from reckon.crew.queue_admission import _resolve_lane_config
+
+    if key not in configs:
+        try:
+            configs[key] = _resolve_lane_config(record)
+        except (OSError, ValueError, ClickException):
+            configs[key] = {}
+    return configs[key]
+
+
+def _lane_document_declared(config: Mapping[str, Any], backend_name: str) -> str:
+    """The lane document one backend declares, or the empty string.
+
+    An undeclared document is the lane publishing nothing, which is not a hold
+    and not an unknown reading: there is simply no document to read.
+    """
+    backend = (config.get("backends") or {}).get(backend_name)
+    if not isinstance(backend, Mapping):
+        return ""
+    declared = backend.get("lane_document")
+    return str(Path(str(declared)).expanduser()) if declared else ""
+
+
+def _read_lane_document(path: str) -> Any:
+    """Read and parse one published lane document.
+
+    ``None`` when the document is absent, unreadable or not JSON, so a reader
+    that never raises keeps a view servable while the lane is between writes.
+    """
+    try:
+        return json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def _live_lane_readings(
+    records: Sequence[Mapping[str, Any]],
+) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
+    """Compose every live row's lane-admission reading from one document read.
+
+    Each row's stored sentence was composed when its verdict was recorded, at
+    the moment that row was dispatched, so replaying it reports each row against
+    a different reading of a lane that has moved in between. The view therefore
+    reads each lane document once for the whole composition and composes every
+    row's reading from that one reading, keyed by run id; the returned second
+    mapping holds one entry per document, so the response dates the reading it
+    used once rather than once per row.
+
+    A row whose backend declares no lane document, or whose reading cannot be
+    resolved, is left out: no reading is invented for it.
+    """
+    if not records:
+        return {}, {}
+    from reckon.crew import flight as flight_module
+    from reckon.crew import lane_document as lane_module
+    from reckon.crew.dispatch_plan import _lane_worker_allowance
+
+    configs: dict[tuple[str, str], Mapping[str, Any]] = {}
+    documents: dict[str, Any] = {}
+    documents_by_path: dict[str, dict[str, Any]] = {}
+    session_readings: dict[tuple[str, str], dict[str, Any]] = {}
+    readings: dict[str, dict[str, Any]] = {}
+    for record in records:
+        config = _lane_config_for(record, configs)
+        path = _lane_document_declared(config, str(record.get("backend") or ""))
+        if not path:
+            continue
+        if path not in documents:
+            documents[path] = _read_lane_document(path)
+            fields = lane_module.read_lane_reading_fields(documents[path])
+            documents_by_path[path] = {
+                "path": path,
+                "observed_at": str(fields.get("observed_at") or ""),
+            }
+        session = str(record.get("session") or "")
+        key = (path, session)
+        if key not in session_readings:
+            decision = _lane_worker_allowance(
+                documents[path],
+                session=session,
+                weights_configured=flight_module.fair_use_weights_configured(config),
+            )
+            session_readings[key] = {
+                "path": path,
+                "observed_at": documents_by_path[path]["observed_at"],
+                "allowance": decision.get("allowance"),
+                "source": str(decision.get("source") or ""),
+                "detail": str(decision.get("detail") or decision.get("reason") or ""),
+            }
+        run_id = str(record.get("run_id") or "")
+        if run_id:
+            readings[run_id] = session_readings[key]
+    return readings, documents_by_path
+
+
+def _lane_reading_statement(
+    documents: Mapping[str, Mapping[str, Any]],
+) -> dict[str, Any] | None:
+    """State the lane readings the view composed from, once per document.
+
+    ``observed_at`` is carried at the top only when every document the rows were
+    read against agree on it, so a reader is never handed one stamp standing for
+    two different readings.
+    """
+    if not documents:
+        return None
+    rows = [
+        {"path": path, "observed_at": reading.get("observed_at") or None}
+        for path, reading in sorted(documents.items())
+    ]
+    stamps = {row["observed_at"] for row in rows}
+    statement: dict[str, Any] = {"documents": rows}
+    if len(stamps) == 1:
+        statement["observed_at"] = rows[0]["observed_at"]
+    return statement
+
+
 def _matches(
     row: Mapping[str, Any],
     *,
@@ -889,6 +1038,7 @@ def runs_view(
 
     rows: list[dict[str, Any]] = []
     live_records: list[Mapping[str, Any]] = []
+    lane_documents: dict[str, dict[str, Any]] = {}
     if selected_source in {"all", "live"}:
         # One read of the project's live pointers serves both the rows rendered
         # and the classification: whether a run's review stands for it is a fact
@@ -907,8 +1057,19 @@ def runs_view(
             )
         else:
             live_records = snapshot
+        # One reading of each lane document serves every row, so rows of one
+        # session report the lane's present allowance rather than the sentence
+        # each row recorded when it was dispatched.
+        lane_readings, lane_documents = _live_lane_readings(live_records)
         classified_live = group_terminal_lane_events(
-            [classify_pointer(record, pointers=snapshot) for record in live_records]
+            [
+                classify_pointer(
+                    record,
+                    pointers=snapshot,
+                    lane_reading=lane_readings.get(str(record.get("run_id") or "")),
+                )
+                for record in live_records
+            ]
         )
         records_by_id = {
             str(record.get("run_id") or ""): record for record in live_records
@@ -1042,7 +1203,7 @@ def runs_view(
         sections=run_section_index([live_records]),
         keep_empty=RUN_ROW_FIELDS,
     )
-    return {
+    response = {
         "ok": True,
         "project": project,
         "view": "runs",
@@ -1051,6 +1212,13 @@ def runs_view(
         "count": len(rows),
         "rows": rows,
     }
+    # The rows disagree about the lane only if they were composed from
+    # different documents, so the reading they share is dated here, once,
+    # rather than repeated on every row that was composed from it.
+    statement = _lane_reading_statement(lane_documents)
+    if statement is not None:
+        response["lane_reading"] = statement
+    return response
 
 
 # --- Watch-event extraction -------------------------------------------------
