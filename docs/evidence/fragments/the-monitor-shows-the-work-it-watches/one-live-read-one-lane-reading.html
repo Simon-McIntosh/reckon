@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s98">
+  <meta name="plan-recorded-at" content="2026-11-03">
+  <meta name="plan-verdict" content="passed">
+  <title>One live read composes every row's lane detail from one lane reading | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="one-live-read-one-lane-reading-landing" data-node="one-live-read-one-lane-reading" data-reckon="landed" data-when="2026-11-03">
+  <h2>The live view reads each lane document once and every row reports that reading</h2>
+
+  <p id="one-live-read-one-lane-reading-what">A queued request stores the lane-admission sentence its dispatcher composed at the moment it was queued, and the live and runs views replayed that stored sentence per row. Three rows of one session dispatched minutes apart therefore reported allowances of 0, 63 and 65 extra workers in a single response, each sentence describing a lane read at a different moment. <code>reckon/crew/query.py</code> now composes one reading per lane document for the whole view (<code>_live_lane_readings</code>), gives that reading to every row's <code>classify_pointer</code>, and <code>reckon/crew/recovery_classification.py</code> composes the waiting row's lane-admission detail from it. The runs view response carries the reading it used once under <code>lane_reading</code>. A row's stored sentence is still shown, always dated by the moment it was recorded.</p>
+
+  <p id="one-live-read-one-lane-reading-gate"><strong>Gate.</strong> <code>tests/test_one_live_read_one_lane_reading.py</code>: (a) three queued rows of one session whose stored sentences carry 0, 63 and 65 report the lane document's allowance of 4, and the document is read once (counted through a patch); (b) every stored sentence still shown carries the time it was recorded. 2 passed, <code>EXIT=0</code>. Ruff adds no findings on the changed files.</p>
+
+  <p id="one-live-read-one-lane-reading-population"><strong>Population.</strong> The 50 test files importing <code>reckon.crew.query</code>, <code>reckon.crew.recovery_classification</code> or <code>reckon.crew.dispatch_plan</code>, base revision <code>3d0ed7f149</code> against head <code>b5b0ebe1d4</code>: base 9 failed / 597 passed / 1 error, head 8 failed / 598 passed / 4 errors, <strong>0 added failures</strong>. One added failure found on the first head arm (<code>test_a_live_read_of_a_served_field_is_not_refused</code>) was a real regression — a pointer naming no project — and is repaired in <code>b5b0ebe1d4</code>; it passes serially. The extra errors are xdist fixture-isolation artifacts in <code>tests/conftest.py::test_temp_config_home</code> (fixture 'prefix' not found), which also errors at base and passes serially: <code>tests/test_a_malformed_request_is_refused_before_storage.py</code> runs 17 passed on its own.</p>
+
+  <p id="one-live-read-one-lane-reading-negative"><strong>Negative control.</strong> Replaying the stored sentences (returning no reading from <code>_live_lane_readings</code>) turns the first case red: 2 failed, <code>EXIT=1</code>, including <code>test_one_lane_reading_composes_one_*</code>. Log under the run directory: <code>negative-control.log</code>.</p>
+</article>
+</body>
+</html>
