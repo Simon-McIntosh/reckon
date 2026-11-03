@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-03T00:38:11.811Z",
+  "dispatched_at": "2026-11-03T00:31:06Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-review-gate-judges-what-it-covers.html:200",
+      "id": "reasoning-1",
+      "reason": "without saying what `finding_unit` returns for a multi-section finding (or that the delivery path must become multi-valued), the node either silently under-blocks to one section or invents a shape the plan does not authorise, and \u00a713's own arm \"each refuse exactly the sections their text names\" would pass only on the grouping function while the delivery path stays wrong.",
+      "text": "\u00a713 states a source-anchored finding \"resolves to the sections its text names (\u00a7N or sN), each of which it blocks\", and says \"The delivery of findings to sections that already uses `_anchor_unit` gains the same correction\"; that delivery path is `finding_unit` (`reckon/crew/plan_review.py:2424`), whose return type is a single `str` and which the response writer stores as `response[\"section\"] = finding_unit(record, finding_id)` at `plan_review.py:2058`, so a finding naming two sections cannot be recorded as blocking both and a node implementing this hits an interface that cannot carry the stated rule",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "f7bcef668c0077ca60d233e5078709b5997bd1ff",
+  "plan_fingerprint": "bec5fb688ed450cf4897ad759492f51b9755b628d30763551c5e876bc306fd3c",
+  "plan_slug": "a-review-gate-judges-what-it-covers",
+  "plan_version": 51,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261103T002953979664-plan-review-of-a-review-gate-judges-what-it-covers",
+  "reviewed_blob_sha": "58dccf61f2053731c7ed100f334c2e65af257486",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `plan_review._anchor_unit` is at `reckon/crew/plan_review.py:2314`; `require_plan_reviewed` collects plan-wide unanswered findings at `reckon/crew/routing.py:2735-2762`; `plan-a-read-costs-what-changed.v7.json` exists at `~/.config/reckon/crew/reviews/reckon/`; `duplicate_owner-3` anchors `reckon/project_state.py:1590` and its text names \u00a75; and the cited line-map collision reproduces (`_line_unit_map` of the-monitor-shows-the-work-it-watches maps line 567 to `s66`).",
+    "done_when": "pass \u2014 five arms over a fixture plan, the design-record findings named by id with their real anchors, and a declared negative control (\"collects unanswered findings plan-wide, and the first case fails\").",
+    "evidence_paths": "pass \u2014 evidence lands in `tests/test_a_finding_blocks_its_own_section.py` and a base-revision comparison, both durable repo paths.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or changelog prose reach any symbol or comment.",
+    "reasoning": "a finding \u2014 the new rule says a source-anchored finding blocks *each* section its text names, but the delivery path it also corrects records one unit per finding.",
+    "single_goal": "pass \u2014 one goal (a finding blocks only the section it is about); the source-anchor correction is the same mechanism that makes attribution true.",
+    "wiring": "pass \u2014 `plan-section-depends-on` gives s14 <- s13 and s15 <- s13, s14, and s13 needs no upstream; the sections it corrects (`finding_unit`, used at `reckon/crew/plan_review.py:2058`) exist today."
+  },
+  "section_digests": {
+    "_document": "7bff2d36d32d8a8df5ffa990890142ff483878bacd9bb363ae182507cd2c0d4f",
+    "s1": "2f80e3c4526e5da0f46c438dc82b2880b0fa395a71a3807823c00850eb9622b9",
+    "s10": "0347256131d51d907a02af2f58beaa7a22b5537fdced1660d95567b2a3ff101d",
+    "s11": "2010b138f0e5041018c272b7dc46ddae5a5ec3a681dd94f345d06ffffce39f24",
+    "s12": "b9d85c58fba665a6ec6d382c6c08e4af211a0068675727b775a65fd42dc39899",
+    "s13": "c1acf58b1325e3ca878bdb18ca4e2dbce3ea629e6041a5d30b90a94186ab3ec0",
+    "s14": "8c20023c9b8866bac51fe6efba30a50c67a1773541f695bd4950d7c212b52f91",
+    "s15": "3b85b34e331075f64d346578c644077c9b01d65d21473122383624e9b5997c97",
+    "s2": "b003c30eb192f0dfa86d4e6518b4deede24bf6b15c0b15ba5784a6066d3da870",
+    "s3": "7df7d94c9d011998671062ddf1072ba44b1c08d7172f92e43f18961813f1d434",
+    "s4": "491337ffa1e3dbb35aed0b41de9bfb17126787d7b0a08c15bb12879faa1a9b43",
+    "s5": "f21e5477c01ae1e8fb4da7b3d607da52313f50d700b6b7dc3d5a2adb8d9f8956",
+    "s6": "534a6debaffa16edfc0cb75f6488191af897e1ff0b9ad32ecdaaa28148c119ff",
+    "s7": "ce6bf11980ac24dc184e5bd2aa6fd813667fe40e90c0ea97a60a56d649f3fd30",
+    "s8": "fd5dc1e3777871755eeeb65dc14935764ea25a67e2902dd8de2e8831cb64fa78",
+    "s9": "6237a98697d0fead79a4d109178e3da581fa42f7bd6e8028527f46a167cb259e"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T00:58:42.618036+00:00"
+}
