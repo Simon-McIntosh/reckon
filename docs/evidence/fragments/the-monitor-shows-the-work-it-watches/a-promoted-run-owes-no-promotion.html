@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s102">
+  <meta name="plan-recorded-at" content="2026-11-03">
+  <meta name="plan-verdict" content="passed">
+  <title>A promoted run owes no promotion | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-promoted-run-owes-no-promotion-landing" data-node="a-promoted-run-owes-no-promotion" data-reckon="landed" data-when="2026-11-03">
+  <h2>A run that has already landed no longer asks to be promoted</h2>
+  <p>A station computes each session's duties once per tick and keeps that answer until the next tick, so the list the obligations view and the stop hook serve can be minutes old. Promotion unlinks a run's live pointer as it writes the run's ledger row, and the <code>review-ready</code> or <code>promotable-stale</code> duty derived from that pointer survived in the held answer: the view and the stop hook went on naming "promote the completed review run" for a run already promoted, and the hook blocked the coordinator's turn on it.</p>
+  <p><strong>Deliverable.</strong> <code>review-ready</code> and <code>promotable-stale</code> join <code>LIVE_POINTER_DUTY_KINDS</code> in <code>reckon/crew/obligation_snapshot.py</code>. Both are promotion duties, and a promotion is taken only through <code>crew complete</code> against the run's own live pointer, so once the pointer is gone — through promotion or through discard — the duty names an action nobody can perform. The settlement is still one <code>stat</code> per such duty at the run's own pointer path: no ledger is opened, which is what the module's banner requires of the prompt path. The comment above the set, the helper's docstring and the derivation's docstring in <code>reckon/crew/obligations.py</code> state the rule and who settles it. Every other kind is unchanged: a <code>review-missing</code> row is evidence a promotion did not settle, so it is still listed for a departed run.</p>
+  <p><strong>Gate.</strong> <code>tests/test_a_promoted_run_owes_no_promotion.py</code>, four cases, each writing the station's answer while the run's pointer existed and reading it after removing it: (a) a run promoted in the project ledger set produces neither a <code>review-ready</code> nor a <code>promotable-stale</code> duty, read through <code>serve_crew_view("obligations")</code> and through the stop hook, which no longer returns <code>decision: block</code>; (b) the same run with its pointer present and no ledger row still reads <code>review-ready</code> on both surfaces; (c) a run discarded with no ledger row at all also produces no promotion duty; (d) a <code>review-missing</code> duty for a departed run is still listed on both surfaces.</p>
+  <p><strong>Negative control.</strong> Leaving the promotion kinds out of <code>LIVE_POINTER_DUTY_KINDS</code> fails the first and third cases and keeps the two positive controls green: 2 failed, 2 passed. Log: <code>negative-control.log</code> under the run directory. The two green cases are the instrument's own positive control — the same assertions do see a duty when one is owed, so the absence in (a) and (c) is not an absence of work.</p>
+</article>
+</body>
+</html>
