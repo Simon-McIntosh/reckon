@@ -62,6 +62,9 @@ def _run(tmp_path: Path) -> tuple[int, str, Path]:
         text=True,
         timeout=240,
         env=env,
+        # A replay is not interactive: the picker's client can reach a prompt,
+        # and inheriting the suite's stdin would block that prompt forever.
+        stdin=subprocess.DEVNULL,
         check=False,
     )
     log.write_text(completed.stdout + f"EXIT={completed.returncode}\n")
@@ -93,14 +96,11 @@ def _replayed_rows(block: list[str]) -> list[str]:
     rows = []
     for line in block:
         stripped = line.strip()
-        if not stripped.startswith("excluded "):
+        if not stripped.startswith("codes "):
             continue
-        backend = stripped.split()[1].split("/")[0]
-        reasons = stripped.split(": ", 1)[1]
-        rows.extend(
-            f"{backend} {reason.split(':', 1)[0].strip()}"
-            for reason in reasons.split("; ")
-        )
+        target, codes = stripped[len("codes ") :].split(": ", 1)
+        backend = target.split("/")[0]
+        rows.extend(f"{backend} {code}" for code in codes.split())
     return rows
 
 

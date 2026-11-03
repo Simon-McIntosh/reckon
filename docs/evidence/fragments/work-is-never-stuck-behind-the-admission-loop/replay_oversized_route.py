@@ -788,6 +788,13 @@ def budget_view(config: dict[str, Any], *, utilisation: float | None) -> dict[st
     return {"backends": rows, "groups": []}
 
 
+def _candidate_codes(candidate: dict[str, Any]) -> list[str]:
+    """One reason code per reason the candidate carries, in the picker's order."""
+    from reckon.crew.picker import _reason_code
+
+    return [_reason_code(str(r)) for r in candidate.get("reasons") or ()]
+
+
 def _exclusion_rows(excluded: list[dict[str, Any]]) -> list[tuple[str, str]]:
     """One (backend, reason code) row per reason, in the picker's own order."""
     from reckon.crew.picker import _reason_code
@@ -865,6 +872,13 @@ def report(attempt, selection) -> tuple[list[str], bool]:
     lines.extend(
         f"  excluded {candidate.get('backend')}/{candidate.get('model')}: "
         + "; ".join(str(r) for r in candidate.get("reasons") or ())
+        for candidate in selection.get("excluded") or ()
+    )
+    lines.extend(
+        "  codes {}: {}".format(
+            f"{candidate.get('backend')}/{candidate.get('model')}",
+            " ".join(_candidate_codes(candidate)),
+        )
         for candidate in selection.get("excluded") or ()
     )
     lines.extend(
@@ -958,6 +972,16 @@ def main(argv: list[str] | None = None) -> int:
             print("\n".join(lines))
             return 2
         lines.append("")
+
+    # A dispatch bounds its pick, and the routing verdict reads the section's
+    # attempt count from the promotion ledger inside that bound. On a checkout
+    # whose ledger has no index the read builds one, which a busy node can push
+    # past the bound, and the attempt then reports a timeout where the record
+    # shows a refusal. Reading it once here, outside any pick, leaves the bounded
+    # stages doing only the work they are bounded for.
+    from reckon.mcp_views import section_attempt_count
+
+    section_attempt_count("reckon", PLAN, SECTION, None)
 
     failures = 0
     for attempt in ATTEMPTS:
