@@ -357,8 +357,9 @@ def _launch_queued(
     # A sidecar that cannot be written must not report the launch as refused:
     # every caller writes the request back when this raises, which would queue
     # a second copy of a request that did launch.
-    with contextlib.suppress(OSError):
-        _join_admitted_plan_review(pointer, str(launched.get("run_id") or ""))
+    if isinstance(launched, Mapping):
+        with contextlib.suppress(OSError):
+            _join_admitted_plan_review(pointer, str(launched.get("run_id") or ""))
     return launched
 
 
