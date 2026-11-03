@@ -21,11 +21,11 @@
   <meta name="plan-informs" content="work-is-never-stuck-behind-the-admission-loop">
   <meta name="plan-blocks" content="work-is-never-stuck-behind-the-admission-loop">
   <meta name="plan-section-depends-on" content="{&quot;s7&quot;:[&quot;a-read-costs-what-changed#s2&quot;,&quot;a-read-costs-what-changed#s3&quot;,&quot;a-read-costs-what-changed#s5&quot;,&quot;a-read-costs-what-changed#s6&quot;],&quot;s4&quot;:[&quot;a-read-costs-what-changed#s2&quot;],&quot;s3&quot;:[&quot;a-read-costs-what-changed#s2&quot;],&quot;s6&quot;:[&quot;a-read-costs-what-changed#s2&quot;,&quot;a-read-costs-what-changed#s3&quot;,&quot;work-is-never-stuck-behind-the-admission-loop#s19&quot;],&quot;s5&quot;:[&quot;a-read-costs-what-changed#s3&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;descoped&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;descoped&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>A Read Costs What Changed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="21">
+<meta name="plan-version" content="22">
 <meta name="plan-modified" content="2026-11-03">
 </head>
 <body>
@@ -79,6 +79,10 @@
 
     
     
+    <h2 id="s8">§8 — A persisted answer still reuses rows by stat identity</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> §3 landed at merge <code>30fbd6294e</code> through the admission lander, whose gate runs only the run's own armed test. The coordinator's measurement of the merge candidate <code>051c9c0fa3</code> over the importer population of <code>metadata_index</code> and <code>_store</code> had found two added failures, and both fail 3 of 3 on main <code>9430f8e207</code> after the landing and passed 3 of 3 before it:</p><ul><li><code>tests/test_a_restart_reuses_rows_by_stat_identity.py::test_a_persisted_row_is_reused_when_only_the_device_differs</code></li><li><code>tests/test_a_restart_reuses_rows_by_stat_identity.py::test_a_second_build_reads_no_file_and_reuses_every_row</code></li></ul><p>§3 was dispatched before §2 landed, so the regression appears only where §3's persisted code version meets §2's scopes.</p><p><strong>Deliverable.</strong> Find why a persisted answer carrying its code version stops reusing rows by stat identity once §2's scopes are present, and restore the reuse without dropping §3's code-version invalidation.</p><p><strong>Done when</strong> the two tests above pass three times serially on the node's head, <code>tests/test_a_persisted_answer_carries_its_code_version.py</code> still passes, and the test files importing <code>reckon.metadata_index</code> and <code>reckon._store</code> add no failure against main <code>9430f8e207</code>. The negative control reverts the fix, and the two tests fail again. Ruff adds no findings on the staged paths. Write paths: <code>reckon/metadata_index.py</code> and <code>reckon/_store.py</code>.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-arcwc-001" data-status="open" data-written-by="" data-written-at="" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
@@ -88,6 +92,9 @@
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="_top" data-id="c-close-s2" data-who="" data-when="">
+    <div class="r-comment-body"><p>§2 landed as merge <code>901325c5a6</code>. No added failure over the importer population on the merge candidate, 10 removed. <a href="/reckon/evidence/archive/a-read-costs-what-changed-landed.html#s2-every-read-enters-the-existing-scopes">evidence</a></p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261103T033801666237-review-of-every-read-enters-the-existing-scopes-cab4f5243072" data-who="reckon-build" data-when="2026-11-03T03:55:09.358Z">
     <div class="r-comment-body"><p>Reviewed run r-20261103T021938516080 at base 9bdaea5 and head cab4f52430: parsed verdict on all six checklist items and all six dimensions (goal_fidelity 18, evidence 15, scope_discipline 19, durability 16, fit 17, reuse 14; total 99), with five non-blocking findings and one added suite failure (tests/test_spa_shell_geometry.py::test_rendered_topbar_children_follow_the_canvas_order, a browser-probe readiness timeout that passes twice at base).</p></div>
 </div>
@@ -102,9 +109,6 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261103T021938516080-every-read-enters-the-existing-scopes" data-who="reckon-build" data-when="2026-11-03T06:50:51Z">
     <div class="r-comment-body"><p>Every MCP read now enters metadata_index.discovery_file_scope and resources.resource_scan_scope once on the executor thread (edit_plan twice, around its pre- and post-write reads), the covered walk and revalidation skip INFRA_DIRS state records while keeping figures, and one covered-tree validation is reused per read; measured on a 40-plan / 5-figure / 2,000-review-dir tree read_plan stats 65 distinct paths and validates once, roadmap and audit once each, crew(live) zero, base arm about 2,050 paths; all seven done-when cases green and each declared negative control red.</p></div>
-</div>
-<div class="r-comment" data-section="_top" data-id="c-close-s2" data-who="" data-when="">
-    <div class="r-comment-body"><p>§2 landed as merge <code>901325c5a6</code>. No added failure over the importer population on the merge candidate, 10 removed. <a href="/reckon/evidence/archive/a-read-costs-what-changed-landed.html#s2-every-read-enters-the-existing-scopes">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261103T022300314104-a-persisted-answer-carries-its-code-version" data-who="reckon-build" data-when="2026-11-03T09:22:39.771Z">
     <div class="r-comment-body"><p>Persisted parses now carry the source digest of every module that produced them through one persisted-memo helper, and _store._read_state seeds the shared parse from discovery_state before reading; measured on a 40-plan store a fresh process reads one plan with 0 parses (base 1), an edited plan parses once while an untouched read parses 0, a changed _plan_html digest makes all 40 stored parses absent (40 parses on the rebuilding pass, 0 on the next), and a corrupt store still yields the parsed value, with both declared negative controls turning their named case red.</p></div>
