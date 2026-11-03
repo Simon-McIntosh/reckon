@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="small-node-census">
+  <meta name="plan-title" content="The Small-Node Record Census">
+  <meta name="plan-summary" content="Small nodes landed 4.5 record lines for every product line in the week after the small-node rule; a small node that changes product lands 0.25.">
+  <meta name="plan-status" content="reference">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,measurement,plans">
+  <meta name="plan-informs" content="a-small-change-is-a-small-node">
+  <title>The Small-Node Record Census | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Verdict</h2>
+    <p><strong>The ratio is not at most one.</strong> In the week after the small-node rule reached the worker
+      prompt, the fleet's small nodes landed <strong>7,093 record lines against 1,574 product lines, a ratio of
+      4.51</strong>. Measured by the node's net tree diff instead of by its own commits the same week reads 6,096
+      against 1,535, a ratio of 3.97. Neither reading is near one.</p>
+    <p>The aggregate hides the structure, and the structure is the finding. A small node <em>that changes
+      product</em> lands about a quarter of a record line for each product line it lands — 395 record lines against
+      1,574 product lines across 73 nodes, a ratio of 0.25. Almost all of the record comes from the other 105 small
+      nodes, which change no product at all. Fifty-four of those are admitted to the population only by the rule's
+      second arm, the arm that calls a node small when it changes no source or test and stays under 300 lines.</p>
+    <p>So the plan's done-when, taken as written over every node the rule calls small, fails by a factor of four
+      and a half. Taken over the nodes that actually trade record for product, the same week passes with room to
+      spare. Which of the two the section means is a decision the census can inform but not make.</p>
+
+    <h2 id="s2">§2 — What was counted, and over what</h2>
+    <table>
+      <thead><tr><th>Item</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Window</td><td>2026-09-29T06:03:41Z to 2026-10-06T06:03:41Z — the seven days after the merge that put the small-node rule in the composed worker prompt</td></tr>
+        <tr><td>Projects</td><td>reckon, nova, imas-ambix, imas-codex</td></tr>
+        <tr><td>Runs completed in the window</td><td>2,800</td></tr>
+        <tr><td>Runs carrying their own commits</td><td>891 (868 implement, 23 documentation); 890 resolved in their project's checkout</td></tr>
+        <tr><td>Nodes below the small-node threshold</td><td>178</td></tr>
+        <tr><td>Of those, nodes that change product</td><td>73</td></tr>
+      </tbody>
+    </table>
+    <p><strong>The unit is the node's own commits.</strong> Each run record names the commits it made, and each
+      of those is measured against its own parent. That is the per-commit reading the velocity view already takes
+      of a landed range, and it is the only reading that stays the node's own when a run is dispatched from a
+      revision another run's commit landed after. Fifty-three of the 890 nodes are dispatched that way, and
+      <code>base_sha..promoted_revision</code> then carries the foreign commit into the node's diff.</p>
+    <p><strong>The classes are the ones the velocity view uses.</strong> Every changed path is classed by
+      <code>reckon.path_classes.file_class</code>: <code>source</code> and <code>tests</code> are product;
+      <code>plan_evidence_research_html</code> (plan, evidence and research documents) and
+      <code>docs_state</code> are record. The <code>figures</code> directory is excluded from both, as in the
+      5.35-line baseline this measure is written against. Lines are added plus deleted.</p>
+    <p><strong>The threshold is the rule's own.</strong> A node is small when its diff has at most 50 changed
+      lines, or when it changes no source and no test and has at most 300.</p>
+    <p><strong>What this does not count.</strong> The landing comment promotion writes onto the plan section is
+      not in the node's commit, so record is, if anything, understated here. Review runs commit nothing in this
+      window and contribute nothing to either column.</p>
+
+    <h2 id="s3">§3 — The counts</h2>
+    <table>
+      <thead><tr><th>Reading</th><th>Small nodes</th><th>Record lines</th><th>Product lines</th><th>Ratio</th><th>Nodes with no product</th></tr></thead>
+      <tbody>
+        <tr><td>Per commit (primary)</td><td>178</td>7,093</td><td>1,574</td><td><strong>4.51</strong></td><td>105</td></tr>
+        <tr><td>Net tree diff (secondary)</td><td>145</td><td>6,096</td><td>1,535</td><td><strong>3.97</strong></td><td>75</td></tr>
+        <tr><td>Per commit, product-carrying nodes only</td><td>73</td><td>395</td><td>1,574</td><td><strong>0.25</strong></td><td>0</td></tr>
+        <tr><td>Net tree diff, product-carrying nodes only</td><td>70</td><td>397</td><td>1,535</td><td><strong>0.26</strong></td><td>0</td></tr>
+        <tr><td>Per commit, all 890 nodes (reference)</td><td>890</td><td>52,592</td><td>222,721</td><td><strong>0.24</strong></td><td>—</td></tr>
+      </tbody>
+    </table>
+    <p>By project, on the primary reading:</p>
+    <table>
+      <thead><tr><th>Project</th><th>Small nodes</th><th>Record lines</th><th>Product lines</th></tr></thead>
+      <tbody>
+        <tr><td>reckon</td><td>89</td><td>2,759</td><td>1,102</td></tr>
+        <tr><td>imas-ambix</td><td>55</td><td>3,006</td><td>310</td></tr>
+        <tr><td>nova</td><td>27</td><td>996</td><td>162</td></tr>
+        <tr><td>imas-codex</td><td>7</td><td>332</td><td>0</td></tr>
+      </tbody>
+    </table>
+    <p>A small node's record is small in the median and heavy in the tail: the median small node lands 22.5
+      record lines and the mean is 39.8, against a maximum of 255. The tail is evidence fragments, one per node,
+      the largest of them a 255-line fragment written for a change of 255 lines.</p>
+
+    <h2 id="s4">§4 — Where the record comes from</h2>
+    <p>Of the 178 small nodes, 105 land no product line at all, and they carry 6,698 of the 7,093 record lines.
+      The remaining 73 land all 1,574 product lines and 395 record lines between them. The population therefore
+      splits cleanly into two shapes that the single ratio averages into a meaningless number:</p>
+    <table>
+      <thead><tr><th>Shape</th><th>Nodes</th><th>Record lines</th><th>Product lines</th><th>Record per product line</th></tr></thead>
+      <tbody>
+        <tr><td>A small node that changes product</td><td>73</td><td>395</td><td>1,574</td><td>0.25</td></tr>
+        <tr><td>A small node that changes none</td><td>105</td><td>6,698</td><td>0</td><td>undefined</td></tr>
+      </tbody>
+    </table>
+    <p>Within the second shape, 54 nodes are admitted only by the 300-line arm — they would not be small under the
+      50-line arm — and they alone carry 5,567 record lines. Replacing a paragraph of prose with a 250-line
+      evidence fragment keeps a node under 300 lines and so keeps it inside the population the measure is about.</p>
+    <p>Fifty-two small nodes land no record line at all. The rule is not uniformly ignored; it is obeyed by some
+      nodes and dominated by the ones that write a fragment for every node regardless.</p>
+
+    <h2 id="s5">§5 — The instrument, and its controls</h2>
+    <p>Three checks were run before the figure was believed.</p>
+    <p><strong>The classifier sees what is there.</strong> Spot-checked on named nodes: a node landing
+      <code>imas_ambix/agent/live_panel.py</code> (5 added, 2 removed), <code>tests/test_live_panel.py</code> (32
+      added) and a 4-line evidence fragment reads as 39 product lines and 4 record lines, which is the commit's
+      contents exactly. A node landing a 245-line evidence fragment and a one-line SVG reads as 373 record lines,
+      1 figure line and 0 product lines.</p>
+    <p><strong>The diff is the node's own.</strong> The primary reading sums each named commit against its parent,
+      which reproduces the run record's own <code>changed_lines</code> exactly on 601 of 890 nodes. The 289 that
+      differ differ by the amount a node's repeat edits to one file add when counted commit by commit rather than
+      net — median 36 lines, ninetieth percentile 270. The largest gaps are nodes that re-generate a large artifact
+      across commits and so count it twice; one such node's two readings are 752 lines and 62,358. A merge commit
+      in a node's list is skipped for the same reason: measured against its first parent it carries everything the
+      merged branch brought in, which is another run's work. One node's diff was 109,059 lines until its merge
+      was excluded, against the 371 its record reports.</p>
+    <p><strong>The verdict survives the choice of unit.</strong> The two readings classify 43 nodes differently
+      around the 50-line threshold, and change the population from 178 to 145. Both give an aggregate between 3.9
+      and 4.6 and a product-carrying ratio between 0.25 and 0.26. No reading of the same data puts the aggregate
+      near one.</p>
+    <p><strong>What the instrument does not see.</strong> A run whose named commits are not reachable from any
+      project checkout is dropped and counted: one node landed with 890 readable and 1 unreadable. Record written
+      by a coordinator's promotion rather than by the node is not attributed to the node.</p>
+
+    <h2 id="s6">§6 — What this says about the section</h2>
+    <p>The rule is landing where it was aimed. The nodes that write product write about a quarter of a line of
+      record per product line, well inside the section's target and a long way from the 5.35-line fleet figure
+      the section quotes as its baseline. The target fails only when the population is widened to every node the
+      rule calls small, and the widening is done by the rule's own second arm.</p>
+    <p>Two readings of the done-when are available, and they give opposite answers on the same week:</p>
+    <ul>
+      <li>Over every small node, as the sentence reads, the ratio is 4.5 and the target is not met. The number is
+        dominated by nodes whose denominator is zero.</li>
+      <li>Over small nodes that change product, the ratio is 0.25 and the target is met with a factor of four in
+        hand.</li>
+    </ul>
+    <p>A third option is available to the rule itself: the 300-line arm can be tightened to exclude a node that
+      lands no product line, which removes the denominator-of-zero population rather than averaging over it. That
+      is a change to the rule, not to the measure, and belongs to whoever owns the section.</p>
+
+    <h2 id="s7">§7 — Reproducing it</h2>
+    <p>The population is read from the run store: <code>runs</code> rows completed inside the window, taking
+      <code>base_sha</code>, <code>promoted_revision</code> and the named <code>commits</code> from each payload.
+      Line counts come from <code>git diff --numstat</code> in each project's checkout, and classes from
+      <code>reckon.path_classes.file_class</code>. The two scripts that produce the figures above are
+      <code>smallnode_census.py</code> (per commit) and <code>net_reading.py</code> (net tree diff); both write
+      their JSON beside themselves, under the run directory
+      <code>~/.config/reckon/crew/runs/r-20261103T081947319381-measure-the-smallnode-record-ratio-after-landingline/census/</code>,
+      which also holds the per-node rows the tables are cut from.</p>
+  </main>
+</body>
+</html>
