@@ -25,8 +25,8 @@
   <title>The Codebase Is Reviewed Between Nodes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="74">
-<meta name="plan-modified" content="2026-10-15">
+<meta name="plan-version" content="75">
+<meta name="plan-modified" content="2026-11-03">
 </head>
 <body>
   <main class="plan-doc">
@@ -472,6 +472,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-s11-undeferred-1013" data-who="reckon-build (health-review-1010)" data-when="2026-10-13T05:20:00Z">
     <div class="r-comment-body"><p>Un-deferred. All three promotion-family repairs this section waited on have merged:</p><ul><li>the review-store status check (<code>4262a4480</code>);</li><li>the impl guard's served-figure fixtures (<code>a08b27d49</code>);</li><li>the whole-or-not-at-all worktree release (<code>2e44591a1</code>).</li></ul><p>The promotion family is now stable enough to review in code mode.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261103T083309069188-review-and-treat-the-promotion-code-family" data-who="reckon-build" data-when="2026-11-03T08:56:55.215Z">
+    <div class="r-comment-body"><p>read the stored findings against the promotion family at 12c5565c, found three stale rows the tree has already repaired and one live duplicated capability, proposed a treatment deleting promotion_scope.py&#x27;s _revision_blob in favour of merge.py&#x27;s _blob_id (expected delta -7), and reported the clone census as 26 within the family at both revisions and 787 to 1051 over the default corpus, beside the unreproduced baseline of 107; the stored review is blocked because the crew report root is read-only under this run&#x27;s fence</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261011T032137080650-review-of-dispatch-names-the-health-review" data-who="reckon-build" data-when="2026-10-11T03:27:29.694Z">
     <div class="r-comment-body"><p>§9 — an independent review of run r-20261011T025734864974-dispatch-names-the-health-review is stored as a parsed record scoring goal_fidelity 19, evidence 18, scope_discipline 12, durability 13, fit 18, reuse 5 (total 85) over reviewed_base_sha 6b7a2c631b3c5e38665f5a43b8f3c89f8b51c78e / reviewed_head_sha 29185a66aa6fd6ffad6a7daa6716130e1a78c239, with three follow-on findings (an open-findings helper duplicating plan_review.py:2438, a write outside the declared fence into reckon/crew/dispatch_plan.py, and an untested open_findings count) and no blocking finding.</p></div>
