@@ -91,14 +91,6 @@ _SAFE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 _MAX_RETRY_DELAY_SECONDS = 0.05
 
-# The bound on retrying an index append that lost a race for the store's write
-# lock. A lock held by a concurrent promotion lasts milliseconds, so a few
-# seconds of backoff writes the row that a single attempt would have lost; a
-# store locked past this bound is reported failed and left to the repair pass
-# rather than holding a promotion open.
-_MAX_INDEX_RETRY_SECONDS = 3.0
-_MAX_INDEX_RETRY_DELAY_SECONDS = 0.2
-
 # Backends launched against hardware this operation owns outright rather than
 # a metered API. The harness still emits a total_cost_usd figure computed for
 # whatever model name it was told to speak, but no per-token price was ever
@@ -2515,54 +2507,23 @@ def register_member(
     return entry
 
 
-def _locked_index_error(exc: BaseException) -> bool:
-    """Whether an index write lost a race for the store's write lock.
-
-    SQLite reports a held write lock as ``database is locked`` or, for a table
-    locked inside a transaction, ``database table is locked``. A duplicate-row
-    or malformed-record refusal is never retried: the same write would fail
-    again for the same reason.
-    """
-    if not isinstance(exc, sqlite3.OperationalError):
-        return False
-    message = str(exc).lower()
-    return "locked" in message or "busy" in message
-
-
-def _index_backoff(attempt: int) -> None:
-    """Yield to the writer holding the index lock before the next attempt."""
-    delay = min(_MAX_INDEX_RETRY_DELAY_SECONDS, 0.1 * (2**attempt))
-    time.sleep(random.uniform(delay / 2, delay))  # noqa: S311 - scheduling jitter
-
-
 def _index_append(project: str, record: Mapping[str, Any]) -> dict[str, Any]:
     """Update the rebuildable index after the authoritative file is written.
 
-    A locked store is retried with a bounded backoff, because a lock held by a
-    concurrent promotion lasts milliseconds and the row it costs is invisible
-    until a reader rebuilds the whole index. The bound is wall clock rather
-    than an attempt count, so a store that frees late enough is still written
-    and one that does not frees this promotion to report the failure.
-
-    A failure of any other kind, and a lock outlasting the bound, is returned
-    to promotion without altering the run file or failing its append. Index lag
-    exposes missing rows until a repair pass appends them, or a reader rebuilds
-    the cache from the files.
+    The store retries a locked database with a bounded backoff inside this one
+    call, so a lock held by a concurrent promotion lasts milliseconds and the
+    row it costs is written rather than lost. A lock outlasting that bound, and
+    any other failure, is returned to promotion without altering the run file
+    or failing its append. Index lag exposes missing rows until a repair pass
+    appends them, or a reader rebuilds the cache from the files.
     """
     from reckon import run_store
 
-    deadline = time.monotonic() + _MAX_INDEX_RETRY_SECONDS
-    attempt = 0
-    while True:
-        try:
-            run_store.append(project, dict(record))
-        except Exception as exc:  # noqa: BLE001 — index failure cannot undo the run file
-            if not _locked_index_error(exc) or time.monotonic() >= deadline:
-                return {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
-            _index_backoff(attempt)
-            attempt += 1
-            continue
-        return {"status": "written"}
+    try:
+        run_store.append(project, dict(record))
+    except Exception as exc:  # noqa: BLE001 — index failure cannot undo the run file
+        return {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
+    return {"status": "written"}
 
 
 def unindexed_run_ids(

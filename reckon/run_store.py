@@ -16,7 +16,9 @@ from __future__ import annotations
 import json
 import logging
 import os
+import random
 import sqlite3
+import time
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Self
@@ -120,6 +122,14 @@ _RUN_STORE_ENV = "RECKON_RUN_STORE"
 # spend the whole bound inside the driver's first attempt, so the backoff could
 # never run a second one.
 INDEX_BUSY_TIMEOUT_SECONDS = 0.2
+
+# The bound on retrying an append that lost a race for the store's write lock.
+# A lock held by a concurrent writer lasts milliseconds, so a few seconds of
+# backoff writes the row a single attempt would have lost; a store locked past
+# this bound is raised to the caller and left to the repair pass rather than
+# holding a promotion open.
+INDEX_RETRY_SECONDS = 3.0
+INDEX_RETRY_MAX_DELAY_SECONDS = 0.2
 
 
 def store_path() -> Path:
@@ -592,16 +602,53 @@ class RunStore:
         return self._path
 
 
+def _locked(exc: BaseException) -> bool:
+    """Whether a store write lost a race for the database's write lock.
+
+    SQLite reports a held write lock as ``database is locked`` or, for a table
+    locked inside a transaction, ``database table is locked``. A duplicate-row
+    or malformed-record refusal is never retried: the same write would fail
+    again for the same reason.
+    """
+    if not isinstance(exc, sqlite3.OperationalError):
+        return False
+    message = str(exc).lower()
+    return "locked" in message or "busy" in message
+
+
+def _append_backoff(attempt: int) -> None:
+    """Yield to the writer holding the store lock before the next attempt."""
+    delay = min(INDEX_RETRY_MAX_DELAY_SECONDS, 0.1 * (2**attempt))
+    time.sleep(random.uniform(delay / 2, delay))  # noqa: S311 - scheduling jitter
+
+
 def append(project: str, record: Mapping[str, Any]) -> None:
     """Append one run to the default store, raising on failure.
+
+    A locked store is retried with a backoff bounded by wall clock, because a
+    lock held by a concurrent writer lasts milliseconds and the row it costs is
+    invisible until a reader rebuilds the whole index. The retry lives below
+    this seam, inside one call, so a caller counting appends sees one append per
+    run however many attempts the lock took. A lock outlasting the bound, and a
+    failure of any other kind, is raised.
 
     This is the seam a promotion calls and the seam a test injects a failure
     into: a raising store write is recorded by the caller, never propagated,
     so the committed file row a promotion already wrote stays the durable
     result.
     """
-    with RunStore() as store:
-        store.append(project, record)
+    deadline = time.monotonic() + INDEX_RETRY_SECONDS
+    attempt = 0
+    while True:
+        try:
+            with RunStore() as store:
+                store.append(project, record)
+            return
+        except sqlite3.OperationalError as exc:
+            if not _locked(exc) or time.monotonic() >= deadline:
+                raise
+            _append_backoff(attempt)
+            attempt += 1
 
 
 def runs_for_node(node: str, *, project: str | None = None) -> list[dict[str, Any]]:
