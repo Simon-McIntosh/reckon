@@ -114,6 +114,13 @@ CREATE TABLE IF NOT EXISTS "refusals" (
 # the only cross-host truth.
 _RUN_STORE_ENV = "RECKON_RUN_STORE"
 
+# How long one connection waits on another writer's lock before handing the
+# refusal back. Kept short because the append that opens this connection retries
+# a locked store with its own bounded backoff: a long busy timeout here would
+# spend the whole bound inside the driver's first attempt, so the backoff could
+# never run a second one.
+INDEX_BUSY_TIMEOUT_SECONDS = 0.2
+
 
 def store_path() -> Path:
     """Return the store's SQLite path, resolved in one place.
@@ -203,7 +210,9 @@ class RunStore:
         self._root = Path(root).expanduser().resolve() if root is not None else None
         self._path = Path(path) if path is not None else store_path()
         self._path.parent.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(str(self._path))
+        self._conn = sqlite3.connect(
+            str(self._path), timeout=INDEX_BUSY_TIMEOUT_SECONDS
+        )
         self._create()
 
     def __enter__(self) -> Self:

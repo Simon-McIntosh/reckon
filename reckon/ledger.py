@@ -91,6 +91,14 @@ _SAFE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 _MAX_RETRY_DELAY_SECONDS = 0.05
 
+# The bound on retrying an index append that lost a race for the store's write
+# lock. A lock held by a concurrent promotion lasts milliseconds, so a few
+# seconds of backoff writes the row that a single attempt would have lost; a
+# store locked past this bound is reported failed and left to the repair pass
+# rather than holding a promotion open.
+_MAX_INDEX_RETRY_SECONDS = 3.0
+_MAX_INDEX_RETRY_DELAY_SECONDS = 0.2
+
 # Backends launched against hardware this operation owns outright rather than
 # a metered API. The harness still emits a total_cost_usd figure computed for
 # whatever model name it was told to speak, but no per-token price was ever
@@ -2507,20 +2515,107 @@ def register_member(
     return entry
 
 
+def _locked_index_error(exc: BaseException) -> bool:
+    """Whether an index write lost a race for the store's write lock.
+
+    SQLite reports a held write lock as ``database is locked`` or, for a table
+    locked inside a transaction, ``database table is locked``. A duplicate-row
+    or malformed-record refusal is never retried: the same write would fail
+    again for the same reason.
+    """
+    if not isinstance(exc, sqlite3.OperationalError):
+        return False
+    message = str(exc).lower()
+    return "locked" in message or "busy" in message
+
+
+def _index_backoff(attempt: int) -> None:
+    """Yield to the writer holding the index lock before the next attempt."""
+    delay = min(_MAX_INDEX_RETRY_DELAY_SECONDS, 0.1 * (2**attempt))
+    time.sleep(random.uniform(delay / 2, delay))  # noqa: S311 - scheduling jitter
+
+
 def _index_append(project: str, record: Mapping[str, Any]) -> dict[str, Any]:
     """Update the rebuildable index after the authoritative file is written.
 
-    An index failure is returned to promotion without altering the run file or
-    failing its append. Index lag exposes missing rows until a reader rebuilds
+    A locked store is retried with a bounded backoff, because a lock held by a
+    concurrent promotion lasts milliseconds and the row it costs is invisible
+    until a reader rebuilds the whole index. The bound is wall clock rather
+    than an attempt count, so a store that frees late enough is still written
+    and one that does not frees this promotion to report the failure.
+
+    A failure of any other kind, and a lock outlasting the bound, is returned
+    to promotion without altering the run file or failing its append. Index lag
+    exposes missing rows until a repair pass appends them, or a reader rebuilds
     the cache from the files.
     """
     from reckon import run_store
 
-    try:
-        run_store.append(project, dict(record))
-    except Exception as exc:  # noqa: BLE001 — index failure cannot undo the run file
-        return {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
-    return {"status": "written"}
+    deadline = time.monotonic() + _MAX_INDEX_RETRY_SECONDS
+    attempt = 0
+    while True:
+        try:
+            run_store.append(project, dict(record))
+        except Exception as exc:  # noqa: BLE001 — index failure cannot undo the run file
+            if not _locked_index_error(exc) or time.monotonic() >= deadline:
+                return {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
+            _index_backoff(attempt)
+            attempt += 1
+            continue
+        return {"status": "written"}
+
+
+def unindexed_run_ids(
+    project: str,
+    root: str | Path | None = None,
+) -> list[str]:
+    """Committed run ids the index does not hold, listed without rebuilding it.
+
+    A promotion whose index append reported failed leaves its committed run
+    file behind with no row. This is the listing a repair pass works from: run
+    filenames are read, no payload is decoded, and nothing is written. A
+    missing store answers with no ids, because a cache that does not exist yet
+    is built rather than repaired.
+    """
+    from reckon import run_store
+
+    indexed = run_store.indexed_run_ids(project)
+    if indexed is None:
+        return []
+    paths = _run_files(project, _run_ledger_root(project, root))
+    return sorted({path.stem for path in paths} - indexed)
+
+
+def repair_index(
+    project: str,
+    root: str | Path | None = None,
+) -> dict[str, Any]:
+    """Append index rows for committed runs the index lacks.
+
+    A run promoted with a failed index append does not have to wait for a
+    reader to rebuild the whole index: this appends only the missing rows, so
+    the cost is the lag rather than the corpus. Each row goes through the same
+    bounded retry a promotion uses. Nothing committed is altered; the index is
+    a cache over the run files, and this pass writes it back into step.
+    """
+    ledger_root = _run_ledger_root(project, root)
+    missing = unindexed_run_ids(project, root)
+    appended: list[str] = []
+    failed: list[dict[str, str]] = []
+    for run_id in missing:
+        record = _read_run(run_path(project, run_id, ledger_root))
+        record.pop("store_write", None)
+        outcome = _index_append(project, record)
+        if outcome.get("status") == "written":
+            appended.append(run_id)
+        else:
+            failed.append({"run_id": run_id, "error": str(outcome.get("error"))})
+    return {
+        "project": project,
+        "missing": missing,
+        "appended": appended,
+        "failed": failed,
+    }
 
 
 def _git_stdout(checkout: Path, *args: str) -> str | None:
