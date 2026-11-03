@@ -2591,6 +2591,23 @@ def _composed_plan_review_directory(
     return None, ""
 
 
+def _delivered_report_in(
+    directory: Path, project: str, plan_slug: str
+) -> dict[str, Any] | None:
+    """The delivered report under ``directory``, and whether the store holds it.
+
+    The store joins a delivery by the directory it was written from rather than
+    by the run that launched it, so a report whose ``dispatch.json`` names no
+    run is still stored — by the plan build's pass — under the directory's own
+    name. Reading the delivery back here is what stops a receipt reporting a
+    review as unstored when the store already holds it.
+    """
+    for sidecar in plan_review.delivered_reports(project, plan_slug):
+        if Path(str(sidecar.get("report_path") or "")).parent == directory:
+            return sidecar
+    return None
+
+
 def _plan_review_store_outcome(
     project: str, run_id: str, record: Mapping[str, Any]
 ) -> dict[str, Any] | None:
@@ -2605,9 +2622,12 @@ def _plan_review_store_outcome(
 
     A run that is not a plan review yields ``None``, so its receipt carries no
     such field. A promoting plan review whose composed report names no run —
-    where promotion finds no delivery to join at all — yields the composed
-    directory and the run id it fails to name, which is what a review that
-    never reached the store leaves behind.
+    where promotion finds no delivery to join at all — is read back from the
+    store by its composed directory before anything is said about it: a plan
+    build stores a delivery under the directory it was written from, so such a
+    review may be stored with no run to join. Only when no stored record
+    carries it does the receipt name the composed directory and the run id it
+    fails to name.
     """
     from reckon.crew import recovery
 
@@ -2640,11 +2660,14 @@ def _plan_review_store_outcome(
                 "so promotion never reached the plan-review store"
             ),
         }
+    stored = _delivered_report_in(directory, project, plan_slug)
+    if stored is not None and stored.get("stored"):
+        return {"status": "written"}
     if not named:
         error = (
             f"the composed report directory {directory} names no run id, so "
-            f"promotion could not join it to run {run_id!r} and the review was "
-            "not stored"
+            f"promotion could not join it to run {run_id!r} and no stored "
+            "record carries the review"
         )
     elif named != run_id:
         error = (
