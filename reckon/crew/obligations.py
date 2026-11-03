@@ -172,6 +172,14 @@ STALLED_RUN_DUTY_KIND = "run-stalled"
 # discard of the run.
 PRODUCER_GONE_DUTY_KIND = "run-producer-gone"
 
+# A request waiting on a run no project holds: the landing that would release
+# it can never be read, so no admission pass will ever end the wait. It is its
+# own kind rather than a waiting reading, because a coordinator shown "waiting
+# upstream" for it waits for something that will not happen. Unlike a queued or
+# stalled row it holds a turn open: only the session can fix the ref or drop
+# the request.
+WAIT_UNRESOLVABLE_DUTY_KIND = "wait-unresolvable"
+
 # The duty kinds that are listed but never hold a stop open: the work behind
 # them is already owned by a reflex that retries, so blocking would ask the
 # coordinator to act on a wait it cannot shorten.
@@ -1784,6 +1792,36 @@ def _obligations_view(
                 "age_seconds": int((now - started).total_seconds()),
                 "reason": str(hold.get("reason") or ""),
                 "next_command": f"reckon crew queue release --run {run_id}",
+            }
+        )
+    # A request waiting on a run no project holds is listed under its own kind
+    # rather than as a waiting row: the admission pass records the reason on
+    # the pointer, and no pass will ever clear it. The wait itself is read from
+    # the pass's own obligation record, so this view cannot disagree with the
+    # reading that failed to resolve it.
+    for pointer in live_pointers:
+        details = queue_admission.unresolvable_wait_obligations(pointer)
+        if not details:
+            continue
+        if str(pointer.get("session") or "") != session:
+            continue
+        run_id = str(pointer.get("run_id") or "")
+        started = parse_utc(pointer.get("waits_at") or pointer.get("created_at"))
+        items.append(
+            {
+                "kind": WAIT_UNRESOLVABLE_DUTY_KIND,
+                "run_id": run_id,
+                "node": str((pointer.get("node") or {}).get("id") or ""),
+                "plan": str(
+                    pointer.get("plan") or (pointer.get("node") or {}).get("plan") or ""
+                ),
+                "age_seconds": (int((now - started).total_seconds()) if started else 0),
+                "reason": details[0],
+                "next_command": (
+                    f"fix the wait or drop the request: no project holds the run "
+                    f"this request waits on, so it can never be released while "
+                    f"the ref stands (reckon crew discard --run {run_id})"
+                ),
             }
         )
     # Requests an admission pass held because a plan unit they read carries no
