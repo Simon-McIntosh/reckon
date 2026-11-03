@@ -1681,6 +1681,7 @@ def _spawn_worker_retrying_a_vanished_bind(
     argv: Iterable[str],
     stderr_path: Path,
     log_path: Path | None = None,
+    on_spawn: Callable[[subprocess.Popen], None] | None = None,
 ) -> subprocess.Popen:
     """Spawn a worker, retrying while the fence's own bind source is missing.
 
@@ -1696,9 +1697,18 @@ def _spawn_worker_retrying_a_vanished_bind(
     is left running, not collected as a failure at the window's end.
     A spawn that failed for any other reason is returned at once for its caller
     to record as the launch failure it is.
+
+    ``on_spawn`` is called with each successfully started process as soon as it
+    exists, before the startup watch runs out its window. The worker a stop, a
+    recovery sweep or any other reader reaches is the one the run's worker
+    record names, so that record must be written while the worker is still
+    inside the watch rather than after it — a worker whose whole life is shorter
+    than the window would otherwise be recorded only once it is already gone.
     """
     started = time.monotonic()
     process = attempt()
+    if on_spawn is not None:
+        on_spawn(process)
     tries = 1
     limit = max(1, _backends.PROTECTED_BIND_WAIT_ATTEMPTS)
     while tries < limit and _died_over_a_vanished_bind_source(
@@ -1716,6 +1726,8 @@ def _spawn_worker_retrying_a_vanished_bind(
         tries += 1
         started = time.monotonic()
         process = attempt()
+        if on_spawn is not None:
+            on_spawn(process)
     return process
 
 
@@ -2659,12 +2671,82 @@ def _launch_failure_detail(exc: BaseException, spec: Mapping[str, Any]) -> str:
     return base
 
 
+def _worker_record_payload(
+    spec: Mapping[str, Any],
+    *,
+    pid: int,
+    attempt: int,
+    launched_at: str,
+    registered_at: str,
+) -> dict[str, Any]:
+    """The fields a run's worker record carries, composed in one place.
+
+    Two sites write this record — the spawn retry, as each try starts, and the
+    supervisor, once the spawn has returned — and a reader of the run directory
+    cannot tell which wrote the copy it reads. Composing the fields here is what
+    keeps the two from naming different things about the same worker.
+    """
+    return {
+        "run_id": str(spec.get("run_id") or ""),
+        "attempt": attempt,
+        "pid": pid,
+        "pid_start_time": _process_start_time(pid),
+        "launched_at": launched_at,
+        "claim_registered_at": registered_at,
+        "backend": str(spec["plan"].get("backend") or ""),
+        "argv": list(spec["plan"].get("argv") or ()),
+    }
+
+
+def _worker_record_writer(
+    spec: Mapping[str, Any],
+) -> Callable[[subprocess.Popen], None] | None:
+    """The writer that records the worker a spawn has just started.
+
+    Called by the spawn retry as each try begins, so the run directory names its
+    worker as soon as the worker exists instead of after the startup watch has
+    run out its window.
+
+    None when the spec names no run directory: a caller that reaches the spawn
+    seam without a run to record into has nowhere to put the record, and the
+    record belongs to a run, not to a spawn.
+    """
+    if not spec.get("run_directory"):
+        return None
+    run_directory = Path(str(spec["run_directory"]))
+    run_id = str(spec.get("run_id") or "")
+    attempt = int(spec.get("attempt") or 1)
+    launched_at = str(spec.get("launched_at") or "")
+    registered_at = _claim_registration_for_worker(run_directory, run_id)
+
+    def record(process: subprocess.Popen) -> None:
+        _write_attempt_artifact(
+            run_directory,
+            WORKER_RECORD_NAME,
+            _worker_record_payload(
+                spec,
+                pid=process.pid,
+                attempt=attempt,
+                launched_at=launched_at,
+                registered_at=registered_at,
+            ),
+            attempt=attempt,
+        )
+
+    return record
+
+
 def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
     """Spawn the worker inside the supervisor's own process group.
 
     The answer names the pid and, when the spawn retry's startup poll already
     collected the worker's exit, carries that exit — as an ``_WorkerPid`` — so
     the supervisor writes it instead of waiting on a pid that has been reaped.
+
+    The run's worker record is written here, as each try starts, rather than by
+    the caller after this returns: the startup watch can hold a launch for its
+    whole window, and the record is what a stop, a recovery sweep or any other
+    reader reaches the worker through.
     """
     plan = spec["plan"]
     run_id = str(spec["run_id"])
@@ -2724,6 +2806,7 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
         argv=argv,
         stderr_path=Path(str(spec["stderr_path"])),
         log_path=Path(str(spec["log_path"])),
+        on_spawn=_worker_record_writer(spec),
     )
     # A poll of a child that has already exited collects its status, and the
     # retry's startup check is such a poll. The status is carried on the pid
@@ -3708,6 +3791,10 @@ def _run_supervisor(spec_path: Path) -> int:
     stop_requested = _record_stop_before_spawn()
     _supervisor_tree_snapshot(spec)
     launched_at = _utc_now()
+    # The spawner writes the worker record as the worker starts, before the
+    # startup watch can hold the launch, so it takes this attempt's launch time
+    # from the spec rather than recomputing one after the watch has returned.
+    spec["launched_at"] = launched_at
     if stop_requested.is_set():
         # The stop arrived while the snapshot ran, before any worker existed,
         # so none is spawned and the launch is over before it began.
@@ -3772,16 +3859,13 @@ def _run_supervisor(spec_path: Path) -> int:
     _write_attempt_artifact(
         run_directory,
         WORKER_RECORD_NAME,
-        {
-            "run_id": str(spec.get("run_id") or ""),
-            "attempt": attempt,
-            "pid": pid,
-            "pid_start_time": _process_start_time(pid),
-            "launched_at": launched_at,
-            "claim_registered_at": registered_at,
-            "backend": str(spec["plan"].get("backend") or ""),
-            "argv": list(spec["plan"].get("argv") or ()),
-        },
+        _worker_record_payload(
+            spec,
+            pid=pid,
+            attempt=attempt,
+            launched_at=launched_at,
+            registered_at=registered_at,
+        ),
         attempt=attempt,
     )
     if attempt == 1 and registered_at:
