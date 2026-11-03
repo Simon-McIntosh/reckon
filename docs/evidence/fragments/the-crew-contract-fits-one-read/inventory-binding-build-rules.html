@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="inventory-binding-build-rules">
+  <meta name="plan-title" content="Binding build rules — inventory node record">
+  <meta name="plan-summary" content="Every binding sentence in the reckon-build skill and its eleven reference files carries one row in the cumulative inventory, with its enforcement, its still-wanted verdict and its disposition.">
+  <meta name="plan-evidence-for" content="the-crew-contract-fits-one-read">
+  <meta name="plan-verifies" content="the-crew-contract-fits-one-read#s2">
+  <title>Binding build rules — inventory node record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>Binding build rules — inventory node record</h1>
+
+  <section id="inventory-binding-build-rules-scope">
+   <h2>§1 — Scope and counts</h2>
+   <p>The inventory covers <code>skills/reckon-build/SKILL.md</code> and every file under
+   <code>skills/reckon-build/references/</code>: nine reference files plus the two under
+   <code>references/orchestrator-harness/</code>. The plan named eight references on
+   2026-09-26; <code>coordinator-reference.md</code> was added on 2026-10-04 and the
+   harness directory carries two files, so the corpus is twelve files today. Every one
+   is inventoried.</p>
+   <table>
+    <thead><tr><th id="inventory-binding-build-rules-measure">Measure</th><th>Value</th></tr></thead>
+    <tbody>
+     <tr><td>Total prose sentences</td><td>1917</td></tr>
+     <tr><td>Binding sentences, one row each</td><td>681</td></tr>
+     <tr><td>Marked enforced, each citing a test that fires its guard</td><td>21</td></tr>
+     <tr><td>Delete as enforced</td><td>21</td></tr>
+     <tr><td>Delete as obsolete</td><td>4</td></tr>
+     <tr><td>Keep</td><td>656</td></tr>
+    </tbody>
+   </table>
+   <p>The statement of scope is the ratio: 681 of 1917 prose sentences are binding, so
+   roughly one sentence in three states a rule.</p>
+  </section>
+
+  <section id="inventory-binding-build-rules-enforcement">
+   <h2>§2 — Enforcement evidence</h2>
+   <p>Twenty-one rows name a production refusal or check, and each carries the test that
+   drives the guarded action far enough to make it fire. Those tests were run at the base
+   revision on failure 2026-11-03, one log per test under the run directory
+   <code>logs/enforced/</code>, and every run exited 0:</p>
+   <ul>
+    <li><code>test_a_context_refusal_names_the_window.py</code> — the context-window refusal names the window it exceeded (3 passed).</li>
+    <li><code>test_a_scope_refusal_names_the_paths_it_parsed.py</code> — dispatch refuses containing or contained path claims (4 passed).</li>
+    <li><code>test_crew_refusal_visibility.py</code> — <code>member-in-flight</code> is visible as a refusal (34 passed).</li>
+    <li><code>test_the_ledger_writer_refuses_a_fold.py</code> — a fold recorded as a followup is refused (10 passed).</li>
+    <li><code>test_a_followup_that_hides_work_is_refused.py</code> — a plan cannot close over a foldable followup (6 passed).</li>
+    <li><code>test_a_queued_run_is_never_told_to_redispatch.py</code> — a queued run keeps its id and its place (5 passed).</li>
+    <li><code>test_a_full_queue_is_a_wait_not_a_refusal.py</code> — the queue bound is a wait, named as a refusal where it fires (8 passed).</li>
+    <li><code>test_crew_ack.py</code> — the Stop hook refuses while an obligation is unacknowledged (4 passed).</li>
+    <li><code>test_manifest_parse_format.py</code> — a status word outside the vocabulary is refused (104 passed).</li>
+   </ul>
+  </section>
+
+  <section id="inventory-binding-build-rules-negative-control">
+   <h2>§3 — Negative control</h2>
+   <p>The render refuses to write the page when an enforced row names a test whose log
+   cannot be opened, so a row cannot claim enforcement it cannot point at. Run against a
+   copy with <code>logs/enforced/test_crew_ack.log</code> moved aside, it exited 2 and
+   named the three rows that had lost their evidence — <code>SKILL.md:618</code>,
+   <code>coordinator-reference.md:748</code> and
+   <code>orchestrator-harness/claude-code.md:337</code>. The log is
+   <code>logs/negative-control.log</code> in the run directory.</p>
+  </section>
+ </main>
+</body>
+</html>
