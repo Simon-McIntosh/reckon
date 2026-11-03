@@ -10,5 +10,10 @@ in both the covered walk and the revalidation, and memoises one covered-tree val
 <code>read_plan(view="summary")</code> stats 65 distinct paths and validates the covered tree once;
 <code>edit_plan</code>, <code>roadmap</code> and <code>audit</code> once each; <code>crew(view="live")</code> zero.
 The base arm (no boundary scope, state records back in the walk) reaches about 2,050 distinct paths.
-Six of the seven done-when cases pass; the review-store change case is open (see the manifest).</p>
+All seven done-when cases pass. The review-store case stores its record through
+<code>crew.plan_review.store_plan_review</code> against a temporary crew home and then sees it change
+<code>edit_plan</code>'s <code>review_owed</code>, asserting the real crew home is untouched. Each declared
+negative control ran red against this head and was reverted: entering the scopes in the async wrapper fails the
+first case, restoring the state records to the covered walk fails the first case, and skipping every
+<code>INFRA_DIRS</code> directory including <code>figures</code> fails the third.</p>
 </section>
