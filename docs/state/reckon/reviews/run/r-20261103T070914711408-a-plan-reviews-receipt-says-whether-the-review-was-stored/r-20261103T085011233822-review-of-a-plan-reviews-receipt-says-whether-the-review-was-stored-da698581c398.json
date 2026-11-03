@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/promotion.py:_complete_locked",
+    "reckon/crew_run_commands.py:crew_complete",
+    "reckon/crew_dispatch_commands.py:_emit_crew_result"
+  ],
+  "completed_at": "2026-11-03T09:13:35.762Z",
+  "dispatched_at": "2026-11-03T09:04:36Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_checks.py",
+      "id": "fc58680b422",
+      "line": 2646,
+      "severity": "non-blocking",
+      "text": "the no-join branch states 'the review was not stored' from promotion's failed join alone, but plan_review.store_delivered_reviews (reckon/crew/plan_review.py:4376) stores every delivered report through its directory regardless of dispatch.json's run id, so a report composed with run_id null that an earlier plan-build pass stored reads as not stored on the receipt"
+    },
+    {
+      "file": "tests/test_plan_review_store_receipt.py",
+      "id": "f378e8398be",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the only guard for the new field is the un-landed test in the run's scratch directory, /tmp/reckon-crew-scratch/r-20261103T070914711408-.../measure/test_plan_review_store_receipt.py, and no file of that name exists in the repository, so no committed test fails if the field regresses and the guard dies with the node's /tmp"
+    },
+    {
+      "file": "docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-plan-reviews-receipt-says-whether-the-review-was-stored.html",
+      "id": "f0a9a9ac153",
+      "line": 27,
+      "severity": "non-blocking",
+      "text": "the base-red claim quotes logs/base.log, which ran a five-case earlier draft at 08:29 including test_a_joined_report_reads_written_across_a_second_promotion, while the delivered test holds four cases and was copied into both arms at 08:57; the KeyError outcome is certain from the base arm lacking the field, but the cited red log does not correspond to the delivered test"
+    }
+  ],
+  "items": {
+    "diff": "read commit by commit from 4da2af6c05 to da698581c3: 31ab20badf adds _composed_plan_review_directory, _plan_review_store_outcome and the receipt attachment, and da698581c3 adds the evidence fragment; nothing else changed.",
+    "done_when": "the done_when names a test in a temporary home plus no added failing id against a base arm; the manifest records both arms and their logs, and the head log reports 2 failed, 758 passed with the four added cases in the head-only population.",
+    "goal": "the node's goal is that a plan review's promotion receipt says whether its review was stored; reckon/crew/promotion_checks.py:2614 _plan_review_store_outcome and reckon/crew/promotion.py:1845 attach that field, read back off the delivery the store recorded.",
+    "manifest": "read; it records status complete, both gate arms with their logs, no added failing id, 0 added failures, and per-dimension rubric lines.",
+    "write_paths": "the manifest declares reckon/crew/promotion.py, reckon/crew/promotion_checks.py and the evidence fragment; every path in the three-file diff is one of the first three declared and the fourth declared path is untouched."
+  },
+  "justifications": {
+    "durability": "the four assertions in the scratch test_plan_review_store_receipt.py each redden on a real regression (dropping the field raises KeyError; dropping the store read makes the refused case read written), but no test file exists in reckon/tests that runs them, so nothing in the repository fails if this change regresses.",
+    "evidence": "the evaluated gates are recorded, not claimed: /tmp/reckon-crew-scratch/r-20261103T070914711408-a-plan-reviews-receipt-says-whether-the-review-was-stored/logs/gate-head.log opens with its revision, tree, module and command and ends EXIT=1, and its failure ids are a strict subset of the base arm's, but the base-red negative control in logs/base.log predates the delivered test file.",
+    "fit": "reckon/crew/promotion_checks.py:2585 follows the module's private-helper and docstring idiom beside _plan_review_record_for_promoting_run, and promotion.py:1843-1846 attaches the field where the receipt is assembled; no plan, sprint or ticket identifier appears in the diff.",
+    "goal_fidelity": "reckon/crew/promotion_checks.py:2621-2632 reads written off the stored delivery and the refusal reason off its sidecar, but the no-join branch at reckon/crew/promotion_checks.py:2643 states the review was not stored from a failed join alone, which plan_review.py:4376 makes possibly false.",
+    "reuse": "the addition reuses _delivered_plan_review_for_run, _plan_review_crew_run_id and _plan_review_report_root rather than opening a second path into the store; its write-path resolution at promotion_checks.py:2577 answers the no-join case the existing run-id scan at promotion_checks.py:2694 cannot.",
+    "scope_discipline": "every path in `git diff --stat 4da2af6c05..da698581c3` is inside the declared write paths, and the fourth declared path (docs/figures/) carries nothing."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a plan review's promotion receipt says whether the review was stored; reckon/crew/promotion_checks.py:2614 _plan_review_store_outcome computes it and reckon/crew/promotion.py:1845 attaches it to the receipt.\nVERDICT done_when: the done_when asks for a temporary-home test plus no added failing id against a base arm; the manifest records both arms by log path and the head log holds 2 failed, 758 passed with the four added cases present only in the head arm.\nVERDICT write_paths: the manifest declares three source/doc paths plus a figures directory; `git diff --stat 4da2af6c05..da698581c3` touches only the first three, and the figures path is untouched.\nVERDICT manifest: read; it records status complete, baseline_suite and after_suite with log paths and failure ids, 0 added failures, and a rubric line per dimension.\nVERDICT diff: read commit by commit; 31ab20badf adds the two helpers and the receipt attachment, da698581c3 adds the evidence fragment, and no other file changes.\nCALL_SITES: reckon/crew/promotion.py:_complete_locked, reckon/crew_run_commands.py:crew_complete, reckon/crew_dispatch_commands.py:_emit_crew_result\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_checks.py:2621-2632 reports written and the store's refusal reason correctly, but the no-join branch at reckon/crew/promotion_checks.py:2643-2648 can say 'the review was not stored' about a review an earlier store pass wrote.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate-head.log and gate-base.log carry revision, tree, module, command and a bare EXIT= line, and the head ids are a strict subset of the base ids, but the base-red control cited in the evidence fragment comes from a log of an earlier test draft.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in `git diff --stat 4da2af6c05..da698581c3` is inside the declared write paths and no companion file was touched.\nSCORE durability: 10\nJUSTIFICATION durability: the four assertions in the scratch tests/test_plan_review_store_receipt.py each name a regression that reddens them, but that file is not committed, so reckon/tests holds no test that fails if the field regresses.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/promotion_checks.py:2585 follows the module's private-helper idiom and docstring style, and no plan or ticket identifier enters the diff.\nSCORE reuse: 17\nJUSTIFICATION reuse: reckon/crew/promotion_checks.py:2621 reuses _delivered_plan_review_for_run and the plan-review path helpers instead of a second store reader, and its write-path lookup serves the no-join case the existing run-id scan at promotion_checks.py:2694 cannot.\nFINDING reckon/crew/promotion_checks.py:2646 non-blocking: the no-join branch reports 'the review was not stored' from the failed join alone while plan_review.py:4376 stores delivered reports by directory regardless of dispatch.json's run id, so a stored review can be reported unstored.\nFINDING tests/test_plan_review_store_receipt.py:1 non-blocking: the only guard is the un-landed scratch test, so nothing in the repository fails if the new field regresses.\nFINDING docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-plan-reviews-receipt-says-whether-the-review-was-stored.html:27 non-blocking: the base-red evidence cites a log of an earlier five-case test draft rather than the delivered four-case test.\n",
+  "review_run_id": "r-20261103T085011233822-review-of-a-plan-reviews-receipt-says-whether-the-review-was-stored-da698581c398",
+  "reviewed_base_sha": "4da2af6c05a3b143bc2b8001c354ee23e4492e12",
+  "reviewed_head_sha": "da698581c3980e57610010dde7cb53e97d11521c",
+  "reviewed_run_id": "r-20261103T070914711408-a-plan-reviews-receipt-says-whether-the-review-was-stored",
+  "scores": {
+    "durability": 10,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T10:14:56.263247+00:00",
+  "total": 94
+}
