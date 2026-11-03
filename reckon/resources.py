@@ -760,7 +760,9 @@ def _resolve_canonical(
         return None
     archived_values = (False, True) if include_archived else (False,)
     candidates = [
-        _canonical_resource_at(docs_dir, project, artifact_type, slug, archived=archived)
+        _canonical_resource_at(
+            docs_dir, project, artifact_type, slug, archived=archived
+        )
         for artifact_type in types
         for archived in archived_values
     ]
