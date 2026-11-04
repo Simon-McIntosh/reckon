@@ -2514,8 +2514,9 @@ def _index_append(project: str, record: Mapping[str, Any]) -> dict[str, Any]:
     call, so a lock held by a concurrent promotion lasts milliseconds and the
     row it costs is written rather than lost. A lock outlasting that bound, and
     any other failure, is returned to promotion without altering the run file
-    or failing its append. Index lag exposes missing rows until a repair pass
-    appends them, or a reader rebuilds the cache from the files.
+    or failing its append. Index lag exposes missing rows until
+    ``run_store.import_ledger`` — the repair pass the promotion gate already
+    runs — inserts them, or a reader rebuilds the cache from the files.
     """
     from reckon import run_store
 
@@ -2524,59 +2525,6 @@ def _index_append(project: str, record: Mapping[str, Any]) -> dict[str, Any]:
     except Exception as exc:  # noqa: BLE001 — index failure cannot undo the run file
         return {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
     return {"status": "written"}
-
-
-def unindexed_run_ids(
-    project: str,
-    root: str | Path | None = None,
-) -> list[str]:
-    """Committed run ids the index does not hold, listed without rebuilding it.
-
-    A promotion whose index append reported failed leaves its committed run
-    file behind with no row. This is the listing a repair pass works from: run
-    filenames are read, no payload is decoded, and nothing is written. A
-    missing store answers with no ids, because a cache that does not exist yet
-    is built rather than repaired.
-    """
-    from reckon import run_store
-
-    indexed = run_store.indexed_run_ids(project)
-    if indexed is None:
-        return []
-    paths = _run_files(project, _run_ledger_root(project, root))
-    return sorted({path.stem for path in paths} - indexed)
-
-
-def repair_index(
-    project: str,
-    root: str | Path | None = None,
-) -> dict[str, Any]:
-    """Append index rows for committed runs the index lacks.
-
-    A run promoted with a failed index append does not have to wait for a
-    reader to rebuild the whole index: this appends only the missing rows, so
-    the cost is the lag rather than the corpus. Each row goes through the same
-    bounded retry a promotion uses. Nothing committed is altered; the index is
-    a cache over the run files, and this pass writes it back into step.
-    """
-    ledger_root = _run_ledger_root(project, root)
-    missing = unindexed_run_ids(project, root)
-    appended: list[str] = []
-    failed: list[dict[str, str]] = []
-    for run_id in missing:
-        record = _read_run(run_path(project, run_id, ledger_root))
-        record.pop("store_write", None)
-        outcome = _index_append(project, record)
-        if outcome.get("status") == "written":
-            appended.append(run_id)
-        else:
-            failed.append({"run_id": run_id, "error": str(outcome.get("error"))})
-    return {
-        "project": project,
-        "missing": missing,
-        "appended": appended,
-        "failed": failed,
-    }
 
 
 def _git_stdout(checkout: Path, *args: str) -> str | None:
