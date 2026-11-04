@@ -224,6 +224,21 @@ def test_a_worker_lanes_reset_claims_nothing_about_orchestrator_sessions():
         assert "orchestrator" not in rendered, rendered
 
 
+def test_the_reset_rows_words_start_at_one_column_whatever_the_group_is():
+    """The group sits in the job column, so the rest of the line keeps its place.
+
+    A worker lane's group and the orchestrator wallet's group are different
+    lengths. A job cell sized by its own text would carry everything after it
+    along with that length, so no two reset rows would line up with each other
+    or with the fleet rows above them.
+    """
+    starts = {
+        group: ticker.Ticker(width=WIDE).render(_reset(group)).index("limits reset")
+        for group in (GROUP, LANE_GROUP)
+    }
+    assert len(set(starts.values())) == 1, starts
+
+
 def test_a_config_declaring_no_group_names_no_lane(tmp_path: Path, monkeypatch):
     """With no wallet declared, the row claims no lane and no orchestrator.
 
