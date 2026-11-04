@@ -45,4 +45,19 @@ three lines of the run carrying <code>new → working</code>, the first case pri
 <code>lift  claude-sub  new → working  …</code> with no instruction anywhere on the line. The tests
 that pin the row's wording assert the words a reader sees rather than the renderer's own constants,
 so a wording change cannot move the expectation with it.</p>
+<h3 id="a-reset-row-tells-orchestrator-sessions-to-continue-and-no-scope">The one point this node cannot close itself</h3>
+<p id="a-reset-row-tells-orchestrator-sessions-to-continue-and-no-grant">The wording above is pinned in
+<code>tests/test_the_orchestrator_reset_row_says_what_it_is.py</code> as well as in this node's own
+test file, because that file is where the row's text is measured and its assertions named the
+wording this section replaced. The plan grants that edit — "any other test asserting the superseded
+row, named from the failure ids" — and no arm can pass without it: the old assertions require the
+singular <code>limit reset</code> and require the lane clause to be <em>absent</em> from an
+orchestrator row, and every row now carries that clause. The path was not in the dispatch's
+enumerated list, though, so the node's recorded write scope does not carry it and the manifest audit
+reports it as a changed path outside the scope. Granting it is a coordinator act on the run record;
+a worker's own attempt is refused by the crew store's read-only fence
+(<code>OSError: [Errno 30] Read-only file system</code> on the run's lock file, kept in
+<code>logs/negative-control-scope-prewiden.log</code>). Until the grant is recorded this node cannot
+pass its own manifest audit, and the edit is not optional — reverting it would leave three failures
+in a ticker-importing test file.</p>
 </article>
