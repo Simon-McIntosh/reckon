@@ -187,8 +187,7 @@ def _assert_current_attempt(
     return worker
 
 
-def test_a_supervisor_confirming_one_worker_keeps_one_attempt(tmp_path: Path) -> None:
-    directory = tmp_path / "run"
+def _assert_duplicate_worker_confirmation_keeps_one_attempt(directory: Path) -> None:
     directory.mkdir()
     (directory / "attempt.json").write_text(
         json.dumps({"attempt": 2}), encoding="utf-8"
@@ -202,6 +201,10 @@ def test_a_supervisor_confirming_one_worker_keeps_one_attempt(tmp_path: Path) ->
     assert sorted(path.name for path in directory.glob("attempt-*-worker.json")) == [
         "attempt-2-worker.json"
     ]
+
+
+def test_duplicate_worker_confirmation_keeps_one_attempt(tmp_path: Path) -> None:
+    _assert_duplicate_worker_confirmation_keeps_one_attempt(tmp_path / "run")
 
 
 def test_supervisor_confirmation_rejects_a_missing_worker(
@@ -278,6 +281,7 @@ def test_crew_resume_keeps_the_harness_behind_a_supervisor(
         assert exit_record["signal_name"] == "SIGKILL"
     finally:
         _stop_group(supervisor_pid)
+    _assert_duplicate_worker_confirmation_keeps_one_attempt(tmp_path / "receipt")
 
 
 def test_a_second_resume_records_the_third_attempt(
@@ -464,3 +468,4 @@ def test_crew_redispatch_keeps_the_harness_behind_a_supervisor(
         _kill_worker_and_read_exit(directory, int(worker["pid"]))
     finally:
         _stop_group(supervisor_pid)
+    _assert_duplicate_worker_confirmation_keeps_one_attempt(tmp_path / "receipt")
