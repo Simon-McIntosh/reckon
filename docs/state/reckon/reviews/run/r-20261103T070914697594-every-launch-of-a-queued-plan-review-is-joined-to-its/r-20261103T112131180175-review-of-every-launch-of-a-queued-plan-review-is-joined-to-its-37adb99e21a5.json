@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:_launch_queued",
+    "reckon/crew/dispatch.py:_launch_yielded_queued_request",
+    "reckon/crew/queue_admission.py:_await_moved_launch",
+    "reckon/crew/queue_admission.py:admit_once",
+    "reckon/crew/recovery_review_dispatch.py:join_admitted_plan_review"
+  ],
+  "completed_at": "2026-11-03T11:37:02.376Z",
+  "dispatched_at": "2026-11-03T11:29:56Z",
+  "findings": [
+    {
+      "file": "tests/test_every_launch_joins_the_composed_sidecar.py",
+      "line": "275",
+      "severity": "non-blocking",
+      "text": "non-blocking: the queued-record case is never shown red in the record \u2014 base-gate.log runs it at 4da2af6, where the funnel held no join at all, and negative-control.log removes the join entirely, so both runs leave it green; the gate added in 7e5dc1ea (join only an accepted launched record) has no recorded failing run, and the delta's base arm is the run base rather than the previously reviewed head ab617767 where the case would actually fail."
+    },
+    {
+      "file": "tests/test_every_launch_joins_the_composed_sidecar.py",
+      "line": "67",
+      "severity": "non-blocking",
+      "text": "non-blocking: the `project` fixture and `_compose_while_held` at :104 copy tests/test_a_queued_plan_review_is_stored.py:57-134 nearly verbatim instead of sharing the setup; four modules already carry this scaffolding by local idiom, so it fits the repo's habit, but the copy is what the clone detector reads at promotion."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T070914697594-every-launch-of-a-queued-plan-review-is-joined-to-its/manifest.md",
+      "line": "3",
+      "severity": "non-blocking",
+      "text": "non-blocking: write_paths omits tests/test_every_launch_joins_the_composed_sidecar.py, which the landed delta commits and resume-1-advice.txt grants, so the record and the tree disagree about the scope the node ran under."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Read commit by commit: 7e5dc1ea7a adds the 294-line guard test and replaces the `isinstance(launched, Mapping)` gate in `_launch_queued` with a `_require_launched_record` check; 37adb99e21 updates only the evidence fragment, whose cited lines at :319, :363-368, :4198/:4204, :463/:464 and dispatch.py:519 all resolve in the committed blob.",
+    "done_when": "The done_when asks one test per launch path, the store at promotion, a red negative control, base and head arms with `pytest -n 8`, and scoped ruff; the module's four cases cover the three paths plus a queued record, and logs/head-gate.log, logs/base-gate.log, logs/negative-control.log and logs/flake-check.log record the arms.",
+    "goal": "The source node's goal for this delta is to make every launch of a queued plan review join its composed sidecar and to keep that guard in the repository; reckon/crew/queue_admission.py:362 resolves the join only for a record `_require_launched_record` accepts, and tests/test_every_launch_joins_the_composed_sidecar.py now holds the guard.",
+    "manifest": "Read; it states status complete, the five commits, base 4 failed/625 passed against head 3 failed/626 passed, the negative-control path, and records the one head-only failure and its alone-runs under outside_scope.",
+    "write_paths": "The source manifest's write_paths at manifest.md:3 lists queue_admission.py, recovery_review_dispatch.py, the evidence fragment and a figures directory; the delta also commits tests/test_every_launch_joins_the_composed_sidecar.py, which resume-1-advice.txt explicitly grants, but the manifest line was not updated."
+  },
+  "justifications": {
+    "durability": "tests/test_every_launch_joins_the_composed_sidecar.py:228 and :244 redden when the join is removed from the funnel, as logs/negative-control.log records, and the module passes 4 of 4 on a review rerun at the head arm.",
+    "evidence": "logs/base-gate.log ends `4 failed, 625 passed` and logs/head-gate.log `3 failed, 626 passed` over the same file set, so added failures read 0 from the receipts; the one head-only id passes alone on both arms in logs/flake-check.log.",
+    "fit": "the change keeps the module's own comment idiom at reckon/crew/queue_admission.py:357-361, reuses the already-imported contextlib and CrewError, and `ruff check` and `ruff format --check` report no finding on either changed file.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:362-368 gates the join on `_require_launched_record` and the delta commits the guard at tests/test_every_launch_joins_the_composed_sidecar.py, which is exactly what the resume scope asked for.",
+    "reuse": "the join reuses recovery_review_dispatch.join_admitted_plan_review and queue_admission._require_launched_record rather than adding a validator or writer, though the new module's fixture at :67 copies tests/test_a_queued_plan_review_is_stored.py:57 near verbatim.",
+    "scope_discipline": "every path in `git diff --stat ab617767..37adb99e` is a declared or separately granted one (tests/ was added by resume-1-advice.txt), and the manifest's write_paths line was never updated to include it."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the delta's goal is that every launch of a queued plan review joins its composed sidecar and that the guard lives in the repository; reckon/crew/queue_admission.py:362 now resolves the join only for a record `_require_launched_record` accepts, and tests/test_every_launch_joins_the_composed_sidecar.py holds the guard.\nVERDICT done_when: the done_when asks a test per launch path, the store at promotion, a red negative control and base/head arms; the module's four cases cover the three paths plus a queued record, and logs/base-gate.log, logs/head-gate.log, logs/negative-control.log and logs/flake-check.log record the arms.\nVERDICT write_paths: manifest.md:3 lists queue_admission.py, recovery_review_dispatch.py, the evidence fragment and a figures directory; the delta also commits tests/test_every_launch_joins_the_composed_sidecar.py, granted by resume-1-advice.txt but absent from that line.\nVERDICT manifest: read; it states complete, five commits, base 4 failed/625 passed against head 3 failed/626 passed, the negative-control path, and the head-only failure with its alone-runs.\nVERDICT diff: read commit by commit against ab617767: 7e5dc1ea7a adds the guard test and gates the join on `_require_launched_record`; 37adb99e21 updates only the evidence fragment, whose cited lines all resolve in the committed blob.\nCALL_SITES: reckon/crew/queue_admission.py:_launch_queued, reckon/crew/dispatch.py:_launch_yielded_queued_request, reckon/crew/queue_admission.py:_await_moved_launch, reckon/crew/queue_admission.py:admit_once, reckon/crew/recovery_review_dispatch.py:join_admitted_plan_review\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:362-368 gates the join on `_require_launched_record` and the guard test is now committed at tests/test_every_launch_joins_the_composed_sidecar.py, which is the delta the resume scope asked for.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/base-gate.log ends `4 failed, 625 passed` and logs/head-gate.log `3 failed, 626 passed`, so added failures read 0 from the receipts; the one head-only id passes alone on both arms in logs/flake-check.log.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in `git diff --stat ab617767..37adb99e` is a declared or separately granted one, and tests/ enters only through resume-1-advice.txt while manifest.md:3 still omits it.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_every_launch_joins_the_composed_sidecar.py:228 and :244 redden when the join is removed from the funnel, as logs/negative-control.log records, and the module passes 4 of 4 on a review rerun at the head arm.\nSCORE fit: 19\nJUSTIFICATION fit: the change keeps the module's comment idiom at reckon/crew/queue_admission.py:357-361 and reuses its existing imports, and `ruff check` and `ruff format --check` report no finding on either changed file.\nSCORE reuse: 17\nJUSTIFICATION reuse: the join reuses recovery_review_dispatch.join_admitted_plan_review and queue_admission._require_launched_record rather than adding a validator or writer, though tests/test_every_launch_joins_the_composed_sidecar.py:67 copies the fixture at tests/test_a_queued_plan_review_is_stored.py:57.\nFINDING tests/test_every_launch_joins_the_composed_sidecar.py:275 non-blocking: the queued-record case is never shown red \u2014 base-gate.log runs it at 4da2af6 where the funnel held no join and negative-control.log removes the join entirely, so the gate added in 7e5dc1ea has no recorded failing run.\nFINDING tests/test_every_launch_joins_the_composed_sidecar.py:67 non-blocking: the `project` fixture and `_compose_while_held` at :104 copy tests/test_a_queued_plan_review_is_stored.py:57-134 nearly verbatim instead of sharing the setup.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T070914697594-every-launch-of-a-queued-plan-review-is-joined-to-its/manifest.md:3 non-blocking: write_paths omits tests/test_every_launch_joins_the_composed_sidecar.py, which the delta commits and resume-1-advice.txt grants.\n",
+  "review_run_id": "r-20261103T112131180175-review-of-every-launch-of-a-queued-plan-review-is-joined-to-its-37adb99e21a5",
+  "reviewed_base_sha": "ab6177672897db7a6577ee708d86e5ed17d0c57f",
+  "reviewed_head_sha": "37adb99e21a5676757c7a2c83066ecafd4413f11",
+  "reviewed_run_id": "r-20261103T070914697594-every-launch-of-a-queued-plan-review-is-joined-to-its",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-04T10:30:18.439758+00:00",
+  "total": 106
+}
