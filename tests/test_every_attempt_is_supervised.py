@@ -10,7 +10,6 @@ import sys
 import time
 from contextlib import suppress
 from pathlib import Path
-from threading import Event
 from types import SimpleNamespace
 
 import pytest
@@ -20,7 +19,7 @@ import reckon.crew.dispatch_launch as dispatch_launch_module
 import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import _backends, crew_dispatch_commands
 from reckon import cli as cli_module
-from reckon.crew import resumption, runs
+from reckon.crew import recovery, resumption, runs
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
@@ -84,7 +83,7 @@ def _sleeping_plan(worktree: Path, dialect: str) -> _backends.LaunchPlan:
     return _backends.LaunchPlan(
         backend="alpha",
         dialect=dialect,
-        argv=[sys.executable, "-c", "import time; time.sleep(60)"],
+        argv=[sys.executable, "-c", "import signal; signal.pause()"],
         cwd=str(worktree),
         stdin_text="",
         environment={},
@@ -152,11 +151,18 @@ def _resumable_run(tmp_path: Path, dialect: str) -> tuple[str, Path, Path]:
 def _assert_current_attempt(
     run_id: str, directory: Path, supervisor_pid: int, attempt: int = 2
 ) -> dict[str, object]:
+    assert "__supervise__" in _cmdline(supervisor_pid)
+    _wait_until(
+        lambda: _record_names_attempt(directory / "worker.json", attempt),
+        "the current worker record",
+    )
     spec = json.loads((directory / "supervisor.json").read_text(encoding="utf-8"))
     assert "reckon.crew.supervisor_main" in spec["argv"]
     assert spec["attempt"] == attempt
     worker = json.loads((directory / "worker.json").read_text(encoding="utf-8"))
     assert int(worker["pid"]) != supervisor_pid
+    assert dispatch_launch_module.process_alive(int(worker["pid"])) is True
+    assert "-c" in _cmdline(int(worker["pid"]))
     assert worker["attempt"] == attempt
     assert (
         json.loads((directory / "attempt-1-worker.json").read_text(encoding="utf-8"))[
@@ -181,45 +187,6 @@ def _assert_current_attempt(
     return worker
 
 
-def _stub_supervisor(monkeypatch: pytest.MonkeyPatch) -> list[dict[str, object]]:
-    """Confirm a launched worker through the supervisor's own bounded check."""
-    confirmed = Event()
-    launches: list[dict[str, object]] = []
-    monkeypatch.setattr(
-        dispatch_launch_module,
-        "_supervisor_launched_worker",
-        lambda _directory: confirmed.is_set(),
-    )
-
-    def start(spec_path: Path, directory: Path, run_id: str) -> int:
-        spec = json.loads(spec_path.read_text(encoding="utf-8"))
-        attempt = int(spec["attempt"])
-        confirmed.clear()
-        worker = {
-            "run_id": run_id,
-            "pid": 12000 + attempt,
-            "pid_start_time": 1000 + attempt,
-            "backend": "alpha",
-        }
-        for _ in range(2):
-            assert dispatch_launch_module._write_attempt_artifact(
-                directory, "worker.json", worker, attempt=attempt
-            )
-        confirmed.set()
-        supervisor_pid = 11000 + attempt
-        assert (
-            dispatch_launch_module._confirm_supervisor_survived(
-                supervisor_pid, directory, run_id
-            )
-            == run_id
-        )
-        launches.append(spec)
-        return supervisor_pid
-
-    monkeypatch.setattr(dispatch_launch_module, "_start_supervisor", start)
-    return launches
-
-
 def test_a_supervisor_confirming_one_worker_keeps_one_attempt(tmp_path: Path) -> None:
     directory = tmp_path / "run"
     directory.mkdir()
@@ -235,6 +202,18 @@ def test_a_supervisor_confirming_one_worker_keeps_one_attempt(tmp_path: Path) ->
     assert sorted(path.name for path in directory.glob("attempt-*-worker.json")) == [
         "attempt-2-worker.json"
     ]
+
+
+def test_supervisor_confirmation_rejects_a_missing_worker(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(dispatch_launch_module, "process_alive", lambda _pid: False)
+    with pytest.raises(
+        dispatch_launch_module.CrewError, match="without writing an exit record"
+    ):
+        dispatch_launch_module._confirm_supervisor_survived(
+            12345, tmp_path, "r-missing-worker"
+        )
 
 
 def _kill_worker_and_read_exit(directory: Path, worker_pid: int) -> dict[str, object]:
@@ -271,7 +250,6 @@ def test_crew_resume_keeps_the_harness_behind_a_supervisor(
         "_resolved_flight",
         lambda flight_module, project, checkout_path, overrides: CONFIG,
     )
-    launches = _stub_supervisor(monkeypatch)
 
     result = CliRunner().invoke(
         cli_module.main,
@@ -280,8 +258,26 @@ def test_crew_resume_keeps_the_harness_behind_a_supervisor(
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)
     supervisor_pid = int(payload["pid"])
-    assert len(launches) == 1
-    _assert_current_attempt(run_id, directory, supervisor_pid)
+    try:
+        worker = _assert_current_attempt(run_id, directory, supervisor_pid)
+        Path(runs.read_pointer(run_id)["worktree"], "repair.txt").write_text(
+            "uncommitted repair\n", encoding="utf-8"
+        )
+        row = recovery.classify_pointer(runs.read_pointer(run_id))
+        assert row["classification"] == "running"
+        assert row["classification"] not in {"scoring", "promotable"}
+        reflex = recovery.dispatch_review_for_run(
+            runs.read_pointer(run_id),
+            launcher=lambda *args, **kwargs: pytest.fail(
+                "a live attempt must not dispatch its review"
+            ),
+        )
+        assert reflex["dispatched"] is False
+        assert "running" in reflex["reason"]
+        exit_record = _kill_worker_and_read_exit(directory, int(worker["pid"]))
+        assert exit_record["signal_name"] == "SIGKILL"
+    finally:
+        _stop_group(supervisor_pid)
 
 
 def test_a_second_resume_records_the_third_attempt(
@@ -298,7 +294,6 @@ def test_a_second_resume_records_the_third_attempt(
         "_resolved_flight",
         lambda flight_module, project, checkout_path, overrides: CONFIG,
     )
-    launches = _stub_supervisor(monkeypatch)
 
     first = CliRunner().invoke(
         cli_module.main,
@@ -306,31 +301,49 @@ def test_a_second_resume_records_the_third_attempt(
     )
     assert first.exit_code == 0, first.output
     first_pid = int(json.loads(first.output)["pid"])
-    _assert_current_attempt(run_id, directory, first_pid)
-    manifest.write_text(
-        "status: blocked\ncommits: [old-head]\nblockers: fixture pause\n",
-        encoding="utf-8",
-    )
-    dispatch_launch_module._write_attempt_artifact(
-        directory,
-        "exit.json",
-        {"run_id": run_id, "worker_pid": 12002, "exit_code": 0},
-        attempt=2,
-    )
-    pointer = runs.read_pointer(run_id)
-    pointer.update({"phase": "blocked", "pid": None})
-    runs._write_json(runs.pointer_path(run_id), pointer)
-
-    second = CliRunner().invoke(
-        cli_module.main,
-        ["crew", "resume", "--run", run_id, "--advice", "continue again"],
-    )
-    assert second.exit_code == 0, second.output
-    assert len(launches) == 2
-    second_pid = int(json.loads(second.output)["pid"])
-    current = _assert_current_attempt(run_id, directory, second_pid, attempt=3)
-    assert json.loads((directory / "attempt-2-worker.json").read_text())["attempt"] == 2
-    assert json.loads((directory / "attempt-3-worker.json").read_text()) == current
+    second_pid = None
+    try:
+        worker = _assert_current_attempt(run_id, directory, first_pid)
+        manifest.write_text(
+            "status: blocked\ncommits: [old-head]\nblockers: fixture pause\n",
+            encoding="utf-8",
+        )
+        _kill_worker_and_read_exit(directory, int(worker["pid"]))
+        _wait_until(
+            lambda: (
+                runs.read_pointer(run_id).get("phase") == "blocked"
+                and dispatch_launch_module.process_alive(first_pid) is False
+            ),
+            "the blocked first attempt to end",
+        )
+        second = CliRunner().invoke(
+            cli_module.main,
+            ["crew", "resume", "--run", run_id, "--advice", "continue again"],
+        )
+        assert second.exit_code == 0, second.output
+        second_pid = int(json.loads(second.output)["pid"])
+        _wait_until(
+            lambda: (
+                runs.read_pointer(run_id).get("attempt") == 3
+                and _record_names_attempt(directory / "worker.json", 3)
+            ),
+            "the third attempt's canonical worker record",
+        )
+        current = json.loads((directory / "worker.json").read_text())
+        assert current["attempt"] == 3
+        assert (
+            json.loads((directory / "attempt-1-worker.json").read_text())["attempt"]
+            == 1
+        )
+        assert (
+            json.loads((directory / "attempt-2-worker.json").read_text())["attempt"]
+            == 2
+        )
+        assert json.loads((directory / "attempt-3-worker.json").read_text()) == current
+    finally:
+        _stop_group(first_pid)
+        if second_pid is not None:
+            _stop_group(second_pid)
 
 
 def test_a_killed_resumed_worker_leaves_its_attempt_exit_record(
@@ -434,7 +447,6 @@ def test_crew_redispatch_keeps_the_harness_behind_a_supervisor(
         lambda **kwargs: {"held": False, "backend": "beta"},
     )
     monkeypatch.setattr(dispatch_module._backends, "launch_plan", lambda **kwargs: plan)
-    launches = _stub_supervisor(monkeypatch)
 
     moved = dispatch_module.change_lane(
         run_id,
@@ -444,8 +456,11 @@ def test_crew_redispatch_keeps_the_harness_behind_a_supervisor(
         advice="continue",
     )
     supervisor_pid = int(moved["pid"])
-    assert len(launches) == 1
-    _assert_current_attempt(run_id, directory, supervisor_pid)
-    assert moved["attempt"] == 2
-    assert moved["attempt_kind"] == "lane-change"
-    assert moved["lane_change"]["to_backend"] == "beta"
+    try:
+        worker = _assert_current_attempt(run_id, directory, supervisor_pid)
+        assert moved["attempt"] == 2
+        assert moved["attempt_kind"] == "lane-change"
+        assert moved["lane_change"]["to_backend"] == "beta"
+        _kill_worker_and_read_exit(directory, int(worker["pid"]))
+    finally:
+        _stop_group(supervisor_pid)
