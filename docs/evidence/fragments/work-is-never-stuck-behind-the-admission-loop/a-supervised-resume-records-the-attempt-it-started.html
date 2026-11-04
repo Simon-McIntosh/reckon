@@ -17,9 +17,18 @@
 
   <p><strong>Measure.</strong> The two named resume and redispatch cases passed
   4 of 4 variants in each of three serial runs. The full node test file passed
-  7 of 7. Restoring the duplicate writer made all 4 variants fail with
-  <code>assert 3 == 2</code>. The tests drive the existing bounded supervisor
-  confirmation through a controlled event, with no added wall-clock wait.</p>
+  8 of 8. The named cases now observe the live supervisor command line, a
+  separate live worker, refusal to review a running attempt, and the worker's
+  exit receipt. The fixture worker waits for a signal rather than a timer.
+  A separate assertion drives the duplicate worker confirmation directly so
+  the receipt race cannot hide the attempt-number defect.</p>
+
+  <p><strong>Negative controls.</strong> Restoring the duplicate writer made
+  all 4 named variants fail with <code>assert 3 == 2</code>. Returning a fake
+  supervisor PID without starting a process also made all 4 fail. With the
+  process-checking test commit reverted, all 4 passed under that fake PID.
+  A direct refusal test confirms that a missing worker cannot satisfy the
+  existing bounded supervisor confirmation.</p>
 
   <p><strong>Importer comparison.</strong> The same 73 referencing test files
   ran against extracted base and head trees. Base: 832 passed, 9 failed, 6
