@@ -356,12 +356,3 @@ def test_a_scope_whose_tests_the_change_creates_records_an_empty_baseline(
     suite_delta = json.loads(result.output)["record"]["suite_delta"]
     assert suite_delta["status"] == "clean"
     assert suite_delta["baseline_measured_nothing"] is True
-
-
-def _write_suite_manifest(
-    path: Path, *, baseline: dict[str, object], after: dict[str, object]
-) -> None:
-    lines = ["node: node-a", "status: complete", "commits: abc123", "tests: done"]
-    lines.append("baseline_suite: " + json.dumps(baseline))
-    lines.append("after_suite: " + json.dumps(after))
-    path.write_text("\n".join(lines) + "\n")
