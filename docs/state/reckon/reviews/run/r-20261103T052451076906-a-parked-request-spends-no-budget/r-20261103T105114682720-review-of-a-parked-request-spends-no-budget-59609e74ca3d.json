@@ -1,0 +1,43 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/mcp.py:312",
+    "reckon/mcp_views.py:4256",
+    "reckon/crew/query.py:473"
+  ],
+  "completed_at": "2026-11-03T11:13:33.058Z",
+  "dispatched_at": "2026-11-03T11:02:47Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T052451076906-a-parked-request-spends-no-budget/manifest.md",
+      "line": 20,
+      "severity": "blocking",
+      "text": "blocking: after_suite records completed true, exit_status 1 and a 14-id failure list, but the log the field cites ends mid-progress at 52% with no pytest summary line and no EXIT= line, so promotion reads no exit status from it and the done-when's \"adds no failure against the base revision\" half rests on an unreadable receipt; re-run the arm to a complete log ending in a bare EXIT= line and record that log, or state plainly that the arm did not finish."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T052451076906-a-parked-request-spends-no-budget/manifest.md",
+      "line": 20,
+      "severity": "non-blocking",
+      "text": "non-blocking: the after_suite revision field reads 37062f9ab5 while after-suite.log:1 names tree a-parked-request-spends-no-budget at 59609e74ca, so the revision the arm measured cannot be told from the field without opening the log header."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a request which never launched reports no elapsed budget time and no overrun; the delta since the prior review adds the live-vocabulary declaration at reckon/crew/query.py:159 so the parked wait already computed by recovery_stream.py reaches a caller through `crew view live --fields waiting_seconds`, extending the goal's own figure to a requestable surface.\nVERDICT done_when: the done_when asks for the two cases and the negative control in tests/test_a_parked_request_spends_no_budget.py plus no added failure across the files importing recovery_stream, recovery_classification and recovery; gate-head.log records 7 passed EXIT=0, negative-control.log records 5 failed 2 passed EXIT=1 and negative-control-field.log records 1 failed 6 passed EXIT=1, but the second arm it names -- after-suite.log -- carries no pytest summary and no EXIT= line, so the \"add no failure against the base revision\" half is claimed in manifest.md:20 and not recorded in the log it cites.\nVERDICT write_paths: the source manifest declares reckon/crew/recovery_stream.py, reckon/crew/query.py, tests/test_a_parked_request_spends_no_budget.py, the docs/evidence fragment and an unused docs/figures directory; commit 37062f9ab5 changes query.py and the test file, and 59609e74ca changes the evidence fragment, all inside that set, with query.py granted explicitly in resume-2-advice.txt after the section that held it landed.\nVERDICT manifest: read; it states status complete with gate-head.log 7 passed, both negative controls at EXIT=1, and a baseline/after pair of 14 failures either side, the after arm's log on disk being the one artefact the record claims and does not show.\nVERDICT diff: read commit by commit against 87a5a0c0 -- 46af8a1fa5 is a merge of origin/main that touches no node file, 37062f9ab5 adds one tuple entry to LIVE_CLASSIFICATION_FIELDS plus a 37-line test case, and 59609e74ca rewrites three lines of the landing fragment; nothing else is the node's own work.\nCALL_SITES: reckon/mcp.py:312, reckon/mcp_views.py:4256, reckon/crew/query.py:473\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/query.py:159 declares waiting_seconds inside LIVE_CLASSIFICATION_FIELDS, which LIVE_FIELD_VOCABULARY at query.py:281 unions, so the value recovery_stream.py already computes is accepted by the live view and the MCP pre-flight rather than only by whomever happens to hold a parked row.\nSCORE evidence: 11\nJUSTIFICATION evidence: gate-head.log carries 7 passed with EXIT=0 and both negative controls end in EXIT=1, but after-suite.log stops mid-progress at 52% with no summary and no EXIT= line although manifest.md:20 records that arm as completed with 14 failures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only files the two node commits touch are reckon/crew/query.py:159, tests/test_a_parked_request_spends_no_budget.py:118-143 and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-parked-request-spends-no-budget.html, all in the manifest's declared set.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_parked_request_spends_no_budget.py:139 calls _refuse_unknown_live_fields with the name and no row, which reddens with RunQueryError at query.py:259 when the tuple entry is removed (negative-control-field.log), and :143 reddens if the projected wait stops being measured from creation.\nSCORE fit: 19\nJUSTIFICATION fit: the entry joins the existing capitalised tuple at reckon/crew/query.py:159 in the same lower-snake spelling as its neighbours, and the test follows the module's _record fixture idiom at tests/test_a_parked_request_spends_no_budget.py:28.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the one existing declaration at reckon/crew/query.py:281 rather than adding a vocabulary of its own; a search of reckon/crew for other live-field sets found only LIVE_OVERRUN_FIELDS, LIVE_PLACEMENT_FIELDS and COMMON_RUN_FIELDS, which the same union already composes.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T052451076906-a-parked-request-spends-no-budget/manifest.md:20 blocking: after_suite records completed true, exit_status 1 and a 14-id failure list, but the log the field cites ends mid-progress at 52% with no pytest summary line and no EXIT= line, so promotion reads no exit status from it and the done-when's \"adds no failure against the base revision\" half rests on an unreadable receipt; re-run the arm to a complete log ending in a bare EXIT= line and record that log, or state plainly that the arm did not finish.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T052451076906-a-parked-request-spends-no-budget/manifest.md:20 non-blocking: the after_suite revision field reads 37062f9ab5 while after-suite.log:1 names tree a-parked-request-spends-no-budget at 59609e74ca, so the revision the arm measured cannot be told from the field without opening the log header.\n",
+  "review_run_id": "r-20261103T105114682720-review-of-a-parked-request-spends-no-budget-59609e74ca3d",
+  "reviewed_base_sha": "87a5a0c023e6514b69cee88d7adf94cf1ca640ad",
+  "reviewed_head_sha": "59609e74ca3d778b72ab26a648a2a8cc633f8e62",
+  "reviewed_run_id": "r-20261103T052451076906-a-parked-request-spends-no-budget",
+  "scores": {
+    "durability": 19,
+    "evidence": 11,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T11:11:47.472189+00:00",
+  "total": 107
+}
