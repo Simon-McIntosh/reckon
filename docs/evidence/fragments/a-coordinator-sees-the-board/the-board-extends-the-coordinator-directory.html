@@ -31,6 +31,27 @@ view answers with, so a workstation-scope read is bounded.</p>
 whatever its plans hold. The control coordinator appeared and the test failed
 on <code>assert "gated-coordinator" not in by_session</code>; the log is
 <code>logs/negative-control.log</code> in the run directory.</p>
+<h2 id="the-board-extends-the-coordinator-directory-discovery-lock">Discovery lock</h2>
+<p>Merged with main, the board deadlocked. Plan discovery holds the server's
+discovery lock while it builds the roadmap; the roadmap's critical path asks the
+plan-coordinator resolver who owns each plan; that resolver reads the directory
+view to decide which sessions are still dispatching; and a directory read that
+always derived ready-idle owners ran plan discovery again, waiting on the
+non-reentrant lock its own caller held.</p>
+<p><code>directory()</code> now takes <code>ready_idle</code>, off by default, and
+the crew view asks for it. The resolver's read derives no plan facts, and the
+payload names which join ran (<code>not_requested</code>, <code>project</code>
+or <code>workstation_scope</code>) so a read that did not ask is not mistaken
+for one that found nothing.</p>
+<p>Case:
+<code>test_discovery_returns_while_the_roadmap_reads_coordinators</code> drives <code>discover_plans</code> in a thread bounded at 30 s against a
+real plan tree whose critical path reaches the resolver. It fails at the node's
+pre-fix head merged with main (<code>logs/deadlock-control.log</code>, the
+assertion that discovery returned) and returns in 3.6 s with the change.</p>
+<p>Gate at the fix, one log each: <code>test_the_board_extends_the_directory.py</code>
+5 passed, <code>test_the_ready_idle_set.py</code> 4 passed, the plan-coordinator
+ledger suite 11 passed, all EXIT=0.</p>
+
 <h2 id="the-board-extends-the-coordinator-directory-repair">Repair round</h2>
 <p>Review returned four findings and all four are folded into commit
 <code>dd6625581b</code>.</p>
