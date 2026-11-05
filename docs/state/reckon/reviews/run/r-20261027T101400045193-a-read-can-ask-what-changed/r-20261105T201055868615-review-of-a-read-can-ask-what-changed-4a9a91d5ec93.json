@@ -12,6 +12,13 @@
   "completed_at": "2026-11-05T20:19:28.335Z",
   "dispatched_at": "2026-11-05T20:14:31Z",
   "failure_note": "The reviewed run records baseline_suite at c15f841ed for tests/test_a_read_can_ask_what_changed.py, which exits 4 because the file does not exist at that revision, so it names no failing id; after_suite at 4a9a91d5ec exits 0 with 20 passed and no failing id. Added failures = 0. The one-file gate at the reviewed head (logs/gate-a-read-can-ask-what-changed.log, 20 passed, EXIT=0) was re-run by this reviewer for the single case the commit changes: 1 passed, EXIT=0.",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "Commit 4a9a91d5ec adds the two assertions the earlier finding asked for, that the answer carries no error and names the why view; the third line is redundant rather than a missing check, so the case already fails when the plan read stops serving why.",
+      "recorded_at": "2026-11-05T20:38:35.136049+00:00"
+    }
+  },
   "findings": [
     {
       "file": "tests/test_a_read_can_ask_what_changed.py",
