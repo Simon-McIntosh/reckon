@@ -446,7 +446,7 @@ def crew_directory(project, run_id, node_id, pretty):
     from reckon.crew.directory import DirectoryError, directory
 
     try:
-        result = directory(project, run_id=run_id, node_id=node_id)
+        result = directory(project, run_id=run_id, node_id=node_id, ready_idle=True)
     except DirectoryError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_crew_result(result, pretty)

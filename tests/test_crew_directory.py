@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import html
 import json
 import os
+from datetime import UTC, datetime
 from pathlib import Path
 
 from click.testing import CliRunner
@@ -248,6 +250,74 @@ def test_directory_is_a_cli_verb_and_an_existing_mcp_view(
             mcp._crew,
         )
     }
+
+
+def test_the_cli_listing_names_an_idle_owner_with_no_run(tmp_path, monkeypatch) -> None:
+    # The listing is the surface a coordinator reads to find work nobody is on,
+    # so a session whose only plan has a ready-idle section and no run at all
+    # is a row it must carry, not the absence of a row.
+    home = tmp_path / "isolated-config"
+    docs = tmp_path / "repo" / "docs"
+    plans = docs / "plans"
+    plans.mkdir(parents=True)
+    declarations = json.dumps({"s1": "implementable"})
+    (plans / "idle-plan.html").write_text(
+        "<!doctype html><html><head>"
+        '<meta name="docs-project" content="nova">'
+        '<meta name="reckon-type" content="plan">'
+        '<meta name="plan-slug" content="idle-plan">'
+        '<meta name="plan-status" content="active">'
+        '<meta name="plan-effort" content="M">'
+        '<meta name="plan-owner" content="physics-lead">'
+        '<meta name="plan-section-declarations" content="'
+        + html.escape(declarations)
+        + '"></head><body><main class="plan-doc">'
+        '<h2 id="s1">Section 1</h2>'
+        '<section data-reckon="section" data-id="s1" data-effort-hours="1.0" '
+        'data-status="implementable" data-links="" data-capability-version="1.0" '
+        'data-capability-class="general" data-capability-reasoning="standard" '
+        'data-capability-verification="strict" data-capability-risk="low"></section>'
+        "</main></body></html>",
+        encoding="utf-8",
+    )
+    (home / "mounts.json").parent.mkdir(parents=True, exist_ok=True)
+    (home / "mounts.json").write_text(json.dumps({"nova": str(docs)}), encoding="utf-8")
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    monkeypatch.delenv("RECKON_MOUNTS_PATH", raising=False)
+    monkeypatch.delenv("RECKON_STATE_ROOT", raising=False)
+    ledger = home / "state" / "nova" / "crew.json"
+    ledger.parent.mkdir(parents=True, exist_ok=True)
+    ledger.write_text(
+        json.dumps(
+            {
+                "data": {
+                    "_version": 1,
+                    "members": [],
+                    "holds": [],
+                    "runs": [
+                        {
+                            "run_id": "run-earlier",
+                            "session": "idle-coordinator",
+                            "project": "nova",
+                            "plan": "idle-plan",
+                            "dispatched_at": datetime.now(UTC).isoformat(),
+                        }
+                    ],
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    command = CliRunner().invoke(cli_main, ["crew", "directory", "--project", "nova"])
+
+    assert command.exit_code == 0, command.output
+    rows = {row["session"]: row for row in json.loads(command.output)["coordinators"]}
+    assert rows["idle-coordinator"]["runs"] == []
+    assert rows["idle-coordinator"]["state"] == "idle"
+    assert [
+        ref.partition("#")[2] for ref in rows["idle-coordinator"]["ready_idle_sections"]
+    ] == ["s1"]
 
 
 def test_a_sessionless_pointer_is_visible_but_is_not_a_coordinator(
