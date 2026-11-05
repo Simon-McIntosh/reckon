@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="278">
+<meta name="plan-version" content="279">
 <meta name="plan-modified" content="2026-11-05">
 </head>
 <body>
@@ -583,7 +583,10 @@
     <div class="r-comment-body"><p>Independent review of r-20261103T074735748928 records a parsed verdict at base 57eb26e9..head 63e2271a4c: goal 17, evidence 11, scope_discipline 18, durability 13, fit 15, reuse 13; four non-blocking findings (the done-when's "build_roadmap is not called" clause is replaced by an assertion that cannot fail on the defect, derived write-path over-capture at two points, and an E303 blank-line finding), zero added failures.</p></div>
 </div>
 <div class="r-comment" data-section="s28" data-id="c-run-r-20261105T151328525250-review-of-a-coordinator-queues-the-work-it-chose-in-one-call-a088a4c41e5a" data-who="reckon-build" data-when="2026-11-05T15:25:56.750Z">
-    <div class="r-comment-body"><p>Independent review of r-20261103T074735748928 over the commits it gained since its last review, 63e2271a4c..a088a4c41e (afba652dbb, a088a4c41e): stored parsed record scoring goal_fidelity 18, evidence 14, scope_discipline 19, durability 17, fit 18, reuse 10, with 3 non-blocking findings — the done-when&#x27;s sixth clause is measured as exactly one roadmap build rather than the stated zero, `_SENTENCE_END` truncates a write-paths sentence at an `e.g.`, and `_built_once` re-implements the derivation-once composition owned by plan_review.project_section_readiness.</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261103T074735748928 over the commits it gained since its last review, 63e2271a4c..a088a4c41e (afba652dbb, a088a4c41e): stored parsed record scoring goal_fidelity 18, evidence 14, scope_discipline 19, durability 17, fit 18, reuse 10, with 3 non-blocking findings — the done-when's sixth clause is measured as exactly one roadmap build rather than the stated zero, `_SENTENCE_END` truncates a write-paths sentence at an `e.g.`, and `_built_once` re-implements the derivation-once composition owned by plan_review.project_section_readiness.</p></div>
+</div>
+<div class="r-comment" data-section="s28" data-id="c-run-r-20261103T074735748928-a-coordinator-queues-the-work-it-chose-in-one-call" data-who="reckon-build" data-when="2026-11-05T15:02:13Z">
+    <div class="r-comment-body"><p>`crew dispatch --batch &lt;file&gt;` queues a coordinator&#x27;s chosen sections as one call: a new dispatch_batch.py reads each named plan once for the whole batch, derives every omitted field (done-when, write paths, waits, capability/effort) from the section, lets an entry wait on another entry by node id, and stores each entry on its own so a refused entry does not stop the rest; the gate shows all six required facts with 2 section_prose calls for 6 entries over 2 plans and exactly one build_roadmap call for the whole batch.</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-s29-lead-ruling-idle-peer-promotion" data-who="" data-when="">
     <div class="r-comment-body"><p>Lead ruling, 28 October: a coordinator may promote an idle peer's finished run. The reckon lead gave it in this session ("a coordinator should be able to promote"), and the power_convertor lead gave it through power-convertor-d6 ("auth given for a coordinator to promote an idle peer's finished run"). Once the holding run's session has been idle past the threshold §29 names (six hours), a coordinator of the same project may promote a complete run that has its review attached. The clean case is made automatic by <code>a-review-gate-judges-what-it-covers</code> §11, where the landing pass lands any session's run whose review has no blocking finding. Precedent: <code>r-20261025T012116961947-vs1-fdu-count-citation</code> (owner e28a3130, idle 19 h) was promoted by power-convertor-d6 with no added failures, the gate re-run with its one pre-existing failing test deselected.</p></div>
