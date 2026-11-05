@@ -80,6 +80,7 @@ def _plan(
     depends_on: dict[str, list[str]] | None = None,
     status: str = "active",
     gates: str = "",
+    extra_headings: tuple[str, ...] = (),
 ) -> str:
     """One plan document carrying the head metadata the change set reads."""
 
@@ -104,6 +105,7 @@ def _plan(
         </head><body>
         <h2 id="s1">§1 — first</h2>
         <h2 id="s2">§2 — second</h2>
+        {"".join(f'<h2 id="{name}">§ — {name}</h2>' for name in extra_headings)}
         {gates}
         </body></html>
         """
@@ -175,6 +177,17 @@ def fixture(tmp_path: Path) -> dict:
             "docs/plans/f.html": _plan("f", {"s1": "implementable"}),
             "docs/plans/g.html": _plan(
                 "g", {"s1": "implementable"}, depends_on={"s1": ["f"]}
+            ),
+            # A plan whose sections are nearly complete, but whose markup
+            # carries a heading no declaration names: the roadmap's whole-plan
+            # rule holds it, so its dependent is never released.
+            "docs/plans/h.html": _plan(
+                "h",
+                {"s1": "implementable", "s2": "deferred"},
+                extra_headings=("s3",),
+            ),
+            "docs/plans/i.html": _plan(
+                "i", {"s1": "implementable"}, depends_on={"s1": ["h"]}
             ),
         },
     )
@@ -383,6 +396,42 @@ def test_a_dependent_on_a_whole_plan_is_released_when_it_completes(fixture):
     released = {row["ref"]: row for row in moved["newly_ready"]}
     assert "g#s1" in released
     assert released["g#s1"]["finished_waiting_on"] == ["f"]
+
+
+def test_a_whole_plan_held_by_an_undeclared_heading_releases_nothing(fixture):
+    """The whole-plan rule reads the authored headings from the docs root.
+
+    ``h`` reaches the roadmap with a done section and only deferred open
+    sections, so the decision falls to its authored headings — and its markup
+    carries one no declaration names. The roadmap holds the dependency, so the
+    plan waiting on it stays unreleased even though a section of it landed.
+    """
+    root, stream = fixture["root"], fixture["stream"]
+    opened = change_set_module.change_set(
+        PROJECT, None, repo=root, stream_path=stream, now=fixture["before"]
+    )
+    _commit(
+        root,
+        "the open section of h lands",
+        _iso(DAY + 3_000),
+        {
+            "docs/plans/h.html": _plan(
+                "h",
+                {"s1": "done", "s2": "deferred"},
+                extra_headings=("s3",),
+            )
+        },
+    )
+    moved = change_set_module.change_set(
+        PROJECT,
+        opened["observed_at"],
+        repo=root,
+        stream_path=stream,
+        now=fixture["at_move"],
+    )
+    # The section landing was seen, so the plan and its markup were read.
+    assert "h#s1" in {row["ref"] for row in moved["sections"]}
+    assert "i#s1" not in {row["ref"] for row in moved["newly_ready"]}
 
 
 def test_a_project_with_no_stream_does_not_claim_to_have_read_one(fixture, tmp_path):
