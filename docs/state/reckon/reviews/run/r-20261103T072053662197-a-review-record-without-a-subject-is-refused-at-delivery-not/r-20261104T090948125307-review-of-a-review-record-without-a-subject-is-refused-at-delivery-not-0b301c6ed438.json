@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own gate logs. baseline_suite.log at 05a2cd1a records '3 passed in 3.00s' EXIT=0 with failure_ids [] and completed true; after_suite.log at 0b301c6ed4 records '3 passed in 3.30s' EXIT=0 with failure_ids [] and completed true. Both arms name the same single test file, which is the whole of this node's gate, and the node changed no product source, so the zero is a measured zero between two arms that both ran the file.",
+  "call_sites": [
+    "reckon/crew_run_commands.py:crew_check_run",
+    "reckon/crew/reports.py:_review_record_status_findings"
+  ],
+  "completed_at": "2026-11-04T09:23:30.064Z",
+  "dispatched_at": "2026-11-04T09:17:17Z",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-review-record-without-a-subject-is-refused-at-delivery-not.html",
+      "id": "g1f7a2c4e01",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "the plan's \u00a722 requires the first step to state which of the two permitted remedies was chosen, and why; the committed fragment records only that the delivery-time refusal already existed, so the choice (refuse rather than stamp, because the reviewer still holds its turn) survives only in the run manifest, which does not land with the code."
+    },
+    {
+      "file": "tests/test_a_subjectless_review_record_is_refused_at_delivery.py",
+      "id": "g2a8b3d5f02",
+      "line": "135",
+      "severity": "non-blocking",
+      "text": "`assert all(str(record) in finding for finding in findings)` spans every manifest-audit finding, not only the review-record ones, so an unrelated finding added to the fixture manifest later would redden this case for a reason that has nothing to do with the subject refusal."
+    },
+    {
+      "file": "tests/test_a_subjectless_review_record_is_refused_at_delivery.py",
+      "id": "g3b9c4e6a03",
+      "line": "88",
+      "severity": "non-blocking",
+      "text": "the fixture builds and declares a second record path (`sibling`) that no case ever writes, so the fixture implies a paired delivery the test never makes and the dead path appears in the pointer's write_paths."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "name the two runtime paths the test exercises, listed on the CALL_SITES line: the crew check verb and the manifest-audit function that applies review_record_refusals to declared run-directory records.",
+    "diff": "Read against base 05a2cd1a: one commit, two new files, 228 lines added and none removed. The test exercises crew check --manifest over a temporary crew home and a run-directory record path; the fragment records the finding, the change and the measure. No product source changed.",
+    "done_when": "The done_when names tests/test_a_subjectless_review_record_is_refused_at_delivery.py: a subjectless scored record written to a review run's declared path must be refused at delivery and a record carrying its subject must pass. The three cases assert exactly that, and the manifest records both arms at 3 passed EXIT=0 and a red control at 2 failed EXIT=1.",
+    "goal": "The source node's goal is that a review record without a subject is refused at delivery rather than at promotion. The landed change adds no product code: the delivery-time refusal already exists at 05a2cd1a, and the commit pins it with tests/test_a_subjectless_review_record_is_refused_at_delivery.py plus the evidence fragment, which is what the plan's done_when actually asked for.",
+    "manifest": "Read. It records status complete, the commit 0b301c6ed4, both suite arms as JSON with completed true and failure_ids [], the negative-control log path and its 2-failed result, and a rubric line per dimension; it also reports the watcher-side verdict gap under outside_scope rather than fixing it.",
+    "write_paths": "The manifest declares reckon/crew/review.py, the named test file, the evidence fragment and a figures directory. The diff touches only the test file and the fragment, both inside that set; no product path was written."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows the two subject cases fail when the delivery-side subject requirements are removed, so the added assertions redden on the exact regression they pin rather than passing whatever the code does.",
+    "evidence": "The gate is the named test file and its result is recorded in both arms of baseline_suite.log and after_suite.log at 3 passed EXIT=0, with the negative control red at 2 failed; the plan's literal control ('against the base tree the record passes delivery') could not be run because the guard already exists at base, and the node substituted a documented mutation instead.",
+    "fit": "The test follows the hand-written-record case's shape (temporary crew home, run pointer, crew check --manifest) at tests/test_a_hand_written_review_record_is_refused.py:1-100, and the fragment uses the repo's evidence-fragment layout with no plan label or ticket reference in its names.",
+    "goal_fidelity": "The landed change does what the node goal states: reckon/crew/reports.py:1911 applies review_record_refusals to a declared run-directory record, so at 0b301c6ed4 a subjectless record is refused at delivery and never reaches promotion.",
+    "reuse": "The node calls the existing refusal path and the existing path helpers instead of restating the contract; a search over tests/helpers, tests/conftest.py and the review tests found no shared crew-run-pointer fixture to extend, and each sibling review test defines its own.",
+    "scope_discipline": "Every path in the diff (tests/test_a_subjectless_review_record_is_refused_at_delivery.py and docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-review-record-without-a-subject-is-refused-at-delivery-not.html) is inside the node's declared write paths, and nothing the goal does not imply was carried."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261104T090948125307-review-of-a-review-record-without-a-subject-is-refused-at-delivery-not-0b301c6ed438",
+  "reviewed_base_sha": "05a2cd1ab2b40f88480dbf2cb4b195d6e252c3e3",
+  "reviewed_head_sha": "0b301c6ed438bc9a249f9c0c7888a17d9575248c",
+  "reviewed_run_id": "r-20261103T072053662197-a-review-record-without-a-subject-is-refused-at-delivery-not",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T09:45:24.450294+00:00",
+  "total": 111
+}

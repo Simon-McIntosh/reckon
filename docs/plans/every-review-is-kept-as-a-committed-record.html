@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.97">
-<meta name="plan-version" content="178">
+<meta name="plan-version" content="179">
 <meta name="plan-modified" content="2026-11-05">
 </head>
 <body>
@@ -489,6 +489,9 @@
 </div>
 <div class="r-comment" data-section="s22" data-id="c-run-r-20261103T072053662197-a-review-record-without-a-subject-is-refused-at-delivery-not" data-who="reckon-build" data-when="2026-11-03T07:57:50.266Z">
     <div class="r-comment-body"><p>§22 verified at delivery rather than repaired: `crew check --manifest` already refuses a scored review record naming neither a reviewed run nor a plan, through `review.review_record_refusals` (extending `store_review_refusals` and `names_a_review_subject`, landed in a0182b4ae7 and reached from the audit in 1bfed6d8ce); added tests/test_a_subjectless_review_record_is_refused_at_delivery.py pinning it — 3 passed, EXIT=0 in both arms; negative control with the delivery-side subject requirements removed makes the record pass delivery and be refused only at promotion (2 failed, EXIT=1). No product source changed, so the promotion-time refusal is untouched.</p></div>
+</div>
+<div class="r-comment" data-section="s22" data-id="c-run-r-20261104T090948125307-review-of-a-review-record-without-a-subject-is-refused-at-delivery-not-0b301c6ed438" data-who="reckon-build" data-when="2026-11-04T09:23:30.064Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261103T072053662197-a-review-record-without-a-subject-is-refused-at-delivery-not landed as a parsed record at both granted review-records paths — scores goal_fidelity 18, evidence 17, scope_discipline 20, durability 19, fit 18, reuse 19 (total 111), reviewed_base_sha 05a2cd1ab2b40f88480dbf2cb4b195d6e252c3e3 and reviewed_head_sha 0b301c6ed438bc9a249f9c0c7888a17d9575248c, added_failure_count 0 with added_failure_ids [] — and three non-blocking findings, no blocking one.</p></div>
 </div>
 <div class="r-comment" data-section="s23" data-id="c-run-r-20261019T145622046439-review-of-a-stored-review-carries-its-total-b3ea84199f72" data-who="reckon-build" data-when="2026-10-19T15:25:12.240Z">
     <div class="r-comment-body"><p>Reviewed run r-20261019T124040554227-a-stored-review-carries-its-total at base 3a95ee39c74a48a022b3a3f7d9a899d442a39f17 and head b3ea84199f724585488a787f27785848c3f4c9ec; the store derives a landed record's total from its six scores on write and on read for a record with no integer total. Scores goal_fidelity 19, evidence 16, scope_discipline 15, durability 19, fit 19, reuse 20 (total 108); one follow-on finding (an out-of-scope test edit); added_failure_count 0 against the reviewed run's own base/after suite arms.</p></div>
