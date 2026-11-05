@@ -31,8 +31,15 @@ PLAN = "plan-a"
 SESSION = "session"
 PRODUCT_PATH = "reckon/alpha.py"
 DOC_PATH = "docs/plans/plan-a.html"
+# The fixture plan declares no section write paths, so the plan cannot be the
+# compose command's subject: the composer resolves a plan to the paths its
+# implementable sections declare and refuses one that resolves to none. The
+# block therefore names this dispatch's own product write paths, one --path
+# each, and the command it prints runs as printed. A plan that does declare
+# write paths keeps the plan as the subject; that case lives in
+# tests/test_review_remedy_uses_dispatch_paths.py.
 COMPOSE_COMMAND = (
-    f"reckon crew review --project {PROJECT} --around {PLAN} --session {SESSION}"
+    f"reckon crew review --project {PROJECT} --path {PRODUCT_PATH} --session {SESSION}"
 )
 
 

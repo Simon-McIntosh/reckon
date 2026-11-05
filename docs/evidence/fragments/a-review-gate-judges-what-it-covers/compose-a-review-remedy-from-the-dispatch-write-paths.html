@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-review-gate-judges-what-it-covers">
+  <meta name="plan-title" content="A printed review command composes from the dispatch write paths">
+  <meta name="plan-summary" content="The dispatch payload's health_review block composes its remedy from the write paths of the dispatch that printed it when the plan declares no section write paths, so the printed command runs as printed.">
+  <meta name="plan-evidence-for" content="reckon:a-review-gate-judges-what-it-covers">
+  <meta name="plan-verifies" content="reckon:a-review-gate-judges-what-it-covers#s6">
+  <meta name="plan-recorded-at" content="2026-11-03">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,reckon-tooling,review">
+  <title>A printed review command composes from the dispatch write paths — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="compose-a-review-remedy-from-the-dispatch-write-paths-note" class="r-note" data-node="compose-a-review-remedy-from-the-dispatch-write-paths" data-reckon="landed" data-when="2026-11-03">
+  <h2 id="compose-a-review-remedy-from-the-dispatch-write-paths-head">A printed review command composes from the dispatch write paths</h2>
+  <p id="compose-a-review-remedy-from-the-dispatch-write-paths-rule">The dispatch payload's <code>health_review</code> block always composed its remedy around the plan: <code>reckon crew review --project &lt;p&gt; --around &lt;plan&gt; --session &lt;s&gt;</code>. The composer that command reaches resolves a plan to the write paths its implementable sections declare and refuses one that declares none. So a dispatch against a plan with no section write paths printed a remedy that refused the moment it was run — the refusal moved one step later rather than removed, which is the failure this section exists to close.</p>
+  <p id="compose-a-review-remedy-from-the-dispatch-write-paths-change">The block now asks the plan for its declared write paths (through <code>plan_review.code_review_paths_from_plan</code>) and, when the plan has none, composes the remedy from the write paths of the dispatch that printed it — one <code>--path</code> per product source path, quoted through <code>shlex.quote</code>. A plan that does declare write paths keeps the plan as the subject, so a review still covers the whole of what the plan is about to build. A plan that cannot be read, or a block reported against an unreadable review store, gets the same fallback: the command must run.</p>
+  <p id="compose-a-review-remedy-from-the-dispatch-write-paths-gate">Node gate on <code>tests/test_review_remedy_uses_dispatch_paths.py</code> at the node's final revision: 2 passed, <code>EXIT=0</code>. The first case dry-runs a dispatch against a plan whose one implementable section declares no write paths, takes the printed <code>compose_command</code>, and runs it verbatim; the command carries <code>--path alpha/mod.py</code> and no <code>--around</code>, exits 0, composes a review whose brief and goal name that path, and dispatches it. The second case dispatches against a plan whose section does declare write paths and holds the printed command to the plan form — <code>--around plan-b</code> and no <code>--path</code> — so the fallback fires only for the plan that needs it.</p>
+  <p id="compose-a-review-remedy-from-the-dispatch-write-paths-control">Negative control, the declared mutation — restore the plan-slug-only command so <code>_health_review_compose_command</code> ignores the paths it is handed: 1 failed, 1 passed, <code>EXIT=1</code>. The executed remedy exits 1 with <code>{"detail": "plan 'plan-a' names no implementable section write paths", "error": "crew_error"}</code> — the pre-change behaviour, reproduced from the mutation and caught by the first case. The base arm runs the same test file against a tree extracted from the base revision with <code>git archive</code>, the module unmodified and the node's new test copied in: 1 failed, 1 passed, <code>EXIT=1</code> on the same case, which is the pre-change code refusing the remedy it printed.</p>
+  <p id="compose-a-review-remedy-from-the-dispatch-write-paths-neighbours">Three cases in <code>tests/test_dispatch_names_the_health_review.py</code> compared the printed command against a <code>COMPOSE_COMMAND</code> constant spelled <code>--around plan-a</code>, for a fixture plan that declares no section write paths — exactly the shape whose remedy changed, so all three went red on the change. Reproduced first, three serial runs on a tree extracted from the base revision with <code>git archive</code>: 3 passed each time (<code>EXIT=0</code>); three serial runs at the head worktree before the repair: 3 failed each time (<code>EXIT=1</code>), the diff naming <code>--around plan-a</code> against <code>--path reckon/alpha.py</code>. The constant now spells the command the block emits, still as an exact comparison, and a comment beside it records why the plan cannot be the subject and where the plan-declaring case is tested. After the repair the file's six cases and this node's two give 8 passed on three serial runs (<code>EXIT=0</code>). Logs: <code>gate-after.log</code>, <code>gate-base.log</code>, <code>negative-control.log</code>, <code>repro-head.log</code>, <code>repro-base.log</code>, <code>after-three.log</code> and <code>after-suite.log</code> in the run directory.</p>
+</article>
+</body>
+</html>
