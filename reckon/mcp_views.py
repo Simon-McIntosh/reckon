@@ -54,6 +54,13 @@ from reckon.project_state import _natural_identifier_key
 VIEW_NAMES = frozenset(
     {"summary", "detail", "history", "version", "raw", "schema", "section", "why"}
 )
+#: The view names a typed resource function composes. ``why`` is served only by
+#: ``read_plan``, which routes it to ``reckon.why_view`` before any typed view is
+#: asked, and no typed function builds that shape — so accepting the name in
+#: them would answer it with whatever shape the function fell through to. They
+#: refuse it by normalising against this set, which is one rule rather than a
+#: refusal written into each caller.
+TYPED_VIEW_NAMES = VIEW_NAMES - {"why"}
 #: Summary input key carrying a plan's assembled blocker state. The reading
 #: surface that owns a plan's holds fills it with ``roadmap.plan_blocker_state``'s
 #: answer; a summary that finds no such answer — a direct ``resource_view``
@@ -2230,12 +2237,20 @@ def storage_schema_for(resource_type: str) -> dict[str, Any]:
     )
 
 
-def normalize_view(view: str | None) -> str:
-    """Validate a view name, defaulting typed calls to ``summary``."""
+def normalize_view(
+    view: str | None, *, accepted: Iterable[str] = TYPED_VIEW_NAMES
+) -> str:
+    """Validate a view name, defaulting typed calls to ``summary``.
+
+    ``accepted`` is the set the calling surface composes. It defaults to the
+    typed views, so a typed function refuses a name it does not serve rather
+    than falling through to the shape it would otherwise return; a caller that
+    serves more names passes its own set.
+    """
 
     selected = (view or "summary").strip().lower()
-    if selected not in VIEW_NAMES:
-        choices = ", ".join(sorted(VIEW_NAMES))
+    if selected not in accepted:
+        choices = ", ".join(sorted(accepted))
         displayed = repr(view)
         if len(displayed) > 96:
             displayed = displayed[:93] + "..."

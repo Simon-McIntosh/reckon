@@ -617,21 +617,71 @@ def test_the_roadmap_description_does_not_promise_observed_at_unconditionally():
 
 
 def test_every_view_read_plan_serves_is_a_declared_view_name():
-    """The views read_plan dispatches are the set ``VIEW_NAMES`` declares.
+    """The views read_plan enumerates are exactly the set ``VIEW_NAMES`` declares.
 
     ``read_plan`` routes the why view beside its normaliser rather than through
     it, so a view can be served while the declared set omits it — and a caller
     reading either list on its own then holds a different vocabulary from the
-    one the read answers with.
+    one the read answers with. The comparison is an equality rather than a
+    subset, so a name the set declares and the read does not serve is caught
+    from the other side too.
     """
     from reckon import mcp
-    from reckon.mcp_views import VIEW_NAMES, normalize_view
+    from reckon.mcp_views import VIEW_NAMES
 
     documented = set(re.findall(r"``'([a-z]+)'``", mcp._read_plan_tool.__doc__ or ""))
-    assert "why" in documented, "the read_plan description must name the why view"
-    served = documented | set(VIEW_NAMES) | {mcp.WHY_VIEW}
-    assert served == set(VIEW_NAMES), (
+    assert documented, "the read_plan description must enumerate the views it serves"
+    assert documented == set(VIEW_NAMES), (
         "views read_plan serves but VIEW_NAMES omits: "
-        f"{sorted(served - set(VIEW_NAMES))}"
+        f"{sorted(documented - set(VIEW_NAMES))}; views VIEW_NAMES declares but "
+        f"read_plan does not serve: {sorted(set(VIEW_NAMES) - documented)}"
     )
-    assert normalize_view(mcp.WHY_VIEW) == mcp.WHY_VIEW
+
+
+def test_every_typed_view_refuses_the_why_view(fixture, config_home):
+    """Only the plan read serves ``why``; every typed view must refuse it.
+
+    The typed views share one normaliser, so a name added to the declared set
+    reaches all of them at once. A function that does not compose that shape
+    would answer it with whatever it falls through to and stamp the answer with
+    the requested name, which reads as a served view rather than a refusal.
+    """
+    from reckon import mcp
+    from reckon.mcp_views import (
+        ResourceSelector,
+        ViewRequestError,
+        audit_view,
+        discovery_view,
+        portfolio_view,
+        resource_view,
+        roadmap_view,
+    )
+
+    selector = ResourceSelector(project=PROJECT, type="plan", id="a")
+    typed = {
+        "resource": lambda: resource_view(selector, 1, {}, view="why", provenance={}),
+        "discovery": lambda: discovery_view(
+            PROJECT,
+            {},
+            view="why",
+            provenance={},
+            cursor=None,
+            limit=None,
+            include_prompts=False,
+        ),
+        "audit": lambda: audit_view(PROJECT, {}, view="why", cursor=None, limit=None),
+        "portfolio": lambda: portfolio_view({}, view="why"),
+        "roadmap": lambda: roadmap_view({}, view="why", cursor=None, limit=None),
+    }
+    for name, call in typed.items():
+        with pytest.raises(ViewRequestError) as raised:
+            call()
+        assert raised.value.code == "invalid_view", f"{name} answered why"
+
+    served = mcp._read_plan_tool(
+        project=PROJECT,
+        slug="a",
+        view="why",
+        checkout_path=str(fixture["root"]),
+    )
+    assert served.get("error") != "invalid_view"
