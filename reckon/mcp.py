@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import json
 import logging
+import subprocess
 import threading
 from collections.abc import Callable, Iterable, Mapping
 from datetime import UTC, datetime
@@ -2555,12 +2556,19 @@ def _roadmap_tool(
     view: _RoadmapViewName | None = None,
     cursor: str | None = None,
     limit: int | None = None,
+    since: str | None = None,
 ) -> dict[str, Any]:
     """Return a transport-bounded roadmap by default for one project.
 
     Lossless single-project reports routinely exceed the MCP response ceiling,
     so clients request ``view='raw'`` explicitly. Portfolio and graph targets
     retain their existing defaults.
+
+    ``since`` names an instant a previous read returned as its ``observed_at``;
+    given, the answer carries ``change_set``: the plan sections whose
+    declaration moved, the sections their landing released, and the runs whose
+    classification moved in the transition stream. Every answer carries
+    ``observed_at``, the instant to pass back on the next read.
     """
 
     # The roadmap read's own validator decides this, before the scan that builds
@@ -2572,7 +2580,7 @@ def _roadmap_tool(
     selected_view = _roadmap_selected_view(project, view)
     if checkout_path is None:
         checkout_path = _run_scoped_read_root(project)
-    return _roadmap(
+    answer = _roadmap(
         project,
         checkout_path=checkout_path,
         sprint=sprint,
@@ -2581,6 +2589,51 @@ def _roadmap_tool(
         cursor=cursor,
         limit=limit,
     )
+    return _answer_with_change_set(answer, project, since, checkout_path)
+
+
+def _answer_with_change_set(
+    answer: dict[str, Any],
+    project: str,
+    since: str | None,
+    checkout_path: str | None,
+) -> dict[str, Any]:
+    """Add a read's ``observed_at`` and, when a window is named, its change set.
+
+    The composition happens after the read, so the roadmap's stored
+    composition — which is keyed on the tree, not on a window — is neither
+    recomputed nor multiplied per ``since``. A portfolio or graph target covers
+    no single project's plans and gets its instant only.
+
+    A change set that cannot be composed is reported in its own field rather
+    than failing the read: the answer it rides on is still correct, and a
+    reader that asked for the window sees why it is absent instead of reading
+    an empty set as "nothing changed".
+    """
+
+    from reckon import change_set as change_set_module
+
+    answer["observed_at"] = change_set_module.observed_now()
+    single = project != "*" and not project.startswith("graph:")
+    if since is None and not single:
+        return answer
+    try:
+        composed = change_set_module.change_set(
+            project, since, repo=checkout_path if single else None
+        )
+    except (OSError, ValueError, subprocess.SubprocessError) as exc:
+        composed = {
+            "project": project,
+            "since": since,
+            "observed_at": answer["observed_at"],
+            "full": False,
+            "sections": [],
+            "newly_ready": [],
+            "runs": [],
+            "error": f"{type(exc).__name__}: {exc}",
+        }
+    answer["change_set"] = composed
+    return answer
 
 
 def _crew(
@@ -2845,7 +2898,7 @@ def _crew(
             advice=advice,
             dry_run=dry_run,
         )
-    return serve_crew_view(
+    answer = serve_crew_view(
         view,
         refresh=refresh,
         project=project,
@@ -2871,6 +2924,9 @@ def _crew(
         phase=phase,
         mine=mine,
     )
+    if view == "live" and isinstance(answer, dict) and answer.get("ok", True):
+        return _answer_with_change_set(answer, str(project or ""), since, checkout_path)
+    return answer
 
 
 # The action names are owned by the module that runs them, so the tool's own
