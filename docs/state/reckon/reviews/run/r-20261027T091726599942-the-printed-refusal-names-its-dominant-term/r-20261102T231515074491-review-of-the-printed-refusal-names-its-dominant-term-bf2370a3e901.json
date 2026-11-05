@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/dispatch.py:696",
+    "reckon/crew/dispatch.py:1851",
+    "reckon/crew/dispatch_sessions.py:1744",
+    "reckon/crew/queue_edit.py:289",
+    "reckon/crew/queue_admission.py:3976",
+    "reckon/crew_dispatch_commands.py:1875",
+    "reckon/crew_dispatch_commands.py:2133",
+    "reckon/crew_dispatch_commands.py:2367"
+  ],
+  "completed_at": "2026-11-02T23:51:13.336Z",
+  "dispatched_at": "2026-11-02T23:44:46Z",
+  "findings": [
+    {
+      "file": "reckon/crew/node.py",
+      "id": "f6dd0023fec",
+      "line": 638,
+      "severity": "non-blocking",
+      "text": "the figures-only fallback for a context-window verdict carrying no nested fit is untested: no case in tests/test_the_printed_refusal_names_its_dominant_term.py builds a hand-built verdict the way reckon/crew/queue_edit.py:289 does, and the string 'node context estimate' appears in no test, so a regression that mangled the queue-edit and horizon refusal wording would stay green."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit: 258ca4f8a0 replaces the local dominant-term clause with routing's rendering, ae2dbbfb separates the printed remedy by a semicolon, bf2370a3e9 rewrites the evidence fragment; 3 files, +58/-63, and ae2dbbfb..bf2370a3 changes only the fragment, so the gate at ae2dbbfb covers the reviewed code.",
+    "done_when": "the done-when asks for a write-path fixture, a mention fixture, a no-dominant-file fixture and unchanged figures; tests/test_the_printed_refusal_names_its_dominant_term.py holds exactly those three cases and logs/head_gate.log records 12 passed EXIT=0 over that file plus three neighbours.",
+    "goal": "the node goal is to carry the context refusal's dominant term and its origin into the message dispatch prints; reckon/crew/node.py:628 returns routing's rendering of the fit and line 636 prints it with the remedy.",
+    "manifest": "read at manifest.md; status complete, recording the head gate at ae2dbbfb (12 passed), base gate at 4eea7f1b (9 passed), base arm with the new cases (3 failed) and negative control (3 failed), each with a log path.",
+    "write_paths": "the declared paths are reckon/crew/node.py, tests/test_the_printed_refusal_names_its_dominant_term.py, the evidence fragment and the figures directory; the diff 83b2b9a..bf2370a3 touches only the first three."
+  },
+  "justifications": {
+    "durability": "tests/test_the_printed_refusal_names_its_dominant_term.py:126 asserts verdict['detail'] is inside the printed line, which reddens if reckon/crew/node.py:628 reverts to a locally composed clause, but the new figures-only fallback at reckon/crew/node.py:638 is asserted by no test.",
+    "evidence": "logs/head_gate.log (revision ae2dbbfb, 12 passed, EXIT=0), logs/base_gate.log (4eea7f1b, 9 passed, EXIT=0), logs/base_arm_with_new_tests.log (3 failed, EXIT=1) and logs/negative_control.log (3 failed, EXIT=1) each end in a bare EXIT= line and the manifest's baseline_suite/after_suite both record failure_count 0.",
+    "fit": "reckon/crew/node.py:590 imports routing's private renderer function-locally, matching the file's existing deferred private-import idiom, and _rendered_context_detail carries no plan, stage or ticket name.",
+    "goal_fidelity": "reckon/crew/node.py:628-638 prints routing._context_refusal_detail as the context refusal's message, so the dominant term, its token figure and its origin reach the dispatch CLI; the three figures keep their values though the leading sentence is reworded rather than merely extended.",
+    "reuse": "reckon/crew/node.py:628 calls routing._context_refusal_detail rather than re-rendering the dominant term, removing the duplication the previous review found; only the retained no-fit fallback at reckon/crew/node.py:629-633 still words the figures itself.",
+    "scope_discipline": "git diff --stat 83b2b9a..bf2370a3 lists only reckon/crew/node.py, tests/test_the_printed_refusal_names_its_dominant_term.py and docs/evidence/fragments/a-brief-should-not-cost-what-it-names/the-printed-refusal-nodes-its-dominant-term.html, all inside the reviewed run's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to carry the context refusal's dominant term and its origin into the message dispatch prints; reckon/crew/node.py:628 returns routing's rendering of the fit and line 636 prints it with the remedy.\nVERDICT done_when: the done-when asks for a write-path fixture, a mention fixture, a no-dominant-file fixture and unchanged figures; tests/test_the_printed_refusal_names_its_dominant_term.py holds exactly those three cases and logs/head_gate.log records 12 passed EXIT=0 over that file plus three neighbours.\nVERDICT write_paths: the declared paths are reckon/crew/node.py, tests/test_the_printed_refusal_names_its_dominant_term.py, the evidence fragment and the three figures directory; the diff 83b2b9a..bf2370a3 touches only the first three.\nVERDICT manifest: read at manifest.md; status complete, recording the head gate at ae2dbbfb (12 passed), base gate at 4eea7f1b (9 passed), base arm with the new cases (3 failed) and negative control (3 failed), each with a log path.\nVERDICT diff: read commit by commit: 258ca4f8a0 replaces the local dominant-term clause with routing's rendering, ae2dbbfb separates the printed remedy by a semicolon, bf2370a3e9 rewrites the evidence fragment; 3 files, +58/-63, and ae2dbbfb..bf2370a3 changes only the fragment, so the gate at ae2dbbfb covers the reviewed code.\nCALL_SITES: reckon/crew/dispatch.py:696, reckon/crew/dispatch.py:1851, reckon/crew/dispatch_sessions.py:1744, reckon/crew/queue_edit.py:289, reckon/crew/queue_admission.py:3976, reckon/crew_dispatch_commands.py:1875, reckon/crew_dispatch_commands.py:2133, reckon/crew_dispatch_commands.py:2367\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/node.py:628-638 prints routing._context_refusal_detail as the copy of the refusal's message, so the dominant term, its token figure and its origin reach the dispatch CLI.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/head_gate.log (revision ae2dbbfb, 12 passed, EXIT=0) and logs/base_gate.log (4eea7f1b, 9 passed, EXIT=0) both end in a bare EXIT= line, and both arms in the manifest record failure_count 0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 83b2b9a..bf2370a3 lists only the three declared paths and nothing else.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_the_printed_refusal_names_its_dominant_term.py:126 asserts verdict['detail'] is inside the printed line, which reddens if reckon/crew/node.py:628 reverts to a locally composed clause, but the new figures-only fallback at reckon/crew/node.py:638 is asserted by no test.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/node.py:590 imports routing's private renderer function-locally, matching the file's existing deferred private-import idiom, and carries no plan or stage name.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/node.py:628 calls routing._context_refusal_detail rather than re-rendering the dominant term; only the retained no-fit fallback at reckon/crew/node.py:629-633 still words the figures itself.\nFINDING reckon/crew/node.py:638 non-blocking: the figures-only fallback for a context-window verdict carrying no nested fit is untested, so a regression that mangled the queue-edit refusal wording would stay green.",
+  "review_run_id": "r-20261102T231515074491-review-of-the-printed-refusal-names-its-dominant-term-bf2370a3e901",
+  "reviewed_base_sha": "83b2b9a19d8430734f1ea9f4d4a8118774161b73",
+  "reviewed_head_sha": "bf2370a3e90101246d738ad63ed3f04b9577c2bf",
+  "reviewed_run_id": "r-20261027T091726599942-the-printed-refusal-names-its-dominant-term",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T06:18:48.945841+00:00",
+  "total": 111
+}

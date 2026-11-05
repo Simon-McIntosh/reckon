@@ -23,9 +23,9 @@
   <title>A Brief Should Not Cost What It Names | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="17">
-<meta name="plan-modified" content="2026-11-02">
-<meta name="plan-section-declarations" content="{&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;}">
+<meta name="plan-version" content="18">
+<meta name="plan-modified" content="2026-11-05">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -222,6 +222,14 @@ Section 2 comes first and is nearly free: the per-file breakdown is already comp
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="reduction-marker" data-choice="flag" data-by="Simon McIntosh" data-when="2026-11-02T21:09:02+00:00">
+    <p class="r-dec-q">How is a reduced brief recorded — as a flag, or as the diff against the refused attempt?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="flag">a flag plus the two token figures</button>
+      <button class="r-opt" data-value="diff">the diff between the refused and accepted briefs</button>
+      </p>
+    <p class="r-dec-rat">A run accepted after a context refusal records that it was retried, with the refused and accepted estimates; that is enough for an auditor to see a reduction happened and by how much, without storing brief diffs.</p>
+    </div>
 <div class="r-dec" data-key="reference-cost" data-choice="flat" data-by="Simon McIntosh" data-when="2026-11-02T21:09:02+00:00">
     <p class="r-dec-q">What does a mention cost, once it is not charged at file load?</p>
     <p class="r-dec-opts">
@@ -230,14 +238,6 @@ Section 2 comes first and is nearly free: the per-file breakdown is already comp
       <button class="r-opt" data-value="zero">nothing at all</button>
       </p>
     <p class="r-dec-rat">A mentioned path is charged one flat reference cost, the same kind of constant regenerated paths already use, so a mention costs a known amount whatever the file&#x27;s size and the estimate stays predictable.</p>
-    </div>
-<div class="r-dec" data-key="reduction-marker" data-choice="flag" data-by="Simon McIntosh" data-when="2026-11-02T21:09:02+00:00">
-    <p class="r-dec-q">How is a reduced brief recorded — as a flag, or as the diff against the refused attempt?</p>
-    <p class="r-dec-opts">
-      <button class="r-opt chosen" data-value="flag">a flag plus the two token figures</button>
-      <button class="r-opt" data-value="diff">the diff between the refused and accepted briefs</button>
-      </p>
-    <p class="r-dec-rat">A run accepted after a context refusal records that it was retried, with the refused and accepted estimates; that is enough for an auditor to see a reduction happened and by how much, without storing brief diffs.</p>
     </div>
 </section>
 
@@ -255,15 +255,6 @@ Section 2 comes first and is nearly free: the per-file breakdown is already comp
 <div class="r-comment" data-section="_top" data-id="c-20261021-declare-sections" data-who="reckon-build" data-when="2026-10-21T16:45:00Z">
     <div class="r-comment-body"><p>Sections declared against the code at activation. §1 (why) and §6 (non-goals) are framing. §3 is met: <code>_declared_input_files</code> in <code>reckon/crew/routing.py</code> charges a path only in a clause that declares it an input, so a mention costs nothing and a negated clause's paths are withheld. §4 is met by the same rule: a named anchor is not preloaded without any opt-out. §7 is met: dispatch grants each node its own <code>docs/figures/&lt;plan&gt;/&lt;node&gt;</code> directory beside the landing record. §2 and §5 are not built: a context refusal still reports only the total, and nothing records a brief reduced after a refusal. §9 takes the first row of §1's table in its regenerating form, which §6 had left out.</p></div>
 </div>
-<div class="r-comment" data-section="s9" data-id="c-run-r-20261021T180904443351-review-of-a-regenerated-path-is-charged-as-written-df48984e9db6" data-who="reckon-build" data-when="2026-10-21T18:31:40.713Z">
-    <div class="r-comment-body"><p>independent review of r-20261021T173243033733-a-regenerated-path-is-charged-as-written at head df48984e9 (base 0f9888eda) records a parsed review scoring goal_fidelity 20, evidence 14, scope_discipline 20, durability 16, fit 18, reuse 18 (total 106), added_failure_count 0, with three follow-on findings: the fold assertion at tests/test_a_regenerated_path_is_charged_as_written.py:337 supplies the value it asserts and guards nothing, the base arm at tests/test_a_regenerated_path_is_charged_as_written.py:39 is a collection error rather than failing tests, and the done-when's promoted-ledger-row half is asserted nowhere; no finding blocks the change.</p></div>
-</div>
-<div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-10-21T18:48:00Z">
-    <div class="r-comment-body"><p>Landed: --regenerate-path is claimed like a write path and charged a flat reference cost; gate 126 passed; review 106/120 with two follow-ons in §10. Evidence: <a href="/reckon/evidence/archive/a-brief-should-not-cost-what-it-names-landed.html#s9">§9 landing record</a>.</p></div>
-</div>
-<div class="r-comment" data-section="s9" data-id="c-run-r-20261021T173243033733-a-regenerated-path-is-charged-as-written" data-who="reckon-build" data-when="2026-10-21T18:08:13.360Z">
-    <div class="r-comment-body"><p>a declared regenerated path is folded into the write scope and charged one flat reference cost (4000 tokens) with provenance regenerated, so a fixture node writing a 1 MB record fits a 230144-token lane window (24000 tokens estimated) that the same file as a plain write path exceeds (305715 tokens, refused context-window-exceeded); gate 126 passed exit 0 against the base's collection error.</p></div>
-</div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261021T231933887750-review-of-a-regenerated-path-is-proved-on-the-ledger-bcace6a32d28" data-who="reckon-build" data-when="2026-10-21T23:37:44.168Z">
     <div class="r-comment-body"><p>independent review of r-20261021T225901318162-a-regenerated-path-is-proved-on-the-ledger at head bcace6a32d (base e8bbc2ce0) records a parsed review scoring goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 19, reuse 20 (total 117), added_failure_count 0, with one follow-on finding (the fold test's docstring at tests/test_a_regenerated_path_is_charged_as_written.py:353 overstates what the case reaches; the delivered fragment states the refusal correctly); no finding blocks the change.</p></div>
 </div>
@@ -272,15 +263,6 @@ Section 2 comes first and is nearly free: the per-file breakdown is already comp
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261021T225901318162-a-regenerated-path-is-proved-on-the-ledger" data-who="reckon-build" data-when="2026-10-21T23:17:25.208Z">
     <div class="r-comment-body"><p>tests/test_a_regenerated_path_is_charged_as_written.py now declares the path only through --regenerate-path and proves the fold reaches the built node's write_paths and the live claim, plus a promotion fixture that reads regenerate_paths off the promoted ledger row; gate 18 passed exit 0, and the two declared mutations each turn their case red (4 failed and 2 failed).</p></div>
-</div>
-<div class="r-comment" data-section="s3" data-id="c-reopen-s3" data-who="reckon-build" data-when="2026-10-22T07:40:00Z">
-    <div class="r-comment-body"><p>Reopened: this section was declared done in error. Its measure charges a mention at a reference cost, but <code>_declared_input_files</code> in <code>reckon/crew/routing.py</code> charges a mention nothing, and the <code>reference-cost</code> decision that selects the behaviour is still open. The code's current answer is <code>zero</code>; choosing among flat, capped-head and zero is the lead's decision.</p></div>
-</div>
-<div class="r-comment" data-section="s4" data-id="c-reopen-s4" data-who="reckon-build" data-when="2026-10-22T07:40:00Z">
-    <div class="r-comment-body"><p>Reopened: declared done in error. No anchor opt-out exists in <code>reckon/crew/</code> and <code>TaskNode</code> carries no such field, so neither half of the measure (the opt-out recorded on the run, and a path both opted out and declared as a write path refused) is met. It follows §3.</p></div>
-</div>
-<div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-10-22T07:40:00Z">
-    <div class="r-comment-body"><p>Met by the existing payload: the dry-run's <code>repository_files.named_files</code> and <code>write_paths</code> records carry <code>estimated_tokens</code> per file beside the total, and <code>_context_refusal_detail</code> in <code>reckon/crew/routing.py</code> renders the largest contributors with their token figures. The grep this section was filed on looked for <code>per_file</code> and missed both.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-scope-s2" data-who="reckon-build" data-when="2026-10-22T07:40:00Z">
     <div class="r-comment-body"><p>Already present at the base: the refusal names the largest contributing files with their token figures, and says no file dominates when none does. What remains is the origin of the dominant term, a declared write path or a mention, since the remedy differs between them.</p></div>
@@ -295,7 +277,28 @@ Section 2 comes first and is nearly free: the per-file breakdown is already comp
     <div class="r-comment-body"><p>a context refusal now names its single largest contributing input with its token figure and whether it arrived as a declared write path or as a mention, keeping the estimate, window, shortfall and contributor list unchanged; gate 23 passed, base arm 3 failed, negative control 3 failed</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261102T223050000262-review-of-the-printed-refusal-names-its-dominant-term-83b2b9a19d84" data-who="reckon-build" data-when="2026-11-02T22:46:41.422Z">
-    <div class="r-comment-body"><p>Independent review of r-20261027T091726599942 stored parsed at the reviewed head 83b2b9a1 scoring all six dimensions (goal_fidelity 18, evidence 19, scope_discipline 20, durability 19, fit 17, reuse 5, total 98/120) with 0 added failures against the reviewed run&#x27;s base and head suite arms and one non-blocking reuse finding; the record validates with crew check --review (EXIT=0).</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261027T091726599942 stored parsed at the reviewed head 83b2b9a1 scoring all six dimensions (goal_fidelity 18, evidence 19, scope_discipline 20, durability 19, fit 17, reuse 5, total 98/120) with 0 added failures against the reviewed run's base and head suite arms and one non-blocking reuse finding; the record validates with crew check --review (EXIT=0).</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261102T231515074491-review-of-the-printed-refusal-names-its-dominant-term-bf2370a3e901" data-who="reckon-build" data-when="2026-11-02T23:51:13.336Z">
+    <div class="r-comment-body"><p>Independent review of r-20261027T091726599942-the-printed-refusal-names-its-dominant-term for the commits gained since the previous review (83b2b9a to bf2370a3): parsed, scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 17, reuse 18, no findings, zero added failures; the gained commits resolve the prior review&#x27;s reuse finding by printing routing&#x27;s own rendering of the context-fit refusal.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-reopen-s3" data-who="reckon-build" data-when="2026-10-22T07:40:00Z">
+    <div class="r-comment-body"><p>Reopened: this section was declared done in error. Its measure charges a mention at a reference cost, but <code>_declared_input_files</code> in <code>reckon/crew/routing.py</code> charges a mention nothing, and the <code>reference-cost</code> decision that selects the behaviour is still open. The code's current answer is <code>zero</code>; choosing among flat, capped-head and zero is the lead's decision.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-reopen-s4" data-who="reckon-build" data-when="2026-10-22T07:40:00Z">
+    <div class="r-comment-body"><p>Reopened: declared done in error. No anchor opt-out exists in <code>reckon/crew/</code> and <code>TaskNode</code> carries no such field, so neither half of the measure (the opt-out recorded on the run, and a path both opted out and declared as a write path refused) is met. It follows §3.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-10-22T07:40:00Z">
+    <div class="r-comment-body"><p>Met by the existing payload: the dry-run's <code>repository_files.named_files</code> and <code>write_paths</code> records carry <code>estimated_tokens</code> per file beside the total, and <code>_context_refusal_detail</code> in <code>reckon/crew/routing.py</code> renders the largest contributors with their token figures. The grep this section was filed on looked for <code>per_file</code> and missed both.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261021T180904443351-review-of-a-regenerated-path-is-charged-as-written-df48984e9db6" data-who="reckon-build" data-when="2026-10-21T18:31:40.713Z">
+    <div class="r-comment-body"><p>independent review of r-20261021T173243033733-a-regenerated-path-is-charged-as-written at head df48984e9 (base 0f9888eda) records a parsed review scoring goal_fidelity 20, evidence 14, scope_discipline 20, durability 16, fit 18, reuse 18 (total 106), added_failure_count 0, with three follow-on findings: the fold assertion at tests/test_a_regenerated_path_is_charged_as_written.py:337 supplies the value it asserts and guards nothing, the base arm at tests/test_a_regenerated_path_is_charged_as_written.py:39 is a collection error rather than failing tests, and the done-when's promoted-ledger-row half is asserted nowhere; no finding blocks the change.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-10-21T18:48:00Z">
+    <div class="r-comment-body"><p>Landed: --regenerate-path is claimed like a write path and charged a flat reference cost; gate 126 passed; review 106/120 with two follow-ons in §10. Evidence: <a href="/reckon/evidence/archive/a-brief-should-not-cost-what-it-names-landed.html#s9">§9 landing record</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261021T173243033733-a-regenerated-path-is-charged-as-written" data-who="reckon-build" data-when="2026-10-21T18:08:13.360Z">
+    <div class="r-comment-body"><p>a declared regenerated path is folded into the write scope and charged one flat reference cost (4000 tokens) with provenance regenerated, so a fixture node writing a 1 MB record fits a 230144-token lane window (24000 tokens estimated) that the same file as a plain write path exceeds (305715 tokens, refused context-window-exceeded); gate 126 passed exit 0 against the base's collection error.</p></div>
 </div>
 </section>
 </main>
