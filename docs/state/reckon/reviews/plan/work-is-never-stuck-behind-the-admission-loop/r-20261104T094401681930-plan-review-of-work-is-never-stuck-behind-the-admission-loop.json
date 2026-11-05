@@ -1,0 +1,194 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-04T10:00:12.183Z",
+  "dispatched_at": "2026-11-04T09:55:07Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:225",
+      "id": "done_when-1",
+      "reason": "",
+      "text": "\u2014 s26 measures \"once the figure review is stored and complete, the same run is landed\" in a fresh temporary crew home, but in production a run refused for its missing figure review carries `admission_landing: refused` and `_refusal_holds` (queue_landing.py:268-296) is keyed on `code_stamp` and the code review's `review_stamp` only; storing the figure review moves neither stamp, so the refusal still holds and the run is never re-judged \u2014 the exact state the section exists to clear.",
+      "type": "done_when",
+      "would_change": null
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:233",
+      "id": "done_when-2",
+      "reason": "",
+      "text": "\u2014 s28's first case drives `advance_waiting_requests` directly and counts `project_section_readiness` through a patch, but the new key applies only when `_READINESS_PASS_ACTIVE` is set (queue_admission.py:2233); nothing in the case enters `readiness_pass()` or `project_read()`, so with the bounded read at its default True `_readiness_rows` takes the `section_readiness_rows` branch and returns before the whole-project call, making the count zero on the base revision and on the fixed revision alike and leaving the stated negative control unable to discriminate.",
+      "type": "done_when",
+      "would_change": null
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:237",
+      "id": "done_when-3",
+      "reason": "",
+      "text": "\u2014 s29's three cases are an added-and-reproducing failure, an added-and-flaky failure, and no added failure; no case has the candidate and main failing the same id, which is the ordinary state on a red main and is the state s29's own Why records (\"Both now fail on main 9430f8e207\").",
+      "type": "done_when",
+      "would_change": null
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:241",
+      "id": "done_when-4",
+      "reason": "",
+      "text": "\u2014 s30's first deliverable names four ways an earlier request can be held (a claim, a gate, a backoff, a plan review), while its gate measures only the claim case; a node that narrows `_earlier_overlapping_request` to skip claim-held requests alone passes all three cases and leaves the other three holds fencing later requests.",
+      "type": "done_when",
+      "would_change": null
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:241",
+      "id": "single_goal-1",
+      "reason": "",
+      "text": "\u2014 s30 bundles two independent repairs: the overlap rule in `_earlier_overlapping_request` and the ranking guarantee of a priority override under `fair_share_admission_order`/`weighted_project_order`; they share no code path, case 3 is the only arm that measures the second, and one write scope (`queue_admission.py`) is asked to carry both.",
+      "type": "single_goal",
+      "would_change": null
+    }
+  ],
+  "plan_commit": "86b3c34d5cc130998b4ff846ac2fdd2922627b39",
+  "plan_fingerprint": "ef3a743540c286d230b0e14525d3c05b431746c4751a367990897956562ff4c3",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 190,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "5c45dce540a895e91318f0ac6d25ec3f11264343",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "the section's done-when now carries the case the finding names",
+      "reason": "",
+      "when": "2026-11-05T09:46:30.206037+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "5c45dce540a895e91318f0ac6d25ec3f11264343",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "the section's done-when now carries the case the finding names",
+      "reason": "",
+      "when": "2026-11-05T09:46:58.708277+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "5c45dce540a895e91318f0ac6d25ec3f11264343",
+      "commit_basis": "edit",
+      "finding": "done_when-3",
+      "note": "the section's done-when now carries the case the finding names",
+      "reason": "",
+      "when": "2026-11-05T09:47:28.620090+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "5c45dce540a895e91318f0ac6d25ec3f11264343",
+      "commit_basis": "edit",
+      "finding": "done_when-4",
+      "note": "the section's done-when now carries the case the finding names",
+      "reason": "",
+      "when": "2026-11-05T09:47:51.415806+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "single_goal-1",
+      "reason": "both repairs change one ordering decision in one pass over one file; split, they would serialise on queue_admission.py for no gain, and case 3 already measures the second half",
+      "when": "2026-11-05T09:48:14.234904+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "5c45dce540a895e91318f0ac6d25ec3f11264343",
+      "commit_basis": "edit",
+      "note": "the section's done-when now carries the case the finding names",
+      "reason": "",
+      "when": "2026-11-05T09:46:30.206037+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "5c45dce540a895e91318f0ac6d25ec3f11264343",
+      "commit_basis": "edit",
+      "note": "the section's done-when now carries the case the finding names",
+      "reason": "",
+      "when": "2026-11-05T09:46:58.708277+00:00"
+    },
+    "done_when-3": {
+      "action": "acted",
+      "by": "",
+      "commit": "5c45dce540a895e91318f0ac6d25ec3f11264343",
+      "commit_basis": "edit",
+      "note": "the section's done-when now carries the case the finding names",
+      "reason": "",
+      "when": "2026-11-05T09:47:28.620090+00:00"
+    },
+    "done_when-4": {
+      "action": "acted",
+      "by": "",
+      "commit": "5c45dce540a895e91318f0ac6d25ec3f11264343",
+      "commit_basis": "edit",
+      "note": "the section's done-when now carries the case the finding names",
+      "reason": "",
+      "when": "2026-11-05T09:47:51.415806+00:00"
+    },
+    "single_goal-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "both repairs change one ordering decision in one pass over one file; split, they would serialise on queue_admission.py for no gain, and case 3 already measures the second half",
+      "when": "2026-11-05T09:48:14.234904+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-work-is-never-stuck-behind-the-admission-loop.v190.json",
+  "review_run_id": "r-20261104T094401681930-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "99c392f4ad83ddac90af1d919e74464bf89e1cd5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `select_review_for_head` resolves at reckon/crew/recovery_review_subject.py:113 and is called with no rubric at reckon/crew/queue_landing.py:861; `_readiness_rows` resolves at reckon/crew/queue_admission.py:2195 with the stated key; `_READINESS_PASS_ACTIVE` is the contextvar at queue_admission.py:2275; `_earlier_overlapping_request` resolves (definition at queue_admission.py:652, call at :4120); `landing_measure.py` exists with `importer_population` and `measure_run`; merges 30fbd6294e, 051c9c0fa3 and 9430f8e207 all resolve as commits, and head 9385b998b belongs to power_convertor so its absence from this repository is not a broken pointer.",
+    "done_when": "a finding \u2014 s26's second case lands a run whose figure review arrives with no prior refusal stamped, so the refusal-hold path that production takes is never exercised.",
+    "evidence_paths": "pass \u2014 the five sections name no node-local or scratchpad evidence path; the gate logs they rely on are the run's own manifest test_logs, and s23 remains the only evidence fragment they cite.",
+    "naming": "pass \u2014 the five new test names each state the mechanism (`test_the_lander_waits_for_every_owed_review`, `test_a_landing_refusal_names_its_remedy`, `test_a_pass_builds_each_project_once`, `test_the_lander_measures_the_population`, `test_a_held_request_holds_nothing_behind_it`), and none carries a plan label, stage word, version tag or ticket number.",
+    "reasoning": "pass \u2014 each root cause matches the code it cites: `select_review_for_head` discards figure-rubric records outright (recovery_review_subject.py:142-154), which is why the lander reads only the code review; the readiness key does carry plan and refs; and `order` is built once per pass from every placeable request, so a request the pass has already held stays in `order[:index]` and is counted as an overlap, exactly as s30 states.",
+    "single_goal": "a finding \u2014 s30 carries two independent deliverables (hold semantics, and priority ranking across sessions) with one write scope and one verdict.",
+    "wiring": "pass \u2014 plan-section-depends-on now declares s27\u2192s26, s29\u2192s26 and s30\u2192s28, every target resolves to a section that exists, and no section among the five consumes output it fails to declare."
+  },
+  "section_digests": {
+    "_document": "f880f752fa1a48fb80b116bd1fc9ce3a4ad4e0af1317d3ef3447875423290672",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s11": "64172d367078831447521db5db6f564603855f46c387c906413737be38d7cefa",
+    "s12": "a326ddd2ee6a25d3a5bd7e7faf7faebb13b159435640d33f4c6c5edcca238229",
+    "s13": "43c63cb3547e9638882e45af647c6eca92cdbd77c8006cbf416ed717619a79d5",
+    "s14": "8ad0ca2171f9b9e5d1a4402bed0ba51d908267ec88069268c781013864f569fa",
+    "s15": "97b76e836bce15b65611e3a1c12d5628da0992c3b604881d88f2e406aec3097b",
+    "s16": "de7130b93ad47423ed1f2ac37f7d700e9e1875834a26a33af10a97e2476eafa7",
+    "s17": "e0db3dac4c8e5a22f059034f39cf37bf8c5bd249834f218c25bdec42bc4151ed",
+    "s18": "dac73bb15e3a6db1d4fce585091868e67027d7235101498beef9a59ec2d88363",
+    "s19": "c1cb9323a74f953649b86e65f30cfa320b3f38079883c2a62230fe0b33e58fac",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s20": "132bce7e7e2e5612ff43da2f5ac5d14df2686c95a8118525bacac4349e87cb1b",
+    "s21": "ee777267cd96cff6866d857040b00da4e88084663ba40545bb4727aa3450d15c",
+    "s22": "ded37e8e903c88b4c4ba24e9bcfd1cc917e8112037b46dcbbf603bc8a83b9c4b",
+    "s23": "ccb7d854a9adbfef64161daad60b53aa6d860102e4771ff9a5577ab600a8cf79",
+    "s24": "61e0aa46c530807b80f7d600cfda4b2ccbbbe6a7695e74d51056473811046ce6",
+    "s25": "e45eb6699ec467a5bd9381005ac8a37e5079839d93875987c3ae51c7f7c2b7b3",
+    "s26": "539e81e221891e11763df9b3b7e69e7a645066f3800f04f204379c0c9cd606b3",
+    "s27": "3e00c68c2c7c78bd8c8b8456b0718c3bd0720d2858b7c95db2196c25e03b289c",
+    "s28": "30bc98aaddd2d6c8d28d1c452f880d7cb878cfb826d6984289a30e5036f5f654",
+    "s29": "9b6291a5aa06c78a5a4b91e0d0347e5c326910f310194a0fb127ae609f0e909f",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s30": "8ffdfc0bea13c1194422025c96e96c2f636f888a4097a62be293e48b8752cf0d",
+    "s4": "8220f4acb86bde075d194dffed5ce2cf67af7ba21c21fd4e67d63a215ff7f5c6",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "2f92e5358487aabaeb8d2b0c54fdf9a0407281e571a7eadaef0a2509754e3666",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T09:20:37.413939+00:00"
+}
