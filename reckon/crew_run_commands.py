@@ -293,39 +293,46 @@ def crew_merge(
 
     try:
         repository = merge.project_repository(project)
-        merge.require_promotable_head(
-            project,
-            repository,
-            head,
-            run_id=run_id,
-            gate=gate,
-            failure_classification=failure_classification,
-            commits=commits,
-            gate_check={
+        promotion_options = {
+            "run_id": run_id,
+            "gate": gate,
+            "failure_classification": failure_classification,
+            "commits": commits,
+            "gate_check": {
                 "command": gate_command,
                 "exit_status": gate_exit_status,
                 "log_path": gate_log_path,
                 "log_digest": gate_log_digest,
             },
-            suite_delta_waiver=waive_suite_delta,
-            boundary_waiver=waive_boundary_refusal,
-            resume_waiver=waive_resume_path,
-            review_waiver=waive_unreviewed_promotion,
-            negative_control_waiver=waive_negative_control,
-            no_impl_change=no_impl_change,
-            live_run_waiver=waive_live_run,
-            domain_waiver=waive_domain_check,
-            accepted_paths=dict(accepted_paths),
-            no_commit=no_commit,
-            plan_link=plan_link,
-            unplanned_reason=unplanned_reason,
-        )
+            "suite_delta_waiver": waive_suite_delta,
+            "boundary_waiver": waive_boundary_refusal,
+            "resume_waiver": waive_resume_path,
+            "review_waiver": waive_unreviewed_promotion,
+            "negative_control_waiver": waive_negative_control,
+            "no_impl_change": no_impl_change,
+            "live_run_waiver": waive_live_run,
+            "domain_waiver": waive_domain_check,
+            "accepted_paths": dict(accepted_paths),
+            "no_commit": no_commit,
+            "plan_link": plan_link,
+            "unplanned_reason": unplanned_reason,
+        }
+
+        def verify_promotion(checkout, _base, merged_head, _commit):
+            merge.require_promotable_head(
+                project, checkout, merged_head, **promotion_options
+            )
+
+        # A retry of a landed head still pushes, so check it before that path.
+        if merge._is_ancestor(repository, merge._rev_parse(repository, head), "HEAD"):
+            verify_promotion(repository, "", head, "")
         report = merge.land_merge(
             repository,
             head=head,
             message=message,
             body=body,
             candidate=candidate or None,
+            verify=verify_promotion,
         )
     except merge.MergePushOutstandingError as exc:
         _emit(exc.report, pretty)
