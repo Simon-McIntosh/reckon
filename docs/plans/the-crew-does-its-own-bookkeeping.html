@@ -22,7 +22,7 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="It collects the crew-command defects the power_convertor fleet reported on 2026-10-22; the monitor&#x27;s own items are filed in the-monitor-shows-the-work-it-watches §81–§88, related duty fixes live in a-coordinator-can-clear-its-own-duties, and no section waits on another plan.">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;implementable&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;implementable&quot;,&quot;s25&quot;:&quot;implementable&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
-  <meta name="plan-version" content="44">
+  <meta name="plan-version" content="45">
   <meta name="plan-modified" content="2026-11-05">
   <title>The Crew Does Its Own Bookkeeping | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -294,6 +294,9 @@
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261105T102251084655-review-of-a-locked-ledger-store-is-retried-dae0aa1423b8" data-who="reckon-build" data-when="2026-11-05T10:51:57.406Z">
     <div class="r-comment-body"><p>Independent review of the two commits gained since the previous review (02f6f1b963, the landed regression test; dae0aa1423, the evidence record pointing at it) at reviewed base ec03593f7c and head dae0aa1423. The prior blocking finding is answered: removing the retry from the package now reddens two repository tests (logs/in-tree-test-no-retry.txt: 2 failed, 1 passed), where before nothing in the tree reddened. One non-blocking finding: test_a_short_lock_is_waited_out is green in that same negative control, so it measures a bare connection's five-second driver patience rather than the retry, and the done_when's "the short lock then fails the append" clause is unmet and unsatisfiable at any hold under 5 s while INDEX_RETRY_SECONDS is 3.0.</p></div>
 </div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261103T073033751153-a-locked-ledger-store-is-retried" data-who="reckon-build" data-when="2026-11-05T06:33:09Z">
+    <div class="r-comment-body"><p>run_store.append retries a locked store write with a wall-clock-bounded backoff (INDEX_RETRY_SECONDS 3 s) below the append seam. The retry helper _retrying is the only opener that passes INDEX_BUSY_TIMEOUT_SECONDS, so every other connection keeps the driver&#x27;s five-second patience, and run_store.import_ledger — the repair pass the promotion gate already runs — writes through it, so a lock met while importing is waited out instead of raising. The duplicate ledger-side repair (repair_index/unindexed_run_ids) is deleted. Measure against base 327ce7a6bb: a 0.6 s lock now succeeds on retry where base failed after one 5.01 s attempt with no row; a 5.0 s lock reports failed and import_ledger appends it (rows_imported 1); an import begun under a 1.0 s lock completes (1.07 s). Negative controls: retry bound removed -&gt; the 0.6 s lock fails; pre-repair tree under a 1.0 s lock -&gt; import_ledger raises OperationalError after 0.2 s; pre-repair tree retains repair_index/unindexed_run_ids, the repaired head does not.</p></div>
+</div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261103T081407226111-review-of-a-research-or-evidence-document-cannot-carry-a-plans-slug-d060a1bdc29d" data-who="reckon-build" data-when="2026-11-03T08:35:55.649Z">
     <div class="r-comment-body"><p>stored a parsed review record for run r-20261103T073250723891 at reviewed head d060a1bdc29d, scoring all six dimensions (goal_fidelity 19, evidence 18, scope_discipline 20, durability 4, fit 18, reuse 12) with zero added failures against the reviewed run's base and head suite logs, one blocking finding (no committed test) and two non-blocking findings</p></div>
 </div>
@@ -351,14 +354,14 @@
 <div class="r-comment" data-section="s3" data-id="c-20261023-s3-title" data-who="reckon-build" data-when="2026-10-23T08:00:00Z">
     <div class="r-comment-body"><p>Content review of v10 on 2026-10-23, finding single_goal-2, declined for that wave because §3 was not being built: §3's heading and followup title still promise that a resumed run's brief names its current head, which its deliverable hands to §20. Retitle §3 and its followup before dispatching it.</p></div>
 </div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261105T121848963941-review-of-a-merge-refuses-a-run-whose-promotion-would-be-refused-2dccc0f9c632" data-who="reckon-build" data-when="2026-11-05T12:28:51Z">
+    <div class="r-comment-body"><p>Parsed independent review of source base 2c3100cb3d84b65ce531afd5cc2ac80025754755 and head 2dccc0f9c6328c8b94fd4c0ca053823114ec5137 scores all six dimensions (18/18/20/3/18/19), records zero added failures and one blocking durability finding.</p></div>
+</div>
 <div class="r-comment" data-section="s7" data-id="c-20261023-s7-title" data-who="reckon-build" data-when="2026-10-23T08:00:00Z">
     <div class="r-comment-body"><p>Content review of v10 on 2026-10-23, finding single_goal-1, declined for that wave because §7 was not being built: §7's heading and <em>Why</em> still promise that a resume reports its own success, and cite the already-has-a-resume-launching incident, which its deliverable hands to §19. Retitle §7 and its followup before dispatching it.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-20261023-s8-review" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
     <div class="r-comment-body"><p>Content review of v11 on 2026-10-23: <code>_committed_scope</code> in <code>reckon/crew/promotion_evidence.py</code> deliberately diffs each cited commit rather than the base-to-head span, so §8's prescribed base-to-head comparison is the span diff that function rejects. Rework §8 before dispatch.</p></div>
-</div>
-<div class="r-comment" data-section="s4" data-id="c-run-r-20261105T121848963941-review-of-a-merge-refuses-a-run-whose-promotion-would-be-refused-2dccc0f9c632" data-who="reckon-build" data-when="2026-11-05T12:28:51Z">
-    <div class="r-comment-body"><p>Parsed independent review of source base 2c3100cb3d84b65ce531afd5cc2ac80025754755 and head 2dccc0f9c6328c8b94fd4c0ca053823114ec5137 scores all six dimensions (18/18/20/3/18/19), records zero added failures and one blocking durability finding.</p></div>
 </div>
 </section>
 </main>
