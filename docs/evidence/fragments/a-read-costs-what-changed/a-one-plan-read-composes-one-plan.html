@@ -1,0 +1,75 @@
+<section id="a-one-plan-read-composes-one-plan-landing">
+  <h2>A one-plan read reads its project's declaring record, not the project</h2>
+
+  <p><strong>What changed.</strong>
+  <code>reckon/project_state.py</code> gains
+  <code>read_project_manifest(docs_dir, project)</code>: the project's declaring
+  record alone — the <code>project</code> resource in a distributed store, and
+  the legacy index in a legacy one, where the north stars sit beside the project
+  rows rather than on the row. The mode branch now exists once, and
+  <code>read_project_derivations</code> reads through it. In
+  <code>reckon/_store.py</code>, <code>_declared_north_stars</code> takes the
+  declared north-star ids from that record instead of from
+  <code>compose_project_state</code>, so the north-star diagnostic a plan read
+  feeds no longer composes the project. The diagnostic text is unchanged in both
+  storage layouts.</p>
+
+  <h3 id="a-one-plan-read-composes-one-plan-measured">Measured</h3>
+
+  <p>Compositions of the project state counted while one plan is read and
+  written, through a patch on
+  <code>project_state.compose_project_state</code>. The base revision is the
+  same tree with the two source changes reverted; the count patch replaces the
+  composed function, so a memo inside it cannot hide a call.</p>
+
+  <table id="a-one-plan-read-composes-one-plan-counts">
+    <caption>Compositions per operation. The inventory column is what the
+    summary view's own project-inventory read costs on its own; the plan read
+    must add nothing on top of it.</caption>
+    <thead><tr><th>operation</th><th>store</th><th>base</th><th>head</th></tr></thead>
+    <tbody>
+      <tr><td><code>read_plan(view="summary")</code>, plan's own read</td><td>legacy</td><td>1</td><td>0</td></tr>
+      <tr><td><code>read_plan(view="summary")</code>, plan's own read</td><td>distributed</td><td>1</td><td>0</td></tr>
+      <tr><td><code>edit_plan set</code></td><td>legacy</td><td>1</td><td>0</td></tr>
+      <tr><td><code>edit_plan set</code></td><td>distributed</td><td>1</td><td>0</td></tr>
+      <tr><td>project inventory read alone</td><td>legacy</td><td>0</td><td>0</td></tr>
+      <tr><td>project inventory read alone</td><td>distributed</td><td>1</td><td>1</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>The inventory column is a finding, not a pass.</strong> A summary
+  read on a distributed store still composes the project once, and it did before
+  this change: <code>reckon/mcp_views.py:_project_state_lists</code> composes the
+  project to answer the sprint, milestone and blocker lists the summary view
+  carries. That is a different composition from the north-star one, it belongs
+  to the inventory reader, and <code>reckon/mcp_views.py</code> is outside this
+  node's write scope and is held by concurrent nodes. Recorded under
+  <code>outside_scope</code>.</p>
+
+  <table id="a-one-plan-read-composes-one-plan-arms">
+    <caption>Every arm is a log whose header names its revision, tree and
+    command, and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>node tests at head</td><td>worktree</td><td>6 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>node tests at base source, new test copied in</td><td><code>git archive HEAD</code></td><td>2 failed, 4 passed, <code>EXIT=1</code>: the count case in both fixtures</td></tr>
+      <tr><td>importers at head</td><td>worktree</td><td>46 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>importers at base</td><td><code>git archive HEAD</code></td><td>44 passed, 2 failed, <code>EXIT=1</code>: only the new count case</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Negative controls.</strong> Restoring the
+  <code>compose_project_state</code> call in
+  <code>_store._declared_north_stars</code> turns the count case red in both
+  fixtures (<code>EXIT=1</code>). Dropping the legacy north-star merge from
+  <code>read_project_manifest</code> turns
+  <code>test_a_declared_north_star_carries_no_diagnostic[legacy]</code> red
+  (<code>EXIT=1</code>): the plan naming the declared direction is reported
+  undeclared again.</p>
+
+  <p><strong>Lint.</strong> <code>ruff check</code> and
+  <code>ruff format --check</code> are clean on the new test. The two source
+  files carry pre-existing formatting and lint findings at the base revision as
+  well; the format hunks those tools report in them are not in the regions this
+  change touches.</p>
+</section>
