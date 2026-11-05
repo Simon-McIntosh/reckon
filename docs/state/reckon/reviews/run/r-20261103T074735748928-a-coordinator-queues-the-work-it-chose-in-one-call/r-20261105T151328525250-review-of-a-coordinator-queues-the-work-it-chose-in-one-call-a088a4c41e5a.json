@@ -1,0 +1,68 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:_queue_dispatch_batch",
+    "reckon/crew_dispatch_commands.py:crew_dispatch"
+  ],
+  "completed_at": "2026-11-05T15:25:56.750Z",
+  "dispatched_at": "2026-11-05T15:17:17Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_batch.py",
+      "id": "f6ef41a70d4",
+      "line": "164",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_built_once` still derives the project's whole roadmap once per batch, so the done-when's sixth clause (\"build_roadmap is not called\") is not met as written \u2014 the gate now measures exactly one call instead of none, and the whole-project derivation the clause exists to remove still happens per batch call."
+    },
+    {
+      "file": "reckon/crew/dispatch_batch.py",
+      "id": "f5db1cd0d5c",
+      "line": "105",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_SENTENCE_END` ends the write-paths sentence at the first `.` followed by whitespace or end, so an abbreviation such as `e.g.` or `i.e.` inside the sentence truncates it and silently drops every write path named after the abbreviation."
+    },
+    {
+      "file": "reckon/crew/dispatch_batch.py",
+      "id": "f79cdf47740",
+      "line": "164",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_built_once` duplicates the discovery-plus-roadmap_build_scope composition that `reckon/crew/plan_review.py:5265 project_section_readiness` already owns (it wraps the scope owner but re-implements the composition around it), while `_parsed_once` at reckon/crew/dispatch_batch.py:135 duplicates `reckon/file_memo.py:358 memoized` and `_PlanRead.write_paths` at :286 duplicates `reckon/crew/plan_review.py:4548 code_review_paths_from_plan`."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read both repair commits against 63e2271a4c: afba652dbb (3 files) and a088a4c41e (1 file), +210/-61, every file inside the declared scope; ruff check and ruff format --check are clean on the three staged .py paths at a088a4c41e.",
+    "done_when": "the done-when's six clauses (prompt.txt:147) are asserted in tests/test_a_batch_queues_the_chosen_sections.py:230-296 and :299-328; five are asserted exactly, and the sixth, \"build_roadmap is not called\", is now measured as exactly one call at tests/test_a_batch_queues_the_chosen_sections.py:322 \u2014 a different quantity from the done-when's zero.",
+    "goal": "the node goal is one batch call that queues a coordinator's chosen sections (prompt.txt:38); the landed change keeps that at reckon/crew/dispatch_batch.py:483 `queue_batch` reached from reckon/crew_dispatch_commands.py:1515, and the repair round only adds derived-field parsing and roadmap memoisation.",
+    "manifest": "read; it records status complete, head a088a4c41e, after.log (2 passed, EXIT=0), head.log (32 passed, EXIT=0) and negative_control.log (two arms, EXIT=1 each).",
+    "write_paths": "the declared write paths (prompt.txt:77-84) name dispatch_batch.py, crew_dispatch_commands.py, the build skill, the sprint-orchestration reference, the gate test, the evidence fragment and a figures directory; the repair diff touches four of those files and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_batch_queues_the_chosen_sections.py:322 reddens at 12 builds when the memo is removed (negative_control.log arm 2) and :262 reddens if the extension filter or the sentence stop is reverted, but :322 does not assert which roadmap the single build covers or that every reader is served from it.",
+    "evidence": "tests/test_a_batch_queues_the_chosen_sections.py:322 asserts `len(built) == 1`, measuring one roadmap derivation where prompt.txt:147 states the done-when's sixth clause as no call, so five of six clauses are measured as stated and the sixth is measured against a different figure.",
+    "fit": "reckon/crew/dispatch_batch.py follows the surrounding module idiom, the exception is renamed to BatchEntryRefusedError, and `ruff check` and `ruff format --check` pass on all three staged .py paths at a088a4c41e.",
+    "goal_fidelity": "reckon/crew/dispatch_batch.py:492 wraps `_queue_batch` in `_parsed_once` and `_built_once`, so a six-entry call over one project parses each plan once and derives the roadmap once, which is the one-call economy the goal names.",
+    "reuse": "reckon/crew/dispatch_batch.py:164 re-implements the discovery-plus-roadmap_build_scope composition owned by reckon/crew/plan_review.py:5265 without extending it, and the module still carries its own parse cache at :135 beside reckon/file_memo.py:358.",
+    "scope_discipline": "every path in 63e2271a4c..a088a4c41e (dispatch_batch.py, crew_dispatch_commands.py, the gate test, the evidence fragment) is inside the declared write paths at prompt.txt:77-84, and the E303 at crew_dispatch_commands.py:1139 is removed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal at prompt.txt:38 (\"A coordinator queues the work it chose in one call\"); reckon/crew/dispatch_batch.py:483 `queue_batch` still implements it and the repair round only adds the derived-field parsing and roadmap memoisation.\nVERDICT done_when: read the six clauses at prompt.txt:147 against tests/test_a_batch_queues_the_chosen_sections.py:230-296 and :299-328; five are asserted exactly and the sixth, \"build_roadmap is not called\", is replaced at :322 by `assert len(built) == 1`, a different quantity from the done-when's zero.\nVERDICT write_paths: read the declared scope at prompt.txt:77-84; the four files in 63e2271a4c..a088a4c41e (reckon/crew/dispatch_batch.py, reckon/crew_dispatch_commands.py, tests/test_a_batch_queues_the_chosen_sections.py, the evidence fragment) are all inside it.\nVERDICT manifest: read; it records status complete, head a088a4c41e, after.log (2 passed, EXIT=0), head.log (32 passed, EXIT=0) and negative_control.log (two arms, EXIT=1).\nVERDICT diff: read afba652dbb and a088a4c41e against 63e2271a4c commit by commit; +210/-61 across four files, all inside scope, with the write-path sentence stop, the source-extension filter, the roadmap memo and the E303 removal landed.\nCALL_SITES: reckon/crew_dispatch_commands.py:_queue_dispatch_batch, reckon/crew_dispatch_commands.py:crew_dispatch\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_batch.py:492 wraps the batch in `_parsed_once` and `_built_once`, so a six-entry call over one project parses each plan once and derives the roadmap once.\nSCORE evidence: 14\nJUSTIFICATION evidence: tests/test_a_batch_queues_the_chosen_sections.py:322 asserts one roadmap build where prompt.txt:147 states the done-when's sixth clause as no call.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in 63e2271a4c..a088a4c41e is inside the declared write paths at prompt.txt:77-84, and the E303 at crew_dispatch_commands.py:1139 is removed.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_batch_queues_the_chosen_sections.py:322 reddens at 12 builds when the memo is removed (negative_control.log arm 2), but it does not assert which roadmap the single build covers.\nSCORE fit: 18\nJUSTIFICATION fit: ruff check and ruff format --check pass on the three staged .py paths at a088a4c41e, and the exception now follows the module's Error-suffixed naming.\nSCORE reuse: 10\nJUSTIFICATION reuse: reckon/crew/dispatch_batch.py:164 re-implements the discovery-plus-roadmap_build_scope composition owned by reckon/crew/plan_review.py:5265 without extending it.\nFINDING reckon/crew/dispatch_batch.py:164 non-blocking: `_built_once` still derives the project's whole roadmap once per batch, so the done-when's sixth clause is not met as written and the whole-project derivation the sixth clause exists to remove still happens per call.\nFINDING reckon/crew/dispatch_batch.py:105 non-blocking: `_SENTENCE_END` ends the write-paths sentence at the first `.` followed by whitespace, so an `e.g.` or `i.e.` inside the sentence truncates it and drops every path named after the abbreviation.\nFINDING reckon/crew/dispatch_batch.py:164 non-blocking: `_built_once` duplicates the discovery-plus-roadmap_build_scope composition owned by reckon/crew/plan_review.py:5265 project_section_readiness, while `_parsed_once` at :135 duplicates reckon/file_memo.py:358 and the write-path reader at :286 duplicates reckon/crew/plan_review.py:4548.\n",
+  "review_run_id": "r-20261105T151328525250-review-of-a-coordinator-queues-the-work-it-chose-in-one-call-a088a4c41e5a",
+  "reviewed_base_sha": "63e2271a4c9ec129ac63312753cf3c9aeb107f90",
+  "reviewed_head_sha": "a088a4c41e5ac40c4a9254d3d17c7b270d42a0ef",
+  "reviewed_run_id": "r-20261103T074735748928-a-coordinator-queues-the-work-it-chose-in-one-call",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 10,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T15:35:58.295929+00:00",
+  "total": 96
+}
