@@ -25,7 +25,7 @@
   <title>A Coordinator Sees the Board | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="29">
+<meta name="plan-version" content="30">
 <meta name="plan-modified" content="2026-11-05">
 </head>
 <body>
@@ -297,6 +297,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261105T163308099273-review-of-the-critical-path-reads-link-by-link-820eef6b7dcc" data-who="reckon-build" data-when="2026-11-05T16:50:11.053Z">
     <div class="r-comment-body"><p>review of r-20261027T103440000932-the-critical-path-reads-link-by-link at head 820eef6b7dcc: parsed record scoring goal_fidelity 19, evidence 12, scope_discipline 20, durability 17, fit 16, reuse 20 (total 104), added_failure_count 0, four non-blocking findings (stale docstring at reckon/roadmap.py:3302, untested decision-before-wait ordering, stale case counts in the evidence fragment, three-file gate not re-run at the head).</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261027T103440000932-the-critical-path-reads-link-by-link" data-who="reckon-build" data-when="2026-11-05T16:29:14Z">
+    <div class="r-comment-body"><p>roadmap critical_path gains `links` (per-link primary_state, holds, and the state&#x27;s own evidence) plus `head` and `head_note`; the 08:50Z fixture reads shared-coil-supply-model#s9 ready-idle with coordinator cdb769a4-7af0-4304-a144-f39ecbf8c502 and iter-switched-terminal-transients#s6 gated with holds g-istt-6 and shared-coil-supply-model#s9; `critical_path.sections` keeps its ref shape so the four readers outside this module are unchanged; three-file gate 22 passed; the evidence record now carries all four links and every hold, and the repair arms run 5 passed at ee5067137e26e4dc9dd58e87d35638ee4328fd37 and 6 passed at 6d76ede655a6bfb020c885e66e13186f7b39dfde.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261105T155603994486-review-of-the-board-extends-the-coordinator-directory-fede253832fd" data-who="reckon-build" data-when="2026-11-05T16:06:28.052Z">
     <div class="r-comment-body"><p>The review of the-board-extends-the-coordinator-directory (1f5a6bb2..fede253832) is stored and validated: scores goal_fidelity 16, evidence 19, scope_discipline 19, durability 16, fit 17, reuse 16; four non-blocking findings (duplicate lane-document parse re-added at mcp_views.py:747, ready join capped at the ready-set view's default page at directory.py:253, ready-idle join withheld on workstation-scope reads at directory.py:345, binding verdict unguarded for a disregarded claim at tests/test_the_board_extends_the_directory.py:191); zero added failures against the base arm.</p></div>
