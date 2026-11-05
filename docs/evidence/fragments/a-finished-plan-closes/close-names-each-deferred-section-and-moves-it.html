@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>close names each deferred section and moves it</title>
+</head>
+<body>
+<main class="evidence-fragment">
+<h2 id="close-names-each-deferred-section-and-moves-it-title">close names each deferred section and moves it</h2>
+
+<p id="close-names-each-deferred-section-and-moves-it-summary">
+<code>close</code> still refuses a plan holding a deferred section, but the
+refusal now names both ways to clear one: a <code>descoped</code> declaration
+carrying a reason, or a <code>descoped</code> declaration carrying
+<code>moved_to</code>, the successor section that now owns the work. The second
+is a move, not a drop.
+</p>
+
+<h3 id="close-names-each-deferred-section-and-moves-it-refusal">What the refusal says
+</h3>
+<p id="close-names-each-deferred-section-and-moves-it-refusal-text">
+<code>_require_every_section_ticked</code> in <code>reckon/_store.py</code>
+names every open section and then both remedies:
+<code>{"status": "descoped", "reason": "&lt;why&gt;"}</code> or
+<code>{"status": "descoped", "reason": "&lt;why&gt;", "moved_to":
+"&lt;plan&gt;#&lt;section&gt;"}</code>. On the base commit the text names
+neither, and the fixture's close test fails there.
+</p>
+
+<h3 id="close-names-each-deferred-section-and-moves-it-move">What a move carries
+</h3>
+<p id="close-names-each-deferred-section-and-moves-it-move-text">
+The <code>moved_to</code> ref must resolve to a section the successor plan
+declares, or the write is refused before anything is written. The successor
+section then receives the moved section's authored prose, its
+<code>effort_hours</code>, its capability requirement (each dimension raised to
+the stricter of the two) and its open gates, and lists the move as an incoming
+link. The successor's half is a second plan write that lands only after the
+source plan has landed, so a refused source write moves nothing. The moved
+section's comments are re-anchored on the <code>c-move-&lt;section&gt;</code>
+record the write leaves on the closed plan, and no gate or comment on either
+plan names a section it does not declare.
+</p>
+
+<h3 id="close-names-each-deferred-section-and-moves-it-evidence">Evidence
+</h3>
+<p id="close-names-each-deferred-section-and-moves-it-evidence-text">
+Every figure here names the revision it was measured on and the command that
+produced it. The green arm is
+<code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+tests/test_close_names_each_deferred_section_and_moves_it.py</code> —
+<strong>6 passed, EXIT=0 at <code>3ad29535b1</code></strong>. The two red arms
+select and resolve differently, so their commands are given as they ran. The
+case that a refused move writes nothing, evidence included, is red against the
+code before the fix: the same pytest invocation with
+<code>-k test_a_refused_move_writes_nothing_not_even_its_evidence</code>
+appended (<strong>1 failed, 5 deselected, EXIT=1 at
+<code>2be71296a4</code></strong>). The base arm leaves the refusal naming no
+remedy and is red at <code>ab87725e67</code>, run against a scratch tree of
+that revision with <code>PYTHONPATH</code> pointing at it and the main
+checkout's interpreter. The declared mutation — leaving the moved section's
+open gate on the closed plan — reddens exactly the successor-carries-the-gate
+assertion.
+The three-file gate — the node file above plus
+<code>tests/test_schema.py</code> and
+<code>tests/test_a_plan_closes_in_one_op.py</code> — ran to completion at the
+final head <code>101f89ca51</code>: <strong>3 failed, 3733 passed,
+EXIT=1</strong>, and the node file alone is <strong>9 passed at that same
+revision</strong>. The three red rows are
+<code>test_cross_project_conformance</code> entries over mounted plans this
+work does not touch, and they fail identically at the base revision.
+<code>moved_to</code> is stated in <code>PLAN-FORMAT.md</code> and the
+<code>reckon-edit</code> skill; the durable record on the successor is the
+<code>data-links</code> entry, so the section schema carries no
+<code>moved_to</code> field of its own.
+</p>
+</main>
+</body>
+</html>

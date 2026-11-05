@@ -554,6 +554,54 @@ def section_prose(
         yield identity, _strip_tags(raw)
 
 
+def insert_section_prose(document: str, section_id: str, prose: str) -> str:
+    """Append authored prose to one section's body, read from the same raw read.
+
+    The paragraph goes after the section's record element when that element
+    directly follows the heading, because a paragraph between a heading and its
+    adjacent record breaks the pairing the reader requires; otherwise it goes
+    directly after the heading. Both extents come from
+    :func:`_structural_spans`, so this is the section reader :func:`section_prose`
+    shares and not a second recogniser of authored sections.
+
+    Raises :class:`ValueError` when the document carries no heading or record
+    for ``section_id``.
+    """
+    if not prose:
+        return document
+    records = _structural_spans(document)
+    heading = next(
+        (
+            record.heading
+            for record in records
+            if record.heading is not None
+            and section_id in (record.heading.identity, record.heading.own_id)
+        ),
+        None,
+    )
+    if heading is None:
+        raise ValueError(
+            f"section {section_id!r}: cannot carry moved prose, no heading or "
+            "record found in the successor's document"
+        )
+    insert_at = heading.heading_span[1]
+    record = next(
+        (
+            candidate
+            for candidate in records
+            if candidate.tag == "section"
+            and str(candidate.attributes.get("data-id") or "") == section_id
+            and candidate.start >= heading.heading_span[1]
+            and not document[heading.heading_span[1] : candidate.start].strip()
+        ),
+        None,
+    )
+    if record is not None:
+        insert_at = record.end
+    paragraph = f"\n<p>{_htmlmod.escape(prose)}</p>"
+    return document[:insert_at] + paragraph + document[insert_at:]
+
+
 def landed_section_ids(html_text: str) -> frozenset[str]:
     """Identities whose rendered section extent is an unambiguous landed card."""
     return frozenset(

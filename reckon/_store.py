@@ -61,6 +61,7 @@ from __future__ import annotations
 
 import fcntl
 import hashlib
+import html
 import json
 import os
 import re
@@ -73,7 +74,7 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import IO, Any, TextIO
 
-from reckon._schema import is_section_identity
+from reckon._schema import PlanRef, is_section_identity
 from reckon.lifecycle import TERMINAL_STATUSES
 
 PLAN_SUMMARY_MAX_LENGTH = 160
@@ -906,11 +907,12 @@ _WRITE_EFFECT_KINDS = (
     "section_dependency_edits",
     "plan_meta_removals",
     "declaration_removals",
+    "section_moves",
 )
 
-_WRITE_EFFECTS: dict[str, ContextVar[tuple[dict[str, Any], list[dict[str, str]]] | None]] = {
-    kind: ContextVar(f"reckon_{kind}", default=None) for kind in _WRITE_EFFECT_KINDS
-}
+_WRITE_EFFECTS: dict[
+    str, ContextVar[tuple[dict[str, Any], list[dict[str, str]]] | None]
+] = {kind: ContextVar(f"reckon_{kind}", default=None) for kind in _WRITE_EFFECT_KINDS}
 
 # The most recently read plan's HTML, kept so an op batch applied to that plan
 # can see the document it was applied to even when its project is not mounted.
@@ -1480,6 +1482,17 @@ def _write_state_locked(
     section_dependency_edits = _consume_write_effects("section_dependency_edits", data)
     meta_removals = _consume_write_effects("plan_meta_removals", data)
     declaration_removals = _consume_write_effects("declaration_removals", data)
+    section_moves = _consume_write_effects("section_moves", data)
+    # A move names a section of another plan, and that section must exist. Both
+    # are judged here, before any file is written: the evidence append below
+    # lands earlier than the carry that reads these moves, so a refusal raised
+    # there would leave the evidence on disk behind a plan refused by its own
+    # batch.
+    resolved_moves = (
+        _resolve_section_moves(section_moves, project, slug, root)
+        if section_moves
+        else []
+    )
 
     if expected_version != cur_version:
         merged_comments = _comment_append_onto_current(data, cur_state)
@@ -1576,6 +1589,11 @@ def _write_state_locked(
         if docs_dir is None:
             raise OpError(f"append_evidence: no docs dir for project {project!r}")
         _apply_evidence_appends(docs_dir, project, evidence_appends, root)
+    successor_moves = (
+        _carry_section_moves(new_data, source_text, resolved_moves, slug)
+        if resolved_moves
+        else []
+    )
     authored_text_changed = source_text != text
     if state_type == "plan":
         _require_heading_for_section_records(source_text, new_data.get("sections"))
@@ -1614,6 +1632,12 @@ def _write_state_locked(
         return cur_version
 
     write_atomically(html_file, lambda handle: handle.write(new_text))
+    if successor_moves:
+        # A descope that names a successor is two plan writes: this one, and the
+        # successor's half carrying the section's prose, effort, capability and
+        # open gates. The successor is written only after this plan has landed,
+        # so a refused source write moves nothing.
+        _write_successor_moves(successor_moves, root)
     return new_data["version"]
 
 
@@ -2726,27 +2750,34 @@ def _move_section_record(working: dict, section_id: str, status: Any) -> None:
 
 
 #: The keys a reasoned declaration value carries, and the only ones it may.
-_DESCOPED_DECLARATION_KEYS = frozenset({"status", "reason"})
+_DESCOPED_DECLARATION_KEYS = frozenset({"status", "reason", "moved_to"})
 
 
-def _descoped_declaration_value(section_id: str, value: Any) -> tuple[Any, str | None]:
-    """Split a declaration value into its declaration and its descope reason.
+def _descoped_declaration_value(
+    section_id: str, value: Any
+) -> tuple[Any, str | None, str | None]:
+    """Split a declaration value into its declaration, reason and successor.
 
     A plain string is a declaration with no reason, which every value but
     ``descoped`` accepts. A ``descoped`` declaration states why the section was
     dropped, so it may also be written as ``{"status": "descoped", "reason":
     ...}``; that shape carries the reason in the same op as the declaration, so
     a write cannot land one without the other.
+
+    ``moved_to`` names the successor section that now owns the work, written
+    ``[project:]slug#section``. It is the second way to clear a deferred
+    section, and it carries the section's state to the successor rather than
+    dropping it.
     """
     if isinstance(value, str):
-        return value, None
+        return value, None, None
     if not isinstance(value, Mapping):
-        return value, None
+        return value, None, None
     unknown = sorted(str(key) for key in value if key not in _DESCOPED_DECLARATION_KEYS)
     if unknown:
         raise OpError(
             f"section_declarations.{section_id}: a reasoned declaration carries "
-            f"'status' and 'reason'; got the extra key(s) {unknown}"
+            f"'status', 'reason' and 'moved_to'; got the extra key(s) {unknown}"
         )
     reason = value.get("reason")
     if reason is not None and not isinstance(reason, str):
@@ -2754,11 +2785,65 @@ def _descoped_declaration_value(section_id: str, value: Any) -> tuple[Any, str |
             f"section_declarations.{section_id}.reason must be a string stating "
             "why the section was dropped"
         )
-    return value.get("status"), (reason or "").strip() or None
+    moved_to = value.get("moved_to")
+    if moved_to is not None and not isinstance(moved_to, str):
+        raise OpError(
+            f"section_declarations.{section_id}.moved_to must be a string naming "
+            "the successor section as [project:]slug#section"
+        )
+    return (
+        value.get("status"),
+        (reason or "").strip() or None,
+        (moved_to or "").strip() or None,
+    )
+
+
+def _normalised_section_ref(ref: PlanRef) -> str:
+    """The canonical spelling of a successor ref, project kept only when named."""
+    prefix = f"{ref.project}:" if ref.project else ""
+    return f"{prefix}{ref.slug}#{ref.stage}"
+
+
+def _resolve_successor_section(
+    project: str, section_id: str, moved_to: str, root: str | Path | None = None
+) -> tuple[str, str, str, str]:
+    """Resolve ``moved_to`` to a declared section, or refuse the declaration.
+
+    A move is only meaningful if the section it names exists: the successor
+    must be a plan this store can read and must declare the named section.
+    Refusing here, before any write, is what keeps a plan from recording a move
+    to nothing.
+    """
+    from reckon._schema import parse_plan_ref
+
+    ref = parse_plan_ref(moved_to)
+    if ref is None or not ref.stage:
+        raise OpError(
+            f"section_declarations.{section_id}.moved_to: {moved_to!r} does not "
+            "name a section; expected [project:]slug#section"
+        )
+    target_project = ref.project or project
+    try:
+        target_state, _version = read_plan(target_project, ref.slug, root)
+    except (OSError, CorruptEnvelopeError, ValueError) as exc:
+        raise OpError(
+            f"section_declarations.{section_id}.moved_to: {moved_to!r} does not "
+            f"resolve — {ref.slug!r} could not be read ({exc})"
+        ) from exc
+    declarations = target_state.get("section_declarations") or {}
+    if not isinstance(declarations, Mapping) or ref.stage not in declarations:
+        raise OpError(
+            f"section_declarations.{section_id}.moved_to: {moved_to!r} does not "
+            f"resolve — plan {ref.slug!r} declares no section {ref.stage!r}"
+        )
+    return target_project, ref.slug, ref.stage, _normalised_section_ref(ref)
 
 
 def _carry_descope_reason(
-    working: dict, section_id: str, declaration: Any, reason: str | None
+    working: dict,
+    section_id: str,
+    declaration: Any,
+    reason: str | None,
 ) -> None:
     """Put the reason on the section's typed record.
 
@@ -2766,6 +2851,10 @@ def _carry_descope_reason(
     lives there rather than in a map beside the declarations. A declaration that
     is not ``descoped`` carries no reason, so any reason the section held before
     is cleared rather than left behind contradicting the declaration.
+
+    A move records its successor on the record as a link, but only once the
+    write knows which checkout it is resolving against — the successor is a
+    different document, so the link is set by :func:`_carry_section_moves`.
     """
     if str(declaration or "").strip() == "descoped":
         if not reason:
@@ -2814,6 +2903,259 @@ def _require_descope_reasons(state: Mapping[str, Any]) -> None:
             "a descoped section must state why it was dropped; no reason on "
             f"{', '.join(missing)} — set section_declarations.<id> to "
             '{"status": "descoped", "reason": "<why>"}'
+        )
+
+
+_CAPABILITY_DEMAND = {
+    "reasoning": {"standard": 0, "deep": 1},
+    "verification": {"standard": 0, "strict": 1},
+    "risk": {"low": 0, "moderate": 1, "high": 2},
+}
+
+
+def _stricter_capability(existing: Any, moved: Any) -> Any:
+    """The capability that satisfies both sections' demands.
+
+    A move carries the moved section's capability requirement to the successor,
+    so the successor asks for at least what either section needed. Unknown
+    values keep the successor's own, because there is no scale to compare them
+    on and inventing one would silently raise or lower a requirement.
+    """
+    if not isinstance(existing, dict):
+        return moved if isinstance(moved, dict) else existing
+    if not isinstance(moved, dict):
+        return existing
+    merged = dict(existing)
+    requirements = dict(existing.get("requirements") or {})
+    for key, value in (moved.get("requirements") or {}).items():
+        scale = _CAPABILITY_DEMAND.get(str(key), {})
+        if scale.get(str(value), -1) > scale.get(str(requirements.get(key)), -1):
+            requirements[key] = value
+    merged["requirements"] = requirements
+    return merged
+
+
+def _section_record(state: Mapping[str, Any], section_id: str) -> dict | None:
+    for record in state.get("sections") or []:
+        if isinstance(record, dict) and str(record.get("id") or "") == section_id:
+            return record
+    return None
+
+
+def _gate_touches_section(gate: Any, section_id: str) -> bool:
+    if not isinstance(gate, dict):
+        return False
+    if str(gate.get("section") or "") == section_id:
+        return True
+    return section_id in [str(s) for s in (gate.get("gated_sections") or [])]
+
+
+def _section_prose_text(document: str, section_id: str) -> str:
+    """The authored prose a section carries, read from the document itself."""
+    from reckon import _plan_html
+
+    for identity, prose in _plan_html.section_prose(
+        document, keep_landed_cards=True, keep_landed_notes=True
+    ):
+        if identity == section_id:
+            return prose.strip()
+    return ""
+
+
+def _insert_section_prose(document: str, section_id: str, prose: str) -> str:
+    """Append carried prose to a section's body, through the plan reader."""
+    from reckon import _plan_html
+
+    try:
+        return _plan_html.insert_section_prose(document, section_id, prose)
+    except ValueError as exc:
+        raise OpError(str(exc)) from exc
+
+
+def _resolve_section_moves(
+    moves: list[dict[str, str]],
+    project: str,
+    slug: str,
+    root: str | Path | None,
+) -> list[tuple[dict[str, str], str, str, str, str]]:
+    """Resolve every move's successor, or refuse before anything is written.
+
+    The successor is a different document, read against the checkout the write
+    targets. A ref that names no section there, or a ref naming a section of the
+    plan being written, refuses the whole batch here — ahead of the evidence
+    append, which writes a file of its own, so a refusal cannot leave one half
+    of a batch on disk.
+
+    The plan's own identity is the caller's, which is the plan this write
+    targets. Reading it back out of the payload would let a payload that omits
+    it defeat the same-plan refusal entirely.
+    """
+    resolved: list[tuple[dict[str, str], str, str, str, str]] = []
+    for request in moves:
+        section = str(request.get("section") or "")
+        moved_to = str(request.get("moved_to") or "")
+        target_project, target_slug, target_section, successor_ref = (
+            _resolve_successor_section(project, section, moved_to, root)
+        )
+        if (target_project, target_slug) == (project, slug):
+            raise OpError(
+                f"section_declarations.{section}.moved_to must name a section of "
+                "another plan: the successor's half is a second plan write, and "
+                "the plan being written cannot receive it"
+            )
+        resolved.append(
+            (request, target_project, target_slug, target_section, successor_ref)
+        )
+    return resolved
+
+
+def _carry_section_moves(
+    state: dict,
+    source_text: str,
+    resolved: list[tuple[dict[str, str], str, str, str, str]],
+    slug: str,
+) -> list[dict[str, Any]]:
+    """Take each moved section off this plan and describe its successor's half.
+
+    The descope says the work left this plan; this half belongs to the plan
+    being written, so it runs before the document is rendered: the moved
+    section's open gates are collected to travel with it, and its comments are
+    re-anchored on the move record this write leaves, so no comment here still
+    names work that has gone. A closed gate is an outcome already recorded, not
+    work to carry, so it stays on this plan as evidence. The successor's half
+    comes back as a payload written after this plan lands, so a refused source
+    write moves nothing.
+
+    ``resolved`` comes from :func:`_resolve_section_moves`, which ran before
+    this write touched any file, so every successor is known to exist and to be
+    another plan's section. ``slug`` is the caller's, so the source ref names
+    the plan being written even when the payload leaves its identity out.
+    """
+    payloads: list[dict[str, Any]] = []
+    for request, target_project, target_slug, target_section, successor_ref in resolved:
+        moved_section = str(request.get("section") or "")
+        moved_record = _section_record(state, moved_section)
+        if moved_record is None:
+            continue
+
+        links = list(moved_record.get("links") or [])
+        if successor_ref not in links:
+            links.append(successor_ref)
+        moved_record["links"] = links
+
+        moved_gates = [
+            gate
+            for gate in state.get("gates") or []
+            if _gate_touches_section(gate, moved_section)
+            and str(gate.get("status") or "open").strip().lower() == "open"
+        ]
+
+        comments = state.get("comments")
+        if not isinstance(comments, dict):
+            comments = {}
+            state["comments"] = comments
+        anchored = list(comments.pop(moved_section, []) or [])
+        anchor = f"c-move-{moved_section}"
+        records = list(comments.get(anchor) or [])
+        records.append(
+            {
+                "id": anchor,
+                "who": "reckon",
+                "when": _utc_ts(),
+                "body": (
+                    f"Moved to <code>{html.escape(successor_ref)}</code>: "
+                    f"{html.escape(str(request.get('reason') or ''))}"
+                ),
+            }
+        )
+        records.extend(anchored)
+        comments[anchor] = records
+
+        payloads.append(
+            {
+                "project": target_project,
+                "slug": target_slug,
+                "section": target_section,
+                "source_ref": f"{slug}#{moved_section}",
+                "effort_hours": moved_record.get("effort_hours"),
+                "capability": moved_record.get("capability"),
+                "gates": [
+                    {
+                        **dict(gate),
+                        "section": target_section,
+                        "gated_sections": [
+                            target_section if str(section) == moved_section else section
+                            for section in (gate.get("gated_sections") or [])
+                        ],
+                    }
+                    for gate in moved_gates
+                ],
+                "prose": _section_prose_text(source_text, moved_section),
+            }
+        )
+    return payloads
+
+
+def _write_successor_moves(
+    payloads: list[dict[str, Any]], root: str | Path | None = None
+) -> None:
+    """Write each successor plan with the moved section's state on it.
+
+    Runs after the source plan has landed, and only against a different plan:
+    re-entering the write that is still returning would deadlock on its lock.
+    """
+    pending: dict[tuple[str, str], dict[str, Any]] = {}
+    for payload in payloads:
+        key = (payload["project"], payload["slug"])
+        if key not in pending:
+            state, version = read_plan(payload["project"], payload["slug"], root)
+            path = _resolve_html_file(payload["project"], payload["slug"], root)
+            if path is None:
+                raise OpError(
+                    f"section move: no document found for plan {payload['slug']!r}"
+                )
+            pending[key] = {
+                "project": payload["project"],
+                "slug": payload["slug"],
+                "state": state,
+                "version": version,
+                "text": path.read_text(encoding="utf-8", errors="replace"),
+                "path": path,
+            }
+        entry = pending[key]
+        target_record = _section_record(entry["state"], payload["section"])
+        if target_record is None:
+            continue
+        links = list(target_record.get("links") or [])
+        if payload["source_ref"] in links:
+            # Idempotent: repeating a descope must not carry the effort or the
+            # gates across a second time.
+            continue
+        links.append(payload["source_ref"])
+        target_record["links"] = links
+        target_record["effort_hours"] = float(
+            target_record.get("effort_hours") or 0
+        ) + float(payload.get("effort_hours") or 0)
+        target_record["capability"] = _stricter_capability(
+            target_record.get("capability"), payload.get("capability")
+        )
+        target_gates = entry["state"].setdefault("gates", [])
+        if not isinstance(target_gates, list):
+            target_gates = []
+            entry["state"]["gates"] = target_gates
+        target_gates.extend(payload["gates"])
+        entry["text"] = _insert_section_prose(
+            entry["text"], payload["section"], payload.get("prose") or ""
+        )
+
+    for entry in pending.values():
+        entry["path"].write_text(entry["text"], encoding="utf-8")
+        write_plan(
+            entry["project"],
+            entry["slug"],
+            entry["state"],
+            entry["version"],
+            root,
         )
 
 
@@ -3045,7 +3387,7 @@ def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> 
                 "section declaration id must match "
                 f"a safe section identity; got {section_id!r}"
             )
-        declaration, reason = _descoped_declaration_value(section_id, value)
+        declaration, reason, moved_to = _descoped_declaration_value(section_id, value)
         if declaration not in SECTION_DECLARATION_ENUM:
             raise OpError(
                 f"section declaration must be one of {SECTION_DECLARATION_ENUM}; "
@@ -3056,7 +3398,30 @@ def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> 
             raise OpError("plan has no section declarations map")
         declarations[section_id] = declaration
         _move_section_record(working, section_id, declaration)
+        if moved_to is not None:
+            # The successor is resolved against the checkout being written, and a
+            # bare ``apply_ops`` caller has no checkout at all, so the resolution
+            # belongs to the write that carries the move. Only the ref's shape is
+            # judged here, before any op of the batch is accepted.
+            from reckon._schema import parse_plan_ref
+
+            ref = parse_plan_ref(moved_to)
+            if ref is None or not ref.stage:
+                raise OpError(
+                    f"section_declarations.{section_id}.moved_to: {moved_to!r} does "
+                    "not name a section; expected [project:]slug#section"
+                )
         _carry_descope_reason(working, section_id, declaration, reason)
+        if moved_to is not None:
+            _queue_write_effect(
+                "section_moves",
+                working,
+                {
+                    "section": section_id,
+                    "moved_to": moved_to,
+                    "reason": reason or "",
+                },
+            )
         return
     if head == "section_declarations" and len(parts) == 1:
         # The whole map writes the same statement the dotted form writes one
@@ -3757,9 +4122,7 @@ def _apply_move(working: dict, op: dict, is_index: bool, warnings: list[str]) ->
     sprints[ti] = {**ts, "items": to_items}
 
 
-def _apply_close(
-    working: dict, op: dict, is_index: bool, warnings: list[str]
-) -> None:
+def _apply_close(working: dict, op: dict, is_index: bool, warnings: list[str]) -> None:
     """Set a terminal status and resolve every open followup in one write.
 
     The single op that closes a plan: it sets the close's status, resolves every
@@ -4072,11 +4435,20 @@ def _require_every_section_ticked(
             "authored heading(s) with no section_declarations entry "
             f"({', '.join(undeclared)}) count as open"
         )
+    remedies = (
+        "each open section needs a declaration ticked to 'done', or a descoped "
+        "declaration naming one of two remedies: a reason alone "
+        '({"status": "descoped", "reason": "<why>"}), or a reason with the '
+        "successor section that now owns the work "
+        '({"status": "descoped", "reason": "<why>", "moved_to": '
+        '"<plan>#<section>"})'
+    )
     raise OpError(
         "terminal status refused: "
         + "; ".join(reasons)
-        + " — every section needs a declaration ticked to 'done' before the "
-        "plan can land"
+        + " — "
+        + remedies
+        + " before the plan can land"
     )
 
 
