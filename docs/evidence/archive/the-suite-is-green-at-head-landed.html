@@ -3213,6 +3213,11 @@ reckon/crew/dispatch.py:4535: TypeError
     <p>Run <code>r-20261025T014647219148-the-producer-stubs-are-the-real-producer-record</code> landed at merge <code>2d5218522</code> (head <code>63fecf56e</code>). The two hand-built producer stubs are now the real _WatchStreamProducer record, so their teardowns read the deferred-retry slot section 55 added and pass.</p><p>Worker's account: both hand-built producer stand-ins replaced with real _WatchStreamProducer records; head arm 18 passed 0 errors EXIT=0, base arm 18 passed 3 teardown errors EXIT=1, negative control EXIT=1 on the id the head arm does not fail; fragment committed; nothing remaining</p><p>Coordinator's measure: the coordinator re-ran the gate (2 files) from git archive extractions: head 18 passed in 8.74s, merge with main (candidate 9e0facf62 on 31f04a3aa) 18 passed in 8.51s, main alone 18 passed, 3 errors in 8.77s, base 18 passed, 3 errors in 9.52s; failures the head adds over the base: 0; failures the merge adds over main: 0. Review 117 of 120.</p>
   </section>
 
+  <section id="s63">
+    <h2>§63 landing</h2>
+    <p>Run <code>r-20261027T063529804270-a-group-stop-reaches-the-fenced-worker</code> landed at merge <code>dff484335</code>. The supervisor now writes a run's worker record as each spawn try starts, inside the retry loop that spawns it, through one helper both writers share, so a group stop delivered after the spawn reaches the live worker and the reaper records that stop's SIGTERM rather than a leftover's plain exit. The regression case is deterministic: the stub signals when it is spawned and the stop follows that signal; it failed five serial runs of five with the repair reverted and passed ten of ten at the head. Coordinator importer measure over the test files importing dispatch_launch.py: no failure added, and the two ids that differed in parallel passed three serial runs of three at main and the merge. Review 111 of 120.</p>
+  </section>
+
 </main>
 </body>
 </html>
