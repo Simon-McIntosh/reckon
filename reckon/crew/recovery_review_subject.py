@@ -237,7 +237,9 @@ def _remember_resolved_commit(key: tuple[str, str], sha: str) -> None:
     _RESOLVE_COMMIT_CACHE[key] = sha
 
 
-def _resolve_commit(tree: Path, candidate: str, *, strict: bool = False) -> str:
+def _resolve_commit(
+    tree: Path, candidate: str, *, strict: bool = False, cached: bool = False
+) -> str:
     """The canonical object id ``candidate`` names in ``tree``, or empty.
 
     ``--verify`` refuses a value that names no commit rather than echoing it
@@ -255,12 +257,19 @@ def _resolve_commit(tree: Path, candidate: str, *, strict: bool = False) -> str:
     the empty string, so the two are told apart by their answers. A caller that
     does not opt in reduces this to a truth value about a citation and keeps an
     empty answer for every failure.
+
+    Only a caller that opts into ``cached`` takes a stored answer, and never
+    under ``strict``: a promotion asks git about each citation as it lands and
+    again as the revision is chosen, and a remembered answer would report the
+    instrument healthy on a day it cannot start. A derivation that only tests
+    citations against their own tree asks once per process and opts in.
     """
     if not candidate:
         return ""
-    stored = _stored_commit_answer(tree, candidate)
-    if stored:
-        return stored
+    if cached and not strict:
+        stored = _stored_commit_answer(tree, candidate)
+        if stored:
+            return stored
     try:
         completed = subprocess.run(
             [
@@ -335,7 +344,7 @@ def _canonical_commits(tree: Path | None, entries: Iterable[Any]) -> list[str]:
     seen: set[str] = set()
     for entry in entries:
         for candidate in _commit_candidates(entry):
-            sha = _resolve_commit(tree, candidate)
+            sha = _resolve_commit(tree, candidate, cached=True)
             if sha:
                 if sha not in seen:
                     seen.add(sha)

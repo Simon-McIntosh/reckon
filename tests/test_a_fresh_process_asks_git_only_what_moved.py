@@ -275,7 +275,7 @@ def test_the_store_answers_what_git_answers(fleet: dict[str, Any]) -> None:
             f"{run_id} counts {watch_module._commits_beyond_base(record)} commits"
             f" where git counts {expected_count}"
         )
-        assert subject_module._resolve_commit(worktree, head) == head, (
+        assert subject_module._canonical_commits(worktree, [head]) == [head], (
             f"{run_id} resolves its full revision {head} to something else"
         )
 
@@ -285,7 +285,7 @@ def test_a_ref_name_still_asks_git(fleet: dict[str, Any]) -> None:
     _derive()
     worktree = fleet["worktrees"][0]
     with _GitSpy(subject_module) as spy:
-        resolved = subject_module._resolve_commit(worktree, "main")
+        resolved = subject_module._canonical_commits(worktree, ["main"])[0]
     assert resolved == _git(worktree, "rev-parse", "main"), (
         "the ref name did not resolve to the revision git reports"
     )
@@ -337,7 +337,7 @@ def test_a_corrupt_store_falls_back_to_git_and_repairs_itself(
     head = _git(worktree, "rev-parse", "HEAD")
     with _GitSpy(watch_module, subject_module) as spy:
         count = watch_module._commits_beyond_base(record)
-        resolved = subject_module._resolve_commit(worktree, head)
+        resolved = subject_module._canonical_commits(worktree, [head])[0]
     assert count == int(
         _git(worktree, "rev-list", "--count", f"{record['base_sha']}..HEAD")
     ), "a corrupt store did not fall back to the count git gives"
