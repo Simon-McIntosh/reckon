@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="193">
+<meta name="plan-version" content="194">
 <meta name="plan-modified" content="2026-11-05">
 </head>
 <body>
@@ -443,6 +443,9 @@
 <div class="r-comment" data-section="s20" data-id="c-run-r-20261102T213931926007-a-vanished-lock-starts-no-second-copy" data-who="reckon-build" data-when="2026-11-03T00:27:54Z">
     <div class="r-comment-body"><p>Landed 33dcdfc6ce, b4838498fc, eca23f33d2, 138a7a3ff9 and fbaa51c15f: `_alive` keeps a copy alive while its recorded pid names a process whose command line is that service's (alert once per vanished lock, no restart), each supervision pass stops every copy but the recorded one by pid after logging the list, the pid record carries the live lock file's inode with the previous record only as fallback, `announce_requeue` writes the alerts log through the one `alert()` appender, and the recreated-lock case asserts the inode of the file on disk rather than requiring the number to change; 4 cases in `tests/test_a_vanished_lock_starts_no_second_copy.py`, head arm 4 passed / exit 0 at fbaa51c15f.</p></div>
 </div>
+<div class="r-comment" data-section="s24" data-id="c-run-r-20261103T073615423342-a-request-that-never-launched-holds-no-claim-another-landing" data-who="reckon-build" data-when="2026-11-03T10:07:53.207Z">
+    <div class="r-comment-body"><p>A landing is admitted past a peer claim held by a request in a waiting phase (queued, awaiting-upstream, blocked-upstream, held): promotion_scope's accept-path walk consults node.claim_disposition for it, names the walked-past claim under waiting_request_claims, and leaves the request's pointer untouched. Gate 11 passed EXIT=0; base arm 5 passed EXIT=0; negative control (claim_disposition bypassed) 4 failed EXIT=1.</p></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261029T134712468009-review-of-landing-runs-beside-admission-619610fcf9fe" data-who="reckon-build" data-when="2026-10-29T13:57:43.710Z">
     <div class="r-comment-body"><p>Reviewed r-20261028T222632387609-landing-runs-beside-admission at head 619610fcf9fe against base 13b5e629: six dimensions scored (goal_fidelity 18, evidence 18, scope_discipline 15, durability 16, fit 18, reuse 5) with four non-blocking findings — _LandingWorker duplicates the SweepBeat off-tick-path worker, the --no-impl-change waiver is broader than the section and unobserved afterwards, a land step in flight at service stop is orphaned past the 1 s join, and one assertion was updated in a file outside the declared write paths. The record is parsed and accepted; nothing blocks.</p></div>
 </div>
@@ -491,8 +494,8 @@
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261029T145111134871-review-of-a-delivered-run-reaches-a-landing-verdict-c12609ed2938" data-who="reckon-build" data-when="2026-10-29T15:00:19.489Z">
     <div class="r-comment-body"><p>§8 reviewed at c12609ed29 against base c97238c9: goal met, evidence reproducible, 0 added failures, two non-blocking findings (a tautological ledger assertion at the new test's line 260, and a surviving raw commit-entry reader at promotion_scope.py:1253).</p></div>
 </div>
-<div class="r-comment" data-section="s24" data-id="c-run-r-20261103T073615423342-a-request-that-never-launched-holds-no-claim-another-landing" data-who="reckon-build" data-when="2026-11-03T10:07:53.207Z">
-    <div class="r-comment-body"><p>A landing is admitted past a peer claim held by a request in a waiting phase (queued, awaiting-upstream, blocked-upstream, held): promotion_scope&#x27;s accept-path walk consults node.claim_disposition for it, names the walked-past claim under waiting_request_claims, and leaves the request&#x27;s pointer untouched. Gate 11 passed EXIT=0; base arm 5 passed EXIT=0; negative control (claim_disposition bypassed) 4 failed EXIT=1.</p></div>
+<div class="r-comment" data-section="s23" data-id="c-run-r-20261103T085129232474-replay-the-two-oversizednode-routing-refusals" data-who="reckon-build" data-when="2026-11-03T09:58:52.393Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/replay-the-two-oversizednode-routing-refusals.html</p></div>
 </div>
 </section>
 </main>
