@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "c15f841ed10ab5349332c8578bfa65910226fafe",
+  "call_sites": [
+    "reckon/mcp.py:2095",
+    "reckon/mcp.py:1171",
+    "reckon/mcp.py:3276",
+    "reckon/mcp.py:3294",
+    "reckon/mcp_views.py:4085"
+  ],
+  "completed_at": "2026-11-05T19:06:10.103Z",
+  "dispatched_at": "2026-11-05T18:59:26Z",
+  "failure_note": "The reviewed run's baseline_suite (revision c15f841ed, tests/test_a_read_can_ask_what_changed.py) exited 4 with no test collected because the file does not exist at that revision, so it names no failing id; the after_suite at f17de498fc is recorded EXIT=0 with no failing id, and the three files it covers are green in three logs (19, 15 and 6 passed, each EXIT=0). Added failures = 0 against the run's own arms.",
+  "findings": [
+    {
+      "file": "reckon/mcp_views.py",
+      "line": "54",
+      "severity": "non-blocking",
+      "text": "non-blocking: adding \"why\" to the shared VIEW_NAMES makes audit_view's fallthrough at reckon/mcp_views.py:3708 serve a detail-shaped payload stamped view=\"why\", where the base refused invalid_view; reproduced in-process by widening VIEW_NAMES, so a malformed request returns a false success naming a view the audit tool does not offer."
+    },
+    {
+      "file": "tests/test_a_read_can_ask_what_changed.py",
+      "line": "632",
+      "severity": "non-blocking",
+      "text": "non-blocking: the served set is unioned with the declared set, so the assertion reduces to documented | {why} being a subset of VIEW_NAMES and cannot catch a view read_plan serves but declares nowhere, which its docstring claims to hold."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T101400045193-a-read-can-ask-what-changed/manifest.md",
+      "line": "31",
+      "severity": "non-blocking",
+      "text": "non-blocking: after_suite records a three-file command against a log whose header ran one file and reported 19 passed, so the arm cannot be reproduced from the receipt it cites."
+    }
+  ],
+  "head_log_revision": "f17de498fc72083c9f0ff87a3e397e415bcc0c95",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "one commit, 57 insertions and 7 deletions across reckon/mcp.py, reckon/mcp_views.py and tests/test_a_read_can_ask_what_changed.py: a description rewrite, a names_one_project call, the why view name and two new cases.",
+    "done_when": "the \u00a77 measure is a fixture read returning the one moved declaration, its released dependents and the one moved run; this commit leaves those assertions untouched and its own gate at f17de498fc records 19 passed EXIT=0 in logs/gate-a-read-can-ask-what-changed.log.",
+    "goal": "the source node's goal is that the brief, crew live and the roadmap answer `since` with a change set carrying `observed_at`; this commit repairs the statements around it \u2014 the roadmap tool's contract at reckon/mcp.py:2565, the single-project rule through names_one_project at reckon/mcp.py:2095, and the declared view set at reckon/mcp_views.py:54.",
+    "manifest": "read; it records the three repairs and the green gate logs, and its after_suite at line 31 names a command its cited log did not run.",
+    "write_paths": "the fence (prompt.txt:78-82) names reckon/mcp.py, reckon/change_set.py, the test file and the fragment; the diff touches these plus reckon/mcp_views.py, which the plan designates as the carrier of the why view name."
+  },
+  "justifications": {
+    "durability": "tests/test_a_read_can_ask_what_changed.py:608 reddens on the sentence it replaces, while :632 unions the declared set into the served set and so cannot catch an undeclared served view.",
+    "evidence": "the three logs each name revision f17de498fc, the tree, the literal command and end EXIT=0, while the manifest's after_suite at manifest.md:31 records a command the log it cites did not run.",
+    "fit": "reckon/mcp.py:2565 follows the surrounding docstring idiom and adds no forbidden name, though :595 guards prose by regex sentence-splitting.",
+    "goal_fidelity": "reckon/mcp.py:2565 now ties observed_at and change_set to the since argument, but reckon/mcp_views.py:54's widened set makes the audit tool serve a shape it previously refused.",
+    "reuse": "the diff adds no definition and removes a duplicated expression by calling names_one_project at reckon/mcp.py:2095, with the why literal bound to WHY_VIEW by a case at :637.",
+    "scope_discipline": "reckon/mcp_views.py in the diff is outside the source node's fence, though the plan names that file as where the why view name is added and the manifest records the extension."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that the brief, crew live and the roadmap answer `since` with a change set carrying `observed_at`; this commit implements none of that and instead repairs the three hand-maintained statements around it \u2014 the roadmap tool's `since`/`observed_at` contract at reckon/mcp.py:2565, the single-project rule now routed through `names_one_project` at reckon/mcp.py:2095, and the declared view set at reckon/mcp_views.py:54.\nVERDICT done_when: the \u00a77 measure is a fixture read returning the one moved declaration, the dependents it released and the exactly one run whose classification moved; this commit adds no fixture behaviour and leaves those assertions untouched, and its own gate at f17de498fc is recorded in logs/gate-a-read-can-ask-what-changed.log as 19 passed EXIT=0.\nVERDICT write_paths: the source node's fence (prompt.txt:78-82) names reckon/mcp.py, reckon/change_set.py, tests/test_a_read_can_ask_what_changed.py and the evidence fragment; the diff touches three files, two inside that fence and reckon/mcp_views.py, which the plan itself designates as the carrier of the why view name (docs/plans/the-mcp-answers-the-question-asked.html).\nVERDICT manifest: read at runs/r-20261027T101400045193-a-read-can-ask-what-changed/manifest.md; it records the three repairs, the gate logs (19/15/6 passed, EXIT=0 at f17de498fc) and the prior review round, but its after_suite at line 31 names a three-file command while the log it cites ran one file for 19 tests.\nVERDICT diff: read f17de498fc against 6957a1f558, one commit, 57 insertions and 7 deletions across reckon/mcp.py, reckon/mcp_views.py and tests/test_a_read_can_ask_what_changed.py; the description rewrite, the `names_one_project` call and the `why` name are the substance, and two cases are added.\nCALL_SITES: reckon/mcp.py:2095, reckon/mcp.py:1171, reckon/mcp.py:3276, reckon/mcp.py:3294, reckon/mcp_views.py:4085\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/mcp.py:2565 now ties `observed_at` and `change_set` to the `since` argument the read actually honours, but widening the shared set at reckon/mcp_views.py:54 makes the audit tool serve a shape it previously refused (see the finding at that line).\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/gate-a-read-can-ask-what-changed.log, gate-mcp-recovery.log and gate-crew-view-serves-every-view.log each name revision f17de498fc, the tree, the literal command and end EXIT=0, yet the manifest's after_suite at manifest.md:31 records a three-file command against a log whose header ran one file.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: two of the three paths in the diff are inside the source node's fence and reckon/mcp_views.py is not, though the plan names that file as where the why view name is to be added and the manifest records the extension.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_read_can_ask_what_changed.py:608 reddens on the sentence it replaces (verified by re-running its own predicate against the 6957a1f558 docstring), while the set assertion at :632 derives its served side from a union with the declared set and so cannot catch an undeclared view that reaches the read.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/mcp.py:2565 follows the surrounding docstring idiom and introduces no forbidden name, though tests/test_a_read_can_ask_what_changed.py:595 guards prose by regex sentence-splitting, which is narrower than the contract it states.\nSCORE reuse: 19\nJUSTIFICATION reuse: the diff adds no definition and removes one duplication by calling mcp_views.names_one_project at reckon/mcp.py:2095; the `why` literal at reckon/mcp_views.py:54 cannot be imported from reckon/mcp.py:1455 without a cycle, and tests/test_a_read_can_ask_what_changed.py:637 binds the two.\nFINDING reckon/mcp_views.py:54 non-blocking: adding \"why\" to the shared VIEW_NAMES makes reckon/mcp_views.py:3708's audit fallthrough serve a detail-shaped payload stamped \"view\": \"why\" for audit(view=\"why\"), where the base refused invalid_view \u2014 reproduced in-process by widening VIEW_NAMES and calling audit_view, so a malformed request now returns a false success that names a view the audit tool's own docstring does not offer.\nFINDING tests/test_a_read_can_ask_what_changed.py:632 non-blocking: `served = documented | set(VIEW_NAMES) | {WHY_VIEW}` unions the declared set into the served set, so the assertion reduces to documented \u222a {why} \u2286 VIEW_NAMES and cannot catch a view read_plan serves but declares nowhere, which is the drift its docstring at :619 claims to hold.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T101400045193-a-read-can-ask-what-changed/manifest.md:31 non-blocking: after_suite records a three-file pytest command against logs/gate-a-read-can-ask-what-changed.log, whose own header names one file and reports 19 passed, so the arm cannot be reproduced from the receipt it cites even though the three files are green in three separate logs.",
+  "review_run_id": "r-20261105T185446567257-review-of-a-read-can-ask-what-changed-f17de498fc72",
+  "reviewed_base_sha": "6957a1f558a62b93de8d65955f81ac4c426ffc2e",
+  "reviewed_head_sha": "f17de498fc72083c9f0ff87a3e397e415bcc0c95",
+  "reviewed_run_id": "r-20261027T101400045193-a-read-can-ask-what-changed",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T19:09:44.097792+00:00",
+  "total": 99
+}
