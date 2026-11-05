@@ -1,0 +1,70 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch.py:702",
+    "reckon/crew/dispatch.py:1859",
+    "reckon/crew/dispatch.py:2884",
+    "reckon/crew/dispatch.py:3339",
+    "reckon/crew/promotion.py:1451"
+  ],
+  "completed_at": "2026-11-05T15:22:01.166Z",
+  "dispatched_at": "2026-11-05T15:15:21Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_refusals.py",
+      "id": "f29d9a56d02",
+      "line": 94,
+      "severity": "non-blocking",
+      "text": "_refused_at duplicates the shared timestamp parser reckon/_timestamps.py:41 parse_utc rather than importing it, and reads a naive stamp as unreadable where the owner reads it as UTC, so the repository again carries two readings of one timestamp rule."
+    },
+    {
+      "file": "reckon/crew/dispatch_refusals.py",
+      "id": "f34804cf604",
+      "line": 86,
+      "severity": "non-blocking",
+      "text": "_charged_paths now takes routing's contributor records, which include standing-instruction files, so removed_paths can report a path that is not a repository input as one the brief no longer charges."
+    },
+    {
+      "file": "reckon/crew/dispatch_refusals.py",
+      "id": "fac47f5ef2c",
+      "line": 134,
+      "severity": "non-blocking",
+      "text": "the trace payload's paths changed from mappings to strings without a version, so a trace written by the previous code inside the 24-hour window is read back as a dict repr in removed_paths on the next run."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "pass \u2014 verified the two record sites, the reduction read, the consume site and the promotion copy named on the CALL_SITES line.",
+    "diff": "pass \u2014 two commits read against 98b62b89d0: the fix consumes the trace on any fitting dispatch, bounds the match to 24 hours and routes _charged_paths through routing's contributor reader, while changing the on-disk trace payload from dicts to strings and widening the path set to standing-instruction files; the second commit is the evidence fragment alone.",
+    "done_when": "pass \u2014 the done_when asks for a refusal then a shortened acceptance carrying the reduction, its survival through promotion, and no marker on a first attempt; tests/test_a_reduced_brief_leaves_a_trace.py has a named case for each, red-before-fix.log records 3 failed 3 passed EXIT=1 at 98b62b89d0 and after-fix.log records 6 passed EXIT=0.",
+    "goal": "pass \u2014 the node's goal is unchanged by this round: a run accepted after a context refusal of the same node id records the refusal, both estimates, the paths cut and the text removed, and that record reaches the promoted ledger row; reckon/crew/dispatch.py:2884 writes it to the node block and reckon/crew/promotion.py:1451 carries that block onto the row.",
+    "manifest": "pass \u2014 read; status complete, and it records the gate at 5089a79381 as 154 passed EXIT=0, the red arm as 3 failed 3 passed EXIT=1, and baseline_suite and after_suite with the log paths those figures come from.",
+    "write_paths": "pass \u2014 git diff 98b62b89d0..2a6b74f42b touches exactly reckon/crew/dispatch.py, reckon/crew/dispatch_refusals.py, tests/test_a_reduced_brief_leaves_a_trace.py and the landing fragment, all four inside the manifest's declared paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_reduced_brief_leaves_a_trace.py:220 fails if consume_context_refusal is made conditional again, and line 240 fails if TRACE_MAX_AGE is dropped, both demonstrated red in red-before-fix.log.",
+    "evidence": "reckon/crew/dispatch_refusals.py:163 gets its proof from the recorded arms: red-before-fix.log is 3 failed 3 passed EXIT=1 at 98b62b89d0 and head-after-review.log is 154 passed EXIT=0 at 5089a79381.",
+    "fit": "reckon/crew/dispatch_refusals.py:33 imports the routing private the way reckon/crew/node.py:590 already imports _context_refusal_detail, and the added names follow the module's constants style.",
+    "goal_fidelity": "reckon/crew/dispatch.py:2884 still writes the reduction onto the node block the goal describes, and the round changes only how the trace is consumed and how charged paths are named.",
+    "reuse": "reckon/crew/dispatch_refusals.py:94 re-implements the timestamp parsing reckon/_timestamps.py:41 parse_utc owns instead of importing it.",
+    "scope_discipline": "every path in git diff 98b62b89d0..2a6b74f42b is one of the four declared write paths, and the routing census-key gap the worker found is recorded under outside_scope rather than edited."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is unchanged by this round \u2014 a run accepted after a context refusal of the same node id records the refusal, both estimates, the paths cut and the text removed, and that record reaches the promoted ledger row; reckon/crew/dispatch.py:2884 writes it to the node block and reckon/crew/promotion.py:1451 carries that block onto the row.\nVERDICT done_when: the done_when asks for a refusal then a shortened acceptance carrying the reduction, its survival through promotion, and no marker on a first attempt; tests/test_a_reduced_brief_leaves_a_trace.py has a named case for each, red-before-fix.log records 3 failed 3 passed EXIT=1 at 98b62b89d0 and after-fix.log records 6 passed EXIT=0.\nVERDICT write_paths: git diff 98b62b89d0..2a6b74f42b touches exactly reckon/crew/dispatch.py, reckon/crew/dispatch_refusals.py, tests/test_a_reduced_brief_leaves_a_trace.py and the landing fragment, all four inside the manifest's declared paths.\nVERDICT manifest: read; status complete, and it records the gate at 5089a79381 as 154 passed EXIT=0, the red arm as 3 failed 3 passed EXIT=1, and baseline_suite and after_suite with the log paths those figures come from.\nVERDICT diff: two commits read against 98b62b89d0: the fix consumes the trace on any fitting dispatch, bounds the match to 24 hours and routes _charged_paths through routing's contributor reader, while changing the on-disk trace payload from dicts to strings and widening the path set to standing-instruction files; the second commit is the evidence fragment alone.\nCALL_SITES: reckon/crew/dispatch.py:702, reckon/crew/dispatch.py:1859, reckon/crew/dispatch.py:2884, reckon/crew/dispatch.py:3339, reckon/crew/promotion.py:1451\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:2884 still writes the reduction onto the node block the goal describes, and the round changes only how the trace is consumed and how charged paths are named.\nSCORE evidence: 19\nJUSTIFICATION evidence: reckon/crew/dispatch_refusals.py:163 gets its proof from the recorded arms: red-before-fix.log is 3 failed 3 passed EXIT=1 at 98b62b89d0 and head-after-review.log is 154 passed EXIT=0 at 5089a79381.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff 98b62b89d0..2a6b74f42b is one of the four declared write paths, and the routing census-key gap the worker found is recorded under outside_scope rather than edited.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_reduced_brief_leaves_a_trace.py:220 fails if consume_context_refusal is made conditional again, and line 240 fails if TRACE_MAX_AGE is dropped, both demonstrated red in red-before-fix.log.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/dispatch_refusals.py:33 imports the routing private the way reckon/crew/node.py:590 already imports _context_refusal_detail, and the added names follow the module's constants style.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/dispatch_refusals.py:94 re-implements the timestamp parsing reckon/_timestamps.py:41 parse_utc owns instead of importing it.\nFINDING reckon/crew/dispatch_refusals.py:94 non-blocking: _refused_at duplicates the shared timestamp parser reckon/_timestamps.py:41 parse_utc rather than importing it, and reads a naive stamp as unreadable where the owner reads it as UTC, so the repository again carries two readings of one timestamp rule.\nFINDING reckon/crew/dispatch_refusals.py:86 non-blocking: _charged_paths now takes routing's contributor records, which include standing-instruction files, so removed_paths can report a path that is not a repository input as one the brief no longer charges.\nFINDING reckon/crew/dispatch_refusals.py:134 non-blocking: the trace payload's paths changed from mappings to strings without a version, so a trace written by the previous code inside the 24-hour window is read back as a dict repr in removed_paths on the next run.\n",
+  "review_run_id": "r-20261105T151336270150-review-of-a-reduced-brief-leaves-a-trace-2a6b74f42be0",
+  "reviewed_base_sha": "98b62b89d006308462bc5e79353dfdcdb4eae884",
+  "reviewed_head_sha": "2a6b74f42be0883b5eca7ec73bf3e8a70b4dc252",
+  "reviewed_run_id": "r-20261027T100023696601-a-reduced-brief-leaves-a-trace",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T15:30:24.907044+00:00",
+  "total": 100
+}
