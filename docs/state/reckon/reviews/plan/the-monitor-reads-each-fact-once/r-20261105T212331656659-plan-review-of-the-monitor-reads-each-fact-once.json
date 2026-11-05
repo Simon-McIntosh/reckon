@@ -1,0 +1,68 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-05T21:38:40.585Z",
+  "dispatched_at": "2026-11-05T21:28:47Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-reads-each-fact-once/r-20261105T212331656659-plan-review-of-the-monitor-reads-each-fact-once/plan.html:388",
+      "id": "reasoning-1",
+      "reason": "a node dispatched on this section would rebuild an incremental read that already exists and measure a bound it cannot meet, so the plan needs either the real cost driver named (e.g. the per-tick re-read of each run's manifest, review store and tree head that `_classification_inputs` keys on, or the classification memo being absent on the fleet) or a statement of why the existing resume does not hold there.",
+      "text": "\u00a713 blames the cost on \"a fresh classification reads the run's stream again from its start\", but the path it names already resumes: `recovery_watch._watch_snapshot` reaches `classify_pointer`, which reads the run's `classification.json` memo and re-publishes it (`reckon/crew/recovery_classification.py:823`, `:1037`, `:2491`), and `_observed_stream` passes that memo's `{\"offset\", \"state\", \"head\"}` to `_backends.observe_log(resume=...)` (`reckon/crew/recovery_stream.py:546-570`), refusing the resume only when the inode changes \u2014 which an append-only stream does not. \u00a713's own measured pair is the signature of that resume working, not of a replay: 83 MB cold versus 0.07 MB warm per tick, while the store's ingest read 8.2 MB cold and nothing warm. So the 1,067\u20131,160 MB/min over 30 live runs is not explained by a whole-stream replay per tick, and a node that does exactly what \u00a713 prescribes could satisfy its equivalence clause and still sit far outside the 20 MB/min bound.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-reads-each-fact-once/r-20261105T212331656659-plan-review-of-the-monitor-reads-each-fact-once/plan.html:398",
+      "id": "done_when-1",
+      "reason": "the gate as written cannot distinguish the fixed code from the unfixed code, so it would promote a section whose cost defect is unchanged; the instrument must cover the reader the section names (the stream path's opens/bytes in `_observed_stream`), or `_read_range` must be made the one path every stream read takes.",
+      "text": "\u00a713's gate asserts \"through the store's single read step `_read_range`, that the tick which classifies it reads under 1 MB of that stream, and the same test at the base revision reads the whole stream\", but `_read_range` is only the ingest's read step (`reckon/crew/station_store.py:262`, called at `:650` and `:677`), and since \u00a76 the ingest reads only bytes past its stored offset at base as well; the replay the section blames opens the stream through `_backends.observe_log` (`reckon/crew/recovery_stream.py:569`), which `_read_range` never sees. A test instrumenting `_read_range` alone therefore reads the appended bytes at base too, so the declared negative control (\"the same test at the base revision reads the whole stream\") cannot go red, and the head arm passes vacuously whether or not the classification stopped replaying.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-reads-each-fact-once/r-20261105T212331656659-plan-review-of-the-monitor-reads-each-fact-once/plan.html:403",
+      "id": "done_when-2",
+      "reason": "as wired, the section is admitting-dispatchable with an unmet upstream (\u00a712's test) while being declared its upstream; the plan needs the recorded-hour replay owned by \u00a713 (with its fixture path stated) or the dependency and the clause reconciled.",
+      "text": "\u00a713's second clause requires \"every verdict `classify_tick` returns over the recorded hour that `tests/test_the_station_carries_every_row.py` replays\" to equal a fresh classification, but that file exists nowhere in the tree (`git grep` finds it only in this plan, at line 403): it is the row-carries instrument of \u00a712, whose run failed on cost and whose work is not landed, and `_document` now declares `s12` downstream of `s13` \u2014 so a node dispatched on \u00a713 must author \u00a712's replay fixture and test before it can measure anything, work the section neither declares nor scopes.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "116da9e9f83cef80494bc4da9997815145d9b510",
+  "plan_fingerprint": "134d0147728d79745a4fea31422116c33deb0ad4b4ee0c093eef3d2e2e5dbc4d",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 86,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261105T212331656659-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "cb46312f6ad258823686f0767887aac59ffb590c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the module and symbol anchors in \u00a713 (`reckon/crew/station_store.py`, `StationStore.ingest_stream`, `StationStore.classify_tick`, `_read_range`, `recovery_watch._snapshot_reuse_key`, `recovery_watch._watch_snapshot`, `docs/research/monitor-storage-load-rca.html` \u00a72) all resolve, but `tests/test_the_station_carries_every_row.py` resolves to no file anywhere in the tree \u2014 reported as the `done_when` finding below.",
+    "done_when": "a finding \u2014 \u00a713's gate names an instrument that cannot see the read it is about, and its second clause needs a test file that no node in the tree produces.",
+    "evidence_paths": "pass \u2014 the 60 s window's before/after figures are required into `docs/research/monitor-storage-load-rca.html` (which exists, with \u00a72 \"What was measured, and when\"), and the gate logs are the run's own; no session-scratchpad or node-local path is named.",
+    "naming": "pass \u2014 \u00a713's new test name states the mechanism it measures, and no plan label, ticket number, stage name or version tag reaches a symbol, filename or comment.",
+    "reasoning": "a finding \u2014 the stated root cause (\"that fresh classification reads the run's stream again from its start\") is not what the cited code path does: the classification already resumes a grown stream from a stored cursor, and the plan's own cold/warm pair is the signature of that resume working.",
+    "single_goal": "pass \u2014 \u00a713 carries one deliverable (a fresh classification taking its stream facts from the store's folded state); the equivalence, cost and ruff clauses are measures of that one change, not a second goal.",
+    "wiring": "pass \u2014 `s12` now declares `s13` in `plan-section-depends-on`, and that edge is right in direction (the cutover's cost bound cannot be met until classification is incremental); `s13` declares no `depends-on` because every input it uses (\u00a75, \u00a76, \u00a710) is already `done`, so nothing it needs is missing."
+  },
+  "section_digests": {
+    "_document": "c4f35786760d2dd4e5b3fcfb43d589b92078a62b0590edbdac991765da99b96a",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "38f47f6c263ab20e196f87db055259566815ada1f8b4d77174730db2285d659e",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T21:57:07.141556+00:00"
+}
