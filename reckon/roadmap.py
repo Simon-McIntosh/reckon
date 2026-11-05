@@ -3231,13 +3231,16 @@ WAITING = "waiting"
 def _link_holds(
     named: Iterable[Mapping[str, Any]],
 ) -> list[dict[str, str]]:
-    """The open gates and unmet waits among one section's named holds.
+    """Every hold among one section's named holds, by kind.
 
-    A section row also carries the decisions that govern it, which are not part
-    of what this link reports: the four primary states are about dispatch and
-    the two hold kinds below are what stands in front of one. Gates come first
-    so a link held by both names its gate before its wait, and each kind keeps a
-    stable order by id so two builds of one tree report the same list.
+    A section row carries the gates, the unmet waits and the open decisions that
+    govern it, and a link reports all three: a decision left out here would make
+    a section held only by an open decision read exactly like a section nothing
+    explains, while the section row beside it names the decision. Gates come
+    first so a link held by both names its gate before its wait, a decision
+    ranks between them because locking it is what releases the section, and each
+    kind keeps a stable order by id so two builds of one tree report the same
+    list.
     """
 
     gates = sorted(
@@ -3252,6 +3255,18 @@ def _link_holds(
         ),
         key=lambda row: row["id"],
     )
+    decisions = sorted(
+        (
+            {
+                "kind": DECISION_BLOCKER,
+                "id": str(hold.get("key") or hold.get("id") or ""),
+                "status": str(hold.get("status") or ""),
+            }
+            for hold in named
+            if hold.get("kind") == DECISION_BLOCKER
+        ),
+        key=lambda row: row["id"],
+    )
     waits = sorted(
         (
             {
@@ -3263,7 +3278,7 @@ def _link_holds(
         ),
         key=lambda row: row["id"],
     )
-    return [*gates, *waits]
+    return [*gates, *decisions, *waits]
 
 
 def _critical_path_links(
@@ -3280,9 +3295,9 @@ def _critical_path_links(
     then what stands in its way. The primary state is the first that applies, in
     the order in flight (a live run names it), ready-idle (the section is
     dispatchable and nothing has taken it, so the plan's coordinator is who to
-    ask), gated (an open gate names it) and waiting (an unmet wait names it). A
-    link none of the four describes reports no primary state rather than a fifth
-    one invented here.
+    ask), gated (an open gate names it) and waiting (an unmet wait or an open
+    decision names it). A link none of the four describes reports no primary
+    state rather than a fifth one invented here.
 
     ``holds`` carries every open gate and every unmet wait beside the state, so
     a link both gated and waiting reads as gated with both listed. The rows are

@@ -15,15 +15,18 @@ import re
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 import pytest
 
 from reckon import serve
 from reckon.roadmap import (
+    DECISION_BLOCKER,
     GATED,
     IN_FLIGHT,
     READY_IDLE,
     WAITING,
+    _critical_path_links,
     build_roadmap,
 )
 
@@ -119,12 +122,10 @@ def _link(roadmap: dict[str, Any], ref: str) -> dict[str, Any]:
     raise AssertionError(f"{ref} is not on the critical path: {_links(roadmap)}")
 
 
-def _live_run(
-    monkeypatch: pytest.MonkeyPatch, *, run_id: str, plan: str, section: str
-) -> None:
-    """Give one plan's section a live run, as the fleet's live set would."""
+def _pointer(*, run_id: str, plan: str, section: str) -> dict[str, Any]:
+    """One live run of a plan's section, as the fleet's live set reports it."""
 
-    pointer = {
+    return {
         "run_id": run_id,
         "project": PROJECT,
         "member": "worker-one",
@@ -134,7 +135,12 @@ def _live_run(
         "launcher_host": "another-login-node",
         "node": {"id": f"{plan}-{section}", "plan": plan, "section": section},
     }
-    monkeypatch.setattr("reckon.crew.list_live", lambda *a, **k: [pointer])
+
+
+def _live_runs(monkeypatch: pytest.MonkeyPatch, *pointers: dict[str, Any]) -> None:
+    """Report exactly these runs as the fleet's live set."""
+
+    monkeypatch.setattr("reckon.crew.list_live", lambda *a, **k: list(pointers))
 
 
 def test_the_head_reads_ready_idle_with_its_coordinator_named(
@@ -240,30 +246,73 @@ def test_the_evidence_table_records_every_link_and_every_hold(
             assert hold["id"] in row, f"{link['ref']} omits its hold {hold['id']}"
 
 
+def test_a_link_held_by_an_open_decision_names_that_decision() -> None:
+    """A decision-held link reads as waiting on the decision, not as unexplained.
+
+    The section rows carry governance decisions beside the gates and the unmet
+    waits, so a link that dropped the decision would report no state and no
+    holds for a section the row beside it says is held.
+    """
+
+    plan_slug, _, section = HEAD.partition("#")
+    critical: dict[str, Any] = {"sections": [HEAD]}
+    _critical_path_links(
+        critical,
+        section_runs={},
+        ready_sections_by_plan={},
+        section_holds_by_plan={
+            plan_slug: {
+                section: [
+                    {
+                        "kind": DECISION_BLOCKER,
+                        "key": "d-winding-gauge",
+                        "status": "open",
+                    }
+                ]
+            }
+        },
+        resolve_coordinators=dict,
+    )
+
+    link = critical["links"][0]
+    assert link["primary_state"] == WAITING
+    assert link["wait"] == "d-winding-gauge"
+    assert link["holds"] == [
+        {"kind": DECISION_BLOCKER, "id": "d-winding-gauge", "status": "open"}
+    ]
+
+
 def test_a_live_run_on_the_head_turns_its_state_to_in_flight(
     board: dict[str, Any], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Negative control: the state is decided by the run, not by the ref.
 
     The head is ready-idle on the fixture. Given a live run it must read in
-    flight with that run's id, and the sentence must stop calling it idle — a
+    flight naming that run, and the sentence must stop calling it idle — a
     path that reported a fixed state per row passes the first case and fails
-    this one.
+    this one. The run's id is minted here rather than written down, and a
+    second live run sits on another section of the same plan, so the id the
+    head reports has to be the one the derivation matched to this section
+    rather than whichever run the live set happened to hold.
     """
 
     assert _link(board, HEAD)["primary_state"] == READY_IDLE
 
-    _live_run(
+    head_plan, _, head_section = HEAD.partition("#")
+    on_head = f"run-live-{uuid4().hex[:8]}"
+    elsewhere = f"run-live-{uuid4().hex[:8]}"
+    _live_runs(
         monkeypatch,
-        run_id="run-live-head",
-        plan=HEAD.partition("#")[0],
-        section=HEAD.partition("#")[2],
+        _pointer(run_id=on_head, plan=head_plan, section=head_section),
+        _pointer(run_id=elsewhere, plan=head_plan, section="s1"),
     )
     busy = _build()
 
     head = _link(busy, HEAD)
     assert head["primary_state"] == IN_FLIGHT
-    assert head["run_id"] == "run-live-head"
+    assert head["run_id"] == on_head
+    assert head["run_id"] != elsewhere
     note = str(busy["critical_path"]["head_note"])
     assert "idle" not in note
     assert "in flight" in note
+    assert on_head in note
