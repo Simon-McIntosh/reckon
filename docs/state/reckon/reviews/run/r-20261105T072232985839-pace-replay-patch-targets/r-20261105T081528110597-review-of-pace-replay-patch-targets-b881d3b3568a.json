@@ -1,0 +1,51 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-05T08:32:08.572Z",
+  "dispatched_at": "2026-11-05T08:24:47Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the coordinator reran the armed command over the whole file at the true dispatch base cc6b2bffdbf0 (2 failed, 15 passed) into base-arm.coordinator.log and recorded it as baseline_suite; the delivered record named a mistyped revision and a filtered log",
+      "recorded_at": "2026-11-05T08:37:25.644781+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the review itself ran ruff check and ruff format --check on the head blobs and both passed",
+      "recorded_at": "2026-11-05T08:37:42.384584+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T072232985839-pace-replay-patch-targets/manifest.md",
+      "line": 15,
+      "severity": "non-blocking",
+      "text": "baseline_suite cites base-arm.log, whose own summary line reads '2 failed, 15 deselected' (a filtered two-test population), while after_suite runs the full file and reports 17 passed; the full base population is recorded in base-repro.log ('2 failed, 15 passed') but that log is not the one the field names, so the cited baseline/after pair is not the same population."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T072232985839-pace-replay-patch-targets/manifest.md",
+      "line": 11,
+      "severity": "non-blocking",
+      "text": "the done_when requires 'ruff check and ruff format --check add no findings on the path against its base'; the manifest's tests and test_logs record no ruff evidence, though this review re-ran both on the head blobs and they pass ('All checks passed!', '2 files already formatted')."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal (a run brief at brief.md:14-16) is that both pace-replay tests patch each function at the module the row resolves it through; scripts/census/test_pace_replay.py:709 and :777 now patch pace_report._account_surface_readings, and pace_report.py:1756 calls it as a module global, so the target is the resolving module.\nVERDICT done_when: done_when names the reproduction, the patch targets, the armed pytest command at head, a negative control removing the _account_surface_readings patch, a clean ruff result and a single-file change; base-repro.log and after-arm-head.log record the first three with revision headers and bare EXIT lines, the declared negative control is not satisfiable (pace-replay-patch-targets/negative-control.log reddens at 0cfb9aa through budget._unknown_allowance, not through the removed patch) and the worker substituted a recorded_windows control in negative-control-recorded-windows.log, ruff evidence is absent from the manifest though it passes at head, and the change touches two files under a crew widen grant.\nVERDICT write_paths: the dispatch prompt at prompt.txt:106-107 declares scripts/census/test_pace_replay.py only; resume-1-advice.txt grants scripts/census/pace_replay.py through 'crew widen', and both changed paths sit inside that widened set with nothing else touched.\nVERDICT manifest: read manifest.md; it reports status complete, head arm 17 passed / EXIT=0 at b881d3b356e against a base arm of 2 failed / 15 passed, and it states the pace_replay.py _unknown_allowance fix, the recorded_windows negative control and the inertness of the _account_surface_readings patch.\nVERDICT diff: read commit by commit from cc6b2bffdb to b881d3b356; 0cfb9aa76e changes four lines in scripts/census/test_pace_replay.py (budget -> pace_report on _account_surface_readings, plus the pace_report import) and b881d3b356 changes scripts/census/pace_replay.py:621 to read pace_report._unknown_allowance and imports pace_report, nine insertions and six deletions in total.\nCALL_SITES: scripts/census/pace_replay.py:95 replay, scripts/census/pace_replay.py:861 main\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: scripts/census/test_pace_replay.py:709 and :777 patch _account_surface_readings on reckon/pace_report.py, which is the module pace_report.py:1756 resolves the bare global through, and the gate passes at head.\nSCORE evidence: 16\nJUSTIFICATION evidence: after-arm-head.log carries the head shas in its header and 17 passed / EXIT=0 at scripts/census/test_pace_replay.py, and base-repro.log records 2 failed / 15 passed at cc6b2bffdb, but the declared negative control was not satisfiable and baseline_suite cites a deselected two-test arm (manifest.md:15).\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the two changed paths, scripts/census/test_pace_replay.py and scripts/census/pace_replay.py, are the exact set granted in resume-1-advice.txt through crew widen, and the diff touches nothing else.\nSCORE durability: 17\nJUSTIFICATION durability: reverting scripts/census/test_pace_replay.py:709 to budget._account_surface_readings reddens both tests with AttributeError and reverting scripts/census/pace_replay.py:624 to budget_module._unknown_allowance reddens test_a_new_window_replays_a_withheld_allowance (negative-control.log:112-114), so each change has a condition under which the gate fails.\nSCORE fit: 18\nJUSTIFICATION fit: the import added at scripts/census/pace_replay.py:27-30 follows the module's existing noqa-marked import block and both changed files are clean under ruff check and ruff format --check at head.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition; it repoints two references at reckon/pace_report.py, the module that already owns _account_surface_readings (:1583) and _unknown_allowance (:62), so no capability is duplicated.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T072232985839-pace-replay-patch-targets/manifest.md:15 non-blocking: baseline_suite cites base-arm.log, whose own summary line reads '2 failed, 15 deselected' while after_suite runs the full file and reports 17 passed, so the cited pair is not the same population even though the full base population is recorded in base-repro.log.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T072232985839-pace-replay-patch-targets/manifest.md:11 non-blocking: the done_when requires a ruff check and ruff format --check result on the changed path, and the manifest records neither, though both pass on the head blobs.",
+  "review_run_id": "r-20261105T081528110597-review-of-pace-replay-patch-targets-b881d3b3568a",
+  "reviewed_base_sha": "cc6b2bffdbf0a53a5b2162a57165cd147e39bd25",
+  "reviewed_head_sha": "b881d3b3568a12bb0c515f15b91a7543898feb4e",
+  "reviewed_run_id": "r-20261105T072232985839-pace-replay-patch-targets",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T08:49:19.074098+00:00",
+  "total": 107
+}
