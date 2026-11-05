@@ -89,6 +89,23 @@ def declared_dimension_floors(config: Mapping[str, Any] | None) -> dict[str, int
     return floors
 
 
+def _newest_delivered_review_run_id(project: str, run_id: str) -> str:
+    """The review run id of the run's newest delivered review, or ``""``.
+
+    A rendered command names the round it answers, and the round the verb would
+    select without the flag is the run's newest delivered review. A store that
+    cannot be read yields the empty string, so the command renders as it did
+    before rather than failing the reader that prints it.
+    """
+    from reckon.crew import review_records
+
+    try:
+        record = review_records.newest_delivered_review(project, run_id)
+    except (OSError, ValueError):
+        return ""
+    return str((record or {}).get("review_run_id") or "").strip()
+
+
 def dimension_disposition_valid(entry: Any) -> bool:
     """Whether a recorded disposition answers a sub-floor finding.
 
@@ -486,7 +503,13 @@ def record_finding_disposition(
     return path
 
 
-def dispose_commands(project: str, run_id: str, selector: str) -> tuple[str, str]:
+def dispose_commands(
+    project: str,
+    run_id: str,
+    selector: str,
+    *,
+    review_run_id: str | None = None,
+) -> tuple[str, str]:
     """The two commands that answer one duty, as ``(fold, exempt)``.
 
     The two spaces a disposition lives in — a review finding named by its index
@@ -499,10 +522,22 @@ def dispose_commands(project: str, run_id: str, selector: str) -> tuple[str, str
     reason, the two shapes :func:`record_finding_disposition` and
     :func:`record_dimension_disposition` accept, so a reader handed either
     command is handed one the writer takes.
+
+    The command names the review run it answers through ``--review``, so it
+    runs rather than being refused for selecting an older round. A caller that
+    holds the duty's own record passes its review run id in
+    ``review_run_id``; omitted, the run's newest delivered review supplies it,
+    which is the record the verb would otherwise select. A run carrying no
+    staging record renders the command without the flag, exactly as before,
+    because no newer round exists for the verb to prefer.
     """
+    named = str(review_run_id or "").strip()
+    if not named:
+        named = _newest_delivered_review_run_id(project, run_id)
+    review_flag = f"--review {shlex.quote(named)} " if named else ""
     base = (
         f"reckon crew dispose --project {shlex.quote(project)} "
-        f"--run {shlex.quote(run_id)} {selector}"
+        f"--run {shlex.quote(run_id)} {review_flag}{selector}"
     )
     return (
         f"{base} --kind folded --node '<the node the finding went into>'",

@@ -784,6 +784,14 @@ def _reviewed_head_from_run_records(project: str, reviewed_run_id: str) -> str:
     "answer a finding on the run's figure review.",
 )
 @click.option(
+    "--review",
+    "review_run",
+    default=None,
+    help="Review run whose record the disposition answers. Omit to answer the "
+    "run's newest delivered review; a call naming none is refused when the "
+    "record it selected is an older round.",
+)
+@click.option(
     "--kind",
     required=True,
     help="Disposition kind: folded with --node, or exempted with --reason.",
@@ -810,6 +818,7 @@ def crew_dispose(
     reason,
     pretty,
     review_rubric=None,
+    review_run=None,
 ):
     """Record the disposition one sub-floor review dimension or review finding carries.
 
@@ -842,6 +851,17 @@ def crew_dispose(
     parameter is last and defaults, so a caller reaching the callback without
     naming a rubric answers the text review rather than failing on an argument
     it never had to know about.
+
+    A run reviewed again after a repair carries one record per round, and the
+    selection by the run's head — or its fallback to a review of an ancestor
+    head — can reach an earlier round than the one the caller means.
+    ``--review`` names the review run whose record the disposition answers, and
+    the write is keyed on that record in either tree. Without it, a call whose
+    selected record is not the run's newest delivered review is refused, naming
+    that review run and the two ways to answer it: name it with ``--review``,
+    or promote it first. Every receipt names the review run and the reviewed
+    head of the record it wrote, beside its path, because the path alone does
+    not say which round it holds.
     """
     from reckon.crew import merge as merge_module
     from reckon.crew import obligations as obligations_module
@@ -891,7 +911,35 @@ def crew_dispose(
             "which is the only space a code review's entries live in"
         )
 
-    if rubric:
+    named_review = str(review_run or "").strip() if review_run is not None else ""
+    named_path: Path | None = None
+    if named_review and code_key:
+        raise click.ClickException(
+            f"run {reviewed_run_id!r} is a code review, and a code review's "
+            "record is keyed by the neighbourhood it read rather than by a "
+            "review run; --review names no record of it"
+        )
+    if named_review:
+        # The review run named is resolved to the one record it produced,
+        # crossing the committed tree and the staging store, so the write is
+        # keyed on the review the caller means rather than on the head the
+        # run's work happens to be at.
+        named_path, named_record = review_records_module.record_for_review_run_anywhere(
+            project, reviewed_run_id, named_review, rubric=rubric
+        )
+        if named_record is None:
+            raise click.ClickException(
+                f"run {reviewed_run_id!r} carries no record from review run "
+                f"{named_review!r} in project {project!r}; --review names the "
+                "review run whose record the disposition answers"
+            )
+        stored = named_record
+        described = ""
+        _base_carried, _base, carries_named_head, named_head = (
+            review_module.carried_revision_pair(named_record)
+        )
+        head = named_head if carries_named_head and named_head else ""
+    elif rubric:
         # A figure review is stored beside the run's text review under the
         # rubric's own name, and the by-head readers below select text records
         # only, so the figure record is read through the store's rubric-keyed
@@ -972,6 +1020,28 @@ def crew_dispose(
         if descent_record is not None:
             stored = descent_record
             described = ""
+    if not named_review and not code_key and stored is not None:
+        # A run re-reviewed after a repair carries more than one round, and the
+        # by-head selection or its descent fallback can land on an earlier one:
+        # the descent searches only the committed tree, so a newer round still
+        # awaiting promotion is invisible to it. Writing a disposition onto the
+        # older record retires a finding by index against a review the caller
+        # was not reading, so a call that names no review is refused rather
+        # than allowed to answer the wrong round.
+        newest = review_records_module.newest_delivered_review(
+            project, reviewed_run_id, rubric=rubric
+        )
+        newest_id = str((newest or {}).get("review_run_id") or "").strip()
+        selected_id = str(stored.get("review_run_id") or "").strip()
+        if newest_id and newest_id != selected_id:
+            raise click.ClickException(
+                f"the record selected for run {reviewed_run_id!r} is review "
+                f"{selected_id or 'an unidentified review'}, while the run's "
+                f"newest delivered review is {newest_id}; a disposition "
+                "recorded without --review would answer the older one. Name "
+                f"the newer review with --review {newest_id}, or promote it "
+                f"first with: crew complete --run {newest_id}"
+            )
     if stored is None:
         if described:
             raise click.ClickException(
@@ -988,6 +1058,28 @@ def crew_dispose(
     # naming a revision for it would leave the writer nothing to read back.
     _, _, carries_head, stored_head = review_module.carried_revision_pair(stored)
     reviewed_head_sha = stored_head if carries_head and stored_head else None
+    if named_path is not None:
+        # The writers select the record they rewrite by the head they are given,
+        # so a named review is proved to be the record that head resolves to
+        # before anything is written: a sibling review of another review run at
+        # the same head would otherwise receive a disposition meant for this one.
+        resolved_path, resolved_record = review_module.stored_record(
+            project,
+            reviewed_run_id,
+            reviewed_head_sha=reviewed_head_sha,
+            rubric=rubric,
+        )
+        if (
+            resolved_record is None
+            or Path(resolved_path).resolve() != Path(named_path).resolve()
+        ):
+            raise click.ClickException(
+                f"review run {named_review!r} cannot be selected on its own: the "
+                f"record at head {reviewed_head_sha or 'it names no head'} "
+                f"resolves to {str(resolved_path) if resolved_path else 'no file'}"
+                f", not to {named_path}; refusing to write a disposition onto a "
+                "record other than the review run named"
+            )
     try:
         if finding_index is None:
             path = review_dispositions.record_dimension_disposition(
@@ -1039,6 +1131,13 @@ def crew_dispose(
             # a truthy value marks a report carrying a problem, so a receipt
             # naming the index that way would exit non-zero on a success.
             "finding_index": finding_index,
+            # The review the disposition was written onto, named by the run that
+            # produced it and by the head it read. The path alone does not say
+            # which round it holds, so a caller reading only the path cannot
+            # tell the record it meant from an older one.
+            "review_run_id": str((record or {}).get("review_run_id") or "").strip()
+            or None,
+            "reviewed_head": reviewed_head_sha,
             "path": str(path),
             "disposition": entry,
         },

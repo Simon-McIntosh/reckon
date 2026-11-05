@@ -761,6 +761,79 @@ def stored_records_for_run(
     return records
 
 
+def newest_delivered_review(
+    project: str,
+    reviewed_run_id: str,
+    *,
+    base_dir: str | Path | None = None,
+    rubric: str | None = None,
+) -> dict[str, Any] | None:
+    """The run's newest review record the staging store holds, or ``None``.
+
+    A delivered review is filed into the staging store when its worker ends,
+    and it stays there until a promotion commits it into the project's tree. A
+    run re-reviewed after a repair therefore has one record per round, and the
+    newest of them is the review its findings are about now. A reader that
+    selects a record by a head, or by descent from a head the work has moved
+    past, can land on an earlier round; this is the answer that says which
+    round is current.
+
+    Only the staging store is read: it is where a round is delivered and where
+    a record awaits promotion, which is the state the caller is asking about.
+    A run with no staging record yields ``None``, so a run whose reviews have
+    all been promoted is never refused for lacking a newer one. ``rubric``
+    keeps a figure round out of a text-review answer, the rule every reader in
+    this family applies.
+
+    The rounds are ordered by when each review ran rather than by the file's
+    modification time: a disposition recorded on an earlier round rewrites that
+    file, which would otherwise move it past the newer round and make the older
+    record read as the newest.
+    """
+    records = stored_records_for_run(project, reviewed_run_id, base_dir=base_dir)
+    newest: dict[str, Any] | None = None
+    newest_key: tuple[datetime, int] | None = None
+    for path, record in records:
+        if not _review._review_rubric_matches(record, rubric):
+            continue
+        key = _delivery_order(record, path)
+        if newest_key is None or key > newest_key:
+            newest, newest_key = record, key
+    return newest
+
+
+def _delivery_order(
+    record: Mapping[str, Any], path: str | Path
+) -> tuple[datetime, int]:
+    """When a review round ran, for ordering one round against another.
+
+    The record's own dispatch stamp is the first answer, and the dispatch
+    instant its review run id encodes the second — a record delivered straight
+    into the staging store carries the id but no stamp. The file's modification
+    time is only the tie-break, and the whole answer for a record naming
+    neither, because a rewrite in place moves it and it says when the file was
+    last written rather than when the review ran.
+    """
+    stamp = str(record.get(_review.DISPATCH_TIME_KEY) or "").strip()
+    if not stamp:
+        stamp = _review.run_id_dispatch_time(str(record.get("review_run_id") or ""))
+    moment: datetime | None = None
+    if stamp:
+        try:
+            moment = datetime.fromisoformat(stamp)
+        except ValueError:
+            moment = None
+    try:
+        modified = Path(path).stat().st_mtime_ns
+    except OSError:
+        modified = 0
+    if moment is None:
+        return datetime.min.replace(tzinfo=UTC), modified
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=UTC)
+    return moment, modified
+
+
 def _record_filed_elsewhere(
     directory: Path,
     reviewed_run_id: str,
@@ -1412,6 +1485,51 @@ def record_for_review_run(
             continue
         return path, dict(record)
     return None
+
+
+def record_for_review_run_anywhere(
+    project: str,
+    reviewed_run_id: str,
+    review_run_id: str,
+    *,
+    base_dir: str | Path | None = None,
+    rubric: str | None = None,
+) -> tuple[Path | None, dict[str, Any] | None]:
+    """The stored record one review run produced for a run, staged or committed.
+
+    A caller that names the review run whose record it means supplies both
+    identities — the run reviewed and the review run that read it — because a
+    review run id alone says nothing about the run it belongs to, and a write
+    keyed on the wrong run's record would answer a finding raised on another
+    piece of work. The committed tree is read first: a promoted review is the
+    record that travels with the project, and the staging copy is the same
+    record before its promotion. A review run that never reached the committed
+    tree is answered from the staging store through
+    :func:`record_for_review_run`.
+
+    ``reviewed_run_id`` and ``rubric`` both filter what is returned, so a
+    record of another run or of another rubric is never handed back as the one
+    named. ``(None, None)`` means no readable record of that review run belongs
+    to this run.
+    """
+    name = str(review_run_id or "").strip()
+    if not name:
+        return None, None
+    for path, record in reversed(_committed_records_for_run(project, reviewed_run_id)):
+        if str(record.get("review_run_id") or "").strip() != name:
+            continue
+        if not _review._review_rubric_matches(record, rubric):
+            continue
+        return path, dict(record)
+    staged = record_for_review_run(project, name, base_dir=base_dir)
+    if staged is None:
+        return None, None
+    path, record = staged
+    if str(record.get("reviewed_run_id") or "").strip() != reviewed_run_id:
+        return None, None
+    if not _review._review_rubric_matches(record, rubric):
+        return None, None
+    return path, dict(record)
 
 
 def _indexed_head_matches(entry: Mapping[str, Any], named: str | None) -> bool:
