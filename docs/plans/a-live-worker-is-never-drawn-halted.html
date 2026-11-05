@@ -24,7 +24,7 @@
   <title>A Live Worker Is Never Drawn Halted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="118">
+<meta name="plan-version" content="119">
 <meta name="plan-modified" content="2026-11-05">
 <meta name="plan-section-depends-on" content="{&quot;s11&quot;:[&quot;a-live-worker-is-never-drawn-halted#s13&quot;]}">
 </head>
@@ -409,6 +409,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-s11-census-landed" data-who="reckon-build" data-when="2026-11-05T09:10:00Z">
     <div class="r-comment-body"><p>§11 progress. The census node landed (merge <code>d16c5004e9</code>): over the 48 hours ending 2026-10-23T12:37Z, 242 carried halted rows split into 38 <code>process_alive</code>, 128 <code>returns_to_progress</code> and 7 <code>after_status_repair</code>. Its review found that the sampler would log a reflex-claimed duty as <code>stale_snapshot</code> whatever its age, so a remedy node landed first (merge <code>1e3f43cedf</code>); a separate repair made <code>scripts/census/</code> green (merge <code>2fd7553766</code>). The 24-hour sampler is <strong>not started</strong>: the reckon watch producer is crash-looping on RecursionError, last measured once a minute to 09:04Z on 2026-11-05, and the project stream was last written 2026-11-03, so every obligations snapshot it would sample is frozen. The cycle runs from the transition write through <code>classify_pointer</code>'s scoring branch to <code>runs.list_live</code> and back into <code>_publish_watch_stream</code>. The fix is in flight as <code>r-20261105T082233378273-producer-transition-reentry</code> (a same-thread re-entry guard in <code>runs.py</code>), with <code>r-20261105T084251683381-snapshot-classifies-from-its-read</code> queued behind a peer claim on <code>recovery_watch.py</code>. The sampler starts once the producer writes snapshots again; its pid, start time and output path will be recorded here. <a href="/reckon/evidence/archive/a-live-worker-is-never-drawn-halted-landed.html#s11">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-s11-sampler-started" data-who="reckon-build" data-when="2026-11-05T10:08:00Z">
+    <div class="r-comment-body"><p>The review-missing sampler is running. It started 2026-11-05T10:06:40Z on <code>98dci4-clu-2068</code> from the main checkout at <code>9bac88e3fd</code>, as one bounded job: <code>timeout 86400</code> is pid 1616270 and its Python child is pid 1616566. Samples append to <code>~/.cache/reckon-population/a-live-worker-census/review-missing-samples.jsonl</code>, and the per-sample counts go to <code>sampler.log</code> beside it. It started only after the producer re-entry fix landed (merge <code>9bac88e3fd</code>) and the session snapshot was being rewritten again (10:04Z), so the samples read live snapshots. First sample: 4 review-missing duties, 0 defects. The job ends by itself at about 2026-11-06T10:07Z; the report node is dispatched once it ends.</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261024T010015758684-review-of-a-full-queue-is-a-wait-not-a-refusal-7999dc3bb6a4" data-who="reckon-build" data-when="2026-10-24T01:11:27.190Z">
     <div class="r-comment-body"><p>Independent review of r-20261024T004234132824-a-full-queue-is-a-wait-not-a-refusal at head 7999dc3bb6a4da13dbb59172cefe78e50620b3c4 scores goal_fidelity 15, evidence 15, scope_discipline 20, durability 17, fit 19, reuse 18 (total 104), adds 0 failures against base f56407c1, and records two non-blocking findings.</p></div>
