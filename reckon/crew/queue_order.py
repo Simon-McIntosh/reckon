@@ -14,14 +14,23 @@ from reckon.roadmap_ranking import leading_signal, section_ranking_key
 
 STARVATION_AGE_SECONDS = 30 * 60
 _LOGGER = logging.getLogger(__name__)
+_PRIORITY_KEYS: dict[
+    tuple[str, str], tuple[dict[str, Any], dict[str, tuple[Any, ...]]]
+] = {}
 
 
 def _roadmap_priority_keys(
     queued_pointers: Sequence[Mapping[str, Any]],
 ) -> dict[int, tuple[Any, ...]]:
     """Resolve section signals from each project's roadmap once per ordering."""
-    from reckon.mcp_discovery import _discover_project, _inventory_row
-    from reckon.roadmap import build_roadmap
+    from reckon import serve
+    from reckon.mcp_discovery import (
+        _discover_project,
+        _discovery_state_root,
+        _docs_dir_for_project,
+        _inventory_row,
+    )
+    from reckon.roadmap import build_roadmap, roadmap_build_scope
 
     keys: dict[int, tuple[Any, ...]] = {}
     projects = {
@@ -31,25 +40,50 @@ def _roadmap_priority_keys(
     }
     for project in projects:
         try:
-            discovered = _discover_project(project, None)
-            sprints = list(discovered.get("sprints") or ())
-            report = build_roadmap(
-                project,
-                [_inventory_row(item) for item in discovered.get("inventory", ())],
-                sprints,
-                active_sprint_id=discovered.get("active_sprint_id"),
-            )
-            sprint_order = {
-                str(row["ref"]): int(row["order"]) - 1
-                for row in report.get("sprints") or ()
-                if row.get("ref") and row.get("order")
-            }
-            critical = set(report.get("critical_path", {}).get("sections") or ())
-            sections = {
-                str(row.get("ref") or ""): row
-                for row in report.get("immediate_roadmap") or ()
-                if row.get("ref")
-            }
+            docs_dir = _docs_dir_for_project(project, None)
+            cache_key = (project, str(docs_dir.resolve())) if docs_dir else None
+            discovered_result = None
+            if cache_key is not None:
+                _, discovered_result = serve._fresh_discovery(
+                    cache_key, docs_dir, project, _discovery_state_root(None)
+                )
+            cached = _PRIORITY_KEYS.get(cache_key) if cache_key else None
+            if cached is not None and cached[0] is discovered_result:
+                project_keys = cached[1]
+            else:
+                with roadmap_build_scope(resolve_coordinators=False) as scope:
+                    discovered = _discover_project(project, None)
+                    report = scope.built
+                    if report is None:
+                        report = build_roadmap(
+                            project,
+                            [
+                                _inventory_row(item)
+                                for item in discovered.get("inventory", ())
+                            ],
+                            list(discovered.get("sprints") or ()),
+                            active_sprint_id=discovered.get("active_sprint_id"),
+                            docs_dir=docs_dir,
+                        )
+                sprint_order = {
+                    str(row["ref"]): int(row["order"]) - 1
+                    for row in report.get("sprints") or ()
+                    if row.get("ref") and row.get("order")
+                }
+                critical = set(report.get("critical_path", {}).get("sections") or ())
+                project_keys = {
+                    str(row["ref"]): section_ranking_key(
+                        row, critical_sections=critical, sprint_order=sprint_order
+                    )
+                    for row in report.get("immediate_roadmap") or ()
+                    if row.get("ref")
+                }
+                if cache_key is not None:
+                    _, discovered_result = serve._fresh_discovery(
+                        cache_key, docs_dir, project, _discovery_state_root(None)
+                    )
+                    if discovered_result is not None:
+                        _PRIORITY_KEYS[cache_key] = (discovered_result, project_keys)
         except Exception as exc:  # noqa: BLE001 - an unreadable roadmap yields no invented key
             _LOGGER.debug("roadmap priority unavailable for %s: %s", project, exc)
             continue
@@ -57,11 +91,9 @@ def _roadmap_priority_keys(
             if str(pointer.get("project") or "") != project:
                 continue
             ref = f"{pointer.get('plan')}#{pointer.get('section')}"
-            row = sections.get(ref)
-            if row is not None:
-                keys[id(pointer)] = section_ranking_key(
-                    row, critical_sections=critical, sprint_order=sprint_order
-                )
+            key = project_keys.get(ref)
+            if key is not None:
+                keys[id(pointer)] = key
     return keys
 
 
