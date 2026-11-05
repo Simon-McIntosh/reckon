@@ -101,4 +101,50 @@
   select different entries. The new case fixes each brief's own figure against a cold cache
   and then requires one shared cache to return both unchanged, in the order a coordinator
   runs when it previews a brief and re-dispatches it anchored.</p>
+
+  <h3>Repair — the estimate gate charges what dispatch charges</h3>
+
+  <p><strong>The defect.</strong> The node's estimate cases called the module-private
+  <code>_context_file_inputs</code> rather than <code>context_census</code>, the function
+  dispatch and the fit verdict actually charge with. A gate written that way cannot see the
+  census cache at all, which is how the cache-key defect above passed it green. A second
+  rebuild of the same shape was also present: <code>_recorded_task_node</code> in
+  <code>reckon/crew/dispatch_sessions.py</code> rebuilds a live run's node field by field and
+  named neither <code>anchor_paths</code> nor <code>regenerate_paths</code>, so a node
+  rebuilt from its own record carried no anchor and would be charged the reference cost
+  again, and a regenerated path would not read as written.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>head, armed suite</td>
+        <td><code>c5ff7ff18d</code></td>
+        <td><strong>10 passed</strong>, exit 0</td></tr>
+      <tr><td>base, armed suite</td>
+        <td><code>c8231c94</code></td>
+        <td>8 passed, exit 0 — the new cases do not exist there</td></tr>
+      <tr><td>base, new test file copied in</td>
+        <td><code>c8231c94</code></td>
+        <td>1 failed, exit 1 — the rebuilt node carries no anchor</td></tr>
+      <tr><td>head gate over the record rebuild</td>
+        <td><code>c5ff7ff18d</code> working tree</td>
+        <td><strong>50 passed</strong>, exit 0</td></tr>
+      <tr><td>negative control (key entry removed)</td>
+        <td>mutated head</td>
+        <td><strong>1 failed</strong>, 54392 served for 50392, exit 1</td></tr>
+      <tr><td>negative control (rebuild fields removed)</td>
+        <td>mutated head</td>
+        <td><strong>1 failed</strong> on the anchor assertion, exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>What changed.</strong> The estimate figures in the node's test file are now
+  measured through <code>context_census</code> on separate cold caches, so the difference
+  between the anchored and unanchored brief is exactly one reference charge, and the
+  shared-cache case is the one that fails when the anchored set leaves the request key. The
+  record-level assertions (provenance, <code>counted</code>, the real byte count beside the
+  zero charge) remain in their own case, since only the internal record carries them.
+  <code>_recorded_task_node</code> now carries both <code>anchor_paths</code> and
+  <code>regenerate_paths</code>, and a new case rebuilds a node from a live run record and
+  requires the rebuilt node to estimate exactly as its original did.</p>
 </section>
