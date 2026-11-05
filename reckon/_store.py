@@ -2963,36 +2963,13 @@ def _section_prose_text(document: str, section_id: str) -> str:
 
 
 def _insert_section_prose(document: str, section_id: str, prose: str) -> str:
-    """Append carried prose to a section's authored body, after its heading."""
-    if not prose:
-        return document
-    escaped = html.escape(prose)
-    for pattern in (
-        # The record element comes first: a paragraph placed between a heading
-        # and its adjacent record would break the pairing the reader requires.
-        re.compile(
-            r'(<section\b[^>]*\bdata-id="'
-            + re.escape(section_id)
-            + r'"[^>]*>\s*</section>)',
-            re.DOTALL | re.IGNORECASE,
-        ),
-        re.compile(
-            r'(<h2\b[^>]*\bid="' + re.escape(section_id) + r'"[^>]*>.*?</h2>)',
-            re.DOTALL | re.IGNORECASE,
-        ),
-        re.compile(
-            r"(<h2\b[^>]*\bid='" + re.escape(section_id) + r"'[^>]*>.*?</h2>)",
-            re.DOTALL | re.IGNORECASE,
-        ),
-    ):
-        match = pattern.search(document)
-        if match is not None:
-            insert = f"{match.group(1)}\n<p>{escaped}</p>"
-            return document[: match.start(1)] + insert + document[match.end(1) :]
-    raise OpError(
-        f"section {section_id!r}: cannot carry moved prose, no heading or record "
-        "found in the successor's document"
-    )
+    """Append carried prose to a section's body, through the plan reader."""
+    from reckon import _plan_html
+
+    try:
+        return _plan_html.insert_section_prose(document, section_id, prose)
+    except ValueError as exc:
+        raise OpError(str(exc)) from exc
 
 
 def _resolve_section_moves(
