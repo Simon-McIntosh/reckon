@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:443 crew_directory (changed at :449)",
+    "reckon/cli.py crew verb registration -> crew_directory"
+  ],
+  "completed_at": "2026-11-05T20:28:21.777Z",
+  "dispatched_at": "2026-11-05T20:21:32Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T101652349078-the-board-extends-the-coordinator-directory/logs/cli-control.log",
+      "id": "f0f54863ef5",
+      "line": 24,
+      "severity": "non-blocking",
+      "summary": "the negative-control log's final receipt reads EXIT=0 while the same log reports '1 failed, 7 deselected', so a reader or check scripting on the EXIT line concludes the unfixed head passed; the failing assertion is legible in the text, so the red evidence itself is sound."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T101652349078-the-board-extends-the-coordinator-directory/manifest.md",
+      "id": "f63dc204b13",
+      "line": 12,
+      "severity": "non-blocking",
+      "summary": "changed_paths omits reckon/crew_run_commands.py and tests/test_crew_directory.py although commit 4ccc4da975 changed both, so the record's own scope listing disagrees with its commits line and a scope audit read from the manifest misses them."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read 177165e0dd..4ccc4da975; a single commit changes one keyword argument in reckon/crew_run_commands.py and adds one CLI case to tests/test_crew_directory.py, with nothing else.",
+    "done_when": "the folding advice required a CLI listing case red without the argument; logs/gate-cli-directory.log records tests/test_crew_directory.py at 4ccc4da975 as 8 passed EXIT=0 and logs/cli-control.log records the new case failing with KeyError 'idle-coordinator' before the fix.",
+    "goal": "the delta's goal is to fold the previous review's finding that the CLI listing lost its idle-owner row; reckon/crew_run_commands.py:449 passes ready_idle=True and achieves it.",
+    "manifest": "read; it records status complete, the commits list ending 4ccc4da975, the CLI suite at 8 passed in artifacts, and a landing line, but its changed_paths omits the two files the last commit changed.",
+    "write_paths": "reckon/crew_run_commands.py was added to scope by resume-4-advice.txt and tests/test_crew_directory.py is the CLI test file that advice gates on, so both touched files are inside the coordinator's delta scope, though the manifest's changed_paths does not list them."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_directory.py:316 reddens with KeyError 'idle-coordinator' when reckon/crew_run_commands.py:449 omits ready_idle, and it asserts runs==[], state=='idle' and ready_idle_sections==['s1'] against output seeded independently of the call.",
+    "evidence": "logs/gate-cli-directory.log carries revision, tree and literal command for 4ccc4da975 and ends EXIT=0 with 8 passed, and I reproduced tests/test_crew_directory.py::test_the_cli_listing_names_an_idle_owner_with_no_run at head (1 passed), but the red arm logs/cli-control.log ends EXIT=0 while reporting 1 failed.",
+    "fit": "the one-keyword call at reckon/crew_run_commands.py:449 matches the neighbouring mcp_views.py:4133 caller, and the case at tests/test_crew_directory.py:255 follows the file's tmp_path/monkeypatch and CliRunner idiom.",
+    "goal_fidelity": "reckon/crew_run_commands.py:449 passes ready_idle=True, so the CLI reader the plan's section 5 power_convertor measure was taken through again lists the run-less idle owner.",
+    "reuse": "the delta adds no production definition, only a test that inline-builds a one-section plan document where tests/test_the_board_extends_the_directory.py:33 has a private _plan_html helper, which is not a shared owner.",
+    "scope_discipline": "the diff stays in the two files the coordinator's delta named, but the reviewed manifest's changed_paths line omits both reckon/crew_run_commands.py and tests/test_crew_directory.py."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the delta commit 4ccc4da975 restores the row the previous review found missing by passing ready_idle=True at reckon/crew_run_commands.py:449, so the CLI listing again names a coordinator with ready-idle work and no run.\nVERDICT done_when: the folding advice's measure is a CLI listing case that is red without the argument; logs/gate-cli-directory.log runs tests/test_crew_directory.py at 4ccc4da975 (8 passed, EXIT=0) and logs/cli-control.log shows the new case failing with KeyError 'idle-coordinator' at the pre-fix head.\nVERDICT write_paths: the delta touches reckon/crew_run_commands.py, added to scope by resume-4-advice.txt, and tests/test_crew_directory.py, the CLI test file that advice gates on; the source manifest's changed_paths nevertheless omits both.\nVERDICT manifest: read; it records the commits list ending 4ccc4da975, the CLI suite at 8 passed in artifacts, and a landing line, but its changed_paths field was not extended to the two files the last commit changed.\nVERDICT diff: read 177165e0dd..4ccc4da975 commit by commit; one commit changes two files, a one-line keyword argument and a 70-line test, both implied by the folded finding.\nCALL_SITES: reckon/crew_run_commands.py:443 crew_directory (the changed line at :449), reckon/cli.py crew verb registration -> crew_directory\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:449 passes ready_idle=True, so the CLI reader the plan's section 5 power_convertor measure was taken through again lists the run-less idle owner.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-cli-directory.log carries revision, tree and literal command for 4ccc4da975 and ends EXIT=0 with 8 passed, and I reproduced tests/test_crew_directory.py::test_the_cli_listing_names_an_idle_owner_with_no_run at head (1 passed), but the red arm logs/cli-control.log ends EXIT=0 while reporting 1 failed.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: the diff stays in the two files the coordinator's delta named, but the reviewed manifest's changed_paths line omits both reckon/crew_run_commands.py and tests/test_crew_directory.py, so a reader auditing scope from the manifest cannot see them.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_crew_directory.py:316 reddens with KeyError 'idle-coordinator' when reckon/crew_run_commands.py:449 omits ready_idle, as logs/cli-control.log records, and it asserts runs==[], state=='idle' and ready_idle_sections==['s1'] against output seeded independently of the call.\nSCORE fit: 16\nJUSTIFICATION fit: the one-keyword call at reckon/crew_run_commands.py:449 matches the neighbouring mcp_views.py:4133 caller, and the case at tests/test_crew_directory.py:255 follows the file's tmp_path/monkeypatch and CliRunner idiom with a mechanism-stating comment and no plan or ticket label.\nSCORE reuse: 18\nJUSTIFICATION reuse: the delta adds no production definition, only a test that inline-builds a one-section plan document where the sibling module tests/test_the_board_extends_the_directory.py:33 has a private _plan_html helper (not a shared owner), so no capability is forked.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T101652349078-the-board-extends-the-coordinator-directory/logs/cli-control.log:24 non-blocking: the negative-control log's final receipt reads EXIT=0 while the same log reports '1 failed, 7 deselected', so a reader or check that scripts on the EXIT line concludes the unfixed head passed; the failing assertion is legible in the text.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T101652349078-the-board-extends-the-coordinator-directory/manifest.md:12 non-blocking: changed_paths omits reckon/crew_run_commands.py and tests/test_crew_directory.py although commit 4ccc4da975 changed both, so the record's own scope listing disagrees with its commits line.",
+  "review_run_id": "r-20261105T201523345254-review-of-the-board-extends-the-coordinator-directory-4ccc4da97561",
+  "reviewed_base_sha": "177165e0ddbe9fa20c692be9c5ecd6e179631935",
+  "reviewed_head_sha": "4ccc4da9756155a82d2ed47d0bd911408550bab4",
+  "reviewed_run_id": "r-20261027T101652349078-the-board-extends-the-coordinator-directory",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T20:40:00.912921+00:00",
+  "total": 102
+}
