@@ -2390,7 +2390,7 @@ def _readiness_rows(
     """
     fingerprint = _plan_tree_fingerprint(docs_dir)
     scope = (project, str(docs_dir or ""))
-    if not (_READINESS_PASS_ACTIVE.get() and not _BOUNDED_READ.get()):
+    if not _READINESS_PASS_ACTIVE.get():
         scope += (plan, ",".join(sorted(str(ref) for ref in refs)))
     key = "|".join((*scope, *(str(part) for part in fingerprint)))
     cached = cache.get(key)

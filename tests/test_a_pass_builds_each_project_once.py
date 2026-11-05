@@ -91,7 +91,11 @@ def _requests(repository: Path) -> list[dict]:
 
 
 def _pass(
-    monkeypatch: pytest.MonkeyPatch, requests: list[dict], *, shared: bool = True
+    monkeypatch: pytest.MonkeyPatch,
+    requests: list[dict],
+    *,
+    shared: bool = True,
+    project_wide: bool = True,
 ) -> tuple[int, list[str]]:
     builds = 0
     real = plan_review.project_section_readiness
@@ -105,7 +109,7 @@ def _pass(
         patch.setattr(plan_review, "project_section_readiness", counting)
         with (
             queue_admission.readiness_pass() if shared else nullcontext(),
-            queue_admission.project_read(),
+            queue_admission.project_read() if project_wide else nullcontext(),
         ):
             queue_admission.advance_waiting_requests(requests)
     phases = [runs.read_pointer(request["run_id"])["phase"] for request in requests]
@@ -113,17 +117,18 @@ def _pass(
     return builds, phases
 
 
+@pytest.mark.parametrize("project_wide", [True, False])
 def test_waiting_requests_share_one_project_read(
-    project: Path, monkeypatch: pytest.MonkeyPatch
+    project: Path, monkeypatch: pytest.MonkeyPatch, project_wide: bool
 ) -> None:
     requests = _requests(project)
     assert len(list((project / "docs" / "plans").glob("*.html"))) == 12
     assert len(requests) == 20
     assert len({ref for request in requests for ref in request["waits"]}) == 8
-    builds, phases = _pass(monkeypatch, requests)
-    assert builds == 1
+    builds, phases = _pass(monkeypatch, requests, project_wide=project_wide)
     assert phases == [PHASES[UPSTREAM_STATES[index % 8]] for index in range(20)]
     assert set(phases) == set(PHASES.values())
+    assert builds == 1
 
 
 def test_phases_match_the_request_scoped_project_reads(
@@ -133,9 +138,8 @@ def test_phases_match_the_request_scoped_project_reads(
     reference_builds, reference_phases = _pass(
         monkeypatch, _requests(project), shared=False
     )
-    builds, phases = _pass(monkeypatch, _requests(project))
+    _, phases = _pass(monkeypatch, _requests(project))
     assert reference_builds == 12
-    assert builds == 1
     assert phases == reference_phases
 
 
@@ -148,8 +152,7 @@ def test_plan_edit_is_seen_by_next_pass(
     path.write_text(_plan("upstream-1", {"s1": "done"}, {}), encoding="utf-8")
     stat = path.stat()
     os.utime(path, ns=(stat.st_atime_ns, stat.st_mtime_ns + 2_000_000_000))
-    builds, after = _pass(monkeypatch, requests)
-    assert builds == 1
+    _, after = _pass(monkeypatch, requests)
     for index in range(20):
         if index % 8 == 1:
             assert before[index] == queue_admission.AWAITING_UPSTREAM_PHASE
