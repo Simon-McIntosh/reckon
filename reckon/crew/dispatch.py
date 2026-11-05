@@ -119,6 +119,11 @@ from reckon.crew.recovery import (
     resume_window_refusal as resume_window_refusal,
     stream_paths_newest_first as stream_paths_newest_first,
 )
+from reckon.crew.dispatch_refusals import (
+    brief_reduction as brief_reduction,
+    consume_context_refusal as consume_context_refusal,
+    record_context_refusal as record_context_refusal,
+)
 from reckon.crew.refusals import (
     format_refusal as format_refusal,
 )
@@ -693,7 +698,9 @@ def _reroute_oversized_request(
         ]
     chosen = picker_snapshot.widest_fitting_candidate(candidates, resolution.backend)
     if chosen is None:
-        raise CompetenceLimit(_oversized_context_refusal(resolution, repo, estimate))
+        refusal = _oversized_context_refusal(resolution, repo, estimate)
+        record_context_refusal(node=node, project=project, verdict=refusal)
+        raise CompetenceLimit(refusal)
     chosen_backend = str(chosen.get("backend") or "")
     # Re-resolve onto the chosen lane rather than patching the plan, so the new
     # backend gets its own execution fit, sandbox and write-path checks instead
@@ -1849,6 +1856,7 @@ def dispatch(
         resolution=resolution, project=project, repo=repo_root
     )
     if not competence["allowed"]:
+        record_context_refusal(node=node, project=project, verdict=competence)
         raise CompetenceLimit(competence)
 
     fences = config.get("fences") or {}
@@ -2870,6 +2878,12 @@ def dispatch(
             repo_root=repo_root,
             authority=authority,
         )
+        # A brief cut after a context refusal is recorded here, in the node block
+        # promotion rebuilds the committed row from, so the reduction is visible
+        # on the landed run and not only on the dispatch that accepted it.
+        reduction = brief_reduction(node=node, project=project, verdict=competence)
+        if reduction is not None:
+            node_definition["brief_reduction"] = reduction
         if orchestrator_assessment:
             node_definition["orchestrator_assessment"] = dict(orchestrator_assessment)
 
@@ -3318,6 +3332,11 @@ def dispatch(
         # could drain an empty fleet between the probe and this write, leaving
         # a new run behind a payload that incorrectly said it was watched.
         _write_json(pointer_path(run_id), record)
+        # Any dispatch that fits ends the refusal's usefulness, whether or not
+        # the brief changed: a trace left behind would mark a later dispatch
+        # against an older refusal's figures, and a node never dispatched again
+        # would leave its trace in the crew home for good.
+        consume_context_refusal(node=node, project=project)
         record["peer_channel"] = _wire_peer_channels(record, adjacent_peers)
         wired_peer_run_ids = list(record["peer_channel"]["peers"])
         record["watch"] = watch_state(project, session=session)
