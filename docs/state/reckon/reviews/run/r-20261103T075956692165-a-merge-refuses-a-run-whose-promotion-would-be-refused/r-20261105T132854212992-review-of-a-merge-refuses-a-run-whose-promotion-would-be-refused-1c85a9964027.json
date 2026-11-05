@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The source run is suite-unarmed and has no baseline_suite or after_suite fields in its manifest. Its own base-arm.log at 2c3100cb3d84b65ce531afd5cc2ac80025754755 and head-arm-final.log at 569a0044befb1a47d5efd1a3e90b03c867d26149 each completed with 32 passed and EXIT=0, so the paired recorded failure-id delta is empty; repair-final-head-gate.log at the reviewed head completed with 49 passed and EXIT=0.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:crew_merge",
+    "reckon/crew/merge.py:require_promotable_head",
+    "reckon/crew/merge.py:land_merge"
+  ],
+  "completed_at": "2026-11-05T13:38:11Z",
+  "dispatched_at": "2026-11-05T13:30:15Z",
+  "findings": [
+    {
+      "disposition": "exempted",
+      "file": "tests/test_merge_requires_promotable_run.py",
+      "line": 126,
+      "severity": "non-blocking",
+      "text": "The dry-run refusal assertion accepts an exit-status-1 refusal alone, so removing red-base suite-delta detection leaves this assertion green despite the claimed red-base check; exempted because the merge guard itself turns red under its recorded no-op mutation and suite-delta behavior has separate coverage."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "Commits 9a05236e46cbdcc29c16e5d41c93a22ddfb63673 and 1c85a9964027e9224d758e152c7506986067d1ac add only tests/test_merge_requires_promotable_run.py and one paragraph in the declared evidence fragment relative to 2dccc0f9c6328c8b94fd4c0ca053823114ec5137.",
+    "done_when": "The plan at docs/plans/the-crew-does-its-own-bookkeeping.html:55 asks for dry-run refusal, merge refusal, promotable landing, and a red negative control; /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T075956692165-a-merge-refuses-a-run-whose-promotion-would-be-refused/repair-final-head-gate.log records 49 passed at the reviewed head and repair-final-mutation.log records the guard-removal refusal test failing.",
+    "goal": "The source goal in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T075956692165-a-merge-refuses-a-run-whose-promotion-would-be-refused/prompt.txt:32 requires merge refusal for an unpromotable run; the new tests/test_merge_requires_promotable_run.py:155 assertion exercises the existing production guard.",
+    "manifest": "The source manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T075956692165-a-merge-refuses-a-run-whose-promotion-would-be-refused/manifest.md reports complete, names commits 9a05236e46cbdcc29c16e5d41c93a22ddfb63673 and 1c85a9964027e9224d758e152c7506986067d1ac, and cites the final gate and negative-control logs.",
+    "write_paths": "The source manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T075956692165-a-merge-refuses-a-run-whose-promotion-would-be-refused/manifest.md declares tests/test_merge_requires_promotable_run.py and the evidence fragment; both paths in the two-commit diff are within that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_merge_requires_promotable_run.py:155 fails if reckon/crew/merge.py:108 no longer checks promotion, as the recorded no-op mutation proves; the promotable case at line 267 also fails if the merged marker is absent.",
+    "evidence": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T075956692165-a-merge-refuses-a-run-whose-promotion-would-be-refused/repair-final-head-gate.log reports 49 passed and EXIT=0 at 1c85a9964027e9224d758e152c7506986067d1ac, while repair-final-mutation.log reports the refusal assertion failing with EXIT=1 under guard removal.",
+    "fit": "tests/test_merge_requires_promotable_run.py:12-15 reuses the repository's CLI, git, and landing fixtures, and its added test names describe the behavior without forbidden plan or version labels.",
+    "goal_fidelity": "tests/test_merge_requires_promotable_run.py:155 demands refusal and lines 161-162 demand unchanged local and remote heads when the existing merge check in reckon/crew_run_commands.py:321 rejects the run.",
+    "reuse": "The capability search found existing dry-run coverage in tests/test_complete_reports_every_refusal.py:214 and merge coverage in tests/test_a_reviewed_head_lands_without_touching_the_index.py:125; the new test composes those owners to cover their previously untested intersection.",
+    "scope_discipline": "The diff from 2dccc0f9c6328c8b94fd4c0ca053823114ec5137 to 1c85a9964027e9224d758e152c7506986067d1ac changes only the test and evidence fragment declared in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T075956692165-a-merge-refuses-a-run-whose-promotion-would-be-refused/manifest.md."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source goal in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T075956692165-a-merge-refuses-a-run-whose-promotion-would-be-refused/prompt.txt:32 requires merge refusal for an unpromotable run; the new tests/test_merge_requires_promotable_run.py:155 assertion exercises the existing production guard.\nVERDICT done_when: The plan at docs/plans/the-crew-does-its-own-bookkeeping.html:55 asks for dry-run refusal, merge refusal, promotable landing, and a red negative control; /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T075956692165-a-merge-refuses-a-run-whose-promotion-would-be-refused/repair-final-head-gate.log records 49 passed at the reviewed head and repair-final-mutation.log records the guard-removal refusal test failing.\nVERDICT write_paths: The source manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T075956692165-a-merge-refuses-a-run-whose-promotion-would-be-refused/manifest.md declares tests/test_merge_requires_promotable_run.py and the evidence fragment; both paths in the two-commit diff are within that scope.\nVERDICT manifest: The source manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T075956692165-a-merge-refuses-a-run-whose-promotion-would-be-refused/manifest.md reports complete, names commits 9a05236e46cbdcc29c16e5d41c93a22ddfb63673 and 1c85a9964027e9224d758e152c7506986067d1ac, and cites the final gate and negative-control logs.\nVERDICT diff: Commits 9a05236e46cbdcc29c16e5d41c93a22ddfb63673 and 1c85a9964027e9224d758e152c7506986067d1ac add only tests/test_merge_requires_promotable_run.py and one paragraph in the declared evidence fragment relative to 2dccc0f9c6328c8b94fd4c0ca053823114ec5137.\nCALL_SITES: reckon/crew_run_commands.py:crew_merge, reckon/crew/merge.py:require_promotable_head, reckon/crew/merge.py:land_merge\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_merge_requires_promotable_run.py:155 demands refusal and lines 161-162 demand unchanged local and remote heads when the existing merge check in reckon/crew_run_commands.py:321 rejects the run.\nSCORE evidence: 18\nJUSTIFICATION evidence: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T075956692165-a-merge-refuses-a-run-whose-promotion-would-be-refused/repair-final-head-gate.log reports 49 passed and EXIT=0 at 1c85a9964027e9224d758e152c7506986067d1ac, while repair-final-mutation.log reports the refusal assertion failing with EXIT=1 under guard removal.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diff from 2dccc0f9c6328c8b94fd4c0ca053823114ec5137 to 1c85a9964027e9224d758e152c7506986067d1ac changes only the test and evidence fragment declared in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T075956692165-a-merge-refuses-a-run-whose-promotion-would-be-refused/manifest.md.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_merge_requires_promotable_run.py:155 fails if reckon/crew/merge.py:108 no longer checks promotion, as the recorded no-op mutation proves; the promotable case at line 267 also fails if the merged marker is absent.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_merge_requires_promotable_run.py:12-15 reuses the repository's CLI, git, and landing fixtures, and its added test names describe the behavior without forbidden plan or version labels.\nSCORE reuse: 19\nJUSTIFICATION reuse: The capability search found existing dry-run coverage in tests/test_complete_reports_every_refusal.py:214 and merge coverage in tests/test_a_reviewed_head_lands_without_touching_the_index.py:125; the new test composes those owners to cover their previously untested intersection.\nFINDING tests/test_merge_requires_promotable_run.py:126 non-blocking: The dry-run refusal assertion accepts an exit-status-1 refusal alone, so removing red-base suite-delta detection leaves this assertion green despite the claimed red-base check; exempted because the merge guard itself turns red under its recorded no-op mutation and suite-delta behavior has separate coverage.\n",
+  "review_run_id": "r-20261105T132854212992-review-of-a-merge-refuses-a-run-whose-promotion-would-be-refused-1c85a9964027",
+  "reviewed_base_sha": "2dccc0f9c6328c8b94fd4c0ca053823114ec5137",
+  "reviewed_head_sha": "1c85a9964027e9224d758e152c7506986067d1ac",
+  "reviewed_range": "2dccc0f9c6328c8b94fd4c0ca053823114ec5137..1c85a9964027e9224d758e152c7506986067d1ac",
+  "reviewed_run_id": "r-20261103T075956692165-a-merge-refuses-a-run-whose-promotion-would-be-refused",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T13:42:06.523553+00:00",
+  "total": 113
+}
