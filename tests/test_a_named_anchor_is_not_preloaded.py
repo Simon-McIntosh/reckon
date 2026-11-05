@@ -13,6 +13,7 @@ a node cannot both edit a file and be briefed without reading it.
 from __future__ import annotations
 
 import json
+import math
 import subprocess
 from collections.abc import Iterator
 from pathlib import Path
@@ -90,24 +91,39 @@ def _records_by_path(records: list[dict[str, object]]) -> dict[str, dict[str, ob
 # ── the estimate ────────────────────────────────────────────────────────────
 
 
+def _census(node: crew.TaskNode, repo: Path, root: Path) -> int:
+    """The figure dispatch and the fit verdict charge with, on a cold cache."""
+    return routing.context_census(node, repo, authority=_authority(repo), root=root)
+
+
 def test_the_same_brief_estimates_lower_with_the_anchor(tmp_path: Path) -> None:
     """The same path-naming brief costs a reference, or nothing when anchored."""
     _seed_large_file(tmp_path)
     anchored = _node(write_paths=[], anchor_paths=[LARGE_PATH])
     unanchored = _node(write_paths=[], anchor_paths=[])
 
-    anchored_tokens, anchored_inputs = _context_file_inputs(
+    anchored_tokens = _census(anchored, tmp_path, tmp_path / "cold-anchored")
+    unanchored_tokens = _census(unanchored, tmp_path, tmp_path / "cold-unanchored")
+
+    # Exactly the same brief, so the only difference is the opt-out, which is
+    # worth exactly one reference charge.
+    assert anchored.done_when == unanchored.done_when
+    assert unanchored_tokens - anchored_tokens == _REFERENCE_COST_TOKENS
+    assert anchored_tokens < unanchored_tokens
+
+
+def test_an_anchored_record_keeps_its_real_bytes(tmp_path: Path) -> None:
+    """The census records what it withheld, so the opt-out is visible."""
+    _seed_large_file(tmp_path)
+    anchored = _node(write_paths=[], anchor_paths=[LARGE_PATH])
+    unanchored = _node(write_paths=[], anchor_paths=[])
+
+    _tokens, anchored_inputs = _context_file_inputs(
         tmp_path, anchored, _authority(tmp_path)
     )
-    unanchored_tokens, unanchored_inputs = _context_file_inputs(
+    _tokens, unanchored_inputs = _context_file_inputs(
         tmp_path, unanchored, _authority(tmp_path)
     )
-
-    # Exactly the same brief, so the only difference is the opt-out.
-    assert anchored.done_when == unanchored.done_when
-    assert unanchored_tokens == _REFERENCE_COST_TOKENS
-    assert anchored_tokens == 0
-    assert anchored_tokens < unanchored_tokens
 
     record = _records_by_path(anchored_inputs["named_files"])[LARGE_PATH]
     assert record["provenance"] == "anchor"
@@ -162,18 +178,24 @@ def test_the_anchor_selects_its_own_census_entry(tmp_path: Path) -> None:
 def test_an_anchor_withholds_a_declared_input_charge(tmp_path: Path) -> None:
     """Anchoring the path wins over a declaration written in another spelling."""
     _seed_large_file(tmp_path)
-    node = _node(
-        write_paths=[],
-        anchor_paths=[f"./{LARGE_PATH}"],
-        done_when=(
-            f"the record {LARGE_PATH} is a declared input to this node; "
-            "pytest reports the census charged the anchored path nothing"
-        ),
+    done_when = (
+        f"the record {LARGE_PATH} is a declared input to this node; "
+        "pytest reports the census charged the anchored path nothing"
     )
+    anchored = _node(
+        write_paths=[], anchor_paths=[f"./{LARGE_PATH}"], done_when=done_when
+    )
+    unanchored = _node(write_paths=[], anchor_paths=[], done_when=done_when)
 
-    tokens, inputs = _context_file_inputs(tmp_path, node, _authority(tmp_path))
+    anchored_tokens = _census(anchored, tmp_path, tmp_path / "declared-anchored")
+    unanchored_tokens = _census(unanchored, tmp_path, tmp_path / "declared-plain")
 
-    assert tokens == 0
+    # The unanchored brief pays for the declared input at its real size; the
+    # anchor withholds that charge even though it is spelled differently.
+    assert anchored_tokens < unanchored_tokens
+    assert unanchored_tokens - anchored_tokens == math.ceil(LARGE_BYTES / 3.5)
+
+    _tokens, inputs = _context_file_inputs(tmp_path, anchored, _authority(tmp_path))
     record = _records_by_path(inputs["named_files"])[f"./{LARGE_PATH}"]
     assert record["provenance"] == "anchor"
     assert record["bytes"] == LARGE_BYTES
@@ -388,3 +410,40 @@ def test_a_queued_request_keeps_its_anchor_through_reconstruction() -> None:
 
     assert node.anchor_paths == [LARGE_PATH]
     assert node.as_dict()["anchor_paths"] == [LARGE_PATH]
+
+
+def test_a_run_record_rebuild_keeps_its_anchor(tmp_path: Path) -> None:
+    """A node rebuilt from a live run record is charged as its record says.
+
+    The record rebuild names each field it keeps, so a field it omits is one
+    the re-estimate silently charges again — the anchor would be billed at the
+    reference cost, and a regenerated path would not read as written.
+    """
+    from reckon.crew.dispatch_sessions import _recorded_task_node
+
+    _seed_large_file(tmp_path)
+    original = crew.TaskNode(
+        id="node-recorded",
+        goal="name an anchor without loading it",
+        plan=PLAN,
+        section="s1",
+        role="implement",
+        spec_level="exact",
+        done_when=DONE_WHEN,
+        write_paths=[],
+        regenerate_paths=["docs/research/rewritten_record.html"],
+        anchor_paths=[LARGE_PATH],
+        time_budget="20m",
+    )
+    record = {"run_id": "r-20261105T000000000000-recorded", "node": original.as_dict()}
+
+    rebuilt = _recorded_task_node(record)
+
+    assert rebuilt.anchor_paths == [LARGE_PATH]
+    assert rebuilt.regenerate_paths == ["docs/research/rewritten_record.html"]
+    assert rebuilt.write_paths == original.write_paths
+    # The rebuilt node estimates as the record's own node does: the anchor is
+    # withheld from the charge rather than re-billed as a reference.
+    assert _census(rebuilt, tmp_path, tmp_path / "recorded") == _census(
+        original, tmp_path, tmp_path / "recorded-original"
+    )
