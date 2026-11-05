@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/_store.py:4116",
+    "reckon/_store.py:4189"
+  ],
+  "completed_at": "2026-11-05T12:17:23.126Z",
+  "dispatched_at": "2026-11-05T12:10:54Z",
+  "findings": [
+    {
+      "file": "reckon/_store.py",
+      "line": "3979",
+      "severity": "non-blocking",
+      "text": "non-blocking: the new clause makes continuation_present true for any plan holding one deferred section under an open decision or gate, without requiring that section to be the only remaining work, so a landing that resolves the driver followup while other sections are still open is accepted with no next step \u2014 a case the guard refused before this change and that section 8's motivating case does not cover."
+    },
+    {
+      "file": "reckon/_store.py",
+      "line": "3954",
+      "severity": "non-blocking",
+      "text": "non-blocking: the guard's decision-open test (no choice recorded) disagrees with reckon/roadmap.py:1115, which labels a rationale-bearing unchosen decision as deferred and drops it from the unsettled set, so a decision the guard treats as holding a plan can read as invisible on the surface the lead's accept condition relies on; the gate-closed test at reckon/_store.py:3963 likewise duplicates reckon/roadmap.py:949 rather than reusing it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read both commits against 7b529f43888a288a60f6c9a84c63576e81b2bf4a; the production change is one clause in continuation_present at reckon/_store.py:3979-3983 plus three private helpers at reckon/_store.py:3903-3967, with its test file, one skill paragraph and the evidence fragment.",
+    "done_when": "the plan's done-when names tests/test_a_waiting_plan_needs_no_placeholder.py with a locked-decision negative control; that file is at the reviewed head and the manifest records its run alongside the base and negative-control arms.",
+    "goal": "the node's goal is that a plan whose remaining work is a deferred section held by an open decision or an open gate lands with no placeholder followup; reckon/_store.py:3983 adds that clause to continuation_present and the added test lands such a plan successfully with no followup appended.",
+    "manifest": "read at its run directory; it records status complete, base 2 failed/3 passed EXIT=1, head 5 passed EXIT=0, negative control 1 failed/4 passed EXIT=1, naming all three log paths.",
+    "write_paths": "the diff touches reckon/_store.py, skills/reckon-edit/SKILL.md, tests/test_a_waiting_plan_needs_no_placeholder.py and the landing fragment, every one of them inside the node's declared write paths."
+  },
+  "justifications": {
+    "durability": "gate-base.log shows tests/test_a_waiting_plan_needs_no_placeholder.py:145 and :179 failing on CONTINUATION_REQUIRED when the clause is absent, so the added assertions would redden on the regression, and none of them compares a value against an input the test itself supplied.",
+    "evidence": "baseline_suite and after_suite in the manifest carry the same literal pytest command with EXIT=1 and EXIT=0, and gate-base.log and gate-head.log each name their revision and end in a bare EXIT line.",
+    "fit": "the three helpers at reckon/_store.py:3903-3967 sit beside continuation_present, are named by mechanism, and their docstrings state the rule rather than a plan label.",
+    "goal_fidelity": "reckon/_store.py:3983 makes continuation_present accept a deferred section held by an open decision or gate, which is the deliverable the plan's section 8 states.",
+    "reuse": "reckon/_store.py:3954 re-derives the decision-open test that reckon/roadmap.py:1115 owns and reckon/_store.py:3963 re-derives reckon/roadmap.py:949's closed-status test, so the guard forks the roadmap's classification instead of reading it.",
+    "scope_discipline": "git diff --stat 7b529f43 ddbdf26bed lists four files, all inside the declared write paths, with nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a plan whose remaining work is a deferred section held by an open decision or an open gate lands with no placeholder followup; reckon/_store.py:3983 adds that clause to continuation_present and the added test lands such a plan successfully with no followup appended.\nVERDICT done_when: the plan's done-when names tests/test_a_waiting_plan_needs_no_placeholder.py with a locked-decision negative control; that file is at the reviewed head and the manifest records its run alongside the base and negative-control arms.\nVERDICT write_paths: the diff touches reckon/_store.py, skills/reckon-edit/SKILL.md, tests/test_a_waiting_plan_needs_no_placeholder.py and the landing fragment, every one of them inside the node's declared write paths.\nVERDICT manifest: read at its run directory; it records status complete, base 2 failed/3 passed EXIT=1, head 5 passed EXIT=0, negative control 1 failed/4 passed EXIT=1, naming all three log paths.\nVERDICT diff: read both commits against 7b529f43888a288a60f6c9a84c63576e81b2bf4a; the production change is one clause in continuation_present at reckon/_store.py:3979-3983 plus three private helpers at reckon/_store.py:3903-3967, with its test file, one skill paragraph and the evidence fragment.\nCALL_SITES: reckon/_store.py:4116, reckon/_store.py:4189\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_store.py:3983 makes continuation_present accept a deferred section held by an open decision or gate, which is the deliverable the plan's section 8 states.\nSCORE evidence: 19\nJUSTIFICATION evidence: baseline_suite and after_suite in the manifest carry the same literal pytest command with EXIT=1 and EXIT=0, and gate-base.log and gate-head.log each name their revision and end in a bare EXIT line.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 7b529f43 ddbdf26bed lists four files, all inside the declared write paths, with nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: gate-base.log shows tests/test_a_waiting_plan_needs_no_placeholder.py:145 and :179 failing on CONTINUATION_REQUIRED when the clause is absent, so the added assertions would redden on the regression, and none of them compares a value against an input the test itself supplied.\nSCORE fit: 18\nJUSTIFICATION fit: the three helpers at reckon/_store.py:3903-3967 sit beside continuation_present, are named by mechanism, and their docstrings state the rule rather than a plan label.\nSCORE reuse: 11\nJUSTIFICATION reuse: reckon/_store.py:3954 re-derives the decision-open test that reckon/roadmap.py:1115 owns and reckon/_store.py:3963 re-derives reckon/roadmap.py:949's closed-status test, so the guard forks the roadmap's classification instead of reading it.\nFINDING reckon/_store.py:3979 non-blocking: the new clause makes continuation_present true for any plan holding one deferred section under an open decision or gate, without requiring that section to be the only remaining work, so a landing that resolves the driver followup while other sections are still open is accepted with no next step \u2014 a case the guard refused before this change and that section 8's motivating case does not cover.\nFINDING reckon/_store.py:3954 non-blocking: the guard's decision-open test (no choice recorded) disagrees with reckon/roadmap.py:1115, which labels a rationale-bearing unchosen decision as deferred and drops it from the unsettled set, so a decision the guard treats as holding a plan can read as invisible on the surface the lead's accept condition relies on; the gate-closed test at reckon/_store.py:3963 likewise duplicates reckon/roadmap.py:949 rather than reusing it.\n",
+  "review_run_id": "r-20261105T120653195902-review-of-a-deferred-section-held-by-a-decision-or-a-gate-is-a-plans-ddbdf26bed59",
+  "reviewed_base_sha": "7b529f43888a288a60f6c9a84c63576e81b2bf4a",
+  "reviewed_head_sha": "ddbdf26bed596505bcd39b515337bd39eddaf598",
+  "reviewed_run_id": "r-20261103T075244656990-a-deferred-section-held-by-a-decision-or-a-gate-is-a-plans",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 11,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T12:45:50.456073+00:00",
+  "total": 104
+}
