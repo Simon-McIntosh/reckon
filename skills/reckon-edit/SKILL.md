@@ -94,6 +94,14 @@ followup on a completed plan is a POINTER whose body names the plan that carries
 Test it: after writing, does `roadmap(project)` list the work in `pending_work`? If not you
 hid it. Canonical rule: `reckon-build` SKILL.md §7a-bis.
 
+**A plan waiting on someone else needs no placeholder followup.** When a plan's only
+remaining work is a section declared `deferred` under a decision that has not been locked,
+or under a gate that has no verdict, the decision or gate is the plan's continuation: it
+names what the section waits on and who must act. A landing therefore owes no followup,
+and one that merely restates the wait is hidden work rather than a continuation. Lock the
+decision or settle the gate, and the plan no longer waits — the next landing then owes a
+real continuation.
+
 5. **Every followup MUST carry a non-empty `<pre class="r-fu-prompt">` block.** A followup
    without a prompt is rejected at write time. See §05 invocation below.
 6. **Locked decisions are a contract.** Use the dissent flow (write a new followup) — never silently re-lock.

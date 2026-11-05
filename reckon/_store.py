@@ -3900,6 +3900,73 @@ def _plan_is_in_progress(state: dict[str, Any]) -> bool:
     return status not in TERMINAL_STATUSES and implementation < 1.0
 
 
+def _deferred_sections(state: dict[str, Any]) -> set[str]:
+    """The section identities a plan declares deferred.
+
+    A deferred section is declared work nobody on this plan can do: it waits on
+    someone else, and the wait is recorded on a decision or a gate.
+    """
+    from reckon._plan_html import SECTION_DECLARATION_DEFERRED
+
+    declarations = state.get("section_declarations") or {}
+    return {
+        str(section)
+        for section, classification in declarations.items()
+        if str(classification or "").strip() == SECTION_DECLARATION_DEFERRED
+    }
+
+
+def _named_sections(record: dict[str, Any]) -> set[str]:
+    """The section identities a decision or gate names, ignoring empty ones."""
+    candidates = [
+        record.get("section"),
+        *(record.get("gated_sections") or []),
+        *(record.get("sections") or []),
+    ]
+    return {
+        str(candidate).strip()
+        for candidate in candidates
+        if str(candidate or "").strip()
+    }
+
+
+def _deferred_section_is_held(state: dict[str, Any]) -> bool:
+    """Whether a deferred section waits on an open decision or an open gate.
+
+    A section deferred under a decision or gate that has not concluded is
+    already visibly waiting: the record says what the section waits on and who
+    must act. That record is the plan's continuation, so no followup is
+    appended to repeat it.
+
+    A decision is open until it records a choice, which is the attribute the
+    lock op writes and the roadmap reads a decision's readiness from. A gate is
+    open until it records a verdict; the pass and fail ops set the verdict and
+    the closed status together.
+    """
+    deferred = _deferred_sections(state)
+    if not deferred:
+        return False
+    decisions = state.get("decisions") or {}
+    records = decisions.values() if isinstance(decisions, dict) else decisions
+    for decision in records:
+        if not isinstance(decision, dict):
+            continue
+        if str(decision.get("choice") or decision.get("chosen") or "").strip():
+            continue
+        if _named_sections(decision) & deferred:
+            return True
+    for gate in state.get("gates") or []:
+        if not isinstance(gate, dict):
+            continue
+        if str(gate.get("verdict") or "").strip().lower() in {"passed", "failed"}:
+            continue
+        if str(gate.get("status") or "").strip().lower() == "closed":
+            continue
+        if _named_sections(gate) & deferred:
+            return True
+    return False
+
+
 def continuation_present(state: dict[str, Any]) -> bool:
     """Whether a plan's state names what comes next, or says nothing does.
 
@@ -3911,7 +3978,9 @@ def continuation_present(state: dict[str, Any]) -> bool:
     followups = [f for f in (state.get("followups") or []) if isinstance(f, dict)]
     if any(_followup_is_open(f) for f in followups):
         return True
-    return any(_chain_closed(f.get("outcome")) for f in followups)
+    if any(_chain_closed(f.get("outcome")) for f in followups):
+        return True
+    return _deferred_section_is_held(state)
 
 
 def _followups_before_the_patch(state: dict[str, Any]) -> list[dict[str, Any]]:
