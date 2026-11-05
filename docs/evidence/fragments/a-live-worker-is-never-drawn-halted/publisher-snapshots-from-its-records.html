@@ -14,7 +14,9 @@
 
 <p>Each test reduces a complete scoring pointer with no live review and counts calls to the live-directory reader. At base, the publisher, roadmap and station entry points each made one extra read; the other three made none. At head, all six made none and all six tests passed. Removing the publisher handover makes its test fail with one read; suppressing the quiet-beat handover also makes its test fail with one read.</p>
 
-<p>The 76-file base and 77-file head populations include every test file that imports the four affected modules or names the three publisher functions. Both ran on the fleet node with <code>-n 6 --timeout 300</code>. Base: 5 failed, 670 passed. Head: 3 failed, 678 passed. Every head failure ID is also a base failure ID, so the added-failure set is empty. The node's run record holds the full gate logs, selected file lists and negative-control logs.</p>
+<p>The ticker entry-point test initially counted reads from every thread. A transition can launch an independent obligations sweep while the ticker classifies its row; a captured failing run traced its extra reads to that worker thread, through <code>obligations._classified_rows</code> and <code>runs._drain_row</code>. The ticker snapshot still received <code>pointers=</code> and <code>cache=</code>. The counter now measures the thread driving the entry point. The six-test file passed ten independent runs with this correction. Removing the ticker's handover still fails its own test with one read, so the correction retains the handover check.</p>
+
+<p>The 76-file base and 77-file head populations include every test file that imports the four affected modules or names the three publisher functions. Both ran on the fleet node with <code>-n 6 --timeout 300</code>. Base: 5 failed, 670 passed. Head after the counter correction: 3 failed, 678 passed. Every head failure ID is also a base failure ID, so the added-failure set is empty. The node's run record holds the full gate logs, selected file lists and negative-control logs.</p>
 </main>
 </body>
 </html>
