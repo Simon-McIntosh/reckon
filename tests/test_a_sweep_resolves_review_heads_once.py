@@ -74,6 +74,14 @@ def fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Path]:
     )
     ledger_dir = root / "docs" / "state" / PROJECT
     (ledger_dir / "runs").mkdir(parents=True, exist_ok=True)
+    # A ledger file, so the derivation reads a ledger rather than the empty
+    # state of a project that has never run a worker: a read of the latter
+    # answers the empty roster without touching the index, and this fixture
+    # asserts the index build its derivation costs.
+    (ledger_dir / "crew.json").write_text(
+        json.dumps({"data": {"_version": 1, "members": [], "runs": [], "holds": []}}),
+        encoding="utf-8",
+    )
     for index in range(LIVE_RUNS):
         run_id = f"run-{index:02d}"
         reviewed_head = _git(root, "rev-parse", "HEAD")

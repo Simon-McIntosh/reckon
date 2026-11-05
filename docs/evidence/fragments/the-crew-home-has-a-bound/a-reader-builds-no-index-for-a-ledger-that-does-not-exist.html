@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-crew-home-has-a-bound">
+  <meta name="plan-evidence-for" content="reckon:the-crew-home-has-a-bound">
+  <meta name="plan-verifies" content="reckon:the-crew-home-has-a-bound#s8">
+  <meta name="plan-recorded-at" content="2026-11-05">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,ledger,index,cache,quota">
+  <title>A reader builds no index for a ledger that does not exist &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-reader-builds-no-index-for-a-ledger-that-does-not-exist-landing" data-node="a-reader-builds-no-index-for-a-ledger-that-does-not-exist" data-reckon="landed" data-when="2026-11-05">
+
+<section>
+<h3 id="a-reader-builds-no-index-for-a-ledger-that-does-not-exist-change">What changed</h3>
+<p><code>load()</code> in <code>reckon/ledger.py</code> now takes the index route only when the ledger it would index holds
+something. The new private predicate <code>_ledger_holds_content</code> answers true when the aggregate
+<code>docs/state/&lt;project&gt;/crew.json</code> exists, or when at least one run record sits in the
+<code>runs</code> directory beside it. A ledger holding neither is read down the uncached path that
+<code>_load_aggregate</code> already answers with the empty roster at version 0.</p>
+<p>Before the change a read of such a project resolved <code>_run_index_path</code> and opened SQLite, creating
+<code>~/.cache/reckon/ledger-&lt;sha256&gt;-v4.sqlite</code> for a ledger that is not there. Those files are keyed to a path
+whose checkout does not exist, so <code>gc</code> classifies each as <code>recorded-checkout-gone</code> and nothing removes it
+until someone runs a sweeping <code>--apply</code>. Ten such indexes of 28&nbsp;KB each appeared within an hour of the
+backlog reclaim for projects that never ran a worker.</p>
+<p>The narrowing matters and is the one design decision this node made. A project may hold per-run documents under
+<code>runs/</code> and no aggregate file at all; that ledger has content, and its index is kept. Skipping on the
+aggregate's absence alone broke four derivation tests, which is how the shape was found. A <code>runs</code> directory
+that exists and holds no record is the other side of the same rule: it is a shape, not content, and indexing it
+publishes the same artefact an absent ledger leaves. The first form of the predicate tested the directory's
+existence and so still indexed that emptiness; review caught it, and it is now a record count.</p>
+</section>
+
+<section>
+<h3 id="a-reader-builds-no-index-for-a-ledger-that-does-not-exist-gate">The gate</h3>
+<p>The gate is <code>tests/test_a_reader_builds_no_index_for_a_missing_ledger.py</code>, committed so the suite holds
+the rule rather than this record. Its four cases read:</p>
+<ul>
+<li>a temporary project with no <code>crew.json</code> and no <code>runs</code> directory reads as the empty roster and writes no
+<code>ledger-*.sqlite</code> under a temporary cache root;</li>
+<li>a temporary project whose <code>runs</code> directory exists and holds no record reads the same and writes no index;</li>
+<li>a temporary project holding run records and no aggregate still builds exactly one index and returns the record;</li>
+<li>a temporary project with a <code>crew.json</code> still builds its index.</li>
+</ul>
+<p>Head arm: <strong>4 passed</strong>, <code>EXIT=0</code>, the module resolved inside this worktree and its predicate
+recorded as <code>glob</code> (<code>logs/head-gate.log</code>).</p>
+<p>Two negative controls, each a full archive of the head revision with one change applied and the committed test
+copied in. <strong>The old predicate</strong> &mdash; the <code>runs</code> directory's existence rather than a record count
+&mdash; turns the empty-directory case red: <strong>1 failed, 3 passed</strong>, <code>EXIT=1</code>, failing
+<code>test_a_project_with_an_empty_runs_directory_builds_no_index</code>
+(<code>logs/negative-control-old-predicate.log</code>). <strong>The unconditional index build</strong> turns both
+no-content cases red: <strong>2 failed, 2 passed</strong>, <code>EXIT=1</code>, failing
+<code>test_a_project_with_no_ledger_and_no_runs_directory_builds_no_index</code> and the empty-directory case
+(<code>logs/negative-control-unconditional.log</code>). Each log's header names the tree, the working directory, the
+imported module path, and whether <code>load()</code> is gated at all.</p>
+</section>
+
+<section>
+<h3 id="a-reader-builds-no-index-for-a-ledger-that-does-not-exist-suite">The imported-module suite</h3>
+<p>The 81 test files importing <code>reckon.ledger</code> ran on both arms with <code>-n 8</code> and a session cache root of
+their own. Head: <strong>715 passed, 3 skipped, 0 failed</strong> (<code>logs/head-suite.log</code>, <code>EXIT=0</code>).
+Base at <code>ab87725e6</code> with the guard test copied in: <strong>712 passed, 3 skipped, 3 failed</strong>
+(<code>logs/base-suite.log</code>).</p>
+<p>Two of the base failures are the guard test's own no-content cases, which is the control working. The third,
+<code>tests/test_roster_write_commits.py::test_commit_refuses_roster_with_uncommitted_registration</code>, does not
+reproduce at head. <strong>Added failures against base: 0.</strong></p>
+<p>One fixture had to change for that to be true.
+<code>tests/test_a_sweep_resolves_review_heads_once.py</code> built a crew home whose ledger was an empty
+<code>runs</code> directory with no aggregate, and asserted its derivation built the index once. A ledger in that state
+holds nothing, so no index is built and the count was zero: the assertion measured the fixture's accidental shape
+rather than the derivation. Writing an aggregate with no rows gives it a ledger the derivation reads and indexes, and
+leaves its rows unchanged. The file passes (<strong>4 passed</strong>) and the suite above is the measurement.</p>
+</section>
+
+<section>
+<h3 id="a-reader-builds-no-index-for-a-ledger-that-does-not-exist-hygiene">Hygiene</h3>
+<p><code>ruff check</code> and <code>ruff format --check</code> pass clean on both staged paths,
+<code>reckon/ledger.py</code> and <code>tests/test_a_reader_builds_no_index_for_a_missing_ledger.py</code>.</p>
+</section>
+
+</article>
+</body>
+</html>
