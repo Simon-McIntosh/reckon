@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-05T18:24:37.327Z",
+  "dispatched_at": "2026-11-05T18:15:55Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "id": "f7847f181dd",
+      "line": 169,
+      "severity": "non-blocking",
+      "text": "The figure tier is judged by review_record_refusals, which only requires findings to be a list, so a stored figure review carrying an undisposed blocking finding counts as complete; the lander attempts the land and the refusal arrives one step later from promotion_checks._require_no_undisposed_blocking_figure_finding inside the same crew land step, so the run is not merged but its record names a land failure rather than the finding the code tier would have named."
+    },
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "id": "fdec387645a",
+      "line": 140,
+      "severity": "non-blocking",
+      "text": "_review_for_tier re-reads the figure record through review.read_review instead of extending promotion_checks._newest_figure_review, so the lander does not inherit that owner's unreadable-record distinction and a figure record that cannot be parsed is treated as an absent one."
+    },
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "id": "f7f6635fbc7",
+      "line": 282,
+      "severity": "non-blocking",
+      "text": "The awaiting record's review_tier holds code or figure while review_tier on the run record and ledger is the light/full/none sweep tier, so one key name carries two vocabularies on the same pointer."
+    },
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "id": "fb1cc7df098",
+      "line": 288,
+      "severity": "non-blocking",
+      "text": "stale_head is documented as naming a revision, but the caller passes stale, which is str(exc) when a tier's store read raises, so an exception message is persisted in a field a reader compares as a revision."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the lander waits for every review the run owes; reckon/crew/queue_landing.py:107 `_owed_review_tiers` adds the figure tier when `_changed_figure_paths` finds a figure image, and land_once at :978 iterates every returned tier.\nVERDICT done_when: tests/test_the_lander_waits_for_every_owed_review.py carries the three named cases against a temporary RECKON_HOME, and baseline-suite.log / after-suite.log record the two arms (71 passed EXIT=0 at 9aa132d9fa, 74 passed EXIT=0 at eca17ce5a4).\nVERDICT write_paths: the manifest declares reckon/crew/queue_landing.py, tests/test_the_lander_waits_for_every_owed_review.py and the evidence fragment; `git diff --stat 9aa132d9fa..a1a89e23` lists exactly those three files and nothing else.\nVERDICT manifest: read; it states the 74/71 arms, the 2-failed negative control and ruff clean on the staged paths, and I re-ran `ruff check` and `ruff format --check` on head copies of both source files with no finding and both formatted.\nVERDICT diff: read both commits against 9aa132d9fa \u2014 eca17ce5a4 changes reckon/crew/queue_landing.py (+190/-24) and adds the 369-line test, a1a89e23 adds the 72-line evidence fragment; the tier rule, the per-tier read, the tier-naming awaiting record and the tier-wide refusal stamp are all present.\nCALL_SITES: reckon/crew/queue_admission.py:4675\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: queue_landing.py:978-991 reads each owed tier and :282 names on the awaiting record which tier holds it, though the figure tier's blocking-finding case is left to the promotion step inside _land (FINDING at :169).\nSCORE evidence: 19\nJUSTIFICATION evidence: after-suite.log:6 records \"74 passed in 131.74s\" then EXIT=0 at eca17ce5a4 against baseline-suite.log:6 \"71 passed in 112.55s\" EXIT=0 at 9aa132d9fa, and negative-control.log:8-10 shows \"2 failed, 1 passed\" whose first failure is \"held run landed\".\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat 9aa132d9fa..a1a89e23` shows only queue_landing.py, the new test and the evidence fragment, all inside the manifest's declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: test_a_run_owing_a_figure_review_is_not_landed_on_its_code_review fails with \"held run landed\" under the negative control's code-review-only mutation, so the tier rule is guarded, but no case exercises a figure review that carries a blocking finding.\nSCORE fit: 15\nJUSTIFICATION fit: queue_landing.py:282 stores review_tier \"figure\" on admission_landing while the same name means the light/full/none sweep tier on the run record and ledger (reckon/crew/gc.py:305, reckon/review_tiers.py).\nSCORE reuse: 5\nJUSTIFICATION reuse: the figure branch at queue_landing.py:169 writes a second acceptance predicate for the capability promotion_checks.py:672 already owns, and _review_for_tier at :140 re-reads the figure record rather than extending promotion_checks.py:552.\nFINDING reckon/crew/queue_landing.py:169 non-blocking: `_review_tier_is_complete` judges a figure record by `review_record_refusals`, which only requires `findings` to be a list, so a stored figure review carrying an undisposed blocking finding counts as complete; the lander then attempts the land and the refusal comes one step later from promotion_checks._require_no_undisposed_blocking_figure_finding inside the same `crew land` step, so the run is not merged but its record names a land failure rather than the finding the code tier would have named at :1019.\nFINDING reckon/crew/queue_landing.py:140 non-blocking: `_review_for_tier` re-reads the figure record through `review.read_review` instead of extending `reckon/crew/promotion_checks.py:552` `_newest_figure_review`, so the lander does not inherit that owner's unreadable-record distinction (`_unreadable_figure_review_records`, promotion_checks.py:613) and a figure record that cannot be parsed is treated by the lander as an absent one.\nFINDING reckon/crew/queue_landing.py:282 non-blocking: the awaiting record's `review_tier` holds \"code\" or \"figure\" while `review_tier` on the run record and ledger is the light/full/none sweep tier (reckon/review_tiers.py, reckon/crew/gc.py:305), so one key name carries two vocabularies on the same pointer.\nFINDING reckon/crew/queue_landing.py:288 non-blocking: `stale_head` is documented at :264 as naming a revision, but the caller passes `stale`, which is `str(exc)` when a tier's store read raises (:985), so an exception message is persisted in a field a reader compares as a revision.\n",
+  "review_run_id": "r-20261105T181142265013-review-of-the-lander-waits-for-every-review-the-run-owes-a1a89e23386b",
+  "reviewed_base_sha": "9aa132d9faabbb77a25017029a3d98c5aaa05a61",
+  "reviewed_head_sha": "a1a89e23386b4c38f585e08eb007222d974f69e5",
+  "reviewed_run_id": "r-20261105T105635194287-the-lander-waits-for-every-review-the-run-owes",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T18:32:54.909632+00:00",
+  "total": 94
+}

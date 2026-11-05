@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="225">
+<meta name="plan-version" content="226">
 <meta name="plan-modified" content="2026-11-05">
 </head>
 <body>
@@ -520,7 +520,7 @@
     <div class="r-comment-body"><p>§37 reviewed at head 392e647f4f from base a1deb2b4fc — the two delta commits are docs-only and replace the fragment's six-file sample with the full 57-file importer sweep at both arms (head 2 failed/397 passed, base 3 failed/393 passed, the two head failures failing at base too, 396 = 399 - 3 reconciling); the guard itself re-reads the pointer and attempt exit records under `runs._pointer_lock` at queue_admission.py:4339 and refuses with a `refused-before-launch` verdict; four non-blocking findings: the base-arm log's command line reads `-n 6 56` instead of the file list, the attempt-resulted test writes its record before the pass and its `fired` hook applies nothing, the fragment overstates that in line 7, and the new verdict word defeats `_record_stalls`'s one-stall-per-wait dedupe because the refused row precedes the stall row in the same record</p></div>
 </div>
 <div class="r-comment" data-section="s37" data-id="c-run-r-20261105T142049099120-a-launch-rereads-the-run-it-starts" data-who="reckon-build" data-when="2026-11-05T17:10:56Z">
-    <div class="r-comment-body"><p>§37 — `queue_admission._launch_reread_refusal` re-reads the request&#x27;s live pointer and the run&#x27;s per-attempt exit records under `runs._pointer_lock` immediately before the launch, and refuses with a `refused-before-launch` verdict when the pointer is gone or an attempt already recorded a result (launch-failure attempts, which reached no model, are exempt so the queue&#x27;s own retry still follows them); tests/test_a_launch_rereads_the_run_it_starts.py shows the three cases with each change written after the pass read the request as queued, and both negative controls each launch the refused case; head gate 3 passed, importer arms head 2 failed/397 passed against base 3 failed/393 passed with both head failures failing at the base too, ruff clean on both staged paths.</p></div>
+    <div class="r-comment-body"><p>§37 — `queue_admission._launch_reread_refusal` re-reads the request's live pointer and the run's per-attempt exit records under `runs._pointer_lock` immediately before the launch, and refuses with a `refused-before-launch` verdict when the pointer is gone or an attempt already recorded a result (launch-failure attempts, which reached no model, are exempt so the queue's own retry still follows them); tests/test_a_launch_rereads_the_run_it_starts.py shows the three cases with each change written after the pass read the request as queued, and both negative controls each launch the refused case; head gate 3 passed, importer arms head 2 failed/397 passed against base 3 failed/393 passed with both head failures failing at the base too, ruff clean on both staged paths.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261028T234015324511-review-of-a-launch-reuses-what-queue-time-proved-0baeb0d40d78" data-who="reckon-build" data-when="2026-10-29T00:55:31.433Z">
     <div class="r-comment-body"><p>review of r-20261028T222907809727-a-launch-reuses-what-queue-time-proved at head 0baeb0d40d780256c17223fe67396b938c5723f0 scores goal_fidelity 13, evidence 11, scope_discipline 20, durability 13, fit 18, reuse 19, with added_failure_count 0; one blocking finding (the digest short-circuit at reckon/crew/routing.py:2789 skips the unanswered-findings refusal, so a launch passes a plan a fresh direct dispatch refuses).</p></div>
@@ -563,6 +563,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261029T145111134871-review-of-a-delivered-run-reaches-a-landing-verdict-c12609ed2938" data-who="reckon-build" data-when="2026-10-29T15:00:19.489Z">
     <div class="r-comment-body"><p>§8 reviewed at c12609ed29 against base c97238c9: goal met, evidence reproducible, 0 added failures, two non-blocking findings (a tautological ledger assertion at the new test's line 260, and a surviving raw commit-entry reader at promotion_scope.py:1253).</p></div>
+</div>
+<div class="r-comment" data-section="s26" data-id="c-run-r-20261105T181142265013-review-of-the-lander-waits-for-every-review-the-run-owes-a1a89e23386b" data-who="reckon-build" data-when="2026-11-05T18:24:37.327Z">
+    <div class="r-comment-body"><p>recorded a parsed review of r-20261105T105635194287-the-lander-waits-for-every-review-the-run-owes at head a1a89e23386b4c38f585e08eb007222d974f69e5 against base 9aa132d9faabbb77a25017029a3d98c5aaa05a61: scores goal_fidelity 18, evidence 19, scope_discipline 20, durability 17, fit 15, reuse 5; added_failure_count 0 with no ids, four non-blocking findings, and `crew check --review --record` reports ok on both records.</p></div>
 </div>
 </section>
 </main>
