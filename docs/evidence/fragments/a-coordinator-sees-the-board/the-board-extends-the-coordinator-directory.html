@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="evidence-project" content="reckon">
+<meta name="plan" content="a-coordinator-sees-the-board">
+<meta name="plan-node" content="the-board-extends-the-coordinator-directory">
+<title>the-board-extends-the-coordinator-directory — landed</title>
+</head>
+<body>
+<main class="plan-doc">
+<h2 id="the-board-extends-the-coordinator-directory-what">What landed</h2>
+<p>Each directory run row now carries <code>plan_section</code> beside its
+<code>plan</code> and <code>section</code>. Each coordinator row carries
+<code>held_paths</code> — every write path its runs declare, each with the
+binding verdict <code>claim_disposition</code> gives it — and
+<code>queued_runs</code>, with the place the admission pass
+(<code>queued_placements</code>) will launch each request at. A coordinator
+that owns ready-idle sections appears even with no run at all, with
+<code>ready_idle_sections</code>, its <code>plan_owner</code> and
+<code>state: "idle"</code>. The join calls the plan-coordinator resolver and
+the ready-set view and derives neither fact.</p>
+<p>The <code>directory</code> branch of the crew view now pages its coordinator
+rows through the same <code>limit</code> and <code>cursor</code> every other
+view answers with, so a workstation-scope read is bounded.</p>
+
+<h2 id="the-board-extends-the-coordinator-directory-measure">Measure</h2>
+<p>Gate: <code>tests/test_the_board_extends_the_directory.py</code> plus
+<code>tests/test_mcp_tools.py</code> — 37 passed, EXIT=0, at the head tree.</p>
+<p>Negative control: the board mutated to list every plan's coordinator
+whatever its plans hold. The control coordinator appeared and the test failed
+on <code>assert "gated-coordinator" not in by_session</code>; the log is
+<code>logs/negative-control.log</code> in the run directory.</p>
+<p>The adjacent suite that imports the changed modules (<code>test_crew_directory</code>,
+<code>test_a_plans_coordinator_is_derived_from_the_ledger</code>,
+<code>test_directory_row_reads_the_derived_phase</code>,
+<code>test_directory_claim_asks_first</code>, <code>test_ready_set_composition</code>)
+reports 33 passed on both arms, so no failure is added against the base.</p>
+</main>
+</body>
+</html>
