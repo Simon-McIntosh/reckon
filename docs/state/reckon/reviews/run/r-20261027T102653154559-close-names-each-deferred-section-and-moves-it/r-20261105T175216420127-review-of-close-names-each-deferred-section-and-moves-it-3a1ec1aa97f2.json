@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite records revision 2811a92a40 with exit_status 0, completed true, failure_count 0 and failure_ids [] (gate-repair2-base.log: 6 passed, EXIT=0), and after_suite records revision 3a1ec1aa97 with exit_status 0, completed true, failure_count 0 and failure_ids [] (gate-repair2-head.log: 6 passed, EXIT=0); the separate three-file gate at cf6e12390f (gate-full.log: 3 failed, 3724 passed, EXIT=1) fails the same three test_cross_project_conformance ids that gate-base-attribution.log reproduces at ab87725e67, so added_failure_count is 0.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/evidence.py:453",
+    "reckon/doccheck.py:1907",
+    "reckon/compliance.py:93",
+    "reckon/resources.py:244"
+  ],
+  "completed_at": "2026-11-05T18:01:34.184Z",
+  "dispatched_at": "2026-11-05T17:55:43Z",
+  "evidence_notes": "The gained commits are documentation-only: cf6e12390f corrects the evidence paragraph's blanket command claim and 3a1ec1aa97 records the three-file gate's completed run; neither adds an assertion, so the assertions-the-run-added reading is empty by construction. gate-prefix-red.log, gate-base.log and gate-node-head.log were opened and each header matches the command and revision the fragment now states. The delivered manifest's status line reads in-progress after the final resume and is reported as a blocking finding.",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": 5,
+      "text": "blocking: the delivered manifest's status line reads in-progress although every commit is landed, the checkpoint records the three-file gate as complete and the suite arms are green; a record that never reaches a terminal status leaves the run's own delivery unreadable to promotion."
+    },
+    {
+      "file": "manifest.md",
+      "line": 29,
+      "text": "non-blocking: the declared negative_control_log was written at 16:42:30 against a three-test tree whose header names ab87725e67, while the landed test file at 3a1ec1aa97 collects six tests, so the mutation's reddening is demonstrated against an earlier revision of the guard rather than the one being landed."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/evidence.py:453 (evidence_record_plan names the landed record a fragment composes into), reckon/doccheck.py:1907 (_record_fragment_dir locates the fragment directory), reckon/compliance.py:93 (_dependencies globs each fragment as a dependency of the record verdict) and reckon/resources.py:244 (_is_evidence_fragment classifies the file as a fragment); all four resolve at 3a1ec1aa97.",
+    "diff": "read 2811a92a40..3a1ec1aa97 commit by commit: cf6e12390f rewrites the evidence paragraph so each red arm states the invocation it actually ran (the -k selector at 2be71296a4 and the scratch-tree interpreter at ab87725e67), and 3a1ec1aa97 appends the completed three-file gate result; the refusal, move and schema prose are untouched.",
+    "done_when": "the done_when names tests/test_close_names_each_deferred_section_and_moves_it.py plus tests/test_schema.py and tests/test_a_plan_closes_in_one_op.py; gate-full.log records that exact three-file command at revision cf6e12390f and ends \"3 failed, 3724 passed, EXIT=1\", and gate-base-attribution.log reproduces the same three failure ids at ab87725e67, so the done_when's \"adds no failure against a base arm\" clause is now measured (0 added) rather than assumed.",
+    "goal": "the source node's goal is close's deferred-section refusal naming both remedies, with a moved_to descope carrying the section's prose, effort, capability, open gates and comments to its successor; the gained commits cf6e12390f and 3a1ec1aa97 serve it by making docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html:47-70 state each arm's own command and record the completed three-file gate.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T102653154559-close-names-each-deferred-section-and-moves-it/manifest.md; baseline_suite records 2811a92a40 with 0 failures at gate-repair2-base.log and after_suite records 3a1ec1aa97 with 0 failures at gate-repair2-head.log, both naming the literal pytest command and both ending EXIT=0, but the file's own status line reads in-progress although all seven commits are landed and the checkpoint records the gate as complete.",
+    "write_paths": "the manifest declares eight write paths; the gained diff 2811a92a40..3a1ec1aa97 changes only docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html, which is inside them, and carries no code, test or plan-state change."
+  },
+  "justifications": {
+    "durability": "the gained commits add no assertion or executable code, and the manifest's negative_control_log at manifest.md:29 was recorded at 16:42 against a three-test tree labelled ab87725e67 rather than the landed six-test file, so the guard's reddening is shown only against an earlier revision.",
+    "evidence": "gate-full.log:1 names the three-file command at revision cf6e12390f and its summary line records 3 failed, 3724 passed, EXIT=1, with gate-base-attribution.log reproducing the same three failure ids at ab87725e67.",
+    "fit": "the edits keep the fragment's h3/id-bearing-p structure and prose idiom at docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html:45-75 and introduce no plan or ticket identifiers.",
+    "goal_fidelity": "docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html:48-70 now attributes each measured figure to the command and revision that produced it, which is what the gained commits set out to correct.",
+    "reuse": "the gained commits add no function, class or module; the fragment remains consumed by the existing owners reckon/evidence.py:453, reckon/doccheck.py:1907, reckon/compliance.py:93 and reckon/resources.py:244, which I opened.",
+    "scope_discipline": "git diff --stat 2811a92a40..3a1ec1aa97 reports one file changed, docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html, inside the manifest's declared write paths."
+  },
+  "node": "review-of-close-names-each-deferred-section-and-moves-it-3a1ec1aa97",
+  "node:reviewed": "close-names-each-deferred-section-and-moves-it",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is close's deferred-section refusal naming both remedies, with a moved_to descope carrying the section's prose, effort, capability, open gates and comments to its successor; the gained commits cf6e12390f and 3a1ec1aa97 serve it by making docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html:47-70 state each arm's own command and record the completed three-file gate.\nVERDICT done_when: the done_when names tests/test_close_names_each_deferred_section_and_moves_it.py plus tests/test_schema.py and tests/test_a_plan_closes_in_one_op.py; gate-full.log records that exact three-file command at revision cf6e12390f and ends \"3 failed, 3724 passed, EXIT=1\", and gate-base-attribution.log reproduces the same three failure ids at ab87725e67, so the done_when's \"adds no failure against a base arm\" clause is now measured (0 added) rather than assumed.\nVERDICT write_paths: the manifest declares eight write paths; the gained diff 2811a92a40..3a1ec1aa97 changes only docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html, which is inside them, and carries no code, test or plan-state change.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T102653154559-close-names-each-deferred-section-and-moves-it/manifest.md; baseline_suite records 2811a92a40 with 0 failures at gate-repair2-base.log and after_suite records 3a1ec1aa97 with 0 failures at gate-repair2-head.log, both naming the literal pytest command and both ending EXIT=0, but the file's own status line reads in-progress although all seven commits are landed and the checkpoint records the gate as complete.\nVERDICT diff: read 2811a92a40..3a1ec1aa97 commit by commit: cf6e12390f rewrites the evidence paragraph so each red arm states the invocation it actually ran (the -k selector at 2be71296a4 and the scratch-tree interpreter at ab87725e67), and 3a1ec1aa97 appends the completed three-file gate result; the refusal, move and schema prose are untouched.\nCALL_SITES: reckon/evidence.py:453, reckon/doccheck.py:1907, reckon/compliance.py:93, reckon/resources.py:244\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html:48-70 now attributes each measured figure to the command and revision that produced it, which is what the gained commits set out to correct.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-full.log:1 names the three-file command at revision cf6e12390f and its summary line records 3 failed, 3724 passed, EXIT=1, with gate-base-attribution.log reproducing the same three failure ids at ab87725e67.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 2811a92a40..3a1ec1aa97 reports one file changed, docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html, inside the manifest's declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: the gained commits add no assertion or executable code, and the manifest's negative_control_log at manifest.md:29 was recorded at 16:42 against a three-test tree labelled ab87725e67 rather than the landed six-test file, so the guard's reddening is shown only against an earlier revision.\nSCORE fit: 19\nJUSTIFICATION fit: the edits keep the fragment's h3/id-bearing-p structure and prose idiom at docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html:45-75 and introduce no plan or ticket identifiers.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained commits add no function, class or module; the fragment remains consumed by the existing owners reckon/evidence.py:453, reckon/doccheck.py:1907, reckon/compliance.py:93 and reckon/resources.py:244, which I opened.\nFINDING manifest.md:5 blocking: the delivered manifest's status line reads in-progress although every commit is landed, the checkpoint records the three-file gate as complete and the suite arms are green; a record that never reaches a terminal status leaves the run's own delivery unreadable to promotion.\nFINDING manifest.md:29 non-blocking: the declared negative_control_log was written at 16:42:30 against a three-test tree whose header names ab87725e67, while the landed test file at 3a1ec1aa97 collects six tests, so the mutation's reddening is demonstrated against an earlier revision of the guard rather than the one being landed.\n",
+  "review_run_id": "r-20261105T175216420127-review-of-close-names-each-deferred-section-and-moves-it-3a1ec1aa97f2",
+  "reviewed_base_sha": "2811a92a404abe4125f869616646f0ad742c5a90",
+  "reviewed_head_sha": "3a1ec1aa97f2d9e9d46d6b1da947edfec98410c8",
+  "reviewed_run_id": "r-20261027T102653154559-close-names-each-deferred-section-and-moves-it",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T18:02:00+00:00",
+  "total": 112
+}
