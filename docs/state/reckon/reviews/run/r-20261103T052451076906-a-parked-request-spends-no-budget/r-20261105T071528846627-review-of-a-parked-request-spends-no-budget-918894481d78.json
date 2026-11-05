@@ -1,0 +1,49 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-05T07:38:40.193Z",
+  "dispatched_at": "2026-11-05T07:28:54Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T052451076906-a-parked-request-spends-no-budget/manifest.md",
+      "id": "f73a550be1a",
+      "line": 25,
+      "severity": "blocking",
+      "text": "the manifest itself records that the coordinator must widen the run's write scope to tests/test_read_verbs_retire_behind_crew_view.py, and `crew check --manifest` returns ok:false naming that path, so the run cannot be promoted until the grant is made."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-parked-request-spends-no-budget.html",
+      "id": "f320a887cb3",
+      "line": 7,
+      "severity": "non-blocking",
+      "text": "the landed fragment quotes \"passes rising 264 to 271\" for the importer arms while the recorded after arm, after-suite-final.log, reports 292 passed, so the evidence document contradicts the receipt it cites."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T052451076906-a-parked-request-spends-no-budget/manifest.md",
+      "id": "f3e045e5dec",
+      "line": 16,
+      "severity": "non-blocking",
+      "text": "test_logs names repro-candidate.log, parity-serial-1.log, parity-serial-2.log, parity-serial-3.log, node-gate.log and candidate-confirm.log, none of which exist on disk, so the fragment's claim that the parity cases pass on a detached candidate export has no readable receipt."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that a request which never launched reports no elapsed budget time and no overrun, and delta commit 918894481d carries it to the parity capture by setting the queued row's budget fields to the answer the live view now gives at tests/test_read_*.py:486 and :520.\nVERDICT done_when: the done_when asks for the parked-budget cases, the negative control and no added failure against the base revision; gate-head.log records 7 passed EXIT=0, negative-control.log 5 failed 2 passed EXIT=1, negative-control-field.log 1 failed 6 passed EXIT=1, and baseline-suite.log / after-suite-final.log each run to a summary and a bare EXIT=1 with the same 14 failure ids.\nVERDICT write_paths: the manifest declares six paths at manifest.md:3 including both files the delta touches, but `crew check --manifest` returns ok:false naming tests/test_read_verbs_retire_behind_crew_view.py as outside the run's granted scope, and manifest.md:25 records that grant as an open blocker.\nVERDICT manifest: read; it states status complete, the 7-pass gate, both controls at EXIT=1, and arms revised to 918894481d with complete logs, but its test_logs at manifest.md:16 names six logs (repro-candidate, parity-serial-1/2/3, node-gate, candidate-confirm) that do not exist on disk.\nVERDICT diff: read commit by commit against 59609e74ca -- one commit, 918894481d, adds one paragraph to the evidence fragment and flips the queued row's budget_overrun True to False and elapsed_seconds 300 to None in both the project and session captures, with an expanded docstring; nothing else changes.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-parked-request-spends-no-budget.html:8 states the correction and tests/test_read_verbs_retire_behind_crew_view.py:486 records the parked row's answer as no elapsed time and no overrun.\nSCORE evidence: 13\nJUSTIFICATION evidence: after-suite-final.log ends `4 failed, 292 passed, 10 errors` with `EXIT=1` and its 14 failure ids are identical to baseline-suite.log, and a detached export of the reviewed head re-runs tests/test_read_verbs_retire_behind_crew_view.py to `16 passed` EXIT=0; the landed fragment at :7 still quotes \"passes rising 264 to 271\" against 292, and manifest.md:16 cites six logs absent from disk.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: the delta touches only the two files the review goal names, yet `crew check --manifest --run r-20261103T052451076906-a-parked-request-spends-no-budget` returns ok:false for tests/test_read_verbs_retire_behind_crew_view.py being outside the run's granted scope.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_read_verbs_retire_behind_crew_view.py:687 compares `_classification(row)` against the written-down capture, so restoring the retired verb's elapsed_seconds 300 and budget_overrun True at :486 reddens the [project] and [session] cases while the r-live-working rows keep their values.\nSCORE fit: 19\nJUSTIFICATION fit: the change follows the module's own comment-and-docstring idiom at tests/test_read_verbs_retire_behind_crew_view.py:464-470 and introduces no new name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no definition at all, correcting an existing capture at tests/test_read_verbs_retire_behind_crew_view.py:486 rather than forking any mechanism; a search of reckon/crew for a second parity-capture owner found only this module and tests/test_crew_surface_parity.py's CLASSIFICATION_FIELDS it imports.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T052451076906-a-parked-request-spends-no-budget/manifest.md:25 blocking: the manifest itself records that the coordinator must widen the run's write scope to tests/test_read_verbs_retire_behind_crew_view.py, and `crew check --manifest` returns ok:false naming that path, so the run cannot be promoted until the grant is made.\nFINDING docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-parked-request-spends-no-budget.html:7 non-blocking: the landed fragment quotes \"passes rising 264 to 271\" for the importer arms while the recorded after arm, after-suite-final.log, reports 292 passed, so the evidence document contradicts the receipt it cites.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T052451076906-a-parked-request-spends-no-budget/manifest.md:16 non-blocking: test_logs names repro-candidate.log, parity-serial-1.log, parity-serial-2.log, parity-serial-3.log, node-gate.log and candidate-confirm.log, none of which exist on disk, so the fragment's claim that the parity cases pass on a detached candidate export has no readable receipt.\n",
+  "review_run_id": "r-20261105T071528846627-review-of-a-parked-request-spends-no-budget-918894481d78",
+  "reviewed_base_sha": "59609e74ca3d778b72ab26a648a2a8cc633f8e62",
+  "reviewed_head_sha": "918894481d78c568e0927e3f60f0bb2b5030ef39",
+  "reviewed_run_id": "r-20261103T052451076906-a-parked-request-spends-no-budget",
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T10:28:11.859620+00:00",
+  "total": 101
+}
