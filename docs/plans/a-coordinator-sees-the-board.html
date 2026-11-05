@@ -25,7 +25,7 @@
   <title>A Coordinator Sees the Board | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="23">
 <meta name="plan-modified" content="2026-11-05">
 </head>
 <body>
@@ -289,11 +289,14 @@
 <div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-11-05T13:35:00Z">
     <div class="r-comment-body"><p>Section 3 landed at merge <code>25af6fefb</code>: ready_set_view now carries each ready row's live_run, coordinator, plan_owner and critical_path flag, and names the closable plans with their closure blockers. Under ready_idle it filters to rows with no live run and pages with its own cursor; no new view is added. On the power_convertor fixture of 2026-10-22T08:50Z, the filtered call names iter-switched-terminal-transients#s13, iter-dummy-load-validation#s4 and shared-coil-supply-model#s9 with their coordinators, and jt60sa-coil-circuit-model and tf-co-wound-tape-validation as closable, under the 80,000-character ceiling. Coordinator armed pair: the base arm runs no tests (exit 4, the test file is new); head 4 passed. Coordinator importer measure over the 52 test files importing reckon.mcp_views, stacked on main: main 778 passed, stack 782 passed, no failure added. Review 108. Its unreachable coordinators fallback branch is folded into the lane-share node's done-when for deletion; the other three findings are exempted. <a href="/reckon/evidence/archive/a-coordinator-sees-the-board-landed.html#s3">evidence</a></p></div>
 </div>
-<div class="r-comment" data-section="s9" data-id="c-20261023-s9-conflict" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
-    <div class="r-comment-body"><p>Content review of v11 on 2026-10-23: §9 lists every live host's session, while §5's done-when requires a coordinator whose only plan has no ready section and no run not to appear. Decide which rule the board follows before §9 is dispatched.</p></div>
-</div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261105T143231863205-review-of-the-lane-share-lives-on-the-lanes-view-cc4027211900" data-who="reckon-build" data-when="2026-11-05T14:43:07.753Z">
     <div class="r-comment-body"><p>review of r-20261027T101220701986-the-lane-share-lives-on-the-lanes-view at cc4027211900c424f846eb16211794d3026380fc (base ab87725e67ab7377c2efb9b60a263578f3f2f8de) scores goal_fidelity 19, evidence 18, scope_discipline 19, durability 18, fit 18, reuse 13, added failures 0, three non-blocking findings (a tautological assertion in the node test file, and two duplicated capabilities in reckon/mcp_views.py); recommendation: land, with the findings foldable into a later node</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261027T101220701986-the-lane-share-lives-on-the-lanes-view" data-who="reckon-build" data-when="2026-11-05T14:28:31.949Z">
+    <div class="r-comment-body"><p>`crew(view=&quot;lanes&quot;, session=...)` now serves a `session_share` block — the session&#x27;s published worker slots read through `obligations._published_worker_slots`, the router&#x27;s live-run count for that session (`unknown` when unlisted), and the local lane document&#x27;s `observed_at`, age, shelf life and `stale` marker; the unreachable `_ready_set_coordinators` derivation and its swallow-all fallback are deleted. Gate: 42 passed (node tests + tests/test_mcp_tools.py); a stale document reads stale. Negative control: dropping the staleness comparison fails the stale case (1 failed, EXIT=1).</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-20261023-s9-conflict" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
+    <div class="r-comment-body"><p>Content review of v11 on 2026-10-23: §9 lists every live host's session, while §5's done-when requires a coordinator whose only plan has no ready section and no run not to appear. Decide which rule the board follows before §9 is dispatched.</p></div>
 </div>
 </section>
 </main>
