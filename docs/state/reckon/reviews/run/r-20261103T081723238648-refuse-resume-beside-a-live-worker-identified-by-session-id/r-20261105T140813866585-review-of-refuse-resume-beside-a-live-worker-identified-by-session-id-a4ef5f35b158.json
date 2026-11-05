@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch_sessions.py:resume_plan",
+    "reckon/crew/resumption.py:_launcher_refusal",
+    "reckon/crew/promotion_checks.py:345",
+    "reckon/crew/claims.py:106",
+    "reckon/crew/gc.py:726",
+    "reckon/crew/recovery_liveness.py:1224",
+    "reckon/crew/follower_registration.py:583",
+    "reckon/crew/watch_unit.py:65"
+  ],
+  "completed_at": "2026-11-05T14:31:44.200Z",
+  "dispatched_at": "2026-11-05T14:20:23Z",
+  "findings": [
+    {
+      "file": "reckon/crew/process_liveness.py",
+      "id": "f18c3db44ad",
+      "line": "376",
+      "severity": "non-blocking",
+      "text": "the launch == \"cli\" gate is load-bearing \u2014 it is what keeps an in-harness run, whose session id is its coordinator's own, from being read alive by any live process carrying that id \u2014 and no case covers it: all five cases write launch \"cli\" (tests/test_resume_finds_unrecorded_live_session.py:174), so deleting the gate leaves the suite green and the in-harness false positive undetected"
+    },
+    {
+      "file": "reckon/crew/process_liveness.py",
+      "id": "f585c38b0b9",
+      "line": "295",
+      "severity": "non-blocking",
+      "text": "the whole-element session test is restated here rather than shared with its owner _launched_prior_session (reckon/crew/dispatch_launch.py:545), which the plan named as the predicate to call; an argv-level predicate owned by that module and called from both sites would keep one definition of \"this launch carries this session\""
+    },
+    {
+      "file": "reckon/crew/process_liveness.py",
+      "id": "f04db53e9fb",
+      "line": "377",
+      "severity": "non-blocking",
+      "text": "the read can only see a resumed worker, because the id enters argv only in the resume dialect (reckon/_backends.py:1682 and reckon/_backends.py:1335); a freshly launched cli worker whose supervisor died still names no process, so that shape of the same defect stays open and needs its own node"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to refuse resume beside a live worker identified by session id, and reckon/crew/process_liveness.py:376-379 adds that read into the one owner both doors call, matching an argument the production dialects really carry (reckon/_backends.py:1682 `--resume <id>`, reckon/_backends.py:1335 the `resume` subcommand).\nVERDICT done_when: the done-when is both doors refusing a run whose pids are dead while a live process carries its session id, and the gate `PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_resume_finds_unrecorded_live_session.py` asserts exactly that, recorded in after-arm.log as 5 passed EXIT=0 at a4ef5f35b1.\nVERDICT write_paths: the dispatch granted six paths; the diff touches three of them (reckon/crew/process_liveness.py, tests/test_resume_finds_unrecorded_live_session.py, the evidence fragment) and nothing outside them.\nVERDICT manifest: read at the run directory; it records head 5 passed EXIT=0, base arm 2 failed EXIT=1, 62 neighbouring cases green, and a declared negative control, and each of the four logs named there was opened and matches.\nVERDICT diff: read commit by commit against e32a099c44 \u2014 one commit a4ef5f35b1 adding 63 lines in the liveness owner, a 278-line test file and a 28-line evidence fragment, with no deletions anywhere.\nCALL_SITES: reckon/crew/dispatch_sessions.py:resume_plan, reckon/crew/resumption.py:_launcher_refusal, reckon/crew/promotion_checks.py:345, reckon/crew/claims.py:106, reckon/crew/gc.py:726, reckon/crew/recovery_liveness.py:1224, reckon/crew/follower_registration.py:583, reckon/crew/watch_unit.py:65\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/process_liveness.py:376 consults the session id in argv only when the pid probe is not True, and both production launch dialects put that id in argv as a whole element, so the refusal fires on the shape the plan describes.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_resume_finds_unrecorded_live_session.py:203 and :222 are the two refusal cases the done-when names, and after-arm.log records 5 passed with EXIT=0 at the reviewed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three changed paths are all inside the six granted ones, no other file appears in the diff, and the module's formatting delta measured against e32a099c44 is the pre-existing blank-line difference only.\nSCORE durability: 15\nJUSTIFICATION durability: the two refusal cases redden when the whole-argv search is removed (negative-control.log, 2 failed EXIT=1) and pass at the head, but the load-bearing `launch == \"cli\"` gate at reckon/crew/process_liveness.py:376 has no case that tests it.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/process_liveness.py:251 names the helper by what it does and follows the module's shape, though its function-local import of _ancestor_processes is the only deferred import in a module whose neighbour imposes no cycle.\nSCORE reuse: 13\nJUSTIFICATION reuse: the read extends the existing owner record_process_alive and calls _ancestor_processes, but reckon/crew/process_liveness.py:295 restates the whole-element match that reckon/crew/dispatch_launch.py:545 already owns.\nFINDING reckon/crew/process_liveness.py:376 non-blocking: the launch == \"cli\" gate is load-bearing \u2014 it keeps an in-harness run, whose session id is its coordinator's own, from being read alive by any live process carrying that id \u2014 and all five cases write launch \"cli\" (tests/test_resume_finds_unrecorded_live_session.py:174), so deleting the gate leaves the suite green.\nFINDING reckon/crew/process_liveness.py:295 non-blocking: the whole-element session test is restated here rather than shared with its owner _launched_prior_session (reckon/crew/dispatch_launch.py:545) that the plan named, so one predicate now has two definitions that can drift.\nFINDING reckon/crew/process_liveness.py:377 non-blocking: the read sees only a resumed worker, since the id enters argv only in the resume dialect (reckon/_backends.py:1682, reckon/_backends.py:1335); a freshly launched worker whose supervisor died still names no process and that shape of the defect stays open.\n",
+  "review_run_id": "r-20261105T140813866585-review-of-refuse-resume-beside-a-live-worker-identified-by-session-id-a4ef5f35b158",
+  "reviewed_base_sha": "e32a099c44faf70d2fbc8eb4901eb8c7d58e2524",
+  "reviewed_head": "a4ef5f35b1584548fe9d8a9e38e6cd52de759d77",
+  "reviewed_head_sha": "a4ef5f35b1584548fe9d8a9e38e6cd52de759d77",
+  "reviewed_run_id": "r-20261103T081723238648-refuse-resume-beside-a-live-worker-identified-by-session-id",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 13,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T14:43:16.667251+00:00",
+  "total": 98
+}
