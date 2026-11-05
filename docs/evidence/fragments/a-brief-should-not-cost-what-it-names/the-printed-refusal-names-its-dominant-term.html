@@ -1,0 +1,83 @@
+<section id="the-printed-refusal-names-its-dominant-term-landing">
+  <h2>The context refusal dispatch prints names its dominant term</h2>
+
+  <p><strong>What changed.</strong> <code>CompetenceLimit</code>
+  (<code>reckon/crew/node.py</code>) rendered the context-window refusal as the estimate,
+  the window and the shortfall only, so a coordinator under budget pressure was left
+  guessing which input to cut and rationally cut the only field they control.
+  <code>reckon/crew/routing.py</code> already renders that refusal in full — the figures,
+  the contributing files, and how the contribution arrived — into the payload's
+  <code>detail</code>. The printed message now <em>is</em> that rendering, imported where it
+  is used, rather than a second sentence assembled beside it: one renderer feeds the line
+  an operator reads and the payload a reviewer inspects, so the two cannot drift. The
+  origin matters because the remedies differ — a declared write path cannot leave the
+  brief, while a mention can be cut or replaced by a reference — and a refusal in which no
+  repository input is charged says so, because that absence is itself the answer that tells
+  a coordinator the brief is not the problem. A verdict carrying no fit (a hand-built
+  refusal, or one that fell through on another measure) has nothing to borrow and states
+  the figures it carries, so the queue-edit and horizon messages are unchanged.
+  <code>reckon/crew/routing.py</code> is not edited.</p>
+
+  <h3>Measured — the printed line, before and after</h3>
+
+  <p>Three fixtures through <code>routing._competence_verdict</code> and the refusal the
+  dispatch CLI renders: a 1&nbsp;MB file, standing context fixed at 20&nbsp;000 tokens, lane
+  window 230&nbsp;144 tokens (19&nbsp;000 for the third case). Base is
+  <code>4eea7f1b</code>, head is <code>ae2dbbfb</code>.</p>
+
+  <table>
+    <thead><tr><td><strong>arm</strong></td><td><strong>printed message</strong></td></tr></thead>
+    <tbody>
+      <tr id="the-printed-refusal-names-its-dominant-term-before">
+        <td>base, write-path dominant</td>
+        <td><code>node context estimate 306715 usable input tokens exceeds the 230144 token
+        window by 76571 tokens; split the node or route it to a backend with at least
+        306715 usable input tokens …</code> — no term named</td></tr>
+      <tr id="the-printed-refusal-names-its-dominant-term-after-write">
+        <td>head, write-path dominant</td>
+        <td><code>context-window-exceeded: estimated 306715 usable input tokens against a
+        230144 token window (shortfall 76571 tokens); largest contributing files: …;
+        <strong>dominant term: …/large_module.py (285715 tokens), which arrived as a
+        declared write path</strong>; split the node …</code></td></tr>
+      <tr id="the-printed-refusal-names-its-dominant-term-after-mention">
+        <td>head, mention dominant</td>
+        <td><code>… <strong>which arrived as a mention</strong>; split the node …</code> —
+        the same total as the row above, the opposite lever: the mention can be cut, the
+        write path cannot.</td></tr>
+      <tr id="the-printed-refusal-names-its-dominant-term-after-none">
+        <td>head, standing context alone</td>
+        <td><code>… (shortfall 1000 tokens); <strong>no repository file dominates the
+        estimate; the standing instruction context alone exceeds the window</strong>;
+        split the node …</code></td></tr>
+      </tbody>
+    </table>
+
+  <h3>Arms</h3>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr id="the-printed-refusal-names-its-dominant-term-arm-head">
+        <td>head gate (four files)</td><td><code>ae2dbbfb</code></td>
+        <td><strong>12 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr id="the-printed-refusal-names-its-dominant-term-arm-base">
+        <td>base gate (template resolved over the base tree: the new test file does not
+        exist there)</td><td><code>4eea7f1b</code></td>
+        <td><strong>9 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr id="the-printed-refusal-names-its-dominant-term-arm-base-new">
+        <td>base tree with the new cases copied in</td><td><code>4eea7f1b</code></td>
+        <td><strong>3 failed</strong>, <code>EXIT=1</code> — every new case fails at the
+        base</td></tr>
+      <tr id="the-printed-refusal-names-its-dominant-term-arm-negctl">
+        <td>negative control: dominant-term clause dropped from the message</td>
+        <td><code>ae2dbbfb</code> + mutation</td>
+        <td><strong>3 failed</strong>, <code>EXIT=1</code>; all three ids pass at the head
+        arm</td></tr>
+    </tbody>
+  </table>
+
+  <p>Both base arms are <code>git archive</code> extractions on node-local scratch with the
+  main checkout's <code>.env</code> linked; each log names its revision, tree, command, the
+  imported <code>reckon.crew.node.__file__</code> and its working directory, and ends in a
+  bare <code>EXIT=&lt;code&gt;</code> line.</p>
+</section>

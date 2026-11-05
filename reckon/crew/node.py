@@ -576,6 +576,25 @@ class BudgetHold(CrewError):  # noqa: N818 - public refusal name
         )
 
 
+def _rendered_context_detail(verdict: Mapping[str, Any]) -> str | None:
+    """Return routing's own rendering of the fit, or None when it carries none.
+
+    The figures and the dominant-term wording are rendered once, by routing, so
+    the line dispatch prints and the payload a reader inspects cannot drift
+    apart: the printed line is that rendering rather than a sentence assembled
+    beside it. A verdict built without the fit it came from -- a hand-built
+    refusal, or one that fell through on another measure -- has nothing to
+    borrow, and the caller states the figures it does carry.
+    """
+
+    from reckon.crew.routing import _context_refusal_detail
+
+    context_fit = verdict.get("context")
+    if not isinstance(context_fit, Mapping):
+        return None
+    return _context_refusal_detail(context_fit)
+
+
 def _context_refusal_recommendation(verdict: Mapping[str, Any]) -> str:
     """Return the split-or-reroute remedy a context refusal carries.
 
@@ -606,11 +625,16 @@ class CompetenceLimit(CrewError):  # noqa: N818 - public refusal name
         # horizon nobody measured and sends the reader to the wrong remedy.
         self.verdict = dict(verdict)
         if str(verdict.get("reason") or "") == "context-window-exceeded":
-            detail = (
+            rendered = _rendered_context_detail(verdict)
+            figures = (
                 f"node context estimate {verdict['estimated_tokens']} usable input "
                 f"tokens exceeds the {verdict['window_tokens']} token window by "
-                f"{verdict['shortfall_tokens']} tokens; "
-                f"{_context_refusal_recommendation(verdict)}"
+                f"{verdict['shortfall_tokens']} tokens"
+            )
+            detail = (
+                f"{rendered}; {_context_refusal_recommendation(verdict)}"
+                if rendered is not None
+                else f"{figures}; {_context_refusal_recommendation(verdict)}"
             )
         else:
             detail = (
