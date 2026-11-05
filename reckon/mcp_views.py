@@ -12,6 +12,7 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextlib import closing
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -30,6 +31,7 @@ from reckon._timestamps import parse_utc
 from reckon.crew import lane_document as lane_document_module
 from reckon.crew import rollout as rollout_module
 from reckon.crew import staleness as staleness_module
+from reckon.crew.runs import accepts_keyword
 from reckon.doccheck import lifecycle_staleness, modified_age_days
 from reckon.evidence import EXECUTABLE_SECTION_ROLES
 from reckon.lifecycle import (
@@ -1993,17 +1995,23 @@ def partition_live_runs(
         except OSError:
             pointers = []
 
+    project_pointers = [
+        pointer
+        for pointer in pointers
+        if isinstance(pointer, dict) and pointer.get("project") == project
+    ]
     in_flight: dict[str, list[dict[str, str]]] = {}
     interrupted: dict[str, list[dict[str, str]]] = {}
     recorded = _recorded_live_run_classifications(project)
-    for pointer in pointers:
-        if not isinstance(pointer, dict) or pointer.get("project") != project:
-            continue
+    classifier = classify_pointer
+    if accepts_keyword(classify_pointer, "pointers"):
+        classifier = partial(classify_pointer, pointers=project_pointers)
+    for pointer in project_pointers:
         plan = _run_target_plan(pointer)
         if not plan:
             continue
         classified = run_classification_record(
-            pointer, classify=classify_pointer, recorded=recorded
+            pointer, classify=classifier, recorded=recorded
         )
         classification = run_classification(classified)
         row = _run_row(pointer, classification=classification)
