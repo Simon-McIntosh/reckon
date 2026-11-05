@@ -1,0 +1,72 @@
+<section id="the-lander-waits-for-every-review-the-run-owes-landing">
+  <h2>The lander reads every review tier the run owes</h2>
+
+  <p><strong>What changed.</strong> The landing pass asked the review store for
+  the run's review with no rubric (<code>select_review_for_head</code>), and
+  every text-review reader excludes figure records by design. A run that
+  changed figure images was therefore judged on its code review alone: its
+  figure review could be missing, queued, or never dispatched, and the pass saw
+  a run with nothing outstanding. <code>land_once</code> in
+  <code>reckon/crew/queue_landing.py</code> now reads every tier the run owes
+  at its head, through the rule the review reflex dispatches by
+  (<code>recovery_review_dispatch._changed_figure_paths</code>): the code review
+  always, and the figure review when the run's commits add or change an image
+  under a figures directory. A tier that is missing is recorded
+  <code>awaiting-review</code> naming that tier and that tier's own reflex
+  state, which is what a missing code review already did. A tier that is stored
+  but not complete is refused: the code tier by the acceptance rule it always
+  used, the figure tier by the store's own delivery contract for its rubric.</p>
+
+  <p><strong>The refusal stamp now covers every owed tier.</strong> A refusal
+  holds only while the review records it read are unchanged, so a stamp keyed
+  on the code review alone left a run refused for a missing figure review held
+  after that review was stored: nothing moved in the record the stamp read.
+  <code>_owed_review_stamp</code> digests each owed tier's record, an absent
+  tier included, so storing the missing review changes the stamp and the next
+  pass judges the head again. The awaiting-review record compares the tier it
+  named as well, so a run that gains a figure review rewrites its record rather
+  than keeping one naming a wait that has ended.</p>
+
+  <h3 id="the-lander-waits-for-every-review-the-run-owes-arms">Measured</h3>
+
+  <table id="the-lander-waits-for-every-review-the-run-owes-arms-table">
+    <caption>Each arm is a log whose first lines name its revision, tree, the
+    module as imported and the command, and whose last line reads
+    <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>baseline, the seven test files importing
+        <code>reckon.crew.queue_landing</code>, resolved over the base tree</td>
+        <td><code>9aa132d9fa</code></td>
+        <td>71 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>head, the same seven files plus
+        <code>tests/test_the_lander_waits_for_every_owed_review.py</code></td>
+        <td><code>eca17ce5a4</code></td>
+        <td>74 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control: the lander reads the code review only</td>
+        <td><code>eca17ce5a4</code> + mutation</td>
+        <td>2 failed, 1 passed, <code>EXIT=1</code> &mdash;
+        <code>test_a_run_owing_a_figure_review_is_not_landed_on_its_code_review</code>
+        and <code>test_storing_the_owed_figure_review_lands_the_held_run</code>
+        red, the code-review-only control still green</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>The three cases the gate shows.</strong> A delivered run whose
+  commits change runtime source and an SVG, with its code review stored and its
+  figure review not, is not landed; its live pointer reads
+  <code>status: awaiting-review</code> with <code>review_tier: figure</code>.
+  The same run, seeded refused with the code stamp and the review stamp it was
+  judged under while the figure review was missing, is left exactly as recorded
+  on the next pass &mdash; and lands as soon as the figure review is stored and
+  complete, which is the refusal hold lifting on the review record changing
+  rather than on the code moving. A run whose commits change no figure image
+  lands on its code review alone, unchanged.</p>
+
+  <p><strong>Not done here.</strong> The reflex's own reading of an unreadable
+  changed-path list is mirrored rather than tightened: git reporting no paths
+  reads as no figure review owed, because a lander waiting on a review the
+  reflex would never dispatch would hold the run forever. Undisposed blocking
+  findings in a figure review still refuse the landing at promotion, as
+  before.</p>
+</section>
