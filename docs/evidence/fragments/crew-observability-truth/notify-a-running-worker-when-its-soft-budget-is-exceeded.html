@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>notify-a-running-worker-when-its-soft-budget-is-exceeded — landing record</title>
+</head>
+<body>
+<article id="notify-a-running-worker-when-its-soft-budget-is-exceeded">
+<h3>A run past its soft budget is messaged, and nothing signals it</h3>
+<p id="notify-a-running-worker-when-its-soft-budget-is-exceeded-summary">The overrun was computed exactly and delivered to nobody. The watch producer now measures every live pointer against its soft limit — 1.5x the declared allowance, denominated in generated tokens when the run declares a token budget and in wall clock otherwise — and, once per run, writes one message into that run's own directory (<code>budget-notice.md</code>) naming the allowance, the elapsed span, the overrun and the measured cause. The message asks for the manifest the worker already holds. Nothing signals the process: the run keeps its process, its phase and its session. Promotion carries the same measurement onto the committed row under <code>budget_overrun</code>, <code>budget_overrun_seconds</code>, <code>budget_overrun_tokens</code> and <code>budget_overrun_notice</code>, so the verdict survives the pointer that promotion deletes — the ledger side of the pair that was absent from all 800 committed rows.</p>
+<p id="notify-a-running-worker-when-its-soft-budget-is-exceeded-measure">Gate: <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_budget_overrun_notifies_worker.py</code>. Base arm runs the same tests against the base tree extracted at <code>85a4c56fba</code>: 6 failed, EXIT=1, every failure an <code>AttributeError</code> for the absent <code>notify_budget_overrun</code>. Head arm: 6 passed, 0 failed, EXIT=0. Negative control — the message dropped from <code>notify_budget_overrun</code>: 4 failed (the two informing cases and the two that read the message), EXIT=1.</p>
+<p id="notify-a-running-worker-when-its-soft-budget-is-exceeded-positives">The tests hold the decision from both sides. A run at 2x its budget is messaged once and a second pass adds no second message (the exclusive create is what makes the message once-per-run across re-armed producers and concurrent readers); a run at 899s and at 900s against a 600s allowance receives nothing, because a limit that always speaks is filtered like any other noise; a finished run is not messaged; and a run inside a token budget is silent however long it took, which is the case the section's denominator measure exists to stop mislabelling. A monkeypatched <code>_signal_process_group</code> in both the watch and the stream module records zero calls, so the soft limit's "terminates nothing" half is asserted rather than assumed.</p>
+</article>
+</body>
+</html>
