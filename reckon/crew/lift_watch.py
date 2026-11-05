@@ -365,8 +365,10 @@ def _reset_detail(event: Mapping[str, Any], *, moment: datetime) -> str:
     It names the group and clock the reset belongs to, the instant it is for in
     UTC, and who announced it and why — or, for an event the window readings
     detected, that it was detected rather than announced, which is the one fact
-    that separates the two kinds. The closing clause is what the row asks a
-    stopped session to do.
+    that separates the two kinds. It carries no instruction: what the row asks
+    of a reader depends on which wallet the group is, and only the rendering
+    pane resolves that, so the instruction is composed once, where it is
+    printed.
     """
     group = str(event.get("group") or "")
     clock = budget_reset._clock_key(event.get("clock"))
@@ -379,10 +381,7 @@ def _reset_detail(event: Mapping[str, Any], *, moment: datetime) -> str:
             f"announced by {event.get('by') or 'unknown'}: "
             f"{event.get('reason') or 'marked used'}"
         )
-    return (
-        f"usage limit reset ({group}, {clock}) at {stamp} UTC, {provenance}; "
-        "sessions stopped at the usage limit can continue their work"
-    )
+    return f"usage limit reset ({group}, {clock}) at {stamp} UTC, {provenance}"
 
 
 def _scope_session(lift: Mapping[str, Any]) -> str:

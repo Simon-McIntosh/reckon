@@ -1,0 +1,63 @@
+<article class="r-evidence" data-node="a-reset-row-tells-orchestrator-sessions-to-continue-and-no">
+<h3 id="a-reset-row-tells-orchestrator-sessions-to-continue-and-no-what">A reset row says "continue", and says no worker lane opened</h3>
+<p id="a-reset-row-tells-orchestrator-sessions-to-continue-and-no-body">At the base revision a limit-reset row was composed as a free-text clause with the
+group, clock and instruction in it, and the two groups read
+<code>limit reset · claude-orchestrators · five_hour · orchestrator sessions may continue · …</code>
+and <code>limit reset · claude-sub · five_hour · worker lanes may continue · …</code>. The second is
+the reading the lead ruled against: a reset recorded under the worker lane's own budget group said
+that lane had no limit, which is not what an announcer recording a lead-reported reset recorded. The
+row also carried no stage cell of its own, so nothing on the line separated a reset from a lift
+beyond the clause's first two words.</p>
+<p id="a-reset-row-tells-orchestrator-sessions-to-continue-and-no-fix">The row now prints the stage
+cell <code>limit</code>, the budget group in the job cell — padded to the job column through the
+same cell a fleet row and a lift row use, so the trailing figures keep their places — and the
+instruction where the transition words would go:
+<code>09:06  limit  claude-orchestrators  limits reset (five_hour): orchestrator sessions continue;
+worker lanes keep their limits — &lt;the announcer's reason&gt;</code>. Every reset row closes with
+the worker-lane clause whatever group it was recorded under, so a reset recorded on
+<code>claude-sub</code> reads <code>limits reset (five_hour): worker lanes keep their limits</code>
+and no row reads as opening a lane it never named. The wording is composed once, in
+<code>ticker.limit_reset_text</code>, which the pane prints; <code>lift_watch._reset_detail</code>
+now composes the event's own facts only — group, clock, instant, announcer, reason — because which
+instruction applies depends on the group's wallet, which only the rendering pane resolves.</p>
+<h3 id="a-reset-row-tells-orchestrator-sessions-to-continue-and-no-measure">Measure</h3>
+<p id="a-reset-row-tells-orchestrator-sessions-to-continue-and-no-figures">Both arms were built from
+git checkouts under the run's scratch directory with the four follower variables unset and run in
+place on the fleet node. Node suite, the two test files this node's write scope names, at
+<code>-n</code> off: base <code>e43d47a8c</code> <strong>1 failed, 16 passed</strong>, head
+<code>8575a8ebc</code> <strong>1 failed, 17 passed</strong>. The single failure is
+<code>tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window</code>,
+and it is pre-existing at both arms: it names five modules above the 50,000-token bound that sit
+outside this node's scope — <code>dispatch.py</code> 51632, <code>plan_review.py</code> 70614,
+<code>queue_admission.py</code> 54432, <code>runs.py</code> 52413, <code>roadmap.py</code> 52669 —
+and this change neither adds to that list nor shrinks it. The added pass is the new case driving a
+follower over one recorded <code>claude-orchestrators</code> reset.</p>
+<p id="a-reset-row-tells-orchestrator-sessions-to-continue-and-no-sweep">Every test file importing
+<code>reckon/crew/ticker.py</code> or <code>reckon/crew/lift_watch.py</code> (24 files) was run in both
+arms at <code>-n 8</code>: base <strong>159 passed, EXIT=0</strong>, head <strong>160 passed,
+EXIT=0</strong>; the extra pass is the new case. One earlier base run of the same set reported
+<code>test_a_reload_image_carries_the_model_catalogue.py::test_an_image_without_the_catalogue_reverts_to_the_fallback</code>
+failing; it did not reproduce on either arm's rerun, it exercises the model-catalogue image this
+change does not touch, and it is recorded as a flake rather than as anything this change fixed.</p>
+<p id="a-reset-row-tells-orchestrator-sessions-to-continue-and-no-negative">The negative control removes the renderer's reset branch, so a reset row falls through to the
+ordinary transition path and prints the words it used to: <strong>3 failed, 11 passed, EXIT=1</strong>,
+three lines of the run carrying <code>new → working</code>, the first case printing
+<code>lift  claude-sub  new → working  …</code> with no instruction anywhere on the line. The tests
+that pin the row's wording assert the words a reader sees rather than the renderer's own constants,
+so a wording change cannot move the expectation with it.</p>
+<h3 id="a-reset-row-tells-orchestrator-sessions-to-continue-and-no-scope">The one point this node cannot close itself</h3>
+<p id="a-reset-row-tells-orchestrator-sessions-to-continue-and-no-grant">The wording above is pinned in
+<code>tests/test_the_orchestrator_reset_row_says_what_it_is.py</code> as well as in this node's own
+test file, because that file is where the row's text is measured and its assertions named the
+wording this section replaced. The plan grants that edit — "any other test asserting the superseded
+row, named from the failure ids" — and no arm can pass without it: the old assertions require the
+singular <code>limit reset</code> and require the lane clause to be <em>absent</em> from an
+orchestrator row, and every row now carries that clause. The path was not in the dispatch's
+enumerated list, though, so the node's recorded write scope does not carry it and the manifest audit
+reports it as a changed path outside the scope. Granting it is a coordinator act on the run record;
+a worker's own attempt is refused by the crew store's read-only fence
+(<code>OSError: [Errno 30] Read-only file system</code> on the run's lock file, kept in
+<code>logs/negative-control-scope-prewiden.log</code>). Until the grant is recorded this node cannot
+pass its own manifest audit, and the edit is not optional — reverting it would leave three failures
+in a ticker-importing test file.</p>
+</article>
