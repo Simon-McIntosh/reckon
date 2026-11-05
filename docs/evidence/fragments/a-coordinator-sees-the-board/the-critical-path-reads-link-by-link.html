@@ -69,6 +69,15 @@
   unmet waits, one of them outside its own plan — and reads as <code>waiting</code> on the
   first of them. Reporting only the state, without the holds, would hide three of the four.</p>
 
+  <h3>The arms, as run</h3>
+
+  <p>Both arms run the same command,
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_the_critical_path_reads_link_by_link.py</code>: six cases pass at the
+  head, and five pass at the commit this record was repaired against. Neither arm
+  is an empty collection: the log body of each carries a passing run, so a reader
+  checking the record is never asked to take a zero-collection as a measurement.</p>
+
   <h3>Negative controls, both executed</h3>
 
   <ul>
