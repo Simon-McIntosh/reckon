@@ -22,6 +22,7 @@ from click.testing import CliRunner
 
 from reckon import cli as cli_module
 from reckon import crew, crew_dispatch_commands, ledger
+from reckon.crew import routing
 from reckon.crew.node import validate_node
 from reckon.crew.routing import _REFERENCE_COST_TOKENS, _context_file_inputs
 
@@ -119,6 +120,43 @@ def test_the_same_brief_estimates_lower_with_the_anchor(tmp_path: Path) -> None:
     unanchored_record = _records_by_path(unanchored_inputs["named_files"])[LARGE_PATH]
     assert unanchored_record["provenance"] == "reference"
     assert unanchored_record["counted"] is True
+
+
+def test_the_anchor_selects_its_own_census_entry(tmp_path: Path) -> None:
+    """A cached census is not served for a differently anchored brief.
+
+    The anchor is a charge-selecting field like the regenerated set: two nodes
+    whose briefs differ only there charge the same file differently. A census
+    cache keyed without it serves the unanchored figure for the anchored brief
+    whenever the file stamps have not moved, which is exactly the sequence a
+    coordinator runs when it previews a brief and re-dispatches it anchored.
+    """
+    _seed_large_file(tmp_path)
+    anchored = _node(write_paths=[], anchor_paths=[LARGE_PATH])
+    unanchored = _node(write_paths=[], anchor_paths=[])
+
+    # Two caches that never met: the figures each brief produces on its own.
+    cold_anchored = routing.context_census(
+        anchored, tmp_path, authority=_authority(tmp_path), root=tmp_path / "cold-a"
+    )
+    cold_unanchored = routing.context_census(
+        unanchored, tmp_path, authority=_authority(tmp_path), root=tmp_path / "cold-u"
+    )
+    assert cold_unanchored - cold_anchored == _REFERENCE_COST_TOKENS
+
+    # One shared cache, the unanchored brief first: the anchored brief must
+    # still be charged its own way.
+    shared = tmp_path / "shared"
+    shared_unanchored = routing.context_census(
+        unanchored, tmp_path, authority=_authority(tmp_path), root=shared
+    )
+    shared_anchored = routing.context_census(
+        anchored, tmp_path, authority=_authority(tmp_path), root=shared
+    )
+
+    assert shared_unanchored == cold_unanchored
+    assert shared_anchored == cold_anchored
+    assert shared_unanchored - shared_anchored == _REFERENCE_COST_TOKENS
 
 
 def test_an_anchor_withholds_a_declared_input_charge(tmp_path: Path) -> None:

@@ -3467,6 +3467,12 @@ def _census_request_key(
         # the reference cost rather than their size, so two nodes whose scopes
         # differ only there must not share one cached figure.
         "regenerate_paths": sorted(str(path) for path in node.regenerate_paths),
+        # An anchored path is charged nothing rather than a reference cost, so
+        # the anchored set selects a figure for the same reason the regenerated
+        # set does. Without it here a census cached for the unanchored brief is
+        # served for the anchored one while the files stand, which is exactly
+        # the preview-then-anchor sequence the opt-out exists for.
+        "anchor_paths": sorted(str(path) for path in node.anchor_paths),
         "agent": _context_agent(backend_settings or {}),
         "authority": authority_key,
     }
