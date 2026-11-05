@@ -31,6 +31,45 @@ view answers with, so a workstation-scope read is bounded.</p>
 whatever its plans hold. The control coordinator appeared and the test failed
 on <code>assert "gated-coordinator" not in by_session</code>; the log is
 <code>logs/negative-control.log</code> in the run directory.</p>
+<h2 id="the-board-extends-the-coordinator-directory-repair">Repair round</h2>
+<p>Review returned four findings and all four are folded into commit
+<code>dd6625581b</code>.</p>
+<ul>
+<li><strong>One read of the lane document.</strong> The lane-share block read the
+file twice — once through <code>read_lane_document_file</code> for the report it
+quotes and again through its own <code>json.loads</code> for the admission block
+— so a lane rewriting the file between the two reads produced a report and a
+session row from different vintages. <code>lane_document.read_lane_document_with_admission</code>
+now reads and parses once and returns both, and the view's own parse helper is
+deleted. The per-session row lookup is
+<code>lane_document.session_admission_row</code>, beside the block it reads.</li>
+<li><strong>The idle join reads every page.</strong> The join now pages the
+ready-set view and unions the pages instead of taking one answer, so an owner
+whose ready-idle sections sort past a page is not listed as idle over nothing.
+Case: a plan with 40 ready-idle sections, all 40 named on the owner.</li>
+<li><strong>Workstation scope joins.</strong> The join runs once per mounted
+project when the read names none, so the default directory lists a run-less
+owner. Case: <code>directory()</code> with no project lists
+<code>idle-coordinator</code>, and still does not list the gated one.</li>
+<li><strong>The queued claim is asserted.</strong> A queued run holds no worker
+and no worktree, so its claim reads as disregarded; the test now asserts
+<code>binding is False</code> and that its reason says so.</li>
+</ul>
+<p>Red arm: the new cases run against the reviewed revision
+(<code>fede253832</code>) in <code>logs/red-arm.log</code> — the
+workstation-scope case fails there (<code>KeyError: 'idle-coordinator'</code>,
+EXIT=1) and the other three pass, which is why two of them are coverage rather
+than repair: the reviewed code already computed the queued verdict correctly and
+already returned the unpaged set unpaged, so those cases guard the property
+instead of repairing it. The queued assertion is shown load-bearing by the
+mutation in <code>logs/queued-binding-control.log</code>: with every held path
+forced to <code>binding: True</code> the board test fails, EXIT=1.</p>
+<p>Gate after the repair: <code>test_the_board_extends_the_directory.py</code>
+plus <code>test_the_lane_share_lives_on_the_lanes_view.py</code> — 11 passed,
+EXIT=0 (<code>logs/gate-resume.log</code>). The adjacent suite including
+<code>test_mcp_tools.py</code> — 68 passed, EXIT=0
+(<code>logs/adjacent-resume.log</code>).</p>
+
 <p>The adjacent suite that imports the changed modules (<code>test_crew_directory</code>,
 <code>test_a_plans_coordinator_is_derived_from_the_ledger</code>,
 <code>test_directory_row_reads_the_derived_phase</code>,
