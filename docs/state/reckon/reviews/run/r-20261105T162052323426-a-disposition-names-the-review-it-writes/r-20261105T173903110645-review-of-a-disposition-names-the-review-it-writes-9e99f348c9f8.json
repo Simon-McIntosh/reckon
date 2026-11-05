@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-05T17:52:13.163Z",
+  "dispatched_at": "2026-11-05T17:44:07Z",
+  "findings": [
+    {
+      "file": "reckon/mcp_crew_actions.py",
+      "line": 111,
+      "severity": "non-blocking",
+      "text": "The added review_run map entry is unreachable from the tool surface: reckon/mcp.py:2586 _crew takes no review_run parameter and calls _crew_write_action with an explicit keyword list, so a coordinator reaching the refusal through the MCP tool still cannot supply the --review remedy; the new case drives crew_action directly and therefore cannot detect this. The manifest records the gap under outside_scope."
+    },
+    {
+      "file": "reckon/crew/review_dispositions.py",
+      "line": 536,
+      "severity": "non-blocking",
+      "text": "dispose_commands re-derives the review id as the newest delivered review across every rubric, and neither production caller passes review_run_id even though both hold the record: reckon/crew/obligations.py:1695 and reckon/crew/recovery_review_dispatch.py:2388 render a duty from a record already in hand, so for a run with a text round and a newer figure round the printed text-duty command names the figure review."
+    },
+    {
+      "file": "tests/test_a_disposition_names_the_review_it_writes.py",
+      "line": 392,
+      "severity": "non-blocking",
+      "text": "named[\"review_run_id\"] == NEWER_REVIEW compares the code's output against the same value the test handed in as review_run=; the paired assertion at :393 (reviewed_head == fixture.newer_head) is the independent half and is what makes the case bite when the map entry is removed."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "pass \u2014 read commit by commit: 6d7a0dc2f1 changes review_records.py, review_dispositions.py, mcp_crew_actions.py and adds three cases to the test file; 059946728a and 9e99f348c9 change only the evidence fragment.",
+    "done_when": "pass \u2014 the done-when names tests/test_a_disposition_names_the_review_it_writes.py and its three cases; the manifest records the importer arms at 475 passed (head, 6d7a0dc2f1) against 468 (base) with zero added failures, and I re-ran the named file at 9e99f348c9 from an extracted head tree: 7 passed in 2.91s EXIT=0.",
+    "goal": "pass with a residual \u2014 the node goal is that a disposition names the review it writes; the gained commits repair the three prior findings at reckon/crew/review_records.py:798, reckon/mcp_crew_actions.py:111 and reckon/crew/review_dispositions.py:534, and the first and third are effective while the second is unreachable from the MCP surface.",
+    "manifest": "pass with a blemish \u2014 read; it records the seven-case gate, both importer arms, the three mutation logs and the outside_scope gap at reckon/mcp.py, but its tests: line names the single-file command whose recorded log (head-gate.log, revision e3f3aaf7cc) still shows 4 passed rather than 7.",
+    "write_paths": "pass \u2014 the resume advice grants reckon/mcp_crew_actions.py and reckon/crew/review_dispositions.py through crew widen, the manifest declares six paths, and every path in the 65650c4813..9e99f348c9 diff is one of them."
+  },
+  "plan_slug": "the-crew-does-its-own-bookkeeping",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a disposition names the review it writes, and the gained commits repair the three prior findings \u2014 reckon/crew/review_records.py:798 orders rounds by dispatch time, reckon/crew/review_dispositions.py:534 names the review in the rendered command, and reckon/mcp_crew_actions.py:111 adds the map entry that is not yet reachable from reckon/mcp.py:2586.\nVERDICT done_when: the done-when names tests/test_a_disposition_names_the_review_it_writes.py; the manifest records 475 passed at 6d7a0dc2f1 against 468 at base with zero added failures, and I re-ran the named file at 9e99f348c9 (7 passed in 2.91s, EXIT=0) from an extracted head tree whose imported reckon/__init__.py I confirmed.\nVERDICT write_paths: the resume advice grants reckon/mcp_crew_actions.py and reckon/crew/review_dispositions.py through crew widen and the manifest declares six paths, and every path in the 65650c4813..9e99f348c9 diff is one of them.\nVERDICT manifest: read; it records the seven-case gate, both importer arms, the three per-repair mutation logs and the outside_scope gap at reckon/mcp.py, but its tests: line names a single-file command whose recorded log still shows 4 passed at revision e3f3aaf7cc.\nVERDICT diff: read commit by commit; 6d7a0dc2f1 carries all three source repairs and the three new cases, and 059946728a plus 9e99f348c9 carry only the evidence fragment.\nCALL_SITES: reckon/crew_run_commands.py:1031 crew_dispose, reckon/crew/review_dispositions.py:506 dispose_commands (reckon/crew/obligations.py:1695, reckon/crew/recovery_review_dispatch.py:2388), reckon/mcp_crew_actions.py:399 crew_action\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/mcp_crew_actions.py:111 adds a map entry that reckon/mcp.py:2586 _crew cannot supply, so one of the three repairs the commits exist for does not reach the surface it names.\nSCORE evidence: 16\nJUSTIFICATION evidence: the manifest's own tests: line resolves to head-gate.log, which shows 4 passed at revision e3f3aaf7cc rather than the 7 the fragment claims, though the 475-passed arm at reckon/crew/... head-importers.log does carry the seven cases and my independent re-run at 9e99f348c9 confirms 7 passed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the 65650c4813..9e99f348c9 diff is inside the six paths the manifest declares, and reckon/mcp.py is left untouched and recorded as outside_scope.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_disposition_names_the_review_it_writes.py:335 and :396 fail under their recorded mutations (mutation-ordering.log, mutation-command.log), but :371 drives crew_action directly so it cannot redden if reckon/mcp.py:2586 keeps rejecting review_run, and no case covers the figure-rubric mismatch at reckon/crew/review_dispositions.py:536.\nSCORE fit: 18\nJUSTIFICATION fit: _delivery_order at reckon/crew/review_records.py:798 and _newest_delivered_review_run_id at reckon/crew/review_dispositions.py:92 follow the surrounding module style and carry no plan, ticket or version identifier.\nSCORE reuse: 17\nJUSTIFICATION reuse: _delivery_order composes reckon/crew/review.py:3314 run_id_dispatch_time and DISPATCH_TIME_KEY rather than re-deriving them, and dispose_commands delegates to review_records.newest_delivered_review, though reckon/crew/review_lifecycle.py:186 _dispatch_time owns a dispatch-time extraction that is only partly reused.\nFINDING reckon/mcp_crew_actions.py:111 non-blocking: the review_run map entry is unreachable through the MCP tool because reckon/mcp.py:2586 _crew has no review_run parameter, so the remedy the refusal names still cannot be passed from a client and the test at :390 bypasses the surface.\nFINDING reckon/crew/review_dispositions.py:536 non-blocking: the review id is re-derived as the newest delivered review of any rubric while obligations.py:1695 and recovery_review_dispatch.py:2388 each hold the record and pass none, so a text duty can name a newer figure round.\nFINDING tests/test_a_disposition_names_the_review_it_writes.py:392 non-blocking: the assertion compares review_run_id to the same NEWER_REVIEW the test passed as review_run, so it is not independent of its input; the reviewed_head assertion at :393 is the independent half.\n",
+  "review_run_id": "r-20261105T173903110645-review-of-a-disposition-names-the-review-it-writes-9e99f348c9f8",
+  "reviewed_base_sha": "65650c481366d989debe7f80f20e38366555558e",
+  "reviewed_head_sha": "9e99f348c9f815e616d5e94fa8db87a971eaa77a",
+  "reviewed_run_id": "r-20261105T162052323426-a-disposition-names-the-review-it-writes",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T17:59:54.690298+00:00",
+  "total": 102
+}

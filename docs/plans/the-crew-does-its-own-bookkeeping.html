@@ -22,7 +22,7 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="It collects the crew-command defects the power_convertor fleet reported on 2026-10-22; the monitor&#x27;s own items are filed in the-monitor-shows-the-work-it-watches §81–§88, related duty fixes live in a-coordinator-can-clear-its-own-duties, and no section waits on another plan.">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;implementable&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;implementable&quot;,&quot;s25&quot;:&quot;implementable&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
-  <meta name="plan-version" content="59">
+  <meta name="plan-version" content="60">
   <meta name="plan-modified" content="2026-11-05">
   <title>The Crew Does Its Own Bookkeeping | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -355,6 +355,12 @@
 <div class="r-comment" data-section="s23" data-id="c-close-s23" data-who="reckon-build" data-when="2026-10-23T11:30:00Z">
     <div class="r-comment-body"><p>Section 23 landed at merge <code>53bc0d08b</code>: a stopped peer with a current terminal manifest no longer blocks another run's accepted path. <a href="/reckon/evidence/archive/the-crew-does-its-own-bookkeeping-landed.html#s23">evidence</a></p></div>
 </div>
+<div class="r-comment" data-section="s26" data-id="c-run-r-20261105T165724208680-review-of-a-disposition-names-the-review-it-writes-65650c481366" data-who="reckon-build" data-when="2026-11-05T17:10:22.319Z">
+    <div class="r-comment-body"><p>Independent review of r-20261105T162052323426-a-disposition-names-the-review-it-writes at head 65650c481366 scored goal_fidelity 19, evidence 19, scope_discipline 19, durability 16, fit 18, reuse 17, with three non-blocking findings: the newest-review order follows file mtime and is moved by a later write, the crew tool's dispose map carries no review argument, and the duty commands dispose_commands renders omit it.</p></div>
+</div>
+<div class="r-comment" data-section="s26" data-id="c-run-r-20261105T173903110645-review-of-a-disposition-names-the-review-it-writes-9e99f348c9f8" data-who="reckon-build" data-when="2026-11-05T17:52:13.163Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261105T162052323426-a-disposition-names-the-review-it-writes over the commits gained since its prior review (base 65650c481366d989debe7f80f20e38366555558e, head 9e99f348c9f815e616d5e94fa8db87a971eaa77a): status parsed, six dimensions scored goal_fidelity 16, evidence 16, scope_discipline 20, durability 15, fit 18, reuse 17 (total 102), zero added failures against the reviewed run&#x27;s own gate logs, three non-blocking findings (the review_run map entry is unreachable from the MCP tool because reckon/mcp.py:2586 _crew has no parameter for it; dispose_commands re-derives the review id instead of taking it from the record its callers hold; one added assertion compares against the value it passed in).</p></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-20261023-s3-title" data-who="reckon-build" data-when="2026-10-23T08:00:00Z">
     <div class="r-comment-body"><p>Content review of v10 on 2026-10-23, finding single_goal-2, declined for that wave because §3 was not being built: §3's heading and followup title still promise that a resumed run's brief names its current head, which its deliverable hands to §20. Retitle §3 and its followup before dispatching it.</p></div>
 </div>
@@ -372,9 +378,6 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-20261023-s8-review" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
     <div class="r-comment-body"><p>Content review of v11 on 2026-10-23: <code>_committed_scope</code> in <code>reckon/crew/promotion_evidence.py</code> deliberately diffs each cited commit rather than the base-to-head span, so §8's prescribed base-to-head comparison is the span diff that function rejects. Rework §8 before dispatch.</p></div>
-</div>
-<div class="r-comment" data-section="s26" data-id="c-run-r-20261105T165724208680-review-of-a-disposition-names-the-review-it-writes-65650c481366" data-who="reckon-build" data-when="2026-11-05T17:10:22.319Z">
-    <div class="r-comment-body"><p>Independent review of r-20261105T162052323426-a-disposition-names-the-review-it-writes at head 65650c481366 scored goal_fidelity 19, evidence 19, scope_discipline 19, durability 16, fit 18, reuse 17, with three non-blocking findings: the newest-review order follows file mtime and is moved by a later write, the crew tool&#x27;s dispose map carries no review argument, and the duty commands dispose_commands renders omit it.</p></div>
 </div>
 </section>
 </main>
