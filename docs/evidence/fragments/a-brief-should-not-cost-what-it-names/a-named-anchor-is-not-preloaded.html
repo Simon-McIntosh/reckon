@@ -65,4 +65,40 @@
     <li><strong>What is not measured here.</strong> Verifying the merged result belongs to a
     separately dispatched test node.</li>
   </ul>
+
+  <h3>Repair — the anchor selects its own cached census</h3>
+
+  <p><strong>The defect.</strong> The census cache is keyed on the fields that select a
+  figure. The regenerated set was already in the key because it changes what a write path is
+  charged; the anchored set changes a charge the same way and was not. A census cached for
+  the unanchored brief was therefore served for the anchored one while the file stamps stood,
+  so the anchor silently bought nothing — and the same figure gates the context-fit refusal.
+  Reproduced on a git-archive extraction of <code>1c1b41bb</code> with one
+  1&nbsp;000&nbsp;000-byte file: cold caches give <strong>54&nbsp;392</strong> tokens
+  unanchored and <strong>50&nbsp;392</strong> anchored, while one shared cache gives
+  <strong>54&nbsp;392</strong> for both.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>repair head, armed suite</td>
+        <td><code>baf2f333d4</code></td>
+        <td><strong>8 passed</strong>, exit 0</td></tr>
+      <tr><td>repair base, armed suite</td>
+        <td><code>1c1b41bb</code></td>
+        <td>7 passed, exit 0 — the new case does not exist there</td></tr>
+      <tr><td>repair base, new case copied in</td>
+        <td><code>1c1b41bb</code></td>
+        <td>1 failed, exit 1 — the shared cache serves the unanchored figure</td></tr>
+      <tr><td>negative control (the key entry removed again)</td>
+        <td>mutated head</td>
+        <td><strong>1 failed</strong>, exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>What changed.</strong> <code>_census_request_key</code> now carries the sorted
+  anchored set beside the regenerated set, so two briefs differing only in what they anchor
+  select different entries. The new case fixes each brief's own figure against a cold cache
+  and then requires one shared cache to return both unchanged, in the order a coordinator
+  runs when it previews a brief and re-dispatches it anchored.</p>
 </section>
