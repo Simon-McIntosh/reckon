@@ -1,0 +1,102 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:2471",
+    "reckon/crew/recovery_watch.py:2692",
+    "reckon/crew/lift_watch.py:308",
+    "reckon/crew_follow_commands.py:2644",
+    "reckon/crew_follow_commands.py:3270",
+    "reckon/crew_follow_commands.py:3506",
+    "reckon/crew/ticker.py:2374",
+    "reckon/crew/ticker.py:3052",
+    "reckon/crew/ticker.py:3185"
+  ],
+  "completed_at": "2026-11-04T10:56:52.037Z",
+  "dispatched_at": "2026-11-04T10:48:46Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-a-reset-row-tells-orchestrator-sessions-to-continue-and-no-b665d7481695",
+      "recorded_at": "2026-11-04T11:15:20.407441+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_the_orchestrator_reset_row_says_what_it_is.py",
+      "id": "scope-grant-unrecorded",
+      "line": "132",
+      "severity": "blocking",
+      "text": "blocking: this file is outside the run's recorded write_paths, so promotion's scope check refuses the node until the coordinator records reckon crew widen for it; the edit is required because reverting it restores the singular limit reset and the lane-clause-absent assertions and leaves three failures."
+    },
+    {
+      "file": "docs/evidence/fragments/a-limit-reset-reaches-every-session/a-reset-row-tells-orchestrator-sessions-to-continue-and-no.html",
+      "id": "fragment-cites-wrong-log",
+      "line": "60",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment cites logs/negative-control-scope-prewiden.log as holding the read-only OSError from the widen attempt, but that log is the manifest audit output and the OSError is in logs/scope-widen-refused.log, so a reader following the pointer finds the wrong evidence."
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "id": "padding-unguarded",
+      "line": "3183",
+      "severity": "non-blocking",
+      "text": "non-blocking: the job-cell padding has no assertion behind it; neither test file compares a reset row's column positions against a fleet or lift row, so reverting the cell to elide(_job_name(...), NODE) leaves the node suite green."
+    },
+    {
+      "file": "tests/test_a_limit_reset_reaches_every_pane.py",
+      "id": "stage-constant-both-sides",
+      "line": "388",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert _stage_cells(reset) == {ticker.LIMIT_STAGE} compares the rendered stage against the renderer's own constant, so a change to that constant moves both sides together even though it still separates the reset path from the lift path."
+    },
+    {
+      "file": "manifest.md",
+      "id": "head-arm-not-scratch",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "non-blocking: the after_suite arm is the worker worktree run serially, where the done_when asks for both arms from git checkouts under the run scratch with pytest -n 8; the base arm meets it and the head arm does not."
+    },
+    {
+      "file": "manifest.md",
+      "id": "module-window-done-when-unmet",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when requires tests/test_every_module_fits_a_worker_window.py to pass at head, and both arms record it failing with the same id; the manifest reports it under outside_scope, which is honest, but the declared measure is not met."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from d091a650371d to b665d7481695; the single gained commit adds one evidence-fragment section recording the scope grant the node cannot make itself, and touches no code, test or figure.",
+    "done_when": "the done_when asks for a follower-driven case whose stage cell reads limit and whose line carries limits reset, continue and worker lanes keep their limits with no transition; tests/test_a_limit_reset_reaches_every_pane.py:192-211 is that case and the manifest records its run, but the same done_when requires tests/test_every_module_fits_a_worker_window.py to pass at head and both arms fail it.",
+    "goal": "the source node's goal is that a reset row tells orchestrator sessions to continue and opens no worker lane; at the reviewed head reckon/crew/ticker.py:3176-3185 still composes that row from its own fields and the resolved wallet, and the gained commit adds no code.",
+    "manifest": "read; it records the repair arms at 1 failed 17 passed either side of b665d748 with the same failure id, the 24-file ticker/lift_watch sweep at 159 against 160 passed, the negative control at 3 failed 11 passed EXIT=1, and names every log.",
+    "write_paths": "the dispatch fenced four paths; the landed diff also touches tests/test_the_orchestrator_reset_row_says_what_it_is.py, which plan section 9's write-path clause grants but the run's recorded write scope still does not carry, and the gained commit documents that rather than closing it."
+  },
+  "justifications": {
+    "durability": "tests/test_the_orchestrator_reset_row_says_what_it_is.py:135 now pins the literal words and reddens on a wording change, but the job-cell padding at reckon/crew/ticker.py:3183 has no assertion and tests/test_a_limit_reset_reaches_every_pane.py:388 compares the stage against ticker.LIMIT_STAGE itself.",
+    "evidence": "the manifest's after_suite names logs/repair-after.log with 1 failed 17 passed EXIT=1, but the done_when's requirement that tests/test_every_module_fits_a_worker_window.py passes at head is unmet at that log, and the head arm ran serially in the worker worktree rather than from a scratch checkout with pytest -n 8.",
+    "fit": "docs/evidence/fragments/a-limit-reset-reaches-every-session/a-reset-row-tells-orchestrator-sessions-to-continue-and-no.html:48-62 follows the fragment's existing shape with node-prefixed element ids and names no plan label.",
+    "goal_fidelity": "reckon/crew/ticker.py:3182-3185 draws the reset row's stage as LIMIT_STAGE and its clause through limit_reset_text, so a claude-orchestrators reset still prints the continue instruction and every reset row closes with the worker-lane clause.",
+    "reuse": "the gained commit adds no definition; the code under review routes the row through _job_cell at reckon/crew/ticker.py:2942 and limit_reset_text at :371, and no other job-cell or reset-clause owner exists under reckon/crew.",
+    "scope_discipline": "the gained commit touches only the fenced evidence fragment, but tests/test_the_orchestrator_reset_row_says_what_it_is.py:132 remains outside the run's recorded write_paths in its live pointer, so the node's own manifest audit still reports a changed path outside scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that a reset row tells orchestrator sessions to continue and opens no worker lane; at the reviewed head reckon/crew/ticker.py:3176-3185 still composes that row from its own fields and the resolved wallet, and the gained commit adds no code.\nVERDICT done_when: the done_when asks for a follower-driven case whose stage cell reads limit and whose line carries limits reset, continue and worker lanes keep their limits with no transition; tests/test_a_limit_reset_reaches_every_pane.py:192-211 is that case and the manifest records its run, but the same done_when requires tests/test_every_module_fits_a_worker_window.py to pass at head and both arms fail it.\nVERDICT write_paths: the dispatch fenced four paths; the landed diff also touches tests/test_the_orchestrator_reset_row_says_what_it_is.py, which plan section 9's write-path clause grants but the run's recorded write scope still does not carry, and the gained commit documents that rather than closing it.\nVERDICT manifest: read; it records the repair arms at 1 failed 17 passed either side of b665d748 with the same failure id, the 24-file ticker/lift_watch sweep at 159 against 160 passed, the negative control at 3 failed 11 passed EXIT=1, and names every log.\nVERDICT diff: read commit by commit from d091a650371d to b665d7481695; the single gained commit adds one evidence-fragment section recording the scope grant the node cannot make itself, and touches no code, test or figure.\nCALL_SITES: reckon/crew/recovery_watch.py:2471, reckon/crew/recovery_watch.py:2692, reckon/crew/lift_watch.py:308, reckon/crew_follow_commands.py:2644, reckon/crew_follow_commands.py:3270, reckon/crew_follow_commands.py:3506, reckon/crew/ticker.py:2374, reckon/crew/ticker.py:3052, reckon/crew/ticker.py:3185\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:3182-3185 draws the reset row's stage as LIMIT_STAGE and its clause through limit_reset_text, so a claude-orchestrators reset still prints the continue instruction and every reset row closes with the worker-lane clause.\nSCORE evidence: 14\nJUSTIFICATION evidence: the manifest's after_suite names logs/repair-after.log with 1 failed 17 passed EXIT=1, but the done_when's requirement that tests/test_every_module_fits_a_worker_window.py passes at head is unmet at that log, and the head arm ran serially in the worker worktree rather than from a scratch checkout with pytest -n 8.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: the gained commit touches only the fenced evidence fragment, but tests/test_the_orchestrator_reset_row_says_what_it_is.py:132 remains outside the run's recorded write_paths in its live pointer, so the node's own manifest audit still reports a changed path outside scope.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_the_orchestrator_reset_row_says_what_it_is.py:135 now pins the literal words and reddens on a wording change, but the job-cell padding at reckon/crew/ticker.py:3183 has no assertion and tests/test_a_limit_reset_reaches_every_pane.py:388 compares the stage against ticker.LIMIT_STAGE itself.\nSCORE fit: 18\nJUSTIFICATION fit: docs/evidence/fragments/a-limit-reset-reaches-every-session/a-reset-row-tells-orchestrator-sessions-to-continue-and-no.html:48-62 follows the fragment's existing shape with node-prefixed element ids and names no plan label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained commit adds no definition; the code under review routes the row through _job_cell at reckon/crew/ticker.py:2942 and limit_reset_text at :371, and no other job-cell or reset-clause owner exists under reckon/crew.\nFINDING tests/test_the_orchestrator_reset_row_says_what_it_is.py:132 blocking: this file is outside the run's recorded write_paths, so promotion's scope check refuses the node until the coordinator records reckon crew widen for it; the edit is required because reverting it restores the singular limit reset and the lane-clause-absent assertions and leaves three failures.\nFINDING docs/evidence/fragments/a-limit-reset-reaches-every-session/a-reset-row-tells-orchestrator-sessions-to-continue-and-no.html:60 non-blocking: the fragment cites logs/negative-control-scope-prewiden.log as holding the read-only OSError from the widen attempt, but that log is the manifest audit output and the OSError is in logs/scope-widen-refused.log, so a reader following the pointer finds the wrong evidence.\nFINDING reckon/crew/ticker.py:3183 non-blocking: the job-cell padding has no assertion behind it; neither test file compares a reset row's column positions against a fleet or lift row, so reverting the cell to elide(_job_name(...), NODE) leaves the node suite green.\nFINDING tests/test_a_limit_reset_reaches_every_pane.py:388 non-blocking: assert _stage_cells(reset) == {ticker.LIMIT_STAGE} compares the rendered stage against the renderer's own constant, so a change to that constant moves both sides together even though it still separates the reset path from the lift path.\nFINDING manifest.md:20 non-blocking: the after_suite arm is the worker worktree run serially, where the done_when asks for both arms from git checkouts under the run scratch with pytest -n 8; the base arm meets it and the head arm does not.\nFINDING manifest.md:20 non-blocking: the done_when requires tests/test_every_module_fits_a_worker_window.py to pass at head, and both arms record it failing with the same id; the manifest reports it under outside_scope, which is honest, but the declared measure is not met.\n",
+  "review_run_id": "r-20261104T104107827333-review-of-a-reset-row-tells-orchestrator-sessions-to-continue-and-no-b665d7481695",
+  "reviewed_base_sha": "d091a650371d829a6526b2b22136666a44baea5c",
+  "reviewed_head_sha": "b665d7481695e71afe0ae7abf857cde80311e3bc",
+  "reviewed_run_id": "r-20261103T070912242908-a-reset-row-tells-orchestrator-sessions-to-continue-and-no",
+  "scores": {
+    "durability": 14,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-04T10:56:53.730963+00:00",
+  "total": 97
+}

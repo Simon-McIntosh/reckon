@@ -26,7 +26,7 @@
   <title>A Limit Reset Reaches Every Session | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="60">
+<meta name="plan-version" content="61">
 <meta name="plan-modified" content="2026-11-05">
 </head>
 <body>
@@ -225,6 +225,9 @@
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261022T033422651385-every-pane-draws-a-limit-reset-once" data-who="reckon-build" data-when="2026-10-22T05:11:39Z">
     <div class="r-comment-body"><p>lift_watch.sweep_resets folds each recent limit-reset event into the project's watch stream once, driven from the producer's clock-driven sweep block in recovery_watch, and ticker draws it as its own stage-limited working row without disturbing the pane's lift memory.</p></div>
 </div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261104T095004671388-review-of-a-session-without-a-pane-learns-of-a-reset-on-its-next-782014fda09f" data-who="reckon-build" data-when="2026-11-04T10:05:27.655Z">
+    <div class="r-comment-body"><p>review of r-20261103T074735750421 at head 782014fda09f — scores goal_fidelity 17, evidence 15, scope_discipline 15, durability 9, fit 16, reuse 5; four non-blocking findings, no blocking finding.</p></div>
+</div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261022T050643238770-review-of-an-announcement-names-who-it-cannot-reach-c61cb3da3d6c" data-who="reckon-build" data-when="2026-10-22T05:18:47.601Z">
     <div class="r-comment-body"><p>independent review of run r-20261022T034717545596-an-announcement-names-who-it-cannot-reach at head c61cb3da3d6c51faaae74e35b2c4ed2d103e905f (base f990f80631361c8f10b4b184fe7374fe1515adf5): scores goal_fidelity 19, evidence 19, scope_discipline 19, durability 18, fit 18, reuse 17; added_failure_count 0 over the reviewed run's own baseline_suite/after_suite arms; one follow-on finding on the all-reached detail wording at reckon/crew_run_commands.py:2819; status parsed.</p></div>
 </div>
@@ -273,8 +276,8 @@
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261103T110419286490-review-of-a-reset-row-tells-orchestrator-sessions-to-continue-and-no-d091a650371d" data-who="reckon-build" data-when="2026-11-03T11:27:09.093Z">
     <div class="r-comment-body"><p>review of r-20261103T070912242908-a-reset-row-tells-orchestrator-sessions-to-continue-and-no over revisions 90c8167f1592de27b74c3cfa4977f5f264b23b3c..d091a650371d829a6526b2b22136666a44baea5c; scores goal_fidelity 18, evidence 16, scope_discipline 15, durability 15, fit 18, reuse 20; added_failure_count 0; one blocking finding (tests/test_the_orchestrator_reset_row_says_what_it_is.py lies outside the dispatch fence and needs a coordinator grant) and two non-blocking findings.</p></div>
 </div>
-<div class="r-comment" data-section="s3" data-id="c-run-r-20261104T095004671388-review-of-a-session-without-a-pane-learns-of-a-reset-on-its-next-782014fda09f" data-who="reckon-build" data-when="2026-11-04T10:05:27.655Z">
-    <div class="r-comment-body"><p>review of r-20261103T074735750421 at head 782014fda09f — scores goal_fidelity 17, evidence 15, scope_discipline 15, durability 9, fit 16, reuse 5; four non-blocking findings, no blocking finding.</p></div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261104T104107827333-review-of-a-reset-row-tells-orchestrator-sessions-to-continue-and-no-b665d7481695" data-who="reckon-build" data-when="2026-11-04T10:56:52.037Z">
+    <div class="r-comment-body"><p>review of r-20261103T070912242908-a-reset-row-tells-orchestrator-sessions-to-continue-and-no at head b665d7481695e71afe0ae7abf857cde80311e3bc (base d091a650371d829a6526b2b22136666a44baea5c) scores goal_fidelity 18, evidence 14, scope_discipline 13, durability 14, fit 18, reuse 20, adds no failures, records one blocking finding — tests/test_the_orchestrator_reset_row_says_what_it_is.py is outside the run&#x27;s recorded write_paths, so the coordinator must record `reckon crew widen` before promotion — and five non-blocking findings (a wrong log citation in the evidence fragment, unguarded job-cell padding, a stage assertion compared against the renderer&#x27;s own constant, the head arm run from the worktree rather than a scratch checkout with -n 8, and the done-when&#x27;s module-window test failing at both arms).</p></div>
 </div>
 </section>
 </main>
