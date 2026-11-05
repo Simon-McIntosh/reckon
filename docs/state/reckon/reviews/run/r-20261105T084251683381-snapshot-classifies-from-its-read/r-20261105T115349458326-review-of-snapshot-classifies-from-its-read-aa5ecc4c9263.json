@@ -1,0 +1,120 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_a_crashed_producer_is_restarted.py::test_repeated_crashes_reach_a_reported_limit"
+  ],
+  "added_failures_note": "Derived from the reviewed run's own baseline_suite (c15f841ed1, 8 failure ids in logs/base-fails.txt) and after_suite (aa5ecc4c92, 6 failure ids in logs/head-fails.txt); the only id present at head and absent at base is the crashed-producer timing test. Both arms completed to their summary lines with EXIT=1.",
+  "assertion_analysis": [
+    {
+      "condition_to_fail": "The fixture record stops reaching the scoring branch -- for example if the review-in-flight phase test at recovery_classification.py:649 began treating a complete run with no live review as something other than scoring -- leaving an empty or different classification in the list.",
+      "file": "tests/test_snapshot_classifies_from_its_read.py",
+      "line": 100
+    },
+    {
+      "condition_to_fail": "The same row classified without a population stops being classified scoring, which would make the second control measure a branch the read is not on.",
+      "file": "tests/test_snapshot_classifies_from_its_read.py",
+      "line": 111
+    },
+    {
+      "condition_to_fail": "The unhanded path stops reading the live set, for example if classify_pointer stopped calling _review_run_in_flight or recovery_review_dispatch.list_live were replaced by a cached read, which reddens the positive control.",
+      "file": "tests/test_snapshot_classifies_from_its_read.py",
+      "line": 112
+    },
+    {
+      "condition_to_fail": "The hand-over at recovery_watch.py:1390 or the forwarding at :1567 is dropped, so the row lists the live directory again and the count is one; logs/negative-control.log records exactly that mutation and exits 1.",
+      "file": "tests/test_snapshot_classifies_from_its_read.py",
+      "line": 114
+    }
+  ],
+  "base_log_revision": "c15f841ed10ab5349332c8578bfa65910226fafe",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:2569 _live_project_session_counts",
+    "reckon/crew/recovery_watch.py:2844 _quiet_beat_snapshots",
+    "reckon/crew/recovery_watch.py:2857 _quiet_beat_snapshots",
+    "reckon/crew/recovery_watch.py:3180 watch_ticker",
+    "reckon/crew/runs.py:2600 _watch_stream_snapshots",
+    "reckon/roadmap_snapshot.py:315",
+    "reckon/crew/station_store.py:804"
+  ],
+  "completed_at": "2026-11-05T12:03:52.960Z",
+  "dispatched_at": "2026-11-05T11:56:43Z",
+  "findings": [
+    {
+      "file": "tests/test_snapshot_classifies_from_its_read.py",
+      "id": "ff126739eb3",
+      "line": "114",
+      "severity": "non-blocking",
+      "text": "non-blocking: The test drives _watch_snapshot directly and never enters watch_ticker, _quiet_beat_snapshots or _live_project_session_counts, so deleting pointers=pointers at reckon/crew/recovery_watch.py:3180 (or :2569, :2844, :2857) leaves the suite green; the three call sites the brief exists to convert are covered by no assertion, and the durability of the change rests on the middle of the plumbing rather than on its use."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T084251683381-snapshot-classifies-from-its-read/logs/rerun-head-crashed.log",
+      "id": "f85f3b06534",
+      "line": "41",
+      "severity": "non-blocking",
+      "text": "non-blocking: Under one head-revision header this log records runs 1-3 as FAILED (EXIT=1) and runs 4-6 as passed (EXIT=0) of test_repeated_crashes_reach_a_reported_limit, while manifest.md:12 states zero failures in three alone-runs at head and one in three with the head source reverted at base; the single added failure is therefore attributed to load on evidence its own log does not support, and either the test is unstable at head alone or this log spans two different trees under one header."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T084251683381-snapshot-classifies-from-its-read/logs/base-gate.log",
+      "id": "fbbc098750c",
+      "line": "3",
+      "severity": "non-blocking",
+      "text": "non-blocking: The module header line names the head worktree's recovery_watch.py while the same header's cwd and PYTHONPATH are the extracted base tree, and logs/rerun-base-crashed.log:4 names the base path correctly for the same revision, so this arm's header misstates the module it imported; the arm's behaviour is base, but a reader checking provenance is told the wrong file."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T084251683381-snapshot-classifies-from-its-read/manifest.md",
+      "id": "f4f78b48f0b",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "non-blocking: An orphaned JSON fragment sits on its own line between negative_control_note and baseline_suite, so a line-oriented reader sees an unrecognised key holding a partial baseline_suite record and cannot tell which of the two records is the real one."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T084251683381-snapshot-classifies-from-its-read/manifest.md",
+      "id": "f9f492b05f7",
+      "line": "26",
+      "severity": "non-blocking",
+      "text": "non-blocking: outside_scope names only runs.py:2600, but reckon/roadmap_snapshot.py:315 and reckon/crew/station_store.py:804 each loop over a pointer population they already hold and still call _watch_snapshot without pointers=, so two further sweeps of the same shape remain unconverted and unrecorded; both are outside this node's write paths, which is why the defect is the incomplete record rather than the code."
+    }
+  ],
+  "head_log_revision": "aa5ecc4c92635019696989125a8ebf44b2d80d88",
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "The single commit aa5ecc4c9263 threads pointers through _compute_watch_snapshot (recovery_watch.py:1370-1392) and _watch_snapshot (:1532, :1567) and hands the sweep's own records over at :2569, :2844, :2857 and :3180, adds the counting test, and adds the evidence fragment.",
+    "done_when": "The source brief.md:13-25 asks for a list_live count of zero at head and at least one at base plus a negative control; tests/test_snapshot_classifies_from_its_read.py:114 asserts the zero after asserting the same row reads at least once at :112, and head-gate.log (1 passed, EXIT=0), base-gate.log (listed the live set 1 time(s), EXIT=1) and negative-control.log (EXIT=1) record both arms.",
+    "goal": "The source brief.md:8-10 asks that a watch snapshot classify each pointer from the records its sweep already read; reckon/crew/recovery_watch.py:1370-1392 and :1567 now thread the sweep's pointers into classify_pointer, and the sweeps at :2569, :2844, :2857 and :3180 hand their own records over.",
+    "manifest": "The source manifest.md:7-27 records the one commit aa5ecc4c9263, the three changed paths, both suite arms with failure ids and the negative control, but manifest.md:20 carries an orphaned JSON fragment and manifest.md:12 states rerun counts that logs/rerun-head-crashed.log contradicts.",
+    "write_paths": "The source brief.md:29-31 grants reckon/crew/recovery_watch.py, tests/test_snapshot_classifies_from_its_read.py and the evidence fragment; the base-to-head diff changes exactly those three files, 171 insertions and 6 deletions."
+  },
+  "justifications": {
+    "durability": "tests/test_snapshot_classifies_from_its_read.py:114 asserts the count is zero and reddens when the hand-over is dropped, but the test drives _watch_snapshot directly and no assertion covers the call sites at recovery_watch.py:2569, :2844, :2857 or :3180.",
+    "evidence": "logs/rerun-head-crashed.log:41,77,113 records three consecutive failures at the head revision while the manifest claims zero failures in three alone-runs at head, so the attribution of the one added failure to load rather than to this change is not what the record shows.",
+    "fit": "reckon/crew/recovery_watch.py:1370-1392 follows the module's keyword-only snapshot idiom and its helper names, and the conditional kwargs at :1390 exist only to leave the exact-kwargs contract pinned by tests/test_producer_shares_the_classifier_verdict.py:241 intact.",
+    "goal_fidelity": "reckon/crew/recovery_watch.py:1390 hands the sweep's records to classify_pointer at the three sweeps the brief names inside this file, but runs.py:2600 _watch_stream_snapshots, named first in the brief, still takes one read per row and is deferred.",
+    "reuse": "The change extends the pointers parameter classify_pointer already owns at reckon/crew/recovery_classification.py:786 and the one recovery_review_dispatch.py:582 already reads, adding no new reader.",
+    "scope_discipline": "The base-to-head diff c15f841ed10ab5349332c8578bfa65910226fafe..aa5ecc4c92635019696989125a8ebf44b2d80d88 touches only the three paths granted by brief.md:29-31 and adds nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source brief.md:8-10 asks that a watch snapshot classify each pointer from the records its sweep already read; reckon/crew/recovery_watch.py:1370-1392 and :1567 now thread the sweep's pointers into classify_pointer, and the sweeps at :2569, :2844, :2857 and :3180 hand their own records over.\nVERDICT done_when: The source brief.md:13-25 asks for a list_live count of zero at head and at least one at base plus a negative control; tests/test_snapshot_classifies_from_its_read.py:114 asserts the zero after asserting the same row reads at least once at :112, and logs/head-gate.log (1 passed, EXIT=0), logs/base-gate.log (listed the live set 1 time(s), EXIT=1) and logs/negative-control.log (EXIT=1) record both arms.\nVERDICT write_paths: The source brief.md:29-31 grants reckon/crew/recovery_watch.py, tests/test_snapshot_classifies_from_its_read.py and the evidence fragment; the base-to-head diff changes exactly those three files, 171 insertions and 6 deletions.\nVERDICT manifest: The source manifest.md:7-27 records the one commit aa5ecc4c9263, the three changed paths, both suite arms with failure ids and the negative control, but manifest.md:20 carries an orphaned JSON fragment and manifest.md:12 states rerun counts that logs/rerun-head-crashed.log contradicts.\nVERDICT diff: The single commit aa5ecc4c9263 threads pointers through _compute_watch_snapshot (recovery_watch.py:1370-1392) and _watch_snapshot (:1532, :1567) and hands the sweep's own records over at :2569, :2844, :2857 and :3180, adds the counting test, and adds the evidence fragment.\nCALL_SITES: reckon/crew/recovery_watch.py:2569, reckon/crew/recovery_watch.py:2844, reckon/crew/recovery_watch.py:2857, reckon/crew/recovery_watch.py:3180, reckon/crew/runs.py:2600, reckon/roadmap_snapshot.py:315, reckon/crew/station_store.py:804\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:1390 hands the sweep's records to classify_pointer at the three sweeps the brief names inside this file, but runs.py:2600 _watch_stream_snapshots, named first in the brief, still takes one read per row and is deferred.\nSCORE evidence: 12\nJUSTIFICATION evidence: logs/rerun-head-crashed.log:41,77,113 records three consecutive failures at the head revision while the manifest claims zero failures in three alone-runs at head, so the attribution of the one added failure to load rather than to this change is not what the record shows.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The base-to-head diff c15f841ed10ab5349332c8578bfa65910226fafe..aa5ecc4c92635019696989125a8ebf44b2d80d88 touches only the three paths granted by brief.md:29-31 and adds nothing the goal does not imply.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_snapshot_classifies_from_its_read.py:114 asserts the count is zero and reddens when the hand-over is dropped, but the test drives _watch_snapshot directly and no assertion covers the call sites at recovery_watch.py:2569, :2844, :2857 or :3180.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/recovery_watch.py:1370-1392 follows the module's keyword-only snapshot idiom and its helper names, and the conditional kwargs at :1390 exist only to leave the exact-kwargs contract pinned by tests/test_producer_shares_the_classifier_verdict.py:241 intact.\nSCORE reuse: 20\nJUSTIFICATION reuse: The change extends the pointers parameter classify_pointer already owns at reckon/crew/recovery_classification.py:786 and the one recovery_review_dispatch.py:582 already reads, adding no new reader.\nFINDING tests/test_snapshot_classifies_from_its_read.py:114 non-blocking: The test drives _watch_snapshot directly and never enters watch_ticker, _quiet_beat_snapshots or _live_project_session_counts, so deleting pointers=pointers at reckon/crew/recovery_watch.py:3180 (or :2569, :2844, :2857) leaves the suite green; the three call sites the brief exists to convert are covered by no assertion, and the durability of the change rests on the middle of the plumbing rather than on its use.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T084251683381-snapshot-classifies-from-its-read/logs/rerun-head-crashed.log:41 non-blocking: Under one head-revision header this log records runs 1-3 as FAILED (EXIT=1) and runs 4-6 as passed (EXIT=0) of test_repeated_crashes_reach_a_reported_limit, while manifest.md:12 states zero failures in three alone-runs at head and one in three with the head source reverted at base; the single added failure is therefore attributed to load on evidence its own log does not support, and either the test is unstable at head alone or this log spans two different trees under one header.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T084251683381-snapshot-classifies-from-its-read/logs/base-gate.log:3 non-blocking: The module header line names the head worktree's recovery_watch.py while the same header's cwd and PYTHONPATH are the extracted base tree, and logs/rerun-base-crashed.log:4 names the base path correctly for the same revision, so this arm's header misstates the module it imported; the arm's behaviour is base, but a reader checking provenance is told the wrong file.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T084251683381-snapshot-classifies-from-its-read/manifest.md:20 non-blocking: An orphaned JSON fragment sits on its own line between negative_control_note and baseline_suite, so a line-oriented reader sees an unrecognised key holding a partial baseline_suite record and cannot tell which of the two records is the real one.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T084251683381-snapshot-classifies-from-its-read/manifest.md:26 non-blocking: outside_scope names only runs.py:2600, but reckon/roadmap_snapshot.py:315 and reckon/crew/station_store.py:804 each loop over a pointer population they already hold and still call _watch_snapshot without pointers=, so two further sweeps of the same shape remain unconverted and unrecorded; both are outside this node's write paths, which is why the defect is the incomplete record rather than the code.\n",
+  "review_run_id": "r-20261105T115349458326-review-of-snapshot-classifies-from-its-read-aa5ecc4c9263",
+  "reviewed_base_sha": "c15f841ed10ab5349332c8578bfa65910226fafe",
+  "reviewed_commits": [
+    "aa5ecc4c92635019696989125a8ebf44b2d80d88"
+  ],
+  "reviewed_head_sha": "aa5ecc4c92635019696989125a8ebf44b2d80d88",
+  "reviewed_run_id": "r-20261105T084251683381-snapshot-classifies-from-its-read",
+  "scores": {
+    "durability": 14,
+    "evidence": 12,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T13:12:00Z",
+  "total": 99
+}
