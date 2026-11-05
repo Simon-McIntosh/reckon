@@ -1,0 +1,52 @@
+<article class="r-evidence" data-node="a-session-without-a-pane-learns-of-a-reset-on-its-next">
+<h3 id="a-session-without-a-pane-learns-of-a-reset-on-its-next-what">A session without a pane learns of a reset on its next prompt</h3>
+<p id="a-session-without-a-pane-learns-of-a-reset-on-its-next-body">A session whose follower is down has no
+stream to read, so a reset announced while it was stopped reached it only if a human said so. The
+coordinator obligations hook now renders one line per recent reset beside the duty list, the way it already
+renders a model notice, so the session's next prompt is where it finds out. A reset is not work to clear:
+it is permission to carry on, which is why the line stands beside the duties rather than among them.</p>
+<p id="a-session-without-a-pane-learns-of-a-reset-on-its-next-reads">The line is read from
+<code>&lt;crew-home&gt;/budget-resets.json</code> by the hook itself rather than through
+<code>budget_reset.recent_resets</code>, because importing that module would pull the derivation modules
+onto every prompt's path. The fast reader applies the same two rules — the event is global or scoped to the
+asking session, and it is inside the horizon — and a case pins the two readings equal on a store exercising
+each rule, so the copy cannot drift from the store's own. The horizon is the 60 minutes a re-armed producer
+announces by, so a session without a pane learns of exactly the resets a pane would still draw.</p>
+<p id="a-session-without-a-pane-learns-of-a-reset-on-its-next-once">It is said once. The digest that
+already decides whether the duty list changed now carries the reset ids and a tag for the reason a
+not-fresh reading gave, so a reset appearing changes it and is spoken, a second prompt with the same
+reading adds nothing, and a reset that ages past the horizon speaks again because it stops being said. The
+obligations view carries the same events under <code>limit_resets</code>, read through the store's own
+reader with the same horizon, so a CLI or MCP read of a session sees what its prompt saw. The row is
+carried on the view only when the session has one: the published snapshot is sliced from fleet state and
+compared with the view field for field, and the prompt reads the store rather than the payload, so a key
+present on one surface and absent from the other would read as a divergence where there is none.</p>
+<h3 id="a-session-without-a-pane-learns-of-a-reset-on-its-next-measure">Measure</h3>
+<p id="a-session-without-a-pane-learns-of-a-reset-on-its-next-gate">The gate runs the hook as the harness
+runs it — a subprocess with hook JSON on stdin — under a temporary crew home, over a store holding a
+20-minute global event, a 90-minute one, and one scoped to another session, with no obligations snapshot
+published. It finds one reset line, naming the 20-minute event, with neither excluded event anywhere in the
+text; a second prompt with the same reading writes no context at all; the obligations view lists the
+20-minute event under <code>limit_resets</code> and names its group; and the hook's fast reader equals
+<code>budget_reset.recent_resets</code> for the asking session and for no session, at the producer's own
+horizon. <strong>4 passed</strong> in 24.74 s, EXIT=0. The declared negative control sets the horizon to a
+day, and the hook then names the 90-minute event as well — <strong>1 failed, 3 passed, EXIT=1</strong>, the
+one failure being that first case's single-line assertion.</p>
+<p id="a-session-without-a-pane-learns-of-a-reset-on-its-next-suite">The gate lives in the repository as
+<code>tests/test_a_session_without_a_pane_learns_of_a_reset.py</code>, so a regression reddens the suite
+rather than a run directory. Run from the repository root with no override in force it is
+<strong>4 passed</strong> in 20.05 s, EXIT=0. The same file against the change reverted — the base tree
+with only the test added — is <strong>4 errors, EXIT=1</strong>, the first at the fixture's
+<code>budget_reset_store_path()</code>: without the change there is no store path for the hook to read, so
+none of the four cases can run.</p>
+<p id="a-session-without-a-pane-learns-of-a-reset-on-its-next-arms">Both arms were rebuilt from git
+archives under the run's own scratch directory with the four follower variables unset, and run in place on
+the fleet node at <code>pytest -n 8</code> over the 65 test files importing the two changed modules: base
+<code>abf338ba97</code> <strong>13 failed, 426 passed, 10 errors</strong> (414.63 s), head
+<code>18513da3ee</code> <strong>15 failed, 424 passed, 10 errors</strong> (511.77 s). The two ids that
+differ, both in <code>tests/test_a_slow_station_still_reads_as_alive.py</code>, pass when that file runs
+alone at the same head (<strong>3 passed</strong>, 13.91 s): the file measures beat windows, so it is the
+parallel arm's load, not this change. No other id is added, and the three snapshot-parity ids an earlier
+head of this node broke are gone — the view's reset row is carried only when the session has one. Both arms
+return EXIT=1 on the shared base failures, which belong to other work.</p>
+</article>
