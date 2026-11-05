@@ -1,0 +1,63 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/ledger.py:2524 (ledger._index_append calling run_store.append, the retried append)",
+    "reckon/crew/promotion_gate.py:1056 (run_store.import_ledger, the repair pass)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-04T11:58:32Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-locked-ledger-store-is-retried.html",
+      "id": "f9f577e225f",
+      "line": 10,
+      "severity": "blocking",
+      "text": "blocking: section 11's write paths name \"the new test\", and this commit carries the test only as a <pre> block inside the evidence document, so no file under tests/ exists at ec03593f7c and removing reckon/run_store.py:_retrying leaves every repository test green; I confirmed the carried test is sound (3 passed at head; 2 failed, 1 passed with _retrying replaced by a bare RunStore() open), so the remaining work is a copy by a node whose fence includes tests/, not a rewrite."
+    },
+    {
+      "file": "docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-locked-ledger-store-is-retried.html",
+      "id": "fc3aa12deb6",
+      "line": 9,
+      "severity": "non-blocking",
+      "text": "non-blocking: \"Landing it is one file copy into tests/test_a_locked_ledger_store_is_retried.py\" understates the step, because the block at :10 is HTML-escaped (&quot;, &gt;, &#x27;) and a raw-source copy would land markup rather than Python; the landing node must extract and unescape the <pre><code> content, which I did to compile and run it."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read ec03593f7c against 40a072fd7f commit by commit: the one commit adds a paragraph at docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-locked-ledger-store-is-retried.html:9 and a <pre id=\"a-locked-ledger-store-is-retried-owed-test\"> block at :10 holding a 108-line pytest module, with no other file touched.",
+    "done_when": "section 11 of docs/plans/the-crew-does-its-own-bookkeeping.html asks for a short-lock retry, a long-lock append reported failed then appended by the repair pass, a negative control that removes the retry, a base/head suite pair and clean ruff; the manifest records gate-base.txt (32 ids) and gate-repair-head.txt (21 ids) with zero added, plus logs/proposed-test-repaired.txt (3 passed, EXIT=0) and logs/proposed-test-noretry.txt (2 failed, EXIT=1), and I reproduced both arms independently.",
+    "goal": "the node goal is that a locked ledger store is retried; the single gained commit ec03593f7c changes no behaviour and adds no code, it appends the owed regression test and the result of running it both ways to docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-locked-ledger-store-is-retried.html:10, so the gain is the missing verification, not the retry.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T073033751153-a-locked-ledger-store-is-retried/manifest.md; status complete, nine commits, baseline_suite at 327ce7a6bb (22 failed, 2805 passed, 10 errors, 32 ids, completed true) and after_suite at 9812a25966 (21 failed, 2816 passed, 0 errors, 21 ids, completed true), and the two carried-test logs are named in test_logs at line 16.",
+    "write_paths": "the node's declared paths are reckon/ledger.py, reckon/run_store.py, docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-locked-ledger-store-is-retried.html and docs/figures/the-crew-does-its-own-bookkeeping/a-locked-ledger-store-is-retried; git show --stat ec03593f7c lists exactly one file, docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-locked-ledger-store-is-retried.html, +110/-0, inside them."
+  },
+  "justifications": {
+    "durability": "the tree at ec03593f7c still contains no test for reckon/run_store.py:_retrying, so deleting that function leaves every repository test green; the reddening assertion lives only in an HTML block at docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-locked-ledger-store-is-retried.html:10.",
+    "evidence": "both arms are recorded with revision, literal command and EXIT in logs/proposed-test-repaired.txt (3 passed, EXIT=0) and logs/proposed-test-noretry.txt (2 failed, EXIT=1), and I reproduced them at ec03593f7c in a scratch tree.",
+    "fit": "the added block follows the fragment's existing paragraph-then-evidence shape and names the proposed file tests/test_a_locked_ledger_store_is_retried.py by behaviour, with no plan or section identifier in the symbol or path.",
+    "goal_fidelity": "the gained commit at docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-locked-ledger-store-is-retried.html:10 documents and proves the retry test the section requires, but changes no runtime behaviour, so it advances the section's evidence and not the retry itself.",
+    "reuse": "no production definition is added; the carried test's _holding helper at docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-locked-ledger-store-is-retried.html:10 threads a 0.4 s release around BEGIN IMMEDIATE, where tests/test_gc_sweeps_ledger_indexes.py:212 holds its lock inline on the calling thread for a different capability, so nothing is forked.",
+    "scope_discipline": "git show --stat ec03593f7c lists one file, docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-locked-ledger-store-is-retried.html, inside the node's declared write paths, with nothing outside them."
+  },
+  "node": "review-of-a-locked-ledger-store-is-retried-ec03593f7c2c",
+  "node:reviewed": "a-locked-ledger-store-is-retried",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a locked ledger store is retried; the single gained commit ec03593f7c changes no behaviour and adds no code, it appends the owed regression test and the result of running it both ways to docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-locked-ledger-store-is-retried.html:10, so the gain is the missing verification, not the retry.\nVERDICT done_when: section 11 of docs/plans/the-crew-does-its-own-bookkeeping.html asks for a short-lock retry, a long-lock append reported failed then appended by the repair pass, a negative control that removes the retry, a base/head suite pair and clean ruff; the manifest records gate-base.txt (32 ids) and gate-repair-head.txt (21 ids) with zero added, plus logs/proposed-test-repaired.txt (3 passed, EXIT=0) and logs/proposed-test-noretry.txt (2 failed, EXIT=1), and I reproduced both arms independently.\nVERDICT write_paths: the node's declared paths are reckon/ledger.py, reckon/run_store.py, docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-locked-ledger-store-is-retried.html and docs/figures/the-crew-does-its-own-bookkeeping/a-locked-ledger-store-is-retried; git show --stat ec03593f7c lists exactly one file, docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-locked-ledger-store-is-retried.html, +110/-0, inside them.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T073033751153-a-locked-ledger-store-is-retried/manifest.md; status complete, nine commits, baseline_suite at 327ce7a6bb (22 failed, 2805 passed, 10 errors, 32 ids, completed true) and after_suite at 9812a25966 (21 failed, 2816 passed, 0 errors, 21 ids, completed true), and the two carried-test logs are named in test_logs at line 16.\nVERDICT diff: read ec03593f7c against 40a072fd7f commit by commit: the one commit adds a paragraph at docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-locked-ledger-store-is-retried.html:9 and a <pre id=\"a-locked-ledger-store-is-retried-owed-test\"> block at :10 holding a 108-line pytest module, with no other file touched.\nCALL_SITES: reckon/ledger.py:2524 (ledger._index_append calling run_store.append, the retried append), reckon/crew/promotion_gate.py:1056 (run_store.import_ledger, the repair pass)\nSCORE goal_fidelity: 15\nSCORE evidence: 18\nSCORE scope_discipline: 20\nSCORE durability: 5\nSCORE fit: 18\nSCORE reuse: 19\nJUSTIFICATION goal_fidelity: the gained commit at docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-locked-ledger-store-is-retried.html:10 documents and proves the retry test the section requires, but changes no runtime behaviour, so it advances the section's evidence and not the retry itself.\nJUSTIFICATION evidence: both arms are recorded with revision, literal command and EXIT in logs/proposed-test-repaired.txt (3 passed, EXIT=0) and logs/proposed-test-noretry.txt (2 failed, EXIT=1), and I reproduced them at ec03593f7c in a scratch tree.\nJUSTIFICATION scope_discipline: git show --stat ec03593f7c lists one file, docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-locked-ledger-store-is-retried.html, inside the node's declared write paths, with nothing outside them.\nJUSTIFICATION durability: the tree at ec03593f7c still contains no test for reckon/run_store.py:_retrying, so deleting that function leaves every repository test green; the reddening assertion lives only in an HTML block at docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-locked-ledger-store-is-retried.html:10.\nJUSTIFICATION fit: the added block follows the fragment's existing paragraph-then-evidence shape and names the proposed file tests/test_a_locked_ledger_store_is_retried.py by behaviour, with no plan or section identifier in the symbol or path.\nJUSTIFICATION reuse: no production definition is added; the carried test's _holding helper at docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-locked-ledger-store-is-retried.html:10 threads a 0.4 s release around BEGIN IMMEDIATE, where tests/test_gc_sweeps_ledger_indexes.py:212 holds its lock inline on the calling thread for a different capability, so nothing is forked.\nFINDING docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-locked-ledger-store-is-retried.html:10 blocking: section 11's write paths name \"the new test\", and this commit carries the test only as a <pre> block inside the evidence document, so no file under tests/ exists at ec03593f7c and removing reckon/run_store.py:_retrying leaves every repository test green; I confirmed the carried test is sound (3 passed at head; 2 failed, 1 passed with _retrying replaced by a bare RunStore() open), so the remaining work is a copy by a node whose fence includes tests/, not a rewrite.\nFINDING docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-locked-ledger-store-is-retried.html:9 non-blocking: \"Landing it is one file copy into tests/test_a_locked_ledger_store_is_retried.py\" understates the step, because the block at :10 is HTML-escaped (&quot;, &gt;, &#x27;) and a raw-source copy would land markup rather than Python; the landing node must extract and unescape the <pre><code> content, which I did to compile and run it.\n",
+  "review_run_id": "r-20261104T115111788070-review-of-a-locked-ledger-store-is-retried-ec03593f7c2c",
+  "reviewed_base_sha": "40a072fd7ff96b62939ca8149728a346648621b0",
+  "reviewed_head_sha": "ec03593f7c2ccd99169a9c751b059be43411974d",
+  "reviewed_run_id": "r-20261103T073033751153-a-locked-ledger-store-is-retried",
+  "scores": {
+    "durability": 5,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T09:46:41.119292+00:00",
+  "total": 95
+}

@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "FAILED tests/test_append_run_writes_one_run_file.py::test_concurrent_appends_keep_crew_bytes_untouched[False]"
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/ledger.py:2764 (_index_append called from the promotion append path)",
+    "reckon/run_store.py:717 (import_ledger, the repair path already wired at reckon/crew/promotion_gate.py:1056)",
+    "reckon/budget.py:543 (RunStore connection that inherits the new busy timeout)",
+    "reckon/budget.py:579 (RunStore connection that inherits the new busy timeout)"
+  ],
+  "completed_at": "2026-11-04T09:35:14.850Z",
+  "dispatched_at": "2026-11-04T09:26:18Z",
+  "findings": [
+    {
+      "file": "reckon/run_store.py",
+      "id": "fc12bda1d82",
+      "line": 625,
+      "text": "blocking: the retry and its repair pass land with no repository test, while section 11's done_when requires a test with a database held locked and the plan's write paths include the new test; the dispatch granted no tests/ path, so the only guard is probe_index_retry.py under the run scratch, which is not committed and dies with the run, and nothing in the tree reddens if the retry is removed."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "id": "f5a3f8f3fce",
+      "line": 2550,
+      "text": "non-blocking: repair_index and unindexed_run_ids (reckon/ledger.py:2529) re-implement capabilities already owned by reckon/run_store.py:717 import_ledger (which inserts every committed run absent from the store) and reckon/run_store.py:760 compare (which reports file_only_run_ids), and nothing calls the new functions, so the repair pass the plan asks for is an unreachable duplicate beside the wired import_ledger path at reckon/crew/promotion_gate.py:1056."
+    },
+    {
+      "file": "reckon/run_store.py",
+      "id": "f835e3ef7c1",
+      "line": 224,
+      "text": "non-blocking: INDEX_BUSY_TIMEOUT_SECONDS is applied to every RunStore connection rather than only the retried append, so import_ledger at reckon/run_store.py:742 and the refusal stamp at reckon/budget.py:543 now give up on a lock after 0.2 s where they waited 5 s, and import_ledger catches only sqlite3.IntegrityError, so a concurrent writer surfaces there as an uncaught OperationalError."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T073033751153-a-locked-ledger-store-is-retried/logs/gate-head.txt",
+      "id": "f621616c322",
+      "line": 1,
+      "text": "non-blocking: the head suite arm ran at the tree carrying 51e5f80810 plus a7f69e9f59 rather than at the reviewed head 1c8b055dd4, and its single added failure tests/test_append_run_writes_one_run_file.py::test_concurrent_appends_keep_crew_bytes_untouched[False] is claimed closed only by targeted-head.txt, whose header names no revision, so no recorded arm evidences a clean suite at the reviewed head."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read all four commits against 327ce7a6bb: 51e5f80810 adds a retry inside ledger._index_append plus unindexed_run_ids/repair_index, e62a8e6552 moves the retry below the seam into run_store.append and removes it from ledger, a7f69e9f59 and 1c8b055dd4 write the evidence fragment; +125/-6 across three files, none of them a test.",
+    "done_when": "section 11's done_when asks for a short-lock test, a long-lock test whose row the repair pass appends, a negative control, a base/head suite pair and clean ruff; the manifest records each arm as a scratch probe (logs/probe-index-short.txt, logs/probe-index-long.txt, logs/negative-control.txt, logs/repro-base.txt) rather than a test file, the head suite arm ran at 51e5f80810 rather than the reviewed head, and ruff passes on both changed modules at 1c8b055dd4.",
+    "goal": "the node goal is that a locked ledger store is retried; reckon/run_store.py:625 lands the retry inside run_store.append with a wall-clock bound, and reckon/ledger.py:2529-2575 adds a listing and a repair pass, so the retried write is landed while the repair pass has no production caller.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T073033751153-a-locked-ledger-store-is-retried/manifest.md; status complete, four commits, a tests line naming the 262-file pytest -n 8 arm, test_logs naming six logs under logs/, artifacts naming the base reproduction, both probe arms and the control, and outside_scope recording that no tests/ path was granted.",
+    "write_paths": "the manifest's declared paths are reckon/ledger.py, reckon/run_store.py, the evidence fragment and the figures directory; git diff --stat 327ce7a6bb..1c8b055dd4 changes exactly reckon/ledger.py, reckon/run_store.py and docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-locked-ledger-store-is-retried.html, all inside them."
+  },
+  "justifications": {
+    "durability": "no test file is in the diff and none was granted, so the only thing that reddens when the retry is removed is /tmp/reckon-crew-scratch/r-20261103T073033751153-a-locked-ledger-store-is-retried/probe_index_retry.py, which is not committed and dies with the run.",
+    "evidence": "the reproduction and both probe arms are real independent checks (logs/repro-base.txt fails after one 5.01 s attempt, logs/probe-index-short.txt writes the row in 1.0 s, logs/probe-index-long.txt fails then repairs), but the arm named after_suite in the manifest ran at 51e5f80810 and its one added failure is closed only by a re-run whose log header names no revision.",
+    "fit": "reckon/run_store.py:605-647 follows the module's existing idiom of a private predicate, a small helper and a documented public seam, and ruff check and ruff format --check pass on both changed modules at 1c8b055dd4.",
+    "goal_fidelity": "reckon/run_store.py:625 retries only a locked OperationalError with a bound of INDEX_RETRY_SECONDS, so a lock held for milliseconds writes its row, but reckon/ledger.py:2550 repair_index is called by nothing while the repair path already in production is run_store.import_ledger at reckon/crew/promotion_gate.py:1056.",
+    "reuse": "reckon/ledger.py:2529 unindexed_run_ids and :2550 repair_index re-implement what reckon/run_store.py:717 import_ledger and :760 compare already own and do not extend either owner, so the capability is duplicated rather than extended.",
+    "scope_discipline": "git diff --stat 327ce7a6bb..1c8b055dd4 lists only reckon/ledger.py, reckon/run_store.py and the declared evidence fragment, with no test path and no concurrent node's file touched."
+  },
+  "node": "review-of-a-locked-ledger-store-is-retried-1c8b055dd404",
+  "node:reviewed": "a-locked-ledger-store-is-retried",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a locked ledger store is retried; reckon/run_store.py:625 lands the retry inside run_store.append with a wall-clock bound, and reckon/ledger.py:2529-2575 adds a listing and a repair pass, so the retried write is landed while the repair pass has no production caller.\nVERDICT done_when: section 11's done_when asks for a short-lock test, a long-lock test whose row the repair pass appends, a negative control, a base/head suite pair and clean ruff; the manifest records each arm as a scratch probe (logs/probe-index-short.txt, logs/probe-index-long.txt, logs/negative-control.txt, logs/repro-base.txt) rather than a test file, the head suite arm ran at 51e5f80810 rather than the reviewed head, and ruff passes on both changed modules at 1c8b055dd4.\nVERDICT write_paths: the manifest's declared paths are reckon/ledger.py, reckon/run_store.py, the evidence fragment and the figures directory; git diff --stat 327ce7a6bb..1c8b055dd4 changes exactly reckon/ledger.py, reckon/run_store.py and docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-locked-ledger-store-is-retried.html, all inside them.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T073033751153-a-locked-ledger-store-is-retried/manifest.md; status complete, four commits, a tests line naming the 262-file pytest -n 8 arm, test_logs naming six logs under logs/, artifacts naming the base reproduction, both probe arms and the control, and outside_scope recording that no tests/ path was granted.\nVERDICT diff: read all four commits against 327ce7a6bb: 51e5f80810 adds a retry inside ledger._index_append plus unindexed_run_ids/repair_index, e62a8e6552 moves the retry below the seam into run_store.append and removes it from ledger, a7f69e9f59 and 1c8b055dd4 write the evidence fragment; +125/-6 across three files, none of them a test.\nCALL_SITES: reckon/ledger.py:2764 (_index_append called from the promotion append path), reckon/run_store.py:717 (import_ledger, the repair path already wired at reckon/crew/promotion_gate.py:1056), reckon/budget.py:543 (RunStore connection that inherits the new busy timeout), reckon/budget.py:579 (RunStore connection that inherits the new busy timeout)\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/run_store.py:625 retries only a locked OperationalError with a bound of INDEX_RETRY_SECONDS, so a lock held for milliseconds writes its row, but reckon/ledger.py:2550 repair_index is called by nothing while the repair path already in production is run_store.import_ledger at reckon/crew/promotion_gate.py:1056.\nSCORE evidence: 13\nJUSTIFICATION evidence: the reproduction and both probe arms are real independent checks (logs/repro-base.txt fails after one 5.01 s attempt, logs/probe-index-short.txt writes the row in 1.0 s, logs/probe-index-long.txt fails then repairs), but the arm named after_suite in the manifest ran at 51e5f80810 and its one added failure is closed only by a re-run whose log header names no revision.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 327ce7a6bb..1c8b055dd4 lists only reckon/ledger.py, reckon/run_store.py and the declared evidence fragment, with no test path and no concurrent node's file touched.\nSCORE durability: 4\nJUSTIFICATION durability: no test file is in the diff and none was granted, so the only thing that reddens when the retry is removed is /tmp/reckon-crew-scratch/r-20261103T073033751153-a-locked-ledger-store-is-retried/probe_index_retry.py, which is not committed and dies with the run.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/run_store.py:605-647 follows the module's existing idiom of a private predicate, a small helper and a documented public seam, and ruff check and ruff format --check pass on both changed modules at 1c8b055dd4.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/ledger.py:2529 unindexed_run_ids and :2550 repair_index re-implement what reckon/run_store.py:717 import_ledger and :760 compare already own and do not extend either owner, so the capability is duplicated rather than extended.\nFINDING reckon/run_store.py:625 blocking: the retry and its repair pass land with no repository test, while section 11's done_when requires a test with a database held locked and the plan's write paths include the new test; the dispatch granted no tests/ path, so the only guard is probe_index_retry.py under the run scratch, which is not committed and dies with the run, and nothing in the tree reddens if the retry is removed.\nFINDING reckon/ledger.py:2550 non-blocking: repair_index and unindexed_run_ids (reckon/ledger.py:2529) re-implement capabilities already owned by reckon/run_store.py:717 import_ledger (which inserts every committed run absent from the store) and reckon/run_store.py:760 compare (which reports file_only_run_ids), and nothing calls the new functions, so the repair pass the plan asks for is an unreachable duplicate beside the wired import_ledger path at reckon/crew/promotion_gate.py:1056.\nFINDING reckon/run_store.py:224 non-blocking: INDEX_BUSY_TIMEOUT_SECONDS is applied to every RunStore connection rather than only the retried append, so import_ledger at reckon/run_store.py:742 and the refusal stamp at reckon/budget.py:543 now give up on a lock after 0.2 s where they waited 5 s, and import_ledger catches only sqlite3.IntegrityError, so a concurrent writer surfaces there as an uncaught OperationalError.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T073033751153-a-locked-ledger-store-is-retried/logs/gate-head.txt:1 non-blocking: the head suite arm ran at the tree carrying 51e5f80810 plus a7f69e9f59 rather than at the reviewed head 1c8b055dd4, and its single added failure tests/test_append_run_writes_one_run_file.py::test_concurrent_appends_keep_crew_bytes_untouched[False] is claimed closed only by targeted-head.txt, whose header names no revision, so no recorded arm evidences a clean suite at the reviewed head.\n",
+  "review_run_id": "r-20261104T091756019009-review-of-a-locked-ledger-store-is-retried-1c8b055dd404",
+  "reviewed_base_sha": "327ce7a6bbd9bb2db4f178ec00aadbc1262c11cc",
+  "reviewed_head_sha": "1c8b055dd4047483f8ebeafc301e2873aa084866",
+  "reviewed_run_id": "r-20261103T073033751153-a-locked-ledger-store-is-retried",
+  "scores": {
+    "durability": 4,
+    "evidence": 13,
+    "fit": 16,
+    "goal_fidelity": 16,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T09:46:41.138411+00:00",
+  "total": 74
+}
