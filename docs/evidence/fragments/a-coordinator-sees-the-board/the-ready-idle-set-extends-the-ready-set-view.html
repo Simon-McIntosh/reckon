@@ -1,0 +1,60 @@
+<!doctype html>
+<title>The ready-idle set extends the ready-set view</title>
+<section id="the-ready-idle-set-extends-the-ready-set-view-landing">
+  <h2>The ready set says which rows nobody is working on, and who to ask</h2>
+
+  <p><strong>What changed.</strong> <code>ready_set_view</code> already projected the
+  roadmap's ready rows, and a row with a run on it read exactly like a row nobody had picked
+  up. Each row now carries <code>live_run</code> (the run id on the row, or <code>null</code>),
+  <code>coordinator</code> and <code>plan_owner</code> from the crew's plan-coordinator
+  derivation, and <code>critical_path</code>. The view also gains <code>closable</code>: the
+  plans whose every declared section is resolved, each with the closure blockers
+  <code>close</code> would still have to clear.</p>
+
+  <p><code>ready_idle=True</code> filters the same view to rows with no live run. It is a
+  filter argument, not a view: nothing new is served and no refusal family is added. The
+  filtered answer pages with <code>limit</code>/<code>cursor</code> through the same
+  <code>paginate</code> every other view answers with. An unpaged call keeps the whole set,
+  so a surface already reading this projection is not silently cut to one page.</p>
+
+  <p>One derivation per fact: the coordinator columns are read from
+  <code>resolve_plan_coordinators</code>, or taken as an argument when the caller already
+  holds them, never re-derived from the ledger here.</p>
+
+  <h3>Measured</h3>
+
+  <p><code>tests/test_the_ready_idle_set.py</code>, four cases over
+  <code>tests/fixtures/coordinator_board_0850/</code> — power_convertor's 17 plan documents
+  as committed immediately before <strong>2026-10-22T08:50Z</strong>, and the eight run
+  records that decided each plan's coordinator at that instant, copied from the same commit.
+  On that fixture the filtered view names the three sections §1 of the plan reports as
+  implementable, ready and idle, each with the coordinator its deciding run names:</p>
+
+  <table>
+    <thead><tr><th>section</th><th>coordinator</th><th>plan-owner</th></tr></thead>
+    <tbody>
+      <tr><td><code>iter-switched-terminal-transients#s13</code></td>
+        <td><code>83d14db1-f84d-4588-b40a-bc508c081332</code></td><td>Simon McIntosh</td></tr>
+      <tr><td><code>iter-dummy-load-validation#s4</code></td>
+        <td><code>83d14db1-f84d-4588-b40a-bc508c081332</code></td><td>Simon McIntosh</td></tr>
+      <tr><td><code>shared-coil-supply-model#s9</code></td>
+        <td><code>cdb769a4-7af0-4304-a144-f39ecbf8c502</code></td><td>Simon McIntosh</td></tr>
+    </tbody>
+  </table>
+
+  <p>The same call names <code>jt60sa-coil-circuit-model</code> and
+  <code>tf-co-wound-tape-validation</code> as closable, and its whole serialised payload is
+  asserted below the transport ceiling (<code>DEFAULT_RESPONSE_CEILING</code>,
+  80,000 characters). A fourth case walks the filtered set two rows at a time and checks the
+  pages rejoin into the unpaged order.</p>
+
+  <p><strong>Negative control.</strong> The declared mutation skips the live-run filter. With
+  <code>shared-coil-supply-model#s9</code> given a live run in the fixture the section stays
+  in the filtered set and the case fails — <strong>1 failed, <code>EXIT=1</code></strong> —
+  while the unmutated head leaves it out and still reports the run on the unfiltered row, so
+  the section's absence is the filter rather than a row that never carried the run.</p>
+
+  <p><strong>The view does not invent the run.</strong> The section rows are the same
+  classified run rows the plan-level partition gives the roadmap, so a run reported here and
+  a run reported by <code>crew live</code> cannot disagree.</p>
+</section>
