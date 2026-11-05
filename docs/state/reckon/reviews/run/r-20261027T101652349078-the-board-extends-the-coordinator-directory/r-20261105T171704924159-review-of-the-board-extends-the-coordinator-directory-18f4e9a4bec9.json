@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/mcp_views.py:4102 serve_crew_view directory branch",
+    "reckon/crew_run_commands.py:446 crew directory command"
+  ],
+  "completed_at": "2026-11-05T17:30:23.341Z",
+  "dispatched_at": "2026-11-05T17:21:01Z",
+  "findings": [
+    {
+      "file": "reckon/crew/directory.py",
+      "id": "ff8bd3585a6",
+      "line": 245,
+      "severity": "non-blocking",
+      "summary": "the fail-closed PlanVisibilityError from the registry owner is not translated by either production caller, so an invalid mounts registry makes the workstation-scope board raise instead of degrading."
+    },
+    {
+      "file": "tests/test_the_board_extends_the_directory.py",
+      "id": "fe6228153aa",
+      "line": 121,
+      "severity": "non-blocking",
+      "summary": "the fixture seeds only the flat registry shape, so no test fails if the join stops delegating to the owner."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "two commits, code/refactor at 22b90a98ed and evidence at 18f4e9a4be, each read against e8c5b3633f.",
+    "done_when": "the manifest records the revised gate at 18f4e9a4be with 11 passed EXIT=0; I reproduced it at the reviewed head in review-gate-head.log.",
+    "goal": "the delta closes the three folded findings; reckon/crew/directory.py:245 delegates the mounted set, :287 carries the page size, tests line 251 makes the case span six pages.",
+    "manifest": "read; complete, with commits, acted lines, after_suite at head and named negative-control logs.",
+    "write_paths": "all three paths the delta touches are inside the manifest's declared write paths."
+  },
+  "justifications": {
+    "durability": "the paging assertion at tests/test_the_board_extends_the_directory.py:246 is proven load-bearing by logs/paging-control.log, which fails on exactly that case with the read-every-page loop removed, but nothing fails if reckon/crew/directory.py:245 reverts to its own flat-shape registry reader or if the per-page limit at :287 is dropped again (the cursor encodes an offset, so omitting the limit still yields every row).",
+    "evidence": "the gate at the reviewed head is recorded with revision, tree and command in logs/gate-head.log (11 passed, EXIT=0) and I reproduced it from an extraction of 18f4e9a4be, but the head arm of the adjacent suite is only in logs/adjacent-resume2.log with no revision or tree header, so the done-when's base-versus-head comparison is unstamped on that side.",
+    "fit": "the added comment at reckon/crew/directory.py:241 states the mechanism rather than a plan label and follows the module's lazy-import and owner-delegation idiom, though reckon/crew/directory.py:13 imports the package-private query._mounted_projects and rebinds it under a public name.",
+    "goal_fidelity": "reckon/crew/directory.py:245 now resolves the workstation-scope mounted set through the package owner and :287 pages the ready-set join with a limit on every request, which is exactly what the delta was dispatched to repair.",
+    "reuse": "the delta removes the duplicate reader and delegates to reckon/crew/query.py:740 _mounted_projects, which wraps reckon/crew/routing.py mounted_repository_projects and flight.mounted_project_docs \u2014 an owner that already existed, now extended rather than forked, and no new definition is added.",
+    "scope_discipline": "both commits touch only reckon/crew/directory.py, tests/test_the_board_extends_the_directory.py and docs/evidence/fragments/a-coordinator-sees-the-board/the-board-extends-the-coordinator-directory.html, all declared in the manifest's write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that crew(view=\"directory\") names each run's plan#section, carries each coordinator's held paths and queued runs, lists a run-less ready-idle owner and pages; the delta under review (e8c5b363..18f4e9a4be) closes the three findings the previous review left, delegating the mounted set at reckon/crew/directory.py:245, carrying the ready-set page size on every request at reckon/crew/directory.py:287, and making the paging case span six pages at tests/test_the_board_extends_the_directory.py:251.\nVERDICT done_when: the done-when as revised by resume-2-advice names tests/test_the_board_extends_the_directory.py and tests/test_the_lane_share_lives_on_the_lanes_view.py with 0 failures and revision-stamped logs ending EXIT=; the manifest records that run (11 passed, EXIT=0) and I reproduced it at the reviewed head in an independent git-archive extraction (11 passed, EXIT=0, review-gate-head.log).\nVERDICT write_paths: the manifest declares reckon/crew/directory.py, reckon/crew/lane_document.py, reckon/mcp_views.py, tests/test_the_board_extends_the_directory.py and the evidence fragment; the delta touches exactly directory.py, the test file and the fragment, all inside that scope.\nVERDICT manifest: read; status complete, commits 6671f39178..18f4e9a4be, acted lines for the three folded findings, after_suite at 18f4e9a4be with 0 failures, and negative-control logs named by bare path.\nVERDICT diff: read commit by commit \u2014 22b90a98ed replaces the local registry reader with reckon.crew.query._mounted_projects, deletes directory.py's own _mounted_projects, passes the limit on every ready-set page and monkeypatches the page limit small in the paging case; 18f4e9a4be records the same in the evidence fragment.\nCALL_SITES: reckon/mcp_views.py:4102 serve_crew_view directory branch, reckon/crew_run_commands.py:446 crew directory command\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/directory.py:245 now resolves the workstation-scope mounted set through the package owner and :287 pages the ready-set join with a limit on every request, which is exactly what the delta was dispatched to repair.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate at the reviewed head is recorded with revision, tree and command in logs/gate-head.log (11 passed, EXIT=0) and I reproduced it from an extraction of 18f4e9a4be, but the head arm of the adjacent suite is only in logs/adjacent-resume2.log with no revision or tree header, so the done-when's base-versus-head comparison is unstamped on that side.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: both commits touch only reckon/crew/directory.py, tests/test_the_board_extends_the_directory.py and docs/evidence/fragments/a-coordinator-sees-the-board/the-board-extends-the-coordinator-directory.html, all declared in the manifest's write paths.\nSCORE durability: 14\nJUSTIFICATION durability: the paging assertion at tests/test_the_board_extends_the_directory.py:246 is proven load-bearing by logs/paging-control.log, which fails on exactly that case with the read-every-page loop removed, but nothing fails if reckon/crew/directory.py:245 reverts to its own flat-shape registry reader or if the per-page limit at :287 is dropped again (the cursor encodes an offset, so omitting the limit still yields every row).\nSCORE fit: 17\nJUSTIFICATION fit: the added comment at reckon/crew/directory.py:241 states the mechanism rather than a plan label and follows the module's lazy-import and owner-delegation idiom, though reckon/crew/directory.py:13 imports the package-private query._mounted_projects and rebinds it under a public name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta removes the duplicate reader and delegates to reckon/crew/query.py:740 _mounted_projects, which wraps reckon/crew/routing.py mounted_repository_projects and flight.mounted_project_docs \u2014 an owner that already existed, now extended rather than forked, and no new definition is added.\nFINDING reckon/crew/directory.py:245 non-blocking: calling the registry owner makes reckon/crew/routing.py's PlanVisibilityError reachable from the default board read, and neither production caller translates it \u2014 reckon/mcp_views.py:4141 catches only DirectoryError/RunQueryError and reckon/crew_run_commands.py:450 only DirectoryError \u2014 so an invalid mounts registry turns the workstation-scope board into an uncaught exception where the deleted helper degraded to listing no idle owners.\nFINDING tests/test_the_board_extends_the_directory.py:121 non-blocking: the fixture writes only the flat registry shape, so the reuse repair has no regression guard \u2014 a future local reader that again knows only the flat shape passes this file, and a nested {\"mounts\": {...}} or unreadable registry is never exercised.\n",
+  "review_run_id": "r-20261105T171704924159-review-of-the-board-extends-the-coordinator-directory-18f4e9a4bec9",
+  "reviewed_base_sha": "e8c5b3633fa7ba6804cf2d50417e82fe11e9f89f",
+  "reviewed_head_sha": "18f4e9a4bec9bdcbe5d7c30058b7c06e8984f9a7",
+  "reviewed_run_id": "r-20261027T101652349078-the-board-extends-the-coordinator-directory",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T17:41:34.808149+00:00",
+  "total": 105
+}
