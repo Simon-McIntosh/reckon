@@ -23,7 +23,7 @@
   <title>A Brief Should Not Cost What It Names | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="30">
+<meta name="plan-version" content="31">
 <meta name="plan-modified" content="2026-11-05">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
 </head>
@@ -322,7 +322,10 @@ Section 2 comes first and is nearly free: the per-file breakdown is already comp
     <div class="r-comment-body"><p>Reviewed run r-20261027T100023696601-a-reduced-brief-leaves-a-trace (node a-reduced-brief-leaves-a-trace), commits 04cf3e4227..98b62b89d0. Verdict: the reduction marker is recorded on the run node block and reaches the promoted ledger row via promotion.py:1451; the head gate (152 passed EXIT=0), the base new-cases arm (2 failed/2 passed EXIT=1) and the negative control (2 failed/2 passed EXIT=1) all corroborate. Scores goal_fidelity 19, evidence 19, scope_discipline 20, durability 19, fit 18, reuse 15; two non-blocking findings (dispatch.py:3336 unconsumed trace on a no-reduction dispatch; dispatch_refusals.py:62 duplicate repository-input walk).</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261105T151336270150-review-of-a-reduced-brief-leaves-a-trace-2a6b74f42be0" data-who="reckon-build" data-when="2026-11-05T15:22:01.166Z">
-    <div class="r-comment-body"><p>Independent re-review of r-20261027T100023696601-a-reduced-brief-leaves-a-trace at head 2a6b74f42b, scoped to the two commits gained since the review at 98b62b89d0: the refusal trace is now consumed on any fitting dispatch, matched only within 24 hours, and charged paths come from routing&#x27;s contributor reader; scores goal_fidelity 19, evidence 19, scope_discipline 20, durability 19, fit 18, reuse 5, with three non-blocking findings (a duplicated timestamp parser, a widened removed_paths set, an unversioned trace payload shape) and no added failures.</p></div>
+    <div class="r-comment-body"><p>Independent re-review of r-20261027T100023696601-a-reduced-brief-leaves-a-trace at head 2a6b74f42b, scoped to the two commits gained since the review at 98b62b89d0: the refusal trace is now consumed on any fitting dispatch, matched only within 24 hours, and charged paths come from routing's contributor reader; scores goal_fidelity 19, evidence 19, scope_discipline 20, durability 19, fit 18, reuse 5, with three non-blocking findings (a duplicated timestamp parser, a widened removed_paths set, an unversioned trace payload shape) and no added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261105T155243192263-review-of-a-reduced-brief-leaves-a-trace-8aea6c97f774" data-who="reckon-build" data-when="2026-11-05T16:02:27.705Z">
+    <div class="r-comment-body"><p>Independent review of r-20261027T100023696601-a-reduced-brief-leaves-a-trace for the commits gained since 2a6b74f42b (c2192970aa, 8aea6c97f7) stored parsed at head 8aea6c97f7 with scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 18, reuse 18, added_failure_count 0, and one non-blocking finding on the origin-label vocabulary dispatch_refusals.py:48 duplicates from routing.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-10-22T07:40:00Z">
     <div class="r-comment-body"><p>Met by the existing payload: the dry-run's <code>repository_files.named_files</code> and <code>write_paths</code> records carry <code>estimated_tokens</code> per file beside the total, and <code>_context_refusal_detail</code> in <code>reckon/crew/routing.py</code> renders the largest contributors with their token figures. The grep this section was filed on looked for <code>per_file</code> and missed both.</p></div>
