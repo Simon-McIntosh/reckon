@@ -174,6 +174,11 @@ for n in rank:
     <p>Run <code>r-20261027T092250673290-a-section-can-wait-on-a-followup</code> landed at merge <code>8b9531568</code>. The ref grammar takes slug@f-id and slug#sN@f-id, so a section can wait on one followup: the roadmap holds it while the followup is open and releases it when it resolves, a ref to a missing followup is a dangling-hard-dependency finding, and the edit_plan store op accepts both forms; PLAN-FORMAT.md, the reckon-edit skill and the published schema state the suffix. Coordinator importer measure over 80 test files: main 4450 passed, merged 4461 passed, the same five failures at both, so none added. read_plan's deps surface, which still resolves a followup ref to the whole plan's status, is carried as a new section. Review 112 of 120.</p>
   </section>
 
+  <section id="s14">
+    <h2>§14 landing</h2>
+    <p>Run <code>r-20261027T094917475863-a-closures-completion-is-computed-once</code> landed at merge <code>35397df39</code>. _dependency_endpoints no longer counts a closure's shipped and total members itself: its shipped_fraction reads the helper resolve_graph_target uses, in reckon/graph_target.py where both counts moved, so one computation serves both surfaces. A sentinel patched into the shared helper reaches both, which fails at the base. Coordinator importer measure over 66 test files importing graph_target and roadmap: main 632 passed, merged 634 passed, the same two failures at both, so none added. Review 105 of 120.</p>
+  </section>
+
 </main>
 </body>
 </html>
