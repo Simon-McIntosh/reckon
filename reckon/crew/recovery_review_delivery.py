@@ -47,7 +47,12 @@ def _is_review_run(record: Mapping[str, Any]) -> bool:
     return _is_review_node(record) or _pointer_role(record) == REVIEW_ROLE
 
 
-def _review_store_record_paths(record: Mapping[str, Any], project: str) -> list[Path]:
+def _review_store_record_paths(
+    record: Mapping[str, Any],
+    project: str,
+    *,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
+) -> list[Path]:
     """The paths a reviewer was told to write its record to, in order.
 
     The dispatch composes them from the reviewed run, so they name the record
@@ -66,7 +71,9 @@ def _review_store_record_paths(record: Mapping[str, Any], project: str) -> list[
     """
     node = record.get("node") or {}
     directory = review_module.review_store_root() / project
-    run_directory = _review_record_delivery_directory(record, project)
+    run_directory = _review_record_delivery_directory(
+        record, project, pointers=pointers
+    )
     paths: list[Path] = []
     for declared in node.get("write_paths") or ():
         landed = _delivered_record_location(declared, run_directory)
@@ -167,7 +174,10 @@ def _delivered_record_location(
 
 
 def _review_record_delivery_directory(
-    record: Mapping[str, Any], project: str
+    record: Mapping[str, Any],
+    project: str,
+    *,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> Path | None:
     """Where a review run delivers its record: the reviewed run's directory.
 
@@ -177,7 +187,7 @@ def _review_record_delivery_directory(
     as the fallback rather than being dropped: the declaration is the run's own
     record of where its deliverable goes.
     """
-    reviewed = _resolved_reviewed_run_id(record, project)
+    reviewed = _resolved_reviewed_run_id(record, project, pointers=pointers)
     if reviewed:
         return run_dir(reviewed)
     return _declared_record_directory(record)
@@ -216,7 +226,11 @@ def file_review_records_into_store(record: Mapping[str, Any]) -> list[Path]:
 
 
 def _resolved_reviewed_run_id(
-    record: Mapping[str, Any], project: str, *, refuse_ambiguous: bool = False
+    record: Mapping[str, Any],
+    project: str,
+    *,
+    refuse_ambiguous: bool = False,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> str:
     """The run a reviewer reviews, resolved from its minted node id, or empty.
 
@@ -245,7 +259,7 @@ def _resolved_reviewed_run_id(
         return source
     matches = [
         str(pointer.get("run_id") or "")
-        for pointer in list_live(project=project)
+        for pointer in (list_live(project=project) if pointers is None else pointers)
         if str((pointer.get("node") or {}).get("id") or "") == source
     ]
     if not matches:

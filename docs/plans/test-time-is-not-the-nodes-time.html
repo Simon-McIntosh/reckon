@@ -25,8 +25,8 @@
   <title>Test Time Is Not The Node's Time | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="37">
-<meta name="plan-modified" content="2026-11-03">
+<meta name="plan-version" content="39">
+<meta name="plan-modified" content="2026-11-05">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
 <body>
@@ -184,6 +184,15 @@
 </section>
   
 <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s1" data-id="c-run-r-20261103T080457426850-review-of-measure-what-a-nodes-time-budget-controls-and-how-much-of-it-916b9c8c4808" data-who="reckon-build" data-when="2026-11-03T08:37:14.228Z">
+    <div class="r-comment-body"><p>Reviewed r-20261103T072523194588 at base c941de7658..head 916b9c8c48 and stored a parsed record scoring goal_fidelity 17, evidence 15, scope_discipline 20, durability 4, fit 8, reuse 5, with one blocking finding (the added script adds seven ruff findings and fails ruff format --check) and seven non-blocking findings; the reviewed node is suite-unarmed, so no added failure can be derived and the record states added_failure_count 0 over an empty id list.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20261105T104535752157-review-of-measure-what-a-nodes-time-budget-controls-and-how-much-of-it-e1d54ab0a039" data-who="reckon-build" data-when="2026-11-05T11:21:49.960Z">
+    <div class="r-comment-body"><p>The review of 916b9c8c48..d2626bdd is stored at the canonical record path as a parsed record scoring goal_fidelity 18, evidence 14, scope_discipline 20, durability 7, fit 20, reuse 18, with three non-blocking findings: docs/research/how-much-of-a-node-is-its-gate.html:121 says the codex lane yields no tool-call timing "at all" while its own table row (2.6% fallback) and the payload (4 of 155 runs) show four runs do, and the reviewed manifest's tests line records only the ruff pair, so a promotion receipt re-runs lint and not the --control-run that is the done_when's measure. This attempt also cleared the previously blocking lint finding: at d2626bdd ruff 0.16.4 reports check and format clean on scripts/gate_share_of_run_time.py, the two citations the first review named resolve (prompts.py:501 _continuation_multiple, dispatch_sessions.py:338 _apply_budget_watchdog), and _log_seconds now delegates to promotion_gate._recorded_gate_seconds.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20261103T072523194588-measure-what-a-nodes-time-budget-controls-and-how-much-of-it" data-who="reckon-build" data-when="2026-11-05T11:02:45Z">
+    <div class="r-comment-body"><p>The deadline scan names every path that acts on a node deadline with file and line and finds `_apply_budget_watchdog` the only one that can stop a live worker, resolving `fences.enforce_budget_watchdog` false for all 18 mounted projects; the timing scan, whose control compares 543.02 s against the independent 543 s the log prints as (0:09:03), measures a median gate share of wall time of 7.8% on clive (344 measurable runs) and 8.9% on codex (51), over 891 implement runs in the payload window 2026-10-20T09:25:02Z to 2026-11-03T09:25:02Z, with 496 runs with no measurable share and 146 with a visibly truncated gate, each listed by id; codex streams carry no timestamps, so that lane yields no tool-call timing.</p></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261019T164106237543-a-deadline-lets-a-named-batch-finish" data-who="reckon-build" data-when="2026-10-19T17:06:30.037Z">
     <div class="r-comment-body"><p>state one deadline rule everywhere a worker reads it — at the deadline write the checkpoint, continue only through a bounded step the manifest named before the deadline, finish it by the hard stop (launch plus budget times the grace multiple), with resolved_grace_multiple as the single owner the prompt and the opt-in watchdog both read; measured 168 passed / 1 failed at head against 157 passed / 2 failed at base, no failure added and one pre-existing snapshot failure repaired.</p></div>
 </div>
@@ -210,9 +219,6 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-close-s6" data-who="reckon-build" data-when="2026-10-19T20:20:00Z">
     <div class="r-comment-body"><p>§6 landed: no double period in the time fence, and the clock test checks the seconds-left command (merge <code>35fb465ed</code>). Zero added failures. <a href="/reckon/evidence/archive/test-time-is-not-the-nodes-time-landed.html#s6-the-time-fence-reads-cleanly">evidence</a></p></div>
-</div>
-<div class="r-comment" data-section="s1" data-id="c-run-r-20261103T080457426850-review-of-measure-what-a-nodes-time-budget-controls-and-how-much-of-it-916b9c8c4808" data-who="reckon-build" data-when="2026-11-03T08:37:14.228Z">
-    <div class="r-comment-body"><p>Reviewed r-20261103T072523194588 at base c941de7658..head 916b9c8c48 and stored a parsed record scoring goal_fidelity 17, evidence 15, scope_discipline 20, durability 4, fit 8, reuse 5, with one blocking finding (the added script adds seven ruff findings and fails ruff format --check) and seven non-blocking findings; the reviewed node is suite-unarmed, so no added failure can be derived and the record states added_failure_count 0 over an empty id list.</p></div>
 </div>
 </section>
 </main>

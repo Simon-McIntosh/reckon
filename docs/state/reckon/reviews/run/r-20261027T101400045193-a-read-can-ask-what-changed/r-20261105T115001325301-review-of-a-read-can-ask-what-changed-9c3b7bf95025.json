@@ -1,0 +1,135 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "c15f841ed10ab5349332c8578bfa65910226fafe",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp.py:3838",
+    "reckon/mcp.py:3850",
+    "reckon/mcp_deadlines.py:602",
+    "reckon/crew_run_commands.py:476"
+  ],
+  "completed_at": "2026-11-05T12:45:38.370Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "a-read-can-ask-what-changed",
+      "recorded_at": "2026-11-05T12:55:12.839548+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-05T12:38:12Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-read-can-ask-what-changed",
+      "recorded_at": "2026-11-05T12:54:31.874562+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "a-read-can-ask-what-changed",
+      "recorded_at": "2026-11-05T12:54:38.726322+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "a-read-can-ask-what-changed",
+      "recorded_at": "2026-11-05T12:54:47.770267+00:00"
+    },
+    "3": {
+      "kind": "folded",
+      "node": "a-read-can-ask-what-changed",
+      "recorded_at": "2026-11-05T12:54:53.150768+00:00"
+    },
+    "4": {
+      "kind": "folded",
+      "node": "a-read-can-ask-what-changed",
+      "recorded_at": "2026-11-05T12:55:00.595714+00:00"
+    },
+    "5": {
+      "kind": "folded",
+      "node": "a-read-can-ask-what-changed",
+      "recorded_at": "2026-11-05T12:55:06.842200+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/change_set.py",
+      "id": "f6e86b76d55",
+      "line": "228",
+      "severity": "non-blocking",
+      "text": "non-blocking: both window filters bound only the start (`epoch > since`, and the stream equivalent at :353), so the closed-at-end window stated at :18-22 is not implemented and a change landing between `observed_now()` at :391 and the reads at :433 is reported by this answer and again by the next, which contradicts the module's own promise."
+    },
+    {
+      "file": "reckon/change_set.py",
+      "id": "fa9cb2c0408",
+      "line": "240",
+      "severity": "non-blocking",
+      "text": "non-blocking: every section change in a plan is attributed to `moved[-1]`, the last commit inside the window, so a declaration moved by an earlier commit of a multi-commit window reports a later commit's sha and instant as its provenance."
+    },
+    {
+      "file": "reckon/change_set.py",
+      "id": "f45a59d4b38",
+      "line": "418",
+      "severity": "non-blocking",
+      "text": "non-blocking: `sources[\"runs\"]` is set true unconditionally, including when the stream file is absent and `_run_changes` returns at :336 without reading anything, so the answer reports a source it never read."
+    },
+    {
+      "file": "reckon/change_set.py",
+      "id": "f8a243c7a50",
+      "line": "93",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_split_ref` re-implements the `[project:]plan[#section]` grammar that `parse_plan_ref` owns at reckon/_schema.py:294 instead of wrapping it, so a change to the ref grammar lands in two places."
+    },
+    {
+      "file": "reckon/change_set.py",
+      "id": "fe092cd68f0",
+      "line": "174",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_satisfied` restates reckon/roadmap.py:662 `_section_satisfied` while dropping its passed-section-gate arm, so `_ready`'s parity claim at :199-201 holds for declared sections only and the two surfaces can disagree about a gate-passed section."
+    },
+    {
+      "file": "tests/test_a_read_can_ask_what_changed.py",
+      "id": "f7b17bb0b87",
+      "line": "213",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion compares `moved[\"observed_at\"]` against `change_set_module.observed_now(...)` of the same injected clock, so both sides come from the function under test and it cannot redden on a regression in that function's formatting."
+    }
+  ],
+  "head_log_revision": "9c3b7bf950257a656ad71adbc8a6834781be03b8",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read the single commit 9c3b7bf95 against base c15f841e; it adds reckon/change_set.py (475 lines) composing the window from plan git history and the transition stream, wires it into reckon/mcp.py (60 lines), adds 10 tests, and lands the evidence fragment.",
+    "done_when": "the done_when names tests/test_a_read_can_ask_what_changed.py plus tests/test_mcp_tools.py as its gate and requires the base arm to refuse or ignore `since`; the manifest's `tests:` line records exactly that command, logs/gate-head.log shows 45 passed EXIT=0, and the fixture test asserts the one moved declaration, the one released dependent and the one moved run, plus the empty, full and unreadable answers.",
+    "goal": "the node's goal is that the brief, crew live and the roadmap answer the crew tool's existing `since` with the change set since that time and each carry `observed_at`; reckon/mcp.py:2627 attaches `observed_at` and a composed `change_set` to every single-project roadmap answer and reckon/mcp.py:2927 to `crew(view=\"live\")`, so all three reads answer the window, and a portfolio or `graph:` read carries the instant only.",
+    "manifest": "read; it states the head gate 45 passed EXIT=0, the base arm 35 passed on tests/test_mcp_tools.py, and the negative control 7 failed / 3 passed, and I read those same figures from the five logs it names on disk.",
+    "write_paths": "read the five declared paths in the dispatch prompt; the diff touches four of them \u2014 reckon/mcp.py, reckon/change_set.py, tests/test_a_read_can_ask_what_changed.py and the landing fragment \u2014 and no path outside them."
+  },
+  "justifications": {
+    "durability": "logs/negative-control.log reddens 7 of the 10 tests when change_set's window is forced open, so tests/test_a_read_can_ask_what_changed.py:215 really guards the window, but no test covers the closed-at-end bound the module docstring states at reckon/change_set.py:18.",
+    "evidence": "logs/gate-head.log records 45 passed EXIT=0 at 9c3b7bf95 for the literal command in the manifest's `tests:` line, and logs/base-three-reads-probe.log quotes the base refusal `_roadmap_tool() got an unexpected keyword argument 'since'` rather than asserting it.",
+    "fit": "reckon/change_set.py:1-29 documents the mechanism and its two sources in the surrounding idiom, and its symbols name what they do with no plan or ticket label, though the docstring's window guarantee overstates what :228 implements.",
+    "goal_fidelity": "reckon/mcp.py:2627 gives the roadmap (and so the default brief and every named view) a `change_set` plus `observed_at`, and reckon/mcp.py:2927 does the same for `crew(view=\"live\")`, leaving only portfolio and `graph:` reads answering the instant without a window.",
+    "reuse": "reckon/change_set.py:93 re-implements the ref grammar owned by reckon/_schema.py:294 and :174 restates the satisfaction rule owned by reckon/roadmap.py:662, which puts this dimension at the rubric's ceiling of 5 even though the history, blob and stream reads are reused rather than forked.",
+    "scope_discipline": "`git diff --name-status c15f841e 9c3b7bf9` lists exactly the four declared paths and nothing else, and reckon/project_brief.py is read and left alone with the divergence written under outside_scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the brief, crew live and the roadmap answer the crew tool's existing `since` with the change set since that time and each carry `observed_at`; reckon/mcp.py:2627 attaches `observed_at` and a composed `change_set` to every single-project roadmap answer and reckon/mcp.py:2927 to `crew(view=\"live\")`, so all three reads answer the window, and a portfolio or `graph:` read carries the instant only.\nVERDICT done_when: the done_when names tests/test_a_read_can_ask_what_changed.py plus tests/test_mcp_tools.py as its gate and requires the base arm to refuse or ignore `since`; the manifest's `tests:` line records exactly that command, logs/gate-head.log shows 45 passed EXIT=0, and the fixture test asserts the one moved declaration, the one released dependent and the one moved run, plus the empty, full and unreadable answers.\nVERDICT write_paths: read the five declared paths in the dispatch prompt; the diff touches four of them \u2014 reckon/mcp.py, reckon/change_set.py, tests/test_a_read_can_ask_what_changed.py and the landing fragment \u2014 and no path outside them.\nVERDICT manifest: read; it states the head gate 45 passed EXIT=0, the base arm 35 passed on tests/test_mcp_tools.py, and the negative control 7 failed / 3 passed, and I read those same figures from the five logs it names on disk.\nVERDICT diff: read the single commit 9c3b7bf95 against base c15f841e; it adds reckon/change_set.py (475 lines) composing the window from plan git history and the transition stream, wires it into reckon/mcp.py (60 lines), adds 10 tests, and lands the evidence fragment.\nCALL_SITES: reckon/mcp.py:3838, reckon/mcp.py:3850, reckon/mcp_deadlines.py:602, reckon/crew_run_commands.py:476\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/mcp.py:2627 gives the roadmap (and so the default brief and every named view) a `change_set` plus `observed_at`, and reckon/mcp.py:2927 does the same for `crew(view=\"live\")`, leaving only portfolio and `graph:` reads answering the instant without a window.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/gate-head.log records 45 passed EXIT=0 at 9c3b7bf95 for the literal command in the manifest's `tests:` line, and logs/base-three-reads-probe.log quotes the base refusal `_roadmap_tool() got an unexpected keyword argument 'since'` rather than asserting it.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: `git diff --name-status c15f841e 9c3b7bf9` lists exactly the four declared paths and nothing else, and reckon/project_brief.py is read and left alone with the divergence written under outside_scope.\nSCORE durability: 16\nJUSTIFICATION durability: logs/negative-control.log reddens 7 of the 10 tests when change_set's window is forced open, so tests/test_a_read_can_ask_what_changed.py:215 really guards the window, but no test covers the closed-at-end bound the module docstring states at reckon/change_set.py:18.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/change_set.py:1-29 documents the mechanism and its two sources in the surrounding idiom, and its symbols name what they do with no plan or ticket label, though the docstring's window guarantee overstates what :228 implements.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/change_set.py:93 re-implements the ref grammar owned by reckon/_schema.py:294 and :174 restates the satisfaction rule owned by reckon/roadmap.py:662, which puts this dimension at the rubric's ceiling of 5 even though the history, blob and stream reads are reused rather than forked.\nFINDING reckon/change_set.py:228 non-blocking: both window filters bound only the start (`epoch > since`, and the stream equivalent at :353), so the closed-at-end window stated at :18-22 is not implemented and a change landing between `observed_now()` at :391 and the reads at :433 is reported by this answer and again by the next, which contradicts the module's own promise.\nFINDING reckon/change_set.py:240 non-blocking: every section change in a plan is attributed to `moved[-1]`, the last commit inside the window, so a declaration moved by an earlier commit of a multi-commit window reports a later commit's sha and instant as its provenance.\nFINDING reckon/change_set.py:418 non-blocking: `sources[\"runs\"]` is set true unconditionally, including when the stream file is absent and `_run_changes` returns at :336 without reading anything, so the answer reports a source it never read.\nFINDING reckon/change_set.py:93 non-blocking: `_split_ref` re-implements the `[project:]plan[#section]` grammar that `parse_plan_ref` owns at reckon/_schema.py:294 instead of wrapping it, so a change to the ref grammar lands in two places.\nFINDING reckon/change_set.py:174 non-blocking: `_satisfied` restates reckon/roadmap.py:662 `_section_satisfied` while dropping its passed-section-gate arm, so `_ready`'s parity claim at :199-201 holds for declared sections only and the two surfaces can disagree about a gate-passed section.\nFINDING tests/test_a_read_can_ask_what_changed.py:213 non-blocking: the assertion compares `moved[\"observed_at\"]` against `change_set_module.observed_now(...)` of the same injected clock, so both sides come from the function under test and it cannot redden on a regression in that function's formatting.",
+  "review_run_id": "r-20261105T115001325301-review-of-a-read-can-ask-what-changed-9c3b7bf95025",
+  "reviewed_base_sha": "c15f841ed10ab5349332c8578bfa65910226fafe",
+  "reviewed_head_sha": "9c3b7bf950257a656ad71adbc8a6834781be03b8",
+  "reviewed_run_id": "r-20261027T101400045193-a-read-can-ask-what-changed",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T12:52:01.682529+00:00",
+  "total": 91
+}

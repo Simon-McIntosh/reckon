@@ -1,0 +1,850 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="power_convertor">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="shared-coil-supply-model">
+  <meta name="plan-title" content="One Coil-Supply Model for ITER and JT-60SA">
+  <meta name="plan-summary" content="Composed classes for converters, coils, lines and couplings shared by both machines, with distributed winding capacitance and every ITER supply including VS1">
+  <meta name="plan-status" content="in-progress">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="35.25">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-context" content="extended">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-sprint" content="S2">
+  <meta name="plan-tags" content="power-supply,iter,jt-60sa,coil,lumped-model">
+  <meta name="plan-blocks" content="jt60sa-coil-circuit-model">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <title>One Coil-Supply Model for ITER and JT-60SA | power_convertor</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="185">
+<meta name="plan-modified" content="2026-10-22">
+<meta name="plan-section-depends-on" content="{&quot;s10&quot;:[&quot;shared-coil-supply-model#s9&quot;],&quot;s6&quot;:[&quot;shared-coil-supply-model#s9&quot;],&quot;s9&quot;:[&quot;nova:iter-passive-plasma-circuit#s7&quot;]}">
+</head>
+<body>
+  <main class="plan-doc">
+    <p>The ITER and JT-60SA models answer the same question: what a set of converters does to the coils they
+    drive, through windings, lines, grounding and the magnetic coupling between them. JT-60SA is where the
+    method is checked against measured data, and ITER is where it is used. The two models should therefore
+    share one foundation, so that what JT-60SA teaches transfers to ITER by construction rather than by
+    re-implementation.</p>
+    <p>This plan builds that foundation: one set of composed classes, the same for both machines, in which every
+    coil carries its distributed winding capacitance and every ITER supply, VS1 and its connection to PF2–PF5
+    included, is a circuit the model can predict. The physics stays where it is; what changes is that each
+    concept has one owner.</p>
+
+    <h2 id="s1">§1 — Why one foundation</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>The two machines grew from parallel paths. The code at <code>e2a75c81</code> shows where they diverge:</p>
+    <ul>
+      <li>Three independent JT-60SA ten-coil lists: <code>COILS</code> in <code>circuit.py</code>, the same
+      literal in <code>current_identity.py</code>, and <code>_COILS</code> in <code>coil_system.py</code>.</li>
+      <li>A passive-structure record that cannot hold unlabelled filaments: <code>nova_plant.averaged_plant</code>
+      fabricates alternating vessel and cryostat labels to satisfy <code>PassiveStructure</code>'s group rule.</li>
+      <li>Two firing gate windows and two bridge stamps: <code>JT60SAFiring.gate</code> keeps its own window
+      beside <code>FiringGenerator.gate</code>, and <code>_stamp_jt60sa_bridge</code> re-stamps the bridge
+      <code>add_unit</code> builds.</li>
+      <li>Coil construction decided by name: <code>coil_windings.py</code> branches on
+      <code>geometry.name.startswith("CS")</code>, <code>"PF"</code> or <code>"VS"</code> in five places, keys
+      <code>PF_DOUBLE_PANCAKES</code> by ITER name and <code>TERMINAL_UNIT_LAYERS</code> by the first two letters.
+      A JT-60SA coil therefore cannot reach the turn-resolved path except by being renamed.</li>
+    </ul>
+    <p>Machine assembly also lives in the study scripts rather than the library.
+    <code>scripts/iter/pf_switched_pulse.py</code> is 1,656 lines and builds its own windings and stress
+    measures. <code>scripts/iter/initiation_transient.py</code> builds its own coil models. So each new study
+    re-assembles the machine.</p>
+    <p>The most consequential gap is capacitance. ITER's sectioned windings carry geometry-computed distributed
+    capacitance (<a href="/power_convertor/research/iter-coil-winding-strays">winding strays</a>), and their first
+    PF modes fall at 260–690 Hz, inside the converter band. JT-60SA has the same sectioned-winding code with its
+    own pancake layouts (<a href="/power_convertor/research/jt60sa-replay-windings">JT-60SA windings</a>), but
+    the coupled plant scored against the measured coil-to-coil coupling is R–L with nova's mutuals and passive
+    structure only. JT-60SA's 6f, 12f and 18f lines (about 365, 730 and 1,095 Hz) sit just below its ideal
+    winding modes (868 Hz–2.43 kHz). The measured coupling rises with frequency where nova's stays flat
+    (<a href="/power_convertor/plans/jt60sa-coil-circuit-model">jt60sa-coil-circuit-model</a> §14). The
+    distributed winding is the one capacitive form not yet scored against that data, and the test needs both
+    machines' coils built the same way.</p>
+
+    <h2 id="s2">§2 — The shared component classes</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="8.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
+    <p>No new vocabulary. Every concept below already has an owner, and the shared model is those owners,
+    extended so that both machines build from them and composed rather than inherited. Machine-specific numbers
+    come from records: the IDS machine description, the IDM register
+    (<a href="/power_convertor/research/iter-coil-supply-idm-register">IDM register</a>) and the JT-60SA sources
+    register. They never come from name prefixes or module constants. The owner of each concept:</p>
+    <ul>
+      <li><strong>Plant</strong>: <code>nova_plant.NovaPlant</code>, nova's coupled coils, passive structure and
+      prescribed plasma. It holds one <code>PassiveStructure</code> record. That record gains a way to carry
+      unlabelled filaments, so <code>averaged_plant</code> stops inventing labels. §3 adds the section-resolved
+      ports here.</li>
+      <li><strong>Forms</strong>: the existing entry points derive each form from the one composition. These
+      are <code>nova_plant.averaged_plant</code> for the averaged state space, <code>nova_plant.into_switched</code>
+      for the switched multiport that <code>switched_circuit.Circuit</code> integrates, and
+      <code>coil_coupling.terminal_impedance</code> and <code>sectioned_response</code> for the analytic
+      frequency domain. There is no new forms module, so the forms cannot drift apart.</li>
+      <li><strong>Circuit</strong>: <code>circuit_connections.CircuitConnections</code>, which already holds a
+      circuit's branches and incidence, extended to hold its supply, coils, lines and grounding.
+      <code>filter_network.BoosterLoop</code> is today's JT-60SA-only composition of converter filter, coil,
+      grounding and mutual. It becomes one instance of the circuit and retires as a class.</li>
+      <li><strong>Supply and its units</strong>: <code>supply.SupplyModel</code> and <code>supply.SeriesUnit</code>,
+      the existing per-unit converter composition with firing phase and thyristor phasors, imported by 25 files.
+      A <code>SeriesUnit</code> gains its firing law as a strategy, its protection and, where fitted, its
+      switching network or discharge unit. The ITER thyristor law, the CS circulating law, the JT-60SA booster
+      law and the IGBT modulator implement one interface, <code>converter_units.FiringGenerator</code>'s, so the
+      gate window exists once. <code>converter_units.ConverterNetwork</code> stamps any unit into the switched
+      netlist.</li>
+      <li><strong>Winding</strong>: <code>coil_windings.WindingGeometry</code> and <code>SectionedWinding</code>, with
+      <code>TurnInsulation</code>. <code>WindingGeometry</code> gains each coil's manufactured layout as a record
+      (pancakes, layers, turns, hands), so construction never reads a coil's name. The distributed capacitance,
+      turn to turn, section to section and section to ground, stays with <code>coil_coupling</code>'s
+      <code>capacitance_nodal</code>, <code>capacitive_ladder</code> and <code>sectioned_response</code>. A separate
+      coil class is added only if <code>SectionedWinding</code> cannot carry a coil's terminals and feeder; the
+      node that adds it says why.</li>
+      <li><strong>Line</strong>: <code>busbar_lines</code>. Its module functions become a frozen <code>Line</code>
+      dataclass with those functions as methods: distributed resistance, inductance and capacitance per unit
+      length, in segments. The ITER DC busbars, the VS1 connection to PF2–PF5 and the JT-60SA feeders are all
+      Lines. This is the one new class, and it replaces functions rather than adding surface beside them.</li>
+      <li><strong>Grounding</strong>: <code>filter_network.GroundingSystem</code>, extended to carry ITER's grounding
+      as well as JT-60SA's.</li>
+    </ul>
+    <p>The section's public surface shrinks overall:</p>
+    <ul>
+      <li><code>BoosterLoop</code> retires into the circuit;</li>
+      <li>the JT-60SA firing class and bridge stamp merge into the shared strategy and stamp;</li>
+      <li>the duplicate coil lists go;</li>
+      <li>the <code>busbar_lines</code> functions become one class's methods.</li>
+    </ul>
+    <p>Done when:</p>
+    <ul>
+      <li>An ITER coil (PF6) and a JT-60SA coil (EF4) are built through the same <code>WindingGeometry</code> and
+      <code>SectionedWinding</code> owners from their machine descriptions and layout records, in one test.</li>
+      <li>Each divergence in §1 is removed. The deleted code is shown, and a test reaches the single owner that
+      remains: one coil list for each machine, a passive-structure record that holds unlabelled filaments, one
+      gate window, one bridge stamp, one circuit composition with <code>BoosterLoop</code> retired, and construction
+      from layout records, never from names.</li>
+      <li>Behaviour is unchanged. The whole suite passes with the same count. The frozen dummy-load prediction
+      JSON stays byte-identical, and <code>tests/test_claims_register.py</code> passes.</li>
+      <li>Negative control: a coil with no layout record raises an error naming the coil, instead of being
+      modelled as a two-layer double pancake.</li>
+    </ul>
+
+    <h2 id="s3">§3 — Distributed capacitance in both machines' plants</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="6.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
+    <p>Every coil in the ITER and JT-60SA coupled plants carries its Winding's distributed capacitance. Its section
+    mutuals come from nova's finite rectangular kernels, one thick element per section, as the flux maps now use
+    for whole coils. The plant exports section-resolved ports, so a study reads internal voltages as well as
+    terminals. The ports extend <code>NovaPlant</code>. The per-study coupling of windings into a plant,
+    <code>coil_windings.add_coupled_windings</code> and <code>add_prescribed_winding_sources</code>, retires into
+    them.</p>
+    <p>Where the insulation is undocumented, the capacitance carries a stated range and every result is reported
+    at both ends. JT-60SA's turn, pancake and ground layers have no thickness or permittivity in the held
+    sources, so its range is the replay windings record's.</p>
+    <p>Done when:</p>
+    <ul>
+      <li>For each ITER PF coil, the converged isolated winding's first mode reproduces its turn-resolved
+      reference within 1 %, under the same terminal boundary condition and loss assumptions. No turn-resolved
+      reference exists for the CS modules, whose held record is a seven-section equal split, so for each CS
+      module the measure is convergence: halving every section's length moves the first mode by less than
+      1 %. The full coupled
+      plant's first terminal-impedance peak, and its shift from that isolated reference, are reported at both
+      installed-loss bounds without the 1 % limit: mutual coupling to the other coils, the plant's resistance
+      and the converter move it physically, so the shift is a result, not a convergence error. The PF reference is
+      <a href="/power_convertor/research/iter-pf-frequency-response-prediction">PF frequency response</a>, and
+      the CS reference is <a href="/power_convertor/research/iter-coil-winding-strays">winding strays</a>. The
+      two VS coils keep one electrical section each, because their internal layout is not published. The
+      record says so and lists the missing layout.</li>
+      <li>For each JT-60SA EF and CS coil, the first mode is reported at both ends of the insulation range. The
+      nominal case reproduces the replay windings record's 868 Hz–2.43 kHz span.</li>
+      <li>Positive control: with every capacitance set to zero, the plant reproduces today's R–L plant to
+      0.1 %. That means the JT-60SA harmonic transfer functions at 6f, 12f and 18f, and ITER's nova-plant
+      terminal impedance.</li>
+      <li>Negative control: with losses removed, doubling every capacitance of one coil lowers each of its
+      modes by a factor of √2, within 0.1 %.</li>
+      <li>Section transients converge: with the installed damping carried, halving the switched step moves no
+      section voltage peak or section dv/dt by more than 1 %. The first integrated run, without damped
+      sections, saw settled section peaks shift by up to 1,743 % when its step was halved.</li>
+    </ul>
+
+    <h2 id="s4">§4 — Every ITER supply as a composed circuit, the VS1 line included</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="8.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p>The thirteen ITER supplies the integrated model drives are each built as one Circuit from the IDM register:
+    CS1 (CS1U and CS1L in series), CS2U, CS2L, CS3U, CS3L, PF1 to PF6, VS1 and VS3. No value is taken from
+    DINA, which is the demand, not the design. The correction-coil and TF supplies, which decision
+    <code>iter-coverage</code> adds, are §7's.</p>
+    <p>VS1 is modelled whole: its thyristor pair and four IGBT units, and its Line to the PF2–PF5 connection
+    points. That Line is distributed, with inductance and capacitance from the register or, where IDM is silent,
+    from a stated assumption added to the register.</p>
+    <p>The circuits are data, not code. One factory builds any circuit from its register entries, so this
+    section adds one public function and one refusal: the refusal of a parameter that has no source. That
+    refusal is the design-authority rule enforced in code, and no existing refusal covers it.</p>
+    <p>For each circuit the model predicts two things:</p>
+    <ul>
+      <li>the frequency response: the terminal impedance, and the transfer from each converter line to every
+      terminal and section voltage, to ground and across;</li>
+      <li>the switched response over a chosen window.</li>
+    </ul>
+    <p>Done when:</p>
+    <ul>
+      <li>All thirteen circuits build from the register. A test refuses a circuit with any parameter that has
+      neither a register citation nor a stated assumption.</li>
+      <li>Each circuit, run through the composed model instead of its study's own assembly, reproduces the
+      numbers the merged studies pinned in the
+      <a href="/power_convertor/research/iter-model-claims-register">claims register</a>. A pin with a band is
+      reproduced within it. A pin recorded without a band, such as VS1's sampled loop at 6.04 dB and 61.03° at
+      71.35 Hz, is reproduced to 1 % of its pinned value, because the composed circuit carries the same
+      arithmetic. Other examples are the PF2/PF5 line gains and the initiation peaks.</li>
+      <li>The VS1 Line's first resonance and the PF2–PF5 connection-point voltage response are reported, with
+      the line's capacitance at both ends of its range.</li>
+      <li>Negative control: opening VS1's galvanic connection reduces PF2's and PF5's response to VS1's
+      carrier to the mutual-inductance coupling alone, as nova's mutual predicts.</li>
+      <li>The switched response runs on the large plants. Under decision <code>large-plant-propagator</code>
+      (revised 19 October), the composed VS1 circuit runs on the companion integrator with its port factor
+      cache. The cache took a 1 ms VS1 window from 489 s to 34.8 s with the same switching events. Its accuracy
+      is shown by step halving: halving the step moves no terminal, connection-point or first-turn peak by more
+      than 1 %. Under the lead's decision <code>long-window-modelling</code>
+      (iter-switched-terminal-transients), the 120 ms PF2 windows run on the terminal plant through the exact
+      modal path. The sectioned plant runs on short windows around switching events, started from the long
+      run's state at that instant. The exact modal path keeps its energy balance, closed within 1e-6 where it
+      runs. Negative control: doubling the companion step on VS1 moves a peak by more than the halving does,
+      so the step-halving check has resolution.</li>
+    </ul>
+    <p>The claims-register pins that need every supply switching together on one plant are measured by <a href="/power_convertor/plans/iter-switched-terminal-transients#s6">iter-switched-terminal-transients §6</a>, which assembles that run. They are the whole-pulse replay pins, the integrated insertion pins and the sampled loop margins. This section closes on the pins one composed circuit can reproduce, the VS1 line's response, and VS1's first-turn step criterion. The averaged plant adapter's positive-energy refusal of the cached plant is diagnosed here, because the composed circuits' averaged response needs it. Moving these pins removes a circular wait: §6 needed this section closed, and these pins needed §6's assembly.</p>
+
+    <h2 id="s5">§5 — JT-60SA's circuits on the same classes</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="5.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>EF1–EF6 and CS1–CS4 are built through the same owners: <code>CircuitConnections</code>,
+    <code>SupplyModel</code> and <code>SeriesUnit</code>, <code>SectionedWinding</code>, <code>Line</code> and
+    <code>GroundingSystem</code>. Each
+    carries the following:</p>
+    <ul>
+      <li>the base supply, booster or switching unit, and quench-protection circuit tabulated in
+      <a href="/power_convertor/plans/jt60sa-coil-circuit-model">jt60sa-coil-circuit-model</a> §2;</li>
+      <li>the 2023 filter and the as-built grounding from
+      <a href="/power_convertor/plans/jt60sa-power-supply-sources">jt60sa-power-supply-sources</a> §3.</li>
+    </ul>
+    <p>The booster is composed from its documented bridges (jt60sa-power-supply-sources §2) at design values.
+    The fitted booster model the coil-circuit plan's integrated run needs stays held by that plan's gate
+    g-jccm-1.</p>
+    <p>Done when:</p>
+    <ul>
+      <li>With capacitance off, the composed JT-60SA plant reproduces the stored results unchanged: the
+      coil-to-coil transfer functions of jt60sa-coil-circuit-model §5 (eight of nine pairs within 4–8 % of M/L)
+      and the 45 judged slow-current windows of §7.</li>
+      <li>With capacitance on, the same runs are reported beside them.</li>
+      <li>Negative control: exchanging two coils' layout records changes both coils' modes, and the test that
+      pins them fails.</li>
+    </ul>
+
+    <h2 id="s6">§6 — The studies call the shared model</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="8.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p>The machine assembly inside the study scripts is replaced by calls to the composed model. That covers
+    <code>scripts/iter/pf_switched_pulse.py</code>, <code>initiation_transient.py</code>,
+    <code>current_controllers.py</code>, <code>dummy_load_prediction.py</code> and, once it lands,
+    <code>integrated_simulation.py</code>, plus the JT-60SA replay and plant scripts. Each script keeps its
+    command line and its outputs.</p>
+<p>This section runs last. It follows §9, which gives the plant one owner, and the first stage of
+    <a href="/power_convertor/plans/iter-switched-terminal-transients#s6">iter-switched-terminal-transients §6</a>,
+    so it does not refactor scripts that run imports. Every study, <code>integrated_model.py</code> included, then
+    reads the plant from §9's owner, and the re-export §9 leaves in <code>current_controllers.py</code> is removed.</p>
+    <p>Done when:</p>
+    <ul>
+      <li>No study script defines a coil, winding, converter unit, line or passive structure of its own. An
+      import-graph test checks this.</li>
+      <li><code>tests/test_claims_register.py</code> passes, the frozen dummy-load JSON stays byte-identical, and
+      the whole suite passes with the same count.</li>
+      <li>Each script's line count is reported before and after.</li>
+<li>No study script, and no <code>src</code> module other than <code>nova_plant.py</code>, names a plant cache
+      path. The import-graph test checks this and covers <code>integrated_model.py</code>.</li>
+      <li>Negative control: a local winding definition added to a scratch copy of one script fails the
+      import-graph test.</li>
+    </ul>
+
+    <h2 id="s7">§7 — The correction-coil supplies</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="5.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+<p>Decision <code>iter-coverage</code> extends the model to every ITER coil supply. This section builds the correction-coil supplies through the owners §2 extends and the circuit factory §4 adds; §8 builds the TF supply. Their IDM values were looked up by the coordinator on 17 October 2026, and a node enters them in the IDM register with their citations.</p><ul><li><strong>Correction coils:</strong> nine independent circuits, three each at the top, side and bottom. Each feeds a pair of diametrically opposite coils in series and anti-series. Each converter is a 12-pulse, four-quadrant thyristor converter of four six-pulse bridges, rated ±10 kA. The on-load output is ±85 V for the top and bottom circuits and ±300 V for the side circuits (SRD-41, 28B6XQ v6.0, Table 2.2.6; Q3ZSRQ v1.1). There is no separate discharge unit: the converters discharge the coils, and on a converter fault the circuit resistance must give L/R ≤ 18 s (28B6XQ v6.0 §2.2.3.4.2). Each coil is 9–10 mH, and the terminal voltage to ground is at most 110 V (top and bottom) and 300 V (side) in operation (A7BSV3 v1.1, revision required).</li></ul><p>IDM is silent on the correction-coil busbar and feeder inductance and resistance. Those enter the register as stated assumptions. None is taken from DINA.</p><p>The correction coils are not axisymmetric. In nova's axisymmetric plant, an anti-series pair links no net flux with the PF and CS coils. Their circuits therefore couple to the plant only through ground, a stated assumption the record carries.</p><p>Done when:</p><ul><li>All nine correction-coil circuits build from the register through the same factory as §4's, and the factory refuses any parameter with no source.</li><li>For each circuit, the model predicts the frequency response (terminal impedance, and the transfer from each converter line to the coil terminals, to ground and across) and the switched response over one current ramp.</li><li>Each correction-coil circuit's fault decay meets L/R ≤ 18 s, or the record names by how much it misses.</li><li>Negative control: connecting one correction-coil pair in series rather than anti-series gives it a non-zero net mutual with PF6, so the axisymmetric decoupling the record assumes is a property of the anti-series connection and not of the code.</li></ul>
+
+    <h2 id="s8">§8 — The TF supply</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+<p>One 12-pulse, two-quadrant thyristor converter rated 68 kA drives the eighteen TF coils in series. Each coil's self-inductance is 349 mH; with the mutual coupling between the TF coils, the series string is 17.7 H, not 18 × 0.349 = 6.28 H. Both are SRD values, carried in the register as stated assumptions until their IDM page is located. Nine fast-discharge units sit between the nine coil pairs, and the SRD gives an equivalent L/R of 11 s (28B6XQ v6.0 §2.2.3.1). The converter gives ±160 V in normal operation and ±650 V for charge and discharge (Q69TXL v2.2 PDF 11, 27–28). §8's remaining work, the switched response over one current ramp, runs after §4's VS1 window, on the same companion integrator; §7 does not wait on it. The <a href="/power_convertor/research/iter-coil-supply-idm-register">IDM register</a> gives the TF voltage to ground as 1.0 kV nominal, 7.0 kV in fast discharge and 15.0 kV in a fault (22HLVN v1.0, Table 4). The circuit is built through the owners §2 extends and the factory §4 adds.</p><p>The coordinator settled the discharge configuration from 778SPD v1.0 on 18 October 2026.</p><ul><li><strong>Arrangement:</strong> nine fast-discharge units are interleaved in series with the nine coil pairs (p. 8). Each unit therefore sees one resistor's voltage, and the interleaving keeps the voltage to ground limited.</li><li><strong>Resistance:</strong> each resistor is 0.111 Ω at 20 °C, 0.999 Ω for all nine (pp. 29, 33).</li><li><strong>Peak voltage per unit:</strong> 7.5 kV at 20 °C without transients; 8.5 kV including the main-breaker transient; 10 kV including the pyrobreaker transient (pp. 10, 29).</li><li><strong>Heating:</strong> a discharge starting at 20 °C ends at 236 °C, with the resistance risen by a factor of 2.34 (p. 29). The end temperature must not exceed 300 °C.</li></ul><p>Each fast-discharge unit links one pair of TF coils, and its discharge depends on the resistor's temperature. The lead confirmed both on 18 October 2026. With the coils' 17.7 H, the 11 s equivalent time constant implies an equivalent resistance of about 1.61 Ω. That value lies between the resistors' initial 0.999 Ω and their final 2.34 × 0.999 ≈ 2.34 Ω at 236 °C. So the resistor heating accounts for the 11 s, with no missing inductance.</p><p>The method comes from the partner repository <code>~/Code/mctb</code>, its fast-discharge model of the TF cold tests (<code>docs/research/mctb-discharge-fit.html</code>). That model has three parts, and it reproduces all ten TF17 and TF07 discharges to 0.04–0.27 % rms:</p><ul><li>one inductance;</li><li>a dump-resistor law R<sub>F</sub> = R<sub>F0</sub> + k<sub>F</sub>E, linear in the absorbed energy and adiabatic during a discharge, with AISI 304's temperature coefficient;</li><li>one passive coupled mode in each coil, with k² = 0.80 and τ₂ = 0.49 s, which drops the current by 0.68 % within half a second.</li></ul><p>What transfers to the operational circuit is the method and the coil's passive mode, because TF17 and TF07 are ITER TF coils. What does not transfer is the cold-test resistor: a dedicated 5.5 mΩ unit discharging one coil with τ ≈ 60 s. The operational resistor law is set from 778SPD instead: 0.111 Ω at 20 °C, rising 2.34 times by the end of a discharge, at 236 °C.</p><p>Done when:</p><ul><li>The TF circuit builds from the register through §4's factory, with the nine interleaved units, 0.111 Ω each, cited to 778SPD.</li><li>The model predicts the TF terminal impedance, the converter-line transfer to the coil terminals, to ground and across, and the switched response over one current ramp.</li><li>Each unit's resistor follows the energy law above, with R<sub>F0</sub> = 0.111 Ω at 20 °C and k<sub>F</sub> set so the resistance reaches 2.34 times its initial value at the energy one unit absorbs in a full 68 kA discharge. Each coil carries the passive mode measured on TF17 and TF07. The discharge reproduces 778SPD's 11 s equivalent time constant within 5 %, with τ taken as 778SPD defines it: the current-squared equivalent τ<sub>eq</sub> = 2∫I²dt / I<sub>0</sub>², which equals L/R for a constant resistance (778SPD v1.0 pp. 10, 29). The record also reports mctb's measure, a single exponential fitted from 80 % to 10 % of the starting current, and states why the two differ: the energy-linear resistor makes the decay non-exponential. Beside it, the record gives the constant-resistance decays at 0.999 Ω (about 17.7 s) and at 2.34 Ω (about 7.6 s), which bracket the result.</li><li>The peak voltage across each unit stays within 7.5 kV without transients, and within 8.5 kV and 10 kV with the breaker transients the model carries. Any excess is named.</li><li>Negative control: with the discharge units bypassed, the current decays only through the converter and the coil resistance, with a time constant at least ten times longer than 11 s. That shows the gate measures the discharge units and not the converter.</li></ul>
+
+    <h2 id="s9">§9 — One plant owner, on a jointly passive plant</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<p>The coupled ITER plant every study reads is pinned in one constant, <code>NOVA_PLANT_CACHE</code>, defined in <code>scripts/iter/current_controllers.py</code> and imported by about a dozen scripts. That plant (key <code>28148563521d92a2198b</code>) does not store positive energy. Its joint coil and passive linkage has two negative directions, VSU −3.84×10<sup>−8</sup> H and VSL −3.25×10<sup>−8</sup> H, from the eight VS3 steel jackets (§4, <code>9c654e94</code>). On it, the analytic arm of iter-switched-terminal-transients §6 grows, and its energy account closes only to 5.2 %. A cold build does not repair it, because nova's linkage code is unchanged. The repair is nova's iter-passive-plasma-circuit §7, which issues a new 105069/3 plant entry and key.</p>
+<p>This section moves the plant source into <code>src/power_convertor/nova_plant.py</code>, re-exports it as <code>current_controllers.NOVA_PLANT_CACHE</code> so every existing importer follows, and adopts nova's new key there. It is held until nova's §7 lands, and it runs before the first stage of <a href="/power_convertor/plans/iter-switched-terminal-transients#s6">iter-switched-terminal-transients §6</a> resumes.</p>
+<p>Done when:</p>
+<ul>
+<li><code>nova_plant.py</code> is the one place that names the plant entry, and <code>current_controllers.NOVA_PLANT_CACHE</code> is read from it.</li>
+<li>On the adopted plant, the joint coil and passive linkage S = L − M<sup>T</sup>M has no negative eigenvalue, every coil's bare inductance is positive, and the averaged linearised spectrum of the thirteen composed supplies has no positive rate. Negative control: the old pinned plant fails the same assertions.</li>
+<li>Every composed-circuit pin measured on the old plant is measured again on the new one, and the record lists each with its move. A move beyond 1 % is reported with its cause and never fitted.</li>
+</ul>
+
+    <h2 id="s10">§10 — The switched path takes the full plasma source</h2>
+<section data-reckon="section" data-id="s10" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><code>plasma_input_matrix(plant)</code> in <code>nova_plant.py</code> gives the switched path a plasma input on the coil ports only: −pinv(L<sub>c</sub>), with zeros on every passive mode. <code>into_switched</code> feeds <code>plant.plasma_rate</code>, one column per coil, through it. A disruption drives every circuit, the passive structure included, so <a href="/power_convertor/plans/coil-supply-report-rebuild#s6">coil-supply-report-rebuild §6</a>, a fast-discharge trip followed by a disruption, needs the plasma flux on every coil and passive mode. <code>current_control.coupled_plant</code> closed the same gap behind a <code>full_source</code> option (<code>846ac2e3</code>). This section adds that option to the switched path as an opt-in. It runs on §9's plant, because −L<sup>−1</sup> through today's indefinite joint linkage would grow.</p>
+<p>Done when:</p>
+<ul>
+<li><code>into_switched(..., full_source=True)</code> takes a plasma flux rate on every coil and passive mode, with the input −L<sup>−1</sup> through the joint coil and passive linkage.</li>
+<li>With the option off, the input matrix is unchanged bit for bit and the existing switched tests pass unchanged.</li>
+<li>Positive control: a flux step on the passive modes alone moves the coil currents through the mutuals, as an analytic two-circuit case predicts.</li>
+<li>Negative control: with the coil-to-passive mutual removed, the same step leaves the coil currents unmoved, so the test measures the coupling.</li>
+</ul>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="iter-coverage" data-choice="add-correction-and-tf" data-by="Simon McIntosh" data-when="2026-10-17">
+    <p class="r-dec-q">Which ITER supplies does the shared model cover?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="integrated-thirteen">The thirteen supplies the integrated model drives: CS, PF1–PF6, VS1, VS3</button>
+      <button class="r-opt chosen" data-value="add-correction-and-tf">Those thirteen, plus the correction-coil supplies and the TF supply</button>
+      </p>
+    <p class="r-dec-rat">The lead asked on 17 October 2026 for models that predict the response of all ITER power converters and their coils, the VS1 line included. §4 builds the thirteen supplies the integrated run and the presentation results rest on. §7 builds the correction-coil supplies and §8 the TF supply, both after §4 because they call its circuit factory, and both from IDM values. None of their values is taken from DINA.</p>
+    </div>
+<div class="r-dec" data-key="large-plant-propagator" data-choice="companion-cached" data-by="reckon-build" data-when="2026-10-19" data-sections="s4" data-recommended="companion-cached" data-recommended-by="exact-integrator-vs1-speed-2">
+    <p class="r-dec-q">How the exact integrator propagates the large plants</p>
+    <p class="r-dec-ctx">&lt;p&gt;The exact integrator forms a dense modal basis for every new switch state. On the 2,881-state composed VS1 circuit and the 120 ms PF2 windows, node &lt;code&gt;exact-integrator-vs1-speed-2&lt;/code&gt; profiled that per-state decomposition as the binding cost, not gate callbacks or caching. Its measurements show a rank-one modal update would not close the gap.&lt;/p&gt;</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="companion-cached">The companion integrator with its port factor cache for the large plants, its accuracy shown by step halving; the exact modal path stays for small circuits</button>
+      <button class="r-opt" data-value="sparse-krylov">Krylov exponential action on the sparse state for large plants, with the energy account on that path (measured, and not pursued: 1.05e-4 from the modal eigenbasis, and no operator fits the batch)</button>
+      <button class="r-opt" data-value="rank-one-modal">Sherman–Morrison rank-one update of the modal form per switch change (insufficient on the measured numbers)</button>
+      </p>
+    <p class="r-dec-rat">Revised 19 October after node exact-integrator-vs1-speed-2 measured the Krylov action. Substepped, it converges to itself (2e-6 to 1e-5) but sits 1.05e-4 from the modal eigenbasis it would be gated against, and no exact-path operator fits a 1 ms VS1 window inside 570 s (modal about 1,700 s, dense Krylov about 980 s). The same node&#x27;s port factor cache takes the companion integrator&#x27;s 1 ms VS1 window from 489 s to 34.8 s with the same switching events. VS1 windows therefore run on the cached companion integrator, with step halving as the accuracy evidence, and the Krylov path is not pursued further. A matrix-free backward-Euler operator is recorded in the node&#x27;s evidence as the route if it is ever needed. Small circuits keep the exact modal path and its energy balance.</p>
+    </div>
+<div class="r-dec" data-key="busbar-route-length" data-choice="170-480 m range" data-by="Simon McIntosh" data-when="2026-10-22T04:55:13+00:00">
+    <p class="r-dec-q">Which DC busbar route length does the register carry for the PF/CS feeders the composed circuits are built on?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="170-480 m range">170-480 m range</button>
+      <button class="r-opt" data-value="170 m single value">170 m single value</button>
+      <button class="r-opt" data-value="30 m">30 m</button>
+      </p>
+    <p class="r-dec-rat">IDM prints no per-circuit route length. The only IDM-derived figure is 22HXXE&#x27;s busbar leakage bound, which implies 170–480 m of busbar per circuit (5×10⁻⁷ S/m against 4.2–12 kΩ). 170 m is a lower bound, because that leakage figure is pessimistic. The 30 m assumption sat below the only IDM-derived figure, and it smoothed away the coil-end reflection the insertion pins rest on: PF1&#x27;s 1 µs across-gain is 1.267 at 30 m, 1.373 at 170 m and 1.555 at 480 m. The register carries the range as a stated assumption, and the composed insertion runs at both ends, so its results are a band.</p>
+    </div>
+<div class="r-dec" data-key="vs1-step-criterion" data-choice="short windows at peaks" data-by="Simon McIntosh" data-when="2026-10-22T08:35:56+00:00">
+    <p class="r-dec-q">How does §4 settle VS1&#x27;s step criterion, now that the whole 4 ms window does not converge at 0.125 µs?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="short windows at peaks">short windows at peaks</button>
+      <button class="r-opt" data-value="run 0.0625 us first">run 0.0625 us first</button>
+      <button class="r-opt" data-value="carry a bounded limit">carry a bounded limit</button>
+      </p>
+    <p class="r-dec-rat">At 0.125 µs only PF3&#x27;s first turn converges. The connection points and terminal reverse because the 2.7–5.4 MHz line ring is under-resolved, and each full-window halving costs about four times the last, so brute force to about 0.01 µs is out of reach. Each peak is formed by one switching event. So step-halve a short window around each peak down to about 0.01 µs, with every arm started from one exact state at a shared grid instant. The full 4 ms window stays the stability evidence.</p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-scsm-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-17" data-recommends-skill="/reckon-build shared-coil-supply-model §2" data-resolved-at="2026-10-17T23:57:05+00:00" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Build the shared classes first; this consolidation leads the project&#x27;s work</h4>
+    <div class="r-fu-body"><p>The lead set this consolidation as the first priority on 17 October 2026. The order is §2, then §3. §4 and §5 follow §3 in parallel, because they write different circuits, and §6 comes last.</p><p>§2 runs as two nodes. The first takes the windings, coils and plant: <code>coil_windings</code>, <code>coil_coupling</code>, <code>passive_structure</code>, <code>coupled_circuit</code>, <code>nova_plant</code> and <code>circuit</code>. No live node writes those, so it starts at once. The second takes the converters, firing laws and lines: <code>converter_units</code>, <code>bridge</code>, <code>commutation</code> and <code>busbar_lines</code>. It starts when the transients stray sweep releases those paths. That sweep and the integrated-run assembly finish on today's code, and §6 here then moves them onto the shared model.</p><p>jt60sa-coil-circuit-model §16 waits on §3 through its gate.</p></div>
+    <pre class="r-fu-prompt">/reckon-build shared-coil-supply-model §2</pre>
+    <p class="r-fu-outcome">§2's first node landed (merged at 84ebf330; whole suite 1053 passed, 7 skipped of 1060), and its second is in review. §3's first attempt showed the section is several fences of work, so it is split. Superseded by f-scsm-002, which carries the order with §7 placed.</p>
+    </article>
+<article class="r-fu" data-id="f-scsm-002" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-18T00:05:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §3 as four nodes, then §4 and §5 in parallel, §7 after §4, and §6 last</h4>
+    <div class="r-fu-body"><p>§3 runs as four nodes in order:</p><ol><li>the finite-kernel section matrices for every ITER PF and CS coil;</li><li>section ports on <code>NovaPlant</code> built from those matrices;</li><li>the four quantitative gates as evidence;</li><li>retiring <code>add_coupled_windings</code> and <code>add_prescribed_winding_sources</code> onto the ports, and carrying the damping.</li></ol><p>§4 and §5 follow §3 in parallel, because they write different circuits. §7 follows §4, because it calls §4's circuit factory. jt60sa-coil-circuit-model §16 waits on §3 through its gate. §6 comes last, and moves the parked integrated run onto the shared model.</p></div>
+    <pre class="r-fu-prompt">/reckon-build shared-coil-supply-model §3</pre>
+    </article>
+<article class="r-fu" data-id="f-scsm-vs3-anti-series" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-written-by="reckon-plot" data-written-at="2026-10-19" data-recommends-skill="/reckon-build shared-coil-supply-model §4" data-resolved-at="2026-10-20T05:38:51+00:00" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">§4: compose VS3 as one anti-series coil pair, not two independent branches (low priority)</h4>
+    <div class="r-fu-body"><p>The register builds VS3 as two independent converter-to-coil loops (<code>circuit_connections.topology</code> “independent”, merged at <code>ea8cc214</code>). EFXUVH v2.1 gives one coil circuit instead: VS3U and VS3L “connected in an anti-series ‘saddle’ arrangement” (PDF 11, 111), with two converters in push-pull “connected to the 4-terminal VS3 coil circuit” that “shall always be operated in unison” (PDF 64); converter 1 is associated with VS3U and converter 2 with VS3L (PDF 88). The lead confirmed on 19 October 2026 that the loops are not independent. The register's “each branch two 1.2 kV cells” double-counts: the two cells are the two converters.</p><p>Recompose VS3 through the existing <code>anti_series</code> topology with the two converters in series, each one 1.2 kV-link H-bridge, and replace the independence assertions in <code>tests/test_circuit_factory.py</code>, <code>tests/test_vs1_composed.py</code> and <code>tests/test_converter_units.py</code>. Read one-line EEFCAW v2.3 first for the terminal-level hookup. Priority is low: the VS3 coils are not superconducting. The supply overview and IGBT figures already draw the anti-series pair.</p></div>
+    <pre class="r-fu-prompt">/reckon-build shared-coil-supply-model §4</pre>
+    <p class="r-fu-outcome"><p>Done (merged <code>26080d52</code>): VS3 composed as one anti-series loop with both converters in series, per the lead's 20 October ruling.</p></p>
+    </article>
+<article class="r-fu" data-id="f-scsm-003" data-status="open" data-written-by="power-convertor-ac" data-written-at="2026-10-22" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Pin the TF cold tests&#x27; confirmations and bounds on the TF supply and in the claims register</h4>
+    <div class="r-fu-body"><p>The TF cold-test validation has closed. Its synthesis (<a href="/power_convertor/research/tf-cold-test-synthesis"><code>docs/research/tf-cold-test-synthesis.html</code></a>) gives the TF supply measured values that its composed model should reproduce as pins in the model claims register (<code>docs/research/iter-model-claims-register.html</code>). The register's owning plan, iter-integrated-model-assurance, is done, so the pins land with this plan's TF supply.</p><ul><li><strong>Confirmations.</strong> The conductor-coupling passive mode: posterior k² 0.792 [0.765, 0.817] and τ<sub>2</sub> 0.506 s [0.484, 0.528], which contain the model's (0.80, 0.49 s). The resistor law: linear, with slope 1.826 ± 0.132 µΩ/MJ. The cold-test reproduction in <code>tf_fast_discharge.py</code>, rebuilt on these values, moves by 0.033 s inside its 0.5 s tolerance.</li><li><strong>Bounds.</strong> Terminal-to-ground voltage V/2 + |V<sub>neutral</sub>|, with a measured neutral offset of 0.83–16.23 V and up to 96.6 V at 30 kA. Commutation current zero about 0.1 ms early in the model. Commutation peak at a median absolute error of about 10 %.</li><li><strong>FDR inductance.</strong> 7LDTQA is an upper estimate. Scaled per section, TF sits at 0.07–0.23 of it in the residual regime and 0.52–0.80 in the remagnetisation regime, and CS1U at 0.73–0.91.</li></ul></div>
+    <pre class="r-fu-prompt">/reckon-build shared-coil-supply-model §8</pre>
+    </article>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="_top" data-id="c-s4-status-1021" data-who="reckon-build" data-when="">
+    <div class="r-comment-body"><p>§4 status on 21 October, for gate g-istt-3.</p><p>The composition the gate measures has landed:</p><ul><li>all thirteen supplies build from the register through <code>build_supply_circuit</code>, with the refusal of any parameter without a source (VS3 as one anti-series loop at 26080d52; interunit phase at 99c0e871 and b02cd3c4);</li><li>section-resolved ports exist for every PF and CS coil (<code>SectionedPlant</code>; PF1–PF6 in one 1,436-section plant; the VS1 set in 712 sections), and the section gates pass;</li><li>VS1 is whole with its line and runs on the companion integrator, with the bracket fix, exact resume and source breakpoints merged;</li><li>the single-circuit pins are reproduced or reported with cause, and the averaged adapter's refusal is diagnosed (9c654e94).</li></ul><p>Two done-when items keep the section open:</p><ul><li>VS1's first-turn step criterion. At 1 µs, halving the step moves the PF2, PF4 and PF5 first-turn peaks by 1.1–3.1 %, and the 0.125 µs rung is unrun. The composed window itself is stable on the merged solver (ec989853).</li><li>The PF1 and CS3L insertion pins, which saturate without the busbar-reflected term and are reported as a model gap.</li></ul><p>VS3's section resolution is not confirmed; its terminal behaviour is composed. <a href="/power_convertor/evidence/fragments/shared-coil-supply-model/vs1-first-turn-convergence.html">VS1 evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261017T224859591537-review-of-shared-classes-windings-plant-e32ae463c927" data-who="reckon-build" data-when="2026-10-17T22:57:05.637Z">
+    <div class="r-comment-body"><p>review record for run r-20261017T203919289629-shared-classes-windings-plant at head e32ae463c9271dcd87475a37b767a7d128dbc844 (base 93d4d681b05efc094fdf13f919af5261d8e7521c): scores goal_fidelity 19, evidence 16, scope_discipline 20, durability 14, fit 18, reuse 19 (total 106), added_failure_count 0, three follow-on findings and no blocking finding; the record is stored at both declared write paths under review-records/ of the reviewed run.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261017T230659482755-review-of-shared-classes-converters-lines-5666ae7a94dd" data-who="reckon-build" data-when="2026-10-17T23:20:36.304Z">
+    <div class="r-comment-body"><p>Reviewed r-20261017T215950287664-shared-classes-converters-lines at base f91fc96b / head 5666ae7a.
+Verdict: the shared firing gate window (converter_units.gate_window), the Line owner (busbar_lines.Line),
+the commutation.referred_inductance reduction, the removal of the discarded config.build call and the four
+units built through supply.SeriesUnit are all landed, tested and green (whole suite 1065 passed/0 failed at
+head against 1034 passed/7 skipped at base; the four-law negative control red as declared). One blocking
+finding: the node brief's item 1 names _stamp_jt60sa_bridge as re-stamping the bridge add_unit builds
+(plan section 2 lists "one bridge stamp" among the divergences to remove) and it is neither merged nor
+recorded. Three follow-on findings: pf_budget still writes the per-unit reduction inline, the item-3
+demand-from-rating change has no test that reddens on regression, and the manifest's two focused counts
+name no log on disk. Scores: goal_fidelity 14, evidence 17, scope_discipline 20, durability 15, fit 16,
+reuse 14; total 96.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261017T203919289629-shared-classes-windings-plant" data-who="reckon-build" data-when="2026-10-17T22:47:56Z">
+    <div class="r-comment-body"><p>both machines' winding and coil owners now read a per-coil layout record instead of a name rule — a CoilLayout per coil for ITER CS1U-CS3L/PF1-PF6/VSU-VSL and JT-60SA EF1-EF6/CS1-CS4, read by geometry_from_element, geometry_from_coil, resolve_terminal_unit, pf_turn_layout and both capacitance budgets, with an unrecorded coil refused by name; the screened lumped impedance has one owner in PassiveLoopModel.screening, called by both coil_coupling.terminal_impedance and loaded_pickup.terminal_ratio; JT-60SA's coil list has one owner in circuit.COILS; a passive structure may carry unlabelled filaments and averaged_plant no longer fabricates vessel/cryostat labels. tests/test_shared_coil.py (5 tests) builds ITER PF6 and JT-60SA EF4 through the same WindingGeometry and SectionedWinding owners from their records and checks each one's first terminal section against the share its record states. The landing record is at docs/evidence/fragments/shared-coil-supply-model/shared-classes-windings-plant.html (committed f2c65155).</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261018T002506393458-review-of-shared-classes-converters-lines-fdafc993b306" data-who="reckon-build" data-when="2026-10-18T00:37:48.476Z">
+    <div class="r-comment-body"><p>re-review stored: 104/120, no blocking finding; four follow-ons carried to s4</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261017T215950287664-shared-classes-converters-lines" data-who="reckon-build" data-when="2026-10-18T00:07:26Z">
+    <div class="r-comment-body"><p>Both machines' converter units, firing laws and lines build from one set of owners.
+One phase-locked gate window (converter_units.gate_window) gates all four laws; one
+bridge stamp (_stamp_bridge_valves) stamps every thyristor bridge on both machines and
+_stamp_jt60sa_bridge is deleted; supply.SeriesUnit carries its firing law, protection and
+network, and ConverterNetwork stamps any SeriesUnit; busbar_lines.Line holds the
+per-metre parameters, modal parameters, surge impedance and travel time; one
+commutation reduction (referred_inductance) serves the stored budgets and the CS bridge
+ohms; a new CS unit starts at its own 45 kA rating.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-18T01:40:00Z">
+    <div class="r-comment-body"><p>§2 closed. Both machines build from one set of owners. Windings and plant read per-coil layout records (merged at <code>84ebf330</code>). Converter units, firing laws and lines share one gate window, one bridge stamp, <code>SeriesUnit</code> and a <code>Line</code> class (merged at <code>28316b7c</code>). The whole suite at the merged head passes 1,063 of 1,070 with 7 skipped and nothing failing. Three follow-ons carry to §4. <a href="/power_convertor/evidence/archive/shared-coil-supply-model-landed.html#shared-classes">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T002607499700-review-of-plant-section-ports-9daf6ddd44c7" data-who="reckon-build" data-when="2026-10-18T00:31:14.724Z">
+    <div class="r-comment-body"><p>reviewed run r-20261017T234454153847-plant-section-ports at reviewed_base_sha 6c355e9a257e2080ffb96592bdd2adaac0cf4c4a, reviewed_head_sha 9daf6ddd44c76b1adf6c3bb06bdcaa255963be53; scores goal_fidelity 3, evidence 6, scope_discipline 18, durability 14, fit 17, reuse 17 (total 75); one blocking finding (the node goal is absent — section_linkage is added with no production caller and NovaPlant is unchanged) and three follow-ons (a non-falsifiable sum assertion, an over-claimed test name, and an evidence fragment that reads a passed first-mode gate that was never run)</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T021453868237-review-of-plant-section-ports-34e256daf5f6" data-who="reckon-build" data-when="2026-10-18T02:24:41.312Z">
+    <div class="r-comment-body"><p>The reviewed node (§3 section-matrices, run r-20261017T234454153847-plant-section-ports) built every ITER PF and CS coil's section inductance matrix from nova's finite rectangular kernel and wired it into build_winding, reconciling on all twelve coils to within 0.0067% of nova's whole-coil values against a 0.5% gate; I scored goal_fidelity 18, evidence 16, scope_discipline 13, durability 16, fit 17, reuse 5, with four follow-on findings (two out-of-scope test files, a cache-key test that cannot catch a stale placement label, section_coil_linkage duplicating section_mutuals, and a no-regression arm not fully at head).</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261017T234454153847-plant-section-ports" data-who="reckon-build" data-when="2026-10-18T02:13:39Z">
+    <div class="r-comment-body"><p>every ITER PF and CS coil takes its section inductance matrix from nova's finite rectangular kernel through coil_windings.section_linkage — one thick rectangle per section, sized by its turn count so the current density is uniform and the sections tile the pack, not scaled to any input — and the placement rule is now an input to the matrix cache key, so a changed rule cannot be served from a warm store; measured on ITER's real machine description, the twelve coils' section sums reproduce nova's independently exported whole-coil inductance within 0.0067% and their summed section-to-coil mutuals reproduce nova's coil-to-coil mutuals within 0.013% against a 0.5% gate, with a displaced section reddening the reconciliation at 6.57%</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T035434506931-review-of-plant-section-ports-core-31ef45196031" data-who="reckon-build" data-when="2026-10-18T04:03:27.315Z">
+    <div class="r-comment-body"><p>complete — independent review of run r-20261018T023115153416-plant-section-ports-core (base 1056ab38, head 31ef4519) stored at both declared review-record paths, scoring all six dimensions in 0..20 (total 92) with one blocking finding and five follow-ons; the record names reviewed_base_sha and reviewed_head_sha and carries added_failure_count 0 / added_failure_ids [] derived from the reviewed run's own gate logs.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T044045255401-review-of-plant-section-ports-core-cae9f5e9502e" data-who="reckon-build" data-when="2026-10-18T04:48:58.153Z">
+    <div class="r-comment-body"><p>complete — independent review of run r-20261018T023115153416-plant-section-ports-core at reviewed_base_sha 1056ab38f482a86de7bfcb7c2702a309e657079f and reviewed_head_sha cae9f5e9502e65794e295daffd97e88c24f2811f, stored at both declared review-record paths as a parsed record scoring goal_fidelity 16, evidence 10, scope_discipline 13, durability 15, fit 16, reuse 5 (total 75), with two blocking findings and seven follow-ons. The blocking findings are that the no-regression arm leaves tests/test_pf_switched_pulse.py unmeasured (logs/regress-b3b.log holds no summary or EXIT) and that chunk A ran at REVISION=31ef4519 rather than the reviewed head, so the head commit's refactor of coil_windings.section_linkage and section_coil_linkage onto sections_placed() and its relaxed build_winding signature are covered by no completed regression arm.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T055349412592-review-of-plant-section-ports-core-d77ca582a11b" data-who="reckon-build" data-when="2026-10-18T06:06:03.242Z">
+    <div class="r-comment-body"><p>complete — independent review of run r-20261018T023115153416-plant-section-ports-core at reviewed_base_sha 1056ab38f482a86de7bfcb7c2702a309e657079f and reviewed_head_sha d77ca582a11b86a7f9e979987822ef4a007344c5, stored at both declared review-record paths as a parsed record scoring goal_fidelity 15, evidence 17, scope_discipline 19, durability 14, fit 16, reuse 5 (total 86), with no blocking finding and eight follow-ons; the record carries added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own baseline_suite and after_suite gate logs</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T023115153416-plant-section-ports-core" data-who="reckon-build" data-when="2026-10-18T05:35:01Z">
+    <div class="r-comment-body"><p>complete — NovaPlant gains a section-resolved form. sectioned_plant refines the terminal plant to section resolution for ITER PF and CS coils whose layout places their sections: same-coil blocks from each winding's section_linkage, cross-coil blocks from _cross_section_linkage over the same finite kernel with nothing normalised to a terminal value, and section resistance and section-to-passive coupling taken from a coupled plant's own section level whenever it carries one. The reduction S exposes section nodes, into_switched registers the section multiport and stamps the capacitance through the winding's own _nodes and _add_capacitances so a study reads any internal section voltage as a node voltage, and the terminal-only NovaPlant and averaged_plant are unchanged. coil_windings.py carries no change from this node.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T093212108450-review-of-section-retirement-damping-3262f6efcb4c" data-who="reckon-build" data-when="2026-10-18T09:38:25Z">
+    <div class="r-comment-body"><p>Parsed independent review of source run r-20261018T061333188738-section-retirement-damping at base 60b7034ae4acb231c4bdd7553a50f3c4fe06b3d0 and head 3262f6efcb4c510ad6438bd39886eae5145925ef stored at both declared review-record paths; total 66/120, three blocking and three follow-on findings.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T095517895829-review-of-section-retirement-damping-78d1aea82cb6" data-who="reckon-build" data-when="2026-10-18T09:59:44Z">
+    <div class="r-comment-body"><p>Parsed independent review of base 60b7034ae4acb231c4bdd7553a50f3c4fe06b3d0 and head 78d1aea82cb6b637cbbc5f6678da251f48b78635, total 70/120, two blocking and three follow-on findings, added failure count zero.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T061333188738-section-retirement-damping" data-who="reckon-build" data-when="2026-10-18T09:49:11Z">
+    <div class="r-comment-body"><p>Unsupported Q-target section loss withdrawn; shared ports and measurement instrument retained. Undamped PF6 50 ns/1 ms shifts 0.094% peak and 1.092% slew; PF1 shifts 0.043% and 0.236%; PF6 modes 255.8 Hz–84.3 kHz. Paired original-base/head waveform tests each collected 28, passed 27 and failed the same PF2 tap-division ID, so added failures = 0.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T102610001692-review-of-jt60sa-sectioned-plant-97332ac8293f" data-who="reckon-build" data-when="2026-10-18T10:33:08Z">
+    <div class="r-comment-body"><p>Parsed independent review of base b72e8f1c6f25e3ce7f39c7aab0ffdcb653626bb4 and head 97332ac8293f5d2d596c0c8aad69d4fd6e82dd06 stored at both declared paths; total 79/120, two blocking and six follow-on findings, with added failures unmeasured because the source baseline_suite is empty.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-s3-damping-prior" data-who="reckon-build" data-when="2026-10-18T11:12:00Z">
+    <div class="r-comment-body"><p><strong>How the windings are damped (lead direction, 18 October 2026).</strong> The model's damping is the best data-augmented estimate, not a first-principles one alone. A Q, or a loss scale, may enter the model, but only with a prior: a value, an interval and a source. The physical loss model supplies the prior: the earth unit, the ground screen, the dielectric and the conductor coupling, cited per mechanism in <code>winding_losses.WindingLosses</code>. Data update it:</p><ul><li>JT-60SA's measured coil-to-coil transfer functions near the winding modes (jt60sa-coil-circuit-model §16 fits an installed-damping interval);</li><li>the PF dummy-load recordings;</li><li>any stored-coil frequency sweep, which counts only as a calibration of the cold state.</li></ul><p>Numerical damping with no prior, placed only to make a solver converge, stays ruled out. The calibration acts as scale factors on the physical mechanisms, each with its prior interval, plus at most one residual modal-Q term with its own prior for losses the mechanisms do not carry. Code refuses a bare Q, as the circuit factory refuses an unsourced parameter. Every result reports the prior, the updated value and how far the data moved it.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T112850288620-review-of-exact-exponential-integrator-b2080148f4ed" data-who="reckon-build" data-when="2026-10-18T11:39:37Z">
+    <div class="r-comment-body"><p>parsed review record for base 06260776d5ab91e7a5087821fdd96624b7955895 and head b2080148f4edeeb8b203162ba65877a6ce2a39e1 at both declared review-record paths; 6 scores, 6 checklist items, 8 findings, added_failure_count 0</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T120532827698-review-of-sectioned-plant-physical-losses-77e221beb6f1" data-who="reckon-build" data-when="2026-10-18T12:13:27Z">
+    <div class="r-comment-body"><p>Independent review of source base 96ebac613f1a3add747575c43b300b6d73f092c4 and head 77e221beb6f1646a8932aec8b46547315778129d stored at both declared review-record paths; 6 scores total 49/120, 8 blocking and 4 follow-on findings, added failures unmeasured because source suite receipts are absent.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T121637490873-review-of-exact-exponential-integrator-0926b24a99c7" data-who="reckon-build" data-when="2026-10-18T12:23:33Z">
+    <div class="r-comment-body"><p>parsed review of 06260776d5ab91e7a5087821fdd96624b7955895..0926b24a99c7443b970265e3a25851f48949fdd6 stored at both declared review-record paths; six scores total 81/120, six checklist items, six findings, added_failure_count 0</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T124834125875-review-of-sectioned-plant-physical-losses-a76d2ca5af88" data-who="reckon-build" data-when="2026-10-18T12:56:42Z">
+    <div class="r-comment-body"><p>parsed independent review of 665dd4cf16b932c6bbd2a5c60bdad5154c7805af..a76d2ca5af88d0cf8859eb09f7d1c0e65d4f1bd4 stored at both declared paths; six scores total 66/120, three blocking and three follow-on findings, added failures 0.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T130151055222-review-of-exact-exponential-integrator-6c600039a2fe" data-who="reckon-build" data-when="2026-10-18T13:09:18Z">
+    <div class="r-comment-body"><p>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T090245419306-exact-exponential-integrator/review-records/r-20261018T090245419306-exact-exponential-integrator.at-6c600039a2fe65f15471cbb810329f08c52d2c78.json — parsed independent review, 77/120, two blocking and four follow-on findings</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T100214531402-sectioned-plant-physical-losses" data-who="reckon-build" data-when="2026-10-18T13:11:28Z">
+    <div class="r-comment-body"><p>cited cold installed winding losses composed into SectionedPlant in both forms; installed-cold first-mode Q PF1 1.35/1.20, PF6 0.81/0.78, CS3U 0.92/0.90; PF6 step convergence miss recorded as a finding</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T140245925309-review-of-one-winding-builder-ecdd7039e057" data-who="reckon-build" data-when="2026-10-18T14:08:40Z">
+    <div class="r-comment-body"><p>Parsed independent review of source base 73fe98de2c0b1cfcf6daf714805ba9cc4a6ae481 and head ecdd7039e05748ce4291e3de4e868ac3c9c1fc20 stored at both declared review-record paths; six dimensions total 90/120, two blocking and four follow-on findings, one added failure in paired base/head logs.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T144305546257-review-of-sectioned-plant-multicoil-e03e3677d8ef" data-who="reckon-build" data-when="2026-10-18T14:50:59Z">
+    <div class="r-comment-body"><p>Parsed independent review stored at both declared review-record paths for 73fe98de2c0b1cfcf6daf714805ba9cc4a6ae481..e03e3677d8efc642f7e49f11378cd0cd3ace18dd; six scores total 78/120, one blocking and five follow-on findings, zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T150025846543-review-of-exact-exponential-integrator-c179cfe2d708" data-who="reckon-build" data-when="2026-10-18T15:18:42.904Z">
+    <div class="r-comment-body"><p>review record for r-20261018T090245419306-exact-exponential-integrator at reviewed_base_sha 06260776d5ab91e7a5087821fdd96624b7955895 and reviewed_head_sha c179cfe2d7088996a178f426253f59a039d1ffa6, stored at both declared review-record paths, scoring goal_fidelity 15, evidence 7, scope_discipline 13, durability 13, fit 15, reuse 15 (total 78/120), with three blocking and seven follow-on findings</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T151317906337-review-of-one-winding-builder-97e3eb73d89f" data-who="reckon-build" data-when="2026-10-18T15:21:53Z">
+    <div class="r-comment-body"><p>Parsed independent review for 73fe98de2c0b1cfcf6daf714805ba9cc4a6ae481..97e3eb73d89f1ac3cceb219794261f348e8c1bfb stored at both declared review-record paths; 6 scores total 94/120, 6 checklist items, 7 call sites, 2 blocking and 4 follow-on findings, added failures 0.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T131258383921-one-winding-builder" data-who="reckon-build" data-when="2026-10-18T15:05:51Z">
+    <div class="r-comment-body"><p>Library build_winding is the single builder; the converged counts per family are stated (PF1 32, PF2 30, PF3 32, PF4 88, PF5 32, PF6 36, ITER CS 168, JT-60SA CS 112, EF and VS at layout counts) and opt-in via default_sections, PF6 195.7 Hz and PF1 430.7 Hz within 1 % of the turn-resolved modes, the tap-departure test re-derived to the winding's own L and C prediction (0.25-1.25 times), CS mode 3 stays 8.5 % low at the finest buildable count.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T160608466762-review-of-exact-exponential-integrator-2431e8614123" data-who="reckon-build" data-when="2026-10-18T16:13:56Z">
+    <div class="r-comment-body"><p>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T090245419306-exact-exponential-integrator/review-records/r-20261018T090245419306-exact-exponential-integrator.at-2431e8614123c76aa29ab4b9533456bcd4b7b805.json — parsed independent review of 06260776d5ab91e7a5087821fdd96624b7955895..2431e8614123c76aa29ab4b9533456bcd4b7b805, six scores totaling 83/120, two blocking and five follow-on findings, source added failures 0</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T090245419306-exact-exponential-integrator" data-who="reckon-build" data-when="2026-10-18T16:05:32Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/shared-coil-supply-model/exact-exponential-integrator.html</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T162803839885-review-of-suite-at-merged-head-7a98cadb5773" data-who="reckon-build" data-when="2026-10-18T16:34:12Z">
+    <div class="r-comment-body"><p>Parsed independent review of 4885381caa9936602b694079c269f35fc10627b6..7a98cadb5773afd5f3da162250fba2f7df8e7a8e stored at both declared paths; six scores total 98/120, six checklist items, three findings including one blocking; official added-failure delta unmeasured because the reviewed manifest has no paired suite arms, while six errors are observed in the after-suite summary.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T162729896753-review-of-jt60sa-sectioned-plant-baf602771257" data-who="reckon-build" data-when="2026-10-18T16:35:57Z">
+    <div class="r-comment-body"><p>Independent review of b72e8f1c6f25e3ce7f39c7aab0ffdcb653626bb4..baf6027712576507d441e15f4e2204a88bada3bc stored parsed at both declared review-record paths; six scores total 72/120, six checklist items, two blocking and four follow-on findings, source receipts added_failure_count 0 conditional on the c53c0397 overlay.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T095841005354-jt60sa-sectioned-plant" data-who="reckon-build" data-when="2026-10-18T16:39:38Z">
+    <div class="r-comment-body"><p>JT-60SA EF1-EF6 and CS1-CS4 carry distributed capacitance on 90 finite-kernel sections with resolved ports; g-jccm-5 is met: nominal first-peak span 868.06-2429.26 Hz, zero-capacitance maximum coupling error 0.04045% at 6f/12f/18f, EF1 doubled modes x0.70710678 with independently built CS1 unchanged, and nine three-end pair response tables and figure recorded.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T165023434091-review-of-sectioned-plant-multicoil-dc12565d94e7" data-who="reckon-build" data-when="2026-10-18T16:57:19Z">
+    <div class="r-comment-body"><p>Parsed independent review of 73fe98de2c0b1cfcf6daf714805ba9cc4a6ae481..dc12565d94e73cee0b39c4f10ba3eb33236a4ba2 at both declared review-record paths; six scores total 68/120, three blocking and three follow-on findings, source added failures unmeasured.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T151447145714-suite-at-merged-head" data-who="reckon-build" data-when="2026-10-18T16:28:23Z">
+    <div class="r-comment-body"><p>Whole suite at 4885381c: 1156 passed, 0 failed, 6 added timeout errors, 7 skipped of 1169; 3590 s wall; fragment docs/evidence/fragments/shared-coil-supply-model/suite-at-merged-head.html.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T165231668815-review-of-exact-integrator-hardening-e274b305611b" data-who="reckon-build" data-when="2026-10-18T16:58:37Z">
+    <div class="r-comment-body"><p>Parsed review of 24525bf44e2f2374d6b47014b73f0ffb2e5c8802..e274b305611bcee1b3a4cc4435160b779d261f40 stored at both declared review-record paths; six scores total 108/120, one blocking and one follow-on finding, added failures unmeasured because the source suite pair is absent.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T165527945764-review-of-section-gates-modes-205708ea5821" data-who="reckon-build" data-when="2026-10-18T17:00:38Z">
+    <div class="r-comment-body"><p>Independent review of source base 8eff0697d792c08fb645e506e75e4f1105e4308d and head 205708ea5821948277392d105c406de063df2d2b stored at both declared review-record paths; six scores total 80/120, four follow-on findings, no blocking findings, and added_failure_count 0 limited to two completed script invocations because structured suite arms are absent.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T165442315787-review-of-section-gates-lossy-ebcd14c5699f" data-who="reckon-build" data-when="2026-10-18T17:01:50Z">
+    <div class="r-comment-body"><p>Parsed independent review for 42601cdf7825dc0ebc7098c215a0996f4113056d..ebcd14c5699f34b74b71dbeaa7188d06628fc2a5 stored at both declared review-record paths; six scores total 93/120, six checklist items, one blocking and three follow-on findings, source added-failure count unmeasured because paired suite arms are absent.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T162909366995-section-gates-modes" data-who="reckon-build" data-when="2026-10-18T16:50:23Z">
+    <div class="r-comment-body"><p>PF1/PF6 converged winding modes agree with turn-resolved references within 0.136%, but the full plant terminal peaks miss the 1% gate by +9.236%/+12.939% without added winding losses and by +2.003–3.927%/+7.775–11.070% with cold losses; zero-C and doubled-C controls pass at worst 0.006961% and 2.22e-14% scaling error; PF2/PF5 fixed-terminal ground gains at 12f/6f are 1.000628 and 1.000819–1.001053, below the prior switched intervals with a method qualifier.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T171727735502-review-of-exact-integrator-hardening-41d1e7f5d1c2" data-who="reckon-build" data-when="2026-10-18T17:23:55Z">
+    <div class="r-comment-body"><p>Parsed independent review stored at both declared paths for 24525bf44e2f2374d6b47014b73f0ffb2e5c8802..41d1e7f5d1c2a477899882c7ae3d16a30c8f5339; six scores total 113/120, six checklist items, one follow-on finding, zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T171843999480-review-of-section-gates-lossy-121e701aaffa" data-who="reckon-build" data-when="2026-10-18T17:25:30Z">
+    <div class="r-comment-body"><p>Parsed independent review of 42601cdf7825dc0ebc7098c215a0996f4113056d..121e701aaffae066b03184db65cc1808d2956141 stored at both declared review-record paths; six scores total 93/120, one blocking and three follow-on findings, added failure delta unmeasured because the reviewed manifest has no paired suite arms.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T162746756698-section-gates-lossy" data-who="reckon-build" data-when="2026-10-18T17:11:52Z">
+    <div class="r-comment-body"><p>Gate 4 measured for PF1/PF6 at both installed-loss bounds: exact 100 ms peak shifts 2.455-5.441% and slew shifts 21.780-26.490%, all failing 1%; 5 ms agreement and 53.7-58.3x wall-time comparison recorded in docs/evidence/fragments/shared-coil-supply-model/section-gates-lossy.html; tabular evidence needs no figure.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T163056746870-exact-integrator-hardening" data-who="reckon-build" data-when="2026-10-18T17:11:36Z">
+    <div class="r-comment-body"><p>The exact reduction handles a source across its only capacitor (step and ramp within 1e-12 V; 2e-6 C step reset); 15 cached exponentials versus 108 uncached over four transitions; 10000 highest-mode periods at 11276.31 Hz drift 2.70e-11 exact and 5.87e-11 companion; fragment docs/evidence/fragments/shared-coil-supply-model/exact-integrator-hardening.html. Paired original base/head suites passed 33/34 tests respectively, one xfailed each, with zero added failures across unchanged companion tests.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T174938208839-review-of-jt60sa-plant-at-main-0231678aa528" data-who="reckon-build" data-when="2026-10-18T17:55:57Z">
+    <div class="r-comment-body"><p>Parsed review of 18783ab170479ecbd0eebbe2446d62eff8e5cd7e..0231678aa5283d4378f54bf17e641a91bac24d71 stored at both declared review-record paths; six scores total 93/120, one blocking and two follow-on findings, added failures unmeasured because the source manifest has no paired suite arms.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T164144684245-jt60sa-plant-at-main" data-who="reckon-build" data-when="2026-10-18T18:00:43Z">
+    <div class="r-comment-body"><p>JT-60SA sectioned plant review closure: 7 focused and 69 existing tests pass; nominal first peaks 868.06–2429.26 Hz, zero-capacitance coupling error 0.04045%, EF1 doubled mode ratio 0.7071067812, and nine-pair figure regenerated with maximum numeric change 4.51e-10%; evidence at docs/evidence/fragments/shared-coil-supply-model/jt60sa-plant-at-main.html.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T175710622481-review-of-sectioned-plant-multicoil-42e0339aa875" data-who="reckon-build" data-when="2026-10-18T18:05:09Z">
+    <div class="r-comment-body"><p>Parsed review for source run r-20261018T131339285841-sectioned-plant-multicoil at 73fe98de2c0b1cfcf6daf714805ba9cc4a6ae481..42e0339aa875d96d434190d8d59fa2594bc72de8, total 70/120 with three blocking and five follow-on findings, stored at both declared review-record paths.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-s3-landings-1018-eve" data-who="reckon-build" data-when="2026-10-18T18:15:00Z">
+    <div class="r-comment-body"><p>§3 landings on 18 October (evening):</p><ul><li><strong>Exact integrator</strong>: opt-in <code>integrator="exact"</code> merged (<code>d6526f76</code>), and hardened for a source across a lone capacitor with fixed closed-form test bounds (<code>eb5ae39d</code>). The companion stays the default.</li><li><strong>Gates 1–3</strong> (<code>c30c6117</code>): the converged winding modes match the turn-resolved references within 0.14 %. The full-plant terminal peaks sit 2.0–3.9 % (PF1) and 7.8–11.1 % (PF6) from the 1 % gate with cold losses. Both capacitance controls pass.</li><li><strong>Gate 4</strong> (<code>c7c3e349</code>) fails: from 1 µs to 0.5 µs, section peaks move 2.5–5.4 % and slews 22–26 %. The exact mode runs 54–58 times faster than the companion. Node <code>switching-event-localisation</code> is apportioning the shift among three causes: event times on the grid, finite-difference slew, and sampled peaks.</li><li><strong>JT-60SA sectioned plant</strong> (<code>b8c16b18</code>, then <code>797dc78e</code> at merged main): g-jccm-5 met, with first peaks at 868–2429 Hz, a zero-capacitance coupling error of 0.04 %, and an EF1 doubling ratio of 0.7071. <code>build_winding</code> gains an optional capacitance budget.</li><li><strong>Multi-coil cross blocks</strong> deviate 4–8 % from the coil mutual. The cause is located: sections carry the 224/468 drawn turns while linkage follows the 216.8/459.4 effective turns (DDD 11-3 Table 4-1). Ruling: place sections by the drawing and scale linkage by N<sub>eff</sub>/N<sub>drawn</sub>. In repair.</li><li><strong>Whole suite</strong> at <code>4885381c</code>: 1156 passed and 0 failed. Six new multi-coil tests time out at the 60 s bound.</li></ul></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T182628461693-review-of-switching-event-localisation-931942999a0d" data-who="reckon-build" data-when="2026-10-18T18:33:18Z">
+    <div class="r-comment-body"><p>Parsed independent review of 45ffdfc8aa79efac91c3a60255c8a50c0d6c4e90..931942999a0d9e60a73aec42e1bd8f4b820b455d stored at both declared paths; six scores total 106/120, six checklist items, one blocking finding, zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T185400158679-review-of-switching-event-localisation-8bf4be3dcd4c" data-who="reckon-build" data-when="2026-10-18T18:59:31Z">
+    <div class="r-comment-body"><p>Independent parsed review of 45ffdfc8aa79efac91c3a60255c8a50c0d6c4e90..8bf4be3dcd4cb67d2ffc599e997e0db2cb20ae2b stored at both declared review-record paths; six scores total 112/120, six checklist items, one follow-on finding, zero added suite failures.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T174817233055-switching-event-localisation" data-who="reckon-build" data-when="2026-10-18T18:54:08Z">
+    <div class="r-comment-body"><p>Exact switching roots, source-knot splits and state-derived dense extrema make the 100 ms PF1/PF6 section gate pass at both loss bounds; largest peak shift 0.000003627 percent and slew shift 0.000003699 percent. The grid-end observation repair preserves every sample state and leaves all eight repeated plant-arm peak/slew vectors and four gate percentages unchanged; evidence in docs/evidence/fragments/shared-coil-supply-model/switching-event-localisation.html.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T190922011521-review-of-sectioned-plant-multicoil-4cbcea7a2a54" data-who="reckon-build" data-when="2026-10-18T19:15:47Z">
+    <div class="r-comment-body"><p>Parsed independent review of 73fe98de2c0b1cfcf6daf714805ba9cc4a6ae481..4cbcea7a2a54108ee12dbfd3468038034b9a19f6 stored at both declared paths; six scores total 65/120, nine findings including three blocking, and zero observed added failures on the completed paired arms at 4103976a; no completed final-head arm exists.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T195753443119-review-of-sectioned-plant-multicoil-6474f1f0d958" data-who="reckon-build" data-when="2026-10-18T20:04:29Z">
+    <div class="r-comment-body"><p>Parsed independent review of base 73fe98de2c0b1cfcf6daf714805ba9cc4a6ae481 and head 6474f1f0d9582117e8e09ea056c6ed9e5d80e50c stored at both declared paths; six scores total 93/120, five follow-on findings, no blocking finding, and zero added failures in completed paired five-importer receipts.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T131339285841-sectioned-plant-multicoil" data-who="reckon-build" data-when="2026-10-18T20:00:22Z">
+    <div class="r-comment-body"><p>The four-coil VS1 (712 sections) and six-coil PF (1436 sections) plants build; 21 cross blocks agree with independent filament mutuals within 0.0182% (&lt;0.1% bound), both section matrices are symmetric positive definite, and single-coil matrices are identical to the dispatch base.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T205654261999-review-of-section-gates-closeout-98189b8fcfbd" data-who="reckon-build" data-when="2026-10-18T21:02:26Z">
+    <div class="r-comment-body"><p>Independent review of r-20261018T200515835160-section-gates-closeout at base 82a2c531a68b7bc22e1de616b57bb1c130f81d45 and head 98189b8fcfbdc822963a1febb7951ad0a53c1ab3 is stored at both declared paths; scores goal_fidelity 13, evidence 14, scope_discipline 20, durability 13, fit 18, reuse 5 (total 83), with two blocking and two follow-on findings.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T200515835160-section-gates-closeout" data-who="reckon-build" data-when="2026-10-18T21:05:39Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/shared-coil-supply-model/section-gates-closeout.html#section-gates-closeout records all section gates passing: six CS lossless shifts at most 0.675867931%, with installed losses overdamping their first resonance at both bounds.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-18T21:08:00Z">
+    <div class="r-comment-body"><p>§3 closed. Every gate passes: the multi-coil cross blocks are within 0.018 % of the coil mutuals (<code>5ccc5c2a</code>), the PF modes are within 0.14 % of their references, the CS lossless refinement shift is at most 0.68 % with the installed losses overdamping the CS first resonance (<code>9c367228</code>), the JT-60SA modes and both capacitance controls pass, and step convergence holds below 4e-6 % (<code>2ae8b1a9</code>). Open uncertainty: the overdamped CS roots' damping rates move about 4.1 % under refinement. <a href="/power_convertor/evidence/archive/shared-coil-supply-model-landed.html#section-gates">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T222950733424-review-of-exact-integrator-sectioned-plant-5874351f59d7" data-who="reckon-build" data-when="2026-10-18T22:39:29.323Z">
+    <div class="r-comment-body"><p>Filed parsed review of r-20261018T205559904238-exact-integrator-sectioned-plant at head 5874351f from base dac6cbc4; score goal_fidelity 18, evidence 12, scope_discipline 19, durability 19, fit 17, reuse 20, one blocking finding (six-coil PF 1% agreement unverified) and two follow-ons.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261018T205559904238-exact-integrator-sectioned-plant" data-who="reckon-build" data-when="2026-10-18T22:29:34Z">
+    <div class="r-comment-body"><p>Exact reduction removes 334 dependent capacitor voltages from the 712-section VS1 plant; the closed-form loop error is at most 1.54e-16 V, VS1 short-window peak agreement is 0.430% on sections and 0.000816% on terminals, and the six-coil 203-mode short-window companion gate remains open after a 50.70 V split-boundary error.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-s3-census-moves" data-who="reckon-build" data-when="2026-10-20T13:50:00Z">
+    <div class="r-comment-body"><p>pf-two-in-hand-capacitance §3's census (main <code>64d6a9a3</code>) moved two of this section's landed numbers, almost all of the move from the capacitance placement (<code>6cf2e1d1</code>):</p><ul><li><code>section-gates-modes</code>: the cold PF6 terminal-impedance peak, from 217.464 to 204.3 Hz (−6.1 %);</li><li><code>sectioned-plant-physical-losses</code>: PF6's first installed winding mode, from 195.789 to 181.558 Hz (−7.3 %).</li></ul><p>The landed fragments keep their numbers. A dated correction note, linking to the republished frequency-response prediction, will be appended to each when pf-two-in-hand-capacitance §4's impedance republish lands. The census receipts carry no commit, so the republished values, not these, are the ones to cite.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261018T104738450666-review-of-circuit-factory-thyristor-supplies-87ee547a0f33" data-who="reckon-build" data-when="2026-10-18T10:53:14Z">
+    <div class="r-comment-body"><p>Stored a parsed review for 96ebac613f1a3add747575c43b300b6d73f092c4..87ee547a0f333489abdb86992e1508932da9e8fb with six scores, six checklist verdicts, nine findings and zero added direct-importer failures; blocking findings include incomplete response measures and ineffective source authority.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261018T114709660667-review-of-circuit-factory-thyristor-supplies-b77a08bddd25" data-who="reckon-build" data-when="2026-10-18T11:53:52Z">
+    <div class="r-comment-body"><p>Parsed review of source run r-20261018T100440453114-circuit-factory-thyristor-supplies at base 96ebac613f1a3add747575c43b300b6d73f092c4 and head b77a08bddd25cbb4b4ba918b85bad881f365d947; six scores total 86/120, seven findings (three blocking, four follow-on), six checklist verdicts, no production call sites, and zero added failures; matching records stored at both granted review-record paths.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261018T100440453114-circuit-factory-thyristor-supplies" data-who="reckon-build" data-when="2026-10-18T11:55:20Z">
+    <div class="r-comment-body"><p>§4 gains the register-driven circuit factory: src/power_convertor/registers/iter_supplies.json carries every parameter of all thirteen supplies with its IDM citation or a stated assumption, and circuit_connections.build_supply_circuit builds a supply's units, coils, feeder, grounding and parameter map through the existing CircuitConnections, refusing by name any parameter whose source is not a citation or a stated assumption. Extending CircuitConnections replaced the SupplyCircuit wrapper the review rejected. Three claims-register pins concerning the eleven circuits are reproduced through the composed circuit (the PF1/PF6 series pair 2.10 kV, the per-circuit converter ratings CS1 4.20 / CS2U,CS2L,CS3U,CS3L,PF1,PF6 2.10 / PF2-PF5 3.15 kV, and PF1 2.10 kV in the fast-discharge row); nineteen are not reproduced and are listed in the fragment with the instrument each needs and the input the register does not hold.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261018T133147403387-review-of-composed-circuits-plant-pins-c942e79dee16" data-who="reckon-build" data-when="2026-10-18T13:39:08Z">
+    <div class="r-comment-body"><p>Parsed review of 93e9da601d5e903bf4e436db1e1bb6ac97ba9214..c942e79dee161a1a3e23ba2e0f10be3527f88cfb stored at both declared paths; six scores total 59/120, six checklist verdicts, no production call sites, nine findings including five blocking; added-failure count unmeasured because the reviewed manifest has no baseline_suite log.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261018T155931397481-review-of-composed-circuits-plant-pins-4da211332fe8" data-who="reckon-build" data-when="2026-10-18T16:07:32Z">
+    <div class="r-comment-body"><p>Parsed independent review of 93e9da601d5e903bf4e436db1e1bb6ac97ba9214..4da211332fe8040877cadb90292358582bb71060 stored at both granted record paths; six scores total 69/120, six checklist verdicts, ten findings including six blocking, no production call sites, and zero added failures in the source run's matched eight-test suite.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261018T165123687822-review-of-composed-circuits-plant-pins-448669f860e7" data-who="reckon-build" data-when="2026-10-18T16:58:27Z">
+    <div class="r-comment-body"><p>Parsed independent review of 93e9da601d5e903bf4e436db1e1bb6ac97ba9214..448669f860e717bd5934ff5177097ccb5c462cbf stored at both granted paths; six scores total 65/120, six checklist verdicts, ten findings including five blocking, no production call sites, and zero added failures in the source run's matched 68-test importer suite.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261018T174757503543-review-of-composed-circuits-plant-pins-18641dd7493c" data-who="reckon-build" data-when="2026-10-18T17:55:20Z">
+    <div class="r-comment-body"><p>Parsed independent review of 93e9da601d5e903bf4e436db1e1bb6ac97ba9214..18641dd7493c874deb1b1a3b107b6ac774b8250e stored at both declared review-record paths; six scores total 77/120, six checklist verdicts, eight findings including two blocking, no production call sites, and zero added failures in matched 68-test importer receipts.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261018T120334166577-composed-circuits-plant-pins" data-who="reckon-build" data-when="2026-10-18T17:34:11Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/shared-coil-supply-model/composed-circuits-plant-pins.html#composed-circuits-plant-pins records open-winding PF2 594.821 Hz (595 Hz pin), PF5 276.4 Hz reported (276.4-323.6 Hz band), full-supply PF3 0.255736 moved by external assembly, 82/82 focused tests, and base/head direct importers 68/68 with zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-landings-1018-eve" data-who="reckon-build" data-when="2026-10-18T18:15:00Z">
+    <div class="r-comment-body"><p>§4 landings on 18 October (evening):</p><ul><li><strong>Composed circuits</strong> (<code>be9af06d</code>, partial): PF2's first mode is 594.8 Hz against its 595 Hz pin. PF3's first-turn fraction is 0.2557 against a 0.251 band, recorded as a miss. The ground-line gain, interunit-phase and switched-pulse pins move to <code>vs1-whole-with-line</code>, which is running.</li><li><strong>VS1 IGBT link</strong> (<code>c4daae13</code>): the link defaults to a regulated 1150 V source at FKVZKD's design performance, replacing the old drift of 293–1454 V. The control cascade now holds 1144.7 V / 17.8 Vpp and 1144.0 V / 9.3 Vpp on the rated arms; its gate receipt and FKVZKD's scenario 3 are being finished in <code>igbt-front-end-cascade</code>.</li></ul></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261018T190158076764-review-of-test-independence-sweep-5ab2a5491f14" data-who="reckon-build" data-when="2026-10-18T19:07:21Z">
+    <div class="r-comment-body"><p>Parsed review stored at both declared record paths for base f5b55b5c84f773be8d65195a6b7b41271de4929d and head 5ab2a5491f14ff019c286820ad9d6d91fcde4f04; six scores total 107/120, one blocking finding, zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261018T190505870380-review-of-igbt-front-end-cascade-a8a549715bf2" data-who="reckon-build" data-when="2026-10-18T19:10:00Z">
+    <div class="r-comment-body"><p>[Independent VS1 cascade review](/power_convertor/plans/shared-coil-supply-model#s4): parsed 94/120 review of 29c951f6bcaa88f475148d2633717834b186d561..a8a549715bf2cf498bf1ea04567ddaf37f2dbcff, one blocking and three follow-on findings, zero added suite failures.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261018T170439400940-igbt-front-end-cascade" data-who="reckon-build" data-when="2026-10-18T19:12:26Z">
+    <div class="r-comment-body"><p>[VS1 front-end cascade evidence](/power_convertor/evidence/fragments/shared-coil-supply-model/igbt-front-end-cascade.html#igbt-front-end-cascade): rated arms hold 1144.7 V/17.8 Vpp and 1144.0 V/9.3 Vpp; the 10 mOhm arm is out of rating; the plotted reversal spans 921.4-1311.0 V with feedforward and 782.8-1508.6 V without at h=5 us, with step sensitivity recorded.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261018T191532909899-review-of-vs1-whole-with-line-82cb1cccb455" data-who="reckon-build" data-when="2026-10-18T19:22:41Z">
+    <div class="r-comment-body"><p>Parsed independent review of source base 871dc2bcda77e88d4b034da4f86612821b665784 and head 82cb1cccb4559198b0a336b3d80660865309e135 stored at both declared review-record paths; six scores total 55/120, six checklist items, eight findings including four blocking, observed added failure count zero with source structured-arm gap noted.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261018T180917364037-vs1-whole-with-line" data-who="reckon-build" data-when="2026-10-18T19:24:30Z">
+    <div class="r-comment-body"><p>VS1 six-unit circuit and cited connection line landed; first line resonance 2.686–5.371 MHz, 300/600/1000 Hz connection gains 0.99998072/1.00003353/1.00017558 V/V; evidence at docs/evidence/fragments/shared-coil-supply-model/vs1-whole-with-line.html#vs1-whole-with-line.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261018T192113578825-review-of-test-independence-sweep-f61bb289f469" data-who="reckon-build" data-when="2026-10-18T19:28:52Z">
+    <div class="r-comment-body"><p>Parsed review of f5b55b5c84f773be8d65195a6b7b41271de4929d..f61bb289f469b748780ec842fd81b43ea3b4f26e stored at both declared review-record paths with six scores totaling 113/120, one blocking evidence finding, seven production call sites, and zero added suite failures.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261018T182016407750-test-independence-sweep" data-who="reckon-build" data-when="2026-10-18T19:20:25Z">
+    <div class="r-comment-body"><p>PF6 and CS3L now pin 600 Hz terminal and first-section gains; the repaired five-file head gate passes 95/95, both uniform-scaling mutations fail, and reverting answer commit 1930e3c9 makes the refusal control fail.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261018T201228751784-review-of-igbt-switching-edge-07f78995f98d" data-who="reckon-build" data-when="2026-10-18T20:32:02.545Z">
+    <div class="r-comment-body"><p>review of r-20261018T192008989071-igbt-switching-edge at base a084aa0c / head 07f78995 stored parsed at both declared paths under review-records/ of the reviewed run: goal_fidelity 16, evidence 16, scope_discipline 18, durability 17, fit 18, reuse 20 (total 105); six verdicts, three call sites, no blocking finding, two follow-ons, added_failure_count 0.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261018T192008989071-igbt-switching-edge" data-who="reckon-build" data-when="2026-10-18T20:07:00Z">
+    <div class="r-comment-body"><p>[Switched IGBT edge and PF3/PF5 peaks](/power_convertor/evidence/fragments/shared-coil-supply-model/igbt-switching-edge.html#igbt-switching-edge): explicit 0.5/2.5/5 kV/us pole slew; PF3 across-coil 2169.6/2389.9/2413.1 V and first turn 202.1/265.0/267.5 V; PF5 across-coil 2201.1/2428.0/2454.5 V and first turn 151.5/222.5/226.0 V.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261018T212611961016-review-of-vs3-independent-branches-9855940e7355" data-who="reckon-build" data-when="2026-10-18T21:33:03Z">
+    <div class="r-comment-body"><p>Parsed independent review of 8bf2e326a7709d5a9482be53591c05c52502d11e..9855940e7355839e191ff48bfb02e0d8388956df stored at both declared review-record paths, six scores totaling 93/120, two blocking findings, and zero added failures from completed paired suite receipts.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261018T220104805846-review-of-vs3-independent-branches-dc7504c43585" data-who="reckon-build" data-when="2026-10-18T22:14:47.034Z">
+    <div class="r-comment-body"><p>Parsed independent review of 8bf2e326a7709d5a9482be53591c05c52502d11e..dc7504c435850763706aa09723fb625d340dc979 stored at both declared review-record paths: six scores totalling 90/120 (goal_fidelity 18, evidence 16, scope_discipline 18, durability 15, fit 15, reuse 8), six checklist verdicts, eight production call sites, four follow-on findings and no blocking finding, with added_failure_count 0 across the reviewed run's matched 118/118 base and 127/127 head receipts.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261018T203737787768-vs3-independent-branches" data-who="reckon-build" data-when="2026-10-18T22:01:41Z">
+    <div class="r-comment-body"><p>VS3U and VS3L each deliver measured ±2399.999999 V no load from two regulated bridge cells; both independent feeder frequency drives are finite at 300 and 1000 Hz, the four named files pass 127/127 at the repaired head versus 118/118 at effective base, and the two new mutation controls fail 4 and 1 cases.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261019T002041106086-review-of-exact-integrator-lossy-window-91f8ed93e974" data-who="reckon-build" data-when="2026-10-19T00:26:59.407Z">
+    <div class="r-comment-body"><p>review record for r-20261018T225420358619-exact-integrator-lossy-window at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T225420358619-exact-integrator-lossy-window/review-records/ — scores goal_fidelity 16, evidence 7, scope_discipline 20, durability 18, fit 18, reuse 20; one blocking finding (done_when peak measure unmet) and one follow-on.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261018T225420358619-exact-integrator-lossy-window" data-who="reckon-build" data-when="2026-10-19T00:18:30Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/shared-coil-supply-model/exact-integrator-lossy-window.html#exact-integrator-lossy-window — exact 32-cutset PF2 reduction removes two +3.0146e15/s converter modes; 152 low-loss and 132 high-loss switched topologies have no growing pole, paired suite 46 passed and 1 xfailed, peak measure pending.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261019T003009581037-exact-integrator-performance" data-who="reckon-build" data-when="2026-10-19T03:38:20Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/shared-coil-supply-model/exact-integrator-performance.html#exact-integrator-performance — all three full exact-extrema windows finish in 549.94/549.44/539.86 s, but PF2 h/h2 state and peak gates fail at both loss bounds and true VS1 h/2 remains unmeasured.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261019T061030705987-review-of-exact-integrator-convergence-2bae47d7e162" data-who="reckon-build" data-when="2026-10-19T06:18:03.759Z">
+    <div class="r-comment-body"><p>Independent review of r-20261019T035829094164-exact-integrator-convergence at base d5ebb13a..head 2bae47d7 stored as a parsed record; the integrator defect is found and fixed (reference peak 14,315 V to 100 V; PF2 2 ms peaks 31-125 kV to 3.4-6.7 kV) and scope is clean under the coordinator's extension, but the done_when's facility-window convergence, VS1, full-window timing and energy-balance measures are unmet and the named negative control was substituted, so scores are goal 13, evidence 11, scope 19, durability 18, fit 17, reuse 19 with added_failure_count 0.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261019T035829094164-exact-integrator-convergence" data-who="reckon-build" data-when="2026-10-19T06:08:21Z">
+    <div class="r-comment-body"><p>Exact integrator converges on PF2: with the PCS command schedule held fixed the 2 ms window's end state agrees between 200 and 100 us steps to 4.1e-10 (low loss) and 1.9e-10 (high loss) and exact peaks to 1.5e-9; in closed loop peaks agree to 0.42 % and 0.003 % with no tick's switching sequence differing, the state gap being the PCS loop amplifying sampled-current differences from 6.5e-7 A to 0.19 A; Sinusoid mains are carried exactly (RL 2.2e-15); VS1 speed, the energy balance and full-window timing remain open.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261019T082031788048-review-of-exact-integrator-vs1-speed-3cb4f174b96e" data-who="reckon-build" data-when="2026-10-19T08:36:48.822Z">
+    <div class="r-comment-body"><p>review of r-20261019T062714998167-exact-integrator-vs1-speed at 153ea175..3cb4f174 scores goal_fidelity 5, evidence 8, scope_discipline 19, durability 10, fit 18, reuse 20, added_failure_count 0; VS1 is untouched in the landed change and the done_when's three headline measures are recorded as not met, while the exact energy account and the extended-precision integrator fix are real and honest</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261019T062714998167-exact-integrator-vs1-speed" data-who="reckon-build" data-when="2026-10-19T08:12:06Z">
+    <div class="r-comment-body"><p>the exact modal energy balance (simulate(energy_balance=True), per-span rows) now closes PF2 to 9.9e-9/1.5e-8 of input after two fixes: powers solved from physical vectors instead of unit-vector forms (instrument, 9.0e-3 -&gt; 2.5e-3) and nodal solves refined with an extended-precision residual (integrator, -&gt; 9.9e-9); the integrator fix lowers PF2 2 ms exact terminal peaks from 5000.97/4351.09 V to 2528.49/2419.79 V (low/high) and makes the closed-loop window converge to 2.9e-7; scalar bridge_mode gives the 120 ms window ~1.5x; VS1 speed and the 120 ms budget not reached</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261019T124554328861-review-of-exact-integrator-vs1-speed-2-528849ab6a88" data-who="reckon-build" data-when="2026-10-19T13:05:35.288Z">
+    <div class="r-comment-body"><p>Stored an independent review of r-20261019T090226094841-exact-integrator-vs1-speed-2 as a parsed record over 9e4ee6b8bbacaa1a8f9ba1dcca4063b8c8eb7693..528849ab6a8805a3eb50a06cc20f791f58b27f71, scoring goal 6, evidence 12, scope 19, durability 18, fit 18, reuse 19, added_failure_count 0, with one follow-on finding (shift_invert_action unwired in production).</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261019T090226094841-exact-integrator-vs1-speed-2" data-who="reckon-build" data-when="2026-10-19T10:25:56Z">
+    <div class="r-comment-body"><p>Refinement guard landed (4.5e-7 refined, 0.91 reverted); on VS1, substepped shift-and-invert Krylov converges to within 2e-6-1e-5 of itself but sits 1.05e-4 from the eigenbasis reference, VS1 holds 52 switch states per ms, and no measured operator fits 1 ms in 570 s (modal ~1,700 s, Krylov on the dense matrix ~980 s), so the Krylov path was not wired into simulate; a port factor cache cut the companion VS1 millisecond from 489 s to 34.8 s with identical events.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261018T203817697724-vs1-switched-pulse" data-who="reckon-build" data-when="2026-10-18T22:59:50Z">
+    <div class="r-comment-body"><p>VS1's 105069/3 cut seeds six units, both line conductors and 712 plant sections; the time-zero check moves at most 0.0001406% and zeroed line currents fail its positive test. The merged capacitor-loop repair factors the plant, while the full six-unit exact propagator overflows before 10 us at 1 us under two numerical gauges, leaving the two-step voltage and four claims-pin verdicts unmeasured; the finite-edge factory gap is recorded at docs/evidence/fragments/shared-coil-supply-model/vs1-switched-pulse.html#vs1-switched-pulse.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261019T224358497072-review-of-vs1-companion-window-b921e11c8092" data-who="reckon-build" data-when="2026-10-19T23:04:55.367Z">
+    <div class="r-comment-body"><p>none; this node reviews run r-20261019T133038142897-vs1-companion-window and writes no plan comment</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261019T133038142897-vs1-companion-window" data-who="reckon-build" data-when="2026-10-19T22:43:30Z">
+    <div class="r-comment-body"><p>the one-picosecond initial companion solve is now opt-in (simulate short_initial_solve, default the original one-step solve), restoring test_six_pulse_overlap_and_mean_voltage, test_mixed_network_reference_trajectories and test_default_window_matches_recorded_output[PF1] with no reference changed, and the VS1 replay attaches the installed winding loss record so test_every_iter_sectioned_builder_attaches_the_installed_losses passes; rerun with the losses, VS1 tracks to rms 12.7 A, the highest terminal peak is 3.05 kV (48 percent of 6.30 kV) and the highest to ground 1.59 kV (no rating exceeded), the connection-point peaks spread 0.03 to 2.6 percent across steps with the commands held and the first-turn peaks are not step-converged; the eleven-file merge gate shows zero added failures against the three that fail at the base</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-vs1-window" data-who="reckon-build" data-when="2026-10-19T23:15:00Z">
+    <div class="r-comment-body"><p>VS1 switched window landed (merged <code>93c4d397</code>). It peaks at 3.05 kV, 48 % of its 6.30 kV rating, and 1.59 kV to ground, with installed winding losses. The connection-point peaks agree within 1 % between h/2 and h/4. The first-turn peaks are not step-converged and the composed-circuit pins are unmeasured, so §4 stays open. <a href="/power_convertor/evidence/archive/shared-coil-supply-model-landed.html#vs1-companion-window">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261020T045847329943-review-of-vs3-anti-series-f7e248ce17e3" data-who="reckon-build" data-when="2026-10-20T05:15:41.264Z">
+    <div class="r-comment-body"><p>review of run r-20261020T034318562379-vs3-anti-series at base 9d28bf4c0593c40d0d94980e3385ca4bb620a6d6 and head f7e248ce17e34fd03211204abca5e1b0763ce710 stored as a parsed record at both declared paths; six scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 17, fit 17, reuse 17 (total 108/120), six checklist verdicts, six production call sites, three follow-on findings and no blocking finding; added_failure_count 0.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261020T034318562379-vs3-anti-series" data-who="reckon-build" data-when="2026-10-20T05:11:18Z">
+    <div class="r-comment-body"><p>VS3 is one anti-series coil circuit: the register entry names the anti_series topology over its two windings, the two 1.2 kV IGBT converters sit in series in that one loop and their voltages add to the 2.4 kV registered limit, and the switched netlist stamps them end to end through a shared middle node; the loop's terminal impedance is 0.411244 + 0.217152j ohm at 300 Hz and 0.500201 + 0.149019j ohm at 1 kHz with its first impedance peak at 683.6 kHz, against 0.165601 + 0.113429j ohm and 0.214039 + 0.111888j ohm per independent branch before, and the nine VS3-referencing test files outside this node's scope run 184 tests green at head.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-vs3-anti-series" data-who="reckon-build" data-when="2026-10-20T05:45:00Z">
+    <div class="r-comment-body"><p>VS3 is recomposed as one anti-series loop with its two converters in series (merged <code>26080d52</code>), per the lead's ruling; the VS3 register-row test passes again. §4 still owes its four composed-circuit pins and the first-turn step criterion. <a href="/power_convertor/evidence/archive/shared-coil-supply-model-landed.html#vs3-anti-series">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261020T122946424995-composed-circuit-pins" data-who="reckon-build" data-when="2026-10-20T13:15:46Z">
+    <div class="r-comment-body"><p>Partial delivery; relative interunit phase repaired, loaded composed pair 361.211906 -&gt; 25.854559 V within 1 percent; historical PF2/PF5 mode moves attributed; zero added failures (base 43 passed/5 failed, head 49 passed/same 5 failed), six pin mutations fail; 4 ms VS1 first turns still miss 1 percent and integrated pins remain blocked. [Evidence](/power_convertor/evidence/fragments/shared-coil-supply-model/composed-circuit-pins.html#composed-circuit-pins-measured).</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261020T132541781725-review-of-composed-circuit-pins-99c0e871986e" data-who="reckon-build" data-when="2026-10-20T13:36:00Z">
+    <div class="r-comment-body"><p>Parsed independent review of 1c830c0f..99c0e871: scores 12/18/20/16/20/20, zero added failures, three follow-on findings and no blocking code finding; partial delivery does not close the section and the source run remains blocked.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-composed-circuit-pins" data-who="reckon-build" data-when="2026-10-20T13:38:00Z">
+    <div class="r-comment-body"><p>Partial landing, merged at <code>99c0e871</code>. <code>build_supply_circuit</code> now applies the registered interunit phase displacement to series converter units; before, every unit took the same phase. The loaded composed pair reproduces within 1 % (361.2 → 25.85 V). Six pin tests fail under their mutations. The PF2/PF5 mode moves are attributed to the hand-capacitance winding change. The node added zero failures to five pre-existing ones (independent review 12/18/20/16/20/20).</p><p>Still open, each as its own node:</p><ul><li><code>vs1-first-turn-window</code>: the full 4 ms VS1 first-turn criterion still misses 1 % (PF2 1.52 %, PF4 1.14 % at the last halving).</li><li><code>vs1-line-response-check</code>: an independent circuit-response check of the line resonance.</li><li><code>composed-pins-remainder</code>: the per-circuit pins still unmeasured.</li><li>A diagnosis of the averaged adapter's positive-energy refusal.</li></ul><p>The integrated pins move to iter-switched-terminal-transients §6. <a href="/power_convertor/evidence/fragments/shared-coil-supply-model/composed-circuit-pins.html#composed-circuit-pins-measured">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261020T142701524625-review-of-averaged-plant-energy-refusal-9c654e94f225" data-who="reckon-build" data-when="2026-10-20T14:39:57.113Z">
+    <div class="r-comment-body"><p>The review of run r-20261020T135901124052-averaged-plant-energy-refusal at head 9c654e94f225d8b5d9ffa002d6f89e9bc6410615 parsed six dimensions (goal_fidelity 19, evidence 18, scope_discipline 18, durability 18, fit 18, reuse 20), added_failure_count 0, one follow-on finding. The node's diagnosis branch is sound: the averaged adapter correctly refuses a genuinely indefinite cached linkage, the guard is intact, and the three added refusal tests redden under its mutation.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261020T135901124052-averaged-plant-energy-refusal" data-who="reckon-build" data-when="2026-10-20T14:25:34Z">
+    <div class="r-comment-body"><p>&lt;p&gt;The cached plant is genuinely indefinite: Schur minimum −3.8377767548e-8 H, dominated by VSU, with a second VSL negative direction; the eight steel-jacket rows isolate the over-screening. The averaged guard remains intact, both sampled-loop pins are unmeasured, three new refusal cases fail when the guard is mutated, and base/head gates give 85/88 passed with zero added failures. &lt;a href="/power_convertor/evidence/fragments/shared-coil-supply-model/averaged-plant-energy-refusal.html#averaged-plant-energy-refusal"&gt;Evidence and upstream cache repair&lt;/a&gt;.&lt;/p&gt;</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-indefinite-cache" data-who="reckon-build" data-when="2026-10-20T14:55:00Z">
+    <div class="r-comment-body"><p>The averaged adapter's refusal is correct: the cached nova plant is genuinely indefinite (merged <code>9c654e94</code>; independent review 19/18/18/18/18/20, zero added failures). Its coil Schur complement has two negative eigenvalues, −3.84×10⁻⁸ H (almost entirely VSU) and −3.25×10⁻⁸ H (VSL). The eight steel jackets around the VS3 coils screen more flux than the coils link.</p><p>The cause lies upstream in nova's ITER machine description. Each VS3 conductor annulus is a 27.556 mm square, and its concentric steel jacket a 22.974 mm square at the same centre, so the jacket lies inside the conductor it surrounds. nova's raw passive block has 37 negative eigenvalues (minimum −2.53×10⁻⁷ H). Its stored, positive-definite-guarded copy is positive, but the joint coil and passive linkage is not. The cache holds 1,312 passive rows, where today's source recipe yields 2,186, so the recipe that built it is also unknown.</p><p>The guard stays. VS1's sampled-loop pin and VS3's margin pin stay unmeasured until nova supplies a jointly passive plant, and that request goes to the nova owner through the lead. Until then, any study using the cached plant on the VS3 coils carries this caveat.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T012001461945-review-of-switched-circuit-resume-2e3c13392d01" data-who="reckon-build" data-when="2026-10-21T01:30:59.795Z">
+    <div class="r-comment-body"><p>Review of run r-20261020T142648992611-switched-circuit-resume at head 2e3c1339 against base 88cb436d scores goal_fidelity 9, evidence 12, scope_discipline 19, durability 13, fit 16, reuse 18 (total 87); two blocking findings (the composed VS1 window continuation equality, an explicit done_when target, is unmet at 1.903 relative with events_match false, and the manifest declares complete against that) and two follow-ons.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261020T142648992611-switched-circuit-resume" data-who="reckon-build" data-when="2026-10-21T01:04:04Z">
+    <div class="r-comment-body"><p>Partial: switched runs resume from an exact state with an explicit sample grid; no-resume runs byte-identical (9/9); small-network joins exact (companion 4.8e-11, exact 0); switched-pair suite 60 passed. UNMET: the composed VS1 window's 1e-9 continuation equality, 1.07e-5 relative at the first diverging row (restore-path residual) amplified to 1.90 through the window; follow-on queued. Importer suites 3 failed/128 passed at head vs 4 failed at base, none added (~/.cache/power_convertor-gates/switched-circuit-resume/).</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261020T140039094059-vs1-first-turn-window" data-who="reckon-build" data-when="2026-10-20T14:26:10Z">
+    <div class="r-comment-body"><p>Full 4 ms first-turn miss reproduced exactly (PF2 1.515006%, PF4 1.141817% at 0.5 to 0.25 us); caller restart differs by 3.136621 V after agreement within 5.656e-12 V before restart. Solver resume support outside scope is required; see [continuation evidence](/power_convertor/evidence/fragments/shared-coil-supply-model/vs1-first-turn-window.html#vs1-first-turn-window-evidence).</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T032629187127-review-of-switched-bracket-recursion-9e99d4aeba2f" data-who="reckon-build" data-when="2026-10-21T03:37:04.037Z">
+    <div class="r-comment-body"><p>Independent review of r-20261021T022315546430-switched-bracket-recursion at head 9e99d4aeba2f scores goal_fidelity 18, evidence 13, scope_discipline 16, durability 16, fit 17, reuse 19; one blocking finding — the landed evidence fragment cites cs1_head_depth_count.log for "447 degenerate brackets declined; the arm solves in 207.1 s" while that log records declined 22 and SOLVED in 169.9 s (confirm run 22 and 160.0 s), and no run log contains either figure.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T034650693076-review-of-switched-bracket-recursion-d262f7ff3ccc" data-who="reckon-build" data-when="2026-10-21T04:01:04.498Z">
+    <div class="r-comment-body"><p>Independent review attached to r-20261021T022315546430-switched-bracket-recursion for the single commit it gained since its last review, d262f7ff on docs/evidence/fragments/shared-coil-supply-model/switched-bracket-recursion.html: the corrected figures reconcile with every cited receipt (22 declined and SOLVED in 169.9 s from cs1_head_depth_count.log, 160.0 s from the confirm log, 487.91 s, 315.90 s, EXIT=1), the earlier blocking finding is closed, and one follow-on is recorded because no mechanism reconciles a fragment's figures against the logs it cites. Scores 17/18/20/10/18/20 over the six dimensions; added_failure_count 0 against the reviewed run's baseline_suite 26 passed/0 failed and after_suite 27 passed/0 failed.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T022315546430-switched-bracket-recursion" data-who="reckon-build" data-when="2026-10-21T03:46:04Z">
+    <div class="r-comment-body"><p>Event brackets in a switched segment now terminate on a degenerate bracket: the gate-edge and bracket tails walk in a loop instead of recursing at the walk's own depth, and a bracket at or below four ulp of its own start is declined so the segment advances; the CS1 lumped two-FDU arm whose walk never returned now solves, 2 passed in 487.91 s, with the deepest walk 2 frames deep and 22 degenerate brackets declined.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T041312619770-review-of-composed-pins-remainder-b02cd3c45abf" data-who="reckon-build" data-when="2026-10-21T04:26:42.714Z">
+    <div class="r-comment-body"><p>review of r-20261020T135948836675-composed-pins-remainder at head b02cd3c45abf3ef0d33fc3ce0f7c78e753810127, base e4bf0ea19e237489c6565a64149dfe00990a013b; six scores goal_fidelity 18, evidence 18, scope_discipline 20, durability 16, fit 18, reuse 19; added_failure_count 0; two follow-on findings, no blocking finding</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261020T135948836675-composed-pins-remainder" data-who="reckon-build" data-when="2026-10-21T04:04:53Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/shared-coil-supply-model/composed-pins-remainder.html (section id composed-pins-remainder) records the applied interunit displacement with its 600 Hz before/after, the remaining single-circuit pins reproduced or reported with cause, the composed VS1 line resonance check with its capacitance-drop mutation, and the gate and negative-control receipts; figure docs/figures/shared-coil-supply-model/composed-pins-remainder/insertion-and-pair-rating.svg beside it</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T062335011446-review-of-composed-pins-restate-37c0f14261a9" data-who="reckon-build" data-when="2026-10-21T06:41:34.088Z">
+    <div class="r-comment-body"><p>review records for r-20261021T051306437230-composed-pins-restate stored at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T051306437230-composed-pins-restate/review-records/r-20261021T051306437230-composed-pins-restate.at-37c0f14261a97be15a582fb24a8d423449f1d41c.json and its byte-identical twin r-20261021T051306437230-composed-pins-restate.json; nothing landed in the repository</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T051306437230-composed-pins-restate" data-who="reckon-build" data-when="2026-10-21T07:01:29Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/shared-coil-supply-model/composed-pins-restate.html</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T083020003614-review-of-companion-source-breakpoints-e91a749f3c1a" data-who="reckon-build" data-when="2026-10-21T08:52:10.549Z">
+    <div class="r-comment-body"><p>reviewed r-20261021T070511437581-companion-source-breakpoints at e91a749f3c1aad0a6fb16266a2fd20405864c306 against base 3da4637f6000c0e65171a6c560e4f3d237e6dfad — scores goal_fidelity 18, evidence 10, scope_discipline 18, durability 15, fit 18, reuse 20; added_failure_count 0; two blocking findings (the evidence fragment docs/evidence/fragments/shared-coil-supply-model/companion-source-breakpoints.html is untracked in the reviewed worktree so commit e91a749f lands no landing record; the done_when's declared negative control is met on the small network but unmet on the composed VS1 window, whose pre-fix arm decays the same perturbation, so the brief's attribution of that window's growth to the inert breakpoint is withdrawn) and one follow-on (the fourth named suite, tests/test_switched_discharge_insertion.py, has no readable arm at either revision).</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T070511437581-companion-source-breakpoints" data-who="reckon-build" data-when="2026-10-21T10:22:47Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/shared-coil-supply-model/companion-source-breakpoints.html</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T103633584321-review-of-companion-source-breakpoints-1f84683a250b" data-who="reckon-build" data-when="2026-10-21T10:55:10.911Z">
+    <div class="r-comment-body"><p>review record stored at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T070511437581-companion-source-breakpoints/review-records/r-20261021T070511437581-companion-source-breakpoints.at-1f84683a250bfd62403ce3c50eafd095ef6ebd57.json with its twin r-20261021T070511437581-companion-source-breakpoints.json; nothing landed in the repository</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T125211867585-review-of-vs1-first-turn-convergence-5eeeee28d527" data-who="reckon-build" data-when="2026-10-21T13:16:29.532Z">
+    <div class="r-comment-body"><p>review of r-20261021T041037110068-vs1-first-turn-convergence at head 5eeeee28 recorded: goal_fidelity 18, evidence 16, scope_discipline 10, durability 15, fit 13, reuse 15, added failures 0, six findings of which two blocking (the declared negative control was never applied, and the baseline_suite/after_suite fields plus the head gate log's own command header carry unsubstituted placeholders so the gate receipt cannot be re-run).</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T142324976228-review-of-vs1-first-turn-convergence-be8dbdf3a9b9" data-who="reckon-build" data-when="2026-10-21T14:45:25.450Z">
+    <div class="r-comment-body"><p>parsed review of r-20261021T041037110068-vs1-first-turn-convergence delta 5eeeee28..be8dbdf3 stored at review-records/r-20261021T041037110068-vs1-first-turn-convergence.json (and .at-be8dbdf3a9b9e01ba7fa4fd574f105c4af231cbd.json); two follow-on findings, none blocking, added_failure_count 0.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T041037110068-vs1-first-turn-convergence" data-who="reckon-build" data-when="2026-10-21T14:21:33Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/shared-coil-supply-model/vs1-first-turn-convergence.html</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T131411862066-review-of-vs1-first-turn-convergence-5eeeee28d527-figure" data-who="reckon-build" data-when="2026-10-21T13:45:37.875Z">
+    <div class="r-comment-body"><p>none — a read-only figure review lands nothing in the repository; the record is attached to the reviewed run's review-records directory for the coordinator.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T144624464073-review-of-vs1-first-turn-convergence-be8dbdf3a9b9-figure" data-who="reckon-build" data-when="2026-10-21T15:08:15.909Z">
+    <div class="r-comment-body"><p>figure review record for r-20261021T041037110068-vs1-first-turn-convergence at head be8dbdf3a9b9e01ba7fa4fd574f105c4af231cbd, rubric figure, status parsed, written at both declared review-record paths and passing crew check --review</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-wave-1021-eve" data-who="reckon-build" data-when="2026-10-21T19:25:00Z">
+    <div class="r-comment-body"><p>Coordination moved to session cdb769a4 on 21 October. The previous coordinator, a2286ca9, holds nothing on this plan. Three nodes are dispatched against what keeps §4 and §8 open:</p><ul><li><code>vs1-first-turn-rung</code> extends VS1's 4 ms step ladder to 0.125, 0.0625 and 0.03125 µs. The 0.25 µs rung took 164.5 s, so the full window is affordable at each step.</li><li><code>composed-insertion-busbar</code> finds why the composed busbar Line carries no reflection and fixes it in the owners, so the PF1 and CS3L insertion pins can reproduce. <code>switched_discharge_insertion.py</code> stays read-only while a peer run holds it.</li><li><code>tf-supply-ramp</code> (§8) runs the averaged ramp, with switched windows at its start, middle and flat top.</li></ul><p>VS3 scope: §3's section matrices cover the PF and CS coils, so §4's section-voltage transfers apply to those coils. VS3 is resolved at its terminals only. That is a stated limit, not an open item, and iter-switched-terminal-transients §6 already carries it. §6 waits for that plan's integrated stage 1 to land, and its import-graph test also covers <code>integrated_model.py</code>.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T213140796866-review-of-vs1-first-turn-rung-06cad87132f4-figure" data-who="reckon-build" data-when="2026-10-21T21:47:44.296Z">
+    <div class="r-comment-body"><p>figure review of r-20261021T191732814453-vs1-first-turn-rung at head 06cad87132f48e615ae3c28655e07ab614acb628: 6/6 rubric items answered, 0 blocking, 2 follow-on findings (sub-AA #8c8c8c reference grey on white; caption says 'two blue steps' where the figure draws three).</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T213049566329-review-of-vs1-first-turn-rung-06cad87132f4" data-who="reckon-build" data-when="2026-10-21T21:47:48.206Z">
+    <div class="r-comment-body"><p>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T191732814453-vs1-first-turn-rung/review-records/r-20261021T191732814453-vs1-first-turn-rung.json</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T222130511285-review-of-composed-insertion-busbar-037a3802394b" data-who="reckon-build" data-when="2026-10-21T22:47:55.542Z">
+    <div class="r-comment-body"><p>review record r-20261021T192717927583-composed-insertion-busbar.at-037a3802394b7bf18d6cdcf44bb0018e7eaf0e21.json (status parsed, total 82, added_failure_count 0, one blocking finding on the reviewed run's negative-control log)</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T223933173649-review-of-composed-insertion-busbar-037a3802394b-figure" data-who="reckon-build" data-when="2026-10-21T22:55:55.461Z">
+    <div class="r-comment-body"><p>Figure review of the composed insertion busbar run at head 037a3802394b7bf18d6cdcf44bb0018e7eaf0e21: one attached SVG rasterised and judged, six of six rubric items recorded, two findings, both follow-on, zero blocking, read-only throughout.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T230240178901-review-of-composed-insertion-busbar-61624fc54ee1" data-who="reckon-build" data-when="2026-10-21T23:19:38.537Z">
+    <div class="r-comment-body"><p>review record at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T192717927583-composed-insertion-busbar/review-records/r-20261021T192717927583-composed-insertion-busbar.at-61624fc54ee15aa98bc68e3ee6266d72549bf5fc.json - parsed, six dimensions scored, one blocking finding on the negative-control log's terminal EXIT=0</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T230306270661-review-of-composed-insertion-busbar-61624fc54ee1-figure" data-who="reckon-build" data-when="2026-10-21T23:29:46.521Z">
+    <div class="r-comment-body"><p>none — a read-only figure review lands nothing in the repository; the record is attached to the reviewed run's review-records directory for the coordinator.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261022T033927294340-review-of-vs1-first-turn-rung-f6625d280ad9" data-who="reckon-build" data-when="2026-10-22T04:02:39.991Z">
+    <div class="r-comment-body"><p>review of r-20261021T191732814453-vs1-first-turn-rung at head f6625d28, base 4d0ff7fa; record at review-records/r-20261021T191732814453-vs1-first-turn-rung.json; one blocking finding on the control paragraph at vs1-first-turn-rung.html:37, four findings total.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261022T044258276024-review-of-vs1-first-turn-rung-93fa1adf379d" data-who="reckon-build" data-when="2026-10-22T04:57:31.142Z">
+    <div class="r-comment-body"><p>review of r-20261021T191732814453-vs1-first-turn-rung at head 93fa1adf379dc5950f7a1cab78a854a3614dcce6, base 4d0ff7fa1ef13114c896aba958c7a26d0efbda57; scores goal_fidelity 14, evidence 12, scope_discipline 12, durability 5, fit 16, reuse 20; 2 follow-on findings, 0 blocking.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T191732814453-vs1-first-turn-rung" data-who="reckon-build" data-when="2026-10-22T04:42:55Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/shared-coil-supply-model/vs1-first-turn-rung.html#vs1-first-turn-rung</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261022T044121313521-review-of-composed-insertion-busbar-ea95eb992a70" data-who="reckon-build" data-when="2026-10-22T05:01:22.944Z">
+    <div class="r-comment-body"><p>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T192717927583-composed-insertion-busbar/review-records/r-20261021T192717927583-composed-insertion-busbar.at-ea95eb992a70ef4965ec695ddb369bc1c6835027.json</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T192717927583-composed-insertion-busbar" data-who="reckon-build" data-when="2026-10-22T04:14:44Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/shared-coil-supply-model/composed-insertion-busbar.html</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-landings-1022" data-who="reckon-build" data-when="2026-10-22T08:45:00Z">
+    <div class="r-comment-body"><p>Two §4 nodes landed on 22 October; §4 stays open.</p><ul><li><strong>VS1 ladder to 0.125 µs</strong> (<code>27d6a931</code>): only PF3's first turn converges. The connection points and terminal reverse (0.98 % then about 2.5 %). Cause: the under-resolved 2.7–5.4 MHz line ring. <a href="/power_convertor/evidence/archive/shared-coil-supply-model-landed.html#vs1-first-turn-rung">evidence</a></li><li><strong>Composed insertion</strong> (<code>bd0a3bb5</code>): the pins rest on the retired uncoupled feeder, and the registered 30 m route smooths the reflection. <a href="/power_convertor/evidence/archive/shared-coil-supply-model-landed.html#composed-insertion-busbar">evidence</a></li></ul><p>Still open: VS1's step criterion, by decision <code>vs1-step-criterion</code>, in node <code>vs1-peak-windows</code>; and the two insertion pins restated at both ends of the 170–480 m route, by decision <code>busbar-route-length</code>, in node <code>composed-insertion-route-range</code>. That node waits for the playback run to free <code>switched_discharge_insertion.py</code>.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261019T021331583055-review-of-jt60sa-composed-plant-b3c1fa1da0c4" data-who="reckon-build" data-when="2026-10-19T02:27:50.461Z">
+    <div class="r-comment-body"><p>landed an independent review of run r-20261019T013447800511-jt60sa-composed-plant at head b3c1fa1da0c4fd9d098fbec0d5930c56bacf8f43 — status parsed, six dimensions scored (goal_fidelity 12, evidence 8, scope_discipline 19, durability 10, fit 16, reuse 5), added_failure_count 0, four findings with one blocking (the section 5/7 rerun scores the pre-existing scripts/jt60sa/sectioned_plant.py build_plant() rather than the composed circuits, so the reproduction is not evidence about the new composition).</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261019T024746452670-review-of-jt60sa-composed-plant-d5b353f34b5e" data-who="reckon-build" data-when="2026-10-19T02:58:40.638Z">
+    <div class="r-comment-body"><p>The review record for run r-20261019T013447800511-jt60sa-composed-plant at revision d5b353f3 is stored under its review-records/ directory as a parsed record scoring all six dimensions (goal_fidelity 13, evidence 14, scope_discipline 20, durability 15, fit 16, reuse 5), with one blocking finding (a broken sentence in the evidence fragment at line 67) and four follow-on findings.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261019T033255614329-review-of-jt60sa-composed-plant-136ad552137a" data-who="reckon-build" data-when="2026-10-19T03:46:55.245Z">
+    <div class="r-comment-body"><p>Independent review of r-20261019T013447800511-jt60sa-composed-plant covering only the commits it gained since its prior review (d5b353f3..136ad552, commits 8a2a8eef and 136ad552): parsed, all six dimensions scored 0..20, no blocking finding, three follow-on findings.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261019T013447800511-jt60sa-composed-plant" data-who="reckon-build" data-when="2026-10-19T03:30:21Z">
+    <div class="r-comment-body"><p>The composed JT-60SA plant reproduces §5's nine stored residuals to 2.2e-14 relative with the capacitance off, and replays §7's judged windows with a worst deviation of 3.6 A, naming the two windows a later judge revision stopped judging.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-10-19T04:52:00Z">
+    <div class="r-comment-body"><p>§5 closed. JT-60SA's EF and CS circuits compose on the shared owners (merged <code>1355c2ca</code>). With the capacitance off, the nine stored coil-to-coil residuals reproduce within 2.2×10<sup>−14</sup>. 43 of 45 slow-current windows replay within 3.6 A; the two others are named, no longer judged after a judge revision. Capacitance-on results are reported beside them. Follow-ons go to <code>shared-model-follow-ons</code>: the library module imports the study tree at import time, and two refusal branches are untested. <a href="/power_convertor/evidence/archive/shared-coil-supply-model-landed.html#jt60sa-composed-plant">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261019T052001421094-review-of-correction-coil-supplies-0a230249582b" data-who="reckon-build" data-when="2026-10-19T05:31:04Z">
+    <div class="r-comment-body"><p>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T045626346615-correction-coil-supplies/review-records/r-20261019T045626346615-correction-coil-supplies.at-0a230249582ba9aa053a450b24378591aa5e65d0.json — parsed review of 44419ad8..0a230249, with four blocking and one follow-on findings.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261019T055655374821-review-of-correction-coil-supplies-4f53fd645df5" data-who="reckon-build" data-when="2026-10-19T06:07:55Z">
+    <div class="r-comment-body"><p>Parsed independent review at the two declared review-record paths for base 44419ad805d80858fb6131e8724436e9dd60b516 and head 4f53fd645df5d07262edcd25f6a1757fe2a6d319; six scores 16,16,20,15,17,19, two blocking findings and one follow-on, zero added suite failures.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261019T062910397475-review-of-correction-coil-supplies-e58b86598eee" data-who="reckon-build" data-when="2026-10-19T06:42:27.903Z">
+    <div class="r-comment-body"><p>review of r-20261019T045626346615-correction-coil-supplies at 44419ad8..e58b86598eee scored goal_fidelity 19, evidence 18, scope_discipline 18, durability 17, fit 18, reuse 19; added_failure_count 0; three follow-on findings, no blocking finding; the prior attempt's three findings (midpoint labelled as a published value, correlated gain assertion, bare citation accepted) are all repaired at this head.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261019T045626346615-correction-coil-supplies" data-who="reckon-build" data-when="2026-10-19T06:27:47Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/shared-coil-supply-model/correction-coil-supplies.html#correction-coil-supplies — nine sourced four-bridge supplies with 81-point 10 Hz–100 kHz line sweeps, six-cycle 600 Hz switched ripple, worst conditional fault L/R 14.881 s; A7BSV3 pages and assumed 9.5 mH midpoint recorded; independent 1 kHz gain 0.4998616 V/V, zero-gain mutation fails; 106 committed-head tests pass and revised SVG visually inspected.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-close-s7" data-who="reckon-build" data-when="2026-10-19T07:05:00Z">
+    <div class="r-comment-body"><p>§7 closed. The nine correction-coil supplies build from the register with sourced parameters (merged <code>fc39ea4b</code>). The record gives each circuit's switched 12-pulse ramp and its 10 Hz–100 kHz response. The worst fault decay, 14.9 s, meets L/R ≤ 18 s. A7BSV3 v1.1 is cited at p. 42 and p. 17. <a href="/power_convertor/evidence/archive/shared-coil-supply-model-landed.html#correction-coil-supplies">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261019T142214785276-review-of-shared-model-follow-ons-2-4b1c345e64c2" data-who="reckon-build" data-when="2026-10-19T14:37:25.579Z">
+    <div class="r-comment-body"><p>review-of-shared-model-follow-ons-2 — reviewed d8829013..4b1c345e; three files, all in the declared scope, test-only; both declared mutations reproduce and redden their new assertions; added_failure_count 0 (head and base both carry the pre-existing VS3 failure); scores goal 20, evidence 15, scope 20, durability 19, fit 18, reuse 20; parsed record stored.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261019T134729179483-shared-model-follow-ons-2" data-who="reckon-build" data-when="2026-10-19T14:21:15.688Z">
+    <div class="r-comment-body"><p>shared-model-follow-ons-2 — pinned the anti-series isolated terminal impedance of CC_TOP_1 at 1 kHz to 0.0012 + j119.38052 ohm (model: 0.0012+119.38052084j) and required the crossing violation to name the artist kind with its gid; both mutations refuse (1 failed/17 passed and 4 failed/19 passed), head gate 1 failed (pre-existing VS3)/123 passed against base 1 failed/122 passed, zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261019T044201986969-review-of-tf-supply-circuit-bd77c20bf092" data-who="reckon-build" data-when="2026-10-19T04:50:24Z">
+    <div class="r-comment-body"><p>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T040158952125-tf-supply-circuit/review-records/r-20261019T040158952125-tf-supply-circuit.at-bd77c20bf09237bbdd35f8947c727ab930c4be2d.json — parsed review of d5743aaf..bd77c20b, with one blocking and three follow-on findings.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261019T040158952125-tf-supply-circuit" data-who="reckon-build" data-when="2026-10-19T04:54:07Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/shared-coil-supply-model/tf-supply-circuit.html#tf-supply-circuit — TF factory and response measured; 61 focused tests pass, 778SPD current-squared equivalent tau 10.8403 s passes the 11 s ±5% gate, mctb fitted tau 8.6084 s reported beside it</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-s8-tf-circuit" data-who="reckon-build" data-when="2026-10-19T07:05:00Z">
+    <div class="r-comment-body"><p>Node landed (section still open). The TF supply circuit builds from the register with nine interleaved 0.111 Ω units and the TF converter's IDM values: 9TGBZS, VMMRKR and 6UQZB2 (merged <code>c756f499</code>). The record gives its terminal impedance and converter-line transfers. Its discharge gives 778SPD's current-squared τ<sub>eq</sub> of 10.84 s against 11 s, with mctb's fitted exponential, 8.61 s, beside it. The no-transient unit peak, 8.09–8.71 kV, exceeds 7.5 kV, and that is a finding. The switched response over one current ramp is still owed.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261021T215622483478-review-of-tf-supply-ramp-421216f22173" data-who="reckon-build" data-when="2026-10-21T22:13:51.031Z">
+    <div class="r-comment-body"><p>reviewed r-20261021T192804551119-tf-supply-ramp at 421216f2217352eca895901f02188ec172b940c3 (base dd6563e4d9319bc94a08427a199f4a0ad3e95a65): scored goal_fidelity 19, evidence 16, scope_discipline 20, durability 16, fit 18, reuse 5; added_failure_count 0 (baseline 6 passed at dd6563e4, after 7 passed EXIT=0 at 421216f2); four follow-on findings, none blocking.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261021T221543720942-review-of-tf-supply-ramp-421216f22173-figure" data-who="reckon-build" data-when="2026-10-21T22:45:36.830Z">
+    <div class="r-comment-body"><p>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T192804551119-tf-supply-ramp/review-records/r-20261021T192804551119-tf-supply-ramp.figure.json</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261022T042446437899-review-of-tf-supply-ramp-be8ccf2e1711" data-who="reckon-build" data-when="2026-10-22T04:45:57.558Z">
+    <div class="r-comment-body"><p>reviewed r-20261021T192804551119-tf-supply-ramp over the commits it gained since its first review, base 421216f2217352eca895901f02188ec172b940c3 head be8ccf2e171152367be3ebf0a48243bb224ab323: scored goal_fidelity 18, evidence 16, scope_discipline 20, durability 14, fit 18, reuse 20; added_failure_count 0 (baseline 6 passed at dd6563e4, after 7 passed EXIT=0 at be8ccf2e); two follow-on findings, none blocking.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261021T192804551119-tf-supply-ramp" data-who="reckon-build" data-when="2026-10-22T04:21:49Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/shared-coil-supply-model/tf-supply-ramp.html</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-10-22T04:55:00Z">
+    <div class="r-comment-body"><p>§8 closed. The TF supply's switched response over one current ramp has landed (merged <code>d2b193b0</code>). The averaged charge reaches 68 kA at 1884.86 s at the 650 V limit, with energy closed to 1e-5. Switched windows peak at 478.68 V to ground against 22HLVN's 1.0 kV. Findings carried: each resistor absorbs 4.385 GJ in a full discharge, 15 % over 778SPD's 3.81 GJ; and the no-transient unit peak of 8.09–8.71 kV exceeds 7.5 kV (<code>c756f499</code>). Two results are reported unmet: the ramp-start window's 0.9 A opening offset, and dv/dt step convergence. <a href="/power_convertor/evidence/archive/shared-coil-supply-model-landed.html#tf-supply-ramp">evidence</a></p></div>
+</div>
+</section>
+</main>
+</body>
+</html>

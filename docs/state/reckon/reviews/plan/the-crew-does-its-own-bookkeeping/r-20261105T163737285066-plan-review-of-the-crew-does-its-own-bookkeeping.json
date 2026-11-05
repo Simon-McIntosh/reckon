@@ -1,0 +1,116 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-05T16:53:46.910Z",
+  "dispatched_at": "2026-11-05T16:43:51Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-does-its-own-bookkeeping.html:163",
+      "id": "done_when-1",
+      "reason": "all four bullets sit under the same sentence and each is a concrete assertion; a worker implements what the bullets say, and the only cost is a count that disagrees with its own list.",
+      "text": "the done-when says it \"shows three things\" and then lists four bullets (the two-finding reason case was added without updating the count), so a worker reading the count as the required list could treat one bullet as optional",
+      "type": "done_when",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-does-its-own-bookkeeping.html:163",
+      "id": "reasoning-1",
+      "reason": "the round's advice is authoritative for what the worker may edit, so the worker writes its regression test at the granted node-named path and is unblocked; the fix trades the worker's filename preference for a path it is guaranteed to hold, which is the property the section exists to deliver.",
+      "text": "the grant is a single guessed path, `tests/test_<reviewed run's node id>.py`, while the incident's worker asked for `tests/test_merge_requires_promotable_run.py` \u2014 a module that already existed at the reviewed head and that the coordinator granted by hand (`resume-2-advice.txt`), so where the right home for a regression test is an existing module the guessed path does not name it",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "b5b42e53981206164a079d39cb3c77b0fcb05a96",
+  "plan_fingerprint": "29e40c52b5a47aaec2304832bf5063f8c9c336ea66a3ed7f797c27854fd9f53e",
+  "plan_slug": "the-crew-does-its-own-bookkeeping",
+  "plan_version": 56,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "b5b42e53981206164a079d39cb3c77b0fcb05a96",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a727's count corrected to four; the grant also includes any tests/ path the finding's text names, so an existing test module is granted, with the node-named file only when the finding names none",
+      "reason": "",
+      "when": "2026-11-05T17:02:58.520242+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "b5b42e53981206164a079d39cb3c77b0fcb05a96",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a727's count corrected to four; the grant also includes any tests/ path the finding's text names, so an existing test module is granted, with the node-named file only when the finding names none",
+      "reason": "",
+      "when": "2026-11-05T17:03:19.470090+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "b5b42e53981206164a079d39cb3c77b0fcb05a96",
+      "commit_basis": "edit",
+      "note": "\u00a727's count corrected to four; the grant also includes any tests/ path the finding's text names, so an existing test module is granted, with the node-named file only when the finding names none",
+      "reason": "",
+      "when": "2026-11-05T17:02:58.520242+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "b5b42e53981206164a079d39cb3c77b0fcb05a96",
+      "commit_basis": "edit",
+      "note": "\u00a727's count corrected to four; the grant also includes any tests/ path the finding's text names, so an existing test module is granted, with the node-named file only when the finding names none",
+      "reason": "",
+      "when": "2026-11-05T17:03:19.470090+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-crew-does-its-own-bookkeeping/r-20261105T163737285066-plan-review-of-the-crew-does-its-own-bookkeeping.json",
+  "review_run_id": "r-20261105T163737285066-plan-review-of-the-crew-does-its-own-bookkeeping",
+  "reviewed_blob_sha": "9c3aa2b1b9071c5b08c62e7f1697d057b20b9f76",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_grant_round_scope` (435\u2013497), `_grant_reason` (500, and it does match on `file`), `_repair_resume_advice` and its \"Write scope for this round\" line (`recovery_repair_dispatch.py:556`, constant at `recovery_review_dispatch.py:254`) and `pointer[\"node\"][\"id\"]` (a live pointer's `node.id` is the node slug) all resolve; the incident's quoted manifest line resolves verbatim in `resume-1.jsonl`, and the round's scope in `resume-1-advice.txt` is exactly the four paths the plan names. The one imprecision, \"the `repair-<source>-<head>` round id\", is a paraphrase of the actual `repair-of-<run id>-<head12>` (`REPAIR_NODE_PREFIX`, `round_node_id`); the operative instruction beside it \u2014 read `pointer[\"node\"][\"id\"]` \u2014 is exact, so it cannot misdirect.",
+    "done_when": "a finding \u2014 s27 says the new test \"shows three things\" and then lists four bullets, a count left over from the version that had three; the four bullets themselves are measurable with three genuine negative controls.",
+    "evidence_paths": "pass \u2014 write paths are the module and the new test under `tests/`, and the gate sentence sends every log to the run directory with its revision and literal command first and `EXIT=` last, so nothing lands in a scratchpad.",
+    "naming": "pass \u2014 `_asks_for_a_test`, `tests/test_a_repair_round_*` are named by mechanism, and no plan label, stage name or ticket number reaches a symbol or the test path.",
+    "reasoning": "pass \u2014 all three checks hold. The root cause matches the evidence: the recorded blocking finding said the merge refusal \"has no committed regression test\", and `_asks_for_a_test`'s \"no committed \u2026 test\" pattern matches that text, so the predicate fires on the plan's own cited case. The mechanism produces the done-when: adding the path to the sequence `_grant_round_scope` iterates reaches `widen_claim` and, because `advised = [path for path in scope if path not in refused]` (line 496), reaches the advice line at 556. And the caller is named and reachable: `compose_repair_for_run` (`recovery_repair_dispatch.py:1312`) calls `_grant_round_scope(run_id, scope, blocking)` and feeds the returned scope straight into `_repair_resume_advice`, on the resume path the incident itself took.",
+    "single_goal": "pass \u2014 one deliverable: a blocking finding that asks for a missing test gets a `tests/` path granted; the fourth bullet is a truth table for the predicate that deliverable is built on, not a second goal.",
+    "wiring": "pass \u2014 s27 declares `depends-on: the-crew-does-its-own-bookkeeping#s25`, which exists and is implementable, and both nodes edit `reckon/crew/recovery_repair_dispatch.py`, so the ordering is the same-file serialisation the declaration is for; nothing else depends on s27 and s27 needs nothing further, since `widen_claim`, the pointer's `node.id` and the claim readers it uses already exist at the base."
+  },
+  "section_digests": {
+    "_document": "8a9ab986f23b30b1cca26742c3e49f07e211256070ac23feb2b536bf79c15ca8",
+    "s1": "843bb65a273798e31ae7d542e71c3172be8db96af98b3b5fa5582c0e4b7052b8",
+    "s10": "383abdaed093dc9135b7930e907d6aeaaeff313c10da917e0f90ef21242cc000",
+    "s11": "528ecce7a53f57e54bcf1efa83ff458958c3437b3432895ddecdd835a0e62505",
+    "s12": "cf7304fd49c4d28e5bca798e2fca486ef137e59bce341c819316936d77daf719",
+    "s13": "751a9cd019e8296d87aa5d4f4e45f8a29d84381081120d349dc5bd6b19125ed3",
+    "s14": "37143d66ebad07f999845341b909080392b4fffa341c7553bbece98ce2d93af1",
+    "s15": "327a3b6261f327ba147b39dd2d6fbd1ce595e493e1834f8eb9ef957ea33f55c6",
+    "s16": "738604ff6516e5303088fb5f37ce17d56c02dc7217d2ebd64cdad839f6fd1eb5",
+    "s17": "f7a6d1fb09a597263b98f3f9db11f0a156337a303d2ccf5eb3b0d44899d7956f",
+    "s18": "526aabfb15ccc6205c07b6cf24a8c3fd22579f4776d2bd7a971164251a7d6f95",
+    "s19": "0e85b55be35103b90e318507ff6f86e1f640ef451c18250a9bcb4cb4f2e7c1b0",
+    "s2": "0fe853c67da217879c5c8672e5902b9a76353e03c761fc4b411b7d92af3feb8f",
+    "s20": "949f4ed4b742b4afba912a3943856d1af84c9226addd2df16be2024644c5f1ea",
+    "s21": "7e1c07b0431d4b47d90d44bc5d92db9ab1bb89fe6de6fb2f0fb79f61c04261ef",
+    "s22": "5cb33a844f041e4d88c2d1f7620411b91bbffd0c6605f939520cfa7178756424",
+    "s23": "b1aa58f1dbd4f559cc20a27b9f735c21e1c558ba2ab75ee90c390f1a649c6a44",
+    "s24": "dcacf6665c2b437d62dfd9ebfb5bd1f979f111d5438fc6145701595e4d7468bb",
+    "s25": "ca040954bf353ac976d8d5792c30235f6d957564602a674cf827d3f7ccc5b183",
+    "s26": "a0ac709c25dc1d649a9bc70dde6b95c8d7afc430dbf8b8e48c19f08f2376ad18",
+    "s27": "7cce6a318be2dba988bf7a0df06409d9ff645f1c4bc926bf8a9115b7f33a5ccc",
+    "s3": "ba6dd9a478bc0199ba62cffc2235c6b7735014d677ac51e4789220cffff43d32",
+    "s4": "725c875cfeb877f71fdc01870943889b9c403c08aa0ee675bdbb100c60d896ee",
+    "s5": "7c304261c964b9ccae1e7148a9bffe48cc81416987e9ed2e9d50d6c5a77df7b7",
+    "s6": "f293425c956b5e910273b5c23cfe8ee7a3a4c1d5565a0c10742e9f7beee7c269",
+    "s7": "9450a2aff439a83861b8a100a49b15e67fd864fa1523edeeafd6c9dd9e0ec5c7",
+    "s8": "1e02f8193f9402b4cf070a0f78feb68f2e3d79a9bb21f00d7c10f33032ed6f37",
+    "s9": "c5acdc2406e91d62930f4e8772839567aca54b6df3e16cbe65878db520b53043"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T17:01:11.420013+00:00"
+}

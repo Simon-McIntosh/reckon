@@ -1,0 +1,97 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:_queue_dispatch_batch",
+    "reckon/crew_dispatch_commands.py:crew_dispatch"
+  ],
+  "completed_at": "2026-11-05T14:25:14.290Z",
+  "dispatched_at": "2026-11-05T14:10:41Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-coordinator-queues-the-work-it-chose-in-one-call",
+      "recorded_at": "2026-11-05T14:34:02.807948+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "a-coordinator-queues-the-work-it-chose-in-one-call",
+      "recorded_at": "2026-11-05T14:34:08.722272+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "a-coordinator-queues-the-work-it-chose-in-one-call",
+      "recorded_at": "2026-11-05T14:34:14.986948+00:00"
+    },
+    "3": {
+      "kind": "folded",
+      "node": "a-coordinator-queues-the-work-it-chose-in-one-call",
+      "recorded_at": "2026-11-05T14:34:20.115310+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_batch_queues_the_chosen_sections.py",
+      "id": "fbb5c91388e",
+      "line": "309",
+      "severity": "non-blocking",
+      "text": "non-blocking: `assert len(whole) <= len(_batch())` permits one whole-project roadmap build per batch entry, so it passes on exactly the per-entry project-roadmap rebuild the section exists to remove and cannot fail on the defect it names; the done-when's sixth clause (build_roadmap is not called) is unmeasured. Fold into a section giving queue ordering a bounded rank source."
+    },
+    {
+      "file": "reckon/crew/dispatch_batch.py",
+      "id": "f8560b3e0ed",
+      "line": "180",
+      "severity": "non-blocking",
+      "text": "non-blocking: the token scan runs from the end of the Write-paths sentence locator to the end of the whole section, so a path named in a later paragraph, such as a done-when test path, is captured as a derived write path and widens a worker's fence."
+    },
+    {
+      "file": "reckon/crew/dispatch_batch.py",
+      "id": "f55115466a0",
+      "line": "184",
+      "severity": "non-blocking",
+      "text": "non-blocking: _EXTENSION accepts \"e.g\", \"i.e\" and \"v1.2\" as path-shaped tokens, so ordinary prose abbreviations and version numbers can be derived as write paths."
+    },
+    {
+      "file": "reckon/crew_dispatch_commands.py",
+      "id": "f0e644c92f0",
+      "line": "1139",
+      "severity": "non-blocking",
+      "text": "non-blocking: three blank lines before `@crew.command(name=\"dispatch\")` is an E303 finding this commit adds, against the repository rule that a commit adds no findings."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read the single commit 63e2271a4c against base 57eb26e9: 6 files, +902/-6, each inside the declared scope.",
+    "done_when": "the six bullets of \u00a728's done-when are measured in tests/test_a_batch_queues_the_chosen_sections.py:226-266 and :269-316; five are asserted and the sixth, \"build_roadmap is not called\", is replaced at :309 by `len(whole) <= len(_batch())` because runs.queue_dispatch builds one whole-project roadmap per stored request, which the manifest records under outside_scope.",
+    "goal": "the node's goal is one batch call that queues a coordinator's chosen sections; reckon/crew/dispatch_batch.py:346 `queue_batch` implements it and reckon/crew_dispatch_commands.py:1517 reaches it from `crew dispatch --batch`.",
+    "manifest": "read; it records status complete, head 63e2271a4c, after.log (2 passed, EXIT=0), head.log (32 passed, EXIT=0) and negative_control.log (2 failed, EXIT=1).",
+    "write_paths": "the manifest's orientation_write_paths name dispatch_batch.py, crew_dispatch_commands.py, SKILL.md, sprint-orchestration.md, the new test and the evidence fragment; all six changed paths in the diff are inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_batch_queues_the_chosen_sections.py:252 and :299 fail on a dropped derivation and a dropped parse cache, but :309 cannot fail on the per-entry whole-roadmap build it names.",
+    "evidence": "tests/test_a_batch_queues_the_chosen_sections.py:309 replaces the done-when's \"build_roadmap is not called\" with `len(whole) <= len(_batch())`, which permits one whole-project build per entry.",
+    "fit": "reckon/crew/dispatch_batch.py follows the surrounding module idiom and introduces no forbidden name, but reckon/crew_dispatch_commands.py:1139 leaves three blank lines before the decorator.",
+    "goal_fidelity": "reckon/crew/dispatch_batch.py:415-478 stores each entry on its own and prints one row per entry, which is the one-call behaviour the goal names.",
+    "reuse": "reckon/crew/dispatch_batch.py:172 re-implements the write-path token walk that reckon/crew/plan_review.py:4548 owns, and :93 re-implements a parse cache beside reckon/file_memo.py.",
+    "scope_discipline": "every path in commit 63e2271a4c is inside the manifest's declared write paths, and no plan or sprint state is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is one batch call that queues a coordinator's chosen sections; reckon/crew/dispatch_batch.py:346 `queue_batch` implements it and reckon/crew_dispatch_commands.py:1517 reaches it from `crew dispatch --batch`.\nVERDICT done_when: the six bullets of the section's done-when are measured in tests/test_a_batch_queues_the_chosen_sections.py:226-266 and :269-316; five are asserted and the sixth, \"build_roadmap is not called\", is replaced at :309 by `len(whole) <= len(_batch())` because runs.queue_dispatch builds one whole-project roadmap per stored request, which the manifest records under outside_scope.\nVERDICT write_paths: the manifest's orientation_write_paths name dispatch_batch.py, crew_dispatch_commands.py, SKILL.md, sprint-orchestration.md, the new test and the evidence fragment; all six changed paths in the diff are inside them.\nVERDICT manifest: read; it records status complete, head 63e2271a4c, after.log (2 passed, EXIT=0), head.log (32 passed, EXIT=0) and negative_control.log (2 failed, EXIT=1).\nVERDICT diff: read the single commit 63e2271a4c against base 57eb26e9: 6 files, +902/-6, each inside the declared scope.\nCALL_SITES: reckon/crew_dispatch_commands.py:_queue_dispatch_batch, reckon/crew_dispatch_commands.py:crew_dispatch\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_batch.py:415-478 stores each entry on its own and prints one row per entry, which is the one-call behaviour the goal names.\nSCORE evidence: 11\nJUSTIFICATION evidence: tests/test_a_batch_queues_the_chosen_sections.py:309 replaces the done-when's \"build_roadmap is not called\" with `len(whole) <= len(_batch())`, which permits one whole-project build per entry.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in commit 63e2271a4c is inside the manifest's declared write paths, and no plan or sprint state is touched.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_a_batch_queues_the_chosen_sections.py:252 and :299 fail on a dropped derivation and a dropped parse cache, but :309 cannot fail on the per-entry whole-roadmap build it names.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/dispatch_batch.py follows the surrounding module idiom and introduces no forbidden name, but reckon/crew_dispatch_commands.py:1139 leaves three blank lines before the decorator.\nSCORE reuse: 13\nJUSTIFICATION reuse: reckon/crew/dispatch_batch.py:172 re-implements the write-paths token walk that reckon/crew/plan_review.py:4548 owns, and :93 re-implements a parse cache beside reckon/file_memo.py.\nFINDING tests/test_a_batch_queues_the_chosen_sections.py:309 non-blocking: `assert len(whole) <= len(_batch())` permits one whole-project roadmap build per batch entry, so it passes on exactly the per-entry project-roadmap rebuild the section exists to remove and cannot fail on the defect it names; the done-when's sixth clause is unmeasured.\nFINDING reckon/crew/dispatch_batch.py:180 non-blocking: the token scan runs from the end of the Write-paths sentence locator to the end of the whole section, so a path named in a later paragraph is captured as a derived write path and widens a worker's fence.\nFINDING reckon/crew/dispatch_batch.py:184 non-blocking: _EXTENSION accepts \"e.g\", \"i.e\" and \"v1.2\" as path-shaped tokens, so prose abbreviations and version numbers can be derived as write paths.\nFINDING reckon/crew_dispatch_commands.py:1139 non-blocking: three blank lines before the dispatch decorator is an E303 finding this commit adds.",
+  "review_run_id": "r-20261105T140545976834-review-of-a-coordinator-queues-the-work-it-chose-in-one-call-63e2271a4c9e",
+  "reviewed_base_sha": "57eb26e93c7ed4f8faa064bfe977fab2d62ee680",
+  "reviewed_head_sha": "63e2271a4c9ec129ac63312753cf3c9aeb107f90",
+  "reviewed_run_id": "r-20261103T074735748928-a-coordinator-queues-the-work-it-chose-in-one-call",
+  "scores": {
+    "durability": 13,
+    "evidence": 11,
+    "fit": 15,
+    "goal_fidelity": 17,
+    "reuse": 13,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T14:30:43.621454+00:00",
+  "total": 87
+}

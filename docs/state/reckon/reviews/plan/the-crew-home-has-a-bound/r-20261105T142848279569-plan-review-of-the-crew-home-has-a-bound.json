@@ -1,0 +1,209 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-05T14:37:24.099Z",
+  "dispatched_at": "2026-11-05T14:31:33Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-crew-home-has-a-bound/r-20261105T142848279569-plan-review-of-the-crew-home-has-a-bound/plan.html:171",
+      "id": "reasoning-1",
+      "reason": "the node must be told that wiring the unlink into the release path (itself the deliverable) is required, or its gate passes on a direct `crew gc --run` call while every promotion keeps leaking.",
+      "text": "\u00a711's Why says \"single-run gc is the path every promotion and release takes\", but `garbage_collect` has exactly one production caller, the `crew gc` CLI command at `reckon/crew_run_commands.py:1915`; the promotion/release path (`_release_run_workspace` and `_release_worktree_whole`, `reckon/crew/promotion_release.py:337-425`, `reckon/crew/routing.py:1343-1392`) never calls gc, so a fix confined to gc's `run_id` branch would still be reached by no release",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-crew-home-has-a-bound/r-20261105T142848279569-plan-review-of-the-crew-home-has-a-bound/plan.html:171",
+      "id": "done_when-1",
+      "reason": "a negative control aimed at a branch the tested path never executes measures nothing, so the node needs a control that removes its own unlink.",
+      "text": "\u00a711 declares \"The negative control restores the run-id skip, and the first case fails\", but the first case releases a run's worktree; if the unlink is added where the write paths point (a call from `promotion_release.py`, as the missing caller above requires) restoring gc's run-id skip changes nothing on that path and the control stays green",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-crew-home-has-a-bound/r-20261105T142848279569-plan-review-of-the-crew-home-has-a-bound/plan.html:175",
+      "id": "reasoning-2",
+      "reason": "a node editing `run_store.py` would leave the aborting read in place, and its \"no added failure\" gate on files importing `reckon.run_store` would confirm nothing about the defect.",
+      "text": "\u00a712 sends the node to `reckon/run_store.py`, but the record it describes is `docs/state/<project>/runs/<run_id>.json` (`ledger.run_path`, `reckon/ledger.py:890-895`) and the cited message \"cannot read run \u2026 Expecting value: line 1 column 1\" is raised by `_read_run` at `reckon/ledger.py:1265-1278`; `run_store.py` only decodes SQLite columns and never reads a per-run JSON document",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-crew-home-has-a-bound/r-20261105T142848279569-plan-review-of-the-crew-home-has-a-bound/plan.html:175",
+      "id": "done_when-2",
+      "reason": "half the stated contract (skip everywhere except this run) is unmeasured, so a node could satisfy every case by skipping the damaged record unconditionally.",
+      "text": "\u00a712's deliverable says \"Only a promotion of that run itself is refused\", but its done-when tests only that another run's promotion succeeds beside the damaged record; nothing measures the refusal",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-crew-home-has-a-bound/r-20261105T142848279569-plan-review-of-the-crew-home-has-a-bound/plan.html:24",
+      "id": "wiring-1",
+      "reason": "an implementable section with no followup is never queued, so the work the plan declares is unreachable.",
+      "text": "\u00a711 and \u00a712 are declared `implementable` but the followups list ends at f-tchhab-009 (\u00a79), so neither new section has a dispatching invocation and nothing in the plan reaches them",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-crew-home-has-a-bound/r-20261105T142848279569-plan-review-of-the-crew-home-has-a-bound/plan.html:24",
+      "id": "wiring-2",
+      "reason": "the plan simultaneously says \u00a79 is finished and queued to be built, so a dispatch of f-tchhab-009 rebuilds landed work.",
+      "text": "the same declaration map marks `s9` done while its dispatching followup f-tchhab-009 (snapshot line 214) is still `data-status=\"open\"` and recommends `/reckon-build the-crew-home-has-a-bound \u00a79`, even though `c-close-s9` records \u00a79 landed",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "5bede3ddfbc6bdceb8329614371a3a33fed33094",
+  "plan_fingerprint": "83e3f71dd6adb564446afa75590e4fb1882fc10343cf0a38b12a3ad7265d8f3b",
+  "plan_slug": "the-crew-home-has-a-bound",
+  "plan_version": 74,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "5bede3ddfbc6bdceb8329614371a3a33fed33094",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a711 now unlinks from the release path in promotion_release.py with a control that removes that call; \u00a712 writes reckon/ledger.py's _read_run and tests the run's own refusal; followups added for \u00a711 and \u00a712, and \u00a79's resolved",
+      "reason": "",
+      "when": "2026-11-05T14:51:54.994719+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "5bede3ddfbc6bdceb8329614371a3a33fed33094",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a711 now unlinks from the release path in promotion_release.py with a control that removes that call; \u00a712 writes reckon/ledger.py's _read_run and tests the run's own refusal; followups added for \u00a711 and \u00a712, and \u00a79's resolved",
+      "reason": "",
+      "when": "2026-11-05T14:52:14.189795+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "5bede3ddfbc6bdceb8329614371a3a33fed33094",
+      "commit_basis": "edit",
+      "finding": "reasoning-2",
+      "note": "\u00a711 now unlinks from the release path in promotion_release.py with a control that removes that call; \u00a712 writes reckon/ledger.py's _read_run and tests the run's own refusal; followups added for \u00a711 and \u00a712, and \u00a79's resolved",
+      "reason": "",
+      "when": "2026-11-05T14:52:37.557441+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "5bede3ddfbc6bdceb8329614371a3a33fed33094",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "\u00a711 now unlinks from the release path in promotion_release.py with a control that removes that call; \u00a712 writes reckon/ledger.py's _read_run and tests the run's own refusal; followups added for \u00a711 and \u00a712, and \u00a79's resolved",
+      "reason": "",
+      "when": "2026-11-05T14:53:00.690999+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "5bede3ddfbc6bdceb8329614371a3a33fed33094",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "\u00a711 now unlinks from the release path in promotion_release.py with a control that removes that call; \u00a712 writes reckon/ledger.py's _read_run and tests the run's own refusal; followups added for \u00a711 and \u00a712, and \u00a79's resolved",
+      "reason": "",
+      "when": "2026-11-05T14:53:20.303488+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "5bede3ddfbc6bdceb8329614371a3a33fed33094",
+      "commit_basis": "edit",
+      "finding": "wiring-2",
+      "note": "\u00a711 now unlinks from the release path in promotion_release.py with a control that removes that call; \u00a712 writes reckon/ledger.py's _read_run and tests the run's own refusal; followups added for \u00a711 and \u00a712, and \u00a79's resolved",
+      "reason": "",
+      "when": "2026-11-05T14:53:36.380098+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "5bede3ddfbc6bdceb8329614371a3a33fed33094",
+      "commit_basis": "edit",
+      "note": "\u00a711 now unlinks from the release path in promotion_release.py with a control that removes that call; \u00a712 writes reckon/ledger.py's _read_run and tests the run's own refusal; followups added for \u00a711 and \u00a712, and \u00a79's resolved",
+      "reason": "",
+      "when": "2026-11-05T14:52:14.189795+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "5bede3ddfbc6bdceb8329614371a3a33fed33094",
+      "commit_basis": "edit",
+      "note": "\u00a711 now unlinks from the release path in promotion_release.py with a control that removes that call; \u00a712 writes reckon/ledger.py's _read_run and tests the run's own refusal; followups added for \u00a711 and \u00a712, and \u00a79's resolved",
+      "reason": "",
+      "when": "2026-11-05T14:53:00.690999+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "5bede3ddfbc6bdceb8329614371a3a33fed33094",
+      "commit_basis": "edit",
+      "note": "\u00a711 now unlinks from the release path in promotion_release.py with a control that removes that call; \u00a712 writes reckon/ledger.py's _read_run and tests the run's own refusal; followups added for \u00a711 and \u00a712, and \u00a79's resolved",
+      "reason": "",
+      "when": "2026-11-05T14:51:54.994719+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "5bede3ddfbc6bdceb8329614371a3a33fed33094",
+      "commit_basis": "edit",
+      "note": "\u00a711 now unlinks from the release path in promotion_release.py with a control that removes that call; \u00a712 writes reckon/ledger.py's _read_run and tests the run's own refusal; followups added for \u00a711 and \u00a712, and \u00a79's resolved",
+      "reason": "",
+      "when": "2026-11-05T14:52:37.557441+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "5bede3ddfbc6bdceb8329614371a3a33fed33094",
+      "commit_basis": "edit",
+      "note": "\u00a711 now unlinks from the release path in promotion_release.py with a control that removes that call; \u00a712 writes reckon/ledger.py's _read_run and tests the run's own refusal; followups added for \u00a711 and \u00a712, and \u00a79's resolved",
+      "reason": "",
+      "when": "2026-11-05T14:53:20.303488+00:00"
+    },
+    "wiring-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "5bede3ddfbc6bdceb8329614371a3a33fed33094",
+      "commit_basis": "edit",
+      "note": "\u00a711 now unlinks from the release path in promotion_release.py with a control that removes that call; \u00a712 writes reckon/ledger.py's _read_run and tests the run's own refusal; followups added for \u00a711 and \u00a712, and \u00a79's resolved",
+      "reason": "",
+      "when": "2026-11-05T14:53:36.380098+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-crew-home-has-a-bound/r-20261105T142848279569-plan-review-of-the-crew-home-has-a-bound.json",
+  "review_run_id": "r-20261105T142848279569-plan-review-of-the-crew-home-has-a-bound",
+  "reviewed_blob_sha": "469cf0668c3d2926934c6a4462ab269927e25cc3",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_run_index_path` resolves at `reckon/ledger.py:1115`, `_orphan_ledger_indexes` at `reckon/crew/gc.py:395`, `ledger_path` at `reckon/ledger.py:829`, and the quoted `_orphan_ledger_indexes(...) if run_id is None else []` is exactly `reckon/crew/gc.py:844`.",
+    "done_when": "a finding \u2014 \u00a711's negative control restores the gc run-id skip while its first case exercises the promotion/release path the skip does not reach, and \u00a712's done-when never tests its own \"only a promotion of that run itself is refused\" clause.",
+    "evidence_paths": "pass \u2014 both sections send gate logs and the \u00a711 host measure to the run directory and land evidence in `docs/evidence/archive/the-crew-home-has-a-bound-landed.html`, both durable paths.",
+    "naming": "pass \u2014 the two new test filenames name behaviour (`test_a_released_worktree_takes_its_index.py`, `test_a_damaged_run_record_stops_only_its_run.py`) and no plan label, ticket number or changelog prose appears in the added text.",
+    "reasoning": "a finding \u2014 \u00a711 asserts a caller that does not exist (\"single-run gc is the path every promotion and release takes\"), and \u00a712 names `reckon/run_store.py` as the module to change although the truncation it describes is read and reported by `reckon/ledger.py`.",
+    "single_goal": "pass \u2014 \u00a711's three bullets describe one mechanism (unlink the released tree's index) with its liveness invariant and an operational reap, and \u00a712's deliverable is one read-tolerance change.",
+    "wiring": "a finding \u2014 \u00a711 and \u00a712 are declared `implementable` in the section declarations (snapshot line 24) but no followup invokes either, and \u00a79 is declared done while its dispatching followup f-tchhab-009 is still open."
+  },
+  "section_digests": {
+    "_document": "5bb1f293aa0f11a71f538cf299c5e30ae1598a2b8da609282c6a3bef8674084b",
+    "s1": "32d74b1202f967c9688afa80dbd94719f49d78f6a5afcc8d56d9c46602e1c0a5",
+    "s10": "56c18da5f95c1af6bc07050b4374f565f11fa8750f575894cd4e1cc2b5ea773a",
+    "s11": "ec60db5760a22414e26dea8722f9a6ebd72e8804916d60047c1ae19ba8ee8c8d",
+    "s12": "d7b58af026b4a890971fa2e53f7aff845320619484d53c6995da5acee5f25c09",
+    "s2": "9328c20a14a28cadebc0cf3424b9fa61772f8c3bea7e4f7b1e097571697c0369",
+    "s3": "42466bfb93ed68c3dcdb669550dae38d00ebbdea5e24407a7579076255209fbf",
+    "s4": "ea437bee063bb05e8f8ddb6f7a30f7f066d66dff1770c1488e31b86a6f5c7ba8",
+    "s5": "75a8a336e2ee62426e5a8c3ed3310e0cf614b82a8cf7ae6a5985fcb99f2b1648",
+    "s6": "3f82b3311550663b1d18b1428203c2b44805aff91f1c998049de11dd82bfe201",
+    "s7": "d966e9dc54000fcf7d43d9d39567b2a791c2670b0224b881649472a126a8f106",
+    "s8": "07d9242815cd2c19cf76c9484aa28c908834190af477f204091de9d695b3e8a5",
+    "s9": "5e8a5c96b9e0b65736bdee8a24254ce6fe4a12c73dcb34c44b3a5a72b6e6d9c8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T14:49:44.139698+00:00"
+}

@@ -1,0 +1,63 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch.py:702",
+    "reckon/crew/dispatch.py:1859",
+    "reckon/crew/dispatch.py:2884",
+    "reckon/crew/dispatch.py:3339",
+    "reckon/crew/promotion.py:1451"
+  ],
+  "completed_at": "2026-11-05T16:02:27.705Z",
+  "dispatched_at": "2026-11-05T15:55:41Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "The repository-origin vocabulary is owned by reckon/crew/routing.py, which is read-only for this node; the filter's literals match routing's current emitters, and naming the vocabulary in routing is routing's change.",
+      "recorded_at": "2026-11-05T16:11:03.899794+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_refusals.py",
+      "id": "f5fe2fa51fd",
+      "line": 48,
+      "severity": "non-blocking",
+      "text": "REPOSITORY_ORIGINS re-declares routing's repository-origin vocabulary as the literals 'declared write path' and 'mention', which routing.py:3660 owns inline and emits beside 'standing instruction' at routing.py:3651; if routing renames a repository origin or adds another, this filter silently drops those paths and a cut brief records no removed_paths, so the vocabulary should be named once in the owner."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "pass \u2014 verified the two refusal-record sites, the reduction read and the consume site in dispatch.py, and promotion.py:1451 carrying the node block onto the ledger row.",
+    "diff": "pass \u2014 two commits read against 2a6b74f42b: c2192970aa replaces the local timestamp parser with reckon/_timestamps.parse_utc, filters charged paths to repository origins, and versions the payload so an earlier shape reads as absent; 8aea6c97f7 records the round's arms in the landing fragment.",
+    "done_when": "pass \u2014 the done_when names a refusal followed by a shortened acceptance carrying the reduction, its survival through promotion, and no marker on a first attempt; tests/test_a_reduced_brief_leaves_a_trace.py has a named case for each and head-round2.log records the four-file gate at 156 passed EXIT=0.",
+    "goal": "pass \u2014 the node's goal is that a dispatch accepted after a refusal for the same node id records that it was retried and what changed about its brief; reckon/crew/dispatch.py:2884 writes that record onto the node block for promotion at reckon/crew/promotion.py:1451.",
+    "manifest": "pass \u2014 read; status complete, and it records the gate at c2192970aa as 156 passed EXIT=0, the round-2 red arm as 2 failed 6 passed EXIT=1, and baseline_suite/after_suite with the log paths those figures come from.",
+    "write_paths": "pass \u2014 the manifest declares dispatch.py, dispatch_refusals.py, the test file, the evidence fragment and a figures directory; the two gained commits touch dispatch_refusals.py, the test file and the fragment, all inside that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_reduced_brief_leaves_a_trace.py:285 reddens at 2a6b74f42b with the standing instruction path in removed_paths and :305 reddens there with the earlier-shape trace still marking, both recorded in red-before-fix-round2.log, and both compare against fixture-derived values or an absence rather than a value the test handed in.",
+    "evidence": "The gate log head-round2.log records 156 passed EXIT=0 at c2192970aa and red-before-fix-round2.log records 2 failed 6 passed EXIT=1 at 2a6b74f42b, so the measure is recorded rather than claimed; the manifest's baseline_suite still names the first round's base arm (4 cases at 04cf3e42) rather than a round-2 base arm, which is why this is not 20.",
+    "fit": "reckon/crew/dispatch_refusals.py:43 and :48 follow the module's constant style and :32 imports the shared parser the way other crew modules do, with no plan or ticket identifiers in names or comments.",
+    "goal_fidelity": "The round changes only how the refusal trace is read, and reckon/crew/dispatch.py:2884 still writes node_definition['brief_reduction'] and promotion.py:1451 still carries that block onto the ledger row, so the section goal is untouched.",
+    "reuse": "reckon/crew/dispatch_refusals.py:169 now uses reckon/_timestamps.py parse_utc and :97 uses routing's _context_contributors, resolving the prior round's duplicated timestamp parser; the origin labels at :48 are still literals that routing.py:3651 and :3660 own only inline, so the vocabulary is coupled by text.",
+    "scope_discipline": "git diff 2a6b74f42b..8aea6c97f7 touches only reckon/crew/dispatch_refusals.py, tests/test_a_reduced_brief_leaves_a_trace.py and the landing fragment, all inside the manifest's five declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a dispatch accepted after a refusal for the same node id records that it was retried and what changed about its brief; reckon/crew/dispatch.py:2884 writes that record onto the node block that reckon/crew/promotion.py:1451 carries onto the ledger row, and this round changes only how the trace is read.\nVERDICT done_when: the done_when asks for a refusal then a shortened acceptance carrying the reduction, its survival through promotion and no marker on a first attempt; tests/test_a_reduced_brief_leaves_a_trace.py has a named case for each and head-round2.log records the four-file gate at 156 passed EXIT=0 at c2192970aa.\nVERDICT write_paths: the manifest declares five paths; git diff 2a6b74f42b..8aea6c97f7 touches only reckon/crew/dispatch_refusals.py, tests/test_a_reduced_brief_leaves_a_trace.py and the landing fragment, all inside that scope.\nVERDICT manifest: read; status complete, recording the gate at c2192970aa as 156 passed EXIT=0, the round-2 red arm as 2 failed 6 passed EXIT=1, and baseline_suite and after_suite with their log paths.\nVERDICT diff: two commits read against 2a6b74f42b: c2192970aa replaces the local timestamp parser with reckon/_timestamps.parse_utc, filters charged paths to repository origins through routing's contributor records, and versions the payload so an earlier shape reads as absent; 2a6b74f42b..8aea6c97f7's second commit records the round's arms in the landing fragment alone.\nCALL_SITES: reckon/crew/dispatch.py:702, reckon/crew/dispatch.py:1859, reckon/crew/dispatch.py:2884, reckon/crew/dispatch.py:3339, reckon/crew/promotion.py:1451\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:2884 still writes node_definition['brief_reduction'] and promotion.py:1451 still carries it onto the row, so the goal survives a round that changes only the trace's readers.\nSCORE evidence: 18\nJUSTIFICATION evidence: head-round2.log is 156 passed EXIT=0 at c2192970aa and red-before-fix-round2.log is 2 failed 6 passed EXIT=1 at 2a6b74f42b, while the manifest's baseline_suite still names the first round's base arm rather than a round-2 base arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff 2a6b74f42b..8aea6c97f7 is inside the manifest's declared write paths and the routing census-key gap stays recorded under outside_scope.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_reduced_brief_leaves_a_trace.py:285 and :305 both redden at 2a6b74f42b and pass at the head, each comparing a fixture-derived path or an absence rather than a value the test supplied.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/dispatch_refusals.py:43 and :48 follow the module's constant style and :32 imports the shared parser as other crew modules do, with no forbidden identifiers.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/dispatch_refusals.py:169 uses reckon/_timestamps.py parse_utc and :97 uses routing's _context_contributors, resolving the prior duplicated parser, though the origin labels at :48 remain literals the owner routing.py:3651 defines only inline.\nFINDING reckon/crew/dispatch_refusals.py:48 non-blocking: REPOSITORY_ORIGINS re-declares routing's repository-origin vocabulary as the literals 'declared write path' and 'mention', owned inline at routing.py:3660 beside 'standing instruction' at :3651, so a renamed or added repository origin silently drops those paths from removed_paths and a cut brief would record none.\n",
+  "review_run_id": "r-20261105T155243192263-review-of-a-reduced-brief-leaves-a-trace-8aea6c97f774",
+  "reviewed_base_sha": "2a6b74f42be0883b5eca7ec73bf3e8a70b4dc252",
+  "reviewed_head_sha": "8aea6c97f7746eff8410d988de3d0b859cad9819",
+  "reviewed_run_id": "r-20261027T100023696601-a-reduced-brief-leaves-a-trace",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T16:08:06.786648+00:00",
+  "total": 112
+}

@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": "reckon/project_maintenance_commands.py:1657, reckon/cli.py:552",
+  "completed_at": "2026-11-05T11:18:00.877Z",
+  "dispatched_at": "2026-11-05T11:07:18Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the fragment names the pre-repair head daf1588ce while its cited gate log names 782743ba39; the log carries the revision the result belongs to",
+      "recorded_at": "2026-11-05T11:49:46.188823+00:00"
+    }
+  },
+  "findings": [
+    {
+      "id": "f4a457c9a29",
+      "severity": "non-blocking",
+      "text": "docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-research-or-evidence-document-cannot-carry-a-plans-slug.html:5 non-blocking: the measure paragraph names the head as daf1588ce and reports 7 passed there, while the gate log it cites names its own revision in logs/evidence-head.log as 782743ba39, so the landed record points a reader at an arm revision its evidence does not carry."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from d060a1bd to 782743ba; daf1588cef rewrites _declared_project onto _plan_html.parse_plan and hoists _load_mounts out of _collision_context into run (reckon/doccheck.py:2745-2820) and adds the three bare-audit tests, while 782743ba39 changes only the fragment's measure paragraph.",
+    "done_when": "the done_when asks for a test refusing the colliding record naming the plan and passing an own-slug one, a negative control, a base arm, logs starting with their revision and literal command and ending EXIT=, and ruff parity; tests/test_doccheck_slug_collision.py:85-145 supplies the three bare-audit tests and logs/evidence-base.log (2 failed, 5 passed, EXIT=1), evidence-head.log (7 passed, EXIT=0), evidence-neg.log (4 failed, 3 passed, EXIT=1), suite-base.log and suite-head.log each carry all three.",
+    "goal": "prompt.txt:38 states the goal as a research or evidence document cannot carry a plan's slug; the gained commits keep the bare-audit project resolution at reckon/doccheck.py:2769 and add the committed guard that demonstrates it.",
+    "manifest": "read; it records status complete, commits 0d7db2ae0e, d060a1bdc2, daf1588cef and 782743ba39, the five gate logs, and the arm figures 2 failed/5 passed at base, 7 passed at head and 4 failed/3 passed under the negative control.",
+    "write_paths": "the source fence at prompt.txt:64-67 declared reckon/doccheck.py, the landing fragment and the figures directory; the diff also touches tests/test_doccheck_slug_collision.py, which plan section 12 declares as 'the new test' but the dispatch fence omitted."
+  },
+  "justifications": {
+    "durability": "tests/test_doccheck_slug_collision.py:85 and :126 are red at base 327ce7a6 and again in logs/evidence-neg.log once _collision_context is removed, and each asserts an exit code and printed finding text rather than any value the test itself passed in.",
+    "evidence": "the five gate logs under the run directory record revision, literal command and a bare EXIT= for every arm; I re-measured ruff 0.16.4 on both changed files at each revision and got 17 findings and a clean format check at both, matching the manifest, though no ruff log is stored.",
+    "fit": "reckon/doccheck.py:2769 keeps the module's private-helper idiom and no plan, section or ticket identifier appears in the added code, tests or comments.",
+    "goal_fidelity": "reckon/doccheck.py:2813-2823 loads the mounts once and resolves each audited path through _collision_context, so a bare audit reaches slug_collision_findings and refuses a colliding research record.",
+    "reuse": "_declared_project now delegates to reckon/_plan_html.py:2579 parse_plan, extending the repository's single meta reader rather than re-reading docs-project itself.",
+    "scope_discipline": "every path in the diff is one of the three the review goal names, but tests/test_doccheck_slug_collision.py sits outside the dispatch's declared fence even though plan section 12 declares it."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 states the goal as a research or evidence document cannot carry a plan's slug; the gained commits keep the bare-audit project resolution at reckon/doccheck.py:2769 and add the committed guard that demonstrates it.\nVERDICT done_when: the done_when asks for a test refusing the colliding record naming the plan and passing an own-slug one, a negative control, a base arm, logs starting with their revision and literal command and ending EXIT=, and ruff parity; tests/test_doccheck_slug_collision.py:85-145 supplies the three bare-audit tests and logs/evidence-base.log (2 failed, 5 passed, EXIT=1), evidence-head.log (7 passed, EXIT=0), evidence-neg.log (4 failed, 3 passed, EXIT=1), suite-base.log and suite-head.log each carry all three.\nVERDICT write_paths: the source fence at prompt.txt:64-67 declared reckon/doccheck.py, the landing fragment and the figures directory; the diff also touches tests/test_doccheck_slug_collision.py, which plan section 12 declares as 'the new test' but the dispatch fence omitted.\nVERDICT manifest: read; it records status complete, commits 0d7db2ae0e, d060a1bdc2, daf1588cef and 782743ba39, the five gate logs, and the arm figures 2 failed/5 passed at base, 7 passed at head and 4 failed/3 passed under the negative control.\nVERDICT diff: read commit by commit from d060a1bd to 782743ba; daf1588cef rewrites _declared_project onto _plan_html.parse_plan and hoists _load_mounts out of _collision_context into run (reckon/doccheck.py:2745-2820) and adds the three bare-audit tests, while 782743ba39 changes only the fragment's measure paragraph.\nCALL_SITES: reckon/project_maintenance_commands.py:1657, reckon/cli.py:552\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/doccheck.py:2813-2823 loads the mounts once and resolves each audited path through _collision_context, so a bare audit reaches slug_collision_findings and refuses a colliding research record.\nSCORE evidence: 16\nJUSTIFICATION evidence: the five gate logs under the run directory record revision, literal command and a bare EXIT= for every arm; I re-measured ruff 0.16.4 on both changed files at each revision and got 17 findings and a clean format check at both, matching the manifest, though no ruff log is stored.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in the diff is one of the three the review goal names, but tests/test_doccheck_slug_collision.py sits outside the dispatch's declared fence even though plan section 12 declares it.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_doccheck_slug_collision.py:85 and :126 are red at base 327ce7a6 and again in logs/evidence-neg.log once _collision_context is removed, and each asserts an exit code and printed finding text rather than any value the test itself passed in.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/doccheck.py:2769 keeps the module's private-helper idiom and no plan, section or ticket identifier appears in the added code, tests or comments.\nSCORE reuse: 19\nJUSTIFICATION reuse: _declared_project now delegates to reckon/_plan_html.py:2579 parse_plan, extending the repository's single meta reader rather than re-reading docs-project itself.\nFINDING docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-research-or-evidence-document-cannot-carry-a-plans-slug.html:5 non-blocking: the measure paragraph names the head as daf1588ce and reports 7 passed there, while the gate log it cites names its own revision in logs/evidence-head.log as 782743ba39, so the landed record points a reader at an arm revision its evidence does not carry.\n",
+  "review_run_id": "r-20261105T105730669223-review-of-a-research-or-evidence-document-cannot-carry-a-plans-slug-782743ba39b9",
+  "reviewed_base_sha": "d060a1bdc29d968943687893bdfe12d04f2db75f",
+  "reviewed_head_sha": "782743ba39b9014701b836be5956297daccb78ee",
+  "reviewed_run_id": "r-20261103T073250723891-a-research-or-evidence-document-cannot-carry-a-plans-slug",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T11:46:38.253007+00:00",
+  "total": 107
+}

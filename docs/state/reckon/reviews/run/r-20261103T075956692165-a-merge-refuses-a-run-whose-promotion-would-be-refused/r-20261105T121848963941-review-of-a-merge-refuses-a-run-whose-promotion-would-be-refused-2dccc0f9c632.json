@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The source run was suite-unarmed and its manifest has no baseline_suite or after_suite keys. Its own paired importing-module gates are /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T075956692165-a-merge-refuses-a-run-whose-promotion-would-be-refused/base-arm.log at 2c3100cb3d84b65ce531afd5cc2ac80025754755 and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T075956692165-a-merge-refuses-a-run-whose-promotion-would-be-refused/head-arm-final.log at 569a0044befb1a47d5efd1a3e90b03c867d26149; each completed with 32 passed, EXIT=0, and no failure ids. The evidence-only final commit changes no code.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:crew_merge",
+    "reckon/crew/merge.py:land_merge"
+  ],
+  "completed_at": "2026-11-05T12:28:51Z",
+  "dispatched_at": "2026-11-05T12:20:26Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-merge-refuses-a-run-whose-promotion-would-be-refused",
+      "recorded_at": "2026-11-05T13:28:33.340016+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/merge.py",
+      "line": 108,
+      "severity": "blocking",
+      "text": "The new merge refusal has no committed regression test: the only test that fails when require_promotable_head is replaced with a no-op is the run-local scratch/test_merge_promotion_guard.py, outside the repository and the source run's committed diff; the guard can regress after this run without a repository test turning red."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commits 02ab8a41, 569a0044 and 2dccc0f9 against 2c3100cb3d84b65ce531afd5cc2ac80025754755; the first adds the guard and CLI options, the second moves the check into the merge verification callback, and the third records evidence without adding a repository test.",
+    "done_when": "the plan's three cases are exercised in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T075956692165-a-merge-refuses-a-run-whose-promotion-would-be-refused/head-behavior-final.log (2 passed, EXIT=0), with the base case red in base-behavior.log and the removed-check case red in negative-control.log; base-arm.log and head-arm-final.log each report 32 passed.",
+    "goal": "the source goal requires a merge to refuse a run that cannot promote; reckon/crew/merge.py:108 adds the pre-merge check and reckon/crew_run_commands.py:302 reaches it from crew merge.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T075956692165-a-merge-refuses-a-run-whose-promotion-would-be-refused/manifest.md; it reports complete, names commits 02ab8a41, 569a0044 and 2dccc0f9, and cites the paired behavior, importing-module and mutation logs while acknowledging the regression test exists only in scratch.",
+    "write_paths": "the source manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T075956692165-a-merge-refuses-a-run-whose-promotion-would-be-refused/manifest.md declares merge.py, promotion.py, crew_run_commands.py, its evidence fragment and a figure directory; the three-commit diff changes only merge.py, crew_run_commands.py and that fragment."
+  },
+  "justifications": {
+    "durability": "reckon/crew/merge.py:108 has no assertion added in the committed diff; the refusal assertion that reddened under mutation lives only at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T075956692165-a-merge-refuses-a-run-whose-promotion-would-be-refused/scratch/test_merge_promotion_guard.py:48.",
+    "evidence": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T075956692165-a-merge-refuses-a-run-whose-promotion-would-be-refused/base-behavior.log:48 shows the base merge returned ok:true and pushed after a dry-run refusal, while head-behavior-final.log reports 2 passed and negative-control.log:48 shows the bad landing returns when the guard is removed.",
+    "fit": "reckon/crew/merge.py:108 delegates to the existing promotion.complete_dry_run and follows land_merge's verification seam, while the new names in reckon/crew_run_commands.py:302 describe their behavior.",
+    "goal_fidelity": "reckon/crew/merge.py:108 uses promotion.complete_dry_run for a matched live head, and reckon/crew_run_commands.py:302 invokes it before land_merge moves or pushes the branch.",
+    "reuse": "reckon/crew/merge.py:108 wraps the existing promotion dry-run owner in reckon/crew/promotion.py:853 and uses the existing land_merge verification callback, so the capability search found no parallel promotion checker.",
+    "scope_discipline": "the diff from 2c3100cb3d84b65ce531afd5cc2ac80025754755 to 2dccc0f9c6328c8b94fd4c0ca053823114ec5137 changes only reckon/crew/merge.py, reckon/crew_run_commands.py and the declared evidence fragment, as listed in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T075956692165-a-merge-refuses-a-run-whose-promotion-would-be-refused/manifest.md."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source goal requires a merge to refuse a run that cannot promote; reckon/crew/merge.py:108 adds the pre-merge check and reckon/crew_run_commands.py:302 reaches it from crew merge.\nVERDICT done_when: the plan's three cases are exercised in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T075956692165-a-merge-refuses-a-run-whose-promotion-would-be-refused/head-behavior-final.log (2 passed, EXIT=0), with the base case red in base-behavior.log and the removed-check case red in negative-control.log; base-arm.log and head-arm-final.log each report 32 passed.\nVERDICT write_paths: the source manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T075956692165-a-merge-refuses-a-run-whose-promotion-would-be-refused/manifest.md declares merge.py, promotion.py, crew_run_commands.py, its evidence fragment and a figure directory; the three-commit diff changes only merge.py, crew_run_commands.py and that fragment.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T075956692165-a-merge-refuses-a-run-whose-promotion-would-be-refused/manifest.md; it reports complete, names commits 02ab8a41, 569a0044 and 2dccc0f9, and cites the paired behavior, importing-module and mutation logs while acknowledging the regression test exists only in scratch.\nVERDICT diff: read commits 02ab8a41, 569a0044 and 2dccc0f9 against 2c3100cb3d84b65ce531afd5cc2ac80025754755; the first adds the guard and CLI options, the second moves the check into the merge verification callback, and the third records evidence without adding a repository test.\nCALL_SITES: reckon/crew_run_commands.py:crew_merge, reckon/crew/merge.py:land_merge\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/merge.py:108 uses promotion.complete_dry_run for a matched live head, and reckon/crew_run_commands.py:302 invokes it before land_merge moves or pushes the branch.\nSCORE evidence: 18\nJUSTIFICATION evidence: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T075956692165-a-merge-refuses-a-run-whose-promotion-would-be-refused/base-behavior.log:48 shows the base merge returned ok:true and pushed after a dry-run refusal, while head-behavior-final.log reports 2 passed and negative-control.log:48 shows the bad landing returns when the guard is removed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff from 2c3100cb3d84b65ce531afd5cc2ac80025754755 to 2dccc0f9c6328c8b94fd4c0ca053823114ec5137 changes only reckon/crew/merge.py, reckon/crew_run_commands.py and the declared evidence fragment, as listed in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T075956692165-a-merge-refuses-a-run-whose-promotion-would-be-refused/manifest.md.\nSCORE durability: 3\nJUSTIFICATION durability: reckon/crew/merge.py:108 has no assertion added in the committed diff; the refusal assertion that reddened under mutation lives only at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T075956692165-a-merge-refuses-a-run-whose-promotion-would-be-refused/scratch/test_merge_promotion_guard.py:48.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/merge.py:108 delegates to the existing promotion.complete_dry_run and follows land_merge's verification seam, while the new names in reckon/crew_run_commands.py:302 describe their behavior.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/merge.py:108 wraps the existing promotion dry-run owner in reckon/crew/promotion.py:853 and uses the existing land_merge verification callback, so the capability search found no parallel promotion checker.\nFINDING reckon/crew/merge.py:108 blocking: The new merge refusal has no committed regression test: the only test that fails when require_promotable_head is replaced with a no-op is the run-local scratch/test_merge_promotion_guard.py, outside the repository and the source run's committed diff; the guard can regress after this run without a repository test turning red.\n",
+  "review_run_id": "r-20261105T121848963941-review-of-a-merge-refuses-a-run-whose-promotion-would-be-refused-2dccc0f9c632",
+  "reviewed_base_sha": "2c3100cb3d84b65ce531afd5cc2ac80025754755",
+  "reviewed_head_sha": "2dccc0f9c6328c8b94fd4c0ca053823114ec5137",
+  "reviewed_range": "2c3100cb3d84b65ce531afd5cc2ac80025754755..2dccc0f9c6328c8b94fd4c0ca053823114ec5137",
+  "reviewed_run_id": "r-20261103T075956692165-a-merge-refuses-a-run-whose-promotion-would-be-refused",
+  "scores": {
+    "durability": 3,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T12:48:08.683017+00:00",
+  "total": 96
+}

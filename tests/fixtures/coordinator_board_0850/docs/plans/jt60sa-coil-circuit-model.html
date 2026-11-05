@@ -1,0 +1,1056 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="power_convertor">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="jt60sa-coil-circuit-model">
+  <meta name="plan-title" content="JT-60SA Coil Circuit Model">
+  <meta name="plan-summary" content="Every JT-60SA coil circuit from the IDS machine description, with nova couplings and passive structures, tested on the 2021 coil-to-coil pickup">
+  <meta name="plan-status" content="in-progress">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="22.25">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-sprint" content="S2">
+  <meta name="plan-tags" content="jt-60sa,power-supply,lumped-model">
+  <meta name="plan-after" content="jt60sa-power-supply-sources">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;deferred&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;}">
+  <title>JT-60SA Coil Circuit Model | power_convertor</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="188">
+<meta name="plan-modified" content="2026-10-22">
+<meta name="plan-commits" content="814b1df,99fc9c6,f6bed04,72c47bf,7de4ea4,45e6024,3edecda,6817925,505ef5e,381d0e1,317b5dc,d3bbaa5,4695c76,5721dc1,b6c03e1,3a5647a,f521991,5c00574,fb3fcfe,5f1d0dc,84e78c9">
+<meta name="plan-section-depends-on" content="{&quot;s17&quot;:[&quot;jt60sa-coil-circuit-model#s18&quot;,&quot;jt60sa-coil-circuit-model#s19&quot;]}">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — What the machine description already gives, and what it lacks</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>
+      The S1 plans model each supply into its own coil. An integrated test of the supplies needs the
+      rest of the electromagnetic system: every coil's coupling to every other coil and to the
+      vacuum vessel, and the circuits that connect supplies to coils. This plan builds that system
+      from the IDS machine description, so the same code runs on any machine that publishes one,
+      ITER included.
+    </p>
+    <p>
+      imas-ambix already authors a JT-60SA machine description per operating phase
+      (<code>~/Code/imas-ambix/maps/jt-60sa/machine_description/OP1</code> and <code>OP2</code>,
+      Data Dictionary 4.1.1) with five IDSs: <code>magnetics</code>, <code>pf_active</code>,
+      <code>pf_passive</code>, <code>tf</code> and <code>wall</code>. A prototype run against OP2 found:
+    </p>
+    <table>
+      <thead><tr><th>Content</th><th>State in the OP2 store</th></tr></thead>
+      <tbody>
+        <tr><td>Coils</td><td>12: CS1–4 (40 elements, 549 turns each), EF1–6 (16 elements, 142–353 turns), FPPC_UP and FPPC_DOWN (6 elements, 23 turns)</td></tr>
+        <tr><td>Passive structures</td><td>2 loops; the vacuum vessel has 98 elements (63 in OP1)</td></tr>
+        <tr><td>Supplies</td><td>none</td></tr>
+        <tr><td>Coil resistance</td><td>empty</td></tr>
+        <tr><td>Circuits</td><td>12 placeholders, one per coil, each a 1 × 1 "connection" holding the coil index. The Data Dictionary requires 2 × (supplies + coils) columns, and nova rejects them</td></tr>
+      </tbody>
+    </table>
+    <p>
+      nova computes the coil-coil inductance matrix from this description
+      (<code>scripts/jt60sa/machine_description.py</code>, run in nova's environment): 76 s on a CPU,
+      symmetric to 2 × 10⁻¹⁰, with self-inductances of 375 mH (EF5) to 716 mH (EF6) and 289.5 mH for
+      each CS module. Two adaptations were needed. nova's reader expects the DD3
+      <code>coil.identifier</code>, so the IDS is converted to DD 3.42 first, and the placeholder
+      circuits are cleared.
+    </p>
+    <p>
+      The 2021 single-coil tests already measure these couplings. In each test one booster drives its
+      coil and the neighbours pick up its ripple; for an open neighbour with nothing in between, the
+      ratio of their coil-voltage lines is M/L. The measured 6f ratios are below nova's M/L for every
+      pair: by 1.3 times for neighbours such as EF5 and EF6, and by up to 14 times for distant pairs
+      such as EF5 and EF2. That is the signature of screening by the passive structures, and it is
+      the first test the model has to pass.
+    </p>
+    <p>
+      Measured across frequency, the same tests settle the geometry. At 0.12–0.24 Hz the pickup ratio
+      equals nova's M/L within 2–8 % for all nine pairs with long records (coherence ≥ 0.98), so the
+      machine description and nova are right at DC, and the deficit at 6f is frequency-dependent
+      screening, characterised in §5.
+    </p>
+    <figure>
+      <img src="/power_convertor/figures/jt60sa-coil-circuit-model/pickup-against-coupling.svg" alt="Measured 6f pickup ratio against nova M/L for 13 coil pairs">
+      <figcaption>Coil-to-coil pickup in the 2021 single-coil booster tests (E100310 EF5, E100321
+      EF2, E100347 EF6, E100353 EF1), as the ratio of the neighbour's 6f coil-voltage line to the
+      driven coil's in the hold window, against the DC coupling M/L that nova computes from the OP2
+      machine description. Every pair lies below the dotted line, and distant pairs lie furthest
+      below it. <code>scripts/figures/jt60sa_coil_coupling.py</code>.</figcaption>
+    </figure>
+    <p>
+      Two features of the same data will need explaining. The ratios fall further at 12f and 18f
+      (EF5 to EF6: 0.39, 0.13, 0.11), as screening predicts. EF6's pickup arrives near 180° when
+      EF5 or EF2 drives, while every other pair but EF5 to CS4 (62°) is within 20° of zero. Either EF6's turns or its
+      voltage channel carries the opposite sign to the description, or EF6's circuit responds
+      differently. The low-frequency ratios taken over the swing are also below M/L, which a
+      neighbour supply holding its current would explain.
+    </p>
+
+    <h2 id="s2">§2 — The circuits as built</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>
+      Establish every circuit that connects a supply to a coil, and whether any circuit links several
+      coils. What is known so far:
+    </p>
+    <ul>
+      <li>Each of the ten superconducting coils has its own circuit: a base supply, in series with a booster (EF1, EF2, EF5, EF6) or a switching network unit (CS1–4, EF3, EF4), and a quench protection circuit. The booster circuits carry the ripple filter, and every circuit the alternative grounding (<a href="/power_convertor/research/jt60sa-booster-ripple-evidence">jt60sa-booster-ripple-evidence</a> §2, §6).</li>
+      <li>The two fast plasma position control coils inside the vessel are each fed by their own converter: a four-quadrant, twelve-pulse thyristor converter with circulating current, ±1 kV and ±5 kA, with a crowbar and a non-linear resistor across the coil against disruption overvoltages of up to 10 kV. The vertical-stability function is therefore a control coupling of two independent circuits, unless the documents show the converters wired together.</li>
+      <li>The eighteen sector coils of the resistive-wall-mode system (about 300 A and 240 V each) are non-axisymmetric and outside this plan.</li>
+    </ul>
+    <p>
+      The data can test the circuit topology directly. Coils in one series circuit carry one current,
+      and coils in anti-series carry opposite currents. The channels are on disk: the fast-control-coil
+      currents, supply voltages and references, and the dump-resistor voltages of every coil, for all
+      52 shots, in <code>data/jt60sa/nodes/</code> (<code>scripts/jt60sa/fetch_circuit_nodes.py</code>);
+      the switching-unit terminal voltages are in the main shot files. The fast-control coils carry no
+      current in any 2023 shot (E100963 to E101090), consistent with their completion in December 2025,
+      so the 2023 data hold the ten PF circuits only. Test every PF coil pair for current identity.
+    </p>
+    <p>
+      <strong>Done when</strong> a circuit table in this plan cites a source for each circuit's
+      elements and connection, and the current-identity test has run over every coil pair in the 2023
+      plasma shots with its result recorded. Positive control: a synthetic anti-series pair built from
+      one coil's current and its negative is detected. Negative control: CS1 and CS2, which have
+      separate supplies, are not.
+    </p>
+
+    <h2 id="s3">§3 — Channel signs and the EF6 phase</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>
+      A coil channel's sign decides whether a pickup arrives at 0° or 180°, so it has to be known
+      before the pickup can test the model. For each coil, regress its slow coil voltage on the
+      L dI/dt formed from its own current over a swing, with L from the §1 matrix: the sign of the
+      slope is the channel's sign relative to the machine description's turns. Then settle EF6's
+      180° pickup, by a channel sign or by the state of EF6's circuit while its neighbours are
+      driven. booster-converter-model's measurement-chain section can take the same sign table.
+    </p>
+    <p>
+      The regression extends the slow balance that exists rather than adding another:
+      <code>circuit.py</code>'s filtered derivative, swing selection and self/mutual regression
+      (<code>identify_split</code>, with its 2 Hz balance filter), and the dump-voltage regression in
+      <code>scripts/jt60sa/fast_discharge_couplings.py</code>. The table then becomes the one sign
+      policy. It replaces the shot-dependent EF6 correction in
+      <code>scripts/figures/jt60sa_measured_couplings.py</code> now, and the inferred sign in
+      <code>scripts/figures/jt60sa_coupling_transfer.py</code> when that script is consolidated after
+      §5. Its surface is one module holding the table and a lookup by coil and shot.
+    </p>
+    <p>
+      The data already narrow it. EF6's pickup is inverted in every shot up to E100329, whichever
+      coil drives (EF5, EF2, and the CS1 and CS2 fast discharges), with the magnitude of M/L, and it
+      is correct in every shot from E100347 on. EF6's own fast discharge E100346 still reads
+      inverted: its self-inductance comes out at −691 mH against nova's 716 mH, and every pickup has
+      the opposite sign. Something in EF6's channel or connection changed between E100346 and
+      E100347.
+    </p>
+    <p>
+      <strong>Done when</strong> a sign table for the ten coils and the two fast-control coils is
+      recorded in this plan with the shots it used, and EF6's phase is either explained by it or left
+      open with the evidence. Positive control: a channel inverted on purpose is reported with the
+      opposite sign. Negative control: a coil with no excitation in the window, its own dI/dt below a
+      threshold declared before the run so the regressor has no rank, is reported as unidentifiable
+      with no sign rather than as a measured zero slope. The unexcited fast-control coils are
+      reported the same way.
+    </p>
+
+    <h2 id="s4">§4 — Supplies and circuits in the machine description</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>
+      Write the §2 circuits into a <code>pf_active</code> overlay on the ambix geometry: a new module
+      <code>src/power_convertor/coil_system.py</code> reads the ambix store with imas-python, adds one
+      <code>supply</code> per converter (base, booster, switching network unit, fast-control-coil
+      converter) with its voltage and current limits, writes each <code>circuit</code> as a connection
+      matrix of the size the Data Dictionary defines, adds coil resistances where a document gives
+      them, and saves the result under <code>data/jt60sa/machine_description/</code>. Every value
+      cites its source in the module. The overlay is a candidate for imas-ambix's own store, offered
+      there once it is checked; the geometry stays ambix's.
+    </p>
+    <p>
+      The module's public surface is one builder that returns the overlay and one writer that saves
+      it. It takes over the Data Dictionary conversion from
+      <code>scripts/jt60sa/machine_description.py</code>, which then calls it and stops clearing the
+      circuits, so there is one conversion path. Nothing else is retired, because no existing module
+      writes supplies or circuits.
+    </p>
+    <p>
+      <strong>Done when</strong> nova builds the overlay's circuits without error, and
+      <code>tests/test_coil_system.py</code> shows that each single-coil circuit's current equals its
+      coil's current. Negative control: the ambix placeholder circuits are refused by the same loader
+      with the column-count error the prototype met.
+    </p>
+
+    <h2 id="s5">§5 — The coupling transfer functions, characterised from data</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="5.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>
+      Modelling the vessel and the other passive conductors from their geometry and resistivity is
+      possible but slow to get right, and it is not needed to use the coupling. The 2021 single-coil
+      tests measure the coupling transfer function H(f) = V<sub>pickup</sub>/V<sub>driven</sub>
+      directly: from 0.1 to 30 Hz over the swing, by cross-spectral estimate, and at the converter
+      harmonics 6f to 18f over the hold, as complex line ratios
+      (<code>scripts/figures/jt60sa_coupling_transfer.py</code>, results in
+      <code>data/jt60sa/coupling_transfer.json</code>).
+    </p>
+    <figure>
+      <img src="/power_convertor/figures/jt60sa-coil-circuit-model/coupling-transfer.svg" alt="Measured coupling transfer functions for nine coil pairs with the two-pole fit">
+      <figcaption>Measured |V<sub>pickup</sub>/V<sub>driven</sub>| for nine coil pairs in the 2021
+      single-coil tests: swing estimates with coherence above 0.9 (dots), converter-harmonic line
+      ratios above 5 V (circles), nova's M/L (dotted), and a fit with two real poles shared by every
+      pair (dashed). Shots E100317, E100318, E100324, E100351 and E100353.</figcaption>
+    </figure>
+    <p>
+      At the lowest frequencies H is nova's M/L. Below 30 Hz it falls with two time constants shared
+      by every pair, 151 ms and 42 ms, with a weight per pair, to 4.6 % rms of M/L. Shared time
+      constants are what eigenmodes of the passive structure produce, so the screening points to a
+      few passive loops whose couplings to the coils are identified rather than computed. The measured
+      H is a ratio of terminal voltages, not a coupling. A passive loop also screens the driven coil's
+      own impedance, so H carries a denominator that depends on the driven coil, and its pole weights
+      do not factorise directly into one coupling per coil. The loops are therefore fitted through the
+      coupled circuit equations of coils and loops, which give H for an open pickup coil with the
+      driven coil's self-screening included. If the loops are physical, their couplings fitted on some
+      pairs predict the others. That is the test this section runs. The converter harmonics sit two to five times above the fitted high-frequency gain,
+      a separate effect this section characterises at the line frequencies; the pickups' own supplies
+      are off in those tests, so the lines are coupling. One ratio exceeds M/L: EF5 to EF4 at 12f is
+      0.57 against a DC M/L of 0.288. A purely inductive network with passive loops can exceed the DC
+      ratio (a positive-definite three-coil example gives 0.33 against 0.2), so the excess does not by
+      itself show a common-mode or capacitive path through the grounding. Both explanations are kept as
+      hypotheses, and the coupled-circuit fit says whether the inductive one suffices.
+    </p>
+    <p>
+      Further excitations widen the data: the 2023 single-coil tests at two hold currents, the
+      plasma-campaign shots in which several supplies run, and any coil fast discharge into its
+      quench-protection dump resistor, whose exponential current decay excites every frequency the
+      swing does not. The dump-resistor voltages <code>&lt;coil&gt;/volQPCDR</code> identify those
+      discharges.
+    </p>
+    <p>
+      The 2021 shot log names sixteen of them, covering every coil but EF2: CS1 E100247, E100253,
+      E100256, E100325 and E100326; CS2 E100329; CS3 E100333; CS4 E100336; EF3 E100343; EF4 E100289,
+      E100290, E100294 and E100339; EF5 E100276; EF6 E100346; EF1 E100352. Each dump puts about
+      0.168 Ω across the coil. From the March 2021 dumps one event gives a whole coupling row within a
+      few percent of nova's M/L (CS1 to CS2 0.209 against 0.215, CS1 to EF3 0.143 against 0.149, CS2 to
+      EF5 0.029 against 0.028), and the coil's own voltage against dI/dt gives its self-inductance
+      without the dump resistance (CS1 286 mH and CS2 275 mH against nova's 289 mH). In the February
+      CS1 dumps (E100247 to E100256) the neighbour voltage channels hold fixed offsets with no pickup,
+      so those shots give the self-inductance only. The fast ramps of CS2 and EF5 to ±5 kA (E100268,
+      E100269, E100277, E100278) are a further excitation.
+    </p>
+    <p>
+      A scan of every shot's dump-resistor voltages (<code>scripts/jt60sa/scan_fast_discharges.py</code>,
+      catalogued by <code>scripts/jt60sa/fast_discharge_catalogue.py</code> into
+      <code>data/jt60sa/fast_discharge_catalogue.json</code>) finds 213 shots with dumps from 2021 to
+      2023: 146 in which a single coil dumps, with 10 to 22 for every coil including EF2 (E100319,
+      E100320, E100444, E100445, E100448, E100449, E100497, E100498, E100911, E100912, E101134), at 1, 3
+      and 5 kA, and 67 in which
+      several dump together. The 2023 single-coil dumps (E100884 to E101134) measure the couplings
+      after the filters and the grounding changed.
+    </p>
+    <p>
+      The seven March 2021 dumps whose neighbour channels are live, with the booster tests' lowest
+      frequencies, already give the DC coupling matrix: 62 dump pairs and 11 swing pairs sit around
+      nova's M/L with medians of 0.955 and 0.989, and seven coils' self-inductances lie within 1–7 % of
+      nova's (EF4 605–624 mH against 629 mH, EF1 538 against 551, EF3 339 against 332).
+    </p>
+    <figure>
+      <img src="/power_convertor/figures/jt60sa-coil-circuit-model/measured-couplings.svg" alt="Measured DC couplings from fast discharges and booster swings against nova M/L">
+      <figcaption>Measured DC couplings against nova's M/L from the IDS machine description: the
+      March 2021 fast discharges (circles; pickup over driven coil voltage in the 3 s after the dump)
+      and the 2021 booster swings (squares; transfer function at about 0.2 Hz). EF6's channel sign is
+      corrected up to E100346. Crosses mark measured couplings of the wrong sign, both on pairs with
+      M/L near 0.01. <code>scripts/figures/jt60sa_measured_couplings.py</code>.</figcaption>
+    </figure>
+    <p>
+      Two owners already exist and are extended rather than copied. The complex line ratio is
+      <code>circuit.pickup_ratio</code>, which locks the frequency for each harmonic. The estimators
+      copied into <code>scripts/figures/jt60sa_coil_coupling.py</code> and
+      <code>jt60sa_coupling_transfer.py</code> reuse the 6f lock for every order, and only one applies a
+      line threshold. <code>pickup_ratio</code> gains the threshold as an optional argument and both
+      scripts move onto it, so the catalogue and §6 use one estimator. The identified loops are held as
+      physical circuit elements, each loop's resistance and self-inductance and its mutual inductance to
+      each coil, which is the form nova's passive model holds (<code>nova/circuit/passive.py</code>).
+      They can then be compared with nova's own <code>pf_passive</code> loops and enter §6's state
+      equations directly. Identifying them from data is the new work. The new surface is
+      one module, <code>coupling_modes.py</code>, with a fit and a prediction, and the per-pair fit in
+      the figure script is retired in its favour.
+    </p>
+    <p>
+      The first model has been measured, and it fails. Free passive loops, each with its own
+      resistance, self-inductance and mutual inductance to every coil, fit the training pairs to
+      3–6 %. Under leave-one-pair-out cross-validation they miss the 10 % band on all nine measured
+      EF pairs (14.9–825 % of M/L), and beat M/L alone on six of them. Their fitted decay times,
+      0.076, 0.101 and 0.218 s, lie inside the range of nova's own passive eigenmodes for the OP2
+      vessel and cryostat (0.064–0.218 s). The fit, its cross-validation table and nova's eigenmodes
+      are recorded in the
+      <a href="/power_convertor/evidence/fragments/jt60sa-coil-circuit-model/jccm-modes.html">jccm-modes
+      fragment</a>, produced by <code>scripts/jt60sa/passive_loops_fit.py</code> and
+      <code>scripts/jt60sa/nova_passive_modes.py</code>. On 2026-10-13 the lead chose the next model: nova's
+      geometry-derived passive structure from <code>pf_passive</code>, with only physical scales
+      fitted, the vessel and cryostat resistivities, on the same training pairs and through the same
+      coupled-circuit terminal ratio. It is scored on the same held-out pairs against the same band.
+      §6 couples through whichever model passes. Where neither passes, §6 uses the measured H(f) of
+      the measured pairs and M/L for the rest.
+    </p>
+    <p>
+      nova's structure at nominal resistivity, with nothing fitted, predicts eight of the nine pairs
+      within the band, at 4–8 % of M/L. EF1→EF6 misses at 18.8 %. Realigning E100353's channels
+      changes nothing, so the miss is not a timing artefact. The reverse pair, EF6→EF1, passes at
+      6.5 %, as do EF1→EF2 from the same shot and EF5→EF6 with EF6 as the pickup. The miss is
+      therefore particular to EF1 driving EF6. On 2026-10-13 the lead chose to test EF6's loading
+      before closing §5: whether EF6 carried current during that test, so that it was a loaded
+      rather than an open pickup, and whether a loaded-pickup model brings EF1→EF6 within the band
+      while the passing pairs stay within it. Records:
+      <a href="/power_convertor/evidence/fragments/jt60sa-coil-circuit-model/jccm-nova-modes.html">jccm-nova-modes</a>,
+      <a href="/power_convertor/evidence/fragments/jt60sa-coil-circuit-model/jccm-ef1-ef6.html">jccm-ef1-ef6</a>.
+    </p>
+    <p>
+      EF6 was an open pickup. During E100353 it carried under 1 A of induced current, against
+      175 A when EF6 itself was driven, and both of its supply references were zero. A fitted series
+      load leaves EF1→EF6 at 18.6 % and needs 7 H, ten times EF6's own inductance
+      (<a href="/power_convertor/evidence/fragments/jt60sa-coil-circuit-model/jccm-ef6-loading.html">jccm-ef6-loading</a>).
+      On 2026-10-13 the lead closed §5 on nova's passive structure at nominal resistivity, which
+      meets the band on eight of nine pairs. Two items stay open, with their evidence: EF1→EF6 at
+      18.8 %, whose cause is not timing and not pickup loading, and the EF5→EF4 excess at 12f, which
+      no inductive model here reproduces. §6 couples through nova below 30 Hz, and through the
+      measured H(f) for EF1→EF6 alone.
+    </p>
+    <p>
+      <strong>Done when</strong> a passive model, either free loops or nova's geometry with fitted
+      resistivity scales, fitted through the coupled circuit equations on a training set of pairs,
+      predicts the H(f) of each held-out pair over 0.1–30 Hz within 10 % rms of its M/L. A model that
+      misses the band does not meet this done-when; its miss is recorded as measured. If both models
+      miss, §5 closes only by a decision of the lead recorded in this plan, never by this done-when. Negative control: the same held-out pairs predicted by M/L alone, without the modes,
+      miss by more than that. The complex ratios at 6f, 12f and 18f are recorded for every coil pair
+      the data reach, from the single-coil tests and the fast discharges, with their spread over repeat
+      shots. They are the couplings §6 uses at those frequencies, whether or not a shared extension of
+      the mode model also describes them; pairs the data do not reach are listed. The time constants of nova's own passive-structure
+      model, from <code>pf_passive</code>, are reported beside the identified ones.
+    </p>
+
+    <h2 id="s6">§6 — The coil ripple lines with the converter sources</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="deferred" data-links=""></section>
+    <p>
+      Add the converter sources to §7's assembly: the booster bridges and the EF2–EF5 base supplies from
+      booster-converter-model, and the CS1–4, EF1 and EF6 base supplies configured from the topology
+      jt60sa-power-supply-sources §7 cites. At 6f, 12f and 18f the coils are coupled through §5's measured
+      complex ratios, with §3's channel signs applied. Predict the coil voltages of a 2023 shot that runs
+      every supply (E101088 or E101089), including the ripple each coil picks up from the others.
+    </p>
+    <p>
+      The supplies enter through the supply model's own chain, so each stage is applied once, by its owner:
+      <code>SupplyModel.source_phasors</code> gives the converter coefficients before the loop,
+      <code>coil_phasors</code> applies the booster loop (<code>filter_network.py</code>), and
+      <code>acquired_phasors</code> applies the acquisition chain. This section waits on gate g-jccm-1:
+      until booster-converter-model §5 passes, a line the run misses cannot be told from a supply-model
+      miss. The lead split the slow coil currents out into §7 on 2026-10-14, so that half runs while
+      §5 stays open.
+    </p>
+    <p>
+      <strong>Done when</strong> the predicted coil-voltage lines from 6f to 18f on all ten coils lie
+      within the tolerance the lead set for the S1 prediction (filter-grounding-prediction §1: 3 dB, or
+      5 V where the measured line is below 10 V) for every coil whose couplings §5 reaches. Negative
+      control: the same run, with the same sources and windows, but with §5's line couplings set to zero,
+      misses the band on a coil and line that §5's catalogue reaches and that is named in this plan before
+      the run. That shows the coupling terms carry the pickup.
+    </p>
+
+    <h2 id="s7">§7 — The slow coil currents of the coupled system</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+<p>
+      Drive every coil circuit with its own measured terminal voltage below 30 Hz
+      (<code>MMSYS/vol&lt;coil&gt;</code>, low-passed, with §3's channel signs) and solve the
+      voltage-driven state equations of the ten active coils and nova's passive structure together, at
+      nominal resistivity (<code>power_convertor.passive_structure</code>), with the coil and passive
+      inductances of the machine description §4 wrote. The predicted coil currents are compared with the
+      measured <code>MMSYS/cur&lt;coil&gt;LKAT</code>; no measured coil current is prescribed. This half
+      needs no converter model. A coil's terminal voltage is its supplies' output as applied, so the run
+      tests the coupled inductance and the passive structure on their own, apart from the supply model,
+      whose held-out check (booster-converter-model §5) has not passed. EF1→EF6 is judged on nova's
+      coupling, the model §5 closed on; the same run with EF1→EF6 set to its measured slow ratio is
+      reported beside it and not judged.
+    </p>
+    <p>
+      The judgement is made over short windows, not over whole shots. Integrating a terminal voltage
+      over a 50 s shot and asking for the current within 5 % needs the voltage right to about a volt,
+      while the channels carry offsets of 20–40 V that shift by up to 28 V once the supplies energise
+      (<a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s7-offset">s7-offset</a>).
+      Whole-shot integration therefore measures channel stability, not the coupling. Over a 1–2 s window a
+      volt of offset moves a coil current by a few amperes, so a window tests the coupling. The judged
+      windows are of two kinds. The first is the 1–2 s current ramps of the plasma-free kind-E shots
+      E101001 and E101005, where some coil's current changes by at least 500 A. The second is the
+      single-coil CS fast discharges held from §2, where one module dumps alone and the CS currents
+      differ, which the kind-E ramps do not give. Each window begins after at least 0.5 s with every coil
+      current flat, so the passive currents have decayed. It starts from the measured coil currents and
+      zero filament current. Each voltage's reference is its mean over a flat span in the same supply
+      state as the window, because the channel level moves when a supply energises. A kind-E window
+      lies wholly inside the energised interval, and its reference is an energised flat span. In a fast
+      discharge the dumping module's supply is bypassed from the dump onward, so that module's
+      reference is its supplies-off level on the same shot, and every other coil keeps its energised
+      reference. A window whose shot carries no reference span in the right state is reported, not
+      judged. Nothing is fitted to a judged window. The whole-shot integration is still reported, and not judged. The new
+      surface is the assembly, which replaces nothing because no existing module drives several coils
+      at once, and §6 extends it with the converter sources. nova's propagator integrates passive modes
+      from a supplied flux history and cannot predict the coil currents, so it serves only to cross-check
+      the passive response to the predicted currents.
+    </p>
+    <p>
+      <strong>Done when</strong> each coil's predicted current change over a judged window follows its
+      measured change within 5 % of the largest coil-current change in that window. That holds in at
+      least 90 % of the judged windows and is beyond 10 % in none, for every coil, run on the
+      <code>all_debug</code> partition. Negative control: the same windows with the coil-to-coil mutual
+      inductances and the coil–passive coupling set to zero miss that band on CS2 in a CS1 or CS3 fast
+      discharge, named here before the run. In those windows CS2's own change is small, and its terminal
+      voltage carries the dumping neighbour's mutual EMF.
+    </p>
+
+    <h2 id="s8">§8 — Why EF1 driving EF6 misses nova&#x27;s passive structure</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+<p>
+      §5 closed on nova's passive structure with one miss recorded. The EF1→EF6 terminal ratio from E100353
+      sits 18.8 % of M/L from nova's prediction over 0.1–30 Hz. The reverse pair, EF6→EF1 (E100351), sits
+      at 6.5 %, EF1→EF2 at 7.7 %, and the other six pairs at 3.9–7.3 %. Timing and EF6 loading are ruled out
+      (<a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s5-ef1-ef6">s5-ef1-ef6</a>,
+      <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s5-ef6-loading">s5-ef6-loading</a>).
+      The EF1 dump E100352 gives EF6's slow coupling at 94.4 % of nova's. This section asks whether the miss
+      comes from the coil geometry in the machine description or from a passive conductor that nova's 155
+      filaments (98 vessel, 57 cryostat) do not carry.
+    </p>
+    <p>
+      The two leave different signatures. A geometry error in EF1 or EF6 (radius, height, cross-section,
+      turns, or the sign of their mutual) scales the coupling by a fixed factor at every frequency, the slow
+      limit included. A missing conductor screens the field only below its own decay rate, so it changes
+      H(f) over a band and leaves the slow limit as nova has it. Neither fits the measured pattern
+      unaided. The screened mutual is the same in both directions, so a conductor can make the two
+      directions differ only through the driving coil's own screening, in the ratio's denominator. EF1→EF2
+      shares that denominator with EF1→EF6, yet sits inside the band. A miss confined to EF1→EF6 therefore
+      needs a conductor on the flux path between EF1 and EF6 whose effect EF6→EF1 does not show, a geometry
+      error, or a condition particular to the EF1-driven shots. The spread across EF1-driven shots points
+      at the third: the 2023 shots E100839, E100909 and E100859 give 16.3 %, 14.0 % and 7.8 %.
+    </p>
+    <p>
+      Five measurements settle it. The first is more EF1-driven data. The run fetches the further 2021 and
+      2023 single-coil EF1 booster tests and EF1 fast discharges that the EDDB catalogue holds, with EF6 and
+      EF2 recorded, into the main checkout's <code>data/jt60sa/ef1_coupling</code>. On each it measures
+      H(f) for EF1→EF6 and EF1→EF2 and the slow ratio, through <code>transfer_scoring</code> and §7's
+      slow-part estimator. The second is the geometry. EF1's and EF6's radius, height, cross-section and
+      turns in the machine description §4 wrote are compared with the cited JT-60SA coil data, and EF1's
+      self-inductance with its fast discharges. The third is the candidate conductors. Every toroidally
+      continuous conductor near EF1 or EF6 that nova's model lacks is listed from the JT-60SA design
+      documents and the imas-ambix machine description, with its location, cross-section and resistivity.
+      Candidates include the cryostat top lid and base, the TF coil casings where the outer intercoil
+      structure closes them toroidally, the thermal shields, and the EF coil supports. Each is added to
+      nova's structure as documented, with nothing fitted, and the nine measured pairs are re-scored. The
+      fourth is the shot conditions. For every EF1-driven shot held, the run records which other supplies
+      were energised or in circuit, and each coil's current and reference. It then sets the EF1→EF6 error
+      against them, to test whether the miss follows a shot condition rather than the hardware.
+    </p>
+    <p>
+      The fifth is the dump waveforms. A fast discharge is a single transient, and the cross-spectral
+      estimate keeps only two or three coherent bins on one
+      (<a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s8-dumps">s8-dumps</a>),
+      so the dumps are read in the time domain instead. On each 2023 EF1 fast discharge (E100904, E100905,
+      E101055 and E101056), EF1's measured terminal voltage over the dump window drives nova's nominal
+      structure, and the run predicts the voltage EF6 and EF2 pick up. This is the time-domain form of the
+      terminal ratio. It is computed through §7's coupled solve, or by applying <code>terminal_ratio</code> to the
+      spectrum of EF1's voltage and transforming back, rather than with new physics. Each prediction is scored against the measured pickup: the rms of the difference over the
+      window, as a percentage of the measured pickup's peak. Every voltage channel is first referenced by
+      §7's supply-state rule. The dumped coil takes its settled level after the dump, once its supply is
+      bypassed. Each pickup coil takes its own level over a flat span before the dump, in its own state (<a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s7-offset">s7-offset</a>).
+      The supplies-off levels reach +34.6 V on EF1, +33.4 V on EF5 and −10.3 V on EF6. Those are
+      comparable to the weak pickups, so an unreferenced offset would be scored as coupling. The same is
+      done on the 2023 EF6 and EF5 fast
+      discharges E101079, E101081, E101116 and E101117, fetched one at a time into the main checkout's
+      <code>data/jt60sa/fast_discharge</code>. Those give EF6→EF1, the reverse pair, and EF6→EF5, EF6→EF4,
+      EF5→EF4 and EF5→EF6, which §5 found inside the band. A pair fits when its score is within 10 %.
+      The EF5- and EF6-driven pairs are the positive control: if they do not fit, the waveform test is not
+      validated, and the run judges nothing about EF1 from it. If they fit, the two outcomes separate. If
+      EF1→EF6 misses while EF1→EF2 fits, the offset is real and particular to EF1 driving EF6. If both EF1
+      pairs fit, the miss on E100353 belongs to the booster tests rather than the hardware.
+    </p>
+    <p>
+      <strong>Done when</strong> the run names the cause the numbers support (a geometry error, a missing
+      conductor, or neither) and records: EF1→EF6's slow ratio and H(f) on every EF1-driven shot held, each
+      geometry quantity against its cited value, for each candidate conductor the leave-one-pair-out rms
+      of all nine pairs, the EF1→EF6 error against each shot condition, and the waveform score of every
+      pair on every dump the fifth measurement names, in both arms. A candidate is accepted only if, at its documented geometry and resistivity,
+      it brings EF1→EF6 inside the 10 % band and keeps the other eight pairs inside it. The run is on the
+      <code>all_debug</code> partition. Negative controls: re-scoring with nova's structure unchanged must
+      reproduce EF1→EF6 at 18.8 %. The acceptance check must also reject a synthetic candidate that
+      changes only EF1's own screening, because that moves EF1→EF2 by the same proportion as EF1→EF6.
+      In the waveform test, the arm with the passive structure removed must score worse than nova's
+      structure on every dump. If it does not, the dumps are too slow to show the screening, and the run
+      says so rather than reading the scores as a fit.
+    </p>
+
+    <h2 id="s9">§9 — nova&#x27;s coil coupling at the converter harmonics</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+<p>This section measures how well nova's coupled network of coils and passive structure carries converter ripple from one coil to another. That is the uncertainty the ITER model needs. ITER's current supplies put their lines in the same band as JT-60SA's (<a href="/power_convertor/research/iter-coil-supply-topology">ITER coil supply topology</a>):</p><ul><li>twelve-pulse thyristor PF units on a 50 Hz grid, at 600 Hz and 1200 Hz;</li><li>six-pulse VS units, at 300 Hz;</li><li>the Stage 2 IGBT units, at 500 Hz and 1600 Hz.</li></ul><p>ITER has no measured coil coupling at any of those frequencies. JT-60SA's 6f, 12f and 18f lines sit at about 365, 730 and 1095 Hz on a supply near 61 Hz.</p><p>No converter source model enters, because both terminals of every pair are measured. The pickup coil's terminal load is a passive part of the network and is modelled as one: its idle supply, and in 2023 the ripple filter at its design values. The lead set this scope on 2026-10-15. It replaces §6's whole-shot prediction on this plan's path, since that prediction tests JT-60SA's own converter models, which do not carry to ITER's different converters.</p><p>The measurement is §5's record of measured complex line ratios (<a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s5-lines">s5-lines</a>): 52 ratios at 6f, 12f and 18f across 29 year-pairs, from the 2021 and 2023 single-coil booster tests, each with its spread over repeat shots. They are regenerated with <code>scripts/jt60sa/harmonic_coupling_scan.py</code> and read with §3's channel signs applied.</p><p>The prediction comes from the coupled plant that nova's <code>coupled_plant</code> call returns, the same plant the switched replay and the ITER work take. The run reads it through <code>NovaPlantModel.terminal_ratio</code> in <code>scripts/jt60sa/op2_plant.py</code> at each line's own measured frequency, at nominal resistivity, with nothing fitted, and compares it with M/L alone. <code>harmonic_transfers</code> in that script already sets the plant's |H| beside the measured line for part of the pair set, with a no-passive control. The run extends that function to every line §5 recorded, to the phase, and to the score below, rather than writing a second scorer.</p><p>Which prediction is scored:</p><ul><li><strong>2021:</strong> the open-pickup ratio, with the idle supply taken as open.</li><li><strong>2023:</strong> the ratio with the ripple filter across the pickup terminals wherever <code>filter_network</code> places one. It is computed from the plant's terminal impedance with <code>BoosterFilter.shunt_impedance</code> as the load. <code>loaded_pickup</code>'s terminal ratio is extended from its scalar series load to a complex load impedance to do this, rather than a new helper being added.</li></ul><p>The 2023 lines are also reported open, so the filter's effect on each ratio is visible. A 2023 pickup that the run cannot place a filter on is scored open and listed.</p><p>Each line is scored by its amplitude error, |H<sub>nova</sub>| / |H<sub>meas</sub>| − 1 in %, and its phase error in degrees. A line fits when the amplitude error is within 10 % and the phase error within 10°, or within twice the line's repeat spread where that is larger. For each harmonic the run reports the median and the largest error of both arms. The result is stated as a band per harmonic that the ITER model can carry. Three kinds of line are reported apart rather than averaged into the band:</p><ul><li><strong>Opposite sides of M/L:</strong> lines where nova and the measurement sit on opposite sides of M/L. There the network's screening moves the ratio the wrong way, which points at a path the inductive network does not carry, such as a capacitive or grounding path, rather than at a wrong resistivity. EF5→EF4 at 12f is the known case: measured 0.568, M/L 0.288, nova 0.065.</li><li><strong>Moved between years:</strong> pairs measured in both years whose ratio moves between them. 2023 carries the filter and the alternative grounding, so such a move separates what the loading explains from what it does not.</li><li><strong>Skin depth:</strong> each harmonic's skin depth in the vessel and cryostat walls, set against the wall thickness the machine description gives. One filament across a wall holds only while the skin depth exceeds the thickness.</li></ul><p>Done when:</p><ul><li>A JSON under the main checkout's <code>data/jt60sa/harmonic_nova/</code> lists every line with its frequency, measured ratio and spread, the nova and M/L ratios with both errors, the assumed loading, and the per-harmonic bands.</li><li>A fragment states the bands, the fit count per harmonic, the opposite-side and year-moved lines, and the skin-depth table.</li><li>One SVG under <code>docs/figures/jt60sa-coil-circuit-model/harmonic-nova</code> plots measured against predicted amplitude and phase for each harmonic.</li><li>A unit test pins one line's nova ratio.</li></ul><p>Positive control: before anything is scored, the run reproduces §5's recorded measured ratios from the traces within their stated precision. Negative control: scaling the vessel and cryostat resistivity must move the pinned test's ratio outside its tolerance. If nova and M/L agree within the band on every line, the run says the passive structure is not exercised at these frequencies, and the section reports that instead of a band. The work is computational and runs in place on the fleet allocation.</p>
+
+    <h2 id="s10">§10 — Wall resolution at the converter harmonics</h2>
+<section data-reckon="section" data-id="s10" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="deferred" data-links=""></section>
+<p>§9 found nova over-screening every measured harmonic line, by a median 80–93 %, with a single filament across each wall where the skin depth is thinner than the wall. Nova can now divide walls through their thickness. The ITER coordinator's <code>passive-skin-effect</code> node added this (nova <code>207a66408</code>), and the lead asked for it to be validated on these lines.</p><p>The option is set on the machine. <code>passive_thickness_m</code> gives each passive circuit's plate thickness, and <code>passive_layer_count</code> gives the interior strips. Each face also carries a strip thinner than a seventh of the skin depth at 5 kHz. One layer reproduces the existing plant, so studies that do not set the option are unchanged. The lead requires that this stays so: layered walls are for fast-transient and ripple studies only.</p><p>On ITER, two and four layers agree to four decimals. Against the one-layer plant they lower coil-to-coil transfer by up to about 5 % at 300–1600 Hz, which is more screening. The physical reason is that a resolved wall excludes flux at its face rather than at its mid-plane, so resolution should widen JT-60SA's gap rather than close it. This section measures whether it does.</p><p>Three measurements:</p><ul><li><strong>Plate thickness.</strong> The OP2 description's filament widths (vessel 20–60 mm, cryostat 34–80 mm) may be envelopes that lump the vessel's double wall and ribs into one filament, which would understate the skin effect. The run takes each circuit's conducting plate thickness from the vessel and cryostat documents under <code>data/sources/</code>, or from the machine description where it states plates, and names the source. Where no document gives a plate thickness, it scores both the envelope and the documented plate as bounds.</li><li><strong>Re-score.</strong> The JT-60SA plant is built through <code>op2_plant</code> with two layers and with four, and the 52 lines are re-scored by §9's rule. Per line, the run reports the change against the one-layer plant. The three lines that sit on the opposite side of M/L are reported apart: EF5→EF4 12f, EF5→CS4 12f and 2023 EF2→CS1 6f.</li><li><strong>Surface impedance compared.</strong> The lead asked whether a frequency-dependent skin effect is a better model than a resolved mesh. The run compares two models against the closed-form shell solution, the same check nova's node passed: the strips, and a frequency-dependent surface impedance Z<sub>s</sub> = (1 + j)ρ/δ per unit area on the existing one-filament walls. A thin shell carrying that impedance is the same model. Both are also scored on the 52 lines. The surface impedance grows as √f, so it needs a rational fit before a time-domain model can use it, and the strips do not. The fragment states that trade beside the accuracy.</li></ul><p>Done when:</p><ul><li>A JSON under the main checkout's <code>data/jt60sa/harmonic_layers/</code> carries every line's ratio under one layer, two layers, four layers and the surface impedance, with the thickness used and its source for each passive circuit.</li><li>A fragment, <code>jccm-harmonic-layers</code>, states the per-harmonic bands for each model, the change against one layer, the three opposite-side lines, and the shell check of both models.</li><li>One SVG under <code>docs/figures/jt60sa-coil-circuit-model/harmonic-layers</code> plots it.</li><li>A unit test pins one line's two-layer ratio.</li></ul><p>Positive control: at nova's current main, §9's pinned one-layer EF5→EF4 12f ratio, 0.06469, is reproduced unchanged before any layer is added. Negative control: the surface-impedance arm with ρ scaled a hundredfold must move the pinned shell check outside its tolerance. If layering moves no line by more than its repeat spread, the run says wall resolution is not the cause at these frequencies.</p><p>The work is computational and runs in place on the fleet allocation. It changes nothing in nova: the surface impedance enters through power_convertor's own terminal-ratio path.</p>
+
+    <h2 id="s11">§11 — The circuit at the pickup terminals, 2021 and 2023</h2>
+<section data-reckon="section" data-id="s11" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+<p>§9 scored nova with the pickup open in 2021 and the filter's design shunt across the pickup terminals in 2023. The installed shunt sits across the booster branch, not the terminals, so the 2023 arm modelled a circuit the machine does not have. The measured ratios also moved between years: by ×0.24 to ×4.5 on fourteen pairs, and by ×89 on EF2→CS1 6f. Three lines sit on the far side of M/L, where an inductive network cannot follow.</p><p>This section models what actually sits across each pickup coil's terminals at the harmonics, in each year, and tests whether that circuit explains the year moves and the opposite-side lines. Five elements:</p><ul><li>the idle supply's state, from the converter documents and the shot's own supply references: open, bypass or circulating current;</li><li>the 2023 booster-branch filter at its installed attachment, <code>filter_network.BoosterLoop</code> with <code>shunt_attachment="booster_only"</code>. The model's default, <code>"as_drawn"</code>, puts the shunt across both supplies, which the machine does not have;</li><li>the coil's own capacitance and its cable to ground, bounded by what the switched replay measured. booster-converter-model §14 fitted a resonance near 936 Hz, and no documented component supplies it. jt60sa-switched-pulse-replay §3 measured the available capacitance at 2.87–5.92 µF, against the 6.44–14.63 µF a 730–1100 Hz resonance needs, and found no resonance. The documented 0.6 µF screen with the 3.25 mH booster loop resonates near 3.6 kHz. So the run carries a terminal resonance only as a candidate inside that measured range, never as a fitted one;</li><li>the 2023 alternative grounding;</li><li>whether the voltage channel measures the coil differentially or each terminal to ground, from the measurement documents. If the channel reads each terminal to ground, a common-mode path can carry the driven coil's voltage into the pickup's channel.</li></ul><p>Each element enters through the repository model that already represents it, not through a routing chosen here. A single element can act in two ways:</p><ul><li><strong>Across the coil terminals</strong>, closing the pickup coil's own loop. The grounding's differential resistance, about 4 kΩ, works this way, as do the capacitance across the terminals and the cable's inter-bar capacitance.</li><li><strong>From each terminal to ground</strong>, carrying a common-mode voltage.</li></ul><p><code>filter_network.BoosterLoop</code> and <code>GroundingSystem</code> already carry both parts: the shunt across the coil terminals, and <code>common_mode</code> and <code>terminal_to_ground</code>. <code>busbar_lines</code> carries the cable's inter-bar and to-ground capacitance. The loop-closing parts reach nova's open-pickup prediction as <code>loaded_pickup</code>'s complex load. The common-mode parts reach the channel by its measurement mode: a channel that reads each terminal to ground sees the driven coil's common-mode voltage.</p><p>For each element the run states which part closes the loop and which is common-mode, with the model that supplies each, and reports its effect on every line.</p><p>An element whose values no document gives is scored across a stated range rather than fitted. Scoring follows §12: the lines §12 classed coupled, and the mixed lines' differential ratios. Each line's class is shown beside its result, and the 18 unresolved lines are reported separately.</p><p>Done when:</p><ul><li>A JSON under the main checkout's <code>data/jt60sa/pickup_circuit/</code> carries each element, its source and values, and every line's ratio with and without it.</li><li>A fragment, <code>jccm-pickup-circuit</code>, states which elements move which lines and whether any combination brings the year moves and the opposite-side lines within §9's rule.</li><li>One SVG under <code>docs/figures/jt60sa-coil-circuit-model/pickup-circuit</code> plots it.</li><li>A unit test pins one loaded ratio against an independently computed circuit value, which also answers §9's review follow-on.</li></ul><p>Negative control: with every element removed, the run reproduces §9's open-pickup ratios exactly. A line no element moves is reported as unexplained, not fitted. The work is computational and runs in place on the fleet allocation.</p>
+
+    <h2 id="s12">§12 — Whether the pickup line is the pickup&#x27;s own</h2>
+<section data-reckon="section" data-id="s12" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+<p>§9's measured ratios assume that the line on the pickup coil at 6f, 12f or 18f is the driven coil's line coupled across. That holds only if the pickup's own supply makes no line at the same frequency. booster-converter-model §18 and §21 found that a base supply at zero voltage reference carries 91–111 V of 12f on its coil, and §5 accepted lines only where the pickup's supply reference sat within ±5 V. Every converter runs from the same motor-generator, so a line the pickup's own supply makes sits at the same frequency as the coupled one, and the ratio estimator cannot separate them.</p><p>A self-made line would explain three things §9 found:</p><ul><li>measured ratios above nova, and some above M/L;</li><li>ratios that move between 2021 and 2023, as the 2023 filter changed each supply's ripple;</li><li>the largest misses at 12f, the twelve-pulse base's own line.</li></ul><p>The lead set this test to run before §10 and §11 on 2026-10-16, because it decides whether §9's ratios measure coupling at all.</p><p>For each of the 52 lines, from the traces §5 used, the run measures three things:</p><ul><li><strong>The pickup's line without the driver.</strong> In spans of the same shot where the driven booster does not carry the line and the pickup's supply reference holds the same ±5 V state, the run measures the pickup coil's line at the same harmonic, locked to the shot's own fundamental, and reports its amplitude against the line §5 recorded.</li><li><strong>Scaling with the driver.</strong> Across the repeat shots of each pair, the run tests whether the pickup line's amplitude follows the driven line's and whether its phase relative to the driven line holds. A coupled line does both; a self-made one does neither.</li><li><strong>The pickup supply's state.</strong> Whether the pickup's base supply was firing or blocked in the window, read from its reference and DC channels (<code>PSSCfst/refvol&lt;coil&gt;Bse</code>, <code>&lt;coil&gt;/volPSDC</code>) or the shot records.</li></ul><p>Each line is classed as coupled, self-made or mixed, with its evidence. Where a mixed line's own part has a stable phase, the run subtracts it coherently and re-scores the corrected ratio against nova by §9's rule. A line whose own part cannot be measured is listed, not corrected.</p><p>Done when:</p><ul><li>A JSON under the main checkout's <code>data/jt60sa/own_line/</code> carries every line's class, its line without the driver, the scaling and phase evidence, the supply state and any corrected ratio.</li><li>A fragment, <code>jccm-own-line</code>, states the class counts per harmonic, the corrected nova band where one exists, and what the result means for §9's verdict.</li><li>One SVG under <code>docs/figures/jt60sa-coil-circuit-model/own-line</code> plots it.</li><li>A unit test pins one line's split.</li></ul><p>Positive control: a synthetic pickup trace is built from a driven line through a known ratio plus a self-made line at the same frequency with a different phase. The run must split it into its two parts within 5 %. Negative control: a synthetic, purely coupled line must be classed coupled, with no own part.</p><p>The work is computational and runs in place on the fleet allocation, with no change to nova.</p>
+
+    <h2 id="s13">§13 — An upper bound on 3D eddy paths</h2>
+<section data-reckon="section" data-id="s13" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+<p>Three candidates are now ruled out as the cause of nova's harmonic over-screening:</p><ul><li>contamination by the pickup's own supply (§12);</li><li>the documented pickup-terminal circuit (§11);</li><li>wall resolution, which on ITER adds screening rather than removing it.</li></ul><p>One candidate the axisymmetric model cannot represent remains: ports and breaks that interrupt the toroidal eddy currents a continuous wall would carry. The lead chose to bound it on 2026-10-16.</p><p>Treating a port as added resistance cannot matter at these frequencies. The walls' modes are deep in the inductive limit, and §9's hundredfold resistivity mutation moved EF5→EF4 12f only from 0.065 to 0.083. The bound is therefore a cut: a wall's toroidal current path removed outright. That is the most a port can do, because a real port interrupts only part of the circumference.</p><p>Two measurements:</p><ul><li><strong>Which conductors screen each line.</strong> The OP2 export carries two passive loops, <code>VV</code> and <code>CRYOSTAT</code>, with one label each. The run therefore defines groups by filament position (r, z) within those loops: the vessel's inboard, outboard, upper and lower walls, and the cryostat's body, base and lid. It records each group's boundary and filament count. For each group, the run removes that group and re-scores the lines §12 classed coupled, and the mixed lines' differential ratios. It reports per line which group carries its screening.</li><li><strong>The port bound.</strong> The run takes the poloidal positions of the vessel and cryostat ports from the machine description or the vessel documents, and names the source. It removes the passive filaments at those positions, all together, and re-scores the same lines.</li></ul><p>For each line the run reports nova's cut ratio beside the measured ratio and M/L. The reading:</p><ul><li>If the full port cut still leaves nova below the measured coupling, 3D eddy paths are ruled out as the cause.</li><li>If the cut reaches or passes the measured coupling, ports can explain it within the bound. The real, partial effect then needs a 3D model, and the section says which lines and which ports.</li></ul><p>The cuts are made on the passive circuits passed to nova's coupled plant, through <code>op2_plant</code>, with no change to nova. Scoring goes through <code>op2_plant.harmonic_transfers</code>. The node also replaces the copy of that scoring in <code>scripts/jt60sa/pickup_terminal_circuit.py</code> with a call to it, as §11's review asked, so one acceptance rule serves every harmonic section.</p><p>Done when:</p><ul><li>A JSON under the main checkout's <code>data/jt60sa/passive_cuts/</code> carries every cut, its filaments and source, and every scored line's ratio under each cut.</li><li>A fragment, <code>jccm-passive-cuts</code>, states the screening group per line, the port-bound reading, and what it means for ITER's axisymmetric walls.</li><li>One SVG under <code>docs/figures/jt60sa-coil-circuit-model/passive-cuts</code> plots it.</li><li>A unit test pins one cut ratio.</li></ul><p>Positive control: with no cut, the run reproduces §9's nominal ratios exactly. Negative control: removing every passive filament reproduces §9's no-passive arm.</p><p>The work is computational and runs in place on the fleet allocation.</p>
+
+    <h2 id="s14">§14 — Whether the harmonic coupling is magnetic</h2>
+<section data-reckon="section" data-id="s14" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+<p>Nova fits the measured coil-to-coil transfer functions from 0.1 to 30 Hz (§5), but sits 80–93 % low on the 365–1100 Hz converter lines (§9). Four explanations are ruled out:</p><ul><li>contamination by the pickup's own supply (§12);</li><li>the documented pickup-terminal circuit (§11);</li><li>wall resolution, which on ITER adds screening;</li><li>ports, where the strongest cut lifts no line to its measurement (§13).</li></ul><p>The stored transfer functions suggest why none of these worked. Nine pairs have both a measured transfer function from §5 and harmonic lines. For those nine, each line sits 0.4 to 9 times above the measured coupling at the sample nearest 25 Hz. Four pairs reach 3× on at least one line, EF5→EF4 the most, at 9× on 6f and 7.6× on 12f. Nova's coupling falls or stays flat over that band, as it must, because eddy currents in the walls screen more as frequency rises. A coupling that rises with frequency is therefore not magnetic. This section tests that reading on every pair, using data already held. It runs before the harmonic work closes, as the lead decided on 2026-10-17.</p><p>Of the twenty pairs the harmonic work scores, nine have a measured transfer function from §5. Only those nine can be joined across the band, so every class count states this denominator. The other eleven are reported apart: where a pair has lines at more than one harmonic, the trend from 6f to 12f to 18f is given against nova's over the same lines, and a pair with a single line is listed unclassed.</p><p>For each of the nine pairs, the run joins §5's measured transfer function (0.1–30 Hz, from the booster tests) to its harmonic lines: the lines §12 classed coupled, and the mixed lines' differential ratios. It computes nova's and M/L's coupling on the same frequency grid through <code>op2_plant</code>, and states which shots each part comes from. Each pair is classed:</p><ul><li><strong>Magnetic:</strong> the measured coupling follows nova's trend above 30 Hz, so the harmonic gap is a level offset.</li><li><strong>Rising:</strong> the measured coupling rises with frequency while nova's falls, so the harmonic excess is non-magnetic.</li></ul><p>For a rising pair the run reports the excess, the measured coupling minus nova's, as a complex ratio: its slope in log |H| against log f, and its phase relative to the driven line. The lead has confirmed that ITER's coils carry grounding paint on their ground insulation, which makes their capacitance coil-to-ground rather than coil-to-coil. The run first finds, from the documents, whether JT-60SA's EF coils carry the same paint. If they do, coil-to-coil capacitance is set aside and two routes remain. If they do not, or the documents do not say, coil-to-coil capacitance stays as a third route. It has the same growing-with-f, +90° signature as capacitance to ground and cannot be told from it by slope and phase alone, so the run reports such a pair as capacitive without naming which capacitance. The routes' signatures:</p><ul><li><strong>Capacitance to ground</strong> with common mode through the grounding gives an excess growing about as f, with a phase lead near +90°.</li><li><strong>A voltage tap that reads a terminal to ground</strong> gives an excess set by the grounding divider, roughly flat in frequency.</li></ul><p>The run states which signature each rising pair's excess fits, or that it fits neither. It does not force a route.</p><p>Done when:</p><ul><li>A JSON under the main checkout's <code>data/jt60sa/frequency_trend/</code> carries per pair the joined measured curve with its shots, nova's and M/L's curves, the class, and for rising pairs the excess's slope and phase with the route it fits.</li><li>A fragment, <code>jccm-frequency-trend</code>, gives the class counts, the routes, and the reading for ITER.</li><li>One SVG under <code>docs/figures/jt60sa-coil-circuit-model/frequency-trend</code> plots |H| and phase against frequency for each pair, measured, nova and M/L.</li><li>A unit test pins one pair's excess slope.</li></ul><p>Positive control: a synthetic pair built from nova's own coupling must class magnetic. The same pair with an added excess growing as f with a +90° lead must class rising, with slope 1 ± 0.1 and the capacitive signature. Negative control: nova's curve must reproduce §5's fit from 0.1 to 30 Hz and §9's values on the lines before any pair is classed.</p><p>The work is computational, uses only held data, makes no change to nova, and runs in place on the fleet allocation.</p>
+
+    <h2 id="s15">§15 — The 2023 pulses, with the filter, the new grounding and the plasma</h2>
+<section data-reckon="section" data-id="s15" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="deferred" data-links="jt60sa-switched-pulse-replay#s5"></section>
+<p>Moved here on 17 October 2026 from <a href="/power_convertor/plans/jt60sa-switched-pulse-replay">jt60sa-switched-pulse-replay</a> §6, by the lead's decision in the portfolio review, so that one plan carries the JT-60SA coupling question to its end. The 2023 restart added a ripple filter and a new grounding with design values, which is a controlled change in the stray network. The plasma pulses need a shot-matched equilibrium. None is held. It is asked for from the site (EQDB, a g-file or an IMAS equilibrium) in one bounded query, and nova takes it as a reconstructed plasma source (<a href="/nova/plans/iter-passive-plasma-circuit">iter-passive-plasma-circuit</a> §5). The section is held by gate g-jccm-4 on that source, and it reads §14's verdict on whether the harmonic coupling is magnetic before it scores anything.</p><p>Done when the strays bounded from 2021, unchanged, predict the 2023 lines through the filter and the new grounding. Score them as jt60sa-switched-pulse-replay §5 scored the 2021 windows. Negative control: putting the 2021 grounding in place of the 2023 one moves the predicted lines by the amount the design change implies.</p>
+
+    <h2 id="s16">§16 — Whether the windings&#x27; distributed capacitance explains the rising coupling</h2>
+<section data-reckon="section" data-id="s16" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+<p>§14 found that six of the nine joinable pairs couple more strongly with frequency from 20 Hz through the converter lines while nova stays flat. The excess grows as f<sup>0.25–0.62</sup> with a lag of 11–29°. Lumped capacitance, to ground or between coils, would grow as f with a 90° lead. §11's lumped coil and cable capacitance, within its 5.92 µF bound, fits no joint set of the 27 lines.</p><p>The one capacitive form not yet scored is the capacitance distributed through each winding. Below a damped winding mode the terminal coupling rises with a growing lag, which is the shape measured. JT-60SA's lines, at about 365, 730 and 1,095 Hz, sit just below its ideal winding modes (868 Hz–2.43 kHz). The 2021 replay also needed more capacitance at 730–1,100 Hz than the stray estimates gave. The lead asked on 17 October 2026 for this test, because the EF windings are built like ITER's PF windings and the answer transfers.</p><p>Score the six rising pairs, with the three that follow nova as controls, through the coupled plant with distributed windings from <a href="/power_convertor/plans/shared-coil-supply-model">shared-coil-supply-model</a> §3. There are two kinds of free parameter. The first is one insulation scale for each coil family (EF single pancakes, EF double pancakes, CS). It is applied to every turn, section and ground capacitance of that family, within the range in the replay windings record. The second is the installed damping, as a stated interval, as on ITER. Fit on half the rising pairs and predict the other half, then swap. Predict the three magnetic pairs as well; they must stay flat.</p><p>Done when the derived JT-60SA plant caches this section consumes have been rerun on the regenerated thick-coil matrices (b89fdb0f), with every score that moves tabulated against its earlier recorded value, and the record states, for each pair, the measured and predicted slope and phase from 20 Hz through the lines, and the 6f, 12f and 18f line ratios against §9's rule, all under that cross-validation. It also states which of three verdicts holds:</p><ul><li>the distributed winding explains the rising excess: both held-out halves are within §9's rule on at least two thirds of their scoreable lines, with slopes within 0.1;</li><li>it explains part of it;</li><li>it does not, and any fitted scale that sits at a range end is named.</li></ul><p>The verdict and the fitted scales go to the ITER coordinator as a transferable result: either the insulation scale ITER's windings should carry, or the statement that ITER's harmonic coupling stays empirical.</p><p>Positive control: a synthetic pair generated with a known insulation scale is recovered within 5 %. Negative control: with zero capacitance, the predicted slopes reproduce nova's flat −0.01 to 0.03. The pairs are scored through the plant §9, §13 and §14 use, <code>scripts/jt60sa/op2_plant.py</code>'s <code>NovaPlantModel.terminal_ratio</code> and <code>harmonic_transfers</code>, extended to carry shared-coil-supply-model §3's section-resolved winding ports. No second scorer is added, and the earlier <code>scripts/jt60sa/sectioned_plant.py</code> build is not used. The caller is <code>scripts/jt60sa/winding_coupling_score.py</code> with its test <code>tests/test_winding_coupling_score.py</code>. Rows and logs go to <code>data/jt60sa/winding_coupling/</code>, the figure to <code>docs/figures/jt60sa-coil-circuit-model/winding-coupling</code>, and the record to the fragment <code>docs/evidence/fragments/jt60sa-coil-circuit-model/winding-coupling.html</code>.</p>
+
+    <h2 id="s17">§17 — The 2023 coil-only pulses through the filter and the new grounding</h2>
+<section data-reckon="section" data-id="s17" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+<p>§15's question, whether the strays bounded on 2021 predict the 2023 converter lines through the new ripple filter and grounding, does not need a plasma. Two facts settle this. The 2023 shot census (fragment <a href="/power_convertor/evidence/fragments/jt60sa-coil-circuit-model/shot-census-2023.html">shot-census-2023</a>, merged at <code>828f7255</code>) found that 28 of the 29 held 2023 shots carry no plasma and fire a booster with a measurable 6f line (37–375 V, SNR 11–153). Eighteen of them are single-converter coil tests on EF1, EF2, EF5 and EF6: E100676, E100678, E100839, E100859, E100908, E100909 (EF1); E100863, E100864, E100915, E100917 (EF2); E100865, E100866, E100921, E100922 (EF5); E100882, E100883, E100927, E100928 (EF6). These are the direct 2023 counterparts of the 2021 booster tests. The SELENE check (merged at <code>5cef5365</code>) found that in the coupled plant a prescribed plasma contributes nothing to coil-to-coil coupling at 6f, 12f and 18f, by construction. So the coil-only pulses carry the whole test as the model stands. §15 keeps the plasma pulses, behind gate g-jccm-4.</p><p>Score the eighteen single-converter tests as §9, §13 and §14 scored the 2021 lines: a coil-to-coil terminal ratio, taken here through the composed JT-60SA plant rather than the bare one. The owner is <code>power_convertor.jt60sa_circuits</code>: <code>composed_plant()</code> over the coupled plant, and <code>ComposedPlantModel.terminal_ratio(frequency_hz, driven, pickup)</code>. It composes each coil's circuit from the register (<code>registers/jt60sa_supplies.json</code>), with the as-built alternative grounding: the 2 kΩ and 45 kΩ pairs of jt60sa-power-supply-sources §3. It does not yet install the ripple filter. <code>build_circuit</code> reads the register's <code>filter</code> key but composes only the supply, series unit, coil, line and grounding. So before §17 can score, that owner must install the 2023 filter on every booster coil from the register, with the shunt across the booster branch as §11 corrected. §18 does that. Each shot's measured driven-coil lines, in the census's line window, are the input. The predicted lines on each pickup, and their ratio to the driven coil against §9's rule, are the score. No converter model is needed, so shots on all four boosters can be scored. Use the 2021-bounded strays unchanged. No parameter is refit on 2023. Each shot's campaign comes from the census's catalogue dates, not from the shot number.</p><p>Never build the scored circuit from <code>filter_network.BoosterLoop</code>'s <code>as_drawn</code> default, which puts the shunt across both supplies, a circuit the machine does not have. Never build it from <code>scripts/jt60sa/replay_2021.py</code>'s <code>replay_pulse</code> either: that replay carries neither the 2023 filter nor the alternative grounding; its receivers carry only a stated 1 kΩ grounding shunt. A test asserts the filter attachment and the grounding the scored circuit carries. The two variants the controls and the EF6 arm need are register variants built through the same owner, never a second builder: the 2021 circuit (no filter, the 2021 grounding) and the 2023 circuit with EF6's filter removed. The 2021 grounding has no sourced value in this repository: filter-grounding-prediction describes it only as single-ended, before the alternative system. Its terminal-to-ground resistances must be sourced from the JT-60SA documents before the year move or the negative control can be computed. §19 does that. §17 waits on §18 and §19.</p><p>The six multi-booster pulses (E100963, E100964, E101087–E101090) are listed and not scored. §9's rule is a ratio between one driven coil and one pickup, and a pulse with two or more boosters firing together has no single driven coil. The census itself advises preferring the single-converter tests.</p><p>EF6's filter state in 2023 is not established. jt60sa-power-supply-sources §3 lists the per-filter installation dates as open, and EF6's 2023 ripple behaves as if the trap were absent. The census repeats that caveat. So the four EF6 shots (E100882, E100883, E100927, E100928) form their own arm, scored twice: once with the filter at its design values and once with no filter. They are left out of the claim's verdict. Their record states which filter state the lines favour and by how much, against §9's rule. That state is a finding for the source register, not a fitted parameter. A miss on EF1, EF2 or EF5 may be attributed to the filter, because the collective statement that the modifications preceded the August 2023 restart covers them.</p><p>The caller is <code>scripts/jt60sa/coil_only_2023.py</code> with its test <code>tests/test_coil_only_2023.py</code>. Rows and logs go to the main checkout's <code>/home/ITER/mcintos/Code/power_convertor/data/jt60sa/coil_only_2023/</code>, never a worktree-relative <code>data/</code>, the figure to <code>docs/figures/jt60sa-coil-circuit-model/coil-only-2023</code>, and the record to the fragment <code>docs/evidence/fragments/jt60sa-coil-circuit-model/coil-only-2023.html</code>.</p><p>Before scoring anything, the node reads §14's verdict on whether the harmonic coupling is magnetic, as §15 must. The absolute ratios inherit the plant's known error: on 2021 data, which carries neither the 2023 filter nor the 2023 grounding, §9 found the same plant over-screening these lines by a median 80–93 %. The absolute 2023 ratios are recorded, but they are expected to reproduce that over-screening, and they decide nothing about the filter or the grounding. The claim is judged on the year move instead. For each pair and line, take the change in the coil-to-coil ratio from a matching 2021 booster test on the same driven coil to the 2023 shot, measured, against the change the plant predicts between the 2021 circuit and the 2023 circuit. The plant's own error cancels in that difference to first order. §11 measured the installed filter alone moving the ratio by under 0.90 %, so the move is dominated by the grounding; state that size beside every measured move.</p><p>Done when, for every scored shot, the record states:</p><ul><li>the measured and predicted 6f, 12f and 18f lines on the driven coil and each pickup;</li><li>the absolute ratio against §9's rule, set beside §9's 2021 result for the same pair;</li><li>the measured and predicted year move, with the 2021 test it is taken from;</li><li>a verdict for the claim, judged on the year move: the 2023 design change in filter and grounding predicts the measured move, partly, or not.</li></ul><p>A miss in the year move is attributed to the filter, the grounding or the strays, or left unresolved with the deciding measurement named. A miss in the absolute ratio is attributed to the known plant error unless the year move says otherwise. The EF6 arm states both of its scorings and the filter state they favour. Negative control: putting the 2021 grounding (and no filter) in place of the 2023 design moves the predicted lines by the amount the design change implies, and the test fails if it does not. Positive control: the 2021 circuit variant, with the windings' capacitance removed, reproduces a 2021 booster test's recorded §9 ratios, because the composed plant reduces there to the R-L structure §9 scored.</p>
+
+    <h2 id="s18">§18 — The 2023 ripple filter in the composed JT-60SA circuits</h2>
+<section data-reckon="section" data-id="s18" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+<p><code>src/power_convertor/jt60sa_circuits.py</code> reads the register's <code>filter: "booster_ripple"</code> on EF1, EF2, EF5 and EF6, but composes no filter, so every composed booster circuit is unfiltered. Install the 2023 ripple filter on the booster coils from the register's component values, through the filter owner <code>power_convertor.filter_network</code>, with the shunt across the booster branch (<code>shunt_attachment="booster_only"</code>, as §11 corrected). Never use the as-drawn attachment. Make the filter a per-coil choice with campaign defaults. A 2021 composition carries no filter, so every stored 2021 comparison scored through the composed circuits reproduces unchanged. A 2023 composition carries it on all four booster coils. A per-coil override removes it from one coil, which is what §17's EF6 arm needs (the 2023 circuit with EF6's filter removed).</p><p>Done when the tests show four things. The 2023 booster coil's terminal impedance at 6f and 12f changes with the filter present against removed; the negative control is that removing it must change it. The 2023 composition with EF6's filter overridden off differs from the full 2023 composition at EF6 alone. The as-drawn attachment is refused. The stored 2021 composed residuals reproduce to 1e-9. Write paths: <code>src/power_convertor/jt60sa_circuits.py</code>, <code>tests/test_jt60sa_circuits.py</code>, and the fragment <code>docs/evidence/fragments/jt60sa-coil-circuit-model/composed-filter.html</code>.</p>
+
+    <h2 id="s19">§19 — The 2021 coil-circuit grounding, sourced</h2>
+<section data-reckon="section" data-id="s19" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
+<p>The grounding before the alternative grounding system is described in this repository only partly. filter-grounding-prediction calls it single-ended, and its §7 records that the installed supply-side pair was raised to 45 kΩ × 2 from 2.5 kΩ. Start from that value and its source, and find the remaining legs, above all the coil-terminal grounding. The register carries only the 2023 system: the 2 kΩ and 45 kΩ pairs and the 0.6 µF screen. <code>scripts/jt60sa/replay_2021.py</code> uses a stated 1 kΩ receiver shunt with no source. Find the 2021 terminal-to-ground arrangement and its resistances in the JT-60SA documents: the MECS document that gives the 2023 values, the JT-60SA Code wiki on nakasvr26 (fetched as AGENTS.md describes), and the register built by jt60sa-power-supply-sources §3. Record them with citations as a 2021 variant of <code>registers/jt60sa_supplies.json</code>'s grounding, refitting nothing.</p><p>Done when the 2021 variant is in the register with a citation (document, version and page) for every value, and a test reads it back. Negative control: the read-back test fails when the 2023 grounding values are substituted into the 2021 variant, so an unchanged copy cannot pass for a sourced one. Any leg no document gives is entered in the register as unsourced, with the bounded range §17 will state its year move over as a sensitivity rather than a verdict. The test fails if such a leg carries a single value without a citation. The fragment lists each document and page read. Write paths: <code>src/power_convertor/registers/jt60sa_supplies.json</code>, <code>tests/test_jt60sa_grounding_register.py</code> (its own test file, so it never shares one with §18), and the fragment <code>docs/evidence/fragments/jt60sa-coil-circuit-model/grounding-2021.html</code>.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-jccm-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-13" data-recommends-skill="/reckon-build jt60sa-coil-circuit-model §2" data-resolved-at="2026-10-14T20:39:59+00:00" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Establish the circuits as built</h4>
+    <div class="r-fu-body"><p>§2 needs the JT-60SA route for its fetches. §3 and §4 can start from the data and documents already on disk. §6 waits on the S1 supply models.</p></div>
+    <pre class="r-fu-prompt">/reckon-build jt60sa-coil-circuit-model §2</pre>
+    <p class="r-fu-outcome">Overtaken: §2–§5 and §7 are done, §6 is gated on booster-converter-model §5, and §8 carries the open EF1→EF6 study.</p>
+    </article>
+<article class="r-fu" data-id="f-jccm-002" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-14" data-recommends-skill="/reckon-build jt60sa-coil-circuit-model §8" data-resolved-at="2026-10-15T09:34:42+00:00" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Find why EF1 driving EF6 misses nova</h4>
+    <div class="r-fu-body"><p>§8 separates a coil geometry error, a missing conductor and a condition of the EF1-driven shots, using more EF1-driven data fetched over the site link. §6 stays gated on booster-converter-model §5.</p></div>
+    <pre class="r-fu-prompt">/reckon-build jt60sa-coil-circuit-model §8</pre>
+    <p class="r-fu-outcome">§8 closed: the 2023 dump waveforms fit all 18 pairs within 10 % with the control complete, so the EF1-&gt;EF6 miss belongs to the booster tests rather than the hardware (merge b6c03e1).</p>
+    </article>
+<article class="r-fu" data-id="f-jccm-003" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-15" data-recommends-skill="/reckon-build jt60sa-coil-circuit-model §9" data-resolved-at="2026-10-16T09:03:00+00:00" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Score nova&#x27;s coupling at the converter harmonics</h4>
+    <div class="r-fu-body"><p>§9 scores nova's predicted coil-to-coil ratio at 6f, 12f and 18f against §5's 52 measured booster-test ratios. It reports a per-harmonic amplitude and phase band for the ITER model, and separates lines that point at a non-inductive path or moved between years.</p></div>
+    <pre class="r-fu-prompt">/reckon-build jt60sa-coil-circuit-model §9</pre>
+    <p class="r-fu-outcome">§9 closed negative: nominal nova fits 0/52 harmonic line ratios, over-screening by a median 80-93 %; the layered-wall re-score and the 2023 circuit follow (merge 3a5647a).</p>
+    </article>
+<article class="r-fu" data-id="f-jccm-004" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-16" data-recommends-skill="/reckon-build jt60sa-coil-circuit-model §10" data-resolved-at="2026-10-17T07:01:01+00:00" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Wall resolution at the converter harmonics</h4>
+    <div class="r-fu-body"><p>§10 re-scores the 52 harmonic lines with nova's layered walls at documented plate thickness. It compares the strips with a frequency-dependent surface impedance against the closed-form shell, and says whether wall resolution is the cause of §9's over-screening.</p></div>
+    <pre class="r-fu-prompt">/reckon-build jt60sa-coil-circuit-model §10</pre>
+    <p class="r-fu-outcome">Withdrawn: §10 deferred by the lead on 2026-10-17. The walls cannot carry the missing harmonic coupling (§13), and the harmonic work closes after §14; no followup.</p>
+    </article>
+<article class="r-fu" data-id="f-jccm-005" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-16" data-recommends-skill="/reckon-build jt60sa-coil-circuit-model §11" data-resolved-at="2026-10-16T18:41:00+00:00" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">The circuit at the pickup terminals</h4>
+    <div class="r-fu-body"><p>§11 models what sits across each pickup coil at the harmonics in 2021 and 2023: the idle supply, the booster-branch filter, coil and cable capacitance with the 936 Hz resonance, the grounding, and the channel's measurement mode. It tests whether they explain the year moves and the opposite-side lines.</p></div>
+    <pre class="r-fu-prompt">/reckon-build jt60sa-coil-circuit-model §11</pre>
+    <p class="r-fu-outcome">§11 closed negative: the documented pickup-terminal circuit fits 0/27 scoreable harmonic lines; the EF5-EF4 12f carrier is undocumented (merge fb3fcfe).</p>
+    </article>
+<article class="r-fu" data-id="f-jccm-006" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-16" data-recommends-skill="/reckon-build jt60sa-coil-circuit-model §12" data-resolved-at="2026-10-16T13:23:04+00:00" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Test whether the pickup line is the pickup&#x27;s own</h4>
+    <div class="r-fu-body"><p>§12 classes each of the 52 harmonic lines as coupled, self-made or mixed. It uses the pickup's line without the driver, its scaling with the driver, and the pickup supply's state, and re-scores the corrected ratios against nova. §10 and §11 wait on it through gate g-jccm-3.</p></div>
+    <pre class="r-fu-prompt">/reckon-build jt60sa-coil-circuit-model §12</pre>
+    <p class="r-fu-outcome">§12 closed: 23 coupled, 11 mixed, 0 self-made, 18 unresolved (no firing-state channel in EDDB); nova's harmonic over-screening stands on the coupled lines (merges f521991, 5c00574).</p>
+    </article>
+<article class="r-fu" data-id="f-jccm-007" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-16" data-recommends-skill="/reckon-build jt60sa-coil-circuit-model §13" data-resolved-at="2026-10-16T19:58:01+00:00" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Bound the 3D eddy paths at the harmonics</h4>
+    <div class="r-fu-body"><p>§13 cuts the passive groups in turn and then the walls at the port positions. It reports which conductors screen each coupled harmonic line, and whether the most a port could do brings nova up to the measured coupling.</p></div>
+    <pre class="r-fu-prompt">/reckon-build jt60sa-coil-circuit-model §13</pre>
+    <p class="r-fu-outcome">§13 closed: the full port cut lifts 0 of 25 under-coupled harmonic lines to measurement; ports ruled out (merge 5f1d0dc).</p>
+    </article>
+<article class="r-fu" data-id="f-jccm-008" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-17" data-recommends-skill="/reckon-build jt60sa-coil-circuit-model §14" data-resolved-at="2026-10-17T08:30:56+00:00" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Test whether the harmonic coupling is magnetic</h4>
+    <div class="r-fu-body"><p>§14 joins each pair's measured transfer function from 0.1 Hz to its harmonic lines, against nova and M/L. It classes the pair magnetic or rising, and for a rising pair reports whether the excess fits a capacitance-to-ground or a terminal-tap signature. The harmonic work closes after it.</p></div>
+    <pre class="r-fu-prompt">/reckon-build jt60sa-coil-circuit-model §14</pre>
+    <p class="r-fu-outcome">§14 closed: six of nine pairs rise with frequency (non-magnetic harmonic excess, fitting neither capacitive nor tap route); the harmonic coupling work closes here by the lead's decision (merge 84e78c9). No followup.</p>
+    </article>
+<article class="r-fu" data-id="f-jccm-winding-reuse" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-written-by="reckon-build" data-written-at="2026-10-21" data-recommends-skill="/reckon-build jt60sa-coil-circuit-model §16" data-resolved-at="2026-10-21T10:02:37+00:00" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Make the winding-coupling scorer use sectioned_plant&#x27;s owners</h4>
+    <div class="r-fu-body"><p>From the independent review of jt60sa-winding-coupling (reuse 4/20). <code>scripts/jt60sa/winding_coupling_score.py</code>'s <code>scale_winding</code>, <code>capacitance_at</code>, <code>coil_family</code> and <code>without_capacitance</code> re-implement <code>scripts/jt60sa/sectioned_plant.py</code> lines 66–102, and <code>winding_matrices</code> repeats lines 131–179's assembly. Call the owners instead, without changing any score: the stored rows reproduce to 1e-9. Also fix the self-comparing assertion (<code>set(RISING) | set(MAGNETIC) == set(names)</code>), scrub the plan-section references from its docstrings and comments, and keep <code>scripts/figures/winding_coupling.py</code> as the figure writer, now declared.</p></div>
+    <pre class="r-fu-prompt">/reckon-build jt60sa-coil-circuit-model §16 — dispatch jt60sa-winding-reuse: winding_coupling_score.py calls sectioned_plant.py&#x27;s winding scaling, capacitance helpers and matrix assembly instead of its own copies, with every stored row reproduced to 1e-9; fix the self-comparing test assertion; scrub plan-section references from comments; then tick §16.</pre>
+    <p class="r-fu-outcome"><p>Superseded by f-jccm-plant-builder-reuse. The content review of 21 October found this followup named the wrong module: the duplicated helpers are in <code>scripts/jt60sa/op2_plant.py</code>, not in <code>winding_coupling_score.py</code>, which builds its plant by calling <code>op2_plant.winding_matrices</code>.</p></p>
+    </article>
+<article class="r-fu" data-id="f-jccm-plant-builder-reuse" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-written-by="reckon-build" data-written-at="2026-10-21" data-recommends-skill="/reckon-build jt60sa-coil-circuit-model §16" data-resolved-at="2026-10-21T13:29:00+00:00" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Give the sectioned winding helpers one owner</h4>
+    <div class="r-fu-body"><p>From the independent review of jt60sa-winding-coupling (reuse 4/20), with the file corrected by the plan's content review. <code>scripts/jt60sa/op2_plant.py</code> defines <code>coil_family</code> (258), <code>capacitance_at</code> (265), <code>scale_winding</code> (274) and <code>without_capacitance</code> (294), which duplicate <code>scripts/jt60sa/sectioned_plant.py</code>'s <code>coil_family</code> (66), <code>_estimate_at</code> (73), <code>scale_winding</code> (81) and <code>without_capacitance</code> (94). <code>op2_plant.winding_matrices</code> (395) repeats the assembly in <code>sectioned_plant._base_plant</code> (131–179). <code>sectioned_plant.py</code> already imports <code>op2_plant</code>, so the owners stay in <code>op2_plant.py</code> and <code>sectioned_plant.py</code> calls them; no import cycle is added. No score moves: §16's stored winding-coupling rows and <code>sectioned_plant</code>'s pair responses reproduce to 1e-9. Also replace the self-comparing assertion at <code>tests/test_winding_coupling_score.py:95</code> (<code>set(score.RISING) | set(score.MAGNETIC) == set(context["names"])</code>) with one that can fail, scrub plan-section references from <code>winding_coupling_score.py</code>'s docstrings and comments, and keep <code>scripts/figures/winding_coupling.py</code> as the declared figure writer.</p></div>
+    <pre class="r-fu-prompt">/reckon-build jt60sa-coil-circuit-model §16 — dispatch jt60sa-plant-builder-reuse: op2_plant.py keeps one owner each of coil_family, capacitance_at, scale_winding, without_capacitance and the winding matrix assembly, and sectioned_plant.py calls them, with every stored row reproduced to 1e-9; fix the self-comparing test assertion; scrub plan-section references from comments; then tick §16.</pre>
+    <p class="r-fu-outcome"><p>Landed: run r-20261021T113549930653-jt60sa-plant-builder-reuse, review 110/120, rows byte-identical. The two test follow-ons its review raised moved to f-jccm-test-hygiene.</p></p>
+    </article>
+<article class="r-fu" data-id="f-jccm-census-test-repair" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-written-by="reckon-build" data-written-at="2026-10-21" data-recommends-skill="/reckon-build jt60sa-coil-circuit-model §17" data-resolved-at="2026-10-21T13:29:00+00:00" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Make the 2023 census&#x27;s own tests able to fail</h4>
+    <div class="r-fu-body"><p>From the independent review of the 2023 shot census, moved out of §17 so that one node carries one deliverable. <code>scripts/jt60sa/shot_census_2023.py</code> reads traces with its own <code>np.load</code> (line 289) rather than <code>power_convertor.signals.load</code>. <code>tests/test_shot_census_2023.py:146</code> asserts <code>row["line_window"] is None or row["line_window"]["lines_v"]["6f"] &gt;= MIN_LINE_V</code>, which cannot fail, and its negative control skips at line 152 where the private data tree is absent. Use the shared loader; replace the assertion with one that fails on a shot without a qualifying window; and make the control run on a synthetic trace without the data tree, or fail loudly saying the tree is absent. The census rows must reproduce unchanged. Write paths: <code>scripts/jt60sa/shot_census_2023.py</code>, <code>tests/test_shot_census_2023.py</code>.</p></div>
+    <pre class="r-fu-prompt">/reckon-build jt60sa-coil-circuit-model §17 — dispatch jt60sa-census-test-repair: shot_census_2023.py reads traces through power_convertor.signals.load; the line-window assertion can fail; the negative control runs on a synthetic trace or fails loudly without the data tree; census rows reproduce unchanged.</pre>
+    <p class="r-fu-outcome"><p>Folded into f-jccm-test-hygiene with the winding-coupling test follow-ons, so one node makes both suites able to fail.</p></p>
+    </article>
+<article class="r-fu" data-id="f-jccm-test-hygiene" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-written-by="reckon-build" data-written-at="2026-10-21" data-recommends-skill="/reckon-build jt60sa-coil-circuit-model §17" data-resolved-at="2026-10-21T14:51:18+00:00" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Make the census and winding-coupling tests able to fail</h4>
+    <div class="r-fu-body"><p>Two suites carry checks that cannot fail or silently skip. In the 2023 census, <code>scripts/jt60sa/shot_census_2023.py</code> reads traces with its own <code>np.load</code> (line 289) rather than <code>power_convertor.signals.load</code>. <code>tests/test_shot_census_2023.py:146</code> asserts <code>row["line_window"] is None or ...</code>, which cannot fail, and its negative control skips at line 152 where the private data tree is absent. In the winding coupling, <code>tests/test_winding_coupling_score.py:98</code> asserts the pair count from the module's own <code>SCORED</code>, so it fires before the coverage assertion it should guard, and the reproduction guard (line 196) compares against the gitignored <code>data/jt60sa/winding_coupling/score.json</code> and skips when it is absent (line 181). Use the shared loader; make each assertion one that fails on its own mutation; run the census control on a synthetic trace or fail loudly without the data tree; and make the winding reproduction guard durable with a committed digest of the stored rows. No census or score row may move. Write paths: <code>scripts/jt60sa/shot_census_2023.py</code>, <code>tests/test_shot_census_2023.py</code>, <code>tests/test_winding_coupling_score.py</code>, and a committed digest file beside the test.</p></div>
+    <pre class="r-fu-prompt">/reckon-build jt60sa-coil-circuit-model §17 — dispatch jt60sa-test-hygiene: census reads through signals.load, its line-window assertion and the winding pair-coverage assertion each fail on their own mutation, the census control runs on a synthetic trace or fails loudly, and the winding reproduction guard checks a committed digest rather than skipping; no census or score row moves.</pre>
+    <p class="r-fu-outcome"><p>Landed at 61f682df (review 109/120). Every check the followup named can now fail on its own mutation, and no census or score row moved. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#test-hygiene">evidence</a></p></p>
+    </article>
+<article class="r-fu" data-id="f-jccm-follow-ons" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-written-by="reckon-build" data-written-at="2026-10-21" data-recommends-skill="/reckon-build jt60sa-coil-circuit-model §17" data-resolved-at="2026-10-21T23:53:21+00:00" data-resolved-by="">
+    <h4 class="r-fu-title">Clear the review follow-ons on the JT-60SA scorers and tests</h4>
+    <div class="r-fu-body"><p>Reviews of §16–§19, the census and test-hygiene left twelve follow-ons: four tests that compare a value with itself, a citation check that accepts any string, a gitignored reproduction guard, three duplicated owners (series/shunt combination, trace loading, winding helpers), the coil-only verdict word, and plan-section citations in comments. One node clears them, from the brief <code>power_convertor-jccm-follow-ons.md</code>. §17 closes when it lands.</p></div>
+    <pre class="r-fu-prompt">/reckon-build jt60sa-coil-circuit-model §17</pre>
+    <p class="r-fu-outcome"><p>Merged at <code>e54e8502</code>: five tests strengthened, each with its mutation logged; five already fixed; two declined with the measurement behind each. The verdict is decided against the no-change prediction (7 lines against 3). <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s17-follow-ons">evidence</a></p></p>
+    </article>
+</section>
+  <section data-reckon="gates" id="gates" class="r-gates">
+<h2><span class="sec">§</span> Evidence gates</h2>
+<div class="r-gate" data-id="g-jccm-1" data-section="s6" data-gated-sections="s6" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">the booster and twelve-pulse base-supply converter model, which drives the integrated run</h4>
+    <p class="r-gate-required-evidence">booster-converter-model#s5</p>
+    </div>
+<div class="r-gate" data-id="g-jccm-2" data-section="s6" data-gated-sections="s6" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">the cited topology of the CS1–4, EF1 and EF6 base supplies</h4>
+    <p class="r-gate-required-evidence">jt60sa-power-supply-sources#s7</p>
+    <a class="r-gate-evidence" href="jt60sa-power-supply-sources §7 landed (merge e19dece, landing record f54d288): the Plant Integration Document maps both base-supply families&#x27; phase groups coil by coil, Novello 2015 gives circulating current below 1 kA, and the cited arrangements reproduce both zero-current family signatures. /power_convertor/evidence/archive/jt60sa-power-supply-sources-landed.html">Evidence</a>
+</div>
+<div class="r-gate" data-id="g-jccm-3" data-section="s10" data-gated-sections="s10,s11" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">whether the measured harmonic pickup lines are coupled from the driven coil or made by the pickup&#x27;s own supply, which decides what §10 and §11 score against</h4>
+    <p class="r-gate-required-evidence">jt60sa-coil-circuit-model#s12</p>
+    <a class="r-gate-evidence" href="§12 on the held traces: 23 coupled, 11 mixed, 0 self-made and 18 unresolved of 52 lines, with nova still missing the coupled lines by a median 81–100 %, so §10 and §11 score against the coupled lines and the mixed lines&#x27; differential ratios (merge f521991). /power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s12-own-line">Evidence</a>
+</div>
+<div class="r-gate" data-id="g-jccm-4" data-section="s15" data-gated-sections="s15" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">a reconstructed equilibrium accepted as nova&#x27;s plasma source, and a shot-matched 2023 JT-60SA equilibrium in hand</h4>
+    <p class="r-gate-required-evidence">nova:iter-passive-plasma-circuit#s5</p>
+    </div>
+<div class="r-gate" data-id="g-jccm-5" data-section="s16" data-gated-sections="s16" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">every JT-60SA coil in the coupled plant carries its distributed winding capacitance with section-resolved ports, and the zero-capacitance limit reproduces the R–L plant</h4>
+    <p class="r-gate-required-evidence">shared-coil-supply-model#s3</p>
+    <a class="r-gate-evidence" href="shared-coil-supply-model#s3 closed (comment c-close-s3, 2026-10-18; merges 5ccc5c2a, 9c367228, 2ae8b1a9): every JT-60SA EF and CS coil in the coupled plant carries its distributed winding capacitance with section-resolved ports, the JT-60SA modes are reported at both ends of the insulation range, and the zero-capacitance positive control reproduces the R–L plant&#x27;s 6f, 12f and 18f transfer functions to 0.1 %. The thick-coil geometry regeneration at b89fdb0f moved the coil-to-coil matrix by at most 0.32 %; §16 reruns the derived caches on the regenerated matrices.">Evidence</a>
+</div>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="_top" data-id="c-thick-coil-sources" data-who="reckon-build" data-when="2026-10-17T14:59:00Z">
+    <div class="r-comment-body"><p>Lead direction, 17 October 2026: every coil is modelled as one thick rectangular element, not point filaments or a filament fill. The JT-60SA nova geometry now does this (merged at <code>b89fdb0f</code>, node <code>jt60sa-thick-coil-sources</code>, review 105/120). Each coil enters as one rectangle, where before it was a fill of 268 rectangles in total (40 per CS module, 16 per EF coil, 6 per FPPC coil). Linkage uses nova's exact two-section route: <code>cylinder_greens</code> on the source, averaged over the target section. Effects:</p><ul><li>The coil-to-coil matrix moves by at most 0.32 %. The self-inductances move by about 0.05 %, so their fast-discharge errors change by under 0.06 points (CS 1.2–5.2 %, EF 1.8–2.7 %).</li><li>EF1's self-inductance matches the closed-form Grover value within 0.048 %.</li><li>Coil-to-passive mutuals move by up to 14.5 % relative on some pairs, at most 1.6 µH absolute.</li></ul><p><code>data/jt60sa/inductance_op2.json</code>, <code>passive_structure/matrices.json</code> and <code>geometry_op2.json</code> are regenerated. The derived JT-60SA plant caches, passive-screening scores and their figures have not been rerun on the regenerated matrices. That rerun belongs to this plan's next pass, and any score that moves should be reported against the values recorded here.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-s10-deferred" data-who="reckon-build" data-when="2026-10-17T08:00:00Z">
+    <div class="r-comment-body"><p>Deferred by the lead's decision of 2026-10-17. The harmonic coupling work closes after §14. Wall resolution was expected to add screening, as on ITER, and §13 shows the walls cannot carry the missing coupling, so re-scoring with layered walls would not move the result. The layered option stays available in nova for fast-transient studies.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-s11-dispatch" data-who="reckon-build" data-when="2026-10-16T12:55:00Z">
+    <div class="r-comment-body"><p>§11 is dispatched with <code>--allow-unreviewed-plan</code> after four content reviews. Each review found an element routed into the wrong part of the pickup circuit. The section now leaves the routing to the models that own each element and asks the run to state each split. The last two edits apply the final review's findings in its own words: the filter's installed <code>booster_only</code> attachment, and the citation of the capacitance bound to the switched replay's §3. A further review would read the reviewer's own text.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261016T132747403656-review-of-jccm-pickup-circuit-4cf65d20c41e" data-who="reckon-build" data-when="2026-10-16T13:35:39Z">
+    <div class="r-comment-body"><p>Independent review stored for base 1d1e720e513660366033adf9efad55ba6f699ea9 and head 4cf65d20c41ef75bb9c06f2562c782bcdc568950 with six scores, four production call sites, one blocking finding and one follow-on finding.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261016T125235623419-jccm-pickup-circuit" data-who="reckon-build" data-when="2026-10-16T13:44:12Z">
+    <div class="r-comment-body"><p>&lt;a href="/power_convertor/evidence/fragments/jt60sa-coil-circuit-model/jccm-pickup-circuit.html#jccm-pickup-circuit-results"&gt;Pickup terminal circuit&lt;/a&gt;: 52/52 open ratios reproduced, 0/27 scoreable lines fit the fixed upper combination, 9/27 admit an individual bounded capacitance interval, and the &lt;a href="/power_convertor/figures/jt60sa-coil-circuit-model/pickup-circuit/ratio_moves.svg"&gt;element-move figure&lt;/a&gt; shows the installed filter changes less than 0.90% over grounding on eligible lines; EF5-to-EF4's physical carrier remains unlocated.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261016T183306898466-review-of-jccm-pickup-circuit-93c28278fca8" data-who="reckon-build" data-when="2026-10-16T18:37:51Z">
+    <div class="r-comment-body"><p>Independent incremental review stored for base 4cf65d20c41ef75bb9c06f2562c782bcdc568950 and head 93c28278fca83f46f05c12c224ce3785caf50271 with six scores, no production call sites, and one blocking finding; added failures remain unmeasured because the source manifest supplies no paired suite arms.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-10-16T18:45:00Z">
+    <div class="r-comment-body"><p>§11 closed with a negative result. The documented circuit at the pickup terminals (the installed booster-only filter, the as-built grounding, and capacitance within its measured bound) brings none of the 27 scoreable harmonic lines within §9's rule. The EF5→EF4 12f carrier stays unlocated because the voltage-tap wiring and any inter-coil transfer element are undocumented. Merge <code>fb3fcfe</code>. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s11-pickup">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261016T110739911032-review-of-jccm-own-line-aae9e313d894" data-who="reckon-build" data-when="2026-10-16T11:14:20Z">
+    <div class="r-comment-body"><p>Independent review of aae9e313d894dd35917e3ea76ac54c9ad2fd7f9a is stored in both assigned review records with six scores, three findings (two blocking), and unmeasured added failures because no comparable baseline and after suites were recorded.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261016T112908338487-review-of-jccm-own-line-bbd247a12fa0" data-who="reckon-build" data-when="2026-10-16T11:35:07Z">
+    <div class="r-comment-body"><p>Independent review of bbd247a12fa01cd2b55a9923ea37974625e5d89f is stored in both assigned review records with six scores, three findings (two blocking), and unmeasured added failures because no comparable baseline and after suites were recorded.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261016T101049228440-jccm-own-line" data-who="reckon-build" data-when="2026-10-16T11:59:23Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/jt60sa-coil-circuit-model/jccm-own-line.html#jccm-own-line-results — three-state firing evidence added; held 52 lines remain 23 coupled, 11 mixed, 0 self-made, 18 unresolved; 230 scored supply states unobservable; synthetic three-shot accounting yields one coupled, one self-made and one unresolved line.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261016T115958028465-review-of-jccm-own-line-f49029cce6a9" data-who="reckon-build" data-when="2026-10-16T12:05:06Z">
+    <div class="r-comment-body"><p>Independent review of f49029cce6a9ee69d56ffb24a7ea457f411d8650 is stored in both assigned review records with six scores and two blocking findings; added failures are unmeasured because the source run recorded no completed comparable suite arms.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-s12-held" data-who="reckon-build" data-when="2026-10-16T12:10:00Z">
+    <div class="r-comment-body"><p>§12 landed on the held traces and stays open. Of the 52 lines, 23 are coupled, 11 mixed, none self-made and 18 unresolved. Firing is unobservable in every held shot. Nova still misses the coupled lines by a median 81–100 %, so §9's over-screening is real and not a contamination artefact. The remaining node classifies the 18 unresolved lines once site firing-state or contrast data can be fetched. It also fixes the latent observed-firing branch, which should return mixed when a persistent line also carries a coupled slope. Gate g-jccm-3 passes on this result: §10 and §11 score against the coupled lines and the mixed lines' differential ratios. Merge <code>f521991</code>. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s12-own-line">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-s12-site-dispatch" data-who="reckon-build" data-when="2026-10-16T12:35:00Z">
+    <div class="r-comment-body"><p>The node for the 18 unresolved lines is dispatched with <code>--allow-unreviewed-plan</code>, because the lead asked for the site fetch as soon as the JT-60SA link returned. §12's own text is unchanged since its stored review. The only uncovered unit is §11, whose 9 % change applies its reviewer's finding verbatim, and §11 is not built by this node. §11 gets a fresh review before its own dispatch.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261016T131158232252-review-of-jccm-own-line-site-f164e88bb79a" data-who="reckon-build" data-when="2026-10-16T13:19:27Z">
+    <div class="r-comment-body"><p>/home/ITER/mcintos/.config/reckon/crew/reviews/power_convertor/r-20261016T122537554498-jccm-own-line-site.at-f164e88bb79a5f14d4e32de53c6feca30b8d6faf.json — parsed review of 7fb63954efd3deacc325d8682236fcac30f3695d..f164e88bb79a5f14d4e32de53c6feca30b8d6faf, six scores, one follow-on finding.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261016T122537554498-jccm-own-line-site" data-who="reckon-build" data-when="2026-10-16T13:10:49Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/jt60sa-coil-circuit-model/jccm-own-line-site.html#jccm-own-line-site-results — 39 fetched shots, 854 channel attempts and 25/25 live catalogue positive controls found no direct firing channel; 52 lines remain 23 coupled, 11 mixed, 18 unresolved; 18 same-direction controls contain one above-floor phase-discordant line; figure /power_convertor/figures/jt60sa-coil-circuit-model/own-line-site/contrasts.svg.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-close-s12" data-who="reckon-build" data-when="2026-10-16T13:25:00Z">
+    <div class="r-comment-body"><p>§12 closed. Of the 52 measured harmonic pickup lines, 23 are coupled, 11 mixed, none self-made and 18 unresolved. Contamination by the pickup's own supply does not explain §9's miss: nova still under-predicts the coupled lines by a median 81–100 %, and EF5→EF4 12f is coupled at 0.65 ± 0.22, above M/L's 0.288. The 18 unresolved lines cannot be settled from accessible data, because EDDB has no firing-state channel and the wiki has no bridge records. Settling them would need the facility's shot-level records. The transferable rule for ITER: every ripple-coupling test needs a “driver off” baseline and a recorded firing state for every idle supply. Merges <code>f521991</code> and <code>5c00574</code>. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s12-site">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-s13-dispatch" data-who="reckon-build" data-when="2026-10-16T18:48:00Z">
+    <div class="r-comment-body"><p>§13's content review read the plan before §11 merged. Two of its findings, that §13 builds on an unbuilt §11 and that §11 is not yet ruled out, are answered by §11's merge (<code>fb3fcfe</code>) and close. The third is acted on in the section's text: the export carries two passive loops, so groups are defined by filament position and recorded. §13 is dispatched with <code>--allow-unreviewed-plan</code>, because the only change since the review applies that finding in the reviewer's terms.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261016T191209000767-review-of-jccm-passive-cuts-bcca2001e53e" data-who="reckon-build" data-when="2026-10-16T19:25:03.773Z">
+    <div class="r-comment-body"><p>attached an independent review of run r-20261016T184254068093-jccm-passive-cuts at head bcca2001: total 102 over six dimensions (goal_fidelity 18, evidence 15, scope_discipline 19, durability 17, fit 17, reuse 16) with one blocking finding on the evidence fragment's port-bound reading.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261016T184254068093-jccm-passive-cuts" data-who="reckon-build" data-when="2026-10-16T19:38:13Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/jt60sa-coil-circuit-model/jccm-passive-cuts.html</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261016T193848467130-review-of-jccm-passive-cuts-330e0329ce73" data-who="reckon-build" data-when="2026-10-16T19:54:39.761Z">
+    <div class="r-comment-body"><p>reviewed r-20261016T184254068093-jccm-passive-cuts at head 330e0329ce73a2b203e32d17e7d658fe9b98b4e8 over base feee964c; the prior blocking finding on the fragment's port-bound reading is repaired and the fragment's counts reconcile with the artifact (two lines at or above measured, zero crossings); six follow-on findings, none blocking.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-close-s13" data-who="reckon-build" data-when="2026-10-16T20:05:00Z">
+    <div class="r-comment-body"><p>§13 closed. Cutting every major port band outright moves nova's harmonic coupling by a median 15 % and brings none of the 25 under-coupled lines to its measured value, so 3D eddy paths through ports are ruled out. The cryostat body carries most of the modelled screening. The coordinator's own check of the stored transfer functions points past every wall model: for most pairs the measured coupling is three to eleven times higher at the harmonics than near 25 Hz, where nova fits it. Eddy screening can only grow with frequency, so the harmonic excess looks like an electrical path rather than a magnetic one. That reading is not yet a reviewed result. Merge <code>5f1d0dc</code>. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s13-cuts">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-s13-rise-correction" data-who="reckon-build" data-when="2026-10-17T07:15:00Z">
+    <div class="r-comment-body"><p>Correction to c-close-s13. Its “three to eleven times higher at the harmonics than near 25 Hz” took a median over the upper half of each measured band. Read line by line against the sample nearest 25 Hz, the nine pairs with a §5 curve sit 0.4 to 9 times above it, and four reach 3× on at least one line. §14 states the corrected figures and tests the rise per pair.</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-s14-dispatch" data-who="reckon-build" data-when="2026-10-17T07:16:00Z">
+    <div class="r-comment-body"><p>§14 is dispatched with <code>--allow-unreviewed-plan</code>. Every change since its content review applies that review's findings in its own terms:</p><ul><li>the rise restated from the stored file, 0.4–9× with four of nine pairs reaching 3×;</li><li>the nine-of-twenty denominator, with the eleven unjoinable pairs reported apart;</li><li>coil-to-coil capacitance set aside only if JT-60SA's coils carry grounding paint;</li><li>§10's followup withdrawn with its deferral.</li></ul></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261017T073231581472-review-of-jccm-frequency-trend-71592cee9c3f" data-who="reckon-build" data-when="2026-10-17T07:48:08.864Z">
+    <div class="r-comment-body"><p>§14 review of r-20261017T070234487698-jccm-frequency-trend at head 71592cee (base 87b6b3b4): goal_fidelity 16, evidence 12, scope_discipline 18, durability 12, fit 17, reuse 20, total 95; three findings, two blocking (the section-9 negative-control assertion at tests/test_frequency_trend.py:114 compares the report's nova values against the verbatim copy the script made, so it cannot fail; the unjoinable-pair breakdown at docs/evidence/fragments/jt60sa-coil-circuit-model/jccm-frequency-trend.html:4 is inverted against the node's own JSON) and one follow-on (grounding_paint at scripts/jt60sa/frequency_trend.py:222 performs no search of the held documents while asserting none answers); record stored at runs/r-20261017T070234487698-jccm-frequency-trend/review-records/</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261017T070234487698-jccm-frequency-trend" data-who="reckon-build" data-when="2026-10-17T08:14:14Z">
+    <div class="r-comment-body"><p>§14 — the nine coil pairs that carry both a booster-test transfer function and resolved harmonic lines are joined across the band, with nova's and M/L's open-pickup coupling computed through op2_plant on one 0.1–1200 Hz grid; over a class window from 20 Hz through the lines, six pairs class rising (EF1→EF2 measured slope 0.36 against nova's 0.00, EF2→EF1 0.34/−0.01, EF5→EF4 0.27/−0.01, EF2→EF3 0.25/−0.01, EF6→EF1 0.23/0.00, EF6→EF5 0.18/−0.01) and three magnetic (EF5→EF6 0.05/−0.01, EF6→EF4 0.02/0.00, EF1→EF6 −0.04/0.03) over the stated denominator of nine, so the harmonic coupling is not magnetic on the six rising pairs; none of the six fits a declared route (excess slopes 0.25–0.62, phases −10.8° to −29.1°, where capacitance to ground grows at about 1 with a +90° lead and a grounding-divider tap is flat), so all six are recorded as neither; nova's ratio recomputed through op2_plant reproduces section 9's stored values at the fourteen 2021 coupled lines to 0.3 %; the held sources do not show the EF coils painted, so coil-to-coil capacitance stays a third route; artifacts: data/jt60sa/frequency_trend/frequency_trend.json, docs/evidence/fragments/jt60sa-coil-circuit-model/jccm-frequency-trend.html, docs/figures/jt60sa-coil-circuit-model/frequency-trend/coupling-trend.svg</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261017T081454071906-review-of-jccm-frequency-trend-7743984dcd4a" data-who="reckon-build" data-when="2026-10-17T08:27:53.441Z">
+    <div class="r-comment-body"><p>§14 review of r-20261017T070234487698-jccm-frequency-trend at head 7743984d (base 71592cee, the commit the prior review read): goal_fidelity 19, evidence 18, scope_discipline 19, durability 18, fit 18, reuse 20, total 112; one follow-on finding (docs/evidence/fragments/jt60sa-coil-circuit-model/jccm-frequency-trend.html:4 states EF1→EF2 "climbs from 0.026 near 30 Hz", but the report's measured curve tops out at 29.785 Hz = 0.0224 and 0.026 sits at 16.5 Hz); the repair round fixed all four prior findings — the class window now spans 20 Hz to the lines with class_counts {magnetic:3, rising:6} over denominator 9.</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-close-s14" data-who="reckon-build" data-when="2026-10-17T08:40:00Z">
+    <div class="r-comment-body"><p>§14 closed, and with it the harmonic coupling work, as the lead decided on 2026-10-17. Six of the nine joinable pairs rise with frequency from 20 Hz through the converter lines while nova stays flat, so their harmonic excess is not magnetic. Three follow nova.</p><p>For the method carried to ITER:</p><ul><li>Nova's magnetic coupling stands. It is validated from 0.1 to 30 Hz (§5), on the slow currents (§7) and on fast dumps (§8).</li><li>At the converter harmonics, most of the measured pickup arrives by a non-magnetic path that grows roughly as √f with a small phase lag.</li><li>That path is neither the walls (§13), nor the documented terminal circuit (§11), nor the pickup's own supply (§12), nor capacitance to ground or a terminal tap (§14).</li><li>It cannot be identified from the data and documents held. ITER therefore carries an empirical idle-coil pickup factor and measurement requirements in place of a calibrated harmonic coupling: recorded tap wiring, the inter-coil ground return, a supply-off baseline, and each idle supply's firing state.</li></ul><p>§6 and §10 stay deferred. Merge <code>84e78c9</code>. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s14-trend">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261013T090107726093-review-of-jccm-circuits-00de3452289c" data-who="reckon-build" data-when="2026-10-13T09:07:57Z">
+    <div class="r-comment-body"><p>Independent review record at /home/ITER/mcintos/.config/reckon/crew/reviews/power_convertor/r-20261013T080206388384-jccm-circuits.at-00de3452289cbb9ed602d2cda82280ee4445158f.json; six dimensions scored and four blocking findings recorded for the reviewed change.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261013T093647123441-review-of-jccm-circuits-5eecd82fa7fa" data-who="reckon-build" data-when="2026-10-13T09:55:22.086Z">
+    <div class="r-comment-body"><p>review of r-20261013T080206388384-jccm-circuits stored at reviews/power_convertor/r-20261013T080206388384-jccm-circuits.at-5eecd82fa7fa5ae3194d52f5789097453251b84a.json (and the canonical copy); reviewed_base_sha 00de3452289cbb9ed602d2cda82280ee4445158f, reviewed_head_sha 5eecd82fa7fa5ae3194d52f5789097453251b84a; scores goal_fidelity 18, evidence 16, scope_discipline 20, reviewed durability 14, fit 17, reuse 17 (total 102); added_failure_count 0; no blocking findings, five follow-on</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-s2-jccm-circuits" data-who="reckon-build" data-when="2026-10-13T09:59:00Z">
+    <div class="r-comment-body"><p>Node <code>jccm-circuits</code> landed: the circuit table with sources, and the current-identity test over the eleven 2023 plasma shots on disk. The CS modules track one commanded current in those shots, so the real-data negative control and the review's five follow-ons move to <code>jccm-circuits-dumps</code>, which tests the CS pairs over single-coil fast discharges. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s2-circuits">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261013T080206388384-jccm-circuits" data-who="reckon-build" data-when="2026-10-13T09:34:38.846Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/jt60sa-coil-circuit-model/jccm-circuits.html</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261013T105440233044-review-of-jccm-circuits-dumps-e4bcfdbc58c3" data-who="reckon-build" data-when="2026-10-13T11:08:06.770Z">
+    <div class="r-comment-body"><p>review record for run r-20261013T095837457541-jccm-circuits-dumps stored at /home/ITER/mcintos/.config/reckon/crew/reviews/power_convertor/r-20261013T095837457541-jccm-circuits-dumps.json over base d17e50ce23d2afccc8bf4aa867f197f3dab52312..head e4bcfdbc58c35c7725ecf85e1944950251257b32, total 113, one follow-on finding.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-13T11:12:00Z">
+    <div class="r-comment-body"><p>§2 landed. The circuit table cites a source for each circuit's elements and connection: each of the ten PF coils has its own base supply, booster or switching unit, and quench-protection circuit, and each fast-control coil has its own converter. The current-identity test ran over every PF pair in the 2023 plasma shots on disk: no pair is anti-series, and the CS modules track one commanded current. Over 68 single-coil CS dumps, every CS pair reads independent. Positive control: a synthetic anti-series pair is detected. Negative control: CS1 and CS2 read independent on real data. No circuit links two coils (merges <code>7de4ea4</code>, <code>3edecda</code>). <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s2-dumps">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261013T095837457541-jccm-circuits-dumps" data-who="reckon-build" data-when="2026-10-13T10:53:59.714Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/jt60sa-coil-circuit-model/jccm-circuits-dumps.html</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261013T084814263575-review-of-jccm-signs-41a99e4e2972" data-who="reckon-build" data-when="2026-10-13T09:02:05.904Z">
+    <div class="r-comment-body"><p>Reviewed run r-20261013T081542532362-jccm-signs at base daec0629 head 41a99e4: scores goal_fidelity 18, evidence 15, scope_discipline 20, durability 18, fit 16, reuse 5 (total 92); four follow-on findings (channel_sign.lowpass duplicates signals.slow_part; _pair_sign raises TypeError on a coil outside SIGN_TABLE; a self-referential assertion at tests/test_channel_sign.py:39; a dropped trailing newline in fast_discharge_couplings.py) and no blocking finding; the run's declared negative control was reproduced (removing the excitation floor at channel_sign.py:216 reddens test_unexcited_coil_is_unidentifiable with "assert 1.0 is None").</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-s3-jccm-signs" data-who="reckon-build" data-when="2026-10-13T09:05:00Z">
+    <div class="r-comment-body"><p>Node <code>jccm-signs</code> landed: every PF channel is +1, EF6 is −1 up to E100346 and +1 from E100347, which explains its 180° pickup, and the fast-control coils are unidentifiable. The section stays open for <code>jccm-signs-reuse</code>, which folds the review's reuse finding. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s3-signs">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261013T081542532362-jccm-signs" data-who="reckon-build" data-when="2026-10-13T08:47:36.527Z">
+    <div class="r-comment-body"><p>Added the voltage-channel sign policy (`power_convertor.channel_sign`) with a lookup by coil and shot; all ten PF coils measure +1, EF6 is -1 up to and including E100346 and +1 from E100347, and the two fast-control coils are unidentifiable; the fast-discharge regression moved into it, the figure was regenerated on the lookup; figure: docs/figures/jt60sa-coil-circuit-model/measured-couplings.svg (62 discharge pairs ratio/(M/L) median 0.955, 11 swing pairs median 0.989).</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261013T092014915433-review-of-jccm-signs-reuse-b09fb2ff95f2" data-who="reckon-build" data-when="2026-10-13T09:29:18Z">
+    <div class="r-comment-body"><p>Reviewed 99fc9c6d91c09f338024db383d2ba6a8e8fb12e8..b09fb2ff95f2ce3be71233da9740a991f0c33bac; parsed six scores (20, 17, 20, 12, 19, 20), zero added suite failures, and one blocking finding at tests/test_channel_sign.py:52.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-13T09:42:00Z">
+    <div class="r-comment-body"><p>§3 landed. The sign table covers the ten PF coils and the two fast-control coils, with the shots it used. Every PF voltage channel reads +1. EF6 reads −1 up to and including E100346 and +1 from E100347, which explains its 180° pickup; what changed in its channel between those shots is not established from the data. The fast-control coils are unidentifiable. Positive control: a channel inverted on purpose reads the opposite sign. Negative control: a coil below the 100 A/s excitation floor is reported unidentifiable with no sign. <code>power_convertor.channel_sign</code> is the project's one sign policy (merges <code>99fc9c6</code>, <code>72c47bf</code>). <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s3-signs">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261013T090347753425-jccm-signs-reuse" data-who="reckon-build" data-when="2026-10-13T09:31:35Z">
+    <div class="r-comment-body"><p>jccm-signs-reuse: shared slow_part preserves the 20 Hz fit, unsigned pairs are skipped, four trailing newlines are restored, and the figure retains 62 discharge pairs at median 0.955 of M/L and 11 swing pairs at 0.989; the repaired test pins the 1.2 slope independently, and 90 tests pass.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261013T093206824240-review-of-jccm-signs-reuse-8ce757f81565" data-who="reckon-build" data-when="2026-10-13T09:40:13Z">
+    <div class="r-comment-body"><p>Independent review of 99fc9c6d91c09f338024db383d2ba6a8e8fb12e8..8ce757f8156524d587616af1b26c17f5deed325a stored at the canonical and revisioned review paths with six scores, six checklist verdicts, zero added failures, and one follow-on finding.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-jccm-system" data-who="reckon-build" data-when="2026-10-13T08:48:00Z">
+    <div class="r-comment-body"><p>Node <code>jccm-system</code> landed: the overlay builder and writer, 22 cited supplies, 12 series circuits; nova builds them and solves the inductance; 12/12 circuit currents equal coil currents. The section stays open for the two test fixes the review asked for and the canonical overlay file. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s4-system">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261013T080315506122-jccm-system" data-who="reckon-build" data-when="2026-10-13T08:31:05Z">
+    <div class="r-comment-body"><p>jccm-system: the cited 22-supply, 12-circuit overlay and its source table are recorded in docs/evidence/fragments/jt60sa-coil-circuit-model/jccm-system.html; nova built all circuits and solved inductance on all_debug in 46.18 s, 12/12 coil-current identities held, and the full suite passed 80 tests.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261013T083213626295-review-of-jccm-system-83c504c137d2" data-who="reckon-build" data-when="2026-10-13T08:41:24Z">
+    <div class="r-comment-body"><p>Independent review of b71e333256d852ce588d91b74846b364e8cbb25d..83c504c137d203996e9ae6bee145de4eb16ecc01 stored with six scored dimensions, all six checklist items, three production call sites and two follow-on findings.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-13T10:09:00Z">
+    <div class="r-comment-body"><p>§4 landed. <code>src/power_convertor/coil_system.py</code> writes a <code>pf_active</code> overlay on the ambix OP2 geometry with 22 cited supplies and one series circuit per coil, in matrices of the size the Data Dictionary defines. nova builds the circuits and solves the inductance. <code>tests/test_coil_system.py</code> shows each single-coil circuit's current equals its coil's current, and a stray connection fails it. Negative control: nova's own loader refuses the ambix placeholder circuits with its column-count error. The overlay is at <code>data/jt60sa/machine_description/pf_active.nc</code> (merges <code>814b1df</code>, <code>45e6024</code>). <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s4-system">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261013T094133622985-jccm-system-tests" data-who="reckon-build" data-when="2026-10-13T09:58:31Z">
+    <div class="r-comment-body"><p>Circuit expectations now reject stray and misassigned terminals; nova refused ambix placeholders with 2 != 24 and built all 12 overlay circuits; 107/107 tests passed; the canonical pf_active.nc was written at 91,678 bytes.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261013T095912499375-review-of-jccm-system-tests-e37bd5ff2632" data-who="reckon-build" data-when="2026-10-13T10:08:23Z">
+    <div class="r-comment-body"><p>Independent review of 1259dc91a1921f74a225120c749f9388430ddc69..e37bd5ff2632d73155e040405624c1ecee7ef292 stored in both granted paths with six scores, six checklist verdicts, zero added failures and one follow-on finding.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-s5-jccm-lines" data-who="reckon-build" data-when="2026-10-13T09:12:00Z">
+    <div class="r-comment-body"><p>Node <code>jccm-lines</code> landed: 52 complex coupling ratios at 6f to 18f from the single-coil booster tests, measured through <code>circuit.pickup_ratio</code>. No dump carries a line. The section stays open for <code>jccm-modes</code> and for consolidating <code>jt60sa_coupling_transfer.py</code>. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s5-lines">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261013T082442944007-jccm-lines" data-who="reckon-build" data-when="2026-10-13T08:56:59Z">
+    <div class="r-comment-body"><p>Shared pickup_ratio now rejects weak lines when min_line_v is set; 230 accepted lines yield 52 year/pair/harmonic measurements across 29 year/pairs, tabulated with spread and shots in jccm-lines.html and plotted in harmonic-couplings.svg.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261013T085814981378-review-of-jccm-lines-247dc3a4ba79" data-who="reckon-build" data-when="2026-10-13T09:07:31Z">
+    <div class="r-comment-body"><p>Independent review of ddc1ceb61aa15673e0dd1486cd9f0714d030c2dd..247dc3a4ba79a53d0f1afcbee739741b6f64b75e parsed all six dimensions (18, 16, 20, 17, 19, 20) and six checklist items with two follow-on findings; added failures are unmeasured because the source manifest omitted both suite arms.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261013T105039706434-review-of-jccm-modes-3cdc36fd3e24" data-who="reckon-build" data-when="2026-10-13T11:06:04.045Z">
+    <div class="r-comment-body"><p>none — review node; its deliverable is the stored review record, not a plan edit.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-s5-jccm-modes" data-who="reckon-build" data-when="2026-10-13T13:53:00Z">
+    <div class="r-comment-body"><p>Node <code>jccm-modes</code> landed with a measured fail. Free passive loops miss the 10 % held-out band on all nine EF pairs (best 14.9 %) while beating M/L alone on six. §5 stays open for <code>jccm-nova-modes</code>, <code>jccm-consolidate</code> and <code>jccm-modes-notes</code>. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s5-modes">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261013T133945289286-review-of-jccm-modes-c0343e388b36" data-who="reckon-build" data-when="2026-10-13T13:52:00.215Z">
+    <div class="r-comment-body"><p>none — worker node, the coordinator closes it</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261013T140120579255-review-of-jccm-modes-a2c4e08d1919" data-who="reckon-build" data-when="2026-10-13T14:08:57Z">
+    <div class="r-comment-body"><p>Review of source run r-20261013T081601459003-jccm-modes at a2c4e08d1919bb2543a983b627cd271695706fa5 stored in both declared review JSON paths; one blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-s5-jccm-consolidate" data-who="reckon-build" data-when="2026-10-13T14:14:00Z">
+    <div class="r-comment-body"><p>Node <code>jccm-consolidate</code> landed: the prototype coupling-transfer script uses <code>pickup_ratio</code>, <code>channel_sign</code> and <code>passive_loops</code>, with a multi-harmonic test. §5 stays open for <code>jccm-nova-modes</code> (8 of 9 pairs within the band at nominal resistivity), <code>jccm-ef1-ef6</code> and the data regeneration. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s5-consolidate">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261013T134128176608-jccm-consolidate" data-who="reckon-build" data-when="2026-10-13T14:01:27.415Z">
+    <div class="r-comment-body"><p>scripts/figures/jt60sa_coupling_transfer.py now takes line ratios from circuit.pickup_ratio, signs from channel_sign and its low-frequency curve from the driver's three-loop passive_loops model (per-pair two-pole fit deleted); 12f ratios moved by up to 22 % and 18f by up to 40 % from the per-harmonic lock, swing data and signs identical, and the new multi-harmonic test fails under a reused 6f lock (1 failed, 8 passed) while the full suite passes (143 passed)</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261013T140146043122-review-of-jccm-consolidate-86ae3405dfa6" data-who="reckon-build" data-when="2026-10-13T14:13:02.673Z">
+    <div class="r-comment-body"><p>review of run r-20261013T134128176608-jccm-consolidate (base c0343e388b36edea358610d6a90fcc0092da2532, head 86ae3405dfa609b92a26635f1582c52d579993f6) stored: goal_fidelity 19, evidence 16, scope_discipline 20, durability 10, fit 18, reuse 14; three follow-on findings (test guards the shared estimator rather than the script, data_dir duplicates circuit.TRACES_ROOT, plotted line frequency is nominal not measured); no blocking findings; added_failure_count 0 from the reviewed run's all-green head arm</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261013T141145991904-review-of-jccm-nova-modes-1466f1c7f114" data-who="reckon-build" data-when="2026-10-13T14:18:28Z">
+    <div class="r-comment-body"><p>Independent review of r-20261013T134043404180-jccm-nova-modes at 1466f1c7f114a1bed4df8cac807c5937db85c410 stored in both declared review JSON paths; six parsed scores, two follow-on findings, no blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-s5-jccm-nova-modes" data-who="reckon-build" data-when="2026-10-13T14:20:00Z">
+    <div class="r-comment-body"><p>Node <code>jccm-nova-modes</code> landed: nova's geometry-derived passive structure predicts eight of nine measured coupling transfer functions within 4–8 % of M/L at nominal resistivity, with nothing fitted. EF1→EF6 misses at 18.7 %; <code>jccm-ef1-ef6</code> is testing whether that is a measurement artefact. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s5-nova">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261013T141724190048-review-of-jccm-modes-1d7bd2989835" data-who="reckon-build" data-when="2026-10-13T14:28:16.731Z">
+    <div class="r-comment-body"><p>none — review node; the coordinator closes it. Verdict: delta 1d7bd29 is comment-and-prose only and resolves the prior blocking finding; no blocking finding raised.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261013T081601459003-jccm-modes" data-who="reckon-build" data-when="2026-10-13T14:12:28.810Z">
+    <div class="r-comment-body"><p>none — worker node, the coordinator closes it</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261013T134043404180-jccm-nova-modes" data-who="reckon-build" data-when="2026-10-13T14:11:20Z">
+    <div class="r-comment-body"><p>Nova geometry reduced to 155 passive modes; the nine-pair figure docs/figures/jt60sa-coil-circuit-model/passive-structure.svg and table record scales 1.226/0.893, 8/9 leave-one-pair-out within 10%, and EF1 to EF6 failing at 18.7%.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-s5-jccm-ef1-ef6" data-who="reckon-build" data-when="2026-10-13T14:42:00Z">
+    <div class="r-comment-body"><p>Node <code>jccm-ef1-ef6</code> landed: EF1→EF6's 18.8 % miss against nova is real, not a timing artefact. The reverse pair and the other EF6 pickups pass. <code>jccm-ef6-loading</code> is testing EF6 as a loaded pickup. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s5-ef1-ef6">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261013T141130546987-jccm-ef1-ef6" data-who="reckon-build" data-when="2026-10-13T14:31:11Z">
+    <div class="r-comment-body"><p>EF1→EF6 realigned H(f) remains 18.78% rms of M/L against nominal nova, above the 10% band; EF5→EF6 control remains 4.21%; diagnostic and evidence fragment committed.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261013T143140740652-review-of-jccm-ef1-ef6-6779a13ea187" data-who="reckon-build" data-when="2026-10-13T14:39:41Z">
+    <div class="r-comment-body"><p>Independent review of r-20261013T141130546987-jccm-ef1-ef6 at base 1466f1c7f114a1bed4df8cac807c5937db85c410 and head 6779a13ea18796209ab69973956998176108c3fb stored in both declared JSON paths; six parsed scores total 80, two follow-on findings and no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261013T145541334002-review-of-jccm-ef6-loading-40eefddbbfd9" data-who="reckon-build" data-when="2026-10-13T15:01:54Z">
+    <div class="r-comment-body"><p>Independent review stored for 6779a13ea18796209ab69973956998176108c3fb..40eefddbbfd9b660a3c67db4374ca5d6d72fe860 with six scores totalling 87, three follow-on findings and no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261013T152329259425-review-of-jccm-s5-scoring-bb23c33be997" data-who="reckon-build" data-when="2026-10-13T15:30:47Z">
+    <div class="r-comment-body"><p>Independent review of 2b5eeecfb0931ac5e807332a8ba702dbbb54f050..bb23c33be997b7c604d3cac5726cbd3fcd7b4608 stored with six parsed scores, six checklist items, zero added failures, three follow-on findings and no blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-10-13T15:35:00Z">
+    <div class="r-comment-body"><p>§5 closed by the lead's decision of 2026-10-13. nova's geometry-derived passive structure, read from the OP2 machine description at nominal resistivity, predicts eight of nine measured coil-to-coil transfer functions within 4–8 % of M/L under leave-one-pair-out cross-validation, with nothing fitted. The free-loop model misses on all nine, and M/L alone misses by 61–96 %. Recorded open: EF1→EF6 at 18.8 %, which is neither a timing artefact nor pickup loading, and the EF5→EF4 12f excess. The complex ratios at 6f to 18f are recorded for every pair the booster tests reach. §6 couples through nova below 30 Hz and through measured H(f) for EF1→EF6 (merges <code>f6bed04</code>, <code>6817925</code>, <code>505ef5e</code>, <code>381d0e1</code>, <code>317b5dc</code>, <code>d3bbaa5</code>, <code>4695c76</code>). <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s5-nova">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261013T143739364597-jccm-ef6-loading" data-who="reckon-build" data-when="2026-10-13T14:54:31Z">
+    <div class="r-comment-body"><p>EF6 current showed no induced response in the three pickup shots; a two-parameter series-load fit changed EF1-to-EF6 rms from 18.78% to 18.62% of M/L, still above the 10% band.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261013T143822050853-jccm-s5-scoring" data-who="reckon-build" data-when="2026-10-13T15:22:35Z">
+    <div class="r-comment-body"><p>Shared scoring and held-pair exclusion landed; regenerated harmonic lines rose 26 to 28 while leave-one-pair-out scores stayed identical (free loops 0/9, nova structure 8/9 within 10%); docs/evidence/fragments/jt60sa-coil-circuit-model/jccm-s5-scoring.html</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-split" data-who="reckon-build" data-when="2026-10-14T05:55:00Z">
+    <div class="r-comment-body"><p>§6 split on 2026-10-14 by the lead's decision. booster-converter-model §5 still fails its held-out check and has no pass date: power-convertor-31 reports that 18f–30f pass in no window, and that frozen supplies exist only for EF2 and EF5. The slow coil currents need no converter model, so they move to §7, which runs now on each coil's measured terminal voltage. The 6f–18f ripple lines stay here under gates g-jccm-1 and g-jccm-2.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-replay" data-who="reckon-build" data-when="2026-10-14T18:55:00Z">
+    <div class="r-comment-body"><p>The ITER coordinator is opening <code>jt60sa-switched-pulse-replay</code>, which replays JT-60SA pulses through switched converter units with sectioned windings and reads §1–§5 and §7 read-only. By the lead's decision of 2026-10-14, §6 keeps its frequency-domain sources from booster-converter-model and its gate g-jccm-1. The replay is an independent time-domain check, and neither plan depends on the other. We revisit once the replay's switched sources are validated on a 2021 pulse.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-deferred" data-who="reckon-build" data-when="2026-10-15T10:05:00Z">
+    <div class="r-comment-body"><p>Deferred by the lead's decision of 2026-10-15. This plan validates the method, not JT-60SA's converter models. ITER has no booster: its supplies are twelve-pulse thyristor converter units, CS switching networks and VS1 converters. A whole-shot JT-60SA prediction driven by booster-converter-model therefore tests a model that does not carry to ITER. The 2023 whole-shot ripple prediction is filter-grounding-prediction's aim. The method's open uncertainty at ripple frequencies, nova's coupling at 6f–18f, moves to §9, which uses measured terminals on both coils and needs no converter model. Gate g-jccm-1 stays on this section as written, because reckon has no operation that withdraws a gate. Its verdict is not passed, and booster-converter-model §5 still fails its held-out check.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261014T064413674378-review-of-jccm-slow-d10f8d7ea210" data-who="reckon-build" data-when="2026-10-14T07:09:31.565Z">
+    <div class="r-comment-body"><p>the review of run r-20261014T054540202714-jccm-slow at head d10f8d7ea21047ea94bfea54bdc82b9eb8085b9f stores a parsed record (total 82) scoring goal_fidelity 13, evidence 16, scope_discipline 18, durability 15, fit 16, reuse 4, with one blocking finding on the reviewed manifest's negative_control_log shape and four follow-on findings.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261014T054540202714-jccm-slow" data-who="reckon-build" data-when="2026-10-14T07:15:14.947Z">
+    <div class="r-comment-body"><p>commit 8c5709b lands the coupled voltage-driven solve (src/power_convertor/coupled_circuit.py: propagate, zero_order_hold, CoupledStructure.from_json), its unit tests and the measurement script; commit 61f1357 lands the evidence fragment docs/evidence/fragments/jt60sa-coil-circuit-model/jccm-slow.html; commit d10f8d7 lands the corrected fragment and the script refactor onto power_convertor.channel_sign and signals.slow_part; commit 7d6ce3c adds --log to scripts/jt60sa/slow_currents.py so the control record is written to a file, and the manifest's negative_control_log names that file.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-s7-slow" data-who="reckon-build" data-when="2026-10-14T07:20:00Z">
+    <div class="r-comment-body"><p>First §7 node <code>jccm-slow</code> landed with the band unmet (merge <code>a904613</code>). The coupled solve recovers EF5's 0.370 H on E100310, but on plasma-free E101001 and E101002 no coil is inside 5% (CS 51–58%, EF3/EF4 24–31%, EF1/EF2 83–104%); removing the coupling roughly triples the error. The error grows with the current swing, not with time. §7 stays open: the next node separates a voltage-channel gain error, a wrong-signed mutual and a missing circuit resistance. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s7-slow">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261014T071545829046-review-of-jccm-slow-7d6ce3c1345d" data-who="reckon-build" data-when="2026-10-14T07:32:36.685Z">
+    <div class="r-comment-body"><p>the re-review of run r-20261014T054540202714-jccm-slow at head 7d6ce3c1345d2267e144d3b642e2e9f58b76048f, covering only the delta d10f8d7..7d6ce3c (scripts/jt60sa/slow_currents.py, the --log option), stores a parsed record at both review paths scoring goal_fidelity 17, evidence 18, scope_discipline 20, durability 8, fit 17, reuse 19 (total 99), with two follow-on findings and no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261014T073351883244-review-of-jccm-slow-locate-de31b9735cf8" data-who="reckon-build" data-when="2026-10-14T07:39:36Z">
+    <div class="r-comment-body"><p>Independent parsed review at /home/ITER/mcintos/.config/reckon/crew/reviews/power_convertor/r-20261014T071808537130-jccm-slow-locate.at-de31b9735cf8456d03d1b8cebf71bbbe9c86044e.json scores all six dimensions (total 93), has three follow-on findings and no blocking findings, and records base 7fee536e81f7ae2f46348cb012e4978c3e4cdaab and head de31b9735cf8456d03d1b8cebf71bbbe9c86044e.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261014T071808537130-jccm-slow-locate" data-who="reckon-build" data-when="2026-10-14T07:32:24Z">
+    <div class="r-comment-body"><p>Identified a, b and R with uncertainties for 20 coil-shot pairs using 1 s voltage-integral windows; synthetic maximum coefficient error 0.75%, EF5 control a=0.98569, and the declared CS2 sign mutation returned b=-0.9999989 and failed its positive-sign test.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-s7-locate" data-who="reckon-build" data-when="2026-10-14T07:42:00Z">
+    <div class="r-comment-body"><p>Second §7 node <code>jccm-slow-locate</code> landed (merge <code>64dbe5d</code>). On EF3, EF4 and EF5 the short-ramp voltage balance reads self and mutual gains near 1, so nova's inductance and mutual signs hold. Every well-determined coil, CS modules included, carries a negative effective resistance of about −5 to −9 mΩ. That is the term that integrates into the band failure. The next node, <code>jccm-slow-offset</code>, tests whether the voltage offset changes once the supplies energise. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s7-locate">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261014T071736324984-jccm-slow-fold" data-who="reckon-build" data-when="2026-10-14T07:50:11.955Z">
+    <div class="r-comment-body"><p>CoupledStructure.from_json now reads through passive_structure.PassiveStructure and takes its coil list from circuit.COILS; slow_currents.py asserts CS2 misses the 5% band with the coupling removed (E101001 72.1%, E101002 72.2%) and reports the EF1-&gt;EF6 measured-slow-ratio variant (worst 103.2% / 84.7%) and each candidate shot's plasma-current check in the fragment.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-s7-fold" data-who="reckon-build" data-when="2026-10-14T08:16:00Z">
+    <div class="r-comment-body"><p><code>jccm-slow-fold</code> landed (merge <code>80bb0ee</code>). The review folds are in, CS2's declared control holds (72% with the coupling removed), and the EF1→EF6 measured-ratio variant does not explain the miss. EDDB's plasma current covers only the first 0.39 s, and E101002 reaches 26 kA there, so the offset node judges on E101001 and E101005. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s7-fold">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261014T075102535124-review-of-jccm-slow-fold-f7d5e7ba1d80" data-who="reckon-build" data-when="2026-10-14T08:10:53.459Z">
+    <div class="r-comment-body"><p>Independent review of r-20261014T071736324984-jccm-slow-fold at head f7d5e7ba1d80ebab7078c53cafffc7696076c672 (base a32ff4e367e50ab800092d7bab767ede890cad6d) stored as a parsed record scoring goal_fidelity 19, evidence 16, scope_discipline 20, durability 14, fit 18, reuse 19 (total 106), with three follow-on findings and no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261014T084357066730-review-of-jccm-slow-offset-4029d9a5b2ab" data-who="reckon-build" data-when="2026-10-14T08:50:56Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261014T081524737701-jccm-slow-offset at base 44e3f03cffb8ff1113c3ac3c51c114ed2508cad9 and head 4029d9a5b2ab9565c26b44fde25f16ce4e5dea49 stored in both review paths; six scores total 107, two follow-on findings and no blocking finding; added failures unmeasured because the source recorded no paired suite arms.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261014T081524737701-jccm-slow-offset" data-who="reckon-build" data-when="2026-10-14T08:41:05Z">
+    <div class="r-comment-body"><p>Measured supplies-off, energised and post-pulse levels, flux closure, and fixed-inductance R for all ten coils on E101001 and E101005; the energised-offset current score remains 0/10 inside 5% on each (worst 204.8% and 256.0%, both EF1), with the per-coil record in docs/evidence/fragments/jt60sa-coil-circuit-model/jccm-slow-offset.html.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-s7-replan" data-who="reckon-build" data-when="2026-10-14T09:05:00Z">
+    <div class="r-comment-body"><p>§7 re-planned on 2026-10-14 by the lead's decision. <code>jccm-slow-offset</code> (merge <code>ac50f84</code>) showed the voltage channels shift by up to 28 V once the supplies energise. Integrating a whole 50 s shot to a 5% current band therefore needs volt-level channel stability and tests the instrumentation, not the coupling. §7 is now judged on 1–2 s windows: the kind-E current ramps and the single-coil CS fast discharges, which separate the CS modules. Each window starts from flat currents and is referenced to its own flat span. The whole-shot result is reported, not judged. The negative control is now CS2 in a CS1 or CS3 fast discharge. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s7-offset">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261014T112418599095-review-of-jccm-slow-windows-5bf5d23332b3" data-who="reckon-build" data-when="2026-10-14T11:44:31.287Z">
+    <div class="r-comment-body"><p>the review of run r-20261014T095625938664-jccm-slow-windows at base e06510fb1e2bef9ebb332ce1c3f3cb1762e873f5 and head 5bf5d23332b30f03e2ccd84308e96515bfa94ca5 is stored at /home/ITER/mcintos/.config/reckon/crew/reviews/power_convertor/r-20261014T095625938664-jccm-slow-windows.json scoring goal_fidelity 18, evidence 14, scope_discipline 18, durability 11, fit 18, reuse 5 (total 84), with five follow-on findings and no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261014T095625938664-jccm-slow-windows" data-who="reckon-build" data-when="2026-10-14T12:01:32.103Z">
+    <div class="r-comment-body"><p>NOT LANDED. All work is committed on the node's worktree head; the coordinator owns the merge to main.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-s7-windows" data-who="reckon-build" data-when="2026-10-14T16:25:00Z">
+    <div class="r-comment-body"><p><code>jccm-slow-windows</code> landed (merge <code>453dc7c</code>). Under the supply-state rule, 39 of 45 judged windows are inside 5% (0.867, against 0.90). All 17 2023 dumps pass, 22 of 26 2021 dumps pass and both kind-E ramps miss, and the CS2 control holds in 21 of 21. Three windows are beyond 10%. By the lead's decision on 2026-10-14, one residual node, <code>jccm-slow-residual</code>, tests their cause and re-judges under the unchanged rule; if §7 still misses, it closes by the lead's decision. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s7-windows">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261014T160846150253-review-of-jccm-slow-windows-b53c87ce63a6" data-who="reckon-build" data-when="2026-10-14T16:17:11.846Z">
+    <div class="r-comment-body"><p>stored an independent review of r-20261014T095625938664-jccm-slow-windows at base e06510fb1e2bef9ebb332ce1c3f3cb1762e873f5 head b53c87ce63a69626846f74646fd370d369b7e2e8; goal_fidelity 18 evidence 17 scope_discipline 14 durability 15 fit 17 reuse 5 (total 86), five checklist verdicts and CALL_SITES none, three follow-on findings and no blocking finding</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261014T173909938672-review-of-jccm-slow-residual-7f62a48c3b20" data-who="reckon-build" data-when="2026-10-14T17:53:44.470Z">
+    <div class="r-comment-body"><p>the review of r-20261014T162200072650-jccm-slow-residual at base 595bd49084650f88797bbd329ee2b64355d48a6f and head 7f62a48c3b2067faa9a2af506b935168b56e9ff2 is stored at /home/ITER/mcintos/.config/reckon/crew/reviews/power_convertor/r-20261014T162200072650-jccm-slow-residual.json and its .at-7f62a48c3b2067faa9a2af506b935168b56e9ff2 twin, scoring goal_fidelity 19, evidence 14, scope_discipline 18, durability 17, fit 18, reuse 5 (total 91), with five follow-on findings and no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-close-s7" data-who="reckon-build" data-when="2026-10-14T18:40:00Z">
+    <div class="r-comment-body"><p>§7 closed. The coupled voltage-driven solve of the ten coils and nova's passive structure predicts every judged window's coil current change within 5% of the window's largest change: 45 of 45 judged windows, none beyond 10%, against the 90%/none criterion. With the coil-to-coil and coil–passive coupling removed, CS2 leaves the band in 21 of 21 CS1/CS3 dump windows, so the coupling carries the prediction. The earlier miss of 39 of 45 came from reading the measured change off two raw samples; reading it from the current's slow part, which matches the prediction's bandwidth, is the fix, and the rule and thresholds are unchanged. Whole-shot integration stays a reported diagnostic: the voltage channels shift by up to 28 V once the supplies energise. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s7-residual">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261014T162200072650-jccm-slow-residual" data-who="reckon-build" data-when="2026-10-14T18:16:24.575Z">
+    <div class="r-comment-body"><p>0292139 docs(jt60sa): correct the slow-residual record's log names, revisions and estimator choice</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261014T181707468019-review-of-jccm-slow-residual-02921391b06e" data-who="reckon-build" data-when="2026-10-14T18:32:06.332Z">
+    <div class="r-comment-body"><p>the review of run r-20261014T162200072650-jccm-slow-residual at base 595bd49084650f88797bbd329ee2b64355d48a6f and head 02921391b06e7c005b80129186aaa3bbb1061eae is stored at /home/ITER/mcintos/.config/reckon/crew/reviews/power_convertor/r-20261014T162200072650-jccm-slow-residual.json and its .at-02921391b06e twin, scoring goal_fidelity 19, evidence 17, scope_discipline 19, durability 17, fit 18, reuse 5 (total 95), with four follow-on findings and no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261014T204207824407-jccm-slow-cleanup" data-who="reckon-build" data-when="2026-10-14T21:07:19.044Z">
+    <div class="r-comment-body"><p>slow_residual.judge now calls slow_windows.judge_shot, summarise counts every beyond-limit window per coil, the docstring reads 56 candidate windows, and the residual fragment cites no missing panels; the §7 judge re-run on all_debug gives 45 of 45 judged windows inside 5% with none beyond 10%.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261015T053519440651-review-of-jccm-slow-cleanup-f38e4bbbfd34" data-who="reckon-build" data-when="2026-10-15T05:49:59.863Z">
+    <div class="r-comment-body"><p>independent review of r-20261014T204207824407-jccm-slow-cleanup stored at reviews/power_convertor/r-20261014T204207824407-jccm-slow-cleanup.at-f38e4bbbfd346da3eefc92efb7d0248b1fad79c4.json</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261014T212113530867-review-of-jccm-ef1-structure-b33c6505b4c6" data-who="reckon-build" data-when="2026-10-14T21:39:47.476Z">
+    <div class="r-comment-body"><p>Node review-of-jccm-ef1-structure-b33c6505b4c6 lands an independent review of r-20261014T204323043163-jccm-ef1-structure read at base 1522d6f / head b33c650: parsed record scoring all six dimensions (goal_fidelity 16, evidence 16, scope_discipline 20, durability 15, fit 18, reuse 5; total 90) with six item verdicts, four findings and CALL_SITES: none; one blocking finding (jccm-ef1-structure.html:38 candidate EF1-&gt;EF2 column 7.65/10.05/7.42 against the run's recorded 7.0667/9.9919/7.3163) and three follow-ons.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261014T214550675418-review-of-jccm-ef1-structure-335c4e24b9e7" data-who="reckon-build" data-when="2026-10-14T21:54:49.467Z">
+    <div class="r-comment-body"><p>Node review-of-jccm-ef1-structure-335c4e24b9e7 lands an independent review of r-20261014T204323043163-jccm-ef1-structure read at base 1522d6f / head 335c4e2: parsed record scoring all six dimensions (goal_fidelity 14, evidence 15, scope_discipline 20, durability 15, fit 18, reuse 5; total 87) with six item verdicts, six findings and CALL_SITES: none; no finding is blocking — the prior review's blocking finding (jccm-ef1-structure.html:38 candidate EF1-&gt;EF2 cells 7.65/10.05/7.42) is verified repaired at 335c4e2, where the three cells now read 7.07/9.99/7.32 against candidate_conductors.json 7.0666938/9.9918921/7.3162921. The six follow-ons: the candidate list is not cited from design documents (the three conductors are bounding placements at node-chosen sections); the conductor-set and linkage builder and the steel-resistivity constant duplicate scripts/nova_passive_export.py:export_matrices and nova's ring_resistance; base_reproduces_miss is printed but never asserted; score_pairs uses pair_rms_pct rather than the leave_one_pair_out the done_when names; and the reviewed manifest's negative_control_log names the repair-table control rather than the declared control's log.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261014T204323043163-jccm-ef1-structure" data-who="reckon-build" data-when="2026-10-14T21:45:11.555Z">
+    <div class="r-comment-body"><p>Node jccm-ef1-structure landed: EF1 and EF6 geometry read from OP2 (EF1 8.875 turns, r 5.678-5.924, z 1.054-1.304; EF6 11.25 turns, r 4.905-5.173, z -2.920--2.628), EF1 self-inductance 0.55084 H against 0.53765 H measured on E100352 (2.4% low), nova unchanged re-scores EF1-&gt;EF6 at 18.78% of M/L (the asked 18.8%) with the other eight pairs 4.2-7.7% in band, and none of three candidate conductors placed on the documented outboard envelope (cryostat lid/base are already in nova's 155 filaments) brings EF1-&gt;EF6 inside the 10% band (22.9%, 29.05%, 27.46%); the synthetic EF1-screening control is rejected by the selectivity clause where a non-selective candidate is required to move EF1-&gt;EF2 by less than half its EF1-&gt;EF6 improvement. Cause supported: neither a machine-description geometry error nor a passive addition at these placements; figure is the section's rms table. Full evidence: docs/evidence/fragments/jt60sa-coil-circuit-model/jccm-ef1-structure.html</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261015T053538069572-review-of-jccm-ef1-data-be0e49c9f379" data-who="reckon-build" data-when="2026-10-15T05:52:28.772Z">
+    <div class="r-comment-body"><p>review-of-jccm-ef1-data-be0e49c9f379 lands an independent review of r-20261014T204243880635-jccm-ef1-data read at base 1522d6f / head be0e49c9: parsed record scoring all six dimensions (goal_fidelity 15, evidence 10, scope_discipline 19, durability 14, fit 15, reuse 4; total 77) with six item verdicts, six findings and CALL_SITES: none; one blocking finding (the head-arm gate log cited as baseline_suite and after_suite, data/jt60sa/ef1_coupling/gate-eff1-coupling.log, is header-only with no pytest summary and no EXIT line) and five follow-ons (score_rms_pct duplicates transfer_scoring.rms_pct; measure_transfer duplicates ef1_ef6_check.aligned_transfer; measure_transfer applies only the driven channel's sign, not pair_sign; the fragment omits each coil's per-shot current and reference; the E100351 EF6-&gt;EF1 6.5 percent control is carried, not measured).</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261014T204243880635-jccm-ef1-data" data-who="reckon-build" data-when="2026-10-15T06:02:08.368Z">
+    <div class="r-comment-body"><p>jccm-ef1-data measured EF1→EF6 and EF1→EF2 H(f) and slow ratio on all held EF1-driven shots; E100353 reproduces 18.8% and E100352's dump 94.4% of nova's slow coupling, and the 7.8–18.8% error spread sits inside a single unchanged condition (only EF1 energised), so the miss follows no recorded shot condition.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261015T060355944197-review-of-jccm-ef1-data-a72a0eb1ec3e" data-who="reckon-build" data-when="2026-10-15T06:17:55.677Z">
+    <div class="r-comment-body"><p>Review of run r-20261014T204243880635-jccm-ef1-data read at base 1522d6ff83449acbefccd9ff3987c5fe9558bd02 / head a72a0eb1ec3e2bf64506a7ea02b0817c9442d5f4: a parsed record scoring all six dimensions (goal_fidelity 17, evidence 13, scope_discipline 20, durability 13, fit 18, reuse 4; total 85) with six item verdicts, six findings and CALL_SITES: none; no finding is blocking — the prior review's blocking finding (the head-arm gate log gate-eff1-coupling.log cited as baseline_suite and after_suite was header-only with no pytest summary and no EXIT line) is verified repaired at a72a0eb, where the log now records 7 passed / EXIT=0 and the negative-control log records 1 failed / EXIT=1. The six follow-ons: measure_transfer sets sign from the driven channel alone where the repository convention is the product of the driven and pickup signs, so an EF6 pickup at or below EF6_INVERTED_LAST_SHOT (100346) is corrected by +1 not -1; score_rms_pct duplicates transfer_scoring.rms_pct; measure_transfer duplicates ef1_ef6_check.aligned_transfer; the fragment claims the E100351 EF6-&gt;EF1 6.5% control the scan never measures; the fragment omits each coil's per-shot current and reference the done_when names; and ef6_error_spread_pct folds the single-bin E100352 dump row into the booster spread so the JSON reads [7.34,18.78] against the fragment's 7.8-18.8%.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-s8-interim" data-who="reckon-build" data-when="2026-10-15T06:25:00Z">
+    <div class="r-comment-body"><p>Two §8 nodes landed. Geometry is confirmed: EF1's self-inductance is within 2.4% and EF6's slow coupling to EF1 is at 94.4% of nova's. Three bounding outboard conductors each make EF1→EF6 worse, and no shot condition varies between the EF1-driven shots, yet the pair scatters 7.8–18.8%. The leading reading is the scatter of a weak pickup. <code>jccm-ef1-dumps</code> now measures the 14 EF1 fast discharges in the catalogue to settle it. The documented TF casing, shield and support geometry stays open. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s8-data">data</a>, <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s8-structure">structure</a></p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261015T072036873498-review-of-jccm-ef1-dumps-9b00613cb18a" data-who="reckon-build" data-when="2026-10-15T07:33:41.321Z">
+    <div class="r-comment-body"><p>review-of-jccm-ef1-dumps-9b00613cb18a lands an independent review of r-20261015T062221478123-jccm-ef1-dumps read at base d280ce57ac04552b8f72f4732b514ac489664b1a / head 9b00613cb18a1fed3f895fd0c5bc624be9706db5: parsed record scoring all six dimensions (goal_fidelity 17, evidence 13, scope_discipline 20, durability 12, fit 16, reuse 18; total 96) with six item verdicts, three follow-on findings and CALL_SITES: none; no finding is blocking.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261015T062221478123-jccm-ef1-dumps" data-who="reckon-build" data-when="2026-10-15T07:20:27.187Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/jt60sa-coil-circuit-model/jccm-ef1-dumps.html</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-s8-dumps" data-who="reckon-build" data-when="2026-10-15T07:45:00Z">
+    <div class="r-comment-body"><p>EF1 dumps measured (<code>jccm-ef1-dumps</code>, merged). The cross-spectral estimator keeps only 2–3 coherent bins on a single fast discharge. On the 2023 dumps, EF1→EF6 reads 19–38 % and EF1→EF2 10–22 %, with slow ratios above M/L, so the set neither confirms nor rules out an EF1→EF6 offset. The reverse pair EF6→EF1 fits at 6.5 %. §8 stays open for one time-domain measurement on the 2023 dumps: drive nova's structure with EF1's measured terminal voltage, predict the EF6 and EF2 pickup waveforms, and score them against the measured ones, with a no-passive arm and a positive-control pair. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s8-dumps">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-s8-waveform-dispatch" data-who="reckon-build" data-when="2026-10-15T08:08:00Z">
+    <div class="r-comment-body"><p>Dispatched <code>jccm-ef1-waveform</code> (run <code>r-20261015T080721117876-jccm-ef1-waveform</code>) for the fifth measurement, the time-domain dump waveforms. The fifth measurement was content-reviewed at v95 and v96, and all four findings were acted on. The run waived a third review of v97. That change applies the v96 review's two findings in the reviewer's own terms and is 4 % of the section: the dumped coil is referenced after the dump by the supply-state rule, and the terminal-ratio route is the drive spectrum multiplied and transformed back. The node also folds in the dumps review's follow-ons: it tabulates per-dump coil conditions and drops the inert <code>min_coherence</code> parameter.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261015T091842745168-review-of-jccm-ef1-waveform-abf7983a399e" data-who="reckon-build" data-when="2026-10-15T09:32:16.658Z">
+    <div class="r-comment-body"><p>review of run r-20261015T080721117876-jccm-ef1-waveform read at base b4295fe8d7c19a06dd3d3d486c3579893cc0609e / head abf7983a399ed43ae5518280b99bb0012ca49e49: parsed record scoring all six dimensions (goal_fidelity 18, evidence 15, scope_discipline 20, durability 13, fit 18, reuse 18; total 102) with six item verdicts, three follow-on findings and CALL_SITES: none; no finding is blocking — the three follow-ons are the fragment's per-dump reference bound (within ±35 V etc.) reading below its own JSON on four of eight bullets, the two pinned tests skipping without the gitignored traces so the mutation guard is not reproducible from a fresh clone, and the base-arm gate log omitting the scratch tree's module.__file__/cwd header.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261015T080721117876-jccm-ef1-waveform" data-who="reckon-build" data-when="2026-10-15T09:17:48.215Z">
+    <div class="r-comment-body"><p>jccm-ef1-waveform scores the 2023 dump pickup waveforms in the time domain through terminal_ratio: 18 of 18 pairs on the eight named dumps fit inside the 10% band (EF1-&gt;EF6 4.7-7.1%, EF1-&gt;EF2 1.9-3.1%, E101079 and E101081 EF6-driven 5.1-6.7%, E101116 and E101117 EF5-driven 2.1-3.6%), the no-passive removal arm is worse on every one, and the complete EF5- and EF6-driven positive control fits, so the section's decision rule resolves the miss the booster tests carry in favour of the tests rather than the hardware; a raw predicted/measured peak shortfall of 70-99% is a ripple spike on the measured channel, reading 96-101% once both peaks are averaged over 5 ms; evidence docs/evidence/fragments/jt60sa-coil-circuit-model/jccm-ef1-waveform.html, figure docs/figures/jt60sa-coil-circuit-model/ef1-waveform/waveform_overlay.svg</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-10-15T09:34:21Z">
+    <div class="r-comment-body"><p>§8 closed by its decision rule. Nova's predicted pickup waveforms on the eight 2023 fast discharges fit all 18 pairs within 10 % rms of the measured peak:</p><ul><li>EF1→EF6 4.7–7.1 %</li><li>EF1→EF2 1.9–3.1 %</li><li>EF6-driven 5.1–6.7 %</li><li>EF5-driven 2.1–3.6 %</li></ul><p>The no-passive arm is worse on every pair, and the EF5- and EF6-driven positive control is complete and fits. Both EF1 pairs fit, so the 18.8 % EF1→EF6 miss belongs to the 2021 booster tests, not to a geometry error or a missing conductor. The documented-conductor node is therefore not needed. The 5 ms-smoothed predicted peaks agree at 96–101 %; the raw 70–99 % is ripple on the measured channel. §6 keeps nova below 30 Hz and still takes measured H(f) for EF1→EF6 at the booster harmonics. Merges <code>5721dc1</code> and <code>b6c03e1</code>. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s8-waveform">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261015T200049756435-review-of-jccm-harmonic-nova-c9993b8e3a4c" data-who="reckon-build" data-when="2026-10-15T20:06:21Z">
+    <div class="r-comment-body"><p>Independent review of c9993b8e3a4c2248b8651b705cd01846534b17bb records six parsed scores, 2 follow-on findings and an unmeasured added-failure count because the reviewed base log was not a suite arm.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261015T193543072820-jccm-harmonic-nova" data-who="reckon-build" data-when="2026-10-15T19:59:38Z">
+    <div class="r-comment-body"><p>&lt;a href="/power_convertor/evidence/fragments/jt60sa-coil-circuit-model/jccm-harmonic-nova.html#jccm-harmonic-nova-results"&gt;Harmonic nova result&lt;/a&gt;: 52 reproduced lines, 0/26 at 6f, 0/19 at 12f, 0/7 at 18f within the joint band; &lt;a href="/power_convertor/figures/jt60sa-coil-circuit-model/harmonic-nova/ratios.svg"&gt;amplitude and phase figure&lt;/a&gt;.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-10-16T09:05:00Z">
+    <div class="r-comment-body"><p>§9 closed with a negative result. Nominal nova fits none of the 52 measured harmonic line ratios: 0/26 at 6f, 0/19 at 12f and 0/7 at 18f. It over-screens by a median 80–93 % in amplitude, while M/L under-screens. No error band can be carried to ITER from this section, and the ITER coordinator marks its ripple results provisional until the cause is found.</p><p>Candidates:</p><ul><li>wall currents not resolved through the thickness;</li><li>3D eddy paths;</li><li>pickup loading;</li><li>a coil-terminal resonance;</li><li>a non-inductive path, for the three opposite-side lines.</li></ul><p>The lead added three follow-ups on 2026-10-15: a skin-effect check, walls resolved in nova, and the 2023 filter and grounding circuit. Nova's layered-wall option (nova 207a66408) already exists from the ITER coordinator's passive-skin-effect node, and on ITER it moves coil coupling by under 1 % at 300–1600 Hz. The JT-60SA re-score with layered walls is the direct test. Merge <code>3a5647a</code>. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s9-harmonic">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-s9-iter-correction" data-who="reckon-build" data-when="2026-10-16T09:40:00Z">
+    <div class="r-comment-body"><p>Correction to c-close-s9. The ITER figure of “under 1 %” compared two resolved meshes, 6 mm against 12 mm face strips. It does not compare layered walls with the one-layer plant. The ITER coordinator's later comparison of layered walls with the present one-layer plant lowers coil-to-coil transfer by up to about 5 % at 300–1600 Hz, which is more screening, and two and four layers agree to four decimals. Constraining each source wall to one uniform current lowers it by up to about 6 % more. §10 states the corrected figure.</p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-s16-funded-20261021" data-who="reckon-build" data-when="2026-10-21T05:40:00Z">
+    <div class="r-comment-body"><p>The lead funded §16 on 21 October 2026 because JT-60SA's EF windings are built like ITER's PF windings, so the verdict transfers. Gate g-jccm-5 passes on shared-coil-supply-model §3's landing. The node first reruns the derived JT-60SA plant caches on the regenerated thick-coil matrices (b89fdb0f), then scores the six rising pairs under cross-validation. The 2021 data are held, so no site access is needed.</p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-run-r-20261021T082631156447-review-of-jt60sa-winding-coupling-78fab06af56f" data-who="reckon-build" data-when="2026-10-21T08:47:53.201Z">
+    <div class="r-comment-body"><p>reviewed run r-20261021T054827141838-jt60sa-winding-coupling at 78fab06af56f scores goal_fidelity 18, evidence 17, scope_discipline 13, durability 16, fit 15, reuse 4; the record is stored at the reviewed run's review-records path; four follow-on findings, none blocking: scripts/figures/winding_coupling.py written outside the node's fence, op2_plant.py:258-304 duplicating sectioned_plant.py:66-102, a self-comparison assertion at tests/test_winding_coupling_score.py:95, and plan-section references in source comments</p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-run-r-20261021T054827141838-jt60sa-winding-coupling" data-who="reckon-build" data-when="2026-10-21T08:05:46.671Z">
+    <div class="r-comment-body"><p>the distributed winding capacitance does not explain the six rising JT-60SA coil pairs: the mechanism's excess slope runs 0.64-2.08 across the insulation range while the measured excess runs 0.25-0.62, so every measured slope sits below the mechanism's floor everywhere in range, both folds put two families at a range end, and ITER's harmonic coupling therefore carries no transferable insulation scale, measured against predicted slope and phase per pair with both held-out halves marked in docs/figures/jt60sa-coil-circuit-model/winding-coupling/winding-coupling.svg</p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-s16-winding-coupling" data-who="reckon-build" data-when="2026-10-21T08:55:00Z">
+    <div class="r-comment-body"><p>jt60sa-winding-coupling landed (merge <code>93f8cca3</code>, review 83). The distributed winding capacitance does not explain the rising coupling: the mechanism's slope runs 0.64–2.08 against the measured 0.25–0.62, and it lifts flat control pairs. ITER's harmonic coupling stays empirical. §16 stays open for the reuse follow-on jt60sa-winding-reuse. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s16-winding-coupling">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-close-s16" data-who="reckon-build" data-when="2026-10-21T13:35:00Z">
+    <div class="r-comment-body"><p>§16 closed. The distributed-winding verdict landed at 93f8cca3: the winding capacitance does not explain the rising coupling, so ITER's harmonic coupling stays empirical. The plant-builder reuse follow-on has now landed too: one owner for the sectioned winding helpers, with every stored row byte-identical (review 110/120). <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s16-plant-builder-reuse">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-run-r-20261021T113549930653-jt60sa-plant-builder-reuse" data-who="reckon-build" data-when="2026-10-21T12:39:12.370Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/jt60sa-coil-circuit-model/plant-builder-reuse.html</p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-run-r-20261021T124023630039-review-of-jt60sa-plant-builder-reuse-1f9f4c40a987" data-who="reckon-build" data-when="2026-10-21T13:00:44.614Z">
+    <div class="r-comment-body"><p>review of r-20261021T113549930653-jt60sa-plant-builder-reuse (head 1f9f4c40a987) scores goal_fidelity 19, evidence 19, scope_discipline 18, durability 16, fit 18, reuse 20; three follow-on findings; added_failure_count 0</p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-s17-prereqs-20261021" data-who="reckon-build" data-when="2026-10-21T14:25:00Z">
+    <div class="r-comment-body"><p>§17's fourth content review found two prerequisites. The composed owner it scores through, <code>power_convertor.jt60sa_circuits</code>, installs no ripple filter, and the 2021 grounding its year move and negative control need has no sourced value. They are now §18 and §19, and §17 depends on both.</p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261021T143359000050-review-of-jt60sa-test-hygiene-dee880c794ba" data-who="reckon-build" data-when="2026-10-21T14:46:11.991Z">
+    <div class="r-comment-body"><p>review of r-20261021T135040397092-jt60sa-test-hygiene at head dee880c794ba4064e9df493b83cfa158a9431a9b — scored goal_fidelity 18, evidence 17, scope_discipline 19, durability 17, fit 18, reuse 20; added_failure_count 0 against the base arm (baseline 7 passed 8 errors EXIT=1, head arm 16 passed EXIT=0); two follow-on findings, none blocking</p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261021T135040397092-jt60sa-test-hygiene" data-who="reckon-build" data-when="2026-10-21T14:33:16.753Z">
+    <div class="r-comment-body"><p>§17 test hygiene landed — shot_census_2023._traces_of reads through power_convertor.signals.load; the census end-to-end line-window assertion is strict and its synthetic trace now carries the 12f line the supply fit needs (the old disjunction accepted a row with no window, so the claim was never tested), with a held trace absent failing loudly rather than skipping; the winding-coupling suite asserts pair coverage before its pairs count and pins the stored score rows to the committed digest tests/data/winding_coupling_rows.sha256, failing on a changed value or an absent record instead of skipping, and assembles the plant write cache in scratch so it runs against a read-only shared store; gate 16 passed EXIT=0, negative control 3 failed EXIT=1</p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261021T183810398587-review-of-jt60sa-2023-coil-only-lines-5526119fd2b4" data-who="reckon-build" data-when="2026-10-21T18:57:42.584Z">
+    <div class="r-comment-body"><p>review of r-20261021T161822195706-jt60sa-2023-coil-only-lines at head 5526119fd2b4da9a46e945e0ac0d4a57875f1586 — goal_fidelity 18, evidence 17, scope_discipline 18, durability 15, fit 18, reuse 5; added_failure_count 0; three follow-on findings, none blocking</p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261021T201644035860-review-of-jt60sa-2023-coil-only-lines-9705db0eb6b5" data-who="reckon-build" data-when="2026-10-21T20:37:50.978Z">
+    <div class="r-comment-body"><p>review record for r-20261021T161822195706-jt60sa-2023-coil-only-lines at head 9705db0eb6b5d189b3e4e9afc3f007a40da5695b (base c43da4b352951e4f743a03794e88798332f1ab34): scores 17/16/14/13/17/17, added_failure_count 0, three follow-on findings, status parsed</p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261021T161822195706-jt60sa-2023-coil-only-lines" data-who="reckon-build" data-when="2026-10-21T19:58:30Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/jt60sa-coil-circuit-model/coil-only-2023.html</p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-s17-verdict" data-who="reckon-build" data-when="2026-10-21T20:55:00Z">
+    <div class="r-comment-body"><p>§17's verdict landed: the registered filter and grounding do not account for the 2023 year move. 7 of 120 lines fall within the rule, with a median error of 90.3 %. The predicted move is about 0.93 everywhere, while the measured move runs from 0.08× to 74×. EF6's filter state cannot be separated. Merge <code>22fa0d89</code>. §17 stays open until the follow-on batch <code>f-jccm-follow-ons</code> lands. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s17-coil-only">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261021T231602568384-review-of-jccm-follow-ons-92a812bf8e9c" data-who="reckon-build" data-when="2026-10-21T23:34:12.892Z">
+    <div class="r-comment-body"><p>review-of-jccm-follow-ons at head 92a812bf8e9cff8245d02be1a66df71450a3f3fb (base ec9ad998286cb431e98f6c50fbfe157d8574b5e3): goal_fidelity 18, evidence 13, scope_discipline 20, durability 16, fit 18, reuse 17; added_failure_count 0; two findings, one blocking (the run's negative_control.log holds only three of five declared arms and does not end on EXIT=) and one follow-on (tests/test_coil_only_2023.py:163 compares a composed attribute against the value the test supplied).</p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261021T214956784443-jccm-follow-ons" data-who="reckon-build" data-when="2026-10-21T23:47:17Z">
+    <div class="r-comment-body"><p>jccm-follow-ons: the twelve coil-circuit review findings are recorded one row each in docs/evidence/fragments/jt60sa-coil-circuit-model/jccm-follow-ons.html, five fixed with a strengthened guard that fails on a mutation restoring its defect, five already closed at the base revision with the showing line or commit, two declined with the measurement behind the refusal; and the claim's middle verdict is decided against the no-change prediction of a year move of one on every line rather than against a chosen fraction, so the regenerated record reads 'the 2023 design change in filter and grounding predicts the measured move partly' only because 7 of 120 lines fall inside the rule against 3 for the no-change prediction, with the median error at 90.288 % and the positive control at 120 of 120.</p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-close-s17" data-who="reckon-build" data-when="2026-10-22T00:00:00Z">
+    <div class="r-comment-body"><p>§17 closed. The registered 2023 filter and grounding do not account for the measured 2021-to-2023 move of the coil-to-coil lines.</p><ul><li>7 of 120 lines fall within the rule, with a median error of 90.3 %.</li><li>The predicted move is about 0.93 on every line; the measured move runs from 0.08× to 74×.</li><li>A no-change prediction brings 3 lines within the rule, so the stored verdict reads “partly” by that comparison.</li><li>EF6's 2023 filter state cannot be separated.</li></ul><p>For ITER this supports keeping harmonic idle-coil coupling empirical, with measurement requirements. The follow-on batch has also landed (<code>e54e8502</code>). Merges <code>22fa0d89</code> and <code>e54e8502</code>. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s17-coil-only">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s19" data-id="c-run-r-20261021T152340708849-review-of-jt60sa-grounding-2021-48742173e16b" data-who="reckon-build" data-when="2026-10-21T15:40:58.262Z">
+    <div class="r-comment-body"><p>independent review of jt60sa-grounding-2021 (base ffba083a, head 48742173) stored parsed at both assigned review records under the reviewed run's review-records/: six scores goal_fidelity 19, evidence 13, scope_discipline 20, durability 15, fit 16, reuse 12; two follow-on findings (the read-back accepts any non-empty source string as a citation, verified by a source of "x" leaving all 9 tests green; a self-comparing assertion at test line 126); no blocking findings; no production call site reaches the new grounding_2021 key yet</p></div>
+</div>
+<div class="r-comment" data-section="s19" data-id="c-close-s19" data-who="reckon-build" data-when="2026-10-21T15:55:00Z">
+    <div class="r-comment-body"><p>§19 closed. The 2021 grounding was single-ended at the base-supply mid-point through 2 × 2.5 kΩ, with no coil-terminal leg (Yamauchi FEC 2025 Fig. 1(a); Shirai 2024 §3.3). It is in the register as <code>grounding_2021</code>, with the 2021 screen capacitance unsourced at 0–0.6 µF. §17 can now compute its year move and negative control; for the screen capacitance it states a sensitivity over that range. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s19-grounding-2021">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s19" data-id="c-run-r-20261021T150710605719-jt60sa-grounding-2021" data-who="reckon-build" data-when="2026-10-21T15:22:45.541Z">
+    <div class="r-comment-body"><p>§19 — the 2021 single-ended coil-circuit grounding is in registers/jt60sa_supplies.json as a grounding_2021 variant: the base-supply mid-point pair entered at 2.5 kOhm a leg with citations (Yamauchi FEC 2025 Fig. 1(a) p. 2; Shirai 2024 §3.3 p. 8), both coil-terminal legs marked not fitted (no coil-side grounding leg before the alternative system), and the 2021 screen capacitance entered unsourced with the bounded range 0-0.6 microfarad; the measure is 9 read-back tests passing with both declared mutations failing 5 and 3 tests (logs below), and the fragment lists every document and page read</p></div>
+</div>
+<div class="r-comment" data-section="s18" data-id="c-close-s18" data-who="reckon-build" data-when="2026-10-21T16:05:00Z">
+    <div class="r-comment-body"><p>§18 closed. The composed JT-60SA circuits now carry the 2023 ripple filter on the booster coils as a per-coil choice, with the booster-only shunt, the as-drawn attachment refused and an EF6 override. EF1's converter-terminal impedance at 6f drops from 563 Ω to 5.8 Ω with the filter fitted, and the stored 2021 residuals reproduce to 1e-9 (review 112/120). With §19 also landed, §17's two prerequisites are met. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s18-composed-filter">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s18" data-id="c-run-r-20261021T153932336180-review-of-jt60sa-composed-filter-c961aa49e384" data-who="reckon-build" data-when="2026-10-21T16:00:42.865Z">
+    <div class="r-comment-body"><p>§18 — independent review of run r-20261021T150516831433-jt60sa-composed-filter at reviewed_base_sha ffba083a7e23521b2cde5229d2b679635b388eec and reviewed_head_sha c961aa49e3842c4dd6bfa6ee6b7ca9939ad009b8: status parsed, scores goal_fidelity 19 / evidence 19 / scope_discipline 20 / durability 19 / fit 19 / reuse 16, added_failure_count 0 with added_failure_ids [], one follow-on finding that filtered_circuit_terminal_impedance re-derives the series-inductor-plus-shunt topology the filter owner already encodes at filter_network.py:208, no blocking finding; record at review-records/r-20261021T150516831433-jt60sa-composed-filter.at-c961aa49e3842c4dd6bfa6ee6b7ca9939ad009b8.json</p></div>
+</div>
+<div class="r-comment" data-section="s18" data-id="c-run-r-20261021T150516831433-jt60sa-composed-filter" data-who="reckon-build" data-when="2026-10-21T15:37:39.335Z">
+    <div class="r-comment-body"><p>§18 — power_convertor.jt60sa_circuits now installs the 2023 ripple filter on the booster coils through power_convertor.filter_network (BoosterLoop at design values, shunt_attachment="booster_only") as a per-coil choice with campaign defaults (filtered_coils(campaign="2021") == (), filtered_coils(campaign="2023") == ("EF1","EF2","EF5","EF6"), filtered_coils(campaign="2023", overrides={"EF6": False}) == ("EF1","EF2","EF5")), the as-drawn attachment refused by name at composition; its measure is a booster coil's converter-terminal impedance at 6f and 12f, EF1 moving from 563.2580 and 1303.0232 ohm with the filter removed to 5.8429 and 12.6585 ohm with it present (98.96 % and 99.03 %) and returning when it is removed, the 2021 composition reproducing the nine stored pair residuals to 1e-9; record at docs/evidence/fragments/jt60sa-coil-circuit-model/composed-filter.html, anchor at docs/evidence/fragments/jt60sa-coil-circuit-model/jt60sa-composed-filter.html; commits c961aa49; gate 6 passed with threads capped at 2 on the fleet allocation, negative control 3 failed / 3 passed at EXIT=1</p></div>
+</div>
+</section>
+</main>
+</body>
+</html>

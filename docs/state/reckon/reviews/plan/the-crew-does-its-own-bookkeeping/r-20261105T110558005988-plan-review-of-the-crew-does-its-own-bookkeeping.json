@@ -1,0 +1,195 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-05T11:22:58.341Z",
+  "dispatched_at": "2026-11-05T11:09:56Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-crew-does-its-own-bookkeeping.html:155",
+      "id": "done_when-1",
+      "reason": "the deliverable's \"none starts on a finding the coordinator has disposed\" is already built and tested, so the node must drop it or label it a regression guard, and the reputation case must be replaced by one the new mechanism actually fails without.",
+      "text": "done-when case 2 asserts that a disposed blocking finding starts no round, but `blocking_findings` (`reckon/crew/repair.py:225-240`) already filters `disposition != \"open\"`, `blocking_finding_dispositions` already reports it, `dispatch_repair_for_run` already records `decline-only` with reason \"every blocking finding was disposed\", and `tests/test_a_disposed_finding_ends_its_repair_round.py:150-170` already asserts exactly that, so the case passes on the unfixed code and measures nothing",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-does-its-own-bookkeeping.html:155",
+      "id": "done_when-2",
+      "reason": "the count is the whole of the reported harm (\"found 3 blocking finding(s)\" for three non-blocking findings), so a test that does not pin the count lets the node land the same misdescription in a new wording.",
+      "text": "the deliverable requires that the advice name an unclassified finding \"rather than counting it among the blocking findings\", but done-when case 5 asserts only that \"the advice names it unclassified\"; an implementation that appends the word while leaving the count at `len(findings)` (`reckon/crew/recovery_repair_dispatch.py:551`, where `findings` is `compose_repair_node`'s blocking list and includes the unclassified finding) passes every stated case",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-does-its-own-bookkeeping.html:155",
+      "id": "reasoning-1",
+      "reason": "the fix as written splits the severity decision across two readers, so the worker either lands a half-fix that leaves the same prefixed findings withholding landing, or edits a module its write scope does not grant.",
+      "text": "the mechanism reads the `blocking:`/`non-blocking:` prefix inside `_finding_kind` (`reckon/crew/repair.py:198-217`), but `declared_severity` (`reckon/crew/review.py:176-192`) is documented as \"the one reader of a stored finding's severity, so the promotion audit, the repair reflex and the parser cannot disagree\", and it is what `recovery_review_acceptance._finding_blocks` reads to decide whether a finding withholds the run's landing; a prefix read added only in `repair.py` makes the incident's record non-blocking to the reflex and still blocking to the landing gate, and `reckon/crew/review.py` is not among \u00a725's write paths",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-does-its-own-bookkeeping.html:155",
+      "id": "evidence_paths-1",
+      "reason": "promotion reads its gate receipt from a log whose path and closing `EXIT=` line the section never asks for, so the node can satisfy every stated case while leaving no artifact a later reader or page promotion gate can open.",
+      "text": "\u00a725 says \"Ruff adds no findings on the staged paths\" and names its test, but nothing in it says where the gate log is written, what its first line carries, or that its last line is `EXIT=`, while the plan's other 22 sections each carry \"Every log is under the run directory, starts with its revision and the literal command, and ends in `EXIT=`\" (verified: 22 occurrences of that sentence, none in \u00a725)",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-does-its-own-bookkeeping.html:155",
+      "id": "anchors_resolve-1",
+      "reason": "`reckon/crew/repair.py` is already a declared write path and the call site the section names resolves, so the worker reaches the definition without the pointer being corrected.",
+      "text": "\u00a725 says \"The round is started by `_repair_launch_refusal` and `compose_repair_for_run` in `reckon/crew/recovery_repair_dispatch.py` (near lines 781 and 1047)\"; line 781 is `_repair_launch_refusal`'s definition and line 1047 is a call, while `compose_repair_for_run` is defined at `reckon/crew/repair.py:764",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "c15f841ed10ab5349332c8578bfa65910226fafe",
+  "plan_fingerprint": "51cc9b3f06beed98ebfd9eabb5b549389ac04f05be71598772e8ab82a04d37d0",
+  "plan_slug": "the-crew-does-its-own-bookkeeping",
+  "plan_version": 36,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "48c319923290abc5b3072c76b36a0bea8238a1ac",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a725 revised: prefix read in review.declared_severity, the disposed case dropped as already enforced, the unclassified case asserts the count, the log sentence added, compose_repair_for_run anchored at repair.py",
+      "reason": "",
+      "when": "2026-11-05T11:35:31.566155+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "48c319923290abc5b3072c76b36a0bea8238a1ac",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "\u00a725 revised: prefix read in review.declared_severity, the disposed case dropped as already enforced, the unclassified case asserts the count, the log sentence added, compose_repair_for_run anchored at repair.py",
+      "reason": "",
+      "when": "2026-11-05T11:35:53.766119+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "48c319923290abc5b3072c76b36a0bea8238a1ac",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a725 revised: prefix read in review.declared_severity, the disposed case dropped as already enforced, the unclassified case asserts the count, the log sentence added, compose_repair_for_run anchored at repair.py",
+      "reason": "",
+      "when": "2026-11-05T11:36:14.225559+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "48c319923290abc5b3072c76b36a0bea8238a1ac",
+      "commit_basis": "edit",
+      "finding": "evidence_paths-1",
+      "note": "\u00a725 revised: prefix read in review.declared_severity, the disposed case dropped as already enforced, the unclassified case asserts the count, the log sentence added, compose_repair_for_run anchored at repair.py",
+      "reason": "",
+      "when": "2026-11-05T11:36:35.292881+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "48c319923290abc5b3072c76b36a0bea8238a1ac",
+      "commit_basis": "edit",
+      "finding": "anchors_resolve-1",
+      "note": "\u00a725 revised: prefix read in review.declared_severity, the disposed case dropped as already enforced, the unclassified case asserts the count, the log sentence added, compose_repair_for_run anchored at repair.py",
+      "reason": "",
+      "when": "2026-11-05T11:36:57.243729+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "48c319923290abc5b3072c76b36a0bea8238a1ac",
+      "commit_basis": "edit",
+      "note": "\u00a725 revised: prefix read in review.declared_severity, the disposed case dropped as already enforced, the unclassified case asserts the count, the log sentence added, compose_repair_for_run anchored at repair.py",
+      "reason": "",
+      "when": "2026-11-05T11:36:57.243729+00:00"
+    },
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "48c319923290abc5b3072c76b36a0bea8238a1ac",
+      "commit_basis": "edit",
+      "note": "\u00a725 revised: prefix read in review.declared_severity, the disposed case dropped as already enforced, the unclassified case asserts the count, the log sentence added, compose_repair_for_run anchored at repair.py",
+      "reason": "",
+      "when": "2026-11-05T11:35:31.566155+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "48c319923290abc5b3072c76b36a0bea8238a1ac",
+      "commit_basis": "edit",
+      "note": "\u00a725 revised: prefix read in review.declared_severity, the disposed case dropped as already enforced, the unclassified case asserts the count, the log sentence added, compose_repair_for_run anchored at repair.py",
+      "reason": "",
+      "when": "2026-11-05T11:35:53.766119+00:00"
+    },
+    "evidence_paths-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "48c319923290abc5b3072c76b36a0bea8238a1ac",
+      "commit_basis": "edit",
+      "note": "\u00a725 revised: prefix read in review.declared_severity, the disposed case dropped as already enforced, the unclassified case asserts the count, the log sentence added, compose_repair_for_run anchored at repair.py",
+      "reason": "",
+      "when": "2026-11-05T11:36:35.292881+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "48c319923290abc5b3072c76b36a0bea8238a1ac",
+      "commit_basis": "edit",
+      "note": "\u00a725 revised: prefix read in review.declared_severity, the disposed case dropped as already enforced, the unclassified case asserts the count, the log sentence added, compose_repair_for_run anchored at repair.py",
+      "reason": "",
+      "when": "2026-11-05T11:36:14.225559+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-crew-does-its-own-bookkeeping/r-20261105T110558005988-plan-review-of-the-crew-does-its-own-bookkeeping.json",
+  "review_run_id": "r-20261105T110558005988-plan-review-of-the-crew-does-its-own-bookkeeping",
+  "reviewed_blob_sha": "c6b70e5c424a376e9b0a94d8edc8a464281a896e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 `compose_repair_for_run` is cited as living in `reckon/crew/recovery_repair_dispatch.py` near line 1047, but line 1047 is a call site and the definition is `reckon/crew/repair.py:764`.",
+    "done_when": "a finding \u2014 case 2 (\"a record with one blocking finding that the coordinator has disposed starts no repair round\") already holds on the base revision and is already covered by `tests/test_a_disposed_finding_ends_its_repair_round.py`, so it cannot fail on the unfixed code.",
+    "evidence_paths": "a finding \u2014 \u00a725 is the only section in the plan with no gate-log location and no log-format requirement, where the other 22 carry \"Every log is under the run directory, starts with its revision and the literal command, and ends in `EXIT=`\".",
+    "naming": "pass \u2014 the new test and the mechanism names describe the behaviour, with no plan labels, stage names, ticket numbers or version tags in any path or symbol \u00a725 names.",
+    "reasoning": "a finding \u2014 \u00a725 places the prefix read in `_finding_kind`, while the codebase's declared single reader of a finding's severity is `declared_severity`, which the landing gate reads; the write paths exclude it, so the reflex and the landing gate would disagree about the same record.",
+    "single_goal": "pass \u2014 every clause and every case gates one decision, whether a repair round starts for a stored review; the heading names two of its three conditions, not a second deliverable.",
+    "wiring": "pass \u2014 \u00a725's `depends-on` names `#s2`, the section that owns the round-starting rule in the same module, and no other section lists `reckon/crew/repair.py` among its write paths, so no ordering edge is missing."
+  },
+  "section_digests": {
+    "_document": "de44e0719be9e3b98da265fd9dbd229900ffe3f1ca8ad5761677a2f024650c43",
+    "s1": "843bb65a273798e31ae7d542e71c3172be8db96af98b3b5fa5582c0e4b7052b8",
+    "s10": "383abdaed093dc9135b7930e907d6aeaaeff313c10da917e0f90ef21242cc000",
+    "s11": "528ecce7a53f57e54bcf1efa83ff458958c3437b3432895ddecdd835a0e62505",
+    "s12": "cf7304fd49c4d28e5bca798e2fca486ef137e59bce341c819316936d77daf719",
+    "s13": "751a9cd019e8296d87aa5d4f4e45f8a29d84381081120d349dc5bd6b19125ed3",
+    "s14": "37143d66ebad07f999845341b909080392b4fffa341c7553bbece98ce2d93af1",
+    "s15": "327a3b6261f327ba147b39dd2d6fbd1ce595e493e1834f8eb9ef957ea33f55c6",
+    "s16": "738604ff6516e5303088fb5f37ce17d56c02dc7217d2ebd64cdad839f6fd1eb5",
+    "s17": "f7a6d1fb09a597263b98f3f9db11f0a156337a303d2ccf5eb3b0d44899d7956f",
+    "s18": "526aabfb15ccc6205c07b6cf24a8c3fd22579f4776d2bd7a971164251a7d6f95",
+    "s19": "0e85b55be35103b90e318507ff6f86e1f640ef451c18250a9bcb4cb4f2e7c1b0",
+    "s2": "0fe853c67da217879c5c8672e5902b9a76353e03c761fc4b411b7d92af3feb8f",
+    "s20": "949f4ed4b742b4afba912a3943856d1af84c9226addd2df16be2024644c5f1ea",
+    "s21": "7e1c07b0431d4b47d90d44bc5d92db9ab1bb89fe6de6fb2f0fb79f61c04261ef",
+    "s22": "5cb33a844f041e4d88c2d1f7620411b91bbffd0c6605f939520cfa7178756424",
+    "s23": "b1aa58f1dbd4f559cc20a27b9f735c21e1c558ba2ab75ee90c390f1a649c6a44",
+    "s24": "dcacf6665c2b437d62dfd9ebfb5bd1f979f111d5438fc6145701595e4d7468bb",
+    "s25": "c85b2132134f4d7b7d7ecc41fa59257d883d9c4612478e4f1d43b0c5a34fdeb5",
+    "s3": "ba6dd9a478bc0199ba62cffc2235c6b7735014d677ac51e4789220cffff43d32",
+    "s4": "725c875cfeb877f71fdc01870943889b9c403c08aa0ee675bdbb100c60d896ee",
+    "s5": "7c304261c964b9ccae1e7148a9bffe48cc81416987e9ed2e9d50d6c5a77df7b7",
+    "s6": "f293425c956b5e910273b5c23cfe8ee7a3a4c1d5565a0c10742e9f7beee7c269",
+    "s7": "9450a2aff439a83861b8a100a49b15e67fd864fa1523edeeafd6c9dd9e0ec5c7",
+    "s8": "1e02f8193f9402b4cf070a0f78feb68f2e3d79a9bb21f00d7c10f33032ed6f37",
+    "s9": "c5acdc2406e91d62930f4e8772839567aca54b6df3e16cbe65878db520b53043"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T11:33:30.138968+00:00"
+}

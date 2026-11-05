@@ -342,7 +342,12 @@ def _review_record_subject(path: Path) -> tuple[str, str]:
     return stem, ""
 
 
-def _review_subject(pointer: Mapping[str, Any], project: str) -> tuple[str, str]:
+def _review_subject(
+    pointer: Mapping[str, Any],
+    project: str,
+    *,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
+) -> tuple[str, str]:
     """The reviewed run and head a live review pointer stands for.
 
     Read from the record paths the reviewer was told to write, which the
@@ -357,7 +362,7 @@ def _review_subject(pointer: Mapping[str, Any], project: str) -> tuple[str, str]
     named_run = ""
     named_head = ""
     legacy_run = ""
-    for path in _review_store_record_paths(pointer, project):
+    for path in _review_store_record_paths(pointer, project, pointers=pointers):
         run_id, head = _review_record_subject(path)
         if not run_id:
             continue
@@ -369,7 +374,7 @@ def _review_subject(pointer: Mapping[str, Any], project: str) -> tuple[str, str]
         return named_run, named_head
     if legacy_run:
         return legacy_run, ""
-    return _resolved_reviewed_run_id(pointer, project), ""
+    return _resolved_reviewed_run_id(pointer, project, pointers=pointers), ""
 
 
 def _review_head_covers(reviewed_head: str, head: str) -> bool:
@@ -590,7 +595,7 @@ def _review_in_flight(
             continue
         if rubric == review_module.FIGURE_REVIEW_RUBRIC:
             continue
-        reviewed, reviewed_head = _review_subject(pointer, project)
+        reviewed, reviewed_head = _review_subject(pointer, project, pointers=candidates)
         if reviewed and reviewed == run_id and _review_head_covers(reviewed_head, head):
             return str(pointer.get("run_id") or "")
     return ""

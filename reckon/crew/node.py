@@ -772,6 +772,7 @@ class TaskNode:
     done_when: str = ""
     write_paths: list[str] = field(default_factory=list)
     regenerate_paths: list[str] = field(default_factory=list)
+    anchor_paths: list[str] = field(default_factory=list)
     time_budget: str = ""
     manifest_path: str = ""
     negative_control: str = ""
@@ -802,6 +803,7 @@ class TaskNode:
     def as_dict(self) -> dict[str, Any]:
         """Return the node as sorted JSON-ready data."""
         return {
+            "anchor_paths": list(self.anchor_paths),
             "brief": self.brief,
             "after": list(self.after),
             "brief_path": self.brief_path,
@@ -1318,6 +1320,20 @@ def validate_node(
         fail("scoped", "no exclusive write path is enumerated")
     else:
         mine = set(node.write_paths)
+        # An anchor is a path the worker must be able to find without being
+        # handed its contents, so a path both anchored and written is not a
+        # scope question with two valid answers: the node either edits the file
+        # and pays for reading it, or it does not edit it. Resolving it either
+        # way silently would hide half of a contradiction the dispatcher can
+        # see, so it is refused with the path named.
+        both = sorted(mine.intersection(node.anchor_paths))
+        if both:
+            fail(
+                "scoped",
+                f"{', '.join(both)} is named as an anchor and declared a write "
+                "path; a node cannot both edit a file and be briefed without "
+                "reading it. Drop the anchor or the write path.",
+            )
         for peer, paths in sorted(node.peer_scopes.items()):
             shared = sorted(mine.intersection(paths))
             if shared:

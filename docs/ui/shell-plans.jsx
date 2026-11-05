@@ -687,9 +687,14 @@ function ListCol({ route, onNav, onSelectPlan, items, sortBy, setSortBy, sortDir
         const edited = p.last || null;
         const identity = [p.roi, p.effort].filter(value => value && value !== "—");
         const editedValue = <>{edited && <span className="date" title={`Edited ${edited}`}>edited {edited}</span>}</>;
+        // The served row states whether the plan's only open sections are
+        // deferred; the card prints that answer rather than the impl figure it
+        // would otherwise read as complete.
+        const remainder = p.deferred_remainder || null;
+        const implementationLabel = remainder ? remainder.label : `${Math.round((p.impl || 0) * 100)}%`;
         const metadata = [
           ...identity.map((value, index) => <span key={`identity-${value}-${index}`}>{value}</span>),
-          <button key="implementation" className="r-compact-signal pct" title={`${Math.round((p.impl || 0) * 100)} percent complete; open implementation`} aria-label={`${p.title}: ${Math.round((p.impl || 0) * 100)} percent complete`} onClick={(event) => selectPlanSection(event, onSelectPlan, navKey, "implementation")}>{Math.round((p.impl || 0) * 100)}%</button>,
+          <button key="implementation" className="r-compact-signal pct" title={remainder ? `${remainder.label}; open implementation` : `${Math.round((p.impl || 0) * 100)} percent complete; open implementation`} aria-label={`${p.title}: ${implementationLabel}`} onClick={(event) => selectPlanSection(event, onSelectPlan, navKey, "implementation")}>{implementationLabel}</button>,
           edited ? editedValue : null,
           authored !== effective ? (
             <button key="transition" className="r-status-transition" title={`Authored ${authored}; effective ${effective}; ${gates} open gates`} aria-label={`${p.title}: ${authored} to ${effective}, ${gates} open gates`} onClick={(event) => selectPlanSection(event, onSelectPlan, navKey, "gate-state-heading")}>

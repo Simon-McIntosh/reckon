@@ -1,0 +1,98 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp.py:2848 (MCP crew read -> serve_crew_view)",
+    "reckon/crew_run_commands.py:573 (CLI crew -> serve_crew_view)",
+    "reckon/mcp_views.py:4141 (serve_crew_view directory branch -> crew_directory)",
+    "reckon/mcp_views.py:1130 (crew_lanes_view -> _session_lane_share)"
+  ],
+  "completed_at": "2026-11-05T16:06:28.052Z",
+  "dispatched_at": "2026-11-05T15:58:12Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "the-board-extends-the-coordinator-directory",
+      "recorded_at": "2026-11-05T16:26:47.765613+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "the-board-extends-the-coordinator-directory",
+      "recorded_at": "2026-11-05T16:26:55.570101+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "the-board-extends-the-coordinator-directory",
+      "recorded_at": "2026-11-05T16:27:01.395456+00:00"
+    },
+    "3": {
+      "kind": "folded",
+      "node": "the-board-extends-the-coordinator-directory",
+      "recorded_at": "2026-11-05T16:27:10.844119+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/mcp_views.py",
+      "id": "f25cf36801e",
+      "line": 747,
+      "severity": "non-blocking",
+      "text": "_lane_document_object re-adds the json.loads plus try/except copy the done-when asked to remove and reads the lane file a second time, so the report at line 777 and the admission at line 778 can describe two different document vintages; read_lane_admission takes a parsed object only, so the copy-free form needs an accessor beside read_lane_admission in reckon/crew/lane_document.py, outside this node's fence."
+    },
+    {
+      "file": "reckon/crew/directory.py",
+      "id": "f521b9d4ce8",
+      "line": 253,
+      "severity": "non-blocking",
+      "text": "ready_set_view is called with no limit, so it pages its ready rows at DEFAULT_PAGE_SIZE (25) and every ready-idle row past the first page silently contributes no idle owner to the board."
+    },
+    {
+      "file": "reckon/crew/directory.py",
+      "id": "f9a7a4c31b4",
+      "line": 345,
+      "severity": "non-blocking",
+      "text": "The ready-idle join is skipped whenever project is None or '*', so the default workstation-scope crew(view=directory) read lists no run-less coordinator at all; ready_idle_join names the limitation but the case the section exists to close is absent from the view's default answer."
+    },
+    {
+      "file": "tests/test_the_board_extends_the_directory.py",
+      "id": "fd8b7c0c2d9",
+      "line": 191,
+      "severity": "non-blocking",
+      "text": "The binding verdict is asserted only for the running run, so a regression that hardcodes binding True for every held path passes; the test never asserts the queued run's claim reads as disregarded, which is the case claim_disposition at reckon/crew/node.py:1601 exists to answer."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read both commits against 1f5a6bb2: directory.py gains plan_section, held_paths, queued_runs and the idle rows; mcp_views.py gains the directory paging and a lane-share rewrite; the test and the evidence fragment are new.",
+    "done_when": "The done-when names tests/test_the_board_extends_the_directory.py with tests/test_mcp_tools.py; the manifest records that gate at 37 passed and logs/gate-head.log carries the command and EXIT=0.",
+    "goal": "The goal is for crew(view=directory) to name each run's plan section, carry held paths and queued runs, list ready-idle owners with no run, and page under a limit and cursor; reckon/crew/directory.py:118-130 and 374-420 land all four and reckon/mcp_views.py:4141-4154 adds the paging.",
+    "manifest": "Read; it declares the gate, the negative control, both adjacent arms and an outside_scope note on the per-session admission-row lookup.",
+    "write_paths": "Read the four declared write paths; every path in the two commits sits inside them and no figure directory was written."
+  },
+  "justifications": {
+    "durability": "tests/test_the_board_extends_the_directory.py:191 asserts the binding verdict only on the running run, so a constant binding=True passes while the queued run's disregarded claim at mcp_views.py:778 is never checked.",
+    "evidence": "logs/gate-head.log records 37 passed EXIT=0 at fede253832 and logs/negative-control.log records the control coordinator appearing and the test failing, EXIT=1.",
+    "fit": "reckon/crew/directory.py:210-265 follows the module's lazy-import and owner-delegation idiom, and no added name carries a plan or stage label.",
+    "goal_fidelity": "reckon/crew/directory.py:345 withholds the ready-idle join on a workstation-scope read, so the run-less owner the section exists to surface appears only on a project-scoped read.",
+    "reuse": "reckon/mcp_views.py:747 re-implements the lane-document parse that reckon/crew/obligations.py:889 already owns, where the other joins call their owners (queue_admission.queued_placements, crew.node.claim_disposition).",
+    "scope_discipline": "every path in 1f5a6bb2..fede253832 (reckon/crew/directory.py, reckon/mcp_views.py, tests/test_the_board_extends_the_directory.py, the evidence fragment) is inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is crew(view=directory) naming each run's plan section, carrying held paths and queued runs, listing ready-idle owners with no run, and paging under a limit and cursor; reckon/crew/directory.py:118-130 and 374-420 land all four and reckon/mcp_views.py:4141-4154 adds the paging.\nVERDICT done_when: the done-when names tests/test_the_board_extends_the_directory.py with tests/test_mcp_tools.py; logs/gate-head.log carries that literal command at fede253832 and ends 37 passed EXIT=0, and logs/negative-control.log shows the control coordinator appearing and the test failing.\nVERDICT write_paths: read the four declared write paths of the source node; every path in the two commits sits inside them (reckon/crew/directory.py, reckon/mcp_views.py, tests/test_the_board_extends_the_directory.py, the evidence fragment) and no figure directory was written.\nVERDICT manifest: read; it declares the gate, the negative control with its failing assertion, both adjacent arms at 33 passed, and an outside_scope note on the per-session admission-row lookup.\nVERDICT diff: read commit by commit against 1f5a6bb2; 6671f39178 adds plan_section, held_paths with claim_disposition's verdict, queued_runs with queued_placements' positions, the ready-idle join and directory paging; fede253832 adds only the landing fragment.\nCALL_SITES: reckon/mcp.py:2848, reckon/crew_run_commands.py:573, reckon/mcp_views.py:4141, reckon/mcp_views.py:1130\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/directory.py:345 withholds the ready-idle join on a workstation-scope read, so the run-less owner the section exists to surface appears only on a project-scoped read.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/gate-head.log records 37 passed EXIT=0 at fede253832 and logs/negative-control.log records the control coordinator appearing and the test failing, EXIT=1.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in 1f5a6bb2..fede253832 (reckon/crew/directory.py, reckon/mcp_views.py, tests/test_the_board_extends_the_directory.py, the evidence fragment) is inside the declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_the_board_extends_the_directory.py:191 asserts the binding verdict only on the running run, so a constant binding=True passes while the queued run's disregarded claim at mcp_views.py:778 is never checked.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/directory.py:210-265 follows the module's lazy-import and owner-delegation idiom, and no added name carries a plan or stage label.\nSCORE reuse: 16\nJUSTIFICATION reuse: reckon/mcp_views.py:747 re-implements the lane-document parse that reckon/crew/obligations.py:889 already owns, where the other joins call their owners (queue_admission.queued_placements, crew.node.claim_disposition).\nFINDING reckon/mcp_views.py:747 non-blocking: _lane_document_object re-adds the json.loads plus try/except copy the done-when asked to remove and reads the lane file a second time, so the report at line 777 and the admission at line 778 can describe two different document vintages.\nFINDING reckon/crew/directory.py:253 non-blocking: ready_set_view is called with no limit, so it pages its ready rows at DEFAULT_PAGE_SIZE (25) and every ready-idle row past the first page silently contributes no idle owner to the board.\nFINDING reckon/crew/directory.py:345 non-blocking: the ready-idle join is skipped whenever project is None or '*', so the default workstation-scope read lists no run-less coordinator at all.\nFINDING tests/test_the_board_extends_the_directory.py:191 non-blocking: the binding verdict is asserted only for the running run, so a regression hardcoding binding True for every held path passes.\n",
+  "review_run_id": "r-20261105T155603994486-review-of-the-board-extends-the-coordinator-directory-fede253832fd",
+  "reviewed_base_sha": "1f5a6bb236b4e2d1b036a6d20430dcd12efef43c",
+  "reviewed_head_sha": "fede253832fdff2efd7d5914aa56de5ffe813200",
+  "reviewed_run_id": "r-20261027T101652349078-the-board-extends-the-coordinator-directory",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T16:21:20.947147+00:00",
+  "total": 103
+}

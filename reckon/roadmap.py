@@ -1039,6 +1039,55 @@ def closure_blockers(plan: dict[str, Any]) -> list[dict[str, Any]]:
     return blockers
 
 
+def deferred_remainder(plan: Mapping[str, Any]) -> dict[str, Any] | None:
+    """Name the deferred sections when they are the plan's only open work.
+
+    A plan whose every declared section is resolved but for deferred ones admits
+    no implementable work, so it carries an authored ``impl`` of 1.0 and every
+    progress figure drawn from it reads complete. It is not finished: ``close``
+    refuses a deferred section, and the deferral is the one thing the plan still
+    owes. This is the fact that says so, computed here so the roadmap row, the
+    schedule bars and the SPA plan rows report one answer rather than each
+    deciding from ``impl`` what a finished plan looks like.
+
+    ``None`` for every other plan — one that declares nothing, one that still
+    admits implementable work, and one whose declarations carry no deferred
+    section — because the surfaces fall back to their progress figure there.
+
+    Both readings are asked of the functions that own them rather than tested
+    again here: ``is_closable`` says whether the plan is held open at all —
+    including its reading that an absent declaration set is not resolved, for
+    the reason given at its guard — and ``closure_blockers`` already names the
+    deferred sections among the obstacles it lists, each with the op that
+    clears it. ``done_pct`` carries the share of the declared sections the plan
+    has resolved, so a drawn progress bar can show the deferred tail unfilled
+    without the surface computing it.
+    """
+
+    # Deliberate reuse of ``is_closable``'s answer: the empty declaration set it
+    # refuses to read as resolved is the one ``readiness_from_state`` collapses
+    # every discovered plan without declarations to, so the same reading has to
+    # hold here.
+    if not is_closable(plan):
+        return None
+    deferred = sorted(
+        str(blocker["id"])
+        for blocker in closure_blockers(dict(plan))
+        if blocker.get("kind") == "section"
+        and blocker.get("status") == SECTION_DECLARATION_DEFERRED
+    )
+    if not deferred:
+        return None
+    declared = len(plan.get("section_declarations") or {})
+    resolved = max(0, declared - len(deferred))
+    return {
+        "sections": deferred,
+        "count": len(deferred),
+        "done_pct": round(100.0 * resolved / declared, 1) if declared else 0.0,
+        "label": f"{len(deferred)} deferred, not closable",
+    }
+
+
 def _dispatchability(plan: dict[str, Any]) -> tuple[bool, list[str]]:
     gates = execution_gates(plan)
     if not gates:
@@ -4054,6 +4103,7 @@ def _build_roadmap(
             "gate_blockers": gate_blockers,
             "section_gate_blockers": section_gate_blockers,
             "closure_blockers": closure_blockers(authored),
+            "deferred_remainder": deferred_remainder(authored),
             "decision_blockers": decision_blockers,
             "deferred_decisions": deferred_decisions,
             "decisions": decisions,

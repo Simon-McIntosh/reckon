@@ -197,6 +197,12 @@ def _node_from_pointer(pointer: Mapping[str, Any]) -> TaskNode:
             for path in (node.get("write_paths") or ())
             if not _inside_run_directory(str(path), queued_dir)
         ],
+        # The rebuild is field by field, so a field it does not name is a field
+        # the launched worker never sees. A regenerated path is a write path
+        # charged its own way, and an anchor is the opposite of a write path,
+        # so both are carried rather than re-derived from the write scope.
+        regenerate_paths=[str(path) for path in (node.get("regenerate_paths") or ())],
+        anchor_paths=[str(path) for path in (node.get("anchor_paths") or ())],
         time_budget=str(node.get("time_budget") or ""),
         manifest_path=manifest_path,
         negative_control=str(node.get("negative_control") or ""),
@@ -930,6 +936,86 @@ def _claim_disposition_of(
     return cache[run_id]
 
 
+def _claim_collision(
+    other: Mapping[str, Any],
+    ours: Sequence[str],
+    *,
+    repo: str,
+    shared_files: frozenset[str],
+    disposition: Callable[[Mapping[str, Any]], Any],
+) -> tuple[Any, str] | None:
+    """The path ``other`` claims among ``ours``, when its disposition binds."""
+    if repo:
+        other_repo = str(other.get("repo") or "")
+        if other_repo and os.path.normpath(other_repo) != repo:
+            return None
+    theirs = _declared_scope_paths(other)
+    collision = next(
+        (
+            path
+            for path in ours
+            if path not in shared_files
+            and any(runs._scopes_overlap(path, claim) for claim in theirs)
+        ),
+        None,
+    )
+    if collision is None:
+        return None
+    judged = disposition(other)
+    if not judged.binding:
+        return None
+    return judged, collision
+
+
+def _refreshed_claim(
+    holder: Mapping[str, Any],
+    ours: Sequence[str],
+    *,
+    repo: str,
+    shared_files: frozenset[str],
+    dispositions: dict[str, Any],
+) -> tuple[Any, str] | None:
+    """Re-read the one pointer that holds a claim, and judge it as of now.
+
+    The live set is read once per pass, and the stage that judges requests
+    against it can run for an hour or more, so a holder that landed while the
+    pass ran otherwise fences its peers until the next pass begins. One pointer
+    read answers whether that claim is still there, at a cost of one file read
+    per hold rather than a fresh read of the whole live set.
+
+    ``None`` means the claim no longer holds: its pointer is gone, it no longer
+    claims the path, or its own disposition no longer binds. Where the pointer
+    is unchanged the pass's cached disposition stands; if the pointer is still
+    there and its disposition binds, the request is held exactly as before.
+    An unread pointer claims nothing — there is nothing left to read that says
+    the path is fenced.
+    """
+    run_id = str(holder.get("run_id") or "")
+    if not run_id:
+        return None
+    try:
+        fresh = runs.read_pointer(run_id)
+    except CrewError:
+        return None
+    if fresh == dict(holder):
+        return _claim_collision(
+            fresh,
+            ours,
+            repo=repo,
+            shared_files=shared_files,
+            disposition=lambda written: _claim_disposition_of(written, dispositions),
+        )
+    from reckon.crew.node import claim_disposition
+
+    return _claim_collision(
+        fresh,
+        ours,
+        repo=repo,
+        shared_files=shared_files,
+        disposition=claim_disposition,
+    )
+
+
 def _live_claim_hold(
     pointer: Mapping[str, Any],
     live: Sequence[Mapping[str, Any]],
@@ -949,6 +1035,12 @@ def _live_claim_hold(
     Only a claim whose own disposition binds holds a peer, so a queued, held or
     empty stopped run never holds one. A file the project declares shareable is
     no collision at all, because the launch admits a second claimant there.
+
+    The holder that would fence this request is re-read before the hold is
+    recorded. A holder whose pointer the pass read before it landed is exactly
+    the long pass's failure: the reading is stale by the time the request is
+    judged, so the request is judged again against the pointer's current state
+    instead of being held on a claim nobody makes any more.
     """
     ours = _declared_scope_paths(pointer)
     if not ours:
@@ -960,25 +1052,25 @@ def _live_claim_hold(
     for other in live:
         if str(other.get("run_id") or "") == here:
             continue
-        if repo:
-            other_repo = str(other.get("repo") or "")
-            if other_repo and os.path.normpath(other_repo) != repo:
-                continue
-        theirs = _declared_scope_paths(other)
-        collision = next(
-            (
-                path
-                for path in ours
-                if path not in shared_files
-                and any(runs._scopes_overlap(path, claim) for claim in theirs)
-            ),
-            None,
+        held = _claim_collision(
+            other,
+            ours,
+            repo=repo,
+            shared_files=shared_files,
+            disposition=lambda written: _claim_disposition_of(written, dispositions),
         )
-        if collision is None:
+        if held is None:
             continue
-        disposition = _claim_disposition_of(other, dispositions)
-        if not disposition.binding:
+        fresh = _refreshed_claim(
+            other,
+            ours,
+            repo=repo,
+            shared_files=shared_files,
+            dispositions=dispositions,
+        )
+        if fresh is None:
             continue
+        disposition, collision = fresh
         return (
             f"run {str(other.get('run_id') or 'unknown')!r} holds "
             f"{collision!r}: {disposition.reason}"

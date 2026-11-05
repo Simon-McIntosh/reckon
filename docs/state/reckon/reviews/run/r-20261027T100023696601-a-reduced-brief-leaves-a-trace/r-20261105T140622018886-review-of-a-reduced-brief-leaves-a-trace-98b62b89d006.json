@@ -1,0 +1,76 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch.py:702",
+    "reckon/crew/dispatch.py:1859",
+    "reckon/crew/dispatch.py:2884",
+    "reckon/crew/dispatch.py:3336",
+    "reckon/crew/promotion.py:1451",
+    "reckon/crew/review.py:568"
+  ],
+  "completed_at": "2026-11-05T14:37:01.336Z",
+  "dispatched_at": "2026-11-05T14:26:43Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-reduced-brief-leaves-a-trace",
+      "recorded_at": "2026-11-05T14:50:48.100607+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "a-reduced-brief-leaves-a-trace",
+      "recorded_at": "2026-11-05T14:50:54.316574+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "id": "fd150f5886f",
+      "line": 3336,
+      "severity": "non-blocking",
+      "text": "the refusal trace is consumed only when a reduction was recorded, so a dispatch of the same node that fits with an unchanged brief leaves the trace in place and a later dispatch can be marked retried against an older refusal's figures; a node never re-dispatched also leaves its trace under the crew home with no sweep that ages it out."
+    },
+    {
+      "file": "reckon/crew/dispatch_refusals.py",
+      "id": "f6a90193e40",
+      "line": 62,
+      "severity": "non-blocking",
+      "text": "_charged_paths re-walks inputs[\"repository_files\"] over (\"write_paths\", \"named_files\") at line 75, the same structure reckon/crew/routing.py:3656 _context_contributors already walks, so a change to that input shape has to be made in two places."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "pass \u2014 verified three dispatch call sites, the promotion copy and the review reader listed on the CALL_SITES line.",
+    "diff": "pass \u2014 six commits read against base 04cf3e4227; one feature commit adds the trace module and three dispatch hooks, one test commit drops a module import so the same cases run against a base tree, and four evidence commits touch only the landing fragment.",
+    "done_when": "pass \u2014 the done_when asks for a refusal followed by a shortened acceptance carrying the reduction, that record surviving promotion, and no marker on a first attempt; tests/test_a_reduced_brief_leaves_a_trace.py carries one named case for each and the head gate log records the green run.",
+    "goal": "pass \u2014 the node's goal is to record on a run accepted after a context refusal of the same node id that it was retried and what changed in its brief, and to carry that record onto its promoted ledger row; reckon/crew/dispatch.py:2884 stores the marker on the run's node block and reckon/crew/promotion.py:1451 rebuilds the ledger row from that block.",
+    "manifest": "pass \u2014 read; status complete, and it records the head gate 152 passed EXIT=0, the base new-cases arm 2 failed 2 passed EXIT=1, the negative control 2 failed 2 passed EXIT=1 and the log paths those figures come from.",
+    "write_paths": "pass \u2014 the manifest declares four write paths and every path in the diff, reckon/crew/dispatch.py, reckon/crew/dispatch_refusals.py, tests/test_a_reduced_brief_leaves_a_trace.py and the landing fragment, is inside them."
+  },
+  "justifications": {
+    "durability": "the negative-control log reddens both acceptance cases on a no-op record_context_refusal",
+    "evidence": "the head gate log records 152 passed EXIT=0 and the base new-cases arm records the same two cases failing EXIT=1",
+    "fit": "reckon/crew/dispatch_refusals.py follows the sibling module reckon/crew/dispatch_peer.py:30 import idiom",
+    "goal_fidelity": "reckon/crew/dispatch.py:2884 puts the reduction on the node block",
+    "reuse": "reckon/crew/dispatch_refusals.py:75 re-walks the repository inputs reckon/crew/routing.py:3656 already walks",
+    "scope_discipline": "every path in the diff is inside the four declared write paths in the manifest"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: pass \u2014 the node's goal is to record on a run accepted after a context refusal of the same node id that it was retried and what changed in its brief, and to carry that record onto its promoted ledger row; reckon/crew/dispatch.py:2884 stores the marker on the run's node block and reckon/crew/promotion.py:1451 rebuilds the ledger row from that block.\nVERDICT done_when: pass \u2014 the done_when asks for a refusal followed by a shortened acceptance carrying the reduction, that record surviving promotion, and no marker on a first attempt; tests/test_a_reduced_brief_leaves_a_trace.py carries one named case for each and the head gate log records the green run.\nVERDICT write_paths: pass \u2014 the manifest declares four write paths and every path in the diff, reckon/crew/dispatch.py, reckon/crew/dispatch_refusals.py, tests/test_a_reduced_brief_leaves_a_trace.py and the landing fragment, is inside them.\nVERDICT manifest: pass \u2014 read; status complete, and it records the head gate 152 passed EXIT=0, the base new-cases arm 2 failed 2 passed EXIT=1, the negative control 2 failed 2 passed EXIT=1 and the log paths those figures come from.\nVERDICT diff: pass \u2014 six commits read against base 04cf3e4227; one feature commit adds the trace module and three dispatch hooks, one test commit drops a module import so the same cases run against a base tree, and four evidence commits touch only the landing fragment.\nCALL_SITES: reckon/crew/dispatch.py:702, reckon/crew/dispatch.py:1859, reckon/crew/dispatch.py:2884, reckon/crew/dispatch.py:3336, reckon/crew/promotion.py:1451, reckon/crew/review.py:568\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:2884 puts the reduction on the node block\nSCORE evidence: 19\nJUSTIFICATION evidence: the head gate log records 152 passed EXIT=0 and the base new-cases arm records the same two cases failing EXIT=1\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the four declared write paths in the manifest\nSCORE durability: 19\nJUSTIFICATION durability: the negative-control log reddens both acceptance cases on a no-op record_context_refusal\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/dispatch_refusals.py follows the sibling module reckon/crew/dispatch_peer.py:30 import idiom\nSCORE reuse: 15\nJUSTIFICATION reuse: reckon/crew/dispatch_refusals.py:75 re-walks the repository inputs reckon/crew/routing.py:3656 already walks\nFINDING reckon/crew/dispatch.py:3336 non-blocking: the refusal trace is consumed only when a reduction was recorded, so a dispatch of the same node that fits with an unchanged brief leaves the trace in place and a later dispatch can be marked retried against an older refusal's figures.\nFINDING reckon/crew/dispatch_refusals.py:62 non-blocking: _charged_paths re-walks inputs[\"repository_files\"] over (\"write_paths\", \"named_files\") at line 75, the same structure reckon/crew/routing.py:3656 _context_contributors already walks, so a change to that input shape has to be made in two places.\n",
+  "review_run_id": "r-20261105T140622018886-review-of-a-reduced-brief-leaves-a-trace-98b62b89d006",
+  "reviewed_base_sha": "04cf3e4227131ce93cda94c1b5eef33ae659d61d",
+  "reviewed_head_sha": "98b62b89d006308462bc5e79353dfdcdb4eae884",
+  "reviewed_run_id": "r-20261027T100023696601-a-reduced-brief-leaves-a-trace",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T14:47:17.608504+00:00",
+  "total": 110
+}

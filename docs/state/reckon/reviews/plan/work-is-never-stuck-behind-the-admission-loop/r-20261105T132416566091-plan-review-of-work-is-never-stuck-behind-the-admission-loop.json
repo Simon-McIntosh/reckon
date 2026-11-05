@@ -1,0 +1,179 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-05T13:51:51.911Z",
+  "dispatched_at": "2026-11-05T13:46:35Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:265",
+      "id": "reasoning-1",
+      "reason": "a node handed this sentence builds either a second claim parallel to the existing lease or a refusal that fires only after both have measured, and the section's mechanism and cases both have to be rewritten to say which.",
+      "text": "the deliverable requires that \"A coordinator's landing of a run the lander has claimed is refused, naming the lander's claim, so the two do not measure the same run twice\", but `reckon/crew/promotion.py:211-231` already takes a cross-host lease named `promotion-<run_id>` at `promotion.py:299`, and `_promotion_lease_held` (`promotion.py:174-186`) already refuses a second promotion naming the holder's host, pid and job; because that lease is taken inside `complete()` after the measurement, it does not deliver the stated \"do not measure the same run twice\", and the plan neither names the existing lease nor says when a lander-held claim is taken (at selection, before measurement) or by what name it is recorded",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:265",
+      "id": "done_when-1",
+      "reason": "a case that is green before the change measures nothing, and the node would land a passing gate that never shows the new refusal firing; the plan must restate the case against the new selection-time claim, or drop the clause.",
+      "text": "case 3 (\"A `crew complete --land` on a run the lander has claimed is refused, naming the claim\") already holds at the base revision for the promotion span, since `crew complete --land` enters `promotion.complete()` and the existing host lease refuses a second concurrent promotion with the holder named (`promotion.py:211-231`, `174-186`), so the case cannot distinguish the fix from the unfixed code; it is also the only arm measuring the section's third clause, and it carries no negative control",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:265",
+      "id": "done_when-2",
+      "reason": "the ledger skip is a second, independent detection path, and a node that implements only the pointer re-read passes every stated arm; a control that disables the ledger check and shows the measurement still runs is what makes case 2 a measure.",
+      "text": "the section asserts three outcomes but states one negative control (\"removes the re-read, and the first case records the `CrewError`\"), so case 2 (a run already in the ledger is skipped before measurement, counted through a patch) and case 3 have no arm that shows their guard can fail",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:265",
+      "id": "single_goal-1",
+      "reason": "one node cannot be closed on a single verdict when its two deliverables have separate gates, and splitting them costs nothing here because they write different modules and different tests.",
+      "text": "the section bundles two repairs that share no code path: the pre-launch pointer/ledger re-read inside `reckon/crew/queue_landing.py` (`land_once`, `_measure_delivery`, `_land`), and a coordinator-side mutual-exclusion refusal in `reckon/crew/promotion.py`; only case 3 measures the second, and the negative control measures the first",
+      "type": "single_goal",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "74e73c040306928f3196f2c021900482d7654562",
+  "plan_fingerprint": "93055b15d098a1d23b29a4dfd36daee6b8c0bd77ef79fc9dea279ada670a3ebb",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 210,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "a64572caf7d391d172e92d23ca7c04ab6b08d26b",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a736 drops the coordinator-refusal clause, which promotion's host lease already covers, and keeps the lander's re-read with a negative control per detection path",
+      "reason": "",
+      "when": "2026-11-05T13:55:05.029322+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "a64572caf7d391d172e92d23ca7c04ab6b08d26b",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a736 drops the coordinator-refusal clause, which promotion's host lease already covers, and keeps the lander's re-read with a negative control per detection path",
+      "reason": "",
+      "when": "2026-11-05T13:55:28.323183+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "a64572caf7d391d172e92d23ca7c04ab6b08d26b",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "\u00a736 drops the coordinator-refusal clause, which promotion's host lease already covers, and keeps the lander's re-read with a negative control per detection path",
+      "reason": "",
+      "when": "2026-11-05T13:55:52.774358+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "a64572caf7d391d172e92d23ca7c04ab6b08d26b",
+      "commit_basis": "edit",
+      "finding": "single_goal-1",
+      "note": "\u00a736 drops the coordinator-refusal clause, which promotion's host lease already covers, and keeps the lander's re-read with a negative control per detection path",
+      "reason": "",
+      "when": "2026-11-05T13:56:15.661256+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "a64572caf7d391d172e92d23ca7c04ab6b08d26b",
+      "commit_basis": "edit",
+      "note": "\u00a736 drops the coordinator-refusal clause, which promotion's host lease already covers, and keeps the lander's re-read with a negative control per detection path",
+      "reason": "",
+      "when": "2026-11-05T13:55:28.323183+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "a64572caf7d391d172e92d23ca7c04ab6b08d26b",
+      "commit_basis": "edit",
+      "note": "\u00a736 drops the coordinator-refusal clause, which promotion's host lease already covers, and keeps the lander's re-read with a negative control per detection path",
+      "reason": "",
+      "when": "2026-11-05T13:55:52.774358+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "a64572caf7d391d172e92d23ca7c04ab6b08d26b",
+      "commit_basis": "edit",
+      "note": "\u00a736 drops the coordinator-refusal clause, which promotion's host lease already covers, and keeps the lander's re-read with a negative control per detection path",
+      "reason": "",
+      "when": "2026-11-05T13:55:05.029322+00:00"
+    },
+    "single_goal-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "a64572caf7d391d172e92d23ca7c04ab6b08d26b",
+      "commit_basis": "edit",
+      "note": "\u00a736 drops the coordinator-refusal clause, which promotion's host lease already covers, and keeps the lander's re-read with a negative control per detection path",
+      "reason": "",
+      "when": "2026-11-05T13:56:15.661256+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/work-is-never-stuck-behind-the-admission-loop/r-20261105T132416566091-plan-review-of-work-is-never-stuck-behind-the-admission-loop.json",
+  "review_run_id": "r-20261105T132416566091-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "609ad4f9bb7c5c810016e9900fe4da6bea5e9d94",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited run id resolves (`~/.config/reckon/crew/runs/r-20261103T022604894618-a-one-plan-read-composes-one-plan/` exists, landing and release records present), both write-path modules resolve, and the `_document`-level comment added for section 34 cites a review record that exists (`\u2026/r-20261105T110511704085-classifying-the-live-set-reads-it-once/review-records/\u2026at-352d6ac5fffc\u2026.json`).",
+    "done_when": "a finding \u2014 three cases are asserted while one negative control removes only the pointer re-read, so the ledger arm and the refusal arm are never shown to be able to fail, and the refusal arm already passes at the base revision.",
+    "evidence_paths": "pass \u2014 logs are required under the run directory, with a revision header and a trailing `EXIT=`, so a later reader can open them.",
+    "naming": "pass \u2014 `landed-elsewhere` is a status token naming the state it records; no plan label, ticket number or version tag reaches a symbol, file name or comment, and no changelog prose.",
+    "reasoning": "a finding \u2014 the mechanism's third sentence re-specifies a guard `reckon/crew/promotion.py:211-231` already provides for the promotion half, while the outcome it claims (\"so the two do not measure the same run twice\") is not delivered by that guard because it is taken after measurement and the plan names no claim taken at selection.",
+    "single_goal": "a finding \u2014 the section carries two independent repairs in two modules, the pre-launch pointer/ledger re-read in `reckon/crew/queue_landing.py` and a coordinator-side refusal in `reckon/crew/promotion.py`, with case 3 the only arm that measures the second.",
+    "wiring": "pass \u2014 `s36` declares `depends-on work-is-never-stuck-behind-the-admission-loop#s26` (\"The lander waits for every review the run owes\"), the other section that gates `land_once`, and both named write paths exist."
+  },
+  "section_digests": {
+    "_document": "2c690f4b75425eb4e743b4fba346142035c2c0a9df598387259aac86351de4f7",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s11": "64172d367078831447521db5db6f564603855f46c387c906413737be38d7cefa",
+    "s12": "a326ddd2ee6a25d3a5bd7e7faf7faebb13b159435640d33f4c6c5edcca238229",
+    "s13": "43c63cb3547e9638882e45af647c6eca92cdbd77c8006cbf416ed717619a79d5",
+    "s14": "8ad0ca2171f9b9e5d1a4402bed0ba51d908267ec88069268c781013864f569fa",
+    "s15": "97b76e836bce15b65611e3a1c12d5628da0992c3b604881d88f2e406aec3097b",
+    "s16": "de7130b93ad47423ed1f2ac37f7d700e9e1875834a26a33af10a97e2476eafa7",
+    "s17": "e0db3dac4c8e5a22f059034f39cf37bf8c5bd249834f218c25bdec42bc4151ed",
+    "s18": "dac73bb15e3a6db1d4fce585091868e67027d7235101498beef9a59ec2d88363",
+    "s19": "c1cb9323a74f953649b86e65f30cfa320b3f38079883c2a62230fe0b33e58fac",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s20": "132bce7e7e2e5612ff43da2f5ac5d14df2686c95a8118525bacac4349e87cb1b",
+    "s21": "ee777267cd96cff6866d857040b00da4e88084663ba40545bb4727aa3450d15c",
+    "s22": "ded37e8e903c88b4c4ba24e9bcfd1cc917e8112037b46dcbbf603bc8a83b9c4b",
+    "s23": "ccb7d854a9adbfef64161daad60b53aa6d860102e4771ff9a5577ab600a8cf79",
+    "s24": "61e0aa46c530807b80f7d600cfda4b2ccbbbe6a7695e74d51056473811046ce6",
+    "s25": "e45eb6699ec467a5bd9381005ac8a37e5079839d93875987c3ae51c7f7c2b7b3",
+    "s26": "2bdadd53a5742d8a2188a592cb048d2bb7bc8ace23f8f154eaff76cd539be41d",
+    "s27": "3e00c68c2c7c78bd8c8b8456b0718c3bd0720d2858b7c95db2196c25e03b289c",
+    "s28": "ed6ca5aa57e4f51ab3ceaeb3d9939a36b018a580d6ba698918ebd906a9b5e16d",
+    "s29": "3aa37627da7e8cb8a62888647fafa8d4833f2c35caca60b2937ad5cb7692711d",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s30": "b8b8706c9acabd5006293450da1eac5c27a1d9cbc69cc594fbdba230ca1d1eac",
+    "s31": "ac4b803910e2499bc7b5387d115251c945ada6fcb6411ad4badc3fa09aa77ec2",
+    "s32": "22711f595f248a553e4c98745f773436a8e3f3fd93718028095777acf063c506",
+    "s33": "fe3a748bc5a61e7ac5d17cc712da88ad843725ce9aad7e3ed9470af61c1cd300",
+    "s34": "f4f8c99832a81234a920d6788e9b3ea8bdb5ebf2124bbb64379dda3ea113277c",
+    "s35": "271c4b922642654c95747523ecfe3c49fe034995a1a986ca983e14b57e28654a",
+    "s36": "819995af9d95f087989d4c087569254492d17479c46734b003967c0fbad565f7",
+    "s4": "8220f4acb86bde075d194dffed5ce2cf67af7ba21c21fd4e67d63a215ff7f5c6",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "2f92e5358487aabaeb8d2b0c54fdf9a0407281e571a7eadaef0a2509754e3666",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T13:52:55.674791+00:00"
+}

@@ -1587,19 +1587,37 @@ def compose_project_state(docs_dir: Path, project: str) -> dict[str, Any]:
     return composed
 
 
-def read_project_derivations(docs_dir: Path, project: str) -> dict[str, list[str]]:
-    """Read only the authored repository derivation map for one project."""
+def read_project_manifest(docs_dir: Path, project: str) -> dict[str, Any]:
+    """Read a project's declaring record without composing its state.
+
+    The declaring record carries what a plan read needs from its project: the
+    authored derivation map and the declared north-star collection. Composing
+    the project state for those answers reads every sprint, milestone and
+    blocker resource as well, so one plan's read paid the whole project's cost.
+
+    The mode branch lives here alone: the project resource in a distributed
+    store, and the legacy index in a legacy one, where the north stars sit
+    beside the project rows rather than on the row.
+    """
     mode = project_state_mode(docs_dir)
     if mode.format == "distributed":
         project_manifest, _version = read_resource(
             docs_dir, project, "project", "project"
         )
-    else:
-        legacy, _raw = _load_legacy_index(docs_dir, project)
-        projects = legacy.get("projects") or []
-        project_manifest = (
-            projects[0] if projects and isinstance(projects[0], dict) else {}
-        )
+        return project_manifest
+
+    legacy, _raw = _load_legacy_index(docs_dir, project)
+    projects = legacy.get("projects") or []
+    row = projects[0] if projects and isinstance(projects[0], dict) else {}
+    project_manifest = dict(row)
+    if "north_stars" in legacy:
+        project_manifest["north_stars"] = deepcopy(legacy["north_stars"])
+    return project_manifest
+
+
+def read_project_derivations(docs_dir: Path, project: str) -> dict[str, list[str]]:
+    """Read only the authored repository derivation map for one project."""
+    project_manifest = read_project_manifest(docs_dir, project)
 
     derivations = project_manifest.get("derivations") or {}
     return {

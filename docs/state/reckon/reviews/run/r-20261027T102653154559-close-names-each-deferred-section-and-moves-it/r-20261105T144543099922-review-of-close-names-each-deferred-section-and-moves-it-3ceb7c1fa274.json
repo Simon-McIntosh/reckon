@@ -1,0 +1,107 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite at ab87725e67 records 3 failures (test_the_refusal_names_both_sections_and_both_remedies, test_a_move_carries_the_sections_state, test_a_moved_to_that_does_not_resolve_is_refused) and after_suite at head records 0, so the change adds no failing id.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp_edit_plan.py:175",
+    "reckon/mcp_edit_plan.py:435",
+    "reckon/mcp_edit_plan.py:493",
+    "reckon/_store.py:1530"
+  ],
+  "completed_at": "2026-11-05T15:03:20.037Z",
+  "dispatched_at": "2026-11-05T14:50:44Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "close-names-each-deferred-section-and-moves-it",
+      "recorded_at": "2026-11-05T15:20:38.987528+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "close-names-each-deferred-section-and-moves-it",
+      "recorded_at": "2026-11-05T15:20:44.916724+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "close-names-each-deferred-section-and-moves-it",
+      "recorded_at": "2026-11-05T15:21:01.588727+00:00"
+    },
+    "3": {
+      "kind": "folded",
+      "node": "close-names-each-deferred-section-and-moves-it",
+      "recorded_at": "2026-11-05T15:21:08.921400+00:00"
+    },
+    "4": {
+      "kind": "folded",
+      "node": "close-names-each-deferred-section-and-moves-it",
+      "recorded_at": "2026-11-05T15:21:15.870648+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/_store.py",
+      "line": 3024,
+      "text": "non-blocking: moved_gates collects every gate that touches the moved section regardless of status, so a closed gate travels to the successor as well as staying on the closed plan, while the plan requires a closed gate that named only the moved section to stay on the closed plan as evidence and states that the section's open gates travel."
+    },
+    {
+      "file": "reckon/_store.py",
+      "line": 3018,
+      "text": "non-blocking: _resolve_successor_section is called without the write's root (here and at :3380), so a write against an explicit checkout root resolves moved_to against the default root, whereas _write_successor_moves at :3091 does pass root; on the documented multi-worktree path a valid move is refused, or the successor half is silently skipped when the payload has no matching section there."
+    },
+    {
+      "file": "tests/test_close_names_each_deferred_section_and_moves_it.py",
+      "line": 270,
+      "text": "non-blocking: the done_when says the successor carries the moved section's effort as well as its prose, capability and open gate, but the assertions cover only prose, capability, gate and link; nothing reddens if the effort carry at reckon/_store.py:3117 regresses."
+    },
+    {
+      "file": "reckon/_schema.py",
+      "line": 988,
+      "text": "non-blocking: SectionRecord.moved_to is a field nothing populates - reckon/_plan_html.py:1597 renders a fixed attribute set with no data-moved-to and no reader parses one - so the field and its validator at :1055 describe a shape the store never writes; the durable record is the data-links entry at reckon/_store.py:2874."
+    },
+    {
+      "file": "docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html",
+      "line": 48,
+      "text": "non-blocking: the fragment names the three-file gate as the evidence, but the only recorded attempt at its companion files ended EXIT=124 at 48% with the second file never started; the manifest discloses this under outside_scope, though the fragment reads as a completed gate and the two companions pass only under this review's re-run."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/mcp_edit_plan.py:175 (edit_plan -> write_plan -> _write_state_locked, where section_moves is consumed at reckon/_store.py:1485; also the prose/close paths at :435 and :493) and reckon/_store.py:1530 (the terminal-status guard that now names both remedies).",
+    "diff": "read 3ceb7c1fa2 against ab87725e67 commit by commit: one commit, seven files, +828/-21, adding moved_to to the schema and docs, the refusal remedies, _resolve_successor_section, _carry_section_moves and _write_successor_moves, and three tests.",
+    "done_when": "the done_when names tests/test_close_names_each_deferred_section_and_moves_it.py plus tests/test_schema.py and tests/test_a_plan_closes_in_one_op.py; the first is recorded 3 passed / EXIT=0 at head and 3 failed / EXIT=1 at base, and the other two were left incomplete by the worker (gate-companions.log EXIT=124) but I re-ran them at 3ceb7c1fa2: test_committed_schema_matches_generated passed and the close-op file passed 13 tests, both EXIT=0.",
+    "goal": "the goal is to make close's deferred-section refusal name both remedies and to have a moved_to descope carry the section's prose, effort, capability, open gates and comments to its successor; reckon/_store.py:4413 states both remedies and reckon/_store.py:2995 _carry_section_moves plus :3090 _write_successor_moves perform the carry, with the successor's half written only after the source plan lands.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T102653154559-close-names-each-deferred-section-and-moves-it/manifest.md; status complete, commit 3ceb7c1fa2, baseline_suite 3 failures at ab87725e67, after_suite 0 at head, negative_control_log recorded, and the timed-out companion gate disclosed under outside_scope.",
+    "write_paths": "read the manifest's declared eight paths; git show --stat 3ceb7c1fa2 lists seven files and every one is inside them, with no concurrent node's path touched."
+  },
+  "justifications": {
+    "durability": "tests/test_close_names_each_deferred_section_and_moves_it.py:268-289 asserts the incoming link, capability raise, carried prose, retargeted gate and re-anchored comment, and the base arm plus the declared mutation show the suite reddens when the behaviour is absent; no assertion covers the effort carry required by the done_when, and the gate-vs-declaration check at :281-285 holds even with no move at all because a descoped section stays declared.",
+    "evidence": "the reviewed run's own arms are recorded: gate-base.log 3 failed / EXIT=1 at ab87725e67 and gate-head.log 3 passed / EXIT=0, with negative-control.log reddening exactly the successor-carries-the-gate assertion; the third file of the named gate never completed in the worker's run (gate-companions.log EXIT=124 at 48%), so I re-ran its two companions at 3ceb7c1fa2 and recorded them in review-gate-schema.log and review-gate-close.log.",
+    "fit": "the new helpers follow the module's private-helper idiom and cite no plan or ticket label, but reckon/_schema.py:988 adds a SectionRecord.moved_to field that nothing populates and no attribute any writer emits, so the field and its validator stand beside the live data-links record.",
+    "goal_fidelity": "reckon/_store.py:4413 extends _require_every_section_ticked's refusal to name every open section and both remedies, and reckon/_store.py:3090 _write_successor_moves carries prose, effort, capability, open gates and an incoming link to the successor, but reckon/_store.py:3024 also copies every gate that touches the moved section including closed ones, contradicting the plan's 'a closed gate ... stays on the closed plan as evidence'.",
+    "reuse": "reckon/_store.py:2955 _section_prose_text reuses reckon/_plan_html.py:474 section_prose rather than re-parsing prose, and a search of reckon/ for an existing capability-merge or gate-retarget owner found none, so _stricter_capability and the retarget are the first.",
+    "scope_discipline": "every path in 3ceb7c1fa2 (reckon/_store.py, reckon/_schema.py, docs/_shared/plan.schema.json, PLAN-FORMAT.md, skills/reckon-edit/SKILL.md, the new test file and the evidence fragment) is inside the node's declared write paths; the only extra is formatter reflow of two untouched signatures at reckon/_store.py:910 and :4103."
+  },
+  "node": "review-of-close-names-each-deferred-section-and-moves-it-3ceb7c1fa274",
+  "node:reviewed": "close-names-each-deferred-section-and-moves-it",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to extend close's deferred-section refusal to name both remedies and to have a moved_to descope carry the section's prose, effort, capability, open gates and comments to its successor; reckon/_store.py:4413 states both remedies and reckon/_store.py:2995 _carry_section_moves plus :3090 _write_successor_moves perform the carry, with the successor's half written only after the source plan lands.\nVERDICT done_when: the done_when names tests/test_close_names_each_deferred_section_and_moves_it.py plus tests/test_schema.py and tests/test_a_plan_closes_in_one_op.py; the first is recorded 3 passed / EXIT=0 at head and 3 failed / EXIT=1 at base, and the other two were left incomplete by the worker (gate-companions.log EXIT=124) but I re-ran them at 3ceb7c1fa2: test_committed_schema_matches_generated passed and the close-op file passed 13 tests, both EXIT=0.\nVERDICT write_paths: read the manifest's declared eight paths; git show --stat 3ceb7c1fa2 lists seven files and every one is inside them, with no concurrent node's path touched.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T102653154559-close-names-each-deferred-section-and-moves-it/manifest.md; status complete, commit 3ceb7c1fa2, baseline_suite 3 failures at ab87725e67, after_suite 0 at head, negative_control_log recorded, and the timed-out companion gate disclosed under outside_scope.\nVERDICT diff: read 3ceb7c1fa2 against ab87725e67 commit by commit: one commit, seven files, +828/-21, adding moved_to to the schema and docs, the refusal remedies, _resolve_successor_section, _carry_section_moves and _write_successor_moves, and three tests.\nCALL_SITES: reckon/mcp_edit_plan.py:175, reckon/mcp_edit_plan.py:435, reckon/mcp_edit_plan.py:493, reckon/_store.py:1530\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/_store.py:4413 extends _require_every_section_ticked's refusal to name every open section and both remedies, and reckon/_store.py:3090 _write_successor_moves carries prose, effort, capability, open gates and an incoming link to the successor, but reckon/_store.py:3024 also copies every gate that touches the moved section including closed ones, contradicting the plan's 'a closed gate ... stays on the closed plan as evidence'.\nSCORE evidence: 16\nJUSTIFICATION evidence: the reviewed run's own arms are recorded: gate-base.log 3 failed / EXIT=1 at ab87725e67 and gate-head.log 3 passed / EXIT=0, with negative-control.log reddening exactly the successor-carries-the-gate assertion; the third file of the named gate never completed in the worker's run (gate-companions.log EXIT=124 at 48%), so I re-ran its two companions at 3ceb7c1fa2 and recorded them in review-gate-schema.log and review-gate-close.log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in 3ceb7c1fa2 (reckon/_store.py, reckon/_schema.py, docs/_shared/plan.schema.json, PLAN-FORMAT.md, skills/reckon-edit/SKILL.md, the new test file and the evidence fragment) is inside the node's declared write paths; the only extra is formatter reflow of two untouched signatures at reckon/_store.py:910 and :4103.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_close_names_each_deferred_section_and_moves_it.py:268-289 asserts the incoming link, capability raise, carried prose, retargeted gate and re-anchored comment, and the base arm plus the declared mutation show the suite reddens when the behaviour is absent; no assertion covers the effort carry required by the done_when, and the gate-vs-declaration check at :281-285 holds even with no move at all because a descoped section stays declared.\nSCORE fit: 16\nJUSTIFICATION fit: the new helpers follow the module's private-helper idiom and cite no plan or ticket label, but reckon/_schema.py:988 adds a SectionRecord.moved_to field that nothing populates and no attribute any writer emits, so the field and its validator stand beside the live data-links record.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/_store.py:2955 _section_prose_text reuses reckon/_plan_html.py:474 section_prose rather than re-parsing prose, and a search of reckon/ for an existing capability-merge or gate-retarget owner found none, so _stricter_capability and the retarget are the first.\nFINDING reckon/_store.py:3024 non-blocking: moved_gates collects every gate that touches the moved section regardless of status, so a closed gate travels to the successor as well as staying on the closed plan, while the plan requires a closed gate that named only the moved section to stay on the closed plan as evidence and states that the section's open gates travel.\nFINDING reckon/_store.py:3018 non-blocking: _resolve_successor_section is called without the write's root (here and at :3380), so a write against an explicit checkout root resolves moved_to against the default root, whereas _write_successor_moves at :3091 does pass root; on the documented multi-worktree path a valid move is refused, or the successor half is silently skipped when the payload has no matching section there.\nFINDING tests/test_close_names_each_deferred_section_and_moves_it.py:270 non-blocking: the done_when says the successor carries the moved section's effort as well as its prose, capability and open gate, but the assertions cover only prose, capability, gate and link; nothing reddens if the effort carry at reckon/_store.py:3117 regresses.\nFINDING reckon/_schema.py:988 non-blocking: SectionRecord.moved_to is a field nothing populates - reckon/_plan_html.py:1597 renders a fixed attribute set with no data-moved-to and no reader parses one - so the field and its validator at :1055 describe a shape the store never writes; the durable record is the data-links entry at reckon/_store.py:2874.\nFINDING docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html:48 non-blocking: the fragment names the three-file gate as the evidence, but the only recorded attempt at its companion files ended EXIT=124 at 48% with the second file never started; the manifest discloses this under outside_scope, though the fragment reads as a completed gate and the two companions pass only under this review's re-run.",
+  "review_run_id": "r-20261105T144543099922-review-of-close-names-each-deferred-section-and-moves-it-3ceb7c1fa274",
+  "reviewed_base_sha": "ab87725e67ab7377c2efb9b60a263578f3f2f8de",
+  "reviewed_head_sha": "3ceb7c1fa274bbbb94c847e3fcc00eb51c76bb4c",
+  "reviewed_run_id": "r-20261027T102653154559-close-names-each-deferred-section-and-moves-it",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 16,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T15:03:03+00:00",
+  "total": 100
+}

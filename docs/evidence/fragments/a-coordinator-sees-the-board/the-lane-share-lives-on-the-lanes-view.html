@@ -1,0 +1,71 @@
+<!doctype html>
+<title>The lane share lives on the lanes view alone</title>
+<section id="the-lane-share-lives-on-the-lanes-view-landing">
+  <h2>The lanes view says what the coordinator's own share of the lane is, and how old that answer is</h2>
+
+  <p><strong>What changed.</strong> <code>crew(view="lanes")</code> already attached the
+  parsed lane document to each lane row, so a coordinator could read the lane's headroom and
+  verdict but not its own position in it. Given <code>session=...</code>, the view now also
+  carries a top-level <code>session_share</code> block:</p>
+
+  <table>
+    <thead><tr><th>field</th><th>what it is</th></tr></thead>
+    <tbody>
+      <tr><td><code>worker_slots</code></td>
+        <td>the session's published share, read through
+        <code>obligations._published_worker_slots</code> — the same function a dispatch
+        refusal quotes, so the read and the refusal cannot disagree about one number</td></tr>
+      <tr><td><code>live_runs</code></td>
+        <td>the router's count of the session's live runs, or <code>"unknown"</code> when the
+        router has listed no entry for it — an absent entry is not a zero</td></tr>
+      <tr><td><code>observed_at</code>, <code>age_seconds</code>,
+        <code>shelf_life_seconds</code></td>
+        <td>the local lane document's own vintage</td></tr>
+      <tr><td><code>stale</code>, <code>detail</code></td>
+        <td>a document past the shelf life it publishes is marked stale, with the age that
+        disqualifies it in words</td></tr>
+    </tbody>
+  </table>
+
+  <p>One carrier. <code>crew(view="directory")</code> and <code>ready_set_view</code> copy no
+  figure of these; the block is served only when a session is named, and a stale document is
+  marked stale rather than inherited as current. No view is added.</p>
+
+  <p><strong>One unreachable derivation retired.</strong> <code>_ready_set_coordinators</code>
+  read the crew's plan-coordinator derivation whenever the ready-set view was asked for the
+  filtered set with no coordinators passed. Its only production caller
+  (<code>reckon/serve.py</code>) never asks for the filtered set, so the branch and its
+  swallow-all fallback could not run: the view now takes the coordinator rows it is given and
+  reports none otherwise, and the crew's derivation stays the one statement of who owns a
+  plan. The ready-set view's existing cases still pass.</p>
+
+  <h3>Measured</h3>
+
+  <p><code>tests/test_the_lane_share_lives_on_the_lanes_view.py</code>, seven cases, with the
+  lane document placed through <code>RECKON_LOCAL_LANE_DOCUMENT</code> so no test reads the
+  workstation's real lane. On a document listing the calling session at
+  <code>worker_slots: 7</code>, <code>live_runs: 2</code>, observed five seconds before the
+  composition, the block reads <code>worker_slots == 7</code>,
+  <code>live_runs == 2</code>, <code>observed_at</code> equal to the document's stamp,
+  <code>age_seconds == 5</code>, <code>stale is False</code>; and
+  <code>worker_slots</code> equals a direct call of
+  <code>_published_worker_slots(SESSION)</code>, so the block is not a second reading. A
+  session the router has not listed reads <code>live_runs == "unknown"</code>, with the share
+  falling back to the lane-wide figure exactly as the refusal does. With the document
+  observed past its own
+  45-second shelf life the block reads <code>stale is True</code> at
+  <code>age_seconds == 46</code>; a document publishing no shelf life reads
+  <code>stale is False</code> with <code>"no shelf life"</code> in its detail, because
+  unjudged freshness is not freshness.</p>
+
+  <p>The gate (<code>tests/test_the_lane_share_lives_on_the_lanes_view.py</code> plus
+  <code>tests/test_mcp_tools.py</code>) passes, <strong>42 passed</strong>. The base arm — the
+  existing suites that cover the changed module, run over the base revision in a scratch
+  extraction — is <strong>92 passed, <code>EXIT=0</code></strong>, so the change adds no
+  failure against its base.</p>
+
+  <p><strong>Negative control.</strong> The declared mutation drops the staleness comparison
+  (<code>"stale": False</code> in place of the document's own reading). The stale-document
+  case then fails — <strong>1 failed, 6 passed, <code>EXIT=1</code></strong> — because nothing
+  else in the block looks at the age, while the unmutated head passes all seven.</p>
+</section>

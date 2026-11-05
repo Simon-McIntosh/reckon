@@ -879,6 +879,17 @@ def _omitted_probe_inputs(*, supplied: Mapping[str, bool]) -> list[str]:
     ),
 )
 @click.option(
+    "--anchor-path",
+    "anchor_paths",
+    multiple=True,
+    metavar="PATH",
+    help=(
+        "A repository path the brief names as an anchor whose contents are not "
+        "loaded, so it enters the context estimate at nothing rather than at a "
+        "reference cost. Repeat for each."
+    ),
+)
+@click.option(
     "--negative-control",
     "negative_control",
     default="",
@@ -922,6 +933,7 @@ def crew_pick(
     section,
     write_paths,
     regenerate_paths,
+    anchor_paths,
     negative_control,
     estimated_hours,
     comment,
@@ -997,6 +1009,7 @@ def crew_pick(
                 negative_control=negative_control or "",
                 write_paths=list(write_paths),
                 regenerate_paths=list(regenerate_paths),
+                anchor_paths=list(anchor_paths),
                 estimated_hours=estimated_hours,
             )
             payload = pick(
@@ -1083,8 +1096,64 @@ def _budget_check_report(
     return report, (3 if report["held"] else 0)
 
 
+def _queue_dispatch_batch(
+    batch_path,
+    *,
+    session: str,
+    repo,
+    checkout_path,
+    overrides,
+    launch_kind: str,
+    pretty: bool,
+) -> None:
+    """Queue a batch file's entries as one call, naming a row for each."""
+    from reckon.crew.dispatch_batch import queue_batch, read_batch_entries
+    from reckon.crew.node import CrewError
+
+    try:
+        entries = read_batch_entries(batch_path)
+    except (CrewError, OSError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    _crew_module, flight_module = _crew_modules()
+    root = Path(repo).expanduser().resolve() if repo else Path.cwd().resolve()
+    configs: dict[str, dict] = {}
+
+    def config_for(project_name: str) -> dict:
+        if project_name not in configs:
+            try:
+                configs[project_name] = _dispatch_resolved_flight(
+                    flight_module, project_name, checkout_path, overrides
+                )
+            except click.ClickException as exc:
+                raise CrewError(str(exc)) from exc
+        return configs[project_name]
+
+    result = queue_batch(
+        entries,
+        session=str(session or ""),
+        config_for=config_for,
+        repo_root=root,
+        launch_kind=launch_kind,
+    )
+    _emit_crew_result(result, pretty)
+
+
 @crew.command(name="dispatch")
-@click.option("--project", required=True, help="Project owning the plan.")
+@click.option(
+    "--batch",
+    "batch_path",
+    default=None,
+    type=click.Path(path_type=Path, exists=True, dir_okay=False),
+    help=(
+        "Queue every entry of a JSON batch file in one call: each entry names "
+        "its project, plan, section, node id and goal, and any other dispatch "
+        "field it wants. Fields an entry omits are taken from its section, and "
+        "each entry is stored on its own, so a refused entry does not stop the "
+        "rest. A coordinator writes the work it chose as one batch rather than "
+        "one call per section."
+    ),
+)
+@click.option("--project", required=False, help="Project owning the plan.")
 @click.option("--plan", "plan_slug", default="", help="Plan slug the node serves.")
 @click.option(
     "--brief",
@@ -1159,7 +1228,7 @@ def _budget_check_report(
         "admits no applicable mutation."
     ),
 )
-@click.option("--node", "node_id", required=True, help="Stable node id.")
+@click.option("--node", "node_id", default="", help="Stable node id.")
 @click.option("--goal", default="", help="The one deliverable this node produces.")
 @click.option("--done-when", default="", help="The measure that emits evidence.")
 @click.option(
@@ -1197,6 +1266,19 @@ def _budget_check_report(
         "A write path whose contents are regenerated wholesale rather than "
         "read; claimed like any write path, but charged one fixed reference "
         "cost rather than its file size. Repeat for each."
+    ),
+)
+@click.option(
+    "--anchor-path",
+    "anchor_paths",
+    multiple=True,
+    metavar="PATH",
+    help=(
+        "A repository path the brief names as an anchor whose contents are not "
+        "loaded, so it enters the context estimate at nothing rather than at a "
+        "reference cost. Recorded on the run so a reader sees the worker was "
+        "briefed about a file it was not given. Refused when the same path is a "
+        "write path. Repeat for each."
     ),
 )
 @click.option(
@@ -1367,6 +1449,7 @@ def _budget_check_report(
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 @_holds_stdout_for_one_document
 def crew_dispatch(
+    batch_path,
     project,
     plan_slug,
     brief_path,
@@ -1389,6 +1472,7 @@ def crew_dispatch(
     inputs,
     compares_with,
     regenerate_paths,
+    anchor_paths,
     image_paths,
     peers,
     required_decisions,
@@ -1428,6 +1512,23 @@ def crew_dispatch(
     ``launch`` kind.
     """
     crew_module, flight_module = _crew_modules()
+    if batch_path:
+        _queue_dispatch_batch(
+            batch_path,
+            session=session,
+            repo=repo,
+            checkout_path=checkout_path,
+            overrides=overrides,
+            launch_kind="cli",
+            pretty=pretty,
+        )
+        return
+    if not project:
+        raise click.UsageError(
+            "--project is required unless --batch names the work to queue"
+        )
+    if not node_id:
+        raise click.UsageError("--node is required unless --batch names the work")
     from reckon.crew.dispatch import (
         LaneHeld,
         LanePaused,
@@ -1538,6 +1639,7 @@ def crew_dispatch(
         inputs=list(inputs),
         compares_with=compares_with or "",
         regenerate_paths=list(regenerate_paths),
+        anchor_paths=list(anchor_paths),
         time_budget=time_budget,
         estimated_hours=estimated_hours,
         manifest_path=manifest,

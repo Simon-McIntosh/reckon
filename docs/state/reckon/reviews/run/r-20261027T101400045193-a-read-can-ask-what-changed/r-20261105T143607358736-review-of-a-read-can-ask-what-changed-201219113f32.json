@@ -1,0 +1,87 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "0fb90f72a51991ae1459948cde028cdc62f43c08",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp.py:2592",
+    "reckon/mcp.py:2928",
+    "reckon/crew_run_commands.py:483",
+    "reckon/mcp_deadlines.py:605"
+  ],
+  "completed_at": "2026-11-05T14:45:24.628Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "a-read-can-ask-what-changed",
+      "recorded_at": "2026-11-05T15:07:37.399925+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-05T14:38:01Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-read-can-ask-what-changed",
+      "recorded_at": "2026-11-05T15:07:06.981910+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "logs/review2-red.log reddens the reviewed head (1 failed, 14 passed, EXIT=1 at 0fb90f72a5) and supersedes the older negative-control log.",
+      "recorded_at": "2026-11-05T15:07:30.638563+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/change_set.py",
+      "id": "d7b21e04a6f",
+      "line": "219",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_whole_plan_satisfied` (:219-255) is a line-for-line copy of the rule owned by `reckon/roadmap.py:699 _plan_dependency_satisfied` (completed status, at least one done section, every open section deferred, every authored heading declared) and does not call or extend that owner; the docstring claims sharing the predicates stops the two drifting, but what is copied is the rule itself, and roadmap already carries a second copy of it in `_plan_dependency_judgment` (:770-789), so any later change to the roadmap's rule will not reach this copy. Extracting the predicate once over (status, declarations, authored text) would let both callers share it; the revision-vs-checkout difference is in the inputs, not in the rule."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T101400045193-a-read-can-ask-what-changed/logs/negative-control.log",
+      "id": "a8f30c5be17",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the manifest's negative-control.log is still the arm measured at `c15f841e... + mutation` over the 10-test file, not re-measured at the reviewed head where the file carries 15 tests, so the recorded mutation does not itself show the guard on the code this round landed; logs/review2-red.log is the arm that does (1 failed, 14 passed, EXIT=1 at 0fb90f72a5)."
+    }
+  ],
+  "head_log_revision": "201219113f32ec05277ef8025166430f3474f30d",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s): reckon/mcp.py:2592 returns the roadmap answer through `_answer_with_change_set` (defined :2595), :2928 does the same for `crew(view=\"live\")`, reckon/crew_run_commands.py:483 passes the CLI's `--since` into the live view, and reckon/mcp_deadlines.py:605 `_deadline_tool` wraps both tools and forwards their kwargs, so the change set is reachable from all four.",
+    "diff": "read both commits against 0fb90f72a5: d44e0aace7 changes reckon/change_set.py (+78/-26, adding `_whole_plan_satisfied` at :219, dispatching a section-less ref to it at :270, admitting `(plan, None)` targets at :394 and rendering them as the bare plan ref at :448-455) and adds tests/test_a_read_can_ask_what_changed.py:364-385 with its fixture plans f and g at :175-178; 201219113f updates only the landing fragment's readiness paragraph and its test counts.",
+    "done_when": "the \u00a77 measure is the fixture read returning the moved declaration, its released dependents and the one moved run; this delta's measure is one more dependent shape, and logs/gate-review2.log records `50 passed` with a bare `EXIT=0` at 201219113f for the literal command in the manifest's `tests:` line, while logs/review2-red.log records the added case red (1 failed, 14 passed, EXIT=0->EXIT=1) against the module at 0fb90f72a5.",
+    "goal": "the reviewed goal is to answer `since` on the brief, crew live and roadmap with the change set and an `observed_at`; this delta closes the dependency shape the grammar admits and the module previously dropped, so a ref naming a whole plan is now a landed target (reckon/change_set.py:394) and its dependent is released (:448-455), and it also removes the dead `project` argument the prior review named (:367-372, :598).",
+    "manifest": "read the delivered manifest; it states head gate 50 passed EXIT=0 at 201219113f, the red arm 1 failed / 14 passed EXIT=1, base arm 35 passed, the 15-test count and the negative control, and I read those same figures from logs/gate-review2.log and logs/review2-red.log.",
+    "write_paths": "the dispatch declared five paths; `git diff --name-status 0fb90f72a5 201219113f` lists exactly three \u2014 reckon/change_set.py, tests/test_a_read_can_ask_what_changed.py and docs/evidence/fragments/the-mcp-answers-the-question-asked/a-read-can-ask-what-changed.html \u2014 and every one is inside the declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_read_can_ask_what_changed.py:384-385 asserts the released ref and its `finished_waiting_on == [\"f\"]` from the fixture's own declaration, and logs/review2-red.log shows that same case red against the module at 0fb90f72a5, so removing the whole-plan dispatch or the `(plan, None)` landed target reddens it.",
+    "evidence": "logs/gate-review2.log names revision 201219113f, the tree, the module, the cwd and the literal command, ends in a bare `EXIT=0` at `50 passed`, and logs/review2-red.log supplies the negative arm for the one added case.",
+    "fit": "reckon/change_set.py:219-255 follows the module's docstring-and-import-inside-helper idiom and its naming, but its body restates another module's rule rather than the module's usual delegation (cf. :270 delegating to `roadmap._section_satisfied`).",
+    "goal_fidelity": "reckon/change_set.py:270 and :394 make a ref that names no section a first-class target, and :448-455 emit it as the plan ref, so the change set no longer silently drops a dependency shape `_schema.parse_plan_ref` admits.",
+    "reuse": "reckon/change_set.py:219 `_whole_plan_satisfied` re-implements the rule owned by reckon/roadmap.py:699 `_plan_dependency_satisfied` and does not extend or call it; the rest of the module does delegate (roadmap._section_satisfied, _schema.parse_plan_ref, velocity history), but the rubric caps this dimension at 5 for an added definition that duplicates an owner.",
+    "scope_discipline": "`git diff --name-status 0fb90f72a5 201219113f` lists exactly reckon/change_set.py, tests/test_a_read_can_ask_what_changed.py and the landing fragment, all inside the node's declared write paths, and neither commit touches reckon/mcp.py or the figures directory."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed goal is to answer `since` with a change set and an `observed_at`; this delta closes the dependency shape the change set dropped \u2014 reckon/change_set.py:270 dispatches a section-less ref to a whole-plan rule and :394 admits `(plan, None)` as a landed target \u2014 and removes the dead `project` argument the prior review named (:367, :598).\nVERDICT done_when: the \u00a77 measure is the fixture read naming the moved declaration, its released dependents and the one moved run; logs/gate-review2.log records `50 passed` with a bare `EXIT=0` at 201219113f for the literal command in the manifest's `tests:` line, and logs/review2-red.log records the added case red (1 failed, 14 passed, EXIT=1) against the module at 0fb90f72a5.\nVERDICT write_paths: the dispatch declared five paths; `git diff --name-status 0fb90f72a5 201219113f` lists exactly three \u2014 reckon/change_set.py, tests/test_a_read_can_ask_what_changed.py and the landing fragment \u2014 and all are inside the declared scope.\nVERDICT manifest: read; it states head 50 passed EXIT=0 at 201219113f, red arm 1 failed / 14 passed EXIT=1, base arm 35 passed, 15 tests in the file and the negative control, and I read those figures from the two logs it names.\nVERDICT diff: read both commits against 0fb90f72a5 \u2014 d44e0aace7 (+78/-26 in reckon/change_set.py and +29 test lines adding fixture plans f and g) and 201219113f (the landing fragment's readiness paragraph and its counts); the change is the whole-plan rule, its dispatch in `_satisfied`, its landed target and its rendering in `finished_waiting_on`.\nCALL_SITES: reckon/mcp.py:2592, reckon/mcp.py:2928, reckon/crew_run_commands.py:483, reckon/mcp_deadlines.py:605\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/change_set.py:270 and :394 make a ref naming no section a first-class target and :448-455 emit it as the plan ref, so the change set no longer drops a dependency shape `_schema.parse_plan_ref` admits.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/gate-review2.log names revision 201219113f, the tree, the module, the cwd and the literal command and ends in a bare `EXIT=0` at `50 passed`, with logs/review2-red.log supplying the red arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --name-status 0fb90f72a5 201219113f` lists exactly reckon/change_set.py, tests/test_a_read_can_ask_what_changed.py and the landing fragment, all inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_read_can_ask_what_changed.py:384-385 asserts the released ref and `finished_waiting_on == [\"f\"]` from the fixture's own declaration, and logs/review2-red.log shows that case red against the previous module.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/change_set.py:219-255 follows the module's docstring and lazy-import idiom, though its body restates another module's rule rather than delegating as :270 does.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/change_set.py:219 `_whole_plan_satisfied` duplicates the rule owned by reckon/roadmap.py:699 `_plan_dependency_satisfied` without extending or calling it; the module's other reads do delegate, but the rubric caps the dimension at 5 for this duplication.\nFINDING reckon/change_set.py:219 non-blocking: `_whole_plan_satisfied` is a line-for-line copy of the rule owned by `reckon/roadmap.py:699 _plan_dependency_satisfied` and calls nothing in that owner, so the two can drift and roadmap's own second copy at :770 also diverges; extracting the predicate over (status, declarations, authored text) would let both callers share it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T101400045193-a-read-can-ask-what-changed/logs/negative-control.log:1 non-blocking: the manifest's negative control is still the arm measured at `c15f841e... + mutation` over the 10-test file rather than re-measured at the 15-test head, so logs/review2-red.log is the arm that demonstrates this round's guard.",
+  "review_run_id": "r-20261105T143607358736-review-of-a-read-can-ask-what-changed-201219113f32",
+  "reviewed_base_sha": "0fb90f72a51991ae1459948cde028cdc62f43c08",
+  "reviewed_head_sha": "201219113f32ec05277ef8025166430f3474f30d",
+  "reviewed_run_id": "r-20261027T101400045193-a-read-can-ask-what-changed",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T15:04:27.063020+00:00",
+  "total": 98
+}

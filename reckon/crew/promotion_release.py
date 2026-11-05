@@ -589,6 +589,47 @@ def _write_release_receipt(run_id: str, release: Mapping[str, Any]) -> None:
         return
 
 
+def _recorded_release(
+    path: Path,
+    *,
+    project: str,
+    root: str | Path | None,
+    run_id: str,
+    per_run: bool,
+) -> tuple[dict[str, Any], dict[str, Any]] | None:
+    """The release a run's record already carries, and that record, or ``None``.
+
+    A release pass is not always the first: promotion over an already-promoted
+    run, a second ``crew release``, and a recovery sweep all reach this step
+    after a truthful release was recorded. That record is history rather than a
+    cache — it names the worktree and scratch copy the host actually removed —
+    so a later pass reads it instead of writing over it with a fresh reading
+    that can only say those paths were already gone. The record comes back with
+    the release because a caller reports both, and an unreadable record is
+    treated as carrying none, so a damaged row is repaired rather than frozen.
+    """
+    try:
+        if per_run:
+            loaded = json.loads(path.read_text(encoding="utf-8"))
+            row = loaded if isinstance(loaded, dict) else {}
+        else:
+            data, _version = ledger._load_aggregate(project, root)
+            row = next(
+                (
+                    candidate
+                    for candidate in data.get("runs", [])
+                    if str(candidate.get("run_id") or "") == run_id
+                ),
+                {},
+            )
+    except (OSError, ValueError, ledger.LedgerError):
+        return None
+    release = row.get("release") if isinstance(row, Mapping) else None
+    if isinstance(release, Mapping) and release:
+        return dict(release), dict(row)
+    return None
+
+
 def _record_release_on_ledger(
     *,
     project: str,
@@ -605,11 +646,20 @@ def _record_release_on_ledger(
     one retained for a dirty, unintegrated, live-referenced, or failed run.
     Its separate commit preserves the landing's identity even if a peer has
     already published it or committed other work before release finishes.
+
+    A run whose record already carries a release keeps it: the earlier pass saw
+    the tree and the scratch copy that its own receipt names, so a second pass
+    could only replace a true reading with one reporting them already gone.
     """
     path = ledger.run_path(project, run_id, root)
     per_run = path.is_file()
     if not per_run:
         path = ledger.ledger_path(project, root)
+    already = _recorded_release(
+        path, project=project, root=root, run_id=run_id, per_run=per_run
+    )
+    if already is not None:
+        return already
     # The receipt is written beside the run's own record before the ledger
     # write, because the ledger write is not durable on its own: a landing
     # commit that cannot stage restores the row it wrote to HEAD, and the

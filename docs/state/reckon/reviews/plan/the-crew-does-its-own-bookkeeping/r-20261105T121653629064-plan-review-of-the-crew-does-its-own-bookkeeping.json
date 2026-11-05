@@ -1,0 +1,163 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-05T12:28:01.475Z",
+  "dispatched_at": "2026-11-05T12:22:26Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-crew-does-its-own-bookkeeping/r-20261105T121653629064-plan-review-of-the-crew-does-its-own-bookkeeping/plan.html:160",
+      "id": "reasoning-1",
+      "reason": "if the fallback is only reached when the selection found no record at all, a \"delivered but unpromoted at the current head\" probe reads the same nothing the selection read and can never fire; the repair would add a guard on a path the incident did not take and leave the real one open, which is exactly the node's whole deliverable.",
+      "text": "the ancestor fallback runs only under `if stored is None and described:` (`reckon/crew_run_commands.py:852`), and `stored_review_for_run` reaches `select_review_for_head`, whose store docstring says a committed record at another head falls through to the staging store \"for one at that head before the tree reports the absence\" (`reckon/crew/review_records.py:566-570`); the run's own `review-records/` holds a delivered record at `76a7b7bfae` and another at `a1305995c4`, so on the delivered-review path the selection should already have returned a record and the fallback should not have been reached. The plan names the cause as a missing question about a delivered review without showing which revision the run stood at when the three disposes ran, or that the record for that revision was invisible to the selection \u2014 and its second anecdote (one review record keyed at `e1d54ab0a0`, the filed record at `d2626bdd97`) points at head-keying, not at a missing probe",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-crew-does-its-own-bookkeeping/r-20261105T121653629064-plan-review-of-the-crew-does-its-own-bookkeeping/plan.html:160",
+      "id": "evidence_paths-1",
+      "reason": "without the sentence the node's gate log can land in a session scratchpad or carry no readable exit status, which is the failure the plan's other 25 sections were written to prevent, and adding one line costs the author nothing.",
+      "text": "s26's done-when names no log location, no first-line content and no `EXIT=` last line, while s25 (\u00a7155) and the plan's other sections each say \"Every log is under the run directory, starts with its revision and the literal command, and ends in `EXIT=`\"; promotion reads the gate's exit status from that log, so a worker here may write its gate anywhere",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-crew-does-its-own-bookkeeping/r-20261105T121653629064-plan-review-of-the-crew-does-its-own-bookkeeping/plan.html:155",
+      "id": "done_when-1",
+      "reason": "the case is unwinnable for a test author who dates the fixture before the audit threshold, and the plan's only mention of the audit is an incidental \"on a record written after the\" in a docstring the node never reads, so the node would burn its budget discovering a precondition the plan should state.",
+      "text": "s25's fourth case asserts the advice \"names the other as unclassified\" for a finding carrying neither severity nor prefix, but `unmarked_findings` returns `[]` when `_record_predates_unmarked_audit` is true, which it is for any record stamped before `UNMARKED_SEVERITY_AUDIT_STARTED_AT` (`reckon/crew/repair.py:182-196`); a fixture stamped with a fixed earlier date therefore cannot satisfy the case, and the plan does not say the record must be stamped after that constant",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-crew-does-its-own-bookkeeping/r-20261105T121653629064-plan-review-of-the-crew-does-its-own-bookkeeping/plan.html:154",
+      "id": "single_goal-1",
+      "reason": "the section cannot be retitled or split by its coordinator while the heading under-describes two of its three deliverables, and a reviewer closing the node on the severity work alone would leave the merged-head guard unmeasured.",
+      "text": "the heading promises a round that \"reads each finding's severity and its disposition\", but the third deliverable is \"No round starts for a run whose reviewed head is already reachable from the integration branch\", which is neither: it is a third, unrelated condition on when a round starts, and the section's own disposed-finding bullet is context that `blocking_findings` and `tests/test_a_disposed_finding_ends_its_repair_round.py` already enforce",
+      "type": "single_goal",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "ab87fa4d370c94774b0fff58941052f62111015d",
+  "plan_fingerprint": "3361b65878cb6face9a74332b404a234cc5fc5398ca0e38d07869221a2bd499c",
+  "plan_slug": "the-crew-does-its-own-bookkeeping",
+  "plan_version": 42,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "bdae051f1a89c19f933fa52732f2a8b141a2c666",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a726 now has the node reproduce which selection path returned the older record before changing it, and the fix is an explicit --review naming the record plus a refusal when the selected record is not the run's newest delivered review",
+      "reason": "",
+      "when": "2026-11-05T12:52:16.834337+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "bdae051f1a89c19f933fa52732f2a8b141a2c666",
+      "commit_basis": "edit",
+      "finding": "evidence_paths-1",
+      "note": "\u00a726 carries the gate-log sentence",
+      "reason": "",
+      "when": "2026-11-05T12:52:31.618452+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "bdae051f1a89c19f933fa52732f2a8b141a2c666",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a725's unclassified case stamps its record after UNMARKED_SEVERITY_AUDIT_STARTED_AT",
+      "reason": "",
+      "when": "2026-11-05T12:52:45.953541+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "single_goal-1",
+      "reason": "the merged-head condition and the severity read are one predicate on when a round starts; the reported incident needed both, since the coordinator had disposed the findings and merged the head by hand",
+      "when": "2026-11-05T12:53:02.559008+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "bdae051f1a89c19f933fa52732f2a8b141a2c666",
+      "commit_basis": "edit",
+      "note": "\u00a725's unclassified case stamps its record after UNMARKED_SEVERITY_AUDIT_STARTED_AT",
+      "reason": "",
+      "when": "2026-11-05T12:52:45.953541+00:00"
+    },
+    "evidence_paths-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "bdae051f1a89c19f933fa52732f2a8b141a2c666",
+      "commit_basis": "edit",
+      "note": "\u00a726 carries the gate-log sentence",
+      "reason": "",
+      "when": "2026-11-05T12:52:31.618452+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "bdae051f1a89c19f933fa52732f2a8b141a2c666",
+      "commit_basis": "edit",
+      "note": "\u00a726 now has the node reproduce which selection path returned the older record before changing it, and the fix is an explicit --review naming the record plus a refusal when the selected record is not the run's newest delivered review",
+      "reason": "",
+      "when": "2026-11-05T12:52:16.834337+00:00"
+    },
+    "single_goal-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "the merged-head condition and the severity read are one predicate on when a round starts; the reported incident needed both, since the coordinator had disposed the findings and merged the head by hand",
+      "when": "2026-11-05T12:53:02.559008+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-crew-does-its-own-bookkeeping/r-20261105T121653629064-plan-review-of-the-crew-does-its-own-bookkeeping.json",
+  "review_run_id": "r-20261105T121653629064-plan-review-of-the-crew-does-its-own-bookkeeping",
+  "reviewed_blob_sha": "22e398f2d858d7a43198fbbf9f4e229db2020791",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every s25 anchor resolves: `_repair_launch_refusal` is `reckon/crew/recovery_repair_dispatch.py:781`, `compose_repair_for_run` is `reckon/crew/repair.py:764`, the advice string is rendered at `recovery_repair_dispatch.py:550`, `declared_severity` is `reckon/crew/review.py:176`, the \"nothing is defaulted\" rule is `review.py:42-44`, `_finding_kind` is `repair.py:198` and delegates to `declared_severity`, `_finding_blocks` is `reckon/crew/recovery_review_acceptance.py:41` and reads the same function, `blocking_findings` is `repair.py:225`, `tests/test_a_disposed_finding_ends_its_repair_round.py` exists, and s26's `crew_dispose` is `reckon/crew_run_commands.py:706` with the ancestor fallback at 852-877 and `stored_review_descending_from` at `reckon/crew/review_records.py:1471`.",
+    "done_when": "a finding \u2014 s25's case 4 relies on `unmarked_findings`, which returns an empty list for any record stamped before `UNMARKED_SEVERITY_AUDIT_STARTED_AT` (`reckon/crew/repair.py:182-196`), and the plan never states the stamp the fixture must carry.",
+    "evidence_paths": "a finding \u2014 s25 carries the durable-log sentence (under the run directory, revision and command first, `EXIT=` last) and s26, written later, does not.",
+    "naming": "pass \u2014 \"unclassified\" and \"declared severity\" name mechanisms, and no plan label, ticket number or version tag reaches a symbol, file name or comment.",
+    "reasoning": "a finding \u2014 s26's deliverable adds a probe for a delivered, unpromoted review at the current head, but the store already searches the staging store for a record at the named head before reporting the absence (`reckon/crew/review_records.py:566-570`) and the incident's own run carries head-keyed records at `76a7b7bfae` and at `a1305995c4`, so the plan does not establish what the by-head selection misses and the new check may never fire.",
+    "single_goal": "a finding \u2014 s25's third bullet is a merged-head rule, which is neither a finding's severity nor a finding's disposition, so the section's stated goal does not cover one of its three deliverables.",
+    "wiring": "pass \u2014 s25 declares `depends-on` #s2, which is exactly the reflex-repair-ordering section, and s26's write paths (`reckon/crew_run_commands.py`, `reckon/crew/review_records.py`) are named by no other section, so it needs no ordering edge."
+  },
+  "section_digests": {
+    "_document": "523f9c963881f7a38befe9a436730bae858123ed4ca759ac73f40890e33e8fc0",
+    "s1": "843bb65a273798e31ae7d542e71c3172be8db96af98b3b5fa5582c0e4b7052b8",
+    "s10": "383abdaed093dc9135b7930e907d6aeaaeff313c10da917e0f90ef21242cc000",
+    "s11": "528ecce7a53f57e54bcf1efa83ff458958c3437b3432895ddecdd835a0e62505",
+    "s12": "cf7304fd49c4d28e5bca798e2fca486ef137e59bce341c819316936d77daf719",
+    "s13": "751a9cd019e8296d87aa5d4f4e45f8a29d84381081120d349dc5bd6b19125ed3",
+    "s14": "37143d66ebad07f999845341b909080392b4fffa341c7553bbece98ce2d93af1",
+    "s15": "327a3b6261f327ba147b39dd2d6fbd1ce595e493e1834f8eb9ef957ea33f55c6",
+    "s16": "738604ff6516e5303088fb5f37ce17d56c02dc7217d2ebd64cdad839f6fd1eb5",
+    "s17": "f7a6d1fb09a597263b98f3f9db11f0a156337a303d2ccf5eb3b0d44899d7956f",
+    "s18": "526aabfb15ccc6205c07b6cf24a8c3fd22579f4776d2bd7a971164251a7d6f95",
+    "s19": "0e85b55be35103b90e318507ff6f86e1f640ef451c18250a9bcb4cb4f2e7c1b0",
+    "s2": "0fe853c67da217879c5c8672e5902b9a76353e03c761fc4b411b7d92af3feb8f",
+    "s20": "949f4ed4b742b4afba912a3943856d1af84c9226addd2df16be2024644c5f1ea",
+    "s21": "7e1c07b0431d4b47d90d44bc5d92db9ab1bb89fe6de6fb2f0fb79f61c04261ef",
+    "s22": "5cb33a844f041e4d88c2d1f7620411b91bbffd0c6605f939520cfa7178756424",
+    "s23": "b1aa58f1dbd4f559cc20a27b9f735c21e1c558ba2ab75ee90c390f1a649c6a44",
+    "s24": "dcacf6665c2b437d62dfd9ebfb5bd1f979f111d5438fc6145701595e4d7468bb",
+    "s25": "bf80514defa008503b974d750d8c8f202b4bfc4e3a4ffc91a7a64ad3f2e8d413",
+    "s26": "a4c355ce31679836c01227ab38100c42aed27fbe16a536e10e446df4aeff03c1",
+    "s3": "ba6dd9a478bc0199ba62cffc2235c6b7735014d677ac51e4789220cffff43d32",
+    "s4": "725c875cfeb877f71fdc01870943889b9c403c08aa0ee675bdbb100c60d896ee",
+    "s5": "7c304261c964b9ccae1e7148a9bffe48cc81416987e9ed2e9d50d6c5a77df7b7",
+    "s6": "f293425c956b5e910273b5c23cfe8ee7a3a4c1d5565a0c10742e9f7beee7c269",
+    "s7": "9450a2aff439a83861b8a100a49b15e67fd864fa1523edeeafd6c9dd9e0ec5c7",
+    "s8": "1e02f8193f9402b4cf070a0f78feb68f2e3d79a9bb21f00d7c10f33032ed6f37",
+    "s9": "c5acdc2406e91d62930f4e8772839567aca54b6df3e16cbe65878db520b53043"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T12:39:19.379768+00:00"
+}

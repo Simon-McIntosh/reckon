@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="power_convertor">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="tf-co-wound-tape-validation">
+  <meta name="plan-title" content="TF Co-Wound Tape Validated Against the Cold-Test Measurements">
+  <meta name="plan-summary" content="Build a sectioned TF winding and the co-wound tape&#x27;s TF instance, and check the tape model against TF07 and TF17&#x27;s measured converter-to-tape transfers">
+  <meta name="plan-status" content="in-progress">
+  <meta name="plan-roi" content="mid">
+  <meta name="plan-effort-hours" content="8.75">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S3">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="iter,coil,protection,lumped-model">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;tf-co-wound-tape-validation#s2&quot;, &quot;tf-cold-test-validation#s10&quot;, &quot;quench-detection-converter-pickup#s4&quot;], &quot;s4&quot;: [&quot;tf-co-wound-tape-validation#s3&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;}">
+  <title>TF Co-Wound Tape Validated Against the Cold-Test Measurements | power_convertor</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="25">
+<meta name="plan-modified" content="2026-10-22">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — The tape model has never met a measurement</h2>
+    <section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p><a href="/power_convertor/plans/quench-detection-converter-pickup">quench-detection-converter-pickup</a> §4 built the co-wound tape as a winding element. <code>coil_windings.co_wound_tape</code> carries a second conductor that follows a sectioned winding turn by turn, coupled to it almost perfectly in inductance and capacitively through the turn insulation. That section formed the CS comparisons QI1&nbsp;−&nbsp;QI3 and QI2&nbsp;−&nbsp;QI4 that R3M9BQ v3.0 defines and drove them with CS1's switched ripple. At the converged solve, the pickup through either front end stays well under the 50&nbsp;mV noise target.</p>
+    <p>That result rests on a model no measurement has checked. The tape's strip width, its insulation thicknesses and its place in the turn are not in IDM, so §4 stated them as assumptions and ran both ends. The comparison transfer also moved by about a factor of fifteen between a one-section-per-pancake solve and the converged one. A model that sensitive to resolution and to unsourced geometry needs a measurement before its result is relied on.</p>
+    <p>The only measured converter-to-tape transfers held anywhere are the TF cold tests. <a href="/power_convertor/plans/tf-cold-test-validation">tf-cold-test-validation</a> §10 measured, on TF07 and TF17 at the magnet cold test bench:</p>
+    <ul>
+      <li>the per-double-pancake transfer from the converter to the co-wound tape, raw and compensated, per converter line;</li>
+      <li>the rejection, compensated over raw, central against edge pancakes;</li>
+      <li>the common-mode split;</li>
+      <li>a near-1&nbsp;Hz ramp rejection.</li>
+    </ul>
+    <p>That plan measures and builds no tape element, and it names the element's single owner as quench-detection-converter-pickup §4. The comparison needs a sectioned TF winding, and none exists in <code>coil_windings</code>, which covers the PF and CS coils. Building it is a modelling job of its own, because the TF winding sits in the grooves of radial plates and its capacitive paths differ from a PF or CS pancake's. The lead decided on 21 October 2026 to build it here, in a plan of its own, rather than inside quench §4.</p>
+
+    <h2 id="s2">§2 — A sectioned TF winding</h2>
+    <section data-reckon="section" data-id="s2" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
+    <p>Add the TF coil to <code>coil_windings</code> as a sectioned winding the existing node solve can take, beside the PF and CS layouts. Take each value from IDM, through the coordinator, who looks it up and passes it in the brief:</p>
+    <ul>
+      <li>the turn count;</li>
+      <li>the double-pancake structure;</li>
+      <li>the radial-plate geometry;</li>
+      <li>the insulation between conductor and plate, between plates, and from the plates to the case.</li>
+    </ul>
+    <p>Where IDM is silent, state the assumption and run both ends of its range. The capacitive paths are conductor to radial plate across the turn insulation, plate to plate, and plate to case across the ground insulation. No TF conductor geometry exists in the repository. Every machine-description reader opens <code>pf_active</code> only (<code>frequency_response_prediction.machine_geometries</code>, <code>scripts/iter/coil_windings.py</code>, <code>converter_filter_study</code>), and <code>coil_self_inductance</code> indexes PF coils. Two sources carry the TF coil's self-inductance: the project's register <code>src/power_convertor/registers/iter_supplies.json</code> (<code>supplies.TF.coil_self_inductance_h</code>, 0.349 H from the SRD, with a string inductance of 17.7 H), and 3PAJ8K v1.3's static FEA value, 0.34641 H. They differ by 0.7 %. State which the winding uses, set the other beside it, and partition the coil inductance between the double pancakes as a stated assumption, at both coupling ends.</p><p>Form the plate-to-plate and plate-to-case capacitances through <code>coil_windings.capacitance_budget</code> and <code>_plate</code>, extending them with a TF stack rather than writing a parallel estimator. The section adds a TF layout record, a TF insulation stack, a <code>SECTIONED_KINDS</code> member and a <code>SECTION_SPLIT</code> entry. It retires nothing, because no TF winding exists to replace, and its record says so.</p>
+    <p>Derive the converged section count by the rule the PF coils use: the three lowest winding modes within 3&nbsp;% of the turn-resolved build.</p>
+    <p>Done when the TF winding builds at turn resolution and at its converged count, and the record states:</p>
+    <ul>
+      <li>the converged count;</li>
+      <li>the three lowest modes at both resolutions;</li>
+      <li>the low-frequency terminal-to-ground capacitance, beside any measured value tf-cold-test-validation holds.</li>
+    </ul>
+    <p>Negative control: removing the plate-to-case capacitance drops the terminal-to-ground capacitance to the conductor-to-plate path alone, which the record states.</p>
+
+    <h2 id="s3">§3 — The TF tape against TF07 and TF17</h2>
+    <section data-reckon="section" data-id="s3" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
+    <p>Build the co-wound tape's TF instance with <code>coil_windings.co_wound_tape</code> on §2's winding at its converged count. The element carries its grouped sums at any solve resolution (merged <code>a4d97247</code>). quench-detection-converter-pickup §4 replaced the tape's static capacitive divider with a distributed RC line along the strip (<code>TapeStrip</code>, <code>strip_line_response</code>) before it closed. <code>co_wound_tape</code> reaches <code>pancake_section_bounds</code>, which accepts only <code>PANCAKE_SECTION_KINDS</code> (“hexapancake”, “pancake”), so extend it to the TF layout's section kind rather than relabelling the TF winding. TF07 and TF17's near-1 Hz rejection is exactly the measurement that tells those two models apart.</p><p>The TF tape's stack is stated, not looked up, wherever the TF drawings are silent. Each assumption takes a low and a high end, both run:</p><ul><li>the gap and permittivity between the tape and the conductor;</li><li>the gap and permittivity between the tape and the radial plate's groove wall, which the TF tape faces where the CS tape faces the next turn;</li><li>the inductive coupling to the turn;</li><li>the strip's series resistance per pancake.</li></ul><p>Widen <code>TapeInsulation</code>'s defaults to carry a per-coil stack, CS and TF, rather than adding a parallel <code>TF_TAPE_*</code> constant family. The CS ranges, <code>CS_TAPE_*</code> in <code>coil_windings</code>, are the starting priors. The CS module site acceptance test, 3JUPSH v3.1 (PDF 20–22), reads 4–5 kΩ from each co-wound-tape tap to the conductor. That is a CS value, not a TF one, so it bounds the TF strip only by analogy. A TF reading, if tf-cold-test-validation holds one, takes its place. Each of these is an assumption the comparison below can constrain.</p><p> Form the per-double-pancake tape signals as the cold test wired them, and drive them with the measured converter line voltages. Read those lines, keyed by frequency on one time reference, through their existing owner: the store root <code>cold_test_data.DEFAULT_ROOT</code> and the loader <code>scripts/mctb/current_controllers.load_transfers</code>, not by path. Build the TF instance through <code>quench_detection.cs_tape_pickup</code>, generalised beyond its CS-only gate, rather than a fork. Compare with the measured quantities as <code>scripts/mctb/quench_detection.py</code> computes them: <code>transfer_statistics</code>, <code>rejection_rows</code>, <code>ramp_rejection</code> and <code>common_mode_split</code>. Compare against <a href="/power_convertor/research/tf-cold-test-quench-detection#transfer">the measured per-DP transfer</a> and <a href="/power_convertor/research/tf-cold-test-quench-detection#rejection">the measured rejection</a>.</p>
+    <p>The near-1&nbsp;Hz ramp rejection is a lower bound set by the archive step: 279 on TF07 and 177 on TF17. A model rejection above it is consistent with the measurement, not refuted by it.</p>
+    <p>Where the model misses a measurement, report by how much, at which double pancake and which line. Name the stated tape assumption the measurement constrains, and the range of that assumption the measurement admits. Do not tune the tape to the measurement: a constrained range is the finding, and carrying it to the CS result is §4's.</p>
+    <p>Done when the record tabulates, for TF07 and TF17, each double pancake's modelled and measured transfer and rejection at every measured line. It also gives the deviation and names the constrained assumption with its admitted range. A figure draws the comparison, rendered and inspected.</p>
+    <p>Negative control: a tape with no capacitance to the winding, coupled only inductively at unit coupling, gives a rejection no measurement shows, and the record states that comparison.</p>
+
+    <h2 id="s4">§4 — Carry the verdict to the CS result</h2>
+    <section data-reckon="section" data-id="s4" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>State what §3's verdict means for the CS tape pickup. quench-detection-converter-pickup closed on 21 October 2026 with the CS result awaiting this validation, so the verdict goes into the CS tape record, <code>docs/research/iter-cs-quench-tape-pickup.html</code>, as a dated note. Where the claims register carries the CS result, it also goes there. Three outcomes are possible:</p>
+    <ul>
+      <li>the measurement admits the CS assumptions' range, and the CS result stands as validated;</li>
+      <li>it narrows the range, and the CS pickup is restated on the narrowed range;</li>
+      <li>it excludes the range, and the CS result is reopened.</li>
+    </ul>
+    <p>Done when the CS tape record carries the dated verdict, naming the outcome and the numbers that decide it. Where the claims register carries the CS result, its row is updated to match.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-tfct-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-21" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the sectioned TF winding first</h4>
+    <div class="r-fu-body"><p>§2 needs IDM's TF turn count, double-pancake structure, radial-plate geometry and insulation. The coordinator looks these up and passes them in the brief. §3 follows on §2 and on tf-cold-test-validation §10, which has landed.</p></div>
+    <pre class="r-fu-prompt">/reckon-build tf-co-wound-tape-validation §2</pre>
+    </article>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261021T215411427904-review-of-tf-sectioned-winding-644c2e8e2a85" data-who="reckon-build" data-when="2026-10-21T22:11:44.354Z">
+    <div class="r-comment-body"><p>an independent review of run r-20261021T192634665249-tf-sectioned-winding</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261021T230542171847-review-of-tf-sectioned-winding-644648858c9f" data-who="reckon-build" data-when="2026-10-21T23:30:54.030Z">
+    <div class="r-comment-body"><p>the review of run r-20261021T192634665249-tf-sectioned-winding at head 644648858c9f is stored as a parsed record scoring all six dimensions, with one follow-on finding against the build_winding docstring</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261021T192634665249-tf-sectioned-winding" data-who="reckon-build" data-when="2026-10-21T23:03:40Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/tf-co-wound-tape-validation/tf-sectioned-winding.html</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-21T23:35:00Z">
+    <div class="r-comment-body"><p>§2 closed (merged <code>caeebf3e</code>). The ITER TF coil builds as a sectioned winding of seven radial plates and 134 turns, with 3PAJ8K's 0.34641 H and a plate capacitance network. It converges at 28 sections, within 2.43 % of the turn-resolved modes. Its terminal-to-ground capacitance is 0.61 µF nominal, with no measured TF value to compare. <a href="/power_convertor/evidence/archive/tf-co-wound-tape-validation-landed.html#tf-sectioned-winding">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-s3-cold-test-synthesis" data-who="reckon-build" data-when="2026-10-21T23:45:00Z">
+    <div class="r-comment-body"><p>Inputs from tf-cold-test-validation's synthesis (<code>docs/research/tf-cold-test-synthesis.html</code>, landed <code>a57aa493</code>), for §3 and §4:</p><ul><li><strong>Pair comparisons.</strong> The cold-test thresholds apply to the pair comparisons DP17, DP26, DP35 and DP42. The worst raw pair is −176 mV against the 30 mV threshold, at TF07 DP42 on the 5 kA flat top. Four of five raw taps are at or past 30 mV, while the tape-compensated pairs hold their margins. That is a validation control for the tape's compensation.</li><li><strong>Rejection.</strong> The tape rejection medians, 279 on TF07 and 177 on TF17, are lower bounds where the compensated residual sits at the archive step. The compensated FDU-opening spike peaks at 48.6 mV on TF07.</li><li><strong>Coupling constants.</strong> The passive-mode posterior gives k<sup>2</sup> = 0.792 [0.765, 0.817] and τ<sub>2</sub> = 0.506 s [0.484, 0.528]. That contains the 0.80 and 0.49 s that <code>winding_losses</code> carries and that quench-detection-converter-pickup §6 flagged as a material analogy. The coupling secondary therefore stands on a measured TF posterior.</li></ul></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261022T004155707042-review-of-tf-tape-against-cold-test-e55a5baefba5" data-who="reckon-build" data-when="2026-10-22T00:51:36.132Z">
+    <div class="r-comment-body"><p>review of r-20261021T233641594936-tf-tape-against-cold-test at e55a5baefba57b3154a81f0aa187047012c42613: scores goal_fidelity 18, evidence 16, scope_discipline 20, durability 14, fit 17, reuse 18, four follow-on findings, no blocking finding; record at review-records/r-20261021T233641594936-tf-tape-against-cold-test.json</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261022T004218123354-review-of-tf-tape-against-cold-test-e55a5baefba5-figure" data-who="reckon-build" data-when="2026-10-22T00:58:32.623Z">
+    <div class="r-comment-body"><p>none — this is a review node; its deliverable is the figure record itself, which promotion reads from the reviewed run's review-records directory, so no plan section was commented on and no plan file was edited.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261022T014818344539-review-of-tf-tape-against-cold-test-a7a56279b9a9" data-who="reckon-build" data-when="2026-10-22T02:16:58.003Z">
+    <div class="r-comment-body"><p>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T233641594936-tf-tape-against-cold-test/review-records/r-20261021T233641594936-tf-tape-against-cold-test.at-a7a56279b9a9dcb3ceb52ef1d3c4622fb072351f.json</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261022T022102104490-review-of-tf-tape-against-cold-test-b1513e4bae08" data-who="reckon-build" data-when="2026-10-22T02:35:46.435Z">
+    <div class="r-comment-body"><p>review record stored at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T233641594936-tf-tape-against-cold-test/review-records/r-20261021T233641594936-tf-tape-against-cold-test.json and mirrored at the head-stamped name .at-b1513e4bae0835c7ad63f83219bf30520ddc703e.json; status parsed, six dimensions scored, five follow-on findings, none blocking</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261022T022203605387-review-of-tf-tape-against-cold-test-b1513e4bae08-figure" data-who="reckon-build" data-when="2026-10-22T02:43:58.350Z">
+    <div class="r-comment-body"><p>none — this is a review node; its deliverable is the figure record itself, which promotion reads from the reviewed run's review-records directory, so no plan section was commented on and no plan file was edited.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261021T233641594936-tf-tape-against-cold-test" data-who="reckon-build" data-when="2026-10-22T02:19:08Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/tf-co-wound-tape-validation/tf-tape-against-cold-test.html</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-22T02:50:00Z">
+    <div class="r-comment-body"><p>§3 closed (landed on main at <code>371cc8e5</code>, reviewed head <code>b1513e4b</code>).</p><ul><li>The cold tests admit the strip cut at each pancake boundary and exclude a continuous bonded strip.</li><li>They admit the stated strip's capacitive term at the low lines.</li><li>They show a residue the model does not carry, 0.04–3.66 % of each plate's own voltage.</li></ul><p>The run took two coordinator rounds. The first divided each channel's own fitted front end out of its coefficient and carried the tape's coupling residue. The second read the low lines by their frequency dependence and withdrew a strip-product claim that a flat level cannot support. The reviews' non-blocking follow-ons go to §4: the front-end table's reproducibility, tests that cannot fail, caption and alt-text figures, and the clipped y limits. <a href="/power_convertor/evidence/archive/tf-co-wound-tape-validation-landed.html#tf-tape-against-cold-test">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261022T053800115438-review-of-tf-verdict-to-cs-tape-2c054d242ca8" data-who="reckon-build" data-when="2026-10-22T05:53:18.871Z">
+    <div class="r-comment-body"><p>none — this is a review node; its deliverable is the review record itself, which promotion reads from the reviewed run's review-records directory, so no plan section was commented on and no plan file was edited.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261022T053825173704-review-of-tf-verdict-to-cs-tape-2c054d242ca8-figure" data-who="reckon-build" data-when="2026-10-22T05:53:34.728Z">
+    <div class="r-comment-body"><p>read-only figure review of run r-20261022T025444895093-tf-verdict-to-cs-tape at head 2c054d24. Two figures were attached and both were rendered, looked at and measured: docs/figures/iter-cs-quench-tape-pickup/cs_tape_pickup_front_ends.svg (image-0.png) and docs/figures/iter-tf-co-wound-tape-validation/model-against-measured.svg (image-1.png), the two SVGs the run's own changed_paths carry. All six rubric items pass on both figures. One non-blocking follow-on is recorded: in the CS figure the upper panel's three MCTB corner series lie within a few thousandths of a decade of each other, so at the delivered 1400 px scale the near-black and mid-grey strokes merge into one band and the caption's claim that a reader can tell them apart holds only on magnification; the headline chain and the no-analogue bound stay readable, so the node is not held. The TF figure's earlier clip is fixed: the left panel's limits now carry the whole population (drawn extremes 5.4e-6 and 2.42 against limits 2.0e-6 and 5.0), and I verified no text is clipped and no label overlaps in either render from pixel bounding.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261022T025444895093-tf-verdict-to-cs-tape" data-who="reckon-build" data-when="2026-10-22T05:37:01Z">
+    <div class="r-comment-body"><p>the CS record now reads the TF cold-test verdict through the residue's steady term as well as its ripple. The strip's own transfer vanishes at steady conditions but the residue's does not, so the 2414 V insertion step leaves a steady term of 34.42 V at the envelope's bound and 12.82 V statistically (35.89 V and 13.36 V through the worst specification front end, whose DC gains are measured at 1.0400 to 1.0427), held 3 s by the repository's own records against the specification's 1.5 s dwell, which trips the 50, 300 and 500 mV figures together. The balance table now reports the whole carried comparison at the ramp's division under each balance, 0 V per volt under a balance calibrated on the ramp with the residue carried and 0.014256 V per volt under the balance the record uses, so the earlier pair of statements is replaced by the construction and by the control that separates it from a calibration taken without the residue. The verdict is restated with one outcome per balance reading: the ripple reading stands under both (the residue's own share at the worst line moves 0.06172 to 0.06177 V per volt, 0.08%), the insertion reading is reopened under the design balance and not under the ramp-calibrated one, and the question goes to the lead plainly: is the CS QI balance calibrated on the installed coil? IDM is silent (R3M9BQ v3.0, LYAH8Q v1.1).</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-verdict-landed" data-who="reckon-build" data-when="2026-10-22T06:02:00Z">
+    <div class="r-comment-body"><p>The verdict node is landed (<code>783ee025</code>). The ripple reading is narrowed and stands under both balances. The insertion reading is reopened under the design balance and clear under a ramp-calibrated one. The coordinator resumed the node once: the residue's steady term on the insertion step was missing, and the ramp-calibrated balance had been computed without the residue. §4 stays open until <code>cs-verdict-guards</code> lands the direct test of <code>residue_steady</code>, which the review found unguarded. <a href="/power_convertor/evidence/archive/tf-co-wound-tape-validation-landed.html#tf-verdict-to-cs-tape">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261022T065532135548-review-of-cs-verdict-guards-2c22ac0ef02c" data-who="reckon-build" data-when="2026-10-22T07:05:12.558Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261022T055943688747-cs-verdict-guards at reviewed_base_sha ca16d170 and reviewed_head_sha 2c22ac0e scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 15, fit 18, reuse 20, added_failure_count 0 with no added failure ids, and two follow-on findings on readback-shaped assertions in tests/test_cs_quench_tape.py:1044 and :1119; landing fragment and the record check green.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261022T065612518407-review-of-cs-verdict-guards-2c22ac0ef02c-figure" data-who="reckon-build" data-when="2026-10-22T07:11:29.191Z">
+    <div class="r-comment-body"><p>Figure review of r-20261022T055943688747-cs-verdict-guards at head 2c22ac0e: the attached render of docs/figures/iter-cs-quench-tape-pickup/cs_tape_pickup_front_ends.svg passes all six rubric items (legibility, data_ink, decoration, contrast, table_form, label_collision) at native 1400 px with two follow-on findings - the MCTB corner band is drawn but reads as one stroke on the nominal line while the legend swatch advertises a range the reader cannot see (disclosed in the caption, so not blocking), and the #8c8c8c/#929292 reference greys sit at about 3.4:1 and 3.0:1 on white, above the repository's 3:1 floor but below 4.5:1 for 14 pt regular text; no blocking finding</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261022T055943688747-cs-verdict-guards" data-who="reckon-build" data-when="2026-10-22T06:53:31.234Z">
+    <div class="r-comment-body"><p>The CS tape record's residue arm is now called directly by its tests at one solved arm held for the module, with the steady term recomputed from the arm's carried response, the 2414.45 V insertion step and each front end's measured DC gain; four assertions that could not fail are replaced by independent expectations; the record attributes its per-coil residue medians to its own envelope and states both halves of the design-balance verdict; and the MCTB corner figure draws the nominal corner as the line with the two bracketing corners as a band whose extent is the corner range, its caption stating that they coincide at this scale and giving the largest separation (a factor of 1.24).</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-22T08:45:00Z">
+    <div class="r-comment-body"><p>§4 closed. The verdict node landed at <code>783ee025</code>, and the follow-on <code>cs-verdict-guards</code> at <code>815d942d</code> (reviewed head <code>2c22ac0e</code>, 108 tests passing).</p><p>The guards add tests that call <code>residue_arm</code> and <code>residue_steady</code> directly, with logged mutations. They also replace the CS tests that could not fail, correct the residue attribution and the reading list in the CS record, and draw the MCTB corners as a band. The remaining figure follow-on: the band is narrower than the nominal corner's stroke at page scale.</p><p>The CS record's verdict stands as recorded. Ripple: narrowed and restated, worst admitted 0.099 V. Insertion: reopened under a balance set from the inductive field (steady 34.4 V for 3 s), clear under a balance calibrated on the installed coil. Which of the two holds is the lead's open question. <a href="/power_convertor/evidence/archive/tf-co-wound-tape-validation-landed.html#tf-verdict-to-cs-tape">evidence</a></p></div>
+</div>
+</section>
+</main>
+</body>
+</html>

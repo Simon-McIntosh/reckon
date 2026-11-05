@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="power_convertor">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="iter-pf-winding-line-resonance">
+  <meta name="plan-title" content="PF Winding Resonances on the Converter Lines">
+  <meta name="plan-summary" content="Bound how far PF2&#x27;s 595 Hz and PF5&#x27;s 276 Hz winding modes amplify the 600 Hz and 300 Hz converter lines inside the winding, and name the test that settles it">
+  <meta name="plan-status" content="done">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="10.5">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-sprint" content="S3">
+  <meta name="plan-tags" content="iter,power-supply,coil,insulation">
+  <meta name="plan-standalone" content="A bounded study of two mode-to-line coincidences found by the turn-resolved winding prediction; it reuses the delivered winding, damping and switched-unit code, and iter-switched-terminal-transients §7 reads its result when it lands rather than waiting on it">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;}">
+  <title>PF Winding Resonances on the Converter Lines | power_convertor</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="24">
+<meta name="plan-modified" content="2026-10-19">
+</head>
+<body>
+  <main class="plan-doc">
+    <p>The turn-resolved prediction of the six stored PF coils puts PF2's first open winding mode at 595 Hz
+    (<a href="/power_convertor/research/iter-pf-frequency-response-prediction">pre-test frequency response</a>).
+    That is 0.8 % below 600 Hz, the twelve-pulse line its three thyristor units make above 22 kA. Its VS1
+    carrier at 500 Hz sits 19 % below the mode. PF5's first open mode, 276 Hz, is 8 % below 300 Hz. Each
+    unit makes that six-pulse line from 5.5 to 22 kA, where it fires one bridge. No other PF coil has a mode
+    within 15 % of a line it carries.</p>
+    <p>A converter line that lands on a winding mode is amplified inside the winding. The terminals do not
+    show it, so the voltage stress studies done so far, which judge terminals and the first turns, would not
+    either. The amplification is set by the mode's damping, and that is the unknown. The ladder that found
+    the modes is loss-free. Its poles have no width, so it cannot say whether the gain at 600 Hz is 1.2 or
+    20. The frequency is uncertain too. On PF6, the one coil with a measured sweep, the model's first tied
+    mode is at least 15 % below the measured one. If PF2's open mode is low by the same amount, it sits
+    near 690 Hz, well clear of 600 Hz. If it is not, it sits on the line.</p>
+    <p>The PF6 damping study already bounds an installed first-mode quality factor of 0.60–0.89, with the TF
+    case's share limited by passivity (<a href="/power_convertor/research/iter-pf-winding-damping">PF winding damping</a>).
+    If PF2 and PF5 damp alike, the coincidence is harmless. This plan finds out, and says which measurement
+    would settle it if the bounds cannot.</p>
+
+    <h2 id="s1">§1 — The modes' frequency band and damping, stored and installed</h2>
+    <section data-reckon="section" data-id="s1" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>Run the damping method of <code>scripts/iter/winding_damping.py</code> on PF2 and PF5 through their
+    owners: <code>turn_resolved_coil</code> and <code>pf_turn_layout</code> in
+    <code>src/power_convertor/coil_windings.py</code>, and <code>coil_coupling.capacitance_nodal</code>. Bound
+    the quality factor of the first three modes at 293 K stored and at 4 K installed, with the TF-case
+    share capped at the passivity ceiling as for PF6. The script's driver serves PF1 and PF6 only today:
+    <code>main()</code> raises unless its source coil is PF6 and loops over PF6 and PF1. This section makes
+    the coil an argument of that driver, so that PF2 and PF5 run through the same functions, and the PF1
+    and PF6 outputs stay unchanged. That coil parameter, and one <code>--coil</code> flag beside the existing
+    <code>--check-zero-loss</code> and <code>--stress-figure-only</code>, are the whole added surface; nothing
+    is retired, because the driver keeps serving PF1 and PF6 by default. Give each mode a frequency band.
+    The low end is the model value. The high end is the model value raised by the PF6 tied-mode
+    discrepancy, a factor of at least 1.17, unless a PF2- or PF5-specific measurement says otherwise. That
+    factor is the measured first tied mode's lower bound, 2 kHz from YVUELA's sweep as the
+    <a href="/power_convertor/research/iter-pf-frequency-response-prediction">pre-test frequency response</a>
+    record states it, over the model's first tied mode, 1,708 Hz, which <code>coil_record</code> in
+    <code>scripts/iter/frequency_response_prediction.py</code> returns as PF6's first
+    <code>shorted_resonances_hz</code>. Compute it from <code>coil_record</code> and that stated bound, as one
+    named constant, and state both inputs in the record. The extended driver writes
+    the band and Q table; there is no second entry point. The record is
+    <code>docs/research/iter-pf-winding-line-resonance.html</code>. Figures go in
+    <code>docs/figures/iter-pf-winding-line-resonance/</code>.</p>
+    <p>Done when PF2's and PF5's first three modes each have a frequency band and a Q interval for both
+    states, and the record states whether 600 Hz (PF2) and 300 Hz (PF5) lie inside the band. Positive
+    control: PF6 run through the same call reproduces the PF6 damping study's Q intervals to their stated
+    digits. Negative control: with every loss removed, the reported Q interval grows without bound,
+    showing that the bound comes from the losses and not from the method.</p>
+
+    <h2 id="s2">§2 — The converter lines driven through the winding</h2>
+    <section data-reckon="section" data-id="s2" data-effort-hours="5.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
+    <p>Drive the damped, turn-resolved PF2 winding with its three switched thyristor units and its VS1 IGBT
+    units. The drive already exists: <code>simulate_window</code> in
+    <code>scripts/iter/pf_switched_pulse.py</code> builds the turn-resolved winding through
+    <code>ConverterNetwork</code>, spreads the plasma's and the other coils' flux through
+    <code>add_prescribed_winding_sources</code>, picks windows with <code>choose_instants</code>, whose
+    near-90° rule is the window this section needs, and measures lines with <code>line_peak</code>. It takes
+    the coil as an argument and runs undamped. This section adds the damping and the band corner as
+    arguments of <code>simulate_window</code> and its CLI, with no second driver. Use the scenario windows
+    where PF2's 600 Hz line is largest, from the
+    <a href="/power_convertor/research/iter-scenario-supply-loading">scenario loading</a> intervals over
+    the <a href="/power_convertor/research/iter-sro-scenario-selection">SRO cases</a>, and drive PF5 the
+    same way in its one-bridge band. Run each window at both ends of §1's frequency band and Q interval.
+    Take the internal peaks from <code>scripts/iter/exterior_turn_voltages.py</code>
+    (<code>peak_to_ground</code>, <code>neighbour_peak</code>, <code>turn_to_turn_peak</code>), and the
+    insulation reference from <code>TURN_TO_TURN_CRITERION_V</code> in
+    <code>src/power_convertor/coil_windings.py</code>, whose comment records that no PF winding has a
+    specified impulse test.</p>
+    <p>Report, per coil and arm:</p>
+    <ul>
+      <li>the internal voltage amplitude at the line frequency (600 Hz for PF2, 300 Hz for PF5) to ground,
+      between adjacent turns and between adjacent pancakes. The largest time-domain peaks are reported
+      beside it as edge content. With ideal switches their edges are instantaneous and the peaks do not
+      converge with the step; they converge only with a finite edge rate, which is
+      <a href="/power_convertor/plans/iter-switched-terminal-transients">iter-switched-terminal-transients</a>
+      §7's question;</li>
+      <li>the amplification at the line, as the ratio of the internal peak to the peak the same terminal
+      drive gives on a winding with its first mode moved 30 % away;</li>
+      <li>the margin of each peak against the coil's insulation test level, cited from the
+      <a href="/power_convertor/research/iter-coil-supply-idm-register">IDM register</a> or marked
+      undocumented.</li>
+    </ul>
+    <p>Done when that table is complete at all four band corners for both coils. Positive control: a single
+    lumped RLC with §1's mode and Q, driven by the same line amplitude, reproduces the analytic resonant
+    gain within 2 %. Negative control: on the detuned winding, the ratio of the internal peak to the
+    terminal peak at the line is within 10 % of the same ratio for a drive at one tenth of the line
+    frequency, showing that moving the mode removes the resonant gain, or the record explains why it is
+    not. The solver step is halved once, and no reported line amplitude may move by more than
+    2 %. With damping and band arguments at their defaults, <code>simulate_window</code> reproduces its
+    current undamped PF1/PF6 outputs.</p>
+    <h3>Re-measured on the converged, lossy winding</h3>
+    <p>The verdict above was set on the turn-resolved winding with a modal Q. The winding has since become
+    the converged library winding with cited cold installed losses (<code>WindingLosses</code>) and
+    effective-turn linkage, so the reopened measurement runs on that winding, not on the turn-resolved one,
+    and carries the losses at both installed-loss bounds instead of the modal-Q corners. Done when, for PF2
+    at 600 Hz and PF5 at 300 Hz, the loaded-to-detuned internal line ratio is reported at both bounds,
+    to ground and between adjacent sections, from paired switched replays whose terminal-line ratio stays
+    within 1 % of unity. Where the terminal ratio leaves that band, the internal ratio is normalised by it,
+    and the record says so. Negative control: replaying with the losses removed raises the internal ratio
+    above the lossy value at the upper bound, so the losses are shown to act. The earlier modal-Q replay
+    path is not accepted as evidence for this measurement.</p>
+
+    <h2 id="s3">§3 — The measurement that settles it</h2>
+    <section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>Where §2's verdict depends on where the band falls, name the test that removes the dependence. Give
+    the coil, its state, the sweep range and resolution, and the quantity that decides it: the first open
+    mode's frequency within ±3 % and its Q within a factor of two. Write it as an addition to the
+    <a href="/power_convertor/research/iter-pf-coil-frequency-response-request">frequency-response request</a>,
+    which today covers the stored PF1 and PF3 coils. The lead decides whether it is sent.</p>
+    <p>Done when the record states, for each coil, whether the coincidence is a finding against the IDM
+    insulation levels, a bounded non-issue, or open pending the named measurement, with the deciding number
+    beside it. Where a coil is open, the request addition names its sweep range, resolution and deciding
+    quantity. Negative control: a coil whose band §2 found clear of its line at every corner is classed as
+    a bounded non-issue and gets no request entry.</p>
+
+    <h2 id="s4">§4 — The PF2 transformer-phase lever</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
+<p>Measure the one converter-side lever. PF2's three series units can be fired with their transformers at different phases. The PF1/PF6 interunit study showed that equal angles on two units drop the 600 Hz line by 22.9 dB, while sequential control moves it with the two angles (<a href="/power_convertor/research/iter-pf-twenty-four-pulse">PF1 and PF6 interunit phase comparison</a>). Report what the documented PF2 transformer phases and sequential law do to PF2's 600 Hz line over §2's windows. Extend the phase study that already lives in <code>scripts/iter/pf_switched_pulse.py</code> (<code>UNIT_PHASES_DEG</code>, <code>PHASE_STUDY_OUTPUT</code>, the <code>--arm</code> flag whose choices come from <code>UNIT_PHASES_DEG</code> and reach the solver as <code>simulate_window(unit_phases_deg=...)</code>) with PF2's three units, rather than writing a second study. Do not propose a new phase arrangement. IDM decides that. This section needs §2's windows and runs beside §3.</p>
+<p>Done when the record states PF2's 600 Hz line, in volts and in decibels against the in-phase arrangement, for each of §2's windows under the documented phases and sequential law. Positive control: the same code, applied to the PF1/PF6 loaded pair with both units at 105°, reproduces the interunit study's 22.9 dB drop of the 600 Hz line within 1 dB. Negative control: with the interunit displacement set to zero, the same code restores the 600 Hz line to the in-phase 361.11 V within 1 dB.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-ipwlr-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-17" data-recommends-skill="/reckon-build iter-pf-winding-line-resonance §1" data-resolved-at="2026-10-18T09:11:01+00:00" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Bound PF2&#x27;s and PF5&#x27;s damping first</h4>
+    <div class="r-fu-body"><p>§1 is cheap and may end the plan. If both installed first modes are damped like PF6's, with a Q below about 1, §2 reduces to a confirmation at one corner. §2 needs §1's band, and §3 needs §2's verdict. The figure directory <code>docs/figures/iter-pf-winding-line-resonance/</code> is claimed by this plan alone.</p></div>
+    <pre class="r-fu-prompt">/reckon-build iter-pf-winding-line-resonance §1</pre>
+    <p class="r-fu-outcome">§1–§3 landed and §4 is deferred; the verdict's re-check moves to shared-coil-supply-model §3. No followup.</p>
+    </article>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s1" data-id="c-run-r-20261017T121444371532-review-of-pf2-pf5-damping-band-00e6c7884648" data-who="reckon-build" data-when="2026-10-17T12:22:34.843Z">
+    <div class="r-comment-body"><p>review scored 99, 4 finding(s)</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-close-s1" data-who="reckon-build" data-when="2026-10-17T12:25:00Z">
+    <div class="r-comment-body"><p>§1 landed (merged at <code>c2f7d1cd</code>): PF2's 600 Hz line lies inside its first-mode band (594.8–696.5 Hz) and PF5's 300 Hz inside its band (276.4–323.6 Hz). Installed Q is 0.64–1.14 for PF2 and 0.59–0.93 for PF5, damped as PF6 is. <a href="/power_convertor/evidence/archive/iter-pf-winding-line-resonance-landed.html#pf2-pf5-damping-band">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20261017T113933708562-pf2-pf5-damping-band" data-who="reckon-build" data-when="2026-10-17T12:13:36.981Z">
+    <div class="r-comment-body"><p>pf2-pf5-damping-band: the winding-damping driver takes the coil as an argument with one --coil flag and bounds PF2's and PF5's first three winding modes with a 1.1709 frequency band factor and stored-293K / installed-4K Q intervals; PF2 first mode 594.8 Hz, band 594.8-696.5, Q 2.44-4.64 stored and 0.64-1.14 installed, PF5 first mode 276.4 Hz, band 276.4-323.6, Q 4.88-13.81 stored and 0.59-0.93 installed, so both converter lines (600 Hz PF2, 300 Hz PF5) fall inside the first-mode band; PF1 and PF6 are unchanged</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261017T140629140361-review-of-pf-lines-through-winding-2501f63a81b9" data-who="reckon-build" data-when="2026-10-17T14:11:51Z">
+    <div class="r-comment-body"><p>Independent parsed review of f2e92115cde9f5f44e262019f2068062dc8773e7..2501f63a81b93b99de10d0bdf52493e75a1195da stored with six scores, three blocking findings and one follow-on finding.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261017T145536227819-review-of-pf-lines-through-winding-1823590fe702" data-who="reckon-build" data-when="2026-10-17T15:02:18Z">
+    <div class="r-comment-body"><p>Parsed review of f2e92115cde9f5f44e262019f2068062dc8773e7..1823590fe702777a74887f595c2c04086d6c6313 stored with six scores, two blocking and two follow-on findings; added failures remain unmeasured because source baseline_suite is empty.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261017T152910561948-review-of-pf-lines-through-winding-6ea05c5588f4" data-who="reckon-build" data-when="2026-10-17T15:35:22Z">
+    <div class="r-comment-body"><p>Independent review of f2e92115cde9f5f44e262019f2068062dc8773e7..6ea05c5588f41c1d10cfc80e8ce300ebe5ad032b scored 105 across six dimensions, with one blocking RLC-control finding; the parsed record is stored in the reviewed run's review-records directory.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261017T155818479015-review-of-pf-lines-through-winding-406271470574" data-who="reckon-build" data-when="2026-10-17T16:04:13Z">
+    <div class="r-comment-body"><p>Parsed independent review of f2e92115cde9f5f44e262019f2068062dc8773e7..406271470574d462b10c8da2f9caa9df7e701f2d stored at both declared review-record paths; six scores total 113, no blocking findings, two follow-on findings, and added failures unmeasured because the source baseline_suite is empty.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261017T122529891836-pf-lines-through-winding" data-who="reckon-build" data-when="2026-10-17T15:58:35Z">
+    <div class="r-comment-body"><p>Full PF2/PF5 eight-corner switched loaded/detuned line table with ground, turn and pancake amplitudes and gains (max 1.00450, 1.00565, 1.00554); provisional sampled turn margins 37.8-47.9×; mode-tuned off-resonance RLC amplitude control at eight corners, installed-Q error &lt;=0.0027%, final focused suite 51 passed. Record anchor #pf-lines-through-winding.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-17T16:05:00Z">
+    <div class="r-comment-body"><p>§2 closed (merged at <code>e19d6bee</code>). Neither PF2's 600 Hz nor PF5's 300 Hz line is materially amplified inside the damped winding. Against a detuned switched winding the internal gain is 1.0017–1.0045 to ground and at most 1.006 between turns and pancakes, at all four installed corners. By §3's own negative control, both coils are bounded non-issues with no measurement request. <a href="/power_convertor/evidence/archive/iter-pf-winding-line-resonance-landed.html#pf-lines-through-winding">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-s2-reopen-lossy" data-who="reckon-build" data-when="2026-10-18T19:55:00Z">
+    <div class="r-comment-body"><p>Reopened on the S3 portfolio review (18 October). The winding has changed since this section's verdict: cited cold installed losses (<code>151e55bc</code>), the converged library winding (<code>c53c0397</code>), and effective-turn linkage. Node <code>section-gates-modes</code> (<code>c30c6117</code>) re-measured PF2 and PF5 at fixed terminal voltage: ground gains 1.0006–1.0011, section gains at most 1.005. That is not the paired switched converter-drive gain this verdict rests on, and the new first-mode Q upper ends exceed the earlier intervals by 0.081 and 0.077. A paired switched replay on the lossy, converged plant either confirms the bounded verdict, which closes this section again, or changes it. §4's transformer-phase lever stays deferred.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261018T213040296975-review-of-line-resonance-lossy-replay-7505f57e374f" data-who="reckon-build" data-when="2026-10-18T21:35:51Z">
+    <div class="r-comment-body"><p>Independent parsed review of 70e68054b6b24bbdb7f85414485bc27468f7ef00..7505f57e374f40cdc0659b0e78429d75636c1245 scored goal_fidelity 18, evidence 18, scope_discipline 18, durability 12, fit 18, reuse 5; three follow-on findings and no blocking findings; added_failure_count 0.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2-lossy" data-who="reckon-build" data-when="2026-10-18T21:37:00Z">
+    <div class="r-comment-body"><p>§2 closed again on the converged, lossy winding (merged <code>9e7ce938</code>). The verdict stands: PF2's 600 Hz and PF5's 300 Hz lines are not materially amplified. The adjacent-section gain is now 1.016 and 1.013 at the low loss bound (previously at most 1.006), and the ground gain is at most 1.003. <a href="/power_convertor/evidence/archive/iter-pf-winding-line-resonance-landed.html#lossy-replay">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261018T204154595060-line-resonance-lossy-replay" data-who="reckon-build" data-when="2026-10-18T21:31:10Z">
+    <div class="r-comment-body"><p>On the converged, lossy winding, paired switched PF2/PF5 terminal ratios are 0.998321–1.001137, while adjacent-section gains reach 1.015717/1.013114 at the low installed-loss bounds and exceed the former 1.006 ceiling; ground gains are at most 1.002888. Lossless replays with the exact high-loss converter controls raise both internal ratios in both coils, and 42 base plus 45 head test cases pass. The evidence is at #line-resonance-lossy-replay.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261017T162958981396-review-of-pf-resonance-verdict-db4c0c3b4f9b" data-who="reckon-build" data-when="2026-10-17T16:36:19.949Z">
+    <div class="r-comment-body"><p>review-of-pf-resonance-verdict-db4c0c3b4f9b: independent review of r-20261017T160629331818-pf-resonance-verdict (base c28cd3cd, head db4c0c3b) stored at review-records/r-20261017T160629331818-pf-resonance-verdict.json and .at-db4c0c3b4f9bd130a599771bc40489931bc5c205.json — scores goal_fidelity 19, evidence 17, scope_discipline 20, durability 8, fit 19, reuse 20 (total 103); one follow-on finding: the done_when's guard (tests/test_claims_register.py) cites only the §1/§2 archive anchors, not the new &lt;section id="verdict"&gt;, so the verdict prose has no automated durability guard; added_failure_count 0 with the claims-register base/head arms both 11 passed EXIT=0 and the docs link audit finding sets identical (481=481)</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261017T160629331818-pf-resonance-verdict" data-who="reckon-build" data-when="2026-10-17T16:29:25.063Z">
+    <div class="r-comment-body"><p>pf-resonance-verdict: docs/research/iter-pf-winding-line-resonance.html gains its closing "Verdict per coil" section — PF2 and PF5 are both bounded non-issues, decided by the internal line gain at the converter line (PF2 at most 1.00450 to ground, 1.00245 turn, 1.00236 pancake, 1187× turn margin; PF5 at most 1.00285 / 1.00565 / 1.00554, 1314×), the reopen conditions are stated (a measured first-mode Q above 1.14 or 0.93, or a mode frequency outside 594.8–696.5 or 276.4–323.6 Hz), no entry is added to the frequency-response request, and the open items stand (PF2's 315 V departure, the unconverged edge peaks, the absent PF impulse, ground and pancake test levels); fragment docs/evidence/fragments/iter-pf-winding-line-resonance/pf-resonance-verdict.html#pf-resonance-verdict</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-17T16:38:00Z">
+    <div class="r-comment-body"><p>§3 closed (merged at <code>a767be9a</code>). PF2 and PF5 are bounded non-issues: gain at most 1.006 at every installed corner, so no frequency-response request is added. §4, the PF2 transformer-phase lever, stays open pending the lead's decision. With no amplification to mitigate, and IDM documenting no PF2 phase arrangement, the coordinator proposes deferring it. <a href="/power_convertor/evidence/archive/iter-pf-winding-line-resonance-landed.html#pf-resonance-verdict">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-defer-s4" data-who="reckon-build" data-when="2026-10-18T09:12:00Z">
+    <div class="r-comment-body"><p>Deferred on 18 October 2026. The lead allowed it if no fix is obvious, and a currency review confirmed the plan's objective is met by §1–§3. PF2 and PF5 are bounded non-issues, at most 1.006 internal gain, so the phase lever has no amplification to mitigate, and IDM documents no PF2 phase arrangement. One avenue remains open, outside this section. The verdict rests on the uniform stand-in winding matrix and on an installed Q interval without physical grounding, and both have changed: the finite-kernel section matrices landed, and physical losses are being built. So the PF2/PF5 line gain is re-confirmed in shared-coil-supply-model §3's gates node, with those. If it rises materially, this section reopens.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-19T15:10:00Z">
+    <div class="r-comment-body"><p>§4 closed without action on the lead's ruling, 19 October 2026. §1–§3 found PF2's 600 Hz and PF5's 300 Hz lines not materially amplified inside the damped windings, at most 1.006 at every installed corner. With no amplification to mitigate, and IDM documenting no PF2 phase arrangement, the transformer-phase lever has nothing to act on. It would reopen only if a measured PF2 winding mode moved onto the 600 Hz line.</p></div>
+</div>
+</section>
+</main>
+</body>
+</html>

@@ -157,6 +157,7 @@ LIVE_CLASSIFICATION_FIELDS = (
     "terminal_at",
     "wait_age_seconds",
     "wait_condition_state",
+    "waiting_seconds",
     "wait_key_defect",
     "wait_observed",
     "wait_overdue",

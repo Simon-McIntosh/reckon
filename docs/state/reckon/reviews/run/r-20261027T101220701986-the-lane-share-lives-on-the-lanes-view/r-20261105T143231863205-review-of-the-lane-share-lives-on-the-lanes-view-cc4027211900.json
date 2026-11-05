@@ -1,0 +1,63 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-05T14:43:07.753Z",
+  "dispatched_at": "2026-11-05T14:35:39Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "The literal assertion at line 89 (== SESSION_WORKER_SLOTS) guards the number independently; the delegating comparison only checks that the view reads through _published_worker_slots.",
+      "recorded_at": "2026-11-05T15:06:40.149344+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "the-board-extends-the-coordinator-directory",
+      "recorded_at": "2026-11-05T15:06:47.605812+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "the-board-extends-the-coordinator-directory",
+      "recorded_at": "2026-11-05T15:06:55.798541+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_the_lane_share_lives_on_the_lanes_view.py",
+      "id": "fdb9727c4bb",
+      "line": "91",
+      "severity": "non-blocking",
+      "text": "The assertion compares share[\"worker_slots\"] against obligations._published_worker_slots(SESSION), the very function the view delegates to, so both sides read the same fixture document and move together: if that function regressed, the assertion would still pass. The independent literal beside it at line 89 (== SESSION_WORKER_SLOTS) is the assertion that actually guards the number; this line guards only that the view still delegates, and should say so or be dropped. Repeated at lines 138-140."
+    },
+    {
+      "file": "reckon/mcp_views.py",
+      "id": "fb47a7a9a41",
+      "line": "760",
+      "severity": "non-blocking",
+      "text": "The block re-implements lane-document file reading (json.loads plus a try/except around read_text) instead of calling lane_document.read_lane_document_file, which the same module already uses at reckon/mcp_views.py:708 for the identical job and owns the unreadable-path handling. Two parses of one file can drift in their failure detail."
+    },
+    {
+      "file": "reckon/mcp_views.py",
+      "id": "f92cd9b9055",
+      "line": "765",
+      "severity": "non-blocking",
+      "text": "The per-session admission-row lookup is copied verbatim from reckon/crew/obligations.py:886-889 (same component for the row, same sessions_present gate, same UNKNOWN fallback). The row lookup is the lane_document/obligations owner's capability and should be asked of it rather than restated here."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261105T143231863205-review-of-the-lane-share-lives-on-the-lanes-view-cc4027211900",
+  "reviewed_base_sha": "ab87725e67ab7377c2efb9b60a263578f3f2f8de",
+  "reviewed_head_sha": "cc4027211900c424f846eb16211794d3026380fc",
+  "reviewed_run_id": "r-20261027T101220701986-the-lane-share-lives-on-the-lanes-view",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 13,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T14:55:32.273927+00:00",
+  "total": 105
+}

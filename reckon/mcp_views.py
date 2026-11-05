@@ -8,10 +8,11 @@ import json
 import re
 import sqlite3
 import threading
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextlib import closing
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -30,10 +31,10 @@ from reckon._timestamps import parse_utc
 from reckon.crew import lane_document as lane_document_module
 from reckon.crew import rollout as rollout_module
 from reckon.crew import staleness as staleness_module
+from reckon.crew.runs import accepts_keyword
 from reckon.doccheck import lifecycle_staleness, modified_age_days
 from reckon.evidence import EXECUTABLE_SECTION_ROLES
 from reckon.lifecycle import (
-    COMPLETED_STATUSES,
     TERMINAL_STATUSES,
     effective_status,
     is_section_scoped,
@@ -743,10 +744,53 @@ def _attach_lane_document(
     return lane
 
 
+def _session_lane_share(session: str, moment: datetime) -> dict[str, Any]:
+    """The calling session's published lane share and the document's vintage.
+
+    The share is read through the same function a dispatch refusal quotes, so a
+    coordinator reading the lane and a dispatch the lane refused cannot disagree
+    about one number. ``live_runs`` and the staleness marker come from that same
+    document: a session the router has not listed reads ``unknown`` rather than
+    zero, and a document past its own suggested shelf life reads stale beside
+    the age that disqualifies it.
+    """
+    from reckon.crew import obligations as obligations_module
+    from reckon.crew import paid_lanes
+
+    payload: object = None
+    try:
+        payload = json.loads(paid_lanes.local_lane_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        payload = None
+    report = lane_document_module.read_lane_document(payload, now=moment)
+    admission = lane_document_module.read_lane_admission(payload)
+    listed = (
+        admission["sessions"].get(session)
+        if admission.get("sessions_present")
+        else None
+    )
+    live_runs = (
+        listed.get(lane_document_module.SESSION_LIVE_RUNS_KEY)
+        if isinstance(listed, Mapping)
+        else lane_document_module.UNKNOWN
+    )
+    return {
+        "session": session,
+        "worker_slots": obligations_module._published_worker_slots(session),
+        "live_runs": live_runs,
+        "observed_at": report["observed_at"],
+        "age_seconds": report["age_seconds"],
+        "shelf_life_seconds": report["shelf_life_seconds"],
+        "stale": report["stale"],
+        "detail": report["detail"],
+    }
+
+
 def crew_lanes_view(
     config: Mapping[str, Any],
     runs: Iterable[Mapping[str, Any]],
     *,
+    session: str | None = None,
     receipt_reader: Callable[[str], object] | None = None,
     probe_reader: Callable[[str, Mapping[str, Any]], Mapping[str, Any] | None]
     | None = None,
@@ -764,7 +808,11 @@ def crew_lanes_view(
     receipt reading, and a lane with no reading of its own renders ``borrowed``
     rather than carrying the shared figure.  The top-level ``budget_groups``
     map groups backends by the declared key alone, never by shared window or
-    reset times.
+    reset times.  When ``session`` is given the view also carries that
+    session's published admission share, its live-run count and the local lane
+    document's ``observed_at``, with a document past its own shelf life marked
+    stale; that block is the one carrier of these figures: the directory and
+    the ready-set views copy none of them.
     """
 
     composition_time = composed_at or datetime.now(UTC).isoformat().replace(
@@ -1073,11 +1121,14 @@ def crew_lanes_view(
             lane["unmeasured"] = unmeasured
         lanes.append(_attach_lane_document(lane, lane_document_fields))
 
-    return {
+    view: dict[str, Any] = {
         "composed_at": composition_time,
         "lanes": [ledger.normalize_identity(lane) for lane in lanes],
         "budget_groups": budget_groups,
     }
+    if session:
+        view["session_share"] = _session_lane_share(session, composition_moment)
+    return view
 
 
 def sprint_metrics(items: list[dict[str, Any]]) -> dict[str, Any]:
@@ -1134,9 +1185,54 @@ def sprint_state_view(roadmap: dict[str, Any]) -> list[dict[str, Any]]:
     return view
 
 
-def ready_set_view(roadmap: dict[str, Any]) -> dict[str, Any]:
-    """Project the canonical roadmap's ready rows for composed clients."""
+def _row_live_run(row: Mapping[str, Any]) -> str | None:
+    """The run id sitting on one ready row, or ``None`` when the row is idle.
 
+    A section row carries its runs in ``runs`` and a plan row carries its own in
+    ``in_flight``; both are the classified rows the live partition already gave
+    the plan, so this reads the run rather than looking for a pointer again.
+    """
+
+    for key in ("runs", "in_flight"):
+        candidates = row.get(key)
+        if not isinstance(candidates, Sequence) or isinstance(candidates, str):
+            continue
+        for candidate in candidates:
+            if isinstance(candidate, Mapping) and candidate.get("run_id"):
+                return str(candidate["run_id"])
+    return None
+
+
+def ready_set_view(
+    roadmap: dict[str, Any],
+    *,
+    coordinators: Mapping[str, Mapping[str, Any]] | None = None,
+    ready_idle: bool = False,
+    limit: int | None = None,
+    cursor: str | None = None,
+) -> dict[str, Any]:
+    """Project the canonical roadmap's ready rows for composed clients.
+
+    Every row names its live run (or none), its coordinator and recorded
+    ``plan-owner``, and whether it sits on the critical path. ``ready_idle``
+    filters the rows to those with no live run — the set a coordinator is
+    looking for when a lane is idle — and keeps the view's own paging, so the
+    filtered answer is a page of one more view rather than a second view.
+
+    ``coordinators`` takes the crew's plan-coordinator rows; a caller that
+    passes none reports each row with no coordinator rather than deriving one
+    here, so the crew's derivation remains the only statement of who owns a
+    plan.
+    """
+
+    coordinators = coordinators or {}
+    critical = roadmap.get("critical_path") or {}
+    critical_sections = {
+        str(ref) for ref in critical.get("sections") or [] if str(ref).strip()
+    }
+    critical_plans = {
+        str(slug) for slug in critical.get("plans") or [] if str(slug).strip()
+    }
     readiness_by_slug = {
         str(row.get("slug")): row
         for row in roadmap.get("ready_now", [])
@@ -1156,10 +1252,44 @@ def ready_set_view(roadmap: dict[str, Any]) -> dict[str, Any]:
         ):
             if key in readiness:
                 row[key] = readiness[key]
+        slug = str(row.get("slug") or "")
+        plan_slug = slug.partition("#")[0]
+        owner_row = coordinators.get(plan_slug) or {}
+        row["live_run"] = _row_live_run(row)
+        row["coordinator"] = owner_row.get("coordinator")
+        row["plan_owner"] = str(owner_row.get("plan_owner") or "")
+        row["critical_path"] = slug in critical_sections or plan_slug in critical_plans
+        if ready_idle and (row["live_run"] or row.get("ready") is False):
+            continue
         ready.append(row)
+    closable = []
+    for row in roadmap.get("pending_work", []):
+        if not isinstance(row, dict) or str(row.get("readiness") or "") != "closable":
+            continue
+        owner_row = coordinators.get(str(row.get("slug"))) or {}
+        closable.append(
+            {
+                "plan": str(row.get("slug") or ""),
+                "title": row.get("title") or row.get("slug"),
+                "plan_owner": str(owner_row.get("plan_owner") or ""),
+                "coordinator": owner_row.get("coordinator"),
+                "closure_blockers": list(row.get("closure_blockers") or []),
+            }
+        )
+    # An unpaged call keeps the whole set, so the view a surface already reads is
+    # not silently cut to one page; a caller that asks for a page gets the
+    # cursor paging every other view answers with.
+    if limit is None and cursor is None:
+        page = ready
+        pagination = {"count": len(ready), "total": len(ready), "next_cursor": None}
+    else:
+        page, pagination = paginate(ready, cursor=cursor, limit=limit)
     return {
         "project": roadmap.get("project"),
-        "ready": ready,
+        "ready": page,
+        "ready_idle": ready_idle,
+        "closable": closable,
+        "pagination": pagination,
         "review": roadmap.get("review"),
         "sprints": sprint_state_view(roadmap),
         "endpoints": roadmap.get("endpoints", []),
@@ -1895,17 +2025,23 @@ def partition_live_runs(
         except OSError:
             pointers = []
 
+    project_pointers = [
+        pointer
+        for pointer in pointers
+        if isinstance(pointer, dict) and pointer.get("project") == project
+    ]
     in_flight: dict[str, list[dict[str, str]]] = {}
     interrupted: dict[str, list[dict[str, str]]] = {}
     recorded = _recorded_live_run_classifications(project)
-    for pointer in pointers:
-        if not isinstance(pointer, dict) or pointer.get("project") != project:
-            continue
+    classifier = classify_pointer
+    if accepts_keyword(classify_pointer, "pointers"):
+        classifier = partial(classify_pointer, pointers=project_pointers)
+    for pointer in project_pointers:
         plan = _run_target_plan(pointer)
         if not plan:
             continue
         classified = run_classification_record(
-            pointer, classify=classify_pointer, recorded=recorded
+            pointer, classify=classifier, recorded=recorded
         )
         classification = run_classification(classified)
         row = _run_row(pointer, classification=classification)
@@ -2639,26 +2775,81 @@ def _section_gate_blockers(data: dict[str, Any]) -> list[dict[str, Any]]:
     return section_holding
 
 
-def _section_blocking(deps: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _section_target_plan(
+    dep: dict[str, Any], checkout: str | None
+) -> dict[str, Any] | None:
+    """Read the plan a section-scoped row points at, through the row's own scope."""
+
+    project = str(dep.get("project") or "")
+    slug = str(dep.get("slug") or "")
+    if not project or not slug:
+        return None
+    from reckon._store import read_plan
+
+    try:
+        data, _version = read_plan(
+            project, slug, None if dep.get("scope") == "external" else checkout
+        )
+    except Exception:  # noqa: BLE001 — resolution must degrade, not raise
+        return None
+    return data or None
+
+
+def _section_target_satisfied(dep: dict[str, Any], checkout: str | None = None) -> bool:
+    """Whether a section-scoped row's target is satisfied, from its owner.
+
+    Readiness is the roadmap's answer, never the status a section-scoped row
+    also carries: that status names the target plan or the section's own
+    declaration, and neither is the readiness of the section the row names. An
+    undeclared section of a terminal plan is unsatisfied as an edge target
+    while its plan's status reads completed, so the two readings disagree on a
+    real fixture and only the roadmap's is published here.
+
+    A row resolved by the roadmap carries that verdict in ``satisfied``. Every
+    other row is resolved the way the roadmap resolves its own: the target's
+    declared section identities and :func:`reckon.roadmap._section_satisfied`
+    over the target plan's own state. A target that cannot be read holds its
+    waiting section, because an unobserved target is no evidence that it
+    landed.
+    """
+
+    verdict = dep.get("satisfied")
+    if verdict is not None:
+        return bool(verdict)
+    stage = str(dep.get("stage") or "")
+    if not dep.get("found") or not stage:
+        return False
+    target = _section_target_plan(dep, checkout)
+    if target is None:
+        return False
+    from reckon._schema import declared_section_identities
+    from reckon.roadmap import _section_satisfied
+
+    declarations = target.get("section_declarations")
+    found_section = stage in declared_section_identities(target, declarations)
+    return found_section and _section_satisfied(target, stage, declarations)
+
+
+def _section_blocking(
+    deps: list[dict[str, Any]], *, checkout: str | None = None
+) -> list[dict[str, Any]]:
     """Report the sections that wait, each beside the targets it waits for.
 
     A section-scoped row holds one section of the owning plan, so it is
     reported here instead of in the plan-level blocking list, and only while
     its target is unresolved — the same test the plan-level list applies.
 
-    The row states the target section's own condition, not its plan's, and a
-    verdict the row already reached is read here rather than re-derived from
-    the containing plan: a wait whose target section reads satisfied holds
-    nothing, whether the section was declared done or its gate passed.
+    The row states the target section's own condition, not its plan's, and the
+    verdict is the roadmap's rather than a second derivation from the row's
+    status: a wait whose target section reads satisfied holds nothing, whether
+    the section was declared done or its gate passed.
     """
 
     waits: dict[str, list[dict[str, Any]]] = {}
     for dep in deps:
         if not is_section_scoped(dep):
             continue
-        if dep.get("satisfied") is True:
-            continue
-        if dep.get("found") and dep.get("status") in COMPLETED_STATUSES:
+        if _section_target_satisfied(dep, checkout):
             continue
         target = {
             "ref": dep.get("ref", ""),
@@ -2809,6 +3000,7 @@ def _summary(
     *,
     deps: list[dict[str, Any]],
     include_prompts: bool,
+    checkout: str | None = None,
 ) -> dict[str, Any]:
     if include_prompts:
         raise ViewRequestError(
@@ -2844,7 +3036,7 @@ def _summary(
         "warnings": list(data.get("compatibility_warnings") or []),
     }
     if selector.type == "plan":
-        result["section_blocking"] = _section_blocking(deps)
+        result["section_blocking"] = _section_blocking(deps, checkout=checkout)
         result["section_gate_blockers"] = _section_gate_blockers(data)
         result["sections"] = list(data.get("sections") or [])
         result["todos"] = list(data.get("todos") or [])
@@ -2858,8 +3050,16 @@ def _detail(
     *,
     deps: list[dict[str, Any]],
     include_prompts: bool,
+    checkout: str | None = None,
 ) -> dict[str, Any]:
-    result = _summary(selector, version, data, deps=deps, include_prompts=False)
+    result = _summary(
+        selector,
+        version,
+        data,
+        deps=deps,
+        include_prompts=False,
+        checkout=checkout,
+    )
     result["view"] = "detail"
     result["metadata"] = {
         key: data[key]
@@ -3191,6 +3391,7 @@ def resource_view(
             data,
             deps=dependencies,
             include_prompts=include_prompts,
+            checkout=provenance.get("checkout"),
         )
     elif selected == "detail":
         result = _detail(
@@ -3199,6 +3400,7 @@ def resource_view(
             data,
             deps=dependencies,
             include_prompts=include_prompts,
+            checkout=provenance.get("checkout"),
         )
     elif selected == "history":
         page, pagination = paginate(
@@ -4180,7 +4382,7 @@ def serve_crew_view(
                 "ok": True,
                 "project": project,
                 "view": view,
-                **crew_lanes_view(config, runs),
+                **crew_lanes_view(config, runs, session=session),
             }
         if view == "routing":
             try:

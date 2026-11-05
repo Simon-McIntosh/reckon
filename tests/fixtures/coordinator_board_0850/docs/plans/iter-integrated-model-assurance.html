@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="power_convertor">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="iter-integrated-model-assurance">
+  <meta name="plan-title" content="ITER Integrated Model Assurance">
+  <meta name="plan-summary" content="Verify the converter and coil model at the presented head, register each headline number with its evidence and band, reconcile the pages, write the overview">
+  <meta name="plan-status" content="done">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="10.5">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-sprint" content="S3">
+  <meta name="plan-tags" content="iter,power-supply,evidence">
+  <meta name="plan-standalone" content="It audits and presents the ITER studies already delivered, for the presentation in the week of 19 October 2026; it reads the other plans&#x27; records, and no plan waits on it">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;}">
+  <title>ITER Integrated Model Assurance | power_convertor</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="19">
+<meta name="plan-modified" content="2026-10-18">
+</head>
+<body>
+  <main class="plan-doc">
+    <p>The ITER converter and coil model was built in four days. In that time it gained a switched-circuit
+    solver, every PF, CS and VS converter unit, a current controller per supply, nova's coupled coil,
+    passive and plasma plant, and turn-resolved windings. About 120 merges landed, and 38 research pages
+    record the studies. The lead presents the model in the week of 19 October 2026. What the audience needs
+    is that each number shown was produced by the code at the presented revision. Each number must also be
+    shown with its inputs, the evidence behind it and the size of its uncertainty.</p>
+    <p>Three things stand in the way, all found in the portfolio review of 17 October 2026:</p>
+    <ul>
+      <li><strong>No whole-suite run since 14 October.</strong> The last one passed 417 tests with 8 skipped,
+      at revision <code>0626170</code>. Every merge since has run a focused gate only, as the test protocol
+      prescribes, so the merged head as a whole is unverified.</li>
+      <li><strong>Pages that disagree.</strong> The controller page still says the CS coils, PF1, PF6 and
+      VS3 miss the 1 % and 3 % tracking targets. Its later record says they meet them outside the
+      switching-network windows. Its design table gives every supply a 25 dB gain margin, while the
+      sampled-loop study finds VS1 unstable at the 2 ms control cycle. The averaged scenario loop therefore
+      drives VS1 open-loop from DINA's recorded voltages.</li>
+      <li><strong>No single record of what each result rests on.</strong> The bands that carry over from
+      JT-60SA, the assumed inputs, and the gaps that remain sit in more than twenty places.</li>
+    </ul>
+    <p>This plan builds no new physics. It verifies, records and reconciles what exists, and it writes the
+    overview the presentation is drawn from. The integrated single-entry run of
+    <a href="/power_convertor/plans/iter-switched-terminal-transients">iter-switched-terminal-transients</a> §6
+    stays with that plan. The overview states its status as it stands on the day.</p>
+
+    <h2 id="s1">§1 — The whole suite at the presented head</h2>
+    <section data-reckon="section" data-id="s1" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>Run the whole suite once at the head of <code>main</code>, on compute, never on the login node: in
+    place on the fleet allocation, where a worker already runs, or with
+    <code>srun --partition=all_debug --time=00:59:00 --cpus-per-task=4 --mem=32G</code> from a login
+    node. Cap the BLAS and XLA threads at 2 as the repository's instructions require, and write one log to
+    <code>/home/ITER/mcintos/Code/power_convertor/data/iter/gate-logs/suite-presented-head/suite.log</code>,
+    headed by the revision. Judge it by delta against the 14 October baseline held at
+    <code>data/iter/gate-logs/suite-py314-rerun/</code> (417 passed, 8 skipped at <code>0626170</code>; its
+    <code>summary.json</code> lists the skips): added failures, by test id.
+    Attribute each added failure to the merge that introduced it. Its fix is a separate node, in a file
+    nobody else holds, or is handed to the owning plan; this section runs and records and changes no
+    source. If the suite runs longer than 20 minutes, record the slowest ten tests. A suite that has
+    slowed is a robustness finding too. The suite is run again at the revision actually presented, since
+    the head moves as the other S3 plans land.</p>
+    <p>Done when the log exists at the revision that ran and the record lists every added failure with its
+    attribution, or none. The record is this section's landing evidence,
+    <code>docs/evidence/fragments/iter-integrated-model-assurance/suite-presented-head.html</code>, headed by
+    the revision; §2's
+    register cites it as a row, so §1 and §2 write no file in common. A test that fails at the baseline
+    revision and still fails is listed as pre-existing, not as added. That pre-existing list is the
+    negative control that the delta is computed against the right base.</p>
+
+    <h2 id="s2">§2 — The claims register</h2>
+    <section data-reckon="section" data-id="s2" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>One research page, <code>docs/research/iter-model-claims-register.html</code>, has one row per
+    headline result, with:</p>
+    <ul>
+      <li>the number and its unit;</li>
+      <li>its band: a low and a high value with the reason for each end (a JT-60SA band, an input range, a
+      step-convergence spread), or the explicit entry "no band" with what is missing;</li>
+      <li>the inputs and their authority: IDM, a stated assumption, or DINA's demand, citing the section of
+      the <a href="/power_convertor/research/iter-coil-supply-idm-register">IDM register</a> that records
+      each one, its ratings tables for ordinary limits and its §8 inconsistency list by item number,
+      rather than restating it;</li>
+      <li>the evidence it was validated on: a JT-60SA band, the Simscape cross-check, an analytic control, or
+      none;</li>
+      <li>the open assumptions it depends on, by their IDM register §8 item number where one exists, so
+      that the register and the IDM ledger stay one ledger;</li>
+      <li>the page and anchor it comes from.</li>
+    </ul>
+    <p>Rows are ranked by uncertainty times consequence. The review seeds these rows, and the node adds every
+    other headline it finds:</p>
+    <ul>
+      <li>the switching-network insertion putting 13.05 kV across PF1 against its 12 kV envelope;</li>
+      <li>the PF1/PF6 pair asked for 1.8–2.0 % above its 2.1 kV rating in the limit windows;</li>
+      <li>CS3L's 18.5 % rms initiation deviation, traced to the 778SPD table;</li>
+      <li>VS1 run open-loop, and VS3's 3.45 dB gain margin;</li>
+      <li>the PF6 damped edge peaks of 3.61–3.62 kV against 2.5 kV;</li>
+      <li>the VS1 IGBT edge reaching about 2.2 kV across PF3 and PF5;</li>
+      <li>the 12–35 % of each pulse in which the whole-pulse ripple does not model the circulating bridges;</li>
+      <li>PF2's winding mode at 595 Hz beside the 600 Hz line;</li>
+      <li>VS3's open flux balance;</li>
+      <li>the JT-60SA bands the ripple results inherit. The 6f and 12f lines land within about 3 dB, 18f and
+      above miss by 10–13 dB, and the inter-circuit harmonic coupling exceeds induction by about 1.9 times,
+      unexplained. Transient pickup is validated within 4 % of the 5 ms-smoothed peak.</li>
+    </ul>
+    <p>Done when every ITER study page under <code>docs/research/</code> that carries a headline result, the
+    seeded rows above included, has its headline numbers in the register, and the five highest-ranked rows
+    are named at the top. The register states that page set at its head. Every evidence anchor is a link.
+    A test, <code>tests/test_claims_register.py</code>, runs <code>reckon audit-doc --check-links</code> over
+    <code>docs/</code>, whose link audit resolves in-page anchor ids, and fails on any
+    <code>dangling-anchor</code> or <code>dangling-link</code> finding the audit reports for the register.
+    The audit itself reports these at warn level and exits 0, so the test reads its findings, not its exit
+    code. A copy of the register with one anchor broken on purpose fails the test.</p>
+
+    <h2 id="s3">§3 — The pages reconciled</h2>
+    <section data-reckon="section" data-id="s3" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>Where two pages, or a page and the code, give different values for the same quantity, establish which
+    is current and correct the other. Correct it in its owning page, with the earlier value kept and marked
+    superseded. Redraw a figure through its own script only when its inputs have changed since it was drawn.
+    The known cases:</p>
+    <ul>
+      <li>the controller page's tracking and margin statements against its own later record and against the
+      sampled-loop margins;</li>
+      <li>the reference scenario: <code>105052/1</code> in the controller and time-series pages against
+      <code>105069/3</code>, which the SRO selection names for the PF studies;</li>
+      <li>the whole-pulse ripple, drawn before the CS unit gained its circulating dual-converter mode on
+      17 October;</li>
+      <li>any figure drawn before the move to the 778SPD design values on 16 October.</li>
+    </ul>
+    <p>Before writing, check every page against the live write claims. A page another node holds is left
+    alone, and its owner is told what to correct.</p>
+    <p>Done when every case is corrected or handed off with the corrected value named, and every redrawn
+    figure has been rendered and inspected, with that inspection recorded in the gate log. The register
+    must also agree with the pages it cites: <code>tests/test_claims_register.py</code> also compares one
+    pinned number per row against the cited page's text, and it fails when the page's number is edited on
+    purpose.</p>
+
+    <h2 id="s4">§4 — The overview the presentation is drawn from</h2>
+    <section data-reckon="section" data-id="s4" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p><code>docs/research/iter-integrated-model-overview.html</code> tells the model's story in the order an
+    audience follows it:</p>
+    <ul>
+      <li>what the model answers: whether the converters, switching networks, discharge units, grounding and
+      busbars, as designed in IDM, can deliver DINA's coil currents within their ratings;</li>
+      <li>the plant, the converters, the controllers and the coupled coils;</li>
+      <li>what it finds, coil by coil, against the IDM ratings;</li>
+      <li>how far it is trusted, from JT-60SA and from the controls;</li>
+      <li>what remains open, and what the dummy-load recordings will test next.</li>
+    </ul>
+    <p>It reuses existing figures by their project-absolute paths. It draws one new figure in
+    <code>docs/figures/iter-integrated-model-overview/</code>: each supply's largest demanded voltage over
+    the SRO cases against its rating, with the register's band. It reads the twelve SRO envelope cases'
+    averaged-loop runs that <code>scripts/iter/sro_scenario_selection.py</code> already stores in
+    <code>data/iter/sro_scenario_selection/</code> (one run per case, with <code>deliverability.json</code>),
+    taking each supply's largest applied voltage from them rather than running the cases again. The older
+    six-case census of <code>scripts/iter/scenario_loading.py</code> is not the SRO set and is not used.
+    The figure is drawn through
+    <code>power_convertor.figure_layout.save_figure</code> in the repository's colour roles. Every number in
+    the prose links to its register row.</p>
+    <p>Done when <code>tests/test_claims_register.py</code> passes over the overview too, finding no dangling
+    anchor or link and no number in the overview's prose without a register row; every figure it shows has
+    been rendered and inspected. Negative control: a copy of the overview with one number whose register
+    row is removed fails the test. A reviewer renders the page's figures.
+    Clipped, overlapping or unreadable labels are blocking.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-iima-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-17" data-recommends-skill="/reckon-build iter-integrated-model-assurance §1" data-resolved-at="2026-10-17T22:19:00+00:00" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Run the suite at the head and start the register together</h4>
+    <div class="r-fu-body"><p>§1 and §2 are independent and run at once. §3 starts from §2's rows, and §4 from §2 and §3. Every section must land before the presentation in the week of 19 October 2026, so §4 starts as soon as §2 has its top five rows, and is updated as §3 lands.</p></div>
+    <pre class="r-fu-prompt">/reckon-build iter-integrated-model-assurance §1</pre>
+    <p class="r-fu-outcome">All four sections landed by 18 October 2026: the whole suite at the presented head, the claims register, the reconciled pages and the overview. No followup; the plan is complete.</p>
+    </article>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s1" data-id="c-land-suite-9f68d0a4" data-who="reckon-build" data-when="2026-10-17T12:15:00Z">
+    <div class="r-comment-body"><p>Node suite-presented-head landed (merged at <code>c2d5b64b</code>): 950 passed, 8 skipped, 0 failed of 958 at <code>9f68d0a4</code>, so no added failure against 14 October. The suite took 56 minutes and two tests take 385 s and 322 s. §1 stays open for the run at the presented revision. <a href="/power_convertor/evidence/archive/iter-integrated-model-assurance-landed.html#suite-at-9f68d0a4">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-close-s1" data-who="reckon-build" data-when="2026-10-18T00:20:00Z">
+    <div class="r-comment-body"><p>§1 closed. The whole suite passes at the presented head <code>a3ddab5e</code>: 1,034 passed and 7 skipped of 1,041, with none failed (record merged at <code>6f359605</code>). The four cases the final-head run found are repaired, and the environment is synced with nova's import fix. <a href="/power_convertor/evidence/archive/iter-integrated-model-assurance-landed.html#suite-presented-head">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261017T120326397043-review-of-claims-register-fe093805ff7f" data-who="reckon-build" data-when="2026-10-17T12:12:12.707Z">
+    <div class="r-comment-body"><p>independent review of r-20261017T114801188098-claims-register at head fe093805ff7fee3dca089b03ba594697d6391c00 stores a parsed record scoring all six dimensions (goal_fidelity 19, evidence 17, scope_discipline 20, durability 16, fit 18, reuse 20; total 110) with reviewed_base_sha 8b691f63c01e6cfe2edf5eebad4b61f9a0321a1d and three follow-on findings, all against tests/test_claims_register.py, and no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-17T12:15:00Z">
+    <div class="r-comment-body"><p>§2 landed: the claims register, 37 banded and sourced rows over 27 ITER study pages, ranked, top five named, with a link-finding test that fails on a broken anchor (merged at <code>35386d77</code>; review 110/120). <a href="/power_convertor/evidence/archive/iter-integrated-model-assurance-landed.html#claims-register">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261017T114801188098-claims-register" data-who="reckon-build" data-when="2026-10-17T12:03:27Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/iter-integrated-model-assurance/claims-register.html#claims-register-evidence records 29 pages judged, 27 included, 37 ranked rows and five top claims; the head link audit passed 1 test and the broken-anchor copy failed 1 test.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261017T123426122189-review-of-register-pinned-numbers-30861301ebc2" data-who="reckon-build" data-when="2026-10-17T12:40:54.313Z">
+    <div class="r-comment-body"><p>independent review of run r-20261017T121919803255-register-pinned-numbers at head 30861301: six dimension scores goal_fidelity 18, evidence 16, scope_discipline 20, durability 14, fit 18, reuse 20 (total 106), no blocking findings, two follow-on findings (low-entropy pins; coverage check ignores CLAIMS_DOCS_ROOT).</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261017T121919803255-register-pinned-numbers" data-who="reckon-build" data-when="2026-10-17T12:33:38.729Z">
+    <div class="r-comment-body"><p>tests/test_claims_register.py now pins each claims-register row to a number in its cited page and refuses an edited number, a cross-file link break, a broken in-page anchor and a dropped seeded row; the register's pinned-number conflicts are none and the suite row carries 950 passed of 958 at 9f68d0a4.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261017T130248370892-page-reconciliation" data-who="reckon-build" data-when="2026-10-17T13:25:33Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/iter-integrated-model-assurance/page-reconciliation.html#page-reconciliation-evidence — 10 research pages reconciled, 7 weak pins replaced, 8 focused tests passing and 0 added docs link findings.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261017T132545625048-review-of-page-reconciliation-4de1a3975f65" data-who="reckon-build" data-when="2026-10-17T13:37:29.255Z">
+    <div class="r-comment-body"><p>review of r-20261017T130248370892-page-reconciliation at head 4de1a397 stores goal_fidelity 19, evidence 19, scope_discipline 20, durability 17, fit 19, reuse 20 (total 114) with three follow-on findings and no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-17T13:42:00Z">
+    <div class="r-comment-body"><p>§3 closed. The register is pinned to its pages (merged at <code>f5823541</code>), and the pages are reconciled (merged at <code>67af78f5</code>): controller statements superseded, case labels on nine pages, 37 pre-778SPD figures marked. Two figure jobs are handed off to running nodes with their corrected values named. <a href="/power_convertor/evidence/archive/iter-integrated-model-assurance-landed.html#pages-reconciled">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261017T134203601821-model-overview" data-who="reckon-build" data-when="2026-10-17T14:31:57Z">
+    <div class="r-comment-body"><p>model-overview landed: the overview at docs/research/iter-integrated-model-overview.html tells the integrated model story in five sections with every prose number linked to its register row; its figure plots each supply's largest demanded voltage OUTSIDE its switching-network window over the twelve SRO envelope cases against its IDM converter rating, on the loop's own coupled plant with the loop's own allocation and its clamp left out, and marks each switched circuit's in-window peak separately against the switching network's own maximum; the register's 24 duplicate pins are repaired and it carries the demand row plus rows for PF5's mode inside its band and the installed PF2/PF5 damping, and tests/test_claims_register.py runs over the overview and over every row's pin.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261017T143255729630-review-of-model-overview-c8844776d3e3" data-who="reckon-build" data-when="2026-10-17T14:47:01.050Z">
+    <div class="r-comment-body"><p>review of run r-20261017T134203601821-model-overview at base 4b60dd2a..head c8844776 stored: goal_fidelity 17, evidence 15, scope_discipline 20, durability 12, fit 18, reuse 5 (total 87), with four follow-on findings — the figure's port_demand duplicates the coupled_feedforward allocation owner, the figure module carries no test, the claim-vs1-sampled-loop pin was left without the context the brief asked for, and the c8844776 body's PF6 3.40 kV disagrees with the 3.01 kV the register, prose and figure carry.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261017T144946440748-overview-repair" data-who="reckon-build" data-when="2026-10-17T15:21:54.510Z">
+    <div class="r-comment-body"><p>The overview figure's demand now comes from current_controllers.coupled_feedforward called with a new clip=False (the loop keeps clip=True), the port_demand copy is deleted and the figure's window and envelope are read from the owner's INITIATION_WINDOW_S and SNU_MAXIMUM_ENVELOPE_V; the new tests/test_iter_integrated_model_overview.py pins the 3.0 s window, the seven switched circuits, the envelope maxima and one supply's out-of-window demand on a synthetic plant (4000 V unclipped vs the 2100 V clamp); claim-vs1-sampled-loop now cites iter-coil-current-controllers.html#vertical-sampled-closure and pins "6.04 dB 61.03° 71.35 Hz", the margin row that occurs once there, with test_every_pin_is_distinctive measuring each pin on its owning page. Re-rendered figure is byte-identical; gate 78 passed, EXIT=0.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261017T152229981736-review-of-overview-repair-3d1b0d0c6d71" data-who="reckon-build" data-when="2026-10-17T15:34:47.562Z">
+    <div class="r-comment-body"><p>Review of r-20261017T144946440748-overview-repair (base e923f09258cca6c937728741dc0303a47d96dcc8, head 3d1b0d0c6d7106320b691a8401b7705c91da409f): six dimension scores goal_fidelity 19, evidence 16, scope_discipline 18, durability 18, fit 18, reuse 18 (total 107); four follow-on findings, no blocking finding; the demand-from-owner change, the new figure test and the retargeted VS1 pin are correct and the reuse of coupled_feedforward is faithful to the deleted copy.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-17T15:38:00Z">
+    <div class="r-comment-body"><p>§4 closed. The overview and its demanded-voltage figure are merged at <code>01238bbc</code> and <code>e4b548b2</code>. Outside the switching-network windows, demand exceeds the converter rating on CS3U, CS2U, CS2L, CS3L, PF1 and PF6, by 1.07–1.43×. PF1's and PF6's in-window peaks pass the 8.5 kV network maximum. Every number links to a register row. <a href="/power_convertor/evidence/archive/iter-integrated-model-assurance-landed.html#model-overview">evidence</a></p></div>
+</div>
+</section>
+</main>
+</body>
+</html>

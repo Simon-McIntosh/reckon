@@ -1,0 +1,88 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite at ab87725e67 records 3 failures (two imas-ambix test_cross_project_conformance rows and the reckon every-read-enters-the-existing-scopes row) and after_suite records the identical 3 ids, so no failure is added by this change. The after_suite log on disk is truncated at 44% and carries no summary or EXIT= line, which is recorded as a blocking finding; the zero rests on the ids the manifest records, corroborated by the same 3 ids appearing in the head arm's first 5% before truncation.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/mcp_edit_plan.py:175",
+    "reckon/mcp_edit_plan.py:1948",
+    "reckon/_store.py:1583",
+    "reckon/_store.py:1630",
+    "reckon/_store.py:3385"
+  ],
+  "completed_at": "2026-11-05T16:04:47.879Z",
+  "dispatched_at": "2026-11-05T15:55:58Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "The coordinator re-records the armed pair at the reviewed head and runs the importer population on the merge candidate; that record replaces the worker's interrupted gate-full run.",
+      "recorded_at": "2026-11-05T16:26:18.102377+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "close-names-each-deferred-section-and-moves-it",
+      "recorded_at": "2026-11-05T16:26:32.071817+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "close-names-each-deferred-section-and-moves-it",
+      "recorded_at": "2026-11-05T16:26:40.403596+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": 27,
+      "text": "blocking: after_suite records revision 2be71296a4 with completed true, exit_status 1 and three failure ids, but its cited log gate-full.log (/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T102653154559-close-names-each-deferred-section-and-moves-it/gate-full.log) stops at 44% after 25 lines with no summary and no EXIT= line \u2014 the 3 failed / 3718 passed summary was produced by the earlier run at 3ceb7c1fa2, which the worker re-ran and overwrote at the head, so promotion reads an unreadable after arm and the head three-file gate is unrecorded."
+    },
+    {
+      "file": "docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html",
+      "line": 49,
+      "text": "non-blocking: the fragment states \"3 failed, 3718 passed in 741.73s (EXIT=1)\" as the gate result without naming its revision, while the run that produced that summary ran at 3ceb7c1fa2 and the head re-run was killed at 44%, so the quoted figure reads as the new head's result when only the five-test node file is recorded green there."
+    },
+    {
+      "file": "reckon/_store.py",
+      "line": 1584,
+      "text": "non-blocking: the same-plan refusal was moved out of _apply_set into _carry_section_moves at :3021, which runs after _apply_evidence_appends writes evidence files at :1582, so an op batch that both appends evidence and declares a moved_to naming a section of the plan being written leaves the evidence append on disk while the plan write refuses; no test covers the relocated refusal."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/mcp_edit_plan.py:175 (the op batch that queues section_moves), reckon/mcp_edit_plan.py:1948 (the prose path), reckon/_store.py:1583 (_write_state_locked calling _carry_section_moves with root), reckon/_store.py:1630 (_write_successor_moves), reckon/_store.py:3385 (_apply_set's moved_to shape check).",
+    "diff": "read 2be71296a413 against 3ceb7c1fa2 commit by commit: one commit, seven files, +200/-85, filtering the carried gates to open ones at reckon/_store.py:3037, passing the write's root into the successor resolution at :3016, relocating the same-plan refusal from _apply_set to _carry_section_moves at :3021, deleting SectionRecord.moved_to and regenerating the JSON schema, restating the closed-gate rule in PLAN-FORMAT.md and the reckon-edit skill, and adding two tests plus an effort assertion.",
+    "done_when": "the done_when names the node test file plus tests/test_schema.py and tests/test_a_plan_closes_in_one_op.py; the node file is recorded 5 passed / EXIT=0 at 2be71296a413 (gate-node-head.log) and 3 failed / EXIT=1 at ab87725e67 (gate-base.log), but the three-file arm at the head never completed \u2014 its log stops at 44%.",
+    "goal": "the goal is to extend close's deferred-section refusal with both remedies and to have a moved_to descope carry prose, effort, capability, open gates and comments to its successor; this commit carries the fix half of that \u2014 reckon/_store.py:3037 limits the travel to open gates, :3016 resolves the successor in the write's own root, and :3025 re-anchors the move link on the section record, matching PLAN-FORMAT.md:336.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T102653154559-close-names-each-deferred-section-and-moves-it/manifest.md; status complete, commits 3ceb7c1fa2 and 2be71296a4, baseline_suite 3 failures at ab87725e67, after_suite 3 failures at 2be71296a4 \u2014 but the after_suite log it cites carries no summary line, and the run history shows the quoted summary belongs to the 3ceb7c1fa2 run.",
+    "write_paths": "read the manifest's eight declared paths; git show --stat 2be71296a413 lists seven files and each is inside them, and the figure directory the eighth path names is untouched by this commit."
+  },
+  "justifications": {
+    "durability": "tests/test_close_names_each_deferred_section_and_moves_it.py:332-334 reddens if the open-gate filter is reverted (g-closed reappears in the successor's gates), :390-397 reddens if the successor is resolved against the default root instead of the written checkout, and :288-290 asserts effort 1.75 where the successor alone carries 0.5, but nothing exercises the same-plan refusal that this commit moved out of _apply_set.",
+    "evidence": "the head arm of the node file is recorded (gate-node-head.log, revision 2be71296a413, 5 passed, EXIT=0) and the base arm is red (gate-base.log, ab87725e67, 3 failed, EXIT=1), but the three-file gate's cited head log gate-full.log stops at 44% with no summary and no EXIT= line, so the 3 failed / 3718 passed summary the manifest's after_suite records was produced at the previous revision 3ceb7c1fa2, not at the reviewed head.",
+    "fit": "the change follows the module's private-helper idiom, keeps docstrings at the surrounding length (reckon/_store.py:2998-3005) and cites no plan, ticket or stage label anywhere in code, comments or the commit subject.",
+    "goal_fidelity": "reckon/_store.py:3037 now filters moved_gates to str(gate.get('status') or 'open').strip().lower() == 'open', so a settled gate stays on the closed plan as PLAN-FORMAT.md:336 requires, and reckon/_store.py:3016 threads the write's root into _resolve_successor_section so the successor resolves and is written against the checkout being written.",
+    "reuse": "the diff adds no new function or class, and it removes the duplicate SectionRecord.moved_to field in favour of the data-links entry the reader already owns; the only restatement is the open-status normalisation at reckon/_store.py:3037, which duplicates the two lines of _entry_is_open at :3173-3178 for a different record type (gates carry no resolved_at).",
+    "scope_discipline": "git show --stat 2be71296a413 lists seven files (PLAN-FORMAT.md, docs/_shared/plan.schema.json, the evidence fragment, reckon/_schema.py, reckon/_store.py, skills/reckon-edit/SKILL.md, the test file) and every one is inside the node's eight declared write paths, with no concurrent node's path touched."
+  },
+  "node": "review-of-close-names-each-deferred-section-and-moves-it-2be71296a413",
+  "node:reviewed": "close-names-each-deferred-section-and-moves-it",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to extend close's deferred-section refusal with both remedies and to have a moved_to descope carry prose, effort, capability, open gates and comments to its successor; this commit carries the fix half of that \u2014 reckon/_store.py:3037 limits the travel to open gates, :3016 resolves the successor in the write's own root, and :3025 re-anchors the move link on the section record, matching PLAN-FORMAT.md:336.\nVERDICT done_when: the done_when names the node test file plus tests/test_schema.py and tests/test_a_plan_closes_in_one_op.py; the node file is recorded 5 passed / EXIT=0 at 2be71296a413 (gate-node-head.log) and 3 failed / EXIT=1 at ab87725e67 (gate-base.log), but the three-file arm at the head never completed \u2014 its log stops at 44%.\nVERDICT write_paths: read the manifest's eight declared paths; git show --stat 2be71296a413 lists seven files and each is inside them, and the figure directory the eighth path names is untouched by this commit.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T102653154559-close-names-each-deferred-section-and-moves-it/manifest.md; status complete, commits 3ceb7c1fa2 and 2be71296a4, baseline_suite 3 failures at ab87725e67, after_suite 3 failures at 2be71296a4 \u2014 but the after_suite log it cites carries no summary line, and the run history shows the quoted summary belongs to the 3ceb7c1fa2 run.\nVERDICT diff: read 2be71296a413 against 3ceb7c1fa2 commit by commit: one commit, seven files, +200/-85, filtering the carried gates to open ones at reckon/_store.py:3037, passing the write's root into the successor resolution at :3016, relocating the same-plan refusal from _apply_set to _carry_section_moves at :3021, deleting SectionRecord.moved_to and regenerating the JSON schema, restating the closed-gate rule in PLAN-FORMAT.md and the reckon-edit skill, and adding two tests plus an effort assertion.\nCALL_SITES: reckon/mcp_edit_plan.py:175, reckon/mcp_edit_plan.py:1948, reckon/_store.py:1583, reckon/_store.py:1630, reckon/_store.py:3385\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_store.py:3037 now filters moved_gates to str(gate.get('status') or 'open').strip().lower() == 'open', so a settled gate stays on the closed plan as PLAN-FORMAT.md:336 requires, and its caller at :3016 threads the write's root into _resolve_successor_section so the successor resolves and is written against the checkout being written.\nSCORE evidence: 12\nJUSTIFICATION evidence: the head arm of the node file is recorded (gate-node-head.log, revision 2be71296a413, 5 passed, EXIT=0) and the base arm is red (gate-base.log, ab87725e67, 3 failed, EXIT=1), but the three-file gate's cited head log gate-full.log stops at 44% with no summary and no EXIT= line, so the 3 failed / 3718 passed summary the manifest's after_suite records was produced at the previous revision 3ceb7c1fa2, not at the reviewed head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --stat 2be71296a413 lists seven files and every one is inside the node's eight declared write paths, with no concurrent node's path touched.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_close_names_each_deferred_section_and_moves_it.py:345-352 reddens if the open-gate filter is reverted (g-closed reappears on the successor or vanishes from the source), :419 with :427 redden if the successor is resolved against the default root instead of the written checkout, and :288-290 asserts effort 1.75 where the successor alone carries 0.5, but nothing exercises the same-plan refusal this commit moved out of _apply_set.\nSCORE fit: 18\nJUSTIFICATION fit: the change follows the module's private-helper idiom and keeps docstrings at the surrounding length (reckon/_store.py:2998-3005), citing no plan, ticket or stage label.\nSCORE reuse: 18\nJUSTIFICATION reuse: the diff adds no new function or class and removes the duplicate SectionRecord.moved_to field in favour of the data-links entry the reader owns; the only restatement is the open-status normalisation at reckon/_store.py:3037, which duplicates the two lines of _entry_is_open at :3173-3178 for a different record type.\nFINDING manifest.md:27 blocking: after_suite records revision 2be71296a4 with completed true, exit_status 1 and three failure ids, but its cited log gate-full.log stops at 44% with no summary and no EXIT= line \u2014 the 3 failed / 3718 passed summary was produced by the earlier run at 3ceb7c1fa2, which was overwritten at the head, so promotion reads an unreadable after arm and the head three-file gate is unrecorded.\nFINDING docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html:49 non-blocking: the fragment states '3 failed, 3718 passed in 741.73s (EXIT=1)' as the gate result without naming its revision, while the run that produced that summary ran at 3ceb7c1fa2 and the head re-run was killed at 44%, so the quoted figure reads as the new head's result when only the five-test node file is recorded green there.\nFINDING reckon/_store.py:1583 non-blocking: the same-plan refusal was moved out of _apply_set into _carry_section_moves at :3021, which runs after _apply_evidence_appends writes evidence files at :1581, so an op batch that both appends evidence and declares a moved_to naming a section of the plan being written leaves the evidence append on disk while the plan write refuses; no test covers the relocated refusal.",
+  "review_run_id": "r-20261105T155410942011-review-of-close-names-each-deferred-section-and-moves-it-2be71296a413",
+  "reviewed_base_sha": "3ceb7c1fa274bbbb94c847e3fcc00eb51c76bb4c",
+  "reviewed_head_sha": "2be71296a413ea3572341fdbba33c16de5f077ef",
+  "reviewed_run_id": "r-20261027T102653154559-close-names-each-deferred-section-and-moves-it",
+  "scores": {
+    "durability": 17,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T16:10:00+00:00",
+  "total": 103
+}

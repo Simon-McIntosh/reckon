@@ -1,0 +1,63 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/ledger.py:2524 (ledger._index_append calling run_store.append, the retried seam the test exercises)",
+    "reckon/crew/promotion_gate.py:1056 (run_store.import_ledger, the repair pass the third case drives)"
+  ],
+  "completed_at": "2026-11-05T10:51:57.406Z",
+  "dispatched_at": "2026-11-05T10:42:19Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the two other cases are red in the negative control, so the retry is measured; the short-lock case cannot discriminate while the driver's own five-second patience exceeds INDEX_RETRY_SECONDS, which the test name now overstates but no behaviour depends on",
+      "recorded_at": "2026-11-05T11:25:04.889970+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_locked_ledger_store_is_retried.py",
+      "id": "f9345edfd73",
+      "line": 80,
+      "severity": "non-blocking",
+      "text": "non-blocking: test_a_short_lock_is_waited_out is green in the negative control (logs/in-tree-test-no-retry.txt: 2 failed, 1 passed), so it measures a bare connection's five-second driver patience rather than the retry; the done_when's clause 'the short lock then fails the append' is unmet and cannot be met at any hold shorter than the driver timeout, because INDEX_RETRY_SECONDS is 3.0 at reckon/run_store.py:131 while a bare RunStore() keeps the driver's 5 s, so a cold bare open is strictly more patient than the retry."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit by commit from ec03593f7c to dae0aa1423; exactly two commits, one new 109-line test file and one 111-line deletion of the duplicated source from the evidence fragment, with nothing else touched.",
+    "done_when": "the done_when names a locked-append test, its removal control, no added suite failure, and ruff clean; logs/in-tree-test-head.txt:1 records revision dae0aa1423 with 3 passed and EXIT=0, logs/in-tree-test-no-retry.txt records the mutant with 2 failed, 1 passed and EXIT=1, and the suite arms show 32 base ids against 21 at the repaired head with none added - but the clause 'the short lock then fails the append' under the control is not met, because test_a_short_lock_is_waited_out passes in the mutant.",
+    "goal": "the node goal is that a locked ledger store is retried; the two gained commits are 02f6f1b963, which adds tests/test_a_locked_ledger_store_is_retried.py, and dae0aa1423, which replaces the carried <pre> copy at docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-locked-ledger-store-is-retried.html:8 with a pointer at the landed file.",
+    "manifest": "read; it states the gate ran tests/test_a_locked_ledger_store_is_retried.py (3 passed), carries in-tree-test-head.txt and in-tree-test-no-retry.txt as its arms, and records baseline_suite 32 ids against after_suite 21.",
+    "write_paths": "read the source prompt at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T073033751153-a-locked-ledger-store-is-retried/prompt.txt:77-81 and resume-4-advice.txt:1; the evidence fragment is a declared path and tests/test_a_locked_ledger_store_is_retried.py was granted into scope for this repair, and both files in the diff are inside them."
+  },
+  "justifications": {
+    "durability": "removing the retry from the package reddens tests/test_a_locked_ledger_store_is_retried.py::test_a_locked_write_is_attempted_again and ::test_a_lock_past_the_bound_is_reported_then_imported, as logs/in-tree-test-no-retry.txt records, so the regression fails a repository test.",
+    "evidence": "the gate at logs/in-tree-test-head.txt:1 ran the committed test at revision dae0aa1423 and the control at logs/in-tree-test-no-retry.txt ran it byte-identical against a mutant, but the short-lock case passes there, so the done_when's control clause is unmet and the after suite arm at 9812a25966 predates the test commit.",
+    "fit": "the test follows the suite's sentence-style names and tmp_path/monkeypatch idiom and the evidence fragment keeps the existing r-landing section shape, with no plan, ticket or version label in either path.",
+    "goal_fidelity": "tests/test_a_locked_ledger_store_is_retried.py:61-77 pins the retry at the append seam and docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-locked-ledger-store-is-retried.html:8 now names the landed file instead of carrying its source.",
+    "reuse": "the repair path reuses reckon/run_store.py:734 import_ledger that the promotion gate already calls, and a search of tests/ and tests/conftest.py for a store-lock holder found only an inline BEGIN IMMEDIATE at tests/test_gc_sweeps_ledger_indexes.py:211 and no shared fixture owner.",
+    "scope_discipline": "both changed paths, tests/test_a_locked_ledger_store_is_retried.py and the evidence fragment, are inside the scope granted by prompt.txt:77-81 and resume-4-advice.txt:1, and the worktree is otherwise clean."
+  },
+  "node": "review-of-a-locked-ledger-store-is-retried-dae0aa1423b8",
+  "node:reviewed": "a-locked-ledger-store-is-retried",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a locked ledger store is retried; the two gained commits are 02f6f1b963, which adds tests/test_a_locked_ledger_store_is_retried.py, and dae0aa1423, which replaces the carried <pre> copy at docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-locked-ledger-store-is-retried.html:8 with a pointer at the landed file.\nVERDICT done_when: the done_when names a locked-append test, its removal control, no added suite failure, and ruff clean; logs/in-tree-test-head.txt:1 records revision dae0aa1423 with 3 passed and EXIT=0, logs/in-tree-test-no-retry.txt records the mutant with 2 failed, 1 passed and EXIT=1, and the suite arms show 32 base ids against 21 at the repaired head with none added - but the clause 'the short lock then fails the append' under the control is not met, because test_a_short_lock_is_waited_out passes in the mutant.\nVERDICT write_paths: read the source prompt at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T073033751153-a-locked-ledger-store-is-retried/prompt.txt:77-81 and resume-4-advice.txt:1; the evidence fragment is a declared path and tests/test_a_locked_ledger_store_is_retried.py was granted into scope for this repair, and both files in the diff are inside them.\nVERDICT manifest: read; it states the gate ran tests/test_a_locked_ledger_store_is_retried.py (3 passed), carries in-tree-test-head.txt and in-tree-test-no-retry.txt as its arms, and records baseline_suite 32 ids against after_suite 21.\nVERDICT diff: read commit by commit from ec03593f7c to dae0aa1423; exactly two commits, one new 109-line test file and one 111-line deletion of the duplicated source from the evidence fragment, with nothing else touched.\nCALL_SITES: reckon/ledger.py:2524 (ledger._index_append calling run_store.append, the retried seam the test exercises), reckon/crew/promotion_gate.py:1056 (run_store.import_ledger, the repair pass the third case drives)\nSCORE goal_fidelity: 19\nSCORE evidence: 15\nSCORE scope_discipline: 20\nSCORE durability: 16\nSCORE fit: 19\nSCORE reuse: 19\nJUSTIFICATION goal_fidelity: tests/test_a_locked_ledger_store_is_retried.py:61-77 pins the retry at the append seam and docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-locked-ledger-store-is-retried.html:8 now names the landed file instead of carrying its source.\nJUSTIFICATION evidence: the gate at logs/in-tree-test-head.txt:1 ran the committed test at revision dae0aa1423 and the control at logs/in-tree-test-no-retry.txt ran it byte-identical against a mutant, but the short-lock case passes there, so the done_when's control clause is unmet and the after suite arm at 9812a25966 predates the test commit.\nJUSTIFICATION scope_discipline: both changed paths, tests/test_a_locked_ledger_store_is_retried.py and the evidence fragment, are inside the scope granted by prompt.txt:77-81 and resume-4-advice.txt:1, and the worktree is otherwise clean.\nJUSTIFICATION durability: removing the retry from the package reddens tests/test_a_locked_ledger_store_is_retried.py::test_a_locked_write_is_attempted_again and ::test_a_lock_past_the_bound_is_reported_then_imported, as logs/in-tree-test-no-retry.txt records, so the regression fails a repository test.\nJUSTIFICATION fit: the test follows the suite's sentence-style names and tmp_path/monkeypatch idiom and the evidence fragment keeps the existing r-landing section shape, with no plan, ticket or version label in either path.\nJUSTIFICATION reuse: the repair path reuses reckon/run_store.py:734 import_ledger that the promotion gate already calls, and a search of tests/ and tests/conftest.py for a store-lock holder found only an inline BEGIN IMMEDIATE at tests/test_gc_sweeps_ledger_indexes.py:211 and no shared fixture owner.\nFINDING tests/test_a_locked_ledger_store_is_retried.py:80 non-blocking: test_a_short_lock_is_waited_out is green in the negative control (logs/in-tree-test-no-retry.txt: 2 failed, 1 passed), so it measures a bare connection's five-second driver patience rather than the retry; the done_when's clause 'the short lock then fails the append' is unmet and cannot be met at any hold shorter than the driver timeout, because INDEX_RETRY_SECONDS is 3.0 at reckon/run_store.py:131 while a bare RunStore() keeps the driver's 5 s, so a cold bare open is strictly more patient than the retry.\n",
+  "review_run_id": "r-20261105T102251084655-review-of-a-locked-ledger-store-is-retried-dae0aa1423b8",
+  "reviewed_base_sha": "ec03593f7c2ccd99169a9c751b059be43411974d",
+  "reviewed_head_sha": "dae0aa1423b81f3009ba0d39a9ee6159245d7851",
+  "reviewed_run_id": "r-20261103T073033751153-a-locked-ledger-store-is-retried",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T11:21:47.805859+00:00",
+  "total": 108
+}

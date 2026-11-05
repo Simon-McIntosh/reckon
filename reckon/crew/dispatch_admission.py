@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import shlex
 import socket
 import threading
 from collections import (
@@ -806,12 +807,52 @@ def _health_review_age_days(
     return (now - stamp).total_seconds() / 86400.0
 
 
-def _health_review_compose_command(*, project: str, plan: str, session: str) -> str:
-    """The command that composes a fresh code review around the plan."""
-    return (
-        f"{HEALTH_REVIEW_COMPOSE_VERB} --project {project} "
-        f"--around {plan} --session {session}"
-    )
+def _health_review_plan_write_paths(project: str, plan: str) -> list[str]:
+    """The production paths a plan's implementable sections declare, else ``[]``.
+
+    The subject composer resolves ``--around <plan>`` to exactly these paths and
+    refuses the command when the plan names none, so a remedy composed around a
+    plan that declares no write paths is a refusal moved one step later. A plan
+    that cannot be read is treated the same way: the command must run, so the
+    caller falls back to the paths the dispatch itself declared.
+    """
+    if not plan:
+        return []
+    try:
+        docs = flight.mounted_project_docs().get(project)
+        if docs is None:
+            return []
+        plan_path = Path(docs) / "plans" / f"{plan}.html"
+        if not plan_path.is_file():
+            return []
+        from reckon.crew import plan_review as _plan_review
+
+        return list(_plan_review.code_review_paths_from_plan(plan_path))
+    except (CrewError, OSError, ValueError, KeyError):
+        return []
+
+
+def _health_review_compose_command(
+    *,
+    project: str,
+    plan: str,
+    session: str,
+    paths: Iterable[str] = (),
+) -> str:
+    """The command that composes a fresh code review of this neighbourhood.
+
+    A plan whose implementable sections declare write paths is named as the
+    subject, so the review reads the whole of what that plan is about to build.
+    A plan that declares none cannot be named — the composer refuses it — so the
+    command names the dispatch's own write paths instead, one ``--path`` each.
+    Either way the printed command is one that runs.
+    """
+    named = [str(path) for path in paths if str(path).strip()]
+    if named:
+        subject = " ".join(f"--path {shlex.quote(path)}" for path in named)
+    else:
+        subject = f"--around {shlex.quote(plan)}"
+    return f"{HEALTH_REVIEW_COMPOSE_VERB} --project {project} {subject} --session {session}"
 
 
 def _dispatch_health_review(
@@ -832,7 +873,10 @@ def _dispatch_health_review(
     neighbourhood covers every one of the node's product write paths together
     with that review's age and the open findings already stored against those
     paths, and names the compose command instead when no covering review is
-    younger than the staleness window.
+    younger than the staleness window. The command it names is one that runs: a
+    plan declaring its sections' write paths is named as the subject, and a plan
+    declaring none is replaced by this dispatch's own write paths, because the
+    composer refuses a plan that resolves to no path.
 
     It is advisory: nothing here refuses, holds or reroutes, and the routing is
     untouched. A node that writes no product source has no neighbourhood a code
@@ -878,6 +922,18 @@ def _dispatch_health_review(
         except (CrewError, OSError, ValueError):
             return 0
 
+    def _remedy_paths() -> list[str]:
+        """The paths the remedy names: the dispatch's own, unless the plan has some.
+
+        A plan that declares its sections' write paths is a better subject than
+        the node's own: it covers the whole of what the plan is about to build.
+        One that declares none gives the composer nothing to resolve, so the
+        remedy falls back to the paths this dispatch declared.
+        """
+        if _health_review_plan_write_paths(project, plan):
+            return []
+        return sorted(product_paths)
+
     def _block(
         state: str,
         detail: str,
@@ -895,7 +951,10 @@ def _dispatch_health_review(
                 None
                 if fresh
                 else _health_review_compose_command(
-                    project=project, plan=plan, session=session
+                    project=project,
+                    plan=plan,
+                    session=session,
+                    paths=_remedy_paths(),
                 )
             ),
             "detail": detail,

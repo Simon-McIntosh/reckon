@@ -152,8 +152,15 @@ to extend, the interface not to widen, the question the worker may not settle.
 
 **Queue the work you have chosen in one beat.** Decide which sections need doing
 now, often a few from each of several plans whose review rounds are answered.
-Size each into nodes and dispatch all of them in one beat, naming no lane so the
-picker routes each request. The set may include sections whose upstream has not
+Size each into nodes and queue all of them in one beat with one
+`reckon crew dispatch --batch <file>` call, naming no lane so the picker routes
+each request. One entry per chosen section, naming its project, plan, section,
+node id and goal; every field an entry omits — the done-when, the write paths,
+the waits — is taken from the section itself, and an entry may wait on another
+entry by its node id. The call prints one row per entry: queued,
+awaiting-upstream, already queued, or refused with its reason, and a refused
+entry does not stop the rest. Queueing this way costs one plan read per plan
+rather than one dispatch per section, so never write one call per section. The set may include sections whose upstream has not
 landed. Never load a plan wholesale: choose each section, and steer the queue as
 earlier results come back. A declared section wait parks its node
 `awaiting-upstream` until the upstream lands, with no further coordinator

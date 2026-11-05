@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="docs-project" content="reckon">
+<meta name="plan-slug" content="a-live-worker-is-never-drawn-halted">
+<title>snapshot-classifies-from-its-read — landing record</title>
+</head>
+<body>
+<main class="plan-doc">
+<h2 id="snapshot-classifies-from-its-read">Landing record — a snapshot classifies from the records its sweep already read</h2>
+
+<p id="snapshot-classifies-from-its-read-why">Reducing a live pointer to a snapshot can ask whether a review is already in flight for a finished run, and that question is answered from the project's live-pointer population. The sweep holds that population already, but the snapshot did not pass it on, so every scoring row listed the live directory again. Inside a producer's own transition write that read re-entered the publisher that builds the snapshot, which crash-looped the reckon producer on a recursion error on 2026-11-05. A same-thread re-entry guard in <code>runs.py</code> stops the recursion; handing the sweep's own read over stops the read.</p>
+
+<p id="snapshot-classifies-from-its-read-how">The <code>pointers</code> parameter <code>classify_pointer</code> already accepts is extended rather than joined by a new reader: <code>_watch_snapshot</code> and <code>_compute_watch_snapshot</code> take it and pass it through, and the three sweeps inside <code>recovery_watch.py</code> that hold the population hand it over — the producer's own snapshot pass, the quiet beat's reuse path, and the legacy per-session count rebuild. When no population is handed over the classification call is byte-for-byte the one it was, so a caller with a single pointer classifies exactly as before.</p>
+
+<p id="snapshot-classifies-from-its-read-checks"><code>tests/test_snapshot_classifies_from_its_read.py</code> counts <code>list_live</code> calls while a one-row sweep reduces a scoring pointer with no live review, and carries two controls so the zero cannot be read as an instrument that saw nothing: the row's classification is asserted to be <code>scoring</code> (the branch the read lives on), and the same row classified without the population is asserted to read the set at least once in the same run.</p>
+
+<h3>Gate</h3>
+<p id="snapshot-classifies-from-its-read-gate">The gate is a head/base arm pair over the 112 test files that import <code>recovery_watch</code> or <code>recovery_classification</code>, run at <code>-n 6 --timeout 300</code> on the fleet node in place. <strong>Head: 902 passed, 6 failed, <code>EXIT=1</code>, 270 s.</strong> <strong>Base (revision c15f841ed1): 900 passed, 8 failed, <code>EXIT=1</code>, 196 s.</strong> The delta is one added failure, <code>test_a_crashed_producer_is_restarted.py::test_repeated_crashes_reach_a_reported_limit</code>, a 20-second timing bound on restarted producers; it passes 3/3 alone in the head tree and failed 3/3 alone <em>with the head source reverted to base</em> in the same worktree before passing there too, so it is a load-sensitive bound and not this change. Base-only failures are the reproduction and two further timing-bound cases.</p>
+
+<p id="snapshot-classifies-from-its-read-control">The declared negative control drops the hand-over in <code>_compute_watch_snapshot</code>; the count test then reports one read and exits 1 (<code>negative-control.log</code>).</p>
+</main>
+</body>
+</html>

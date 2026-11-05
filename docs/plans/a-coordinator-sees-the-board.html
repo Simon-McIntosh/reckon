@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-project-reads-as-one-picture#s4&quot;,&quot;a-coordinator-sees-the-board#s2&quot;],&quot;s4&quot;:[&quot;a-project-reads-as-one-picture#s2&quot;,&quot;a-coordinator-sees-the-board#s3&quot;],&quot;s5&quot;:[&quot;the-mcp-answers-the-question-asked#s3&quot;,&quot;a-coordinator-sees-the-board#s2&quot;,&quot;a-coordinator-sees-the-board#s3&quot;],&quot;s7&quot;:[&quot;a-coordinator-sees-the-board#s3&quot;,&quot;a-coordinator-sees-the-board#s4&quot;,&quot;a-coordinator-sees-the-board#s5&quot;,&quot;a-coordinator-sees-the-board#s6&quot;],&quot;s8&quot;:[&quot;a-coordinator-sees-the-board#s3&quot;,&quot;a-coordinator-sees-the-board#s4&quot;,&quot;a-coordinator-sees-the-board#s5&quot;,&quot;a-coordinator-sees-the-board#s6&quot;],&quot;s9&quot;:[&quot;a-coordinator-sees-the-board#s2&quot;,&quot;a-coordinator-sees-the-board#s5&quot;],&quot;s10&quot;:[&quot;a-coordinator-sees-the-board#s9&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>A Coordinator Sees the Board | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="18">
-<meta name="plan-modified" content="2026-10-23">
+<meta name="plan-version" content="29">
+<meta name="plan-modified" content="2026-11-05">
 </head>
 <body>
   <main class="plan-doc">
@@ -106,7 +106,7 @@
     </ul>
 
     <h2 id="s3">§3 — The ready-idle set extends the ready-set view</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><code>ready_set_view</code> (<code>reckon/mcp_views.py:1128</code>) already projects ready sections
     from the canonical roadmap. This section extends it instead of adding a second projection. Each ready
     row gains three fields:</p>
@@ -170,7 +170,7 @@
     section and no run must not appear, and the test must fail if it does.</p>
 
     <h2 id="s6">§6 — The lane share lives on the lanes view alone</h2>
-<section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
     <p><code>crew(view="lanes")</code> already attaches the parsed lane document to each lane row
     (<code>_attach_lane_document</code>, <code>reckon/mcp_views.py:724</code>). The document is parsed once,
     by <code>read_lane_document</code> in <code>reckon/crew/lane_document.py:303</code>, and
@@ -256,6 +256,9 @@
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s10" data-id="c-20261023-s10-source" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
+    <div class="r-comment-body"><p>Content review of v11 on 2026-10-23: the transcript read §10 names (<code>_coordinator_accounting</code> in <code>reckon/crew/dispatch_accounting.py</code>) resolves only the calling process's own session, so it cannot serve every coordinator on the board. §10 needs another source before dispatch.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261023T064458793164-review-of-a-plans-coordinator-is-derived-from-the-ledger-20030d0d081a" data-who="reckon-build" data-when="2026-10-23T07:21:57.992Z">
     <div class="r-comment-body"><p>the review of run r-20261023T002639713681-a-plans-coordinator-is-derived-from-the-ledger is stored at both declared review-records paths, scoring goal_fidelity 14, evidence 16, scope_discipline 20, durability 13, fit 18, reuse 5, total 86, reviewed at 017b346cb43a597da2b3d4c37bea6657eac1c886..20030d0d081a8cbbe50705de9db140dc1835eae2, with one blocking finding: reckon/crew/plan_coordinator.py:122 resolves a review's subject run by looking a node id up in a run-id-keyed map, so the run-review match returns no plan on real ledger data.</p></div>
 </div>
@@ -277,11 +280,41 @@
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-23T11:30:00Z">
     <div class="r-comment-body"><p>§2 landed by merge <code>a1f05ac84</code>: each plan's coordinator is derived from its most recent dispatched run; 120 passed at head with only the pre-existing width failure; review 109/120. <a href="/reckon/evidence/archive/a-coordinator-sees-the-board-landed.html#s2">evidence</a></p></div>
 </div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261105T130153036665-review-of-the-ready-idle-set-extends-the-ready-set-view-dfaf3328e186" data-who="reckon-build" data-when="2026-11-05T13:16:23.372Z">
+    <div class="r-comment-body"><p>Independent review of r-20261027T100533445121: the landed ready-set extension does what its goal states (live_run, coordinator, plan_owner, critical_path, closable with closure blockers, ready_idle filter with the view's own paging), its four fixture cases pass at head and its negative control is recorded red; four non-blocking findings and no blocking one, with durability 15 because the auto-derivation branch at reckon/mcp_views.py:1195 is reached by neither a test nor a production caller.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261027T100533445121-the-ready-idle-set-extends-the-ready-set-view" data-who="reckon-build" data-when="2026-11-05T12:57:31.233Z">
+    <div class="r-comment-body"><p>ready_set_view now carries each ready row's live_run, coordinator, plan_owner and critical_path flag, names the closable plans with their closure blockers, and filters to rows with no live run under ready_idle (paging with its own cursor, no new view); on the 2026-10-22T08:50Z power_convertor fixture the filtered call names iter-switched-terminal-transients#s13, iter-dummy-load-validation#s4 and shared-coil-supply-model#s9 with their coordinators and jt60sa-coil-circuit-model and tf-co-wound-tape-validation as closable, under the 80,000-character ceiling.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-11-05T13:35:00Z">
+    <div class="r-comment-body"><p>Section 3 landed at merge <code>25af6fefb</code>: ready_set_view now carries each ready row's live_run, coordinator, plan_owner and critical_path flag, and names the closable plans with their closure blockers. Under ready_idle it filters to rows with no live run and pages with its own cursor; no new view is added. On the power_convertor fixture of 2026-10-22T08:50Z, the filtered call names iter-switched-terminal-transients#s13, iter-dummy-load-validation#s4 and shared-coil-supply-model#s9 with their coordinators, and jt60sa-coil-circuit-model and tf-co-wound-tape-validation as closable, under the 80,000-character ceiling. Coordinator armed pair: the base arm runs no tests (exit 4, the test file is new); head 4 passed. Coordinator importer measure over the 52 test files importing reckon.mcp_views, stacked on main: main 778 passed, stack 782 passed, no failure added. Review 108. Its unreachable coordinators fallback branch is folded into the lane-share node's done-when for deletion; the other three findings are exempted. <a href="/reckon/evidence/archive/a-coordinator-sees-the-board-landed.html#s3">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261105T151609737027-review-of-the-critical-path-reads-link-by-link-ee5067137e26" data-who="reckon-build" data-when="2026-11-05T15:27:18.591Z">
+    <div class="r-comment-body"><p>independent review of r-20261027T103440000932-the-critical-path-reads-link-by-link stored as parsed: goal_fidelity 18, evidence 16, scope_discipline 20, durability 18, fit 19, reuse 18, total 109, added_failure_count 0, two non-blocking findings (the evidence fragment's table omits the fourth link; the base arm is recorded completed against a log reading "no tests ran").</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261105T155650561358-review-of-the-critical-path-reads-link-by-link-6d76ede655a6" data-who="reckon-build" data-when="2026-11-05T16:06:46.311Z">
+    <div class="r-comment-body"><p>review of the critical path reads link by link at 6d76ede655a6bfb020c885e66e13186f7b39dfde; six dimensions scored 18/13/19/18/19/18 over base ab87725e67ab7377c2efb9b60a263578f3f2f8de, zero added failures derived from the run's own baseline_suite (exit 4, empty collection) and after_suite (exit 0, 0 failures), one blocking and three non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261105T163308099273-review-of-the-critical-path-reads-link-by-link-820eef6b7dcc" data-who="reckon-build" data-when="2026-11-05T16:50:11.053Z">
+    <div class="r-comment-body"><p>review of r-20261027T103440000932-the-critical-path-reads-link-by-link at head 820eef6b7dcc: parsed record scoring goal_fidelity 19, evidence 12, scope_discipline 20, durability 17, fit 16, reuse 20 (total 104), added_failure_count 0, four non-blocking findings (stale docstring at reckon/roadmap.py:3302, untested decision-before-wait ordering, stale case counts in the evidence fragment, three-file gate not re-run at the head).</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261105T155603994486-review-of-the-board-extends-the-coordinator-directory-fede253832fd" data-who="reckon-build" data-when="2026-11-05T16:06:28.052Z">
+    <div class="r-comment-body"><p>The review of the-board-extends-the-coordinator-directory (1f5a6bb2..fede253832) is stored and validated: scores goal_fidelity 16, evidence 19, scope_discipline 19, durability 16, fit 17, reuse 16; four non-blocking findings (duplicate lane-document parse re-added at mcp_views.py:747, ready join capped at the ready-set view's default page at directory.py:253, ready-idle join withheld on workstation-scope reads at directory.py:345, binding verdict unguarded for a disregarded claim at tests/test_the_board_extends_the_directory.py:191); zero added failures against the base arm.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261105T164657055017-review-of-the-board-extends-the-coordinator-directory-e8c5b3633fa7" data-who="reckon-build" data-when="2026-11-05T17:02:15.234Z">
+    <div class="r-comment-body"><p>Independent review of r-20261027T101652349078-the-board-extends-the-coordinator-directory over fede253832..e8c5b3633f: parsed record, scores goal_fidelity 18, evidence 16, scope_discipline 19, durability 15, fit 15, reuse 5, added_failure_count 0, three non-blocking findings; the done-when gate re-ran at the reviewed head reporting 39 passed EXIT=0.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261105T143231863205-review-of-the-lane-share-lives-on-the-lanes-view-cc4027211900" data-who="reckon-build" data-when="2026-11-05T14:43:07.753Z">
+    <div class="r-comment-body"><p>review of r-20261027T101220701986-the-lane-share-lives-on-the-lanes-view at cc4027211900c424f846eb16211794d3026380fc (base ab87725e67ab7377c2efb9b60a263578f3f2f8de) scores goal_fidelity 19, evidence 18, scope_discipline 19, durability 18, fit 18, reuse 13, added failures 0, three non-blocking findings (a tautological assertion in the node test file, and two duplicated capabilities in reckon/mcp_views.py); recommendation: land, with the findings foldable into a later node</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261027T101220701986-the-lane-share-lives-on-the-lanes-view" data-who="reckon-build" data-when="2026-11-05T14:28:31.949Z">
+    <div class="r-comment-body"><p>`crew(view="lanes", session=...)` now serves a `session_share` block — the session's published worker slots read through `obligations._published_worker_slots`, the router's live-run count for that session (`unknown` when unlisted), and the local lane document's `observed_at`, age, shelf life and `stale` marker; the unreachable `_ready_set_coordinators` derivation and its swallow-all fallback are deleted. Gate: 42 passed (node tests + tests/test_mcp_tools.py); a stale document reads stale. Negative control: dropping the staleness comparison fails the stale case (1 failed, EXIT=1).</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-close-s6" data-who="reckon-build" data-when="2026-11-05T15:13:00Z">
+    <div class="r-comment-body"><p>Section 6 landed at merge <code>42b8ce4d9</code>: crew(view="lanes", session=...) now serves a session_share block. It carries the session's published worker slots, read through obligations._published_worker_slots, and the router's live-run count for that session (unknown when the session is unlisted). It also carries the local lane document's observed_at, age and shelf life, and a stale marker. A stale document reads as stale. The unreachable _ready_set_coordinators derivation and its swallow-all fallback are deleted. The auto-landing merged the reviewed head. Coordinator armed pair: the base arm runs no tests (exit 4, the test file is new); head 7 passed. Coordinator importer measure over the 54 test files importing reckon.mcp_views, stacked on main: main 786 passed, stack 793 passed, no failure added. Review 105. The two duplicated capabilities in mcp_views.py are folded into the board node's done-when, and the delegating assertion is exempted. <a href="/reckon/evidence/archive/a-coordinator-sees-the-board-landed.html#s6">evidence</a></p></div>
+</div>
 <div class="r-comment" data-section="s9" data-id="c-20261023-s9-conflict" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
     <div class="r-comment-body"><p>Content review of v11 on 2026-10-23: §9 lists every live host's session, while §5's done-when requires a coordinator whose only plan has no ready section and no run not to appear. Decide which rule the board follows before §9 is dispatched.</p></div>
-</div>
-<div class="r-comment" data-section="s10" data-id="c-20261023-s10-source" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
-    <div class="r-comment-body"><p>Content review of v11 on 2026-10-23: the transcript read §10 names (<code>_coordinator_accounting</code> in <code>reckon/crew/dispatch_accounting.py</code>) resolves only the calling process's own session, so it cannot serve every coordinator on the board. §10 needs another source before dispatch.</p></div>
 </div>
 </section>
 </main>
