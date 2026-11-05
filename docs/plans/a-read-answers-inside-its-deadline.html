@@ -26,7 +26,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="559">
+<meta name="plan-version" content="560">
 <meta name="plan-modified" content="2026-11-05">
 </head>
 <body>
@@ -1154,7 +1154,10 @@
     <div class="r-comment-body"><p>Independent review of r-20261103T071823353305-a-fresh-process-asks-git-only-about-what-moved stored at reviewed_base_sha 05a2cd1ab2b40f88480dbf2cb4b195d6e252c3e3 / reviewed_head_sha f12928cf4c7012cd1131bf87b115327788e59887: all six dimensions scored (18/16/18/15/16/5, total 88), added_failure_count 0 against the reviewed run's own baseline_suite and after_suite arms, four non-blocking findings (continued store duplication of reckon/_store.py's atomic-write and flock owners; the bounded rule pruned only past a 256-tree ceiling; the resolve half of the store asserted against the input value rather than an independent source; a stored commit answer survives a worktree path reused by another repository).</p></div>
 </div>
 <div class="r-comment" data-section="s44" data-id="c-run-r-20261105T073125965126-review-of-a-fresh-process-asks-git-only-about-what-moved-69571c85e4ff" data-who="reckon-build" data-when="2026-11-05T07:44:31.674Z">
-    <div class="r-comment-body"><p>§44 review of run r-20261103T071823353305-a-fresh-process-asks-git-only-about-what-moved at head 69571c85e4 stores a parsed read-only record scoring goal_fidelity 19, evidence 17, scope_discipline 20, durability 17, fit 19, reuse 20, with two non-blocking findings on the run&#x27;s own evidence provenance and added_failure_count 0.</p></div>
+    <div class="r-comment-body"><p>§44 review of run r-20261103T071823353305-a-fresh-process-asks-git-only-about-what-moved at head 69571c85e4 stores a parsed read-only record scoring goal_fidelity 19, evidence 17, scope_discipline 20, durability 17, fit 19, reuse 20, with two non-blocking findings on the run's own evidence provenance and added_failure_count 0.</p></div>
+</div>
+<div class="r-comment" data-section="s44" data-id="c-run-r-20261103T071823353305-a-fresh-process-asks-git-only-about-what-moved" data-who="reckon-build" data-when="2026-11-05T06:43:54Z">
+    <div class="r-comment-body"><p>§44 — two immutable git answers (a full revision&#x27;s commit and the commit count to a base) now come from a store under the crew home keyed on the object ids, so a fresh process spawns neither `git rev-parse --verify` nor `git rev-list --count` over unmoved worktrees; with the store read disabled the same derivation spawns both (1 failing test id, 0 at head).</p></div>
 </div>
 <div class="r-comment" data-section="s45" data-id="c-s45-runs-view" data-who="reckon-build" data-when="2026-10-21T06:05:00Z">
     <div class="r-comment-body"><p>A second reader with the same cost, reported by another session. At about 08:00 CEST, <code>crew(view="runs", project="reckon", session=…, limit=10)</code> returned <code>storage-slow</code> with cause <code>computing</code>: 25.2 s of CPU in a 30 s wait, at code stamp <code>f10cf42fa</code>.</p><p>The view reaches the decode through <code>crew/query.runs_view</code> → <code>ledger.runs</code> → <code>read_records</code> → <code>load</code>, so the reuse §45 places inside <code>ledger.load</code> covers it too. The node also times a warm <code>runs</code> view at base and at head.</p></div>
