@@ -100,6 +100,7 @@ from reckon.mcp_views import (
     crew_view_name,
     discovery_view,
     error_response,
+    names_one_project,
     normalize_roadmap_view,
     normalize_selector,
     normalize_view,
@@ -107,6 +108,7 @@ from reckon.mcp_views import (
     roadmap_view,
     serve_crew_view,
     storage_schema_for,
+    with_change_set,
 )
 
 from reckon.project_state import (
@@ -2090,7 +2092,7 @@ def _roadmap_selected_view(
     so a caller naming no view is sent to the brief only where the brief can
     answer.
     """
-    if view is None and project != "*" and not project.startswith("graph:"):
+    if view is None and names_one_project(project):
         return BRIEF_VIEW
     return view
 
@@ -2555,12 +2557,22 @@ def _roadmap_tool(
     view: _RoadmapViewName | None = None,
     cursor: str | None = None,
     limit: int | None = None,
+    since: str | None = None,
 ) -> dict[str, Any]:
     """Return a transport-bounded roadmap by default for one project.
 
     Lossless single-project reports routinely exceed the MCP response ceiling,
     so clients request ``view='raw'`` explicitly. Portfolio and graph targets
     retain their existing defaults.
+
+    ``since`` names an instant a previous read returned as its ``observed_at``,
+    which is how a caller asks what moved in the meantime. A read that passes a
+    ``since`` carries ``observed_at`` — the instant to pass back on the next read —
+    and ``change_set``: the plan sections whose declaration moved, the sections
+    their landing released, and the runs whose classification moved in the
+    transition stream. A read that passes no ``since`` has asked no question
+    about a window and is answered exactly as its view built it, carrying
+    neither key, so ``view='raw'`` stays lossless.
     """
 
     # The roadmap read's own validator decides this, before the scan that builds
@@ -2572,7 +2584,7 @@ def _roadmap_tool(
     selected_view = _roadmap_selected_view(project, view)
     if checkout_path is None:
         checkout_path = _run_scoped_read_root(project)
-    return _roadmap(
+    answer = _roadmap(
         project,
         checkout_path=checkout_path,
         sprint=sprint,
@@ -2581,6 +2593,7 @@ def _roadmap_tool(
         cursor=cursor,
         limit=limit,
     )
+    return with_change_set(answer, project, since, checkout_path)
 
 
 def _crew(

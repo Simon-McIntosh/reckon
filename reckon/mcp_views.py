@@ -7,6 +7,7 @@ import copy
 import json
 import re
 import sqlite3
+import subprocess
 import threading
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextlib import closing
@@ -51,8 +52,15 @@ from reckon.live_run_classification import (
 from reckon.project_state import _natural_identifier_key
 
 VIEW_NAMES = frozenset(
-    {"summary", "detail", "history", "version", "raw", "schema", "section"}
+    {"summary", "detail", "history", "version", "raw", "schema", "section", "why"}
 )
+#: The view names a typed resource function composes. ``why`` is served only by
+#: ``read_plan``, which routes it to ``reckon.why_view`` before any typed view is
+#: asked, and no typed function builds that shape — so accepting the name in
+#: them would answer it with whatever shape the function fell through to. They
+#: refuse it by normalising against this set, which is one rule rather than a
+#: refusal written into each caller.
+TYPED_VIEW_NAMES = VIEW_NAMES - {"why"}
 #: Summary input key carrying a plan's assembled blocker state. The reading
 #: surface that owns a plan's holds fills it with ``roadmap.plan_blocker_state``'s
 #: answer; a summary that finds no such answer — a direct ``resource_view``
@@ -2229,12 +2237,20 @@ def storage_schema_for(resource_type: str) -> dict[str, Any]:
     )
 
 
-def normalize_view(view: str | None) -> str:
-    """Validate a view name, defaulting typed calls to ``summary``."""
+def normalize_view(
+    view: str | None, *, accepted: Iterable[str] = TYPED_VIEW_NAMES
+) -> str:
+    """Validate a view name, defaulting typed calls to ``summary``.
+
+    ``accepted`` is the set the calling surface composes. It defaults to the
+    typed views, so a typed function refuses a name it does not serve rather
+    than falling through to the shape it would otherwise return; a caller that
+    serves more names passes its own set.
+    """
 
     selected = (view or "summary").strip().lower()
-    if selected not in VIEW_NAMES:
-        choices = ", ".join(sorted(VIEW_NAMES))
+    if selected not in accepted:
+        choices = ", ".join(sorted(accepted))
         displayed = repr(view)
         if len(displayed) > 96:
             displayed = displayed[:93] + "..."
@@ -4043,6 +4059,76 @@ def crew_view_name(view: str) -> str:
     return view
 
 
+def names_one_project(project: str | None) -> bool:
+    """Whether a read names the one project a change set can bound.
+
+    ``None``, ``"*"`` and a ``graph:`` selector each span projects. A change
+    set is composed from one project's plan history and one producer's
+    transition stream, so a cross-project read has no window to bound; it is
+    answered with the reason rather than with a set narrower than the read.
+    """
+
+    if not project:
+        return False
+    return project != "*" and not project.startswith("graph:")
+
+
+def with_change_set(
+    answer: dict[str, Any],
+    project: str | None,
+    since: str | None,
+    checkout_path: str | None,
+) -> dict[str, Any]:
+    """Attach the change set a caller asked for with ``since``.
+
+    Both the roadmap tool and the ``crew`` views call this, so a window asked
+    for on either surface is answered the same way, for the same arguments and
+    the same scope. A read that names no window is returned untouched: it asked
+    no question about a window, and no view should grow keys its caller did not
+    request.
+
+    A window that cannot be composed is reported in the change set's own
+    ``error`` field rather than failing the read: the document it rides on is
+    still correct, and a reader that asked for the window learns why it is
+    absent instead of reading an empty set as "nothing changed".
+    """
+
+    if since is None:
+        return answer
+    from reckon import change_set as change_set_module
+
+    if not names_one_project(project):
+        observed = change_set_module.observed_now()
+        answer["observed_at"] = observed
+        answer["change_set"] = {
+            "project": project,
+            "since": since,
+            "observed_at": observed,
+            "full": False,
+            "sections": [],
+            "newly_ready": [],
+            "runs": [],
+            "error": "cross_project",
+        }
+        return answer
+    try:
+        composed = change_set_module.change_set(project, since, repo=checkout_path)
+    except (OSError, ValueError, subprocess.SubprocessError) as exc:
+        composed = {
+            "project": project,
+            "since": since,
+            "observed_at": change_set_module.observed_now(),
+            "full": False,
+            "sections": [],
+            "newly_ready": [],
+            "runs": [],
+            "error": f"{type(exc).__name__}: {exc}",
+        }
+    answer["observed_at"] = composed.get("observed_at")
+    answer["change_set"] = composed
+    return answer
+
+
 def serve_crew_view(
     view: str = "summary",
     *,
@@ -4461,14 +4547,19 @@ def serve_crew_view(
                 session=session,
                 pointers=project_pointers,
             )
-            return {
-                "ok": True,
-                "project": project,
-                "view": view,
-                "session": session,
-                "watcher": project_watch_visibility(project, session=session),
-                "runs": runs,
-            }
+            return with_change_set(
+                {
+                    "ok": True,
+                    "project": project,
+                    "view": view,
+                    "session": session,
+                    "watcher": project_watch_visibility(project, session=session),
+                    "runs": runs,
+                },
+                project,
+                since,
+                checkout_path,
+            )
         if view == "forgotten":
             from reckon.crew import forgotten_runs as forgotten_module
 

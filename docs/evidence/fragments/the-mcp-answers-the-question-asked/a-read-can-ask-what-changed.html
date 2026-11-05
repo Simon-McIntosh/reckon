@@ -1,0 +1,132 @@
+<!-- Evidence anchor: a-read-can-ask-what-changed -->
+
+<section data-reckon="evidence" id="a-read-can-ask-what-changed-evidence">
+  <h3>§7 — A read can ask what changed</h3>
+
+  <p id="a-read-can-ask-what-changed-surface">
+    <strong>The existing <code>since</code> reaches three more reads, and each
+    answer carries the instant to pass next.</strong> The roadmap tool gained
+    the parameter (<code>reckon/mcp.py</code>, <code>_roadmap_tool</code>), so
+    a view-less call — the brief — and every named view accept it alike;
+    <code>crew(view="live")</code> already took it and now answers with it.
+    A read that names a window answers with <code>observed_at</code> and the
+    change set; one that names none is returned exactly as its view built it,
+    so a raw read stays lossless and no view grows a key nobody asked for. No
+    cursor was added, no store was written, and no read refuses a window that
+    it used to accept. Both surfaces compose it through one helper,
+    <code>reckon/mcp_views.py</code>'s <code>with_change_set</code>, so the
+    roadmap tool, the brief and the <code>crew view</code> verb answer one
+    document for the same arguments. A read that spans projects — no project,
+    <code>*</code>, or a <code>graph:</code> selector — has no single plan
+    history or transition stream to bound, so it is answered with
+    <code>change_set.error</code> reading <code>cross_project</code> rather
+    than with a set narrower than the read.
+  </p>
+
+  <p id="a-read-can-ask-what-changed-composition">
+    <strong>The composition is a new module,
+    <code>reckon/change_set.py</code>, reading two sources that already
+    exist.</strong> Plan changes come from the plan files' git history through
+    <code>velocity._plan_history</code>. Each plan's revisions are read in one
+    batched blob read — the last commit at or before the window's start, then
+    every commit inside the window, then <code>HEAD</code> — and a section's
+    change is credited to the commit in that walk that actually moved its
+    declaration, so a window holding two commits names two commits. Run changes
+    come from the
+    producer's transition stream
+    (<code>~/.config/reckon/crew/watch/&lt;project&gt;-&lt;key&gt;.events</code>),
+    whose rows carry <code>observed_at</code>; the change set filters on
+    <code>event="transition"</code> and a real state move, and carries each row's
+    own instant rather than a file mtime. Wiring findings are absent by
+    construction — they are recomputed on every read and keep no history.
+  </p>
+
+  <p id="a-read-can-ask-what-changed-readiness">
+    <strong>A section's landing reports the dependents it released.</strong>
+    For each section whose declaration moved to <code>done</code>, the module
+    walks the <code>plan-section-depends-on</code> edges and compares each
+    waiting section's readiness across the same two revisions: implementable
+    and every declared dependency satisfied. A dependent reported as
+    <code>newly_ready</code> is one that was not dispatchable entering the
+    window and is dispatchable at its end, and the entry names the refs it
+    finished waiting on. Satisfaction is decided by the roadmap's own
+    <code>_section_satisfied</code>, so a section released here is one the
+    roadmap releases too — including a section carrying no declaration, which
+    a gate closing to <code>passed</code> satisfies. A ref naming no section
+    waits on the plan itself, and is released when that plan completes inside
+    the window, judged by the roadmap's whole-plan rule — a completed plan, or
+    one with a done section, every open section deferred and every authored
+    heading declared — read against the revision rather than the checkout.
+    Dependency refs are split by <code>_schema.parse_plan_ref</code>, the
+    grammar every other surface reads them with.
+  </p>
+
+  <p id="a-read-can-ask-what-changed-window">
+    <strong>The window is half-open at the start and closed at the end, at
+    second resolution.</strong> A change is reported when
+    <code>since &lt; time &lt;= observed_at</code>, so a change landing in the
+    same second a read observed state is reported by that read and not again by
+    the next. Both ends are applied to both sources: a commit or a transition
+    landing after the instant a read observed state is outside that answer and
+    is reported once, by the next one, rather than appearing in a reader's
+    window before the read that owns it. A
+    <code>since</code> the transition stream cannot reach back to is
+    widened to the oldest row the stream still holds and marked
+    <code>full: true</code>; "nothing changed" and "I cannot see that far back"
+    are different answers and only one of them is safe to act on. An instant
+    that cannot be parsed is named in the answer's <code>error</code> rather
+    than read as an empty set.
+  </p>
+
+  <p id="a-read-can-ask-what-changed-measure">
+    <strong>The measure, and both controls.</strong>
+    <code>tests/test_a_read_can_ask_what_changed.py</code> builds a repository
+    under <code>tmp_path</code> whose first commit declares <code>a#s1</code>
+    implementable with <code>b#s1</code> waiting on it and whose second
+    declares <code>a#s1</code> done, plus a transition stream in which one
+    run's classification moves inside the window and another's moved before it,
+    alongside a plan whose section is satisfied by a gate alone. A read with the
+    previous read's <code>observed_at</code> returns exactly
+    <code>a#s1</code> (<code>implementable</code> → <code>done</code>) credited
+    to the commit that moved it, exactly <code>b#s1</code> newly ready, and
+    exactly the one run (<strong>15 passed</strong> at head, <strong>50
+    passed</strong> with <code>tests/test_mcp_tools.py</code>,
+    <code>EXIT=0</code>). Four further cases each fail against the previous
+    revision of the module and pass at this one — a second in-window commit
+    crediting its own section, a commit and a transition landing after the
+    observation instant and waiting for the next answer, a gate closing to
+    <code>passed</code> releasing its dependent, and a project with no stream
+    reporting <code>sources.runs</code> false (<strong>4 failed, 10 passed,
+    EXIT=1</strong>), and a fifth — a dependent on a whole plan that completes
+    in the window — fails against the revision before this round
+    (<strong>1 failed, 14 passed, EXIT=1</strong>). The base arm
+    runs <code>tests/test_mcp_tools.py</code> over an extracted
+    <code>c15f841ed1</code> tree (<strong>35 passed</strong>) and answers red on
+    the new file; a probe against that same tree records the defect the node
+    repairs — <code>_roadmap_tool() got an unexpected keyword argument
+    'since'</code>, and a <code>crew live</code> answer carrying neither
+    <code>observed_at</code> nor <code>change_set</code>. The declared
+    mutation, ignoring <code>since</code> and returning the full answer, reds
+    the window assertions: <strong>7 failed, 3 passed, EXIT=1</strong>.
+  </p>
+
+  <p id="a-read-can-ask-what-changed-answers">
+    <strong>Two contract breaks the wider suite found are repaired, and the
+    attach is one helper.</strong> A <code>roadmap(view="raw")</code> read that
+    names no window must stay exactly <code>{project, view, data}</code>, and
+    <code>crew(view="live")</code> must answer one document on the crew tool
+    and on <code>reckon crew view live</code>; attaching a change set to every
+    answer broke both. The change set is now composed only when the caller
+    names a <code>since</code>, inside <code>serve_crew_view</code> — the one
+    function both surfaces call — and a later review found the attach-and-error
+    glue still written twice, in <code>reckon/mcp.py</code> and
+    <code>reckon/mcp_views.py</code>, with the copies disagreeing on scope.
+    That copy is deleted: <code>with_change_set</code> is the only
+    implementation, the roadmap tool calls it from its own path, and the
+    cross-project rule above is settled in it once. The gate at
+    <code>3f08e5fdbc</code> is <strong>38 passed, EXIT=0</strong> across
+    <code>tests/test_a_read_can_ask_what_changed.py</code>,
+    <code>tests/test_mcp_recovery.py</code> and
+    <code>tests/test_crew_view_serves_every_view.py</code>.
+  </p>
+</section>
