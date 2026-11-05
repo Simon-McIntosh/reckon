@@ -1,0 +1,143 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-05T16:04:00.138Z",
+  "dispatched_at": "2026-11-05T15:54:43Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-does-its-own-bookkeeping.html:163",
+      "id": "reasoning-1",
+      "reason": "the plan must name the source (the run record's `node.id`, read through the run's pointer) or pass the reviewed node id in, or the node will be built around the wrong identifier and the very case written for it cannot be written as stated.",
+      "text": "\u00a727's deliverable names `<n>` as \"the reviewed run's node id\", but the function it modifies takes no node id, and the only identifier the caller has is a different one: `compose_repair_for_run` binds `node_id = str(composed[\"node_id\"])` (`reckon/crew/recovery_repair_dispatch.py:1115`), which `compose_repair_for_run` in `reckon/crew/repair.py` fills from `repair_node_id(...)` \u2014 a `repair-<source>-<head>` round id, not the reviewed run's node id; an implementer taking the available value grants `tests/test_repair_a_merge_refuses_\u2026_<sha>.py` while the plan's case 1 expects `tests/test_<reviewed node>.py`, so the plan does not say where the path's name comes from",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-does-its-own-bookkeeping.html:163",
+      "id": "done_when-1",
+      "reason": "without a case asserting the advice names the test path, the plan's own goal (a worker that does not block asking for a scope it cannot see) is not measured by its gate.",
+      "text": "the three cases assert the grant only, but what the resumed worker reads is the advice line: `_grant_round_scope` returns `advised = [path for path in scope if path not in refused]` (`reckon/crew/recovery_repair_dispatch.py:496`) built from its *input* scope, and `_repair_resume_advice` prints exactly that list after `Write scope for this round:` (line 550), so a test path granted beyond the composed scope never reaches the worker, while the coordinator's own repair in the cited incident did name it (\"tests/test_merge_requires_promotable_run.py is now in your write scope\", `resume-2-advice.txt`); an implementation that widens the claim and returns `advised` unchanged passes every stated case",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-does-its-own-bookkeeping.html:163",
+      "id": "done_when-2",
+      "reason": "the grant's reason is the audit trail for an out-of-scope write, and a case with two blocking findings (the second asking for the test) is what tells the implementer to pass the asking finding's id rather than reuse `_grant_reason`.",
+      "text": "case 1 requires the granted test path to carry \"the finding id as its reason\", but the existing reason reader matches on the finding's `file`: `_grant_reason` returns the id of the finding whose `file` equals or prefixes the path and otherwise falls back to `findings[0][\"id\"]` (`reckon/crew/recovery_repair_dispatch.py:500\u2013516`), and no finding names `tests/test_<n>.py`, so a round with more than one blocking finding records the first finding's id; the done-when case uses a single finding, where the fallback happens to be the right one",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "03bf0cc19c746e12e4f57fe1fab85ceb62acea58",
+  "plan_fingerprint": "7d722efb0d0023cb2847b56de023fa68e532685a4ff9eb25b0774d5ca6c1a5b5",
+  "plan_slug": "the-crew-does-its-own-bookkeeping",
+  "plan_version": 53,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "03bf0cc19c746e12e4f57fe1fab85ceb62acea58",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a727: <n> comes from the reviewed run's pointer node id; the test path is added to the advised write scope the resumed worker reads; its grant reason is the asking finding's id, set explicitly; cases cover two blocking findings and the advice line",
+      "reason": "",
+      "when": "2026-11-05T16:18:30.118729+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "03bf0cc19c746e12e4f57fe1fab85ceb62acea58",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a727: <n> comes from the reviewed run's pointer node id; the test path is added to the advised write scope the resumed worker reads; its grant reason is the asking finding's id, set explicitly; cases cover two blocking findings and the advice line",
+      "reason": "",
+      "when": "2026-11-05T16:18:52.545831+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "03bf0cc19c746e12e4f57fe1fab85ceb62acea58",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "\u00a727: <n> comes from the reviewed run's pointer node id; the test path is added to the advised write scope the resumed worker reads; its grant reason is the asking finding's id, set explicitly; cases cover two blocking findings and the advice line",
+      "reason": "",
+      "when": "2026-11-05T16:19:17.477054+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "03bf0cc19c746e12e4f57fe1fab85ceb62acea58",
+      "commit_basis": "edit",
+      "note": "\u00a727: <n> comes from the reviewed run's pointer node id; the test path is added to the advised write scope the resumed worker reads; its grant reason is the asking finding's id, set explicitly; cases cover two blocking findings and the advice line",
+      "reason": "",
+      "when": "2026-11-05T16:18:52.545831+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "03bf0cc19c746e12e4f57fe1fab85ceb62acea58",
+      "commit_basis": "edit",
+      "note": "\u00a727: <n> comes from the reviewed run's pointer node id; the test path is added to the advised write scope the resumed worker reads; its grant reason is the asking finding's id, set explicitly; cases cover two blocking findings and the advice line",
+      "reason": "",
+      "when": "2026-11-05T16:19:17.477054+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "03bf0cc19c746e12e4f57fe1fab85ceb62acea58",
+      "commit_basis": "edit",
+      "note": "\u00a727: <n> comes from the reviewed run's pointer node id; the test path is added to the advised write scope the resumed worker reads; its grant reason is the asking finding's id, set explicitly; cases cover two blocking findings and the advice line",
+      "reason": "",
+      "when": "2026-11-05T16:18:30.118729+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-crew-does-its-own-bookkeeping/r-20261105T155133227682-plan-review-of-the-crew-does-its-own-bookkeeping.json",
+  "review_run_id": "r-20261105T155133227682-plan-review-of-the-crew-does-its-own-bookkeeping",
+  "reviewed_blob_sha": "78e64fcf7d3946c52ee052f52be93fbf4708ce95",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_grant_round_scope` is defined at `reckon/crew/recovery_repair_dispatch.py:435` and its body ends at line 497, exactly the cited range; `reckon/crew/merge.py:108` is `def require_promotable_head`; the cited run `r-20261103T075956692165\u2026` and its review record exist, and `resume-1-advice.txt` in that run directory carries the scope the plan quotes.",
+    "done_when": "a finding \u2014 the done-when asserts the grant only, so an implementation that widens the claim without the resumed worker's advice naming the path passes every stated case.",
+    "evidence_paths": "pass \u2014 the gate log sentence (\"under the run directory, starts with its revision and the literal command, and ends in `EXIT=`\"), the base-arm comparison and the write paths are all declared; nothing writes to a session scratchpad.",
+    "naming": "pass \u2014 `_asks_for_a_test` and `tests/test_a_repair_round_grants_a_missing_test.py` name the mechanism; no plan label, ticket number or version tag reaches a symbol.",
+    "reasoning": "a finding \u2014 the deliverable takes `<n>` from \"the reviewed run's node id\", but `_grant_round_scope(run_id, scope, findings)` receives no node id, and the only id at its call site is the repair round's own `node_id`, a different value.",
+    "single_goal": "pass \u2014 the node carries one mechanism: a predicate on a finding's text feeding the round's scope grant.",
+    "wiring": "pass \u2014 s27's only declared dependency, `the-crew-does-its-own-bookkeeping#s25`, is the section that edits the same repair-round path (`_repair_launch_refusal`, `_repair_resume_advice` and `compose_repair_for_run`), and no other live section writes `reckon/crew/recovery_repair_dispatch.py`, so the ordering edge is present and correct."
+  },
+  "section_digests": {
+    "_document": "8a9ab986f23b30b1cca26742c3e49f07e211256070ac23feb2b536bf79c15ca8",
+    "s1": "843bb65a273798e31ae7d542e71c3172be8db96af98b3b5fa5582c0e4b7052b8",
+    "s10": "383abdaed093dc9135b7930e907d6aeaaeff313c10da917e0f90ef21242cc000",
+    "s11": "528ecce7a53f57e54bcf1efa83ff458958c3437b3432895ddecdd835a0e62505",
+    "s12": "cf7304fd49c4d28e5bca798e2fca486ef137e59bce341c819316936d77daf719",
+    "s13": "751a9cd019e8296d87aa5d4f4e45f8a29d84381081120d349dc5bd6b19125ed3",
+    "s14": "37143d66ebad07f999845341b909080392b4fffa341c7553bbece98ce2d93af1",
+    "s15": "327a3b6261f327ba147b39dd2d6fbd1ce595e493e1834f8eb9ef957ea33f55c6",
+    "s16": "738604ff6516e5303088fb5f37ce17d56c02dc7217d2ebd64cdad839f6fd1eb5",
+    "s17": "f7a6d1fb09a597263b98f3f9db11f0a156337a303d2ccf5eb3b0d44899d7956f",
+    "s18": "526aabfb15ccc6205c07b6cf24a8c3fd22579f4776d2bd7a971164251a7d6f95",
+    "s19": "0e85b55be35103b90e318507ff6f86e1f640ef451c18250a9bcb4cb4f2e7c1b0",
+    "s2": "0fe853c67da217879c5c8672e5902b9a76353e03c761fc4b411b7d92af3feb8f",
+    "s20": "949f4ed4b742b4afba912a3943856d1af84c9226addd2df16be2024644c5f1ea",
+    "s21": "7e1c07b0431d4b47d90d44bc5d92db9ab1bb89fe6de6fb2f0fb79f61c04261ef",
+    "s22": "5cb33a844f041e4d88c2d1f7620411b91bbffd0c6605f939520cfa7178756424",
+    "s23": "b1aa58f1dbd4f559cc20a27b9f735c21e1c558ba2ab75ee90c390f1a649c6a44",
+    "s24": "dcacf6665c2b437d62dfd9ebfb5bd1f979f111d5438fc6145701595e4d7468bb",
+    "s25": "ca040954bf353ac976d8d5792c30235f6d957564602a674cf827d3f7ccc5b183",
+    "s26": "a0ac709c25dc1d649a9bc70dde6b95c8d7afc430dbf8b8e48c19f08f2376ad18",
+    "s27": "b54302d420884f443d35c8e0ece22746d3986cd3425be039489380c6ff9a4f71",
+    "s3": "ba6dd9a478bc0199ba62cffc2235c6b7735014d677ac51e4789220cffff43d32",
+    "s4": "725c875cfeb877f71fdc01870943889b9c403c08aa0ee675bdbb100c60d896ee",
+    "s5": "7c304261c964b9ccae1e7148a9bffe48cc81416987e9ed2e9d50d6c5a77df7b7",
+    "s6": "f293425c956b5e910273b5c23cfe8ee7a3a4c1d5565a0c10742e9f7beee7c269",
+    "s7": "9450a2aff439a83861b8a100a49b15e67fd864fa1523edeeafd6c9dd9e0ec5c7",
+    "s8": "1e02f8193f9402b4cf070a0f78feb68f2e3d79a9bb21f00d7c10f33032ed6f37",
+    "s9": "c5acdc2406e91d62930f4e8772839567aca54b6df3e16cbe65878db520b53043"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T16:16:33.357877+00:00"
+}

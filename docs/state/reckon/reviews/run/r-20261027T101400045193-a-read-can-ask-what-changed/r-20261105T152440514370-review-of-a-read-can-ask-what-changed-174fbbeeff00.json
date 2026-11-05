@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "201219113f32ec05277ef8025166430f3474f30d",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp.py:2592",
+    "reckon/mcp.py:2928",
+    "reckon/crew_run_commands.py:483",
+    "reckon/mcp_deadlines.py:605"
+  ],
+  "completed_at": "2026-11-05T15:39:36.538Z",
+  "dispatched_at": "2026-11-05T15:31:23Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-read-can-ask-what-changed",
+      "recorded_at": "2026-11-05T15:52:49.984320+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "The docstring at change_set.py:239-243 states the choice to judge both arms with the checkout's authored headings, the read that answers at head; it differs from a base-text walk only when a heading changed outside the window.",
+      "recorded_at": "2026-11-05T15:52:58.945123+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/change_set.py",
+      "id": "de26afb997c",
+      "line": "252",
+      "severity": "non-blocking",
+      "text": "non-blocking: the delegated whole-plan arm that consults `docs_dir` is not exercised by any test \u2014 the fixture's plan f reaches roadmap.py:718 with status `done` and returns before roadmap.py:720 `_plan_authored_state`/`_plan_authored_html`, and every other fixture plan returns earlier still at roadmap.py:724, so a regression in `docs_dir` at reckon/change_set.py:145 (for example `repo / prefix` instead of `repo / Path(prefix).parent`) would make the heading walk read nothing, treat an undeclared heading as declared, and silently flip the verdict to satisfied while the gate stays green; a fixture plan that is active with one done section and one undeclared authored heading would reach it."
+    },
+    {
+      "file": "reckon/change_set.py",
+      "id": "8d2bb0233d4",
+      "line": "258",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base arm now has its authored headings resolved from the checkout (roadmap.py:734 via `_plan_authored_html`) rather than from the base revision's own text that the deleted `_whole_plan_satisfied` walked, so a heading added or removed outside the window can move the base verdict and change which whole-plan landings `_landed` reports; the docstring at :239-243 argues the substitution for \"the read that answers at head\", but `_landed` at :387 judges the base revision with the same checkout headings."
+    }
+  ],
+  "head_log_revision": "174fbbeeff00b6e5e8ab9fbd4af5dfe03eef4709",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read the single commit 174fbbeeff against 201219113f (+54/-58 in reckon/change_set.py): `_whole_plan_satisfied` is deleted (old :219-255), `_Documents.docs_dir` is added at :145, `_satisfied` takes docs_dir and project at :221-259 and delegates its section-less arm, and `_ready`/`_landed` thread the documents object and project through at :264-293 and :360-398.",
+    "done_when": "the \u00a77 measure (a fixture read naming the one moved declaration, the dependents it released and the one moved run) is unchanged by this refactor; logs/gate-reuse.log records `50 passed` with a bare `EXIT=0` at 174fbbeeff for the literal command in the manifest's `tests:` line, and that gate includes the whole-plan case at tests/test_a_read_can_ask_what_changed.py:364.",
+    "goal": "the reviewed node's goal is that the brief, crew live and roadmap answer `since` with the change set and an `observed_at`; this delta keeps that answer intact and removes the last local restatement of a rule \u2014 reckon/change_set.py:252 now returns `roadmap._plan_dependency_satisfied`'s verdict for a ref naming no section.",
+    "manifest": "read the delivered manifest; it states the head gate 50 passed EXIT=0 at 174fbbeeff, the base arm 35 passed, and an `acted reuse` line naming this refactor, and I read those figures from the logs/gate-reuse.log and logs/gate-base.log it names.",
+    "write_paths": "the dispatch declared five paths; `git diff --name-status 201219113f 174fbbeeff` lists exactly one \u2014 reckon/change_set.py \u2014 inside the declared scope, and no test or landing fragment was touched."
+  },
+  "justifications": {
+    "durability": "the only test reachable to this change, tests/test_a_read_can_ask_what_changed.py:364, drives a plan whose status is `done` (fixture line 374), so roadmap.py:718 short-circuits before the docs_dir/heading path this commit introduces.",
+    "evidence": "logs/gate-reuse.log names revision 174fbbeeff, the tree, the module, the cwd and the literal command, and ends in a bare `EXIT=0` at `50 passed`, matching the manifest's `tests:` line.",
+    "fit": "reckon/change_set.py:248 imports its owners inside the helper as the module does elsewhere, `ruff format --check` and `ruff check` on the file are clean, and no added name carries a plan label.",
+    "goal_fidelity": "reckon/change_set.py:252 now returns roadmap._plan_dependency_satisfied's verdict for a section-less ref instead of a local copy, so the change set's whole-plan answer is the roadmap's own rule.",
+    "reuse": "the delta deletes the duplicate `_whole_plan_satisfied` and routes both arms through the owners \u2014 roadmap._section_satisfied at :251 and roadmap._plan_dependency_satisfied at :252 \u2014 so no added definition restates a mechanism the repository already owns.",
+    "scope_discipline": "`git diff --name-status 201219113f 174fbbeeff` lists only reckon/change_set.py, inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is that the brief, crew live and roadmap answer `since` with the change set and an `observed_at`; this delta keeps that answer intact and removes the last local restatement of a rule \u2014 reckon/change_set.py:252 now returns `roadmap._plan_dependency_satisfied`'s verdict for a ref naming no section.\nVERDICT done_when: the \u00a77 measure (a fixture read naming the one moved declaration, the dependents it released and the one moved run) is unchanged by this refactor; logs/gate-reuse.log records `50 passed` with a bare `EXIT=0` at 174fbbeeff for the literal command in the manifest's `tests:` line, and that gate includes the whole-plan case at tests/test_a_read_can_ask_what_changed.py:364.\nVERDICT write_paths: the dispatch declared five paths; `git diff --name-status 201219113f 174fbbeeff` lists exactly one \u2014 reckon/change_set.py \u2014 inside the declared scope, and no test or landing fragment was touched.\nVERDICT manifest: read the delivered manifest; it states the head gate 50 passed EXIT=0 at 174fbbeeff, the base arm 35 passed, and an `acted reuse` line naming this refactor, and I read those figures from the logs/gate-reuse.log and logs/gate-base.log it names.\nVERDICT diff: read the single commit 174fbbeeff against 201219113f (+54/-58 in reckon/change_set.py): `_whole_plan_satisfied` is deleted (old :219-255), `_Documents.docs_dir` is added at :145, `_satisfied` takes docs_dir and project at :221-259 and delegates its section-less arm, and `_ready`/`_landed` thread the documents object and project through at :264-293 and :360-398.\nCALL_SITES: reckon/mcp.py:2592, reckon/mcp.py:2928, reckon/crew_run_commands.py:483, reckon/mcp_deadlines.py:605\nSCORE goal_fidelity: 19\nSCORE evidence: 18\nSCORE scope_discipline: 20\nSCORE durability: 14\nSCORE fit: 18\nSCORE reuse: 20\nJUSTIFICATION goal_fidelity: reckon/change_set.py:252 now returns roadmap._plan_dependency_satisfied's verdict for a section-less ref instead of a local copy, so the change set's whole-plan answer is the roadmap's own rule.\nJUSTIFICATION evidence: logs/gate-reuse.log names revision 174fbbeeff, the tree, the module, the cwd and the literal command, and ends in a bare `EXIT=0` at `50 passed`, matching the manifest's `tests:` line.\nJUSTIFICATION scope_discipline: `git diff --name-status 201219113f 174fbbeeff` lists only reckon/change_set.py, inside the node's declared write paths.\nJUSTIFICATION durability: the only test reachable to this change, tests/test_a_read_can_ask_what_changed.py:364, drives a plan whose status is `done` (fixture line 374), so roadmap.py:718 short-circuits before the docs_dir/heading path this commit introduces.\nJUSTIFICATION fit: reckon/change_set.py:248 imports its owners inside the helper as the module does elsewhere, `ruff format --check` and `ruff check` on the file are clean, and no added name carries a plan label.\nJUSTIFICATION reuse: the delta deletes the duplicate `_whole_plan_satisfied` and routes both arms through the owners \u2014 roadmap._section_satisfied at :251 and roadmap._plan_dependency_satisfied at :252 \u2014 so no added definition restates a mechanism the repository already owns.\nFINDING reckon/change_set.py:252 non-blocking: the delegated whole-plan arm that consults `docs_dir` is not exercised by any test \u2014 the fixture's plan f reaches roadmap.py:718 with status `done` and returns before roadmap.py:720 `_plan_authored_state`/`_plan_authored_html`, and every other fixture plan returns earlier still at roadmap.py:724, so a regression in `docs_dir` at reckon/change_set.py:145 (for example `repo / prefix` instead of `repo / Path(prefix).parent`) would make the heading walk read nothing, treat an undeclared heading as declared, and silently flip the verdict to satisfied while the gate stays green; a fixture plan that is active with one done section and one undeclared authored heading would reach it.\nFINDING reckon/change_set.py:258 non-blocking: the base arm now has its authored headings resolved from the checkout (roadmap.py:734 via `_plan_authored_html`) rather than from the base revision's own text that the deleted `_whole_plan_satisfied` walked, so a heading added or removed outside the window can move the base verdict and change which whole-plan landings `_landed` reports; the docstring at :239-243 argues the substitution for \"the read that answers at head\", but `_landed` at :387 judges the base revision with the same checkout headings.\n",
+  "review_run_id": "r-20261105T152440514370-review-of-a-read-can-ask-what-changed-174fbbeeff00",
+  "reviewed_base_sha": "201219113f32ec05277ef8025166430f3474f30d",
+  "reviewed_head_sha": "174fbbeeff00b6e5e8ab9fbd4af5dfe03eef4709",
+  "reviewed_run_id": "r-20261027T101400045193-a-read-can-ask-what-changed",
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T15:52:02.225791+00:00",
+  "total": 109
+}

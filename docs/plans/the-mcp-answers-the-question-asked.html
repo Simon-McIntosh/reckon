@@ -26,7 +26,7 @@
   <title>The MCP Answers the Question Asked | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="47">
+<meta name="plan-version" content="48">
 <meta name="plan-modified" content="2026-11-05">
 </head>
 <body>
@@ -284,6 +284,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261105T143607358736-review-of-a-read-can-ask-what-changed-201219113f32" data-who="reckon-build" data-when="2026-11-05T14:45:24.628Z">
     <div class="r-comment-body"><p>review attached to r-20261027T101400045193-a-read-can-ask-what-changed for 0fb90f72a5..201219113f: goal_fidelity 18, evidence 18, scope_discipline 20, durability 19, fit 18, reuse 5, total 98, two non-blocking findings (the whole-plan rule copied from roadmap.py:699; the negative control still measured at c15f841e over the 10-test file), added_failure_count 0.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261105T152440514370-review-of-a-read-can-ask-what-changed-174fbbeeff00" data-who="reckon-build" data-when="2026-11-05T15:39:36.538Z">
+    <div class="r-comment-body"><p>review attached to r-20261027T101400045193-a-read-can-ask-what-changed for 201219113f..174fbbeeff: goal_fidelity 19, evidence 18, scope_discipline 20, durability 14, fit 18, reuse 20, total 109, two non-blocking findings (the delegated whole-plan arm that reads docs_dir is untested; the base arm now takes its authored headings from the checkout), added_failure_count 0.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261021T180147626901-review-of-a-newer-flight-key-is-ignored-at-load-8f435107bbad" data-who="reckon-build" data-when="2026-10-21T18:30:30.772Z">
     <div class="r-comment-body"><p>Independent review of r-20261021T160220332694-a-newer-flight-key-is-ignored-at-load at 8f435107bbadf5d5bf83be2c3ff0479786ebf7da (base da1a110ab13de2c3f5b38a38fb807c35cbad06ae), status parsed: all five checklist verdicts and all six dimensions emitted. Scores — goal_fidelity 19, evidence 16, scope_discipline 18, durability 18, fit 18, reuse 20. Added failure ids: none (base log 1 failed / 138 passed and head log 1 failed / 144 passed carry the identical single id, tests/test_one_check_trusts_a_moved_checkout.py::test_a_clean_moved_checkout_answers_on_the_current_code). The change is real and the design is intact: extra="ignore" in the generated schema (reckon/_flight_schema.py:43) plus a schema-driven walk that reports undeclared key paths (reckon/flight.py:1418, published at :2568) with the strict read behind `reckon flight --check` (reckon/project_setup_commands.py:416). Two follow-on findings, neither blocking: keys inside the reckon-owned blocks that `_schema_view` strips are neither refused nor reported, measured at head; and project_setup_commands.py is not `ruff format --check` clean at head though its delta is zero against base (33 complaint lines either side).</p></div>

@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "3f84f307f63b9d6c41236da982ecbf366595aff4",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:admit_once (guard call at 4339)",
+    "reckon/crew/queue_admission.py:4739 (the admission pass loop that calls admit_once)",
+    "reckon/crew/obligations.py:admission_verdicts",
+    "reckon/crew/runs.py:_drain_week_view"
+  ],
+  "completed_at": "2026-11-05T17:07:49.350Z",
+  "dispatched_at": "2026-11-05T16:58:02Z",
+  "findings": [
+    {
+      "file": "tests/test_a_launch_rereads_the_run_it_starts.py",
+      "line": "274",
+      "severity": "non-blocking",
+      "text": "non-blocking: the attempt-resulted case hands `_after_the_pass_reads_the_queue` a no-op change (`lambda: None`) and creates its exit record at line 268 before the pass begins, so the assertion `fired` proves only that the pass read the queue; a guard that checked attempts once at pass start instead of immediately before the launch would pass this case as well, leaving the plan's \"change written after the pass read the request as queued\" requirement untested for the attempt read (the pointer case at line 247 does test the window)."
+    },
+    {
+      "file": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-launch-rereads-the-run-it-starts.html",
+      "line": "7",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states that the test asserts the change landed in the window and that \"a case cannot pass by never applying its change\", which is not true of the attempt-resulted case, whose change is written before the pass and whose hook applies nothing."
+    },
+    {
+      "file": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-launch-rereads-the-run-it-starts.html",
+      "line": "9",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when's non-regression clause names the test files importing reckon.crew.queue_admission, but the recorded comparison covers six consumer files (head 54 passed vs base 1 failed 53 passed) and the 57-file importer population reached only 54 percent at each arm before the background limit killed it, so \"add no failure against the base revision\" is shown for the sample and not for the named population; the fragment discloses this honestly, so the residual is a missing measurement rather than a misstated one."
+    }
+  ],
+  "head_log_revision": "4a8f690d9d99e19ef6ede0d87cd325d831663465",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 3f84f307f6; 4a8f690d9d adds `_attempt_with_a_result` (queue_admission.py:255) and `_launch_reread_refusal` (289) plus the admit_once call site and its verdict, and a1deb2b4fc adds only the ten-line landing fragment, so nothing outside the goal is carried.",
+    "done_when": "the done_when asks for three cases in a new tests/test_a_launch_rereads_the_run_it_starts.py with two negative controls and an importer-set non-regression arm; the manifest records the three-case gate at 3 passed EXIT=0 (logs/gate-head-template.log), both negative controls at 1 failed/2 passed EXIT=1, and a six-file consumer arm at head 54 passed vs base 1 failed 53 passed, while the 57-file importer set was truncated at 54 percent and is not a sweep.",
+    "goal": "the node's goal is that a launch re-reads the run it starts; reckon/crew/queue_admission.py:4339 calls `_launch_reread_refusal(pointer)` after the last hold check and before `snapshot = copy.deepcopy(...)` at 4355 and the `_launch_queued` call, and the refusal is recorded as a `refused-before-launch` verdict at 4350.",
+    "manifest": "read in full; it states the guard, the three cases, both negative controls red against the commit, the consumer arms at both revisions, the base-only failure test_each_admission_pass_records_its_verdict.py::test_the_log_is_trimmed_within_its_size_bound, and it discloses rather than quotes the truncated importer sweep.",
+    "write_paths": "the plan scopes reckon/crew/queue_admission.py and the new test, and the dispatch fence adds the landing fragment; the diff against 3f84f307f6 touches exactly those three files (78 lines in queue_admission.py, 306 in the test, 10 in the fragment) and the reviewed worktree at a1deb2b4fc is clean."
+  },
+  "justifications": {
+    "durability": "removing the pointer re-read reddens only test_a_request_whose_pointer_is_removed_is_not_launched (logs/negative-control-pointer-reread-removed.log, 1 failed/2 passed) and removing the attempt read reddens only test_a_request_whose_attempt_already_resulted_is_not_launched (logs/negative-control-attempt-read-removed.log), though the attempt case writes its record before the pass and so does not exercise the mid-pass window (tests/test_a_launch_rereads_the_run_it_starts.py:274).",
+    "evidence": "logs/gate-head-template.log and both negative-control logs carry revision, command and a bare EXIT= line, but the done_when's clause over the test files importing reckon.crew.queue_admission is measured only on the six-file consumer arm while the 57-file set was truncated at 54 percent (docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-launch-rereads-the-run-it-starts.html:9).",
+    "fit": "reckon/crew/queue_admission.py:255-310 follows the file's own idiom of a local import (`from reckon.crew.recovery_liveness import _exit_record_is_launch_failure`), `Mapping` guards and a docstring stating the mechanism, and the added names `_attempt_with_a_result`, `_launch_reread_refusal` and `refused-before-launch` carry no plan, ticket or stage label.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:4339-4353 re-reads the pointer and the run's attempt exit records under `runs._pointer_lock` immediately before the launch and refuses with a named verdict, and the unchanged queued case still launches (tests/test_a_launch_rereads_the_run_it_starts.py:291).",
+    "reuse": "queue_admission.py:269 calls the existing owner `recovery_liveness._exit_record_is_launch_failure` for the launch-failure reading, and a capability search over resumption.live_attempt_refusal, resumption.claim_next_attempt, recovery_classification and gc found no existing owner of the question \"may this queued request be relaunched\", so the guard is the first of its kind rather than a fork.",
+    "scope_discipline": "every path in `git diff --stat 3f84f307f6..a1deb2b4fc` is one of reckon/crew/queue_admission.py, tests/test_a_launch_rereads_the_run_it_starts.py and the permitted landing fragment under docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a launch re-reads the run it starts; reckon/crew/queue_admission.py:4339 calls `_launch_reread_refusal(pointer)` after the last hold check and before `snapshot = copy.deepcopy(...)` at 4355 and the `_launch_queued` call, and the refusal is recorded as a `refused-before-launch` verdict at 4350.\nVERDICT done_when: the done_when asks for three cases in a new tests/test_a_launch_rereads_the_run_it_starts.py with two negative controls and an importer-set non-regression arm; the manifest records the three-case gate at 3 passed EXIT=0 (logs/gate-head-template.log), both negative controls at 1 failed/2 passed EXIT=1, and a six-file consumer arm at head 54 passed vs base 1 failed 53 passed, while the 57-file importer set was truncated at 54 percent and is not a sweep.\nVERDICT write_paths: the plan scopes reckon/crew/queue_admission.py and the new test, and the dispatch fence adds the landing fragment; the diff against 3f84f307f6 touches exactly those three files (78 lines in queue_admission.py, 306 in the test, 10 in the fragment) and the reviewed worktree at a1deb2b4fc is clean.\nVERDICT manifest: read in full; it states the guard, the three cases, both negative controls red against the commit, the consumer arms at both revisions, the base-only failure test_each_admission_pass_records_its_verdict.py::test_the_log_is_trimmed_within_its_size_bound, and it discloses rather than quotes the truncated importer sweep.\nVERDICT diff: read commit by commit against 3f84f307f6; 4a8f690d9d adds `_attempt_with_a_result` (queue_admission.py:255) and `_launch_reread_refusal` (289) plus the admit_once call site and its verdict, and a1deb2b4fc adds only the ten-line landing fragment, so nothing outside the goal is carried.\nCALL_SITES: reckon/crew/queue_admission.py:admit_once (guard call at 4339), reckon/crew/queue_admission.py:4739 (the admission pass loop that calls admit_once), reckon/crew/obligations.py:admission_verdicts, reckon/crew/runs.py:_drain_week_view\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:4339-4353 re-reads the pointer and the run's attempt exit records under `runs._pointer_lock` immediately before the launch and refuses with a named verdict, and the unchanged queued case still launches (tests/test_a_launch_rereads_the_run_it_starts.py:291).\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/gate-head-template.log and both negative-control logs carry revision, command and a bare EXIT= line, but the done_when's clause over the test files importing reckon.crew.queue_admission is measured only on the six-file consumer arm while the 57-file set was truncated at 54 percent (docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-launch-rereads-the-run-it-starts.html:9).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in `git diff --stat 3f84f307f6..a1deb2b4fc` is one of reckon/crew/queue_admission.py, tests/test_a_launch_rereads_the_run_it_starts.py and the permitted landing fragment under docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/.\nSCORE durability: 17\nJUSTIFICATION durability: removing the pointer re-read reddens only test_a_request_whose_pointer_is_removed_is_not_launched (logs/negative-control-pointer-reread-removed.log, 1 failed/2 passed) and removing the attempt read reddens only test_a_request_whose_attempt_already_resulted_is_not_launched (logs/negative-control-attempt-read-removed.log), though the attempt case writes its record before the pass and so does not exercise the mid-pass window (tests/test_a_launch_rereads_the_run_it_starts.py:274).\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/queue_admission.py:255-310 follows the file's own idiom of a local import (`from reckon.crew.recovery_liveness import _exit_record_is_launch_failure`), `Mapping` guards and a docstring stating the mechanism, and the added names `_attempt_with_a_result`, `_launch_reread_refusal` and `refused-before-launch` carry no plan, ticket or stage label.\nSCORE reuse: 19\nJUSTIFICATION reuse: queue_admission.py:269 calls the existing owner `recovery_liveness._exit_record_is_launch_failure` for the launch-failure reading, and a capability search over resumption.live_attempt_refusal, resumption.claim_next_attempt, recovery_classification and gc found no existing owner of the question \"may this queued request be relaunched\", so the guard is the first of its kind rather than a fork.\nFINDING tests/test_a_launch_rereads_the_run_it_starts.py:274 non-blocking: the attempt-resulted case hands `_after_the_pass_reads_the_queue` a no-op change (`lambda: None`) and creates its exit record at line 268 before the pass begins, so the assertion `fired` proves only that the pass read the queue; a guard that checked attempts once at pass start instead of immediately before the launch would pass this case as well, leaving the plan's \"change written after the pass read the request as queued\" requirement untested for the attempt read (the pointer case at line 247 does test the window).\nFINDING docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-launch-rereads-the-run-it-starts.html:7 non-blocking: the fragment states that the test asserts the change landed in the window and that \"a case cannot pass by never applying its change\", which is not true of the attempt-resulted case, whose change is written before the pass and whose hook applies nothing.\nFINDING docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-launch-rereads-the-run-it-starts.html:9 non-blocking: the done_when's non-regression clause names the test files importing reckon.crew.queue_admission, but the recorded comparison covers six consumer files (head 54 passed vs base 1 failed 53 passed) and the 57-file importer population reached only 54 percent at each arm before the background limit killed it, so \"add no failure against the base revision\" is shown for the sample and not for the named population; the fragment discloses this honestly, so the residual is a missing measurement rather than a misstated one.",
+  "review_run_id": "r-20261105T165246922164-review-of-a-launch-rereads-the-run-it-starts-a1deb2b4fc7a",
+  "reviewed_base_sha": "3f84f307f63b9d6c41236da982ecbf366595aff4",
+  "reviewed_head_sha": "a1deb2b4fc7a01696a3c110fb7578a7c1016bbce",
+  "reviewed_run_id": "r-20261105T142049099120-a-launch-rereads-the-run-it-starts",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T17:13:15.545220+00:00",
+  "total": 103
+}
