@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite records revision ab87725e67ab7377c2efb9b60a263578f3f2f8de, exit_status 4, completed true, failure_count 0, failure_ids [] (coordinator-armed-base.log: no tests ran, the node test file does not exist at that revision), and after_suite records revision c0290a31706d4ffe793f61ca238837654c599c4d, exit_status 0, completed true, failure_count 0, failure_ids [] (coordinator-armed-head.log: 7 passed). Both logs were opened and their headers name the literal command and revision, so added_failure_count is 0.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/_store.py:_carry_section_moves",
+    "reckon/_store.py:_write_successor_moves",
+    "reckon/_store.py:1593"
+  ],
+  "completed_at": "2026-11-05T20:24:31.148Z",
+  "dispatched_at": "2026-11-05T20:17:17Z",
+  "evidence_notes": "Neither gained commit adds a test, so there is no newly added assertion to test for independence from the value under test. The durable guard for the refactor is the pre-existing repository check tests/test_one_raw_text_section_reader.py:218-245: negative-control-reader.log runs it at c6e1200ff7 (pre-refactor) and it fails, with 'reckon/_store.py' in the reported set, EXIT=1; gate4-test_one_raw_text_section_reader.log runs the whole file at c0290a3170 and it is 32 passed, EXIT=0. Reinstating the two regexes in reckon/_store.py would redden it again, so the guard is a regression test for the change rather than a green tick. The refactor's behavioural half is weaker: the node test's prose assertions (tests/test_close_names_each_deferred_section_and_moves_it.py:282-283 and :428) check presence, not the heading/record adjacency the new code reasons about, so neither branch of insert_section_prose is pinned by an assertion; recorded as a non-blocking finding. The three-file gate was run as one command at 277c6cc32c (gate-full-head.log) and as three separate per-file commands at the final head c0290a3170 (gate4-test_close_names_each_deferred_section_and_moves_it.log 7 passed, gate4-test_a_plan_closes_in_one_op.log 13 passed, gate4-test_schema.log 3 failed/3710 passed with the three cross_project_conformance ids the base arm reproduces in gate-base-attribution.log).",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": 12,
+      "text": "non-blocking: changed_paths and orientation_write_paths (manifest.md:3) omit reckon/_plan_html.py, which commit c0290a3170 writes under a scope extension recorded only in resume-7-advice.txt, so the node's own record understates its write set and a reader checking the diff against the manifest sees an apparent scope breach."
+    },
+    {
+      "file": "reckon/_plan_html.py",
+      "line": 557,
+      "text": "non-blocking: insert_section_prose's two placement branches (after an adjacent record, else after the heading) have no assertion of their own; the node test asserts only that the prose substring appears (tests/test_close_names_each_deferred_section_and_moves_it.py:282-283, :428), so a regression that put the paragraph between a heading and its adjacent record, the pairing the reader requires, would stay green."
+    },
+    {
+      "file": "docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html",
+      "line": 67,
+      "text": "non-blocking: the record calls 277c6cc32c \"the landed head\" while the node's head is c0290a3170, the same staleness c6e1200ff7 was written to repair, and it cites no single three-file run at the head it now describes."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/_store.py:_carry_section_moves (:3012) calls the wrapper at :3147; _write_successor_moves (:3099) and the close path at reckon/_store.py:1593 reach it, and _plan_html.insert_section_prose has no production caller other than the store wrapper.",
+    "diff": "read 277c6cc32c..c0290a3170 commit by commit; c6e1200ff7 rewrites five lines of the evidence fragment to cite the three-file run at 277c6cc32c, and c0290a3170 adds insert_section_prose at reckon/_plan_html.py:557 and reduces reckon/_store.py:2965 to a wrapper that translates the reader's ValueError into the store's OpError.",
+    "done_when": "the done_when names the node test plus tests/test_schema.py and tests/test_a_plan_closes_in_one_op.py and the armed suite pair; the armed pair is recorded complete at both revisions (coordinator-armed-base.log EXIT=4 no-tests at ab87725e67, coordinator-armed-head.log 7 passed EXIT=0 at c0290a3170), and the three-file command ran at 277c6cc32c (gate-full-head.log, 3 failed, 3729 passed, EXIT=1) with those three files re-run separately at c0290a3170 in the gate4 logs.",
+    "goal": "the node's goal is that close's deferred-section refusal names both remedies and a moved_to descope carries the section's prose, effort, capability, open gates and comments to its successor; c0290a3170 serves the prose half by moving the insert into reckon/_plan_html.py:557, the module that owns section_prose, and c6e1200ff7 corrects the record's stale gate citation.",
+    "manifest": "read; status is complete, the checkpoint names this round's gate4 logs, and baseline_suite/after_suite carry the literal armed command with their revisions and EXIT=4 / EXIT=0, but changed_paths at manifest.md:12 omits reckon/_plan_html.py, which c0290a3170 writes.",
+    "write_paths": "the dispatch fence lists reckon/_store.py, reckon/_schema.py, docs/_shared/plan.schema.json, PLAN-FORMAT.md, skills/reckon-edit/SKILL.md and the node test file; resume-7-advice.txt:1 adds reckon/_plan_html.py and earlier resume advice adds the evidence fragment, so all three paths in the gained diff sit inside that union."
+  },
+  "justifications": {
+    "durability": "tests/test_one_raw_text_section_reader.py:231 reddens on the pre-refactor code and passes at reckon/_plan_html.py:557's head, but no assertion covers the two placement branches the new function adds, and the node test only checks prose presence at tests/test_close_names_each_deferred_section_and_moves_it.py:282.",
+    "evidence": "the negative control is real and paired (negative-control-reader.log is red at c6e1200ff7 naming reckon/_store.py, gate4-test_one_raw_text_section_reader.log is 32 passed EXIT=0 at c0290a3170), but the done_when's single three-file command has no run at the final head c0290a3170, only per-file logs.",
+    "fit": "the new helper keeps the module's span-owner idiom at reckon/_plan_html.py:557-602, and the lazy import at reckon/_store.py:2967 matches the twenty other `from reckon import _plan_html` imports in that module (reckon/_store.py:2955).",
+    "goal_fidelity": "reckon/_plan_html.py:557 now writes the carried prose through _structural_spans, the same raw read reckon/_plan_html.py:474 section_prose uses, so the prose the goal requires the successor to carry is written by the reader that owns it.",
+    "reuse": "the addition extends the existing owner rather than forking one, consuming _structural_spans (reckon/_plan_html.py:394); a search of reckon for `def .*insert` found only _insert_authored_section (whole-section insert) and _apply_insert_section (op dispatch), neither of which inserts prose into an existing section.",
+    "scope_discipline": "all three paths in the diff are inside the dispatch fence plus the extension recorded at resume-7-advice.txt:1, yet manifest.md:12 and manifest.md:3 list neither reckon/_plan_html.py nor the extension that authorises it."
+  },
+  "node": "review-of-close-names-each-deferred-section-and-moves-it-c0290a31706d",
+  "node:reviewed": "close-names-each-deferred-section-and-moves-it",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that close's deferred-section refusal names both remedies and a moved_to descope carries the section's prose, effort, capability, open gates and comments to its successor; c0290a3170 serves the prose half by moving the insert into reckon/_plan_html.py:557, the module that owns section_prose, and c6e1200ff7 corrects the record's stale gate citation.\nVERDICT done_when: the done_when names tests/test_close_names_each_deferred_section_and_moves_it.py plus tests/test_schema.py and tests/test_a_plan_closes_in_one_op.py and the armed suite pair; the armed pair is recorded complete at both revisions (coordinator-armed-base.log, EXIT=4 no-tests at ab87725e67; coordinator-armed-head.log, 7 passed EXIT=0 at c0290a3170), and the three-file command ran at 277c6cc32c (gate-full-head.log, 3 failed, 3729 passed, EXIT=1) with each of those three files re-run separately at c0290a3170 (gate4 logs: 7 passed, 13 passed, and 3 failed/3710 passed).\nVERDICT write_paths: the dispatch fence lists reckon/_store.py, reckon/_schema.py, docs/_shared/plan.schema.json, PLAN-FORMAT.md, skills/reckon-edit/SKILL.md and the node test file; resume-7-advice.txt:1 adds reckon/_plan_html.py and earlier resume advice adds the evidence fragment, so all three paths in the gained diff sit inside that union.\nVERDICT manifest: read; status is complete, the checkpoint names this round's gate4 logs, and baseline_suite/after_suite carry the literal armed command with their revisions and EXIT=4 / EXIT=0, but changed_paths at manifest.md:12 omits reckon/_plan_html.py, which c0290a3170 writes.\nVERDICT diff: read 277c6cc32c..c0290a3170 commit by commit; c6e1200ff7 rewrites five lines of the evidence fragment to cite the three-file run at 277c6cc32c, and c0290a3170 adds insert_section_prose at reckon/_plan_html.py:557 and reduces reckon/_store.py:2965 to a wrapper that translates the reader's ValueError into the store's OpError.\nCALL_SITES: reckon/_store.py:_carry_section_moves, reckon/_store.py:_write_successor_moves, reckon/_store.py:1593\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_plan_html.py:557 now writes the carried prose through _structural_spans, the same raw read reckon/_plan_html.py:474 section_prose uses, so the prose the goal requires the successor to carry is written by the reader that owns it.\nSCORE evidence: 16\nJUSTIFICATION evidence: the negative control is real and paired (negative-control-reader.log is red at c6e1200ff7 naming reckon/_store.py, gate4-test_one_raw_text_section_reader.log is 32 passed EXIT=0 at c0290a3170), but the done_when's single three-file command has no run at the final head c0290a3170, only per-file logs.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: all three paths in the diff are inside the dispatch fence plus the extension recorded at resume-7-advice.txt:1, yet manifest.md:12 and manifest.md:3 list neither reckon/_plan_html.py nor the extension that authorises it.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_one_raw_text_section_reader.py:231 reddens on the pre-refactor code and passes at c0290a3170 where reckon/_plan_html.py:557 lives, but no assertion covers the two placement branches the new function adds, and the node test only checks prose presence at tests/test_close_names_each_deferred_section_and_moves_it.py:282.\nSCORE fit: 19\nJUSTIFICATION fit: the new helper keeps the module's span-owner idiom at reckon/_plan_html.py:557-602, and the lazy import at reckon/_store.py:2967 matches the twenty other `from reckon import _plan_html` imports in that module (reckon/_store.py:2955).\nSCORE reuse: 20\nJUSTIFICATION reuse: the addition extends the existing owner rather than forking one, consuming _structural_spans (reckon/_plan_html.py:394); a search of reckon for `def .*insert` found only _insert_authored_section (whole-section insert) and _apply_insert_section (op dispatch), neither of which inserts prose into an existing section.\nFINDING manifest.md:12 non-blocking: changed_paths and orientation_write_paths (manifest.md:3) omit reckon/_plan_html.py, which commit c0290a3170 writes under a scope extension recorded only in resume-7-advice.txt, so the node's own record understates its write set and a reader checking the diff against the manifest sees an apparent scope breach.\nFINDING reckon/_plan_html.py:557 non-blocking: insert_section_prose's two placement branches (after an adjacent record, else after the heading) have no assertion of their own; the node test asserts only that the prose substring appears (tests/test_close_names_each_deferred_section_and_moves_it.py:282-283, :428), so a regression that put the paragraph between a heading and its adjacent record, the pairing the reader requires, would stay green.\nFINDING docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html:67 non-blocking: the record calls 277c6cc32c \"the landed head\" while the node's head is c0290a3170, the same staleness c6e1200ff7 was written to repair, and it cites no single three-file run at the head it now describes.",
+  "review_run_id": "r-20261105T201404296643-review-of-close-names-each-deferred-section-and-moves-it-c0290a31706d",
+  "reviewed_base_sha": "277c6cc32c4669cc12161d6bc7599cc8603fa88e",
+  "reviewed_head_sha": "c0290a31706d4ffe793f61ca238837654c599c4d",
+  "reviewed_run_id": "r-20261027T102653154559-close-names-each-deferred-section-and-moves-it",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T20:55:00+00:00",
+  "total": 109
+}
