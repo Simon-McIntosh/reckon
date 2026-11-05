@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "c15f841ed10ab5349332c8578bfa65910226fafe",
+  "call_sites": [
+    "reckon/mcp.py:3780",
+    "reckon/mcp.py:1585",
+    "reckon/why_view.py:63"
+  ],
+  "completed_at": "2026-11-05T20:19:28.335Z",
+  "dispatched_at": "2026-11-05T20:14:31Z",
+  "failure_note": "The reviewed run records baseline_suite at c15f841ed for tests/test_a_read_can_ask_what_changed.py, which exits 4 because the file does not exist at that revision, so it names no failing id; after_suite at 4a9a91d5ec exits 0 with 20 passed and no failing id. Added failures = 0. The one-file gate at the reviewed head (logs/gate-a-read-can-ask-what-changed.log, 20 passed, EXIT=0) was re-run by this reviewer for the single case the commit changes: 1 passed, EXIT=0.",
+  "findings": [
+    {
+      "file": "tests/test_a_read_can_ask_what_changed.py",
+      "line": "691",
+      "severity": "non-blocking",
+      "text": "non-blocking: the guard added to prove the why answer carries the ref it explains, `assert served.get(\"ref\") != \"invalid_view\"`, cannot fail on any answer this read produces: reckon/why_view.py:114 always sets ref to the slug or slug#section, so the assertion only reddens if a slug is literally named invalid_view, and it passes on an answer with no ref key at all. The commit message claims the guard requires the ref, which it does not; `assert served.get(\"ref\") == \"a\"` is the assertion the message describes."
+    }
+  ],
+  "head_log_revision": "4a9a91d5ec938d791fc36f9fe57a62f05423dba7",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Read 51586482b3..4a9a91d5ec: one commit, one file, five insertions and one deletion in tests/test_a_read_can_ask_what_changed.py, replacing `served.get(\"error\") != \"invalid_view\"` with three assertions (error absent, view is why, ref is not invalid_view).",
+    "done_when": "The done_when names tests/test_a_read_can_ask_what_changed.py and tests/test_mcp_tools.py, both suite arms and an executed negative control; the run records after_suite 20 passed EXIT=0 at 4a9a91d5ec and a base arm at c15f841ed that collects nothing, and the commit adds the red control logs/why-guard-red.log which shows ref_not_found satisfying the old guard while failing the new one.",
+    "goal": "The source node's goal is that the brief, crew live and the roadmap answer `since` with a change set carrying `observed_at`; this round is a test-only repair of the prior review's finding on the why-view case at tests/test_a_read_can_ask_what_changed.py:684, and it leaves the three reads untouched.",
+    "manifest": "Read manifest.md at 4a9a91d5ec: status complete, commits listing 4a9a91d5ec as head, acted 0 describing this repair, after_suite 20 passed EXIT=0 at head and baseline_suite EXIT=4 at the base; its `tests:` line at manifest.md:21 still names a two-file command that no log at this revision ran (the head gate log runs the one file, 20 passed).",
+    "write_paths": "The declared write paths are reckon/mcp.py, reckon/change_set.py, tests/test_a_read_can_ask_what_changed.py and the landing fragment; the reviewed commit changes only tests/test_a_read_can_ask_what_changed.py, inside that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_read_can_ask_what_changed.py:687-690 redden if the read refuses or stamps another view, but tests/test_a_read_can_ask_what_changed.py:691 passes on any answer because reckon/why_view.py:114 can never yield the value it compares against.",
+    "evidence": "The gate receipt at the reviewed head is logs/gate-a-read-can-ask-what-changed.log (20 passed, EXIT=0, revision 4a9a91d5ec) and the red control logs/why-guard-red.log quotes ref_not_found passing the old guard and failing the new one, though that control exercises only the first assertion.",
+    "fit": "The added assertions follow the assertions already in the same case at tests/test_a_read_can_ask_what_changed.py:663-682, with message strings in the same form, and introduce no symbol or name.",
+    "goal_fidelity": "tests/test_a_read_can_ask_what_changed.py:687 now requires the plan read to answer the why view with no error, which is the defect the commit names; tests/test_a_read_can_ask_what_changed.py:691 does not deliver the ref half of the commit's own claim.",
+    "reuse": "The commit adds no function, class or module, so no capability is forked; a search over reckon/ and tests/ for a why-answer presence check found only the existing case.",
+    "scope_discipline": "The whole diff of 51586482b3..4a9a91d5ec is tests/test_a_read_can_ask_what_changed.py, which is one of the node's declared write paths, and it adds no product code."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261105T201055868615-review-of-a-read-can-ask-what-changed-4a9a91d5ec93",
+  "reviewed_base_sha": "51586482b30df00e2a8838e39ac1fee3f1723a2a",
+  "reviewed_head_sha": "4a9a91d5ec938d791fc36f9fe57a62f05423dba7",
+  "reviewed_run_id": "r-20261027T101400045193-a-read-can-ask-what-changed",
+  "revision_read_note": "Read the diff with git show 4a9a91d5ec in the source worktree and re-ran the one changed case at that head.",
+  "scores": {
+    "durability": 14,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T20:27:31.980275+00:00",
+  "total": 105
+}
