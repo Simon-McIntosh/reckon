@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The reviewed node is suite-unarmed: its manifest declares no baseline_suite and no after_suite arm because no test file lies in its write paths, so no gate-log pair exists from which an added failure id could be derived. Zero is read from the absence of any suite arm, not from a green run.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-05T11:21:49.960Z",
+  "dispatched_at": "2026-11-05T11:04:47Z",
+  "findings": [
+    {
+      "file": "docs/research/how-much-of-a-node-is-its-gate.html",
+      "id": "ff4259dd9c7",
+      "line": 121,
+      "severity": "non-blocking",
+      "text": "The sentence says a codex stream \"yields no tool-call timing at all\", which the document's own table row at :118 contradicts (2.6% tool-call fallback) and the payload confirms as 4 of 155 runs (codex tool_call_timing is 151 no_timestamps and 0 no_calls), so four runs do carry timestamped tool calls and their shares come from the fallback the sentence says is unavailable."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T072523194588-measure-what-a-nodes-time-budget-controls-and-how-much-of-it/manifest.md",
+      "id": "f2432864e14",
+      "line": 11,
+      "severity": "non-blocking",
+      "text": "The tests line records only the two ruff invocations, so the promotion gate receipt is built from a lint check and omits the --control-run command that is the done_when's quantitative measure, which survives only as a follow-up line in out/lint-and-rerun.log and in out/control.json."
+    },
+    {
+      "file": "scripts/gate_share_of_run_time.py",
+      "id": "f09ae337350",
+      "line": 323,
+      "severity": "non-blocking",
+      "text": "tool_call_timing is set to \"timestamped\" whenever calls is non-empty, but _bash_calls_with_timing appends every call in `order` including one whose seconds is None (start or end absent at :208), so a stream that carries calls with no timestamps, or a call whose result never arrived, is labelled as timed when nothing in it can be charged; the label exists to separate absent timing from absent calls and it mislabels exactly that case."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "e1d54ab clears the lint findings and adds a falsifiable control; d2626bdd corrects two citations, both resolved at the head.",
+    "done_when": "the per-lane table at :113-117 reconciles against out/gate-share.json and the timing control at :100-111 records 543.02 s against an independent 543 s.",
+    "goal": "the goal is to measure what a node's time budget controls and how much of it the gates spend; docs/research/how-much-of-a-node-is-its-gate.html:26-39 and :113-125 answer both halves.",
+    "manifest": "read; it delivers the 891-run payload rather than the later rerun and states the backfill caveat.",
+    "write_paths": "the fence names four paths and the diff touches three of them, all inside it."
+  },
+  "node": "review-of-measure-what-a-nodes-time-budget-controls-and-how-much-of-it-e1d54ab0a039",
+  "node:reviewed": "measure-what-a-nodes-time-budget-controls-and-how-much-of-it",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to measure what a node's time budget controls and how much of it the gates spend; at d2626bdd docs/research/how-much-of-a-node-is-its-gate.html:26-39 names every deadline path by file and line with _apply_budget_watchdog as the only one that can act, and :113-125 carries the table, so both halves are answered, and the commits this review covers refine that answer rather than extend it.\nVERDICT done_when: the done_when asks for a per-lane table with per-id lists and both scanners shown to see a known positive; docs/research/how-much-of-a-node-is-its-gate.html:113-117 reconciles against the reviewed run's out/gate-share.json (891 runs, clive 6.1% all-log over 179 and 7.8% over 344 measurable, codex 8.9% over 51, 228 all-log runs, 496 with no measurable share, 146 truncated) and :100-111 records the timing control reading 543.02 s against an independent 543 s at delta 4e-05, EXIT=0 in out/lint-and-rerun.log.\nVERDICT write_paths: the reviewed run's fence at its prompt.txt:79-82 lists four paths, and the two commits touch docs/research/how-much-of-a-node-is-its-gate.html, docs/evidence/fragments/test-time-is-not-the-nodes-time/measure-what-a-nodes-time-budget-controls-and-how-much-of-it.html and scripts/gate_share_of_run_time.py, all inside it and nothing else.\nVERDICT manifest: read; it reports the delivered payload (891 runs) rather than the later rerun (747 clive / 157 codex) it also holds, states the ledger-backfill caveat that makes the payload the delivered source, and names the control comparison, but its tests line names only the two ruff commands.\nVERDICT diff: read both commits against 916b9c8c48; e1d54ab clears seven ruff findings, the format difference and the unused _TRUNCATION_FLAGS and _GATE_COMMAND, delegates _log_seconds to reckon/crew/promotion_gate.py:508 _recorded_gate_seconds, adds --control-run with an independent h:mm:ss comparison that exits 1 on disagreement and adds tool_call_timing, and d2626bdd corrects prompts.py:502 to :501 (_continuation_multiple) and dispatch_sessions.py:337 to :338 (_apply_budget_watchdog), both of which I resolved at the head.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/research/how-much-of-a-node-is-its-gate.html:113-125 carries the per-lane share table and :26-39 the deadline paths with file and line that the goal asks for.\nSCORE evidence: 14\nJUSTIFICATION evidence: every figure in docs/research/how-much-of-a-node-is-its-gate.html:113-117 and the fragment at :34-37 reconciles against out/gate-share.json, but the reviewed manifest.md:11 names only the ruff commands as tests, so promotion's receipt does not carry the --control-run that is the done_when's measure.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only scripts/gate_share_of_run_time.py:1-600 and the two docs, all inside the fence at the reviewed prompt.txt:79-82.\nSCORE durability: 7\nJUSTIFICATION durability: scripts/gate_share_of_run_time.py:545-600 adds a control that exits 1 when the independent field disagrees, but no test file lies in this node's scope and the codex \"at all\" overstatement at docs/research/how-much-of-a-node-is-its-gate.html:121 passed that control uncaught.\nSCORE fit: 20\nJUSTIFICATION fit: the reformatting and the new comment at scripts/gate_share_of_run_time.py:317-327 follow the file's own idiom, cite no plan or ticket identity, and ruff 0.16.4 at d2626bdd reports check and format both clean.\nSCORE reuse: 18\nJUSTIFICATION reuse: scripts/gate_share_of_run_time.py:262-272 now delegates to reckon/crew/promotion_gate.py:508 _recorded_gate_seconds and keeps its preserved-log fallback, and a search of reckon/ and scripts/ for an h:mm:ss bracket parser found none, so _bracket_seconds at :545 is a new capability rather than a fork.\nFINDING docs/research/how-much-of-a-node-is-its-gate.html:121 non-blocking: the sentence says a codex stream \"yields no tool-call timing at all\", which the document's own table row contradicts at :118 (2.6% tool-call fallback) and the payload confirms as 4 of 155 runs (codex tool_call_timing is 151 no_timestamps and 0 no_calls), so four runs do carry timestamped tool calls and their shares come from the fallback the sentence says is unavailable.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T072523194588-measure-what-a-nodes-time-budget-controls-and-how-much-of-it/manifest.md:11 non-blocking: the tests line records only the two ruff invocations, so the promotion gate receipt is built from a lint check and omits the --control-run command that is the done_when's quantitative measure, which survives only as a follow-up line in out/lint-and-rerun.log and in out/control.json.\nFINDING scripts/gate_share_of_run_time.py:323 non-blocking: tool_call_timing is set to \"timestamped\" whenever calls is non-empty, but _bash_calls_with_timing appends every call including one whose seconds is None (a call with no timestamp or no result) at :208, so such a run is labelled as timed when nothing in it can be charged.",
+  "review_run_id": "r-20261105T104535752157-review-of-measure-what-a-nodes-time-budget-controls-and-how-much-of-it-e1d54ab0a039",
+  "reviewed_base_sha": "916b9c8c480855059f43de8644290961eafcc626",
+  "reviewed_head_sha": "d2626bdd976c5f92a11b541917715a7a619c99ea",
+  "reviewed_run_id": "r-20261103T072523194588-measure-what-a-nodes-time-budget-controls-and-how-much-of-it",
+  "scores": {
+    "durability": 7,
+    "evidence": 14,
+    "fit": 20,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T11:43:05.029788+00:00",
+  "total": 97
+}
