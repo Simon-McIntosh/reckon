@@ -744,10 +744,53 @@ def _attach_lane_document(
     return lane
 
 
+def _session_lane_share(session: str, moment: datetime) -> dict[str, Any]:
+    """The calling session's published lane share and the document's vintage.
+
+    The share is read through the same function a dispatch refusal quotes, so a
+    coordinator reading the lane and a dispatch the lane refused cannot disagree
+    about one number. ``live_runs`` and the staleness marker come from that same
+    document: a session the router has not listed reads ``unknown`` rather than
+    zero, and a document past its own suggested shelf life reads stale beside
+    the age that disqualifies it.
+    """
+    from reckon.crew import obligations as obligations_module
+    from reckon.crew import paid_lanes
+
+    payload: object = None
+    try:
+        payload = json.loads(paid_lanes.local_lane_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        payload = None
+    report = lane_document_module.read_lane_document(payload, now=moment)
+    admission = lane_document_module.read_lane_admission(payload)
+    listed = (
+        admission["sessions"].get(session)
+        if admission.get("sessions_present")
+        else None
+    )
+    live_runs = (
+        listed.get(lane_document_module.SESSION_LIVE_RUNS_KEY)
+        if isinstance(listed, Mapping)
+        else lane_document_module.UNKNOWN
+    )
+    return {
+        "session": session,
+        "worker_slots": obligations_module._published_worker_slots(session),
+        "live_runs": live_runs,
+        "observed_at": report["observed_at"],
+        "age_seconds": report["age_seconds"],
+        "shelf_life_seconds": report["shelf_life_seconds"],
+        "stale": report["stale"],
+        "detail": report["detail"],
+    }
+
+
 def crew_lanes_view(
     config: Mapping[str, Any],
     runs: Iterable[Mapping[str, Any]],
     *,
+    session: str | None = None,
     receipt_reader: Callable[[str], object] | None = None,
     probe_reader: Callable[[str, Mapping[str, Any]], Mapping[str, Any] | None]
     | None = None,
@@ -765,7 +808,11 @@ def crew_lanes_view(
     receipt reading, and a lane with no reading of its own renders ``borrowed``
     rather than carrying the shared figure.  The top-level ``budget_groups``
     map groups backends by the declared key alone, never by shared window or
-    reset times.
+    reset times.  When ``session`` is given the view also carries that
+    session's published admission share, its live-run count and the local lane
+    document's ``observed_at``, with a document past its own shelf life marked
+    stale; that block is the one carrier of these figures: the directory and
+    the ready-set views copy none of them.
     """
 
     composition_time = composed_at or datetime.now(UTC).isoformat().replace(
@@ -1074,11 +1121,14 @@ def crew_lanes_view(
             lane["unmeasured"] = unmeasured
         lanes.append(_attach_lane_document(lane, lane_document_fields))
 
-    return {
+    view: dict[str, Any] = {
         "composed_at": composition_time,
         "lanes": [ledger.normalize_identity(lane) for lane in lanes],
         "budget_groups": budget_groups,
     }
+    if session:
+        view["session_share"] = _session_lane_share(session, composition_moment)
+    return view
 
 
 def sprint_metrics(items: list[dict[str, Any]]) -> dict[str, Any]:
@@ -1153,25 +1203,6 @@ def _row_live_run(row: Mapping[str, Any]) -> str | None:
     return None
 
 
-def _ready_set_coordinators(project: str) -> dict[str, dict[str, Any]]:
-    """Each plan's coordinator and owner, from the derivation the crew owns.
-
-    The derivation is the crew's, not this view's: a second reading of the
-    ledger here is how one plan comes to have two coordinators. An unreadable
-    ledger leaves the columns empty rather than failing the read, because a
-    ready set with no owner is still the answer a reader came for.
-    """
-
-    if not project:
-        return {}
-    try:
-        from reckon.crew.plan_coordinator import resolve_plan_coordinators
-
-        return resolve_plan_coordinators(project)["plans"]
-    except Exception:  # noqa: BLE001 — an unreadable ledger names no owner
-        return {}
-
-
 def ready_set_view(
     roadmap: dict[str, Any],
     *,
@@ -1188,13 +1219,12 @@ def ready_set_view(
     looking for when a lane is idle — and keeps the view's own paging, so the
     filtered answer is a page of one more view rather than a second view.
 
-    ``coordinators`` takes the crew's plan-coordinator rows. When it is absent
-    and the filtered set is asked for, the crew's derivation is read for the
-    project, so one call answers who to ask about each idle section.
+    ``coordinators`` takes the crew's plan-coordinator rows; a caller that
+    passes none reports each row with no coordinator rather than deriving one
+    here, so the crew's derivation remains the only statement of who owns a
+    plan.
     """
 
-    if coordinators is None and ready_idle:
-        coordinators = _ready_set_coordinators(str(roadmap.get("project") or ""))
     coordinators = coordinators or {}
     critical = roadmap.get("critical_path") or {}
     critical_sections = {
@@ -4352,7 +4382,7 @@ def serve_crew_view(
                 "ok": True,
                 "project": project,
                 "view": view,
-                **crew_lanes_view(config, runs),
+                **crew_lanes_view(config, runs, session=session),
             }
         if view == "routing":
             try:
