@@ -41,6 +41,7 @@ def _plan(
     status: str = "active",
     depends_on: list[str] | None = None,
     section_depends_on: dict[str, list[str]] | None = None,
+    declarations: dict[str, str] | None = None,
 ) -> Path:
     """Write one plan, optionally holding a whole-plan or section-scoped ref."""
 
@@ -64,6 +65,9 @@ def _plan(
         '<body><main class="plan-doc"></main></body></html>'
     )
     html = write_state(bare, state)
+    if declarations:
+        state["section_declarations"] = dict(declarations)
+        html = write_state(bare, state)
     if section_depends_on:
         meta = (
             '<meta name="plan-section-depends-on" content="'
@@ -75,9 +79,10 @@ def _plan(
     return path
 
 
-def _summary(project: str, slug: str) -> dict:
+def _summary(project: str, slug: str, *, checkout_path: str | None = None) -> dict:
     return mcp_module._read_plan(
-        resource={"project": project, "type": "plan", "id": slug}
+        resource={"project": project, "type": "plan", "id": slug},
+        checkout_path=checkout_path,
     )
 
 
@@ -137,7 +142,11 @@ def test_whole_plan_and_section_waits_are_reported_side_by_side(project_docs):
     ]
 
 
-def test_satisfied_section_wait_leaves_no_section_row(project_docs):
+def test_undeclared_section_of_a_shipped_plan_holds_without_blocking_the_plan(
+    project_docs,
+):
+    """A terminal plan is no evidence that a section it never declares landed."""
+
     docs_dir, project = project_docs
     _plan(docs_dir, "plan-b", status="shipped")
     _plan(docs_dir, "plan-e", section_depends_on={"s3": ["plan-b#s1"]})
@@ -145,8 +154,71 @@ def test_satisfied_section_wait_leaves_no_section_row(project_docs):
     result = _summary(project, "plan-e")
 
     assert result["blocking"] == []
-    assert result["section_blocking"] == []
     assert result["state"]["effective_status"] == "active"
+    assert result["section_blocking"] == [
+        {
+            "section": "s3",
+            "ready": False,
+            "waits_on": [
+                {
+                    "ref": "plan-b#s1",
+                    "found": True,
+                    "status": "shipped",
+                    "stage": "s1",
+                }
+            ],
+        }
+    ]
+
+
+def test_a_declared_done_section_leaves_no_section_row(project_docs):
+    docs_dir, project = project_docs
+    _plan(docs_dir, "plan-g", declarations={"s1": "done"})
+    _plan(docs_dir, "plan-h", section_depends_on={"s2": ["plan-g#s1"]})
+
+    result = _summary(project, "plan-h")
+
+    assert result["blocking"] == []
+    assert result["state"]["effective_status"] == "active"
+    assert result["section_blocking"] == []
+
+
+def test_a_section_wait_reads_its_target_through_the_calling_checkout(
+    project_docs, tmp_path
+):
+    """The verdict comes from the caller's own tree, not the mounted one."""
+
+    docs_dir, project = project_docs
+    worktree = tmp_path / "worktree"
+    worktree_docs = worktree / "docs"
+    worktree_docs.mkdir(parents=True)
+
+    # The mounted copy says the target section landed; the checkout copy says
+    # it is still to be implemented. Only the second is the caller's own tree.
+    _plan(docs_dir, "plan-i", declarations={"s1": "done"})
+    _plan(worktree_docs, "plan-i", declarations={"s1": "implementable"})
+    for tree in (docs_dir, worktree_docs):
+        _plan(tree, "plan-j", section_depends_on={"s2": ["plan-i#s1"]})
+
+    assert _summary(project, "plan-j")["section_blocking"] == []
+
+    result = _summary(project, "plan-j", checkout_path=str(worktree))
+
+    assert result["blocking"] == []
+    assert result["section_blocking"] == [
+        {
+            "section": "s2",
+            "ready": False,
+            "waits_on": [
+                {
+                    "ref": "plan-i#s1",
+                    "found": True,
+                    "status": "implementable",
+                    "stage": "s1",
+                }
+            ],
+        }
+    ]
 
 
 def test_a_plan_without_section_edges_reports_no_section_blocking(project_docs):

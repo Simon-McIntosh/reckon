@@ -12,8 +12,8 @@
   The two readings disagree on an undeclared section of a terminal plan: the
   status reads <code>shipped</code> while the roadmap holds the edge, so
   <code>read_plan</code> dropped a wait the roadmap kept. The projection now
-  reads the verdict the producer carried in <code>satisfied</code>, and hands a
-  row resolved without one to the same owner, so the rule has one home.
+  resolves the target plan itself and asks the roadmap's
+  <code>_section_satisfied</code> over it, so the rule has one home.
 </p>
 
 <p id="one-derivation-per-fact-run-verdict">
@@ -60,6 +60,19 @@
         <code>test_read_plan_resolves_a_section_wait_through_the_target_plan</code>
       </td>
     </tr>
+    <tr>
+      <td>three-file gate, after (section-edge file included)</td>
+      <td>head working tree</td>
+      <td>33 passed, <code>EXIT=0</code></td>
+    </tr>
+    <tr>
+      <td>declared mutation: <code>resource_view</code> stops threading <code>checkout</code></td>
+      <td>head + mutation</td>
+      <td>
+        <code>1 failed, 6 passed</code>, <code>EXIT=1</code> —
+        <code>test_a_section_wait_reads_its_target_through_the_calling_checkout</code>
+      </td>
+    </tr>
   </tbody>
 </table>
 
@@ -87,13 +100,28 @@
 </p>
 
 <p id="one-derivation-per-fact-conflict">
-  One existing test now contradicts this rule and is outside this node's write
-  scope: <code>tests/test_section_edge_stays_off_plan_blocking.py</code>
-  <code>test_satisfied_section_wait_leaves_no_section_row</code> asserts that a
-  wait on a section a shipped plan never declares reports no row. The roadmap
-  holds that edge (<code>_section_scoped_edges</code> requires the section to be
-  declared), so the assertion encodes the status reading being removed and needs
-  the coordinator's dispatch to update it.
+  One existing test encoded the reading this change removes.
+  <code>test_satisfied_section_wait_leaves_no_section_row</code> asserted that a
+  wait on a section a shipped plan never declares reports no row, while the
+  roadmap holds that edge (<code>_section_scoped_edges</code> requires the
+  section to be declared). It is now
+  <code>test_undeclared_section_of_a_shipped_plan_holds_without_blocking_the_plan</code>
+  and expects the <code>s3</code> row, keeping its original point that a section
+  edge never reaches the plan-level blocking list. A second test,
+  <code>test_a_declared_done_section_leaves_no_section_row</code>, covers the
+  satisfied direction.
+</p>
+
+<p id="one-derivation-per-fact-checkout">
+  The verdict depends on which tree the caller reads, so the projection threads
+  the read's own checkout down to the target resolution. With the threading
+  dropped, <code>read_plan</code> resolves the target through the mounted
+  project while the waiting plan comes from the worktree, and the two copies
+  disagree —
+  <code>test_a_section_wait_reads_its_target_through_the_calling_checkout</code>
+  holds a target the mounted copy declares done and the checkout copy declares
+  implementable, and it fails when <code>resource_view</code> stops passing
+  <code>checkout</code>.
 </p>
 
 </section>
