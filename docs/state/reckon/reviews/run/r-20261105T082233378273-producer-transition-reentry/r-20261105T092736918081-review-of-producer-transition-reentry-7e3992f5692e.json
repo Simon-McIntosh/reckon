@@ -1,0 +1,102 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite gate logs: logs/base-gate.log ends 2 failed/EXIT=1 and logs/head-gate.log ends 2 passed/EXIT=0 at 7e3992f569, both failure ids being the two new cases, so added failures are zero. The population arms record a different figure and are not the source of this count: logs/population-base.log ends 27 failed/672 passed/EXIT=1 and logs/population-head.log ends 5 failed/696 passed/EXIT=1, with three head-only ids (test_idle_producer_backs_off.py::test_idle_producer_backs_off_to_the_cap_and_returns_to_base, test_producer_holds_a_lease.py::test_a_renewed_producer_outlives_three_lease_intervals, test_producer_loop_survives_a_config_change.py::test_the_producer_defers_a_broken_config_and_recovers) attributed to load at manifest.md:21; that attribution is the subject of a finding.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/runs.py:1039 list_live",
+    "reckon/crew/runs.py:3232 _retry_deferred_watch_ticks",
+    "reckon/crew/runs.py:3779 producer seat entry",
+    "reckon/crew/recovery_review_dispatch.py:582 _review_in_flight",
+    "reckon/crew/recovery_classification.py:642 _review_run_in_flight",
+    "reckon/crew/recovery_watch.py:1515 _watch_snapshot"
+  ],
+  "completed_at": "2026-11-05T09:41:08.118Z",
+  "dispatched_at": "2026-11-05T09:29:51Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "landed ahead of the full importer population because the review reflex was dark for every reckon session; the coordinator runs that population at the merged head next and records the delta in the archive anchor",
+      "recorded_at": "2026-11-05T09:52:22.760259+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the coordinator reran the one added id alone 3x on both trees: head 3 of 3 passed, base 2 of 3 failed (~/.cache/reckon-population/producer-reentry/rerun-*.log)",
+      "recorded_at": "2026-11-05T09:52:39.613506+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "the case's durable evidence rests on its other assertions, which compare the emitted row against the classifier rather than the injected state",
+      "recorded_at": "2026-11-05T09:52:59.984942+00:00"
+    },
+    "3": {
+      "kind": "exempted",
+      "reason": "the coordinator's own reruns alone on both trees replace the fragment's claim; the archive anchor states the measured counts",
+      "recorded_at": "2026-11-05T09:53:29.356402+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T082233378273-producer-transition-reentry/manifest.md",
+      "line": 24,
+      "severity": "non-blocking",
+      "text": "the done_when requires every test file under tests/ that imports runs, recovery_watch, recovery_classification or recovery_review_dispatch to run at both revisions, and the node ran a 113/114-file feature-scoped subset instead; the substitution is stated plainly here and in the evidence fragment, but the measure as written is unmet and the wider population could in principle carry an added failure the subset cannot see."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T082233378273-producer-transition-reentry/manifest.md",
+      "line": 21,
+      "severity": "non-blocking",
+      "text": "the three head-only failure ids are attributed to load, but the head arm's own log shows test_idle_producer_backs_off red 2 of 3 while the base arm's log shows the same three tests green 3 of 3 in the same window, so the arms do not share the condition the attribution names; the quieter head-only log is a single-test rerun that does not reproduce the base arm's three-test group, so the attribution is plausible but not established by the record."
+    },
+    {
+      "file": "tests/test_producer_transition_reentry.py",
+      "line": 125,
+      "severity": "non-blocking",
+      "text": "`assert rows[-1][\"from_state\"] == \"working\"` compares the emitted row against the known state the test itself injects at :97, so the two sides move together and the line passes for any fold that echoes its input back; the durable evidence in this case rests on :122, :124 and :127, not on :125."
+    },
+    {
+      "file": "docs/evidence/fragments/a-live-worker-is-never-drawn-halted/producer-transition-reentry.html",
+      "line": 20,
+      "severity": "non-blocking",
+      "text": "the fragment states each of the three head-only failures \"passes 3/3 alone at both revisions once the node is quiet\", but only the head arm has a single-test 3x log; the base evidence for that test is a three-test group run, so \"alone at both revisions\" overstates what was measured."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "six production sites can reach the change: runs.py:1039 list_live (the cycle member), runs.py:3232 and runs.py:3779 (the two ticker publishes), recovery_review_dispatch.py:582 _review_in_flight, recovery_classification.py:642 _review_run_in_flight and recovery_watch.py:1515 _watch_snapshot, the early return at runs.py:3065-3068 suppresses only the nested publish, and list_live still returns its records at runs.py:1041 so the classifier's answer is unchanged.",
+    "diff": "read both commits against 3b9fa9c08f: 12273864c6 adds the in_transition guard at reckon/crew/runs.py:3065-3077 plus the 140-line two-case tests/test_producer_transition_reentry.py, 7e3992f569 adds the 23-line evidence fragment, and every hunk is inside the three declared paths.",
+    "done_when": "the done_when names a base reproduction, a thread-local guard around `_publish_watch_transitions` cleared in a `finally`, no edit to reckon/crew/recovery_watch.py, a head pass with a one-log negative control, and every importer file under tests/ run at both revisions; base-gate.log and negative-control.log record the first four and the diff leaves recovery_watch.py untouched, but the importer population clause is unmet \u2014 a 113/114-file feature-scoped subset ran instead of the 620/621 importer files the clause names, stated at manifest.md:24.",
+    "goal": "the node's goal is that the producer's transition write classifies its pointers without re-entering itself; reckon/crew/runs.py:3065-3077 returns early when `_SWEEP_LOCAL.in_transition` is set and sets it around `_publish_watch_transitions` in a try/finally, I re-ran the gate module at head 7e3992f569 (2 passed in 4.18s), and the base scratch tree at 3b9fa9c08 reproduces `RecursionError` through recovery_watch.py:1515, recovery_classification.py:642, recovery_review_dispatch.py:582 and runs.py:1039.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T082233378273-producer-transition-reentry/manifest.md; status complete, two commits, baseline_suite carries 2 failed and EXIT=1, after_suite carries 0 failed and EXIT=0, negative_control_log names a log whose last line is EXIT=1, and the six rubric lines present are the worker's own dimensions rather than this review's.",
+    "write_paths": "the manifest declares reckon/crew/runs.py, tests/test_producer_transition_reentry.py and docs/evidence/fragments/a-live-worker-is-never-drawn-halted/producer-transition-reentry.html; `git diff --stat 3b9fa9c08 7e3992f569` reports exactly those three files and no other path."
+  },
+  "justifications": {
+    "durability": "tests/test_producer_transition_reentry.py:122 goes red with RecursionError when the guard is removed (logs/negative-control.log, 2 failed/EXIT=1) and :135 goes red if the `finally` is dropped, but :125 compares the emitted from_state against the `known` state the test itself supplied at :97, so that line holds whatever the fold does.",
+    "evidence": "logs/base-gate.log records the exact RecursionError cycle and logs/head-gate.log records 2 passed/EXIT=0 at 7e3992f569 (independently re-run here, 2 passed in 4.18s), but the done_when's importer population was replaced by a 114-file subset (logs/population-head.log, 5 failed/EXIT=1 against logs/population-base.log 27 failed/EXIT=1), and the three head-only failure ids rest on an arm comparison manifest.md:21 attributes to load without controlling for it.",
+    "fit": "the change extends the existing `_SWEEP_LOCAL` thread-local at reckon/crew/runs.py:3046 and follows the surrounding docstring idiom, but that thread-local now carries a transition guard under a name that says sweep, so the name no longer describes its contents.",
+    "goal_fidelity": "reckon/crew/runs.py:3065-3077 closes the cycle at its only production entry point \u2014 the guard returns before the producer lookup, and runs.py:1039's `list_live` still hands its records back to recovery_review_dispatch.py:582, so the scoring classification is produced rather than suppressed.",
+    "reuse": "a search over reckon/ for `threading.local()` and for an existing re-entry helper found only runs.py:3046 `_SWEEP_LOCAL` and dispatch_picker.py:134, so the change adds a second attribute to the owner of the capability rather than forking it.",
+    "scope_discipline": "`git diff --stat 3b9fa9c08bf4c6b7d4868867f9e82c57fe773f58 7e3992f5692ee0614334930732e6f09db8f147fd` changes only reckon/crew/runs.py, tests/test_producer_transition_reentry.py and the evidence fragment, the three paths the source manifest declares, and recovery_watch.py is deliberately untouched."
+  },
+  "node": "review-of-producer-transition-reentry-7e3992f5692e",
+  "node:reviewed": "producer-transition-reentry",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the producer's transition write classifies its pointers without re-entering itself; reckon/crew/runs.py:3065-3077 returns early when `_SWEEP_LOCAL.in_transition` is set and sets it around `_publish_watch_transitions` in a try/finally, I re-ran the gate module at head 7e3992f569 (2 passed in 4.18s), and the base scratch tree at 3b9fa9c08 reproduces `RecursionError` through recovery_watch.py:1515, recovery_classification.py:642, recovery_review_dispatch.py:582 and runs.py:1039.\nVERDICT done_when: the done_when names a base reproduction, a thread-local guard around `_publish_watch_transitions` cleared in a `finally`, no edit to reckon/crew/recovery_watch.py, a head pass with a one-log negative control, and every importer file under tests/ run at both revisions; base-gate.log and negative-control.log record the first four and the diff leaves recovery_watch.py untouched, but the importer population clause is unmet \u2014 a 113/114-file feature-scoped subset ran instead of the 620/621 importer files the clause names, stated at manifest.md:24.\nVERDICT write_paths: the manifest declares reckon/crew/runs.py, tests/test_producer_transition_reentry.py and docs/evidence/fragments/a-live-worker-is-never-drawn-halted/producer-transition-reentry.html; `git diff --stat 3b9fa9c08 7e3992f569` reports exactly those three files and no other path.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T082233378273-producer-transition-reentry/manifest.md; status complete, two commits, baseline_suite carries 2 failed and EXIT=1, after_suite carries 0 failed and EXIT=0, negative_control_log names a log whose last line is EXIT=1, and the six rubric lines present are the worker's own dimensions rather than this review's.\nVERDICT diff: read both commits against 3b9fa9c08f: 12273864c6 adds the in_transition guard at reckon/crew/runs.py:3065-3077 plus the 140-line two-case tests/test_producer_transition_reentry.py, 7e3992f569 adds the 23-line evidence fragment, and every hunk is inside the three declared paths.\nCALL_SITES: reckon/crew/runs.py:1039 list_live, reckon/crew/runs.py:3232 _retry_deferred_watch_ticks, reckon/crew/runs.py:3779 producer seat entry, reckon/crew/recovery_review_dispatch.py:582 _review_in_flight, reckon/crew/recovery_classification.py:642 _review_run_in_flight, reckon/crew/recovery_watch.py:1515 _watch_snapshot\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:3065-3077 closes the cycle at its only production entry point \u2014 the guard returns before the producer lookup, and runs.py:1039's `list_live` still hands its records back to recovery_review_dispatch.py:582, so the scoring classification is produced rather than suppressed.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/base-gate.log records the exact RecursionError cycle and logs/head-gate.log records 2 passed/EXIT=0 at 7e3992f569 (independently re-run here, 2 passed in 4.18s), but the done_when's importer population was replaced by a 114-file subset (logs/population-head.log, 5 failed/EXIT=1 against logs/population-base.log 27 failed/EXIT=1), and the three head-only failure ids rest on an arm comparison manifest.md:21 attributes to load without controlling for it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat 3b9fa9c08bf4c6b7d4868867f9e82c57fe773f58 7e3992f5692ee0614334930732e6f09db8f147fd` changes only reckon/crew/runs.py, tests/test_producer_transition_reentry.py and the evidence fragment, the three paths the source manifest declares, and recovery_watch.py is deliberately untouched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_producer_transition_reentry.py:122 goes red with RecursionError when the guard is removed (logs/negative-control.log, 2 failed/EXIT=1) and :135 goes red if the `finally` is dropped, but :125 compares the emitted from_state against the `known` state the test itself supplied at :97, so that line holds whatever the fold does.\nSCORE fit: 17\nJUSTIFICATION fit: the change extends the existing `_SWEEP_LOCAL` thread-local at reckon/crew/runs.py:3046 and follows the surrounding docstring idiom, but that thread-local now carries a transition guard under a name that says sweep, so the name no longer describes its contents.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search over reckon/ for `threading.local()` and for an existing re-entry helper found only runs.py:3046 `_SWEEP_LOCAL` and dispatch_picker.py:134, so the change adds a second attribute to the owner of the capability rather than forking it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T082233378273-producer-transition-reentry/manifest.md:24 non-blocking: the done_when requires every test file under tests/ that imports runs, recovery_watch, recovery_classification or recovery_review_dispatch to run at both revisions, and the node ran a 113/114-file feature-scoped subset instead; the substitution is stated plainly here and in the evidence fragment, but the measure as written is unmet and the wider population could in principle carry an added failure the subset cannot see.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T082233378273-producer-transition-reentry/manifest.md:21 non-blocking: the three head-only failure ids are attributed to load, but the head arm's own log shows test_idle_producer_backs_off red 2 of 3 while the base arm's log shows the same three tests green 3 of 3 in the same window, so the arms do not share the condition the attribution names; the quieter head-only log is a single-test rerun that does not reproduce the base arm's three-test group, so the attribution is plausible but not established by the record.\nFINDING tests/test_producer_transition_reentry.py:125 non-blocking: `assert rows[-1][\"from_state\"] == \"working\"` compares the emitted row against the known state the test itself injects at :97, so the two sides move together and the line passes for any fold that echoes its input back; the durable evidence in this case rests on :122, :124 and :127, not on :125.\nFINDING docs/evidence/fragments/a-live-worker-is-never-drawn-halted/producer-transition-reentry.html:20 non-blocking: the fragment states each of the three head-only failures \"passes 3/3 alone at both revisions once the node is quiet\", but only the head arm has a single-test 3x log; the base evidence for that test is a three-test group run, so \"alone at both revisions\" overstates what was measured.\n",
+  "review_run_id": "r-20261105T092736918081-review-of-producer-transition-reentry-7e3992f5692e",
+  "reviewed_base_sha": "3b9fa9c08bf4c6b7d4868867f9e82c57fe773f58",
+  "reviewed_head_sha": "7e3992f5692ee0614334930732e6f09db8f147fd",
+  "reviewed_run_id": "r-20261105T082233378273-producer-transition-reentry",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T09:38:21+00:00",
+  "total": 109
+}
