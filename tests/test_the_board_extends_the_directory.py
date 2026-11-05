@@ -16,6 +16,7 @@ from pathlib import Path
 import pytest
 
 from reckon import _store
+from reckon.crew import directory as directory_module
 from reckon.crew.directory import directory
 from reckon.mcp_views import serve_crew_view
 
@@ -246,9 +247,10 @@ def test_directory_names_section_held_paths_and_ready_idle_owners(
 def test_ready_idle_owner_keeps_every_section_past_one_page(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # More ready-idle sections than the ready-set view serves in one page:
-    # every one of them names its owner, so an owner is never listed as idle
-    # over the sections that sorted onto a later page.
+    # The join is held to a page of seven here, so forty sections span six
+    # pages: every one of them names its owner, which an owner would lose if
+    # the join read its first page and stopped.
+    monkeypatch.setattr(directory_module, "_READY_IDLE_PAGE_LIMIT", 7)
     _seed(tmp_path, monkeypatch, wide=40)
     view = directory(PROJECT)
     by_session = {row["session"]: row for row in view["coordinators"]}

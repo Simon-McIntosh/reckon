@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from reckon import ledger
+from reckon.crew.query import _mounted_projects as mounted_projects
 from reckon.crew.query import project_run_rows, run_section_index
 from reckon.crew.recovery import classify_pointer
 from reckon.crew.runs import list_live
@@ -237,7 +238,11 @@ def _ready_idle_rows(
         if project not in (None, "*"):
             return _ready_idle_rows_from_owners(project, pointers)
         rows: list[dict[str, Any]] = []
-        for name in _mounted_projects():
+        # The mounted set is read from the owner that resolves it for the rest
+        # of the package, so a registry shape this view does not know about is
+        # still every project, and an unreadable registry fails closed there
+        # rather than reading as no projects at all.
+        for name in sorted(mounted_projects()):
             owned = [
                 pointer
                 for pointer in pointers
@@ -247,19 +252,6 @@ def _ready_idle_rows(
         return rows
     finally:
         _JOIN_STATE.running = False
-
-
-def _mounted_projects() -> list[str]:
-    """Every project registered in the config home's mounts, sorted."""
-    from reckon._store import _mounts_path
-
-    try:
-        mounts = json.loads(_mounts_path().read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return []
-    if not isinstance(mounts, Mapping):
-        return []
-    return sorted(str(name) for name in mounts if not str(name).startswith("_"))
 
 
 def _ready_idle_rows_from_owners(
@@ -292,7 +284,7 @@ def _ready_idle_rows_from_owners(
             coordinators=coordinators,
             ready_idle=True,
             cursor=cursor,
-            **({} if cursor else {"limit": _READY_IDLE_PAGE_LIMIT}),
+            limit=_READY_IDLE_PAGE_LIMIT,
         )
         ready.extend(view.get("ready") or ())
         cursor = (view.get("pagination") or {}).get("next_cursor")
