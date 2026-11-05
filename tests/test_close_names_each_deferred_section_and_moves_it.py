@@ -432,6 +432,44 @@ def test_a_move_resolves_the_successor_against_the_checkout_being_written(
     ), "the default tree is untouched"
 
 
+def test_a_refused_move_writes_nothing_not_even_its_evidence(setup) -> None:
+    docs_dir, project = setup
+    _setup_trees(docs_dir)
+    record = docs_dir / "evidence" / "archive" / f"{SLUG}-landed.html"
+    before = record.read_text()
+    version_before = _store_module.read_plan(project, SLUG)[1]
+
+    result = mcp_module._edit_plan(
+        project,
+        SLUG,
+        [
+            {
+                "op": "append_evidence",
+                "plan": SLUG,
+                "anchor": "a-move",
+                "title": "the move",
+                "body": "<p>a paragraph that must not land</p>",
+            },
+            {
+                "op": "set",
+                "path": "section_declarations.s2",
+                "value": {
+                    "status": "descoped",
+                    "reason": "the successor owns this now",
+                    "moved_to": f"{SLUG}#s1",
+                },
+            },
+        ],
+        0,
+    )
+
+    assert result["ok"] is False, "a successor in the same plan is refused"
+    assert "another plan" in result["detail"]
+    assert record.read_text() == before, "the evidence append wrote nothing"
+    assert "a-move" not in record.read_text()
+    assert _store_module.read_plan(project, SLUG)[1] == version_before
+
+
 def test_a_moved_to_that_does_not_resolve_is_refused(setup) -> None:
     docs_dir, project = setup
     _setup_trees(docs_dir)

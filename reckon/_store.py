@@ -1483,6 +1483,16 @@ def _write_state_locked(
     meta_removals = _consume_write_effects("plan_meta_removals", data)
     declaration_removals = _consume_write_effects("declaration_removals", data)
     section_moves = _consume_write_effects("section_moves", data)
+    # A move names a section of another plan, and that section must exist. Both
+    # are judged here, before any file is written: the evidence append below
+    # lands earlier than the carry that reads these moves, so a refusal raised
+    # there would leave the evidence on disk behind a plan refused by its own
+    # batch.
+    resolved_moves = (
+        _resolve_section_moves(data, section_moves, project, root)
+        if section_moves
+        else []
+    )
 
     if expected_version != cur_version:
         merged_comments = _comment_append_onto_current(data, cur_state)
@@ -1580,8 +1590,8 @@ def _write_state_locked(
             raise OpError(f"append_evidence: no docs dir for project {project!r}")
         _apply_evidence_appends(docs_dir, project, evidence_appends, root)
     successor_moves = (
-        _carry_section_moves(new_data, source_text, section_moves, project, root)
-        if section_moves
+        _carry_section_moves(new_data, source_text, resolved_moves)
+        if resolved_moves
         else []
     )
     authored_text_changed = source_text != text
@@ -2985,12 +2995,44 @@ def _insert_section_prose(document: str, section_id: str, prose: str) -> str:
     )
 
 
+def _resolve_section_moves(
+    state: Mapping[str, Any],
+    moves: list[dict[str, str]],
+    project: str,
+    root: str | Path | None,
+) -> list[tuple[dict[str, str], str, str, str, str]]:
+    """Resolve every move's successor, or refuse before anything is written.
+
+    The successor is a different document, read against the checkout the write
+    targets. A ref that names no section there, or a ref naming a section of the
+    plan being written, refuses the whole batch here — ahead of the evidence
+    append, which writes a file of its own, so a refusal cannot leave one half
+    of a batch on disk.
+    """
+    slug = str(state.get("slug") or "")
+    resolved: list[tuple[dict[str, str], str, str, str, str]] = []
+    for request in moves:
+        section = str(request.get("section") or "")
+        moved_to = str(request.get("moved_to") or "")
+        target_project, target_slug, target_section, successor_ref = (
+            _resolve_successor_section(project, section, moved_to, root)
+        )
+        if (target_project, target_slug) == (project, slug):
+            raise OpError(
+                f"section_declarations.{section}.moved_to must name a section of "
+                "another plan: the successor's half is a second plan write, and "
+                "the plan being written cannot receive it"
+            )
+        resolved.append(
+            (request, target_project, target_slug, target_section, successor_ref)
+        )
+    return resolved
+
+
 def _carry_section_moves(
     state: dict,
     source_text: str,
-    moves: list[dict[str, str]],
-    project: str,
-    root: str | Path | None = None,
+    resolved: list[tuple[dict[str, str], str, str, str, str]],
 ) -> list[dict[str, Any]]:
     """Take each moved section off this plan and describe its successor's half.
 
@@ -3003,24 +3045,14 @@ def _carry_section_moves(
     comes back as a payload written after this plan lands, so a refused source
     write moves nothing.
 
-    ``root`` is the checkout being written: the successor is resolved against
-    the same one, so a write against an explicit checkout never reads a
-    different tree's plan.
+    ``resolved`` comes from :func:`_resolve_section_moves`, which ran before
+    this write touched any file, so every successor is known to exist and to be
+    another plan's section.
     """
     slug = str(state.get("slug") or "")
     payloads: list[dict[str, Any]] = []
-    for request in moves:
+    for request, target_project, target_slug, target_section, successor_ref in resolved:
         moved_section = str(request.get("section") or "")
-        moved_to = str(request.get("moved_to") or "")
-        target_project, target_slug, target_section, successor_ref = (
-            _resolve_successor_section(project, moved_section, moved_to, root)
-        )
-        if (target_project, target_slug) == (project, slug):
-            raise OpError(
-                f"section_declarations.{moved_section}.moved_to must name a "
-                "section of another plan: the successor's half is a second plan "
-                "write, and the plan being written cannot receive it"
-            )
         moved_record = _section_record(state, moved_section)
         if moved_record is None:
             continue
