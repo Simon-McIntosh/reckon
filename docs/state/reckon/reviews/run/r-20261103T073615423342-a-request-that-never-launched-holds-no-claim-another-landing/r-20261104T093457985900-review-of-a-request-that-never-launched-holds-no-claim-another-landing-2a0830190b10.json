@@ -1,0 +1,52 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/promotion_checks.py:2231 _landing_scope_products calls _accepted_scope_exceptions with the acceptances and commits the walk raises on"
+  ],
+  "completed_at": "2026-11-04T09:49:47.771Z",
+  "dispatched_at": "2026-11-04T09:42:54Z",
+  "findings": [],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T073615423342-a-request-that-never-launched-holds-no-claim-another-landing/logs/head-arm.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T073615423342-a-request-that-never-launched-holds-no-claim-another-landing/logs/base-arm.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/promotion_checks.py:2231 is the one production caller of _accepted_scope_exceptions inside _landing_scope_products; the accept-path walk is reached from crew complete --accept-path, and no other runtime path calls it. reckon/crew/promotion.py:2489 and reckon/crew/promotion_checks.py:2858 are import lists, not calls.",
+    "diff": "Read commit by commit from 83ebc6a7f496847b8014ca80dfbdc8e2360ca8d7 to 2a0830190b106e572e4b1d62515f45734db6ba6e: d3ddd89aff carries all product and test code, 0bf3f0858c and 2a0830190b touch only the landing fragment, so the head gate at d3ddd89 measured the reviewed code exactly.",
+    "done_when": "The done-when's four points are all asserted: tests/test_a_parked_request_does_not_block_a_landing.py:197-226 (parametrised over all four waiting phases: admitted, claim named), :228-252 (a working peer still refused, no ledger row, pointers intact), :255-276 (peer pointer byte-identical and still listed), and the neighbouring stopped-run suite inside logs/head-arm.log (11 passed, EXIT=0) with logs/base-arm.log (5 passed, EXIT=0).",
+    "goal": "The source goal is that a request that never launched holds no claim another landing must clear; reckon/crew/promotion_scope.py:642-661 now admits the accept-path walk past a peer whose phase is in WAITING_REQUEST_PHASES and names it on the acceptance under waiting_request_claims.",
+    "manifest": "Read the delivered manifest at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T073615423342-a-request-that-never-launched-holds-no-claim-another-landing/manifest.md; its three commit shas, 11-passed head gate, 5-passed base arm and 4-failed negative control each match the log it cites.",
+    "write_paths": "The dispatch prompt declares five paths; git diff 83ebc6a7f4..2a0830190b changes three of them (promotion_scope.py, the new test, the landing fragment) and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_parked_request_does_not_block_a_landing.py:214-223 fails whenever the waiting-phase branch is removed or claim_disposition starts binding, which logs/negative-control.log demonstrates as four red cases EXIT=1, and :247-252 guards the converse against over-admission.",
+    "evidence": "logs/head-arm.log ends '11 passed in 103.36s' EXIT=0, logs/base-arm.log ends '5 passed in 21.44s' EXIT=0 and logs/negative-control.log ends '4 failed in 54.68s' EXIT=1 with only the four parked-phase ids the head arm does not fail.",
+    "fit": "reckon/crew/promotion_scope.py:642-661 follows the surrounding walk's structure, imports the rule from reckon/crew/node.py:1529-1576 rather than re-deriving it, and ruff check and ruff format --check both pass on the two changed source files at 2a0830190b.",
+    "goal_fidelity": "reckon/crew/promotion_scope.py:642-661 admits a claim held by a queued, awaiting-upstream, blocked-upstream or held request and records it under waiting_request_claims at :706-718, exactly the behaviour \u00a724 specifies.",
+    "reuse": "The capability is owned by reckon/crew/node.py:1534 claim_disposition and its WAITING_REQUEST_PHASES at :1529, which the change imports at promotion_scope.py:26-29 and consults at :649 rather than adding a second phase rule; the same owner is already used by dispatch_claims.py:506 and queue_admission.py:909.",
+    "scope_discipline": "git diff 83ebc6a7f4..2a0830190b touches only reckon/crew/promotion_scope.py, tests/test_a_parked_request_does_not_block_a_landing.py and the granted landing fragment, with no plan edit, no figure and no edit to the neighbouring stopped-run suite."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source goal is that a request that never launched holds no claim another landing must clear; reckon/crew/promotion_scope.py:642-661 now admits the accept-path walk past a peer whose phase is in WAITING_REQUEST_PHASES and names it under waiting_request_claims.\nVERDICT done_when: All four points are asserted \u2014 tests/test_a_parked_request_does_not_block_a_landing.py:197-226 (parametrised over all four waiting phases: admission plus the named claim), :228-252 (a working peer still refused, no ledger row, pointers intact), :255-276 (the peer's pointer byte-identical and still live), and tests/test_a_stopped_runs_claim_does_not_block_another_landing.py inside logs/head-arm.log (11 passed, EXIT=0) with logs/base-arm.log (5 passed, EXIT=0).\nVERDICT write_paths: The dispatch declares five paths; git diff 83ebc6a7f4..2a0830190b changes three of them \u2014 reckon/crew/promotion_scope.py, tests/test_a_parked_request_does_not_block_a_landing.py and the landing fragment \u2014 and nothing outside them.\nVERDICT manifest: The delivered manifest names three commits and the 11/5/4 gate results; every figure it quotes matches the log it cites, and it states the cut thirteen-file sweep as unknown rather than zero.\nVERDICT diff: Read commit by commit from 83ebc6a7f496847b8014ca80dfbdc8e2360ca8d7 to 2a0830190b106e572e4b1d62515f45734db6ba6e; d3ddd89aff carries all product and test code, 0bf3f0858c and 2a0830190b touch only the fragment, so the gate at d3ddd89 measures the reviewed code exactly.\nCALL_SITES: reckon/crew/promotion_checks.py:2231 _landing_scope_products calls _accepted_scope_exceptions; reckon/crew/promotion.py:2489 and reckon/crew/promotion_checks.py:2858 are import lists rather than calls\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_scope.py:642-661 admits a claim held by a queued, awaiting-upstream, blocked-upstream or held request and records it under waiting_request_claims at :706-718, exactly the behaviour section 24 specifies.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/head-arm.log ends '11 passed in 103.36s' EXIT=0, logs/base-arm.log ends '5 passed in 21.44s' EXIT=0 and logs/negative-control.log ends '4 failed in 54.68s' EXIT=1 with only the four parked-phase ids the head arm does not fail.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 83ebc6a7f4..2a0830190b touches only reckon/crew/promotion_scope.py, tests/test_a_parked_request_does_not_block_a_landing.py and the granted landing fragment, with no plan edit and no figure.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_parked_request_does_not_block_a_landing.py:214-223 reddens whenever the waiting-phase branch is removed or claim_disposition starts binding, as logs/negative-control.log demonstrates, and :247-252 guards the converse against over-admission.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/promotion_scope.py:642-661 follows the surrounding walk and imports the rule from reckon/crew/node.py rather than re-deriving it, and ruff check and ruff format --check both pass on the two changed source files at 2a0830190b.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability is owned by reckon/crew/node.py:1534 claim_disposition with WAITING_REQUEST_PHASES at :1529, imported at promotion_scope.py:26-29 and consulted at :649, so no second phase rule is created.\n",
+  "review_run_id": "r-20261104T093457985900-review-of-a-request-that-never-launched-holds-no-claim-another-landing-2a0830190b10",
+  "reviewed_base_sha": "83ebc6a7f496847b8014ca80dfbdc8e2360ca8d7",
+  "reviewed_head_sha": "2a0830190b106e572e4b1d62515f45734db6ba6e",
+  "reviewed_run_id": "r-20261103T073615423342-a-request-that-never-launched-holds-no-claim-another-landing",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-04T09:48:02+00:00",
+  "total": 118
+}
