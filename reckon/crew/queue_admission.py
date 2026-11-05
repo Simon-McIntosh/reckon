@@ -197,6 +197,12 @@ def _node_from_pointer(pointer: Mapping[str, Any]) -> TaskNode:
             for path in (node.get("write_paths") or ())
             if not _inside_run_directory(str(path), queued_dir)
         ],
+        # The rebuild is field by field, so a field it does not name is a field
+        # the launched worker never sees. A regenerated path is a write path
+        # charged its own way, and an anchor is the opposite of a write path,
+        # so both are carried rather than re-derived from the write scope.
+        regenerate_paths=[str(path) for path in (node.get("regenerate_paths") or ())],
+        anchor_paths=[str(path) for path in (node.get("anchor_paths") or ())],
         time_budget=str(node.get("time_budget") or ""),
         manifest_path=manifest_path,
         negative_control=str(node.get("negative_control") or ""),

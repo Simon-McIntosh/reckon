@@ -1453,6 +1453,11 @@ def _recorded_task_node(record: Mapping[str, Any]) -> TaskNode:
         spec_level=str(data.get("spec_level") or ""),
         done_when=str(data.get("done_when") or ""),
         write_paths=[str(path) for path in data.get("write_paths") or ()],
+        # The rebuild names each field it keeps, so one left out here is a
+        # field the re-estimate never sees: an anchored path would be charged
+        # a reference cost again, and a regenerated path would look written.
+        regenerate_paths=[str(path) for path in data.get("regenerate_paths") or ()],
+        anchor_paths=[str(path) for path in data.get("anchor_paths") or ()],
         time_budget=str(data.get("time_budget") or ""),
         manifest_path=str(
             data.get("manifest_path") or record.get("manifest_path") or ""
