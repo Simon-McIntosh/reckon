@@ -1,0 +1,76 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-05T22:12:23.488Z",
+  "dispatched_at": "2026-11-05T22:07:35Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-reads-each-fact-once/r-20261105T220403500221-plan-review-of-the-monitor-reads-each-fact-once/plan.html:406",
+      "id": "done_when-1",
+      "reason": "the node needs a size floor on the moved input (the text this replaces had \"a stream of at least 50 MB\") or an assertion on the byte delta rather than an absolute, otherwise the worker can build a fixture whose base arm goes green and still claim the control.",
+      "text": "the new test asserts \"the second tick reads under 1 MB from that input's paths\" and offers \"the same test at the base revision reads it in full\" as the negative control, but nothing requires the fixture's dominant input to be larger than 1 MB; with five runs of ordinary manifest/record size the base arm also reads under 1 MB and passes, so the control cannot show the guard fires and the gate measures nothing",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-reads-each-fact-once/r-20261105T220403500221-plan-review-of-the-monitor-reads-each-fact-once/plan.html:412",
+      "id": "done_when-2",
+      "reason": "a gate that fails on the correct implementation will be re-run or waived by the worker, and the one-line \"after the station has taken its first tick\" removes that.",
+      "text": "the fleet clause reads \"over a 60 s window on the fleet node ... the station alone at its default interval reads under 20 MB/min\" without saying the window must follow the station's first tick, and the section's own cold-tick figure is 83 MB, so any window that contains a station start exceeds the bound on correct code",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-reads-each-fact-once/r-20261105T220403500221-plan-review-of-the-monitor-reads-each-fact-once/plan.html:391",
+      "id": "reasoning-1",
+      "reason": "a worker told the cause lies elsewhere may treat a census that names the classification inputs as dominant as an instrument fault, when the plan's own arithmetic already shows those inputs are the leading candidate; the sentence should carry the arithmetic and drop the exclusion.",
+      "text": "\u00a713 sets the stream/classification path aside (\"the resume is working. So the volume ... comes from something else the tick reads\") on the strength of one warm tick at 0.07 MB, while the same paragraph reports 126 MB/min over the same five live pointers; at `reckon/crew/station.py:556`'s 1 s interval sixty warm ticks read 4.2 MB/min, and even the cold-plus-warm composition (83 MB + 59 \u00d7 0.07 MB \u2248 87 MB) falls short of 126, so the fleet's ticks are not warm and the cause is most likely on the path just excluded \u2014 the next sentence then re-lists it (\"a classification memo that is absent or keyed differently on the fleet\") as a candidate",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-reads-each-fact-once/r-20261105T220403500221-plan-review-of-the-monitor-reads-each-fact-once/plan.html:388",
+      "id": "reasoning-2",
+      "reason": "the extra refusal fires only on rewrites, never on the steady-state growth the section is about, so the argument that both paths are incremental still holds and no node would be sent down a different path.",
+      "text": "\"refused only when the stream's inode changes\" understates the resume rule: `recovery_stream._observed_stream` also carries a head fingerprint that `_backends.observe_log` refuses on (reckon/_backends.py:3159-3165), so an in-place rewrite that keeps the inode re-reads too",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "2b785f9f17e7d3f6980d54550cce7229724c36a7",
+  "plan_fingerprint": "3eef2099c3c86fd905022840ae82073a09443478bbd776b094361c363ca99077",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 88,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261105T220403500221-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "3dbeec5895f8c399ed80f18a2651b282d76b7cee",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/station_store.py` carries `ingest_stream` (:611) and `classify_tick` (:764), `recovery_watch._watch_snapshot` exists (:1526) and is called from the station tick (`reckon/crew/station.py:442`), `recovery_stream._observed_stream` exists (:508), and the RCA anchor resolves: `docs/research/monitor-storage-load-rca.html` \u00a72 is \"What was measured, and when\" and does name the instruments.",
+    "done_when": "a finding \u2014 the fixture's dominant input has no size floor, so the base-revision arm can read it \"in full\" and still come in under the 1 MB bound the head arm asserts, leaving the declared negative control unable to fire (\u00a713, snapshot line 406).",
+    "evidence_paths": "pass \u2014 the census log is written to the run directory (durable under the crew run tree), the negative control is a recorded test log, and the before/after figures go into `docs/research/monitor-storage-load-rca.html`; no scratchpad or node-local temporary path is named.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag in a symbol, filename or comment the section proposes; `tests/test_the_station_reads_only_what_changed.py` names the behaviour.",
+    "reasoning": "a finding \u2014 \u00a713 concludes from a single 0.07 MB warm tick that the fleet's volume \"comes from something else the tick reads\", but its own fleet figure (126 MB/min over five live pointers) is 30\u00d7 what a warm tick can produce at the station's 1 s interval, so the fleet's ticks are demonstrably not warm and the classification/memo path it excludes is a live candidate (snapshot line 391).",
+    "single_goal": "pass \u2014 one deliverable: measure which read dominates the station tick and remove it, with the verdict-equivalence clause as a guard on that one change rather than a second goal.",
+    "wiring": "pass \u2014 \u00a713 declares no upstream and needs none outstanding: the station it measures is \u00a75/\u00a76/\u00a77 and all three read `done` (plan-section-declarations), and \u00a712 correctly declares itself downstream of \u00a713 (`plan-section-depends-on` s12 lists s13)."
+  },
+  "section_digests": {
+    "_document": "c4f35786760d2dd4e5b3fcfb43d589b92078a62b0590edbdac991765da99b96a",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "2be40de9ae77005f6da47776345d31a08636fa3fce2de882056c741ace90ad1e",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T22:14:05.097684+00:00"
+}
