@@ -1440,6 +1440,11 @@ _review_is_complete reads the record as complete (no absent dimensions).</p></di
     <p>Landed through run <code>r-20261023T081715369223-a-partial-design-review-covers-nothing</code>, commits <code>cf9a6172e</code>, <code>8b0d90f5f</code> and <code>5756376d4</code>. A design review delivered with one of its brief's items missing is now stored <code>incomplete</code>, as §40 specified for every rubric. The dispatch gate refuses an implementation dispatch when the plan's newest design review is incomplete, naming the design-review command. <code>newest_design_review</code> is unchanged. The <code>crew review --answer</code> verb falls back to it when no covering record exists, so a partial design review's findings stay answerable. The three test cases that delivered a partial design report now deliver a complete one. The gate passed at head. The coordinator ran 133 test files that touch the plan-review store, the design gate or the answer path. The base arm, over the 132 files that exist at base, failed 16; the head arm failed the same 16 plus one queue test. That one passed alone five times at base and five times at head, so it fails only under load and this change does not cause it. The review found no added failures, and its one non-blocking finding, a redundant assertion, was exempted. Fragment: <a href="/reckon/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-partial-design-review-covers-nothing.html">a-partial-design-review-covers-nothing</a>.</p>
   </section>
 
+  <section id="s38-every-launch-of-a-queued-plan-review-is-joined">
+    <h2>§38 — Every launch of a queued plan review is joined to its composed directory</h2>
+    <p>Landed as merge <code>d5e8d296d7</code>, run <code>r-20261103T070914697594-every-launch-of-a-queued-plan-review-is-joined-to-its</code>, after a repair round that committed the guard test <code>tests/test_every_launch_joins_the_composed_sidecar.py</code> and joined only a launched record. The armed test fails 2 at base and passes 4 at head. On merge candidate <code>99a37f6e0e</code>, the <code>queue_admission</code> and <code>recovery_review_dispatch</code> importer population failed 2 at main and the same 2 at the candidate.</p>
+  </section>
+
 </main>
 </body>
 </html>

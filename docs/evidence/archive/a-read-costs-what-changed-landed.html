@@ -25,6 +25,16 @@
     <p>Landed as merge <code>901325c5a6</code> of head <code>21c435f075</code>, run <code>r-20261103T021938516080-every-read-enters-the-existing-scopes</code>, after one repair round.</p><ul><li>Every read enters the discovery and resource scopes that already existed, so one request validates the covered tree once instead of walking it per call. The async wrapper, the CLI roadmap reads and the infra-directory skip all enter the same scope.</li><li>The armed test <code>tests/test_a_request_validates_the_tree_once.py</code> fails 5 and errors 4 at base and passes 9 of 9 at head.</li><li>On the merge candidate <code>1cf1ef17fc</code>, the importer population of the changed modules failed 37 at main <code>8dfcb8ecfa</code> and 27 at the candidate: no added failure and 10 removed, among them the drain and MCP deadline cases and the picker-latency case. The first candidate's three regressions in the cold-discovery, warm-read and cached-index tests pass 3 of 3.</li><li>Before this landing, an admission pass spent 87 minutes, 73 of them in launch, inside <code>_walk_discovery_signature</code> stat-ing the plan tree file by file. The admit service was restarted onto this merge at 08:54Z.</li></ul>
   </section>
 
+  <section id="s3-a-persisted-answer-carries-its-code-version">
+    <h2>§3 — A persisted answer carries the version of the code that made it</h2>
+    <p>Landed as merge <code>30fbd6294e</code> by the admission lander, run <code>r-20261103T022300314104-a-persisted-answer-carries-its-code-version</code>. The lander's gate ran only the armed test. The coordinator's merge-candidate measurement found two added failures in <code>tests/test_a_restart_reuses_rows_by_stat_identity.py</code>, which then failed 3 of 3 on main. §8 repaired them.</p>
+  </section>
+
+  <section id="s8-a-persisted-answer-still-reuses-rows">
+    <h2>§8 — A persisted answer still reuses rows by stat identity</h2>
+    <p>Landed as merge <code>35d1161619</code>, run <code>r-20261103T103857095482-a-persisted-answer-still-reuses-rows</code>. The envelope records each producer's source stat identity beside its digest and reuses the digest while that identity holds. Both stat-identity tests pass 3 of 3 on main <code>1795eff46d</code> after the landing. On merge candidate <code>c1412fbc7e</code>, the <code>metadata_index</code> and <code>_store</code> importer population failed 6 at main and 3 at the candidate, with none added. Four non-blocking review findings were exempted. The reuse finding, a second stat-keyed digest memo beside <code>file_memo.content_digest</code>, is a follow-up consolidation.</p>
+  </section>
+
 </main>
 </body>
 </html>
