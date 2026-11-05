@@ -1585,6 +1585,18 @@ def _indexed_data(
     return result
 
 
+def _ledger_holds_content(project: str, root: str | Path | None) -> bool:
+    """Whether a read of this ledger has anything an index could hold.
+
+    Both sources count: the aggregate file and the directory of per-run
+    documents beside it. A project with neither is a project that has run no
+    worker, and indexing its emptiness publishes a cache file for a state that
+    never existed.
+    """
+    aggregate = ledger_path(project, root)
+    return aggregate.exists() or (aggregate.parent / "runs").is_dir()
+
+
 def indexed_headers(
     project: str, root: str | Path | None = None
 ) -> tuple[dict[str, Any], int]:
@@ -1618,8 +1630,21 @@ def load(
     retains beside its payload in the index, so a caller that consumes only
     those fields decodes no full record on a warm read. What comes back from
     the aggregate on a cold read is projected the same way.
+
+    A ledger with nothing in it is read without an index. A project that has
+    never run a worker has neither an aggregate file nor a directory of per-run
+    documents, and its read is the empty roster :func:`_load_aggregate` already
+    returns. Indexing that emptiness writes a cache file keyed to a path a
+    sweep then classifies as a checkout that is gone, so a read that found
+    nothing publishes a resident artefact nothing removes — one per project
+    name any reader ever asks about. The uncached path costs no more here:
+    there is no aggregate to parse and no document to merge.
+
+    Per-run documents alone are content, so a project holding them and no
+    aggregate keeps its index; that shape is a ledger whose runs are split out
+    by their own files.
     """
-    if use_index:
+    if use_index and _ledger_holds_content(project, root):
         try:
             return _indexed_data(
                 project, root, headers_only=headers_only, picker_only=picker_only

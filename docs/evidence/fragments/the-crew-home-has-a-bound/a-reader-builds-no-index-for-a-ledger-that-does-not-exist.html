@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-crew-home-has-a-bound">
+  <meta name="plan-evidence-for" content="reckon:the-crew-home-has-a-bound">
+  <meta name="plan-verifies" content="reckon:the-crew-home-has-a-bound#s8">
+  <meta name="plan-recorded-at" content="2026-11-05">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,ledger,index,cache,quota">
+  <title>A reader builds no index for a ledger that does not exist &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-reader-builds-no-index-for-a-ledger-that-does-not-exist-landing" data-node="a-reader-builds-no-index-for-a-ledger-that-does-not-exist" data-reckon="landed" data-when="2026-11-05">
+
+<section>
+<h3 id="a-reader-builds-no-index-for-a-ledger-that-does-not-exist-change">What changed</h3>
+<p><code>load()</code> in <code>reckon/ledger.py</code> now takes the index route only when the ledger it would index holds
+something. The new private predicate <code>_ledger_holds_content</code> answers true when the aggregate
+<code>docs/state/&lt;project&gt;/crew.json</code> exists or the <code>runs</code> directory beside it exists; a project with
+neither is a project that has run no worker, and <code>load</code> reads it down the uncached path that
+<code>_load_aggregate</code> already answers with the empty roster at version 0.</p>
+<p>Before the change a read of such a project resolved <code>_run_index_path</code> and opened SQLite, creating
+<code>~/.cache/reckon/ledger-&lt;sha256&gt;-v4.sqlite</code> for a ledger that is not there. Those files are keyed to a path
+whose checkout does not exist, so <code>gc</code> classifies each as <code>recorded-checkout-gone</code> and nothing removes it
+until someone runs a sweeping <code>--apply</code>. Ten such indexes of 28&nbsp;KB each appeared within an hour of the
+backlog reclaim for projects that never ran a worker.</p>
+<p>The narrowing matters and is the one design decision this node made. A project may hold per-run documents under
+<code>runs/</code> and no aggregate file at all; that ledger has content, and its index is kept. Skipping on the
+aggregate's absence alone broke four derivation tests, which is how the shape was found.</p>
+</section>
+
+<section>
+<h3 id="a-reader-builds-no-index-for-a-ledger-that-does-not-exist-gate">The gate</h3>
+<p>The node's write scope grants <code>reckon/ledger.py</code> and no test path, so the gate is a scratch-tree
+measurement rather than a committed test file. Its three cases read:</p>
+<ul>
+<li>a temporary project with no <code>crew.json</code> and no <code>runs</code> directory reads as the empty roster and writes no
+<code>ledger-*.sqlite</code> under a temporary cache root;</li>
+<li>a temporary project holding per-run documents and no aggregate still builds exactly one index and returns the
+document;</li>
+<li>a temporary project with a <code>crew.json</code> still builds its index.</li>
+</ul>
+<p>Head arm: <strong>3 passed</strong>, <code>EXIT=0</code>, <code>module.__file__</code> under this worktree
+(<code>logs/head-gate.log</code>). Base arm, which restores the unconditional index build by resolving
+<code>reckon/</code> from an archive of base <code>ab87725e6</code>: <strong>1 failed, 2 passed</strong>, <code>EXIT=1</code>
+(<code>logs/base-gate.log</code>). The failure is the first case, reporting the index it wrote:
+<code>ledger-209603653903b356195c725f08d1e94bd957fce46514913fb1c1725fa6b0a21c-v4.sqlite</code>.</p>
+</section>
+
+<section>
+<h3 id="a-reader-builds-no-index-for-a-ledger-that-does-not-exist-suite">The imported-module suite</h3>
+<p>The 80 test files importing <code>reckon.ledger</code> ran on both arms with <code>-n 8</code> and a session cache root of
+their own. Head: <strong>706 passed, 3 skipped, 5 errors, 0 failed</strong> (<code>logs/head-suite.log</code>,
+<code>EXIT=1</code> &mdash; the non-zero exit is the five errors). Base at <code>ab87725e6</code>: <strong>705 passed, 3 skipped,
+5 errors, 1 failed</strong> (<code>logs/base-suite.log</code>).</p>
+<p>The five error ids are identical on both arms and are confined to
+<code>tests/test_held_worktree_records_match_each_record_once.py</code>. The one base failure,
+<code>tests/test_roster_write_commits.py::test_commit_refuses_roster_with_uncommitted_registration</code>, does not
+reproduce at head. <strong>Added failures against base: 0.</strong></p>
+</section>
+
+<section>
+<h3 id="a-reader-builds-no-index-for-a-ledger-that-does-not-exist-hygiene">Hygiene</h3>
+<p><code>ruff check</code> and <code>ruff format --check</code> pass clean on <code>reckon/ledger.py</code> (1 file already
+formatted, no findings). The change is +26 &minus;1 lines in one file.</p>
+</section>
+
+</article>
+</body>
+</html>
