@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite records revision 2811a92a40 with exit_status 0, completed true, failure_count 0 and failure_ids [] (gate-repair2-base.log: 6 passed, EXIT=0), and after_suite records revision 277c6cc32c with exit_status 0, completed true, failure_count 0 and failure_ids [] (gate-slugfix-head.log: 7 passed, EXIT=0); both logs were opened and each header names the literal command and its revision, so added_failure_count is 0.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/_store.py:_write_state",
+    "reckon/_store.py:write_plan",
+    "reckon/_store.py:_write_successor_moves"
+  ],
+  "completed_at": "2026-11-05T18:24:57.309Z",
+  "dispatched_at": "2026-11-05T18:19:42Z",
+  "evidence_notes": "The gained commit is a behavioural fix in one private helper pair plus one regression test. The assertions-the-run-added reading: test_a_payload_without_a_slug_cannot_defeat_the_same_plan_refusal adds four assertions \u2014 thread liveness (fails if the write does not stop at the refusal), the OpError type and its 'another plan' text (fails if the same-plan refusal is not raised), and the document text and version equality against values captured before the call (fail if the refused write leaves any disk change). None compares a value against the same variable the test passed into the code under test. gate-prefix-slug-red.log is the negative control: at 3a1ec1aa97 the new test fails because the write never returns, blocked on the lock it holds, which is exactly the failure the assertion catches; at 277c6cc32c it passes. The three-file gate named by the done_when was last run at cf6e12390f (gate-full.log: 3 failed, 3724 passed, EXIT=1, the three test_cross_project_conformance ids reproduced at base in gate-base-attribution.log), so the heads differ; reported as a non-blocking finding. The source manifest's status line reads complete.",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": 33,
+      "text": "non-blocking: the done_when names a three-file gate, but the run's only completed run at the reviewed head 277c6cc32c is the node file alone (gate-slugfix-head.log, 7 passed, EXIT=0); gate-full.log is at cf6e12390f, two commits before the head, so the companions named by the done_when were not re-measured against the landed code. Neither companion references moved_to, so the changed path is unlikely to be reached there."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/_store.py:_write_state (:1360) is the only caller of the changed _write_state_locked, reached from reckon/_store.py:write_plan (:1709, via :1814) and, for a committed move, from _write_successor_moves (:3122); all resolve at 277c6cc32c.",
+    "diff": "read 3a1ec1aa97..277c6cc32c commit by commit; the single commit drops the `state` read in _resolve_section_moves, adds a `slug` parameter to it and to _carry_section_moves, passes the caller's slug at both call sites (reckon/_store.py:1492, :1593), and adds one test that drives the store below the editor's schema check.",
+    "done_when": "the done_when names the node test file plus tests/test_schema.py and tests/test_a_plan_closes_in_one_op.py, and the armed node-file pair; the node-file pair is recorded complete at both revisions (gate-repair2-base.log 6 passed EXIT=0 at 2811a92a40, gate-slugfix-head.log 7 passed EXIT=0 at 277c6cc32c), but no three-file run exists at the reviewed head \u2014 gate-full.log is at cf6e12390f.",
+    "goal": "the source node's goal is close's deferred-section refusal naming both remedies, with a moved_to descope carrying the section's prose, effort, capability, open gates and comments to its successor; the gained commit 277c6cc32c serves it by closing the same-plan refusal's fail-open path, which previously let the successor's half re-enter the plan being written.",
+    "manifest": "read; status is complete, the checkpoint states the fix and its red/green arms, and baseline_suite/after_suite name the literal pytest command, their revisions, 0 failures and EXIT=0; test_logs list gate-slugfix-head.log and gate-prefix-slug-red.log, which I opened.",
+    "write_paths": "the manifest declares eight write paths (reckon/_store.py, reckon/_schema.py, docs/_shared/plan.schema.json, PLAN-FORMAT.md, skills/reckon-edit/SKILL.md, the node test file, the evidence fragment, the figure directory); the gained diff 3a1ec1aa97..277c6cc32c changes only reckon/_store.py and the node test file."
+  },
+  "justifications": {
+    "durability": "tests/test_close_names_each_deferred_section_and_moves_it.py:543-553 reddens on the pre-fix code at 3a1ec1aa97 (gate-prefix-slug-red.log, 1 failed, EXIT=1, caught by the bounded-thread liveness assertion) and its refusals are asserted against values read from the fixture before the call.",
+    "evidence": "the node-file arm at the reviewed head is recorded and readable (gate-slugfix-head.log, revision 277c6cc32c, 7 passed, EXIT=0), and baseline_suite/after_suite both carry completed true, exit_status 0 and failure_ids [], so added_failure_count is 0; but the done_when's three-file gate has no completed run at 277c6cc32c, the last being gate-full.log at cf6e12390f.",
+    "fit": "the change keeps the module's private-helper idiom at reckon/_store.py:2998-3013, its docstring states the caller-identity mechanism without a plan, ticket or stage label, and the new test name reads as the behaviour it checks.",
+    "goal_fidelity": "reckon/_store.py:1492 and :1593 now pass the caller's slug into _resolve_section_moves and _carry_section_moves, so the same-plan refusal at reckon/_store.py:3017 compares against the plan this write targets rather than one read back out of a payload that may omit it.",
+    "reuse": "the diff adds no function, class or module; it threads the caller's identity through the existing owners _resolve_successor_section (reckon/_store.py:2807) and _carry_section_moves rather than adding a second ref-resolution or slug-lookup path, and a search of reckon/ for another same-plan refusal found none.",
+    "scope_discipline": "git show --stat 277c6cc32c lists exactly reckon/_store.py and tests/test_close_names_each_deferred_section_and_moves_it.py, both inside the manifest's eight declared write paths, and the diff carries no unrelated hunk."
+  },
+  "node": "review-of-close-names-each-deferred-section-and-moves-it-277c6cc32c",
+  "node:reviewed": "close-names-each-deferred-section-and-moves-it",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is close's deferred-section refusal naming both remedies, with a moved_to descope carrying the section's prose, effort, capability, open gates and comments to its successor; the gained commit 277c6cc32c serves it by closing the same-plan refusal's fail-open path, which previously let the successor's half re-enter the plan being written.\nVERDICT done_when: the done_when names the node test file plus tests/test_schema.py and tests/test_a_plan_closes_in_one_op.py, and the armed node-file pair; the node-file pair is recorded complete at both revisions (gate-repair2-base.log 6 passed EXIT=0 at 2811a92a40, gate-slugfix-head.log 7 passed EXIT=0 at 277c6cc32c), but no three-file run exists at the reviewed head \u2014 gate-full.log is at cf6e12390f.\nVERDICT write_paths: the manifest declares eight write paths (reckon/_store.py, reckon/_schema.py, docs/_shared/plan.schema.json, PLAN-FORMAT.md, skills/reckon-edit/SKILL.md, the node test file, the evidence fragment, the figure directory); the gained diff 3a1ec1aa97..277c6cc32c changes only reckon/_store.py and the node test file.\nVERDICT manifest: read; status is complete, the checkpoint states the fix and its red/green arms, and baseline_suite/after_suite name the literal pytest command, their revisions, 0 failures and EXIT=0; test_logs list gate-slugfix-head.log and gate-prefix-slug-red.log, which I opened.\nVERDICT diff: read 3a1ec1aa97..277c6cc32c commit by commit; the single commit drops the state read in _resolve_section_moves, adds a slug parameter to it and to _carry_section_moves, passes the caller's slug at both call sites (reckon/_store.py:1492, :1593), and adds one test that drives the store below the editor's schema check.\nCALL_SITES: reckon/_store.py:_write_state, reckon/_store.py:write_plan, reckon/_store.py:_write_successor_moves\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_store.py:1492 and :1593 now pass the caller's slug into _resolve_section_moves and _carry_section_moves, so the same-plan refusal at reckon/_store.py:3017 compares against the plan this write targets rather than one read back out of a payload that may omit it.\nSCORE evidence: 15\nJUSTIFICATION evidence: the node-file arm at the reviewed head is recorded and readable (gate-slugfix-head.log, revision 277c6cc32c, 7 passed, EXIT=0), and baseline_suite/after_suite both carry completed true, exit_status 0 and failure_ids [], so added_failure_count is 0; but the done_when's three-file gate has no completed run at 277c6cc32c, the last being gate-full.log at cf6e12390f.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 277c6cc32c lists exactly reckon/_store.py and tests/test_close_names_each_deferred_section_and_moves_it.py, both inside the manifest's eight declared write paths, and the diff carries no unrelated hunk.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_close_names_each_deferred_section_and_moves_it.py:543-553 reddens on the pre-fix code at 3a1ec1aa97 (gate-prefix-slug-red.log, 1 failed, EXIT=1, caught by the bounded-thread liveness assertion) and its refusals are asserted against values read from the fixture before the call.\nSCORE fit: 19\nJUSTIFICATION fit: the change keeps the module's private-helper idiom at reckon/_store.py:2998-3013, its docstring states the caller-identity mechanism without a plan, ticket or stage label, and the new test name reads as the behaviour it checks.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module; it threads the caller's identity through the existing owners _resolve_successor_section (reckon/_store.py:2807) and _carry_section_moves rather than adding a second ref-resolution or slug-lookup path, and a search of reckon/ for another same-plan refusal found none.\nFINDING manifest.md:33 non-blocking: the done_when names a three-file gate, but the run's only completed run at the reviewed head 277c6cc32c is the node file alone (gate-slugfix-head.log, 7 passed, EXIT=0); gate-full.log is at cf6e12390f, two commits before the head, so the companions named by the done_when were not re-measured against the landed code. Neither companion references moved_to, so the changed path is unlikely to be reached there.\n",
+  "review_run_id": "r-20261105T181656696546-review-of-close-names-each-deferred-section-and-moves-it-277c6cc32c46",
+  "reviewed_base_sha": "3a1ec1aa97f2d9e9d46d6b1da947edfec98410c8",
+  "reviewed_head_sha": "277c6cc32c4669cc12161d6bc7599cc8603fa88e",
+  "reviewed_run_id": "r-20261027T102653154559-close-names-each-deferred-section-and-moves-it",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T19:28:00+00:00",
+  "total": 112
+}
