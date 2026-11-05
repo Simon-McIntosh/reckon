@@ -16,8 +16,10 @@ from __future__ import annotations
 import json
 import logging
 import os
+import random
 import sqlite3
-from collections.abc import Mapping
+import time
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any, Self
 
@@ -114,6 +116,21 @@ CREATE TABLE IF NOT EXISTS "refusals" (
 # the only cross-host truth.
 _RUN_STORE_ENV = "RECKON_RUN_STORE"
 
+# How long a connection opened for a retried write waits on another writer's
+# lock before handing the refusal back. Kept short because the retry owns the
+# bound: a five-second busy timeout spends that bound inside the driver's first
+# attempt, so the backoff never runs a second one. Every other connection keeps
+# the driver's own patience, so a one-off writer behaves exactly as before.
+INDEX_BUSY_TIMEOUT_SECONDS = 0.2
+
+# The bound on retrying an append that lost a race for the store's write lock.
+# A lock held by a concurrent writer lasts milliseconds, so a few seconds of
+# backoff writes the row a single attempt would have lost; a store locked past
+# this bound is raised to the caller and left to the repair pass rather than
+# holding a promotion open.
+INDEX_RETRY_SECONDS = 3.0
+INDEX_RETRY_MAX_DELAY_SECONDS = 0.2
+
 
 def store_path() -> Path:
     """Return the store's SQLite path, resolved in one place.
@@ -198,12 +215,20 @@ class RunStore:
     """One embedded SQLite store, creating its schema on first use."""
 
     def __init__(
-        self, path: str | Path | None = None, *, root: str | Path | None = None
+        self,
+        path: str | Path | None = None,
+        *,
+        root: str | Path | None = None,
+        busy_timeout: float | None = None,
     ) -> None:
         self._root = Path(root).expanduser().resolve() if root is not None else None
         self._path = Path(path) if path is not None else store_path()
         self._path.parent.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(str(self._path))
+        self._conn = (
+            sqlite3.connect(str(self._path))
+            if busy_timeout is None
+            else sqlite3.connect(str(self._path), timeout=busy_timeout)
+        )
         self._create()
 
     def __enter__(self) -> Self:
@@ -583,16 +608,64 @@ class RunStore:
         return self._path
 
 
+def _locked(exc: BaseException) -> bool:
+    """Whether a store write lost a race for the database's write lock.
+
+    SQLite reports a held write lock as ``database is locked`` or, for a table
+    locked inside a transaction, ``database table is locked``. A duplicate-row
+    or malformed-record refusal is never retried: the same write would fail
+    again for the same reason.
+    """
+    if not isinstance(exc, sqlite3.OperationalError):
+        return False
+    message = str(exc).lower()
+    return "locked" in message or "busy" in message
+
+
+def _append_backoff(attempt: int) -> None:
+    """Yield to the writer holding the store lock before the next attempt."""
+    delay = min(INDEX_RETRY_MAX_DELAY_SECONDS, 0.1 * (2**attempt))
+    time.sleep(random.uniform(delay / 2, delay))  # noqa: S311 - scheduling jitter
+
+
+def _retrying(write: Callable[[RunStore], None]) -> None:
+    """Run one store write, retrying a lock with a bounded backoff.
+
+    The retry lives below the callers' seams, inside one call, so a caller
+    counting writes still sees one per record however many attempts a lock
+    took. A lock outlasting the bound, and a failure of any other kind, is
+    raised to the caller.
+    """
+    deadline = time.monotonic() + INDEX_RETRY_SECONDS
+    attempt = 0
+    while True:
+        try:
+            with RunStore(busy_timeout=INDEX_BUSY_TIMEOUT_SECONDS) as store:
+                write(store)
+            return
+        except sqlite3.OperationalError as exc:
+            if not _locked(exc) or time.monotonic() >= deadline:
+                raise
+            _append_backoff(attempt)
+            attempt += 1
+
+
 def append(project: str, record: Mapping[str, Any]) -> None:
     """Append one run to the default store, raising on failure.
+
+    A locked store is retried with a backoff bounded by wall clock, because a
+    lock held by a concurrent writer lasts milliseconds and the row it costs is
+    invisible until a reader rebuilds the whole index. The retry lives below
+    this seam, inside one call, so a caller counting appends sees one append per
+    run however many attempts the lock took. A lock outlasting the bound, and a
+    failure of any other kind, is raised.
 
     This is the seam a promotion calls and the seam a test injects a failure
     into: a raising store write is recorded by the caller, never propagated,
     so the committed file row a promotion already wrote stays the durable
     result.
     """
-    with RunStore() as store:
-        store.append(project, record)
+    _retrying(lambda store: store.append(project, record))
 
 
 def runs_for_node(node: str, *, project: str | None = None) -> list[dict[str, Any]]:
@@ -683,7 +756,12 @@ def import_ledger(
 
     data, _version = ledger.load(project, root)
     counts = {"rows_imported": 0, "rows_already_present": 0, "rows_unchanged": 0}
-    with RunStore() as store:
+
+    def write(store: RunStore) -> None:
+        # Each attempt recounts from zero: a retried attempt re-walks the whole
+        # corpus, and sync_run is idempotent, so leaving a failed attempt's
+        # partial counts in place would report rows this pass did not write.
+        counts.update(rows_imported=0, rows_already_present=0, rows_unchanged=0)
         for record in data["runs"]:
             try:
                 outcome = store.sync_run(project, record)
@@ -698,6 +776,11 @@ def import_ledger(
                 counts["rows_already_present"] += 1
             else:
                 counts["rows_unchanged"] += 1
+
+    # A concurrent writer's lock is retried like any other store write, so an
+    # import running beside a promotion waits it out instead of surfacing an
+    # OperationalError to a caller that only asked to repair the index.
+    _retrying(write)
     return {"project": project, **counts}
 
 

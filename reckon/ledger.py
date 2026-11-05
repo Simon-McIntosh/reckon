@@ -2510,9 +2510,13 @@ def register_member(
 def _index_append(project: str, record: Mapping[str, Any]) -> dict[str, Any]:
     """Update the rebuildable index after the authoritative file is written.
 
-    An index failure is returned to promotion without altering the run file or
-    failing its append. Index lag exposes missing rows until a reader rebuilds
-    the cache from the files.
+    The store retries a locked database with a bounded backoff inside this one
+    call, so a lock held by a concurrent promotion lasts milliseconds and the
+    row it costs is written rather than lost. A lock outlasting that bound, and
+    any other failure, is returned to promotion without altering the run file
+    or failing its append. Index lag exposes missing rows until
+    ``run_store.import_ledger`` — the repair pass the promotion gate already
+    runs — inserts them, or a reader rebuilds the cache from the files.
     """
     from reckon import run_store
 
