@@ -14,6 +14,13 @@
   "completed_at": "2026-11-05T21:36:47.544Z",
   "dispatched_at": "2026-11-05T21:23:17Z",
   "evidence_notes": "The two gained commits' assertions were read against the defect they guard. tests/test_close_names_each_deferred_section_and_moves_it.py:565-571 and :578-582 compare the function's whole output against independently written literals, so reinstating a heading-end insertion for the adjacent-record case would redden :568; negative-control-placement.log does exactly that mutation of reckon/_plan_html.py:587-600 at 101f89ca51 and records '1 failed, 8 deselected ... EXIT=1'. The end-to-end assertion at :284-287 slices from the record's own closing tag, so a paragraph placed before the record fails it. The one exception is :572, recorded as a non-blocking finding: '</section></h2>' is unreachable in either branch, so that line cannot name a falsifying condition, though durability does not rest on it. The evidence fragment's figures were checked against gate-three-final.log (revision 101f89ca51; '3 failed, 3733 passed in 972.22s'; EXIT=1) and gate5-test_close_names_each_deferred_section_and_moves_it.log (revision f059402d4b; 9 passed; EXIT=0).",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "The exact-equality assertion above it already fixes the paragraph's placement after the heading or the adjacent record, so the redundant substring check removes no coverage; it is left rather than spending a round on a line that cannot fail.",
+      "recorded_at": "2026-11-05T21:52:22.130071+00:00"
+    }
+  },
   "findings": [
     {
       "file": "tests/test_close_names_each_deferred_section_and_moves_it.py",
