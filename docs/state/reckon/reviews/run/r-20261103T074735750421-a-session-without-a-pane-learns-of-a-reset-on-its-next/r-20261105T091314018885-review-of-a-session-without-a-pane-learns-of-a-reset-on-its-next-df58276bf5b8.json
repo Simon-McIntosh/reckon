@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_basis": "The reviewed run's manifest carries baseline_suite: null and after_suite: null (suite_pair unarmed), so the pair was derived from its two-arm logs instead: logs/regression_base.log (abf338ba97: 13 failed, 10 errors) against logs/regression_head.log (18513da3ee: 15 failed, 10 errors). The head arm's two extra failing ids are recorded above; the manifest attributes them to parallel-arm timing and a re-run of that file alone passes, and the reviewed run added no other failing id.",
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_a_slow_station_still_reads_as_alive.py::test_a_blocked_tick_keeps_a_fresh_beat_and_reads_slow",
+    "tests/test_a_slow_station_still_reads_as_alive.py::test_a_station_whose_process_has_ended_reads_stopped_within_one_window"
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:1152",
+    "reckon/hooks/coordinator_obligations.py:1187",
+    "reckon/crew/obligations.py:1742",
+    "reckon/mcp_views.py:4072"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-05T09:19:31Z",
+  "findings": [
+    {
+      "file": "tests/test_a_session_without_a_pane_learns_of_a_reset.py",
+      "id": "f9c88a6c3aa",
+      "line": 234,
+      "severity": "non-blocking",
+      "text": "the \"second prompt adds no context\" case runs two identical prompts, so it stays green if limit_resets is dropped from duty_digest at reckon/hooks/coordinator_obligations.py:534, and a reset arriving under an unchanged reading would then stop being spoken with no test reddening."
+    },
+    {
+      "file": "tests/test_a_session_without_a_pane_learns_of_a_reset.py",
+      "id": "f86fda97e41",
+      "line": 8,
+      "severity": "non-blocking",
+      "text": "the module docstring says every case drives the hook as a subprocess, but test_the_obligations_view_lists_the_due_reset (:258) and test_the_hook_reader_matches_the_store_reader (:288) call the library in-process."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s): the hook's checklist and reading injectors, the obligations view, and the MCP view that reads it.",
+    "diff": "read commit by commit against 782014fda0; one commit adds 350 lines of test and 7 lines to the fragment, changing no production code.",
+    "done_when": "plan \u00a73's done_when names four cases and the new file asserts all four \u2014 the 20-minute prompt line and excluded rows at tests/test_a_session_without_a_pane_learns_of_a_reset.py:159, the silent second prompt at :234, and the view's limit_resets at :258 \u2014 with logs/repo_gate.log recording 4 passed EXIT=0, which I re-ran at an exported df58276bf5 tree (4 passed, EXIT=0, 4.64 s).",
+    "goal": "the reviewed node's goal (plan \u00a73) is that a session whose follower is down learns of a limit reset on its next prompt; the delta commit df58276bf5 adds the suite copy of that gate at tests/test_a_session_without_a_pane_learns_of_a_reset.py:159-350, which is what its message claims.",
+    "manifest": "read; status complete, four commits, gate and control logs named, and suite_pair states the pair is unarmed \u2014 its figures (4 passed in 20.05 s, 4 errors EXIT=1) match logs/repo_gate.log and logs/negative_control_reverted.log.",
+    "write_paths": "the reviewed node declared the evidence fragment, the new test and two source files; the delta's only two paths are the fragment and tests/test_a_session_without_a_pane_learns_of_a_reset.py, inside that scope."
+  },
+  "justifications": {
+    "durability": "three of the plan's four properties redden on their regression, but tests/test_a_session_without_a_pane_learns_of_a_reset.py:234 passes with limit_resets removed from duty_digest at reckon/hooks/coordinator_obligations.py:534, so the reset-arrival transition is unguarded.",
+    "evidence": "logs/repo_gate.log and logs/negative_control_reverted.log each carry revision, literal command and EXIT, and a re-run of the committed file at an exported df58276bf5 tree gave 4 passed EXIT=0 in 4.64 s.",
+    "fit": "the file follows the repository's test idiom and isolation discipline, reusing tests/conftest.py:1101 and tests/helpers/git.py:12, and names behaviour rather than a plan item.",
+    "goal_fidelity": "tests/test_a_session_without_a_pane_learns_of_a_reset.py:159-350 moves the run-directory gate into the suite and drives the hook from a temporary crew home, exactly the commit's stated purpose.",
+    "reuse": "the diff adds no production definition; it reuses obligations_view (reckon/crew/obligations.py:1742), budget_reset.recent_resets (reckon/crew/budget_reset.py:474) and lift_watch.RESET_HORIZON, and a search of tests/ found only module-local helpers, the repository's existing pattern.",
+    "scope_discipline": "the diff touches only docs/evidence/fragments/a-limit-reset-reaches-every-session/a-session-without-a-pane-learns-of-a-reset-on-its-next.html and tests/test_a_session_without_a_pane_learns_of_a_reset.py, both declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal (plan \u00a73) is that a session whose follower is down learns of a limit reset on its next prompt; the delta commit df58276bf5 adds the suite copy of that gate at tests/test_a_session_without_a_pane_learns_of_a_reset.py:159-350, which is what its message claims.\nVERDICT done_when: plan \u00a73's done_when names four cases and the new file asserts all four \u2014 the 20-minute prompt line and excluded rows at tests/test_a_session_without_a_pane_learns_of_a_reset.py:159, the silent second prompt at :234, and the view's limit_resets at :258 \u2014 with logs/repo_gate.log recording 4 passed EXIT=0, which I re-ran at an exported df58276bf5 tree (4 passed, EXIT=0, 4.64 s).\nVERDICT write_paths: the reviewed node declared the evidence fragment, the new test and two source files; the delta's only two paths are the fragment and tests/test_a_session_without_a_pane_learns_of_a_reset.py, inside that scope.\nVERDICT manifest: read; status complete, four commits, gate and control logs named, and suite_pair states the pair is unarmed \u2014 its figures (4 passed in 20.05 s, 4 errors EXIT=1) match logs/repo_gate.log and logs/negative_control_reverted.log.\nVERDICT diff: read commit by commit against 782014fda0; one commit adds 350 lines of test and 7 lines to the fragment, changing no production code.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:1152, reckon/hooks/coordinator_obligations.py:1187, reckon/crew/obligations.py:1742, reckon/mcp_views.py:4072\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_session_without_a_pane_learns_of_a_reset.py:159-350 moves the run-directory gate into the suite and drives the hook from a temporary crew home, exactly the commit's stated purpose.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/repo_gate.log and logs/negative_control_reverted.log each carry revision, literal command and EXIT, and a re-run of the committed file at an exported df58276bf5 tree gave 4 passed EXIT=0 in 4.64 s.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only docs/evidence/fragments/a-limit-reset-reaches-every-session/a-session-without-a-pane-learns-of-a-reset-on-its-next.html and tests/test_a_session_without_a_pane_learns_of_a_reset.py, both declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: three of the plan's four properties redden on their regression, but tests/test_a_session_without_a_pane_learns_of_a_reset.py:234 passes with limit_resets removed from duty_digest at reckon/hooks/coordinator_obligations.py:534, so the reset-arrival transition is unguarded.\nSCORE fit: 19\nJUSTIFICATION fit: the file follows the repository's test idiom and isolation discipline, reusing tests/conftest.py:1101 and tests/helpers/git.py:12, and names behaviour rather than a plan item.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no production definition; it reuses obligations_view (reckon/crew/obligations.py:1742), budget_reset.recent_resets (reckon/crew/budget_reset.py:474) and lift_watch.RESET_HORIZON, and a search of tests/ found only module-local helpers, the repository's existing pattern.\nFINDING tests/test_a_session_without_a_pane_learns_of_a_reset.py:234 non-blocking: the \"second prompt adds no context\" case runs two identical prompts, so it stays green if limit_resets is dropped from duty_digest at reckon/hooks/coordinator_obligations.py:534, and a reset arriving under an unchanged reading would then stop being spoken with no test reddening.\nFINDING tests/test_a_session_without_a_pane_learns_of_a_reset.py:8 non-blocking: the module docstring says every case drives the hook as a subprocess, but test_the_obligations_view_lists_the_due_reset (:258) and test_the_hook_reader_matches_the_store_reader (:288) call the library in-process.\n",
+  "review_run_id": "r-20261105T091314018885-review-of-a-session-without-a-pane-learns-of-a-reset-on-its-next-df58276bf5b8",
+  "reviewed_base_sha": "782014fda09f17509df900111a6dece6f88bc774",
+  "reviewed_head_sha": "df58276bf5b82e11419a7266ab9f85c56416b2c4",
+  "reviewed_run_id": "r-20261103T074735750421-a-session-without-a-pane-learns-of-a-reset-on-its-next",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T09:28:49.446066+00:00",
+  "total": 111
+}

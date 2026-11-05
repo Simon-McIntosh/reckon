@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_a_slow_station_still_reads_as_alive.py::test_a_blocked_tick_keeps_a_fresh_beat_and_reads_slow",
+    "tests/test_a_slow_station_still_reads_as_alive.py::test_a_station_whose_process_has_ended_reads_stopped_within_one_window"
+  ],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/mcp_views.py:4072",
+    "reckon/hooks/coordinator_obligations.py:1219"
+  ],
+  "completed_at": "2026-11-04T10:05:27.655Z",
+  "dispatched_at": "2026-11-04T09:57:34Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T074735750421-a-session-without-a-pane-learns-of-a-reset-on-its-next/gate/test_a_session_without_a_pane_learns_of_a_reset.py",
+      "id": "f96d82c6198",
+      "line": "247",
+      "severity": "non-blocking",
+      "text": "non-blocking: the \"a second prompt adds no context\" assertion holds even if the reset ids are dropped from duty_digest, because both prompts compute the same digest from the reading tag alone, so the plan's \"a reset appearing changes the digest and is spoken once\" is unguarded and would regress silently."
+    },
+    {
+      "file": "reckon/hooks/coordinator_obligations.py",
+      "id": "ffe453d8ce1",
+      "line": "1168",
+      "severity": "non-blocking",
+      "text": "non-blocking: _inject_reading makes the stale-station, deferred-reload and not-fresh lines speak once instead of every turn, and because it writes the shared digest file the duty list is re-spoken after any interleaved reading turn; both are behaviour changes outside the goal with no test and no plan authority."
+    },
+    {
+      "file": "reckon/hooks/coordinator_obligations.py",
+      "id": "f36fa9effcd",
+      "line": "734",
+      "severity": "non-blocking",
+      "text": "non-blocking: the id fallback formats the parsed instant without converting to UTC, so for an event carrying a non-UTC offset and no id it derives a different id than budget_reset._event_id at reckon/crew/budget_reset.py:112, contradicting the \"mirrors exactly\" claim; the owner's writer always supplies an id, so this is latent rather than live."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "id": "fd202c8a3c5",
+      "line": "2013",
+      "severity": "non-blocking",
+      "text": "non-blocking: the view carries limit_resets while obligation_snapshot.payload_for never does, so view and snapshot diverge whenever a reset is live; the parity assertions at tests/test_obligations_snapshot_is_published.py:555 only stay green because every test home holds no reset store."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against abf338ba97; the change adds a store reader, a line renderer, digest tags, a view field and one evidence fragment, and nothing else.",
+    "done_when": "all four done_when cases are asserted by the gate, which recorded 4 passed EXIT=0 at 18513da3ee (logs/gate.log), and the declared negative control reddened on exactly the horizon rule (1 failed, 3 passed, EXIT=1, logs/negative_control.log).",
+    "goal": "the node's goal is that a session whose follower is down learns of a limit reset on its next prompt; reckon/hooks/coordinator_obligations.py:1152 reads the reset store on the prompt path and :1196 renders one line per due event beside the duty list, which is the goal.",
+    "manifest": "read; it records status complete, three commits, the gate and both regression arms with their logs, and I re-ran the one file it blames for the two added ids at the reviewed head (3 passed, EXIT=0).",
+    "write_paths": "the three commits touch only reckon/hooks/coordinator_obligations.py, reckon/crew/obligations.py and docs/evidence/fragments/a-limit-reset-reaches-every-session/a-session-without-a-pane-learns-of-a-reset-on-its-next.html, all inside the declared scope."
+  },
+  "justifications": {
+    "durability": "the gate at test_a_session_without_a_pane_learns_of_a_reset.py:247 stays green if limit_resets is removed from duty_digest, so the plan's \"a reset appearing changes the digest\" has no assertion that fails on its regression, and the gate itself lives in the run directory rather than the repository suite.",
+    "evidence": "logs/gate.log records 4 passed EXIT=0 with its revision, tree and literal command, and logs/negative_control.log records the horizon control at 1 failed EXIT=1, though the \"spoken once\" case it counts does not independently test the digest tag it is offered for.",
+    "fit": "reckon/hooks/coordinator_obligations.py:1189 reuses the module's own digest-and-inject idiom and its lazy-import discipline, and the added symbols name the mechanism rather than a plan item.",
+    "goal_fidelity": "reckon/hooks/coordinator_obligations.py:1152-1165 carries the due resets onto the prompt and :2013 carries the same events on the obligations view, so both surfaces the plan names answer from the store.",
+    "reuse": "reckon/hooks/coordinator_obligations.py:688 re-implements reckon/crew/budget_reset.py:474 recent_resets, which owns that capability, rather than extending or calling it.",
+    "scope_discipline": "every diff path is inside the declared write paths, but reckon/hooks/coordinator_obligations.py:1168 also changes three pre-existing prompt branches from speaking every turn to speaking once, which the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a session whose follower is down learns of a limit reset on its next prompt; reckon/hooks/coordinator_obligations.py:1152 reads the reset store on the prompt path and :1196 renders one line per due event beside the duty list, which is the goal.\nVERDICT done_when: all four done_when cases are asserted by the gate, which recorded 4 passed EXIT=0 at 18513da3ee (logs/gate.log), and the declared negative control reddened on exactly the horizon rule (1 failed, 3 passed, EXIT=1, logs/negative_control.log).\nVERDICT write_paths: the three commits touch only reckon/hooks/coordinator_obligations.py, reckon/crew/obligations.py and docs/evidence/fragments/a-limit-reset-reaches-every-session/a-session-without-a-pane-learns-of-a-reset-on-its-next.html, all inside the declared scope.\nVERDICT manifest: read; it records status complete, three commits, the gate and both regression arms with their logs, and I re-ran the one file it blames for the two added ids at the reviewed head (3 passed, EXIT=0).\nVERDICT diff: read commit by commit against abf338ba97; the change adds a store reader, a line renderer, digest tags, a view field and one evidence fragment, and nothing else.\nCALL_SITES: reckon/mcp_views.py:4072, reckon/hooks/coordinator_obligations.py:1219\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/hooks/coordinator_obligations.py:1152-1165 carries the due resets onto the prompt and :2013 carries the same events on the obligations view, so both surfaces the plan names answer from the store.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/gate.log records 4 passed EXIT=0 with its revision, tree and literal command, and logs/negative_control.log records the horizon control at 1 failed EXIT=1, though the \"spoken once\" case it counts does not independently test the digest tag it is offered for.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: every diff path is inside the declared write paths, but reckon/hooks/coordinator_obligations.py:1168 also changes three pre-existing prompt branches from speaking every turn to speaking once, which the goal does not imply.\nSCORE durability: 9\nJUSTIFICATION durability: the gate at test_a_session_without_a_pane_learns_of_a_reset.py:247 stays green if limit_resets is removed from duty_digest, so the plan's \"a reset appearing changes the digest\" has no assertion that fails on its regression, and the gate itself lives in the run directory rather than the repository suite.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/hooks/coordinator_obligations.py:1189 reuses the module's own digest-and-inject idiom and its lazy-import discipline, and the added symbols name the mechanism rather than a plan item.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/hooks/coordinator_obligations.py:688 re-implements reckon/crew/budget_reset.py:474 recent_resets, which owns that capability, rather than extending or calling it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T074735750421-a-session-without-a-pane-learns-of-a-reset-on-its-next/gate/test_a_session_without_a_pane_learns_of_a_reset.py:247 non-blocking: the \"a second prompt adds no context\" assertion holds even if the reset ids are dropped from duty_digest, because both prompts compute the same digest from the reading tag alone, so the plan's \"a reset appearing changes the digest and is spoken once\" is unguarded and would regress silently.\nFINDING reckon/hooks/coordinator_obligations.py:1168 non-blocking: _inject_reading makes the stale-station, deferred-reload and not-fresh lines speak once instead of every turn, and because it writes the shared digest file the duty list is re-spoken after any interleaved reading turn; both are behaviour changes outside the goal with no test and no plan authority.\nFINDING reckon/hooks/coordinator_obligations.py:734 non-blocking: the id fallback formats the parsed instant without converting to UTC, so for an event carrying a non-UTC offset and no id it derives a different id than budget_reset._event_id at reckon/crew/budget_reset.py:112, contradicting the \"mirrors exactly\" claim; the owner's writer always supplies an id, so this is latent rather than live.\nFINDING reckon/crew/obligations.py:2013 non-blocking: the view carries limit_resets while obligation_snapshot.payload_for never does, so view and snapshot diverge whenever a reset is live; the parity assertions at tests/test_obligations_snapshot_is_published.py:555 only stay green because every test home holds no reset store.",
+  "review_run_id": "r-20261104T095004671388-review-of-a-session-without-a-pane-learns-of-a-reset-on-its-next-782014fda09f",
+  "reviewed_base_sha": "abf338ba97e2b1bedd81a58483b9eeaa3026bda3",
+  "reviewed_head_sha": "782014fda09f17509df900111a6dece6f88bc774",
+  "reviewed_run_id": "r-20261103T074735750421-a-session-without-a-pane-learns-of-a-reset-on-its-next",
+  "scores": {
+    "durability": 9,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T10:05:39.695622+00:00",
+  "total": 77
+}
