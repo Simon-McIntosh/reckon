@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-05T13:29:17.357Z",
+  "dispatched_at": "2026-11-05T13:18:39Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T103257252358-a-deferred-only-plan-reads-not-closable/manifest.md",
+      "id": "fb478c5318e",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "changed_paths omits two of the three files the reviewed commit changes: `git show --stat 33f76e1526` touches tests/spa_module_eval.py, tests/test_a_deferred_only_plan_reads_not_closable.py and tests/test_spa_derived_flow.py, while the line lists only the middle one. A coordinator reading changed_paths to compose the promote-time scope sees a diff smaller than the one landed, and the two files the repair actually rewrote are invisible in the record."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T103257252358-a-deferred-only-plan-reads-not-closable/manifest.md",
+      "id": "f025d0f499e",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "The landing line still carries an earlier attempt's figures (gate 28 passed, base arm 5 failed, head arm 5 passed, negative control 3 failed) while every log the same manifest cites at this head records 79 passed EXIT=0 (gate-head.log), 6 failed EXIT=1 (base-arm-2.log), 10 passed EXIT=0 (head-arm.log) and 5 failed 1 passed EXIT=1 (negative-control.log). The landing line is what promotion puts on the plan section, so it understates the gate that ran."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T103257252358-a-deferred-only-plan-reads-not-closable/manifest.md",
+      "id": "f5a55af24cd",
+      "line": "22",
+      "severity": "non-blocking",
+      "text": "baseline_suite.log_path names baseline-arm.log (09:56:44Z), whose five failure ids include test_the_surfaces_render_the_served_fact_without_deriving_it, an id that does not exist in the module at the reviewed head (the head splits it into test_the_crew_bar_draws_the_served_fact_in_both_its_label_and_its_fill and test_the_plan_card_prints_the_served_label). The arm that matches the final tests is base-arm-2.log (12:00Z, 6 failed), and manifest.md:30 says six. An added-failure count derived from the cited log is computed against a test set the head no longer has."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T103257252358-a-deferred-only-plan-reads-not-closable/manifest.md",
+      "id": "f838083299e",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "negative-control.log (12:04:47Z) and render-red.log (12:07:59Z) were both produced before the harness commit landed (head-arm.log 13:20:49Z, gate-head.log 13:22:14Z), so neither recorded refusal exercises tests/spa_module_eval.py:113's evaluate_jsx_render, the path both probe files now run through. The mutation that would show the shared harness can fail was not re-run at the reviewed head."
+    },
+    {
+      "file": "tests/test_spa_crew_cards.py",
+      "id": "f7123a922eb",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "The commit message claims the JSX render harness now has one owner, but four sibling probe files still carry the same React stub and the same walk/hasClass/findAll/textOf tree readers and import nothing from tests/spa_module_eval.py: test_spa_crew_cards.py:20, test_spa_crew_burn.py:17, test_spa_module_scope.py:266 and test_the_flow_draws_each_plan_where_its_progress_puts_it.py:42. The consolidation is correct for the two files the repair grant named; the capability it moved into the owner is still forked four times elsewhere, so the next drift has four places to land."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source goal (prompt.txt:38) is to derive the deferred count in Python and render it on the roadmap row, the crew flow and the SPA plan card; the reviewed delta 33f76e1526 is test-only, leaving reckon/roadmap.py's deferred_remainder and docs/ui/crew.jsx's bar untouched while tests/test_a_deferred_only_plan_reads_not_closable.py:202 still pins the drawn fill to the literal 88.9% and :233 pins the card's label to \"2 deferred, not closable\".\nVERDICT done_when: the done_when (prompt.txt:157) requires the sixteen-done/two-deferred fixture to read 2 deferred, not closable before the descope and closable after, and ruff clean on the staged paths; every such assertion survives the delta unchanged (tests/test_a_deferred_only_plan_reads_not_closable.py:140-145, :198-207, :232-234) and the gate that ran them at this head records 79 passed EXIT=0 (gate-head.log).\nVERDICT write_paths: the source FENCE \u2014 SCOPE (prompt.txt:77-84) grants reckon/roadmap.py, reckon/serve.py, docs/ui/crew.jsx, docs/ui/shell-plans.jsx, tests/test_a_deferred_only_plan_reads_not_closable.py, the evidence fragment and the figures directory; `git diff --stat 736e61d3ad 33f76e1526` touches that test file plus tests/spa_module_eval.py and tests/test_spa_derived_flow.py, both outside the source fence but named as the delta this review dispatch covers, which is the repair grant the plan records at 04cf3e4227.\nVERDICT manifest: read the source run's manifest.md; status complete, head-arm.log 10 passed EXIT=0 at 33f76e1526 and gate-head.log 79 passed EXIT=0, but changed_paths (:13) names one of the three files the commit changes, the landing line (:15) carries an earlier attempt's counts, baseline_suite (:22) cites a log whose failure set predates the split surface tests.\nVERDICT diff: read 736e61d3ad..33f76e1526 commit by commit; the single commit moves the React tree stub, walk/hasClass/findAll/textOf and the node invocation into tests/spa_module_eval.py behind evaluate_jsx_render (:113) and evaluate_jsx_module's prelude/source_suffix/bindings parameters (:68-75), rewires both probes (tests/test_spa_derived_flow.py:28-32, tests/test_a_deferred_only_plan_reads_not_closable.py:151-160) and deletes the two copies, 133 insertions against 151 deletions, with no production source changed.\nCALL_SITES: reckon/serve.py:compile_jsx\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the delta leaves reckon/roadmap.py:1086's deferred_remainder and docs/ui/crew.jsx:144's served fill untouched and keeps the goal's own assertions green at tests/test_a_deferred_only_plan_reads_not_closable.py:202 and :233, so it supports the node goal without itself producing it.\nSCORE evidence: 14\nJUSTIFICATION evidence: gate-head.log names revision 33f76e1526, its literal command and `79 passed in 55.57s / EXIT=0`, covering both probe files and nine suites that import the harness, but manifest.md:15's landing figures and :22's baseline log disagree with the logs they cite.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: `git show --stat 33f76e1526` changes exactly the three test files this dispatch names, all test-only with no product source, though two sit outside the source node's prompt.txt:77-84 fence and neither appears in manifest.md:13's changed_paths.\nSCORE durability: 15\nJUSTIFICATION durability: the delta adds no assertion and removes only the two per-file `assert result.returncode == 0` guards in favour of the raise at tests/spa_module_eval.py:107, so the inherited literals at tests/test_a_deferred_only_plan_reads_not_closable.py:202 and :233 still fail on a wrong render, but no recorded refusal exercises the new shared path (manifest.md:20).\nSCORE fit: 18\nJUSTIFICATION fit: tests/spa_module_eval.py:68-86 keeps the module's existing docstring idiom and keyword-only defaults, the added names REACT_TREE_PRELUDE, evaluate_jsx_render, source_suffix and bindings carry no forbidden identifier, and ruff check with the repository config is clean on all three files in-tree.\nSCORE reuse: 16\nJUSTIFICATION reuse: the delta extends tests/spa_module_eval.py, the owner of the compile-and-evaluate core, and deletes the two duplicates it replaces, but four sibling probes (tests/test_spa_crew_cards.py:20, tests/test_spa_crew_burn.py:17, tests/test_spa_module_scope.py:266, tests/test_the_flow_draws_each_plan_where_its_progress_puts_it.py:42) still carry the same prelude and tree readers.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T103257252358-a-deferred-only-plan-reads-not-closable/manifest.md:13 non-blocking: changed_paths names one of the three files the reviewed commit changes, omitting tests/spa_module_eval.py and tests/test_spa_derived_flow.py.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T103257252358-a-deferred-only-plan-reads-not-closable/manifest.md:15 non-blocking: the landing line carries an earlier attempt's counts (28/5/5/3) where the cited logs record 79 passed, 6 failed, 10 passed and 5 failed 1 passed.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T103257252358-a-deferred-only-plan-reads-not-closable/manifest.md:22 non-blocking: baseline_suite cites baseline-arm.log, whose failure ids include a test the head module no longer has; base-arm-2.log is the arm matching the final tests.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T103257252358-a-deferred-only-plan-reads-not-closable/manifest.md:20 non-blocking: the negative control and render-deleted runs predate the harness commit, so the shared evaluate_jsx_render path has no recorded refusal.\nFINDING tests/test_spa_crew_cards.py:20 non-blocking: four sibling probes still carry the React stub and tree readers the commit moved into tests/spa_module_eval.py, so the harness is not yet a single owner repo-wide.\n",
+  "review_run_id": "r-20261105T123026452242-review-of-a-deferred-only-plan-reads-not-closable-33f76e15264b",
+  "reviewed_base_sha": "736e61d3ade59164133c02142e6a5f1465b62be4",
+  "reviewed_head_sha": "33f76e15264b601cfb32a4a8f822db890dfc55b0",
+  "reviewed_run_id": "r-20261027T103257252358-a-deferred-only-plan-reads-not-closable",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 16,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T13:29:30.918358+00:00",
+  "total": 96
+}
