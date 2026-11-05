@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own arms: logs/repair2_baseline_suite.log at 6d76ede655 records '6 passed in 5.15s' with EXIT=0 and no failing ids, and logs/repair2_after_suite.log at 820eef6b7d records '7 passed in 6.58s' with EXIT=0 and no failing ids, so the delta adds no failure.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/roadmap.py:4471",
+    "reckon/mcp_views.py:3889",
+    "reckon/project_brief.py:304",
+    "reckon/crew/queue_order.py:47",
+    "reckon/graph_target.py:311",
+    "reckon/flight.py:2945"
+  ],
+  "completed_at": "2026-11-05T16:50:11.053Z",
+  "dispatched_at": "2026-11-05T16:37:04Z",
+  "findings": [
+    {
+      "file": "reckon/roadmap.py",
+      "line": "3302",
+      "severity": "non-blocking",
+      "text": "The _critical_path_links docstring still says '``holds`` carries every open gate and every unmet wait beside the state' (reckon/roadmap.py:3302) while the state sentence above it was updated to say 'an unmet wait or an open decision names it'; the function it documents now returns open decisions too, so the module describes one payload two ways."
+    },
+    {
+      "file": "tests/test_the_critical_path_reads_link_by_link.py",
+      "line": "249",
+      "severity": "non-blocking",
+      "text": "test_a_link_held_by_an_open_decision_names_that_decision supplies only a decision hold, so the ordering the same commit documents ('a decision ranks between them', reckon/roadmap.py:3245) is untested: a regression that appended decisions after waits would pass all seven cases while a link held by both a decision and an unmet wait would report the dependency ref as `wait` instead of the decision id."
+    },
+    {
+      "file": "docs/evidence/fragments/a-coordinator-sees-the-board/the-critical-path-reads-link-by-link.html",
+      "line": "36",
+      "severity": "non-blocking",
+      "text": "The fragment still says the module carries 'five cases over tests/fixtures/coordinator_board_0850/' (line 36) and that the head arm 'passes all five' (line 93), while the arms paragraph this commit rewrote in the same file says seven pass at the head and six at the repaired base; a reader reconciling the two cannot tell which count describes the module at this head."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T103440000932-the-critical-path-reads-link-by-link/manifest.md",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "The gained commits change reckon/roadmap.py, but the three-file gate the done_when names is recorded only at the review base (logs/repair_gate.log, 23 passed at 6d76ede655); the head arm runs tests/test_the_critical_path_reads_link_by_link.py alone."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/roadmap.py:4471 (_build_roadmap calls _critical_path_links with section_holds_by_plan), reckon/mcp_views.py:3889 (carries the raw critical_path payload), reckon/project_brief.py:304, reckon/crew/queue_order.py:47, reckon/graph_target.py:311, reckon/flight.py:2945",
+    "diff": "Read commit by commit against 6d76ede655: b7c12f1274 adds the decision branch to _link_holds in reckon/roadmap.py and the decision test, f6705f8ee9 restates the arm counts and the holds description in the evidence fragment, 820eef6b7d re-prefixes the two planted run ids so their sort order is fixed; 97 insertions and 30 deletions across three files.",
+    "done_when": "The done_when names tests/test_the_critical_path_reads_link_by_link.py together with tests/test_graph_target.py and tests/test_roadmap_endpoints.py; the manifest's repair2 arms (logs/repair2_baseline_suite.log, 6 passed at 6d76ede655; logs/repair2_after_suite.log, 7 passed at 820eef6b7d) run only the single-file arm, and the last three-file run, logs/repair_gate.log (23 passed, EXIT=0), is at the review base rather than at the reviewed head.",
+    "goal": "The node's goal is that each critical-path link carries a primary state and the full list of what holds it, head first; the gained commit b7c12f1274 closes the one hold kind still missing, so reckon/roadmap.py:3256-3271 now folds DECISION_BLOCKER rows into critical_path.links[].holds and a decision-held link reports waiting instead of no state and an empty list.",
+    "manifest": "Read; status complete, the three gained commits named (b7c12f1274, f6705f8ee9, 820eef6b7d), baseline_suite 6 passed at 6d76ede655 and after_suite 7 passed at 820eef6b7d both with EXIT=0 logs on disk, and two executed negative controls whose receipts I opened: logs/repair2_nc_decision.log and logs/repair2_nc_live_run.log.",
+    "write_paths": "The manifest declares reckon/roadmap.py, tests/test_the_critical_path_reads_link_by_link.py, docs/evidence/fragments/a-coordinator-sees-the-board/the-critical-path-reads-link-by-link.html and a docs/figures directory; git diff --stat 6d76ede655..820eef6b7d lists exactly the first three and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_the_critical_path_reads_link_by_link.py:249-282 reddens when b7c12f1274 is reverse-applied (logs/repair2_nc_decision.log: 'assert \"\" == \"waiting\"') and line 313 reddens under a plan-wide live-run match (logs/repair2_nc_live_run.log), but no case exercises the documented decision-before-wait ordering that both guards leave unasserted.",
+    "evidence": "The delta's recorded gate is logs/repair2_after_suite.log (7 passed, EXIT=0 at 820eef6b7d), which covers only tests/test_the_critical_path_reads_link_by_link.py, while the three-file gate the done_when names was last run in logs/repair_gate.log at 6d76ede655.",
+    "fit": "reckon/roadmap.py:3302 still describes holds as 'every open gate and every unmet wait' two paragraphs from the state sentence this commit updated to name open decisions, so the module documents one payload two ways.",
+    "goal_fidelity": "reckon/roadmap.py:3256-3271 adds DECISION_BLOCKER rows to the holds list the same function builds for every critical-path link, which is the one hold kind the goal's 'full list of what holds the link' was still missing.",
+    "reuse": "reckon/roadmap.py:3256 consumes the DECISION_BLOCKER rows the existing assembly already builds at reckon/roadmap.py:4327-4331 and imports the kind from reckon/live_run_classification.py:31 rather than minting a second vocabulary; no new hold mechanism is introduced.",
+    "scope_discipline": "git diff --stat 6d76ede655a6bfb020c885e66e13186f7b39dfde 820eef6b7dccb5805138a0b47f554866e8c4dfe8 lists only the three declared paths and no view, refusal family or other module."
+  },
+  "node": "review-of-the-critical-path-reads-link-by-link-820eef6b7dcc",
+  "node:reviewed": "the-critical-path-reads-link-by-link",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that each critical-path link carries a primary state and the full list of what holds it, head first; the gained commit b7c12f1274 closes the one hold kind still missing, so reckon/roadmap.py:3256-3271 now folds DECISION_BLOCKER rows into critical_path.links[].holds and a decision-held link reports waiting instead of no state and an empty list.\nVERDICT done_when: the done_when names tests/test_the_critical_path_reads_link_by_link.py together with tests/test_graph_target.py and tests/test_roadmap_endpoints.py; the manifest's repair2 arms (logs/repair2_baseline_suite.log, 6 passed at 6d76ede655; logs/repair2_after_suite.log, 7 passed at 820eef6b7d) run only the single-file arm, and the last three-file run, logs/repair_gate.log (23 passed, EXIT=0), is at the review base rather than at the reviewed head.\nVERDICT write_paths: the manifest declares reckon/roadmap.py, tests/test_the_critical_path_reads_link_by_link.py, the evidence fragment and a docs/figures directory; git diff --stat 6d76ede655..820eef6b7d lists exactly the first three and nothing else.\nVERDICT manifest: read; status complete, the three gained commits named (b7c12f1274, f6705f8ee9, 820eef6b7d), baseline_suite 6 passed at 6d76ede655 and after_suite 7 passed at 820eef6b7d both with EXIT=0 logs on disk, and two executed negative controls whose receipts I opened (logs/repair2_nc_decision.log, logs/repair2_nc_live_run.log).\nVERDICT diff: read commit by commit against 6d76ede655: b7c12f1274 adds the decision branch to _link_holds in reckon/roadmap.py and the decision test, f6705f8ee9 restates the arm counts and the end of the holds description in the evidence fragment, 820eef6b7d re-prefixes the two planted run ids so their sort order is fixed; 97 insertions and 30 deletions across three files.\nCALL_SITES: reckon/roadmap.py:4471, reckon/mcp_views.py:3889, reckon/project_brief.py:304, reckon/crew/queue_order.py:47, reckon/graph_target.py:311, reckon/flight.py:2945\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/roadmap.py:3256-3271 adds DECISION_BLOCKER rows to the holds list the same function builds for every critical-path link, the one hold kind the goal's 'full list of what holds the link' was still missing.\nSCORE evidence: 12\nJUSTIFICATION evidence: the delta's recorded gate is logs/repair2_after_suite.log (7 passed, EXIT=0 at 820eef6b7d), which covers only tests/test_the_critical_path_reads_link_by_link.py, while the three-file gate the done_when names was last run in logs/repair_gate.log at 6d76ede655.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 6d76ede655a6bfb020c885e66e13186f7b39dfde 820eef6b7dccb5805138a0b47f554866e8c4dfe8 lists only the three declared paths and no view, refusal family or other module.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_the_critical_path_reads_link_by_link.py:249-282 reddens when b7c12f1274 is reverse-applied (logs/repair2_nc_decision.log: 'assert \"\" == \"waiting\"') and line 313 reddens under a plan-wide live-run match (logs/repair2_nc_live_run.log), but no case exercises the decision-before-wait ordering both guards leave unasserted.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/roadmap.py:3302 still describes holds as 'every open gate and every unmet wait' two paragraphs from the state sentence this commit updated to name open decisions.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/roadmap.py:3256 consumes the DECISION_BLOCKER rows the existing assembly already builds at reckon/roadmap.py:4327-4331 and imports the kind from reckon/live_run_classification.py:31 rather than minting a second vocabulary.\nFINDING reckon/roadmap.py:3302 non-blocking: the _critical_path_links docstring still says holds carries 'every open gate and every unmet wait' while the state sentence above it was updated to name open decisions, so the module documents one payload two ways.\nFINDING tests/test_the_critical_path_reads_link_by_link.py:249 non-blocking: the decision case supplies only a decision hold, so the documented decision-before-wait ordering is untested; a regression that appended decisions after waits would pass all seven cases while a link held by a decision and an unmet wait would report the dependency ref as wait instead of the decision id.\nFINDING docs/evidence/fragments/a-coordinator-sees-the-board/the-critical-path-reads-link-by-link.html:36 non-blocking: the fragment still says 'five cases over tests/fixtures/coordinator_board_0850/' and 'passes all five' (line 93) while the arms paragraph this commit rewrote says seven at the head and six at the repaired base.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T103440000932-the-critical-path-reads-link-by-link/manifest.md:11 non-blocking: the gained commits change reckon/roadmap.py but the three-file gate the done_when names is recorded only at the review base (logs/repair_gate.log, 23 passed at 6d76ede655); the head arm runs the one test file alone.",
+  "review_run_id": "r-20261105T163308099273-review-of-the-critical-path-reads-link-by-link-820eef6b7dcc",
+  "reviewed_base_sha": "6d76ede655a6bfb020c885e66e13186f7b39dfde",
+  "reviewed_head_sha": "820eef6b7dccb5805138a0b47f554866e8c4dfe8",
+  "reviewed_run_id": "r-20261027T103440000932-the-critical-path-reads-link-by-link",
+  "scores": {
+    "durability": 17,
+    "evidence": 12,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T16:58:00Z",
+  "total": 104
+}
