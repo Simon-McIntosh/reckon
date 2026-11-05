@@ -1,0 +1,80 @@
+{
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/ticker.py:3052",
+    "reckon/crew/recovery_watch.py:2443",
+    "reckon/crew/recovery_watch.py:2471",
+    "reckon/crew_follow_commands.py:2644",
+    "reckon/crew_follow_commands.py:3270",
+    "reckon/crew_follow_commands.py:3506",
+    "reckon/crew/lift_watch.py:308"
+  ],
+  "completed_at": "2026-11-03T11:27:09.093Z",
+  "dispatched_at": "2026-11-03T11:20:49Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-a-reset-row-tells-orchestrator-sessions-to-continue-and-no-d091a650371d",
+      "recorded_at": "2026-11-04T10:33:14.079008+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/ticker.py",
+      "id": "f8c516ad0c1",
+      "line": "3183",
+      "severity": "blocking",
+      "text": "blocking: tests/test_the_orchestrator_reset_row_says_what_it_is.py is outside the dispatch's enumerated write paths, so promotion's scope check refuses this node until the coordinator grants the path; plan section 9's write-path clause grants it and the edit is required because that file pinned the superseded wording."
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "id": "f3160b92a87",
+      "line": "3183",
+      "severity": "non-blocking",
+      "text": "non-blocking: the job-cell padding added in 8575a8ebca has no assertion behind it; neither test file compares a reset row's column positions against a fleet or lift row, so reverting the cell to elide(_job_name(...), NODE) leaves all 21 tests passing."
+    },
+    {
+      "file": "tests/test_a_limit_reset_reaches_every_pane.py",
+      "id": "fc15c6d3fb4",
+      "line": "205",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert rendered.split()[1] == ticker.LIMIT_STAGE compares the stage cell against the renderer's own constant, so a change to that constant moves both sides together even though it still separates the reset path from the lift path."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from 90c8167f1592 to d091a650371d; 8575a8ebca pads the reset row's job cell through _job_cell and replaces constant-valued wording assertions with literals, d091a65037 corrects the evidence fragment's figures and its account of the module-width failure; 4 files, all inside the plan's write paths.",
+    "done_when": "the done_when asks for a follower-driven case whose stage cell reads limit and whose line carries limits reset, continue and worker lanes keep their limits with no transition; tests/test_a_limit_reset_reaches_every_pane.py:192-211 is that case and the manifest records its run.",
+    "goal": "the source node's goal is that a reset row tells orchestrator sessions to continue and opens no worker lane; the gained commits reckon/crew/ticker.py:3176-3185 keep that row and now pad its job cell, so the goal still holds at the reviewed head.",
+    "manifest": "read; it records base 1 failed 16 passed and head 1 failed 17 passed on the node suite, the 24-file sweep at 159 against 160 passed, the negative control at 3 failed 11 passed EXIT=1, and names every log.",
+    "write_paths": "the dispatch fenced four paths; the gained commits also touch tests/test_the_orchestrator_reset_row_says_what_it_is.py, which plan section 9's write-path clause grants as another test asserting the superseded row but the dispatch fence does not name, and the worker records that deviation in evidence_inputs."
+  },
+  "justifications": {
+    "durability": "tests/test_the_orchestrator_reset_row_says_what_it_is.py:135 now pins the literal words rather than ticker.RESET_ORCHESTRATOR_INSTRUCTION, so a wording change reddens it, but nothing guards the job-cell padding added at reckon/crew/ticker.py:3183.",
+    "evidence": "the base and head logs under the reviewed run's logs/ carry their revisions, module paths, cwd and EXIT= lines, and their summaries read 1 failed 16 passed against 1 failed 17 passed with the same failure id.",
+    "fit": "the change routes the reset row through the same _job_cell call the fleet row at reckon/crew/ticker.py:3080 and the lift row at :3224 already use, and no added name is forbidden.",
+    "goal_fidelity": "reckon/crew/ticker.py:3176-3185 composes the reset row from its own fields and the resolved wallet, so a claude-orchestrators reset prints the orchestrator instruction and every reset row still closes with the worker-lane clause.",
+    "reuse": "no new definition is added; the reset row reuses _job_cell at reckon/crew/ticker.py:2942 rather than forking a second fitting mechanism, and the search over reckon/crew found no other job-cell owner.",
+    "scope_discipline": "every path in the gained commits is inside plan section 9's write paths, but tests/test_the_orchestrator_reset_row_says_what_it_is.py:132 lies outside the dispatch's enumerated fence, which the worker reports rather than hides."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that a reset row tells orchestrator sessions to continue and opens no worker lane; the gained commits reckon/crew/ticker.py:3176-3185 keep that row and now pad its job cell, so the goal still holds at the reviewed head.\nVERDICT done_when: the done_when asks for a follower-driven case whose stage cell reads limit and whose line carries limits reset, continue and worker lanes keep their limits with no transition; tests/test_a_limit_reset_reaches_every_pane.py:192-211 is that case and the manifest records its run.\nVERDICT write_paths: the dispatch fenced four paths; the gained commits also touch tests/test_the_orchestrator_reset_row_says_what_it_is.py, which plan section 9's write-path clause grants as another test asserting the superseded row but the dispatch fence does not name, and the worker records that deviation in evidence_inputs.\nVERDICT manifest: read; it records base 1 failed 16 passed and head 1 failed 17 passed on the node suite, the 24-file sweep at 159 against 160 passed, the negative control at 3 failed 11 passed EXIT=1, and names every log.\nVERDICT diff: read commit by commit from 90c8167f1592 to d091a650371d; 8575a8ebca pads the reset row's job cell through _job_cell and replaces constant-valued wording assertions with literals, d091a65037 corrects the evidence fragment's figures and its account of the module-width failure; 4 files, all inside the plan's write paths.\nCALL_SITES: reckon/crew/ticker.py:3052, reckon/crew/recovery_watch.py:2443, reckon/crew/recovery_watch.py:2471, reckon/crew_follow_commands.py:2644, reckon/crew_follow_commands.py:3270, reckon/crew_follow_commands.py:3506, reckon/crew/lift_watch.py:308\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:3176-3185 composes the reset row from its own fields and the resolved wallet, so a claude-orchestrators reset prints the orchestrator instruction and every reset row still closes with the worker-lane clause.\nSCORE evidence: 16\nJUSTIFICATION evidence: the base and head logs under the reviewed run's logs/ carry their revisions, module paths, cwd and EXIT= lines, and their summaries read 1 failed 16 passed against 1 failed 17 passed with the same failure id.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: every path in the gained commits is inside plan section 9's write paths, but tests/test_the_orchestrator_reset_row_says_what_it_is.py:132 lies outside the dispatch's enumerated fence, which the worker reports rather than hides.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_the_orchestrator_reset_row_says_what_it_is.py:135 now pins the literal words rather than ticker.RESET_ORCHESTRATOR_INSTRUCTION, so a wording change reddens it, but nothing guards the job-cell padding added at reckon/crew/ticker.py:3183.\nSCORE fit: 18\nJUSTIFICATION fit: the change routes the reset row through the same _job_cell call the fleet row at reckon/crew/ticker.py:3080 and the lift row at :3224 already use, and no added name is forbidden.\nSCORE reuse: 20\nJUSTIFICATION reuse: no new definition is added; the reset row reuses _job_cell at reckon/crew/ticker.py:2942 rather than forking a second fitting mechanism, and the search over reckon/crew found no other job-cell owner.\nFINDING reckon/crew/ticker.py:3183 blocking: tests/test_the_orchestrator_reset_row_says_what_it_is.py is outside the dispatch's enumerated write paths, so promotion's scope check refuses this node until the coordinator grants the path; plan section 9's write-path clause grants it and the edit is required because that file pinned the superseded wording.\nFINDING reckon/crew/ticker.py:3183 non-blocking: the job-cell padding added in 8575a8ebca has no assertion behind it; neither test file compares a reset row's column positions against a fleet or lift row, so reverting the cell to elide(_job_name(...), NODE) leaves all 21 tests passing.\nFINDING tests/test_a_limit_reset_reaches_every_pane.py:205 non-blocking: assert rendered.split()[1] == ticker.LIMIT_STAGE compares the stage cell against ticker.LIMIT_STAGE, the renderer's own constant, so a change to that constant moves both sides together even though it still separates the reset path from the lift path.\n",
+  "review_run_id": "r-20261103T110419286490-review-of-a-reset-row-tells-orchestrator-sessions-to-continue-and-no-d091a650371d",
+  "reviewed_base_sha": "90c8167f1592de27b74c3cfa4977f5f264b23b3c",
+  "reviewed_head_sha": "d091a650371d829a6526b2b22136666a44baea5c",
+  "reviewed_run_id": "r-20261103T070912242908-a-reset-row-tells-orchestrator-sessions-to-continue-and-no",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T11:27:11.921244+00:00",
+  "total": 102
+}
