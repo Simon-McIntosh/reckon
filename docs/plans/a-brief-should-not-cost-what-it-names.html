@@ -23,7 +23,7 @@
   <title>A Brief Should Not Cost What It Names | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="29">
 <meta name="plan-modified" content="2026-11-05">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
 </head>
@@ -329,6 +329,9 @@ Section 2 comes first and is nearly free: the per-file breakdown is already comp
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261021T173243033733-a-regenerated-path-is-charged-as-written" data-who="reckon-build" data-when="2026-10-21T18:08:13.360Z">
     <div class="r-comment-body"><p>a declared regenerated path is folded into the write scope and charged one flat reference cost (4000 tokens) with provenance regenerated, so a fixture node writing a 1 MB record fits a 230144-token lane window (24000 tokens estimated) that the same file as a plain write path exceeds (305715 tokens, refused context-window-exceeded); gate 126 passed exit 0 against the base's collection error.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261105T140622018886-review-of-a-reduced-brief-leaves-a-trace-98b62b89d006" data-who="reckon-build" data-when="2026-11-05T14:37:01.336Z">
+    <div class="r-comment-body"><p>Reviewed run r-20261027T100023696601-a-reduced-brief-leaves-a-trace (node a-reduced-brief-leaves-a-trace), commits 04cf3e4227..98b62b89d0. Verdict: the reduction marker is recorded on the run node block and reaches the promoted ledger row via promotion.py:1451; the head gate (152 passed EXIT=0), the base new-cases arm (2 failed/2 passed EXIT=1) and the negative control (2 failed/2 passed EXIT=1) all corroborate. Scores goal_fidelity 19, evidence 19, scope_discipline 20, durability 19, fit 18, reuse 15; two non-blocking findings (dispatch.py:3336 unconsumed trace on a no-reduction dispatch; dispatch_refusals.py:62 duplicate repository-input walk).</p></div>
 </div>
 </section>
 </main>
