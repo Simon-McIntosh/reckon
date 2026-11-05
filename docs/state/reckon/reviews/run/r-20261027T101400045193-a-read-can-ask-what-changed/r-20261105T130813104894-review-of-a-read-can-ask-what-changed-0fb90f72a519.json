@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "9c3b7bf950257a656ad71adbc8a6834781be03b8",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp.py:2592",
+    "reckon/mcp.py:2928",
+    "reckon/crew_run_commands.py:476",
+    "reckon/mcp_deadlines.py:602"
+  ],
+  "completed_at": "2026-11-05T14:09:51.612Z",
+  "dispatched_at": "2026-11-05T14:02:30Z",
+  "findings": [
+    {
+      "file": "reckon/change_set.py",
+      "id": "a1c94f0d277",
+      "line": "400",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_newly_ready` admits a ref to the released set only when `target_section` is truthy (:400), and `_landed` (:343-357) enumerates only `(slug, section)` targets, so a dependent whose dependency ref names a whole plan that completed inside the window is never reported newly ready, even though `_landed`'s own docstring (:330-336) claims a target has landed whenever its satisfaction moved."
+    },
+    {
+      "file": "reckon/change_set.py",
+      "id": "b3d0e7a11c4",
+      "line": "328",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_landed` takes a `project` parameter and never reads it; the argument at :546 is dead, so a reader cannot tell whether the function is meant to filter by project and silently does not."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T101400045193-a-read-can-ask-what-changed/logs/negative-control.log",
+      "id": "c6e2a9b3f05",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the recorded negative control was not re-measured at the reviewed revision \u2014 its header line reads `worktree head c15f841e... + mutation` and it reddens 7 of 10 tests, while the head carries 14 tests and the mutation site it names (`change_set.py line 412`) now sits in a rewritten function, so the log does not by itself demonstrate the guard on the new end-bounded window; the red arm that does is logs/revision-red.log."
+    }
+  ],
+  "head_log_revision": "0fb90f72a51991ae1459948cde028cdc62f43c08",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s): reckon/mcp.py:2592 and :2928 attach the change set to the roadmap and crew live answers, reckon/crew_run_commands.py:476 passes `since` through the CLI view, and reckon/mcp_deadlines.py:602 is the deadline wrapper that answers the same tool.",
+    "diff": "read the single commit 0fb90f72a5 against 9c3b7bf95 file by file: reckon/change_set.py (+312/-116) closes both window filters at the observed instant, walks each plan's in-window revisions to credit the commit that moved a declaration, delegates satisfaction to roadmap._section_satisfied and refs to _schema.parse_plan_ref, and follows whether the stream was read; tests/test_a_read_can_ask_what_changed.py adds four cases and fixes the self-comparison; the landing fragment records the new counts.",
+    "done_when": "the reviewed node's measure is the two-file gate, and the manifest's `tests:` line records exactly that command; logs/gate-revision.log shows `49 passed` and `EXIT=0` at 0fb90f72a5 with the tree, module and cwd named, and logs/revision-red.log shows the four new cases red (4 failed, 10 passed, EXIT=1) against the previous module; I re-ran the node's own file at the head and got 14 passed, EXIT=0.",
+    "goal": "the reviewed goal is to repair the six findings the prior review recorded against 9c3b7bf95; reckon/change_set.py:264-322 credits each moved section to its own commit, :317 credits observed_at on each change, :454 bounds the stream at the observed instant, and :514-520 filters plan commits at :154-158, so the end-closed window the module docstring states at :19-27 now holds.",
+    "manifest": "read the delivered manifest; it states head gate 49 passed EXIT=0, the red arm 4 failed / 10 passed EXIT=1, base arm 35 passed and a 7-failed negative control, and I read those same figures from logs/gate-revision.log, logs/revision-red.log, logs/gate-base.log and logs/negative-control.log.",
+    "write_paths": "the dispatch declared five paths; this commit touches three of them \u2014 reckon/change_set.py, tests/test_a_read_can_ask_what_changed.py and docs/evidence/fragments/the-mcp-answers-the-question-asked/a-read-can-ask-what-changed.html \u2014 and `git diff --name-status 9c3b7bf95 0fb90f72a5` lists nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_read_can_ask_what_changed.py:285-288 fails when attribution reverts to `moved[-1]` and :318-331 fails when the end bound is reopened, and both are shown red at 9c3b7bf95 in logs/revision-red.log rather than merely asserted.",
+    "evidence": "logs/gate-revision.log records `49 passed` and a bare `EXIT=0` at 0fb90f72a5 for the literal command in the manifest's `tests:` line, and the same file alone re-ran at 14 passed.",
+    "fit": "reckon/change_set.py:325-328 leaves a `project` parameter unused in `_landed`, an argument the caller cannot tell is inert, though the module otherwise follows the surrounding docstring-and-helper idiom and passes ruff clean at head.",
+    "goal_fidelity": "reckon/change_set.py:153 and :454 apply the observed instant as the window's closed end on both sources, and :284-321 credits each moved declaration to its own commit, which are the two findings the previous review recorded.",
+    "reuse": "reckon/change_set.py:227 now calls reckon/roadmap.py:662 `_section_satisfied`, :126 calls reckon/_schema.py:294 `parse_plan_ref`, and gate parsing goes through _plan_html.read_state, so the two forked capabilities the previous review named are gone and the remaining reads are reused.",
+    "scope_discipline": "`git diff --name-status 9c3b7bf95 0fb90f72a5` lists exactly reckon/change_set.py, tests/test_a_read_can_ask_what_changed.py and the landing fragment, all inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed goal is to repair the six findings the prior review recorded against 9c3b7bf95; reckon/change_set.py:264-322 credits each moved section to its own commit, :317 carries the commit's observed_at, :454 bounds the stream at the observed instant and :153 bounds the plan commits there too, so the end-closed window stated at :19-27 now holds.\nVERDICT done_when: the reviewed node's measure is its two-file gate; the manifest's `tests:` line records exactly that command, logs/gate-revision.log shows `49 passed` with a bare `EXIT=0` at 0fb90f72a5, logs/revision-red.log shows the four new cases red (4 failed, 10 passed, EXIT=1) at the previous module, and the node's own file re-ran at 14 passed at the head.\nVERDICT write_paths: the dispatch declared five paths; this commit touches three of them \u2014 reckon/change_set.py, tests/test_a_read_can_ask_what_changed.py and docs/evidence/fragments/the-mcp-answers-the-question-asked/a-read-can-ask-what-changed.html \u2014 and `git diff --name-status 9c3b7bf95 0fb90f72a5` lists nothing outside them.\nVERDICT manifest: read; it states head 49 passed EXIT=0, the red arm 4 failed / 10 passed EXIT=1, base arm 35 passed and a 7-failed negative control, and I read those same figures from the four logs it names.\nVERDICT diff: read the single commit 0fb90f72a5 against 9c3b7bf95 \u2014 reckon/change_set.py (+312/-116), 132 added lines of tests, and the landing fragment; the fixes are the closed end, per-commit attribution, delegated satisfaction and ref parsing, and a sources.runs that follows the read.\nCALL_SITES: reckon/mcp.py:2592, reckon/mcp.py:2928, reckon/crew_run_commands.py:476, reckon/mcp_deadlines.py:602\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/change_set.py:153 and :454 apply the observed instant as the window's closed end on both sources, and :284-321 credits each moved declaration to its own commit, which are the two findings the previous review recorded.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/gate-revision.log records `49 passed` and a bare `EXIT=0` at 0fb90f72a5 for the literal command in the manifest's `tests:` line, and the same file alone re-ran at 14 passed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --name-status 9c3b7bf95 0fb90f72a5` lists exactly reckon/change_set.py, tests/test_a_read_can_ask_what_changed.py and the landing fragment, all inside the node's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_read_can_ask_what_changed.py:285-288 fails when attribution reverts to `moved[-1]` and :318-331 fails when the end bound is reopened, both shown red at 9c3b7bf95 in logs/revision-red.log.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/change_set.py:325-328 leaves a `project` parameter unused in `_landed`, an argument the caller cannot tell is inert, though the module otherwise follows the surrounding docstring-and-helper idiom and passes ruff clean at head.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/change_set.py:227 now calls reckon/roadmap.py:662 `_section_satisfied`, :126 calls reckon/_schema.py:294 `parse_plan_ref`, and gate parsing goes through _plan_html.read_state, so the two forked capabilities the previous review named are gone.\nFINDING reckon/change_set.py:400 non-blocking: `_newly_ready` admits a ref to the released set only when `target_section` is truthy, and `_landed` (:343-357) enumerates only `(slug, section)` targets, so a dependent whose ref names a whole plan that completed inside the window is never reported newly ready, though `_landed`'s docstring (:330-336) claims any target whose satisfaction moved counts.\nFINDING reckon/change_set.py:328 non-blocking: `_landed` takes a `project` parameter and never reads it, so the argument passed at :546 is dead and a reader cannot tell whether filtering by project was intended.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T101400045193-a-read-can-ask-what-changed/logs/negative-control.log:1 non-blocking: the recorded negative control was not re-measured at the reviewed revision \u2014 its header names `worktree head c15f841e... + mutation` and 10 tests while the head has 14 \u2014 so it does not by itself demonstrate the guard on the new end-bounded window; logs/revision-red.log is the arm that does.",
+  "review_run_id": "r-20261105T130813104894-review-of-a-read-can-ask-what-changed-0fb90f72a519",
+  "reviewed_base_sha": "9c3b7bf950257a656ad71adbc8a6834781be03b8",
+  "reviewed_head_sha": "0fb90f72a51991ae1459948cde028cdc62f43c08",
+  "reviewed_run_id": "r-20261027T101400045193-a-read-can-ask-what-changed",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T14:18:12.181404+00:00",
+  "total": 111
+}
