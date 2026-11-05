@@ -39,7 +39,15 @@
 
   <p><code>removed_paths</code> carries the resolved path the census charged, which is what
   identifies one file across two attempts that may spell it differently; the entry is
-  shortened to the fixture root here and is absolute in a live run.</p>
+  shortened to the fixture root here and is absolute in a live run. Only repository inputs
+  are recorded: routing's contributor reader also returns the standing instruction chain,
+  which is charged against the estimate but is not something a brief can cut.</p>
+
+  <p>The trace is read through the owners the repository already has. Its instant goes
+  through the shared UTC parser, which reads a stamp with no zone as UTC rather than as
+  unknown; its paths are the contributor reader's records; and its payload carries a
+  version, so a trace written by an earlier shape is treated as absent instead of read back
+  as a dict repr inside the trace's lifetime.</p>
 
   <h3 id="a-reduced-brief-leaves-a-trace-measured">Measured</h3>
 
@@ -52,6 +60,14 @@
         <td><code>1d7d4c9c75</code></td>
         <td><strong>152 passed</strong>, <code>EXIT=0</code> &mdash; the new cases, the context
         estimate, promotion and ledger files together</td></tr>
+      <tr><td>gate at the second review round's head</td>
+        <td><code>c2192970aa</code></td>
+        <td><strong>156 passed</strong>, <code>EXIT=0</code> &mdash; the four files with the two
+        cases this round added</td></tr>
+      <tr><td>this round's new cases before their fix</td>
+        <td><code>2a6b74f42b</code></td>
+        <td><strong>2 failed, 6 passed</strong>, <code>EXIT=1</code> &mdash; the instruction file
+        reported as a removed path, and the earlier-shape trace still marking a dispatch</td></tr>
       <tr><td>gate at the review round's head</td>
         <td><code>5089a79381</code></td>
         <td><strong>154 passed</strong>, <code>EXIT=0</code> &mdash; the same four files with the two
@@ -107,6 +123,13 @@
     <li><strong>The input shape has one reader.</strong> The charged paths are taken from
     routing's contributor reader, which already walks the repository-file groups, rather
     than walking them again in the refusal store.</li>
+    <li><strong>An instruction file is never a path that left the brief.</strong> With a
+    standing instruction file in the refuser's census and absent from the accepted
+    attempt's, the reduction names only the repository path, so an input the brief never
+    named cannot be reported as one it cut.</li>
+    <li><strong>An older shape marks nothing.</strong> A trace whose paths are mappings and
+    which carries no version is asserted not to mark the next dispatch, so a shape change
+    cannot resurface as a reduction.</li>
     <li><strong>The negative control.</strong> Declared as <em>skip recording the refusal; the
     accepted run carries no reduction marker and the test fails</em>: with
     <code>record_context_refusal</code> made a no-op the two acceptance cases fail on the
