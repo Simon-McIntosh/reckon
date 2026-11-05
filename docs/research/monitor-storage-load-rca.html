@@ -302,6 +302,49 @@
     <p>The reading confirms §3's diagnosis and adds one cause §3 did not name: the workers themselves. Each walk was a
     worker looking for a fact reckon stores at a known path. The fence governs writes, and nothing bounded reads, so
     one search could cost more than every monitor process on the node combined.</p>
+    <h2 id="s11">§11 — The cutover measure on 2026-10-29: the station alone is far above the bound</h2>
+    <p>The station was dispatched to retire the per-project producer seats, the producer user units and the follower
+    snapshot path, on the condition that it carry every row they carry and cost the node less than they do. The second
+    half of that condition is not met. The station carries every row — §5’s list included — but it does not yet read each
+    fact once at a cost the node can afford, so the retirement is withheld and the producers stay.</p>
+    <p>The measure is §2’s instrument, unchanged: a 60 s window of per-process <code>/proc/&lt;pid&gt;/io</code> deltas,
+    <code>/proc/&lt;pid&gt;/stat</code> utime and stime deltas, and six samples of process state 10 s apart. The process set is
+    selected on adjacent argv tokens (<code>crew station</code>, <code>crew watch</code>, <code>crew follow</code>), never on a
+    substring of the whole command line, because a substring match selects the shell that launched the watch whose own argv
+    contains the pattern. The station ran alone as <code>crew station --interval 1</code>, with its own runtime root and a copy
+    of the crew home carrying 71 live pointers.</p>
+    <figure>
+      <img src="/reckon/figures/monitor-storage-load-rca/read-volume-against-the-bound.svg" alt="Read volume and CPU of one node station at 5 and 71 live runs, against the cutover bound">
+      <figcaption>One node station, measured alone over 60 s windows on clu-2068 on 2026-10-29. The cutover bound is
+      20 MB/min of read volume and 5 % of one core for all crew monitor processes together, drawn dotted. Read volume is
+      <code>rchar</code>, which counts bytes served from the page cache as well as from GPFS; <code>read_bytes</code> was 0.0
+      in every arm, so nothing was refetched from the file server. The two large arms are the same station over the same
+      crew home taken twice, once while eight test processes shared the node and once on a quiet node; the populations
+      differ by two runs because the live fleet moved between them. A third window over 69 pointers repeated the quiet
+      arm and is not drawn: 1,069 MB/min. D-state samples were taken in two of the three, one at
+      <code>xlog_wait_on_iclog</code> and three at <code>cxiWaitEventWait</code>, and none in the third.</figcaption>
+    </figure>
+    <p>Read volume scales with the number of live runs, and its slope is the cost that matters: 126 MB/min at five live
+    runs, and 1,067, 1,160 and 1,069 MB/min in three windows over about seventy. Against a bound of 20 MB/min the station
+    is five times over at five runs and more than fifty times over at seventy, and the three large arms agree on that
+    within a tenth. CPU follows the same shape but not the same proportion: 42 % of one core at five runs, and 57 %, 82 %
+    and 92 % at seventy depending on what else the node is doing, so it is reported as a range and every arm is more than
+    ten times the 5 % bound. The D-state samples that fail the third part of the bound appeared in two windows out of
+    three and sat on two different waits: the contended window waits on the runtime root’s own journal
+    (<code>xlog_wait_on_iclog</code>) and one quiet window waits on the file server where the streams live
+    (<code>cxiWaitEventWait</code>), so the station blocks on storage in both places it reads from. None appeared in the
+    third, which is why this part of the bound is recorded as intermittent rather than constant.</p>
+    <p>A separate probe says where the bytes go. On a cold runtime root one store tick over five live runs reads 8.2 MB and
+    one whole station tick reads 91 MB, or 83 MB when the store is already warm; every later tick reads 0.07 MB. The store’s stream ingest is therefore already
+    incremental — a tick whose streams have not grown reads nothing at all — and the cost is the classification pass. It
+    replays a run’s whole stream whenever the run’s pointer file signature moves, and a live run’s signature moves
+    continuously, so the whole-stream read is paid every tick for every run that is doing anything. The fix that would meet
+    the bound is in that pass: classify from the folded state the store already keeps, so a moved pointer reads only the
+    bytes its stream appended.</p>
+    <p>The before figures cannot be plotted beside these. §10 counted file syscalls per second rather than bytes, so the
+    producers’ 6,312, 3,323 and 875 calls per second and the fourteen followers’ 310 each are a reading of a different
+    quantity. What the two readings do share is the shape: in both, the cost is paid per run per tick, and the redesign has
+    moved it from the followers into the station rather than removing it.</p>
   </main>
 </body>
 </html>
