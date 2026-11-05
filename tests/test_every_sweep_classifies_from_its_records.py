@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import threading
 from pathlib import Path
 
 import pytest
@@ -50,9 +51,13 @@ def scoring_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, 
 def live_reads(monkeypatch: pytest.MonkeyPatch) -> list[int]:
     reads: list[int] = []
     real = recovery_review_dispatch.list_live
+    sweep_thread = threading.get_ident()
 
     def counting(*args, **kwargs):
-        reads.append(1)
+        # A watch transition can start an obligations sweep on another thread.
+        # Count the entry point under test, not that independent sweep.
+        if threading.get_ident() == sweep_thread:
+            reads.append(1)
         return real(*args, **kwargs)
 
     monkeypatch.setattr(recovery_review_dispatch, "list_live", counting)
