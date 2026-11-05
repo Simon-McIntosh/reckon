@@ -1981,8 +1981,11 @@ def _resolve_plan_ref(
     if parsed.followup:
         # A ref that names one followup is answered by that followup, not by
         # the plan or section holding it, through the same derivation the
-        # roadmap's section-edge rows take.
-        row.update(followup_wait_state(data.get("followups") or [], parsed.followup))
+        # roadmap's section-edge rows take — status included, which is the
+        # target plan's state even when the ref also names a section.
+        row.update(
+            followup_wait_state(data.get("followups") or [], parsed.followup, data)
+        )
     return row
 
 

@@ -32,8 +32,26 @@ SPRINT = "S1"
 WAITING = "waiting"
 TARGET = "other"
 
-FOLLOWUP_REFS = ("other@f-open", "other@f-resolved", "other@f-missing")
-PLAIN_OPEN_REF = "other#s2"
+#: The target's section declarations say ``implementable`` while its plan
+#: status is ``active``, so a row that reported the waited section's state for
+#: a staged ref would disagree with the plan status the roadmap reports.
+WAITED_SECTION = "s2"
+TARGET_SECTION_STATE = "implementable"
+TARGET_PLAN_STATUS = "active"
+
+FOLLOWUP_STATES = (
+    ("f-open", "open", True),
+    ("f-resolved", "resolved", True),
+    ("f-missing", "", False),
+)
+BARE_FOLLOWUP_REFS = tuple(
+    f"{TARGET}@{followup_id}" for followup_id, _, _ in FOLLOWUP_STATES
+)
+STAGED_FOLLOWUP_REFS = tuple(
+    f"{TARGET}#{WAITED_SECTION}@{followup_id}" for followup_id, _, _ in FOLLOWUP_STATES
+)
+FOLLOWUP_REFS = BARE_FOLLOWUP_REFS + STAGED_FOLLOWUP_REFS
+PLAIN_OPEN_REF = f"{TARGET}#{WAITED_SECTION}"
 
 BARE = (
     '<!doctype html><html lang="en"><head><meta charset="utf-8">'
@@ -161,6 +179,16 @@ def _by_ref(rows: list[dict], ref: str) -> dict:
 
 WAIT_KEYS = ("followup", "followup_found", "followup_status", "satisfied")
 
+#: Every key the two surfaces must report alike for a followup ref, in either
+#: form. ``status`` is included because a staged ref (``slug#sN@f-id``) is the
+#: case where the two surfaces used to disagree: the section half names where
+#: the followup belongs, not what is being waited on.
+COMPARED_KEYS = ("scope", "slug", "found", "status", *WAIT_KEYS)
+
+
+def _compared(row: dict) -> dict:
+    return {key: row.get(key) for key in COMPARED_KEYS}
+
 
 @pytest.mark.parametrize("ref", FOLLOWUP_REFS)
 def test_read_plan_reports_the_followup_wait_the_roadmap_reports(
@@ -169,38 +197,71 @@ def test_read_plan_reports_the_followup_wait_the_roadmap_reports(
     read_row = _by_ref(_read_plan_rows(checkout), ref)
     roadmap_row = _by_ref(_roadmap_rows(checkout), ref)
 
-    assert {key: read_row.get(key) for key in WAIT_KEYS} == {
-        key: roadmap_row.get(key) for key in WAIT_KEYS
-    }
+    assert _compared(read_row) == _compared(roadmap_row)
     assert read_row.get("followup") == ref.split("@", 1)[1]
 
 
-def test_an_open_followup_holds_its_waiting_section(checkout: Path) -> None:
-    read_row = _by_ref(_read_plan_rows(checkout), f"{TARGET}@f-open")
-    roadmap_row = _by_ref(_roadmap_rows(checkout), f"{TARGET}@f-open")
+@pytest.mark.parametrize("ref", FOLLOWUP_REFS)
+def test_the_target_plan_status_is_what_a_followup_row_reports(
+    checkout: Path, ref: str
+) -> None:
+    """A staged ref reports the plan's status, not the waited section's state.
 
-    assert read_row["followup_found"] is True
-    assert read_row["followup_status"] == "open"
-    assert read_row["satisfied"] is False
+    The target's section declares ``implementable`` while its plan is
+    ``active``, so a row built from the section half alone is distinguishable
+    from one built from the followup wait.
+    """
+
+    read_row = _by_ref(_read_plan_rows(checkout), ref)
+
+    assert read_row["status"] == TARGET_PLAN_STATUS
+    assert read_row["status"] != TARGET_SECTION_STATE
+
+
+@pytest.mark.parametrize("ref", FOLLOWUP_REFS)
+def test_the_followup_state_decides_the_wait(checkout: Path, ref: str) -> None:
+    read_row = _by_ref(_read_plan_rows(checkout), ref)
+    roadmap_row = _by_ref(_roadmap_rows(checkout), ref)
+    followup_id = ref.split("@", 1)[1]
+    found, followup_status, satisfied = {
+        state_id: (is_found, state, is_found and state != "open")
+        for state_id, state, is_found in FOLLOWUP_STATES
+    }[followup_id]
+
+    assert read_row["followup"] == followup_id
+    assert read_row["followup_found"] is found
+    assert read_row["followup_status"] == followup_status
+    assert read_row["satisfied"] is satisfied
     assert read_row["satisfied"] == roadmap_row["satisfied"]
 
 
-def test_a_resolved_followup_satisfies_its_waiting_section(checkout: Path) -> None:
-    read_row = _by_ref(_read_plan_rows(checkout), f"{TARGET}@f-resolved")
-    roadmap_row = _by_ref(_roadmap_rows(checkout), f"{TARGET}@f-resolved")
+@pytest.mark.parametrize(
+    "followup_id", [followup_id for followup_id, _, _ in FOLLOWUP_STATES]
+)
+def test_a_staged_ref_reads_as_its_bare_form(checkout: Path, followup_id: str) -> None:
+    """The section half adds provenance, never a different answer.
 
-    assert read_row["followup_found"] is True
-    assert read_row["followup_status"] == "resolved"
-    assert read_row["satisfied"] is True
-    assert read_row["satisfied"] == roadmap_row["satisfied"]
+    Only the ``ref`` string differs between the two rows; the wait's four
+    answers and the reported status are the same, so a caller that stages a
+    ref does not silently change what the row says.
+    """
+
+    bare_row = _by_ref(_read_plan_rows(checkout), f"{TARGET}@{followup_id}")
+    staged_row = _by_ref(
+        _read_plan_rows(checkout), f"{TARGET}#{WAITED_SECTION}@{followup_id}"
+    )
+
+    assert {key: staged_row[key] for key in COMPARED_KEYS} == {
+        key: bare_row[key] for key in COMPARED_KEYS
+    }
 
 
+@pytest.mark.parametrize("ref", [ref for ref in FOLLOWUP_REFS if "@f-missing" in ref])
 def test_a_missing_followup_is_reported_as_one_by_both_surfaces(
-    checkout: Path,
+    checkout: Path, ref: str
 ) -> None:
     from reckon import mcp
 
-    ref = f"{TARGET}@f-missing"
     read_row = _by_ref(_read_plan_rows(checkout), ref)
     roadmap_row = _by_ref(_roadmap_rows(checkout), ref)
 
