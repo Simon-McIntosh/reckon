@@ -4044,7 +4044,21 @@ def crew_view_name(view: str) -> str:
     return view
 
 
-def _with_change_set(
+def names_one_project(project: str | None) -> bool:
+    """Whether a read names the one project a change set can bound.
+
+    ``None``, ``"*"`` and a ``graph:`` selector each span projects. A change
+    set is composed from one project's plan history and one producer's
+    transition stream, so a cross-project read has no window to bound; it is
+    answered with the reason rather than with a set narrower than the read.
+    """
+
+    if not project:
+        return False
+    return project != "*" and not project.startswith("graph:")
+
+
+def with_change_set(
     answer: dict[str, Any],
     project: str | None,
     since: str | None,
@@ -4052,21 +4066,36 @@ def _with_change_set(
 ) -> dict[str, Any]:
     """Attach the change set a caller asked for with ``since``.
 
-    It is composed here, in the one function both surfaces call, so the crew
-    tool and the ``crew view`` verb answer one document for the same arguments.
-    A read that names no window is returned untouched: it asked no question
-    about a window, and no view should grow keys its caller did not request.
+    Both the roadmap tool and the ``crew`` views call this, so a window asked
+    for on either surface is answered the same way, for the same arguments and
+    the same scope. A read that names no window is returned untouched: it asked
+    no question about a window, and no view should grow keys its caller did not
+    request.
 
-    A change set that cannot be composed is reported in its own field rather
-    than failing the view: the document it rides on is still the one the view
-    serves, and a reader that asked for the window learns why it is absent
-    instead of reading an empty set as "nothing changed".
+    A window that cannot be composed is reported in the change set's own
+    ``error`` field rather than failing the read: the document it rides on is
+    still correct, and a reader that asked for the window learns why it is
+    absent instead of reading an empty set as "nothing changed".
     """
 
-    if since is None or not project:
+    if since is None:
         return answer
     from reckon import change_set as change_set_module
 
+    if not names_one_project(project):
+        observed = change_set_module.observed_now()
+        answer["observed_at"] = observed
+        answer["change_set"] = {
+            "project": project,
+            "since": since,
+            "observed_at": observed,
+            "full": False,
+            "sections": [],
+            "newly_ready": [],
+            "runs": [],
+            "error": "cross_project",
+        }
+        return answer
     try:
         composed = change_set_module.change_set(project, since, repo=checkout_path)
     except (OSError, ValueError, subprocess.SubprocessError) as exc:
@@ -4503,7 +4532,7 @@ def serve_crew_view(
                 session=session,
                 pointers=project_pointers,
             )
-            return _with_change_set(
+            return with_change_set(
                 {
                     "ok": True,
                     "project": project,

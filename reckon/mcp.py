@@ -29,7 +29,6 @@ from __future__ import annotations
 
 import json
 import logging
-import subprocess
 import threading
 from collections.abc import Callable, Iterable, Mapping
 from datetime import UTC, datetime
@@ -108,6 +107,7 @@ from reckon.mcp_views import (
     roadmap_view,
     serve_crew_view,
     storage_schema_for,
+    with_change_set,
 )
 
 from reckon.project_state import (
@@ -2589,55 +2589,7 @@ def _roadmap_tool(
         cursor=cursor,
         limit=limit,
     )
-    return _answer_with_change_set(answer, project, since, checkout_path)
-
-
-def _answer_with_change_set(
-    answer: dict[str, Any],
-    project: str,
-    since: str | None,
-    checkout_path: str | None,
-) -> dict[str, Any]:
-    """Add a read's change set when the caller names a window.
-
-    A read that names no ``since`` has asked no question about a window, so its
-    answer is returned exactly as the caller's view built it — a ``raw`` read
-    stays lossless and no view grows a key nobody requested. A window that is
-    asked for is answered with the instant it observed and the set it composed.
-
-    The composition happens after the read, so the roadmap's stored composition
-    — which is keyed on the tree, not on a window — is neither recomputed nor multiplied
-    per ``since``.
-
-    A change set that cannot be composed is reported in its own field rather
-    than failing the read: the answer it rides on is still correct, and a
-    reader that asked for the window sees why it is absent instead of reading
-    an empty set as "nothing changed".
-    """
-
-    from reckon import change_set as change_set_module
-
-    if since is None:
-        return answer
-    answer["observed_at"] = change_set_module.observed_now()
-    single = project != "*" and not project.startswith("graph:")
-    try:
-        composed = change_set_module.change_set(
-            project, since, repo=checkout_path if single else None
-        )
-    except (OSError, ValueError, subprocess.SubprocessError) as exc:
-        composed = {
-            "project": project,
-            "since": since,
-            "observed_at": answer["observed_at"],
-            "full": False,
-            "sections": [],
-            "newly_ready": [],
-            "runs": [],
-            "error": f"{type(exc).__name__}: {exc}",
-        }
-    answer["change_set"] = composed
-    return answer
+    return with_change_set(answer, project, since, checkout_path)
 
 
 def _crew(

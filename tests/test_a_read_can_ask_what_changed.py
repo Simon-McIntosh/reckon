@@ -564,3 +564,28 @@ def test_a_read_with_no_window_is_answered_untouched(fixture, config_home):
     answer = mcp._roadmap_tool(PROJECT, checkout_path=str(fixture["root"]))
     assert "observed_at" not in answer
     assert "change_set" not in answer
+
+
+def test_a_cross_project_read_names_why_it_cannot_bound_a_window(fixture, config_home):
+    """One rule for a window on a read that spans projects, on both surfaces.
+
+    A change set is composed from one project's plan history and one producer's
+    transition stream, so a read naming no single project has no window to
+    bound. It is answered with that reason rather than with a set narrower than
+    the read, and the roadmap tool and the crew view answer it through one
+    helper, so the two surfaces cannot answer differently.
+    """
+    from reckon import mcp, mcp_views
+
+    for name in (None, "*", "graph:sample"):
+        answer = mcp_views.with_change_set(
+            {"project": name}, name, _iso(0), str(fixture["root"])
+        )
+        assert answer["observed_at"]
+        assert answer["change_set"]["error"] == "cross_project"
+        assert answer["change_set"]["sections"] == []
+        assert answer["change_set"]["newly_ready"] == []
+        assert answer["change_set"]["runs"] == []
+
+    assert mcp.with_change_set is mcp_views.with_change_set
+    assert not hasattr(mcp, "_answer_with_change_set")
