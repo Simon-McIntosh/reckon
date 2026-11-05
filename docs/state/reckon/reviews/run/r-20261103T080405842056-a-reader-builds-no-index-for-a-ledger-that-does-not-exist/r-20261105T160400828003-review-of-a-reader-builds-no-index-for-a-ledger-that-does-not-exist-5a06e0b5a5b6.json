@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/serve.py:805",
+    "reckon/crew/promotion_gate.py:1006",
+    "reckon/crew/dispatch_admission.py:659",
+    "reckon/crew/dispatch_plan.py:1411",
+    "reckon/run_store.py:757",
+    "reckon/capabilities.py:752",
+    "reckon/crew/routing.py:3050",
+    "reckon/budget.py:671"
+  ],
+  "completed_at": "2026-11-05T16:19:28.388Z",
+  "dispatched_at": "2026-11-05T16:10:33Z",
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": "1603",
+      "severity": "non-blocking",
+      "text": "the predicate rebuilds the runs/*.json path expression that _run_files at reckon/ledger.py:927 already owns; call _run_files(project, root) instead, so a project whose run documents the reader finds but this glob does not cannot be read uncached while it holds content."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T080405842056-a-reader-builds-no-index-for-a-ledger-that-does-not-exist/logs/head-gate.log",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "the log names revision b3b7f297 while measuring the glob predicate introduced at d5c008a224 (the file's mtime is 16:25:12, 73 s before that commit); the variant is recoverable only from the later 'predicate: glob' header line, so a reader cannot tell which revision the four passes belong to."
+    },
+    {
+      "file": "docs/evidence/fragments/the-crew-home-has-a-bound/a-reader-builds-no-index-for-a-ledger-that-does-not-exist.html",
+      "line": "84",
+      "severity": "non-blocking",
+      "text": "the hygiene section names ruff clean on two staged paths while three source files changed; the review-heads fixture repair at 2af9497897 is unmentioned there, though the suite section does name it and I re-ran ruff check and ruff format --check clean on all three."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit against b3b7f297: d5c008a224 replaces the is_dir() predicate with a runs/*.json record count and commits the four-case guard test, 33d4795b8f and 5a06e0b5a5 rewrite the evidence fragment, and 2af9497897 adds an empty aggregate to the review-heads fixture so that test keeps a ledger to index; no other file moves.",
+    "done_when": "the section's done-when names a temporary project with no crew.json writing no ledger-*.sqlite under a temporary cache root, a present-ledger control that still builds its index, and a negative control restoring the unconditional build; tests/test_a_reader_builds_no_index_for_a_missing_ledger.py carries all four cases and logs/head-gate.log, logs/negative-control-old-predicate.log and logs/negative-control-unconditional.log record the arms, which I re-ran at 5a06e0b5a5 as 4 passed EXIT=0.",
+    "goal": "the node goal is that a read of a project ledger holding nothing returns the empty roster and builds no index; reckon/ledger.py:1588 narrows _ledger_holds_content from a runs-directory existence check to a record count and reckon/ledger.py:1653 keeps the index route behind it, which is the deliverable and closes the empty-directory case the earlier review found.",
+    "manifest": "read; it records status complete, five commits, head gate 4 passed EXIT=0, old-predicate control 1 failed 3 passed EXIT=1, unconditional control 2 failed 2 passed EXIT=1, head suite 715 passed 3 skipped 0 failed and base 712 passed 3 failed, with baseline_suite and after_suite left blank so the added-failure figure is carried only in artifacts and in the two suite logs.",
+    "write_paths": "the node was fenced to reckon/ledger.py, the evidence fragment, the figures directory and the two test files; git diff b3b7f297..5a06e0b5 --name-only returns exactly those four of those paths (reckon/ledger.py, tests/test_a_reader_builds_no_index_for_a_missing_ledger.py, tests/test_a_sweep_resolves_review_heads_once.py, the fragment) and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_reader_builds_no_index_for_a_missing_ledger.py:100 asserts the cache root holds no ledger-*.sqlite over a real directory listing, and the worker's old-predicate control turns exactly that case red while two positive cases prove the listing sees a written index.",
+    "evidence": "logs/head-gate.log records 4 passed EXIT=0 for the committed guard test and I re-ran it at 5a06e0b5a5 as 4 passed, but that log's header names revision b3b7f297, four commits before the head it measures, and the manifest leaves baseline_suite and after_suite blank.",
+    "fit": "the helper at reckon/ledger.py:1588 keeps the module's docstring idiom and carries no plan or ticket identifier, though its next(...) is not None form at ledger.py:1603 reads less plainly than any().",
+    "goal_fidelity": "reckon/ledger.py:1603 answers content from a record count and reckon/ledger.py:1653 takes the index route only on it, so a project initialised and never run reads the empty roster and writes no index.",
+    "reuse": "reckon/ledger.py:1603 re-expresses the run-document path expression owned by _run_files at reckon/ledger.py:927 rather than calling it, so the predicate and the reader can diverge.",
+    "scope_discipline": "git diff b3b7f297..5a06e0b5 --name-only lists four files, every one of them inside the declared write paths, with no plan meta, index or peer path touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a read of a project ledger holding nothing returns the empty roster and builds no index; reckon/ledger.py:1588 narrows _ledger_holds_content from a runs-directory existence check to a record count and reckon/ledger.py:1653 keeps the index route behind it, which is the deliverable and closes the empty-directory case the earlier review found.\nVERDICT done_when: the section's done-when names a temporary project with no crew.json writing no ledger-*.sqlite under a temporary cache root, a present-ledger control that still builds its index, and a negative control restoring the unconditional build; tests/test_a_reader_builds_no_index_for_a_missing_ledger.py carries all four cases and logs/head-gate.log, logs/negative-control-old-predicate.log and logs/negative-control-unconditional.log record the arms, which I re-ran at 5a06e0b5a5 as 4 passed EXIT=0.\nVERDICT write_paths: the node was fenced to reckon/ledger.py, the evidence fragment, the figures directory and the two test files; git diff b3b7f297..5a06e0b5 --name-only returns exactly those four of those paths (reckon/ledger.py, tests/test_a_reader_builds_no_index_for_a_missing_ledger.py, tests/test_a_sweep_resolves_review_heads_once.py, the fragment) and nothing else.\nVERDICT manifest: read; it records status complete, five commits, head gate 4 passed EXIT=0, old-predicate control 1 failed 3 passed EXIT=1, unconditional control 2 failed 2 passed EXIT=1, head suite 715 passed 3 skipped 0 failed and base 712 passed 3 failed, with baseline_suite and after_suite left blank so the added-failure figure is carried only in artifacts and in the two suite logs.\nVERDICT diff: read commit by commit against b3b7f297: d5c008a224 replaces the is_dir() predicate with a runs/*.json record count and commits the four-case guard test, 33d4795b8f and 5a06e0b5a5 rewrite the evidence fragment, and 2af9497897 adds an empty aggregate to the review-heads fixture so that test keeps a ledger to index; no other file moves.\nCALL_SITES: reckon/serve.py:805, reckon/crew/promotion_gate.py:1006, reckon/crew/dispatch_admission.py:659, reckon/crew/dispatch_plan.py:1411, reckon/run_store.py:757, reckon/capabilities.py:752, reckon/crew/routing.py:3050, reckon/budget.py:671\nSCORE goal_fidelity: 19\nSCORE evidence: 17\nSCORE scope_discipline: 20\nSCORE durability: 19\nSCORE fit: 18\nSCORE reuse: 15\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1603 answers content from a record count and reckon/ledger.py:1653 takes the index route only on it, so a project initialised and never run reads the empty roster and writes no index.\nJUSTIFICATION evidence: logs/head-gate.log records 4 passed EXIT=0 for the committed guard test and I re-ran it at 5a06e0b5a5 as 4 passed, but that log's header names revision b3b7f297, four commits before the head it measures, and the manifest leaves baseline_suite and after_suite blank.\nJUSTIFICATION scope_discipline: git diff b3b7f297..5a06e0b5 --name-only lists four files, every one of them inside the declared write paths, with no plan meta, index or peer path touched.\nJUSTIFICATION durability: tests/test_a_reader_builds_no_index_for_a_missing_ledger.py:100 asserts the cache root holds no ledger-*.sqlite over a real directory listing, and the worker's old-predicate control turns exactly that case red while two positive cases prove the listing sees a written index.\nJUSTIFICATION fit: the helper at reckon/ledger.py:1588 keeps the module's docstring idiom and carries no plan or ticket identifier, though its next(...) is not None form at ledger.py:1603 reads less plainly than any().\nJUSTIFICATION reuse: reckon/ledger.py:1603 re-expresses the run-document path expression owned by _run_files at reckon/ledger.py:927 rather than calling it, so the predicate and the reader can diverge.\nFINDING reckon/ledger.py:1603 non-blocking: the predicate rebuilds the runs/*.json path expression that _run_files at reckon/ledger.py:927 already owns; call _run_files(project, root) instead, so a project whose run documents the reader finds but this glob does not cannot be read uncached while it holds content.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T080405842056-a-reader-builds-no-index-for-a-ledger-that-does-not-exist/logs/head-gate.log:2 non-blocking: the log names revision b3b7f297 while measuring the glob predicate introduced at d5c008a224 (the file's mtime is 16:25:12, 73 s before that commit); the variant is recoverable only from the later 'predicate: glob' header line, so a reader cannot tell which revision the four passes belong to.\nFINDING docs/evidence/fragments/the-crew-home-has-a-bound/a-reader-builds-no-index-for-a-ledger-that-does-not-exist.html:84 non-blocking: the hygiene section names ruff clean on two staged paths while three source files changed; the review-heads fixture repair at 2af9497897 is unmentioned there, though the suite section does name it and I re-ran ruff check and ruff format --check clean on all three.\n",
+  "review_run_id": "r-20261105T160400828003-review-of-a-reader-builds-no-index-for-a-ledger-that-does-not-exist-5a06e0b5a5b6",
+  "reviewed_base_sha": "b3b7f2970033ee86d9ece0ca186e47eb3efff12b",
+  "reviewed_head_sha": "5a06e0b5a5b6e9e0341671ede43fd2f2623e9cc5",
+  "reviewed_run_id": "r-20261103T080405842056-a-reader-builds-no-index-for-a-ledger-that-does-not-exist",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T16:28:00.939397+00:00",
+  "total": 108
+}
