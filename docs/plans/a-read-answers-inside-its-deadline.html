@@ -26,7 +26,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="558">
+<meta name="plan-version" content="559">
 <meta name="plan-modified" content="2026-11-05">
 </head>
 <body>
@@ -1150,6 +1150,12 @@
 <div class="r-comment" data-section="s43" data-id="c-run-r-20261019T115441866930-a-derivation-builds-the-ledger-index-once" data-who="reckon-build" data-when="2026-10-19T12:47:12.057Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/a-read-answers-inside-its-deadline/a-derivation-builds-the-ledger-index-once.html</p></div>
 </div>
+<div class="r-comment" data-section="s44" data-id="c-run-r-20261104T085948623649-review-of-a-fresh-process-asks-git-only-about-what-moved-f12928cf4c70" data-who="reckon-build" data-when="2026-11-04T09:14:53.157Z">
+    <div class="r-comment-body"><p>Independent review of r-20261103T071823353305-a-fresh-process-asks-git-only-about-what-moved stored at reviewed_base_sha 05a2cd1ab2b40f88480dbf2cb4b195d6e252c3e3 / reviewed_head_sha f12928cf4c7012cd1131bf87b115327788e59887: all six dimensions scored (18/16/18/15/16/5, total 88), added_failure_count 0 against the reviewed run's own baseline_suite and after_suite arms, four non-blocking findings (continued store duplication of reckon/_store.py's atomic-write and flock owners; the bounded rule pruned only past a 256-tree ceiling; the resolve half of the store asserted against the input value rather than an independent source; a stored commit answer survives a worktree path reused by another repository).</p></div>
+</div>
+<div class="r-comment" data-section="s44" data-id="c-run-r-20261105T073125965126-review-of-a-fresh-process-asks-git-only-about-what-moved-69571c85e4ff" data-who="reckon-build" data-when="2026-11-05T07:44:31.674Z">
+    <div class="r-comment-body"><p>§44 review of run r-20261103T071823353305-a-fresh-process-asks-git-only-about-what-moved at head 69571c85e4 stores a parsed read-only record scoring goal_fidelity 19, evidence 17, scope_discipline 20, durability 17, fit 19, reuse 20, with two non-blocking findings on the run&#x27;s own evidence provenance and added_failure_count 0.</p></div>
+</div>
 <div class="r-comment" data-section="s45" data-id="c-s45-runs-view" data-who="reckon-build" data-when="2026-10-21T06:05:00Z">
     <div class="r-comment-body"><p>A second reader with the same cost, reported by another session. At about 08:00 CEST, <code>crew(view="runs", project="reckon", session=…, limit=10)</code> returned <code>storage-slow</code> with cause <code>computing</code>: 25.2 s of CPU in a 30 s wait, at code stamp <code>f10cf42fa</code>.</p><p>The view reaches the decode through <code>crew/query.runs_view</code> → <code>ledger.runs</code> → <code>read_records</code> → <code>load</code>, so the reuse §45 places inside <code>ledger.load</code> covers it too. The node also times a warm <code>runs</code> view at base and at head.</p></div>
 </div>
@@ -1470,9 +1476,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-10-13T00:25:00Z">
     <div class="r-comment-body"><p>§9 landed. The cold time is the plan parse, repeated five or six times per file through four memo kinds, each building its own soup. §11 carries the fix. <a href="/reckon/evidence/archive/a-read-answers-inside-its-deadline-landed.html#s9-cold-attribution">evidence</a></p></div>
-</div>
-<div class="r-comment" data-section="s44" data-id="c-run-r-20261104T085948623649-review-of-a-fresh-process-asks-git-only-about-what-moved-f12928cf4c70" data-who="reckon-build" data-when="2026-11-04T09:14:53.157Z">
-    <div class="r-comment-body"><p>Independent review of r-20261103T071823353305-a-fresh-process-asks-git-only-about-what-moved stored at reviewed_base_sha 05a2cd1ab2b40f88480dbf2cb4b195d6e252c3e3 / reviewed_head_sha f12928cf4c7012cd1131bf87b115327788e59887: all six dimensions scored (18/16/18/15/16/5, total 88), added_failure_count 0 against the reviewed run&#x27;s own baseline_suite and after_suite arms, four non-blocking findings (continued store duplication of reckon/_store.py&#x27;s atomic-write and flock owners; the bounded rule pruned only past a 256-tree ceiling; the resolve half of the store asserted against the input value rather than an independent source; a stored commit answer survives a worktree path reused by another repository).</p></div>
 </div>
 </section>
 </main>
