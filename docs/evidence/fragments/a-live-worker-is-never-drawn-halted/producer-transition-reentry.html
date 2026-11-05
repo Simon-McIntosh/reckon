@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="docs-project" content="reckon">
+<meta name="plan-slug" content="a-live-worker-is-never-drawn-halted">
+<title>producer-transition-reentry — landing record</title>
+</head>
+<body>
+<main class="plan-doc">
+<h2 id="producer-transition-reentry">Landing record — the producer's transition write never re-enters itself</h2>
+
+<p id="producer-transition-reentry-why">Composing a transition classifies every live pointer, and a run whose manifest reports completion with no review attached classifies as <code>scoring</code>. That branch asks whether a review is already in flight, and with no pointer snapshot handed to it the reader lists the project's live runs — which publishes the watch stream again.</p>
+
+<p id="producer-transition-reentry-how"><code>runs._publish_watch_stream</code> now sets <code>_SWEEP_LOCAL.in_transition</code> around <code>_publish_watch_transitions</code> and clears it in a <code>finally</code>, on the same thread-local the obligations sweep already uses for <code>in_sweep</code>. A publish entered from inside a running transition on the same thread returns before it reaches the producer, so the nested listing still returns the live pointers the classifier asked for and only the republish is suppressed.</p>
+
+<p id="producer-transition-reentry-checks">The log sampler that first caught the crash recorded the same cycle, and the new case reproduces it exactly at the base revision: <code>fleet_transitions</code> over a complete, unreviewed pointer reaches <code>_review_in_flight</code>, which lists the project's live runs, which re-enters <code>_publish_watch_transitions</code>. At base the run ends in <code>RecursionError</code> after 8.3 s; at head it publishes the expected <code>working → completed_unpromoted</code> transition. Removing the guard again reddens the same two cases with the same <code>RecursionError</code>.</p>
+
+<h3>Gate</h3>
+<p id="producer-transition-reentry-gate">The done-when's importer population is effectively the whole suite — 620 base files and 621 head files import <code>runs</code>, <code>recovery_watch</code>, <code>recovery_classification</code> or <code>recovery_review_dispatch</code>, mostly through the <code>from reckon.crew import runs</code> comma form. Both arms were started on it and reached 7 % in six minutes, an 86-minute projection against a 60-minute node, so they were stopped and a feature-scoped population was run to a summary line instead: the 113 base and 114 head importer files whose names reach the producer, watcher, transition, ticker, sweep, obligation and reflex paths, over the same <code>-n 6 --timeout 300</code>. Head: <strong>5 failed, 696 passed, 1 skipped, EXIT=1</strong>; base: <strong>27 failed, 672 passed, 1 skipped, EXIT=1</strong>. Three head failure ids are not red at base; all three are wall-clock producer tests, and each passes 3/3 alone at both revisions once the node is quiet. Twenty-four base failures are green at head.</p>
+</main>
+</body>
+</html>
