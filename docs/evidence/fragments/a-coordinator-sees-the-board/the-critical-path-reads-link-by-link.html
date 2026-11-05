@@ -1,0 +1,96 @@
+<!doctype html>
+<title>The critical path reads link by link</title>
+<section id="the-critical-path-reads-link-by-link-landing">
+  <h2>Each link of the critical path says what it is doing and what holds it</h2>
+
+  <p><strong>What changed.</strong> <code>build_roadmap</code>'s
+  <code>critical_path</code> carried a list of section refs and nothing about them, so a
+  coordinator holding the path still had to look each ref up to learn whether the head was
+  being worked on, waiting on a peer or standing behind a gate. Each link now also carries a
+  row: <code>ref</code>, <code>plan</code>, <code>section</code>, its
+  <code>primary_state</code>, and <code>holds</code> — every open gate, every open decision
+  and every unmet wait on that link. A link held only by a decision reads as waiting on that
+  decision rather than reporting no state and an empty list, which would make it
+  indistinguishable from a link nothing explains.</p>
+
+  <p>The primary state is the first that applies, in the plan's order: <code>in flight</code>
+  (with the <code>run_id</code> on the section), <code>ready-idle</code> (with the plan's
+  <code>coordinator</code>, read from the ledger by
+  <code>crew.plan_coordinator.resolve_plan_coordinators</code> and never re-derived here),
+  <code>gated</code> (with the <code>gate</code> id). A link none of those describes reports
+  <code>waiting</code> with the ref it waits on, and reports no primary state when no hold
+  explains it, rather than a fifth state invented in the roadmap.</p>
+
+  <p>The rows are in path order, so the head — the deepest prerequisite the chain forces —
+  is first. <code>critical_path.head</code> names it and
+  <code>critical_path.head_note</code> says it in words, naming the coordinator when the head
+  is idle. <code>critical_path.sections</code> still holds the ordered refs it always did:
+  <code>ready_set_view</code>, <code>project_brief</code>, <code>crew.queue_order</code> and
+  <code>graph_target</code> read that list as strings, and changing its shape would have
+  meant editing four modules outside this node's scope and silently clearing the ready-set's
+  <code>critical_path</code> flag. No view and no refusal family is added; the read is one
+  call on the roadmap row the path already had.</p>
+
+  <h3>Measured on the 08:50Z fixture</h3>
+
+  <p><code>tests/test_the_critical_path_reads_link_by_link.py</code>, five cases over
+  <code>tests/fixtures/coordinator_board_0850/</code> — power_convertor's plan documents and
+  run records as committed immediately before <strong>2026-10-22T08:50Z</strong>, read at
+  that instant so the coordinator's staleness window judges the fixture's own rows. On that
+  fixture the path is four links long and starts at
+  <code>shared-coil-supply-model#s9</code>:</p>
+
+  <table>
+    <thead><tr><th>link</th><th>primary state</th><th>holds</th></tr></thead>
+    <tbody>
+      <tr><td><code>shared-coil-supply-model#s9</code></td><td>ready-idle</td><td>none</td></tr>
+      <tr><td><code>iter-switched-terminal-transients#s6</code></td><td>gated</td>
+        <td><code>g-istt-6</code>, <code>shared-coil-supply-model#s9</code></td></tr>
+      <tr><td><code>coil-supply-report-rebuild#s4</code></td><td>waiting</td>
+        <td><code>iter-switched-terminal-transients#s6</code></td></tr>
+      <tr><td><code>coil-supply-report-rebuild#s8</code></td><td>waiting</td>
+        <td><code>coil-circuit-playback-figures#s3</code>,
+          <code>coil-supply-report-rebuild#s12</code>,
+          <code>coil-supply-report-rebuild#s4</code>,
+          <code>coil-supply-report-rebuild#s6</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The head's coordinator is <code>cdb769a4-7af0-4304-a144-f39ecbf8c502</code>, the session
+  its most recent dispatched row (<code>r-20261022T083726456965-plan-review-of-shared-coil-supply-model</code>)
+  names — read by hand from the fixture's ledger, not from the derivation. The head note
+  reads <em>"The head link shared-coil-supply-model#s9 is idle: ready with no run on it,
+  coordinated by cdb769a4-7af0-4304-a144-f39ecbf8c502."</em></p>
+
+  <p><code>iter-switched-terminal-transients#s6</code> is the case that makes the holds list
+  worth carrying: it is gated <em>and</em> waiting, so it reads as gated with both holds
+  beside it. No row in the roadmap carried s6 at all before this — a gated section with no
+  run is neither ready nor in flight, so it was invisible on the plan's own section rows.</p>
+
+  <p><code>coil-supply-report-rebuild#s8</code> is the widest holds list on this path — four
+  unmet waits, one of them outside its own plan — and reads as <code>waiting</code> on the
+  first of them. Reporting only the state, without the holds, would hide three of the four.</p>
+
+  <h3>The arms, as run</h3>
+
+  <p>Both arms run the same command,
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_the_critical_path_reads_link_by_link.py</code>: seven cases pass at
+  the head, and six pass at the commit this record was repaired against. Both
+  arms collect and run the module — neither log is a zero-collection — so the
+  manifest's baseline and after fields each describe a measurement a reader can
+  open, which is the only shape that field may take.</p>
+
+  <h3>Negative controls, both executed</h3>
+
+  <ul>
+    <li>A live run on the head turns its primary state to <code>in flight</code> with that
+    run's id, and the head note stops calling it idle — asserted in the same test module and
+    passing.</li>
+    <li>The declared mutation, <em>report only the first hold of each link</em>, fails
+    <code>test_a_gated_link_reports_its_gate_and_every_hold_it_carries</code> with
+    <code>assert ['g-istt-6'] == ['g-istt-6', 'shared-coil-supply-model#s9']</code>: one
+    failure, exit 1, against a head arm that passes all five. The log is
+    <code>negative_control.log</code> in the run directory.</li>
+  </ul>
+</section>
