@@ -1,10 +1,10 @@
-"""The context estimate charges declared reads, not every path a brief names.
+"""The context estimate charges a declared read in full and a mention as a reference.
 
 A done-when that merely named the project's run ledger made a one-worker-hour
 node estimate 6,150,700 tokens against a 480,000 window and be refused, and the
 refusal's own top-level detail was empty while the informative reason sat under
-``context``. These pin both repairs: a path merely named is not a read, and a
-genuine refusal answers on its top level.
+``context``. These pin both repairs: a path merely named costs one flat
+reference rather than its size, and a genuine refusal answers on its top level.
 """
 
 from __future__ import annotations
@@ -15,6 +15,7 @@ from pathlib import Path
 from reckon import crew
 from reckon.crew.dispatch import DispatchPlan
 from reckon.crew.routing import (
+    _REFERENCE_COST_TOKENS,
     _competence_verdict,
     _context_file_inputs,
     _context_fit_verdict,
@@ -102,8 +103,8 @@ def _file_tokens(repo: Path, node: crew.TaskNode) -> int:
     return tokens
 
 
-def test_a_merely_named_file_is_not_charged_to_context(tmp_path: Path) -> None:
-    """A done-when that names a large ledger must not buy its bytes."""
+def test_a_merely_named_file_is_charged_a_reference_cost(tmp_path: Path) -> None:
+    """A done-when that names a large ledger buys one reference, not its bytes."""
     _seed(tmp_path)
     named = _node(
         done_when=f"the gate is green; the run ledger lives at {LEDGER_PATH}",
@@ -111,10 +112,14 @@ def test_a_merely_named_file_is_not_charged_to_context(tmp_path: Path) -> None:
     )
     unmentioned = _node(done_when="the gate is green", write_paths=[])
 
-    assert _file_tokens(tmp_path, named) == 0
+    assert _file_tokens(tmp_path, named) == _REFERENCE_COST_TOKENS
+    assert _file_tokens(tmp_path, named) < _estimated_tokens(LEDGER_BYTES)
     assert _file_tokens(tmp_path, unmentioned) == 0
     _tokens, inputs = _context_file_inputs(tmp_path, named, _authority(tmp_path))
-    assert inputs["named_files"] == []
+    records = {str(r["declared"]): r for r in inputs["named_files"]}
+    assert records[LEDGER_PATH]["provenance"] == "reference"
+    assert records[LEDGER_PATH]["estimated_tokens"] == _REFERENCE_COST_TOKENS
+    assert records[LEDGER_PATH]["bytes"] == LEDGER_BYTES
 
 
 def test_a_declared_write_path_is_charged_at_full(tmp_path: Path) -> None:
@@ -133,7 +138,7 @@ def test_a_declared_write_path_is_charged_at_full(tmp_path: Path) -> None:
 
 
 def test_an_explicitly_declared_input_is_charged(tmp_path: Path) -> None:
-    """A clause declaring the path an input charges it; a bare mention does not."""
+    """A declared input pays its size; a mention pays the flat reference."""
     _seed(tmp_path)
     declared = _node(
         done_when=f"the ledger {LEDGER_PATH} is a declared input to this node",
@@ -145,7 +150,7 @@ def test_an_explicitly_declared_input_is_charged(tmp_path: Path) -> None:
     )
 
     assert _file_tokens(tmp_path, declared) == _estimated_tokens(LEDGER_BYTES)
-    assert _file_tokens(tmp_path, mentioned) == 0
+    assert _file_tokens(tmp_path, mentioned) == _REFERENCE_COST_TOKENS
 
 
 def test_a_context_refusal_names_its_figures_on_the_top_level(tmp_path: Path) -> None:

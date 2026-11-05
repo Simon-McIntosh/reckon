@@ -1,13 +1,15 @@
-"""Context estimates charge declared reads, not dispatcher-owned landing targets.
+"""Context estimates charge a declared read in full and an exclusion as a reference.
 
 A node's landing scope is its own fragment, so the estimator exempts the
 fragment dispatch grants and nothing else. The plan's shared landing paths — the
 plan HTML, the cumulative evidence record and the plan-wide figure topic — are
 no longer dispatcher-owned, so naming one is an ordinary read declaration and is
 charged like any other. A clause that excludes a path from the declared inputs
-is the reverse of a read, so it charges nothing even though it names the same
-keywords — and an exclusion governs only the paths its own verb names, so one
-clause may declare a path and exclude another.
+is the reverse of a read: it declares no load, because the sentence tells the
+worker not to open the file. The path is still named, so it is charged one flat
+reference cost rather than its size — and an exclusion governs only the paths
+its own verb names, so one clause may declare a path at full and exclude another
+at the reference.
 """
 
 from __future__ import annotations
@@ -17,7 +19,7 @@ from pathlib import Path
 
 from reckon import crew
 from reckon.crew.dispatch import _grant_landing_write_paths
-from reckon.crew.routing import _context_file_inputs
+from reckon.crew.routing import _REFERENCE_COST_TOKENS, _context_file_inputs
 
 PROJECT = "sample"
 PLAN = "context-accounting"
@@ -147,8 +149,8 @@ def _estimated_tokens(byte_count: int) -> int:
     return math.ceil(byte_count / BYTES_PER_TOKEN)
 
 
-def test_a_plain_exclusion_clause_is_not_a_declared_read(tmp_path: Path) -> None:
-    """A clause telling the worker not to read a file declares no read."""
+def test_a_plain_exclusion_clause_charges_a_reference(tmp_path: Path) -> None:
+    """A clause telling the worker not to read a file buys one reference, not its size."""
     _seed_named_inputs(tmp_path)
     authority = _authority(tmp_path)
     node = _node(
@@ -157,18 +159,27 @@ def test_a_plain_exclusion_clause_is_not_a_declared_read(tmp_path: Path) -> None
     )
 
     tokens, inputs = _context_file_inputs(tmp_path, node, authority)
+    records = _records_by_path(inputs["named_files"])
 
-    # The named file is real and expensive, so a zero charge is a refusal
-    # rather than a missing file: only the small write path is charged.
+    # The named file is real and large, so the charge is a decision about the
+    # exclusion rather than about a missing file: the reference, plus the small
+    # write path, and nothing like the file's own size.
     assert (tmp_path / LARGE_INPUT_PATH).stat().st_size > 200_000
-    assert inputs["named_files"] == []
-    assert tokens == _estimated_tokens((tmp_path / WRITE_PATH).stat().st_size)
+    assert records[LARGE_INPUT_PATH]["provenance"] == "reference"
+    assert records[LARGE_INPUT_PATH]["estimated_tokens"] == _REFERENCE_COST_TOKENS
+    assert (
+        _estimated_tokens((tmp_path / LARGE_INPUT_PATH).stat().st_size)
+        > _REFERENCE_COST_TOKENS
+    )
+    assert tokens == _REFERENCE_COST_TOKENS + _estimated_tokens(
+        (tmp_path / WRITE_PATH).stat().st_size
+    )
 
 
-def test_an_excluded_path_is_not_charged_when_the_clause_says_declared_inputs(
+def test_an_excluded_path_is_charged_a_reference_when_the_clause_says_declared_inputs(
     tmp_path: Path,
 ) -> None:
-    """Naming a path in an exclusion is not declaring it an input."""
+    """Naming a path in an exclusion declares no read; it pays the reference."""
     _seed_named_inputs(tmp_path)
     authority = _authority(tmp_path)
     node = _node(
@@ -177,9 +188,13 @@ def test_an_excluded_path_is_not_charged_when_the_clause_says_declared_inputs(
     )
 
     tokens, inputs = _context_file_inputs(tmp_path, node, authority)
+    records = _records_by_path(inputs["named_files"])
 
-    assert inputs["named_files"] == []
-    assert tokens == _estimated_tokens((tmp_path / WRITE_PATH).stat().st_size)
+    assert records[LARGE_INPUT_PATH]["provenance"] == "reference"
+    assert records[LARGE_INPUT_PATH]["counted"] is True
+    assert tokens == _REFERENCE_COST_TOKENS + _estimated_tokens(
+        (tmp_path / WRITE_PATH).stat().st_size
+    )
 
 
 def test_the_declaration_form_of_the_same_clause_charges_the_file(
@@ -210,56 +225,68 @@ def test_the_declaration_form_of_the_same_clause_charges_the_file(
 
 
 def test_a_mixed_clause_keeps_its_declared_path_charged(tmp_path: Path) -> None:
-    """A clause declaring one path and excluding another charges the declared one.
+    """A clause declaring one path and excluding another charges each by its verb.
 
     The exclusion verb governs the path it names, not the whole clause, so the
-    declared path stays a read while the excluded one is withheld.
+    declared path stays a full read while the excluded one pays the reference.
     """
     _seed_named_inputs(tmp_path)
     authority = _authority(tmp_path)
     node = _node(
         write_paths=[],
         done_when=(
-            f"Declare {DECLARED_INPUT_PATH} as an input "
-            f"and avoid {FIRST_EXCLUDED_PATH}"
+            f"Declare {DECLARED_INPUT_PATH} as an input and avoid {FIRST_EXCLUDED_PATH}"
         ),
     )
 
     tokens, inputs = _context_file_inputs(tmp_path, node, authority)
     records = _records_by_path(inputs["named_files"])
 
-    # Both files exist, so the declared charge and the withheld one are
-    # decisions about the verbs rather than about what is present.
+    # Both files exist, so the two rates are decisions about the verbs rather
+    # than about what is present.
     assert (tmp_path / FIRST_EXCLUDED_PATH).stat().st_size > 100_000
-    assert set(records) == {DECLARED_INPUT_PATH}
+    assert set(records) == {DECLARED_INPUT_PATH, FIRST_EXCLUDED_PATH}
+    assert records[DECLARED_INPUT_PATH]["provenance"] == "declared"
     assert records[DECLARED_INPUT_PATH]["counted"] is True
-    assert tokens == _estimated_tokens((tmp_path / DECLARED_INPUT_PATH).stat().st_size)
+    assert records[FIRST_EXCLUDED_PATH]["provenance"] == "reference"
+    assert records[FIRST_EXCLUDED_PATH]["estimated_tokens"] == _REFERENCE_COST_TOKENS
+    assert (
+        tokens
+        == _estimated_tokens((tmp_path / DECLARED_INPUT_PATH).stat().st_size)
+        + _REFERENCE_COST_TOKENS
+    )
 
 
 def test_the_excluded_first_order_of_a_mixed_clause_reads_the_same_way(
     tmp_path: Path,
 ) -> None:
-    """Reversing the two phrases moves no charge between them."""
+    """Reversing the two phrases moves no charge between them: the declared path
+    stays full and the excluded one stays a reference."""
     _seed_named_inputs(tmp_path)
     authority = _authority(tmp_path)
     node = _node(
         write_paths=[],
         done_when=(
-            f"Avoid {FIRST_EXCLUDED_PATH} and declare {DECLARED_INPUT_PATH} "
-            "as an input"
+            f"Avoid {FIRST_EXCLUDED_PATH} and declare {DECLARED_INPUT_PATH} as an input"
         ),
     )
 
     tokens, inputs = _context_file_inputs(tmp_path, node, authority)
     records = _records_by_path(inputs["named_files"])
 
-    assert set(records) == {DECLARED_INPUT_PATH}
+    assert set(records) == {DECLARED_INPUT_PATH, FIRST_EXCLUDED_PATH}
+    assert records[DECLARED_INPUT_PATH]["provenance"] == "declared"
     assert records[DECLARED_INPUT_PATH]["counted"] is True
-    assert tokens == _estimated_tokens((tmp_path / DECLARED_INPUT_PATH).stat().st_size)
+    assert records[FIRST_EXCLUDED_PATH]["provenance"] == "reference"
+    assert (
+        tokens
+        == _estimated_tokens((tmp_path / DECLARED_INPUT_PATH).stat().st_size)
+        + _REFERENCE_COST_TOKENS
+    )
 
 
 def test_one_exclusion_verb_governs_every_path_it_lists(tmp_path: Path) -> None:
-    """A second path joined to an exclusion list is excluded with the first."""
+    """A second path joined to an exclusion list pays the reference with the first."""
     _seed_named_inputs(tmp_path)
     authority = _authority(tmp_path)
     node = _node(
@@ -271,7 +298,9 @@ def test_one_exclusion_verb_governs_every_path_it_lists(tmp_path: Path) -> None:
     )
 
     tokens, inputs = _context_file_inputs(tmp_path, node, authority)
+    records = _records_by_path(inputs["named_files"])
 
     assert (tmp_path / SECOND_EXCLUDED_PATH).stat().st_size > 50_000
-    assert inputs["named_files"] == []
-    assert tokens == 0
+    assert set(records) == {FIRST_EXCLUDED_PATH, SECOND_EXCLUDED_PATH}
+    assert all(record["provenance"] == "reference" for record in records.values())
+    assert tokens == 2 * _REFERENCE_COST_TOKENS
