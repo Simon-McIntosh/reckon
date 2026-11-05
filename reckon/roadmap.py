@@ -4442,7 +4442,10 @@ def _build_roadmap(
     critical_sections = set(critical.get("sections") or [])
     # The path read link by link: each section it crosses carries its primary
     # state and everything holding it, so a reader starts at the head with the
-    # work's own answer rather than a list of refs to look up.
+    # work's own answer rather than a list of refs to look up. A path that
+    # crosses no section keeps the shape it has always had, because a reader of
+    # a plan-level path compares that payload as it stands and there is no link
+    # to describe.
     if critical.get("sections"):
         _critical_path_links(
             critical,
