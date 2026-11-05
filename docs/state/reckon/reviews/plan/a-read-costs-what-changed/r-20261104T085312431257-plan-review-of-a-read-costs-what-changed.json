@@ -1,0 +1,112 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-04T09:10:03.361Z",
+  "dispatched_at": "2026-11-04T09:05:19Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:84",
+      "id": "reasoning-1",
+      "reason": "a node briefed on \"\u00a72's scopes\" searches the scope context managers and the covered walk, neither of which is on the failing path, instead of the source-digest call the assertion actually catches.",
+      "text": "\u00a78 states \"the regression appears only where \u00a73's persisted code version meets \u00a72's scopes\"; reproduced at head `86b3c34d5c`, both tests fail on `assert digests == []` with the recorded paths `reckon/_plan_html.py` and `reckon/metadata_index.py`, which are the source files `metadata_index._module_source_digest` (reckon/metadata_index.py:1880) hashes through `file_memo.content_digest` on every `persisted_memo` call \u2014 \u00a73's own helper, reached on a second build after `_clear_caches()`, with no scope and no covered walk involved",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:84",
+      "id": "done_when-1",
+      "reason": "a node held to code-only fixes will bypass `file_memo` for module sources to satisfy an assertion it cannot correct, leaving the test claiming no digest of any file while \u00a73 still needs one.",
+      "text": "the repair's write paths are `reckon/metadata_index.py` and `reckon/_store.py`, but the assertion that fails, `assert digests == []`, encodes \"a second build reads no document\" and is falsified by a digest that is not a document; the honest repair is to refine that spy in `tests/test_a_restart_reuses_rows_by_stat_identity.py`, which the fence excludes",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:24",
+      "id": "wiring-1",
+      "reason": "with no declared order, \u00a78 and \u00a75 can be dispatched concurrently onto one file, and a coordinator reading the followup never sees \u00a78 at all.",
+      "text": "`plan-section-declarations` adds `s8: implementable` and `plan-section-depends-on` carries no `s8` entry, while followup `f-arcwc-001` (line 90) still orders only \u00a72, \u00a73, \u00a75, \u00a76, \u00a77; \u00a78 writes `reckon/_store.py`, the same file \u00a75 writes and \u00a73 landed in, and s3 remains declared `implementable` although \u00a78 records \u00a73 merged at `30fbd6294e`",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "efebcdf5528d543bfa332c0a786edeb50dba5937",
+  "plan_fingerprint": "00e4a580d686fb52240ed2c12bbaa32916ebee2a1ea86803066a741edf6da756",
+  "plan_slug": "a-read-costs-what-changed",
+  "plan_version": 23,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "\u00a78 has landed (merge 35d1161619); the landed repair records each producer module's source stat identity and reuses its digest, which addresses the per-call content_digest the finding traces, and both tests pass 3 of 3 on main",
+      "when": "2026-11-05T09:30:55.550305+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "\u00a78 has landed without changing the spy: the digest reads it flagged no longer happen on a second build, so the test's 'reads no document' assertion holds as written",
+      "when": "2026-11-05T09:31:23.695877+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "45878a2c01f7aca1ce78ffb1c0055e27ea0ccfec",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "The landing beats declared s3 and s8 done, so neither is implementable any more and no later section races them on reckon/_store.py.",
+      "reason": "",
+      "when": "2026-11-05T09:32:07.069787+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a78 has landed without changing the spy: the digest reads it flagged no longer happen on a second build, so the test's 'reads no document' assertion holds as written",
+      "when": "2026-11-05T09:31:23.695877+00:00"
+    },
+    "reasoning-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a78 has landed (merge 35d1161619); the landed repair records each producer module's source stat identity and reuses its digest, which addresses the per-call content_digest the finding traces, and both tests pass 3 of 3 on main",
+      "when": "2026-11-05T09:30:55.550305+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "45878a2c01f7aca1ce78ffb1c0055e27ea0ccfec",
+      "commit_basis": "edit",
+      "note": "The landing beats declared s3 and s8 done, so neither is implementable any more and no later section races them on reckon/_store.py.",
+      "reason": "",
+      "when": "2026-11-05T09:32:07.069787+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-read-costs-what-changed.v23.json",
+  "review_run_id": "r-20261104T085312431257-plan-review-of-a-read-costs-what-changed",
+  "reviewed_blob_sha": "cbbd37471d951d6642f287706b28d3d56b742f83",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `30fbd6294e`, `051c9c0fa3`, `9430f8e207` and `901325c5a6` all resolve, both cited test functions exist at lines 208 and 254, and the comment's `#s2-every-read-enters-the-existing-scopes` anchor resolves in `docs/evidence/archive/a-read-costs-what-changed-landed.html`.",
+    "done_when": "a finding \u2014 \u00a78's negative control is measurable, but its measure rests on `assert digests == []` in `tests/test_a_restart_reuses_rows_by_stat_identity.py`, and that test sits outside \u00a78's declared write paths.",
+    "evidence_paths": "pass \u2014 \u00a78 names no scratch path; its gate material lands on the run record and repository paths as the other sections do.",
+    "naming": "pass \u2014 the new section and the added declarations carry mechanism names, no plan labels or tracker numbers.",
+    "reasoning": "a finding \u2014 \u00a78 attributes the two failures to \u00a73's persisted code version meeting \u00a72's scopes, but the failing assertion is on module-source digests taken by \u00a73's own helper.",
+    "single_goal": "pass \u2014 \u00a78 names one deliverable, restoring stat-identity row reuse without dropping the code-version invalidation.",
+    "wiring": "a finding \u2014 \u00a78 is absent from `plan-section-depends-on` and from the build order in followup `f-arcwc-001`, while its write path `reckon/_store.py` is also \u00a75's and \u00a73's, so nothing sequences it against a live node."
+  },
+  "section_digests": {
+    "_document": "a74de2a6c0bae11071d28266f8f6472810d2fb8a2d37079b0ca104de526b82b5",
+    "s1": "f8fb0fbbfbbc79977a59ec9d78c0d66f47803aa96db83e4d628a1dfb6b40e6c3",
+    "s2": "7de6c2e256fca5545163c6149c674fea249ddd1a72361b49c89ef5beaa22263d",
+    "s3": "d11cdceab942c4935f32d292e26f2111b011ca4571980a6c54ef6ae23894aadb",
+    "s4": "d14b5fa9a6b6ef26da6f95b50c43aa782fdbe679ca28020a3095af71cd579417",
+    "s5": "ba22eff9814ea16ac19404864f9a2d1ec8da449b3011fba623d0d1856b2c6ecf",
+    "s6": "b0053663cc25e5e7e15595ae342d21c4c467abe74f06c8c4db86982b276898cc",
+    "s7": "2c7c6fb207a002d2bb1e223ebf1f770570f6b06942edf9ac6647253b410a67b7",
+    "s8": "9a012c065cbd8db9e5e69070d20531b84a584582cc0bf8f45fff060b7f31f464"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T07:27:21.850325+00:00"
+}
