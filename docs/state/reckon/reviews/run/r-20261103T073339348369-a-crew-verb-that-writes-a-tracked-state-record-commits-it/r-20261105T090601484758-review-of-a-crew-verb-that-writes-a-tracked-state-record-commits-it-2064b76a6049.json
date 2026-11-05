@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The reviewed run was suite-unarmed, so its manifest carries neither baseline_suite nor after_suite. The count is derived from the run's own gate logs: logs/head-suite.log (revision 235fe8b1e7) and logs/base-suite.log (revision c2e2d17f) each report 2 failed, 174 passed with the same two ids (test_no_removal_site_still_deletes_with_git_worktree_remove under tests/test_a_worktree_release_is_whole.py, test_no_removal_path_decides_liveness_from_the_phase_gated_claim under tests/test_every_removal_path_reads_the_wide_claim.py), so the head added no failing test. The two committing failures reproduce at the base revision and are not this node's.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:1171",
+    "reckon/crew/promotion.py:1799",
+    "reckon/crew_run_commands.py:3100"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-05T09:11:49Z",
+  "findings": [
+    {
+      "file": "tests/test_a_crew_verb_commits_its_state_record.py",
+      "id": "fa4ee23f968",
+      "line": 44,
+      "severity": "non-blocking",
+      "text": "The new test file defines its own _git helper instead of importing tests/helpers/git.py:12 git(), which 163 test files already import. The owner is not merely equivalent: it strips RUN_ID_ENV from the child environment because the git shim refuses a mutating verb whose run's live pointer it cannot read, which is exactly the state a test is in after naming a temporary configuration home. The local copy reproduces that refusal hazard for the git init/add/commit calls at lines 64-90, so the test can fail inside a worker where the shared helper would pass."
+    },
+    {
+      "file": "tests/test_a_crew_verb_commits_its_state_record.py",
+      "id": "fde4a93f841",
+      "line": 181,
+      "severity": "non-blocking",
+      "text": "This assertion compares the release stored in the record against the same RELEASE constant the test handed to _record_release_on_ledger, so its two sides move together and it holds for any code that round-trips its input. It is not vacuous (a missing or mutated release fails), but the guard against the write not committing rests on the independent assertions at lines 176, 180 and 183, not on this one."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit by commit from 35bee7eb9d to 2064b76a60; 3d76b4300d adds the 225-line test file alone and 2064b76a60 rewrites one paragraph of the fragment, with no other path changed.",
+    "done_when": "the done_when names three temporary-repository cases, a dispose negative control and an importing-module suite pair; logs/repo-head.log records 3 passed with EXIT=0, logs/repo-negative-control.log records 1 failed / 2 passed with test_a_second_release_leaves_the_record_byte_identical red, and logs/head-suite.log and logs/base-suite.log each record 174 passed / 2 failed with the same two ids.",
+    "goal": "the node goal is that a crew verb writing a tracked state record commits it; these two commits carry the node's regression test into the repository at tests/test_a_crew_verb_commits_its_state_record.py and repoint the landing measure at it in docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-crew-verb-that-writes-a-tracked-state-record-commits-it.html:4.",
+    "manifest": "read; it records complete status, the five commits, the head 3 passed / reverted 1 failed 2 passed arms, the importing-module suite pair and negative_control_log logs/repo-negative-control.log.",
+    "write_paths": "the source manifest declares reckon/crew/promotion_release.py, reckon/crew/review_dispositions.py, the evidence fragment and the new test; both commits in this range touch only the fragment and tests/test_a_crew_verb_commits_its_state_record.py."
+  },
+  "justifications": {
+    "durability": "the committed test file fails when _recorded_release is removed, which logs/repo-negative-control.log demonstrates for test_a_second_release_leaves_the_record_byte_identical; the dispose case at tests/test_a_crew_verb_commits_its_state_record.py:138 fails on the same mutation logged in logs/negative-control.log, and the input-derived assertion at line 181 is not what carries it.",
+    "evidence": "logs/repo-head.log records 3 passed (EXIT=0) and logs/repo-negative-control.log records the second-release case red at the base revision; I re-ran the file against an export of 2064b76a60 and saw 3 passed, 0 failed.",
+    "fit": "the file follows the repository's per-module test idiom (module docstring stating the mechanism, tmp_path and monkeypatch fixtures, behaviour-named cases at lines 138, 159 and 189) and introduces no version, plan or ticket label.",
+    "goal_fidelity": "tests/test_a_crew_verb_commits_its_state_record.py holds all three writes the section names, and docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-crew-verb-that-writes-a-tracked-state-record-commits-it.html:4 now cites that path instead of the unmeasurable run-directory copy.",
+    "reuse": "tests/test_a_crew_verb_commits_its_state_record.py:44 duplicates tests/helpers/git.py:12 git(), which 163 test files import, and omits the RUN_ID_ENV stripping that helper exists to perform.",
+    "scope_discipline": "the range 35bee7eb9d..2064b76a60 changes only tests/test_a_crew_verb_commits_its_state_record.py and the landing fragment, both inside the declared write paths, and the fragment edit is one paragraph."
+  },
+  "node": "review-of-a-crew-verb-that-writes-a-tracked-state-record-commits-it-2064b76a6049",
+  "node:reviewed": "a-crew-verb-that-writes-a-tracked-state-record-commits-it",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a721's goal is that a crew verb writing a tracked state record commits it, and these two commits carry the node's own regression test into the repository at tests/test_a_crew_verb_commits_its_state_record.py, repointing the landing measure at it in docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-crew-verb-that-writes-a-tracked-state-record-commits-it.html:4.\nVERDICT done_when: \u00a721's done_when names three temporary-repository cases, a dispose negative control and an importing-module suite pair; logs/repo-head.log records 3 passed with EXIT=0, logs/repo-negative-control.log records 1 failed / 2 passed with test_a_second_release_leaves_the_record_byte_identical red, and logs/head-suite.log and logs/base-suite.log each record 174 passed / 2 failed with the same two ids.\nVERDICT write_paths: the source manifest declares reckon/crew/promotion_release.py, reckon/crew/review_dispositions.py, the evidence fragment and the new test; both commits in this range touch only tests/test_a_crew_verb_commits_its_state_record.py and the fragment, all inside that list.\nVERDICT manifest: read; it records complete status, the five commits ending at 2064b76a60, the head 3 passed / reverted 1 failed 2 passed arms, the importing-module suite pair and negative_control_log logs/repo-negative-control.log.\nVERDICT diff: read commit by commit from 35bee7eb9d to 2064b76a60; 3d76b4300d adds the 225-line test file alone and 2064b76a60 rewrites one paragraph of the fragment, with no other path changed.\nCALL_SITES: reckon/crew/promotion.py:1171, reckon/crew/promotion.py:1799, reckon/crew_run_commands.py:3100\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_crew_verb_commits_its_state_record.py holds all three writes the section names, and docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-crew-verb-that-writes-a-tracked-state-record-commits-it.html:4 now cites that path instead of the unmeasurable run-directory copy.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/repo-head.log records 3 passed with EXIT=0 and logs/repo-negative-control.log records the second-release case red at the base revision, and a re-run of the file against an export of 2064b76a60 gave 3 passed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the range 35bee7eb9d..2064b76a60 changes only tests/test_a_crew_verb_commits_its_state_record.py and the landing fragment, both declared write paths, and the fragment edit is one paragraph.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_crew_verb_commits_its_state_record.py:222 fails when _recorded_release is removed, as logs/repo-negative-control.log shows, while the input-derived assertion at line 181 is not what carries the guard.\nSCORE fit: 18\nJUSTIFICATION fit: the file follows the repository's per-module test idiom (module docstring, tmp_path and monkeypatch fixtures, behaviour-named cases at lines 138, 159 and 189) and carries no version, plan or ticket label.\nSCORE reuse: 5\nJUSTIFICATION reuse: tests/test_a_crew_verb_commits_its_state_record.py:44 duplicates tests/helpers/git.py:12 git(), which 163 test files import, and omits the RUN_ID_ENV stripping that helper exists to perform.\nFINDING tests/test_a_crew_verb_commits_its_state_record.py:44 non-blocking: the new file defines its own _git helper instead of importing tests/helpers/git.py:12 git(), duplicating a capability 163 test files already share and dropping the RUN_ID_ENV stripping the shim needs, so its git init/add/commit calls can be refused when the suite runs inside a worker.\nFINDING tests/test_a_crew_verb_commits_its_state_record.py:181 non-blocking: the assertion compares the record's release against the same RELEASE constant the test handed to the code, so it is not independent of its input; the guard against a non-committing write rests on the independent assertions at lines 176, 180 and 183.\n",
+  "review_run_id": "r-20261105T090601484758-review-of-a-crew-verb-that-writes-a-tracked-state-record-commits-it-2064b76a6049",
+  "reviewed_base_sha": "35bee7eb9d9b46da86c78c6fe4547e7058c86a52",
+  "reviewed_head_sha": "2064b76a6049350741866b564da38dd3e9cb31c2",
+  "reviewed_range": "35bee7eb9d9b46da86c78c6fe4547e7058c86a52..2064b76a6049350741866b564da38dd3e9cb31c2",
+  "reviewed_run_id": "r-20261103T073339348369-a-crew-verb-that-writes-a-tracked-state-record-commits-it",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T09:20:00+00:00",
+  "total": 95
+}

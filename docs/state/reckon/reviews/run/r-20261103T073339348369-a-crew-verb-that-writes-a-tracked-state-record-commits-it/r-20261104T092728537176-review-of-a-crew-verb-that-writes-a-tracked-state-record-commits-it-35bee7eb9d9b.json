@@ -1,0 +1,63 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The reviewed run was suite-unarmed, so its manifest carries neither baseline_suite nor after_suite. The count is derived from the run's own gate logs: logs/head-suite.log and logs/base-suite.log both report the same two failing ids (test_no_removal_site_still_deletes_with_git_worktree_remove, test_no_removal_path_decides_liveness_from_the_phase_gated_claim) with 174 passed on each arm, so the head added no failing test.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:3100",
+    "reckon/crew/promotion.py:1171",
+    "reckon/crew/promotion.py:1799"
+  ],
+  "completed_at": "2026-11-04T09:40:18.297Z",
+  "dispatched_at": "2026-11-04T09:34:23Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_release.py",
+      "line": 592,
+      "severity": "non-blocking",
+      "text": "The landed behaviour has no committed regression test. The only test that fails on it is evidence/test_state_record_commits.py in the run directory, which the repository never runs, so a later edit could drop _recorded_release and leave every gate green."
+    },
+    {
+      "file": "reckon/crew/promotion_release.py",
+      "line": 613,
+      "severity": "non-blocking",
+      "text": "The per-run branch reloads the record with json.loads(path.read_text()) instead of ledger._read_run (reckon/ledger.py:1268), so a run file whose run_id contradicts its path is accepted here while _update_run_record at reckon/crew/promotion_release.py:560 refuses it."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit by commit from c2e2d17f2d to 35bee7eb9d; two source commits and one docs commit.",
+    "done_when": "the done_when names three cases; the head arm runs tests/test_state_record_commits.py and records 3 passed, the base arm records 1 failed / 2 passed.",
+    "goal": "the node goal is that a crew verb writing a tracked state record commits it; reckon/crew/promotion_release.py:658 makes the release pass read and keep a release already on the record.",
+    "manifest": "read; it records complete status, the three commits, the arm results and the negative-control log path.",
+    "write_paths": "the diff touches reckon/crew/promotion_release.py and the landing fragment, both declared write paths."
+  },
+  "justifications": {
+    "durability": "no committed test references _recorded_release; the only failing test lives in the run directory.",
+    "evidence": "logs/base-arm.log records the second-release case red at c2e2d17f and logs/head-arm.log records 3 passed at 235fe8b1e7.",
+    "fit": "the helper follows the module's private-helper idiom at reckon/crew/promotion_release.py:555.",
+    "goal_fidelity": "reckon/crew/promotion_release.py:658 keeps the recorded release and returns before any write.",
+    "reuse": "reckon/crew/promotion_release.py:613 re-reads a per-run file where reckon/ledger.py:1268 _read_run already owns that read.",
+    "scope_discipline": "every path in the diff is inside the declared write paths."
+  },
+  "node": "review-of-a-crew-verb-that-writes-a-tracked-state-record-commits-it-35bee7eb9d9b",
+  "node:reviewed": "a-crew-verb-that-writes-a-tracked-state-record-commits-it",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a crew verb writing a tracked state record commits it; reckon/crew/promotion_release.py:658 makes the release pass read and keep a release already on the record, which is the one case where the pass was rewriting rather than committing.\nVERDICT done_when: the done_when names three cases; the head arm at 235fe8b1e7 runs tests/test_state_record_commits.py and records 3 passed, and the same file at base c2e2d17f has 1 failed / 2 passed, so the gate asserts the second-release case.\nVERDICT write_paths: read from the source manifest; the diff touches reckon/crew/promotion_release.py and docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-crew-verb-that-writes-a-tracked-state-record-commits-it.html, both declared.\nVERDICT manifest: read; it records complete status, the three commits, the head and base arm results, the negative-control log path and the two pre-existing suite failures.\nVERDICT diff: read commit by commit from c2e2d17f2d to 35bee7eb9d; 48d32268f0 adds _recorded_release and its call, 235fe8b1e7 widens its return to carry the record, and 35bee7eb9d adds only the landing fragment.\nCALL_SITES: reckon/crew_run_commands.py:3100, reckon/crew/promotion.py:1171, reckon/crew/promotion.py:1799\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_release.py:658 keeps the recorded release and returns before any write, so the second pass commits nothing rather than rewriting a true receipt.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/base-arm.log records 1 failed / 2 passed with test_a_second_release_leaves_the_record_byte_identical red at c2e2d17f, and logs/head-arm.log records 3 passed at 235fe8b1e7.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths, and reckon/crew/review_dispositions.py was read and correctly left unchanged.\nSCORE durability: 8\nJUSTIFICATION durability: no committed test in the repository references _recorded_release, so reckon/crew/promotion_release.py:592 is guarded only by evidence/test_state_record_commits.py, which lives in the run directory and never runs in the tree.\nSCORE fit: 18\nJUSTIFICATION fit: the helper follows the module's private-helper idiom at reckon/crew/promotion_release.py:555 and its docstring states the mechanism without a plan or ticket reference.\nSCORE reuse: 15\nJUSTIFICATION reuse: reckon/crew/promotion_release.py:613 re-reads a per-run file with raw json.loads where reckon/ledger.py:1268 _read_run already owns that read and validates the run_id.\nFINDING reckon/crew/promotion_release.py:592 non-blocking: the landed behaviour has no committed regression test \u2014 the only test that fails on it is evidence/test_state_record_commits.py inside the run directory, which the repository never runs, so a later edit could drop _recorded_release and leave every gate green.\nFINDING reckon/crew/promotion_release.py:613 non-blocking: the per-run branch reloads the record with json.loads(path.read_text()) instead of ledger._read_run (reckon/ledger.py:1268), so a run file whose run_id contradicts its path is accepted here while _update_run_record at reckon/crew/promotion_release.py:560 refuses the same file.\n",
+  "review_run_id": "r-20261104T092728537176-review-of-a-crew-verb-that-writes-a-tracked-state-record-commits-it-35bee7eb9d9b",
+  "reviewed_base_sha": "c2e2d17f2d7a350b0f79c19d81018261aa950a83",
+  "reviewed_head_sha": "35bee7eb9d9b46da86c78c6fe4547e7058c86a52",
+  "reviewed_run_id": "r-20261103T073339348369-a-crew-verb-that-writes-a-tracked-state-record-commits-it",
+  "scores": {
+    "durability": 8,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-04T09:50:00+00:00",
+  "total": 96
+}
