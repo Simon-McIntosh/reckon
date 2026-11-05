@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-project-reads-as-one-picture#s4&quot;,&quot;a-coordinator-sees-the-board#s2&quot;],&quot;s4&quot;:[&quot;a-project-reads-as-one-picture#s2&quot;,&quot;a-coordinator-sees-the-board#s3&quot;],&quot;s5&quot;:[&quot;the-mcp-answers-the-question-asked#s3&quot;,&quot;a-coordinator-sees-the-board#s2&quot;,&quot;a-coordinator-sees-the-board#s3&quot;],&quot;s7&quot;:[&quot;a-coordinator-sees-the-board#s3&quot;,&quot;a-coordinator-sees-the-board#s4&quot;,&quot;a-coordinator-sees-the-board#s5&quot;,&quot;a-coordinator-sees-the-board#s6&quot;],&quot;s8&quot;:[&quot;a-coordinator-sees-the-board#s3&quot;,&quot;a-coordinator-sees-the-board#s4&quot;,&quot;a-coordinator-sees-the-board#s5&quot;,&quot;a-coordinator-sees-the-board#s6&quot;],&quot;s9&quot;:[&quot;a-coordinator-sees-the-board#s2&quot;,&quot;a-coordinator-sees-the-board#s5&quot;],&quot;s10&quot;:[&quot;a-coordinator-sees-the-board#s9&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>A Coordinator Sees the Board | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="18">
-<meta name="plan-modified" content="2026-10-23">
+<meta name="plan-version" content="19">
+<meta name="plan-modified" content="2026-11-05">
 </head>
 <body>
   <main class="plan-doc">
@@ -256,6 +256,9 @@
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s10" data-id="c-20261023-s10-source" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
+    <div class="r-comment-body"><p>Content review of v11 on 2026-10-23: the transcript read §10 names (<code>_coordinator_accounting</code> in <code>reckon/crew/dispatch_accounting.py</code>) resolves only the calling process's own session, so it cannot serve every coordinator on the board. §10 needs another source before dispatch.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261023T064458793164-review-of-a-plans-coordinator-is-derived-from-the-ledger-20030d0d081a" data-who="reckon-build" data-when="2026-10-23T07:21:57.992Z">
     <div class="r-comment-body"><p>the review of run r-20261023T002639713681-a-plans-coordinator-is-derived-from-the-ledger is stored at both declared review-records paths, scoring goal_fidelity 14, evidence 16, scope_discipline 20, durability 13, fit 18, reuse 5, total 86, reviewed at 017b346cb43a597da2b3d4c37bea6657eac1c886..20030d0d081a8cbbe50705de9db140dc1835eae2, with one blocking finding: reckon/crew/plan_coordinator.py:122 resolves a review's subject run by looking a node id up in a run-id-keyed map, so the run-review match returns no plan on real ledger data.</p></div>
 </div>
@@ -280,8 +283,8 @@
 <div class="r-comment" data-section="s9" data-id="c-20261023-s9-conflict" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
     <div class="r-comment-body"><p>Content review of v11 on 2026-10-23: §9 lists every live host's session, while §5's done-when requires a coordinator whose only plan has no ready section and no run not to appear. Decide which rule the board follows before §9 is dispatched.</p></div>
 </div>
-<div class="r-comment" data-section="s10" data-id="c-20261023-s10-source" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
-    <div class="r-comment-body"><p>Content review of v11 on 2026-10-23: the transcript read §10 names (<code>_coordinator_accounting</code> in <code>reckon/crew/dispatch_accounting.py</code>) resolves only the calling process's own session, so it cannot serve every coordinator on the board. §10 needs another source before dispatch.</p></div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261105T130153036665-review-of-the-ready-idle-set-extends-the-ready-set-view-dfaf3328e186" data-who="reckon-build" data-when="2026-11-05T13:16:23.372Z">
+    <div class="r-comment-body"><p>Independent review of r-20261027T100533445121: the landed ready-set extension does what its goal states (live_run, coordinator, plan_owner, critical_path, closable with closure blockers, ready_idle filter with the view&#x27;s own paging), its four fixture cases pass at head and its negative control is recorded red; four non-blocking findings and no blocking one, with durability 15 because the auto-derivation branch at reckon/mcp_views.py:1195 is reached by neither a test nor a production caller.</p></div>
 </div>
 </section>
 </main>

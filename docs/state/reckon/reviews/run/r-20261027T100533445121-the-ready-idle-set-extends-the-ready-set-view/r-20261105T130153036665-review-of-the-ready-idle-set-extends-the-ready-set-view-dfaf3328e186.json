@@ -1,0 +1,70 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/serve.py:1878 (_attach_ready_set)"
+  ],
+  "completed_at": "2026-11-05T13:16:23.372Z",
+  "dispatched_at": "2026-11-05T13:07:41Z",
+  "findings": [
+    {
+      "file": "reckon/mcp_views.py",
+      "line": 1195,
+      "severity": "non-blocking",
+      "text": "_ready_set_coordinators and its `coordinators is None and ready_idle` branch are unreachable from the only production call site (reckon/serve.py:1878 passes no ready_idle) and no test executes the branch because every case passes coordinators= explicitly, so its swallow-all-exceptions fallback at line 1169 is never exercised."
+    },
+    {
+      "file": "tests/test_the_ready_idle_set.py",
+      "line": 188,
+      "severity": "non-blocking",
+      "text": "the assertion compares the view's live_run against \"run-live-s9\", the run id the test itself supplied to the code under test, so it is a propagation check rather than an independent one and cannot catch a regression in where the value originates (the filter's own guard at line 181 is independent)."
+    },
+    {
+      "file": "manifest.md",
+      "line": 17,
+      "severity": "non-blocking",
+      "text": "baseline_suite records exit_status 4 with completed true and failure_count 0 from a log whose own text is \"no tests ran\", so a promotion gate deriving added failures from it reads a baseline that never measured the base tree; the manifest discloses this at line 19 and the import-arm comparison is the substitute."
+    },
+    {
+      "file": "logs/negative_control.log",
+      "line": 2,
+      "severity": "non-blocking",
+      "text": "the header names revision f65f6cd9 (the base) while the log's own text says the mutation ran in the head worktree, so a reader comparing it against the reviewed head dfaf3328 sees the wrong revision."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/serve.py:1878 (_attach_ready_set)",
+    "diff": "read both commits against f65f6cd9 commit by commit; 770e07f13a changes reckon/mcp_views.py (+107/-4), adds tests/test_the_ready_idle_set.py, 17 fixture plan documents and 8 fixture run records, and dfaf3328e1 adds the 60-line evidence fragment, all inside the declared scope.",
+    "done_when": "the done_when requires a test over a fixture rebuilt from power_convertor's state at 2026-10-22T08:50Z asserting the three idle sections with coordinators, the closable pair, the transport ceiling, its own paging and a live-run negative control; tests/test_the_ready_idle_set.py:125-207 is that test and logs/gate.log records 4 passed EXIT=0 (re-run by this review at dfaf3328, 4 passed).",
+    "goal": "the reviewed run's goal (prompt.txt:38) asks for live run, coordinator, plan owner and critical-path flag on each ready row, closable plans with closure blockers, and a no-live-run filter; reckon/mcp_views.py:1173-1260 adds exactly those five things to the existing projection.",
+    "manifest": "read at manifest.md:1-28; it records commits 770e07f13a and dfaf3328e1, the gate result 39 passed EXIT=0, the logs, a negative control red at 1 failed EXIT=1, and discloses at manifest.md:19 that the baseline arm measured nothing.",
+    "write_paths": "the five declared paths are reckon/mcp_views.py, tests/test_the_ready_idle_set.py, tests/fixtures/coordinator_board_0850, docs/evidence/fragments/a-coordinator-sees-the-board/the-ready-idle-set-extends-the-ready-set-view.html and docs/figures/a-coordinator-sees-the-board/the-ready-idle-set-extends-the-ready-set-view; every path in both commits lies inside them and the figures directory is unused."
+  },
+  "justifications": {
+    "durability": "tests/test_the_ready_idle_set.py:181 fails if the live-run filter is removed, which logs/negative_control.log records at 1 failed EXIT=1, but the auto-derivation branch at reckon/mcp_views.py:1195 is exercised by no test and no production caller.",
+    "evidence": "tests/test_the_ready_idle_set.py:135 asserts each section's coordinator against UUIDs hand-read from the fixture run records, and logs/after_suite.log records 4 passed EXIT=0, though logs/baseline_suite.log:4 records a base arm that ran no test.",
+    "fit": "the new helpers at reckon/mcp_views.py:1136 and :1154 follow the module's typed Mapping idiom and reuse the existing paginate at reckon/mcp_views.py:2420, with no plan or ticket identifier in any name.",
+    "goal_fidelity": "reckon/mcp_views.py:1226-1231 sets live_run, coordinator, plan_owner and critical_path and applies the ready_idle filter, and :1232-1246 adds closable, matching the goal at prompt.txt:38.",
+    "reuse": "the change imports resolve_plan_coordinators (reckon/crew/plan_coordinator.py) rather than re-reading the ledger and reuses paginate and the roadmap's own closable and critical_path rows; a search of reckon/ found no existing row-level live-run or closable projection to extend.",
+    "scope_discipline": "every path in 770e07f13a and dfaf3328e1 is inside the manifest's declared write paths, with no edit to reckon/roadmap.py or reckon/serve.py."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed run's goal (prompt.txt:38) asks for live run, coordinator, plan owner and critical-path flag on each ready row, closable plans with closure blockers, and a no-live-run filter; reckon/mcp_views.py:1173-1260 adds exactly those five things to the existing projection.\nVERDICT done_when: the done_when requires a test over a fixture rebuilt from power_convertor's state at 2026-10-22T08:50Z asserting the three idle sections with coordinators, the closable pair, the transport ceiling, its own paging and a live-run negative control; tests/test_the_ready_idle_set.py:125-207 is that test and logs/gate.log records 4 passed EXIT=0 (re-run by this review at dfaf3328, 4 passed).\nVERDICT write_paths: the five declared paths are reckon/mcp_views.py, tests/test_the_ready_idle_set.py, tests/fixtures/coordinator_board_0850, docs/evidence/fragments/a-coordinator-sees-the-board/the-ready-idle-set-extends-the-ready-set-view.html and docs/figures/a-coordinator-sees-the-board/the-ready-idle-set-extends-the-ready-set-view; every path in both commits lies inside them and the figures directory is unused.\nVERDICT manifest: read at manifest.md:1-28; it records commits 770e07f13a and dfaf3328e1, the gate result 39 passed EXIT=0, the logs, a negative control red at 1 failed EXIT=1, and discloses at manifest.md:19 that the baseline arm measured nothing.\nVERDICT diff: read both commits against f65f6cd9 commit by commit; 770e07f13a changes reckon/mcp_views.py (+107/-4), adds tests/test_the_ready_idle_set.py, 17 fixture plan documents and 8 fixture run records, and dfaf3328e1 adds the 60-line evidence fragment, all inside the declared scope.\nVERDICT call_sites: reckon/serve.py:1878 (_attach_ready_set)\nCALL_SITES: reckon/serve.py:1878 (_attach_ready_set)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/mcp_views.py:1226-1231 sets live_run, coordinator, plan_owner and critical_path and applies the ready_idle filter, and :1232-1246 adds closable, matching the goal at prompt.txt:38.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_the_ready_idle_set.py:135 asserts each section's coordinator against UUIDs hand-read from the fixture run records, and logs/after_suite.log records 4 passed EXIT=0, though logs/baseline_suite.log:4 records a base arm that ran no test.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in 770e07f13a and dfaf3328e1 is inside the manifest's declared write paths, with no edit to reckon/roadmap.py or reckon/serve.py.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_the_ready_idle_set.py:181 fails if the live-run filter is removed, which logs/negative_control.log records at 1 failed EXIT=1, but the auto-derivation branch at reckon/mcp_views.py:1195 is exercised by no test and no production caller.\nSCORE fit: 19\nJUSTIFICATION fit: the new helpers at reckon/mcp_views.py:1136 and :1154 follow the module's typed Mapping idiom and reuse the existing paginate at reckon/mcp_views.py:2420, with no plan or ticket identifier in any name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change imports resolve_plan_coordinators (reckon/crew/plan_coordinator.py) rather than re-reading the ledger and reuses paginate and the roadmap's own closable and critical_path rows; a search of reckon/ found no existing row-level live-run or closable projection to extend.\nFINDING reckon/mcp_views.py:1195 non-blocking: _ready_set_coordinators and its `coordinators is None and ready_idle` branch are unreachable from the only production call site (reckon/serve.py:1878 passes no ready_idle) and no test executes the branch because every case passes coordinators= explicitly, so its swallow-all-exceptions fallback at line 1169 is never exercised.\nFINDING tests/test_the_ready_idle_set.py:188 non-blocking: the assertion compares the view's live_run against \"run-live-s9\", the run id the test itself supplied to the code under test, so it is a propagation check rather than an independent one and cannot catch a regression in where the value originates (the filter's own guard at line 181 is independent).\nFINDING manifest.md:17 non-blocking: baseline_suite records exit_status 4 with completed true and failure_count 0 from a log whose own text is \"no tests ran\", so a promotion gate deriving added failures from it reads a baseline that never measured the base tree; the manifest discloses this at line 19 and the import-arm comparison is the substitute.\nFINDING logs/negative_control.log:2 non-blocking: the header names revision f65f6cd9 (the base) while the log's own text says the mutation ran in the head worktree, so a reader comparing it against the reviewed head dfaf3328 sees the wrong revision.\n",
+  "review_run_id": "r-20261105T130153036665-review-of-the-ready-idle-set-extends-the-ready-set-view-dfaf3328e186",
+  "reviewed_base_sha": "f65f6cd97d237d0871d49b9ec6bf642c5bb12b83",
+  "reviewed_head_sha": "dfaf3328e1868624f8b1602ac4030a1a700c38b4",
+  "reviewed_run_id": "r-20261027T100533445121-the-ready-idle-set-extends-the-ready-set-view",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T13:23:45.694875+00:00",
+  "total": 108
+}
