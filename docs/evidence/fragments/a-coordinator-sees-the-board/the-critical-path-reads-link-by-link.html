@@ -8,8 +8,10 @@
   coordinator holding the path still had to look each ref up to learn whether the head was
   being worked on, waiting on a peer or standing behind a gate. Each link now also carries a
   row: <code>ref</code>, <code>plan</code>, <code>section</code>, its
-  <code>primary_state</code>, and <code>holds</code> — every open gate and every unmet wait
-  on that link.</p>
+  <code>primary_state</code>, and <code>holds</code> — every open gate, every open decision
+  and every unmet wait on that link. A link held only by a decision reads as waiting on that
+  decision rather than reporting no state and an empty list, which would make it
+  indistinguishable from a link nothing explains.</p>
 
   <p>The primary state is the first that applies, in the plan's order: <code>in flight</code>
   (with the <code>run_id</code> on the section), <code>ready-idle</code> (with the plan's
@@ -73,10 +75,11 @@
 
   <p>Both arms run the same command,
   <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
-  tests/test_the_critical_path_reads_link_by_link.py</code>: six cases pass at the
-  head, and five pass at the commit this record was repaired against. Neither arm
-  is an empty collection: the log body of each carries a passing run, so a reader
-  checking the record is never asked to take a zero-collection as a measurement.</p>
+  tests/test_the_critical_path_reads_link_by_link.py</code>: seven cases pass at
+  the head, and six pass at the commit this record was repaired against. Both
+  arms collect and run the module — neither log is a zero-collection — so the
+  manifest's baseline and after fields each describe a measurement a reader can
+  open, which is the only shape that field may take.</p>
 
   <h3>Negative controls, both executed</h3>
 
