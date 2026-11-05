@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-05T09:45:27.264Z",
+  "dispatched_at": "2026-11-05T09:36:32Z",
+  "findings": [
+    {
+      "file": "tests/test_section_edge_stays_off_plan_blocking.py",
+      "id": "f80e999401c",
+      "line": "148",
+      "severity": "blocking",
+      "text": "blocking: the landed change reddens an existing test \u2014 running that file at 82f3a3bdc gives 1 failed, 4 passed, and test_satisfied_section_wait_leaves_no_section_row raises on its `result[\"section_blocking\"] == []` assertion with s3 held. The test encodes exactly the status reading this repair removes (a wait on s1 of a shipped plan that declares no section), while the roadmap's own rule at reckon/roadmap.py:1424-1430 is `found_section and _section_satisfied(...)`, which agrees with the landed change. The worker declared this under outside_scope and in the evidence fragment, and the file sits outside its write fence, so the coordinator must dispatch the expectation inversion before or with promotion; landing these two commits alone leaves main red."
+    },
+    {
+      "file": "reckon/mcp_views.py",
+      "id": "f5b1c61a12c",
+      "line": "2652",
+      "severity": "non-blocking",
+      "text": "non-blocking: _section_target_plan repeats a plan read the producer already performed on the same row in the same call chain \u2014 reckon/mcp.py:_resolve_plan_ref (reckon/mcp.py:1967) reads the target plan (through the same `None if external else checkout` scope expression duplicated at reckon/mcp_views.py:2654) and keeps only status/impl/title, so every section-scoped row in a read_plan summary now does two plan reads. The producer carrying the target's section_declarations (or its verdict) on the row would leave the readiness rule where it belongs and cost one read; the worker records the same shape under outside_scope."
+    },
+    {
+      "file": "reckon/mcp_views.py",
+      "id": "fcd15768310",
+      "line": "3257",
+      "severity": "non-blocking",
+      "text": "non-blocking: the checkout threading the repair adds to resource_view (reckon/mcp_views.py:3257 and :3266, feeding _summary/_detail at :2902) has no guard. The new test calls _section_blocking directly with checkout=str(root), so a regression that dropped the provenance checkout would leave the test green while production fell back to the mounts-resolved checkout for local refs \u2014 silently reading another tree's plan copy. A second assertion through the read_plan/resource_view entry with a worktree checkout would close it."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T094834838111-one-derivation-per-fact/repair-head.txt",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T094834838111-one-derivation-per-fact/repair-base.txt",
+    "negative_control": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T094834838111-one-derivation-per-fact/repair-negative-control.txt"
+  },
+  "item_verdicts": {
+    "diff": "Read commit by commit from 02e72411 to 82f3a3bdc: c3b642292 rewrites _section_target_satisfied, adds _section_target_plan, threads a checkout through _section_blocking/_summary/_detail/resource_view, and adds one production-path test; 82f3a3bdc changes only the evidence fragment.",
+    "done_when": "The node's done_when names the two-file armed gate plus tests/test_mcp_tools.py; repair-base.txt records 25 passed EXIT=0 at 02e72411 and repair-head.txt records 26 passed EXIT=0 at the head, and repair-negative-control.txt ends EXIT=1 with the named production-path test failing, so the measure is recorded rather than claimed \u2014 but tests/test_mcp_tools.py is not in the gate.",
+    "goal": "The node goal is to replace each surface's bypass of the owner of run classification, section readiness, plan progress and the active sprint; the two commits gained since the prior review answer only the section-readiness half, at reckon/mcp_views.py:2685 where _section_target_satisfied now asks roadmap._section_satisfied over the target plan the row names.",
+    "manifest": "The manifest records commits c3b642292 and 82f3a3bdc, the base/head/mutation logs with their EXIT lines, and the section-edge regression under outside_scope; I re-ran that single test at head and it fails exactly as the manifest states.",
+    "write_paths": "The brief grants reckon/mcp_views.py, tests/test_producer_shares_the_classifier_verdict.py, tests/test_surface_parity.py and the two docs paths; the diff touches reckon/mcp_views.py, tests/test_surface_parity.py and docs/evidence/fragments/the-mcp-answers-the-question-asked/one-derivation-per-fact.html, all inside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_surface_parity.py:160 asserts published == {\"s5\": False} against an independent literal, and the recorded mutation (restoring the status read) turns it red with published {} \u2014 both the held and the satisfied direction fail if the rule regresses; the resource_view wiring at reckon/mcp_views.py:3257 is unguarded.",
+    "evidence": "repair-base.txt and repair-head.txt each open with their revision, tree and literal command and end EXIT=0 (25 and 26 passed), and repair-negative-control.txt ends EXIT=1 with test_read_plan_resolves_a_section_wait_through_the_target_plan failing.",
+    "fit": "reckon/mcp_views.py:2652 keeps the function-local import and the degrade-on-error noqa idiom that reckon/mcp.py:1970 already uses for the same resolution, and adds no plan or stage identifier to the source.",
+    "goal_fidelity": "reckon/mcp_views.py:2685-2694 resolves the target plan and applies the roadmap's own declared-section plus _section_satisfied rule, which the prior review found was never reached in production.",
+    "reuse": "The readiness rule is delegated to the owners (reckon/roadmap.py:662 _section_satisfied, reckon/_schema.py:710 declared_section_identities), while the scope-aware target read at reckon/mcp_views.py:2652-2654 duplicates one expression of reckon/mcp.py:1968 and re-reads a plan that owner already read.",
+    "scope_discipline": "git diff 02e72411..82f3a3bdc touches only reckon/mcp_views.py, tests/test_surface_parity.py and the declared evidence fragment, with no stray edits outside the node's write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal replaces each surface's bypass of the owners of run classification, section readiness, plan progress and active sprint; the two gained commits answer only section readiness, at reckon/mcp_views.py:2685 where _section_target_satisfied resolves the target through roadmap._section_satisfied.\nVERDICT done_when: the done_when names the two-file armed gate plus tests/test_mcp_tools.py; repair-base.txt records 25 passed EXIT=0 and repair-head.txt 26 passed EXIT=0, and repair-negative-control.txt ends EXIT=1 with the production-path test failing, but tests/test_mcp_tools.py is absent from the gate.\nVERDICT write_paths: all three changed paths \u2014 reckon/mcp_views.py, tests/test_surface_parity.py and docs/evidence/fragments/the-mcp-answers-the-question-asked/one-derivation-per-fact.html \u2014 are inside the five granted write paths.\nVERDICT manifest: read; it records commits c3b642292 and 82f3a3bdc, the base/head/mutation logs, and the section-edge regression under outside_scope, which I reproduced at head as 1 failed, 4 passed.\nVERDICT diff: read commit by commit from 02e72411 to 82f3a3bdc; c3b642292 rewrites the readiness resolution, adds _section_target_plan and threads checkout through _summary/_detail/resource_view plus one test, and 82f3a3bdc touches only the evidence fragment.\nCALL_SITES: reckon/mcp.py:1724 (_read_plan calls resource_view), reckon/mcp_views.py:2902 (_summary plan branch calls _section_blocking), reckon/mcp_views.py:2709 (_section_blocking calls _section_target_satisfied), reckon/mcp_views.py:2685 (_section_target_satisfied calls _section_target_plan, which reads through reckon._store.read_plan)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/mcp_views.py:2685-2694 now applies the roadmap's declared-section and _section_satisfied rule to the target the row names, which the prior review showed was never reached in production.\nSCORE evidence: 16\nJUSTIFICATION evidence: repair-base.txt and repair-head.txt each name their revision, tree and literal command and end EXIT=0 (25 and 26 passed), and repair-negative-control.txt ends EXIT=1 on the named test, though tests/test_mcp_tools.py from the done_when is not gated.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 02e72411..82f3a3bdc touches only reckon/mcp_views.py, tests/test_surface_parity.py and the declared evidence fragment, every one inside the granted write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_surface_parity.py:160 fails under the recorded status-read mutation (published {}), and the satisfied direction fails too, but the checkout threading at reckon/mcp_views.py:3257 has no assertion.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/mcp_views.py:2652 reuses the function-local import and the degrade-on-error idiom of reckon/mcp.py:1970 and carries no plan or stage identifier.\nSCORE reuse: 12\nJUSTIFICATION reuse: the readiness rule delegates to reckon/roadmap.py:662 and reckon/_schema.py:710, but reckon/mcp_views.py:2652-2654 duplicates the scope read of reckon/mcp.py:1968 and reads a plan that producer already read.\nFINDING tests/test_section_edge_stays_off_plan_blocking.py:148 blocking: the landed change reddens test_satisfied_section_wait_leaves_no_section_row \u2014 verified 1 failed, 4 passed at 82f3a3bdc \u2014 because that test encodes the removed status reading while reckon/roadmap.py:1424-1430 agrees with the new rule; the coordinator must dispatch the inversion before this lands or main stays red.\nFINDING reckon/mcp_views.py:2652 non-blocking: _section_target_plan re-reads a plan that reckon/mcp.py:1967 already read and discarded for the same row, doubling plan reads per section-scoped row in a read_plan summary.\nFINDING reckon/mcp_views.py:3257 non-blocking: the checkout threading through resource_view has no guard, so a regression there would leave the new test green while production read another tree's plan copy.\n",
+  "review_run_id": "r-20261105T091632392412-review-of-one-derivation-per-fact-82f3a3bdc63b",
+  "reviewed_base_sha": "02e72411c7c477e68ccf131d871fba6f706d7d24",
+  "reviewed_head_sha": "82f3a3bdc63bbd1f82bff8ffacf119d713be1c17",
+  "reviewed_run_id": "r-20261027T094834838111-one-derivation-per-fact",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 12,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T10:02:56.521233+00:00",
+  "total": 101
+}

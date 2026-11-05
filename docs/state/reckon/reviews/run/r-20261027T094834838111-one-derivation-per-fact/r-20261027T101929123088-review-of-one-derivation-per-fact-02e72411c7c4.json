@@ -1,0 +1,71 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-10-27T09:52:25Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-one-derivation-per-fact-02e72411c7c4",
+      "recorded_at": "2026-10-27T11:12:15.868312+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/mcp_views.py",
+      "line": "2656",
+      "severity": "blocking",
+      "text": "blocking: the `satisfied` branch of _section_target_satisfied is never exercised in production \u2014 the only producer of these rows, reckon/mcp.py:_resolve_plan_ref (lines 1836-1862, 'satisfied' absent), carries no `satisfied`, so every real row falls to the fallback arm, which calls _section_satisfied with a plan dict built from the row status and therefore takes the owner's `status in COMPLETED_STATUSES` branch; read_plan's verdict is unchanged in production and an undeclared section of a terminal plan still reads satisfied, the disagreement this node exists to remove."
+    },
+    {
+      "file": "tests/test_surface_parity.py",
+      "line": "90",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when asks for section readiness, progress and active sprint from the /_discover payload; only the section-readiness pair lands here, and the worker records the other two under outside_scope, so two of the four facts the goal names carry no guard."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T094834838111-one-derivation-per-fact/manifest.md",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when's gate names tests/test_mcp_tools.py as a third file and the manifest's tests line runs only the two new-guard files, so the read_plan surface the production change touches is not in the recorded gate."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T094834838111-one-derivation-per-fact/head-arm.txt",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T094834838111-one-derivation-per-fact/baseline-head.txt"
+  },
+  "item_verdicts": {
+    "call_sites": "reckon/mcp_views.py:2847 read_plan summary calls _section_blocking, reckon/roadmap.py:2884 is the sole producer that supplies `satisfied` (to its own readiness path), reckon/mcp_views.py:1930 in_flight_by_plan and :1940 interrupted_by_plan wrap partition_live_runs, reckon/mcp_views.py:3271 reads in_flight_by_plan",
+    "diff": "Read commit by commit from 43a85b81 to 02e72411: fbfe00171 changes reckon/mcp_views.py:2641-2666 (new _section_target_satisfied, _section_blocking delegating to it, COMPLETED_STATUSES import dropped) and adds one test to each test file; 02e72411c adds only the evidence fragment.",
+    "done_when": "The done_when asks for section readiness, progress and active sprint from the /_discover payload and roadmap/crew-live/read_plan run verdicts, with both guards run against base as the negative control and a three-file gate; reckon/mcp_views.py:2641 supplies the section-readiness arm only, manifest.md:11 runs two of the three named files, and the base arm log records 23 passing tests that predate the new guards, so the base-commit disagreement evidence is a mutation instead.",
+    "goal": "The goal is to replace each surface's bypass of the owner of run classification, section readiness, plan progress and the active sprint; the diff delegates section readiness at reckon/mcp_views.py:2641 and guards run classification at tests/test_producer_shares_the_classifier_verdict.py:222, while plan progress and the active sprint appear nowhere in the diff.",
+    "manifest": "The manifest records commits fbfe00171 and 02e72411c, the two-file gate at manifest.md:11, base 23 passed EXIT=0 and head 25 passed EXIT=0 in its cited logs, a declared mutation ending 1 failed EXIT=1 in negative-control.txt, and the production gap stated openly under evidence_inputs and outside_scope.",
+    "write_paths": "The brief grants reckon/mcp_views.py, tests/test_producer_shares_the_classifier_verdict.py and tests/test_surface_parity.py; the diff touches exactly those three plus the declared evidence fragment at docs/evidence/fragments/the-mcp-answers-the-question-asked/one-derivation-per-fact.html, and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_surface_parity.py:90 fails when _section_blocking is mutated back to the status read (negative-control.txt, 1 failed EXIT=1), but the guard supplies the roadmap's row shape with `satisfied`, which production never emits, so it does not protect the read_plan path; tests/test_producer_shares_the_classifier_verdict.py:222 asserts one classifier call per read across partition_live_runs, in_flight_by_plan and interrupted_by_plan and would fail if a surface re-derived, but exercises the shared helper and wrappers rather than the three named surfaces.",
+    "evidence": "manifest.md:11 records a two-file gate omitting tests/test_mcp_tools.py, and baseline-head.txt records 23 passing tests at base, so the new guards never ran against the base revision as the done_when requires; the head and mutation logs do carry honest EXIT lines; evidence ends EXIT=0 and negative-control.txt ends EXIT=1 with a named failing id.",
+    "fit": "reckon/mcp_views.py:2661 takes a function-local import of reckon.roadmap._section_satisfied, which sidesteps the module-level cycle (reckon/roadmap.py:90 imports from mcp_views) at the cost of reaching into a private symbol across modules.",
+    "goal_fidelity": "reckon/mcp_views.py:2656-2666 is reached in production only through the fallback, and because reckon/mcp.py:_resolve_plan_ref supplies no `satisfied`, read_plan's section_blocking publishes the same verdict as before the change.",
+    "reuse": "The capability search found the owner already present as _section_satisfied at reckon/roadmap.py:659 and section_readiness_verdict at :908; the added _section_target_satisfied delegates to the former rather than restating the status set, so it extends the owner.",
+    "scope_discipline": "git diff 43a85b81..02e72411 touches only the three granted code/test paths and the declared evidence fragment under docs/evidence/fragments/."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal names run classification, section readiness, plan progress and the active sprint, each replaced by a call to its owner; reckon/mcp_views.py:2641 delegates section readiness and tests/test_producer_shares_the_classifier_verdict.py:222 guards run classification, while plan progress and the active sprint appear nowhere in the diff.\nVERDICT done_when: The done_when asks for section readiness, progress and active sprint from the /_discover payload with both guards run against base as the negative control and a three-file gate; reckon/mcp_views.py:2641 supplies only section readiness, manifest.md:11 runs two of the three named files, and baseline-head.txt records 23 passing tests that predate the new guards, so the base-disagreement evidence is a mutation instead.\nVERDICT write_paths: The brief grants reckon/mcp_views.py, tests/test_producer_shares_the_classifier_verdict.py and tests/test_surface_parity.py; the diff touches exactly those three plus the declared evidence fragment, and nothing outside them.\nVERDICT manifest: The manifest records commits fbfe00171 and 02e72411c, the two-file gate at manifest.md:11, base 23 passed EXIT=0 and head 25 passed EXIT=0, a declared mutation ending 1 failed EXIT=1 in negative-control.txt, and the production gap under evidence_inputs and outside_scope.\nVERDICT diff: Read commit by commit from 43a85b81 to 02e72411; fbfe00171 changes reckon/mcp_views.py:2641-2666 and adds one test to each test file, and 02e72411c adds only the evidence fragment.\nCALL_SITES: reckon/mcp_views.py:2847 read_plan summary calls _section_blocking, reckon/roadmap.py:2884 roadmap calls partition_live_runs, reckon/mcp_views.py:1930 in_flight_by_plan, reckon/mcp_views.py:1940 interrupted_by_plan, reckon/mcp_views.py:3271 summary reads in_flight_by_plan\nSCORE goal_fidelity: 8\nJUSTIFICATION goal_fidelity: reckon/mcp_views.py:2656-2666 is reached in production only through the fallback, and since reckon/mcp.py:_resolve_plan_ref supplies no `satisfied`, read_plan publishes the same verdict as before the change.\nSCORE evidence: 10\nJUSTIFICATION evidence: manifest.md:11 records a two-file gate omitting tests/test_mcp_tools.py and baseline-head.txt records 23 passing tests at base, so the new guards never ran against the base revision the done_when names.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 43a85b81..02e72411 touches only the three granted code/test paths and the declared evidence fragment under docs/evidence/fragments/.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_surface_parity.py:90 fails under the status-read mutation (negative-control.txt, 1 failed EXIT=1) but is fed the `satisfied` row shape production never emits, so it does not protect the read_plan path.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/mcp_views.py:2661 imports reckon.roadmap._section_satisfied function-locally to sidestep the cycle from reckon/roadmap.py:90, at the cost of a cross-module private dependency.\nSCORE reuse: 19\nJUSTIFICATION reuse: the capability search found _section_satisfied at reckon/roadmap.py:659 and section_readiness_verdict at :908, and the added _section_target_satisfied delegates to the former rather than restructured a second status set.\nFINDING reckon/mcp_views.py:2656 blocking: the `satisfied` branch is never exercised in production because reckon/mcp.py:_resolve_plan_ref (1836-1862) carries no `satisfied`, so every real row takes the fallback arm and _section_satisfied sees a plan dict built from the row status, leaving read_plan's verdict unchanged and the terminal-plan undeclared-section wait still dropped.\nFINDING tests/test_surface_parity.py:90 non-blocking: the done_when asks for progress and active sprint pairs from the /_discover payload as well as section readiness, and those two are absent from the diff.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T094834838111-one-derivation-per-fact/manifest.md:11 non-blocking: the done_when's gate names tests/test_mcp_tools.py as a third file and the manifest's tests line runs only the two new-guard files, so the read_plan surface the production change touches sits outside the recorded gate.\n",
+  "review_run_id": "r-20261027T101929123088-review-of-one-derivation-per-fact-02e72411c7c4",
+  "reviewed_base_sha": "43a85b8193fd3ed31af01db8d02a99a6b2795a31",
+  "reviewed_head_sha": "02e72411c7c477e68ccf131d871fba6f706d7d24",
+  "reviewed_run_id": "r-20261027T094834838111-one-derivation-per-fact",
+  "scores": {
+    "durability": 14,
+    "evidence": 10,
+    "fit": 16,
+    "goal_fidelity": 8,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T11:04:48.777975+00:00",
+  "total": 86
+}
