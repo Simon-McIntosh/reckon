@@ -879,6 +879,17 @@ def _omitted_probe_inputs(*, supplied: Mapping[str, bool]) -> list[str]:
     ),
 )
 @click.option(
+    "--anchor-path",
+    "anchor_paths",
+    multiple=True,
+    metavar="PATH",
+    help=(
+        "A repository path the brief names as an anchor whose contents are not "
+        "loaded, so it enters the context estimate at nothing rather than at a "
+        "reference cost. Repeat for each."
+    ),
+)
+@click.option(
     "--negative-control",
     "negative_control",
     default="",
@@ -922,6 +933,7 @@ def crew_pick(
     section,
     write_paths,
     regenerate_paths,
+    anchor_paths,
     negative_control,
     estimated_hours,
     comment,
@@ -997,6 +1009,7 @@ def crew_pick(
                 negative_control=negative_control or "",
                 write_paths=list(write_paths),
                 regenerate_paths=list(regenerate_paths),
+                anchor_paths=list(anchor_paths),
                 estimated_hours=estimated_hours,
             )
             payload = pick(
@@ -1200,6 +1213,19 @@ def _budget_check_report(
     ),
 )
 @click.option(
+    "--anchor-path",
+    "anchor_paths",
+    multiple=True,
+    metavar="PATH",
+    help=(
+        "A repository path the brief names as an anchor whose contents are not "
+        "loaded, so it enters the context estimate at nothing rather than at a "
+        "reference cost. Recorded on the run so a reader sees the worker was "
+        "briefed about a file it was not given. Refused when the same path is a "
+        "write path. Repeat for each."
+    ),
+)
+@click.option(
     "--image",
     "image_paths",
     multiple=True,
@@ -1389,6 +1415,7 @@ def crew_dispatch(
     inputs,
     compares_with,
     regenerate_paths,
+    anchor_paths,
     image_paths,
     peers,
     required_decisions,
@@ -1538,6 +1565,7 @@ def crew_dispatch(
         inputs=list(inputs),
         compares_with=compares_with or "",
         regenerate_paths=list(regenerate_paths),
+        anchor_paths=list(anchor_paths),
         time_budget=time_budget,
         estimated_hours=estimated_hours,
         manifest_path=manifest,

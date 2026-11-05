@@ -844,6 +844,7 @@ def shadow_source(
         regenerate_paths=[
             str(path) for path in definition.get("regenerate_paths") or ()
         ],
+        anchor_paths=[str(path) for path in definition.get("anchor_paths") or ()],
         negative_control=str(definition.get("negative_control") or ""),
         estimated_hours=definition.get("estimated_hours"),
         requires_decisions=[

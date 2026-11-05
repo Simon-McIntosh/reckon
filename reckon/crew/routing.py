@@ -3257,10 +3257,12 @@ def _context_file_inputs(
     """Measure unique repository inputs at the rate each one's provenance pays.
 
     A declared write path and a declared input are loads and pay their size; a
-    mention or a regenerated path pays the flat reference cost; a path dispatch
-    grants the node itself is not an input and pays nothing. One resolved path
-    is charged once, at the first provenance that claims it, so a path that is
-    both declared and mentioned pays the load.
+    mention or a regenerated path pays the flat reference cost; an anchor pays
+    nothing, because the dispatcher has stated that the worker is pointed at the
+    path without being handed it; a path dispatch grants the node itself is not
+    an input and pays nothing. One resolved path is charged once, at the first
+    provenance that claims it, so a path that is both declared and mentioned
+    pays the load.
     """
 
     counted: set[Path] = set()
@@ -3282,6 +3284,7 @@ def _context_file_inputs(
         declared_read: bool,
         regenerated: bool = False,
         reference: bool = False,
+        anchored: bool = False,
     ) -> dict[str, Any]:
         candidate = Path(raw).expanduser()
         resolved = (
@@ -3290,6 +3293,8 @@ def _context_file_inputs(
         fixed_cost = regenerated or reference
         if regenerated:
             provenance = "regenerated"
+        elif anchored:
+            provenance = "anchor"
         elif reference:
             provenance = "reference"
         else:
@@ -3304,7 +3309,12 @@ def _context_file_inputs(
             "status": "missing",
             "reference_tokens": _REFERENCE_COST_TOKENS if fixed_cost else 0,
         }
-        if not regenerated and not declared_read and resolved in granted_paths:
+        if (
+            not regenerated
+            and not anchored
+            and not declared_read
+            and resolved in granted_paths
+        ):
             record["provenance"] = "granted"
         if not resolved.is_relative_to(repo):
             record["status"] = "outside-repository"
@@ -3318,7 +3328,13 @@ def _context_file_inputs(
         if not is_file:
             record["status"] = "directory" if resolved.is_dir() else "missing"
             return record
-        tokens = _REFERENCE_COST_TOKENS if fixed_cost else _tokens_for_bytes(byte_count)
+        tokens = (
+            0
+            if anchored
+            else (
+                _REFERENCE_COST_TOKENS if fixed_cost else _tokens_for_bytes(byte_count)
+            )
+        )
         chargeable = record["provenance"] in ("declared", "regenerated", "reference")
         record.update(
             {
@@ -3342,16 +3358,35 @@ def _context_file_inputs(
         for path in node.write_paths
     ]
     declared_inputs = _declared_input_files(node)
+
+    # An anchor is a path the dispatcher stated the worker is pointed at without
+    # being handed it, so its content never enters the estimate. The comparison
+    # is on the resolved path, so an anchor declared in one spelling withholds a
+    # mention or declaration written in another.
+    def resolved_path(raw: str) -> Path:
+        candidate = Path(raw).expanduser()
+        return (candidate if candidate.is_absolute() else repo / candidate).resolve()
+
+    anchored = {resolved_path(str(path)): str(path) for path in node.anchor_paths}
     # A path declared an input is read, so it is charged at full and is not
     # also a reference; every other path the brief names -- an anchor, or one a
     # negative clause keeps the worker away from -- costs the flat reference.
-    declared_set = set(declared_inputs)
+    declared_set = {
+        path for path in declared_inputs if resolved_path(path) not in anchored
+    }
     mentions = [
-        path for path in _mentioned_repository_files(node) if path not in declared_set
+        path
+        for path in _mentioned_repository_files(node)
+        if path not in declared_set and resolved_path(path) not in anchored
     ]
-    named_files = [describe(path, declared_read=True) for path in declared_inputs] + [
-        describe(path, declared_read=False, reference=True) for path in mentions
-    ]
+    named_files = (
+        [describe(path, declared_read=True) for path in sorted(declared_set)]
+        + [describe(path, declared_read=False, reference=True) for path in mentions]
+        + [
+            describe(path, declared_read=False, anchored=True)
+            for _resolved, path in sorted(anchored.items())
+        ]
+    )
     all_inputs = [*write_paths, *named_files]
     file_tokens = sum(
         int(item["estimated_tokens"]) for item in all_inputs if item["counted"]
