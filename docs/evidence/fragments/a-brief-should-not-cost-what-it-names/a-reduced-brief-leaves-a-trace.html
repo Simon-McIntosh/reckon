@@ -19,16 +19,27 @@
   "refused_estimated_tokens": 220000,
   "accepted_estimated_tokens": 20003,
   "refused_window_tokens": 30000,
-  "removed_paths": ["package/payload.py"],
+  "removed_paths": ["/…/repo/package/payload.py"],
   "removed_text_bytes": 33,
-  "refused_at": "2026-11-05T13:35:59Z"
+  "refused_at": "2026-11-05T14:58:18Z"
 }</pre>
 
   <p>It answers nothing unless the accepted attempt measures below the refused one
   <em>and</em> something in the brief actually differs, so a brief dispatched unchanged to a
   lane whose own agent layout measures differently records no reduction, and a first-attempt
-  run carries no marker at all. The trace is consumed once the run is published, so a later
-  dispatch of the same node cannot inherit an older reduction.</p>
+  run carries no marker at all.</p>
+
+  <p>Consumption is unconditional and the match is bounded. Any dispatch of the node that
+  fits ends the trace, whether or not the brief changed: a brief re-sent unchanged into a
+  roomier lane is not a retry, and a trace left behind would mark a later dispatch against
+  an older refusal's figures while a node never dispatched again would leave its trace in
+  the crew home for good. A trace older than a day is not matched at all — a refusal is
+  evidence about the cut a coordinator is making in that sitting, and an older one
+  describes a brief nobody is holding any more.</p>
+
+  <p><code>removed_paths</code> carries the resolved path the census charged, which is what
+  identifies one file across two attempts that may spell it differently; the entry is
+  shortened to the fixture root here and is absolute in a live run.</p>
 
   <h3 id="a-reduced-brief-leaves-a-trace-measured">Measured</h3>
 
@@ -41,6 +52,15 @@
         <td><code>1d7d4c9c75</code></td>
         <td><strong>152 passed</strong>, <code>EXIT=0</code> &mdash; the new cases, the context
         estimate, promotion and ledger files together</td></tr>
+      <tr><td>gate at the review round's head</td>
+        <td><code>5089a79381</code></td>
+        <td><strong>154 passed</strong>, <code>EXIT=0</code> &mdash; the same four files with the two
+        cases this round added</td></tr>
+      <tr><td>the new cases before their fix</td>
+        <td><code>98b62b89d0</code></td>
+        <td><strong>3 failed, 3 passed</strong>, <code>EXIT=1</code> &mdash; the trace left by a
+        fit without a change, the expired trace still marking a dispatch, and the reduction
+        still reporting the declared path</td></tr>
       <tr><td>gate re-run at the delivered head</td>
         <td><code>27e7789696</code></td>
         <td><strong>152 passed</strong>, <code>EXIT=0</code> &mdash; the same four files after the landing
@@ -78,6 +98,15 @@
     asserted to carry no <code>brief_reduction</code> key and to leave no trace directory
     behind, so the marker's presence is evidence of a retry rather than of the feature
     existing.</li>
+    <li><strong>A fit without a change leaves nothing behind.</strong> A node refused at one
+    window and accepted unchanged at a wider one is asserted to carry no marker and to leave
+    no trace file, so a brief that was never cut is never reported as cut.</li>
+    <li><strong>An expired trace marks nothing.</strong> A trace whose recorded instant is
+    two years old is asserted not to mark the next dispatch, and to be cleared by it, so a
+    refusal cannot be matched to a brief from another sitting.</li>
+    <li><strong>The input shape has one reader.</strong> The charged paths are taken from
+    routing's contributor reader, which already walks the repository-file groups, rather
+    than walking them again in the refusal store.</li>
     <li><strong>The negative control.</strong> Declared as <em>skip recording the refusal; the
     accepted run carries no reduction marker and the test fails</em>: with
     <code>record_context_refusal</code> made a no-op the two acceptance cases fail on the
