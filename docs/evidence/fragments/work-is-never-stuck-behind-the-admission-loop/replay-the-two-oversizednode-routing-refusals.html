@@ -1,0 +1,44 @@
+<article class="r-evidence" data-node="replay-the-two-oversizednode-routing-refusals">
+<h3>The two oversized-node routing refusals, replayed</h3>
+
+<p id="replay-the-two-oversizednode-routing-refusals-landing">A read-only
+replay of the two recorded pick refusals, and the account of what decided
+them. <code>replay_oversized_route.py</code> sits beside this record and
+rebuilds each attempt from the dispatch that made it: the node from the
+coordinator's command line, the flight configuration from the four layers
+committed at the moment, and the pick-timing row that recorded the refusal. It
+then asks <code>reckon.crew.picker</code> the same question in process, with no
+routing or competence verdict stubbed.</p>
+
+<p id="replay-the-two-oversizednode-routing-refusals-result">Both refusals
+reproduce exactly. The 02:29:07Z attempt replays to its eleven exclusion rows —
+four claude <code>reserved-lane</code>, clive's two <code>context-fit</code>
+and one <code>competence</code>, three codex <code>reserved-lane</code> and one
+native <code>in-harness-backend</code> — in the picker's own order; the
+02:34:43Z attempt replays to its three codex <code>reserved-lane</code> rows
+alone. Both read <code>refuse</code> from
+<code>no-eligible-candidates; default-backend-ineligible</code>, and the run
+exits 0.</p>
+
+<p id="replay-the-two-oversizednode-routing-refusals-finding">Three findings.
+The reserved-lane tier floor was met, so the term that withheld codex is the
+policy's <em>window</em> term, not its difficulty term — and the record does
+not carry the window reading, so that attribution is conditional on a
+reconstructed input, which the replay shows does not change the row set either
+way. The later attempt's local lane was absent because the dispatch named
+<code>--backend codex</code>, and naming a lane narrows the picker's offering
+to that lane's backends alone. And the oversize waiver is unreachable on any
+configuration declaring an in-harness backend: it requires every unreserved
+candidate to be excluded on context fit alone, and the in-harness candidate's
+reason never is.</p>
+
+<p id="replay-the-two-oversizednode-routing-refusals-detail">The per-attempt
+account, the input-by-input provenance, the file-and-line citations for each
+path that withheld a lane, and what each of the waiver, the candidate scan and
+the dispatch reroute would have to change are in
+<a href="/reckon/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/oversized-route-replay.html">the
+replay report</a>. The replay's own log records two attempts replayed, both
+refusals reproduced, and a bare <code>EXIT=0</code> line;
+<code>tests/test_oversized_route_replay.py</code> drives it and asserts the
+rows.</p>
+</article>
