@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="power_convertor">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="filter-grounding-prediction">
+  <meta name="plan-title" content="Filter Grounding Prediction">
+  <meta name="plan-summary" content="Predict the 2023 JT-60SA booster ripple from the 2021-fitted model plus the filter and grounding design values, judged against pre-registered criteria">
+  <meta name="plan-status" content="done">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="9.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-sprint" content="S1">
+  <meta name="plan-tags" content="jt-60sa,power-supply,lumped-model">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;}">
+  <title>Filter Grounding Prediction | power_convertor</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="70">
+<meta name="plan-modified" content="2026-10-17">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Pre-register the test</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>
+      The demonstration is a prediction made before the comparison is seen. Write down, before the
+      converter model is fitted, what the prediction must achieve and on which data. The predicted
+      quantities are the coil-voltage lines at 6f, 12f, 18f, 24f and 30f, for three cases:
+    </p>
+    <ul>
+      <li>The EF5 and EF2 idle windows of the 2023 ±1 kV tests (E100865, E100863).</li>
+      <li>The ±2 kV tests (E100866 and the EF2 counterpart).</li>
+      <li>Their swing periods.</li>
+    </ul>
+    <p>
+      Set the tolerance per line, a band in decibels, and the aggregate criterion. Name the cases that are
+      reported but not judged. EF6 is the obvious one until its 2023 filter state is known.
+    </p>
+    <p>The criteria, set on 2026-10-13 before any model parameter was fitted:</p>
+    <table>
+      <thead><tr><th>Quantity</th><th>How it is measured, on model and data alike</th><th>Band</th></tr></thead>
+      <tbody>
+        <tr><td>Coil-voltage lines at 6f, 12f, 18f, 24f, 30f</td><td><code>measurement.measure</code> of <code>MMSYS/vol&lt;coil&gt;</code> over the window, each line at its own fitted frequency (<code>line_frequencies_hz</code>); the model's output is passed through the booster-converter-model §3 measurement chain first. <em>Amended 2026-10-13 at <code>aecc62f</code>, before any 2023 prediction was computed</em>: the original single lock on the 12f line was biased when that line faded within the window (booster-converter-model §7).</td><td>Within 3 dB of the measured line, or within 5 V where the measured line is below 10 V</td></tr>
+        <tr><td>Peak-to-peak ripple</td><td>Peak-to-peak of the sum of the per-family folds, each source family (booster lines and base lines) folded at its own fitted frequency over the window (about 150 supply cycles), through the same chain. <em>Amended with the line row, same reason.</em></td><td>Within 3 dB of the measured value</td></tr>
+        <tr><td>Phase of each coil-voltage line at 6f, 12f, 18f, 24f, 30f</td><td>No recorded channel gives the supply phase, so the model's waveform, through the same chain, is shifted by the one supply phase θ that minimises its squared difference from the recorded samples (<code>fold.fit_supply_phase</code>). θ is the only quantity fitted to the data. Every line is a multiple of 6f, so θ is defined modulo 60°, and the criterion tests the lines' phases relative to one another. Each line's complex coefficient is estimated over four supply cycles, jointly with the line (66 − n)f that 4 kHz sampling folds about 33 Hz below it. The phase error is the shifted model coefficient's phase less the measured one. The judged value is the median over the consecutive four-cycle windows of the case's window, with the model evaluated at each window's operating point. <em>Amended 2026-10-13 by the lead's decision, before any 2023 prediction was computed</em>: on the idle windows of E100307, E100310, E100318 and E100321, the frozen 2021 model meets the amplitude bands at 6f and 18f, yet the phase-aligned overlay (booster-converter-model, <code>bcm-overlay</code>) puts its 18f, 24f and 30f phases more than 100° from the measured ones.</td><td>Within 30° of the measured phase. A line whose measured amplitude is below 10 V is reported, not judged.</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>Aggregate:</strong> the prediction passes only if every judged quantity in every judged case
+      lies inside its band. One miss fails the prediction, and §5 owes it an explanation. The same bands
+      judge the held-out 2021 cases in booster-converter-model §5, for the 6f–24f lines, their phases
+      and the peak-to-peak ripple.
+    </p>
+    <table>
+      <thead><tr><th>Case</th><th>Shots</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>EF5 and EF2 idle windows, ±1 kV tests, −3.5 s to −1.0 s</td><td>E100865 (EF5), E100863 (EF2)</td><td>Judged</td></tr>
+        <tr><td>EF5 and EF2 idle windows, ±2 kV tests</td><td>E100866 (EF5), E100864 (EF2); both booster references swing ±2 kV (<code>PSSCfst/refvol&lt;coil&gt;Bst</code> −1999 to 1997 V), named before any fit</td><td>Judged</td></tr>
+        <tr><td>Swing periods of the four shots above</td><td>as above</td><td>Judged</td></tr>
+        <tr><td>EF6 idle window and swing, ±1 kV</td><td>E100882</td><td>Reported, not judged, until its 2023 filter state is documented (jt60sa-power-supply-sources §3)</td></tr>
+        <tr><td>Raw peak-to-peak extent in 10 ms bins</td><td>all of the above</td><td>Reported, not judged: it carries noise and digitiser images that the folded value averages out</td></tr>
+        <tr><td>Any 2023 structure marked as a hypothesis in §3</td><td>all of the above</td><td>Judged on the 2021-fitted model's own choices, the same ones the 2021 held-out cases were judged on: the booster pair under its fitted one-offset firing law, and the CEA base in the paired one-direction mode. Each verdict names every hypothesis choice it rests on. §3's symmetric booster firing is reported beside the verdict, not judged. <em>Amended 2026-10-13 by the lead's decision, before any 2023 prediction was computed</em>: as §3 encodes them, every EF2 and EF5 configuration carries a hypothesis choice (the booster's firing mode, and the CEA base's signed pairing). Excluding them would have left nothing judged, and the test could not have failed.</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>Done when</strong> this section carries the criteria table and the list of judged and
+      reported cases. Its comment records the commit at which the criteria were set, and that commit
+      precedes the first commit of booster-converter-model §5.
+    </p>
+
+    <h2 id="s2">§2 — The filter and grounding as fixed components</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>
+      Extend <code>power_convertor.filter_network</code> into the full booster loop. The pieces are:
+    </p>
+    <ul>
+      <li>the base supply in series, as a second ripple source: the shot inventory in <a href="/power_convertor/research/jt60sa-booster-ripple-evidence">jt60sa-booster-ripple-evidence</a> shows the coils carrying these lines with no booster current: about 130 V at 12f on EF2–EF5 and 310–390 V at 6f on CS1–4, EF1 and EF6. On the booster coils, which have the filter, the lines are as large as on the coils without one, so the data show the filter not acting on them. The network takes the base supply's voltage as a source input; its converter is a twelve-pulse configuration of the bridge pair in <code>src/power_convertor/bridge.py</code> (booster-converter-model §2), never a second converter model;</li>
+      <li>the booster with its series inductor;</li>
+      <li>the damped filter branch across the booster;</li>
+      <li>the coil, with its self- and mutual inductances as inputs (design values by default; the values booster-converter-model §4 identifies are applied in §4 below);</li>
+      <li>the Alternative Grounding System's mid-point resistors to ground.</li>
+    </ul>
+    <p>
+      Every component value is a design value with its source cited in the module docstring. None is
+      fitted.
+    </p>
+    <p>
+      <strong>Done when</strong> the loop's coil-to-converter response reduces to the existing
+      <code>BoosterFilter.transfer</code> when the grounding resistors are removed. Its common-mode path
+      shows the coil terminals at about ± half the converter voltage to ground with the resistors present
+      and at 0 and the full voltage without them; that pair is the negative control. Tests for both are
+      in <code>tests/test_filter_network.py</code>.
+    </p>
+
+    <h2 id="s3">§3 — Encode the 2023 converter structure from documents</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>
+      Every coil carries two sources on the same supply frequency: the booster, seen through the filter,
+      and the base supply, which the filter does not touch. The shot inventory
+      (<a href="/power_convertor/research/jt60sa-booster-ripple-evidence">jt60sa-booster-ripple-evidence</a> §9)
+      shows the 2023 even lines on EF2 and EF5 are the twelve-pulse base supplies' ripple, not a booster
+      run as a twelve-pulse pair, and the large 6f line on EF1 and EF6 is the other base-supply family's.
+      The structure of each comes from documents, not from the 2023 data: the booster's from
+      <a href="/power_convertor/plans/jt60sa-power-supply-sources">jt60sa-power-supply-sources</a> §2 and
+      the base supplies' from its §7. Encode both as configurations of the
+      bridge pair that booster-converter-model §2 provides. The configuration fixes structure only: bridge
+      count, connection and phase shift. The 2021-fitted bridge parameters are applied to it in §4, and it
+      adds no parameter of its own. Two documented mechanisms are outside what one shared-angle series
+      pair can express: the booster's separate firing angles and the base's signed parallel modules. Their
+      owners are booster-converter-model §8 for the base modules and §9 for the booster pair, which extend
+      the bridge library; §4 consumes them only after both land (gates g-fgp-7 and g-fgp-8).
+    </p>
+    <p>
+      <strong>Done when</strong> the 2023 configuration is a named, cited configuration in code. The
+      plan records the document that fixes each structural choice. A configuration whose structure is
+      unsupported by any document is marked as a hypothesis and reported separately from the judged
+      prediction. Negative control: removing the citation from one structural choice moves that
+      configuration out of the judged set and into the reported hypotheses, shown by a test.
+      <em>Clarified 2026-10-13 with the §1 amendment, before any 2023 prediction was computed</em>: in this
+      section, "judged" and "hypothesis" classify a configuration's documentary support, as
+      <code>configurations.partition_by_evidence</code> computes it, and the control and its test stand
+      unchanged. They no longer decide which cases the prediction scores. Under §1, a case resting on a
+      hypothesis configuration is still judged, and its verdict names that hypothesis, so §4 runs this
+      control to show that the demoted choice joins the hypotheses named beside the verdict. Where the
+      documents and the data disagree, the documented structure is the judged one. Where documents
+      disagree among themselves, the lead's ranking decides: a document describing the installed state
+      ranks above a procurement drawing, which ranks above a simulator model. The ranking is a property
+      of the documents, applied without reference to the data. The filter's shunt attachment (§6) is
+      the first such case. Shirai et al., Nucl. Fusion 64 (2024) 112008, Fig. 9 and §3.3, describes
+      the installed modification with the filter in parallel with the booster only. That outranks
+      the MECS v2.9.2 procurement scheme (Fig 2.7-20) and its p. 9 simulator network, which put the shunt
+      across base and booster. So the booster-only attachment is judged, and the drawn one is reported
+      as the conflicting document.
+    </p>
+
+    <h2 id="s4">§4 — Predict 2023 and compare</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>
+      Run the 2021-fitted model with the documented 2023 structure, the design filter, the grounding,
+      the 2023 operating point (measured reference and coil current) and the measured supply frequency.
+      Compare with the 2023 coil-voltage lines and peak-to-peak ripple through the same measurement
+      chain, using the library measurement that booster-converter-model §3 lifts out of
+      <code>scripts/figures/jt60sa_booster_ripple.py</code>. The overlay figure extends that script's
+      <code>fig_lines()</code> with the model's output rather than drawing a second one. The scoring entry
+      point also computes §1's phase row. For each consecutive four-cycle window of a judged case it
+      evaluates the model at that window's operating point and fits one supply phase with
+      <code>fold.fit_supply_phase</code>. It estimates each measured line jointly with its folded
+      (66 − n)f neighbour and takes the median phase error per line. Lift the joint line fit and the
+      steady-state acquisition sampler that <code>scripts/figures/booster_model_overlay.py</code> carries
+      into <code>measurement.py</code> and <code>supply.py</code>, and call those, rather than writing a
+      third copy. Report three ablations beside the full prediction:
+    </p>
+    <ul>
+      <li>filter only, on the 2021 structure;</li>
+      <li>filter and structure, at the 2021 operating point;</li>
+      <li>everything.</li>
+    </ul>
+    <p>
+      <strong>Done when</strong> the prediction is scored against every judged case under the §1
+      criteria, with the verdict recorded whether it passes or not. Every judged line carries its
+      amplitude error and its median phase error, and the aggregate counts both. One scoring entry point applies §3's
+      judged-or-hypothesis status: every judged case lists, beside its verdict, the hypothesis choices its
+      configurations rest on, as §1 now requires. The §3 citation-removal control is run through that entry point, to show
+      that a demoted choice joins the list. EF6, report-only under §3, stays out of the judged aggregate. A figure in
+      <code>docs/figures/filter-grounding-prediction/</code> overlays predicted and measured lines per
+      coil. The filter-only ablation, already known to miss the 12f and 24f lines by 6–11 times (12 V against 102 V and 3.3 V against 37 V for EF5; 22 V against 135 V and 6.3 V against 42 V for EF2), is shown
+      failing the same criteria, which confirms the criteria can fail.
+    </p>
+
+    <h2 id="s5">§5 — Explain what the prediction misses</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>
+      Account for each residual the §4 comparison leaves. The EF6 anomaly that motivated this section is
+      answered: its 2023 6f line is the base supply's own (research §9), not a failed trap. What remains
+      open on EF1 and EF6 is the filtered booster residual itself, about 25 V expected under a base line
+      near 300 V at 6f, which needs a phase-resolved two-source fit or a channel at the booster terminals
+      (jt60sa-power-supply-sources §6). On EF2 and EF5 the 6f and 18f lines carry the filtered booster
+      almost alone, because a twelve-pulse base cancels them. The 12f and 24f lines carry mostly the base
+      supply. 30f is a twelve-pulse-cancelled order like 6f and 18f. A base contribution there, suggested by
+      2.3 V in E100303, which sits within the 1–3 V noise floor, and by EF2's 5.9 V against 2.4 V from the
+      2021 × design-filter estimate, is a hypothesis until a booster-free control shows a significant 30f
+      line and its dependence on operating point. A residual is attributed by the family of lines it sits
+      on. Test the candidate explanations against the
+      data, not by refitting the prediction:
+    </p>
+    <ul>
+      <li>a detuned or disconnected filter;</li>
+      <li>a different bridge configuration, booster or base;</li>
+      <li>a different operating point: the base supplies' 12f and 24f lines change with coil current.</li>
+    </ul>
+    <p>
+      <strong>Done when</strong> every residual larger than the §1 tolerance has an explanation that is
+      tested. For each residual, at least one candidate explanation has been run against a second shot or
+      checked against a document, and the outcome recorded as confirmed or ruled out. A residual is left
+      open only after such a test proved inconclusive, with the data that would decide it named. Negative
+      control: a deliberately wrong attribution, a 12f residual on EF5 assigned to the booster or a 6f
+      residual assigned to the base, is run through the same procedure and must be ruled out by its
+      second-shot or line-family test.
+    </p>
+    <p><em>Amended 2026-10-14</em>: the swing-window residuals rest on a 12f line that <code>measure_window</code> could not lock below a 60.95 Hz fundamental. §8 re-judges those windows. This section takes its residual inventory from §8's corrected comparison, not from §4's, and no node is dispatched on it until §8 lands.</p>
+
+    <h2 id="s6">§6 — Where the filter&#x27;s shunt attaches: drawings against data</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links="jt60sa-power-supply-sources#s2"></section>
+<p>The drawings and the data disagree about where the filter's shunt branch attaches. The procurement scheme (MECS v2.9.2 p. 8, Figure 2.7-20) and the Simulink network (p. 9) put the shunt (the limiting inductor, then the filter capacitor in parallel with the damping branch) between the booster output and the base supply's negative rail. That places it across base and booster in series, ahead of the QPC and the coil. With the booster bypass closed it sits directly across the base supply. That attachment filters the base supply's ripple too: with 4.45 mH in series, |H| is about 0.03 at 12f, and 0.28–0.44 with the bypass closed. The data show no such filtering. EF5 carries 102 V at 12f in E100865 and 129 V in E101088, against 128–130 V on EF3 and EF4, which have no filter. EF1 and EF6 carry 314 and 337 V at 6f, against 328–388 V on the CS coils. The open item is <a href="/power_convertor/research/jt60sa-booster-ripple-evidence#open-shunt-attachment">open-shunt-attachment</a>.</p><p>Make the attachment a configuration of the loop that <code>power_convertor.filter_network</code> owns, beside the booster-only attachment §2 builds: <em>as drawn</em> (across base and booster, bypass open or closed) and <em>booster only</em>. Cite each value from the evidence document's source table: base-supply inductance 0.35 mH, or 0.175 mH in dual mode (p. 9); booster inductance 3.25 mH in Table 2.7-18 (p. 8) and 4.1 mH in the p. 9 model, carried as two named values; the grounding resistors (2 kΩ × 2 across the coil, 45 kΩ × 2 from the base–booster junction) and the 0.6 µF screen capacitance (p. 9). Which attachment is judged is set by §3's document ranking: the installed modification in Shirai et al. 2024 (Fig. 9) gives booster only, which is judged, and the MECS drawing is reported as the conflicting document.</p><p><strong>Done when</strong> <code>tests/test_filter_network.py</code> shows the base-supply path attenuated to about 0.03 at 12f with the shunt as drawn and the bypass open, to 0.28–0.44 with the bypass closed, and passed near unity with the booster-only attachment. The booster path must be the same in both attachments when the base source is zero. The evidence fragment sets the measured EF5 and EF2 12f lines against EF3 and EF4 beside the two attachments' predictions, stating which one the data support. Negative control: a test that swaps the two attachments' labels must fail the base-path check.</p>
+
+    <h2 id="s7">§7 — Coil terminal voltage to ground</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+<p>The lead's headline quantity is the peak-to-peak ripple because quench detection and the terminal insulation's Paschen margin see it, and the insulation sees each coil terminal's voltage to ground, not the voltage across the coil. The grounding system as installed (Shirai et al. 2024, Fig. 9; MECS v2.9.2 p. 9) has a 2.0 kΩ × 2 pair across the coil terminals with its midpoint grounded, a 45 kΩ × 2 pair on the supply side (raised from 2.5 kΩ), and a 0.6 µF screen capacitance. §6 declared the supply-side legs and the screen but left them out of every calculation. Bring them into <code>GroundingSystem</code>'s common-mode path. Then predict each coil terminal's ripple voltage to ground, for the 2021 grounding (single-ended, before the system) and the installed 2023 grounding, on the same converter waveform.</p><p><strong>Done when</strong> <code>tests/test_filter_network.py</code> shows the terminal-to-ground ripple at 6f and 12f changing with the 45 kΩ legs and the screen capacitance present, against their removal: the negative control is that removing them leaves the result unchanged, which must fail. The evidence fragment tabulates, for EF5 and EF2 at the 2021 and 2023 operating points, the predicted peak-to-peak terminal-to-ground ripple beside the coil-voltage peak-to-peak, so the Paschen-relevant number is stated next to the measured one.</p>
+
+    <h2 id="s8">§8 — Re-judge the 2023 swing windows at their own 12f</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links="booster-converter-model#s20,filter-grounding-prediction#s4"></section>
+<p>§4's 2023 swing windows (E100863–E100866, 7.53–8.53 s) run at about 60.86 Hz. Before booster-converter-model §20, <code>measure_window</code> could not lock 12f at that fundamental. A per-order frequency scan of the held traces reads their coil 12f at 130–147 V, where §4's measurement read 25–37 V. §4's finding that the model's 12f and peak-to-peak are about 10 dB too strong on those windows therefore rests on the mis-lock. The family-folded peak-to-peak used the same 12f frequency. So did the model's synthesis frequency, the four-cycle joint line coefficients and the fitted supply phase in <code>prediction.py</code>. A measured fundamental of 60.970–60.984 Hz against a true 60.852–60.864 Hz walks the 24f phasor by about 69° and the 6f phasor by about 17° over one four-cycle window, so the swing windows' 24f phase misses are suspect as well. The 2023 idle windows, at about 61.17 Hz, are unaffected.</p><p><strong>Done when</strong> §4's judged 2023 cases are re-measured through <code>measure_window</code> as booster-converter-model §20 leaves it, and re-judged under §1's pre-registered criteria, in phase as well as in amplitude and peak-to-peak. The parameters frozen at <code>8ebe9b3</code> stay unchanged, and no ablation is added. The fragment states the re-judged verdict per case beside §4's landed verdict, which stays on the record as judged. Negative control: the fixed 61.2 Hz seeding reproduces §4's landed values.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="line-tolerance" data-choice="3dB-or-5V" data-by="Simon McIntosh" data-when="2026-10-13">
+    <p class="r-dec-q">What tolerance per harmonic line counts as a successful prediction?</p>
+    <p class="r-dec-ctx">The lines span three decades, from about 1 kV at 6f in 2021 to a few volts at 18f in 2023, and the 2023 lines near 5 V sit close to the spectral noise floor of 1–3 V. A tolerance in decibels treats every decade alike; an absolute floor stops the smallest lines from deciding the verdict on noise. The filter-only ablation misses 12f and 24f by 12–20 dB, so the tolerance must be tighter than that to discriminate.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="6dB-or-10V">Within 6 dB, or within 10 V where the measured line is below 20 V</button>
+      <button class="r-opt chosen" data-value="3dB-or-5V">Within 3 dB, or within 5 V where the measured line is below 10 V</button>
+      </p>
+    <p class="r-dec-rat">The lead chose the tighter band: a pass within 3 dB is stronger evidence that the circuit model, not its fitted constants, carries the prediction. The filter-only ablation misses the 12f and 24f lines by 16–21 dB (12 V against 102 V and 3.3 V against 37 V for EF5; 22 V against 135 V and 6.3 V against 42 V for EF2), so it falls 13–18 dB outside the band. The aggregate rule, also the lead&#x27;s, is that every judged line must pass. The same band judges the held-out 2021 cases in booster-converter-model §5.</p>
+    </div>
+<div class="r-dec" data-key="structure-source-ranking" data-choice="installed-over-design" data-by="Simon McIntosh" data-when="2026-10-13" data-sections="s3,s6">
+    <p class="r-dec-q">When documents disagree about the 2023 structure, which one sets the judged structure?</p>
+    <p class="r-dec-ctx">The MECS v2.9.2 procurement scheme (Fig 2.7-20) and its p. 9 simulator network put the filter&#x27;s shunt across base and booster in series. Shirai et al., Nucl. Fusion 64 (2024) 112008, Fig. 9, labelled as the installed modification, puts it across the booster only.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="installed-over-design">Installed-state documents rank above procurement drawings, which rank above simulator models</button>
+      <button class="r-opt" data-value="judge-both">Score the prediction under each documented structure</button>
+      <button class="r-opt" data-value="first-cited">Keep the document cited first</button>
+      </p>
+    <p class="r-dec-rat">The ranking is a property of the documents and is applied without reference to the data, so the prediction stays a test. For the shunt it makes the installed booster-only attachment the judged structure and the MECS drawing a reported alternative. Nothing is fitted on 2023 under either choice.</p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-fgp-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-12" data-recommends-skill="/reckon-build filter-grounding-prediction §1" data-resolved-at="2026-10-17T10:01:03+00:00" data-resolved-by="reckon-edit">
+    <h4 class="r-fu-title">Pre-register the criteria before any model is fitted</h4>
+    <div class="r-fu-body"><p>§1 needs the lead's tolerance decision and must land before booster-converter-model §5 starts fitting. §2 can follow at once. §3 waits on the documented booster structure, and §4 on the fitted model.</p></div>
+    <pre class="r-fu-prompt">/reckon-build filter-grounding-prediction §1</pre>
+    <p class="r-fu-outcome"><p>Resolved in the portfolio review of 17 October 2026: the criteria were pre-registered at <code>0025b89</code> before any fit, and every section has landed. The 2023 prediction failed on 8 of 8 judged cases, and every miss now has a tested or named explanation (§5). No followup here.</p></p>
+    </article>
+</section>
+  <section data-reckon="gates" id="gates" class="r-gates">
+<h2><span class="sec">§</span> Evidence gates</h2>
+<div class="r-gate" data-id="g-fgp-1" data-section="s3" data-gated-sections="s3" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">the 2023 booster bridge arrangement and phase shift cited from documents</h4>
+    <p class="r-gate-required-evidence">jt60sa-power-supply-sources#s2</p>
+    <a class="r-gate-evidence" href="/power_convertor/evidence/archive/jt60sa-power-supply-sources-landed.html#s2">Evidence</a>
+</div>
+<div class="r-gate" data-id="g-fgp-2" data-section="s4" data-gated-sections="s4,s5" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">the converter model fitted on 2021 data and checked on held-out 2021 shots</h4>
+    <p class="r-gate-required-evidence">booster-converter-model#s5</p>
+    <a class="r-gate-evidence" href="booster-converter-model §5, §8–§10. The model was fitted on 2021 only: paired base 512.07 V and 0.0140 Ω per module after the §10 re-score; booster pair 2665.5 V per bridge with the one-offset firing law. It was checked on six held-out 2021 cases. Folded peak-to-peak passes all six. The line aggregate fails: 12f/24f on the booster coils, 30f in the idle windows, and 18f/30f in the swings. Five multi-kA base lines also fail, a miss the diagnosis attributes to per-module data no plant route provides. On 2026-10-13 the lead decided to predict 2023 with the model as it stands. The gate records that the model exists and was checked; the check itself fails. /power_convertor/evidence/archive/booster-converter-model-landed.html#s9-pair">Evidence</a>
+</div>
+<div class="r-gate" data-id="g-fgp-3" data-section="s3" data-gated-sections="s3" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">the bridge-pair library that the 2023 configuration is written against</h4>
+    <p class="r-gate-required-evidence">booster-converter-model#s2</p>
+    <a class="r-gate-evidence" href="/power_convertor/evidence/archive/booster-converter-model-landed.html#s2">Evidence</a>
+</div>
+<div class="r-gate" data-id="g-fgp-4" data-section="s3" data-gated-sections="s3" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">the base supplies&#x27; converter arrangement cited from documents for both families</h4>
+    <p class="r-gate-required-evidence">jt60sa-power-supply-sources#s7</p>
+    <a class="r-gate-evidence" href="/power_convertor/evidence/archive/jt60sa-power-supply-sources-landed.html#s7">Evidence</a>
+</div>
+<div class="r-gate" data-id="g-fgp-5" data-section="s6" data-gated-sections="s6" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">the booster loop network with the base supply as a source</h4>
+    <p class="r-gate-required-evidence">filter-grounding-prediction#s2</p>
+    <a class="r-gate-evidence" href="/power_convertor/evidence/archive/filter-grounding-prediction-landed.html#s2">Evidence</a>
+</div>
+<div class="r-gate" data-id="g-fgp-6" data-section="s4" data-gated-sections="s4" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">both shunt attachments available as configurations of the loop</h4>
+    <p class="r-gate-required-evidence">filter-grounding-prediction#s6</p>
+    <a class="r-gate-evidence" href="§6 landed at 71d80c5: the as-drawn and booster-only shunt attachments are both configurations of BoosterLoop. /power_convertor/evidence/archive/filter-grounding-prediction-landed.html#s6">Evidence</a>
+</div>
+<div class="r-gate" data-id="g-fgp-7" data-section="s4" data-gated-sections="s4" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">the booster pair&#x27;s separate firing angles and the base&#x27;s signed parallel modules expressible in the bridge library</h4>
+    <p class="r-gate-required-evidence">booster-converter-model#s8</p>
+    <a class="r-gate-evidence" href="BridgeSet carries the base&#x27;s signed parallel modules (booster-converter-model §8, cd38228 and bf6543f), and BridgePair the booster pair&#x27;s separate firing angles (§9, a52c361). /power_convertor/evidence/archive/booster-converter-model-landed.html#s8-pairs">Evidence</a>
+</div>
+<div class="r-gate" data-id="g-fgp-8" data-section="s4" data-gated-sections="s4" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">the booster as a documented 30-degree series pair under asymmetric firing, fitted and re-scored on 2021</h4>
+    <p class="r-gate-required-evidence">booster-converter-model#s9</p>
+    <a class="r-gate-evidence" href="booster-converter-model §9, a52c361. The documented 30° series pair, fitted on E100310 at 2665.5 V per bridge, lies within 8.1% of the 2.9 kV nameplate, reaches the ±3 kV and ±5 kV references, and was re-scored on the six held-out 2021 cases. The firing-law diagnosis (one-offset law, five alternatives refuted) is at #s9-firing. /power_convertor/evidence/archive/booster-converter-model-landed.html#s9-pair">Evidence</a>
+</div>
+</section>
+<section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s1" data-id="c-close-s1" data-who="reckon-build" data-when="2026-10-13T06:20:00Z">
+    <div class="r-comment-body"><p>§1 closed: criteria set at <code>0025b89</code> and the last judged shot named at <code>907bd7c</code>, both before any commit of booster-converter-model §5. <a href="/power_convertor/evidence/archive/filter-grounding-prediction-landed.html#s1">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-13T05:22:00Z">
+    <div class="r-comment-body"><p>§2 landed: <code>BoosterLoop</code> and <code>GroundingSystem</code> in <code>filter_network.py</code>, merged at <code>57e7cfb</code>. The booster path reduces to <code>BoosterFilter.transfer</code>, the grounding centres the terminals at ±500 V for 1 kV, and the base path passes the trap (|H| &gt; 0.9). The drawn shunt attachment and the cited grounding legs follow in §6. <a href="/power_convertor/evidence/archive/filter-grounding-prediction-landed.html#s2">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261013T045630708809-fgp-loop" data-who="reckon-build" data-when="2026-10-13T05:18:06.543Z">
+    <div class="r-comment-body"><p>Extended power_convertor.filter_network with BoosterLoop and GroundingSystem — the coil with self/mutual inductance, the base supply as a series ripple source and the Alternative Grounding System's mid-point resistors — reducing to BoosterFilter.transfer with the grounding removed; gate tests/test_filter_network.py+tests/test_fold.py 12 passed at 22be39f, negative control 2 failed EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-13T07:50:00Z">
+    <div class="r-comment-body"><p>§3 landed, merged at <code>da6c5e2</code>: six configurations with 36 cited structural choices. The booster's firing mode and the CEA signed pairing are hypotheses; EF6 is report-only. The citation-demotion and zero-phase negative controls fail as intended. <a href="/power_convertor/evidence/archive/filter-grounding-prediction-landed.html#s3">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261013T073036646490-fgp-structure" data-who="reckon-build" data-when="2026-10-13T07:48:04Z">
+    <div class="r-comment-body"><p>[Configuration evidence](/power_convertor/evidence/fragments/filter-grounding-prediction/fgp-structure.html#fgp-structure-configurations) tabulates six configurations and 36 cited choices; 76 tests pass versus 46 at baseline, and the citation/zero-phase mutation produces nine expected failures. Booster firing and CEA signed pairing remain hypotheses; EF6 remains report-only.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261013T074810862224-review-of-fgp-structure-b72de4841008" data-who="reckon-build" data-when="2026-10-13T07:53:59Z">
+    <div class="r-comment-body"><p>Independent review stored for b72de48410087b27ff47be93e37fe87b94c785ea against e29428ce19e69a0b06a4281f6c5dae189a86776c: six dimensions scored, zero added failures, no blocking findings and one follow-on on independent transformer phase-orientation coverage.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261013T144112254989-fgp-lift" data-who="reckon-build" data-when="2026-10-13T15:08:14Z">
+    <div class="r-comment-body"><p>Frozen EF2 and EF5 model values and lifted measurement helpers at docs/evidence/fragments/filter-grounding-prediction/fgp-lift.html; all 11 overlays reproduce at 0.001 dB and degree precision, while one held-out 12f line moves -0.326531 dB after removing duplicate filtering.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261013T150919821427-review-of-fgp-lift-687df2774e33" data-who="reckon-build" data-when="2026-10-13T15:18:54Z">
+    <div class="r-comment-body"><p>Independent review of r-20261013T144112254989-fgp-lift stored at both review paths, with six scores totalling 113/120, zero added suite failures, and one follow-on finding about overlay regression coverage.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-lift" data-who="reckon-build" data-when="2026-10-13T15:20:00Z">
+    <div class="r-comment-body"><p>First §4 node landed, merged at <code>f713657</code>. It froze the 2021 parameters at <code>8ebe9b3</code>, ahead of any 2023 read. It also lifted the joint line fit and the acquisition sampler into the library, with the overlay reproduced exactly, and removed the doubled ripple filter (largest move 0.33 dB). The scoring node <code>fgp-predict</code> is running. §4 stays open until it lands. <a href="/power_convertor/evidence/archive/filter-grounding-prediction-landed.html#s4-lift">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-13T16:10:00Z">
+    <div class="r-comment-body"><p>§4 landed, merged at <code>6749a56</code>, with the parameters frozen at <code>8ebe9b3</code> first. <strong>The 2023 prediction fails:</strong> 8 of 8 judged cases miss. On the idle windows, 6f and 12f amplitudes are within 2.3 dB and peak-to-peak passes 2 of 4, but 18f is 10–13 dB too strong. On the swing windows, 12f and peak-to-peak are about 10 dB too strong, as is every ablation. The hypothesis lists' <code>firing_mode=symmetric</code> is §3's label; the judged model runs the fitted one-offset law. Review 102/120. Its two follow-ons go to §5: a synthetic test that shares its model with its data, and a figure missing the second idle window and the swing windows. <a href="/power_convertor/evidence/archive/filter-grounding-prediction-landed.html#s4">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261013T151909655110-fgp-predict" data-who="reckon-build" data-when="2026-10-13T15:50:58Z">
+    <div class="r-comment-body"><p>Scored 8 judged EF2/EF5 idle and peak-swing cases: aggregate FAIL (8/8 case failures); filter-only FAIL (8/8); EF6 reported, citation demotion and symmetric firing scored; the fragment records every band and the SVG overlays both coils.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261013T155122640516-review-of-fgp-predict-d49d642aec41" data-who="reckon-build" data-when="2026-10-13T16:06:16.827Z">
+    <div class="r-comment-body"><p>Reviewed r-20261013T151909655110-fgp-predict at base 04bf5e4b841c3f117a808f7a38e98664151665c5 and head d49d642aec41a01d17532c482c78a6799a4d0505; stored parsed record scores all six dimensions (goal_fidelity 18, evidence 16, scope_discipline 17, durability 15, fit 17, reuse 19; total 102), added_failure_count 0 and added_failure_ids [], with two follow-on findings and no blocking defect.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261013T163811321254-review-of-fgp-firing-label-affa9977f078" data-who="reckon-build" data-when="2026-10-13T16:54:35.251Z">
+    <div class="r-comment-body"><p>independent review of run r-20261013T161058375423-fgp-firing-label — full bank 112/120 (goal_fidelity 19, evidence 16, scope_discipline 20, durability 18, fit 19, reuse 20); no blocking finding, two follow-on (score-after.log/focused.log header names base revision d31f158 while measuring the changed worktree; the fragment renders the symmetric arm by name only, so the done_when's offset-0 clause is test-attested); reviewed base d31f158ec997f4fbfc317c351655c6a231b19d81, reviewed head affa9977f0788996519b03404cb7da36da40b51f; added_failure_count 0.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261013T161058375423-fgp-firing-label" data-who="reckon-build" data-when="2026-10-13T16:36:02.556Z">
+    <div class="r-comment-body"><p>node fgp-firing-label — prediction.hypothesis_choices now derives the booster firing entry from the scored model's booster_firing_offset_rad, so judged rows read "fitted one-offset asymmetric law with its offset 0.2006387 rad (11.50 degrees)" and the zero-offset symmetric arm reads "symmetric firing at offset 0"; fgp-predict.html re-rendered from the same scoring run differs only in firing hypothesis text (JSON diff 70/70 changed lines are hypothesis strings; fragment diff 22/22)</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-firing-label" data-who="reckon-build" data-when="2026-10-13T16:58:00Z">
+    <div class="r-comment-body"><p>Label correction merged at <code>75f4d7a</code>, from the other JT-60SA session's finding. The verdict record now names the firing law the scored model applies. The judged rows name the fitted one-offset law at 0.2006387 rad (11.50°) in place of §3's <code>firing_mode=symmetric</code>, and the reported arm names symmetric firing at offset 0. Only the label text changed: every score, band and verdict is identical. A test now guards both labels. Review 112/120. <a href="/power_convertor/evidence/fragments/filter-grounding-prediction/fgp-predict.html">fragment</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261013T165946082905-fgp-record-followons" data-who="reckon-build" data-when="2026-10-13T17:35:59.557Z">
+    <div class="r-comment-body"><p>fgp-record-followons — tests/test_prediction.py now builds its synthetic measured trace as an explicit sum of supply harmonics independent of configured_model and asserts both sides of the amplitude and folded peak-to-peak bands; scripts/figures/jt60sa_booster_ripple.py renders predicted against measured for all eight judged windows (E100865/E100866 EF5, E100863/E100864 EF2, idle and swing) into docs/figures/filter-grounding-prediction/fgp-predict/lines.svg; fgp-predict.html re-renders byte-identical (scores JSON diff 0 lines)</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261013T173616534664-review-of-fgp-record-followons-23c58cd1da25" data-who="reckon-build" data-when="2026-10-13T17:53:59.702Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261013T165946082905-fgp-record-followons stored at both review paths (base 518ab6e0b2e5e1b2bf812fddbc3c4b21856df1f9, head 23c58cd1da25e343ebd564ef61a21a4f4deb9d86), six scores 19/16/20/15/19/20 totalling 109/120, added_failure_count 0, added_failure_ids [], one follow-on finding (stale idle-window caption in src/power_convertor/prediction.py:331) and no blocking defect.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-mislock" data-who="reckon-build" data-when="2026-10-14T05:55:00Z">
+    <div class="r-comment-body"><p>The swing-window 12f and peak-to-peak figures in this verdict come from a 12f anchor that cannot lock below a 60.95 Hz fundamental, and those windows run at about 60.86 Hz (booster-converter-model §20). §8 re-judges them; this verdict stays on the record as judged.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-s5-base" data-who="reckon-build" data-when="2026-10-13T17:58:00Z">
+    <div class="r-comment-body"><p>First §5 node landed, merged at <code>a40b9d8</code>. Every base-family residual tracks the coil-current sign. Measured 12f falls about tenfold from −2.8 kA to +2.8 kA, in 2021 and 2023, while the frozen model's 12f barely moves. The pair swap and the filter are ruled out. The worker's "confirmed" verdict for the operating point was circular, and the fragment now says so. The mechanism goes to booster-converter-model §15. §5 stays open for it and for the booster-family residuals, which wait on §14. <a href="/power_convertor/evidence/archive/filter-grounding-prediction-landed.html#s5-base">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261013T165849127971-fgp-base-residuals" data-who="reckon-build" data-when="2026-10-13T17:45:44.912Z">
+    <div class="r-comment-body"><p>the base-family residuals of the 2023 prediction are attributed to the coil-current operating point the frozen model under-represents; the conducting-pair sign reversal is ruled out by the line-family and magnitude gates, and the booster-only filter by magnitude and sign, so all three recorded residuals are resolved with none left open.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261013T174645964140-review-of-fgp-base-residuals-2f1f3d6fee58" data-who="reckon-build" data-when="2026-10-13T18:07:31.478Z">
+    <div class="r-comment-body"><p>independent review of run r-20261013T165849127971-fgp-base-residuals at head 2f1f3d6 (base 518ab6e0): goal_fidelity 18, evidence 17, scope_discipline 19, durability 14, fit 18, reuse 20 (total 106); no blocking finding, two follow-ons recorded (prose baseline_suite/after_suite manifest fields, and no test over the script's real data path).</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261014T110517264504-review-of-fgp-attribute-residuals-a344502d32b7" data-who="reckon-build" data-when="2026-10-14T11:11:13Z">
+    <div class="r-comment-body"><p>Independent review at base f4e01817d1dabe90da83cc62654455ac95b25287 and head a344502d32b7b5622ccf4fa3260970bdcee461f3 scores goal_fidelity 8, evidence 12, scope_discipline 20, durability 12, fit 18, reuse 20; one blocking finding: paired residual recurrence does not test the proposed physical causes; observed added failure ids [] from the source run's base focused and head full-suite logs, whose scopes differ.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261014T115213495376-review-of-fgp-attribute-residuals-b3adadc3a1a8" data-who="reckon-build" data-when="2026-10-14T11:59:11Z">
+    <div class="r-comment-body"><p>Independent review of a344502d32b7b5622ccf4fa3260970bdcee461f3..b3adadc3a1a889bc1af3ce23de496045b5049a93 scores goal_fidelity 15, evidence 16, scope_discipline 20, durability 13, fit 18, reuse 4; one blocking wrong-family-control finding and three follow-ons; added failure ids [] from matched full-suite logs.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261014T122212763530-review-of-fgp-attribute-residuals-21f98325ba44" data-who="reckon-build" data-when="2026-10-14T12:29:20Z">
+    <div class="r-comment-body"><p>Independent review of b3adadc3a1a889bc1af3ce23de496045b5049a93..21f98325ba4405d0e85132da31dd012944889144 stored at both review paths; six scores 18/15/20/16/18/20, one follow-on finding, three added suite setup errors, uncapped dimension sum 107 and stored aggregate capped at 5 by the review annotator.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-10-14T12:35:00Z">
+    <div class="r-comment-body"><p>§5 closed, merged at <code>1a92f46</code>. Every 2023 miss beyond §1's tolerance now has a tested explanation: 18 of 35 are supported on both paired shots, and 17 stay inconclusive with the deciding measurement named. A wrong-family attribution is ruled out by the same procedure. Review 107/120. <a href="/power_convertor/evidence/archive/filter-grounding-prediction-landed.html#s5">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261014T104753353342-fgp-attribute-residuals" data-who="reckon-build" data-when="2026-10-14T12:21:24Z">
+    <div class="r-comment-body"><p>Corrected comparison retains 35 judged misses (24 booster, 10 base, 1 mixed), 18 supported and 17 inconclusive; 175 bridge-arm verdicts and all 35 overall verdicts are unchanged by owner-arm reuse (maximum numeric delta 1.1e-11). Two recorded wrong-family misses run through assess and are ruled out. Full suite logged 302 passed, 1 skipped, 3 out-of-scope errors, EXIT=1; fragment docs/evidence/fragments/filter-grounding-prediction/fgp-attribute-residuals.html#fgp-attribute-residuals-inventory.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261013T054200864705-review-of-fgp-shunt-5190b6146d7d" data-who="reckon-build" data-when="2026-10-13T05:52:53.341Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261013T053304885200-fgp-shunt scored across all six dimensions (total 113) and stored at reviews/power_convertor/r-20261013T053304885200-fgp-shunt.json, with one follow-on finding on inert grounding legs and no blocking defect.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-close-s6" data-who="reckon-build" data-when="2026-10-13T06:08:00Z">
+    <div class="r-comment-body"><p>§6 landed: both shunt attachments are configurations of <code>BoosterLoop</code>, merged at <code>71d80c5</code>. The base path at 12f is 0.030 as drawn, 0.28–0.44 with the bypass closed and 1.00 booster only. The 2023 12f lines on EF2 and EF5 match the unfiltered EF3 and EF4 lines, which supports booster only. The judged structure is booster only, from the installed-modification figure under the lead's document ranking. <a href="/power_convertor/evidence/archive/filter-grounding-prediction-landed.html#s6">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261013T053304885200-fgp-shunt" data-who="reckon-build" data-when="2026-10-13T05:40:17Z">
+    <div class="r-comment-body"><p>The shunt attachment is configurable in BoosterLoop and the cited grounding legs are explicit; the measured-line table at docs/evidence/fragments/filter-grounding-prediction/fgp-shunt.html shows 12f base gains 0.0301 open, 0.2830-0.4412 bypass closed, and 0.9996 booster only.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-close-s7" data-who="reckon-build" data-when="2026-10-13T06:40:00Z">
+    <div class="r-comment-body"><p>§7 landed, merged at <code>bb4f18d</code>. Under the installed grounding EF5's terminals carry 326 and 70 V peak-to-peak to ground against 362 V across the coil in 2023. The screen capacitance makes the split frequency-dependent rather than centred. These are conditional predictions from the measured coil voltage, with no terminal channel yet to check them against. <a href="/power_convertor/evidence/archive/filter-grounding-prediction-landed.html#s7">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261013T061939864162-fgp-ground" data-who="reckon-build" data-when="2026-10-13T06:33:20Z">
+    <div class="r-comment-body"><p>[Terminal-ripple table](/power_convertor/evidence/fragments/filter-grounding-prediction/fgp-ground.html#fgp-ground-terminal-ripple) records EF5 and EF2 high/low terminal peak-to-peak values at both operating points; installed 2023 grounding gives EF5 326/70 V and EF2 388/66 V, beside measured coil-voltage 362/401 V; 39 tests pass and the ignored-grounding mutation fails three tests.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-10-14T09:20:00Z">
+    <div class="r-comment-body"><p>§8 landed, merged at <code>2a9525f</code>. At their own 60.85 Hz the 2023 swing windows carry 130–147 V of 12f. The frozen model is 2.7–3.3 dB low there, not 10 dB high, and all four swing peak-to-peak values now pass. The aggregate stays FAIL on 8 of 8: 18f is over-predicted everywhere, the swing 24f phase misses by about −146°, and the idle windows are unchanged. §4's verdict stays on the record. §5 now takes its residuals from this comparison. Review 107/120. <a href="/power_convertor/evidence/archive/filter-grounding-prediction-landed.html#s8">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261014T084333096321-fgp-rejudge-swing" data-who="reckon-build" data-when="2026-10-14T09:03:20Z">
+    <div class="r-comment-body"><p>Eight judged 2023 cases re-scored; swing 12f rises to 129.976–147.173 V and all four swing folded peak-to-peak values now pass ±3 dB, while aggregate remains FAIL 8/8 beside the landed FAIL 8/8.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261014T090357514492-review-of-fgp-rejudge-swing-09af783adccc" data-who="reckon-build" data-when="2026-10-14T09:15:42.413Z">
+    <div class="r-comment-body"><p>Independent review of r-20261014T084333096321-fgp-rejudge-swing at base c2e6da2 head 09af783 stored; scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 15, fit 18, reuse 17 (total 107), one follow-on finding on the fixed-seed comparison arm; added_failure_count 0.</p></div>
+</div>
+</section>
+</main>
+</body>
+</html>

@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="power_convertor">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="iter-power-supply-model">
+  <meta name="plan-title" content="ITER Power Supply Model">
+  <meta name="plan-summary" content="Identify the ITER PF converter model from its dummy-load tests in UDA: find the tests, measure their ripple, fit the converter, predict the coil circuit">
+  <meta name="plan-status" content="superseded">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="20.25">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-sprint" content="S1">
+  <meta name="plan-tags" content="iter,power-supply,lumped-model">
+  <meta name="plan-after" content="filter-grounding-prediction">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;}">
+  <title>ITER Power Supply Model | power_convertor</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="66">
+<meta name="plan-modified" content="2026-10-17">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — What transfers from JT-60SA</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>
+      The JT-60SA work establishes a method: a converter built from its topology, a few physical
+      parameters identified from facility data, design components inserted without fitting, and a
+      pre-registered prediction. ITER's coil supplies are larger but of the same families, so the
+      library carries over: thyristor converters, switching networks for breakdown, fast discharge
+      units, and reactive-power compensation and harmonic filtering on the AC side. ITER also uses IGBT
+      converters, which the library does not yet model. The JT-60SA work answers whether a good model can
+      be identified from a lot of facility data; this plan carries that answer to ITER.
+    </p>
+    <p>
+      ITER's data is its converters' tests on dummy loads, archived in CODAC UDA. Those tests are the
+      dataset the ITER model is identified from, and the identified PF converter model (§6) is this
+      plan's main deliverable. Finding the tests (§4), measuring their ripple (§5) and fitting the
+      converters (§6) do not wait on JT-60SA. The JT-60SA verdict in
+      <a href="/power_convertor/plans/filter-grounding-prediction">filter-grounding-prediction</a> decides how
+      far the library's prediction of a whole coil circuit can be trusted, so it gates §3 only. §3 does
+      not wait for §6: the measured test waveforms are not in UDA and ITER has no coil data yet, so §3
+      predicts the PF circuit from design values and the machine description, and §6 narrows its
+      converter inputs when test data arrives.
+    </p>
+
+    <h2 id="s2">§2 — The ITER coil-supply topology, from documents</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>
+      ITER's coil circuit is more complex than JT-60SA's. The machine description's Stage 1 and Stage 2 supply set
+      (<code>pf_active</code>, pulse 111001 run 204) has 14 supplies. The VS1 vertical-stabilisation supply is one
+      supply of six series units, VS1-1 to VS1-6, connected between the two common nodes of the PF2 to PF5
+      branches, so it carries their imbalance current, PF2 + PF3 − PF4 − PF5; an earlier description of one
+      VS1 unit per coil with a lifting pair is superseded by that record. The supplies are a mix of thyristor and IGBT converters. The PF supplies come
+      first; the CS and TF supplies are out of scope until the PF model stands.
+    </p>
+    <p>
+      Document the topology of one PF circuit and of the VS1 loop end to end, with citations:
+    </p>
+    <ul>
+      <li>converter units, each one's type (thyristor or IGBT), pulse number or switching frequency,
+        transformer phase groups and ratings;</li>
+      <li>the AC supply (400 kV grid, reactive-power compensation and harmonic filters);</li>
+      <li>the switching network and fast discharge units;</li>
+      <li>the grounding scheme and coil insulation limits.</li>
+    </ul>
+    <p>
+      Check what the IMAS Data Dictionary's <code>pf_active</code> supply structure can hold, so the model's
+      parameters have a home.
+    </p>
+    <p>
+      Leads to start from, each to be confirmed or ruled out with a citation. The ITER machine definitions
+      in the DINA sources (<code>~/Code/dina/machines/</code> and <code>~/Code/DINA-IMAS/machines/</code>), which
+      carry the PF and CS circuits a scenario code drives, including converter voltage limits and
+      switching-network resistors where present. The ITER machine description held as IMAS data, whose
+      <code>pf_active</code> <code>circuit</code> and <code>supply</code> arrays, if filled, are a circuit
+      definition in the Data Dictionary's own terms. The coil-circuit work in <code>~/Code/nova</code>. The
+      documents and facility records in the imas-codex graph. The ITER Document Management system and the
+      published descriptions of the coil power supply system (AC/DC converters, switching networks, fast
+      discharge units, reactive-power compensation and harmonic filtering). The magnet cold-test bench
+      circuit, a test-facility converter feeding a TF coil with a fast discharge unit, documented in
+      <code>~/Code/mctb/docs/research/mctb-discharge-fit.html</code> §1 and
+      <code>~/Code/mctb/docs/figures/discharge-fit/fdu-circuit.svg</code>. The cited table and the drawn
+      circuit are written up in <code>docs/research/iter-coil-supply-topology.html</code>.
+    </p>
+    <p>
+      <strong>Done when</strong> a cited topology table and a drawn circuit, in
+      <code>docs/figures/iter-power-supply-model/</code>, exist for one PF circuit and for the VS1 loop,
+      with every converter unit's type stated. The
+      mapping of their parameters to <code>pf_active</code> fields is recorded, including the parameters
+      the Data Dictionary has no field for. Every search that returns nothing also records a fact known to
+      be present that the same route did find, so an empty result is a measurement rather than a broken
+      route.
+    </p>
+
+    <h2 id="s3">§3 — One ITER PF circuit, predicted</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>
+      A thin caller, <code>scripts/iter/pf_circuit.py</code>, reads the §2 topology table and its design
+      values, takes a unit's identified parameters from §6 in their place where §6 has fitted that unit,
+      and assembles them into <code>SupplyModel</code> in
+      <code>src/power_convertor/supply.py</code>. <code>SupplyModel</code> already owns the composition of the
+      switching-function bridges (<code>BridgePair</code> in <code>src/power_convertor/bridge.py</code>) with the
+      loop network (<code>BoosterLoop</code> and <code>GroundingSystem</code> in
+      <code>src/power_convertor/filter_network.py</code>) and the ripple-spectrum prediction, so it is extended
+      rather than re-implemented: several series sources for the VS1 loop, the ITER grounding, an IGBT
+      source where §2 finds one, and a sampling rate that is a parameter rather than JT-60SA's. A unit
+      §6 has not fitted takes its §2 design values, marked as such. Three converter inputs the documents
+      do not yet give are carried as stated ranges rather than single values: the commutation reactance
+      (from the converter transformer's short-circuit impedance and the 66 kV network level), the phase
+      displacement between the series units of one string, and how the series units share the voltage.
+      The coil self and mutual inductances, the circuit inductances and the passive structure come from §7,
+      which takes them from ITER's machine description through nova by the route the JT-60SA coil-circuit
+      work established (<a href="/power_convertor/plans/jt60sa-coil-circuit-model">jt60sa-coil-circuit-model</a>). The caller predicts the
+      coil-voltage ripple spectrum and the coil terminal voltages to ground across the circuit's operating
+      range. Every converter unit in the loop is a
+      ripple source and is instantiated: at JT-60SA the base supplies, not only the boosters, set the
+      ripple left after the filters were fitted
+      (<a href="/power_convertor/research/jt60sa-booster-ripple-evidence">jt60sa-booster-ripple-evidence</a> §9).
+    </p>
+    <p>
+      The prediction is judged by the two things ripple threatens in the coils, not by the spectrum alone.
+      For Paschen breakdown the measure is the peak instantaneous voltage to ground, and between adjacent
+      conductors, wherever insulation faces helium at degraded vacuum: the in-cryostat coil terminals,
+      feeders, joints and instrumentation leads. That peak is the DC share each terminal carries under the
+      symmetrical grounding, plus the common-mode ripple, which moves both terminals together and to which
+      each series unit contributes according to its place in the string, plus the commutation notches and
+      switching transients. It is compared with the helium Paschen curve the magnet cold-test work already
+      computes (<code>~/Code/mctb/docs/figures/cryostat-vacuum/paschen_margin.py</code>). For quench detection
+      the measure is the residual differential ripple in each detection section: the inductive ripple
+      voltage the compensation leaves through section imbalance, plus common-mode ripple converted by finite
+      common-mode rejection, within the detection electronics' bandwidth and after any aliasing by their
+      sampling, compared with the detection threshold over its holding time.
+    </p>
+    <p>
+      Both measures need the circuit beyond the converters: the stray capacitances of the windings, feeders
+      and transformer secondaries to ground, the grounding resistors, the mutual coupling of PF2 to PF5
+      through the VS1 string, and the detection section layout, compensation scheme and electronics
+      bandwidth. Each is cited from documents or marked as an assumed value. Before a coil is treated as
+      lumped, its first winding resonance is checked to lie above the ripple band; where it does not, the
+      winding is divided into sections so that the voltage distribution along it is carried.
+    </p>
+    <p>
+      The prediction is blind and is frozen before any fast dummy-load or coil data is read: the lead decided on
+      14 October 2026 that it runs with the JT-60SA verdict recorded rather than waiting for the booster-model
+      repair. Its inputs come from §2, §7 and the commutation design
+      (<a href="/power_convertor/research/iter-commutation-design">iter-commutation-design</a>), and it carries
+      a declared error band built from two parts: the input ranges, each propagated by evaluating the model at
+      both ends (the commutation reactance, the AC-busbar reference side, the firing angle swept through 90°, the
+      firing of the series units under the sequential law, the passive screening), and the model error the
+      JT-60SA verdict measured, about 2.3 dB on the characteristic lines at steady current and 10 to 13 dB on
+      the non-characteristic lines and during current swings. The IGBT units of VS1 are ripple sources too: their
+      carrier lines and sidebands (1600 Hz rectifier, 500 Hz inverter, 45° interleave) and their switching edges
+      enter the same circuit. Where an input the margins need is not given (the grounding resistors, the stray
+      capacitances, the quench-detection layout, compensation, bandwidth and threshold), the Paschen and
+      quench-detection margins are reported as functions of that input over a stated range rather than as single
+      values.
+    </p>
+    <p>
+      <strong>Done when</strong> the prediction is recorded in <code>docs/research/iter-pf-circuit-prediction.html</code>,
+      with its figures in <code>docs/figures/iter-pf-circuit-prediction/</code> and every input traced to a §2
+      citation, the machine description, a §6 fit, or a stated range marked as assumed, and two controls
+      hold. The positive control: the same caller, given every input filter-grounding-prediction §4
+      scored for EF5 (the 2021-fitted parameters, the 2023 structure, the design filter, the grounding and the
+      2023 operating point, booster and base supply both), and passing its clean spectrum through the same
+      measurement chain that section's scoring entry point applies (the library measurement in
+      <code>src/power_convertor/measurement.py</code>), reproduces that section's recorded predicted EF5 line
+      amplitudes from 6f to 30f to 0.01 dB, and the phases that section's scoring entry point fits from the same
+      model output to 0.1°, so the ITER caller adds no error of its own. How far that prediction is from
+      the measured EF5 lines is the JT-60SA verdict gate g-ipsm-1 carries, not this control's measure. The negative
+      controls change one input at a time, and each has its own spectral expectation. Changing the supply
+      frequency from 50 Hz to 61.1 Hz must move every predicted line's frequency by the same ratio, 61.1/50,
+      while its amplitude moves by less than the stated tolerance (§6 measured the amplitude change to be well
+      under it). Changing a
+      twelve-pulse pair to an in-phase six-pulse pair must bring up the 6f and 18f lines that the
+      twelve-pulse phase shift cancels, while the 12f and 24f lines stay at their frequencies, as
+      <code>BridgePair.harmonic_phasors</code> computes them. A library that kept either JT-60SA value
+      internally fails one of these checks, which is the specialisation this section exists to rule out.
+      The record states, for each in-cryostat location named, the predicted peak voltage to ground and its
+      margin to the helium Paschen minimum, and for each quench-detection section the in-band residual
+      differential ripple and its margin to the detection threshold, each with its inputs cited or marked
+      as assumed, and, for each input carried as a range, both margins at each end of that range.
+    </p>
+
+    <h2 id="s4">§4 — The dummy-load tests, found in UDA</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>
+      Find ITER's power-converter tests on dummy loads in CODAC UDA, PF supplies first. For each test,
+      record the converter unit and its type, the date, the load (resistance and inductance), the
+      operating points (current, voltage, firing angle or duty cycle), the channels with their sampling
+      rates, and the pulse or time window. Sampling rate matters because the JT-60SA work showed a 4 kHz
+      channel aliasing the converter harmonics above 2 kHz, so a test whose fastest channel cannot resolve
+      the characteristic lines is recorded as such. Factory acceptance tests held outside UDA and the
+      first coil energisation are listed as later data, with where and when they are expected.
+    </p>
+    <p>
+      The access route is CODAC UDA, and the mctb repository already reads it: the recipe and its traps are
+      in <code>~/Code/mctb/docs/research/mctb-uda-access.html</code>, and the client in
+      <code>~/Code/mctb/docs/figures/uda_servers.py</code> (slow archive on <code>io-ls-udasrv2</code>, fast
+      SDN channels and discharge records on <code>4509dr-srv-5002</code>, port 3090, after
+      <code>ml MINT</code>). <code>io-ls-udasrv1</code> is reserved for control-room operators and is never
+      read. The channels the mctb scripts under <code>~/Code/mctb/docs/figures/uda-access/</code> and
+      <code>~/Code/mctb/docs/figures/discharge-fit/</code> read are the known-present control for this route;
+      the cold-test bench's own converter is a secondary dataset. Search UDA for the coil power supply
+      plant systems (PF converters first, then the VS1 converters, switching networks, fast discharge units
+      and reactive-power compensation), for the variables and time windows of their dummy-load tests, and
+      for any circuit definition UDA serves. The UDA client sources in <code>~/Code/codac/</code> and the SDN
+      interface in <code>~/Code/dina/imas/interface/dina_sdn.f90</code> name signals worth checking. The
+      table is written up in <code>docs/research/iter-dummy-load-tests.html</code>, and the traces of the
+      tests found are saved under <code>data/iter/</code>, which is gitignored like the JT-60SA traces.
+    </p>
+    <p>
+      The searches share one UDA reader, <code>src/power_convertor/uda.py</code>, rather than a copy of the
+      read code per script. A robust UDA reader is needed beyond this plan, so it is built from what
+      already exists: the server rules and per-study readers in the mctb repository
+      (<code>~/Code/mctb/docs/figures/uda_servers.py</code> and its data modules), the read traps measured
+      in <code>~/Code/mctb/docs/research/mctb-uda-access.html</code> §6, and the query layer in
+      <code>~/Code/nova/nova/datachain/uda.py</code>. It carries no project imports or channel names, so it can
+      later move to a shared package.
+    </p>
+    <p>
+      <strong>Done when</strong> the table names each dummy-load test found, PF supplies first, with its
+      converter unit and type, date, load, operating points, channels, sampling rates and access route,
+      and the traces of at least one PF converter test are saved under <code>data/iter/</code>. If UDA holds
+      no dummy-load test, the table records each search made beside a known-present mctb channel read by
+      the same route in the same session, so an empty result is a measurement rather than a broken route,
+      and names where else the tests may be held.
+    </p>
+
+    <h2 id="s5">§5 — Ripple in the dummy-load tests</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="deferred" data-links=""></section>
+<p>
+      Process the §4 traces and decide whether ripple can be assessed from the dummy-load tests at all.
+      For each tested PF converter and operating point, measure the line amplitudes at the converter's
+      characteristic frequencies: multiples of 12f for a twelve-pulse thyristor unit, and the switching
+      frequency with its sidebands for an IGBT unit. The caller is <code>scripts/iter/dummy_load_ripple.py</code>:
+      it loads the §4 windows from <code>data/iter/</code> with each channel's sampling rate and acquisition
+      settings, and passes them to the measures in <code>src/power_convertor/signals.py</code>, the folding
+      in <code>src/power_convertor/fold.py</code> and, where the ITER acquisition chain is known, the
+      acquisition model in <code>src/power_convertor/measurement.py</code>, rather than writing parallel ones
+      or relying on their JT-60SA defaults. Three things decide whether the tests can carry a
+      model: the sampling rate against the characteristic lines, the noise floor against the line
+      amplitudes, and the spread of a line across repeated operating points.
+    </p>
+    <p>
+      The test data also describes its own load and operating point, so neither is taken on trust.
+      The load resistance and inductance are fitted from the load voltage and current as
+      v = R i + L di/dt, ramps giving L and flat tops R. <code>identify</code> in
+      <code>src/power_convertor/circuit.py</code> fits the ten-coil JT-60SA swing loop and cannot take a
+      single load, so a single-load fit is added beside it that reuses its robust least squares
+      (<code>_huber</code>) and its filtered derivative (<code>_derivative</code>). Where voltage is measured at the converter terminals the
+      fitted load includes the busbars, which is the circuit the converter saw. The firing angle is read
+      from the per-unit <code>ALPHA</code> channels and checked against the angle that inverts the DC
+      regulation, V<sub>dc</sub> = V<sub>d0</sub> cos &alpha; &minus; (3X<sub>c</sub>/&pi;) I per six-pulse
+      bridge; the same regression of DC voltage on firing angle and current gives the commutation
+      reactance X<sub>c</sub> even where the sampling rate cannot resolve the ripple. Three further checks
+      decide what the tests can say about the coils: whether conduction was continuous, whether the
+      tested firing angles and currents overlap coil operation (a superconducting coil at flat top holds
+      full current at almost zero DC voltage, near &alpha; = 90&deg;, where the twelve-pulse ripple is
+      largest), and whether each test drove one converter unit or a series string.
+    </p>
+    <p>
+      <strong>Done when</strong> <code>docs/research/iter-dummy-load-tests.html</code> carries, for each
+      tested PF converter unit, a figure in <code>docs/figures/iter-dummy-load-tests/</code> of measured line
+      amplitude against operating point, with every line marked resolved or aliased by its channel's
+      sampling rate, a table per tested unit of the fitted load R and L, the firing-angle and current
+      ranges, continuous conduction, the commutation reactance from DC regulation, and the overlap with
+      coil operation, and a stated verdict on whether the tests can identify the converter. The negative
+      control is a source-off window: the converter blocked with the measurement chain live, which is not
+      the same as deblocked at zero reference, a state that still produces ripple at JT-60SA
+      (<code>measurement.measure</code> over its default <code>IDLE</code> span, before the plasma pulse). The
+      source-off window must show no characteristic line above
+      the noise floor before a line is counted as converter ripple. Where no source-off window exists, an
+      off-frequency estimate sets the noise floor only, and each line's source is recorded as unresolved
+      between converter output and pickup, for §6 to weigh before fitting it.
+    </p>
+
+    <h2 id="s6">§6 — The ITER PF converter model, identified from the dummy-load tests</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="6.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="deferred" data-links=""></section>
+<p>
+      Apply the JT-60SA method to the dummy-load tests. Each tested PF converter is built from its §2
+      topology, and its few physical parameters are identified from part of its tests: for a thyristor
+      bridge, the line voltage and commutation reactance, which <code>fit_base_supply</code> in
+      <code>src/power_convertor/supply.py</code> already identifies from the twelve- and twenty-four-pulse
+      lines; for an IGBT unit, the parameters of a switching model the library does not yet hold, added
+      beside <code>SixPulseBridge</code> in <code>src/power_convertor/bridge.py</code> rather than in a
+      parallel module. A dummy load is a known resistance and inductance, so the converter is identified
+      without the coil and the coupled circuit; §3 then puts the identified converter into the coil
+      circuit.
+    </p>
+    <p>
+      The caller is <code>scripts/iter/identify_pf_converter.py</code>. It loads the §4 windows, builds each
+      converter from its §2 topology with the ITER acquisition settings (sampling rate, bandwidth and
+      timing skew) passed explicitly, because <code>fit_base_supply</code> otherwise builds a twelve-pulse
+      <code>SupplyModel</code> with JT-60SA defaults such as its 104.57 µs skew and its 32 kHz
+      <code>input_rate</code>, and runs the split fixed before the fit. <code>fit_base_supply</code> exposes
+      bandwidth and skew, but not the sampling rate or the phase shift between the bridges, and it scores
+      only the 12f and 24f lines. §6 extends its signature with the input rate, the phase shift and the
+      scored orders, and passes them to the <code>SupplyModel</code> it builds; each keeps its current
+      default, so the JT-60SA callers are unchanged, and it is sequenced with any open run that holds
+      <code>src/power_convertor/supply.py</code>. The split, the tolerance and the converter identities are committed in
+      <code>docs/research/iter-pf-converter-fit.html</code> before the fit runs; the identified parameters,
+      with their units, converter identity and the traces they came from, are written to
+      <code>docs/figures/iter-pf-converter-fit/parameters.json</code>, which §3 reads.
+    </p>
+    <p>
+      §6 starts only when §2 has documented the tested converter's topology and §5's verdict is that
+      the tests can identify it. If §4 finds no dummy-load test, or §5 finds that the tests cannot carry
+      a model, §6 is deferred: §3 takes §2 design values for every unit, and the plan records which data
+      would unblock the fit, such as factory acceptance records held outside UDA or the first coil
+      energisation.
+    </p>
+    <p>
+      <strong>Done when</strong> the fit and held-out tests are named in the committed
+      <code>docs/research/iter-pf-converter-fit.html</code> before the fit, the identified parameters in
+      <code>docs/figures/iter-pf-converter-fit/parameters.json</code> predict the held-out tests'
+      characteristic lines within the tolerance recorded there before the fit (as
+      filter-grounding-prediction records its 3 dB), the held-out verdict is recorded in the same
+      document, and the negative control misses the same held-out lines by more than that tolerance:
+      the converter built as an in-phase six-pulse pair (phase shift 0 rather than 30°), which predicts
+      6f and 18f lines far above the residual a working twelve-pulse unit leaves, scored on those lines
+      against the measured residual while the fit itself is scored on 12f and 24f. The fit also records
+      how sharply the held-out lines bound the commutation reactance: the range of X<sub>c</sub> whose
+      predicted 12f and 24f lines stay within the tolerance at the held-out operating points. A doubled
+      reactance moves those lines by less than 3 dB at many operating points, so where the range spans
+      more than a factor of two the verdict states that those operating points do not identify
+      X<sub>c</sub>, rather than reporting a fitted value. A change of supply frequency is not used as a
+      control, because it moves the line amplitudes by well under the tolerance.
+    </p>
+
+    <h2 id="s7">§7 — ITER coil and passive-structure coupling, from the machine description</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+<p>§3 needs the coils' self and mutual inductances and the passive structure's coupling to them. They come from ITER's machine description through nova, by the route the JT-60SA coil-circuit work validated: nova's conductor set, built from OP2's <code>pf_active</code> and <code>pf_passive</code> at nominal resistivity, predicted 8 of 9 measured EF-pair transfer functions within 4 to 8 % rms of M/L over 0.1 to 30 Hz with no fit (<a href="/power_convertor/plans/jt60sa-coil-circuit-model">jt60sa-coil-circuit-model</a> §5). The export there, <code>scripts/jt60sa/nova_passive_matrices.py</code>, is written for OP2. Its body is lifted into one function that takes the active and passive machine-description entries and their group labels; the JT-60SA script becomes a caller of it and <code>scripts/iter/nova_passive_matrices.py</code> is the second. The output loads through <code>PassiveStructure</code> in <code>src/power_convertor/passive_structure.py</code>, which already reduces a filament set to decay modes and the coupled terminal ratio.</p><p>The sources are in <code>/work/imas/shared/imasdb/ITER_MACHINE_DESCRIPTION/3/</code>: <code>pf_active</code> pulse 111001 run 204 (the Stage 1 and Stage 2 supply set; 14 coils, CS3U to CS3L, PF1 to PF6 and the VS3 in-vessel coils; run 104 is the Stage 1 supply set) and <code>pf_passive</code> pulse 115004 run 6 (vacuum vessel, thermal shield and divertor, 210 loops) with pulse 124001 run 3 (cryostat and its thermal shield, 248 loops). The reduced descriptions 115005/3 and 124002/3 and the blanket panels 116001/3 are compared as variants rather than summed. Each loop's resistance or resistivity is taken from the description where it is given, and from the material's nominal resistivity, cited, where it is not.</p><p>The coupling is then reduced to what the converters see. The <code>pf_active</code> circuit connections define the circuits: the VS1 circuit places the PF2 to PF5 branches between two common nodes with the VS1 supply across them, so VS1 drives the imbalance PF2 + PF3 − PF4 − PF5. The section reports the circuit inductance matrix of the PF and VS1 circuits; the inductance each supply sees with the other supplies open and with them shorted; the passive decay modes with their time constants; and each PF circuit's terminal impedance with the passive structure from 0.1 Hz to 5 kHz, which spans the twelve-pulse lines at 600 Hz and above. One filament across a shell's thickness holds while the skin depth exceeds that thickness, so the frequency at which it stops holding is computed for each passive group and marked on the impedance figure, and the ripple-band values carry their own validity limit.</p><p><strong>Done when</strong> the lifted export reproduces the merged JT-60SA matrices (<code>data/jt60sa/passive_structure/matrices.json</code>) to floating-point tolerance through the JT-60SA caller; the ITER matrices are written to <code>/home/ITER/mcintos/Code/power_convertor/data/iter/passive_structure/</code> and <code>PassiveStructure</code> loads them; the coil inductance matrix is symmetric and positive definite, and each coil's self-inductance is compared with a published ITER value where one is found, cited, or marked as having none; two controls hold, removing the passive structure leaves the DC inductances unchanged while changing the terminal impedance above the first decay mode's corner frequency, and reversing one coil's turns flips the sign of that coil's mutuals and of no other; and the results are recorded in <code>docs/research/iter-coil-coupling.html</code> with figures in <code>docs/figures/iter-coil-coupling/</code> (the coil and circuit inductance matrices, the decay modes, and the terminal impedances with their validity limits). The nova runs are heavy and run on the fleet allocation or an <code>all_debug</code> partition, with their logs kept.</p>
+
+    <h2 id="s8">§8 — When the scenarios load the supplies most</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+<p>§3 sweeps the firing angle and current over their ranges. ITER's own scenario simulations say where the supplies actually operate: the DINA scenarios in the IMAS scenario database hold the driven-coil solution, coil currents and coil voltages for all 14 coils at 5 ms (the 15 MA H-mode case, pulse 105001 run 6, covers 0 to 391 s, and its coil voltages reach the supply limits: PF2 to PF4 3.15 kV, PF1, PF6 and CS 2.1 kV, CS1 4.2 kV). The coils therefore need not be re-simulated: DINA has solved them self-consistently with the plasma. This section maps those coil series to each supply and series unit through the machine-description circuits (VS1 carries PF2 + PF3 − PF4 − PF5), turns each unit's voltage and current into a firing angle with the commutation design, and ranks the intervals that load each supply most: by voltage and the time at its limit, by current, by power, by time near 90° at high current where twelve-pulse ripple is largest, by current zero crossings, and by the coil dI/dt quench detection must compensate. Each ranked interval is named by its scenario phase. A check compares DINA's coil voltages with L·dI/dt from §7's matrix in steady-plasma intervals, without fitting. The scenarios covered are 105001/6 (15 MA), 105003/6 (10 MA), 105006/7 (3 MA), one first-plasma case and one PFPO-1 case.</p><p><strong>Done when</strong> <code>docs/research/iter-scenario-supply-loading.html</code> and <code>docs/figures/iter-scenario-supply-loading/</code> give, for each covered scenario, every PF supply's and VS1's voltage, current and firing-angle timeline at both ends of the commutation-reactance range, with the top loading intervals per measure marked and tabulated by scenario phase, and the 12f and 24f converter lines at each ranked interval; the coupling check's residual is reported with its attribution; a synthetic two-branch test gives the expected supply operating points and ranking, and reversing one coil's current changes the VS1 current as the circuit predicts (logged); <code>reckon audit-doc</code> reports zero errors.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-ipsm-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-12" data-recommends-skill="/reckon-build iter-power-supply-model §2" data-resolved-at="2026-10-13T07:36:56+00:00" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Document one ITER PF circuit and one CS module</h4>
+    <div class="r-fu-body"><p>§2 is document work and can start at any time. §3 waits on the JT-60SA verdict in filter-grounding-prediction §4.</p></div>
+    <pre class="r-fu-prompt">/reckon-build iter-power-supply-model §2</pre>
+    <p class="r-fu-outcome">Superseded by f-ipsm-002: the dummy-load converter tests in UDA became the plan's dataset, so the next step is §4 rather than §2.</p>
+    </article>
+<article class="r-fu" data-id="f-ipsm-002" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-13" data-recommends-skill="/reckon-build iter-power-supply-model §4" data-resolved-at="2026-10-13T14:57:11+00:00" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Find the ITER PF converter dummy-load tests in UDA</h4>
+    <div class="r-fu-body"><p>§4 and §2 can run now. §5 follows §4, and §6 follows §5. §3 waits on §6 and on the JT-60SA verdict in filter-grounding-prediction §4.</p></div>
+    <pre class="r-fu-prompt">/reckon-build iter-power-supply-model §4</pre>
+    <p class="r-fu-outcome">UDA searched (control state and test windows found, no measured waveforms on any reachable archive); superseded by f-ipsm-003 after §3 was decoupled from §6.</p>
+    </article>
+<article class="r-fu" data-id="f-ipsm-003" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-13" data-recommends-skill="/reckon-build iter-power-supply-model §3" data-resolved-at="2026-10-14T07:21:00+00:00" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Predict one ITER PF circuit from design values</h4>
+    <div class="r-fu-body"><p>§2's drawn circuit is in review. §4's UDA search found the PF1 test window and its control state but no measured waveforms, which are held outside UDA. §5 and §6 wait for that test data. §3 no longer waits on §6: it predicts from §2 design values and the machine description, held only by gate g-ipsm-1 on the JT-60SA verdict in filter-grounding-prediction §4.</p></div>
+    <pre class="r-fu-prompt">/reckon-build iter-power-supply-model §3</pre>
+    <p class="r-fu-outcome">Superseded by f-ipsm-008: §3 now waits on two gates, g-ipsm-1 (the JT-60SA verdict) and g-ipsm-2 (§7's coupling matrices).</p>
+    </article>
+<article class="r-fu" data-id="f-ipsm-008" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-14" data-recommends-skill="" data-resolved-at="2026-10-14T10:01:35+00:00" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Predict one ITER PF circuit once the coupling and the verdict decision are in</h4>
+    <div class="r-fu-body"><p>§3 predicts one ITER PF circuit from §2's design values and the machine description, with the coupling from §7. It is held by two gates: g-ipsm-1, the JT-60SA verdict (recorded as failing 8 of 8 judged 2023 cases, so the lead decides whether §3 runs as a bounded blind prediction carrying that error), and g-ipsm-2, §7's coil, circuit and passive-structure matrices. Dispatch §3 when both are released.</p></div>
+    <pre class="r-fu-prompt">/reckon-build iter-power-supply-model §3</pre>
+    <p class="r-fu-outcome">Both gates passed (g-ipsm-1 on the recorded JT-60SA verdict with the lead's decision, g-ipsm-2 on §7) and §3 was dispatched on 14 October 2026 as run r-20261014T100048902123-iter-pf-circuit-prediction, a blind prediction with a declared error band.</p>
+    </article>
+</section>
+  <section data-reckon="gates" id="gates" class="r-gates">
+<h2><span class="sec">§</span> Evidence gates</h2>
+<div class="r-gate" data-id="g-ipsm-1" data-section="s3" data-gated-sections="s3" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">the JT-60SA prediction verdict, which decides how far the library is trusted</h4>
+    <p class="r-gate-required-evidence">filter-grounding-prediction#s4</p>
+    <a class="r-gate-evidence" href="filter-grounding-prediction §4 recorded its verdict (the 2021-fitted JT-60SA model fails 8 of 8 judged 2023 cases: characteristic lines within 2.3 dB at idle, non-characteristic lines and swings 10 to 13 dB off). The lead decided on 14 October 2026 that §3 runs as a blind prediction carrying that error in its band rather than waiting for the booster-model repair.">Evidence</a>
+</div>
+<div class="r-gate" data-id="g-ipsm-2" data-section="s3" data-gated-sections="s3" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">the ITER coil, circuit and passive-structure inductance matrices from the machine description through nova, written to data/iter/passive_structure/ and loadable by PassiveStructure</h4>
+    <p class="r-gate-required-evidence">iter-power-supply-model#s7</p>
+    <a class="r-gate-evidence" href="/power_convertor/evidence/archive/iter-power-supply-model-landed.html#iter-coil-coupling">Evidence</a>
+</div>
+</section>
+<section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261013T075331664605-iter-supply-topology" data-who="reckon-build" data-when="2026-10-13T08:08:26Z">
+    <div class="r-comment-body"><p>PF2 and shared VS1 research table committed as 6031ffbe; nine converter-unit rows, six AC/protection rows and nine pf_active mapping rows; document audit passed at the committed revision.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-land-iter-supply-topology" data-who="reckon-build" data-when="2026-10-13T08:12:00Z">
+    <div class="r-comment-body"><p>Node iter-supply-topology landed (<code>6031ffbe</code>, merged <code>55ee22f</code>): cited PF2 + VS1 table and pf_active map; gate <code>reckon audit-doc</code> passed. §2 stays open for the drawn circuit. The cited VS1 arrangement, six units in one shared series string with the four future units thyristor or VSC, is to be reconciled with the lead's description of one VS1 supply per PF2–PF5 coil plus a lifting pair. <a href="/power_convertor/evidence/archive/iter-power-supply-model-landed.html#iter-supply-topology">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261013T150745889034-review-of-iter-supply-circuits-b29ef9550f2f" data-who="reckon-build" data-when="2026-10-13T15:27:45.757Z">
+    <div class="r-comment-body"><p>independent review of run r-20261013T133014292161-iter-supply-circuits at head b29ef9550f2fe512e1750faa743a5d3da9034a96 (base 07ece71254b633015094bcdf08da75b6c57cfc6e); all six dimensions scored (goal_fidelity 19, evidence 15, scope_discipline 20, durability 18, fit 17, reuse 15; total 104), two follow-on findings and no blocker</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-land-iter-supply-circuits" data-who="reckon-build" data-when="2026-10-13T18:40:00Z">
+    <div class="r-comment-body"><p>Node iter-supply-circuits landed (merge <code>6bbcf89</code>): PF2 circuit and shared VS1 loop drawn from the register, register test 5 passed with both negative controls failing, review 104 with no blocker. §2 stays open: the Stage 2 VS1 design description (IDM FMWA9F v1.0) describes VS1-3 to VS1-6 as IGBT active-front-end converters, which the drawing still marks undecided, and the Stage 2 PF converter description (IDM FMSLSQ v1.1) carries design values the table lacks. Nine extraction nodes are reading both documents. <a href="/power_convertor/evidence/archive/iter-power-supply-model-landed.html#iter-supply-circuits">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261013T133014292161-iter-supply-circuits" data-who="reckon-build" data-when="2026-10-13T14:22:54.231Z">
+    <div class="r-comment-body"><p>drew the cited PF2 circuit and the shared six-unit VS1 loop (pf2-circuit.svg, vs1-loop.svg) from the register, with a register test (5 passed) and the "VS1 arrangement: cited and described" subsection recording both arrangements without choosing; both figures repaired after coordinator review — the PF2 AC and DC loops are now separate (RPC/HF taps the busbar only; the coil returns to the converter string's other terminal), the stray "return" label is on the DC return wire, the grounding note sits beside the coil resistors, the VS1 boxes hold their text, and the three in-figure caption sentences moved into the document; measure figure pf2-circuit.svg and vs1-loop.svg</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-s2-register-design-corrections" data-who="reckon-build" data-when="2026-10-14T05:20:00Z">
+    <div class="r-comment-body"><p>Register corrected from the design documents (merge <code>9a9745a</code>, review 112): VS1-3…6 IGBT AFE + H-bridge; Stage 1 PF2 units 30° within a unit and none between units; Stage 2 PF vector group Dd0/Yd11 against extended delta/delta left unresolved; Stage 2 VS1 in series with the Stage 1 pair, branch taps not given. §3 builds from this register. Three test follow-ons stay open: the unknown-taps style test compares against the script's own colour constant, no test checks the PF2 phase label, and the run's baseline-suite field was left blank. <a href="/power_convertor/evidence/archive/iter-power-supply-model-landed.html#iter-register-design-corrections">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-s2-machine-description-stages" data-who="reckon-build" data-when="2026-10-14T08:20:00Z">
+    <div class="r-comment-body"><p>The ITER machine description settles the VS1 arrangement and carries both converter stages. <code>pf_active</code> pulse 111001 (DD 3.42.0, 3 March 2025): runs 1xx are the Stage 1 supply set (CS one unit per module at ±1.05 kV, PF1-1 and PF6-1, <code>VS1-1-2</code> at ±2.1 kV, PF2 to PF5 three units at ±3.15 kV and ±55 kA); runs 2xx add Stage 2 (CS and PF1/PF6 two units at ±2.1 kV, <code>VS1-1-2-3-4-5-6</code> at ±6.3 kV, and the VS3 in-vessel supply). In both, <code>circuit/connections</code> wires the four PF2 to PF5 branches (supply in series with coil) between two common nodes with one VS1 supply across them, so VS1 carries PF2 + PF3 − PF4 − PF5. The 2024 re-baseline replaced First Plasma with Start of Research Operation; the converter stages keep their earlier scopes (ITER, BSBF 2022, slide 4: Stage 1 is the domestic agencies' First Plasma supply, Stage 2 the ITER-procured Post First Plasma supply), and ITER's 1 September 2025 article states that the 12 Stage 2 units are needed before the machine can turn on, so SRO needs both stages.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-14T07:05:00Z">
+    <div class="r-comment-body"><p>§2 landed: the cited topology table and drawn circuits exist for the PF2 branch and the VS1 loop, every converter unit's type is stated (corrected from the design documents at <code>9a9745a</code>), the VS1 arrangement is settled from the machine description and the <code>pf_active</code> mapping is recorded (merge <code>1ab0dc3</code>, review 108). Two follow-ons stay open: the drawing test counts labels and would not catch a disconnected branch, and the receipt does not capture every field the mapping table cites. The DC interconnecting busbar design (FN7MW9) is being extracted and will extend the register. <a href="/power_convertor/evidence/archive/iter-power-supply-model-landed.html#iter-machine-description-circuits">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-s2-idm-fn7mw9" data-who="reckon-build" data-when="2026-10-14T08:30:00Z">
+    <div class="r-comment-body"><p>IDM FN7MW9 v1.0, the Stage 2 DC interconnecting busbar design, is extracted (merge <code>8e75f37</code>, review 103): busbar resistance 2.5 µΩ/m (PF/CS) and 3.6 µΩ/m (VS), aluminium conductors 120 × 200 mm and 80 × 200 mm per pole, 13.2 kV AC insulation with 48 kV DC and 58 kV impulse withstand; it confirms the six-unit VS1 series string and the PF1 and PF6 Stage 1 + Stage 2 strings at 55 kA, prints no busbar inductance or capacitance, and carries nothing on the AC-side commutation. <a href="/power_convertor/evidence/fragments/iter-power-supply-model/idm-fn7mw9.html">fragment</a></p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20261013T1410-passive-coupling-lead" data-who="reckon-build" data-when="2026-10-13T14:10:00Z">
+    <div class="r-comment-body"><p>Lead for the coil coupling in this section, from the JT-60SA coil-circuit work (not yet merged, under review): nova's passive structure, built from the OP2 machine description's <code>pf_active</code> and <code>pf_passive</code> (155 filaments: 98 vessel, 57 cryostat) at nominal resistivity, predicts 8 of 9 measured 2021 EF-pair transfer functions within 4 to 8 % rms of M/L over 0.1 to 30 Hz, leave-one-pair-out, with no fit; fitted resistivity scales (1.23 vessel, 0.89 cryostat) barely change it, and a free identified-loop model did much worse (15 to 825 %). The code is <code>scripts/jt60sa/nova_passive_matrices.py</code> (exports coil and filament L, R and mutual matrices) and <code>src/power_convertor/passive_structure.py</code> (decay modes and the coupled terminal ratio). For ITER this suggests taking the coupling from the machine description's <code>pf_passive</code> through nova rather than fitting it, if ITER's description carries its passive structures. Fold into the section's text when the code lands and that check is made.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20261013T1425-iter-passive-present" data-who="Simon McIntosh" data-when="2026-10-13T14:25:00Z">
+    <div class="r-comment-body"><p>The lead confirms that ITER's machine description includes its passive structure, and that no measured ITER coil data exists yet because the machine is not complete. The coupling for this section therefore comes from the machine description through nova, as the JT-60SA result supports, rather than from a fit.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20261013T1450-decouple" data-who="Simon McIntosh" data-when="2026-10-13T14:50:00Z">
+    <div class="r-comment-body"><p>Decoupled from §6 by the lead's decision: with no test waveforms in UDA and no ITER coil data yet, this section predicts from §2 design values and the machine description, carrying the commutation reactance, the inter-unit phase displacement and the series voltage sharing as stated ranges; §6 replaces a unit's values when test data arrives. Gate g-ipsm-1 on the JT-60SA verdict still holds.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-s3-gate-verdict-and-coupling" data-who="reckon-build" data-when="2026-10-14T08:20:00Z">
+    <div class="r-comment-body"><p>The verdict gate g-ipsm-1 waits on is in: filter-grounding-prediction §4 scored the 2021-fitted JT-60SA model against 2023 and it fails 8 of 8 judged cases (idle 6f and 12f within 2.3 dB but 18f 10 to 13 dB too strong; swing 12f and peak-to-peak about 10 dB too strong). Whether §3 proceeds as a bounded blind prediction carrying that error, or waits for the booster-converter-model repair, is the lead's decision; the gate stays open until it is made. The coupling part of this section moves to §7, which the gate does not hold.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-s3-review-v43-answers" data-who="reckon-build" data-when="2026-10-14T06:50:00Z">
+    <div class="r-comment-body"><p>Content review of v43 answered. The positive control no longer asks the caller to reproduce the measured 2021 EF5 lines, which the JT-60SA model is recorded as failing at 6f and 24f; it asks the caller to reproduce the library's own scored EF5 prediction to numerical precision, so it measures only what the ITER caller adds. Gate g-ipsm-2 now holds this section on §7's matrices, so the followup's statement that §3 is held only by g-ipsm-1 is superseded: §3 waits on both gates.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-s3-commutation-inputs" data-who="reckon-build" data-when="2026-10-14T08:50:00Z">
+    <div class="r-comment-body"><p>The commutation-reactance range this section carries is now built (merge <code>234ba20</code>, review 106): X<sub>c</sub> 5.08–5.67 mΩ per bridge for the Stage 2 design, borrowed for Stage 1, with the AC-busbar reference side as a second scenario (4.6–5.0 mΩ). Across that band the 12f and 24f lines move 15–60 % at a fixed firing angle. Gate g-ipsm-2 is passed; §3 waits only on the lead's decision on g-ipsm-1. <a href="/power_convertor/evidence/archive/iter-power-supply-model-landed.html#iter-commutation-design">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-s3-blind-prediction-decision" data-who="Simon McIntosh" data-when="2026-10-14T09:00:00Z">
+    <div class="r-comment-body"><p>Run §3 as a blind prediction with the error band (lead, 14 October 2026). Gate g-ipsm-1 is passed on the recorded JT-60SA verdict and g-ipsm-2 on §7, so §3 is ready once its content review is stored.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-s3-dispatched-blind" data-who="reckon-build" data-when="2026-10-14T10:05:00Z">
+    <div class="r-comment-body"><p>§3 dispatched as a blind prediction (run r-20261014T100048902123-iter-pf-circuit-prediction). The v55 review's four findings: the supply-frequency control now states that line frequencies scale by 61.1/50 while amplitudes stay within tolerance, which the node's done-when carries; the followup, the decision's question and a §4 comment anchor are corrected here.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261014T104825647707-review-of-iter-pf-circuit-prediction-f432a9c26e6e" data-who="reckon-build" data-when="2026-10-14T10:55:04Z">
+    <div class="r-comment-body"><p>Review of r-20261014T100048902123-iter-pf-circuit-prediction at f432a9c26e6e9e88b4e52950f5e1c059acb0988e stored as parsed, with six scores and six checklist verdicts; three blocking and three follow-on findings identify the EF5 bypass, grounding capability duplication, false EF5 revision header, a tautological frequency assertion, a weak sequential-law assertion and the missing baseline suite.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261014T111317712325-review-of-iter-pf-circuit-prediction-065b637ad3d0" data-who="reckon-build" data-when="2026-10-14T11:20:22Z">
+    <div class="r-comment-body"><p>Revision-keyed independent review stored as parsed for f432a9c26e6e9e88b4e52950f5e1c059acb0988e..065b637ad3d0113feac2b84366157a648cba0d31; six dimensions scored 83/120, six checklist verdicts, two blocking findings and two follow-on findings.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261014T120135380439-review-of-iter-pf-circuit-prediction-157c224ad910" data-who="reckon-build" data-when="2026-10-14T12:08:03Z">
+    <div class="r-comment-body"><p>Independent incremental review of 065b637ad3d0113feac2b84366157a648cba0d31..157c224ad9102b7fa2e1dab08627158d2859dd8b stored as parsed with six scores, six checklist verdicts, one follow-on finding, and zero added failures in /home/ITER/mcintos/.config/reckon/crew/reviews/power_convertor/r-20261014T100048902123-iter-pf-circuit-prediction.at-157c224ad9102b7fa2e1dab08627158d2859dd8b.json.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261014T100048902123-iter-pf-circuit-prediction" data-who="reckon-build" data-when="2026-10-14T12:01:06Z">
+    <div class="r-comment-body"><p>Frozen PF2 and VS1 prediction in docs/research/iter-pf-circuit-prediction.html and docs/figures/iter-pf-circuit-prediction/prediction.svg; 6144 cases, PF2 12f 55.13–1245.29 V input band and 42–1623 V steady model band. EF5 and ITER share source aggregation and SupplyModel.coil_phasors; baseline 36 passed, head 37 passed, source-omission control changed both; fragment docs/evidence/fragments/iter-power-supply-model/iter-pf-circuit-prediction.html committed.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-14T12:15:00Z">
+    <div class="r-comment-body"><p>§3 landed: the frozen blind prediction of the PF2 branch and the VS1 loop with its declared band (merge <code>3f91b98</code>, review 113). The operating point and the IGBT modulation dominate the ripple; the DC share dominates the voltage to ground; the detection design decides the quench-detection margin. Next: evaluate this circuit at §8's ranked scenario intervals rather than across the blind sweep. Follow-on: the shared-path mutation test does not fully guard the full-unit aggregate. <a href="/power_convertor/evidence/archive/iter-power-supply-model-landed.html#iter-pf-circuit-prediction">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-s3-band-from-transferable-parts" data-who="reckon-build" data-when="2026-10-15T18:45:00Z">
+    <div class="r-comment-body"><p>Lead decision (15 October 2026): JT-60SA validates the method, not JT-60SA's converter models. ITER has no booster, so the booster model's error does not belong in ITER's ripple band. Gate g-ipsm-1 is already closed; this decision governs how §3's declared band is rebuilt. It comes from three parts that carry over:</p><ol><li>nova's coil-to-coil coupling error at the harmonics: jt60sa-coil-circuit-model §9 scores it against the 52 measured booster-test ratios, with no converter model in the loop, as a per-harmonic amplitude and phase band.</li><li>The twelve-pulse thyristor modelling error, from the base-supply work rather than the booster.</li><li>ITER's own converter data. The PF1-1 and PF6-1 dummy-load firing angles agree with the mean-voltage law to a median of −3.4° and −3.0° (p10/p90 within about ±9°) over 20–55 kA in rectification. The TF cold tests and the HIOKI recordings, now located, follow.</li></ol><p>Lines that point at a non-inductive path are reported apart from the band, EF5→EF4 at 12f among them.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261013T075254295604-iter-dummy-load-tests" data-who="reckon-build" data-when="2026-10-13T08:11:33Z">
+    <div class="r-comment-body"><p>UDA survey identified 0 PF converter dummy-load tests: 360 historical channel-month queries had no samples and 27/36 recent queries had telemetry without test metadata, while same-session mctb controls returned data; [research record](/power_convertor/research/iter-dummy-load-tests).</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261013T081139810127-review-of-iter-dummy-load-tests-a0113e3748f1" data-who="reckon-build" data-when="2026-10-13T08:20:23Z">
+    <div class="r-comment-body"><p>Parsed review of e0e3c67f79256d6cd5f0a5684e873800ad259cbf..a0113e3748f18b75a87544f034147e383062b18d stored with six scores, two follow-on findings, and an unmeasured suite-failure delta because the reviewed run supplied no baseline_suite or after_suite logs.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261013T081227404762-iter-pf-activity-windows" data-who="reckon-build" data-when="2026-10-13T08:30:08Z">
+    <div class="r-comment-body"><p>The PFCS family inventory covers 2241 slow and 15 SDN variables; 594 current channel-month queries found one nonzero PF6 channel-day, one unitless sample on 2026-10-09, and no measured PF voltage family.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261013T083013475067-review-of-iter-pf-activity-windows-f1d20b65080a" data-who="reckon-build" data-when="2026-10-13T08:36:50Z">
+    <div class="r-comment-body"><p>Parsed review of ff916d78489421439f77439011f04c389121254c..f1d20b65080aea17b5d75b0c117c67f90ad37e23 stored with all six dimensions, three follow-on findings, and an unmeasured suite-failure delta because the reviewed run names no baseline_suite or after_suite logs.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261013T083115373133-iter-pf-test-windows" data-who="reckon-build" data-when="2026-10-13T09:20:38.233Z">
+    <div class="r-comment-body"><p>docs/research/iter-dummy-load-tests.html gains the PF converter command-window section — PF1 firing angle 2026-09-22T09:27:11Z→2026-09-28T15:36:09Z (0–135), PF6 October 2026 (0–135, day-level window unresolved), DLL1 dummy-load controller from 2026-09-28T09:25:59Z (limit 200→50 mA and current 0–113), MRC MODE from 2026-09-23T11:47:41Z, and every silent family with its scanned interval; scripts/iter/uda/dummy_load_windows.py and save_pf_window.py reproduce the reads.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261013T092100412675-review-of-iter-pf-test-windows-27e130eee9f3" data-who="reckon-build" data-when="2026-10-13T09:43:35.298Z">
+    <div class="r-comment-body"><p>Independent review of r-20261013T083115373133-iter-pf-test-windows stored as a parsed record over base 5ecddecd883055fda6c90608ac190c229982e20a and head 27e130eee9f3a281ad9a4cd1038a6a0c0ac67cee: all six dimensions scored (goal_fidelity 16, evidence 16, scope_discipline 20, durability 1, fit 18, reuse 4; total 75), three follow-on findings (UDA read duplication, no automated control test, PF5 2025 scanned-interval overstatement), and an unmeasured suite-failure delta because the reviewed manifest names no base or after suite.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261013T100350396600-review-of-iter-uda-reader-e950e1dd8f08" data-who="reckon-build" data-when="2026-10-13T10:10:42Z">
+    <div class="r-comment-body"><p>Independent review of the shared UDA reader stored with six scores and two blocking findings; the source run's baseline and after suite arms are absent, so added failures are unmeasured.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261013T094722866703-iter-uda-reader" data-who="reckon-build" data-when="2026-10-13T10:15:52Z">
+    <div class="r-comment-body"><p>Shared UDA reader and four migrated ITER scripts landed; the focused fake-client gate passed 12/12, both review repairs have red parent-source rollback controls, and a controlled 54-query archive scan found PF1 firing-angle activity on all seven days from 22 through 28 September with a 135-degree peak; [evidence](/power_convertor/evidence/archive/iter-power-supply-model-landed.html#iter-uda-reader-shared-access).</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261013T101640906141-review-of-iter-uda-reader-f3e6a3e600b8" data-who="reckon-build" data-when="2026-10-13T10:25:12Z">
+    <div class="r-comment-body"><p>Reviewed the three commits added since e950e1dd; six parsed scores and one follow-on test finding stored for f3e6a3e6, with added failures unmeasured because the source run recorded no baseline_suite or after_suite arms.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20261013T1328-archive-probe" data-who="reckon-build" data-when="2026-10-13T13:28:00Z">
+    <div class="r-comment-body"><p>Archive probe landed (merge <code>b254c59</code>, review 96): no CODAC archive reachable from here holds the PF dummy-load voltage or current waveforms; fourteen hosts probed with same-session controls. §4 stays open: its done-when needs the traces of one PF converter test, which now depend on a source outside UDA (the converter supplier's acquisition or a commissioning recorder). <a href="/power_convertor/evidence/archive/iter-power-supply-model-landed.html#iter-codac-archive-probe">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-turnover-scope-leads" data-who="reckon-build" data-when="2026-10-13T19:25:00Z">
+    <div class="r-comment-body"><p>IDM FFZXDR v1.2 (approved 31 Aug 2026), the turnover scope for PF2–PF6 and Dummy Load 2, holds no test data: it hands the converters' I&amp;C cubicles and cables from construction to commissioning. Its leads to the test data: the System Commissioning Plan of PF Power Converters (8YDU27 v3.1), which governs the commissioning tests and their records; Dummy Load 2 in B33-OUT-WEST, with its P&amp;ID (X7ZE6B v1.0), cabling diagram (27QT5N v3.6), marked scope (ETNZXK) and the PF2–PF5 and VS1 one-line diagram (3SPASA); the PF2–PF6 one-line diagrams (PK3YQG, PK4TXG, PK6ZEZ, PJZR6N, PK32WW); and the interfaces and services appendix (DJRSMJ). PF1 and its dummy load are not in this package, so the September PF1 tests fall under a separate turnover package. Its PF6 one-line excerpt shows the Stage 1 unit's two 41 MVA transformers as extended delta 0/+15° and 0/−15°, where the Stage 2 design (FMSLSQ v1.1) uses Dd0/Yd11.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-dummy-load-controller-signals" data-who="reckon-build" data-when="2026-10-13T19:52:00Z">
+    <div class="r-comment-body"><p>The dummy-load controller's archive variables now have documented meanings. IDM 5KT5BJ v1.2, the 2021 test report of the Dummy Load 2 control cubicle, defines <code>MAG-PFCS-DLL2:DL1101-IT</code> as the <strong>grounding current</strong>, with a 600 mA fault threshold. So the DLL1 <code>DL1101-IT</code> readings of 0–113 on 28 Sep and 7–12 Oct 2026 are ground current, not the dummy-load current that iter-dummy-load-tests.html reads them as. The same report gives the B33 converter-selector codes (<code>CLCNCVTNUM</code>: 12 PF2, 13 PF3, 14 PF4, 15 PF5, 16 VS1, 17–19 CCL1–3, 20–22 CCS1–3, 23–25 PF2/3/4 with VS1), and <code>DLMODE</code> is the dummy-load mode flag. The cabling diagram 27QT5N v3.6 records that the B32 dummy load (DL1) is cabled to PF1-1 and PF6-1. Together with the DLL1 mode (on from 28 Sep) and selector (1 to 2 on 5 Oct) already in the archive, these date each dummy-load session and name its converter. They do not supply the load's voltage or current waveform, which no archived variable has been found to carry. Node uda-dummy-load-sessions derives the session table; a dedicated evidence document will record the signals, sessions, code tables, read recipes and the remaining gap.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-dan-route" data-who="reckon-build" data-when="2026-10-13T20:02:00Z">
+    <div class="r-comment-body"><p>The commissioning plan (8YDU27 v3.1) says where the dummy-load waveforms go. A transient-recorder event or manual trigger records the converter's signals in its local buffer. The CCR aggregates them into a DAN stream and publishes it "to DAN archiver server via DAN" (TP-41P1CU-10108, -10506). The Stage 2 I&amp;C slides (FQHFN3) list the DAN table's fields: four bridge currents, the terminal current, four bridge voltages and the terminal voltage. The same plan defines the tests: a 0.3 Ω resistive light load, and the 6.73 mH inductive dummy load at 55 kA for at most 20 s or 27.5 kA for at most 60 s, at least 15 min apart. The PF1 SAT follows Q3JXB, "SAT for PF Converter System". The waveforms are therefore expected in the DAN archive, not in the slow or SDN UDA archives that §4 has searched. Node dan-archive-probe tests whether that archive is readable without io-ls-udasrv1.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-dummy-load-currents-and-dan" data-who="reckon-build" data-when="2026-10-13T20:40:00Z">
+    <div class="r-comment-body"><p>The archive does carry the dummy-load tests' currents. On io-ls-udasrv2, <code>MAG-PFCS-PF1/PF6:TCD1101–1106-IT</code> (kA, ~2 s) are the converters' bridge, output and bypass current transducers. PF1 ran on the B32 dummy load from 28 Sep 09:25:59 to 5 Oct 12:37:03 UTC (selector 1). PF6 ran from then on (selector 2). The selector codes are documented in 55S4Q4 Table 9 (B32: 1 PF1 two units, 2 PF6 two units). The output current spans −55 to +55 kA, and the bridges reach 26–29 kA (uda-dummy-load-sessions, merged 09c80a8). No converter voltage variable exists, and 2 s cannot resolve ripple. The fast recordings were searched for and not found: the DAN catalogue on the three permitted hosts holds no PF or plant-system-41 recorder pulse, while an 80 kHz MCTB DAN control reads (dan-archive-probe). The operations server io-ls-udasrv1, read once with the lead's authorisation, mirrors io-ls-udasrv2 and holds none either (dan-operations-probe). The lead reports the IDM site-acceptance folders empty. The dummy load is 6.73 mH ±1 % (6.79 mH computed) and 2.99 mΩ at 25 °C (Q3UJAZ, Q5TGLF). Node iter-pf-dummy-load-evidence writes all of this into one evidence document, with the requests that would close the gap: the PF1-1 and PF6-1 DAN stream names and pulse IDs from the CCR/DAN owner, and the executed test records from the commissioning team.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-13T21:20:00Z">
+    <div class="r-comment-body"><p>§4 closed. Its done-when is met: the test table names the PF1 and PF6 dummy-load tests with converter unit and type, dates, load (6.73 mH, 2.99 mΩ), operating points (currents and firing angles; voltage not archived), channels, sampling rates (2 s and 6 s, too slow for ripple, as recorded) and the access route. Traces of both tests are saved under <code>data/iter/dummy-load-sessions/</code>. The section's text says io-ls-udasrv1 is never read. It was read once on 2026-10-13, read-only, on the lead's explicit authorisation for node dan-operations-probe; it mirrors io-ls-udasrv2. The repository's reader still refuses that host. The fast recordings that §5 needs are not in any reachable archive. Two requests would supply them: the CCR/DAN owner for the PF1-1 and PF6-1 DAN stream names and pulse IDs, and the commissioning team for the executed test records by test-procedure ID and Q3JXB. <a href="/power_convertor/evidence/archive/iter-power-supply-model-landed.html#iter-pf-dummy-load-tests">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-dan-pulse-name-search" data-who="reckon-build" data-when="2026-10-14T08:30:00Z">
+    <div class="r-comment-body"><p>The DAN search was widened from plant-code name patterns to every pulse by time and to nova's <code>PCS</code>/<code>PDS</code> roots (merge <code>06a0c01</code>): 5,855 pulses in 729 roots, none in the PF test intervals and no PF spelling, on all three permitted hosts. The PF recordings are not in a reachable archive; they need the commissioning team or the CCR owner, or CODAC's answer on whether <code>4504DS-UDA-6005</code> or a successor holds PF DAN streams. <a href="/power_convertor/evidence/archive/iter-power-supply-model-landed.html#dan-pulse-name-search">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-anchor-correction" data-who="reckon-build" data-when="2026-10-14T10:05:00Z">
+    <div class="r-comment-body"><p>Correction to the comment for run r-20261013T094722866703-iter-uda-reader: its evidence link names an anchor the landing record does not carry. The shared UDA reader's evidence is at <a href="/power_convertor/evidence/archive/iter-power-supply-model-landed.html#iter-uda-reader">iter-power-supply-model-landed#iter-uda-reader</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-s5-slow-dc-regression" data-who="reckon-build" data-when="2026-10-14T07:20:00Z">
+    <div class="r-comment-body"><p>Slow-record part of this section landed (merge <code>a32ff4e</code>, review 104): the DC regulation fitted from the archived angles and currents with the load equation as voltage does not match the design regulation (effective V<sub>d0</sub> about 640 V against about 1418 V ideal; design coefficients miss by 130 to 160 V rms), so the slow data cannot identify the commutation reactance; the archived angle's definition is the first suspect. The section's ripple measures still need the fast recordings. Follow-ons: the controls test the fit but not the reader, matcher and bridge-mode classifier, and the bridge-mode colours sit outside <code>power_convertor.style</code>. <a href="/power_convertor/evidence/archive/iter-power-supply-model-landed.html#iter-dummy-load-dc-regression">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-supersede-s5" data-who="reckon-edit" data-when="2026-10-17T10:15:00Z">
+    <div class="r-comment-body"><p>Superseded on 17 October 2026 by <a href="/power_convertor/plans/iter-dummy-load-validation">iter-dummy-load-validation</a>, on the lead's decision in the portfolio review. This section was written for the UDA slow archive, where §4 found only 2 s indications. The waveforms are on the stand-alone HIOKI recorder, and that plan reads them (§3) and scores a prediction frozen before they arrive (§2, §4).</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-close-s7" data-who="reckon-build" data-when="2026-10-14T08:50:00Z">
+    <div class="r-comment-body"><p>§7 landed: the ITER coil, circuit and passive-structure matrices are in <code>data/iter/passive_structure/</code> and load through <code>PassiveStructure</code> (merge <code>5540efc</code>, review 104), so gate g-ipsm-2 is passed. Follow-ons: <code>shorted_inductance</code> has no production caller; one test restates its formula; the JT-60SA reproduction log is headed with the base revision; <code>scripts/iter/coil_coupling.py</code> rebuilds the incidence matrices <code>circuit_connections.py</code> owns; and the ripple-band values need shells divided through their thickness to be more than extrapolations. <a href="/power_convertor/evidence/archive/iter-power-supply-model-landed.html#iter-coil-coupling">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261014T073248694652-iter-coil-coupling" data-who="reckon-build" data-when="2026-10-14T08:30:38Z">
+    <div class="r-comment-body"><p>Exact nova export and research record committed (f9470d3); 14 coils, 458 passive rings, 0.000535806 H minimum coil eigenvalue, 0.122535 Hz first decay corner, 1.798/29.310 Hz cryostat/vessel skin limits, 5 focused tests passed and document audit zero errors.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261014T083116111255-review-of-iter-coil-coupling-f9470d3903e2" data-who="reckon-build" data-when="2026-10-14T08:48:33.313Z">
+    <div class="r-comment-body"><p>Independent review stored for r-20261014T073248694652-iter-coil-coupling at head f9470d3903e2, base 0e46a4c05172: 6 dimensions scored 104/120 total, four follow-on findings and no blocking findings; do not edit the plan.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-10-14T11:50:00Z">
+    <div class="r-comment-body"><p>§8 landed (merge <code>1f8f519</code>, review 93): the supplies are loaded hardest at initiation (current, dI/dt, power), during ramp-up near 90° at high current (twelve-pulse ripple), and at termination at the voltage limits; those intervals are where §3's circuit is next evaluated for ripple, Paschen and quench-detection margins. Follow-ons: a docstring attributes a rule to the coordinator; <code>firing_angle_deg</code> duplicates <code>Supply._firing_angle</code>; the angle and line functions lack unit tests; one test compares a value with itself; the timeline figures crowd their current labels and show a constant 42° closure angle after the pulse, where the current is zero. <a href="/power_convertor/evidence/archive/iter-power-supply-model-landed.html#iter-scenario-supply-loading">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-supersede-s6" data-who="reckon-edit" data-when="2026-10-17T10:15:00Z">
+    <div class="r-comment-body"><p>Superseded on 17 October 2026 by <a href="/power_convertor/plans/iter-dummy-load-validation">iter-dummy-load-validation</a> §5, which carries this section's fit method unchanged: the split committed before the fit, <code>fit_base_supply</code> extended with the input rate, phase shift and scored orders, and the in-phase six-pulse negative control. It runs on the recorder data, which can resolve the lines. The lead decided that the measured values are carried as built, with the IDM values reported.</p></div>
+</div>
+</section>
+<section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="d-ipsm-blind-prediction" data-choice="run §3 now as a frozen blind prediction with a declared error band" data-by="Simon McIntosh" data-when="2026-10-14T09:48:58+00:00">
+    <p class="r-dec-q">Does §3 run now as a blind prediction carrying the JT-60SA error, or wait for the booster-model repair?</p>
+    <p class="r-dec-rat">The JT-60SA verdict sets how far the library is trusted, and it is in. Running now gives a pre-registered prediction to score against the fast dummy-load data when it arrives; waiting for the booster-model repair would change the error band, not the inputs. The band combines the propagated input ranges with the JT-60SA model error.</p>
+    </div>
+</section>
+</main>
+</body>
+</html>

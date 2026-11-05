@@ -8,7 +8,7 @@ import json
 import re
 import sqlite3
 import threading
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextlib import closing
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
@@ -1133,9 +1133,74 @@ def sprint_state_view(roadmap: dict[str, Any]) -> list[dict[str, Any]]:
     return view
 
 
-def ready_set_view(roadmap: dict[str, Any]) -> dict[str, Any]:
-    """Project the canonical roadmap's ready rows for composed clients."""
+def _row_live_run(row: Mapping[str, Any]) -> str | None:
+    """The run id sitting on one ready row, or ``None`` when the row is idle.
 
+    A section row carries its runs in ``runs`` and a plan row carries its own in
+    ``in_flight``; both are the classified rows the live partition already gave
+    the plan, so this reads the run rather than looking for a pointer again.
+    """
+
+    for key in ("runs", "in_flight"):
+        candidates = row.get(key)
+        if not isinstance(candidates, Sequence) or isinstance(candidates, str):
+            continue
+        for candidate in candidates:
+            if isinstance(candidate, Mapping) and candidate.get("run_id"):
+                return str(candidate["run_id"])
+    return None
+
+
+def _ready_set_coordinators(project: str) -> dict[str, dict[str, Any]]:
+    """Each plan's coordinator and owner, from the derivation the crew owns.
+
+    The derivation is the crew's, not this view's: a second reading of the
+    ledger here is how one plan comes to have two coordinators. An unreadable
+    ledger leaves the columns empty rather than failing the read, because a
+    ready set with no owner is still the answer a reader came for.
+    """
+
+    if not project:
+        return {}
+    try:
+        from reckon.crew.plan_coordinator import resolve_plan_coordinators
+
+        return resolve_plan_coordinators(project)["plans"]
+    except Exception:  # noqa: BLE001 — an unreadable ledger names no owner
+        return {}
+
+
+def ready_set_view(
+    roadmap: dict[str, Any],
+    *,
+    coordinators: Mapping[str, Mapping[str, Any]] | None = None,
+    ready_idle: bool = False,
+    limit: int | None = None,
+    cursor: str | None = None,
+) -> dict[str, Any]:
+    """Project the canonical roadmap's ready rows for composed clients.
+
+    Every row names its live run (or none), its coordinator and recorded
+    ``plan-owner``, and whether it sits on the critical path. ``ready_idle``
+    filters the rows to those with no live run — the set a coordinator is
+    looking for when a lane is idle — and keeps the view's own paging, so the
+    filtered answer is a page of one more view rather than a second view.
+
+    ``coordinators`` takes the crew's plan-coordinator rows. When it is absent
+    and the filtered set is asked for, the crew's derivation is read for the
+    project, so one call answers who to ask about each idle section.
+    """
+
+    if coordinators is None and ready_idle:
+        coordinators = _ready_set_coordinators(str(roadmap.get("project") or ""))
+    coordinators = coordinators or {}
+    critical = roadmap.get("critical_path") or {}
+    critical_sections = {
+        str(ref) for ref in critical.get("sections") or [] if str(ref).strip()
+    }
+    critical_plans = {
+        str(slug) for slug in critical.get("plans") or [] if str(slug).strip()
+    }
     readiness_by_slug = {
         str(row.get("slug")): row
         for row in roadmap.get("ready_now", [])
@@ -1155,10 +1220,44 @@ def ready_set_view(roadmap: dict[str, Any]) -> dict[str, Any]:
         ):
             if key in readiness:
                 row[key] = readiness[key]
+        slug = str(row.get("slug") or "")
+        plan_slug = slug.partition("#")[0]
+        owner_row = coordinators.get(plan_slug) or {}
+        row["live_run"] = _row_live_run(row)
+        row["coordinator"] = owner_row.get("coordinator")
+        row["plan_owner"] = str(owner_row.get("plan_owner") or "")
+        row["critical_path"] = slug in critical_sections or plan_slug in critical_plans
+        if ready_idle and (row["live_run"] or row.get("ready") is False):
+            continue
         ready.append(row)
+    closable = []
+    for row in roadmap.get("pending_work", []):
+        if not isinstance(row, dict) or str(row.get("readiness") or "") != "closable":
+            continue
+        owner_row = coordinators.get(str(row.get("slug"))) or {}
+        closable.append(
+            {
+                "plan": str(row.get("slug") or ""),
+                "title": row.get("title") or row.get("slug"),
+                "plan_owner": str(owner_row.get("plan_owner") or ""),
+                "coordinator": owner_row.get("coordinator"),
+                "closure_blockers": list(row.get("closure_blockers") or []),
+            }
+        )
+    # An unpaged call keeps the whole set, so the view a surface already reads is
+    # not silently cut to one page; a caller that asks for a page gets the
+    # cursor paging every other view answers with.
+    if limit is None and cursor is None:
+        page = ready
+        pagination = {"count": len(ready), "total": len(ready), "next_cursor": None}
+    else:
+        page, pagination = paginate(ready, cursor=cursor, limit=limit)
     return {
         "project": roadmap.get("project"),
-        "ready": ready,
+        "ready": page,
+        "ready_idle": ready_idle,
+        "closable": closable,
+        "pagination": pagination,
         "review": roadmap.get("review"),
         "sprints": sprint_state_view(roadmap),
         "endpoints": roadmap.get("endpoints", []),
