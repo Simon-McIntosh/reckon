@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-live-worker-is-never-drawn-halted">
+  <meta name="plan-title" content="The census instrument and its review-missing sampler">
+  <meta name="plan-summary" content="The instrument and the sampler are committed as one module under scripts/census. Each of the three false-halt kinds reads non-zero on the 48 hours ending 2026-10-23T12:37Z, with the plan's own recorded rows counted under their kinds.">
+  <meta name="plan-evidence-for" content="reckon:a-live-worker-is-never-drawn-halted">
+  <meta name="plan-verifies" content="reckon:a-live-worker-is-never-drawn-halted#s11">
+  <meta name="plan-recorded-at" content="2026-11-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,monitor,census,ticker,obligations">
+</head>
+<body>
+<main class="plan-doc">
+<h2 id="census-instrument">Landing record — the census instrument and its review-missing sampler</h2>
+
+<p id="census-instrument-why">The census behind §1 lived in a coordinator's scratch directory and could not be re-run by anyone else. This node commits it as <code>scripts/census/monitor_census.py</code>, beside the two existing census modules, with its co-located test. It reclassifies every transition in every project's watch stream through <code>ticker.stream_carries</code> and <code>ticker._pane_word</code>, so it counts what the pane actually showed rather than the raw transition volume.</p>
+
+<p id="census-instrument-kinds">Three halted kinds are counted, one per false-halt mechanism the plan repaired, all read from the run's own directory beside the stream because a row alone cannot separate them. <strong>process_alive</strong>: the row's own event records <code>process_alive: true</code> while its destination draws halted. <strong>returns_to_progress</strong>: a later row for the same run draws <code>working</code>, <code>delivered</code>, <code>in review</code> or <code>landed</code>, with no attempt claim between the two. <strong>after_status_repair</strong>: the row was printed within 60 seconds after the run's <code>status-repair.json</code> and no attempt claim falls between the repair and the row.</p>
+
+<p id="census-instrument-claim-rule">Claim times are compared at second granularity at <em>both</em> bounds, strictly on each side: a claim whose truncated time equals either bound's second is not between, because an attempt claimed in the same second as a row cannot have run. The rule is pinned by its own test arm — a claim 0.4 s into the halted row's own second and a claim 0.9 s into the progress row's second both leave the row counted, while a claim 30 s inside the interval excludes it.</p>
+
+<p id="census-instrument-sampler">The module also carries the review-missing sampler. Each <code>review-missing</code> duty in every session's obligations snapshot is judged by <code>obligations._current_review_in_flight</code> on the reviewed run's own live pointer — the reader that gates the duty when it is published. A duty counts as the defect when that reader returns true and the snapshot's <code>computed_at</code> is at or after the review pointer's <code>launched_at</code>; a snapshot computed before the launch counts separately as <code>stale_snapshot</code>. Counted pairs are appended to <code>~/.cache/reckon-population/a-live-worker-census/review-missing-samples.jsonl</code>. The sampler is committed, not started: a crew worker has no turn after its last one.</p>
+
+<h3>Gate</h3>
+<p id="census-instrument-gate">The head arm runs the node's test file: <strong>7 passed, <code>EXIT=0</code></strong> (<code>logs/head-gate.log</code>). The base arm resolves the template over the base revision's tree, where the module and its test do not exist, so it collects nothing and exits 4 (<code>logs/base-gate.log</code>); the base arm therefore adds no failure because it runs no test this node adds. Ruff <code>check</code> and <code>format --check</code> are clean on both staged files.</p>
+
+<h3>Negative control — the historical window</h3>
+<p id="census-instrument-control">Run on the fleet node over the 48 hours ending 2026-10-23T12:37Z, before any of this plan's repairs reached a producer (<code>logs/historical-census.json</code>): <strong>13,325 transition events over 1,335 runs; 242 carried halted rows</strong>, exactly §1's census. Each kind reads non-zero:</p>
+<ul>
+<li id="census-instrument-control-alive"><strong>process_alive: 38</strong>, broken down by transition — <code>complete→stalled</code> 1, <code>completed_unpromoted→stalled</code> 1, <code>stalled→stalled</code> 5, <code>working→running</code> 24, <code>working→stalled</code> 6, <code>working→stopped</code> 1. The 38 matches the fifth content review's figure, and §1's 24 <code>working→running</code> rows are one key among them.</li>
+<li id="census-instrument-control-progress"><strong>returns_to_progress: 128</strong>, including §3's recorded row — <code>r-20261023T012524464845-a-plan-write-refuses-the-bucket</code>, halted at <strong>12:25:51Z</strong>, progress at 12:27:34Z, no claim between.</li>
+<li id="census-instrument-control-repair"><strong>after_status_repair: 7</strong>, including §4's control row — the same run, <code>repaired_at</code> 12:14:30Z, halted row at <strong>12:14:49Z</strong>, <code>attempt-4.claim</code> at 12:14:49.398Z in the row's own second and therefore not between.</li>
+</ul>
+<p id="census-instrument-control-noise">The two noise measures read 22 same-word <code>waiting → waiting</code> rows and 27 lift ids, the worst cycling 271 <code>lift-granted</code> against 270 <code>lift-ended</code>.</p>
+<p id="census-instrument-control-mutation">The declared control disables one mechanism at a time and re-reads the same window (<code>logs/negative-control.log</code>): each mutant's own kind reads zero and the other two still read non-zero, so a zero is attributable to the disabled arm rather than to an instrument that stopped reading. <strong>3 failed, <code>EXIT=1</code></strong>.</p>
+</main>
+</body>
+</html>
