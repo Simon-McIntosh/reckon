@@ -684,4 +684,8 @@ def test_every_typed_view_refuses_the_why_view(fixture, config_home):
         view="why",
         checkout_path=str(fixture["root"]),
     )
-    assert served.get("error") != "invalid_view"
+    assert "error" not in served, (
+        f"the plan read refused the why view: {served.get('error')}"
+    )
+    assert served.get("view") == "why", "the plan read answered with another view"
+    assert served.get("ref") != "invalid_view"
