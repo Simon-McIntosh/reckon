@@ -11,6 +11,7 @@ open gate and every unmet wait beside it in one read.
 from __future__ import annotations
 
 import json
+import re
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -49,6 +50,16 @@ HEAD_COORDINATOR = "cdb769a4-7af0-4304-a144-f39ecbf8c502"
 GATED_LINK = "iter-switched-terminal-transients#s6"
 GATED_GATE = "g-istt-6"
 GATED_HOLDS = [GATED_GATE, HEAD]
+
+
+FRAGMENT = (
+    Path(__file__).parent.parent
+    / "docs"
+    / "evidence"
+    / "fragments"
+    / "a-coordinator-sees-the-board"
+    / "the-critical-path-reads-link-by-link.html"
+)
 
 
 def _build(*, now: datetime | None = NOW) -> dict[str, Any]:
@@ -195,6 +206,38 @@ def test_the_links_keep_the_paths_order_and_its_ref_list(
     assert [link["ref"] for link in links] == list(critical["sections"])
     assert critical["head"] == links[0]["ref"]
     assert all(isinstance(ref, str) for ref in critical["sections"])
+
+
+def _evidence_rows(text: str) -> dict[str, str]:
+    """The evidence table's rows by link ref, each as the row's own text."""
+
+    rows: dict[str, str] = {}
+    for block in text.split("<tr>")[1:]:
+        row = block.split("</tr>", 1)[0]
+        named = re.search(r"<code>([^<]+)</code>", row)
+        if named:
+            rows[named.group(1)] = row
+    return rows
+
+
+def test_the_evidence_table_records_every_link_and_every_hold(
+    board: dict[str, Any],
+) -> None:
+    """The record a reviewer reads names every link the payload carries.
+
+    The table is the only place a reader sees what the path looks like, so a
+    link left out of it — or a hold dropped from a row — understates the
+    payload the roadmap actually returns.
+    """
+
+    rows = _evidence_rows(FRAGMENT.read_text(encoding="utf-8"))
+    for link in _links(board):
+        row = rows.get(link["ref"])
+        assert row is not None, (
+            f"{link['ref']} is missing from the evidence table: {sorted(rows)}"
+        )
+        for hold in link["holds"]:
+            assert hold["id"] in row, f"{link['ref']} omits its hold {hold['id']}"
 
 
 def test_a_live_run_on_the_head_turns_its_state_to_in_flight(
