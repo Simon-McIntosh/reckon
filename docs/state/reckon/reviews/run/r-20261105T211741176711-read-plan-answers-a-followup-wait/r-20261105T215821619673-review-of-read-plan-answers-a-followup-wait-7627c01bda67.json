@@ -1,0 +1,34 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-05T22:07:34.825Z",
+  "dispatched_at": "2026-11-05T22:02:45Z",
+  "emitted": "VERDICT goal: the node's goal is to make read_plan answer a followup wait through the roadmap's own derivation; reckon/roadmap.py:662 adds followup_wait_state, which both _section_scoped_edges (reckon/roadmap.py:1653) and _resolve_plan_ref (reckon/mcp.py:1985) call, so read_plan's rows carry followup, followup_found, followup_status and satisfied.\nVERDICT done_when: the done_when asks for a test reading both surfaces for other@f-open, other@f-resolved and other@f-missing; tests/test_read_plan_answers_a_followup_wait.py:161-243 does exactly that through mcp._read_plan and mcp._roadmap(view=\"raw\"), and the base arm adds the tests/test_a_section_can_wait_on_a_followup.py unchanged clause, recorded 11 passed in gate-roadmap-sibling.log.\nVERDICT write_paths: the manifest declares reckon/mcp.py, reckon/roadmap.py, tests/test_read_plan_answers_a_followup_wait.py, the evidence fragment and a figures directory; git diff 116da9e9f..7627c01bda touches exactly four files, all inside those paths, and the figures directory is unused.\nVERDICT manifest: read at the source run directory; it records status complete, the two commits, eight cases (8 passed head, 6 failed/2 passed base), the negative control, and the module/cwd of the base arm.\nVERDICT diff: read commit by commit; d2e789cbea lifts the roadmap's inline followup lookup into followup_wait_state and calls it from _resolve_plan_ref under `if parsed.followup`, 7627c01bda adds the 31-line landing fragment only.\nCALL_SITES: reckon/mcp.py:_read_plan (deps at mcp.py:1099, section rows via _section_dependency_rows at mcp.py:1937), reckon/mcp.py:3555 link audit, reckon/roadmap.py:build_roadmap via _section_scoped_edges at roadmap.py:3915, reckon/why_view.py:193 _section_edges_for\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp.py:1985 sets the four keys from the same helper the roadmap edge row uses, so an open followup reads satisfied false, a resolved one true and a missing one followup_found false.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-after.log (8 passed, EXIT=0), gate-base.log (6 failed, 2 passed, EXIT=1 with the six ids the manifest lists), negative-control.log (6 failed, EXIT=1) and gate-roadmap-sibling.log (11 passed) are all on disk and reconcile with the manifest; only the ruff-format clause is claimed without a log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff over 116da9e9f..7627c01bda is four files, every one named in the manifest's declared write paths, and no plan or figure edit.\nSCORE durability: 19\nJUSTIFICATION durability: the base arm and the declared mutation both redden the same six followup cases at tests/test_read_plan_answers_a_followup_wait.py:161, so the assertions name the code change that would fail them; only the ref echo at line 168 compares against the test's own input.\nSCORE fit: 20\nJUSTIFICATION fit: followup_wait_state at reckon/roadmap.py:662 sits beside dependency_row_state with the same shape and docstring voice, and neither the symbol nor its comment carries a plan label.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/roadmap.py:1653 replaces the roadmap's inline lookup rather than adding beside it, and a search for a followup-wait owner across reckon/ (why_view._open_followups, mcp_edit_plan._resolve_followup, _store._followup_is_open) found only the write, list-filter and open-test capabilities, so the derivation is extended, not duplicated.\nFINDING tests/test_read_plan_answers_a_followup_wait.py:35 non-blocking: the cases cover only slug@f-id, not slug#sN@f-id, where reckon/mcp.py:1978 reports the section's status and reckon/roadmap.py:1658 the plan's.",
+  "findings": [
+    {
+      "detail": "FOLLOWUP_REFS holds three bare followup refs, so no case exercises a followup ref that also names a stage. For that form read_plan's status comes from dependency_row_state(data, parsed.stage) at reckon/mcp.py:1978, which reports the section's declaration, while the roadmap's followup branch sets status to _status(target), the whole-plan status, at reckon/roadmap.py:1658. The four keys the measure names agree; status does not. Because the node's premise is that the two surfaces answer the same question for the same ref, a staged followup ref is the untested shape where they do not.",
+      "file": "tests/test_read_plan_answers_a_followup_wait.py",
+      "id": "f2789143f27",
+      "line": 35,
+      "severity": "non-blocking",
+      "summary": "The comparison cases cover only the bare slug@f-id form, not slug#sN@f-id, and the two surfaces still disagree on the status key for a staged ref"
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261105T215821619673-review-of-read-plan-answers-a-followup-wait-7627c01bda67",
+  "reviewed_base_sha": "116da9e9f83cef80494bc4da9997815145d9b510",
+  "reviewed_head_sha": "7627c01bda6700038ec5e7a78f8e796e1dfee254",
+  "reviewed_run_id": "r-20261105T211741176711-read-plan-answers-a-followup-wait",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T22:12:42.376377+00:00",
+  "total": 117
+}
