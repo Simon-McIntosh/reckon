@@ -2864,6 +2864,26 @@ def _committed_review_rounds(
     return ids, heads
 
 
+def _with_a_derived_total(payload: Mapping[str, Any]) -> dict[str, Any]:
+    """The record a promotion commits, carrying the total its scores sum to.
+
+    A reviewer that scores all six dimensions and leaves the total line out has
+    written a complete review: the total is arithmetic over the record, and
+    every reader — the store's own writer, ``read_review``, the delivery
+    verdict — derives it. The record a promotion commits is read straight from
+    the reviewer's run directory, which is the one copy that never passes
+    through that writer, so without this the committed row records the review's
+    dimensions beside a null total.
+
+    A record that states its own total keeps it, and a record that scores
+    nothing is left alone: the derivation withholds a total rather than
+    inventing one over a subset of the dimensions.
+    """
+    if review_module._has_integer_total(payload):
+        return dict(payload)
+    return dict(review_module._derive_landed_total(payload))
+
+
 def _delivered_review_payloads_for_commit(
     record: Mapping[str, Any],
     project: str,
@@ -2935,6 +2955,7 @@ def _delivered_review_payloads_for_commit(
     def include(payload: Mapping[str, Any] | None) -> None:
         if not payload:
             return
+        payload = _with_a_derived_total(payload)
         key = str(payload.get("review_run_id") or "").strip()
         if key:
             if key in seen:
