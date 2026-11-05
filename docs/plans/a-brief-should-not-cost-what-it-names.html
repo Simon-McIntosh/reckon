@@ -23,9 +23,9 @@
   <title>A Brief Should Not Cost What It Names | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="24">
 <meta name="plan-modified" content="2026-11-05">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -299,6 +299,9 @@ Section 2 comes first and is nearly free: the per-file breakdown is already comp
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261027T092056010872-a-mention-is-charged-a-reference-cost" data-who="reckon-build" data-when="2026-11-02T23:27:45Z">
     <div class="r-comment-body"><p>A repository path a brief only mentions is now charged one flat reference cost (_REFERENCE_COST_TOKENS = 4,000, the constant regenerated paths already paid) instead of nothing, and a path inside a negative clause is charged as a reference; a declared write path and a declared input keep their full charge and win the single charge when one path is both declared and mentioned. The five exclusion assertions that still held the zero-charge rule were rewritten for the reference charge, so the done-when gate is 29 passed EXIT=0 at the head; the differential case moves 0 -&gt; 4,000 while the 1,200,000-byte file it names would cost 342,858 tokens, and the three recorded briefs re-estimate to 161,013 / 4,000 / 186,748 against their 480,000 windows.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-11-05T08:10:00Z">
+    <div class="r-comment-body"><p>Section 3 landed at merge <code>d9fed5f4a</code>: A repository path a brief only mentions is now charged one flat reference cost in the context estimate, as the locked reference-cost decision chose, and a path in a negative clause is charged as a reference, while the same path declared as a write path is still charged at full; a brief naming no repository path estimates unchanged. Coordinator importer measure, stacked with the mention-cost node over 269 test files importing node.py and routing.py: main 2669 passed, stack 2683 passed, no failure the stack adds. <a href="/reckon/evidence/archive/a-brief-should-not-cost-what-it-names-landed.html#s3">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-reopen-s4" data-who="reckon-build" data-when="2026-10-22T07:40:00Z">
     <div class="r-comment-body"><p>Reopened: declared done in error. No anchor opt-out exists in <code>reckon/crew/</code> and <code>TaskNode</code> carries no such field, so neither half of the measure (the opt-out recorded on the run, and a path both opted out and declared as a write path refused) is met. It follows §3.</p></div>
