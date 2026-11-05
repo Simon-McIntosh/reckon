@@ -744,20 +744,6 @@ def _attach_lane_document(
     return lane
 
 
-def _lane_document_object(path: str | Path) -> object:
-    """The lane document as the admission block's reader takes it.
-
-    ``read_lane_document_file`` resolves the document's own fields and does not
-    hand back the parsed object, while the admission block is read from that
-    object. An unreadable or malformed document is no object at all, which the
-    admission reader reports as an unknown block rather than an error.
-    """
-    try:
-        return json.loads(Path(path).expanduser().read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-
-
 def _session_lane_share(session: str, moment: datetime) -> dict[str, Any]:
     """The calling session's published lane share and the document's vintage.
 
@@ -772,18 +758,17 @@ def _session_lane_share(session: str, moment: datetime) -> dict[str, Any]:
     from reckon.crew import paid_lanes
 
     path = paid_lanes.local_lane_path()
-    # The reading is the lane-document reader's own, so this view and the lanes
-    # rows cannot disagree about the document's state or its vintage.
-    report = lane_document_module.read_lane_document_file(path, now=moment)
-    admission = lane_document_module.read_lane_admission(_lane_document_object(path))
-    live_runs = (
-        admission["sessions"]
-        .get(session, {})
-        .get(lane_document_module.SESSION_LIVE_RUNS_KEY)
-        if admission.get("sessions_present")
-        and isinstance(admission.get("sessions", {}).get(session), Mapping)
-        else lane_document_module.UNKNOWN
-    )
+    # One read of the document: the report this view quotes and the admission
+    # row beside it come from the same parse, so they cannot describe two
+    # vintages of a file the lane rewrites under them.
+    reading = lane_document_module.read_lane_document_with_admission(path, now=moment)
+    report = reading["report"]
+    row = lane_document_module.session_admission_row(reading["admission"], session)
+    live_runs = lane_document_module.UNKNOWN
+    if row is not None:
+        published = row.get(lane_document_module.SESSION_LIVE_RUNS_KEY)
+        if published is not None:
+            live_runs = published
     return {
         "session": session,
         "worker_slots": obligations_module._published_worker_slots(session),

@@ -23,6 +23,10 @@ class DirectoryError(RuntimeError):
 #: reads this view to decide which sessions are still dispatching.
 _JOIN_STATE = threading.local()
 
+#: The page size the ready-idle join reads the ready-set view at. The join reads
+#: every page, so this figure only bounds one request's rows.
+_READY_IDLE_PAGE_LIMIT = 200
+
 
 #: The fields a directory run row carries.
 #:
@@ -226,9 +230,36 @@ def _ready_idle_rows(
         return []
     _JOIN_STATE.running = True
     try:
-        return _ready_idle_rows_from_owners(project, pointers)
+        # A workstation-scope read spans every mounted project, so the join is
+        # made once per project: the roadmap and the ready-set view are read for
+        # one project at a time, and an omitted join would report every project
+        # as having no idle owner.
+        if project not in (None, "*"):
+            return _ready_idle_rows_from_owners(project, pointers)
+        rows: list[dict[str, Any]] = []
+        for name in _mounted_projects():
+            owned = [
+                pointer
+                for pointer in pointers
+                if str(pointer.get("project") or "") == name
+            ]
+            rows.extend(_ready_idle_rows_from_owners(name, owned))
+        return rows
     finally:
         _JOIN_STATE.running = False
+
+
+def _mounted_projects() -> list[str]:
+    """Every project registered in the config home's mounts, sorted."""
+    from reckon._store import _mounts_path
+
+    try:
+        mounts = json.loads(_mounts_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    if not isinstance(mounts, Mapping):
+        return []
+    return sorted(str(name) for name in mounts if not str(name).startswith("_"))
 
 
 def _ready_idle_rows_from_owners(
@@ -250,9 +281,25 @@ def _ready_idle_rows_from_owners(
         list(discovered.get("sprints") or ()),
         active_sprint_id=discovered.get("active_sprint_id"),
     )
-    view = ready_set_view(roadmap, coordinators=coordinators, ready_idle=True)
+    # The ready-set view pages like every other view, so its first page is not
+    # its answer: every page is read, or an owner whose sections sort past the
+    # first page is reported as idle over nothing.
+    ready: list[Mapping[str, Any]] = []
+    cursor: str | None = None
+    while True:
+        view = ready_set_view(
+            roadmap,
+            coordinators=coordinators,
+            ready_idle=True,
+            cursor=cursor,
+            **({} if cursor else {"limit": _READY_IDLE_PAGE_LIMIT}),
+        )
+        ready.extend(view.get("ready") or ())
+        cursor = (view.get("pagination") or {}).get("next_cursor")
+        if not cursor:
+            break
     rows: list[dict[str, Any]] = []
-    for row in view.get("ready") or ():
+    for row in ready:
         session = str(row.get("coordinator") or "")
         if not session:
             continue
@@ -341,9 +388,7 @@ def directory(
         grouped[key].append(row)
 
     queued_by_run = _queued_rows(records, rows_by_run)
-    ready_idle = (
-        _ready_idle_rows(project, records) if project not in (None, "*") else []
-    )
+    ready_idle = _ready_idle_rows(project, records)
     idle_by_session: dict[str, list[str]] = defaultdict(list)
     idle_owner_by_session: dict[str, str] = {}
     for row in ready_idle:

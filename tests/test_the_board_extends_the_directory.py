@@ -91,7 +91,7 @@ def _pointer(
     )
 
 
-def _seed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+def _seed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, wide: int = 0) -> Path:
     home = tmp_path / "config"
     home.mkdir()
     docs = tmp_path / "repo" / "docs"
@@ -103,6 +103,14 @@ def _seed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         _plan_html("coil-build", sections=("s1", "s2"), owner="physics-lead"),
         encoding="utf-8",
     )
+    if wide:
+        (plans / "wide-slate.html").write_text(
+            _plan_html(
+                "wide-slate",
+                sections=tuple(f"s{index}" for index in range(1, wide + 1)),
+            ),
+            encoding="utf-8",
+        )
     (plans / "in-flight.html").write_text(
         _plan_html("in-flight", sections=("s1",)), encoding="utf-8"
     )
@@ -141,6 +149,19 @@ def _seed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
                             "plan": "gated-only",
                             "dispatched_at": datetime.now(UTC).isoformat(),
                         },
+                        *(
+                            [
+                                {
+                                    "run_id": "run-wide-earlier",
+                                    "session": "wide-coordinator",
+                                    "project": PROJECT,
+                                    "plan": "wide-slate",
+                                    "dispatched_at": datetime.now(UTC).isoformat(),
+                                }
+                            ]
+                            if wide
+                            else []
+                        ),
                     ],
                 }
             }
@@ -191,6 +212,17 @@ def test_directory_names_section_held_paths_and_ready_idle_owners(
     assert running["binding"] is True
     assert "run-live" in running["disposition_reason"]
 
+    # A waiting request holds no worker and no worktree, so its claim reads as
+    # disregarded: the board must not fence a path against a run that cannot
+    # write it yet.
+    waiting = next(
+        item for item in live["held_paths"] if item["run_id"] == "run-queued"
+    )
+    assert waiting["path"] == "src/supply.py"
+    assert waiting["binding"] is False
+    assert "run-queued" in waiting["disposition_reason"]
+    assert "disregarded" in waiting["disposition_reason"]
+
     queued = live["queued_runs"]
     assert [item["run_id"] for item in queued] == ["run-queued"]
     assert queued[0]["position"] == 1
@@ -209,6 +241,39 @@ def test_directory_names_section_held_paths_and_ready_idle_owners(
     assert idle["plan_owner"] == "physics-lead"
     assert view["ready_idle_join"] == "project"
     assert home.is_dir()
+
+
+def test_ready_idle_owner_keeps_every_section_past_one_page(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # More ready-idle sections than the ready-set view serves in one page:
+    # every one of them names its owner, so an owner is never listed as idle
+    # over the sections that sorted onto a later page.
+    _seed(tmp_path, monkeypatch, wide=40)
+    view = directory(PROJECT)
+    by_session = {row["session"]: row for row in view["coordinators"]}
+    wide = by_session["wide-coordinator"]
+    sections = sorted(ref.partition("#")[2] for ref in wide["ready_idle_sections"])
+    assert sections == sorted(f"s{index}" for index in range(1, 41))
+
+
+def test_workstation_scope_lists_the_idle_owner(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The default directory read spans every mounted project, so a coordinator
+    # with ready-idle work would be missing if the join were project-only.
+    _seed(tmp_path, monkeypatch)
+    view = directory()
+    by_session = {row["session"]: row for row in view["coordinators"]}
+    idle = by_session["idle-coordinator"]
+    assert idle["runs"] == []
+    assert idle["state"] == "idle"
+    assert sorted(ref.partition("#")[2] for ref in idle["ready_idle_sections"]) == [
+        "s1",
+        "s2",
+    ]
+    assert "gated-coordinator" not in by_session
+    assert view["ready_idle_join"] == "workstation_scope"
 
 
 def test_directory_pages_coordinator_rows(

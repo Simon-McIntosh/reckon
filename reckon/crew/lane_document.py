@@ -405,6 +405,43 @@ def read_lane_document_file(
     return report
 
 
+def read_lane_document_with_admission(
+    path: str | Path, *, now: datetime | None = None
+) -> dict[str, Any]:
+    """Read a lane document once, resolving its own fields and its admission block.
+
+    A caller that quotes the document's state beside a row from its admission
+    block needs both from one parse: the lane rewrites the file under it, so a
+    second read can describe a later version of the document than the first,
+    and a report and an admission row from two vintages read as one answer.
+    The file is read and parsed once here and both resolutions are taken from
+    that text.
+
+    The pair degrades as its parts do: an unreadable path returns the
+    all-unknown report beside an absent admission block, and a document that is
+    not JSON does the same, while a ``null`` or absent admission block resolves
+    to an unknown block whose reason names the shape the document has.
+    """
+    resolved_path = Path(path).expanduser()
+    try:
+        raw = resolved_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return {
+            "report": blank_report(
+                detail=f"lane document {str(resolved_path)!r} cannot be read — {exc}"
+            ),
+            "admission": read_lane_admission(None),
+        }
+    try:
+        document = json.loads(raw)
+    except ValueError:
+        document = None
+    report = read_lane_document(raw, now=now)
+    if report.get("malformed"):
+        report["detail"] = f"lane document {str(resolved_path)!r}: {report['detail']}"
+    return {"report": report, "admission": read_lane_admission(document)}
+
+
 def _resolved_count(
     payload: Mapping[str, Any], keys: tuple[str, ...]
 ) -> int | float | str:
@@ -502,6 +539,19 @@ def read_lane_admission(document: object) -> dict[str, Any]:
             }
         report["sessions"] = resolved
     return report
+
+
+def session_admission_row(admission: object, session: str) -> Mapping[str, Any] | None:
+    """One session's row from an admission block, or ``None`` where it has none.
+
+    A session the router has not admitted yet has no row, and its share is then
+    the new-session figure rather than a row of zeros, so absence is reported as
+    absence here. A block that published no session map has no row for anyone.
+    """
+    if not isinstance(admission, Mapping) or not admission.get("sessions_present"):
+        return None
+    row = (admission.get("sessions") or {}).get(session)
+    return row if isinstance(row, Mapping) else None
 
 
 # The document's name for the constraint it observed binding. Read here so a
