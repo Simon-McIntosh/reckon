@@ -299,8 +299,8 @@ def test_a_live_run_on_the_head_turns_its_state_to_in_flight(
     assert _link(board, HEAD)["primary_state"] == READY_IDLE
 
     head_plan, _, head_section = HEAD.partition("#")
-    on_head = f"run-live-{uuid4().hex[:8]}"
-    elsewhere = f"run-live-{uuid4().hex[:8]}"
+    on_head = f"run-live-a{uuid4().hex[:8]}"
+    elsewhere = f"run-live-b{uuid4().hex[:8]}"
     _live_runs(
         monkeypatch,
         _pointer(run_id=on_head, plan=head_plan, section=head_section),
