@@ -466,7 +466,7 @@ def _parse_text_manifest(text: str, *, path: str | None = None) -> dict[str, Any
                 fields.setdefault(key, "")
                 body_is_block = True
                 continue
-            fields[key] = _read_inline_value(key, raw_value)
+            fields[key] = _read_inline_value(key, raw_value, path=path)
             key = None
     flush()
     return fields
@@ -646,10 +646,17 @@ def _read_field_body(
         # protection the worker never wrote. A list field does not reach here:
         # its mapping body was read as one item per labelled line above.
         raise ManifestParseError(_schema_shape_message(path, name, shape, allowed))
-    return _joined_body_text(lines) if shape == "list" else "\n".join(lines).strip()
+    if shape == "list":
+        # A list under a field whose schema declares text or a mapping is
+        # refused for the same reason: joining its items into one string hands
+        # the reader a value shaped like the text it expects while the entries
+        # the worker wrote are no longer separable, so a command field holding
+        # a JSON array would read as one long command.
+        raise ManifestParseError(_schema_shape_message(path, name, shape, allowed))
+    return "\n".join(lines).strip()
 
 
-def _read_inline_value(name: str, raw_value: str) -> Any:
+def _read_inline_value(name: str, raw_value: str, *, path: str | None = None) -> Any:
     """Build a field's value from the text written after its key on one line.
 
     An inline value is one scalar in this format, so it is returned as the
@@ -666,7 +673,20 @@ def _read_inline_value(name: str, raw_value: str) -> Any:
         items = _literal_list_items(raw_value)
         if items is not None:
             return items
-    return _strip_matching_quotes(raw_value)
+    stripped = _strip_matching_quotes(raw_value)
+    allowed = _MANIFEST_SCHEMA.get(name)
+    if allowed is not None and "list" not in allowed and stripped.startswith("["):
+        # A JSON array written on the key's own line is the same shape defect a
+        # block list under a non-list field is: the reader would carry the
+        # array's literal text where it expects one command, so the field is
+        # named rather than read as a plausible string.
+        try:
+            parsed = json.loads(stripped)
+        except (TypeError, json.JSONDecodeError):
+            parsed = None
+        if isinstance(parsed, list):
+            raise ManifestParseError(_schema_shape_message(path, name, "list", allowed))
+    return stripped
 
 
 def _read_json_manifest(text: str, *, path: str | None) -> dict[str, Any]:

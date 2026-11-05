@@ -231,6 +231,45 @@ def finding_claim(finding: Any) -> str | None:
     return None
 
 
+def normalised_findings(record: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """Return a record's findings in the one shape a reader declares.
+
+    A finding is written as an object carrying its ``text`` and, when it states
+    one, its ``severity``. Records written before that shape was fixed carry a
+    bare string, which is the finding's claim and nothing else; it is read as
+    ``{"text": <claim>}`` so a reader that reads each finding's fields sees the
+    same list from either record. A mapping is returned as the finding it
+    already is, and an entry that states no claim is dropped, on the same rule
+    :func:`finding_claim` applies. A record with no ``findings`` list carries
+    no findings.
+    """
+    findings = record.get("findings")
+    if not isinstance(findings, list):
+        return []
+    rows: list[dict[str, Any]] = []
+    for finding in findings:
+        claim = finding_claim(finding)
+        if claim is None:
+            continue
+        if isinstance(finding, Mapping):
+            rows.append(dict(finding))
+        else:
+            rows.append({"text": claim})
+    return rows
+
+
+def with_normalised_findings(record: Mapping[str, Any]) -> dict[str, Any]:
+    """Return ``record`` carrying its findings in the declared shape.
+
+    The record's other fields are untouched, so a reader that normalises gains
+    nothing but the shape a later consumer expects and loses no field it was
+    reading before.
+    """
+    if not isinstance(record.get("findings"), list):
+        return dict(record)
+    return {**record, "findings": normalised_findings(record)}
+
+
 def claimless_findings(review: Mapping[str, Any]) -> list[tuple[int, Any]]:
     """Return each claimless entry with its index in the record's findings.
 
@@ -2954,6 +2993,7 @@ def store_review(
     if not record.get("timestamp"):
         record = dict(record)
         record["timestamp"] = datetime.now(UTC).isoformat()
+    record = with_normalised_findings(record)
     record = _stamp_finding_ids(record)
     record = _derive_landed_total(record)
     if base_sha and head_sha:
@@ -3474,6 +3514,7 @@ def read_review(
     )
     if record is None:
         return None
+    record = with_normalised_findings(record)
     if not _has_integer_total(record):
         record = _derive_landed_total(record)
     return annotate_review_of_run(record, reviewed_run_id)
