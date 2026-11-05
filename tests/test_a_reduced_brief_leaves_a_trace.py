@@ -252,6 +252,59 @@ def test_an_expired_trace_does_not_mark_a_dispatch_retried(
     assert not trace.exists()
 
 
+def _pinned_standing(monkeypatch: pytest.MonkeyPatch, files: list[dict]) -> None:
+    monkeypatch.setattr(
+        routing,
+        "_standing_context_input",
+        lambda *_args, **_kwargs: (
+            STANDING_INSTRUCTION_TOKENS,
+            {"effective_tokens": STANDING_INSTRUCTION_TOKENS, "files": files},
+        ),
+    )
+
+
+def test_a_standing_instruction_file_is_not_a_removed_repository_path(
+    home: Path, repository: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A cut brief did not cut an instruction file, so it cannot report one.
+
+    routing's contributor reader returns every counted input, and the standing
+    instruction chain is one of them. Only the repository inputs belong on a
+    record of what left the brief, so a path that arrived as a standing
+    instruction is dropped even when the two attempts charge different ones.
+    """
+    standing = str(home / "AGENTS.md")
+    _pinned_standing(monkeypatch, [{"path": standing, "estimated_tokens": 12_000}])
+    with pytest.raises(crew.CompetenceLimit):
+        _dispatch(_oversized(), repository)
+
+    _pinned_standing(monkeypatch, [])
+    record = _dispatch(_shortened(), repository)
+
+    reduction = record["node"]["brief_reduction"]
+    assert reduction["removed_paths"] == [
+        str((repository / "package" / "payload.py").resolve())
+    ]
+    assert standing not in reduction["removed_paths"]
+
+
+def test_a_trace_in_the_earlier_shape_is_treated_as_absent(
+    home: Path, repository: Path
+) -> None:
+    """A trace whose paths were mappings is not the shape this code wrote."""
+    with pytest.raises(crew.CompetenceLimit):
+        _dispatch(_oversized(), repository)
+    trace = min((home / "crew" / REFUSAL_TRACES).glob("*.json"))
+    stored = json.loads(trace.read_text(encoding="utf-8"))
+    stored["paths"] = [{"path": entry, "resolved": entry} for entry in stored["paths"]]
+    stored.pop("version", None)
+    trace.write_text(json.dumps(stored, sort_keys=True), encoding="utf-8")
+
+    record = _dispatch(_shortened(), repository)
+
+    assert "brief_reduction" not in record["node"]
+
+
 def test_a_first_attempt_carries_no_reduction_marker(
     home: Path, repository: Path
 ) -> None:

@@ -29,12 +29,23 @@ from pathlib import Path
 from typing import Any
 
 from reckon._store import write_json_atomically
+from reckon._timestamps import parse_utc
 from reckon.crew.node import TaskNode
 from reckon.crew.routing import _context_contributors
 from reckon.crew.run_paths import _utc_now, crew_home
 
 RECORD_DIRECTORY = "refusal-traces"
 CONTEXT_REFUSAL_REASON = "context-window-exceeded"
+
+# The payload's shape, so a trace written by an earlier version is read as
+# absent rather than misread: the paths were mappings once, and a reader that
+# accepted them would report a dict repr as a file that left the brief.
+TRACE_VERSION = 2
+
+# The origins routing's contributor reader gives a repository input. A
+# standing instruction file is charged against the estimate too, but it is not
+# something a brief can cut, so it never appears on a record of what left one.
+REPOSITORY_ORIGINS = frozenset({"declared write path", "mention"})
 
 # A refusal quotes the few inputs that dominate its estimate; a trace and the
 # reduction read back from it compare all of them, so the reader is asked for
@@ -84,17 +95,8 @@ def _charged_paths(context: Mapping[str, Any]) -> list[str]:
     return [
         str(record["path"])
         for record in _context_contributors(context, limit=_EVERY_CONTRIBUTOR)
+        if record.get("origin") in REPOSITORY_ORIGINS
     ]
-
-
-def _refused_at(stored: Mapping[str, Any]) -> datetime | None:
-    """When the refusal was recorded, or ``None`` if the stamp is unreadable."""
-    raw = str(stored.get("recorded_at") or "")
-    try:
-        parsed = datetime.fromisoformat(raw)
-    except ValueError:
-        return None
-    return parsed if parsed.tzinfo is not None else None
 
 
 def _node_text_bytes(node: TaskNode) -> int:
@@ -121,6 +123,7 @@ def record_context_refusal(
     context = verdict.get("context")
     context = context if isinstance(context, Mapping) else {}
     payload = {
+        "version": TRACE_VERSION,
         "node": node.id,
         "project": project,
         "plan": node.plan,
@@ -161,9 +164,9 @@ def brief_reduction(
         stored = json.loads(path.read_text(encoding="utf-8"))
     except (FileNotFoundError, ValueError):
         return None
-    if not isinstance(stored, Mapping):
+    if not isinstance(stored, Mapping) or stored.get("version") != TRACE_VERSION:
         return None
-    refused_at = _refused_at(stored)
+    refused_at = parse_utc(stored.get("recorded_at"))
     if refused_at is None or datetime.now(tz=UTC) - refused_at > TRACE_MAX_AGE:
         return None
     context = verdict.get("context")
