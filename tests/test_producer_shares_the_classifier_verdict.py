@@ -219,6 +219,54 @@ def test_every_liveness_stub_has_producer_classifier_parity(
     )
 
 
+def test_every_run_reader_publishes_the_one_classifier_verdict(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The roadmap, crew live and read_plan publish one verdict for one run.
+
+    Each surface reaches the classifier through the roadmap
+    :func:`reckon.mcp_views.partition_live_runs`, which is what makes them one
+    derivation rather than three. The classifier is replaced with one that
+    answers a sentinel classification, so a surface that re-derived a verdict
+    from the pointer's file evidence instead of consuming this one would
+    publish something else — or ask a second time for the same run.
+    """
+
+    from reckon import mcp_views
+
+    rows = []
+
+    def one_verdict(pointer, **_kwargs):
+        rows.append(pointer["run_id"])
+        return {
+            "run_id": pointer["run_id"],
+            "classification": "interrupted",
+            "detail": "sentinel verdict",
+            "next_action": "resume",
+            "process_alive": False,
+        }
+
+    pointer = {
+        "run_id": "r-one-verdict-for-every-surface",
+        "project": "sample",
+        "phase": "implementing",
+        "node": {"plan": "active-work", "id": "a-node"},
+    }
+    monkeypatch.setattr(recovery, "classify_pointer", one_verdict)
+    monkeypatch.setattr(
+        mcp_views, "_recorded_live_run_classifications", lambda project: {}
+    )
+
+    in_flight, interrupted = mcp_views.partition_live_runs("sample", [pointer])
+    assert list(interrupted) == ["active-work"], (in_flight, interrupted)
+    assert interrupted["active-work"][0]["run_id"] == pointer["run_id"]
+    assert rows == [pointer["run_id"]], rows
+
+    assert mcp_views.in_flight_by_plan("sample", [pointer]) == {}
+    assert mcp_views.interrupted_by_plan("sample", [pointer]) == interrupted
+    assert rows == [pointer["run_id"]] * 3, rows
+
+
 def test_snapshot_and_transition_do_not_rederive_the_classifier_verdict(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
