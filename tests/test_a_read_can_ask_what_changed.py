@@ -62,11 +62,24 @@ def _git(repo: Path, *arguments: str, when: str | None = None) -> str:
     return completed.stdout.strip()
 
 
+def _gate(section: str, verdict: str, gate_id: str = "g1") -> str:
+    """A section gate as the roadmap's own reader parses it."""
+    return (
+        '<section data-reckon="gates"><div class="r-gate" '
+        f'data-id="{gate_id}" data-section="{section}" '
+        f'data-gated-sections="{section}" data-status="open" '
+        f'data-verdict="{verdict}">'
+        '<h4 class="r-gate-measure">measure</h4>'
+        '<p class="r-gate-required-evidence">evidence</p></div></section>'
+    )
+
+
 def _plan(
     slug: str,
     declarations: dict[str, str],
     depends_on: dict[str, list[str]] | None = None,
     status: str = "active",
+    gates: str = "",
 ) -> str:
     """One plan document carrying the head metadata the change set reads."""
 
@@ -91,6 +104,7 @@ def _plan(
         </head><body>
         <h2 id="s1">§1 — first</h2>
         <h2 id="s2">§2 — second</h2>
+        {gates}
         </body></html>
         """
     )
@@ -151,6 +165,12 @@ def fixture(tmp_path: Path) -> dict:
             "docs/plans/b.html": _plan(
                 "b", {"s1": "implementable"}, depends_on={"s1": ["a#s1"]}
             ),
+            # A section carrying no declaration: its gates alone satisfy it, so
+            # the dependent below is held by a gate rather than by a landing.
+            "docs/plans/e.html": _plan("e", {}, gates=_gate("s1", "failed")),
+            "docs/plans/d.html": _plan(
+                "d", {"s1": "implementable"}, depends_on={"s1": ["e#s1"]}
+            ),
         },
     )
     second = _iso(DAY)
@@ -210,7 +230,10 @@ def test_the_window_names_what_moved_in_it(fixture):
     )
 
     assert moved["full"] is False
-    assert moved["observed_at"] == change_set_module.observed_now(fixture["at_move"])
+    # The instant is the one the injected clock names, not whatever the reader
+    # would compute for itself — a comparison against the function's own output
+    # would pass even if the clock were ignored.
+    assert moved["observed_at"] == _iso(DAY + 3_600)
     assert moved["sources"] == {"plans": True, "runs": True}
     assert [(row["ref"], row["from"], row["to"]) for row in moved["sections"]] == [
         ("a#s1", "implementable", "done")
@@ -237,6 +260,113 @@ def test_the_window_holds_exactly_the_one_run_whose_classification_moved(fixture
     assert [row["run_id"] for row in moved["runs"]] == ["run-1"]
     assert moved["runs"][0]["from_state"] == "working"
     assert moved["runs"][0]["to_state"] == "blocked"
+
+
+def test_a_change_after_the_commit_belongs_to_the_later_one(fixture):
+    """Two in-window commits credit their own sections, not the newest one."""
+    root, stream = fixture["root"], fixture["stream"]
+    opened = change_set_module.change_set(
+        PROJECT, None, repo=root, stream_path=stream, now=fixture["before"]
+    )
+    earlier = _git(root, "rev-parse", "HEAD")
+    third = _commit(
+        root,
+        "the second section of a lands too",
+        _iso(DAY + 1_800),
+        {"docs/plans/a.html": _plan("a", {"s1": "done", "s2": "done"})},
+    )
+    moved = change_set_module.change_set(
+        PROJECT,
+        opened["observed_at"],
+        repo=root,
+        stream_path=stream,
+        now=fixture["at_move"],
+    )
+    assert [(row["ref"], row["commit"]) for row in moved["sections"]] == [
+        ("a#s1", earlier),
+        ("a#s2", third),
+    ]
+    assert moved["sections"][0]["observed_at"] == _iso(DAY)
+    assert moved["sections"][1]["observed_at"] == _iso(DAY + 1_800)
+
+
+def test_a_change_after_the_observation_instant_waits_for_the_next_answer(fixture):
+    """The window is closed at its end, so a later change is reported once, later."""
+    root, stream = fixture["root"], fixture["stream"]
+    opened = change_set_module.change_set(
+        PROJECT, None, repo=root, stream_path=stream, now=fixture["before"]
+    )
+    third = _commit(
+        root,
+        "a second section lands after the observation",
+        _iso(DAY + 5_400),
+        {"docs/plans/a.html": _plan("a", {"s1": "done", "s2": "done"})},
+    )
+    stream.write_text(
+        stream.read_text(encoding="utf-8")
+        + _row("transition", _iso(DAY + 5_400), "run-3", "working", "complete")
+        + "\n",
+        encoding="utf-8",
+    )
+    moved = change_set_module.change_set(
+        PROJECT,
+        opened["observed_at"],
+        repo=root,
+        stream_path=stream,
+        now=fixture["at_move"],
+    )
+    assert [row["ref"] for row in moved["sections"]] == ["a#s1"]
+    assert [row["run_id"] for row in moved["runs"]] == ["run-1"]
+
+    next_read = change_set_module.change_set(
+        PROJECT,
+        moved["observed_at"],
+        repo=root,
+        stream_path=stream,
+        now=fixture["later"],
+    )
+    assert [(row["ref"], row["commit"]) for row in next_read["sections"]] == [
+        ("a#s2", third)
+    ]
+    assert [row["run_id"] for row in next_read["runs"]] == ["run-3"]
+
+
+def test_a_section_released_by_a_passing_gate_is_reported_ready(fixture):
+    """A gate alone satisfies a section, so its dependent is released by it."""
+    root, stream = fixture["root"], fixture["stream"]
+    opened = change_set_module.change_set(
+        PROJECT, None, repo=root, stream_path=stream, now=fixture["before"]
+    )
+    _commit(
+        root,
+        "the gate on e closes",
+        _iso(DAY + 2_400),
+        {"docs/plans/e.html": _plan("e", {}, gates=_gate("s1", "passed"))},
+    )
+    moved = change_set_module.change_set(
+        PROJECT,
+        opened["observed_at"],
+        repo=root,
+        stream_path=stream,
+        now=fixture["at_move"],
+    )
+    released = {row["ref"]: row for row in moved["newly_ready"]}
+    # ``a#s1`` landed in this same window, so ``b#s1`` is released alongside.
+    assert set(released) == {"b#s1", "d#s1"}
+    assert released["d#s1"]["finished_waiting_on"] == ["e#s1"]
+
+
+def test_a_project_with_no_stream_does_not_claim_to_have_read_one(fixture, tmp_path):
+    """No producer means no run history, which is not the same as an empty one."""
+    answer = change_set_module.change_set(
+        PROJECT,
+        _iso(1),
+        repo=fixture["root"],
+        stream_path=tmp_path / "watch" / "absent-000000000000.events",
+        now=fixture["later"],
+    )
+    assert answer["sources"] == {"plans": True, "runs": False}
+    assert answer["runs"] == []
 
 
 def test_an_unchanged_project_answers_empty_with_a_new_instant(fixture):

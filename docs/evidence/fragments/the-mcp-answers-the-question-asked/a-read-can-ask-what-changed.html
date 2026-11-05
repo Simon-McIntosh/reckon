@@ -18,10 +18,12 @@
     <strong>The composition is a new module,
     <code>reckon/change_set.py</code>, reading two sources that already
     exist.</strong> Plan changes come from the plan files' git history through
-    <code>velocity._plan_history</code>; for each plan the module reads the last
-    commit at or before the window's start and compares that revision's section
-    declarations with <code>HEAD</code>'s, so a change is measured between two
-    revisions rather than inferred from the present. Run changes come from the
+    <code>velocity._plan_history</code>. Each plan's revisions are read in one
+    batched blob read — the last commit at or before the window's start, then
+    every commit inside the window, then <code>HEAD</code> — and a section's
+    change is credited to the commit in that walk that actually moved its
+    declaration, so a window holding two commits names two commits. Run changes
+    come from the
     producer's transition stream
     (<code>~/.config/reckon/crew/watch/&lt;project&gt;-&lt;key&gt;.events</code>),
     whose rows carry <code>observed_at</code>; the change set filters on
@@ -38,7 +40,12 @@
     and every declared dependency satisfied. A dependent reported as
     <code>newly_ready</code> is one that was not dispatchable entering the
     window and is dispatchable at its end, and the entry names the refs it
-    finished waiting on.
+    finished waiting on. Satisfaction is decided by the roadmap's own
+    <code>_section_satisfied</code>, so a section released here is one the
+    roadmap releases too — including a section carrying no declaration, which
+    a gate closing to <code>passed</code> satisfies. Dependency refs are split
+    by <code>_schema.parse_plan_ref</code>, the grammar every other surface
+    reads them with.
   </p>
 
   <p id="a-read-can-ask-what-changed-window">
@@ -46,7 +53,11 @@
     second resolution.</strong> A change is reported when
     <code>since &lt; time &lt;= observed_at</code>, so a change landing in the
     same second a read observed state is reported by that read and not again by
-    the next. A <code>since</code> the transition stream cannot reach back to is
+    the next. Both ends are applied to both sources: a commit or a transition
+    landing after the instant a read observed state is outside that answer and
+    is reported once, by the next one, rather than appearing in a reader's
+    window before the read that owns it. A
+    <code>since</code> the transition stream cannot reach back to is
     widened to the oldest row the stream still holds and marked
     <code>full: true</code>; "nothing changed" and "I cannot see that far back"
     are different answers and only one of them is safe to act on. An instant
@@ -60,12 +71,20 @@
     under <code>tmp_path</code> whose first commit declares <code>a#s1</code>
     implementable with <code>b#s1</code> waiting on it and whose second
     declares <code>a#s1</code> done, plus a transition stream in which one
-    run's classification moves inside the window and another's moved before it.
-    A read with the previous read's <code>observed_at</code> returns exactly
-    <code>a#s1</code> (<code>implementable</code> → <code>done</code>), exactly
-    <code>b#s1</code> newly ready, and exactly the one run
-    (<strong>10 passed</strong> at head, <strong>45 passed</strong> with
-    <code>tests/test_mcp_tools.py</code>, <code>EXIT=0</code>). The base arm
+    run's classification moves inside the window and another's moved before it,
+    alongside a plan whose section is satisfied by a gate alone. A read with the
+    previous read's <code>observed_at</code> returns exactly
+    <code>a#s1</code> (<code>implementable</code> → <code>done</code>) credited
+    to the commit that moved it, exactly <code>b#s1</code> newly ready, and
+    exactly the one run (<strong>14 passed</strong> at head, <strong>49
+    passed</strong> with <code>tests/test_mcp_tools.py</code>,
+    <code>EXIT=0</code>). Four further cases each fail against the previous
+    revision of the module and pass at this one — a second in-window commit
+    crediting its own section, a commit and a transition landing after the
+    observation instant and waiting for the next answer, a gate closing to
+    <code>passed</code> releasing its dependent, and a project with no stream
+    reporting <code>sources.runs</code> false (<strong>4 failed, 10 passed,
+    EXIT=1</strong>). The base arm
     runs <code>tests/test_mcp_tools.py</code> over an extracted
     <code>c15f841ed1</code> tree (<strong>35 passed</strong>) and answers red on
     the new file; a probe against that same tree records the defect the node
