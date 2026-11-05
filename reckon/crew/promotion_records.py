@@ -353,15 +353,22 @@ def _default_gate_evidence_from_manifest(
             log_text = ""
     declared_command = str(manifest.get("tests") or "").strip()
     # A review run's evidence is the record it stored, so its manifest's
-    # ``tests`` line describes a check rather than naming one. Reading it as
-    # the gate command refuses a review whose evidence is already on disk, so
-    # the record stands as the check instead. A review run with no delivered
-    # record is left to the ordinary rules below: a review that stores its
-    # record during promotion has nothing on disk yet, and a prose line still
-    # reaches the executable-gate refusal.
+    # ``tests`` line describes a check rather than naming one — and the shape
+    # that line may take belongs to the worker's report rather than to a
+    # command, so it may be a list of the checks the node's fence named. The
+    # record stands as the check instead, replacing whatever the manifest
+    # declared rather than filling only where the operator left the flag
+    # absent: a review whose ``tests:`` line is a list otherwise reaches the
+    # executable-gate refusal on the list's own repr, which is the refusal
+    # measured across nine reviews in one night.
+    # A review run with no delivered record is left to the ordinary rules
+    # below: a review that stores its record during promotion has nothing on
+    # disk yet, and a prose line still reaches the executable-gate refusal.
     review_evidence: dict[str, Any] | None = None
     if _review_role_run(record):
         review_evidence = _review_record_evidence(record)
+    if review_evidence is not None:
+        resolved_gate.update(_review_record_check(review_evidence))
     command_unset = not str(resolved_gate.get("command") or "").strip()
     if command_unset and declared_command and not _gate_command_prose(declared_command):
         resolved_gate["command"] = declared_command
@@ -375,10 +382,7 @@ def _default_gate_evidence_from_manifest(
     # so a run with no recoverable evidence still reaches the ordinary refusal.
     if not str(resolved_gate.get("command") or "").strip():
         recovered = _command_from_gate_log(log_text)
-        if review_evidence is not None:
-            for key, value in _review_record_check(review_evidence).items():
-                resolved_gate.setdefault(key, value)
-        elif recovered:
+        if recovered:
             resolved_gate["command"] = recovered
         elif declared_command:
             resolved_gate["command"] = declared_command
