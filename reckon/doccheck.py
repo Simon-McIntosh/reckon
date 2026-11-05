@@ -2755,6 +2755,49 @@ def slug_collision_findings(
     ]
 
 
+def _declared_project(path: Path) -> str:
+    """Return the project a document names in its ``docs-project`` meta."""
+    if not path.is_file():
+        return ""
+    try:
+        project = _plan_html.parse_plan(path).get("project")
+    except OSError:
+        return ""
+    return (project or "").strip()
+
+
+def _collision_context(
+    path: Path, project: str | None, mounts: Mapping[str, Path]
+) -> tuple[str, Path] | None:
+    """Resolve the project and docs root the slug-collision check reads.
+
+    The collision check compares the audited document against every resource in
+    its project, so it needs the project key and its docs root. A run that names
+    no project takes the mount holding the document, and failing that the
+    project the document declares; without that resolution a per-file audit of a
+    document under a mounted tree skips the check entirely and passes a
+    colliding slug.
+    """
+    if project is not None:
+        docs_dir = mounts.get(project)
+        return (project, docs_dir) if docs_dir and docs_dir.is_dir() else None
+
+    resolved = path.resolve()
+    for key, docs_dir in mounts.items():
+        try:
+            resolved.relative_to(docs_dir)
+        except (OSError, ValueError):
+            continue
+        if docs_dir.is_dir():
+            return key, docs_dir
+
+    declared = _declared_project(path)
+    docs_dir = mounts.get(declared) if declared else None
+    if docs_dir and docs_dir.is_dir():
+        return declared, docs_dir
+    return None
+
+
 def run(
     paths: list[str],
     *,
@@ -2765,17 +2808,20 @@ def run(
     """Audit each path; print findings; return process exit code (0 = no errors)."""
     path_objs = [Path(raw).expanduser() for raw in paths]
 
-    # Cross-type slug collisions, read from the project's resource map. Only a
-    # project-aware run has a docs root to resolve the map from, so a bare
-    # per-file audit stays exactly as it was.
+    # Cross-type slug collisions, read from the project's resource map. A named
+    # project is authoritative; otherwise the mount holding each document
+    # supplies the key and docs root, so a bare per-file audit still catches a
+    # slug a plan and another resource type share.
     collision_findings: dict[Path, list[Finding]] = {}
-    if project is not None:
-        docs_dir = _load_mounts().get(project)
-        if docs_dir is not None and docs_dir.is_dir():
-            for p in path_objs:
-                found = slug_collision_findings(p, docs_dir=docs_dir, project=project)
-                if found:
-                    collision_findings[p] = found
+    mounts = _load_mounts()
+    for p in path_objs:
+        context = _collision_context(p, project, mounts)
+        if context is None:
+            continue
+        key, docs_dir = context
+        found = slug_collision_findings(p, docs_dir=docs_dir, project=key)
+        if found:
+            collision_findings[p] = found
 
     # Build corpus for link check if requested.
     link_findings: dict[Path, list[Finding]] = {}
