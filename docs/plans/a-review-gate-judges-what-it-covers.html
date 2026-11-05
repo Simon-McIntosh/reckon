@@ -25,7 +25,7 @@
   <title>A Review Gate Judges What It Covers | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="65">
+<meta name="plan-version" content="66">
 <meta name="plan-modified" content="2026-11-05">
 <meta name="plan-section-depends-on" content="{&quot;s10&quot;:[&quot;a-review-gate-judges-what-it-covers#s2&quot;,&quot;a-review-gate-judges-what-it-covers#s9&quot;],&quot;s12&quot;:[&quot;a-review-gate-judges-what-it-covers#s9&quot;,&quot;a-review-gate-judges-what-it-covers#s10&quot;],&quot;s14&quot;:[&quot;a-review-gate-judges-what-it-covers#s13&quot;],&quot;s15&quot;:[&quot;a-review-gate-judges-what-it-covers#s13&quot;,&quot;a-review-gate-judges-what-it-covers#s14&quot;]}">
 </head>
@@ -336,6 +336,12 @@
 <div class="r-comment" data-section="s5" data-id="c-20261023-s5-premise" data-who="reckon-build" data-when="2026-10-23T08:00:00Z">
     <div class="r-comment-body"><p>Content review of v5 on 2026-10-23, findings reasoning-1 and done_when-1, declined for that wave because §5 was not being built. <code>_committed_scope</code> in <code>reckon/crew/promotion_evidence.py</code> diffs each cited commit against its own first parent, so there is no comparison against a recorded base to find, and §5's negative control is the span diff that function's docstring already rejects. Rework §5's premise and control before dispatching it.</p></div>
 </div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261104T100710377690-review-of-compose-a-review-remedy-from-the-dispatch-write-paths-9bebcf57dd24" data-who="reckon-build" data-when="2026-11-04T10:18:23.400Z">
+    <div class="r-comment-body"><p>Review of r-20261103T081618468737-compose-a-review-remedy-from-the-dispatch-write-paths at reviewed_base_sha f40cd41cd57e298bfea26a0c922fb68d7c52102d and reviewed_head_sha 9bebcf57dd2446244ed8860ba59797e0f1234ab9: parsed, 6/6 items and 6/6 dimensions scored (107/120), added_failure_count 0 from 1 baseline failure and 0 at head, 2 non-blocking findings — the plan-slug-to-file resolution duplicates plan_review._plan_document_path, and flight.FlightConfigError escapes the fallback's guard so an advisory block could still refuse.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261105T092014704977-review-of-compose-a-review-remedy-from-the-dispatch-write-paths-62f809b9465b" data-who="reckon-build" data-when="2026-11-05T09:31:27.048Z">
+    <div class="r-comment-body"><p>Review of r-20261103T081618468737-compose-a-review-remedy-from-the-dispatch-write-paths, commits gained since the prior review (9bebcf57dd..62f809b946): parsed, 6/6 items and 6/6 dimensions scored (102/120), reviewed_base_sha 9bebcf57dd2446244ed8860ba59797e0f1234ab9 and reviewed_head_sha 62f809b9465b7da8090caeebcd3f66f07d3f9056, added_failure_count 0 from 1 baseline failure and 0 at head, 2 non-blocking findings — the neighbour test file was edited outside the recorded fence on the resume advice, and the armed after_suite pair does not measure the file the gained commits repair.</p></div>
+</div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261013T090732844758-rgjc-covered-refusal-census" data-who="reckon-build" data-when="2026-10-13T10:19:24.033Z">
     <div class="r-comment-body"><p>Measured the fleet-wide size of the covered-refusal problem §7 asked about: of 102 dispatch refusals of the plan-review gate in the fourteen days to 2026-10-13, 43 refused a node whose built section was covered and unchanged and 12 more refused a section changed only by an edit an answered finding asked for (55 of 68 classified refusals, 81 %), judged at the gate's own word-share boundary — review.plan_change_threshold = 0.3, read from `reckon flight --project reckon` and cited as its source; the 0.05 reading from an earlier pass is kept as a sensitivity row and exactly five refusals move between uncovered and changed-answered-finding under it (all uncovered -&gt; answered, each named in the report with its record). The report classifies each refusal with the record it was read from, gives per-project counts, the 13 uncovered refusals, a re-picked negative control (imas-efit west-imas-read-facade s4, which reads uncovered at either boundary), the 756 s median refusal-to-dispatch delay over 50 episodes, and the 430 deduplicated --allow-unreviewed-plan waivers. The four power_convertor refusals of §1 hold at both boundaries: jccm-circuits and jccm-signs covered-unchanged, jccm-lines changed-answered; the modes refusal is absent from every record this census can see and the report names those records.</p></div>
 </div>
@@ -359,9 +365,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261028T122126665233-review-of-ordering-never-reopens-a-review-a6fdb7ba40f6" data-who="reckon-build" data-when="2026-10-28T12:29:45.728Z">
     <div class="r-comment-body"><p>reviewed r-20261028T105008607023-ordering-never-reopens-a-review at a6fdb7ba40 against base 81ff53eb50 — goal_fidelity 19, evidence 16, scope_discipline 19, durability 17, fit 15, reuse 12, no added failure, three non-blocking findings (a docstring claiming a previous-definition fingerprint form the code never builds, a duplicated section normaliser, and an importer head arm measured one commit before the reviewed head)</p></div>
-</div>
-<div class="r-comment" data-section="s6" data-id="c-run-r-20261104T100710377690-review-of-compose-a-review-remedy-from-the-dispatch-write-paths-9bebcf57dd24" data-who="reckon-build" data-when="2026-11-04T10:18:23.400Z">
-    <div class="r-comment-body"><p>Review of r-20261103T081618468737-compose-a-review-remedy-from-the-dispatch-write-paths at reviewed_base_sha f40cd41cd57e298bfea26a0c922fb68d7c52102d and reviewed_head_sha 9bebcf57dd2446244ed8860ba59797e0f1234ab9: parsed, 6/6 items and 6/6 dimensions scored (107/120), added_failure_count 0 from 1 baseline failure and 0 at head, 2 non-blocking findings — the plan-slug-to-file resolution duplicates plan_review._plan_document_path, and flight.FlightConfigError escapes the fallback&#x27;s guard so an advisory block could still refuse.</p></div>
 </div>
 </section>
 </main>
