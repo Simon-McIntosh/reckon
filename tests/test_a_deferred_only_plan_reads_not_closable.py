@@ -24,15 +24,13 @@ comment.
 
 from __future__ import annotations
 
-import json
-import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
 
-from reckon import serve
 from reckon.roadmap import build_roadmap, schedule_report
 from reckon.serve import _derive_lifecycle
 from tests.roadmap_fixtures import plan_row
+from tests.spa_module_eval import evaluate_jsx_render
 
 REFERENCE = datetime(2026, 9, 4, 4, 0, tzinfo=UTC)
 PROJECT = "deferred-remainder-sample"
@@ -147,82 +145,19 @@ def test_descoping_both_sections_makes_the_plan_read_closable() -> None:
     assert _served(declarations)["deferred-only"]["deferred_remainder"] is None
 
 
-NODE_PRELUDE = r"""
-globalThis.window = globalThis;
-const noop = () => {};
-const identity = value => value;
-globalThis.React = {
-  createElement(type, props, ...children) { return { type, props: props || {}, children }; },
-  Fragment: Symbol("Fragment"),
-  useState(value) { return [typeof value === "function" ? value() : value, noop]; },
-  useMemo(factory) { return factory(); },
-  useEffect() {},
-  useLayoutEffect() {},
-  useCallback(fn) { return fn; },
-  useRef(value) { return { current: value }; },
-};
-globalThis.navigator = { clipboard: { writeText: noop } };
-globalThis.fetch = async () => ({ ok: true, json: async () => ({ runs: [] }) });
-window.setInterval = noop;
-window.clearInterval = noop;
-window.setTimeout = noop;
-window.flashSaved = noop;
-window.ReckonShell = window.ReckonShell || { route: { ARTIFACT_ROUTES: [] } };
-
-function walk(node, visit) {
-  if (node == null || node === false || node === true) return;
-  if (Array.isArray(node)) { node.forEach(child => walk(child, visit)); return; }
-  if (typeof node !== "object") return;
-  visit(node);
-  for (const child of node.children || []) walk(child, visit);
-}
-
-function hasClass(node, name) {
-  return String(node?.props?.className || "").split(/\s+/).includes(name);
-}
-
-function findAll(node, predicate) {
-  const matches = [];
-  walk(node, candidate => { if (predicate(candidate)) matches.push(candidate); });
-  return matches;
-}
-
-function textOf(node) {
-  if (node == null || node === false || node === true) return "";
-  if (Array.isArray(node)) return node.map(textOf).join("");
-  if (typeof node !== "object") return String(node);
-  return (node.children || []).map(textOf).join("");
-}
-"""
-
-
 def _run_probe(module: Path, exports: str, payload: dict, probe: str) -> object:
-    """Compile one authored module and run ``probe`` against the served payload."""
+    """Render one authored module under the shared tree harness."""
 
-    source = module.read_text(encoding="utf-8") + exports
-    compiled = serve.compile_jsx(source, filename=f"{module.stem}-probe.jsx").decode()
-    script = "\n".join(
-        (
-            NODE_PRELUDE,
-            compiled,
-            f"const served = {json.dumps(payload)};",
-            f"const inventory = {json.dumps(payload['inventory'])};",
-            f"const schedule = {json.dumps(payload['schedule'])};",
-            "const result = (() => {" + probe + "})();",
-            "process.stdout.write(JSON.stringify(result));",
-        )
+    return evaluate_jsx_render(
+        module,
+        probe,
+        exports=exports,
+        bindings={
+            "inventory": payload["inventory"],
+            "schedule": payload["schedule"],
+            "project": PROJECT,
+        },
     )
-    result = subprocess.run(
-        ["node"],
-        cwd=ROOT,
-        input=script,
-        text=True,
-        capture_output=True,
-        timeout=60,
-        check=False,
-    )
-    assert result.returncode == 0, result.stderr
-    return json.loads(result.stdout)
 
 
 def _payload() -> dict:
@@ -248,7 +183,7 @@ def test_the_crew_bar_draws_the_served_fact_in_both_its_label_and_its_fill() -> 
         "\nwindow.__probe = { DerivedFlow };\n",
         payload,
         """
-window.STATE = { project: served.project, inventory, schedule };
+window.STATE = { project, inventory, schedule };
 const flow = window.__probe.DerivedFlow({ runs: [], project: "deferred-remainder-sample" });
 const bars = findAll(flow, node => hasClass(node, "r-derived-flow-bar"));
 return Object.fromEntries(bars.map(bar => [bar.props.href, {
@@ -278,7 +213,7 @@ def test_the_plan_card_prints_the_served_label() -> None:
         "\nwindow.__probe = { ListCol: window.ReckonShell.plans.ListCol };\n",
         payload,
         """
-window.STATE = served;
+window.STATE = { project, inventory, schedule };
 const col = window.__probe.ListCol({
   route: { view: "list", slug: null },
   onNav: () => {}, onSelectPlan: () => {},
