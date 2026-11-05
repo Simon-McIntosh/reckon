@@ -1,0 +1,56 @@
+<section id="a-claim-hold-reads-its-holder-again-landing">
+  <h2>A claim hold is judged against its holder's pointer, not the pass's reading</h2>
+
+  <p><strong>What changed.</strong> An admission pass reads the live set once
+  (<code>reckon/crew/queue_admission.py</code>, <code>_launch_queued</code>) and
+  judges every queued request against that one reading, and its launch stage can
+  run for an hour. A run that landed while the stage ran kept fencing its peers
+  until the next pass began: on 5 November one landed run held eight requests
+  more than an hour after it landed, and two further holders had no live pointer
+  left at all.</p>
+
+  <p><code>_live_claim_hold</code> now re-reads the one pointer whose claim would
+  fence the request (<code>_refreshed_claim</code>) before the
+  <code>held-on-claim</code> verdict is written. The claim is judged again on
+  that fresh record through the same path comparison the stale entry went
+  through (<code>_claim_collision</code>), so a pointer that is gone, no longer
+  claims the path, or no longer binds does not hold the request. The re-read is
+  one <code>runs.read_pointer</code> per hold, not a fresh read of the live set;
+  an unchanged pointer reuses the pass's cached disposition, so the common case
+  costs one file read and no extra worktree inspection.</p>
+
+  <h3 id="a-claim-hold-reads-its-holder-again-arms">Measured</h3>
+
+  <p>Two cases over a temporary crew home. In the first, a stopped holder with an
+  unintegrated commit claims <code>claimed.txt</code>; the pass's live reading
+  returns, the holder's pointer is unlinked, and the request is then judged. It
+  launches instead of being held. In the second the pointer stays and the request
+  is held <code>held-on-claim</code> naming the holder, exactly as before.</p>
+
+  <table id="a-claim-hold-reads-its-holder-again-table">
+    <caption>Every arm is a log whose first line names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>after suite (node's test file)</td>
+        <td><code>cb19891</code>, worktree</td>
+        <td>2 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control: judge the stale reading</td>
+        <td><code>cb19891</code> + mutation</td>
+        <td>1 failed, 1 passed, <code>EXIT=1</code> &mdash;
+        <code>test_a_holder_that_landed_before_the_judgement_does_not_hold</code></td></tr>
+      <tr><td>wide gate, head (54 files importing the module)</td>
+        <td><code>cb19891</code>, worktree</td>
+        <td>391 passed, 3 failed, <code>EXIT=1</code></td></tr>
+      <tr><td>wide gate, base</td>
+        <td><code>b1f77637</code>, extraction</td>
+        <td>389 passed, 3 failed, <code>EXIT=1</code></td></tr>
+      <tr><td>the one head-only id, isolated</td>
+        <td><code>b1f77637</code> module + tests, run from the worktree cwd</td>
+        <td>1 failed, 1 passed, <code>EXIT=1</code> after a 35 s socket wait</td></tr>
+      <tr><td>the same isolation, from the extraction cwd</td>
+        <td><code>b1f77637</code> + this node's module, extraction cwd</td>
+        <td>2 passed, <code>EXIT=0</code> in 8.02 s</td></tr>
+    </tbody>
+  </table>
+</section>
