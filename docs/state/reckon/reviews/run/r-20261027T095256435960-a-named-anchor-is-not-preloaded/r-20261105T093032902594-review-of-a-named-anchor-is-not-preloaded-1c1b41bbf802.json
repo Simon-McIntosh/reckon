@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite records revision d4bb4f37, completed false, exit 4, failure_count 0, because tests/test_a_named_anchor_is_not_preloaded.py does not exist at the base revision; after_suite records revision 1c1b41bbf8, completed true, exit 0, failure_count 0, so the difference is zero added failures. The readable base arm for the new cases is base-new-cases.log, which runs the head test file against base source and records 7 failed EXIT=1 \u2014 every one of the seven new cases fails at base. The negative control ran against working tree over f652394a8a rather than the final head; the only delta to 1c1b41bbf8 is the docs evidence fragment, so the arms are equivalent for code.",
+  "call_site_count": 12,
+  "call_sites": [
+    "reckon/crew/routing.py:3461",
+    "reckon/crew/routing.py:3545",
+    "reckon/crew/queue_admission.py:277",
+    "reckon/crew/queue_admission.py:1122",
+    "reckon/crew/queue_admission.py:3115",
+    "reckon/crew/queue_admission.py:3426",
+    "reckon/crew/queue_admission.py:3533",
+    "reckon/crew/dispatch_plan.py:773",
+    "reckon/crew/queue_edit.py:179",
+    "reckon/crew/dispatch.py:847",
+    "reckon/crew_dispatch_commands.py:1012",
+    "reckon/crew_dispatch_commands.py:1568"
+  ],
+  "completed_at": "2026-11-05T10:17:59.084Z",
+  "dispatched_at": "2026-11-05T10:07:00Z",
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "line": 3469,
+      "severity": "blocking",
+      "text": "the census cache key lists regenerate_paths because it 'selects which declared write paths are charged at the reference cost rather than their size', and anchor_paths is the same kind of charge-selecting field, but it is not in the key; a census cached for the unanchored brief is therefore served for the anchored one whenever the file stamps are unchanged, and the anchor silently charges the reference cost anyway. Reproduced in a git-archive extraction of 1c1b41bbf8 with one 1,000,000-byte file: cold cache gives context_census 54392 unanchored and 50392 anchored, while a shared cache dir gives 54392 for both \u2014 the anchor's 4000-token saving is absent exactly when a dispatcher previews a brief and then re-dispatches it with --anchor-path, which is the workflow the flag exists for, and the same figure gates the context-fit refusal at routing.py:3545."
+    },
+    {
+      "file": "tests/test_a_named_anchor_is_not_preloaded.py",
+      "line": 98,
+      "severity": "non-blocking",
+      "text": "both estimate cases call the module-private _context_file_inputs instead of context_census, the function dispatch and the fit verdict actually charge with, so the gate cannot see the census cache key and the blocking defect above passes it green; a case driven through context_census with an unanchored node censused first would have caught it."
+    },
+    {
+      "file": "reckon/crew/dispatch_sessions.py",
+      "line": 1444,
+      "severity": "non-blocking",
+      "text": "_dispatch_request_from_record rebuilds the node field by field and names neither anchor_paths nor regenerate_paths, the same shape the node repaired in queue_admission.py:197, so a node rebuilt from a live run record carries no anchor and any re-estimate through it charges the anchored path at the reference cost."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "the production sites reaching the change are the census callers reckon/crew/routing.py:3461 and :3545, the queued rebuild reckon/crew/queue_admission.py:277, :1122, :3115, :3426, :3533, the node validators reckon/crew/dispatch_plan.py:773 and reckon/crew/queue_edit.py:179, the shadow reconstruction reckon/crew/dispatch.py:847, and the two CLI entry points reckon/crew_dispatch_commands.py:1012 and :1568.",
+    "diff": "read the three commits against d4bb4f37: b6759100 adds the --anchor-path flag on both dispatch surfaces, the TaskNode field, the refusal and the zero-charge provenance, f652394a8a carries the field through reckon/crew/queue_admission.py:205's field-by-field rebuild, and 1c1b41bbf8 is the evidence fragment alone (68 insertions, docs only).",
+    "done_when": "the done_when names tests/test_a_named_anchor_is_not_preloaded.py with its four gate files; gate-head-2.log records 109 passed over the working tree at b6759100cf, after-suite.log records 7 passed at 1c1b41bbf8 with EXIT=0, and base-new-cases.log records 7 failed at the base source \u2014 the gate asserts the census figure only through _context_file_inputs, never through context_census, which is what dispatch charges with.",
+    "goal": "the goal is to let a dispatch name a repository path as an anchor whose content does not enter the context estimate, record it on the run, and refuse an anchor that is also a write path; reckon/crew/routing.py:3360-3388 adds the anchor provenance and the zero charge, reckon/crew/node.py:775 records the field, and reckon/crew/node.py:1329 refuses the contradiction \u2014 the first is defeated on a warm census cache, see the blocking finding.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T095256435960-a-named-anchor-is-not-preloaded/manifest.md; status complete, commits b6759100cf f652394a8a 1c1b41bbf8, gate and arm logs recorded with their EXIT lines, negative_control_log names a log ending EXIT=1, and baseline_suite records completed false with EXIT=4 because the test file does not exist at the base revision.",
+    "write_paths": "the manifest declares reckon/crew_dispatch_commands.py, reckon/crew/node.py, reckon/crew/routing.py, reckon/crew/dispatch.py, tests/test_a_named_anchor_is_not_preloaded.py, the evidence fragment and a figures directory; the diff changes those plus reckon/crew/queue_admission.py, and resume-1-advice.txt in the run directory records the coordinator granting that path explicitly."
+  },
+  "justifications": {
+    "durability": "tests/test_a_named_anchor_is_not_preloaded.py:92-125 and :130-146 fail on the mutation the negative control applies (charging the anchored path its size), and :198-232 fails if the queued rebuild drops the field, but all three estimate cases bypass reckon/crew/routing.py:3500 context_census, so the demonstrated regression in the census cache key passes the whole gate green.",
+    "evidence": "gate-head-2.log records 109 passed at the working tree over b6759100cf, after-suite.log records 7 passed at 1c1b41bbf8 with EXIT=0, base-new-cases.log records all 7 new cases failing at the base source with EXIT=1, and negative-control.log records EXIT=1 on the estimate case, but every estimate case in tests/test_a_named_anchor_is_not_preloaded.py:98 calls _context_file_inputs directly and no arm exercises context_census, which is the function dispatch charges with at reckon/crew/routing.py:3461 and :3545.",
+    "fit": "the change follows the surrounding provenance-and-cost idiom of reckon/crew/routing.py:3283-3340 and the sibling regenerate_paths flag at reckon/crew/node.py:774, and introduces no plan, issue or version label in any symbol, comment or filename.",
+    "goal_fidelity": "reckon/crew/routing.py:3360-3388 gives an anchored path the anchor provenance and a zero charge, reckon/crew/node.py:775 records it on TaskNode and :1329 refuses a path that is both anchor and write path, but reckon/crew/routing.py:3469 omits anchor_paths from the census cache key, so on a warm cache the anchor's zero charge is never applied and the goal's 'does not enter the context estimate' is order-dependent and silent.",
+    "reuse": "the anchor extends the existing describe/provenance mechanism in reckon/crew/routing.py:3283 rather than forking it, and a search of reckon/crew for an existing path-cost opt-out found only regenerate_paths (node.py:774) and the mention reference cost at routing.py:3220, both of which the change extends instead of duplicating.",
+    "scope_discipline": "git diff d4bb4f37aa44a7feda5731e57c3d282ef7bbfc94 1c1b41bbf802df93ccde624d52ce81e3b0021cb2 touches only the declared files plus reckon/crew/queue_admission.py, which resume-1-advice.txt records as granted to this node by the coordinator before the change was made."
+  },
+  "node": "review-of-a-named-anchor-is-not-preloaded-1c1b41bbf802",
+  "node:reviewed": "a-named-anchor-is-not-preloaded",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to let a dispatch name a repository path as an anchor whose content does not enter the context estimate, record it on the run, and refuse an anchor that is also a write path; reckon/crew/routing.py:3360-3388 adds the anchor provenance and zero charge, reckon/crew/node.py:775 records the field and :1329 refuses the contradiction.\nVERDICT done_when: the done_when names tests/test_a_named_anchor_is_not_preloaded.py with four gate files; gate-head-2.log records 109 passed at the working tree over b6759100cf, after-suite.log records 7 passed at 1c1b41bbf8 EXIT=0, and base-new-cases.log records 7 failed at base source EXIT=1, but the estimate cases call _context_file_inputs and no arm exercises context_census, the function dispatch charges with.\nVERDICT write_paths: the manifest declares four source files, the test file, the evidence fragment and a figures directory; git diff d4bb4f37aa44a7feda5731e57c3d282ef7bbfc94 1c1b41bbf802df93ccde624d52ce81e3b0021cb2 changes those plus reckon/crew/queue_admission.py, which resume-1-advice.txt records as granted by the coordinator.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T095256435960-a-named-anchor-is-not-preloaded/manifest.md; status complete, three commits, gate and arm logs with EXIT lines, negative_control_log ending EXIT=1, and baseline_suite recorded completed false with EXIT=4 because the test file does not exist at the base revision.\nVERDICT diff: read the three commits against d4bb4f37; b6759100 adds the flag, the field, the refusal and the zero-charge provenance, f652394a8a carries the field through the queued rebuild at reckon/crew/queue_admission.py:205, and 1c1b41bbf8 is the evidence fragment alone with 68 insertions and no code.\nCALL_SITES: reckon/crew/routing.py:3461, reckon/crew/routing.py:3545, reckon/crew/queue_admission.py:277, reckon/crew/queue_admission.py:1122, reckon/crew/queue_admission.py:3115, reckon/crew/queue_admission.py:3426, reckon/crew/queue_admission.py:3533, reckon/crew/dispatch_plan.py:773, reckon/crew/queue_edit.py:179, reckon/crew/dispatch.py:847, reckon/crew_dispatch_commands.py:1012, reckon/crew_dispatch_commands.py:1568\nSCORE goal_fidelity: 12\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:3360-3388 and reckon/crew/node.py:1329 implement the flag, the record and the refusal, but reckon/crew/routing.py:3469 omits anchor_paths from the census cache key, so the zero charge is silently skipped on a warm cache.\nSCORE evidence: 13\nJUSTIFICATION evidence: gate-head-2.log records 109 passed, after-suite.log 7 passed EXIT=0 at 1c1b41bbf8 and base-new-cases.log 7 failed EXIT=1 at base, but no arm runs tests/test_a_named_anchor_is_not_preloaded.py:98 through context_census, which is what dispatch charges with.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is a declared write path except reckon/crew/queue_admission.py, which resume-1-advice.txt records as granted to this node before the change was made.\nSCORE durability: 12\nJUSTIFICATION durability: tests/test_a_named_anchor_is_not_preloaded.py:92-125 reddens on the mutation the negative control applies and :198-232 reddens if the queued rebuild drops the field, but the census cache regression at reckon/crew/routing.py:3469 passes the whole gate green.\nSCORE fit: 18\nJUSTIFICATION fit: the change follows the provenance-and-cost idiom of reckon/crew/routing.py:3283-3340 and the sibling regenerate_paths flag at reckon/crew/node.py:774, with no plan, issue or version label in any name or comment.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/routing.py:3283 describe is extended with an anchored provenance rather than forked, and the only existing path-cost opt-out found in reckon/crew is regenerate_paths at reckon/crew/node.py:774, which the change follows instead of duplicating.\nFINDING reckon/crew/routing.py:3469 blocking: _census_request_key lists regenerate_paths because it selects the charge but omits anchor_paths, so a census cached for the unanchored brief is served for the anchored one; reproduced in an extraction of 1c1b41bbf8, cold cache 54392 unanchored against 50392 anchored, shared cache 54392 for both.\nFINDING tests/test_a_named_anchor_is_not_preloaded.py:98 non-blocking: the estimate cases call the private _context_file_inputs instead of context_census, so the gate cannot see the census cache key and the blocking defect passes it green.\nFINDING reckon/crew/dispatch_sessions.py:1444 non-blocking: _dispatch_request_from_record rebuilds the node without anchor_paths or regenerate_paths, so a node rebuilt from a live run record carries no anchor and any re-estimate charges the anchored path at the reference cost.\n",
+  "review_run_id": "r-20261105T093032902594-review-of-a-named-anchor-is-not-preloaded-1c1b41bbf802",
+  "reviewed_base_sha": "d4bb4f37aa44a7feda5731e57c3d282ef7bbfc94",
+  "reviewed_head_sha": "1c1b41bbf802df93ccde624d52ce81e3b0021cb2",
+  "reviewed_run_id": "r-20261027T095256435960-a-named-anchor-is-not-preloaded",
+  "scores": {
+    "durability": 12,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 12,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T10:24:00+00:00",
+  "total": 64
+}
