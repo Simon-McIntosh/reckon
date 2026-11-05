@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite records 3 failure ids at ab87725e67 (three tests/test_schema.py test_cross_project_conformance rows, corroborated by the FAILED lines and the '3 failed, 3700 deselected' summary in gate-base-attribution.log) and after_suite records 0 failures at 3ad29535b1 (gate-node-head.log ends '6 passed' then EXIT=0), so no failure id appears in the head arm that the base arm did not already carry; added_failure_count is 0.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/mcp_edit_plan.py:1948",
+    "reckon/_store.py:1360",
+    "reckon/_store.py:1485",
+    "reckon/_store.py:1593",
+    "reckon/_store.py:1640",
+    "reckon/_store.py:3436"
+  ],
+  "completed_at": "2026-11-05T16:54:33.327Z",
+  "dispatched_at": "2026-11-05T16:43:28Z",
+  "evidence_notes": "The three-file gate the done_when names is separate from the armed node-file pair recorded in baseline_suite/after_suite; it has no completed run after 3ceb7c1fa2 and is filed as a blocking finding rather than counted as a failure, because both attempts ended in a timeout kill rather than an assertion.",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": 22,
+      "text": "blocking: the done_when names tests/test_schema.py and tests/test_a_plan_closes_in_one_op.py in its gate, but no run of those files has completed at any revision after 3ceb7c1fa2: gate-companions.log ends EXIT=124 (a timeout kill at 48%) and gate-full.log stops at 44% with no summary and no EXIT= line, so the write-ordering change this round landed is unmeasured against the two companion files at the promoted head."
+    },
+    {
+      "file": "docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html",
+      "line": 51,
+      "text": "non-blocking: the fragment states '6 passed, EXIT=0 at 1fb526b32d', but the only node-gate log on disk (gate-node-head.log) names revision 3ad29535b1, so the cited revision has no log of its own and a reader checking the number finds the log disagreeing with the citation."
+    },
+    {
+      "file": "reckon/_store.py",
+      "line": 3012,
+      "text": "non-blocking: _resolve_section_moves reads the plan's identity from the request payload (state.get('slug')) rather than from the slug argument its only caller already holds, so the same-plan refusal silently never fires for any caller whose data carries no slug \u2014 a refusal that fails open is indistinguishable from one that does not exist."
+    },
+    {
+      "file": "manifest.md",
+      "line": 28,
+      "text": "non-blocking: baseline_suite's command field reads 'PYTHONPATH=<base tree> <venv>/python ...' with angle-bracket placeholders the manifest contract forbids, so the recorded arm cannot be re-run from the field and a reader must open gate-base-attribution.log to recover the literal command."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/mcp_edit_plan.py:1948 (the op batch that queues section_moves), reckon/_store.py:1360 (_write_state into the locked writer), reckon/_store.py:1485-1493 (the new pre-write resolution), reckon/_store.py:1593 (_carry_section_moves), reckon/_store.py:1640 (_write_successor_moves), reckon/_store.py:3436 (_apply_set queueing the move).",
+    "diff": "read commit by commit against 2be71296a4: 1fb526b32d moves the same-plan refusal and the successor resolution into _resolve_section_moves at reckon/_store.py:2998 ahead of the evidence append at :1593, passes the resolved tuples to _carry_section_moves, and adds test_a_refused_move_writes_nothing_not_even_its_evidence; 3ad29535b1 rewrites only the fragment's evidence paragraph.",
+    "done_when": "the done_when names a three-file gate (the node test file, tests/test_schema.py, tests/test_a_plan_closes_in_one_op.py) plus the armed node-file pair; the node-file head arm is recorded green (gate-node-head.log, 3ad29535b1, 6 passed, EXIT=0) and the base arm red (gate-base.log, ab87725e67, 3 failed, EXIT=1), but no run of the three-file gate has ever completed: gate-companions.log ends EXIT=124 (a timeout kill) at 3ceb7c1fa2 and gate-full.log stops at 44% at 2be71296a4.",
+    "goal": "the node goal is close's deferred-section refusal naming both remedies, with a moved_to descope carrying the section's prose, effort, capability, open gates and comments to its successor; the reviewed commits close the remaining gap from the previous round \u2014 reckon/_store.py:1486-1493 judges every move before any file write, and the evidence fragment now cites only revisions it measured.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T102653154559-close-names-each-deferred-section-and-moves-it/manifest.md; status complete, after_suite records the node file at 3ad29535b1 with exit_status 0 and a readable log ending EXIT=0, baseline_suite records 3 failures at ab87725e67, but baseline_suite's command field carries `<base tree>`/`<venv>` placeholders rather than the literal command its log header holds.",
+    "write_paths": "the manifest declares eight paths; 1fb526b32d touches reckon/_store.py and tests/test_close_names_each_deferred_section_and_moves_it.py, and 3ad29535b1 touches docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html, all inside that set, and no concurrent node's path is touched."
+  },
+  "justifications": {
+    "durability": "tests/test_close_names_each_deferred_section_and_moves_it.py:468 reddens on the pre-fix code at 2be71296a4 exactly on the evidence-write assertion (gate-prefix-red.log), and compares the record and the plan version against values read from the fixture before the call rather than against the code under test.",
+    "evidence": "the armed node-file arm is recorded green and readable at the head (gate-node-head.log, 3ad29535b1, 6 passed, EXIT=0) and the base arm is red (gate-base.log, ab87725e67, 3 failed, EXIT=1), but the done_when's three-file gate has no completed run at any revision after 3ceb7c1fa2: gate-companions.log ends EXIT=124 and gate-full.log stops at 44%.",
+    "fit": "reckon/_store.py:2998 follows the module's private-helper idiom and its docstring explains the write-ordering constraint without naming a plan, ticket or stage.",
+    "goal_fidelity": "reckon/_store.py:1486-1493 resolves and refuses every section move ahead of the evidence append at reckon/_store.py:1593, so a refused batch leaves nothing on disk.",
+    "reuse": "reckon/_store.py:2998 wraps the existing _resolve_successor_section at reckon/_store.py:2807 rather than re-implementing ref resolution, and keeps _carry_section_moves as the single place that carries a move.",
+    "scope_discipline": "the two commits touch only reckon/_store.py, tests/test_close_names_each_deferred_section_and_moves_it.py and docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html, all inside the manifest's eight declared write paths."
+  },
+  "node": "review-of-close-names-each-deferred-section-and-moves-it-3ad29535b1f4",
+  "node:reviewed": "close-names-each-deferred-section-and-moves-it",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is close's deferred-section refusal naming both remedies, with a moved_to descope carrying the section's prose, effort, capability, open gates and comments to its successor; the reviewed commits close the remaining gap from the previous round \u2014 reckon/_store.py:1486-1493 judges every move before any file write, and the evidence fragment now cites only revisions it measured.\nVERDICT done_when: the done_when names a three-file gate (the node test file, tests/test_schema.py, tests/test_a_plan_closes_in_one_op.py) plus the armed node-file pair; the node-file head arm is recorded green (gate-node-head.log, 3ad29535b1, 6 passed, EXIT=0) and the base arm red (gate-base.log, ab87725e67, 3 failed, EXIT=1), but no run of the three-file gate has ever completed \u2014 gate-companions.log ends EXIT=124 at 3ceb7c1fa2 and gate-full.log stops at 44% at 2be71296a4.\nVERDICT write_paths: the manifest declares eight paths; 1fb526b32d touches reckon/_store.py and tests/test_close_names_each_deferred_section_and_moves_it.py and 3ad29535b1 touches docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html, all inside that set.\nVERDICT manifest: read; status complete, after_suite records the armed node file at 3ad29535b1 with exit 0 and a readable log ending EXIT=0, baseline_suite records 3 failures at ab87725e67, but baseline_suite's command field carries `<base tree>`/`<venv>` placeholders rather than the literal run command.\nVERDICT diff: read commit by commit against 2be71296a4: 1fb526b32d moves the same-plan refusal and successor resolution into _resolve_section_moves at reckon/_store.py:2998 ahead of the evidence append at :1593, passes the resolved tuples to _carry_section_moves, and adds test_a_refused_move_writes_nothing_not_even_its_evidence; 3ad29535b1 rewrites only the fragment's evidence paragraph.\nCALL_SITES: reckon/mcp_edit_plan.py:1948, reckon/_store.py:1360, reckon/_store.py:1485, reckon/_store.py:1593, reckon/_store.py:1640, reckon/_store.py:3436\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_store.py:1486-1493 resolves and refuses every section move ahead of the evidence append at reckon/_store.py:1593, so a refused batch leaves nothing on disk.\nSCORE evidence: 13\nJUSTIFICATION evidence: the node-file arm is recorded green and readable at the head (gate-node-head.log, 3ad29535b1, 6 passed, EXIT=0) but the done_when's three-file gate has no completed run at any revision after 3ceb7c1fa2 (gate-companions.log EXIT=124, gate-full.log truncated at 44%).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits touch only reckon/_store.py, tests/test_close_names_each_deferred_section_and_moves_it.py and the evidence fragment, all inside the manifest's eight declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_close_names_each_deferred_section_and_moves_it.py:468 reddens on the pre-fix code at 2be71296a4 exactly on the evidence-write assertion (gate-prefix-red.log), and compares against values read from the fixture before the call.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/_store.py:2998 follows the module's private-helper idiom and its docstring explains the ordering constraint without naming a plan, ticket or stage.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/_store.py:2998 wraps the existing _resolve_successor_section at reckon/_store.py:2807 rather than re-implementing ref resolution, and keeps _carry_section_moves as the single place that carries a move.\nFINDING manifest.md:22 blocking: the done_when names tests/test_schema.py and tests/test_a_plan_closes_in_one_op.py in its gate, but no run of those files has completed at any revision after 3ceb7c1fa2 \u2014 gate-companions.log ends EXIT=124 and gate-full.log stops at 44% \u2014 so the write-ordering change is unmeasured against the two companion files at the promoted head.\nFINDING docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html:51 non-blocking: the fragment states 6 passed at 1fb526b32d but the only node-gate log names revision 3ad29535b1, so the cited revision has no log of its own.\nFINDING reckon/_store.py:3012 non-blocking: _resolve_section_moves reads the plan's identity from the payload rather than the slug argument its caller holds, so the same-plan refusal silently never fires for a caller whose data carries no slug.\nFINDING manifest.md:28 non-blocking: baseline_suite's command field carries angle-bracket placeholders the manifest contract forbids, so the recorded arm cannot be re-run from the field alone.\n",
+  "review_run_id": "r-20261105T164132309693-review-of-close-names-each-deferred-section-and-moves-it-3ad29535b1f4",
+  "reviewed_base_sha": "2be71296a413ea3572341fdbba33c16de5f077ef",
+  "reviewed_head_sha": "3ad29535b1f42f46c55218ab198895aa076ff6b7",
+  "reviewed_run_id": "r-20261027T102653154559-close-names-each-deferred-section-and-moves-it",
+  "scores": {
+    "durability": 19,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T17:12:00+00:00",
+  "total": 109
+}
