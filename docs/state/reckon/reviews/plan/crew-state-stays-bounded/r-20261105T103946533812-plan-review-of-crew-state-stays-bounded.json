@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-05T10:56:22.074Z",
+  "dispatched_at": "2026-11-05T10:49:34Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/crew-state-stays-bounded/r-20261105T103946533812-plan-review-of-crew-state-stays-bounded/plan.html:212",
+      "id": "done_when-1",
+      "reason": "a worker reads the five listed cases and implements them; the stale count misstates the gate but changes neither the mechanism nor the measure, so it is a one-word correction rather than a re-direction of the node.",
+      "text": "the done-when opens \"a new tests/test_a_retention_pass_is_bounded.py shows four things\" and then lists five cases, so the declaration and the enumeration disagree about what the gate must show",
+      "type": "done_when",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/crew-state-stays-bounded/r-20261105T103946533812-plan-review-of-crew-state-stays-bounded/plan.html:212",
+      "id": "reasoning-1",
+      "reason": "the node measures first and may legitimately find the ledger phase is the slow one, at which point it has no sanctioned mechanism and an unmet five-minute gate, so the plan needs to say what happens in that branch (a stated ceiling, a narrowed ledger read, or a split node) before it is dispatched.",
+      "text": "the Why names `_retention_ledger_records` (gc.py:1467, called once per pass over every mounted project's whole ledger at gc.py:1525) as a candidate slow phase, but every prescribed mechanism \u2014 judged-counting, the persisted cursor, the cached `flight.resolve`, the stderr progress \u2014 acts on the per-directory loop only; none reduces the full ledger read, which the cursor cannot touch because it happens before the loop, and the done-when then holds the pass to \"one dry run with --limit 500 finishes in under five minutes\" whatever the measurement names",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "a673fb27060da0d26265128cc3cd2828af64fa41",
+  "plan_fingerprint": "22816b053f27e0a863f8cf82c16690073249fe559c61c13495037c4ede2a2e50",
+  "plan_slug": "crew-state-stays-bounded",
+  "plan_version": 59,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261105T103946533812-plan-review-of-crew-state-stays-bounded",
+  "reviewed_blob_sha": "ef968ec0177915f19de5425d883035205d6f6176",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol resolves at the reviewed revision: `_retention_ledger_records` (`reckon/crew/gc.py:1467`), `_run_directory_retention_report` (`reckon/crew/gc.py:276`), `_run_directory_grace_seconds` (`reckon/crew/gc.py:365`), `main()` writing one `json.dumps` report to stdout (`reckon/crew/gc.py:1728`), and `crew retention-sweep` emitting the same report (`reckon/crew_run_commands.py:1761`, `:1814`); `docs/evidence/fragments/crew-state-stays-bounded/` exists.",
+    "done_when": "a finding \u2014 the done-when says the new test \"shows four things\" and then enumerates five `<li>` cases (the fifth, the `flight.resolve` count, was added after the sentence's count was written).",
+    "evidence_paths": "pass \u2014 the host measurement is committed to `docs/evidence/fragments/crew-state-stays-bounded/a-retention-pass-finishes-inside-its-slot.html`, beside six existing fragments on that path in the tree, and the test runs from `tests/`; neither is a session scratchpad or node-local temporary.",
+    "naming": "pass \u2014 \u00a710 introduces no plan labels, stage names, ticket numbers or version tags into a symbol, filename or comment: `tests/test_a_retention_pass_is_bounded.py` and `a-retention-pass-finishes-inside-its-slot.html` are named for what they measure, and the section's `\u00a77` references are plan prose rather than source.",
+    "reasoning": "a finding \u2014 the section names `_retention_ledger_records` as one of the two candidate slow phases but prescribes mechanisms only for the per-directory phase, so if the quiet-window measurement names the ledger phase the section's own five-minute target has no mechanism behind it.",
+    "single_goal": "pass \u2014 every clause of \u00a710 serves one deliverable, a retention pass that finishes inside its hourly slot; the progress/timing lines and the judged-count bound are instrument and bound for that one goal, not a second deliverable.",
+    "wiring": "pass \u2014 s10 names no `plan-section-depends-on` entry, and it needs none: \u00a77 (hourly timer) and \u00a78 (scratch settling) are `done` and their code is present at HEAD (`retention_sweep`, `settle_run_scratch`, `render_retention_service_unit` in `reckon/crew/gc.py`), so the node it reaches has no unlanded upstream."
+  },
+  "section_digests": {
+    "_document": "13630d50da2a233e09eaf895eff25a3f1d196859ac6631c357e426c66cee7c0b",
+    "s1": "61be6bb6df8b986fbb68c3273e136fcef1b9fa13e7bcadb4fb62eab2fa4145ff",
+    "s10": "315127e4deec7cc5cddb86dff02e7b275019db204359913c27ae83aac4991da9",
+    "s2": "0809becc839b3ed5586cc9018606732a929379de88ab524968574e8429943a9b",
+    "s3": "9aa4d5f5a6287b698b7d6011ac8fcc295589c20484d8892a3c86d88d629b8793",
+    "s4": "2681ac58d6ae7457bc800678db433ce359be271248b74a429b44ee4d817769b4",
+    "s5": "bba37241ec93e13e0fb1eb173abfd49db0b6e77d788aa2dbec1608d164852542",
+    "s6": "c491229cedc576a79a4628da53168b317ce14fef88d78739c48e86b16aaff17a",
+    "s7": "1f6a99e4b8834c4a8bea5559a1507e6da85988f873d5547c7804930237104694",
+    "s8": "bc03fa54cdefe8b48312fabda86a4fca8277e025db66430978900e888a969066",
+    "s9": "94c64e9a52c50d223769478a5aa73517f29bc51fd5a6b123d7978de2b35c4317"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T11:17:00.047531+00:00"
+}
