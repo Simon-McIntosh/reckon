@@ -3272,7 +3272,7 @@ def _critical_path_links(
     section_runs: Mapping[tuple[str, str], list[dict[str, Any]]],
     ready_sections_by_plan: Mapping[str, list[str]],
     section_holds_by_plan: Mapping[str, Mapping[str, list[dict[str, Any]]]],
-    coordinators: Mapping[str, Mapping[str, Any]],
+    resolve_coordinators: Callable[[], Mapping[str, Mapping[str, Any]]],
 ) -> None:
     """Give each link of the critical path its primary state and its holds.
 
@@ -3295,6 +3295,10 @@ def _critical_path_links(
     """
 
     rows: list[dict[str, Any]] = []
+    # Only an idle link needs a coordinator named, so the ledger that holds them
+    # is read at most once, and not at all for a path that is wholly busy or
+    # wholly held.
+    coordinators: Mapping[str, Mapping[str, Any]] | None = None
     for ref in (str(node) for node in critical.get("sections") or ()):
         plan_slug, _, section = ref.partition("#")
         named = section_holds_by_plan.get(plan_slug, {}).get(section, [])
@@ -3312,13 +3316,15 @@ def _critical_path_links(
             "primary_state": "",
             "holds": holds,
         }
-        coordinator = str(
-            (coordinators.get(plan_slug) or {}).get("coordinator") or ""
-        ).strip()
         if runs:
             row["primary_state"] = IN_FLIGHT
             row["run_id"] = str(runs[0].get("run_id") or "")
         elif section in ready_sections_by_plan.get(plan_slug, []):
+            if coordinators is None:
+                coordinators = dict(resolve_coordinators() or {})
+            coordinator = str(
+                (coordinators.get(plan_slug) or {}).get("coordinator") or ""
+            ).strip()
             row["primary_state"] = READY_IDLE
             row["coordinator"] = coordinator or None
         elif holds and holds[0]["kind"] == GATE_BLOCKER:
@@ -4452,7 +4458,7 @@ def _build_roadmap(
             section_runs=section_runs,
             ready_sections_by_plan=ready_sections_by_plan,
             section_holds_by_plan=section_holds_by_plan,
-            coordinators=_critical_path_coordinators(
+            resolve_coordinators=lambda: _critical_path_coordinators(
                 project, resolved_docs, pointers, now
             ),
         )
