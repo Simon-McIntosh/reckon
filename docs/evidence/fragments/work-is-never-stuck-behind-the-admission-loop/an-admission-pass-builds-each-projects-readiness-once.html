@@ -1,0 +1,19 @@
+<section data-reckon="evidence" data-node="an-admission-pass-builds-each-projects-readiness-once" id="an-admission-pass-builds-each-projects-readiness-once">
+  <h3 id="an-admission-pass-builds-each-projects-readiness-once-heading">One project readiness build per admission pass</h3>
+  <p>The admission cache now keys whole-project reads by project, docs directory and tree fingerprint. An active pass disables bounded reads regardless of the bounded-read preference, and its cache follows that same boundary. Outside a pass, plan and refs remain part of the key. Implementation commits: <code>c4af6ade6ea06562ba9aa5cf53f568ac87422be4</code> and <code>3605f12d51aff547858fae2b89d437c62b4db641</code>.</p>
+  <table>
+    <thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Synthetic project</td><td>12 plans; 20 awaiting-upstream requests; refs across 8 upstream plans.</td></tr>
+      <tr><td>Readiness builds</td><td>12 at base <code>ae04b0b3f1c3480cbe87e832add03644e96f39ea</code>; 1 with sharing, with bounded reads explicitly disabled and with normal admission flags.</td></tr>
+      <tr><td>Phase parity</td><td>All 20 request phases match the request-scoped reference: 8 queued, 7 awaiting upstream and 5 blocked upstream. The test reads back the persisted pointer phases.</td></tr>
+      <tr><td>Edit visibility</td><td>Completing one upstream section between passes releases its 3 waiting requests; every other request retains its phase.</td></tr>
+      <tr><td>Focused gate</td><td>5 passed in 27.55s.</td></tr>
+      <tr><td>Negative control</td><td>Restoring plan and refs to the pass key produces 12 builds and fails both read-count cases: 2 failed, 3 passed in 66.38s.</td></tr>
+      <tr><td>Importer comparison</td><td>55 existing test files, 390 tests. Base arms: 4 failed, 376 passed in 147.39s, plus 10 passed in 47.57s. Final head: 5 failed, 385 passed in 220.76s. The sole additional failure failed on the base and passed on the head in serial confirmation; no added reproducible failure.</td></tr>
+      <tr><td>Ruff</td><td>Zero findings on the base source and delivered Python paths; both delivered files pass the format check.</td></tr>
+    </tbody>
+  </table>
+  <p>The base measurement is 12 builds, while the section anticipated 20: requests already share entries when they name the same plan. The defect is repeated whole-project construction across distinct plan keys. The regression fixture preserves the measured base behavior instead of asserting the anticipated count.</p>
+  <p>Durable logs and commands are in run <code>r-20261105T111108536678-an-admission-pass-builds-each-projects-readiness-once</code>: <code>base-regression.log</code>, <code>final-suite-head.log</code>, <code>population-base.log</code>, <code>dynamic-base.log</code>, <code>final-population-head.log</code>, <code>added-base.log</code>, <code>added-head.log</code>, <code>final-negative-control.log</code>, <code>ruff-base.log</code> and <code>ruff-head.log</code>. The manifest retains the exact failure IDs and import paths. Integration verification remains a coordinator task.</p>
+</section>
