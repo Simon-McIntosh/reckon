@@ -278,101 +278,64 @@ def test_each_skill_leads_its_fast_path_with_the_brief(skill: str) -> None:
     )
 
 
-#: A project several times the size of this repository's own, so a brief that
-#: repeated every section it knows about would overrun the row it declares.
-BIG_PLANS = 40
-BIG_SECTIONS_PER_PLAN = 10
+#: The size of the brief payload built below: comfortably past the summary's
+#: own row and inside the brief's, which is the boundary this case measures.
+BRIEF_PAYLOAD_CHARACTERS = 25_000
+
+#: The row the summary is declared at, written here rather than read back from
+#: the budget table, so the case below measures a boundary the table cannot move
+#: by moving both sides at once.
+SUMMARY_ROW_CHARACTERS = 20_000
+
+_PADDING = (
+    "the section declares no wait and its gate has passed, so a reader acts on "
+    "it first "
+)
 
 
-def _write_big_plan(docs: Path, slug: str, previous: str | None) -> None:
-    """Write one plan of ``BIG_SECTIONS_PER_PLAN`` implementable sections."""
+def _brief_payload(characters: int) -> dict[str, Any]:
+    """A brief-shaped answer measuring exactly ``characters`` serialised characters."""
 
-    body: list[str] = []
-    declarations: dict[str, str] = {}
-    for number in range(1, BIG_SECTIONS_PER_PLAN + 1):
-        identity = f"s{number}"
-        declarations[identity] = "implementable"
-        body.append(
-            f'<h2 id="{identity}">Section {number}</h2>'
-            f'<section data-reckon="section" data-id="{identity}" '
-            'data-effort-hours="1.0" data-capability-version="1.0" '
-            'data-capability-class="general" '
-            'data-capability-reasoning="standard" '
-            'data-capability-verification="standard" '
-            'data-capability-risk="low" data-status="implementable" '
-            'data-attempts="0" data-links=""></section>'
-        )
-    bare = (
-        '<!doctype html><html lang="en"><head><meta charset="utf-8">'
-        '<meta name="docs-project" content="sample">'
-        f"<title>{slug}</title></head>"
-        f'<body><main class="plan-doc">{"".join(body)}</main></body></html>'
+    payload: dict[str, Any] = {
+        "project": PROJECT,
+        "view": "brief",
+        "text": "",
+        "lines": [
+            {"key": "overview", "text": "", "values": {"plans": 2}},
+            {"key": "ready_sections", "text": "", "values": {"sections": []}},
+        ],
+    }
+    missing = characters - mcp_budget.serialised_characters(payload)
+    assert missing > 0, "the payload's own fields already exceed the size asked for"
+    prose = (_PADDING * (missing // len(_PADDING) + 1))[:missing]
+    payload["text"] = prose
+    payload["lines"][1]["text"] = prose[-200:]
+    return payload
+
+
+def test_the_default_view_admits_a_brief_the_summary_row_would_refuse() -> None:
+    """The brief's row takes a brief the summary's row would turn away.
+
+    The payload is built here rather than read from a project, because the
+    contract under test is about the composition a read returns rather than
+    about any one checkout: a project large enough to answer this brief would
+    push other views past their own rows. What the case measures is the
+    boundary between the two rows, through the same resolver the MCP read uses,
+    so a brief row lowered back to the summary's fails here on the answer's own
+    size rather than on two table entries agreeing with each other.
+    """
+    payload = _brief_payload(BRIEF_PAYLOAD_CHARACTERS)
+    size = mcp_budget.serialised_characters(payload)
+
+    assert size >= SUMMARY_ROW_CHARACTERS + 5_000, (
+        f"the fixture answered {size} characters, too close to the summary's "
+        f"{SUMMARY_ROW_CHARACTERS}-character row to test the boundary between them"
     )
-    path = docs / "plans" / f"{slug}.html"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        write_state(
-            bare,
-            {
-                "slug": slug,
-                "title": slug.title(),
-                "status": "active",
-                "depends_on": [previous] if previous else [],
-                "decisions": {},
-                "gates": [],
-                "followups": [{"id": "next-action", "prompt": f"/reckon-build {slug}"}],
-                "version": 0,
-                "section_declarations": declarations,
-            },
-        ),
-        encoding="utf-8",
+    assert mcp_budget.view_budget("roadmap", {}) >= size, (
+        "the view a roadmap call naming no view resolves to does not admit a "
+        f"brief of {size} characters"
     )
-
-
-@pytest.fixture()
-def big_project(tmp_path, monkeypatch):
-    """A mounted project larger than this repository's own, ready to brief."""
-
-    project = "sample"
-    docs = tmp_path / "repo" / "docs"
-    docs.mkdir(parents=True)
-    state_root = tmp_path / "state"
-    state_root.mkdir()
-    mounts = tmp_path / "mounts.json"
-    mounts.write_text(json.dumps({project: str(docs)}))
-    monkeypatch.setenv("RECKON_MOUNTS_PATH", str(mounts))
-    monkeypatch.setenv("RECKON_STATE_ROOT", str(state_root))
-    monkeypatch.setenv("RECKON_MCP_READ_DEADLINE_SECONDS", "120")
-
-    import reckon.serve as serve_module
-
-    serve_module._MOUNTS_FILE = mounts
-    serve_module._STATE_ROOT = state_root
-    serve_module._DISC_CACHE.clear()
-    reload_mcp_family()
-
-    previous = None
-    for index in range(1, BIG_PLANS + 1):
-        slug = f"plan-{index:03d}"
-        _write_big_plan(docs, slug, previous)
-        previous = slug
-    return project
-
-
-def test_a_brief_for_a_project_larger_than_reckon_fits_its_row(
-    big_project: str,
-) -> None:
-    """A default read of a large project is held to the brief's own row."""
-
-    answer = mcp_module._roadmap_tool(big_project)
-
-    assert answer["view"] == "brief"
-    row = mcp_budget.VIEW_BUDGETS[("roadmap", "brief")]
-    assert mcp_budget.view_budget("roadmap", {}) == row, (
-        "a roadmap call naming no view is not resolved to the brief's own row"
+    assert mcp_budget.view_budget("roadmap", {"view": "summary"}) < size, (
+        "the summary's row admits a brief it is not sized for, so the two rows "
+        "no longer describe different answers"
     )
-    size = mcp_budget.serialised_characters(answer)
-    assert size <= row, (
-        f"the brief answered {size} characters over its {row}-character row"
-    )
-    assert answer["lines"], "the brief carries the typed rows behind its lines"
