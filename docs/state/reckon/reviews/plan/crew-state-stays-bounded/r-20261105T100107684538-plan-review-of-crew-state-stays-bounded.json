@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-05T10:14:21.092Z",
+  "dispatched_at": "2026-11-05T10:09:17Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/crew-state-stays-bounded/r-20261105T100107684538-plan-review-of-crew-state-stays-bounded/plan.html:212",
+      "id": "reasoning-1",
+      "reason": "the node must be told the stream (stderr) and the parser contract (stdout stays one JSON document) or the call site added to the write paths, otherwise it implements the print where the plan says and breaks two shipped callers that no listed case measures.",
+      "text": "the Deliverable requires the pass to print \"its progress and per-phase timing as it goes\", but the two real callers both emit one JSON document on stdout \u2014 `main()` writes `json.dumps(report, indent=2)` to stdout (reckon/crew/gc.py:1736) and the `crew retention-sweep` verb emits the same report through `_emit_crew_result` (reckon/crew_run_commands.py:1814) \u2014 so a pass that prints inside `retention_sweep` corrupts the JSON envelope of both, and the plan's write paths (`reckon/crew/gc.py`, the new test, the fragment) exclude the CLI call site where that would be repaired",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/crew-state-stays-bounded/r-20261105T100107684538-plan-review-of-crew-state-stays-bounded/plan.html:212",
+      "id": "done_when-1",
+      "reason": "without a cursor-only control the node can ship the resumed-cursor claim on a case that its own control never exercises, and the earlier review's finding is answered on paper only.",
+      "text": "the declared negative control is \"counts only offered rows again, and the first case fails\", which falsifies the judged-limit change alone; the second case (300 withheld directories passed by the fourth pass) is proved only by the cursor, and no stated control reverts the cursor to show that case reddens",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/crew-state-stays-bounded/r-20261105T100107684538-plan-review-of-crew-state-stays-bounded/plan.html:212",
+      "id": "done_when-2",
+      "reason": "a node can satisfy every listed case and the five-minute bound while the per-directory config resolution survives, so the clause that names the phase's real cost has nothing that reddens when it is left in place.",
+      "text": "the Deliverable requires \"each phase reads its inputs once per pass\", but none of the four cases and neither host run measures it: the concrete target is `_run_directory_grace_seconds` (reckon/crew/gc.py:1467-1548), which resolves the flight config through `flight.resolve(project, checkout_path=root)` once per judged directory inside the loop",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "52df7d3f52bad4d1c3adb52cf09ca3b92fbd203a",
+  "plan_fingerprint": "ec6741fc75fac8989f3582a029209f8147fd99664c49cc4f732974ad1a9f99c4",
+  "plan_slug": "crew-state-stays-bounded",
+  "plan_version": 56,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261105T100107684538-plan-review-of-crew-state-stays-bounded",
+  "reviewed_blob_sha": "9a0a4968aa7a6bc3a27dc869966e1b37213f9f4f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 reckon/crew/gc.py:1467 (_retention_ledger_records), gc.py:276 (_run_directory_retention_report), `python -m reckon.crew.gc` (gc.py:1678) and `--limit` (gc.py:1706) all resolve; the fragment path's parent exists; the new test file is new.",
+    "done_when": "findings \u2014 the four test cases and the host measure are measurable, but the declared negative control falsifies only the first case, and \"each phase reads its inputs once per pass\" has no case and no measure.",
+    "evidence_paths": "pass \u2014 the host timings are committed to docs/evidence/fragments/crew-state-stays-bounded/a-retention-pass-finishes-inside-its-slot.html, which exists as a directory and survives the run, replacing the manifest citation an earlier review rejected.",
+    "naming": "pass \u2014 tests/test_a_retention_pass_is_bounded.py and a-retention-pass-finishes-inside-its-slot name the mechanism, with no plan label, stage name or ticket number.",
+    "reasoning": "a finding \u2014 the plan requires the pass to print progress and per-phase timing \"as it goes\" but names no stream, and both real entry points already own stdout for a single JSON document.",
+    "single_goal": "pass \u2014 \u00a710 carries one deliverable, bounding one pass's work and length; the quiet-window measurement is the evidence for that deliverable, not a second one.",
+    "wiring": "pass \u2014 \u00a710 declares no plan-section-depends-on and needs none: it writes only reckon/crew/gc.py, a new test and a new evidence fragment, and every section it cites (\u00a77's reaper, \u00a79's retention verb) is already declared done in plan-section-declarations (plan.html:23)."
+  },
+  "section_digests": {
+    "_document": "13630d50da2a233e09eaf895eff25a3f1d196859ac6631c357e426c66cee7c0b",
+    "s1": "61be6bb6df8b986fbb68c3273e136fcef1b9fa13e7bcadb4fb62eab2fa4145ff",
+    "s10": "d80b2e5bd4f302f479ea3428e54007d66daf1d1303b4aedb41dc9e559f49ee0d",
+    "s2": "0809becc839b3ed5586cc9018606732a929379de88ab524968574e8429943a9b",
+    "s3": "9aa4d5f5a6287b698b7d6011ac8fcc295589c20484d8892a3c86d88d629b8793",
+    "s4": "2681ac58d6ae7457bc800678db433ce359be271248b74a429b44ee4d817769b4",
+    "s5": "bba37241ec93e13e0fb1eb173abfd49db0b6e77d788aa2dbec1608d164852542",
+    "s6": "c491229cedc576a79a4628da53168b317ce14fef88d78739c48e86b16aaff17a",
+    "s7": "1f6a99e4b8834c4a8bea5559a1507e6da85988f873d5547c7804930237104694",
+    "s8": "bc03fa54cdefe8b48312fabda86a4fca8277e025db66430978900e888a969066",
+    "s9": "94c64e9a52c50d223769478a5aa73517f29bc51fd5a6b123d7978de2b35c4317"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T10:32:03.704766+00:00"
+}
