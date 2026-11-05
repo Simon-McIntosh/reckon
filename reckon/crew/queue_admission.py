@@ -3993,8 +3993,7 @@ def priorities_first(
         (
             pointer
             for pointer in order
-            if _priority_override(pointer) is not None
-            and not _is_review_run(pointer)
+            if _priority_override(pointer) is not None and not _is_review_run(pointer)
         ),
         key=lambda pointer: -_priority_override(pointer),
     )

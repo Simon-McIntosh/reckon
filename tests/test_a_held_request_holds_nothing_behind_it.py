@@ -68,9 +68,7 @@ def _lane_document(tmp_path: Path) -> Path:
 
 def _gate_document(tmp_path: Path) -> Path:
     gate = tmp_path / "gate.json"
-    gate.write_text(
-        json.dumps({"paused": True, "reason": "moving"}), encoding="utf-8"
-    )
+    gate.write_text(json.dumps({"paused": True, "reason": "moving"}), encoding="utf-8")
     return gate
 
 
@@ -342,4 +340,4 @@ def test_a_reprioritised_request_is_ranked_first_across_sessions_and_projects(
     order = queue_admission.fair_share_admission_order(
         queued, queued, now=START, config_for=lambda _pointer: config
     )
-    assert [pointer["run_id"] for pointer in order][0] == "r-raised"
+    assert order[0]["run_id"] == "r-raised"
