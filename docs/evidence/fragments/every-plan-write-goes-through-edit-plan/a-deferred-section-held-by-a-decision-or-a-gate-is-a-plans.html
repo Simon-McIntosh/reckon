@@ -1,0 +1,101 @@
+<!-- Evidence anchor: a-deferred-section-held-by-a-decision-or-a-gate-is-a-plans -->
+
+<section id="a-deferred-section-held-by-a-decision-or-a-gate-is-a-plans-evidence">
+  <h2>A deferred section held by a decision or a gate is the plan's continuation</h2>
+
+  <p id="a-deferred-section-held-by-a-decision-or-a-gate-is-a-plans-rule">
+    A plan whose declared work is resolved but which keeps one section declared
+    <code>deferred</code> is waiting on someone else, and the wait is already recorded: an
+    open decision names the section it holds, or an open gate names it. That record states
+    what the section waits on and who must act, so it stands as the plan's continuation and
+    a landing on such a plan owes no followup. Before the change the guard accepted only an
+    open followup or a chain-closing outcome, so the coordinator had no legal landing at
+    all: a followup restating the wait was refused as hidden work, and no followup was
+    refused as no continuation — the placeholder form the close op retired.
+  </p>
+
+  <p id="a-deferred-section-held-by-a-decision-or-a-gate-is-a-plans-predicate">
+    <code>continuation_present</code> in <code>reckon/_store.py</code> gains one clause:
+    after an open followup and a chain-closing outcome it consults
+    <code>_deferred_section_is_held</code>. A decision is open until it records a
+    <code>choice</code>, which is the attribute the lock op writes and the roadmap reads a
+    decision's readiness from. A gate is open until it records a <code>verdict</code>, which
+    the pass and fail ops write together with the closed status. Either holds the deferred
+    section when the sections it names include it. Both write paths — the op writer and the
+    HTTP patch writer — reach the rule through the one <code>continuation_present</code>
+    entry point, so they cannot disagree. <code>skills/reckon-edit/SKILL.md</code> states the
+    rule for coordinators: no placeholder followup for a plan waiting on a decision or gate,
+    and locking the decision or settling the gate ends the wait so the next landing owes a
+    real continuation.
+  </p>
+
+  <table id="a-deferred-section-held-by-a-decision-or-a-gate-is-a-plans-verdicts">
+    <thead>
+      <tr><th>Case</th><th>Control that must refuse</th><th>Verdict at head</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Deferred section held by an open decision: the landing succeeds and no followup is appended</td>
+        <td>The same plan with the decision locked</td>
+        <td>holds — landing exits <code>ok</code>, the followup list is unchanged and the one followup is resolved; the locked twin is refused with <code>CONTINUATION_REQUIRED</code></td>
+      </tr>
+      <tr>
+        <td>Deferred section held by an open gate: the same landing succeeds</td>
+        <td>The same plan with the gate carrying a <code>passed</code> verdict</td>
+        <td>holds — succeeded with no new followup; the settled twin is refused with <code>CONTINUATION_REQUIRED</code></td>
+      </tr>
+      <tr>
+        <td>Deferred section no record names</td>
+        <td>That case is itself the control</td>
+        <td>holds — deferral alone is not a continuation, so the landing is refused</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p id="a-deferred-section-held-by-a-decision-or-a-gate-is-a-plans-measure">
+    Gate: <code>tests/test_a_waiting_plan_needs_no_placeholder.py</code>, five cases, run
+    through <code>edit_plan</code> against a temporary mounted project.
+  </p>
+
+  <table id="a-deferred-section-held-by-a-decision-or-a-gate-is-a-plans-arms">
+    <thead>
+      <tr><th>Arm</th><th>Revision</th><th>Result</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Base — base code with this node's test staged into the scratch tree</td>
+        <td><code>7b529f4388</code></td>
+        <td>2 failed, 3 passed, <code>EXIT=1</code>; the two failures are the two acceptance cases, which reproduce the defect: the landing is refused with <code>CONTINUATION_REQUIRED</code> although a decision or gate holds the deferred section</td>
+      </tr>
+      <tr>
+        <td>Head</td>
+        <td><code>bb711ee134</code></td>
+        <td>5 passed, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>Declared negative control — the decision branch forced to read every decision as locked</td>
+        <td><code>bb711ee134</code> plus the mutation</td>
+        <td>1 failed, 4 passed, <code>EXIT=1</code>; the failing id is <code>test_a_deferred_section_under_an_open_decision_is_the_continuation</code>, the landing refused for want of a continuation</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p id="a-deferred-section-held-by-a-decision-or-a-gate-is-a-plans-caveat">
+    The base arm is base code with this node's test file staged into the scratch tree, not the
+    bare template resolution. With the added test absent the template resolves to a bare
+    <code>pytest -q</code> over the whole suite, which runs above one percent in as many
+    minutes on this checkout and cannot complete inside a node's window; the staged arm answers
+    the same question — what the base code does when this test runs — and both arms then name
+    the same command string.
+  </p>
+
+  <p id="a-deferred-section-held-by-a-decision-or-a-gate-is-a-plans-related">
+    Related suites run green beside the gate: <code>tests/test_continuation.py</code>,
+    <code>tests/test_landing_patch_refuses_a_hiding_followup.py</code>,
+    <code>tests/test_closure_gates.py</code> and
+    <code>tests/test_terminal_status_needs_every_section_ticked.py</code> (83 passed together
+    with the new file). <code>tests/test_skill_contracts.py</code> has one failure at base —
+    <code>test_every_registered_crew_verb_is_documented_or_exempt</code>, over a crew verb the
+    edit skill never documents — which this node does not touch.
+  </p>
+</section>
