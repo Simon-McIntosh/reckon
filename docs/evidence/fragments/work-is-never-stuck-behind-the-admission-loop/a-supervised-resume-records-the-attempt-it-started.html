@@ -1,0 +1,41 @@
+<!doctype html>
+<title>A supervised resume records the attempt it started</title>
+<section
+  id="a-supervised-resume-records-the-attempt-it-started-landing"
+  data-node="a-supervised-resume-records-the-attempt-it-started"
+>
+  <h2>A supervised resume records the attempt it started</h2>
+
+  <p><strong>What changed.</strong> A worker receipt written when the process
+  starts is reused when its supervisor confirms the same process. That second
+  confirmation no longer creates another numbered receipt. Resume and
+  redispatch both retain attempt 2 after the first continuation; a second
+  resume records attempt 3 and keeps the earlier receipts. The attempt-number
+  path is <code>supervised_launch</code> followed by
+  <code>record_resumption</code> for resume, and
+  <code>change_lane</code> for redispatch. Both reach the worker writer twice.</p>
+
+  <p><strong>Measure.</strong> The two named resume and redispatch cases passed
+  4 of 4 variants in each of three serial runs. The full node test file passed
+  8 of 8. The named cases now observe the live supervisor command line, a
+  separate live worker, refusal to review a running attempt, and the worker's
+  exit receipt. The fixture worker waits for a signal rather than a timer.
+  A separate assertion drives the duplicate worker confirmation directly so
+  the receipt race cannot hide the attempt-number defect.</p>
+
+  <p><strong>Negative controls.</strong> Restoring the duplicate writer made
+  all 4 named variants fail with <code>assert 3 == 2</code>. Returning a fake
+  supervisor PID without starting a process also made all 4 fail. With the
+  process-checking test commit reverted, all 4 passed under that fake PID.
+  A direct refusal test confirms that a missing worker cannot satisfy the
+  existing bounded supervisor confirmation.</p>
+
+  <p><strong>Importer comparison.</strong> The same 73 referencing test files
+  ran against extracted base and head trees. Base: 832 passed, 9 failed, 6
+  setup errors, 1 skipped. Head: 836 passed, 7 failed, the same 6 setup
+  errors, 1 skipped. No failure ID was added; the two removed failures were
+  the resume and redispatch cases. The six shared setup errors came from the
+  worker fence's read-only <code>/tmp</code>; a matched rerun under the granted
+  temporary root passed all 6 on both revisions. Shared watch failures remain
+  present on both revisions.</p>
+</section>

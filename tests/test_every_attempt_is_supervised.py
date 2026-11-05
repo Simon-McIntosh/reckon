@@ -15,6 +15,7 @@ from types import SimpleNamespace
 import pytest
 from click.testing import CliRunner
 
+import reckon.crew.dispatch_launch as dispatch_launch_module
 import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import _backends, crew_dispatch_commands
 from reckon import cli as cli_module
@@ -82,7 +83,7 @@ def _sleeping_plan(worktree: Path, dialect: str) -> _backends.LaunchPlan:
     return _backends.LaunchPlan(
         backend="alpha",
         dialect=dialect,
-        argv=[sys.executable, "-c", "import time; time.sleep(60)"],
+        argv=[sys.executable, "-c", "import signal; signal.pause()"],
         cwd=str(worktree),
         stdin_text="",
         environment={},
@@ -148,13 +149,21 @@ def _resumable_run(tmp_path: Path, dialect: str) -> tuple[str, Path, Path]:
 
 
 def _assert_current_attempt(
-    run_id: str, directory: Path, supervisor_pid: int
+    run_id: str, directory: Path, supervisor_pid: int, attempt: int = 2
 ) -> dict[str, object]:
     assert "__supervise__" in _cmdline(supervisor_pid)
-    _wait_for(directory / "worker.json")
+    _wait_until(
+        lambda: _record_names_attempt(directory / "worker.json", attempt),
+        "the current worker record",
+    )
+    spec = json.loads((directory / "supervisor.json").read_text(encoding="utf-8"))
+    assert "reckon.crew.supervisor_main" in spec["argv"]
+    assert spec["attempt"] == attempt
     worker = json.loads((directory / "worker.json").read_text(encoding="utf-8"))
     assert int(worker["pid"]) != supervisor_pid
-    assert worker["attempt"] == 2
+    assert dispatch_launch_module.process_alive(int(worker["pid"])) is True
+    assert "-c" in _cmdline(int(worker["pid"]))
+    assert worker["attempt"] == attempt
     assert (
         json.loads((directory / "attempt-1-worker.json").read_text(encoding="utf-8"))[
             "attempt"
@@ -168,11 +177,46 @@ def _assert_current_attempt(
         == 1
     )
     assert (
-        json.loads((directory / "attempt-2-worker.json").read_text(encoding="utf-8"))
+        json.loads(
+            (directory / f"attempt-{attempt}-worker.json").read_text(encoding="utf-8")
+        )
         == worker
     )
+    assert not (directory / f"attempt-{attempt + 1}-worker.json").exists()
     assert runs.read_pointer(run_id)["pid"] == supervisor_pid
     return worker
+
+
+def _assert_duplicate_worker_confirmation_keeps_one_attempt(directory: Path) -> None:
+    directory.mkdir()
+    (directory / "attempt.json").write_text(
+        json.dumps({"attempt": 2}), encoding="utf-8"
+    )
+    worker = {"run_id": "fixture", "pid": 123, "pid_start_time": 456}
+    for _ in range(2):
+        assert dispatch_launch_module._write_attempt_artifact(
+            directory, "worker.json", worker, attempt=2
+        )
+    assert json.loads((directory / "worker.json").read_text())["attempt"] == 2
+    assert sorted(path.name for path in directory.glob("attempt-*-worker.json")) == [
+        "attempt-2-worker.json"
+    ]
+
+
+def test_duplicate_worker_confirmation_keeps_one_attempt(tmp_path: Path) -> None:
+    _assert_duplicate_worker_confirmation_keeps_one_attempt(tmp_path / "run")
+
+
+def test_supervisor_confirmation_rejects_a_missing_worker(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(dispatch_launch_module, "process_alive", lambda _pid: False)
+    with pytest.raises(
+        dispatch_launch_module.CrewError, match="without writing an exit record"
+    ):
+        dispatch_launch_module._confirm_supervisor_survived(
+            12345, tmp_path, "r-missing-worker"
+        )
 
 
 def _kill_worker_and_read_exit(directory: Path, worker_pid: int) -> dict[str, object]:
@@ -237,6 +281,73 @@ def test_crew_resume_keeps_the_harness_behind_a_supervisor(
         assert exit_record["signal_name"] == "SIGKILL"
     finally:
         _stop_group(supervisor_pid)
+    _assert_duplicate_worker_confirmation_keeps_one_attempt(tmp_path / "receipt")
+
+
+def test_a_second_resume_records_the_third_attempt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    run_id, directory, manifest = _resumable_run(tmp_path, "codex")
+    plan = _sleeping_plan(Path(runs.read_pointer(run_id)["worktree"]), "codex")
+    monkeypatch.setattr(resumption, "resume_plan", lambda *args, **kwargs: plan)
+    monkeypatch.setattr(
+        crew_dispatch_commands,
+        "_resolved_flight",
+        lambda flight_module, project, checkout_path, overrides: CONFIG,
+    )
+
+    first = CliRunner().invoke(
+        cli_module.main,
+        ["crew", "resume", "--run", run_id, "--advice", "continue"],
+    )
+    assert first.exit_code == 0, first.output
+    first_pid = int(json.loads(first.output)["pid"])
+    second_pid = None
+    try:
+        worker = _assert_current_attempt(run_id, directory, first_pid)
+        manifest.write_text(
+            "status: blocked\ncommits: [old-head]\nblockers: fixture pause\n",
+            encoding="utf-8",
+        )
+        _kill_worker_and_read_exit(directory, int(worker["pid"]))
+        _wait_until(
+            lambda: (
+                runs.read_pointer(run_id).get("phase") == "blocked"
+                and dispatch_launch_module.process_alive(first_pid) is False
+            ),
+            "the blocked first attempt to end",
+        )
+        second = CliRunner().invoke(
+            cli_module.main,
+            ["crew", "resume", "--run", run_id, "--advice", "continue again"],
+        )
+        assert second.exit_code == 0, second.output
+        second_pid = int(json.loads(second.output)["pid"])
+        _wait_until(
+            lambda: (
+                runs.read_pointer(run_id).get("attempt") == 3
+                and _record_names_attempt(directory / "worker.json", 3)
+            ),
+            "the third attempt's canonical worker record",
+        )
+        current = json.loads((directory / "worker.json").read_text())
+        assert current["attempt"] == 3
+        assert (
+            json.loads((directory / "attempt-1-worker.json").read_text())["attempt"]
+            == 1
+        )
+        assert (
+            json.loads((directory / "attempt-2-worker.json").read_text())["attempt"]
+            == 2
+        )
+        assert json.loads((directory / "attempt-3-worker.json").read_text()) == current
+    finally:
+        _stop_group(first_pid)
+        if second_pid is not None:
+            _stop_group(second_pid)
 
 
 def test_a_killed_resumed_worker_leaves_its_attempt_exit_record(
@@ -326,9 +437,13 @@ def test_crew_redispatch_keeps_the_harness_behind_a_supervisor(
     runs._write_json(runs.pointer_path(run_id), pointer)
     plan = _sleeping_plan(Path(pointer["worktree"]), dialect)
     resolution = _lane_resolution(dialect)
-    monkeypatch.setattr(dispatch_sessions_module, "plan_dispatch", lambda **kwargs: resolution)
     monkeypatch.setattr(
-        dispatch_sessions_module, "resolve_dispatch_ledger_root", lambda authority: tmp_path
+        dispatch_sessions_module, "plan_dispatch", lambda **kwargs: resolution
+    )
+    monkeypatch.setattr(
+        dispatch_sessions_module,
+        "resolve_dispatch_ledger_root",
+        lambda authority: tmp_path,
     )
     monkeypatch.setattr(
         dispatch_sessions_module,
@@ -353,3 +468,4 @@ def test_crew_redispatch_keeps_the_harness_behind_a_supervisor(
         _kill_worker_and_read_exit(directory, int(worker["pid"]))
     finally:
         _stop_group(supervisor_pid)
+    _assert_duplicate_worker_confirmation_keeps_one_attempt(tmp_path / "receipt")
