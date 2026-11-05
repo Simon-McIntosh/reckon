@@ -1370,13 +1370,24 @@ def _admitted_from(pointer: Mapping[str, Any]) -> str:
 
 
 def _compute_watch_snapshot(
-    pointer: Mapping[str, Any], *, moment: float, stall_seconds: int
+    pointer: Mapping[str, Any],
+    *,
+    moment: float,
+    stall_seconds: int,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Reduce one pointer to the state and reason a ticker compares."""
+    """Reduce one pointer to the state and reason a ticker compares.
+
+    ``pointers`` is the sweep's own read of the live pointers, handed on to
+    :func:`classify_pointer` so a row that recognises a review in flight reads
+    the population the sweep already holds instead of listing the directory
+    once per row. A sweep that passes none classifies exactly as before.
+    """
     row = classify_pointer(
         pointer,
         now_seconds=moment,
         stale_after_seconds=stall_seconds,
+        **({"pointers": pointers} if pointers is not None else {}),
     )
     verdict = row["fleet_verdict"]
 
@@ -1518,8 +1529,14 @@ def _watch_snapshot(
     moment: float,
     stall_seconds: int,
     cache: dict[str, tuple[str, dict[str, Any]]] | None = None,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Reduce one pointer to the state and reason a ticker compares.
+
+    ``pointers`` is the population this snapshot is one row of, when the
+    caller took its own read of the live pointers for the whole sweep; it
+    travels to :func:`_compute_watch_snapshot` so no row re-lists the
+    directory. A caller with one pointer passes none.
 
     A run whose classification inputs are all unchanged since the last poll
     serves its previous snapshot: only the silence is recomputed, from the
@@ -1547,7 +1564,7 @@ def _watch_snapshot(
         ):
             return _refresh_snapshot(stored, moment=moment, stall_seconds=stall_seconds)
     snapshot = _compute_watch_snapshot(
-        pointer, moment=moment, stall_seconds=stall_seconds
+        pointer, moment=moment, stall_seconds=stall_seconds, pointers=pointers
     )
     refreshed = _refresh_snapshot(snapshot, moment=moment, stall_seconds=stall_seconds)
     if run_id and key is not None:
@@ -2549,7 +2566,7 @@ def _live_project_session_counts(project: str, session: str) -> dict[str, int]:
     pointers = runs._list_live_records(project=project)
     current = {
         str(pointer.get("run_id") or ""): _watch_snapshot(
-            pointer, moment=moment, stall_seconds=stall_seconds
+            pointer, moment=moment, stall_seconds=stall_seconds, pointers=pointers
         )
         for pointer in pointers
         if pointer.get("run_id")
@@ -2820,7 +2837,11 @@ def _quiet_beat_snapshots(
         stored = served[1] if served is not None else None
         if stored is None:
             current[run_id] = _watch_snapshot(
-                pointer, moment=moment, stall_seconds=stall_seconds, cache=cache
+                pointer,
+                moment=moment,
+                stall_seconds=stall_seconds,
+                cache=cache,
+                pointers=pointers,
             )
             continue
         if _fresh_liveness(pointer) != (
@@ -2829,7 +2850,11 @@ def _quiet_beat_snapshots(
             stored.get("process_descendant_alive"),
         ):
             current[run_id] = _watch_snapshot(
-                pointer, moment=moment, stall_seconds=stall_seconds, cache=cache
+                pointer,
+                moment=moment,
+                stall_seconds=stall_seconds,
+                cache=cache,
+                pointers=pointers,
             )
         else:
             current[run_id] = _refresh_snapshot(
@@ -3152,6 +3177,7 @@ def watch_ticker(
                         moment=moment,
                         stall_seconds=stall_seconds,
                         cache=snapshot_cache,
+                        pointers=pointers,
                     )
                     for pointer in pointers
                     if pointer.get("run_id")
