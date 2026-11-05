@@ -100,6 +100,11 @@
     <p>Run <code>r-20261027T090204446170-the-live-view-reads-under-a-read-only-home</code> landed at merge <code>43c6870be</code>. The crew live view now reads a project's seat lock read-only and creates nothing under the watch directory, and the reconcile-on-read repair reports an unrepaired record rather than raising when the home refuses the write, so a fenced worker with a read-only config home can call it. Coordinator measure over the 130 test files that reach the watch, follower and live-view paths: main 988 passed, merged 986 passed; the five ids that differed each passed three serial runs of three at both, so none is added. Write sites a session-scoped read still reaches (watch_unit, follower_registration, host_lease) and an unreadable seat are carried as a new section. Review 109 of 120.</p>
   </section>
 
+  <section id="s18">
+    <h2>§18 landing</h2>
+    <p>Run <code>r-20261102T213837635744-a-session-live-read-writes-nothing</code> landed at merge <code>42dbb8702</code>. A session-scoped crew live read now writes nothing under a read-only home: follower liveness opens registrations read-only, a stale lease seen during a read is reported rather than unlinked, and an unopenable seat reads as an unknown holder. Coordinator measure over 139 test files reaching the watch, follower and live-view paths: main 958 passed, merged 961 passed; the failures present at main are present at both, so none is added. Review 103 of 120.</p>
+  </section>
+
 </main>
 </body>
 </html>
