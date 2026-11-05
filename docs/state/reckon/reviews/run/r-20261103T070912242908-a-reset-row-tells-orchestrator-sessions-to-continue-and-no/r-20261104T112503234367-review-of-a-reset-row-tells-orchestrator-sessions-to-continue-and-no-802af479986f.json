@@ -1,0 +1,112 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/ticker.py:3053",
+    "reckon/crew/ticker.py:3185",
+    "reckon/crew/recovery_watch.py:2443",
+    "reckon/crew/lift_watch.py:308",
+    "reckon/crew_follow_commands.py:3270",
+    "reckon/crew_follow_commands.py:3506"
+  ],
+  "completed_at": "2026-11-04T11:41:26.942Z",
+  "dispatched_at": "2026-11-04T11:33:16Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking, noted at landing",
+      "recorded_at": "2026-11-05T09:13:39.668777+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking, noted at landing",
+      "recorded_at": "2026-11-05T09:13:39.702849+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "non-blocking, noted at landing",
+      "recorded_at": "2026-11-05T09:13:53.644684+00:00"
+    },
+    "3": {
+      "kind": "exempted",
+      "reason": "non-blocking, noted at landing",
+      "recorded_at": "2026-11-05T09:13:57.068345+00:00"
+    },
+    "4": {
+      "kind": "exempted",
+      "reason": "non-blocking, noted at landing",
+      "recorded_at": "2026-11-05T09:13:59.033608+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "manifest.md",
+      "id": "after-arm-skips-granted-file",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "non-blocking: the after_suite and tests commands both name only tests/test_a_limit_reset_reaches_every_pane.py and tests/test_every_module_fits_a_worker_window.py, so neither arm runs tests/test_the_orchestrator_reset_row_says_what_it_is.py, the file the gained commit 802af47998 adds its case to and the file whose assertions this node rewrote; the only evidence the final commit's case is green and load-bearing is the targeted negative control logs/negative-control-job-column.log (1 failed, 7 deselected, EXIT=1) and a single-test read at the head."
+    },
+    {
+      "file": "docs/evidence/fragments/a-limit-reset-reaches-every-session/a-reset-row-tells-orchestrator-sessions-to-continue-and-no.html",
+      "id": "fragment-names-stale-head-and-grant",
+      "line": "28",
+      "severity": "non-blocking",
+      "text": "non-blocking: the landing record names 8575a8ebc as the measured head and at line 60 states the write-scope grant is still unrecorded, while the reviewed head is 802af479986f, node.write_paths in the run's live pointer now carries tests/test_the_orchestrator_reset_row_says_what_it_is.py, and the fragment says nothing about the final commit's job-column case or its negative control."
+    },
+    {
+      "file": "docs/evidence/fragments/a-limit-reset-reaches-every-session/a-reset-row-tells-orchestrator-sessions-to-continue-and-no.html",
+      "id": "fragment-cites-wrong-log",
+      "line": "60",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment cites logs/negative-control-scope-prewiden.log as holding the read-only OSError from the widen attempt, but that log is the manifest audit output (command: reckon crew check --manifest) and the OSError is in logs/scope-widen-refused.log, so a reader following the pointer finds the wrong evidence."
+    },
+    {
+      "file": "tests/test_a_limit_reset_reaches_every_pane.py",
+      "id": "stage-word-not-pinned-literally",
+      "line": "204",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert rendered.split()[1] == ticker.LIMIT_STAGE compares the rendered stage cell against the renderer's own constant, so a change to that constant moves both sides together and the done_when's 'stage cell reads limit' is not pinned to a literal anywhere; the same shape stands at line 388 and at line 170 of the pre-existing case."
+    },
+    {
+      "file": "manifest.md",
+      "id": "done-when-module-window-and-arms",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when requires tests/test_every_module_fits_a_worker_window.py to pass at head and both arms record it failing with the same id (reported honestly under outside_scope), and the head arm logs/repair2-after.log runs serially in the worker worktree where the done_when asks both arms to come from git checkouts under the run scratch with pytest -n 8."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from b665d7481695 to 802af479986f; the single gained commit is test-only and adds one case to tests/test_the_orchestrator_reset_row_says_what_it_is.py:234-248 comparing the column where limits reset starts for two differently named groups, which I ran at the head and found green.",
+    "done_when": "the done_when asks for a follower-driven case whose stage cell reads limit and whose line carries limits reset, continue and worker lanes keep their limits with no transition; tests/test_a_limit_reset_reaches_every_pane.py:187-209 is that case and logs/repair2-after.log records it passing, but the same done_when requires tests/test_every_module_fits_a_worker_window.py to pass at head and both arms fail it.",
+    "goal": "the source node's goal is that a reset row tells orchestrator sessions to continue and opens no worker lane; at the reviewed head reckon/crew/ticker.py:3151-3193 composes the row as stage limit, group in the job cell and the clause from limit_reset_text, and the gained commit touches no production code.",
+    "manifest": "read; it records the repair arms at 1 failed 17 passed either side of b665d748 with the same failure id, the 24-file ticker/lift_watch sweep at 159 against 160 passed, the transition-restoration control at 3 failed 11 passed EXIT=1, the job-column control at 1 failed 7 deselected EXIT=1, and names every log.",
+    "write_paths": "read the run's recorded write paths in the live pointer: they carry all seven paths the landed diff touches, including tests/test_the_orchestrator_reset_row_says_what_it_is.py, so the prior round's blocking scope finding is answered; the gained commit's only path, that same test file, is inside the scope."
+  },
+  "justifications": {
+    "durability": "tests/test_the_orchestrator_reset_row_says_what_it_is.py:244 fails when the job cell is sized by its own text, shown by logs/negative-control-job-column.log at 1 failed, but the stage word is asserted against ticker.LIMIT_STAGE at tests/test_a_limit_reset_reaches_every_pane.py:204 so a change to that constant would move both sides.",
+    "evidence": "logs/repair2-after.log is a real arm at 802af47998 ending EXIT=1 with one pre-existing failure, but it never runs tests/test_the_orchestrator_reset_row_says_what_it_is.py, the done_when's required module-window pass is unmet at both arms, and the manifest records no ruff log for a done_when clause I had to measure myself (delta zero on all four changed files).",
+    "fit": "tests/test_the_orchestrator_reset_row_says_what_it_is.py:234-248 follows the module's producer-path fixture idiom and its docstring, and the production code mirrors _lift_line at reckon/crew/ticker.py:3196-3230 rather than inventing a row shape.",
+    "goal_fidelity": "reckon/crew/ticker.py:3176-3193 draws stage limit, the padded job cell and the clause from limit_reset_text, so a claude-orchestrators reset prints 'limits reset (five_hour): orchestrator sessions continue; worker lanes keep their limits' and a claude-sub reset closes with the worker-lane clause alone.",
+    "reuse": "the gained commit adds one test and no definition; the production change routes the row through the existing _job_name and _job_cell at reckon/crew/ticker.py:2776 and :2942 and composes the wording once in limit_reset_text at :371, and no other reset-clause or job-cell owner exists under reckon/crew.",
+    "scope_discipline": "every path in the diff is inside the run's recorded write paths, which now carry tests/test_the_orchestrator_reset_row_says_what_it_is.py, and the gained commit touches only that file plus nothing outside the plan's fragment clause."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that a reset row tells orchestrator sessions to continue and opens no worker lane; at the reviewed head reckon/crew/ticker.py:3151-3193 composes the row as stage limit, group in the job cell and the clause from limit_reset_text, and the gained commit touches no production code.\nVERDICT done_when: the done_when asks for a follower-driven case whose stage cell reads limit and whose line carries limits reset, continue and worker lanes keep their limits with no transition; tests/test_a_limit_reset_reaches_every_pane.py:187-209 is that case and logs/repair2-after.log records it passing, but the same done_when requires tests/test_every_module_fits_a_worker_window.py to pass at head and both arms fail it.\nVERDICT write_paths: read the run's recorded write paths in the live pointer: they carry all seven paths the landed diff touches, including tests/test_the_orchestrator_reset_row_says_what_it_is.py, so the prior round's blocking scope finding is answered; the gained commit's only path, that same test file, is inside the scope.\nVERDICT manifest: read; it records the repair arms at 1 failed 17 passed either side of b665d748 with the same failure id, the 24-file ticker/lift_watch sweep at 159 against 160 passed, the transition-restoration control at 3 failed 11 passed EXIT=1, the job-column control at 1 failed 7 deselected EXIT=1, and names every log.\nVERDICT diff: read commit by commit from b665d7481695 to 802af479986f; the single gained commit is test-only and adds one case to tests/test_the_orchestrator_reset_row_says_what_it_is.py:234-248 comparing the column where limits reset starts for two differently named groups, which I ran at the head and found green.\nCALL_SITES: reckon/crew/ticker.py:3053, reckon/crew/ticker.py:3185, reckon/crew/recovery_watch.py:2443, reckon/crew/lift_watch.py:308, reckon/crew_follow_commands.py:3270, reckon/crew_follow_commands.py:3506\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:3176-3193 draws stage limit, the padded job cell and the clause from limit_reset_text, so a claude-orchestrators reset prints 'limits reset (five_hour): orchestrator sessions continue; worker lanes keep their limits' and a claude-sub reset closes with the worker-lane clause alone.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/repair2-after.log is a real arm at 802af47998 ending EXIT=1 with one pre-existing failure, but it never runs tests/test_the_orchestrator_reset_row_says_what_it_is.py, the done_when's required module-window pass is unmet at both arms, and the manifest records no ruff log for a done_when clause I had to measure myself (delta zero on all four changed files).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is inside the run's recorded write paths, which now carry tests/test_the_orchestrator_reset_row_says_what_it_is.py, and the gained commit touches only that file plus nothing outside the plan's fragment clause.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_orchestrator_reset_row_says_what_it_is.py:244 fails when the job cell is sized by its own text, shown by logs/negative-control-job-column.log at 1 failed, but the stage word is asserted against ticker.LIMIT_STAGE at tests/test_a_limit_reset_reaches_every_pane.py:204 so a change to that constant would move both sides.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_the_orchestrator_reset_row_says_what_it_is.py:234-248 follows the module's producer-path fixture idiom and its docstring, and the production code mirrors _lift_line at reckon/crew/ticker.py:3196-3230 rather than inventing a row shape.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained commit adds one test and no definition; the production change routes the row through the existing _job_name and _job_cell at reckon/crew/ticker.py:2776 and :2942 and composes the wording once in limit_reset_text at :371, and no other reset-clause or job-cell owner exists under reckon/crew.\nFINDING manifest.md:20 non-blocking: the after_suite and tests commands both name only tests/test_a_limit_reset_reaches_every_pane.py and tests/test_every_module_fits_a_worker_window.py, so neither arm runs tests/test_the_orchestrator_reset_row_says_what_it_is.py, the file the gained commit 802af47998 adds its case to and the file whose assertions this node rewrote; the only evidence the final commit's case is green and load-bearing is the targeted negative control logs/negative-control-job-column.log (1 failed, 7 deselected, EXIT=1) and a single-test read at the head.\nFINDING docs/evidence/fragments/a-limit-reset-reaches-every-session/a-reset-row-tells-orchestrator-sessions-to-continue-and-no.html:28 non-blocking: the landing record names 8575a8ebc as the measured head and at line 60 states the write-scope grant is still unrecorded, while the reviewed head is 802af479986f, node.write_paths in the run's live pointer now carries tests/test_the_orchestrator_reset_row_says_what_it_is.py, and the fragment says nothing about the final commit's job-column case or its negative control.\nFINDING docs/evidence/fragments/a-limit-reset-reaches-every-session/a-reset-row-tells-orchestrator-sessions-to-continue-and-no.html:60 non-blocking: the fragment cites logs/negative-control-scope-prewiden.log as holding the read-only OSError from the widen attempt, but that log is the manifest audit output (command: reckon crew check --manifest) and the OSError is in logs/scope-widen-refused.log, so a reader following the pointer finds the wrong evidence.\nFINDING tests/test_a_limit_reset_reaches_every_pane.py:204 non-blocking: assert rendered.split()[1] == ticker.LIMIT_STAGE compares the rendered stage cell against the renderer's own constant, so a change to that constant moves both sides together and the done_when's 'stage cell reads limit' is not pinned to a literal anywhere; the same shape stands at line 388 and at line 170 of the pre-existing case.\nFINDING manifest.md:20 non-blocking: the done_when requires tests/test_every_module_fits_a_worker_window.py to pass at head and both arms record it failing with the same id (reported honestly under outside_scope), and the head arm logs/repair2-after.log runs serially in the worker worktree where the done_when asks both arms to come from git checkouts under the run scratch with pytest -n 8.\n",
+  "review_run_id": "r-20261104T112503234367-review-of-a-reset-row-tells-orchestrator-sessions-to-continue-and-no-802af479986f",
+  "reviewed_base_sha": "b665d7481695e71afe0ae7abf857cde80311e3bc",
+  "reviewed_head_sha": "802af479986f64df72a28c5abee44f6c4f5b492b",
+  "reviewed_run_id": "r-20261103T070912242908-a-reset-row-tells-orchestrator-sessions-to-continue-and-no",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-04T11:41:28.118901+00:00",
+  "total": 108
+}
