@@ -737,13 +737,36 @@ def _queued_requests_overlap(
     )
 
 
+#: The holds after which an earlier request cannot launch in this pass, so it
+#: fences nothing behind it. Each names a reason for waiting that lies outside
+#: the queue itself: a live run's claim, the lane's gate, a failed attempt's
+#: back-off, and a plan whose text has moved since the request was queued.
+_NON_BINDING_HOLD_VERDICTS = frozenset(
+    {
+        "held-on-claim",
+        "held-by-gate",
+        "held-on-retry-backoff",
+        "held-on-plan-review",
+    }
+)
+
+
+def _non_binding_holds(verdicts: Sequence[Mapping[str, Any]]) -> set[str]:
+    """The requests this pass has held for a reason outside the queue."""
+    return {
+        str(row.get("run_id") or "")
+        for row in verdicts
+        if str(row.get("verdict") or "") in _NON_BINDING_HOLD_VERDICTS
+    }
+
+
 def _earlier_overlapping_request(
     pointer: Mapping[str, Any],
     earlier: Sequence[Mapping[str, Any]],
     *,
     moment: datetime,
     claims: dict[str, list[tuple[Path | None, Path]]],
-    held: Collection[str] = (),
+    fenced: Collection[str] = (),
 ) -> Mapping[str, Any] | None:
     """An earlier-ranked queued request whose write paths overlap this one.
 
@@ -756,18 +779,18 @@ def _earlier_overlapping_request(
     them again.
 
     An earlier request holds a later one only while it could launch: one the
-    same pass has already held — on a claim, a gate, a back-off or a plan
-    review — is named in ``held`` and fences nothing, so a request waiting on
-    something outside the queue never parks the work behind it.
+    same pass has already held on a claim, a gate, a back-off or a plan review
+    is named in ``fenced`` and holds nothing, so a request waiting on something
+    outside the queue never parks the work behind it.
     """
     queued_at = parse_utc(pointer.get("queued_at"))
     if queued_at is not None and (
         (moment - queued_at).total_seconds() > queue_order.STARVATION_AGE_SECONDS
     ):
         return None
-    fenced = set(held)
+    skipping = set(fenced)
     for candidate in earlier:
-        if str(candidate.get("run_id") or "") in fenced:
+        if str(candidate.get("run_id") or "") in skipping:
             continue
         if _queued_requests_overlap(pointer, candidate, claims=claims):
             return candidate
@@ -4357,7 +4380,7 @@ def admit_once(
                 order[:index],
                 moment=moment,
                 claims=claims,
-                held=result["held"],
+                fenced=_non_binding_holds(verdicts),
             )
             if overlap is not None:
                 # An earlier-ranked queued request names a path this one also
