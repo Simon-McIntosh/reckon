@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-title" content="The finding-type recurrence fold reads stored responses through the view, and the 7–13 October figures">
+  <meta name="plan-summary" content="A fixture gate computes both consecutive-review recurrence shares per finding type from the answers stored against each finding, exercises them through the plan-review view, and reddens when the response-action filter is deleted. The 7–13 October window gives duplicate_owner 38.1% any and 21.4% acted over 42 findings.">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-recorded-at" content="2026-11-05">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>The finding-type recurrence fold reads stored responses through the view | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The finding-type recurrence fold reads stored responses through the view</h1>
+
+    <section id="finish-the-remaining-reviewrecord-recurrence-fold-measure">
+      <h2>Measure</h2>
+      <p>The fold already reported both shares from
+        <code>plan_review._finding_type_recurrence</code>, and the plan-review
+        view already carried them. What was missing was a gate that holds both
+        facts: that the shares are read from the answer stored against each
+        finding, and that the view a reader meets reports them. The new file
+        supplies it over a synthesised store, so no real record is read or
+        written.</p>
+      <table>
+        <thead>
+          <tr><th>fact</th><th>value</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>gate</td>
+            <td><code>tests/test_review_finding_recurrence.py</code></td>
+          </tr>
+          <tr><td>head arm</td><td>4 passed, EXIT=0</td></tr>
+          <tr><td>base arm</td><td>4 passed, EXIT=0 — 0 added failures</td></tr>
+          <tr>
+            <td>negative control</td>
+            <td>response-action filter deleted from <code>_acted_findings</code>:
+              3 failed, 1 passed, EXIT=1</td>
+          </tr>
+          <tr>
+            <td>fixture shares</td>
+            <td><code>dup</code> 1/1 acted; <code>shared_state</code> 2/2 any,
+              0/2 acted; <code>unanswered</code> 1/1 any, 0/1 acted;
+              <code>fresh</code> 0/1 any</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="finish-the-remaining-reviewrecord-recurrence-fold-october">
+      <h2>The 7–13 October window</h2>
+      <p>Read from the plan-review day summary over the committed records of the
+        <code>reckon</code> project, window 2026-10-07 inclusive to 2026-10-14
+        exclusive (115 reviews, 289 re-reviews). The figures sit beside the
+        whole-history reading the research script took.</p>
+      <table>
+        <thead>
+          <tr><th>window</th><th>type</th><th>findings</th><th>any</th><th>any share</th><th>acted</th><th>acted share</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>7–13 October</td><td><code>duplicate_owner</code></td><td>42</td><td>16</td><td>38.1%</td><td>9</td><td>21.4%</td></tr>
+          <tr><td>whole history (research script)</td><td><code>duplicate_owner</code></td><td>270</td><td>225</td><td>83.3%</td><td>113</td><td>41.9%</td></tr>
+        </tbody>
+      </table>
+      <p>Within the week, the share of <code>duplicate_owner</code> findings that
+        follow a review raising the same type is 38.1%, and the share that follow
+        an instance answered <code>acted</code> is 21.4% — both well below the
+        whole-history reading, over a sixth of the findings.</p>
+    </section>
+
+    <section id="finish-the-remaining-reviewrecord-recurrence-fold-paths">
+      <h2>Changed paths</h2>
+      <ul>
+        <li><code>tests/test_review_finding_recurrence.py</code> — the gate: both
+          shares per type from stored responses, a declined and an unanswered
+          recurrence distinguished from an acted one, a predecessor before the
+          window still anchoring its successor, and the review view reporting
+          the same fold</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
