@@ -22,7 +22,7 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="It collects the crew-command defects the power_convertor fleet reported on 2026-10-22; the monitor&#x27;s own items are filed in the-monitor-shows-the-work-it-watches §81–§88, related duty fixes live in a-coordinator-can-clear-its-own-duties, and no section waits on another plan.">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;implementable&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;implementable&quot;,&quot;s25&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
-  <meta name="plan-version" content="32">
+  <meta name="plan-version" content="33">
   <meta name="plan-modified" content="2026-11-05">
   <title>The Crew Does Its Own Bookkeeping | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -281,6 +281,9 @@
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261104T091756019009-review-of-a-locked-ledger-store-is-retried-1c8b055dd404" data-who="reckon-build" data-when="2026-11-04T09:35:14.850Z">
     <div class="r-comment-body"><p>reviewed run r-20261103T073033751153-a-locked-ledger-store-is-retried at base 327ce7a6bbd9bb2db4f178ec00aadbc1262c11cc and head 1c8b055dd4047483f8ebeafc301e2873aa084866; scores goal_fidelity 16, evidence 13, scope_discipline 20, durability 4, fit 16, reuse 5; one blocking finding (no repository test guards the retry, because the dispatch granted no tests/ path) and three non-blocking (repair_index/unindexed_run_ids duplicate run_store.import_ledger and have no caller; the shortened busy timeout reaches every RunStore connection; the recorded head suite arm predates the reviewed head).</p></div>
 </div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261104T110542316827-review-of-a-locked-ledger-store-is-retried-40a072fd7ff9" data-who="reckon-build" data-when="2026-11-04T11:19:13.390Z">
+    <div class="r-comment-body"><p>reviewed the four commits the run gained since its previous review (1c8b055dd4..40a072fd7f): the scoped busy timeout, the retry lifted into _retrying with import_ledger routed through it, the deletion of the duplicate repair_index/unindexed_run_ids, and two evidence-fragment rewrites. Six dimensions scored, one blocking finding: the retry still has no repository test.</p></div>
+</div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261103T081407226111-review-of-a-research-or-evidence-document-cannot-carry-a-plans-slug-d060a1bdc29d" data-who="reckon-build" data-when="2026-11-03T08:35:55.649Z">
     <div class="r-comment-body"><p>stored a parsed review record for run r-20261103T073250723891 at reviewed head d060a1bdc29d, scoring all six dimensions (goal_fidelity 19, evidence 18, scope_discipline 20, durability 4, fit 18, reuse 12) with zero added failures against the reviewed run's base and head suite logs, one blocking finding (no committed test) and two non-blocking findings</p></div>
 </div>
@@ -289,6 +292,9 @@
 </div>
 <div class="r-comment" data-section="s18" data-id="c-s18-promotion-sweeps-an-authored-edit" data-who="reckon-build" data-when="2026-10-24T21:30:00Z">
     <div class="r-comment-body"><p>Measured 2026-10-24 on the-suite-is-green-at-head: the two promotion paths disagree on an uncommitted text-mode edit. <code>crew complete --land</code> refused while the plan carried one (the refusal from <code>reckon/crew/promotion_scope.py</code>). A review run's <code>crew complete --gate not-run</code>, a few minutes later, committed the whole plan file, so another writer's uncommitted section addition went out as <code>c3473734a</code> under a <code>promote(...)</code> subject. A git note now records what that commit carries. Whichever way this section resolves the refusal, a promotion should not commit authored content it did not write under its own subject. It should commit only the regions it wrote, or proceed and leave the authored edit uncommitted for its writer.</p></div>
+</div>
+<div class="r-comment" data-section="s21" data-id="c-run-r-20261104T092728537176-review-of-a-crew-verb-that-writes-a-tracked-state-record-commits-it-35bee7eb9d9b" data-who="reckon-build" data-when="2026-11-04T09:40:18.297Z">
+    <div class="r-comment-body"><p>Reviewed run r-20261103T073339348369-a-crew-verb-that-writes-a-tracked-state-record-commits-it at base c2e2d17f2d head 35bee7eb9d: status parsed, six dimensions scored 17/18/20/8/18/15 (total 96), two non-blocking findings (no committed regression test for _recorded_release; the per-run branch re-reads the record instead of ledger._read_run), zero added failures against the run's own head-suite and base-suite logs.</p></div>
 </div>
 <div class="r-comment" data-section="s22" data-id="c-run-r-20261023T092859257904-review-of-an-exited-review-with-a-filed-record-reads-complete-b3da12602bb1" data-who="reckon-build" data-when="2026-10-23T09:46:15.674Z">
     <div class="r-comment-body"><p>Attached the independent review of run r-20261023T084704256476-an-exited-review-with-a-filed-record-reads-complete at head b3da12602bb1b2ff43640d9102de35f97a8f6d60: status parsed, six dimensions scored 19/16/20/15/18/17 (total 105), three non-blocking findings, zero added failures against the reviewed run's own gate logs.</p></div>
@@ -328,9 +334,6 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-20261023-s8-review" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
     <div class="r-comment-body"><p>Content review of v11 on 2026-10-23: <code>_committed_scope</code> in <code>reckon/crew/promotion_evidence.py</code> deliberately diffs each cited commit rather than the base-to-head span, so §8's prescribed base-to-head comparison is the span diff that function rejects. Rework §8 before dispatch.</p></div>
-</div>
-<div class="r-comment" data-section="s21" data-id="c-run-r-20261104T092728537176-review-of-a-crew-verb-that-writes-a-tracked-state-record-commits-it-35bee7eb9d9b" data-who="reckon-build" data-when="2026-11-04T09:40:18.297Z">
-    <div class="r-comment-body"><p>Reviewed run r-20261103T073339348369-a-crew-verb-that-writes-a-tracked-state-record-commits-it at base c2e2d17f2d head 35bee7eb9d: status parsed, six dimensions scored 17/18/20/8/18/15 (total 96), two non-blocking findings (no committed regression test for _recorded_release; the per-run branch re-reads the record instead of ledger._read_run), zero added failures against the run&#x27;s own head-suite and base-suite logs.</p></div>
 </div>
 </section>
 </main>
