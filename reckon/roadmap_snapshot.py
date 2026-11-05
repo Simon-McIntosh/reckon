@@ -313,7 +313,11 @@ def _roadmap_live_readings(project: str) -> tuple[list[list[str]], dict[str, Any
             continue
         try:
             snapshot = watch._watch_snapshot(
-                pointer, moment=moment, stall_seconds=stall_seconds, cache=reduction
+                pointer,
+                moment=moment,
+                stall_seconds=stall_seconds,
+                cache=reduction,
+                pointers=pointers,
             )
         except Exception:  # noqa: BLE001 — a key never becomes the read's failure
             snapshot = {}

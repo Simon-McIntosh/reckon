@@ -791,6 +791,7 @@ class StationStore:
         cache = self._classification_cache()
         verdicts: dict[str, dict[str, Any]] = {}
         present: set[str] = set()
+        parsed_rows: list[tuple[Path, Mapping[str, Any]]] = []
         for row in self.pointer_rows():
             path = Path(str(row["path"]))
             try:
@@ -799,6 +800,9 @@ class StationStore:
                 continue
             if not isinstance(record, Mapping) or not record.get("run_id"):
                 continue
+            parsed_rows.append((path, record))
+        records = [record for _, record in parsed_rows]
+        for path, record in parsed_rows:
             run_id = str(record["run_id"])
             present.add(run_id)
             verdict = recovery._watch_snapshot(
@@ -806,6 +810,7 @@ class StationStore:
                 moment=moment,
                 stall_seconds=stall_seconds,
                 cache=cache,
+                pointers=records,
             )
             verdicts[run_id] = verdict
             served = cache.get(run_id)
