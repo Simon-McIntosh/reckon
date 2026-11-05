@@ -105,6 +105,68 @@ def project_repository(project: str) -> Path:
     return mount
 
 
+def require_promotable_head(
+    project: str,
+    repository: Path,
+    head: str,
+    *,
+    run_id: str = "",
+    gate: str = "passed",
+    **promotion_options: object,
+) -> None:
+    """Refuse a live run's head when its promotion checks would refuse it.
+
+    The live pointer identifies the run; the promotion dry run owns the checks.
+    Reading pointers directly avoids the watch publication done by list_live.
+    An explicit run must name this head, so it cannot check a different run.
+    """
+    from reckon.crew import promotion, runs
+
+    head_sha = _rev_parse(repository, head)
+    pointers = (
+        [runs.read_pointer(run_id)]
+        if run_id
+        else runs._list_live_records(project=project)
+    )
+    matched = []
+    for pointer in pointers:
+        if str(pointer.get("project") or "") != project:
+            continue
+        worktree = str(pointer.get("worktree") or "")
+        if not worktree:
+            continue
+        try:
+            worktree_head = _rev_parse(Path(worktree), "HEAD")
+        except MergeError:
+            continue
+        if worktree_head == head_sha:
+            matched.append(str(pointer.get("run_id") or ""))
+    if run_id and run_id not in matched:
+        raise MergeError(
+            f"run {run_id} is not at head {head_sha}; nothing was moved or pushed"
+        )
+    for matched_run in matched:
+        try:
+            report = promotion.complete_dry_run(
+                matched_run,
+                gate=gate,
+                root=repository,
+                require_gate_check=True,
+                **promotion_options,
+            )
+        except Exception as exc:
+            raise MergeError(
+                f"promotion dry run for {matched_run} could not be read: {exc}; "
+                "nothing was moved or pushed"
+            ) from exc
+        if not report.get("would_promote") or report.get("would_withdraw"):
+            reasons = report.get("refusals") or ["promotion would withdraw the run"]
+            raise MergeError(
+                f"promotion dry run refused run {matched_run}, so nothing was "
+                "moved or pushed: " + "; ".join(str(reason) for reason in reasons)
+            )
+
+
 def _run(
     repo: Path,
     *args: str,
