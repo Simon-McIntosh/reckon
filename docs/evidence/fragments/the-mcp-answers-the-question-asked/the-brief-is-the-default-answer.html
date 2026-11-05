@@ -60,17 +60,33 @@
   </p>
 
   <p id="the-brief-is-the-default-answer-size">
-    <strong>The brief fits the row the default call is held to.</strong> On the
-    mounted <code>reckon</code> project the brief serialises to
-    <strong>17,772</strong> characters against the <strong>20,000</strong>-character
-    row <code>reckon/mcp_budget.py</code> resolves for a roadmap call that names
-    no view, with 1,963 characters of composed text; the same project's
-    <code>view="summary"</code> answers in 10,173. The budget registry still
-    names <code>summary</code> as the roadmap's default view, which is why the
-    default call is held to that row; a dedicated <code>("roadmap", "brief")</code>
-    row would need <code>mcp_budget.py</code> and the view sweep in
-    <code>tests/test_every_default_read_fits.py</code>, both outside this
-    node's write paths, and is recorded as outside scope.
+    <strong>The brief has its own row, above the summary's.</strong>
+    <code>reckon/mcp_budget.py</code> now declares
+    <code>("roadmap", "brief")</code> and names <code>brief</code> as the
+    roadmap's default view, so a call that names no view is held to the answer
+    it receives instead of to the summary's row. The row is sized for a
+    project's brief with headroom over that summary row rather than at a figure
+    measured once: a brief carries the summary's own fields plus the composed
+    lines and the typed rows behind them, and grows with the project's
+    dependency graph.
+  </p>
+
+  <p id="the-brief-is-the-default-answer-boundary">
+    <strong>The boundary is measured on an answer, not the table.</strong>
+    The case that guards this builds a brief-shaped payload of
+    <strong>25,000</strong> characters and asks the resolver the MCP read uses
+    two questions: does the view a call naming no view resolves to admit it,
+    and would the summary's <strong>20,000</strong>-character row turn it away.
+    Both hold, so the two rows describe different answers. The earlier form of
+    this assertion compared the table's brief row with the row the default view
+    resolved, and passed with the brief row lowered back to 20,000 because both
+    sides moved together. The case now fails on that mutation:
+    <strong>1 failed, EXIT=1</strong> in
+    <code>logs/negative-control-brief-row.txt</code>. A fixture project was
+    tried first and rejected: a project whose brief exceeds 20,000 characters is
+    large enough that <code>roadmap view="detail"</code> answers
+    <strong>54,389</strong> characters over its own 30,000-character row, so
+    the contract is tested on the composition it governs.
   </p>
 
   <p id="the-brief-is-the-default-answer-snapshot">
@@ -102,6 +118,8 @@
     paths; the revision is made because the section's own measure names it.
     The slow-read file above was revised the same way and for the same reason:
     it named the default answer's shape as <code>summary</code>, and the
-    default answer is now the brief.
+    default answer is now the brief. Both files, and
+    <code>tests/test_every_default_read_fits.py</code>, are now inside this
+    node's write scope, granted when each landed.
   </p>
 </section>
