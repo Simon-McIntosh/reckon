@@ -95,3 +95,27 @@ def test_partition_classifies_fifty_from_one_live_read(
     observed = {row["run_id"]: row["classification"] for row in rows}
     assert observed == expected
     assert len(reads) <= 1
+
+
+def test_partition_passes_only_its_projects_pointers_to_review_lookup(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    pointers = _pointers(tmp_path)
+    foreign = {
+        "run_id": "r-other-project",
+        "project": "other-project",
+        "node": {"id": "source-0", "plan": PLAN},
+    }
+    seen: list[set[str]] = []
+    original = recovery_review_dispatch._review_subject
+
+    def capture_subject(pointer, project, *, pointers=None):
+        if pointers is not None:
+            seen.append({item["project"] for item in pointers})
+        return original(pointer, project, pointers=pointers)
+
+    monkeypatch.setattr(recovery_review_dispatch, "_review_subject", capture_subject)
+    partition_live_runs(PROJECT, [foreign, *pointers])
+    assert seen
+    assert all(projects == {PROJECT} for projects in seen)

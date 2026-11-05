@@ -1897,15 +1897,18 @@ def partition_live_runs(
         except OSError:
             pointers = []
 
+    project_pointers = [
+        pointer
+        for pointer in pointers
+        if isinstance(pointer, dict) and pointer.get("project") == project
+    ]
     in_flight: dict[str, list[dict[str, str]]] = {}
     interrupted: dict[str, list[dict[str, str]]] = {}
     recorded = _recorded_live_run_classifications(project)
     classifier = classify_pointer
     if "pointers" in inspect.signature(classify_pointer).parameters:
-        classifier = partial(classify_pointer, pointers=pointers)
-    for pointer in pointers:
-        if not isinstance(pointer, dict) or pointer.get("project") != project:
-            continue
+        classifier = partial(classify_pointer, pointers=project_pointers)
+    for pointer in project_pointers:
         plan = _run_target_plan(pointer)
         if not plan:
             continue
