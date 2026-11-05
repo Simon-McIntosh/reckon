@@ -9,9 +9,18 @@
     the parameter (<code>reckon/mcp.py</code>, <code>_roadmap_tool</code>), so
     a view-less call — the brief — and every named view accept it alike;
     <code>crew(view="live")</code> already took it and now answers with it.
-    Every answer from those reads carries <code>observed_at</code>. No cursor
-    was added, no store was written, and no read refuses a window that it used
-    to accept.
+    A read that names a window answers with <code>observed_at</code> and the
+    change set; one that names none is returned exactly as its view built it,
+    so a raw read stays lossless and no view grows a key nobody asked for. No
+    cursor was added, no store was written, and no read refuses a window that
+    it used to accept. Both surfaces compose it through one helper,
+    <code>reckon/mcp_views.py</code>'s <code>with_change_set</code>, so the
+    roadmap tool, the brief and the <code>crew view</code> verb answer one
+    document for the same arguments. A read that spans projects — no project,
+    <code>*</code>, or a <code>graph:</code> selector — has no single plan
+    history or transition stream to bound, so it is answered with
+    <code>change_set.error</code> reading <code>cross_project</code> rather
+    than with a set narrower than the read.
   </p>
 
   <p id="a-read-can-ask-what-changed-composition">
@@ -99,5 +108,25 @@
     <code>observed_at</code> nor <code>change_set</code>. The declared
     mutation, ignoring <code>since</code> and returning the full answer, reds
     the window assertions: <strong>7 failed, 3 passed, EXIT=1</strong>.
+  </p>
+
+  <p id="a-read-can-ask-what-changed-answers">
+    <strong>Two contract breaks the wider suite found are repaired, and the
+    attach is one helper.</strong> A <code>roadmap(view="raw")</code> read that
+    names no window must stay exactly <code>{project, view, data}</code>, and
+    <code>crew(view="live")</code> must answer one document on the crew tool
+    and on <code>reckon crew view live</code>; attaching a change set to every
+    answer broke both. The change set is now composed only when the caller
+    names a <code>since</code>, inside <code>serve_crew_view</code> — the one
+    function both surfaces call — and a later review found the attach-and-error
+    glue still written twice, in <code>reckon/mcp.py</code> and
+    <code>reckon/mcp_views.py</code>, with the copies disagreeing on scope.
+    That copy is deleted: <code>with_change_set</code> is the only
+    implementation, the roadmap tool calls it from its own path, and the
+    cross-project rule above is settled in it once. The gate at
+    <code>3f08e5fdbc</code> is <strong>38 passed, EXIT=0</strong> across
+    <code>tests/test_a_read_can_ask_what_changed.py</code>,
+    <code>tests/test_mcp_recovery.py</code> and
+    <code>tests/test_crew_view_serves_every_view.py</code>.
   </p>
 </section>
