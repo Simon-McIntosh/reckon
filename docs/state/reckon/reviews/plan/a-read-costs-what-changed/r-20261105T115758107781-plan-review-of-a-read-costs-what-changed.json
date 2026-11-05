@@ -1,0 +1,72 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-05T12:06:42.316Z",
+  "dispatched_at": "2026-11-05T12:00:59Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:23",
+      "id": "wiring-1",
+      "reason": "the followup is the plan's invocation of record, so a section it never names is never built, and without the \u00a75 declaration \u00a79 can land ahead of the change its premise assumes.",
+      "text": "`plan-section-depends-on` has no `s9` entry and followup `f-arcwc-001` at :94 still orders only \u00a72, \u00a73, \u00a75, \u00a76 and \u00a77, although \u00a79's Why rests on \u00a75's node (`_store._declared_north_stars`, which at `reckon/_store.py:837` still calls `compose_project_state`) and s5 is declared `implementable` rather than done; a coordinator following the followup never dispatches \u00a79, and one dispatching it has no declaration telling it to wait for \u00a75",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:88",
+      "id": "reasoning-1",
+      "reason": "the mechanism determines whether the zero-compose case and the payload-parity case are simultaneously satisfiable, and leaving it to the node is how one of the two gets quietly dropped.",
+      "text": "the Deliverable restates the goal (\"reads that plan's state and the project-level fields it shows, without composing any other plan\") and names no mechanism, where every neighbouring section names the concrete change, while `index_discovery` (`reckon/mcp_views.py:1174`) must still return `sprints`, `milestones`, `blockers`, `timeline`, `active_sprint_id`, `north_stars` and `resource_versions` and `read_plan`'s summary consumes `sprints` through `_plan_blocker_state` (`reckon/mcp.py:1801-1809`); a node must therefore design the cheaper project-level read itself and judge unaided whether its payload can hold equal",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:88",
+      "id": "reasoning-2",
+      "reason": "either \u00a79 must declare the \u00a75 dependency and its own base, or its done-when must say which plan shape it counts, otherwise the node fails its own gate on code it is not permitted to touch.",
+      "text": "on main a distributed `read_plan(view=\"summary\")` of a plan that names a north star composes the project a second time through `_store._add_north_star_diagnostic` \u2192 `_declared_north_stars` (`reckon/_store.py:736`, `:837`), which \u00a75 removes and which lies outside \u00a79's declared write paths (`reckon/mcp_views.py` and the new test), so \u00a79's \"composes no other plan's state\" count cannot reach zero in its own fence for such a plan",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:88",
+      "id": "done_when-1",
+      "reason": "an unnamed patch target lets the count case pass on the function under test, so the negative control (\"restores the whole-project build\") would fail the case for the wrong reason or not at all.",
+      "text": "the first case counts \"through a patch on the composer\" without naming the function, and the nearest candidate to patch is `_project_state_lists` itself (`reckon/mcp_views.py:1265`), the function the section changes, which would make the count trivially zero without measuring any composition",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "137ff8261e2d35bc646a8e7ba1b2af45d50930b5",
+  "plan_fingerprint": "959967108e472082a37596b3cf1fdfb1f76d9f5ed3eac97110b61431052a7aa7",
+  "plan_slug": "a-read-costs-what-changed",
+  "plan_version": 28,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261105T115758107781-plan-review-of-a-read-costs-what-changed",
+  "reviewed_blob_sha": "96ccd26adb84b074e65d17d0bdb0bd2c73cff40a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_project_state_lists` exists at `reckon/mcp_views.py:1265` with the compose call at :1275, its caller `index_discovery` at :1174 is reached from `read_plan` summary at `reckon/mcp.py:1801`, and the three closed-section anchors (`#s2-\u2026`, `#s3-\u2026`, `#s8-\u2026`) all resolve in `docs/evidence/archive/a-read-costs-what-changed-landed.html`.",
+    "done_when": "a finding \u2014 \u00a79's count case patches \"the composer\" without naming the function, and the composer the section's own Why describes (`compose_project_state`, named in \u00a75 but never in \u00a79) is never named in \u00a79.",
+    "evidence_paths": "pass \u2014 \u00a79's logs are required under the run directory, each starting with its revision and the literal command and ending in `EXIT=`, which survives the run.",
+    "naming": "pass \u2014 `tests/test_a_distributed_summary_reads_one_plan.py` and the section title name the behaviour; no plan label, ticket number or version tag reaches a symbol.",
+    "reasoning": "a finding \u2014 \u00a79 states a deliverable and a measure but describes no mechanism, and on main the zero-compose measure is unreachable from \u00a79's declared write path for a plan that names a north star.",
+    "single_goal": "pass \u2014 \u00a79 carries one deliverable: a distributed summary read of one plan composes no other plan.",
+    "wiring": "a finding \u2014 the new \u00a79 is declared implementable in `plan-section-declarations` (line 24) but appears in neither `plan-section-depends-on` (line 23) nor followup `f-arcwc-001` (line 94), so nothing orders it behind \u00a75, whose landing it presumes."
+  },
+  "section_digests": {
+    "_document": "0f7027067aab9fe4c78be843efbc4b8a158bf9128dd1466c4f20f55ea80a2cee",
+    "s1": "f8fb0fbbfbbc79977a59ec9d78c0d66f47803aa96db83e4d628a1dfb6b40e6c3",
+    "s2": "7de6c2e256fca5545163c6149c674fea249ddd1a72361b49c89ef5beaa22263d",
+    "s3": "d11cdceab942c4935f32d292e26f2111b011ca4571980a6c54ef6ae23894aadb",
+    "s4": "d14b5fa9a6b6ef26da6f95b50c43aa782fdbe679ca28020a3095af71cd579417",
+    "s5": "ba22eff9814ea16ac19404864f9a2d1ec8da449b3011fba623d0d1856b2c6ecf",
+    "s6": "b0053663cc25e5e7e15595ae342d21c4c467abe74f06c8c4db86982b276898cc",
+    "s7": "2c7c6fb207a002d2bb1e223ebf1f770570f6b06942edf9ac6647253b410a67b7",
+    "s8": "9a012c065cbd8db9e5e69070d20531b84a584582cc0bf8f45fff060b7f31f464",
+    "s9": "56a6651deba8947b20a2e9cae078de8785d93ba000713179e50deff45f2cc2b7"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T12:32:55.200377+00:00"
+}
