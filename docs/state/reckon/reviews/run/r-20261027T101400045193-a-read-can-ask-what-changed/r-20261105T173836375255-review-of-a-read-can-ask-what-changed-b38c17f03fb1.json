@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "4ff7ec4746e6b01e1a90178fc1ed65a5877d5018",
+  "call_sites": [
+    "reckon/mcp.py:2592",
+    "reckon/mcp.py:2905",
+    "reckon/mcp.py:3839",
+    "reckon/crew_run_commands.py:573"
+  ],
+  "completed_at": "2026-11-05T17:48:44.156Z",
+  "dispatched_at": "2026-11-05T17:41:13Z",
+  "findings": [
+    {
+      "file": "reckon/mcp_views.py",
+      "line": "4047",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_with_change_set` (reckon/mcp_views.py:4047) duplicates the change-set attach-and-error glue already owned by `_answer_with_change_set` (reckon/mcp.py:2595) instead of delegating to one helper, and the two copies already disagree: the mcp.py copy attaches to any project including `*`/`graph:` and passes `repo=None` for those, while the views copy returns untouched when `project` is falsy and always passes `checkout_path`; a later fix to one error contract leaves the other serving a different document on the roadmap and crew surfaces. mcp.py already imports mcp_views (reckon/mcp.py:109), so a single owner in mcp_views was available; the addition duplicates rather than extends it."
+    }
+  ],
+  "head_log_revision": "b38c17f03fb1d8c59951bc7a78b5d1ca4dd4cac5",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read both commits against the base: merge 483632cc0e is lossless for the node's files (reckon/mcp.py blob equals the node parent 4ff7ec4746, reckon/mcp_views.py blob equals origin/main parent 65fbbaaaf6, and main changed neither mcp.py nor the node's new files, so no side was dropped); fix b38c17f03f returns an answer untouched when since is None (reckon/mcp.py:2626), removes the crew-layer attach from `_crew` (reckon/mcp.py:2905 now returns serve_crew_view directly), and adds `_with_change_set` inside serve_crew_view (reckon/mcp_views.py:4047) so both surfaces compose the same document.",
+    "done_when": "the \u00a77 measure is a fixture read naming the one moved declaration, the dependents it released and the one moved run; tests/test_a_read_can_ask_what_changed.py:232-262 asserts exactly those, the fix leaves them intact, and logs/gate-merge.log records 72 passed with a bare EXIT=0 at b38c17f03f for that file plus tests/test_mcp_recovery.py and tests/test_crew_view_serves_every_view.py.",
+    "goal": "the reviewed node's goal is that the brief, crew live and the roadmap answer the existing `since` with a change set and an `observed_at`; the fix keeps that (reckon/mcp.py:2592 for the roadmap, reckon/mcp_views.py:4506 for crew live) and narrows attachment so a read naming no window returns its view's own document.",
+    "manifest": "read the delivered manifest; it states the gate at b38c17f03f as 72 passed EXIT=0 across tests/test_mcp_recovery.py, tests/test_crew_view_serves_every_view.py, tests/test_a_read_can_ask_what_changed.py and tests/test_mcp_tools.py, and names the two failures the fix answers; I read those figures from logs/gate-merge.log, whose header names the same revision and literal command.",
+    "write_paths": "the reviewed run declared reckon/change_set.py, reckon/mcp.py, tests/test_a_read_can_ask_what_changed.py and the evidence fragment; comparing file blobs at both merge parents shows the merge carried mcp.py from the node's parent (4e8e2bb6) and mcp_views.py from main (53354015), with change_set.py and the test unchanged, and the fix adds reckon/mcp_views.py, which is outside the run's original manifest grant but is named in this review's declared targets."
+  },
+  "justifications": {
+    "durability": "tests/test_a_read_can_ask_what_changed.py:565-566 asserts `observed_at` and `change_set` are absent from a no-window read, which reddens if reckon/mcp.py:2626 is reverted; the crew-surface relocation is guarded only by the pre-existing tests/test_crew_view_serves_every_view.py:403, outside this run's write scope.",
+    "evidence": "logs/gate-merge.log names revision b38c17f03f, the tree, the module and the literal command, and ends in a bare EXIT=0 at `72 passed`, matching the manifest's recorded gate.",
+    "fit": "reckon/mcp_views.py:4047 follows the module's local-import and docstring idiom seen at reckon/mcp_views.py:4508, adds no plan or ticket label, and the visible error path keeps the same `type: message` shape as reckon/mcp.py:2637.",
+    "goal_fidelity": "reckon/mcp.py:2626 and reckon/mcp_views.py:4076 leave an answer untouched when `since` is None, so roadmap(view=raw) is again exactly {project, view, data} as tests/test_mcp_recovery.py:411 requires, while a named window still attaches the change set.",
+    "reuse": "reckon/mcp_views.py:4047 duplicates rather than extends reckon/mcp.py:2595, so the change-set attach glue now has two owners; the composition itself still delegates to the real owner, change_set_module.change_set.",
+    "scope_discipline": "the fix commit touches only reckon/mcp.py, reckon/mcp_views.py and tests/test_a_read_can_ask_what_changed.py; mcp_views.py sits outside the run's original manifest grant but is named in this review's declared scope, and nothing else was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is that the brief, crew live and the roadmap answer the existing `since` with a change set and an `observed_at`; the fix keeps that (reckon/mcp.py:2592 for the roadmap, reckon/mcp_views.py:4506 for crew live) and narrows attachment so a read naming no window returns its view's own document.\nVERDICT done_when: the \u00a77 measure is a fixture read naming the one moved declaration, the dependents it released and the one moved run; tests/test_a_read_can_ask_what_changed.py:232-262 asserts exactly those, the fix leaves them intact, and logs/gate-merge.log records 72 passed with a bare EXIT=0 at b38c17f03f.\nVERDICT write_paths: the reviewed run declared reckon/change_set.py, reckon/mcp.py, tests/test_a_read_can_ask_what_changed.py and the evidence fragment; blob comparison at both merge parents shows the merge carried mcp.py from the node's parent and mcp_views.py from main with no side dropped, and the fix adds reckon/mcp_views.py, named in this review's declared targets.\nVERDICT manifest: read the delivered manifest; it states the gate at b38c17f03f as 72 passed EXIT=0 across the two previously failing files, the change-set file and tests/test_mcp_tools.py, and I read that figure from logs/gate-merge.log.\nVERDICT diff: read both commits against the base; merge 483632cc0e is lossless for the node's files (reckon/mcp.py blob equals the node parent 4ff7ec4746, reckon/mcp_views.py blob equals origin/main parent 65fbbaaaf6, and main changed neither mcp.py nor the node's new files), and fix b38c17f03f returns an answer untouched when since is None (reckon/mcp.py:2626), removes the crew-layer attach (reckon/mcp.py:2905), and adds `_with_change_set` inside serve_crew_view (reckon/mcp_views.py:4047).\nCALL_SITES: reckon/mcp.py:2592, reckon/mcp.py:2905, reckon/mcp.py:3839, reckon/crew_run_commands.py:573\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp.py:2626 and reckon/mcp_views.py:4076 leave an answer untouched when `since` is None, so roadmap(view=raw) is again exactly {project, view, data}.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/gate-merge.log names revision b38c17f03f, the tree, the module and the literal command, and ends in a bare EXIT=0 at `72 passed`.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the fix commit touches only reckon/mcp.py, reckon/mcp_views.py and tests/test_a_read_can_ask_what_changed.py; mcp_views.py is named in this review's declared scope and nothing else was touched.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_read_can_ask_what_changed.py:565-566 asserts `observed_at` and `change_set` are absent from a no-window read, which reddens if reckon/mcp.py:2626 is reverted.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/mcp_views.py:4047 follows the module's local-import and docstring idiom seen at reckon/mcp_views.py:4508 and adds no plan or ticket label.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/mcp_views.py:4047 duplicates rather than extends reckon/mcp.py:2595, so the change-set attach glue now has two owners.\nFINDING reckon/mcp_views.py:4047 non-blocking: `_with_change_set` duplicates the change-set attach-and-error glue already owned by `_answer_with_change_set` (reckon/mcp.py:2595) instead of delegating to one helper, and the two copies already disagree on the project-less and non-single cases, so a later fix to one leaves the other serving a different document on the roadmap and crew surfaces.",
+  "review_run_id": "r-20261105T173836375255-review-of-a-read-can-ask-what-changed-b38c17f03fb1",
+  "reviewed_base_sha": "4ff7ec4746e6b01e1a90178fc1ed65a5877d5018",
+  "reviewed_head_sha": "b38c17f03fb1d8c59951bc7a78b5d1ca4dd4cac5",
+  "reviewed_run_id": "r-20261027T101400045193-a-read-can-ask-what-changed",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T18:00:10.544618+00:00",
+  "total": 95
+}
