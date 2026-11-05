@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "c15f841ed10ab5349332c8578bfa65910226fafe",
+  "call_sites": [
+    "reckon/mcp.py:2592",
+    "reckon/mcp_views.py:4535",
+    "reckon/mcp.py:2848",
+    "reckon/crew_run_commands.py:573"
+  ],
+  "completed_at": "2026-11-05T18:31:56.908Z",
+  "dispatched_at": "2026-11-05T18:22:45Z",
+  "failure_note": "The reviewed run's baseline_suite (revision c15f841ed, tests/test_a_read_can_ask_what_changed.py) exited 4 with no test collected because the file does not exist at that revision, so it names no failing id; the after_suite at 6957a1f558 (tests/test_a_read_can_ask_what_changed.py tests/test_mcp_recovery.py tests/test_crew_view_serves_every_view.py) ended 38 passed EXIT=0 with no failing id. Added failures = 0 against the run's own arms. Independently, I re-ran the declared gate's second file at the reviewed head: tests/test_mcp_tools.py, 35 passed, EXIT=0.",
+  "findings": [
+    {
+      "file": "reckon/mcp.py",
+      "line": "2570",
+      "severity": "non-blocking",
+      "text": "non-blocking: the `_roadmap_tool` docstring still says \"Every answer carries `observed_at`\", which the landed code contradicts and tests/test_a_read_can_ask_what_changed.py:565 asserts against: an answer that names no `since` carries neither `observed_at` nor `change_set` (reckon/mcp_views.py:4080 returns the answer untouched). A reader of the tool description will pass a previous answer's `observed_at` where none was returned and read the absence as no change."
+    },
+    {
+      "file": "reckon/mcp_views.py",
+      "line": "4047",
+      "severity": "non-blocking",
+      "text": "non-blocking: `names_one_project` restates the single-project test still written inline at reckon/mcp.py:2094 (`project != \"*\" and not project.startswith(\"graph:\")`), so the rule now has a named owner and an unnamed copy in the module that already imports this one; the copy is not wrong today, but it is the same drift this commit exists to remove from the change-set attach."
+    }
+  ],
+  "head_log_revision": "6957a1f558a62b93de8d65955f81ac4c426ffc2e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read both commits against b38c17f03f: 3f08e5fdbc deletes `_answer_with_change_set` and its 52 lines from reckon/mcp.py, promotes the views copy to `with_change_set` with a new `names_one_project` predicate (reckon/mcp_views.py:4047-4113), and adds one test; 6957a1f558 rewrites only the landing fragment's surface and answers paragraphs, adding no code.",
+    "done_when": "the \u00a77 measure is a fixture read that returns the one section whose declaration moved, the dependents it released and the exactly one run whose classification moved; tests/test_a_read_can_ask_what_changed.py:232-262 still asserts exactly those, and the declared gate is green at the head \u2014 the run's logs/gate-reuse-docs.log records 38 passed EXIT=0 for the three-file arm at 6957a1f558, and I re-ran the gate's second file, tests/test_mcp_tools.py, at that revision (35 passed, EXIT=0, log gate-head-mcp-tools.log).",
+    "goal": "the source node's goal is that the brief, crew live and the roadmap answer the existing `since` with a change set and an `observed_at`; the two commits under review keep that and replace the two attach copies with one helper, landed on both surfaces at reckon/mcp.py:2592 (roadmap tool) and reckon/mcp_views.py:4535 (crew live).",
+    "manifest": "read the delivered manifest; it states the head gate at 6957a1f558 as 38 passed EXIT=0 across three test files and names its log, and logs/gate-reuse-docs.log matches that figure with a header naming the revision, tree, literal command and module and a bare EXIT=0 last line; its tests: line names the two-file gate, which I re-ran at the head.",
+    "write_paths": "the reviewed commits touch docs/evidence/fragments/the-mcp-answers-the-question-asked/a-read-can-ask-what-changed.html, reckon/mcp.py, reckon/mcp_views.py and tests/test_a_read_can_ask_what_changed.py; all four are named in this review's declared targets, and reckon/mcp_views.py sits outside the source run's original dispatch fence (prompt.txt FENCE \u2014 SCOPE) while being declared in the run's manifest and required by the coordinator's own instruction, as the prior review round also recorded."
+  },
+  "justifications": {
+    "durability": "tests/test_a_read_can_ask_what_changed.py:582-592 reddens if the cross_project arm is reverted, because a `None` project then returns the answer untouched and answer[\"observed_at\"] raises, and the identity assertion at :590 reddens if a local copy is reintroduced; but no test drives the roadmap tool or serve_crew_view end to end for a cross-project `since`, so that wiring rests on the import identity alone.",
+    "evidence": "logs/gate-reuse-docs.log names revision 6957a1f558, the tree, the module and the literal command and ends in a bare EXIT=0 at 38 passed, and the declared gate's third file passed when I re-ran it at the head (gate-head-mcp-tools.log, 35 passed, EXIT=0).",
+    "fit": "reckon/mcp_views.py:4047-4113 keeps the module's local-import and docstring idiom and adds no plan or ticket label, but the roadmap tool's docstring at reckon/mcp.py:2570 still claims every answer carries `observed_at`, which the code contradicts.",
+    "goal_fidelity": "reckon/mcp.py:2592 and reckon/mcp_views.py:4535 both call the one helper `with_change_set`, so a window named on the roadmap tool and on the crew verb is answered by one implementation for the same arguments and scope.",
+    "reuse": "reckon/mcp_views.py:4061 is now the single owner of the attach and error contract and delegates composition to reckon/change_set.py:524, retiring the duplicate the prior review found; the only remaining copy of a rule is the inline single-project test at reckon/mcp.py:2094.",
+    "scope_discipline": "the diff touches four files, three inside the source node's own fence plus reckon/mcp_views.py, which the run's manifest declares and the coordinator's instruction required; no unrelated file and no plan state is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that the brief, crew live and the roadmap answer the existing `since` with a change set and an `observed_at`; the two commits under review keep that and replace the two attach copies with one helper, landed on both surfaces at reckon/mcp.py:2592 (roadmap tool) and reckon/mcp_views.py:4535 (crew live).\nVERDICT done_when: the \u00a77 measure is a fixture read that returns the one section whose declaration moved, the dependents it released and the exactly one run whose classification moved; tests/test_a_read_can_ask_what_changed.py:232-262 still asserts exactly those, and the declared gate is green at the head \u2014 logs/gate-reuse-docs.log records 38 passed EXIT=0 for the three-file arm at 6957a1f558, and I re-ran the gate's second file, tests/test_mcp_tools.py, at that revision (35 passed, EXIT=0, log gate-head-mcp-tools.log).\nVERDICT write_paths: the reviewed commits touch the landing fragment, reckon/mcp.py, reckon/mcp_views.py and tests/test_a_read_can_ask_what_changed.py; all four are named in this review's declared targets, and reckon/mcp_views.py is outside the source run's original dispatch fence but declared in its manifest and required by the coordinator's own instruction.\nVERDICT manifest: read the delivered manifest; it states the head gate at 6957a1f558 as 38 passed EXIT=0 and logs/gate-reuse-docs.log matches that figure, with a header naming the revision, tree, literal command and module and a bare EXIT=0 last line.\nVERDICT diff: read both commits against b38c17f03f: 3f08e5fdbc deletes `_answer_with_change_set` and its 52 lines from reckon/mcp.py and promotes the views copy to `with_change_set` with a new `names_one_project` predicate (reckon/mcp_views.py:4047-4113), and 6957a1f558 rewrites only the landing fragment's surface and answers paragraphs.\nCALL_SITES: reckon/mcp.py:2592, reckon/mcp_views.py:4535, reckon/mcp.py:2848, reckon/crew_run_commands.py:573\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp.py:2592 and reckon/mcp_views.py:4535 both call the one helper `with_change_set`, so a window named on the roadmap tool and on the crew verb is answered by one implementation for the same arguments and scope.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/gate-reuse-docs.log names revision 6957a1f558, the tree, the module and the literal command and ends in a bare EXIT=0 at 38 passed, and the declared gate's second file passed when I re-ran it at the head (gate-head-mcp-tools.log, 35 passed, EXIT=0).\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the diff touches four files, three inside the source node's own fence plus reckon/mcp_views.py, which the run's manifest declares and the coordinator's instruction required, and no plan state is touched.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_read_can_ask_what_changed.py:582-592 reddens if the cross_project arm is reverted and :590 reddens if a local copy is reintroduced, but no test drives the roadmap tool or serve_crew_view end to end for a cross-project `since`.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/mcp_views.py:4047-4113 keeps the module's local-import and docstring idiom and adds no plan or ticket label, but reckon/mcp.py:2570 still claims every answer carries `observed_at`, which the code contradicts.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/mcp_views.py:4061 is now the single owner of the attach and error contract and delegates composition to reckon/change_set.py:524, retiring the duplicate the prior review found; the only remaining copy of a rule is the inline single-project test at reckon/mcp.py:2094.\nFINDING reckon/mcp.py:2570 non-blocking: the `_roadmap_tool` docstring still says every answer carries `observed_at`, which the landed code contradicts and tests/test_a_read_can_ask_what_changed.py:565 asserts against, so a reader of the tool description will pass a previous answer's `observed_at` where none was returned.\nFINDING reckon/mcp_views.py:4047 non-blocking: `names_one_project` restates the single-project test still written inline at reckon/mcp.py:2094, so the rule now has a named owner and an unnamed copy in the module that already imports this one.",
+  "review_run_id": "r-20261105T182004952767-review-of-a-read-can-ask-what-changed-6957a1f558a6",
+  "reviewed_base_sha": "b38c17f03fb1d8c59951bc7a78b5d1ca4dd4cac5",
+  "reviewed_head_sha": "6957a1f558a62b93de8d65955f81ac4c426ffc2e",
+  "reviewed_run_id": "r-20261027T101400045193-a-read-can-ask-what-changed",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T18:38:35.499114+00:00",
+  "total": 106
+}
