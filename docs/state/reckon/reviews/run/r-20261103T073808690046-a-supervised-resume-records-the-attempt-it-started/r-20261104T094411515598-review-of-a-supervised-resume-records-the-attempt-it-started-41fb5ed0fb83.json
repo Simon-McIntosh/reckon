@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:_worker_record_writer",
+    "reckon/crew/dispatch_launch.py:_run_supervisor"
+  ],
+  "completed_at": "2026-11-04T09:56:36Z",
+  "dispatched_at": "2026-11-04T09:49:07Z",
+  "findings": [
+    {
+      "file": "tests/test_every_attempt_is_supervised.py",
+      "id": "f9370a91ba7",
+      "line": "274",
+      "severity": "blocking",
+      "text": "the resume and redispatch cases now stub _start_supervisor (also at :437), remove the real process command-line, liveness, review-reflex and exit-record assertions, and therefore can pass when no supervisor or worker actually runs despite their named supervision contract."
+    },
+    {
+      "file": "tests/test_every_attempt_is_supervised.py",
+      "id": "f1a2058f1d8",
+      "line": "210",
+      "severity": "blocking",
+      "text": "_confirm_supervisor_survived is called with run_id and compared with that same run_id after _supervisor_launched_worker was patched to return true; this assertion cannot detect a missing worker or an unsupervised launch and cannot replace the removed process check."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Commit 43bf4793 adds the receipt reuse and tests, b7072c15 replaces real supervisor execution in the named cases with a stub, and 41fb5ed0 adds an evidence fragment; all three were read against base 68878455.",
+    "done_when": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:221 requires three serial passes, a red negative control, and no added importer failures; event-serial-1/2/3.log each record 4 passed, negative-control-2.log records 4 failed, and the paired importer logs add zero failure IDs.",
+    "goal": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:219-221 asks a first resume to record attempt 2 while retaining attempt 1; dispatch_launch.py:2005-2024 reuses the same worker receipt and the new second-resume case checks attempt 3.",
+    "manifest": "The source manifest names commits 43bf4793, b7072c15 and 41fb5ed0, reports the direct reproduction, final 7-pass gate, three 4-pass serial gates, negative-control log and paired importer receipts.",
+    "write_paths": "The source manifest declares dispatch_launch.py, dispatch_sessions.py, supervisor_main.py, the named test, an evidence fragment and a figures directory; git diff 68878455..41fb5ed0 changes only dispatch_launch.py, that test, and the declared fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_every_attempt_is_supervised.py:234-236 would fail if duplicate writes again create attempt 3, as negative-control-2.log demonstrates, while :274 and :437 remove real supervision from the two original regression cases.",
+    "evidence": "event-serial-1/2/3.log, negative-control-2.log and the paired importer logs provide explicit receipts, but tests/test_every_attempt_is_supervised.py:274 substitutes a stub for the actual supervisor in the named serial gate.",
+    "fit": "reckon/crew/dispatch_launch.py:2005-2024 extends its existing immutable-receipt writer, but tests/test_every_attempt_is_supervised.py:258 retains a real-supervision test name after replacing its process with a stub.",
+    "goal_fidelity": "reckon/crew/dispatch_launch.py:2005-2024 reuses a canonical worker receipt for the same process, and tests/test_every_attempt_is_supervised.py:331 checks a later resume reaches attempt 3.",
+    "reuse": "The capability search for immutable worker receipts and attempt numbering found reckon/crew/dispatch_launch.py:1889 and :1997 as the existing owner, which the change extends without adding a competing production definition.",
+    "scope_discipline": "git diff 68878455..41fb5ed0 lists only reckon/crew/dispatch_launch.py, tests/test_every_attempt_is_supervised.py and the declared evidence fragment, all within the source manifest's write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: docs/plans/work-is-never-stuck-behind-the-admission-loop.html:219-221 asks a first resume to record attempt 2 while retaining attempt 1; dispatch_launch.py:2005-2024 reuses the same worker receipt and the new second-resume case checks attempt 3.\nVERDICT done_when: docs/plans/work-is-never-stuck-behind-the-admission-loop.html:221 requires three serial passes, a red negative control, and no added importer failures; event-serial-1/2/3.log each record 4 passed, negative-control-2.log records 4 failed, and the paired importer logs add zero failure IDs.\nVERDICT write_paths: The source manifest declares dispatch_launch.py, dispatch_sessions.py, supervisor_main.py, the named test, an evidence fragment and a figures directory; git diff 68878455..41fb5ed0 changes only dispatch_launch.py, that test, and the declared fragment.\nVERDICT manifest: The source manifest names commits 43bf4793, b7072c15 and 41fb5ed0, reports the direct reproduction, final 7-pass gate, three 4-pass serial gates, negative-control log and paired importer receipts.\nVERDICT diff: Commit 43bf4793 adds the receipt reuse and tests, b7072c15 replaces real supervisor execution in the named cases with a stub, and 41fb5ed0 adds an evidence fragment; all three were read against base 68878455.\nCALL_SITES: reckon/crew/dispatch_launch.py:_worker_record_writer, reckon/crew/dispatch_launch.py:_run_supervisor\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:2005-2024 reuses a canonical worker receipt for the same process, and tests/test_every_attempt_is_supervised.py:331 checks a later resume reaches attempt 3.\nSCORE evidence: 12\nJUSTIFICATION evidence: event-serial-1/2/3.log, negative-control-2.log and the paired importer logs provide explicit receipts, but tests/test_every_attempt_is_supervised.py:274 substitutes a stub for the actual supervisor in the named serial gate.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 68878455..41fb5ed0 lists only reckon/crew/dispatch_launch.py, tests/test_every_attempt_is_supervised.py and the declared evidence fragment, all within the source manifest's write paths.\nSCORE durability: 12\nJUSTIFICATION durability: tests/test_every_attempt_is_supervised.py:234-236 would fail if duplicate writes again create attempt 3, as negative-control-2.log demonstrates, while :274 and :437 remove real supervision from the two original regression cases.\nSCORE fit: 14\nJUSTIFICATION fit: reckon/crew/dispatch_launch.py:2005-2024 extends its existing immutable-receipt writer, but tests/test_every_attempt_is_supervised.py:258 retains a real-supervision test name after replacing its process with a stub.\nSCORE reuse: 20\nJUSTIFICATION reuse: The capability search for immutable worker receipts and attempt numbering found reckon/crew/dispatch_launch.py:1889 and :1997 as the existing owner, which the change extends without adding a competing production definition.\nFINDING tests/test_every_attempt_is_supervised.py:274 blocking: the resume and redispatch cases now stub _start_supervisor (also at :437), remove the real process command-line, liveness, review-reflex and exit-record assertions, and therefore can pass when no supervisor or worker actually runs despite their named supervision contract.\nFINDING tests/test_every_attempt_is_supervised.py:210 blocking: _confirm_supervisor_survived is called with run_id and compared with that same run_id after _supervisor_launched_worker was patched to return true; this assertion cannot detect a missing worker or an unsupervised launch and cannot replace the removed process check.\n",
+  "review_run_id": "r-20261104T094411515598-review-of-a-supervised-resume-records-the-attempt-it-started-41fb5ed0fb83",
+  "reviewed_base_sha": "68878455232a3496a556491f8942b22109833b70",
+  "reviewed_head_sha": "41fb5ed0fb83daecd0129d878c1c2b9c1734bad4",
+  "reviewed_run_id": "r-20261103T073808690046-a-supervised-resume-records-the-attempt-it-started",
+  "scores": {
+    "durability": 12,
+    "evidence": 12,
+    "fit": 14,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T09:59:53.292439+00:00",
+  "total": 95
+}

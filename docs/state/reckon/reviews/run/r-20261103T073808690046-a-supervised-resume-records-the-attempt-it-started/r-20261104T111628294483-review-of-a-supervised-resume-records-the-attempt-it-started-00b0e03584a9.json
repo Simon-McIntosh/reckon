@@ -1,0 +1,63 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    "tests/test_every_attempt_is_supervised.py:153-165: command-line, supervisor-spec, distinct PID, liveness and worker-command assertions fail if resume returns a nonexistent or wrong supervisor, omits its worker, or starts the wrong command.",
+    "tests/test_every_attempt_is_supervised.py:161,166-185: fixed expected attempt numbers and absence of an attempt-3 receipt fail when a first resume is misnumbered or the duplicate writer creates another receipt; the canonical-to-immutable equality assertion alone tests consistency, while the fixed numbers supply the independent expectation.",
+    "tests/test_every_attempt_is_supervised.py:197-203: either false writer return, canonical attempt 3, or an extra receipt fails the direct duplicate-confirmation check; the restored writer control reaches canonical attempt 3.",
+    "tests/test_every_attempt_is_supervised.py:214-219: the raises assertion fails if a dead supervisor without a worker receipt is accepted.",
+    "tests/test_every_attempt_is_supervised.py:269-281: running classification, review refusal and SIGKILL receipt assertions fail if a live run is scored or reviewed, or if its worker death is recorded with the wrong signal.",
+    "tests/test_every_attempt_is_supervised.py:306-346: command success, fixed attempts 1, 2 and 3, and receipt equality fail if a second resume is refused or misnumbered; the receipt equality alone could move with the canonical record, so fixed attempt constants carry the numbering guard.",
+    "tests/test_every_attempt_is_supervised.py:465-467: fixed lane-change attempt, kind and destination assertions fail if redispatch omits or mislabels its new attempt."
+  ],
+  "call_sites": [
+    "reckon/crew/resumption.py:_resume",
+    "reckon/crew/dispatch_sessions.py:change_lane",
+    "reckon/crew/dispatch_launch.py:_start_supervisor",
+    "reckon/crew/dispatch_launch.py:_write_attempt_artifact"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-04T11:20:39Z",
+  "findings": [
+    {
+      "file": "tests/test_every_attempt_is_supervised.py",
+      "id": "f8e81c7365e",
+      "line": "210",
+      "severity": "non-blocking",
+      "text": "The missing-worker refusal test duplicates tests/test_dispatch_returns_without_worker.py:1625-1653, which already exercises the same _confirm_supervisor_survived refusal with a real ended process; exempted because the local direct check makes this node's focused gate exercise the guard."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Commits 4477dc0e and c505e9b3 change tests/test_every_attempt_is_supervised.py to restore live supervision and guard duplicate receipts; 00b0e035 changes the declared evidence fragment only.",
+    "done_when": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:221 requires three serial passes, a red restored-cause control, importer parity and clean Ruff; repair-final-serial-1/2/3.log each ends 4 passed, repair-final-negative-duplicate-writer.log ends 4 failed, and the source manifest records paired importer and Ruff receipts.",
+    "goal": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:219-221 requires supervised first and second resumes; tests/test_every_attempt_is_supervised.py:151-186 now checks real process and attempt receipts, and :287-346 checks the third attempt.",
+    "manifest": "The reviewed run's manifest.md records commits 4477dc0e, c505e9b3 and 00b0e035, an 8-pass final gate, three 4-pass serial gates, red controls, and baseline_suite and after_suite with zero failure IDs.",
+    "write_paths": "The source manifest's orientation_write_paths includes the named test and evidence fragment; git diff 41fb5ed0..00b0e035 lists only those two paths."
+  },
+  "justifications": {
+    "durability": "tests/test_every_attempt_is_supervised.py:153-185 fails for a missing supervisor or extra attempt receipt, and :197-203 fails when the pre-fix writer increments a duplicate confirmation, as the two red control logs show.",
+    "evidence": "repair-final-serial-1/2/3.log each records four passing named variants, repair-final-negative-no-process.log and repair-final-negative-duplicate-writer.log each record four failures, and repair-final-suite.log records eight passes at 00b0e035.",
+    "fit": "tests/test_every_attempt_is_supervised.py:43-73 reuses its existing bounded wait and command-line helpers, and :264-284 stops each launched process group after checking its receipts.",
+    "goal_fidelity": "tests/test_every_attempt_is_supervised.py:153-186 checks a distinct live worker behind a real supervisor and current attempt 2, while :323-346 checks the second resume reaches attempt 3.",
+    "reuse": "tests/test_every_attempt_is_supervised.py:210-219 duplicates the missing-worker refusal already owned by tests/test_dispatch_returns_without_worker.py:1625-1653; the duplicate-confirmation helper at :190-207 has no earlier owner in the capability search.",
+    "scope_discipline": "git diff 41fb5ed0..00b0e035 changes only tests/test_every_attempt_is_supervised.py and docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-supervised-resume-records-the-attempt-it-started.html, both declared in the source manifest."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: docs/plans/work-is-never-stuck-behind-the-admission-loop.html:219-221 requires supervised first and second resumes; tests/test_every_attempt_is_supervised.py:151-186 now checks real process and attempt receipts, and :287-346 checks the third attempt.\nVERDICT done_when: docs/plans/work-is-never-stuck-behind-the-admission-loop.html:221 requires three serial passes, a red restored-cause control, importer parity and clean Ruff; repair-final-serial-1/2/3.log each ends 4 passed, repair-final-negative-duplicate-writer.log ends 4 failed, and the source manifest records paired importer and Ruff receipts.\nVERDICT write_paths: The source manifest's orientation_write_paths includes the named test and evidence fragment; git diff 41fb5ed0..00b0e035 lists only those two paths.\nVERDICT manifest: The reviewed run's manifest.md records commits 4477dc0e, c505e9b3 and 00b0e035, an 8-pass final gate, three 4-pass serial gates, red controls, and baseline_suite and after_suite with zero failure IDs.\nVERDICT diff: Commits 4477dc0e and c505e9b3 change tests/test_every_attempt_is_supervised.py to restore live supervision and guard duplicate receipts; 00b0e035 changes the declared evidence fragment only.\nCALL_SITES: reckon/crew/resumption.py:_resume, reckon/crew/dispatch_sessions.py:change_lane, reckon/crew/dispatch_launch.py:_start_supervisor, reckon/crew/dispatch_launch.py:_write_attempt_artifact\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_every_attempt_is_supervised.py:153-186 checks a distinct live worker behind a real supervisor and current attempt 2, while :323-346 checks the second resume reaches attempt 3.\nSCORE evidence: 18\nJUSTIFICATION evidence: repair-final-serial-1/2/3.log each records four passing named variants, repair-final-negative-no-process.log and repair-final-negative-duplicate-writer.log each record four failures, and repair-final-suite.log records eight passes at 00b0e035.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 41fb5ed0..00b0e035 changes only tests/test_every_attempt_is_supervised.py and docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-supervised-resume-records-the-attempt-it-started.html, both declared in the source manifest.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_every_attempt_is_supervised.py:153-185 fails for a missing supervisor or extra attempt receipt, and :197-203 fails when the pre-fix writer increments a duplicate confirmation, as the two red control logs show.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_every_attempt_is_supervised.py:43-73 reuses its existing bounded wait and command-line helpers, and :264-284 stops each launched process group after checking its receipts.\nSCORE reuse: 5\nJUSTIFICATION reuse: tests/test_every_attempt_is_supervised.py:210-219 duplicates the missing-worker refusal already owned by tests/test_dispatch_returns_without_worker.py:1625-1653; the duplicate-confirmation helper at :190-207 has no earlier owner in the capability search.\nFINDING tests/test_every_attempt_is_supervised.py:210 non-blocking: The missing-worker refusal test duplicates tests/test_dispatch_returns_without_worker.py:1625-1653, which already exercises the same _confirm_supervisor_survived refusal with a real ended process; exempted because the local direct check makes this node's focused gate exercise the guard.\n",
+  "review_run_id": "r-20261104T111628294483-review-of-a-supervised-resume-records-the-attempt-it-started-00b0e03584a9",
+  "reviewed_base_sha": "41fb5ed0fb83daecd0129d878c1c2b9c1734bad4",
+  "reviewed_head_sha": "00b0e03584a90dc6c36523201936083db9e78aff",
+  "reviewed_run_id": "r-20261103T073808690046-a-supervised-resume-records-the-attempt-it-started",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-04T11:29:55.910814+00:00",
+  "total": 98
+}
