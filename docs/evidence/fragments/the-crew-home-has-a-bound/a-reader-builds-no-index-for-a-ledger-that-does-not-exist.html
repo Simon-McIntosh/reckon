@@ -22,8 +22,8 @@
 <h3 id="a-reader-builds-no-index-for-a-ledger-that-does-not-exist-change">What changed</h3>
 <p><code>load()</code> in <code>reckon/ledger.py</code> now takes the index route only when the ledger it would index holds
 something. The new private predicate <code>_ledger_holds_content</code> answers true when the aggregate
-<code>docs/state/&lt;project&gt;/crew.json</code> exists or the <code>runs</code> directory beside it exists; a project with
-neither is a project that has run no worker, and <code>load</code> reads it down the uncached path that
+<code>docs/state/&lt;project&gt;/crew.json</code> exists, or when at least one run record sits in the
+<code>runs</code> directory beside it. A ledger holding neither is read down the uncached path that
 <code>_load_aggregate</code> already answers with the empty roster at version 0.</p>
 <p>Before the change a read of such a project resolved <code>_run_index_path</code> and opened SQLite, creating
 <code>~/.cache/reckon/ledger-&lt;sha256&gt;-v4.sqlite</code> for a ledger that is not there. Those files are keyed to a path
@@ -32,43 +32,59 @@ until someone runs a sweeping <code>--apply</code>. Ten such indexes of 28&nbsp;
 backlog reclaim for projects that never ran a worker.</p>
 <p>The narrowing matters and is the one design decision this node made. A project may hold per-run documents under
 <code>runs/</code> and no aggregate file at all; that ledger has content, and its index is kept. Skipping on the
-aggregate's absence alone broke four derivation tests, which is how the shape was found.</p>
+aggregate's absence alone broke four derivation tests, which is how the shape was found. A <code>runs</code> directory
+that exists and holds no record is the other side of the same rule: it is a shape, not content, and indexing it
+publishes the same artefact an absent ledger leaves. The first form of the predicate tested the directory's
+existence and so still indexed that emptiness; review caught it, and it is now a record count.</p>
 </section>
 
 <section>
 <h3 id="a-reader-builds-no-index-for-a-ledger-that-does-not-exist-gate">The gate</h3>
-<p>The node's write scope grants <code>reckon/ledger.py</code> and no test path, so the gate is a scratch-tree
-measurement rather than a committed test file. Its three cases read:</p>
+<p>The gate is <code>tests/test_a_reader_builds_no_index_for_a_missing_ledger.py</code>, committed so the suite holds
+the rule rather than this record. Its four cases read:</p>
 <ul>
 <li>a temporary project with no <code>crew.json</code> and no <code>runs</code> directory reads as the empty roster and writes no
 <code>ledger-*.sqlite</code> under a temporary cache root;</li>
-<li>a temporary project holding per-run documents and no aggregate still builds exactly one index and returns the
-document;</li>
+<li>a temporary project whose <code>runs</code> directory exists and holds no record reads the same and writes no index;</li>
+<li>a temporary project holding run records and no aggregate still builds exactly one index and returns the record;</li>
 <li>a temporary project with a <code>crew.json</code> still builds its index.</li>
 </ul>
-<p>Head arm: <strong>3 passed</strong>, <code>EXIT=0</code>, <code>module.__file__</code> under this worktree
-(<code>logs/head-gate.log</code>). Base arm, which restores the unconditional index build by resolving
-<code>reckon/</code> from an archive of base <code>ab87725e6</code>: <strong>1 failed, 2 passed</strong>, <code>EXIT=1</code>
-(<code>logs/base-gate.log</code>). The failure is the first case, reporting the index it wrote:
-<code>ledger-209603653903b356195c725f08d1e94bd957fce46514913fb1c1725fa6b0a21c-v4.sqlite</code>.</p>
+<p>Head arm: <strong>4 passed</strong>, <code>EXIT=0</code>, the module resolved inside this worktree and its predicate
+recorded as <code>glob</code> (<code>logs/head-gate.log</code>).</p>
+<p>Two negative controls, each a full archive of the head revision with one change applied and the committed test
+copied in. <strong>The old predicate</strong> &mdash; the <code>runs</code> directory's existence rather than a record count
+&mdash; turns the empty-directory case red: <strong>1 failed, 3 passed</strong>, <code>EXIT=1</code>, failing
+<code>test_a_project_with_an_empty_runs_directory_builds_no_index</code>
+(<code>logs/negative-control-old-predicate.log</code>). <strong>The unconditional index build</strong> turns both
+no-content cases red: <strong>2 failed, 2 passed</strong>, <code>EXIT=1</code>, failing
+<code>test_a_project_with_no_ledger_and_no_runs_directory_builds_no_index</code> and the empty-directory case
+(<code>logs/negative-control-unconditional.log</code>). Each log's header names the tree, the working directory, the
+imported module path, and whether <code>load()</code> is gated at all.</p>
 </section>
 
 <section>
 <h3 id="a-reader-builds-no-index-for-a-ledger-that-does-not-exist-suite">The imported-module suite</h3>
-<p>The 80 test files importing <code>reckon.ledger</code> ran on both arms with <code>-n 8</code> and a session cache root of
-their own. Head: <strong>706 passed, 3 skipped, 5 errors, 0 failed</strong> (<code>logs/head-suite.log</code>,
-<code>EXIT=1</code> &mdash; the non-zero exit is the five errors). Base at <code>ab87725e6</code>: <strong>705 passed, 3 skipped,
-5 errors, 1 failed</strong> (<code>logs/base-suite.log</code>).</p>
-<p>The five error ids are identical on both arms and are confined to
-<code>tests/test_held_worktree_records_match_each_record_once.py</code>. The one base failure,
+<p>The 81 test files importing <code>reckon.ledger</code> ran on both arms with <code>-n 8</code> and a session cache root of
+their own. Head: <strong>714 passed, 3 skipped, 1 failed</strong> (<code>logs/head-suite.log</code>, <code>EXIT=1</code>).
+Base at <code>ab87725e6</code> with the guard test copied in: <strong>712 passed, 3 skipped, 3 failed</strong>
+(<code>logs/base-suite.log</code>).</p>
+<p>Two of the base failures are the guard test's own no-content cases, which is the control working. The third,
 <code>tests/test_roster_write_commits.py::test_commit_refuses_roster_with_uncommitted_registration</code>, does not
-reproduce at head. <strong>Added failures against base: 0.</strong></p>
+reproduce at head.</p>
+<p><strong>One added failure.</strong>
+<code>tests/test_a_sweep_resolves_review_heads_once.py::test_one_derivation_builds_the_index_once</code> builds a crew
+home whose ledger is an empty <code>runs</code> directory with no aggregate, and asserts its derivation built the index
+once. Under this change that ledger holds nothing, so no index is built and the count is zero. The premise the test
+rests on &mdash; that an empty ledger is worth indexing &mdash; is the behaviour §8 removes, so the repair is a line in
+that fixture giving it a ledger rather than a change to this node's product code. The file is outside this node's
+write paths. The one-line repair was verified in a scratch copy of the head revision and turns the file green
+(<strong>4 passed</strong>), so the fix is known rather than assumed.</p>
 </section>
 
 <section>
 <h3 id="a-reader-builds-no-index-for-a-ledger-that-does-not-exist-hygiene">Hygiene</h3>
-<p><code>ruff check</code> and <code>ruff format --check</code> pass clean on <code>reckon/ledger.py</code> (1 file already
-formatted, no findings). The change is +26 &minus;1 lines in one file.</p>
+<p><code>ruff check</code> and <code>ruff format --check</code> pass clean on both staged paths,
+<code>reckon/ledger.py</code> and <code>tests/test_a_reader_builds_no_index_for_a_missing_ledger.py</code>.</p>
 </section>
 
 </article>
