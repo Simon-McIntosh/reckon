@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run's manifest carries no baseline_suite/after_suite keys (FENCE - SUITE unarmed), so the delta is derived from its own two importer-population gate logs: logs/importers-base-population.log (revision 9430f8e207, 8 failed / 3 errors, EXIT=1) and logs/importers-head.log (revision header 86b3c34d, 6 failed / 1 error, EXIT=1). Every FAILED/ERROR id in the head log also appears in the base log (the six tests/test_a_refused_set_names_the_paths_that_work.py cases and tests/conftest.py::test_temp_config_home), and the base additionally carries the two stat-identity tests this node repairs, so the added set is empty.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/serve.py:1605",
+    "reckon/_store.py:780",
+    "reckon/_store.py:2454",
+    "reckon/change_streams.py:648",
+    "reckon/change_streams.py:655",
+    "reckon/metadata_index.py:2088"
+  ],
+  "completed_at": "2026-11-05T06:35:24.654Z",
+  "dispatched_at": "2026-11-05T06:22:34Z",
+  "findings": [
+    {
+      "file": "reckon/metadata_index.py",
+      "line": 1883,
+      "severity": "non-blocking",
+      "text": "non-blocking: `_MODULE_SOURCE_DIGESTS` is a second stat-keyed digest memo beside the owner `reckon/file_memo.py:310` content_digest, which already keys a digest by the file's stat signature through memoized at line 354; an adopt/seeded entry on that owner would extend the capability instead of forking it inside metadata_index. Correctness is unaffected, but a later change to file_memo's identity fields will not reach this cache. The node's fence (reckon/metadata_index.py only) is why the owner could not be extended here."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T103857095482-a-persisted-answer-still-reuses-rows/logs/importers-head.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "non-blocking: the head population arm's header names revision 86b3c34d, the pre-fix parent, while the manifest and landing fragment claim d006397423; the body is post-fix (the two stat-identity tests pass in it, which they cannot at 86b3c34d), so the result stands but cannot be reproduced from the revision the log names."
+    },
+    {
+      "file": "reckon/metadata_index.py",
+      "line": 1978,
+      "severity": "non-blocking",
+      "text": "non-blocking: `_module_source_stats` takes a second `path.stat()` after `_module_source_digest` has already hashed the file under its own stat, so a write landing between the two pairs an old digest with a new identity in the stored envelope, and a later reader then adopts that stale digest for the new bytes; the window is narrow and of the same kind file_memo.content_digest guards for its text store, but nothing asserts it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T103857095482-a-persisted-answer-still-reuses-rows/manifest.md",
+      "line": 12,
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when names `ruff adds no findings on the staged paths` but test_logs names no ruff log and artifacts records no ruff result, so that clause carries a claim with no receipt on disk; I re-ran ruff check and ruff format --check on reckon/metadata_index.py at head and both are clean, so the substance holds."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/serve.py:1605 calls metadata_index.discovery_state, reckon/_store.py:780 and :2454 do the same, and reckon/change_streams.py:648 and :655 call _load_dir_stamps; all reach _persisted_payload at reckon/metadata_index.py:2088 and its persisted_memo read path.",
+    "diff": "read both commits against base 86b3c34d: d006397423 adds the stat-keyed digest reuse cache and a source_stats field on the persisted envelope (+113/-14, reckon/metadata_index.py), and 10a19d771e adds the 67-line landing fragment.",
+    "done_when": "the done_when names the two stat-identity tests three times serially, tests/test_a_persisted_answer_carries_its_code_version.py, the importer population, the revert control and ruff; logs/gate-head-3x.log records 8 passed in each of three serial passes, logs/negative-control-revert.log records 2 failed under the reverted fix, the importer arms are recorded in logs/importers-base-population.log and logs/importers-head.log, and ruff was run by me because no ruff log exists.",
+    "goal": "the node goal is to restore stat-identity row reuse under a persisted answer that carries its code version; reckon/metadata_index.py:1986 _read_persisted_memo now reuses the digest recorded beside each producer's stat identity rather than hashing `_plan_html.py` and `metadata_index.py` on every revalidation, and the two named stat-identity tests pass at head.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T103857095482-a-persisted-answer-still-reuses-rows/manifest.md; status complete, commits d006397423 and 10a19d771e, tests names both gate test files, test_logs names four logs, artifacts records 8 passed x3, head importer 1494 passed 6 failed 1 error, base importer 1490 passed 8 failed 3 errors and the control 2 failed, and it carries no baseline_suite/after_suite because the suite was unarmed.",
+    "write_paths": "the manifest declares reckon/metadata_index.py, docs/evidence/fragments/a-read-costs-what-changed/a-persisted-answer-still-reuses-rows.html and a figures directory; `git show --stat d006397423 10a19d771e` changes exactly the first two and writes no figure."
+  },
+  "justifications": {
+    "durability": "tests/test_a_restart_reuses_rows_by_stat_identity.py:219 and :270 fail on `assert digests == []` when reckon/metadata_index.py is reverted (logs/negative-control-revert.log, 2 failed, EXIT=1), and tests/test_a_persisted_answer_carries_its_code_version.py keeps the source-change invalidation the new envelope field could have dropped.",
+    "evidence": "logs/gate-head-3x.log records 8 passed in each of three serial passes and logs/negative-control-revert.log records the required red, but logs/importers-head.log:1 names revision 86b3c34d (the pre-fix parent) rather than the head it measured, and no ruff log exists though the done-when names ruff (I re-ran ruff check and ruff format --check on reckon/metadata_index.py at head: both clean).",
+    "fit": "reckon/metadata_index.py:1878-1883 declares the cache with a comment stating the mechanism and drops it from clear() at line 333, matching the module's existing memo idiom, and the added helpers at lines 1885-1930 use only the os, Mapping and Path names the file already imports.",
+    "goal_fidelity": "reckon/metadata_index.py:2005-2018 adopts the digest recorded beside a producer's unchanged stat identity instead of hashing the source again, and logs/negative-control-revert.log shows the two named stat-identity tests redden without that change, so the landed code is the mechanism that restores the measured reuse.",
+    "reuse": "reckon/metadata_index.py:1883 adds a second stat-keyed digest cache while reckon/file_memo.py:310 content_digest already memoises a file's digest under the same stat signature through memoized at line 354; the addition extends persisted_memo's cross-process capability but duplicates file_memo's in-process one, and the node's fence did not reach file_memo.py to extend it.",
+    "scope_discipline": "git show --stat d006397423 10a19d771e lists reckon/metadata_index.py (+113/-14) and the landing fragment (+67), both inside the manifest's declared write paths, and no other file."
+  },
+  "node": "review-of-a-persisted-answer-still-reuses-rows-10a19d771e5f",
+  "node:reviewed": "a-persisted-answer-still-reuses-rows",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to restore stat-identity row reuse under a persisted answer that carries its code version; reckon/metadata_index.py:1986 _read_persisted_memo now reuses the digest recorded beside each producer's stat identity instead of hashing `_plan_html.py` and `metadata_index.py` on every revalidation, and the two named stat-identity tests pass at head.\nVERDICT done_when: the done_when names the two stat-identity tests three times serially, tests/test_a_persisted_answer_carries_its_code_version.py, the importer population, the revert control and ruff; logs/gate-head-3x.log records 8 passed in each of three serial passes, logs/negative-control-revert.log records 2 failed under the reverted fix, both importer arms are recorded, and ruff was run by me because no ruff log exists.\nVERDICT write_paths: the manifest declares reckon/metadata_index.py, the landing fragment under docs/evidence/fragments/a-read-costs-what-changed/ and a figures directory; `git show --stat d006397423 10a19d771e` changes exactly the first two and writes no figure.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T103857095482-a-persisted-answer-still-reuses-rows/manifest.md; status complete, commits d006397423 and 10a19d771e, tests names both gate test files, test_logs names four logs, artifacts records 8 passed x3, head importer 1494 passed 6 failed 1 error, base importer 1490 passed 8 failed 3 errors and the control 2 failed, and it carries no baseline_suite/after_suite because the suite was unarmed.\nVERDICT diff: read both commits against base 86b3c34d: d006397423 adds the stat-keyed digest reuse cache and a source_stats field on the persisted envelope (+113/-14, reckon/metadata_index.py), and 10a19d771e adds the 67-line landing fragment.\nCALL_SITES: reckon/serve.py:1605, reckon/_store.py:780, reckon/_store.py:2454, reckon/change_streams.py:648, reckon/change_streams.py:655, reckon/metadata_index.py:2088\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/metadata_index.py:2005-2018 adopts the digest recorded beside a producer's unchanged stat identity instead of hashing the source again, and logs/negative-control-revert.log shows the two named stat-identity tests redden without that change, so the landed code is the mechanism that restores the measured reuse.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/gate-head-3x.log records 8 passed in each of three serial passes and logs/negative-control-revert.log records the required red, but logs/importers-head.log:1 names revision 86b3c34d (the pre-fix parent) rather than the head it measured, and no ruff log exists though the done-when names ruff (I re-ran ruff check and ruff format --check on reckon/metadata_index.py at head: both clean).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat d006397423 10a19d771e lists reckon/metadata_index.py (+113/-14) and the landing fragment (+67), both inside the manifest's declared write paths, and no other file.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_restart_reuses_rows_by_stat_identity.py:219 and :270 fail on `assert digests == []` when reckon/metadata_index.py is reverted (logs/negative-control-revert.log, 2 failed, EXIT=1), and tests/test_a_persisted_answer_carries_its_code_version.py keeps the source-change invalidation the new envelope field could have dropped.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/metadata_index.py:1878-1883 declares the cache with a comment stating the mechanism and drops it from clear() at line 333, matching the module's existing memo idiom, and the added helpers at lines 1885-1930 use only the os, Mapping and Path names the file already imports.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/metadata_index.py:1883 adds a second stat-keyed digest cache while reckon/file_memo.py:310 content_digest already memoises a file's digest under the same stat signature through memoized at line 354, and the addition duplicates rather than extends that owner (the node's fence did not reach file_memo.py).\nFINDING reckon/metadata_index.py:1883 non-blocking: `_MODULE_SOURCE_DIGESTS` is a second stat-keyed digest memo beside the owner `reckon/file_memo.py:310` content_digest, which already keys a digest by the file's stat signature through memoized at line 354; an adopt/seeded entry on that owner would extend the capability instead of forking it inside metadata_index, and a later change to file_memo's identity fields will not reach this cache.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T103857095482-a-persisted-answer-still-reuses-rows/logs/importers-head.log:1 non-blocking: the head population arm's header names revision 86b3c34d, the pre-fix parent, while the manifest and landing fragment claim d006397423; the body is post-fix so the result stands, but it cannot be reproduced from the revision the log names.\nFINDING reckon/metadata_index.py:1978 non-blocking: `_module_source_stats` takes a second `path.stat()` after `_module_source_digest` has already hashed the file under its own stat, so a write landing between the two pairs an old digest with a new identity and a later reader adopts that stale digest; the window is narrow and nothing asserts it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T103857095482-a-persisted-answer-still-reuses-rows/manifest.md:12 non-blocking: the done_when names `ruff adds no findings on the staged paths` but test_logs names no ruff log and artifacts records no ruff result, so that clause carries a claim with no receipt on disk; I re-ran ruff check and ruff format --check on reckon/metadata_index.py at head and both are clean.",
+  "review_run_id": "r-20261105T061644194563-review-of-a-persisted-answer-still-reuses-rows-10a19d771e5f",
+  "reviewed_base_sha": "86b3c34d5cc130998b4ff846ac2fdd2922627b39",
+  "reviewed_head_sha": "10a19d771e5f0bcb14583f5c345735febd7c15da",
+  "reviewed_run_id": "r-20261103T103857095482-a-persisted-answer-still-reuses-rows",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T06:40:00+00:00",
+  "total": 94
+}
