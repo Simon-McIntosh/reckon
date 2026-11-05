@@ -200,6 +200,42 @@ def _merge_land_refusal(
     help="Project whose branch the head lands on.",
 )
 @click.option("--head", required=True, help="Reviewed commit to land as a merge.")
+@click.option(
+    "--run",
+    "run_id",
+    default="",
+    help="Run whose head is being merged; inferred from live runs when omitted.",
+)
+@click.option(
+    "--gate", default="passed", help="Promotion verdict to check before merging."
+)
+@click.option(
+    "--failure-classification", default="", help="Classification when --gate failed."
+)
+@click.option(
+    "--commit",
+    "commits",
+    multiple=True,
+    help="Commit the promotion would cite; repeat as needed.",
+)
+@click.option("--gate-command", default="", help="Promotion gate command.")
+@click.option(
+    "--gate-exit-status", type=int, default=None, help="Promotion gate exit status."
+)
+@click.option("--gate-log-path", default="", help="Promotion gate log path.")
+@click.option("--gate-log-digest", default="", help="Promotion gate log digest.")
+@click.option("--waive-suite-delta", default="", metavar="REASON")
+@click.option("--waive-boundary-refusal", default="", metavar="REASON")
+@click.option("--waive-resume-path", default="", metavar="REASON")
+@click.option("--waive-unreviewed-promotion", default="", metavar="REASON")
+@click.option("--waive-negative-control", default=None, metavar="REASON")
+@click.option("--no-impl-change", default="", metavar="REASON")
+@click.option("--waive-live-run", default="", metavar="REASON")
+@click.option("--waive-domain-check", default="", metavar="REASON")
+@click.option("--accept-path", "accepted_paths", type=(str, str), multiple=True)
+@click.option("--no-commit", default="", metavar="REASON")
+@click.option("--plan-link", default="", metavar="SLUG")
+@click.option("--unplanned-reason", default="", metavar="TEXT")
 @click.option("--message", default="", help="Merge commit subject.")
 @click.option(
     "--body",
@@ -212,7 +248,34 @@ def _merge_land_refusal(
     help="A merge commit already built, landed unchanged if its parents match.",
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_merge(project, head, message, body, candidate, pretty):
+def crew_merge(
+    project,
+    head,
+    run_id,
+    gate,
+    failure_classification,
+    commits,
+    gate_command,
+    gate_exit_status,
+    gate_log_path,
+    gate_log_digest,
+    waive_suite_delta,
+    waive_boundary_refusal,
+    waive_resume_path,
+    waive_unreviewed_promotion,
+    waive_negative_control,
+    no_impl_change,
+    waive_live_run,
+    waive_domain_check,
+    accepted_paths,
+    no_commit,
+    plan_link,
+    unplanned_reason,
+    message,
+    body,
+    candidate,
+    pretty,
+):
     """Land a reviewed head on the primary branch without touching the shared index.
 
     The merge is built from objects — ``merge-tree`` computes the tree,
@@ -230,6 +293,33 @@ def crew_merge(project, head, message, body, candidate, pretty):
 
     try:
         repository = merge.project_repository(project)
+        merge.require_promotable_head(
+            project,
+            repository,
+            head,
+            run_id=run_id,
+            gate=gate,
+            failure_classification=failure_classification,
+            commits=commits,
+            gate_check={
+                "command": gate_command,
+                "exit_status": gate_exit_status,
+                "log_path": gate_log_path,
+                "log_digest": gate_log_digest,
+            },
+            suite_delta_waiver=waive_suite_delta,
+            boundary_waiver=waive_boundary_refusal,
+            resume_waiver=waive_resume_path,
+            review_waiver=waive_unreviewed_promotion,
+            negative_control_waiver=waive_negative_control,
+            no_impl_change=no_impl_change,
+            live_run_waiver=waive_live_run,
+            domain_waiver=waive_domain_check,
+            accepted_paths=dict(accepted_paths),
+            no_commit=no_commit,
+            plan_link=plan_link,
+            unplanned_reason=unplanned_reason,
+        )
         report = merge.land_merge(
             repository,
             head=head,
