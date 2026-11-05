@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import copy
+import inspect
 import json
 import re
 import sqlite3
@@ -12,6 +13,7 @@ from collections.abc import Callable, Iterable, Mapping
 from contextlib import closing
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -1898,6 +1900,9 @@ def partition_live_runs(
     in_flight: dict[str, list[dict[str, str]]] = {}
     interrupted: dict[str, list[dict[str, str]]] = {}
     recorded = _recorded_live_run_classifications(project)
+    classifier = classify_pointer
+    if "pointers" in inspect.signature(classify_pointer).parameters:
+        classifier = partial(classify_pointer, pointers=pointers)
     for pointer in pointers:
         if not isinstance(pointer, dict) or pointer.get("project") != project:
             continue
@@ -1905,7 +1910,7 @@ def partition_live_runs(
         if not plan:
             continue
         classified = run_classification_record(
-            pointer, classify=classify_pointer, recorded=recorded
+            pointer, classify=classifier, recorded=recorded
         )
         classification = run_classification(classified)
         row = _run_row(pointer, classification=classification)
