@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own armed arms: after_suite at 6d76ede655a6bfb020c885e66e13186f7b39dfde is exit_status 0 with failure_count 0 and no FAILED line in coordinator-armed-head.log; baseline_suite at ab87725e67ab7377c2efb9b60a263578f3f2f8de is exit_status 4 with failure_count 0 because the test file is created by this change and the arm collected nothing ('no tests ran in 0.00s'). Zero added failures either way.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/mcp_views.py:1229",
+    "reckon/project_brief.py:304",
+    "reckon/crew/queue_order.py:47",
+    "reckon/graph_target.py:311",
+    "reckon/flight.py:2945"
+  ],
+  "completed_at": "2026-11-05T16:06:46.311Z",
+  "dispatched_at": "2026-11-05T15:58:48Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T103440000932-the-critical-path-reads-link-by-link/manifest.md",
+      "line": "12",
+      "text": "blocking: test_logs names four paths that do not exist on disk \u2014 logs/repair_baseline_suite.log, logs/repair_after_suite.log, logs/repair_negative_control.log and logs/repair_negative_control_arms.log \u2014 while rubric.evidence says of the first two 'both logs on disk and both bodies carrying a passing run' and negative_control_note quotes the third's failure, so the repair round's central claims (5 passed at the repair base ee5067137e and 1 failed 4 passed under the mutation at the repair head) cite receipts no reader can open; repair_gate.log at the reviewed head does exist and supports the head measure, so the absence is in the record, not in the code."
+    },
+    {
+      "file": "reckon/roadmap.py",
+      "line": "3231",
+      "text": "non-blocking: _link_holds keeps only GATE_BLOCKER and SECTION_DEPENDENCY_BLOCKER rows out of section_holds_by_plan, which also carries DECISION_BLOCKER (built at line 4305), so a critical-path link held only by an open decision reports primary_state '' and holds [] \u2014 indistinguishable from a link nothing explains, although the section rows beside it do list that decision under blockers."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T103440000932-the-critical-path-reads-link-by-link/manifest.md",
+      "line": "23",
+      "text": "non-blocking: baseline_suite still records completed true with exit_status 4 against coordinator-armed-base.log, whose body reads 'ERROR: file or directory not found' and 'no tests ran', so an arm that collected nothing is still filed as an arm that ran; the fragment's sentence 'Neither arm is an empty collection' describes the repair arms rather than this field, and the two disagree for a reader who checks only the armed fields."
+    },
+    {
+      "file": "tests/test_the_critical_path_reads_link_by_link.py",
+      "line": "266",
+      "text": "non-blocking: 'assert head[\"run_id\"] == \"run-live-head\"' compares against the literal the test itself passed into _live_run, so on its own it holds whatever the derivation does; the state change asserted at line 265 is what makes the case a guard, and no durability claim should rest on line 266."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/mcp_views.py:1229 (ready_set_view reads critical_path.sections as strings), reckon/project_brief.py:304 (_critical_path_line), reckon/crew/queue_order.py:47, reckon/graph_target.py:311, reckon/flight.py:2945, through build_roadmap callers reckon/serve.py:1865, reckon/mcp.py:2504 and reckon/crew/plan_review.py:5293.",
+    "diff": "Read the two commits gained since the previous review against ee5067137e26e4dc9dd58e87d35638ee4328fd37: b225af5322 adds coil-supply-report-rebuild#s8 and three other rows to the fragment's sample table plus tests/test_the_critical_path_reads_link_by_link.py:222-269 (_evidence_rows and test_the_evidence_table_records_every_link_and_every_hold), and 6d76ede655 adds the 'arms, as run' and negative-control paragraphs to the fragment; reckon/roadmap.py is unchanged by both.",
+    "done_when": "The done_when names tests/test_the_critical_path_reads_link_by_link.py asserting s9 ready-idle with its coordinator and iter-switched-terminal-transients#s6 gated with holds g-istt-6 and shared-coil-supply-model#s9; tests/test_the_critical_path_reads_link_by_link.py:120-139 supplies both against the 08:50Z fixture, and logs/repair_gate.log records the named three-file gate at the reviewed head (tests/test_the_critical_path_reads_link_by_link.py, tests/test_graph_target.py, tests/test_roadmap_endpoints.py) as 23 passed, EXIT=0.",
+    "goal": "The node's goal is that each critical-path link carries a primary state and the full list of what holds it, head first; reckon/roadmap.py:3269 _critical_path_links fills critical_path.links at line 3337 and critical_path.head at line 3339, deriving in flight, ready-idle, gated and waiting in the plan's declared precedence from the roadmap's own section runs, ready list and named holds.",
+    "manifest": "Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T103440000932-the-critical-path-reads-link-by-link/manifest.md; status complete, five commits named, a six-case head arm at 6d76ede, a 22-case three-file gate at ee50671 and a 23-case one at 6d76ede (logs/repair_gate.log), baseline_suite exit 4 and after_suite exit 0, a negative control logged with its failing test id -- but four of the log paths it names under test_logs do not exist on disk.",
+    "write_paths": "The manifest declares reckon/roadmap.py, tests/test_the_critical_path_reads_link_by_link.py, the evidence fragment and an unused docs/figures directory; git diff --stat ab87725e67ab7377c2efb9b60a263578f3f2f8de 6d76ede655a6bfb020c885e66e13186f7b39dfde lists exactly the first three, 563 insertions and no deletions, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_the_critical_path_reads_link_by_link.py:133 reddens when _link_holds is mutated to report only the first hold (negative_control.log, 1 failed 4 passed, EXIT=1) and line 265 reddens when the head's state stops following the live run; the run_id assertion at line 266 only mirrors the pointer the test itself supplied, so line 265 carries that case.",
+    "evidence": "logs/repair_gate.log carries the done_when's exact three-file gate at the reviewed head (23 passed in 136.09s, EXIT=0) and coordinator-armed-head.log carries the armed after arm (6 passed, EXIT=0), but the manifest's test_logs names /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T103440000932-the-critical-path-reads-link-by-link/logs/repair_baseline_suite.log, repair_after_suite.log, repair_negative_control.log and repair_negative_control_arms.log and none of the four exists, so the repair round's stated base measurement has no receipt a reader can open.",
+    "fit": "reckon/roadmap.py:3225 names the four states by mechanism, the ledger guard at line 3396 follows the module's existing noqa BLE001 idiom, the test names its fixture by what it reproduces, and no plan label, ticket reference, author attribution or version suffix appears in the code, test or fragment.",
+    "goal_fidelity": "reckon/roadmap.py:3269 derives the four states in the plan's order and line 3339 puts the path's first link first, so the deliverable is present; the rows sit under critical_path.links beside the unchanged ref list rather than as fields on the critical_path.sections entries that plan section s4 names, which commit 70f57bdcd4 justifies by the four readers of that list outside this node's scope.",
+    "reuse": "the derivation consumes section_holds_by_plan, ready_sections_by_plan and section_runs, which reckon/roadmap.py already builds at line 4300, and delegates the coordinator question to reckon/crew/plan_coordinator.resolve_plan_coordinators rather than re-deriving it; a search over reckon/ and tests/ for an existing per-link four-state projection found none, the nearest being reckon/mcp_views.py:1229's filtered section list.",
+    "scope_discipline": "git diff --stat ab87725e67ab7377c2efb9b60a263578f3f2f8de 6d76ede655a6bfb020c885e66e13186f7b39dfde lists only reckon/roadmap.py, tests/test_the_critical_path_reads_link_by_link.py and the evidence fragment, and no view, refusal family or other module is touched."
+  },
+  "node": "review-of-the-critical-path-reads-link-by-link-6d76ede655a6",
+  "node:reviewed": "the-critical-path-reads-link-by-link",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that each critical-path link carries a primary state and the full list of what holds it, head first; reckon/roadmap.py:3269 _critical_path_links sets critical_path.links at line 3337 and critical_path.head at line 3339, deriving in flight, ready-idle, gated and waiting in the plan's declared precedence.\nVERDICT done_when: the done_when names tests/test_the_critical_path_reads_link_by_link.py asserting shared-coil-supply-model#s9 ready-idle with its coordinator and iter-switched-terminal-transients#s6 gated with holds g-istt-6 and shared-coil-supply-model#s9; tests/test_the_critical_path_reads_link_by_link.py:120-139 supplies both, and logs/repair_gate.log records the named three-file gate at the reviewed head as 23 passed, EXIT=0.\nVERDICT write_paths: the manifest declares reckon/roadmap.py, tests/test_the_critical_path_reads_link_by_link.py, the evidence fragment and an unused docs/figures directory; git diff --stat ab87725e67ab7377c2efb9b60a263578f3f2f8de 6d76ede655a6bfb020c885e66e13186f7b39dfde lists exactly the first three, 563 insertions, all inside them.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T103440000932-the-critical-path-reads-link-by-link/manifest.md; status complete, five commits, a six-case head arm, the three-file gate at 23 passed on logs/repair_gate.log, baseline_suite exit 4 and after_suite exit 0, and a logged negative control -- but four of the log paths it names under test_logs are absent from disk.\nVERDICT diff: read the two commits gained since ee5067137e26e4dc9dd58e87d35638ee4328fd37 against ab87725e67ab7377c2efb9b60a263578f3f2f8de; b225af5322 adds the fourth link's row to the fragment and tests/test_the_critical_path_reads_link_by_link.py:222-269, 6d76ede655 adds the arms and negative-control paragraphs to the fragment, and reckon/roadmap.py is untouched by both.\nCALL_SITES: reckon/mcp_views.py:1229, reckon/project_brief.py:304, reckon/crew/queue_order.py:47, reckon/graph_target.py:311, reckon/flight.py:2945\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/roadmap.py:3269 derives the four states in the plan's order and line 3339 puts the first link first, but the rows live under critical_path.links rather than as fields on the critical_path.sections entries plan section s4 names, which commit 70f57bdcd4 justifies by the four readers of that list.\nSCORE evidence: 13\nJUSTIFICATION evidence: logs/repair_gate.log carries the done_when's three-file gate at the head (23 passed, EXIT=0) and coordinator-armed-head.log the armed after arm, but four logs named in the manifest's test_logs do not exist, so the repair round's stated base measurement has no receipt.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat ab87725e67ab7377c2efb9b60a263578f3f2f8de 6d76ede655a6bfb020c885e66e13186f7b39dfde lists only reckon/roadmap.py, tests/test_the_critical_path_reads_link_by_link.py and the evidence fragment, and adds no view or refusal family.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_critical_path_reads_link_by_link.py:133 reddens when _link_holds reports only the first hold (negative_control.log, 1 failed 4 passed, EXIT=1) and line 265 reddens when the head state stops following the live run, while line 266 mirrors the pointer the test supplied.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/roadmap.py:3225 names the four states by mechanism, line 3396 follows the module's existing noqa BLE001 idiom, and no plan label, ticket reference, author attribution or version suffix appears in the code, test or fragment.\nSCORE reuse: 18\nJUSTIFICATION reuse: the derivation consumes section_holds_by_plan and ready_sections_by_plan, which reckon/roadmap.py already builds at line 4300, and delegates coordinators to reckon/crew/plan_coordinator.resolve_plan_coordinators; a search over reckon/ and tests/ found no existing per-link four-state projection.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T103440000932-the-critical-path-reads-link-by-link/manifest.md:12 blocking: test_logs names four paths that do not exist (logs/repair_baseline_suite.log, repair_after_suite.log, repair_negative_control.log, repair_negative_control_arms.log) while rubric.evidence and negative_control_note quote their contents, so the repair round's base and mutation measurements cite receipts no reader can open.\nFINDING reckon/roadmap.py:3231 non-blocking: _link_holds drops DECISION_BLOCKER holds that section_holds_by_plan carries, so a link held only by an open decision reports an empty state and empty holds, indistinguishable from a link nothing explains.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T103440000932-the-critical-path-reads-link-by-link/manifest.md:23 non-blocking: baseline_suite still records completed true with exit_status 4 against a log reading 'no tests ran', so an arm that collected nothing is filed as an arm that ran, contradicting the fragment's 'Neither arm is an empty collection'.\nFINDING tests/test_the_critical_path_reads_link_by_link.py:266 non-blocking: the run_id assertion compares against the literal the test passed into _live_run, so it holds whatever the derivation does; line 265's state change is what carries the case.\n",
+  "review_run_id": "r-20261105T155650561358-review-of-the-critical-path-reads-link-by-link-6d76ede655a6",
+  "reviewed_base_sha": "ab87725e67ab7377c2efb9b60a263578f3f2f8de",
+  "reviewed_head_sha": "6d76ede655a6bfb020c885e66e13186f7b39dfde",
+  "reviewed_run_id": "r-20261027T103440000932-the-critical-path-reads-link-by-link",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T17:08:00+00:00",
+  "total": 105
+}
