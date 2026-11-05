@@ -65,20 +65,18 @@ imported module path, and whether <code>load()</code> is gated at all.</p>
 <section>
 <h3 id="a-reader-builds-no-index-for-a-ledger-that-does-not-exist-suite">The imported-module suite</h3>
 <p>The 81 test files importing <code>reckon.ledger</code> ran on both arms with <code>-n 8</code> and a session cache root of
-their own. Head: <strong>714 passed, 3 skipped, 1 failed</strong> (<code>logs/head-suite.log</code>, <code>EXIT=1</code>).
+their own. Head: <strong>715 passed, 3 skipped, 0 failed</strong> (<code>logs/head-suite.log</code>, <code>EXIT=0</code>).
 Base at <code>ab87725e6</code> with the guard test copied in: <strong>712 passed, 3 skipped, 3 failed</strong>
 (<code>logs/base-suite.log</code>).</p>
 <p>Two of the base failures are the guard test's own no-content cases, which is the control working. The third,
 <code>tests/test_roster_write_commits.py::test_commit_refuses_roster_with_uncommitted_registration</code>, does not
-reproduce at head.</p>
-<p><strong>One added failure.</strong>
-<code>tests/test_a_sweep_resolves_review_heads_once.py::test_one_derivation_builds_the_index_once</code> builds a crew
-home whose ledger is an empty <code>runs</code> directory with no aggregate, and asserts its derivation built the index
-once. Under this change that ledger holds nothing, so no index is built and the count is zero. The premise the test
-rests on &mdash; that an empty ledger is worth indexing &mdash; is the behaviour §8 removes, so the repair is a line in
-that fixture giving it a ledger rather than a change to this node's product code. The file is outside this node's
-write paths. The one-line repair was verified in a scratch copy of the head revision and turns the file green
-(<strong>4 passed</strong>), so the fix is known rather than assumed.</p>
+reproduce at head. <strong>Added failures against base: 0.</strong></p>
+<p>One fixture had to change for that to be true.
+<code>tests/test_a_sweep_resolves_review_heads_once.py</code> built a crew home whose ledger was an empty
+<code>runs</code> directory with no aggregate, and asserted its derivation built the index once. A ledger in that state
+holds nothing, so no index is built and the count was zero: the assertion measured the fixture's accidental shape
+rather than the derivation. Writing an aggregate with no rows gives it a ledger the derivation reads and indexes, and
+leaves its rows unchanged. The file passes (<strong>4 passed</strong>) and the suite above is the measurement.</p>
 </section>
 
 <section>
