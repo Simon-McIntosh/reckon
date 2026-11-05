@@ -784,12 +784,54 @@ def newest_delivered_review(
     all been promoted is never refused for lacking a newer one. ``rubric``
     keeps a figure round out of a text-review answer, the rule every reader in
     this family applies.
+
+    The rounds are ordered by when each review ran rather than by the file's
+    modification time: a disposition recorded on an earlier round rewrites that
+    file, which would otherwise move it past the newer round and make the older
+    record read as the newest.
     """
     records = stored_records_for_run(project, reviewed_run_id, base_dir=base_dir)
-    for _path, record in reversed(records):
-        if _review._review_rubric_matches(record, rubric):
-            return record
-    return None
+    newest: dict[str, Any] | None = None
+    newest_key: tuple[datetime, int] | None = None
+    for path, record in records:
+        if not _review._review_rubric_matches(record, rubric):
+            continue
+        key = _delivery_order(record, path)
+        if newest_key is None or key > newest_key:
+            newest, newest_key = record, key
+    return newest
+
+
+def _delivery_order(
+    record: Mapping[str, Any], path: str | Path
+) -> tuple[datetime, int]:
+    """When a review round ran, for ordering one round against another.
+
+    The record's own dispatch stamp is the first answer, and the dispatch
+    instant its review run id encodes the second — a record delivered straight
+    into the staging store carries the id but no stamp. The file's modification
+    time is only the tie-break, and the whole answer for a record naming
+    neither, because a rewrite in place moves it and it says when the file was
+    last written rather than when the review ran.
+    """
+    stamp = str(record.get(_review.DISPATCH_TIME_KEY) or "").strip()
+    if not stamp:
+        stamp = _review.run_id_dispatch_time(str(record.get("review_run_id") or ""))
+    moment: datetime | None = None
+    if stamp:
+        try:
+            moment = datetime.fromisoformat(stamp)
+        except ValueError:
+            moment = None
+    try:
+        modified = Path(path).stat().st_mtime_ns
+    except OSError:
+        modified = 0
+    if moment is None:
+        return datetime.min.replace(tzinfo=UTC), modified
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=UTC)
+    return moment, modified
 
 
 def _record_filed_elsewhere(

@@ -33,7 +33,8 @@ from click.testing import CliRunner
 
 from reckon.cli import main as cli_main
 from reckon.crew import review as review_module
-from reckon.crew import runs
+from reckon.crew import review_dispositions, review_records, runs
+from reckon.mcp_crew_actions import crew_action
 
 PROJECT = "disposition-names-its-review-fixture"
 SESSION = "coordinator-fixture"
@@ -277,3 +278,127 @@ def test_a_named_review_the_run_never_carried_is_refused(fixture: Fixture) -> No
     assert result.exit_code != 0, result.output
     assert "review-of-another-run" in result.output
     assert fixture.earlier_record.read_bytes() == earlier_before
+
+
+@dataclass(frozen=True)
+class StagedFixture:
+    """A run whose two rounds were both delivered and neither promoted."""
+
+    earlier_head: str
+    newer_head: str
+    earlier_record: Path
+    newer_record: Path
+
+
+@pytest.fixture()
+def staged(tmp_path: Path, isolated_reckon_home: Path) -> StagedFixture:
+    """Two delivered rounds, so both records are in the staging store.
+
+    A run whose reviews have not been promoted is the state in which file
+    modification times can order the rounds wrongly: writing a disposition onto
+    the earlier round rewrites its file, which would move it past the newer one.
+    """
+    repository = tmp_path / "staged-repo"
+    (repository / "docs" / "state" / PROJECT).mkdir(parents=True)
+    for index in (1, 2, 3, 4):
+        (repository / f"seed-{index}.txt").write_text(f"{index}\n", encoding="utf-8")
+    for arguments in (
+        ("init", "-q", "-b", "main"),
+        ("config", "user.email", "worker@example.invalid"),
+        ("config", "user.name", "Worker"),
+    ):
+        _git(repository, *arguments)
+    for index in (1, 2, 3, 4):
+        _git(repository, "add", f"seed-{index}.txt")
+        _git(repository, "commit", "-q", "-m", f"test: seed revision {index}")
+    earlier_base = _git(repository, "rev-parse", "HEAD~3")
+    earlier_head = _git(repository, "rev-parse", "HEAD~2")
+    newer_head = _git(repository, "rev-parse", "HEAD~1")
+    (isolated_reckon_home / "mounts.json").write_text(
+        json.dumps({PROJECT: str(repository / "docs")}), encoding="utf-8"
+    )
+    _write_pointer(REVIEWED_RUN, worktree=repository)
+    earlier_record = review_module.store_review(
+        _review_record(EARLIER_REVIEW, base_sha=earlier_base, head_sha=earlier_head)
+    )
+    newer_record = review_module.store_review(
+        _review_record(NEWER_REVIEW, base_sha=earlier_head, head_sha=newer_head)
+    )
+    return StagedFixture(
+        earlier_head=earlier_head,
+        newer_head=newer_head,
+        earlier_record=earlier_record,
+        newer_record=newer_record,
+    )
+
+
+def test_a_rewritten_older_round_does_not_read_as_the_newest(
+    staged: StagedFixture,
+) -> None:
+    """Writing onto the earlier round leaves the newer round the newest one.
+
+    A disposition rewrites the record it answers, so ordering the rounds by the
+    file's modification time would promote the older round each time one of its
+    findings was answered.
+    """
+    result = CliRunner().invoke(
+        cli_main,
+        [
+            "crew",
+            "dispose",
+            "--project",
+            PROJECT,
+            "--run",
+            REVIEWED_RUN,
+            "--review",
+            EARLIER_REVIEW,
+            "--finding",
+            "0",
+            "--kind",
+            "folded",
+            "--node",
+            FOLD_NODE,
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert _recorded_dispositions(staged.earlier_record)["0"]["kind"] == "folded"
+
+    newest = review_records.newest_delivered_review(PROJECT, REVIEWED_RUN)
+
+    assert (newest or {}).get("review_run_id") == NEWER_REVIEW
+
+
+def test_the_crew_tool_carries_the_review_argument(fixture: Fixture) -> None:
+    """The tool's dispose action forwards ``review_run`` to the verb.
+
+    Without the mapping the argument is dropped, the call falls back to the
+    older record and is refused, so the remedy the refusal names would be
+    unreachable through the tool surface.
+    """
+    arguments = {
+        "project": PROJECT,
+        "run_id": REVIEWED_RUN,
+        "finding_index": 0,
+        "kind": "folded",
+        "node": FOLD_NODE,
+    }
+
+    unnamed = crew_action("dispose", **arguments)
+    assert not unnamed.get("ok"), unnamed
+    assert NEWER_REVIEW in str(unnamed.get("detail") or "")
+
+    named = crew_action("dispose", **arguments, review_run=NEWER_REVIEW)
+    assert named.get("ok"), named
+    assert named["review_run_id"] == NEWER_REVIEW
+    assert named["reviewed_head"] == fixture.newer_head
+
+
+def test_a_rendered_disposition_command_names_its_review(fixture: Fixture) -> None:
+    """A printed fold or exempt command carries ``--review`` for the round it answers."""
+    fold, exempt = review_dispositions.dispose_commands(
+        PROJECT, REVIEWED_RUN, "--finding 0"
+    )
+
+    for command in (fold, exempt):
+        assert f"--review {NEWER_REVIEW}" in command
+        assert "crew dispose" in command

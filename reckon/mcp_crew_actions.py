@@ -108,6 +108,7 @@ _PARAM_MAP: dict[str, dict[str, str]] = {
     "dispose": {
         "project": "project",
         "run_id": "reviewed_run_id",
+        "review_run": "review_run",
         "dimension": "dimension",
         "finding_index": "finding_index",
         "kind": "kind",
