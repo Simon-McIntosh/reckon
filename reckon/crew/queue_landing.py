@@ -97,8 +97,104 @@ def _unreadable_entry_holds(
     )
 
 
-def _review_reflex_state(pointer: Mapping[str, Any]) -> tuple[str, str]:
-    """The review reflex's own state for this run, as ``(state, detail)``.
+#: The two review tiers a delivered run can owe. The code review is the run
+#: review every landing reads; the figure review judges the rendered artifacts a
+#: run that changed a figure produces, and is filed under its own rubric.
+CODE_REVIEW_TIER = "code"
+FIGURE_REVIEW_TIER = "figure"
+
+
+def _owed_review_tiers(pointer: Mapping[str, Any]) -> list[str]:
+    """Every review tier this run owes at its head, in the order it is read.
+
+    The tier rule is the review reflex's own — the one it dispatches by — so the
+    lander and the reflex cannot disagree about which reviews a run owes. A
+    delivered run always owes its code review, and owes a figure review exactly
+    when its commits add or change a figure image. A changed-path list git
+    cannot produce reads as no figure review owed, which is the reflex's own
+    reading of it: a lander waiting on a review the reflex would never dispatch
+    would hold the run forever, so the two must answer alike.
+    """
+    from reckon.crew.recovery_review_dispatch import _changed_figure_paths
+
+    tiers = [CODE_REVIEW_TIER]
+    try:
+        images = _changed_figure_paths(pointer)
+    except (OSError, ValueError):
+        images = []
+    if images:
+        tiers.append(FIGURE_REVIEW_TIER)
+    return tiers
+
+
+def _review_for_tier(
+    project: str, run_id: str, head: str, tree: Path | None, tier: str
+) -> tuple[dict[str, Any] | None, str]:
+    """The stored review one tier owes at ``head``, and any other head seen.
+
+    The code tier is read through the selection the classifier and promotion
+    share, so the lander, the classifier and the gate all treat one record as
+    the evidence about a revision. The figure tier is read under its own rubric
+    from the store: the text-review selection excludes figure records by
+    design, so reading it through that selection answers with the wrong subject
+    — which is how a run owing a figure review was landed without one.
+    """
+    from reckon.crew import review as review_module
+    from reckon.crew.recovery_review_subject import select_review_for_head
+
+    if tier != FIGURE_REVIEW_TIER:
+        return select_review_for_head(project, run_id, head, tree=tree)
+    stored = review_module.read_review(
+        project,
+        run_id,
+        reviewed_head_sha=head,
+        rubric=review_module.FIGURE_REVIEW_RUBRIC,
+    )
+    return stored, ""
+
+
+def _review_tier_is_complete(tier: str, review: Mapping[str, Any] | None) -> bool:
+    """Whether a stored review of this tier holds every measure its rubric asks.
+
+    The code tier is judged by the acceptance rule the landing already applies,
+    so an incomplete or finding-bearing text review is not re-judged here. A
+    figure review is not scored on the text dimensions, so it is judged by the
+    store's own delivery contract for its rubric, which is the list a reviewer
+    reads before the record was ever stored.
+    """
+    from reckon.crew import review as review_module
+
+    if tier != FIGURE_REVIEW_TIER:
+        return _review_accepts_promotion(review)
+    return not review_module.review_record_refusals(review or {})
+
+
+def _owed_review_stamp(
+    reviews: Mapping[str, Mapping[str, Any] | None],
+) -> str:
+    """The identity of every owed review record a judgement was made on.
+
+    A refusal states the record it read, and holds while that record is
+    unchanged. Reading only the code review would leave a run refused for a
+    figure review it owed held after that review was stored: the stamp would
+    not move and the refusal would stand over an absence that no longer
+    exists. Keying the stamp on each owed tier's record makes storing the
+    missing review a change the next pass reads as a reason to judge again.
+    """
+    from reckon.crew.plan_review import _digest
+
+    return _digest(
+        {
+            str(tier): (_review_stamp(review) if review is not None else "")
+            for tier, review in reviews.items()
+        }
+    )
+
+
+def _review_reflex_state(
+    pointer: Mapping[str, Any], tier: str = CODE_REVIEW_TIER
+) -> tuple[str, str]:
+    """The review reflex's own state for one tier, as ``(state, detail)``.
 
     A run waiting for its review is not a run with nothing to say: the reflex
     either dispatched a review or was refused, and it writes which onto the run
@@ -106,10 +202,22 @@ def _review_reflex_state(pointer: Mapping[str, Any]) -> tuple[str, str]:
     silent skip into a verdict a coordinator can act on. A run carrying no
     record at all has not been picked up yet, which is reported as a refusal to
     dispatch with that reason rather than as an absence of state.
-    """
-    from reckon.crew.recovery_review_dispatch import REVIEW_DISPATCH_FIELD
 
-    recorded = pointer.get(REVIEW_DISPATCH_FIELD)
+    Each tier has its own dispatch field, so a run waiting on its figure review
+    reports the figure reflex's attempt rather than the code review's, which
+    would name a dispatch that has already produced the review being read.
+    """
+    from reckon.crew.recovery_review_dispatch import (
+        FIGURE_REVIEW_DISPATCH_FIELD,
+        REVIEW_DISPATCH_FIELD,
+    )
+
+    field = (
+        FIGURE_REVIEW_DISPATCH_FIELD
+        if tier == FIGURE_REVIEW_TIER
+        else REVIEW_DISPATCH_FIELD
+    )
+    recorded = pointer.get(field)
     if not isinstance(recorded, Mapping):
         return "refused", "the review reflex has recorded no attempt for this run"
     if str(recorded.get("status") or "") == "dispatched":
@@ -124,6 +232,7 @@ def _awaiting_review_holds(
     state: str,
     detail: str,
     code_stamp: str,
+    tier: str = CODE_REVIEW_TIER,
 ) -> bool:
     """Whether this head already carries this awaiting-review record."""
 
@@ -134,6 +243,7 @@ def _awaiting_review_holds(
         and recovery.same_revision(str(previous.get("head") or ""), head)
         and str(previous.get("review_state") or "") == state
         and str(previous.get("review_detail") or "") == detail
+        and str(previous.get("review_tier") or CODE_REVIEW_TIER) == tier
         and bool(code_stamp)
         and str(previous.get("code_stamp") or "") == code_stamp
     )
@@ -146,17 +256,22 @@ def _record_awaiting_review(
     head: str,
     code_stamp: str,
     review_stamp: str,
+    tier: str = CODE_REVIEW_TIER,
+    stale_head: str = "",
 ) -> None:
-    """Record that this head's landing waits on the review reflex.
+    """Record that this head's landing waits on one review tier.
 
     The run is not refused and not landed: it has a verdict, and the verdict
-    names what it waits for. Writing it once per head and reflex state keeps a
-    pass that runs every 30 seconds from rewriting the pointer for a run whose
-    situation has not moved.
+    names the tier it waits for and that tier's reflex state. Writing it once
+    per head, tier and reflex state keeps a pass that runs every 30 seconds
+    from rewriting the pointer for a run whose situation has not moved. A
+    ``stale_head`` names a revision the tier's stored record describes instead
+    of this one, so the record reports two revisions that disagree rather than
+    an absence.
     """
-    state, detail = _review_reflex_state(pointer)
+    state, detail = _review_reflex_state(pointer, tier)
     if _awaiting_review_holds(
-        pointer.get("admission_landing"), head, state, detail, code_stamp
+        pointer.get("admission_landing"), head, state, detail, code_stamp, tier
     ):
         return
 
@@ -164,11 +279,14 @@ def _record_awaiting_review(
         record["admission_landing"] = {
             "head": head,
             "status": "awaiting-review",
+            "review_tier": tier,
             "review_state": state,
             "review_detail": detail,
             "code_stamp": code_stamp,
             "review_stamp": review_stamp,
         }
+        if stale_head:
+            record["admission_landing"]["stale_head"] = stale_head
         return record
 
     runs._mutate_pointer(run_id, mutation)
@@ -799,13 +917,13 @@ def land_once() -> dict[str, Any]:
     the host was merely busy. A manifest whose
     last commit entry names no revision is refused with that entry quoted and an
     obligation for the run's session, so the run is visible to a coordinator
-    rather than dropped from the pass in silence. A delivered run whose head
-    carries no review is recorded ``awaiting-review`` with the review reflex's
-    own state beside it, so waiting for a review is a verdict on the record
-    rather than a run the pass never mentions.
+    rather than dropped from the pass in silence. A delivered run missing a
+    review it owes is recorded ``awaiting-review`` naming that tier and the
+    review reflex's own state beside it, so waiting for a review is a verdict
+    on the record rather than a run the pass never mentions. Every tier the run
+    owes is read at its head, so a run that owes a figure review is not landed
+    on its code review alone.
     """
-    from reckon.crew.recovery_review_subject import select_review_for_head
-
     landed: list[str] = []
     obligations: list[dict[str, str]] = []
     deferred: list[str] = []
@@ -857,11 +975,21 @@ def land_once() -> dict[str, Any]:
             continue
         if not recovery.same_revision(head, delivered):
             continue
-        try:
-            review, stale = select_review_for_head(project, run_id, head, tree=tree)
-        except (OSError, ValueError) as exc:
-            review, stale = None, str(exc)
-        review_stamp = _review_stamp(review)
+        owed = _owed_review_tiers(pointer)
+        reviews: dict[str, dict[str, Any] | None] = {}
+        stale, stale_tier = "", ""
+        for tier in owed:
+            try:
+                record, described = _review_for_tier(project, run_id, head, tree, tier)
+            except (OSError, ValueError) as exc:
+                record, described = None, str(exc)
+            reviews[tier] = record
+            if described and not stale:
+                stale, stale_tier = described, tier
+        review_stamp = _owed_review_stamp(reviews)
+        awaiting_tier = next((tier for tier in owed if reviews.get(tier) is None), "")
+        stale_tier = stale_tier or awaiting_tier
+        review = reviews.get(CODE_REVIEW_TIER)
         previous = pointer.get("admission_landing")
         if isinstance(previous, Mapping) and recovery.same_revision(
             str(previous.get("head") or ""), head
@@ -889,17 +1017,31 @@ def land_once() -> dict[str, Any]:
                 previous, code_stamp, review_stamp
             ):
                 continue
-        if stale or review is None:
+        if stale or awaiting_tier:
             _record_awaiting_review(
                 run_id,
                 pointer,
                 head=head,
                 code_stamp=code_stamp,
                 review_stamp=review_stamp,
+                tier=stale_tier or CODE_REVIEW_TIER,
+                stale_head=stale,
             )
             continue
-        if not _review_accepts_promotion(review):
-            guard = "review acceptance: a blocking finding or an incomplete record"
+        incomplete = next(
+            (
+                tier
+                for tier in owed
+                if not _review_tier_is_complete(tier, reviews.get(tier))
+            ),
+            "",
+        )
+        if incomplete:
+            guard = (
+                "review acceptance: a blocking finding or an incomplete record"
+                if incomplete == CODE_REVIEW_TIER
+                else f"review acceptance: the stored {incomplete} review is incomplete"
+            )
             _record_attempt(
                 run_id,
                 head=head,
