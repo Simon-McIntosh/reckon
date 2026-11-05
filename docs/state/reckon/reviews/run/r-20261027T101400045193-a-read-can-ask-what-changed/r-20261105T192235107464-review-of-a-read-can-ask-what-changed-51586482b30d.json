@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "c15f841ed10ab5349332c8578bfa65910226fafe",
+  "call_sites": [
+    "reckon/mcp.py:1171",
+    "reckon/mcp.py:1595",
+    "reckon/mcp_views.py:3371",
+    "reckon/mcp_views.py:3510",
+    "reckon/mcp_views.py:3661",
+    "reckon/mcp_views.py:3853",
+    "reckon/mcp_views.py:3965"
+  ],
+  "completed_at": "2026-11-05T19:37:30.850Z",
+  "dispatched_at": "2026-11-05T19:29:12Z",
+  "failure_note": "The reviewed run's baseline_suite (revision c15f841ed, tests/test_a_read_can_ask_what_changed.py) exited 4 with no test collected because that file does not exist at the base revision, so it names no failing id; its after_suite at 51586482b3 records EXIT=0 with no failing id, and the four files it covers are green in four logs at that revision (20, 15, 6 and 3 passed, each EXIT=0). Added failures = 0 against the run's own arms.",
+  "findings": [
+    {
+      "file": "tests/test_a_read_can_ask_what_changed.py",
+      "line": "687",
+      "severity": "non-blocking",
+      "text": "non-blocking: the closing guard `assert served.get(\"error\") != \"invalid_view\"` passes on any other error the plan read can return (a missing plan, a why composition failure), so it does not show that read_plan still serves the why view; `assert \"error\" not in served` would be the assertion the case's own docstring describes."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T101400045193-a-read-can-ask-what-changed/manifest.md",
+      "line": "31",
+      "severity": "non-blocking",
+      "text": "non-blocking: after_suite records a four-file command against logs/gate-a-read-can-ask-what-changed.log, whose header runs one file and reports 20 passed; the other three files are green in three separate logs, so no shell was handed the recorded command and the arm cannot be reproduced from the receipt it cites."
+    }
+  ],
+  "head_log_revision": "51586482b30df00e2a8838e39ac1fee3f1723a2a",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "one commit, 77 insertions and 12 deletions across reckon/mcp_views.py (TYPED_VIEW_NAMES and an accepted parameter on normalize_view) and tests/test_a_read_can_ask_what_changed.py (the view-set case tightened to an equality plus a new per-typed-view refusal case).",
+    "done_when": "the source node's measure is the fixture change-set read with its negative control; this commit adds no behaviour to that read and its gate at 51586482b3 records four green files (20/15/6/3 passed, EXIT=0), with the plan-read docstring enumeration kept equal to VIEW_NAMES by tests/test_a_read_can_ask_what_changed.py:619.",
+    "goal": "the source node's goal is that the brief, crew live and the roadmap answer `since` with a change set carrying `observed_at`; this commit is a repair round on that surface and leaves the three reads intact while making the declared view vocabulary honest, adding TYPED_VIEW_NAMES at reckon/mcp_views.py:61 and routing it through normalize_view at reckon/mcp_views.py:2240.",
+    "manifest": "read; it records the two repairs, the four green gate logs and the two red logs (typed-view-red.log and view-names-red.log) for this commit, and its after_suite at line 31 names a four-file command its cited log did not run.",
+    "write_paths": "the run's declared paths (prompt.txt:207) name reckon/mcp.py, reckon/mcp_views.py, reckon/change_set.py, tests/test_a_read_can_ask_what_changed.py and the evidence fragment; the diff touches only reckon/mcp_views.py and the test file, both inside that set."
+  },
+  "justifications": {
+    "durability": "tests/test_a_read_can_ask_what_changed.py:641 fails on the regression -- typed-view-red.log shows it red at f17de498fc with 'DID NOT RAISE ViewRequestError' -- but its final assertion at line 687 passes on any error other than invalid_view.",
+    "evidence": "the gate receipt at 51586482b3 is four separate logs (20/15/6/3 passed, EXIT=0), but the manifest's after_suite at manifest.md:31 records one four-file command none of them ran.",
+    "fit": "reckon/mcp_views.py:55-61 follows the module's existing frozenset-constant idiom with a `#:` doc comment, and the added names are mechanism words with no plan label.",
+    "goal_fidelity": "reckon/mcp_views.py:61 derives TYPED_VIEW_NAMES from VIEW_NAMES so a typed view refuses the why name while read_plan still serves it, which is the defect the commit names.",
+    "reuse": "normalize_view at reckon/mcp_views.py:2240 is the repository's owner of view-name validation and the diff extends it rather than forking, with TYPED_VIEW_NAMES derived from the existing VIEW_NAMES at line 54.",
+    "scope_discipline": "the diff touches only reckon/mcp_views.py and tests/test_a_read_can_ask_what_changed.py, both inside the run's declared write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261105T192235107464-review-of-a-read-can-ask-what-changed-51586482b30d",
+  "reviewed_base_sha": "f17de498fc72083c9f0ff87a3e397e415bcc0c95",
+  "reviewed_head_sha": "51586482b30df00e2a8838e39ac1fee3f1723a2a",
+  "reviewed_run_id": "r-20261027T101400045193-a-read-can-ask-what-changed",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T19:52:20.359230+00:00",
+  "total": 106
+}

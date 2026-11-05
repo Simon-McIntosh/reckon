@@ -26,7 +26,7 @@
   <title>The MCP Answers the Question Asked | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="50">
+<meta name="plan-version" content="51">
 <meta name="plan-modified" content="2026-11-05">
 </head>
 <body>
@@ -293,6 +293,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261105T185446567257-review-of-a-read-can-ask-what-changed-f17de498fc72" data-who="reckon-build" data-when="2026-11-05T19:06:10.103Z">
     <div class="r-comment-body"><p>no code landed; the review of run r-20261027T101400045193-a-read-can-ask-what-changed at head f17de498fc (base 6957a1f558) is stored as a parsed record scoring all six dimensions at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T101400045193-a-read-can-ask-what-changed/review-records/r-20261027T101400045193-a-read-can-ask-what-changed.json and at the revision-pinned path beside it.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261105T192235107464-review-of-a-read-can-ask-what-changed-51586482b30d" data-who="reckon-build" data-when="2026-11-05T19:37:30.850Z">
+    <div class="r-comment-body"><p>review of r-20261027T101400045193-a-read-can-ask-what-changed at base f17de498fc head 51586482b3: parsed, six dimensions scored (goal_fidelity 18, evidence 15, scope_discipline 19, durability 16, fit 18, reuse 20), added_failure_count 0, two non-blocking findings.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261021T180147626901-review-of-a-newer-flight-key-is-ignored-at-load-8f435107bbad" data-who="reckon-build" data-when="2026-10-21T18:30:30.772Z">
     <div class="r-comment-body"><p>Independent review of r-20261021T160220332694-a-newer-flight-key-is-ignored-at-load at 8f435107bbadf5d5bf83be2c3ff0479786ebf7da (base da1a110ab13de2c3f5b38a38fb807c35cbad06ae), status parsed: all five checklist verdicts and all six dimensions emitted. Scores — goal_fidelity 19, evidence 16, scope_discipline 18, durability 18, fit 18, reuse 20. Added failure ids: none (base log 1 failed / 138 passed and head log 1 failed / 144 passed carry the identical single id, tests/test_one_check_trusts_a_moved_checkout.py::test_a_clean_moved_checkout_answers_on_the_current_code). The change is real and the design is intact: extra="ignore" in the generated schema (reckon/_flight_schema.py:43) plus a schema-driven walk that reports undeclared key paths (reckon/flight.py:1418, published at :2568) with the strict read behind `reckon flight --check` (reckon/project_setup_commands.py:416). Two follow-on findings, neither blocking: keys inside the reckon-owned blocks that `_schema_view` strips are neither refused nor reported, measured at head; and project_setup_commands.py is not `ruff format --check` clean at head though its delta is zero against base (33 complaint lines either side).</p></div>
