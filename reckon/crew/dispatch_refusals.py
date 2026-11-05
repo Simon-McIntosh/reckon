@@ -24,15 +24,28 @@ import hashlib
 import json
 import re
 from collections.abc import Mapping
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 from reckon._store import write_json_atomically
 from reckon.crew.node import TaskNode
+from reckon.crew.routing import _context_contributors
 from reckon.crew.run_paths import _utc_now, crew_home
 
 RECORD_DIRECTORY = "refusal-traces"
 CONTEXT_REFUSAL_REASON = "context-window-exceeded"
+
+# A refusal quotes the few inputs that dominate its estimate; a trace and the
+# reduction read back from it compare all of them, so the reader is asked for
+# every contributor rather than for the three a refusal renders.
+_EVERY_CONTRIBUTOR = 10_000
+
+# A refusal is evidence about the brief a coordinator is about to cut, and that
+# cut happens in the same sitting. A trace older than this describes a brief
+# nobody is holding any more, and matching a later dispatch to it would report
+# a reduction that never happened.
+TRACE_MAX_AGE = timedelta(hours=24)
 
 
 def _home(home: str | Path | None) -> Path:
@@ -59,30 +72,29 @@ def is_context_refusal(verdict: Mapping[str, Any]) -> bool:
     return str(verdict.get("reason") or "").startswith(CONTEXT_REFUSAL_REASON)
 
 
-def _charged_paths(context: Mapping[str, Any]) -> list[dict[str, Any]]:
-    """The repository inputs a context verdict charged, by declared and resolved path.
+def _charged_paths(context: Mapping[str, Any]) -> list[str]:
+    """The repository inputs a context verdict charged, as routing names them.
 
-    A path is carried by both spellings because the two attempts being compared
-    may write the same file differently: the resolved path is what identifies
-    one file across briefs, and the declared path is what a reader recognises as
-    the thing that left the brief.
+    routing's contributor reader is the one place that knows the shape a
+    context verdict carries its inputs in, so the trace and the reduction take
+    its records rather than walking ``inputs['repository_files']`` a second
+    time. Each record names the resolved path, which is what identifies one
+    file across two attempts that may spell it differently.
     """
-    inputs = context.get("inputs") if isinstance(context, Mapping) else None
-    repository = inputs.get("repository_files") if isinstance(inputs, Mapping) else None
-    if not isinstance(repository, Mapping):
-        return []
-    charged: list[dict[str, Any]] = []
-    for group in ("write_paths", "named_files"):
-        for item in repository.get(group) or ():
-            if not isinstance(item, Mapping) or not item.get("counted"):
-                continue
-            charged.append(
-                {
-                    "path": str(item.get("declared") or item.get("path") or ""),
-                    "resolved": str(item.get("path") or ""),
-                }
-            )
-    return charged
+    return [
+        str(record["path"])
+        for record in _context_contributors(context, limit=_EVERY_CONTRIBUTOR)
+    ]
+
+
+def _refused_at(stored: Mapping[str, Any]) -> datetime | None:
+    """When the refusal was recorded, or ``None`` if the stamp is unreadable."""
+    raw = str(stored.get("recorded_at") or "")
+    try:
+        parsed = datetime.fromisoformat(raw)
+    except ValueError:
+        return None
+    return parsed if parsed.tzinfo is not None else None
 
 
 def _node_text_bytes(node: TaskNode) -> int:
@@ -151,19 +163,20 @@ def brief_reduction(
         return None
     if not isinstance(stored, Mapping):
         return None
+    refused_at = _refused_at(stored)
+    if refused_at is None or datetime.now(tz=UTC) - refused_at > TRACE_MAX_AGE:
+        return None
     context = verdict.get("context")
     context = context if isinstance(context, Mapping) else None
     if context is None:
         return None
     accepted_tokens = int(context.get("estimated_tokens") or 0)
     refused_tokens = int(stored.get("estimated_tokens") or 0)
-    accepted_paths = {
-        entry["resolved"] for entry in _charged_paths(context) if entry.get("resolved")
-    }
+    accepted_paths = set(_charged_paths(context))
     removed_paths = [
-        str(entry.get("path") or "")
+        str(entry)
         for entry in stored.get("paths") or ()
-        if isinstance(entry, Mapping) and entry.get("resolved") not in accepted_paths
+        if str(entry) not in accepted_paths
     ]
     removed_text_bytes = max(
         0, int(stored.get("text_bytes") or 0) - _node_text_bytes(node)

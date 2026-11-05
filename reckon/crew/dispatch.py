@@ -3332,8 +3332,11 @@ def dispatch(
         # could drain an empty fleet between the probe and this write, leaving
         # a new run behind a payload that incorrectly said it was watched.
         _write_json(pointer_path(run_id), record)
-        if reduction is not None:
-            consume_context_refusal(node=node, project=project)
+        # Any dispatch that fits ends the refusal's usefulness, whether or not
+        # the brief changed: a trace left behind would mark a later dispatch
+        # against an older refusal's figures, and a node never dispatched again
+        # would leave its trace in the crew home for good.
+        consume_context_refusal(node=node, project=project)
         record["peer_channel"] = _wire_peer_channels(record, adjacent_peers)
         wired_peer_run_ids = list(record["peer_channel"]["peers"])
         record["watch"] = watch_state(project, session=session)
