@@ -1588,13 +1588,19 @@ def _indexed_data(
 def _ledger_holds_content(project: str, root: str | Path | None) -> bool:
     """Whether a read of this ledger has anything an index could hold.
 
-    Both sources count: the aggregate file and the directory of per-run
-    documents beside it. A project with neither is a project that has run no
-    worker, and indexing its emptiness publishes a cache file for a state that
-    never existed.
+    Content is the aggregate file, or at least one run record in the directory
+    beside it. Either source alone is enough: a project may split its runs into
+    their own documents and carry no aggregate at all.
+
+    A ``runs`` directory that exists and holds no record is not content. It is
+    the state of a project that has been initialised and never run a worker,
+    and indexing that emptiness publishes a cache file for a ledger nothing
+    will refresh — the same artefact an absent ledger would leave.
     """
     aggregate = ledger_path(project, root)
-    return aggregate.exists() or (aggregate.parent / "runs").is_dir()
+    if aggregate.exists():
+        return True
+    return next((aggregate.parent / "runs").glob("*.json"), None) is not None
 
 
 def indexed_headers(
