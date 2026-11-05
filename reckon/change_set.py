@@ -216,20 +216,62 @@ class _Documents:
         return Path(path).stem
 
 
-def _satisfied(slug: str, section: str | None, views: Mapping[str, _PlanView]) -> bool:
-    """Whether one dependency ref's target has landed in the given revision.
+def _whole_plan_satisfied(view: _PlanView) -> bool:
+    """Whether a whole-plan dependency on this revision is satisfied.
 
-    The verdict is the roadmap's own — :func:`reckon.roadmap._section_satisfied`
-    — so a section released here is one the roadmap releases too, including the
-    arm where a section carries no declaration and only its passed gates
-    satisfy it.
+    The roadmap's rule, applied to one revision: a completed plan satisfies it;
+    otherwise at least one section is done, every open section is deferred, and
+    every authored heading carries a declaration. The roadmap's own
+    :func:`reckon.roadmap._plan_dependency_satisfied` resolves the plan's file
+    from the checkout, so it answers for the head rather than for the revision
+    this module is reading; the predicates it is built from are shared here
+    instead, so the two cannot drift apart on what "built" means.
     """
-    from reckon.roadmap import _section_satisfied
+    from reckon import _plan_html
+    from reckon.lifecycle import COMPLETED_STATUSES
 
+    if view.status in COMPLETED_STATUSES:
+        return True
+    declarations = view.declarations
+    if not declarations:
+        return False
+    if not any(
+        str(value).strip() == _plan_html.SECTION_DECLARATION_DONE
+        for value in declarations.values()
+    ):
+        return False
+    for section in _plan_html.open_sections(
+        {"section_declarations": dict(declarations)}
+    ):
+        if (
+            str(declarations.get(section) or "").strip()
+            != _plan_html.SECTION_DECLARATION_DEFERRED
+        ):
+            return False
+    declared = {str(section).strip() for section in declarations}
+    for identity, _heading in _plan_html.authored_section_headings(view.text):
+        if identity not in declared:
+            return False
+    return True
+
+
+def _satisfied(slug: str, section: str | None, views: Mapping[str, _PlanView]) -> bool:
+    """Whether one dependency ref's target is satisfied in the given revision.
+
+    A ref naming a section is judged by :func:`reckon.roadmap._section_satisfied`
+    — the roadmap's own verdict — so a section released here is one the roadmap
+    releases too, including the arm where a section carries no declaration and
+    only its passed gates satisfy it. A ref naming no section waits on the plan
+    itself and is judged by the whole-plan rule.
+    """
     view = views.get(slug)
     if view is None:
         return False
-    return _section_satisfied(view.as_plan(), section or "")
+    if not section:
+        return _whole_plan_satisfied(view)
+    from reckon.roadmap import _section_satisfied
+
+    return _section_satisfied(view.as_plan(), section)
 
 
 def _ready(
@@ -325,27 +367,31 @@ def _section_changes(
 def _landed(
     documents: _Documents,
     heads: Mapping[str, _PlanView],
-    project: str,
-) -> set[tuple[str, str]]:
-    """The ``(plan, section)`` targets whose satisfaction moved in the window.
+) -> set[tuple[str, str | None]]:
+    """The targets whose satisfaction moved in the window.
 
-    A target has landed when it did not satisfy its dependents entering the
-    window and does at its end. That is broader than a declaration reaching
-    ``done``: a section carrying no declaration is satisfied by its passed
-    gates, and a gate closing inside the window releases its dependents exactly
-    as a declaration does.
+    A target is one section, named ``(plan, section)``, or the whole plan,
+    named ``(plan, None)``, and it has landed when it did not satisfy its
+    dependents entering the window and does at its end. That is broader than a
+    declaration reaching ``done``: a section carrying no declaration is
+    satisfied by its passed gates, and a gate closing inside the window
+    releases its dependents exactly as a declaration does; a plan likewise
+    satisfies a whole-plan dependency once it completes, which is a change of
+    status rather than of any declaration.
     """
     bases: dict[str, _PlanView] = {}
     for path in documents.history:
         view = documents.at_base(path)
         if view is not None:
             bases[documents.slug_of(path)] = view
-    landed: set[tuple[str, str]] = set()
+    landed: set[tuple[str, str | None]] = set()
     for slug in sorted(heads):
         head = heads[slug]
         before = bases.get(slug)
         if before is None:
             continue
+        if not _satisfied(slug, None, bases) and _satisfied(slug, None, heads):
+            landed.add((slug, None))
         sections = set(head.declarations) | set(before.declarations)
         for gate in head.gates():
             sections.add(str(gate.get("section") or ""))
@@ -360,16 +406,18 @@ def _landed(
 
 def _newly_ready(
     documents: _Documents,
-    landed: set[tuple[str, str]],
+    landed: set[tuple[str, str | None]],
     heads: Mapping[str, _PlanView],
     project: str,
 ) -> list[dict[str, Any]]:
-    """Sections whose readiness moved because a section they wait on landed.
+    """Sections whose readiness moved because a target they wait on landed.
 
     Only a landed target can release a dependent, so only those are walked.
-    Each dependent is compared across the same two revisions its dependency was
-    read at, which is what makes "moved" a measurement of the window rather
-    than of the present.
+    The target is the section a ref names or, for a ref naming no section, the
+    plan itself — a dependent on a whole plan is released by that plan
+    completing rather than by any one of its sections landing. Each dependent is
+    compared across the same two revisions its dependency was read at, which is
+    what makes "moved" a measurement of the window rather than of the present.
     """
     if not landed:
         return []
@@ -397,8 +445,12 @@ def _newly_ready(
                 target_project, target_plan, target_section = parts
                 if target_project is not None and target_project != project:
                     continue
-                if target_section and (target_plan, target_section) in landed:
-                    waited_on.add(f"{target_plan}#{target_section}")
+                if (target_plan, target_section) in landed:
+                    waited_on.add(
+                        f"{target_plan}#{target_section}"
+                        if target_section
+                        else target_plan
+                    )
             if not waited_on:
                 continue
             if _ready(slug, section, bases, project):
@@ -543,7 +595,7 @@ def change_set(
         sections = _section_changes(documents, heads)
         answer["sections"] = sections
         answer["newly_ready"] = _newly_ready(
-            documents, _landed(documents, heads, project), heads, project
+            documents, _landed(documents, heads), heads, project
         )
         answer["sources"]["plans"] = True
 

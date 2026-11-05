@@ -171,6 +171,11 @@ def fixture(tmp_path: Path) -> dict:
             "docs/plans/d.html": _plan(
                 "d", {"s1": "implementable"}, depends_on={"s1": ["e#s1"]}
             ),
+            # A dependency on a whole plan rather than on one of its sections.
+            "docs/plans/f.html": _plan("f", {"s1": "implementable"}),
+            "docs/plans/g.html": _plan(
+                "g", {"s1": "implementable"}, depends_on={"s1": ["f"]}
+            ),
         },
     )
     second = _iso(DAY)
@@ -354,6 +359,30 @@ def test_a_section_released_by_a_passing_gate_is_reported_ready(fixture):
     # ``a#s1`` landed in this same window, so ``b#s1`` is released alongside.
     assert set(released) == {"b#s1", "d#s1"}
     assert released["d#s1"]["finished_waiting_on"] == ["e#s1"]
+
+
+def test_a_dependent_on_a_whole_plan_is_released_when_it_completes(fixture):
+    """A ref naming no section waits on the plan, so completion releases it."""
+    root, stream = fixture["root"], fixture["stream"]
+    opened = change_set_module.change_set(
+        PROJECT, None, repo=root, stream_path=stream, now=fixture["before"]
+    )
+    _commit(
+        root,
+        "f completes",
+        _iso(DAY + 2_700),
+        {"docs/plans/f.html": _plan("f", {"s1": "done"}, status="done")},
+    )
+    moved = change_set_module.change_set(
+        PROJECT,
+        opened["observed_at"],
+        repo=root,
+        stream_path=stream,
+        now=fixture["at_move"],
+    )
+    released = {row["ref"]: row for row in moved["newly_ready"]}
+    assert "g#s1" in released
+    assert released["g#s1"]["finished_waiting_on"] == ["f"]
 
 
 def test_a_project_with_no_stream_does_not_claim_to_have_read_one(fixture, tmp_path):
