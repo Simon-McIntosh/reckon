@@ -1,0 +1,43 @@
+<article class="r-landing" id="an-answer-says-what-was-done">
+  <h3 id="an-answer-says-what-was-done-title">An answer says what was done</h3>
+  <p id="an-answer-says-what-was-done-body">
+    <code>reckon crew review --answer &lt;id&gt; --acted</code> now requires
+    <code>--note "&lt;what changed&gt;"</code>, and the MCP answer action takes the
+    same note as <code>note</code>. The note is stored on the finding's response,
+    read back by <code>plan_review._stored_response</code>, and printed by the next
+    review brief in place of a bare <code>-&gt; acted</code>, so a reviewer reads
+    what the fix changed instead of re-deriving it from the diff. A note without
+    an answer is refused naming <code>--answer</code>: composing a review with
+    one dropped it silently and reported a review of a finding nobody answered.
+    Every acted-answer example in the build, create, edit and review skills names
+    the note.
+  </p>
+  <p id="an-answer-says-what-was-done-measure">
+    <strong>Measure.</strong> <code>tests/test_an_answer_says_what_was_done.py</code>:
+    6 passed. The declared controls go red: dropping the note requirement fails
+    <code>test_an_acted_answer_without_a_note_is_refused</code>, removing the
+    note-without-answer refusal fails
+    <code>test_a_note_without_an_answer_is_refused</code> (the control's run
+    dispatched a review and discarded the note, which is the defect), and
+    restoring one skill example without <code>--note</code> fails
+    <code>test_every_skill_example_of_an_acted_answer_shows_the_note</code>. The
+    blast radius — the eight pre-existing files that answer findings through the
+    CLI plus the tool-parity file — is 123 passed. The three no-added-failure
+    arm files are 1 failed / 12 passed at both the node revision and the base,
+    the shared failure being
+    <code>test_crew_help_names_its_state_or_condition</code> on the attach verb's
+    help line.
+  </p>
+  <p id="an-answer-says-what-was-done-open">
+    <strong>Open.</strong> The 156-file importer arm was split by the time fence.
+    The chunk holding every file that reaches the changed surfaces ran at both
+    arms: 8 failed / 234 passed at the node revision and 8 failed / 209 passed at
+    the base, both red only inside <code>test_crew.py</code> and
+    <code>test_crew_session_delivery.py</code>, whose failures include a
+    <code>RecursionError</code> in <code>reckon/crew/runs.py</code>'s watch
+    publisher — the unrelated follow path, and flaky — so that comparison
+    records no added failure outside it rather than a clean arm. The remaining
+    116 importer files did not run; the parameter-surface subset that could
+    notice a new tool argument did, and adds none.
+  </p>
+</article>

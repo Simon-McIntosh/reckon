@@ -146,6 +146,8 @@ def test_an_incomplete_design_reviews_finding_is_still_answerable(section_plan):
             "--answer",
             "reuse_search-1",
             "--acted",
+            "--note",
+            "The fix the finding asked for is recorded in this review.",
         ],
     )
     assert result.exit_code == 0, result.output

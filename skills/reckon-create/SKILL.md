@@ -671,7 +671,7 @@ completion reaches your session's follower. Read it back with
 acted on or declined with a one-line reason:
 
 ```bash
-reckon crew review --project <project> --plan <slug> --answer <finding> --acted
+reckon crew review --project <project> --plan <slug> --answer <finding> --acted --note "<what changed>"
 reckon crew review --project <project> --plan <slug> --answer <finding> --declined "<reason>"
 ```
 

@@ -199,6 +199,8 @@ def test_answer_stores_an_unstored_delivery_before_answering(project):
             "--answer",
             _FINDING,
             "--acted",
+            "--note",
+            "The fix the finding asked for is recorded in this review.",
         ],
     )
     assert result.exit_code == 0, result.output
@@ -235,6 +237,8 @@ def test_answer_surface_reads_a_section_covering_review(project):
             "--answer",
             _FINDING,
             "--acted",
+            "--note",
+            "The fix the finding asked for is recorded in this review.",
         ],
     )
     assert result.exit_code == 0, result.output
@@ -286,6 +290,8 @@ def test_absent_covering_review_names_the_stale_one(project):
             "--answer",
             _FINDING,
             "--acted",
+            "--note",
+            "The fix the finding asked for is recorded in this review.",
         ],
     )
     assert result.exit_code != 0, result.output

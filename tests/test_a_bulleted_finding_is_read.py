@@ -191,6 +191,8 @@ def test_a_bulleted_finding_is_stored_and_answerable(section_plan):
             "--answer",
             "anchors_resolve-1",
             "--acted",
+            "--note",
+            "The fix the finding asked for is recorded in this review.",
         ],
     )
     assert result.exit_code == 0, result.output
