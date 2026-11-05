@@ -758,8 +758,13 @@ prerequisite, user-owned decision, excess spend, or consent for an outward effec
 ### Queue the chosen work after the review round
 
 **Choose the sections that need doing now, from any plans whose review round is
-answered, size each into nodes and dispatch all of them in one beat, naming no
-lane.** The picker routes each request. The set may include sections whose
+answered, size each into nodes and queue all of them in one beat, naming no
+lane.** Write the chosen work as one `reckon crew dispatch --batch <file>` call
+rather than one call per section: each entry names its project, plan, section,
+node id and goal, every omitted field is derived from the section, and the call
+reports one row per entry (queued, awaiting-upstream, already queued, or
+refused) without a refused entry stopping the rest. The picker routes each
+request. The set may include sections whose
 upstream has not landed. A coordinator chooses each section rather than loading a
 plan wholesale, so it queues work it knows needs doing and steers the queue as
 earlier results come back. Consult the plan's declared `plan-section-depends-on` waits and give
