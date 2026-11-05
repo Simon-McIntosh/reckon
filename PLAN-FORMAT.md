@@ -320,6 +320,23 @@ neither lands without the other:
 {"op": "set", "path": "section_declarations.s4", "value": {"status": "descoped", "reason": "the interface it built was retired upstream"}}
 ```
 
+A section whose work continues elsewhere is descoped with `moved_to`, naming
+the successor section that now owns it as `[project:]slug#section`:
+
+```json
+{"op": "set", "path": "section_declarations.s4", "value": {"status": "descoped", "reason": "the successor owns this now", "moved_to": "next-plan#s2"}}
+```
+
+`moved_to` must resolve to a section the successor plan declares, and the ref
+is recorded on the section's own `data-links`; the successor section gains the
+same ref as an incoming link. The move carries the section's state with it: its
+authored prose, its `effort_hours` and its capability requirement land on the
+successor section, its open gates travel across, and its comments are
+re-anchored on the move record (`c-move-<section>`) the write leaves on this
+plan. Nothing on either plan is left naming a section that does not exist. A
+successor section in the same plan is refused: the successor's half is a second
+plan write.
+
 A `descoped` declaration written as a bare value, or an entry in a whole-map
 `set`, is refused: there is no place in that form for the reason. Use `done` for
 work that was built — `descoped` records a decision not to build, and the two

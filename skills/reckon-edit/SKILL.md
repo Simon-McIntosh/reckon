@@ -458,7 +458,26 @@ dropped, in one op:
 ```
 
 That closes the section for landing — a plan whose only remaining sections are
-descoped closes — while `impl` excludes it, because nothing was built. A bare
+descoped closes — while `impl` excludes it, because nothing was built.
+
+**Work that continues elsewhere moves, and the move carries its state.** Name
+the successor section with `moved_to`, `[project:]slug#section`:
+
+```json
+{"op": "set", "path": "section_declarations.s4",
+ "value": {"status": "descoped", "reason": "the successor owns this now",
+           "moved_to": "next-plan#s2"}}
+```
+
+The ref must resolve to a section that plan declares, or the write is refused.
+The successor section receives the moved section's authored prose, effort,
+capability requirement and open gates, and lists the move as an incoming link;
+the moved section's comments are re-anchored on a `c-move-<section>` record on
+this plan, so nothing on either plan names a section that has gone. Closing a
+plan refused for a deferred section is exactly where this is read: the refusal
+names both remedies, a descope with a reason and a descope with `moved_to`.
+
+A bare
 `"descoped"` value, or a `descoped` entry in a whole-map `set`, is refused: the
 reason has nowhere to go, and a descope with no reason is the same false record
 `done` would have been. `done` stays reserved for work that exists.

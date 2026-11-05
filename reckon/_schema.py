@@ -985,6 +985,22 @@ class SectionRecord(BaseModel):
             "declaration and absent on every other declaration"
         ),
     )
+    moved_to: str | None = Field(
+        default=None,
+        description=(
+            "The successor section that now owns a descoped section's work, "
+            "written as [project:]slug#section. Only a descoped declaration "
+            "carries one: the store records it as a link to the successor and "
+            "carries the section's prose, effort, capability, open gates and "
+            "comments across with it"
+        ),
+        json_schema_extra={
+            "pattern": (
+                rf"^\s*(?:{_PROJECT_SEGMENT}:)?{_REF_SEGMENT}"
+                rf"#{_REF_SEGMENT}\s*$"
+            ),
+        },
+    )
     links: list[str] = Field(
         description="Plan refs, using [project:]slug[#section][@followup]",
         json_schema_extra={
@@ -1038,6 +1054,19 @@ class SectionRecord(BaseModel):
                 "descope_reason: only a descoped declaration carries a reason"
                 f" (status is {self.status!r})"
             )
+        moved_to = (self.moved_to or "").strip()
+        if moved_to:
+            if self.status != "descoped":
+                raise ValueError(
+                    "moved_to: only a descoped declaration carries one"
+                    f" (status is {self.status!r})"
+                )
+            ref = parse_plan_ref(moved_to)
+            if ref is None or not ref.stage:
+                raise ValueError(
+                    f"moved_to: {moved_to!r} does not name a section; expected "
+                    "[project:]slug#section"
+                )
         return self
 
     @field_validator("links")
