@@ -818,12 +818,12 @@ def _declared_north_stars(project: str, docs_dir: Path) -> set[str] | None:
     """Return the project's declared north-star ids, reused while they hold.
 
     The diagnostic needs only the north-star declarations, not the whole
-    composed project state, and re-deriving that state on every plan read walks
-    the corpus once per read. The result is memoised against the stat identity
+    composed project state, so this reads the project's declaring record and
+    never composes the project. The result is memoised against the stat identity
     of the directory that carries the declarations, so a read about one plan
     takes its answer from a result the store already holds rather than from a
-    fresh recursive glob. ``None`` means the project state could not be read, so
-    the caller adds no diagnostic.
+    fresh read of the same record. ``None`` means the record could not be read,
+    so the caller adds no diagnostic.
     """
     from reckon import file_memo
 
@@ -831,15 +831,15 @@ def _declared_north_stars(project: str, docs_dir: Path) -> set[str] | None:
     key_path = state_dir if state_dir.is_dir() else docs_dir
 
     def compute() -> set[str] | None:
-        from reckon.project_state import ProjectStateError, compose_project_state
+        from reckon.project_state import ProjectStateError, read_project_manifest
 
         try:
-            project_state = compose_project_state(docs_dir, project)
+            manifest = read_project_manifest(docs_dir, project)
         except ProjectStateError:
             return None
         return {
             str(item.get("id") or "")
-            for item in project_state.get("north_stars", [])
+            for item in manifest.get("north_stars") or []
             if isinstance(item, dict)
         }
 
