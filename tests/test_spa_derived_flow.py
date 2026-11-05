@@ -1,53 +1,17 @@
 from __future__ import annotations
 
 import json
-import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
 
-from reckon import serve
 from reckon.roadmap import schedule_report
+from tests.spa_module_eval import evaluate_jsx_render
 
 ROOT = Path(__file__).resolve().parents[1]
 CREW = ROOT / "docs" / "ui" / "crew.jsx"
 SPRINT = ROOT / "docs" / "ui" / "sprint.jsx"
 
 REFERENCE = datetime(2026, 9, 4, 4, 0, tzinfo=UTC)
-
-NODE_PRELUDE = r"""
-globalThis.window = globalThis;
-const noop = () => {};
-globalThis.React = {
-  createElement(type, props, ...children) { return { type, props: props || {}, children }; },
-  Fragment: Symbol("Fragment"),
-  useState(value) { return [globalThis.__selectedSprint ?? (typeof value === "function" ? value() : value), noop]; },
-  useMemo(factory) { return factory(); },
-  useEffect() {},
-};
-globalThis.navigator = { clipboard: { writeText: noop } };
-globalThis.fetch = async () => ({ ok: true, json: async () => ({ runs: [] }) });
-window.setInterval = noop;
-window.clearInterval = noop;
-window.flashSaved = noop;
-
-function walk(node, visit) {
-  if (node == null || node === false || node === true) return;
-  if (Array.isArray(node)) { node.forEach(child => walk(child, visit)); return; }
-  if (typeof node !== "object") return;
-  visit(node);
-  for (const child of node.children || []) walk(child, visit);
-}
-
-function hasClass(node, name) {
-  return String(node?.props?.className || "").split(/\s+/).includes(name);
-}
-
-function findAll(node, predicate) {
-  const matches = [];
-  walk(node, candidate => { if (predicate(candidate)) matches.push(candidate); });
-  return matches;
-}
-"""
 
 TEST_EXPORTS = """
 window.__derivedFlowTest = {
@@ -61,35 +25,12 @@ window.__derivedFlowTest = {
 def _run_probe(
     *, plans: list[dict], runs: list[dict], probe: str, schedule: dict | None = None
 ) -> object:
-    source = CREW.read_text(encoding="utf-8") + TEST_EXPORTS
-    compiled = serve.compile_jsx(source, filename="derived-flow-probe.jsx").decode()
-    served = (
-        f"const servedSchedule = {json.dumps(schedule)};"
-        if schedule
-        else "const servedSchedule = null;"
+    return evaluate_jsx_render(
+        CREW,
+        probe,
+        exports=TEST_EXPORTS,
+        bindings={"plans": plans, "runs": runs, "servedSchedule": schedule},
     )
-    script = "\n".join(
-        (
-            NODE_PRELUDE,
-            compiled,
-            f"const plans = {json.dumps(plans)};",
-            f"const runs = {json.dumps(runs)};",
-            served,
-            "const result = (() => {" + probe + "})();",
-            "process.stdout.write(JSON.stringify(result));",
-        )
-    )
-    result = subprocess.run(
-        ["node"],
-        cwd=ROOT,
-        input=script,
-        text=True,
-        capture_output=True,
-        timeout=30,
-        check=False,
-    )
-    assert result.returncode == 0, result.stderr
-    return json.loads(result.stdout)
 
 
 def _fixture() -> tuple[list[dict], list[dict]]:
@@ -168,13 +109,13 @@ class FixedNowDate extends RealDate {
   }
 }
 globalThis.Date = FixedNowDate;
-globalThis.__selectedSprint = "beta";
+globalThis.__stateSeed = "beta";
 window.STATE = { project: "reckon", inventory: plans, schedule: servedSchedule };
 const flow = window.__derivedFlowTest.DerivedFlow({ runs, project: "reckon" });
 const bars = findAll(flow, node => hasClass(node, "r-derived-flow-bar"));
 const lanes = findAll(flow, node => hasClass(node, "r-derived-flow-lane"));
 const nowLines = findAll(flow, node => hasClass(node, "r-derived-flow-now"));
-delete globalThis.__selectedSprint;
+delete globalThis.__stateSeed;
 const surface = window.__derivedFlowTest.CrewView({ visibleProjects: ["reckon"], mountedProjectCount: 1, selectedProject: "reckon" });
 const directChildren = surface.children.flat().filter(Boolean);
 return {

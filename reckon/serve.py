@@ -2008,6 +2008,7 @@ def _derive_lifecycle(
     from reckon.roadmap import (
         _status,
         closure_blockers,
+        deferred_remainder,
         plan_blocker_state,
         plans_released_by_cleared_blockers,
         recorded_blockers,
@@ -2107,6 +2108,11 @@ def _derive_lifecycle(
         # Transition gates hold a closure or a choice, not execution, so they
         # leave this list and surface beside it instead.
         plan["closure_blockers"] = closure_blockers(plan)
+        # The row's progress figure is the authored ``impl``, which reads 100 %
+        # for a plan whose only open sections are deferred. The fact that it is
+        # not finished is derived once, in the roadmap, and served beside it so
+        # the crew flow and the plan rows can state it instead of the figure.
+        plan["deferred_remainder"] = deferred_remainder(plan)
         plan["decision_blockers"] = state["decision_blockers"]
 
     hydrated_sprints = deepcopy(sprints)

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-finished-plan-closes">
+  <meta name="plan-evidence-for" content="reckon:a-finished-plan-closes">
+  <meta name="plan-verifies" content="reckon:a-finished-plan-closes#s4">
+  <meta name="plan-verdict" content="pass">
+  <title>A plan whose only open sections are deferred reads not closable | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-deferred-only-plan-reads-not-closable-landing" data-node="a-deferred-only-plan-reads-not-closable" data-reckon="landed" data-when="2026-11-05">
+  <h2>A plan whose only open sections are deferred reads not closable</h2>
+  <p>A plan that has built sixteen sections and deferred the last two carries an authored <code>impl</code> of 1.0. Every progress figure drawn from that figure reads complete — the roadmap row said 100 %, the crew flow drew a finished bar attached to the now line, and the plan card printed 100 % — while <code>close</code> still refused it on the two deferred sections. The surfaces were stating a finish the plan had not reached.</p>
+  <p>The fact is now derived once, in <code>deferred_remainder</code> beside <code>closure_blockers</code> in <code>reckon/roadmap.py</code>. It answers for a plan that declares sections, resolves every one of them but for deferred ones, and carries at least one deferred section: it returns the deferred section ids, their count, and the label <em>N deferred, not closable</em>. Every other plan — no declarations, implementable work still admitted, or no deferred section — gets <code>None</code>, and the surfaces fall back to their progress figure.</p>
+  <p>The roadmap row carries the answer beside <code>progress_pct</code>, which keeps the authored figure rather than overriding it, and the served inventory rows that <code>_derive_lifecycle</code> builds carry it for the crew flow and the plan card. The crew flow bar in <code>docs/ui/crew.jsx</code> and the plan row in <code>docs/ui/shell-plans.jsx</code> print the served label in place of the percentage, and neither restates the wording, so the SPA renders the fact without deriving it. The bar's filled share is also served: the split the schedule derives counts deferred sections as done and would fill the bar to the now line, so the fact carries the share of declared sections the plan has resolved — sixteen of eighteen here — and the bar draws that.</p>
+  <p>The reading itself is asked of the functions that own it rather than repeated: <code>deferred_remainder</code> asks <code>is_closable</code> whether the plan is held open, and reads the deferred sections from the entries <code>closure_blockers</code> already names with the op that clears each. The absent-declaration reading stays at <code>is_closable</code>'s guard, where the reason it is not taken as resolved is written.</p>
+  <p>Gate: <code>tests/test_a_deferred_only_plan_reads_not_closable.py</code> beside <code>tests/test_surface_parity.py</code> and <code>tests/test_graph_target.py</code> — 29 passed, exit 0, at head <code>0c8779fe5c</code> (<code>gate-head.log</code>). At the base revision <code>2fd7553766</code> the same six-test module reads 6 failed, exit 1 (<code>base-arm-2.log</code>), with the row's progress figure already at 100.0 and no <code>deferred_remainder</code> on the row or the served payload.</p>
+  <p>The surfaces are checked by rendering them: each module is compiled with <code>reckon.serve.compile_jsx</code> and run under node against the served payload, and the drawn bar's label and filled share and the plan card's signal are read off the element tree. Deleting the render — leaving the identifier where it is no longer rendered, and in one comment-like binding the plan card keeps — turns the two render tests red while a source-text check would still pass — <code>render-red.log</code> records that run: 2 failed, 4 passed, exit 1.</p>
+  <p>The declared mutation — deferred sections counted as done where their classification is compared — was applied to a head extraction and <code>negative-control.log</code> records what it shows: <code>5 failed, 1 passed</code>, exit 1, the not-closable readers reporting sixteen deferred where the fixture must report two. The one that passes is the control plan still building.</p>
+  <p>After both deferred sections are descoped the row drops the fact and its closure list collapses to the <code>close</code> op, which the fourth test pins.</p>
+</article>
+</body>
+</html>
