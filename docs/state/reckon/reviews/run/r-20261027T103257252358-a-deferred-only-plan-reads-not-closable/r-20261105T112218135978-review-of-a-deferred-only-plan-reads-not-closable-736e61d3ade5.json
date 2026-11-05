@@ -1,0 +1,40 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-05T12:11:37.515Z",
+  "dispatched_at": "2026-11-05T12:08:14Z",
+  "findings": [
+    {
+      "file": "tests/test_a_deferred_only_plan_reads_not_closable.py",
+      "id": "fda2faf158d",
+      "line": "150",
+      "severity": "non-blocking",
+      "text": "The delta adds NODE_PRELUDE and _run_probe (tests/test_a_deferred_only_plan_reads_not_closable.py:150-227) that duplicate, almost line for line, the node render harness tests/test_spa_derived_flow.py:18-92 already owns for the same module and the same component: the same globalThis.React stub, the same walk/hasClass/findAll helpers, the same compile_jsx + `subprocess.run([\"node\"], input=script, cwd=ROOT)` + json.loads(stdout) plumbing, and the same `window.__probe = { DerivedFlow }` export over docs/ui/crew.jsx. tests/spa_module_eval.py:evaluate_jsx_module is a third copy of the compile-and-evaluate core. A change to the React stub or the probe protocol now has to be made in three places, and the two render tests could have been added beside the existing harness that already renders this component."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T103257252358-a-deferred-only-plan-reads-not-closable/manifest.md",
+      "id": "f2cfd5ebc96",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "baseline_suite records baseline-arm.log, a run of the earlier five-test version of tests/test_a_deferred_only_plan_reads_not_closable.py (5 failed), while after_suite records the six-test module at head-arm.log (0 failed). The matching six-test base arm exists as base-arm-2.log (6 failed, EXIT=1) and is cited only in the evidence fragment, so the machine-read base and head arms describe different test populations; the added-failure comparison is nevertheless empty because the head arm records no failure."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal (prompt.txt:38) is to derive in Python that a plan whose only open sections are deferred reads N deferred, not closable and render it on the roadmap row, the crew flow and the SPA plan card; the delta commits 0c8779fe5c, e2f9c47daa and 736e61d3ad keep reckon/roadmap.py:1086's done_pct served beside the label and now make docs/ui/crew.jsx:144-159 draw the crew bar's fill and text from that served fact, with docs/ui/shell-plans.jsx:693 unchanged and still rendering the served label.\nVERDICT done_when: the source done_when (prompt.txt, FENCE \u2014 EVIDENCE) asks for a test asserting a sixteen-done/two-deferred fixture reads 2 deferred, not closable on the roadmap row and in the served payload and drops the fact after descope, failing on the base; tests/test_a_deferred_only_plan_reads_not_closable.py:90-147 asserts exactly that and expands once those sections are descoped, and the delta replaces the old source-text surface check with rendered-surface assertions at :236 and :274.\nVERDICT write_paths: read prompt.txt's FENCE \u2014 SCOPE; it grants reckon/roadmap.py, reckon/serve.py, docs/ui/crew.jsx, docs/ui/shell-plans.jsx, tests/test_a_deferred_only_plan_reads_not_closable.py and the evidence fragment under docs/evidence/fragments/a-finished-plan-closes/, and `git diff --stat 552ea73bda 736e61d3ad` touches exactly four of those and nothing else.\nVERDICT manifest: read the reviewed run's manifest.md; status complete, recording gate 29 passed exit 0 at the code head (gate-head.log), head module arm 6 passed exit 0 (head-arm.log), base arm 6 failed exit 1 (base-arm-2.log cited in the fragment), negative control 5 failed 1 passed exit 1, and the render-deleted arm 2 failed 4 passed exit 1 (render-red.log); the importer population is declared unmet under outside_scope.\nVERDICT diff: read all three commits against 552ea73bda commit by commit; 0c8779fe5c swaps deferred_remainder's copied guard and filter for is_closable and closure_blockers and adds done_pct, draws the crew bar from it, and replaces the two source-text surface checks with node-rendered probes (199 insertions, 22 deletions across 4 files); e2f9c47daa and 736e61d3ad update only the evidence fragment.\nCALL_SITES: reckon/roadmap.py:_build_roadmap (row field at 4106), reckon/serve.py:_derive_lifecycle (2115), docs/ui/crew.jsx:DerivedFlow (139-159), docs/ui/shell-plans.jsx:ListCol (693)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: docs/ui/crew.jsx:144-148 now takes the bar's fill from the served done_pct and :139 its label, so the crew flow states the deferred remainder in both its text and its bar rather than painting 100 % at the now line.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-head.log names revision 0c8779fe5c, its literal command and ends `29 passed ... EXIT=0`, base-arm-2.log ends `6 failed ... EXIT=1`, negative-control.log ends `5 failed, 1 passed ... EXIT=1`, but manifest.md:21's baseline_suite cites the older five-test base run and the importer population is unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat 552ea73bda 736e61d3ad` touches only the fragment, docs/ui/crew.jsx, reckon/roadmap.py and tests/test_a_deferred_only_plan_reads_not_closable.py, all inside prompt.txt's FENCE \u2014 SCOPE, with no plan file and no figure edited.\nSCORE durability: 18\nJUSTIFICATION durability: render-red.log records that deleting the render from the two surfaces turns tests/test_a_deferred_only_plan_reads_not_closable.py:236 and :274 red (2 failed, 4 passed, EXIT=1), and the served done_pct is pinned to the literal 88.9 at :101 and :131 independently of the code that computes it.\nSCORE fit: 18\nJUSTIFICATION fit: the added field done_pct at reckon/roadmap.py:1086 sits beside the existing progress_pct and the test harness names (NODE_PRELUDE, _run_probe, _payload) match tests/test_spa_derived_flow.py:25-80's idiom, and `ruff check` with the repo config reports no finding on either head Python file.\nSCORE reuse: 5\nJUSTIFICATION reuse: the production reader at reckon/roadmap.py:1077-1081 now extends both owners (`is_closable`, `closure_blockers`), but tests/test_a_deferred_only_plan_reads_not_closable.py:150-227 re-implements the node render harness tests/test_spa_derived_flow.py:18-92 already owns for the same DerivedFlow component.\nFINDING tests/test_a_deferred_only_plan_reads_not_closable.py:150 non-blocking: NODE_PRELUDE and _run_probe duplicate the harness in tests/test_spa_derived_flow.py:18-92 (same React stub, walk/hasClass/findAll, compile_jsx + node + json plumbing, same DerivedFlow export) and the compile-and-evaluate core in tests/spa_module_eval.py, so the stub and probe protocol now live in three files.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T103257252358-a-deferred-only-plan-reads-not-closable/manifest.md:21 non-blocking: baseline_suite records the five-test baseline-arm.log while after_suite records the six-test module, so the two machine-read arms cover different test populations; the matching six-test base arm is base-arm-2.log, cited only in the evidence fragment.\n",
+  "review_run_id": "r-20261105T112218135978-review-of-a-deferred-only-plan-reads-not-closable-736e61d3ade5",
+  "reviewed_base_sha": "552ea73bdabe8c8795223a258235948ca0e93bdf",
+  "reviewed_head_sha": "736e61d3ade59164133c02142e6a5f1465b62be4",
+  "reviewed_run_id": "r-20261027T103257252358-a-deferred-only-plan-reads-not-closable",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T12:12:08.119817+00:00",
+  "total": 96
+}

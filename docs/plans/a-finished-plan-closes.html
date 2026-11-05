@@ -25,7 +25,7 @@
   <title>A Finished Plan Closes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="27">
+<meta name="plan-version" content="28">
 <meta name="plan-modified" content="2026-11-05">
 </head>
 <body>
@@ -138,6 +138,12 @@
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261021T130648677198-finished-work-gates-release" data-who="reckon-build" data-when="2026-10-21T14:32:33Z">
     <div class="r-comment-body"><p>§3 landed in two commits: split_unpassed_gates in reckon/roadmap.py now holds a gate only over the sections a plan still declares implementable (b38b00b23), and drops a settled gate before asking what remains an unpassed hold, so a closed gate holds neither the plan nor a section whatever its verdict, live or finished (73d06200b). A plan that persisted no section classification keeps its prior reading. New gate tests/test_gates_on_finished_work_release.py passes 7/7; the full seven-module gate reads 114 passed, exit 0, against 6 failed, 1 passed, exit 1 under the declared mutation.</p></div>
 </div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261105T100356958928-review-of-a-deferred-only-plan-reads-not-closable-552ea73bdabe" data-who="reckon-build" data-when="2026-11-05T10:37:51.087Z">
+    <div class="r-comment-body"><p>r-20261027T103257252358-a-deferred-only-plan-reads-not-closable reviewed at base 2fd7553766514b9cf2aca7eccc03544bde10777b and head 552ea73bdabe8c8795223a258235948ca0e93bdf: parsed, goal_fidelity 17, evidence 16, scope_discipline 19, durability 16, fit 17, reuse 5, total 90, added_failure_count 0, four non-blocking findings (deferred_remainder duplicates is_closable and closure_blockers; the crew-flow bar still paints a finished bar; the surface assertion passes on a textual mention; the importer-population clause was never run to a summary)</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261105T112218135978-review-of-a-deferred-only-plan-reads-not-closable-736e61d3ade5" data-who="reckon-build" data-when="2026-11-05T12:11:37.515Z">
+    <div class="r-comment-body"><p>Re-review of r-20261027T103257252358-a-deferred-only-plan-reads-not-closable at 736e61d3ad: total 96, reuse 5; findings disposed and folded into a repair round.</p></div>
+</div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261021T170135992339-review-of-a-finishing-write-offers-its-close-0d523f4a04e5" data-who="reckon-build" data-when="2026-10-21T17:26:21.604Z">
     <div class="r-comment-body"><p>independent review of run r-20261021T161646186730-a-finishing-write-offers-its-close, read at base 7195cfc0521738eff7be6813300ab2352314308b and head 0d523f4a04e5a64a701639571a06f9a85104674e: status parsed, goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 18, reuse 15, added_failure_count 0, three follow-on findings (a hardcoded section_declarations path head duplicating reckon/_store_section_ops.py:76, an unasserted readiness_error failure path, an unattributable Terminated line in the negative-control log), stored at the reviewed run's review-records/ in both declared spellings.</p></div>
 </div>
@@ -161,9 +167,6 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261021T205941958744-a-finished-plan-reads-closed" data-who="reckon-build" data-when="2026-10-21T22:55:12Z">
     <div class="r-comment-body"><p>mcp_deadlines.py: _plan_readiness_fields answers readiness "closed" with no readiness_error on a declaration write on a terminal plan (terminal set from reckon.lifecycle.TERMINAL_STATUSES, status read from the plan HTML via _resolve_html_file), reserving the roadmap pending_work lookup for live plans; the closed case is parametrised over the owner's TERMINAL_STATUSES; base arm 7 failed / 30 passed exit 1, head arm 37 passed exit 0.</p></div>
-</div>
-<div class="r-comment" data-section="s4" data-id="c-run-r-20261105T100356958928-review-of-a-deferred-only-plan-reads-not-closable-552ea73bdabe" data-who="reckon-build" data-when="2026-11-05T10:37:51.087Z">
-    <div class="r-comment-body"><p>r-20261027T103257252358-a-deferred-only-plan-reads-not-closable reviewed at base 2fd7553766514b9cf2aca7eccc03544bde10777b and head 552ea73bdabe8c8795223a258235948ca0e93bdf: parsed, goal_fidelity 17, evidence 16, scope_discipline 19, durability 16, fit 17, reuse 5, total 90, added_failure_count 0, four non-blocking findings (deferred_remainder duplicates is_closable and closure_blockers; the crew-flow bar still paints a finished bar; the surface assertion passes on a textual mention; the importer-population clause was never run to a summary)</p></div>
 </div>
 </section>
 </main>
