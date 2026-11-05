@@ -11,6 +11,7 @@ record this write leaves, and the successor lists the move as an incoming link.
 from __future__ import annotations
 
 import json
+import threading
 from pathlib import Path
 
 import pytest
@@ -494,3 +495,57 @@ def test_a_moved_to_that_does_not_resolve_is_refused(setup) -> None:
     assert result["ok"] is False, result
     assert "moved_to" in result["detail"]
     assert "nope" in result["detail"]
+
+
+def test_a_payload_without_a_slug_cannot_defeat_the_same_plan_refusal(setup) -> None:
+    docs_dir, project = setup
+    _setup_trees(docs_dir)
+    path = docs_dir / "plans" / f"{SLUG}.html"
+    before = path.read_text()
+    version_before = _store_module.read_plan(project, SLUG)[1]
+
+    # The store is written to directly here, below the editor's schema check,
+    # because that is where the refusal lives and the payload's identity must
+    # not be able to stand in for the caller's.
+    state = dict(_store_module.read_plan(project, SLUG)[0])
+    state.pop("slug", None)
+    ops = [
+        {
+            "op": "set",
+            "path": "section_declarations.s2",
+            "value": {
+                "status": "descoped",
+                "reason": "the successor owns this now",
+                "moved_to": f"{SLUG}#s1",
+            },
+        }
+    ]
+
+    outcome: dict = {}
+
+    def _attempt() -> None:
+        # The batch and its write run in one thread: a batch's write effects are
+        # held per context, so applying the ops elsewhere leaves the store with
+        # no move to judge.
+        try:
+            _store_module.apply_ops(state, ops, False)
+            outcome["version"] = _store_module.write_plan(
+                project, SLUG, state, version_before
+            )
+        except _store_module.OpError as exc:
+            outcome["error"] = exc
+
+    # Bounded: a guard that reads the payload's identity lets this move through
+    # and the successor's half re-enters this plan's own write, which either
+    # lands as a second write or blocks on the lock this one holds. A regression
+    # must fail here rather than hang the suite.
+    attempt = threading.Thread(target=_attempt, daemon=True)
+    attempt.start()
+    attempt.join(timeout=30)
+
+    assert not attempt.is_alive(), "the write did not stop at the refusal"
+    error = outcome.get("error")
+    assert isinstance(error, _store_module.OpError), outcome
+    assert "another plan" in str(error)
+    assert path.read_text() == before, "the refused write left the document alone"
+    assert _store_module.read_plan(project, SLUG)[1] == version_before

@@ -1489,7 +1489,7 @@ def _write_state_locked(
     # there would leave the evidence on disk behind a plan refused by its own
     # batch.
     resolved_moves = (
-        _resolve_section_moves(data, section_moves, project, root)
+        _resolve_section_moves(section_moves, project, slug, root)
         if section_moves
         else []
     )
@@ -1590,7 +1590,7 @@ def _write_state_locked(
             raise OpError(f"append_evidence: no docs dir for project {project!r}")
         _apply_evidence_appends(docs_dir, project, evidence_appends, root)
     successor_moves = (
-        _carry_section_moves(new_data, source_text, resolved_moves)
+        _carry_section_moves(new_data, source_text, resolved_moves, slug)
         if resolved_moves
         else []
     )
@@ -2996,9 +2996,9 @@ def _insert_section_prose(document: str, section_id: str, prose: str) -> str:
 
 
 def _resolve_section_moves(
-    state: Mapping[str, Any],
     moves: list[dict[str, str]],
     project: str,
+    slug: str,
     root: str | Path | None,
 ) -> list[tuple[dict[str, str], str, str, str, str]]:
     """Resolve every move's successor, or refuse before anything is written.
@@ -3008,8 +3008,11 @@ def _resolve_section_moves(
     plan being written, refuses the whole batch here — ahead of the evidence
     append, which writes a file of its own, so a refusal cannot leave one half
     of a batch on disk.
+
+    The plan's own identity is the caller's, which is the plan this write
+    targets. Reading it back out of the payload would let a payload that omits
+    it defeat the same-plan refusal entirely.
     """
-    slug = str(state.get("slug") or "")
     resolved: list[tuple[dict[str, str], str, str, str, str]] = []
     for request in moves:
         section = str(request.get("section") or "")
@@ -3033,6 +3036,7 @@ def _carry_section_moves(
     state: dict,
     source_text: str,
     resolved: list[tuple[dict[str, str], str, str, str, str]],
+    slug: str,
 ) -> list[dict[str, Any]]:
     """Take each moved section off this plan and describe its successor's half.
 
@@ -3047,9 +3051,9 @@ def _carry_section_moves(
 
     ``resolved`` comes from :func:`_resolve_section_moves`, which ran before
     this write touched any file, so every successor is known to exist and to be
-    another plan's section.
+    another plan's section. ``slug`` is the caller's, so the source ref names
+    the plan being written even when the payload leaves its identity out.
     """
-    slug = str(state.get("slug") or "")
     payloads: list[dict[str, Any]] = []
     for request, target_project, target_slug, target_section, successor_ref in resolved:
         moved_section = str(request.get("section") or "")
