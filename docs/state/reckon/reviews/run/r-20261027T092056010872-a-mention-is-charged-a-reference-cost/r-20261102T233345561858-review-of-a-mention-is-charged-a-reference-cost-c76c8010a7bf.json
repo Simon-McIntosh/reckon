@@ -1,0 +1,33 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-03T00:03:02.248Z",
+  "dispatched_at": "2026-11-02T23:55:15Z",
+  "findings": [
+    {
+      "file": "tests/test_context_estimate_excludes_granted_paths.py",
+      "id": "f0d3a20e6f5",
+      "line": 169,
+      "severity": "non-blocking",
+      "summary": "The reference-charge magnitude assertions compare the estimator's output against _REFERENCE_COST_TOKENS imported from reckon.crew.routing at :22, so both sides move together and a change to the constant's value leaves :169, :174, :195, :252, :256, :284 and :306 green; the structural assertions at :168 and :304 still fail if the charge regresses to zero, which is the defect the repair guards."
+    }
+  ],
+  "project": "reckon",
+  "review": "VERDICT goal: the node goal is to charge a repository path a brief only mentions at a fixed reference cost and a path in a negative clause as a reference; the gained commits repair the file that held the superseded zero-charge rule, and the behaviour they assert lives at reckon/crew/routing.py:3336, which charges every mentioned path outside declared_set at provenance reference.\nVERDICT done_when: the done-when's gate names six files including tests/test_context_estimate_excludes_granted_paths.py; gate/repair-wide-gate-head.log records 29 passed, EXIT=0 at d1dbe76b, and I re-ran that file at the reviewed head c76c8010a7bf in a clean archive: 8 passed, EXIT=0.\nVERDICT write_paths: the gained commits touch only docs/evidence/fragments/a-brief-should-not-cost-what-it-names/a-mention-is-charged-a-reference-cost.html and tests/test_context_estimate_excludes_granted_paths.py, both inside the repair round's write scope declared in resume-1-advice.txt.\nVERDICT manifest: read; it records status complete, commits c993966f/d1dbe76b/c76c8010a7, baseline_suite 12 passed EXIT=0 at 94bac864d1, after_suite 12 passed EXIT=0 at c76c8010a7bf, and the revert negative control at 5 failed EXIT=1.\nVERDICT diff: read commit by commit against 94bac864d1; d1dbe76b16 rewrites five exclusion assertions for the reference charge (91 changed lines) and c76c8010a7bf splices 19 lines of the fragment's arms table and paragraph, deleting none of the pre-existing record.\nCALL_SITES: reckon/crew/routing.py:3447 (context_census), reckon/crew/routing.py:3531 (_context_fit_verdict), reckon/crew/dispatch.py:572, reckon/crew/dispatch.py:607, reckon/crew/picker/snapshot.py:112, reckon/crew/picker/snapshot.py:784\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_context_estimate_excludes_granted_paths.py:168 now asserts one reference per excluded path at provenance reference beside the declared write path at full, replacing the zero-charge assertions the blocking finding named.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate/repair-wide-gate-head.log is the done-when's six-file gate at 29 passed EXIT=0, and gate/repair-baseline-suite.log and gate/repair-after-suite.log are a matching 12-passed EXIT=0 pair, though the wide gate ran at d1dbe76b rather than the final docs-only head c76c8010a7bf.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 94bac864d1 c76c8010a7bf names only tests/test_context_estimate_excludes_granted_paths.py and the evidence fragment, both granted in resume-1-advice.txt's write scope.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_context_estimate_excludes_granted_paths.py:168 and :304 index records the estimator would not emit at all under the old zero charge, so the regression the repair exists for reddens them, but the magnitude assertions at :169, :174, :195, :252, :256, :284 and :306 compare against _REFERENCE_COST_TOKENS imported from the module under test at :22 and stay green if that constant's value changes.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_context_estimate_excludes_granted_paths.py:162 reuses the file's own _records_by_path helper at :81 and the surrounding docstring/assert idiom, and the renamed cases carry no plan label or version marker.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no capability of its own - it calls the estimator at reckon/crew/routing.py:3240 and the test-local helper at :81, and introduces no second mechanism for naming or charging repository paths.\nFINDING tests/test_context_estimate_excludes_granted_paths.py:169 non-blocking: the reference-charge magnitude assertions compare the estimator's output against _REFERENCE_COST_TOKENS imported from reckon.crew.routing at :22, so both sides move together and a change to that constant's value leaves :169, :174, :195, :252, :256, :284 and :306 green; the structural assertions at :168 and :304 still fail if the charge regresses to zero, which is the defect this repair guards.",
+  "review_run_id": "r-20261102T233345561858-review-of-a-mention-is-charged-a-reference-cost-c76c8010a7bf",
+  "reviewed_base_sha": "94bac864d15e31f4b8e3513cf30891a966d9064b",
+  "reviewed_head_sha": "c76c8010a7bf56258cb852974c6b9ae02efac676",
+  "reviewed_run_id": "r-20261027T092056010872-a-mention-is-charged-a-reference-cost",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T06:23:10.367174+00:00",
+  "total": 111
+}

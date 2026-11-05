@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-02T23:04:25Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-a-mention-is-charged-a-reference-cost-94bac864d15e",
+      "recorded_at": "2026-11-02T23:28:09.092386+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_context_estimate_excludes_granted_paths.py",
+      "id": "f9813cfeaf7",
+      "line": 164,
+      "severity": "blocking",
+      "summary": "Five assertions in this file still hold the superseded rule that an excluded path is charged nothing (wide-gate-head.log: 5 failed, 24 passed, EXIT=1 against 21 passed at the base); the done-when gate and the manifest's tests: line both name this file, so the tree is red at the head and the promotion gate receipt will be red until its docstring and token assertions are rewritten for the reference charge, which lies outside this node's fence."
+    },
+    {
+      "file": "tests/test_a_mention_is_charged_a_reference_cost.py",
+      "id": "f1717f01f2d",
+      "line": 26,
+      "severity": "non-blocking",
+      "summary": "REFERENCE_TOKENS is imported from the module under test, so the reference-charge assertions at :118, :119, :125, :142, :144 and :258 move with the code's own constant and stay green if its value changes; only :254 and :120 pin the magnitude from an independent source."
+    },
+    {
+      "file": "tests/test_a_mention_is_charged_a_reference_cost.py",
+      "id": "f3d618c290c",
+      "line": 165,
+      "severity": "non-blocking",
+      "summary": "The same-path case (a path both prohibited and a declared write path) is resolved to the full charge alone, a reading the plan's done-when does not settle; it is stated in the landing line and is never cheaper than the edit, so it needs a coordinator decision rather than a repair."
+    }
+  ],
+  "project": "reckon",
+  "review": "VERDICT goal: the source goal is to charge a path a brief only mentions a fixed reference cost and a path in a negative clause as a reference; reckon/crew/routing.py:3206 _mentioned_repository_files and :3336 charge exactly those paths one flat reference, and :74 _REFERENCE_COST_TOKENS carries the figure.\nVERDICT done_when: the done-when names a differential pair, a negative-clause case, a declared-write-path case and the plan's three recorded briefs; tests/test_a_mention_is_charged_a_reference_cost.py:100-196 asserts the first three and :224-262 re-estimates the recorded 161,013 / 326,217 / 508,965 figures, but the six-file gate the done-when names is red at the head (gate/wide-gate-head.log: 5 failed, 24 passed, EXIT=1).\nVERDICT write_paths: the declared paths are reckon/crew/routing.py, tests/test_a_mention_is_charged_a_reference_cost.py, tests/test_context_estimate_reads_declared_files.py, the evidence fragment and a figures directory; git diff --stat 24b3d9df01 94bac864d1 changes the first three plus the fragment and nothing else.\nVERDICT manifest: read at .../r-20261027T092056010872-a-mention-is-charged-a-reference-cost/manifest.md; it states status complete, two commits, the three gate logs plus the negative control, baseline_suite 4 passed EXIT=0 and after_suite 12 passed EXIT=0, and it names the five out-of-scope red tests under outside_scope and blockers rather than hiding them.\nVERDICT diff: read commit by commit against base 24b3d9df01; c993966f44 adds _REFERENCE_COST_TOKENS, _mentioned_repository_files, a reference provenance in _context_file_inputs and the reference constant in the new test, 94bac864d1 adds the evidence fragment, and every hunk stays inside the declared scope.\nCALL_SITES: reckon/crew/routing.py:3447 (context_census), reckon/crew/routing.py:3531 (_context_fit_verdict), reckon/crew/routing.py:3591 (_context_contributors, which labels the named_files group a mention), reckon/crew/dispatch.py:572, reckon/crew/dispatch.py:607, reckon/crew/picker/snapshot.py:112, reckon/crew/picker/snapshot.py:784\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:3330-3341 charges a prose mention and a negative-clause path one flat reference, keeps a declared write path and a declared input at file size, and leaves a path-free brief at zero, but it resolves the same-path write-path-plus-prohibition case to the full charge alone, so the done-when's literal 'charged as a reference even when the same path is also a declared write path' is not asserted (tests/test_a_mention_is_charged_a_reference_cost.py:165).\nSCORE evidence: 13\nJUSTIFICATION evidence: the baseline and after arms are real logs with revision, tree, imported module, cwd and a final EXIT line (gate/baseline-suite.log: 4 passed EXIT=0; gate/after-suite.log: 12 passed EXIT=0), but they cover only two of the six files the done-when's gate names, and the manifest's tests: line names all six, whose head run is red (gate/wide-gate-head.log: 5 failed, EXIT=1); the negative control is recorded and red (gate/negative-control.log: 4 failed, EXIT=1).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat 24b3d9df01 94bac864d1 (reckon/crew/routing.py, the two test files and the evidence fragment) is inside the declared write paths, and the file the gate needs rewritten is reported under outside_scope instead of edited.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_mention_is_charged_a_reference_cost.py:118-120 fails if the mention charge returns to zero, and gate/negative-control.log shows four cases reddening under that mutation, but the expected figure is imported from the module under test at tests/test_a_mention_is_charged_a_reference_cost.py:26, so a change to the constant's value leaves those assertions green.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/routing.py:3206 reuses the existing _NAMED_REPOSITORY_FILE pattern and the surrounding describe() record shape at :3265, and no added name carries a plan label or version marker.\nSCORE reuse: 18\nJUSTIFICATION reuse: the new charge reuses the owning constant at reckon/crew/routing.py:77 (_REGENERATED_PATH_REFERENCE_TOKENS = _REFERENCE_COST_TOKENS) rather than a second 4,000, and the mention set is the same regex owner the declaration reader already uses, with no second capability for naming repository paths.\nFINDING tests/test_context_estimate_excludes_granted_paths.py:164 blocking: five assertions in this file still hold the superseded rule that an excluded path is charged nothing (gate/wide-gate-head.log: 5 failed, 24 passed, EXIT=1 against 21 passed at the base), and the manifest's tests: line and the done-when gate both name this file, so the tree is red at the head and the promotion gate receipt will be red until the file's docstring and four token assertions are rewritten for the reference charge, which lies outside this node's fence.\nFINDING tests/test_a_mention_is_charged_a_reference_cost.py:26 non-blocking: REFERENCE_TOKENS is read from reckon.crew.routing._REFERENCE_COST_TOKENS, so the reference-charge assertions at :118, :119, :125, :142, :144 and :258 compare the code's output against the code's own constant and stay green if that constant's value is changed; only :254 (charge > 0) and the file-size inequality at :120 pin the magnitude independently.\nFINDING tests/test_a_mention_is_charged_a_reference_cost.py:165 non-blocking: the same-path case (a path both prohibited and a declared write path) is resolved to the full charge alone and asserted as such, a reading the plan's done-when does not settle; the behaviour is stated in the landing line and is never cheaper than the edit, so it needs a coordinator decision rather than a repair.",
+  "review_run_id": "r-20261102T223457755877-review-of-a-mention-is-charged-a-reference-cost-94bac864d15e",
+  "reviewed_base_sha": "24b3d9df01ede8c55f8ac3070af5b11b09e90596",
+  "reviewed_head_sha": "94bac864d15e31f4b8e3513cf30891a966d9064b",
+  "reviewed_run_id": "r-20261027T092056010872-a-mention-is-charged-a-reference-cost",
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T23:18:48.545476+00:00",
+  "total": 102
+}
