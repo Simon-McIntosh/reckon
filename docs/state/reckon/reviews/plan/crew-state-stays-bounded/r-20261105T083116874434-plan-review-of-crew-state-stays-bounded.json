@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-05T09:24:54.686Z",
+  "dispatched_at": "2026-11-05T09:20:07Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/crew-state-stays-bounded/r-20261105T083116874434-plan-review-of-crew-state-stays-bounded/plan.html:212",
+      "id": "reasoning-1",
+      "reason": "a judged-count cap needs either a cursor/offset that advances past withheld rows or an ordering that judges prune candidates first; without one the node ships a bound that livelocks and reports success, and the fix must be specified before dispatch rather than discovered by the worker.",
+      "text": "the deliverable's fix, \"--limit counts every judged directory, not only offered ones\", is applied to a loop that iterates `sorted(path for path in runs_root.iterdir() if path.is_dir())` from the first entry on every pass (`reckon/crew/gc.py:1533`) and breaks once the cap is reached (gc.py:1562); with the cap moved onto judged rows, two withheld classes that never clear \u2014 `review-owed` (gc.py:306-324) and `missing-derived-figure` (gc.py:337-353) \u2014 sit at the head of that order, so a prefix of `limit` such rows makes every pass judge the same prefix, remove nothing, and never reach the runs behind it. \u00a71 records 8,861 review runs of 17,341, so this is not a corner case, and it contradicts \u00a77's landed claim that \"the first passes reclaim the existing backlog at that rate\" (plan.html:183) as well as this section's own Why, \"the reaper \u00a77 installs would then reap nothing\".",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/crew-state-stays-bounded/r-20261105T083116874434-plan-review-of-crew-state-stays-bounded/plan.html:212",
+      "id": "evidence_paths-1",
+      "reason": "the done-when's host measure needs a path \u00a73 does not retire \u2014 a committed evidence fragment under `docs/evidence/fragments/crew-state-stays-bounded/` or a gate log \u2014 otherwise the plan's one measurement of real-store cost cannot be checked, which is the exact defect \u00a710 exists to end.",
+      "text": "\"its per-phase timings are cited in the manifest\" names the run manifest as the durable record of the only host measurement the done-when rests on, but \u00a73 states \"The run's durable facts are its ledger row, its committed run record and its evidence fragment\" (plan.html:118) and retires a finished run's directory after a one-day grace (\u00a73, plan.html:117), so the manifest the timings are written to is gone within a day of the run ending and no later reader can open the measure; \u00a75 and \u00a78's sections both required a committed evidence fragment and gate log for this reason.",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/crew-state-stays-bounded/r-20261105T083116874434-plan-review-of-crew-state-stays-bounded/plan.html:212",
+      "id": "done_when-1",
+      "reason": "the attribution is the input that decides which phase the bound must actually target; leaving it unmeasured lets a node satisfy the gate while bounding the wrong phase, and it is one clause to add.",
+      "text": "the Deliverable requires the node to \"First measure the pass on a quiet window, with per-phase timings, and name the slow phase\", but the Done when lists only the new test's two cases, the host wall-clock bound and the suite/ruff clauses; nothing in the gate reddens when the slow phase is unnamed or when the measurement was taken on a loaded node, even though the Why itself says \"That run shared the node with parallel censuses and a 1.65 TB copy, so the cost is not yet attributed\".",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "10e20494f9cc3958a1247913c05c06e89131a810",
+  "plan_fingerprint": "38b5ce98bbc5092b67ea5deb4b0ac4b2a45fb472107ced81de519b9f96aa6a1b",
+  "plan_slug": "crew-state-stays-bounded",
+  "plan_version": 53,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261105T083116874434-plan-review-of-crew-state-stays-bounded",
+  "reviewed_blob_sha": "67732bd581941aba4969f8b67d0ad0cf7c1a9025",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_retention_ledger_records` (reckon/crew/gc.py:1467), `_run_directory_retention_report` (reckon/crew/gc.py:276), `python -m reckon.crew.gc [--apply] [--limit N]` (gc.py:1671) and `--limit` (gc.py:1706) all resolve, and the cited population reproduces: `ls -1 ~/.config/reckon/crew/runs | wc -l` reads 20,078 today against the plan's 20,003.",
+    "done_when": "a finding \u2014 \u00a710's Done when never measures the Deliverable's first requirement, naming the slow phase, so the gate can pass with the cost unattributed.",
+    "evidence_paths": "a finding \u2014 the host measure's only home is \"the manifest\", and \u00a73 of this same plan states a run's durable facts are its ledger row, committed run record and evidence fragment, then retires the run directory after the grace window.",
+    "naming": "pass \u2014 `tests/test_a_retention_pass_is_bounded.py` and the changed `reckon/crew/gc.py` carry no plan label, stage name, ticket number or changelog prose.",
+    "reasoning": "a finding \u2014 the section's mechanism for bounding the pass makes every hourly pass re-judge the same head of the sorted run list, so permanently withheld rows consume the whole budget and the runs behind them are never reached.",
+    "single_goal": "pass \u2014 \u00a710 carries one outcome, a retention pass that finishes inside its slot; the per-phase measurement is the input to that bound rather than a separate deliverable with its own verdict.",
+    "wiring": "pass \u2014 s10's only upstream is \u00a77's `retention_sweep`, which is landed (`reckon/crew/gc.py:1501`), so no `plan-section-depends-on` entry is owed; the `_document` change adds s10 to `plan-section-declarations` as `implementable`, which matches the section element's `data-status=\"implementable\"` at plan.html:211."
+  },
+  "section_digests": {
+    "_document": "13630d50da2a233e09eaf895eff25a3f1d196859ac6631c357e426c66cee7c0b",
+    "s1": "61be6bb6df8b986fbb68c3273e136fcef1b9fa13e7bcadb4fb62eab2fa4145ff",
+    "s10": "3706ab9224b7f6affe72ac729347c0e24499d31f751a6c877cb164c843ca8e3e",
+    "s2": "0809becc839b3ed5586cc9018606732a929379de88ab524968574e8429943a9b",
+    "s3": "9aa4d5f5a6287b698b7d6011ac8fcc295589c20484d8892a3c86d88d629b8793",
+    "s4": "2681ac58d6ae7457bc800678db433ce359be271248b74a429b44ee4d817769b4",
+    "s5": "bba37241ec93e13e0fb1eb173abfd49db0b6e77d788aa2dbec1608d164852542",
+    "s6": "c491229cedc576a79a4628da53168b317ce14fef88d78739c48e86b16aaff17a",
+    "s7": "1f6a99e4b8834c4a8bea5559a1507e6da85988f873d5547c7804930237104694",
+    "s8": "bc03fa54cdefe8b48312fabda86a4fca8277e025db66430978900e888a969066",
+    "s9": "94c64e9a52c50d223769478a5aa73517f29bc51fd5a6b123d7978de2b35c4317"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T09:56:00.221761+00:00"
+}
