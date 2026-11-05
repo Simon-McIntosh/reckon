@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "baseline arm selects nothing: tests/test_oversized_route_replay.py does not exist at ef7d6fd75b (git cat-file -e fails), so the base revision carries no failures in that file; the after arm head.log records '5 passed in 81.94s' with EXIT=0 and no FAILED line, so the delta is zero added failures.",
+  "call_sites": [],
+  "completed_at": "2026-11-04T10:28:18.268Z",
+  "dispatched_at": "2026-11-04T10:21:40Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/replay_oversized_route.py",
+      "line": "984",
+      "severity": "non-blocking",
+      "text": "the replay calls reckon.mcp_views.section_attempt_count against the live promotion store to warm its cache while the header it prints at replay_oversized_route.py:949 says 'promotion-ledger: not consulted'; that ambient read is what makes a standalone run record EXIT=1 as direct.log does, so the count should be a declared input rather than a read."
+    },
+    {
+      "file": "tests/test_oversized_route_replay.py",
+      "line": "129",
+      "severity": "non-blocking",
+      "text": "this assertion checks that the script printed its own 'reproduced exactly' verdict, which the script emits from a comparison against the constant embedded in itself; it is not independent of the value under test and adds no coverage beyond the row comparison at line 128."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit against ef7d6fd75b: ae909d8a2d adds the replay script and both fragments, 9099948928 replaces the prose reason split with a per-candidate codes line and pre-reads the section attempt count; 1343 insertions over four files, no production source touched.",
+    "done_when": "S23's measure requires both attempts to read refuse carrying their recorded exclusion rows and the log to end on a bare EXIT= line; head.log records '5 passed in 81.94s' then EXIT=0 and the replay prints 'replayed: 2 attempts, refusals reproduced' (replay_oversized_route.py:1016-1021).",
+    "goal": "the node goal is a read-only replay of both recorded pick refusals plus a report naming which input decided each; docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/replay_oversized_route.py:817-857 rebuilds both attempts in process and oversized-route-replay.html states the per-attempt attribution with line citations.",
+    "manifest": "read; it reports the fence suite '5 passed EXIT=0', names head.log and negative-control.log, records ae909d8a2d and 9099948928, and itself discloses the live-ledger flake under blockers.",
+    "write_paths": "read the manifest's declared grants; git diff --name-only ef7d6fd75b..9099948928 lists four files, all inside docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ or tests/test_oversized_route_replay.py."
+  },
+  "justifications": {
+    "durability": "tests/test_oversized_route_replay.py:128 compares the replay's rows against the independent RECORDED constant and negative-control.log:100-102 reddens two ids, but the child reads ambient promotion state (replay_oversized_route.py:984) and so fails nondeterministically.",
+    "evidence": "head.log ends EXIT=0 with '5 passed', but direct.log at the same head (written 10:56 local, after commit 9099948928 at 10:54:59) records 'replayed: 2 attempts, refusals NOT reproduced' and EXIT=1, so the recorded green is not stable across runs.",
+    "fit": "replay_oversized_route.py:34-40 follows the repo's module idiom and every added filename, function and comment names its behaviour with no plan, issue or version label.",
+    "goal_fidelity": "replay_oversized_route.py:987-1005 replays each recorded attempt through reckon.crew.picker.pick and prints its rows beside the record, which is what S23's deliverable asks for, and every cited line in oversized-route-replay.html resolves at 9099948928.",
+    "reuse": "a search over reckon/ for a replay or pick-timing reader found only the writer reckon/crew/picker/__init__.py:115 _record_pick_timings and no replay owner, so the script is the first of its capability.",
+    "scope_discipline": "every changed path in git diff --name-only ef7d6fd75b..9099948928 is inside one of the two declared write grants, and no file under reckon/ is modified."
+  },
+  "node": "review-of-replay-the-two-oversizednode-routing-refusals-9099948928f7",
+  "node:reviewed": "replay-the-two-oversizednode-routing-refusals",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a read-only replay of both recorded pick refusals plus a report naming which input decided each; docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/replay_oversized_route.py:817-857 rebuilds both attempts in process and oversized-route-replay.html states the per-attempt attribution with line citations.\nVERDICT done_when: S23's measure requires both attempts to read refuse carrying their recorded exclusion rows and the log to end on a bare EXIT= line; head.log records '5 passed in 81.94s' then EXIT=0 and the replay prints 'replayed: 2 attempts, refusals reproduced' (replay_oversized_route.py:1016-1021).\nVERDICT write_paths: read the manifest's declared grants; git diff --name-only ef7d6fd75b..9099948928 lists four files, all inside docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ or tests/test_oversized_route_replay.py.\nVERDICT manifest: read; it reports the fence suite '5 passed EXIT=0', names head.log and negative-control.log, records ae909d8a2d and 9099948928, and itself discloses the live-ledger flake under blockers.\nVERDICT diff: read commit by commit against ef7d6fd75b: ae909d8a2d adds the replay script and both fragments, 9099948928 replaces the prose reason split with a per-candidate codes line and pre-reads the section attempt count; 1343 insertions over four files, no production source touched.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nSCORE evidence: 14\nSCORE scope_discipline: 20\nSCORE durability: 15\nSCORE fit: 18\nSCORE reuse: 20\nJUSTIFICATION goal_fidelity: replay_oversized_route.py:987-1005 replays each recorded attempt through reckon.crew.picker.pick and prints its rows beside the record, which is what S23's deliverable asks for, and every cited line in oversized-route-replay.html resolves at 9099948928.\nJUSTIFICATION evidence: head.log ends EXIT=0 with '5 passed', but direct.log at the same head (written 10:56 local, after commit 9099948928 at 10:54:59) records 'replayed: 2 attempts, refusals NOT reproduced' and EXIT=1, so the recorded green is not stable across runs.\nJUSTIFICATION scope_discipline: every changed path in git diff --name-only ef7d6fd75b..9099948928 is inside one of the two declared write grants, and no file under reckon/ is modified.\nJUSTIFICATION durability: tests/test_oversized_route_replay.py:128 compares the replay's rows against the independent RECORDED constant and negative-control.log:100-102 reddens two ids, but the child reads ambient promotion state (replay_oversized_route.py:984) and so fails nondeterministically.\nJUSTIFICATION fit: replay_oversized_route.py:34-40 follows the repo's module idiom and every added filename, function and comment names its behaviour with no plan, issue or version label.\nJUSTIFICATION reuse: a search over reckon/ for a replay or pick-timing reader found only the writer reckon/crew/picker/__init__.py:115 _record_pick_timings and no replay owner, so the script is the first of its capability.\nFINDING docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/replay_oversized_route.py:984 non-blocking: the replay calls reckon.mcp_views.section_attempt_count against the live promotion store to warm its cache while the header it prints at replay_oversized_route.py:949 says 'promotion-ledger: not consulted'; that ambient read is what makes a standalone run record EXIT=1 as direct.log does, so the count should be a declared input rather than a read.\nFINDING tests/test_oversized_route_replay.py:129 non-blocking: this assertion checks that the script printed its own 'reproduced exactly' verdict, which the script emits from a comparison against the constant embedded in itself; it is not independent of the value under test and adds no coverage beyond the row comparison at line 128.\n",
+  "review_run_id": "r-20261104T101242125460-review-of-replay-the-two-oversizednode-routing-refusals-9099948928f7",
+  "reviewed_base_sha": "ef7d6fd75b5d09331b56dab0d511c0fd7f847516",
+  "reviewed_head_sha": "9099948928f7ab1b9c9049e2ec37287d691796ee",
+  "reviewed_run_id": "r-20261103T085129232474-replay-the-two-oversizednode-routing-refusals",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-04T10:26:17+00:00",
+  "total": 105
+}
