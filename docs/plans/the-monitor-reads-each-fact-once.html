@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="86">
+<meta name="plan-version" content="88">
 <meta name="plan-modified" content="2026-11-05">
 </head>
 <body>
@@ -375,38 +375,46 @@
 
     
 
-    <h2 id="s13">§13 — The station classifies only what a stream appended</h2>
+    <h2 id="s13">§13 — The station's tick reads only what changed</h2>
 <section data-reckon="section" data-id="s13" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
 <p>The cutover measure of §12 failed on cost, not on rows. Its run showed the station carrying every
 row of a recorded hour (100 of 100), and then measured the station alone over the fleet node's live
 pointers at 1,067–1,160 MB/min of reads against the bound of 20, and 57–92&nbsp;% of one core against
 5. The reads are page-cache traffic (<code>read_bytes</code> stayed at zero), and they scale with the
 live population: the same instrument over five live pointers read 126&nbsp;MB/min.</p>
-<p>The cost is the classification pass, not the ingest. <code>StationStore.ingest_stream</code> in
-<code>reckon/crew/station_store.py</code> already reads each stream only past its consumed offset and
-keeps a folded state per stream. <code>StationStore.classify_tick</code> then reclassifies every run
-whose reuse key (<code>recovery_watch._snapshot_reuse_key</code>) moved, through
-<code>recovery_watch._watch_snapshot</code>, and that fresh classification reads the run's stream again
-from its start. A stream that grows by one line moves the key, so each tick replays the whole stream
-of every run that wrote anything since the last one. Measured by the §12 run: a cold station tick over
-five live runs read 83&nbsp;MB, a warm one 0.07&nbsp;MB, while the store's own ingest read 8.2&nbsp;MB
-cold and nothing warm.</p>
-<p>This section makes a fresh classification take its stream facts from the folded state the store
-already holds, so a tick reads only the bytes appended since the last one. It does not change what a
-verdict says, and it does not retire anything; §12 does that once this cost is measured inside its
-bound.</p>
-<p>Done when: a test in <code>tests/test_the_station_classifies_what_was_appended.py</code> grows a
-stream of at least 50&nbsp;MB by one record and asserts, through the store's single read step
-<code>_read_range</code>, that the tick which classifies it reads under 1&nbsp;MB of that stream, and
-the same test at the base revision reads the whole stream (the negative control, recorded as a test
-log); every verdict <code>classify_tick</code> returns over the recorded hour that
-<code>tests/test_the_station_carries_every_row.py</code> replays equals the verdict a fresh
-<code>recovery_watch._watch_snapshot</code> classification returns for the same pointer and moment;
-over a 60&nbsp;s window on the fleet node with at least 30 live runs, measured with the instruments of
-<code>docs/research/monitor-storage-load-rca.html</code> §2, the station alone at its default interval
-reads under 20&nbsp;MB/min and uses under 5&nbsp;% of one core, with the before and after figures
-recorded in the RCA; the test files importing the changed modules show no added failure against base
-in matched arms; and ruff check and ruff format --check on the staged paths add no finding.</p>
+<p>The cause is not yet named, and this section names it before it changes anything. The stream
+reads are already incremental on both paths: <code>StationStore.ingest_stream</code> in
+<code>reckon/crew/station_store.py</code> reads past its stored offset, and a fresh classification
+through <code>recovery_watch._watch_snapshot</code> resumes a grown stream from the offset its
+classification memo records (<code>recovery_stream._observed_stream</code>, refused only when the
+stream's inode changes). The §12 run measured a cold station tick over five live runs at 83&nbsp;MB
+and a warm one at 0.07&nbsp;MB, which is that resume working. So the volume at 30 or more live runs
+comes from something else the tick reads: candidates include the inputs the classification reuse key
+is a function of (each run's manifest, its records, the review store and the tree head), a
+classification memo that is absent or keyed differently on the fleet, or a per-project refresh stage
+outside the classification. This section measures which.</p>
+<p>The work is one change found by one measurement: take a per-path census of the bytes the station
+reads over a 60&nbsp;s window on the fleet node, name the paths and the code reading them that make up
+most of the volume, and remove the dominant read so a steady-state tick reads only what changed since
+the last one. It does not change what a verdict says and retires nothing; §12 does that once this
+cost is inside its bound.</p>
+<p>Done when: a census of one 60&nbsp;s window of the station on the fleet node with at least 30 live
+runs, counting bytes per path through an instrument that sees every read the station process makes
+(a Python audit hook on <code>open</code> wrapping the returned file's reads, or
+<code>strace -f -e trace=read,pread64,openat</code> summarised by path), is recorded as a log in the
+run directory and names the paths making up at least 90&nbsp;% of the bytes and the function reading
+each; a test in <code>tests/test_the_station_reads_only_what_changed.py</code> builds its own fixture
+crew home of at least five runs, moves the input the census found dominant between two ticks, and
+asserts through the same per-path instrument that the second tick reads under 1&nbsp;MB from that
+input's paths, while the same test at the base revision reads it in full (the negative control,
+recorded as a test log); the same test asserts that every verdict <code>classify_tick</code> returns
+on that fixture equals the verdict a fresh <code>recovery_watch._watch_snapshot</code> classification
+returns for the same pointer and moment; over a 60&nbsp;s window on the fleet node with at least 30
+live runs, measured with the instruments of <code>docs/research/monitor-storage-load-rca.html</code>
+§2, the station alone at its default interval reads under 20&nbsp;MB/min and uses under 5&nbsp;% of
+one core, with the census and the before and after figures recorded in the RCA; the test files
+importing the changed modules show no added failure against base in matched arms; and ruff check and
+ruff format --check on the staged paths add no finding.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
