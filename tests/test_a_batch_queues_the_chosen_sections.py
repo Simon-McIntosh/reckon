@@ -47,11 +47,12 @@ SECTIONS_A = ("s1", "s2", "s3")
 SECTIONS_B = ("s1", "s2")
 
 
-def _plan(
-    slug: str, sections: dict[str, str], declarations: dict[str, str]
-) -> str:
+def _plan(slug: str, sections: dict[str, str], declarations: dict[str, str]) -> str:
     quote = '"'
-    body = "".join(f"<h2 id={quote}{name}{quote}>§{name[1:]}</h2>{prose}" for name, prose in sections.items())
+    body = "".join(
+        f"<h2 id={quote}{name}{quote}>§{name[1:]}</h2>{prose}"
+        for name, prose in sections.items()
+    )
     return (
         "<!doctype html>\n"
         f"<meta name={quote}docs-project{quote} content={quote}{PROJECT}{quote}>\n"
