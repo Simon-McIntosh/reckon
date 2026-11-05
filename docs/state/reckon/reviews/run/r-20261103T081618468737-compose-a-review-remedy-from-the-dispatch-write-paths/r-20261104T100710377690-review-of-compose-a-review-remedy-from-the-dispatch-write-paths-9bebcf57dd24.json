@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: baseline_suite (f40cd41cd5, gate-base.log, completed true) records 1 failure, tests/test_review_remedy_uses_dispatch_paths.py::test_a_plan_without_write_paths_prints_a_remedy_that_runs; after_suite (9bebcf57dd, gate-after.log, completed true) records 0 failures. One baseline failure and none at head gives added_failure_count 0. A third log, outside-scope-health-review.log, records 3 failures in tests/test_dispatch_names_the_health_review.py, which is outside this node's write scope and is reported by the node under outside_scope rather than counted as an added failure.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch_plan.py:972",
+    "reckon/crew/plan_review.py:4692"
+  ],
+  "completed_at": "2026-11-04T10:18:23.400Z",
+  "dispatched_at": "2026-11-04T10:12:13Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_admission.py",
+      "id": "f5a5326aa86",
+      "line": "825",
+      "severity": "non-blocking",
+      "text": "non-blocking: the helper resolves the plan file inline as `<mounted docs>/plans/<slug>.html`, duplicating a capability the repository already owns at reckon/crew/plan_review.py:1538 `_plan_document_path` (which resolves through `resolve_resource` and returns None rather than raising), and duplicating the composer's own lookup at reckon/crew/plan_review.py:4692-4697; if either resolution is later widened, the remedy and the composer disagree again and the printed command refuses \u2014 exactly the defect this node closes \u2014 so the fallback should consult the same resolver the composer uses."
+    },
+    {
+      "file": "reckon/crew/dispatch_admission.py",
+      "id": "fd41d40d3cb",
+      "line": "827",
+      "severity": "non-blocking",
+      "text": "non-blocking: the guard catches (CrewError, OSError, ValueError, KeyError) but `flight.mounted_project_docs()` raises `flight.FlightConfigError` (reckon/flight.py:207), which is a plain Exception and not a CrewError, so a malformed mounts file would escape an advisory block documented at reckon/crew/dispatch_admission.py:838-845 as refusing nothing \u2014 the sibling advisory reads in the same function (list_code_reviews at :915-917) are guarded, and reckon/crew/dispatch_plan.py:1382 catches FlightConfigError explicitly at the same call."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/dispatch_plan.py:972 is the one production caller of `_dispatch_health_review`, re-exported at :1666, and reckon/crew/plan_review.py:4692 `_resolve_code_subject` is the composer the printed command reaches.",
+    "diff": "read all three commits against f40cd41cd5: 92a92d2e19 adds the path-taking compose command, the plan-write-paths helper and the `_remedy_paths` fallback plus the 239-line test; ca0a2ffcb5 adds the 30-line landing fragment; 9bebcf57dd corrects one fragment sentence to name the base-arm tree.",
+    "done_when": "plan \u00a76's measure asks for a dry-run dispatch against a plan with no section write paths whose printed compose_command is run and found to compose a review of those paths, with a negative control refusing the plan-slug form; tests/test_review_remedy_uses_dispatch_paths.py:204-222 does exactly that and gate-after.log '2 passed in 2.10s' EXIT=0 at 9bebcf57dd records it.",
+    "goal": "the node goal is 'Compose a review remedy from the dispatch write paths'; reckon/crew/dispatch_admission.py:835-855 makes `_health_review_compose_command` take the dispatch's paths and emit one `--path` each, and :925-935 feeds it `sorted(product_paths)` whenever the plan declares no section write paths.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T081618468737-compose-a-review-remedy-from-the-dispatch-write-paths/manifest.md; status complete, commits 92a92d2e19, ca0a2ffcb5, 9bebcf57dd, the tests line matches gate-after.log's header command verbatim, and baseline_suite/after_suite carry the base-arm and head-arm figures.",
+    "write_paths": "read the reviewed manifest's declared paths (reckon/crew/dispatch_admission.py, tests/test_review_remedy_uses_dispatch_paths.py, docs/evidence/fragments/a-review-gate-judges-what-it-covers/compose-a-review-remedy-from-the-dispatch-write-paths.html); `git diff --stat f40cd41 9bebcf57dd` lists those three files and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_review_remedy_uses_dispatch_paths.py:217 reddens under the declared mutation (negative-control.log: the plan-slug-only command restored makes the executed remedy exit 1), so the added assertion dies with the behaviour it guards; :239 (`--path` absent for plan-b) additionally fails if the fallback were applied to a plan that does declare paths.",
+    "evidence": "tests/test_review_remedy_uses_dispatch_paths.py:217-222 takes the printed compose_command verbatim, runs it, and asserts the composed payload's brief_text and the dispatched node's goal both name alpha/mod.py, while gate-after.log records '2 passed in 2.10s' EXIT=0 at 9bebcf57dd and negative-control.log records the exact refusal `plan 'plan-a' names no implementable section write paths` EXIT=1.",
+    "fit": "reckon/crew/dispatch_admission.py:826 uses the same in-function `from reckon.crew import plan_review as _plan_review` import the surrounding function already uses at :892, the docstrings are in the module's house voice, and no plan, issue or version label appears in the new names.",
+    "goal_fidelity": "reckon/crew/dispatch_admission.py:852 emits `--path <p>` per product path when the plan declares none and keeps `--around <plan>` at :854 when it does, and :933-935 supplies the dispatch's own sorted product paths, which is the remedy the goal states.",
+    "reuse": "the substantive parse is delegated to the owner at reckon/crew/plan_review.py:4525 `code_review_paths_from_plan`, but the plan-slug-to-file resolution at reckon/crew/dispatch_admission.py:822-825 re-implements what reckon/crew/plan_review.py:1538 `_plan_document_path` already owns and what the composer repeats at reckon/crew/plan_review.py:4692-4697.",
+    "scope_discipline": "git diff f40cd41 9bebcf57dd touches exactly the three declared write paths (reckon/crew/dispatch_admission.py, tests/test_review_remedy_uses_dispatch_paths.py, the landing fragment) with 336 insertions and 8 deletions, and no concurrent node's path."
+  },
+  "node": "review-of-compose-a-review-remedy-from-the-dispatch-write-paths-9bebcf57dd24",
+  "node:reviewed": "compose-a-review-remedy-from-the-dispatch-write-paths",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'Compose a review remedy from the dispatch write paths'; reckon/crew/dispatch_admission.py:835-855 makes `_health_review_compose_command` take the dispatch's paths and emit one `--path` each, and :925-935 feeds it `sorted(product_paths)` whenever the plan declares no section write paths.\nVERDICT done_when: plan \u00a76's measure asks for a dry-run dispatch against a plan with no section write paths whose printed compose_command is run and found to compose a review of those paths, with a negative control refusing the plan-slug form; tests/test_review_remedy_uses_dispatch_paths.py:204-222 does exactly that and gate-after.log '2 passed in 2.10s' EXIT=0 at 9bebcf57dd records it.\nVERDICT write_paths: read the reviewed manifest's declared paths (reckon/crew/dispatch_admission.py, tests/test_review_remedy_uses_dispatch_paths.py, docs/evidence/fragments/a-review-gate-judges-what-it-covers/compose-a-review-remedy-from-the-dispatch-write-paths.html); `git diff --stat f40cd41 9bebcf57dd` lists those three files and nothing else.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T081618468737-compose-a-review-remedy-from-the-dispatch-write-paths/manifest.md; status complete, commits 92a92d2e19, ca0a2ffcb5, 9bebcf57dd, the tests line matches gate-after.log's header command verbatim, and baseline_suite/after_suite carry the base-arm and head-arm figures.\nVERDICT diff: read all three commits against f40cd41cd5: 92a92d2e19 adds the path-taking compose command, the plan-write-paths helper and the `_remedy_paths` fallback plus the 239-line test; ca0a2ffcb5 adds the 30-line landing fragment; 9bebcf57dd corrects one fragment sentence to name the base-arm tree.\nCALL_SITES: reckon/crew/dispatch_plan.py:972, reckon/crew/plan_review.py:4692\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_admission.py:852 emits `--path <p>` per product path when the plan declares none and keeps `--around <plan>` at :854 when it does, and :933-935 supplies the dispatch's own sorted product paths, which is the remedy the goal states.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_review_remedy_uses_dispatch_paths.py:217-222 takes the printed compose_command verbatim, runs it, and asserts the composed payload's brief_text and the dispatched node's goal both name alpha/mod.py, while gate-after.log records '2 passed in 2.10s' EXIT=0 at 9bebcf57dd and negative-control.log records the exact refusal `plan 'plan-a' names no implementable section write paths` EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff f40cd41 9bebcf57dd touches exactly the three declared write paths (reckon/crew/dispatch_admission.py, tests/test_review_remedy_uses_dispatch_paths.py, the landing fragment) with 336 insertions and 8 deletions, and no concurrent node's path.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_review_remedy_uses_dispatch_paths.py:217 reddens under the declared mutation (negative-control.log: the plan-slug-only command restored makes the executed remedy exit 1), so the added assertion dies with the behaviour it guards; :239 (`--path` absent for plan-b) additionally fails if the fallback were applied to a plan that does declare paths.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/dispatch_admission.py:826 uses the same in-function `from reckon.crew import plan_review as _plan_review` import the surrounding function already uses at :892, the docstrings are in the module's house voice, and no plan, issue or version label appears in the new names.\nSCORE reuse: 13\nJUSTIFICATION reuse: the substantive parse is delegated to the owner at reckon/crew/plan_review.py:4525 `code_review_paths_from_plan`, but the plan-slug-to-file resolution at reckon/crew/dispatch_admission.py:822-825 re-implements what reckon/crew/plan_review.py:1538 `_plan_document_path` already owns and what the composer repeats at reckon/crew/plan_review.py:4692-4697.\nFINDING reckon/crew/dispatch_admission.py:825 non-blocking: the helper resolves the plan file inline as `<mounted docs>/plans/<slug>.html`, duplicating a capability the repository already owns at reckon/crew/plan_review.py:1538 `_plan_document_path` (which resolves through `resolve_resource` and returns None rather than raising), and duplicating the composer's own lookup at reckon/crew/plan_review.py:4692-4697; if either resolution is later widened, the remedy and the composer disagree again and the printed command refuses \u2014 exactly the defect this node closes \u2014 so the fallback should consult the same resolver the composer uses.\nFINDING reckon/crew/dispatch_admission.py:827 non-blocking: the guard catches (CrewError, OSError, ValueError, KeyError) but `flight.mounted_project_docs()` raises `flight.FlightConfigError` (reckon/flight.py:207), which is a plain Exception and not a CrewError, so a malformed mounts file would escape an advisory block documented at reckon/crew/dispatch_admission.py:838-845 as refusing nothing \u2014 the sibling advisory reads in the same function (list_code_reviews at :915-917) are guarded, and reckon/crew/dispatch_plan.py:1382 catches FlightConfigError explicitly at the same call.",
+  "review_run_id": "r-20261104T100710377690-review-of-compose-a-review-remedy-from-the-dispatch-write-paths-9bebcf57dd24",
+  "reviewed_base": "f40cd41cd57e298bfea26a0c922fb68d7c52102d",
+  "reviewed_base_sha": "f40cd41cd57e298bfea26a0c922fb68d7c52102d",
+  "reviewed_head_sha": "9bebcf57dd2446244ed8860ba59797e0f1234ab9",
+  "reviewed_run_id": "r-20261103T081618468737-compose-a-review-remedy-from-the-dispatch-write-paths",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 13,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-04T10:35:00+00:00",
+  "total": 107
+}

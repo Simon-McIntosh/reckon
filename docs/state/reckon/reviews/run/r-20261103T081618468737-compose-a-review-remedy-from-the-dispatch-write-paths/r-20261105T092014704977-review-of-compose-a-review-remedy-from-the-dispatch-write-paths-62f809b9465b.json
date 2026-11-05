@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite gate logs as the evidence fence requires: baseline_suite (f40cd41cd5, gate-base.log, completed true) records 1 failure, tests/test_review_remedy_uses_dispatch_paths.py::test_a_plan_without_write_paths_prints_a_remedy_that_runs; after_suite (62f809b946, gate-after.log, completed true) records 0 failures. One baseline failure and none at head gives added_failure_count 0. The head arm for the neighbour file the gained commits repair is after-suite.log ('8 passed', EXIT=0, completed), reproduced independently at 62f809b946 by review-gate.log ('8 passed', EXIT=0); repro-base.log records the same three cases passing at f40cd41 and repro-head.log records them failing 3/3 at 9bebcf57dd before the repair, which is the added-regression evidence the resume advice cited.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch_plan.py:972",
+    "reckon/crew/dispatch_admission.py:953"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-05T09:23:54Z",
+  "findings": [
+    {
+      "file": "tests/test_dispatch_names_the_health_review.py",
+      "id": "f49cd0dee67",
+      "line": "34",
+      "severity": "non-blocking",
+      "text": "non-blocking: this file is outside the reviewed node's declared write paths (the fence names only reckon/crew/dispatch_admission.py, tests/test_review_remedy_uses_dispatch_paths.py, the evidence fragment and a docs/figures path); the edit is authorised solely by the coordinator's resume advice and disclosed at manifest.md:26, so a promotion-time scope check reads it as an out-of-scope write and needs that grant to be honoured explicitly."
+    },
+    {
+      "file": "manifest.md",
+      "id": "f6e9528399c",
+      "line": "22",
+      "severity": "non-blocking",
+      "text": "non-blocking: the armed after_suite field records a run of tests/test_review_remedy_uses_dispatch_paths.py only, so the suite pair does not measure the file the gained commits actually repair; the head measurement for the changed file exists only in after-suite.log ('8 passed' EXIT=0), which the manifest references under test_logs and not in after_suite, so a reader auditing the pair alone cannot see the repair verified."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read 8a16271deb and 62f809b946 against 9bebcf57dd: 8a16271deb changes the COMPOSE_COMMAND constant from '--around plan-a' to '--path reckon/alpha.py' and adds a seven-line comment explaining why the fixture plan cannot be the subject; 62f809b946 rewrites one evidence paragraph to record the reproduction and the repair. Nine insertions, two deletions, two files.",
+    "done_when": "the reviewed node's done_when is that tests/test_review_remedy_uses_dispatch_paths.py runs the exact printed compose_command for a plan without section write paths and observes the dispatched paths; gate-after.log records '2 passed' EXIT=0 at 62f809b946 and after-suite.log records '8 passed' EXIT=0 across that file and the repaired neighbour file, and an independent run at the reviewed head reproduced '8 passed' EXIT=0.",
+    "goal": "the reviewed node's goal is 'Compose a review remedy from the dispatch write paths'; the two commits gained since the prior review (9bebcf57dd..62f809b946) repair the neighbouring cases that the composition change broke and record the repair, so the composed remedy can land without regressing the suite (tests/test_dispatch_names_the_health_review.py:41-48 now expects the --path form the block emits).",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T081618468737-compose-a-review-remedy-from-the-dispatch-write-paths/manifest.md; status complete, commits 92a92d2e19, ca0a2ffcb5, 9bebcf57dd, 8a16271deb, 62f809b946, baseline_suite 1 failure at f40cd41 and after_suite 0 failures at 62f809b946, both completed true.",
+    "write_paths": "the reviewed node's declared write paths are reckon/crew/dispatch_admission.py, tests/test_review_remedy_uses_dispatch_paths.py, the evidence fragment under docs/evidence/fragments/a-review-gate-judges-what-it-covers/, and a docs/figures path; the gained diff touches the fragment (in scope) and tests/test_dispatch_names_the_health_review.py (out of the recorded scope, authorised only by the coordinator's resume advice and disclosed under outside_scope)."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_names_the_health_review.py:131, :176 and :269 compare the emitted block['compose_command'] against a literal constant, and reinstating the pre-change '--around plan-a' form reddens all three (repro-head.log: 3 failed), so the assertion dies with the behaviour it guards; the path value on the right side derives from the same PRODUCT_PATH the test hands in, so the comparison pins the command form rather than the path's provenance, which the node's own test asserts independently.",
+    "evidence": "the reproduction is recorded on both sides \u2014 repro-head.log 3 failed EXIT=1 at 9bebcf57dd and repro-base.log 3 passed EXIT=0 at f40cd41 \u2014 and after-suite.log records 8 passed EXIT=0 at 62f809b946, which an independent run at the reviewed head reproduced; the structured after_suite field measures only the node's own test file, which is the gap recorded as a finding.",
+    "fit": "tests/test_dispatch_names_the_health_review.py:34-40 adds a comment in the file's existing prose register and introduces no plan, sprint or issue label; the constant keeps its name and its exact-equality use.",
+    "goal_fidelity": "tests/test_dispatch_names_the_health_review.py:41-43 now expects `reckon crew review --project proj --path reckon/alpha.py --session session`, the string reckon/crew/dispatch_admission.py:953 composes for a plan that declares no section write paths, so the gained work completes the node's remedy rather than changing it.",
+    "reuse": "the gained commits add no function, class or module \u2014 only a constant's value, a comment and one evidence paragraph \u2014 so there is no capability to fork; searched reckon/crew for an existing compose-command expectation and found the owner of the behaviour at reckon/crew/dispatch_admission.py:835, which the test exercises rather than re-implements.",
+    "scope_discipline": "git diff --stat 9bebcf57dd 62f809b946 touches two files, and tests/test_dispatch_names_the_health_review.py is outside the node's declared write paths, admitted only by the coordinator's resume advice and disclosed at manifest.md:26."
+  },
+  "node": "review-of-compose-a-review-remedy-from-the-dispatch-write-paths-62f809b9465b",
+  "node:reviewed": "compose-a-review-remedy-from-the-dispatch-write-paths",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is 'Compose a review remedy from the dispatch write paths'; the two commits gained since the prior review (9bebcf57dd..62f809b946) repair the neighbouring cases that the composition change broke and record the repair, so the composed remedy can land without regressing the suite (tests/test_dispatch_names_the_health_review.py:41-48 now expects the --path form the block emits).\nVERDICT done_when: the reviewed node's done_when is that tests/test_review_remedy_uses_dispatch_paths.py runs the exact printed compose_command for a plan without section write paths and observes the dispatched paths; gate-after.log records '2 passed' EXIT=0 at 62f809b946 and after-suite.log records '8 passed' EXIT=0 across that file and the repaired neighbour file, and an independent run at the reviewed head reproduced '8 passed' EXIT=0.\nVERDICT write_paths: the reviewed node's declared write paths are reckon/crew/dispatch_admission.py, tests/test_review_remedy_uses_dispatch_paths.py, the evidence fragment under docs/evidence/fragments/a-review-gate-judges-what-it-covers/, and a docs/figures path; the gained diff touches the fragment (in scope) and tests/test_dispatch_names_the_health_review.py (out of the recorded scope, authorised only by the coordinator's resume advice and disclosed under outside_scope).\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T081618468737-compose-a-review-remedy-from-the-dispatch-write-paths/manifest.md; status complete, commits 92a92d2e19, ca0a2ffcb5, 9bebcf57dd, 8a16271deb, 62f809b946, baseline_suite 1 failure at f40cd41 and after_suite 0 failures at 62f809b946, both completed true.\nVERDICT diff: read 8a16271deb and 62f809b946 against 9bebcf57dd: 8a16271deb changes the COMPOSE_COMMAND constant from '--around plan-a' to '--path reckon/alpha.py' and adds a seven-line comment explaining why the fixture plan cannot be the subject; 62f809b946 rewrites one evidence paragraph to record the reproduction and the repair. Nine insertions, two deletions, two files.\nCALL_SITES: reckon/crew/dispatch_plan.py:972, reckon/crew/dispatch_admission.py:953\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: tests/test_dispatch_names_the_health_review.py:41-43 now expects `reckon crew review --project proj --path reckon/alpha.py --session session`, the string reckon/crew/dispatch_admission.py:953 composes for a plan that declares no section write paths, so the gained work completes the node's remedy rather than changing it.\nSCORE evidence: 16\nJUSTIFICATION evidence: the reproduction is recorded on both sides \u2014 repro-head.log 3 failed EXIT=1 at 9bebcf57dd and repro-base.log 3 passed EXIT=0 at f40cd41 \u2014 and after-suite.log records 8 passed EXIT=0 at 62f809b946, which an independent run at the reviewed head reproduced; the structured after_suite field measures only the node's own test file, which is the gap recorded as a finding.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: git diff --stat 9bebcf57dd 62f809b946 touches two files, and tests/test_dispatch_names_the_health_review.py is outside the node's declared write paths, admitted only by the coordinator's resume advice and disclosed at manifest.md:26.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_dispatch_names_the_health_review.py:131, :176 and :269 compare the emitted block['compose_command'] against a literal constant, and reinstating the pre-change '--around plan-a' form reddens all three (repro-head.log: 3 failed), so the assertion dies with the behaviour it guards; the path value on the right side derives from the same PRODUCT_PATH the test hands in, so the comparison pins the command form rather than the path's provenance, which the node's own test asserts independently.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_dispatch_names_the_health_review.py:34-40 adds a comment in the file's existing prose register and introduces no plan, sprint or issue label; the constant keeps its name and its exact-equality use.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained commits add no function, class or module \u2014 only a constant's value, a comment and one evidence paragraph \u2014 so there is no capability to fork; searched reckon/crew for an existing compose-command expectation and found the owner of the behaviour at reckon/crew/dispatch_admission.py:835, which the test exercises rather than re-implements.\nFINDING tests/test_dispatch_names_the_health_review.py:34 non-blocking: this file is outside the reviewed node's declared write paths (the fence names only reckon/crew/dispatch_admission.py, tests/test_review_remedy_uses_dispatch_paths.py, the evidence fragment and a docs/figures path); the edit is authorised solely by the coordinator's resume advice and disclosed at manifest.md:26, so a promotion-time scope check reads it as an out-of-scope write and needs that grant to be honoured explicitly.\nFINDING manifest.md:22 non-blocking: the armed after_suite field records a run of tests/test_review_remedy_uses_dispatch_paths.py only, so the suite pair does not measure the file the gained commits actually repair; the head measurement for the changed file exists only in after-suite.log ('8 passed' EXIT=0), which the manifest references under test_logs and not in after_suite, so a reader auditing the pair alone cannot see the repair verified.",
+  "review_run_id": "r-20261105T092014704977-review-of-compose-a-review-remedy-from-the-dispatch-write-paths-62f809b9465b",
+  "reviewed_base": "9bebcf57dd2446244ed8860ba59797e0f1234ab9",
+  "reviewed_base_sha": "9bebcf57dd2446244ed8860ba59797e0f1234ab9",
+  "reviewed_head_sha": "62f809b9465b7da8090caeebcd3f66f07d3f9056",
+  "reviewed_run_id": "r-20261103T081618468737-compose-a-review-remedy-from-the-dispatch-write-paths",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T09:45:00+00:00",
+  "total": 102
+}
