@@ -1,0 +1,71 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite (gates/base-siblings.log, tests/test_a_review_row_reads_its_head_from_files.py + tests/test_an_unchanged_run_costs_one_stat.py at 05a2cd1ab2) records failure_count 0 with failure_ids [], and after_suite (gates/head.log, tests/test_a_fresh_process_asks_git_only_what_moved.py at f12928cf4c) records failure_count 0 with failure_ids []; both declare completed true and exit 0.",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:1203",
+    "reckon/crew/recovery_liveness.py:1484",
+    "reckon/crew/promotion_evidence.py:244",
+    "reckon/crew/promotion_scope.py:266",
+    "reckon/crew/merge.py:134",
+    "reckon/crew/routing.py:766",
+    "reckon/crew/recovery.py:266"
+  ],
+  "completed_at": "2026-11-04T09:14:53.157Z",
+  "dispatched_at": "2026-11-04T09:09:14Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": 209,
+      "severity": "non-blocking",
+      "text": "_update_git_answer_store re-implements the atomic JSON replacement and the exclusive flock that reckon/_store.py already owns (write_json_atomically at :619, _serialized_path_lock at :394), which reckon/crew/gate_watch.py:156 and reckon/crew/recovery_memo.py:197 already use for a lock-guarded store write and a persisted derivation cache; the crew home now carries two lock disciplines (a .lock file beside the store here, locks/<namespace>/<sha>.lock there) and the store bypasses the owner's fsync and mode handling."
+    },
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": 195,
+      "severity": "non-blocking",
+      "text": "\u00a744 states 'the store is bounded: a write drops entries no live pointer names', but _bound_git_answer_store only consults the live pointers once max(len(commits), len(counts)) exceeds _GIT_ANSWER_STORE_WORKTREES (256), so below the ceiling it retains entries for every tree that still exists on disk whatever the live pointers name \u2014 bounded, but not by the rule the plan states."
+    },
+    {
+      "file": "tests/test_a_fresh_process_asks_git_only_what_moved.py",
+      "line": 278,
+      "severity": "non-blocking",
+      "text": "assert subject_module._resolve_commit(worktree, head) == head compares the call against the same head the test just passed in, so a store that stored and returned its own candidate would satisfy it; the resolve half of the store is therefore never checked against an independent value (the same shape recurs at :344). A full revision genuinely resolves to itself, so no independent source exists, but the 'the store answers what git answers' claim holds only for the count at :298."
+    },
+    {
+      "file": "reckon/crew/recovery_review_subject.py",
+      "line": 214,
+      "severity": "non-blocking",
+      "text": "_stored_commit_answer returns a stored sha without establishing that tree still holds that object; _bound_git_answer_store prunes only trees that are no longer directories, so a worktree path removed and reused by a different repository keeps its entries and _resolve_commit would report a commit the new tree does not have \u2014 the case reckon/crew/recovery_watch.py:123-125's docstring says cannot happen. Callers such as reckon/crew/promotion_scope.py:950 treat a non-empty answer as 'this commit exists here'."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read f12928cf4c against 05a2cd1ab2 commit by commit (one commit): reckon/crew/recovery_watch.py +189 for the store, its bound and the read/write in _commits_beyond_base; reckon/crew/recovery_review_subject.py +45 for the stored full-revision answer and an in-process cache; tests/test_a_fresh_process_asks_git_only_what_moved.py +379; the landing fragment +10.",
+    "done_when": "the measure names tests/test_a_fresh_process_asks_git_only_what_moved.py, and gates/head.log records that file at 6 passed EXIT=0 (6 passed is also the after_suite failure_count 0); each bullet the measure states \u2014 neither call spawned, ref name still asks git, moved head counted once and entry updated, corrupt store falls back, negative control spawns both \u2014 has its own case in that file.",
+    "goal": "the node goal is that a fresh process asks git only about what moved; reckon/crew/recovery_watch.py:110-286 adds a crew-home store keyed on object ids and both derivation sites consult it, so reckon/crew/recovery_review_subject.py:261-263 answers a full revision from the store while a ref name still reaches the git rev-parse at :265-276.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T071823353305-a-fresh-process-asks-git-only-about-what-moved/manifest.md: status complete, commits f12928cf4c, tests line is the literal head command, test_logs names gates/head.log, negative_control_log names gates/negative-control.log, and baseline_suite/after_suite are both recorded with completed true and failure_ids [].",
+    "write_paths": "the manifest declares five paths; commit f12928cf4c changes four of them (reckon/crew/recovery_watch.py, reckon/crew/recovery_review_subject.py, tests/test_a_fresh_process_asks_git_only_what_moved.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/a-fresh-process-asks-git-only-about-what-moved.html) and nothing outside, leaving docs/figures/... unwritten as the brief permitted."
+  },
+  "node": "review-of-a-fresh-process-asks-git-only-about-what-moved-f12928cf4c70",
+  "node:reviewed": "a-fresh-process-asks-git-only-about-what-moved",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a fresh process asks git only about what moved; reckon/crew/recovery_watch.py:110-286 adds a crew-home store keyed on object ids and both derivation sites consult it, so reckon/crew/recovery_review_subject.py:261-263 answers a full revision from the store while a ref name still reaches the git rev-parse at :265-276.\nVERDICT done_when: the measure names tests/test_a_fresh_process_asks_git_only_what_moved.py, and gates/head.log records that file at 6 passed EXIT=0 (6 passed is also the after_suite failure_count 0); each bullet the measure states \u2014 neither call spawned, ref name still asks git, moved head counted once and entry updated, corrupt store falls back, negative control spawns both \u2014 has its own case in that file.\nVERDICT write_paths: the manifest declares five paths; commit f12928cf4c changes four of them (reckon/crew/recovery_watch.py, reckon/crew/recovery_review_subject.py, tests/test_a_fresh_process_asks_git_only_what_moved.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/a-fresh-process-asks-git-only-about-what-moved.html) and nothing outside, leaving docs/figures/... unwritten as the brief permitted.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T071823353305-a-fresh-process-asks-git-only-about-what-moved/manifest.md: status complete, commits f12928cf4c, tests line is the literal head command, test_logs names gates/head.log, negative_control_log names gates/negative-control.log, and baseline_suite/after_suite are both recorded with completed true and failure_ids [].\nVERDICT diff: read f12928cf4c against 05a2cd1ab2 commit by commit (one commit): reckon/crew/recovery_watch.py +189 for the store, its bound and the read/write in _commits_beyond_base; reckon/crew/recovery_review_subject.py +45 for the stored full-revision answer and an in-process cache; tests/test_a_fresh_process_asks_git_only_what_moved.py +379; the landing fragment +10.\nCALL_SITES: reckon/crew/recovery_classification.py:1203, reckon/crew/recovery_liveness.py:1484, reckon/crew/promotion_evidence.py:244, reckon/crew/promotion_scope.py:266, reckon/crew/merge.py:134, reckon/crew/routing.py:766, reckon/crew/recovery.py:266\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:312-318 reads a stored count before spawning git and :332-334 writes one after, and reckon/crew/recovery_review_subject.py:261-263 does the same for a full revision, which is the delivery \u00a744 states; the store is only trusted for ids that cannot move, as _FULL_REVISION at :209 gates.\nSCORE evidence: 16\nJUSTIFICATION evidence: gates/head.log records 6 passed EXIT=0 at f12928cf4c and gates/negative-control.log records 1 failed 5 passed EXIT=1 with the failing id absent from the head arm, so both arms are reproducible from what the manifest named; the weakness is that the resolve half of the 'same answers git gives' bullet is not measured against an independent source (see the finding at tests/test_a_fresh_process_asks_git_only_what_moved.py:278).\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git show --stat f12928cf4c lists four files, all inside the manifest's declared write paths, and adds no plan labels, no ticket references and no source file outside reckon/crew/recovery_watch.py, reckon/crew/recovery_review_subject.py and the test; the one thing the goal does not name is the second in-process cache at reckon/crew/recovery_review_subject.py:209-236.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_fresh_process_asks_git_only_what_moved.py:243-250 fails if a git call is spawned with the store populated, and gates/negative-control.log shows precisely that failing when _read_git_answer_store returns empty, so the central guard is proven to fire; the count assertions at :298 and :333 compare against git's own rev-list, but the resolve assertions at :278 and :344 compare against the input value.\nSCORE fit: 16\nJUSTIFICATION fit: the added code follows the file's idiom \u2014 module-level bounded dict cache beside _COMMITS_BEYOND_BASE_CACHE, a lazy import to dodge the cycle with recovery_watch, best-effort writes that never raise \u2014 and introduces no plan, stage or ticket name; the flock and tempfile dance at :209-237 is the one place it departs from how reckon/crew/gate_watch.py:156 does the same thing.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/_store.py:619 write_json_atomically and :394 _serialized_path_lock already own atomic JSON replacement under an exclusive flock, and reckon/crew/gate_watch.py:156 plus reckon/crew/recovery_memo.py:197 already consume them for exactly a lock-guarded store write and a persisted derivation cache; reckon/crew/recovery_watch.py:209-237 re-implements both without extending or calling the owner.\nFINDING reckon/crew/recovery_watch.py:209 non-blocking: _update_git_answer_store re-implements the atomic JSON replacement and the exclusive flock that reckon/_store.py already owns (write_json_atomically at :619, _serialized_path_lock at :394), which reckon/crew/gate_watch.py:156 and reckon/crew/recovery_memo.py:197 already use for a lock-guarded store write and a persisted derivation cache; the crew home now carries two lock disciplines (a .lock file beside the store here, locks/<namespace>/<sha>.lock there) and the store bypasses the owner's fsync and mode handling.\nFINDING reckon/crew/recovery_watch.py:195 non-blocking: \u00a744 states 'the store is bounded: a write drops entries no live pointer names', but _bound_git_answer_store only consults the live pointers once max(len(commits), len(counts)) exceeds _GIT_ANSWER_STORE_WORKTREES (256), so below the ceiling it retains entries for every tree that still exists on disk whatever the live pointers name \u2014 bounded, but not by the rule the plan states.\nFINDING tests/test_a_fresh_process_asks_git_only_what_moved.py:278 non-blocking: assert subject_module._resolve_commit(worktree, head) == head compares the call against the same head the test just passed in, so a store that stored and returned its own candidate would satisfy it; the resolve half of the store is therefore never checked against an independent value (the same shape recurs at :344). A full revision genuinely resolves to itself, so no independent source exists, but the 'the store answers what git answers' claim holds only for the count at :298.\nFINDING reckon/crew/recovery_review_subject.py:214 non-blocking: _stored_commit_answer returns a stored sha without establishing that tree still holds that object; _bound_git_answer_store prunes only trees that are no longer directories, so a worktree path removed and reused by a different repository keeps its entries and _resolve_commit would report a commit the new tree does not have \u2014 the case reckon/crew/recovery_watch.py:123-125's docstring says cannot happen. Callers such as reckon/crew/promotion_scope.py:950 treat a non-empty answer as 'this commit exists here'.\n",
+  "review_run_id": "r-20261104T085948623649-review-of-a-fresh-process-asks-git-only-about-what-moved-f12928cf4c70",
+  "reviewed_base_sha": "05a2cd1ab2b40f88480dbf2cb4b195d6e252c3e3",
+  "reviewed_head_sha": "f12928cf4c7012cd1131bf87b115327788e59887",
+  "reviewed_run_id": "r-20261103T071823353305-a-fresh-process-asks-git-only-about-what-moved",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-04T09:13:17+00:00",
+  "total": 88
+}

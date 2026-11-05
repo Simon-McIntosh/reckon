@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite (gates/base-siblings.log, tests/test_a_review_row_reads_its_head_from_files.py + tests/test_an_unchanged_run_costs_one_stat.py at 05a2cd1ab2) records failure_count 0 with failure_ids [], and after_suite (gates/head.log, tests/test_a_fresh_process_asks_git_only_what_moved.py at 69571c85e4) records failure_count 0 with failure_ids []; both declare completed true and exit 0. The delta reviewed here is f12928cf4c..69571c85e4, the commits the run gained since the review stored at f12928cf4c.",
+  "call_site_count": 11,
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:2425",
+    "reckon/crew/recovery_repair_dispatch.py:1442",
+    "reckon/crew/promotion_scope.py:270",
+    "reckon/crew/promotion_scope.py:348",
+    "reckon/crew/promotion_evidence.py:60",
+    "reckon/crew/promotion_evidence.py:380",
+    "reckon/crew/merge.py:134",
+    "reckon/crew/routing.py:766",
+    "reckon/crew/dispatch.py:1269",
+    "reckon/crew/gc.py:475",
+    "reckon/crew/review.py:491"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-05T07:36:53Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T071823353305-a-fresh-process-asks-git-only-about-what-moved/gates/negative-control.log",
+      "id": "fdd7b8fff35",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the recorded control's header names revision f12928cf4c with the store read disabled, so the only out-of-process red log predates the fix it is cited against; the head-equivalent control exists only as the in-process case test_without_the_store_the_derivation_spawns_both inside the head gate, and a later reader cannot tell from the log whether the repaired code was exercised."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T071823353305-a-fresh-process-asks-git-only-about-what-moved/manifest.md",
+      "id": "ffd02430dbb",
+      "line": 16,
+      "severity": "non-blocking",
+      "text": "the checkpoint claims the admission-regression file ran 8 passed three times serially at 69571c85e4, but test_logs names only gates/head.log and gates/base-regression.log, so that repair's head arm is a claim a reviewer cannot open."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 11 production call site(s)",
+    "diff": "Read the single commit f12928cf4c..69571c85e4 (+17/-8, two files): a keyword-only `cached` flag on `_resolve_commit` at reckon/crew/recovery_review_subject.py:240-242, a `cached and not strict` guard around the store read at :269, `cached=True` from `_canonical_commits` at :347, and three test assertions rerouted from `_resolve_commit` to `_canonical_commits` so they exercise the production entry point.",
+    "done_when": "The done_when's measure is tests/test_a_fresh_process_asks_git_only_what_moved.py, and the reviewed run's manifest records gates/head.log at 69571c85e4 with \"6 passed in 16.66s\" and EXIT=0, including test_populated_store_answers_a_first_derivation_without_git at :237-262 which asserts a first fleet_state spawns neither call.",
+    "goal": "The node goal is that a fresh process asks git only about what moved; the delta makes the stored answer opt-in on the resolver at reckon/crew/recovery_review_subject.py:269-272 and opts in only from the canonicalisation at :347, so the derivation still takes stored answers while every other caller asks git afresh.",
+    "manifest": "Read the reviewed run's manifest.md: status complete, commits f12928cf4c and 69571c85e4, a literal gate command, test_logs naming gates/head.log and gates/base-regression.log, negative_control_log named, and retry_failures recording the five admission-regression ids the fix repairs.",
+    "write_paths": "The manifest declares five paths; the delta at f12928cf4c..69571c85e4 changes only reckon/crew/recovery_review_subject.py and tests/test_a_fresh_process_asks_git_only_what_moved.py, both inside that set."
+  },
+  "justifications": {
+    "durability": "tests/test_a_commit_that_fails_to_resolve_refuses_the_promotion.py reddens on the reverted behaviour (5 failed at f12928cf4c per the manifest's recorded ids) but lies outside this node's gate, while the modified assertions at tests/test_a_fresh_process_asks_git_only_what_moved.py:278 enter through the same function they compare.",
+    "evidence": "gates/head.log records \"6 passed in 16.66s\" at 69571c85e4 with EXIT=0, and gates/base-regression.log records 8 passed at base, but the head-arm runs of tests/test_a_commit_that_fails_to_resolve_refuses_the_promotion.py that the manifest cites have no persisted log.",
+    "fit": "reckon/crew/recovery_review_subject.py:240-266 extends the existing keyword-only `strict` idiom with a sibling flag and documents why `strict` wins, matching the surrounding style.",
+    "goal_fidelity": "reckon/crew/recovery_review_subject.py:347 keeps the derivation on the store while :269 denies a stored answer to every other caller and to `strict`, which is exactly the split the admission regression showed was needed.",
+    "reuse": "the delta adds no new capability; it threads an opt-in flag into the store read the module already owned, and the duplication the earlier review recorded at reckon/crew/recovery_watch.py:209 is in code this commit does not touch.",
+    "scope_discipline": "the two changed files are both declared write paths, and the diff carries nothing the goal does not imply."
+  },
+  "node": "review-of-a-fresh-process-asks-git-only-about-what-moved-69571c85e4ff",
+  "node:reviewed": "a-fresh-process-asks-git-only-about-what-moved",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that a fresh process asks git only about what moved; the delta makes the stored answer opt-in on the resolver at reckon/crew/recovery_review_subject.py:269-272 and opts in only from the canonicalisation at :347, so the derivation still takes stored answers while every other caller asks git afresh.\nVERDICT done_when: The done_when's measure is tests/test_a_fresh_process_asks_git_only_what_moved.py, and the reviewed run's manifest records gates/head.log at 69571c85e4 with \"6 passed in 16.66s\" and EXIT=0, including test_populated_store_answers_a_first_derivation_without_git at :237-262 which asserts a first fleet_state spawns neither call.\nVERDICT write_paths: The manifest declares five paths; the delta at f12928cf4c..69571c85e4 changes only reckon/crew/recovery_review_subject.py and tests/test_a_fresh_process_asks_git_only_what_moved.py, both inside that set.\nVERDICT manifest: Read the reviewed run's manifest.md: status complete, commits f12928cf4c and 69571c85e4, a literal gate command, test_logs naming gates/head.log and gates/base-regression.log, negative_control_log named, and retry_failures recording the five admission-regression ids the fix repairs.\nVERDICT diff: Read the single commit f12928cf4c..69571c85e4 (+17/-8, two files): a keyword-only `cached` flag on `_resolve_commit` at reckon/crew/recovery_review_subject.py:240-242, a `cached and not strict` guard around the store read at :269, `cached=True` from `_canonical_commits` at :347, and three test assertions rerouted from `_resolve_commit` to `_canonical_commits` so they exercise the production entry point.\nCALL_SITES: reckon/crew/recovery_classification.py:2425, reckon/crew/recovery_repair_dispatch.py:1442, reckon/crew/promotion_scope.py:270, reckon/crew/promotion_scope.py:348, reckon/crew/promotion_evidence.py:60, reckon/crew/promotion_evidence.py:380, reckon/crew/merge.py:134, reckon/crew/routing.py:766, reckon/crew/dispatch.py:1269, reckon/crew/gc.py:475, reckon/crew/review.py:491\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_subject.py:347 keeps the derivation on the store while :269 denies a stored answer to every other caller and to `strict`, which is exactly the split the admission regression showed was needed.\nSCORE evidence: 17\nJUSTIFICATION evidence: gates/head.log records \"6 passed in 16.66s\" at 69571c85e4 with EXIT=0, and gates/base-regression.log records 8 passed at base, but the head-arm runs of tests/test_a_commit_that_fails_to_resolve_refuses_the_promotion.py that the manifest cites have no persisted log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two changed files are both declared write paths, and the diff carries nothing the goal does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_commit_that_fails_to_resolve_refuses_the_promotion.py reddens on the reverted behaviour (5 failed at f12928cf4c per the manifest's recorded ids) but lies outside this node's gate, while the modified assertions at tests/test_a_fresh_process_asks_git_only_what_moved.py:278 enter through the same function they compare.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/recovery_review_subject.py:240-266 extends the existing keyword-only `strict` idiom with a sibling flag and documents why `strict` wins, matching the surrounding style.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no new capability; it threads an opt-in flag into the store read the module already owned, and the duplication the earlier review recorded at reckon/crew/recovery_watch.py:209 is in code this commit does not touch.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T071823353305-a-fresh-process-asks-git-only-about-what-moved/gates/negative-control.log:1 non-blocking: the recorded control's header names revision f12928cf4c with the store read disabled, so the only out-of-process red log predates the fix it is cited against; the head-equivalent control exists only as the in-process case test_without_the_store_the_derivation_spawns_both inside the head gate, and a later reader cannot tell from the log whether the repaired code was exercised.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T071823353305-a-fresh-process-asks-git-only-about-what-moved/manifest.md:16 non-blocking: the checkpoint claims the admission-regression file ran \"8 passed three times serially\" at 69571c85e4, but test_logs names only gates/head.log and gates/base-regression.log, so that repair's head arm is a claim a reviewer cannot open.\n",
+  "review_run_id": "r-20261105T073125965126-review-of-a-fresh-process-asks-git-only-about-what-moved-69571c85e4ff",
+  "reviewed_base_sha": "f12928cf4c7012cd1131bf87b115327788e59887",
+  "reviewed_head_sha": "69571c85e4ffa0c701b7b0c2ccd365c9a2577575",
+  "reviewed_run_id": "r-20261103T071823353305-a-fresh-process-asks-git-only-about-what-moved",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T08:00:00+00:00",
+  "total": 112
+}
