@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <title>Landing: a subjectless review record is refused at delivery</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="a-review-record-without-a-subject-is-refused-at-delivery-not-landing">
+      <h1>A subjectless review record is refused at delivery</h1>
+
+      <p id="a-review-record-without-a-subject-is-refused-at-delivery-not-finding">
+        The delivery-time check already refuses a record that names neither a
+        reviewed run nor a plan. <code>crew check --manifest</code>, which every
+        reviewer passes before its turn ends, reads each run-directory record
+        through <code>review.review_record_refusals</code>, and that function
+        extends <code>store_review_refusals</code>, which has carried the subject
+        predicate <code>names_a_review_subject</code> since
+        <code>a0182b4ae7</code> (2026-10-18, the day of the reported run). The
+        wiring that reaches delivered run-directory records arrived with
+        <code>1bfed6d8ce</code>. So §22's product gap was closed by work that
+        landed beside it, and the missing piece was the test: nothing pinned the
+        refusal, so nothing would have noticed it going away.
+      </p>
+
+      <p id="a-review-record-without-a-subject-is-refused-at-delivery-not-change">
+        Added <code>tests/test_a_subjectless_review_record_is_refused_at_delivery.py</code>.
+        It points a temporary crew home and run pointer at a review run whose
+        declared paths are the reviewed run's <code>review-records/</code>
+        directory, writes a record scored on all six dimensions and carrying no
+        <code>reviewed_run_id</code> and no plan, runs
+        <code>crew check --manifest</code>, and requires a non-zero exit whose
+        findings name that record path and say it has no subject. A record
+        carrying its <code>reviewed_run_id</code> passes the same check
+        unchanged, with no findings. No product source changed.
+      </p>
+
+      <p id="a-review-record-without-a-subject-is-refused-at-delivery-not-measure">
+        Gate: <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+        tests/test_a_subjectless_review_record_is_refused_at_delivery.py</code> —
+        3 passed, EXIT=0, in both arms (base product code and the tree carrying
+        the new test, which are the same product source). Negative control: with
+        the delivery-side subject requirements removed from
+        <code>store_review_refusals</code> and <code>review_record_refusals</code>
+        in a scratch extraction of the base tree, the subjectless record passes
+        delivery (<code>review_record_refusals</code> returns <code>[]</code>) and
+        2 of the 3 cases fail, EXIT=1; the promotion path still refuses the same
+        record with “review record names neither a reviewed run nor a plan, so it
+        has no subject”. That mutation is the declared control: without the
+        delivery-time check the record is refused only at promotion.
+      </p>
+    </section>
+  </main>
+</body>
+</html>
