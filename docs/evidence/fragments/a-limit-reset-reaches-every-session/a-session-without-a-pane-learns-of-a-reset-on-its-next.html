@@ -32,6 +32,13 @@ text; a second prompt with the same reading writes no context at all; the obliga
 horizon. <strong>4 passed</strong> in 24.74 s, EXIT=0. The declared negative control sets the horizon to a
 day, and the hook then names the 90-minute event as well — <strong>1 failed, 3 passed, EXIT=1</strong>, the
 one failure being that first case's single-line assertion.</p>
+<p id="a-session-without-a-pane-learns-of-a-reset-on-its-next-suite">The gate lives in the repository as
+<code>tests/test_a_session_without_a_pane_learns_of_a_reset.py</code>, so a regression reddens the suite
+rather than a run directory. Run from the repository root with no override in force it is
+<strong>4 passed</strong> in 20.05 s, EXIT=0. The same file against the change reverted — the base tree
+with only the test added — is <strong>4 errors, EXIT=1</strong>, the first at the fixture's
+<code>budget_reset_store_path()</code>: without the change there is no store path for the hook to read, so
+none of the four cases can run.</p>
 <p id="a-session-without-a-pane-learns-of-a-reset-on-its-next-arms">Both arms were rebuilt from git
 archives under the run's own scratch directory with the four follower variables unset, and run in place on
 the fleet node at <code>pytest -n 8</code> over the 65 test files importing the two changed modules: base
