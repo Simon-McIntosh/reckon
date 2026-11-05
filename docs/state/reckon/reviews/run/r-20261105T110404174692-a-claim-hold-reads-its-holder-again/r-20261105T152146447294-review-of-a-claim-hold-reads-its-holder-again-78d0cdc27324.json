@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own gates: baseline_suite names three failure ids and the completed after_suite (the node gate) names none, so no id is added. The separate importer head arm adds one id absent from the importer base arm, tests/test_a_queued_request_arranges_its_follower.py::test_one_admission_pass_launches_without_follower_refusal, which the reviewed manifest attributes to the worktree working directory and records under outside_scope; logs/follower-test-base-plus-change.log passes 2/2 from an extraction cwd and logs/follower-test-worktree-cwd-base-code.log fails from the worktree cwd with base code.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:4169 _live_claim_hold in _launch_queued",
+    "reckon/crew/queue_admission.py:1616 _live_claim_hold in _record_stalls",
+    "reckon/crew/queue_admission.py:4739 admit_once in admit_until_stopped"
+  ],
+  "completed_at": "2026-11-05T15:33:47.392Z",
+  "dispatched_at": "2026-11-05T15:24:51Z",
+  "findings": [
+    {
+      "disposition": "folded",
+      "disposition_reason": "a test node adding the changed-pointer case covers the branch the plan names beyond the two the done_when fixes.",
+      "file": "tests/test_a_claim_hold_reads_the_holder_again.py",
+      "line": "145",
+      "severity": "non-blocking",
+      "text": "non-blocking: the second case leaves the pointer byte-identical, so the case the plan names where the holder 'no longer claims the path' is untested \u2014 the changed-pointer branch at reckon/crew/queue_admission.py:1003-1012 (fresh != holder) and the claim_disposition re-judgement there never run in this file; a rewrite of the pointer that drops the claimed path, between the live read and the judgement, would regress unnoticed."
+    },
+    {
+      "disposition": "exempted",
+      "disposition_reason": "the mutation is described in manifest.md:negative_control_note and the red test id is the landed case, so the substance of the control is not in doubt.",
+      "file": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-claim-hold-reads-its-holder-again.html",
+      "line": "39",
+      "severity": "non-blocking",
+      "text": "non-blocking: this row records the negative control at cb19891 + mutation while the log it cites opens '# rev: b1f77637dd48a7ff4766ffffac8dd74a830b7969 (mutation applied to the worktree)', so the red log names a revision the tree it ran in is not; the failure it shows is still the declared one."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Read commit by commit from b1f77637dd48a7ff4766ffffac8dd74a830b7969: cb1989103c extracts the claim-collision judgement into _claim_collision and adds _refreshed_claim plus its call in _live_claim_hold (reckon/crew/queue_admission.py:939-1070), and adds the two-case test file; 78d0cdc273 adds only the evidence fragment.",
+    "done_when": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:252 requires two cases in tests/test_a_claim_hold_reads_the_holder_again.py; both are present at :124 and :145, logs/node-gate-head.log ends 2 passed EXIT=0, and logs/negative-control.log ends 1 failed, 1 passed EXIT=1 on the first case.",
+    "goal": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:251 states the goal as a claim hold reading its holder again; reckon/crew/queue_admission.py:970-1012 adds _refreshed_claim, which re-reads the one holder pointer through runs.read_pointer before a held-on-claim verdict is written and judges the claim on that record.",
+    "manifest": "Read in full; it names commits cb1989103c52e896870fd4c26e68f7175aea92a4 and 78d0cdc273243abc3a81628f72f85058998ea53e, a 2-passed node gate, a red control failing test_a_holder_that_landed_before_the_judgement_does_not_hold, importer arms of 389 passed/3 failed at base and 391 passed/3 failed at head, and one head-only failure attributed to the worktree cwd under outside_scope.",
+    "write_paths": "The reviewed manifest.md:3 grants reckon/crew/queue_admission.py, the new test, the evidence fragment and a figures directory; the two commits change only the first three, and docs/figures/work-is-never-stuck-behind-the-admission-loop/a-claim-hold-reads-its-holder-again is untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_claim_hold_reads_the_holder_again.py:138 fails on the stale judgement as logs/negative-control.log shows and :156-159 fails an over-eager drop, but no case makes the pointer survive while dropping the claimed path, so the changed-pointer branch at reckon/crew/queue_admission.py:1003-1012 is never exercised.",
+    "evidence": "logs/node-gate-head.log and logs/importers-base.log carry revision, tree, command and a bare EXIT= line, but logs/negative-control.log:2 names rev b1f77637 while the tree it ran in was the head worktree with a mutation, and the ruff result is claimed in the manifest with no log of its own (re-run clean by this review).",
+    "fit": "reckon/crew/queue_admission.py:939-1012 follows the surrounding Mapping/Sequence idiom and adds no plan, ticket or version name, though the test module docstring at tests/test_a_claim_hold_reads_the_holder_again.py:1-12 carries an incident narrative dated 5 November.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:1043-1070 records held-on-claim only after _refreshed_claim answers from a fresh read_pointer, so a holder that landed during the stage no longer fences its peer.",
+    "reuse": "The change calls the existing owners \u2014 runs.read_pointer (reckon/crew/runs.py:950) and node.claim_disposition (reckon/crew/node.py:1574) \u2014 and _claim_collision is an extraction of the loop already inside _live_claim_hold rather than a second implementation.",
+    "scope_discipline": "The diff from b1f77637dd48a7ff4766ffffac8dd74a830b7969 to 78d0cdc273243abc3a81628f72f85058998ea53e changes only reckon/crew/queue_admission.py, tests/test_a_claim_hold_reads_the_holder_again.py and the granted fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: docs/plans/work-is-never-stuck-behind-the-admission-loop.html:251 states the goal as a claim hold reading its holder again; reckon/crew/queue_admission.py:970-1012 adds _refreshed_claim, which re-reads the one holder pointer through runs.read_pointer before a held-on-claim verdict is written and judges the claim on that record.\nVERDICT done_when: docs/plans/work-is-never-stuck-behind-the-admission-loop.html:252 requires two cases in tests/test_a_claim_hold_reads_the_holder_again.py; both are present at :124 and :145, logs/node-gate-head.log ends 2 passed EXIT=0, and logs/negative-control.log ends 1 failed, 1 passed EXIT=1 on the first case.\nVERDICT write_paths: The reviewed manifest.md:3 grants reckon/crew/queue_admission.py, the new test, the evidence fragment and a figures directory; the two commits change only the first three, and docs/figures/work-is-never-stuck-behind-the-admission-loop/a-claim-hold-reads-its-holder-again is untouched.\nVERDICT manifest: Read in full; it names commits cb1989103c52e896870fd4c26e68f7175aea92a4 and 78d0cdc273243abc3a81628f72f85058998ea53e, a 2-passed node gate, a red control failing test_a_holder_that_landed_before_the_judgement_does_not_hold, importer arms of 389 passed/3 failed at base and 391 passed/3 failed at head, and one head-only failure attributed to the worktree cwd under outside_scope.\nVERDICT diff: Read commit by commit from b1f77637dd48a7ff4766ffffac8dd74a830b7969: cb1989103c extracts the claim-collision judgement into _claim_collision and adds _refreshed_claim plus its call in _live_claim_hold (reckon/crew/queue_admission.py:939-1070), and adds the two-case test file; 78d0cdc273 adds only the evidence fragment.\nCALL_SITES: reckon/crew/queue_admission.py:4169 _launch_queued, reckon/crew/queue_admission.py:1616 _record_stalls, reckon/crew/queue_admission.py:4739 admit_until_stopped\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:1043-1070 records held-on-claim only after _refreshed_claim answers from a fresh read_pointer, so a holder that landed during the stage no longer fences its peer.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/node-gate-head.log and logs/importers-base.log carry revision, tree, command and a bare EXIT= line, but logs/negative-control.log:2 names rev b1f77637 while the tree it ran in was the head worktree with a mutation, and the ruff result is claimed in the manifest with no log of its own (re-run clean by this review).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diff from b1f77637dd48a7ff4766ffffac8dd74a830b7969 to 78d0cdc273243abc3a81628f72f85058998ea53e changes only reckon/crew/queue_admission.py, tests/test_a_claim_hold_reads_the_holder_again.py and the granted fragment.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_claim_hold_reads_the_holder_again.py:138 fails on the stale judgement as logs/negative-control.log shows and :156-159 fails an over-eager drop, but no case makes the pointer survive while dropping the claimed path, so the changed-pointer branch at reckon/crew/queue_admission.py:1003-1012 is never exercised.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/queue_admission.py:939-1012 follows the surrounding Mapping/Sequence idiom and adds no plan, ticket or version name, though the test module docstring at tests/test_a_claim_hold_reads_the_holder_again.py:1-12 carries an incident narrative dated 5 November.\nSCORE reuse: 20\nJUSTIFICATION reuse: The change calls the existing owners \u2014 runs.read_pointer (reckon/crew/runs.py:950) and node.claim_disposition (reckon/crew/node.py:1574) \u2014 and _claim_collision is an extraction of the loop already inside _live_claim_hold rather than a second implementation.\nFINDING tests/test_a_claim_hold_reads_the_holder_again.py:145 non-blocking: the second case leaves the pointer byte-identical, so the case the plan names where the holder 'no longer claims the path' is untested \u2014 the changed-pointer branch at reckon/crew/queue_admission.py:1003-1012 (fresh != holder) and the claim_disposition re-judgement there never run in this file; a rewrite of the pointer that drops the claimed path, between the live read and the judgement, would regress unnoticed.\nFINDING docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-claim-hold-reads-its-holder-again.html:39 non-blocking: this row records the negative control at cb19891 + mutation while the log it cites opens '# rev: b1f77637dd48a7ff4766ffffac8dd74a830b7969 (mutation applied to the worktree)', so the red log names a revision the tree it ran in is not; the failure it shows is still the declared one.\n",
+  "review_run_id": "r-20261105T152146447294-review-of-a-claim-hold-reads-its-holder-again-78d0cdc27324",
+  "reviewed_base_sha": "b1f77637dd48a7ff4766ffffac8dd74a830b7969",
+  "reviewed_head_sha": "78d0cdc273243abc3a81628f72f85058998ea53e",
+  "reviewed_run_id": "r-20261105T110404174692-a-claim-hold-reads-its-holder-again",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T15:31:18.337182+00:00",
+  "total": 110
+}
