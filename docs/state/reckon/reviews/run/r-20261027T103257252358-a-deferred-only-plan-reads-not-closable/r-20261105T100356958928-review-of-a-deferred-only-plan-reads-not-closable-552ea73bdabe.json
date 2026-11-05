@@ -1,0 +1,50 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-05T10:37:51.087Z",
+  "dispatched_at": "2026-11-05T10:29:02Z",
+  "findings": [
+    {
+      "file": "reckon/roadmap.py",
+      "line": "1042",
+      "severity": "non-blocking",
+      "text": "deferred_remainder re-implements the two computations its immediate neighbours already own: the declarations-present guard and plan_executable_remainder == 0 test are is_closable (reckon/roadmap.py:958-985) copied verbatim, and the deferred-section filter dictating SECTION_DECLARATION_DEFERRED is a fourth copy of the idiom closure_blockers already runs at reckon/roadmap.py:1010-1022 (see also roadmap.py:730 and :774). Calling is_closable and reading the section entries out of closure_blockers would give one owner. The copy matters here rather than being stylistic: the guard carries a comment in is_closable explaining why an absent declaration set must not read as resolved, and a second copy has no such warning attached, so a future change to that reading drifts silently: the review search over the capability found is_closable and closure_blockers in the same module, and none was extended."
+    },
+    {
+      "file": "docs/ui/crew.jsx",
+      "line": "152",
+      "severity": "non-blocking",
+      "text": "The bar's done-share is still drawn from flowDonePercent(item) over the served split, which for a plan at impl 1.0 covers the whole span, so the crew flow still paints a fully finished bar at the now line for exactly the plan this change targets; only the text label at docs/ui/crew.jsx:155 changes. The plan section's complaint was the finished bar attached to the now line as much as the figure, so the surface now states two different things about the same plan."
+    },
+    {
+      "file": "tests/test_a_deferred_only_plan_reads_not_closable.py",
+      "line": "142",
+      "severity": "non-blocking",
+      "text": "The surface guard is a source-text check: asserting 'deferred_remainder' appears in the JSX passes on a mention anywhere in the file, so deleting the render at docs/ui/crew.jsx:139 or docs/ui/shell-plans.jsx:690 while leaving the identifier in a comment keeps the assertion green. It fails on the obvious regression (removing both) but not on the one it was added to prevent, which is a surface that stops rendering the served fact."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T103257252358-a-deferred-only-plan-reads-not-closable/manifest.md",
+      "line": "24",
+      "severity": "non-blocking",
+      "text": "The evidence fence requires that every test file importing a production module the node changed adds no failure against a base arm; the importer population (112 files importing reckon.roadmap or reckon.serve) was run on neither arm to a summary, so that clause is unmeasured rather than satisfied. The worker records this honestly at manifest.md:24 and :26 and did not widen the node to cover it, but a reader must not read the gate's 28 passed as covering the population: an added row key can redden a test elsewhere that compares a row dict for equality."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal (prompt.txt:38) is to derive in Python that a plan whose only open sections are deferred reads N deferred, not closable, and render it on the roadmap row, the crew flow and the SPA plan card; reckon/roadmap.py:1042 adds deferred_remainder, reckon/roadmap.py:4092 and reckon/serve.py:2112 serve it on the roadmap row and the discovered inventory, and docs/ui/crew.jsx:139 and docs/ui/shell-plans.jsx:690 print the served label.\nVERDICT done_when: the evidence fence (prompt.txt:156-158) requires a test asserting a sixteen-done/two-deferred fixture reads 2 deferred, not closable on the roadmap row and in the served payload and drops the fact after descope, failing on the base commit; that test is tests/test_a_deferred_only_plan_reads_not_closable.py:72-127, the manifest records after_suite 5 passed exit 0 and baseline_suite 5 failed exit 1 with readable logs, and I re-ran the file at the reviewed head: 5 passed in 2.56s, worktree clean.\nVERDICT write_paths: the declared paths (prompt.txt:78-84) are reckon/roadmap.py, reckon/serve.py, docs/ui/crew.jsx, docs/ui/shell-plans.jsx, tests/test_a_deferred_only_plan_reads_not_closable.py, the fragment at docs/evidence/fragments/a-finished-plan-closes/a-deferred-only-plan-reads-not-closable.html and a figures directory; the two commits touch the first six and write no figure.\nVERDICT manifest: read; status complete, recording gate 28 passed exit 0, head arm 5 passed exit 0, base arm 5 failed exit 1, negative control 3 failed 2 passed exit 1, and stating at manifest.md:24 and :26 that the importer-population arms did not complete.\nVERDICT diff: read both commits against base 2fd7553766; 0b54be23b4 adds deferred_remainder beside closure_blockers, one field on the roadmap row and one on the served inventory rows, the label on both JSX surfaces and a 145-line test, and 552ea73bda adds the 27-line evidence fragment, 205 insertions and 3 deletions across exactly the declared paths.\nCALL_SITES: reckon/roadmap.py:_build_roadmap (row field at 4092), reckon/serve.py:_derive_lifecycle (2109-2112), docs/ui/crew.jsx:DerivedFlow (139, 152, 155), docs/ui/shell-plans.jsx:ListCol (690-694)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: docs/ui/crew.jsx:139 and docs/ui/shell-plans.jsx:690 render plan.deferred_remainder.label from reckon/serve.py:2112 rather than deriving it, so the fact reaches all three named surfaces, but docs/ui/crew.jsx:152 still paints a fully done bar for the same plan.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate log's header names the revision, tree and command and ends EXIT=0 with 28 passed, the base and head arms are logged and the mutation log is a real red arm, but the importer-population clause of prompt.txt:158 is unmeasured (manifest.md:24).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 2fd7553766..552ea73bda touches only the six declared paths, writes no figure, edits no plan file, and the landing is recorded as one manifest line.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_deferred_only_plan_reads_not_closable.py:81-89, 96, 112-118 fail if deferred_remainder returns None, is removed, or survives a descope, and the declared mutation reddens three of them, but the surface guard at line 142 passes on a mere textual mention.\nSCORE fit: 17\nJUSTIFICATION fit: the reader at reckon/roadmap.py:1042 follows the module's Mapping-typed docstring idiom and the JSX edits match docs/ui/crew.jsx:139's surrounding style, with no plan or ticket identifier in any added name.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/roadmap.py:1042 copies is_closable's guard (reckon/roadmap.py:958) and closure_blockers' deferred filter (reckon/roadmap.py:1010-1022) instead of calling either owner in the same file.\nFINDING reckon/roadmap.py:1042 non-blocking: deferred_remainder copies is_closable's declarations guard (roadmap.py:958-985) and closure_blockers' deferred filter (roadmap.py:1010-1022) rather than calling them, and the copied guard carries none of the comment that explains why an absent declaration set must not read as resolved.\nFINDING docs/ui/crew.jsx:152 non-blocking: the bar's done-share still comes from flowDonePercent over the served split, so a deferred-only plan is still painted as a finished bar at the now line while its label reads 2 deferred, not closable.\nFINDING tests/test_a_deferred_only_plan_reads_not_closable.py:142 non-blocking: the surface assertion passes on any textual mention of deferred_remainder, so removing the render while leaving the identifier in a comment keeps it green.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T103257252358-a-deferred-only-plan-reads-not-closable/manifest.md:24 non-blocking: the fence's importer-population clause was not run to a summary on either arm, so the gate's 28 passed does not cover tests that import reckon.roadmap or reckon.serve.\n",
+  "review_run_id": "r-20261105T100356958928-review-of-a-deferred-only-plan-reads-not-closable-552ea73bdabe",
+  "reviewed_base_sha": "2fd7553766514b9cf2aca7eccc03544bde10777b",
+  "reviewed_head_sha": "552ea73bdabe8c8795223a258235948ca0e93bdf",
+  "reviewed_run_id": "r-20261027T103257252358-a-deferred-only-plan-reads-not-closable",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T10:49:51.748728+00:00",
+  "total": 90
+}
