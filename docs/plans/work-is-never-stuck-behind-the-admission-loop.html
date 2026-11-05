@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="221">
+<meta name="plan-version" content="222">
 <meta name="plan-modified" content="2026-11-05">
 </head>
 <body>
@@ -505,6 +505,12 @@
 <div class="r-comment" data-section="s34" data-id="c-run-r-20261105T110511704085-classifying-the-live-set-reads-it-once" data-who="reckon-build" data-when="2026-11-05T13:14:24Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/classifying-the-live-set-reads-it-once.html#classifying-the-live-set-reads-it-once-measure — 50 classifications match the base reading with at most one live-set read; the per-pointer control makes 710 reads and fails.</p></div>
 </div>
+<div class="r-comment" data-section="s37" data-id="c-run-r-20261105T165246922164-review-of-a-launch-rereads-the-run-it-starts-a1deb2b4fc7a" data-who="reckon-build" data-when="2026-11-05T17:07:49.350Z">
+    <div class="r-comment-body"><p>§37 reviewed at head a1deb2b4fc — `queue_admission._launch_reread_refusal` re-reads the live pointer and the run's `attempt-*-exit.json` records under `runs._pointer_lock` immediately before the launch (queue_admission.py:4339) and records a `refused-before-launch` verdict; the gate (3 passed EXIT=0) and two negative controls (each 1 failed/2 passed EXIT=1, reddening a different case) are recorded, and the consumer arm is head 54 passed vs base 1 failed 53 passed with the single base-only `test_the_log_is_trimmed_within_its_size_bound`; scores goal_fidelity 18, evidence 14, scope_discipline 19, durability 17, fit 16, reuse 19, total 103; three non-blocking findings: the attempt-resulted case writes its record before the pass so it does not test the mid-pass window, the fragment overstates that window coverage, and the done-when's importer-population clause is measured on six of 57 files because the wider sweep was truncated at 54 percent.</p></div>
+</div>
+<div class="r-comment" data-section="s37" data-id="c-run-r-20261105T171931398425-review-of-a-launch-rereads-the-run-it-starts-392e647f4f06" data-who="reckon-build" data-when="2026-11-05T17:33:04.516Z">
+    <div class="r-comment-body"><p>§37 reviewed at head 392e647f4f from base a1deb2b4fc — the two delta commits are docs-only and replace the fragment&#x27;s six-file sample with the full 57-file importer sweep at both arms (head 2 failed/397 passed, base 3 failed/393 passed, the two head failures failing at base too, 396 = 399 - 3 reconciling); the guard itself re-reads the pointer and attempt exit records under `runs._pointer_lock` at queue_admission.py:4339 and refuses with a `refused-before-launch` verdict; four non-blocking findings: the base-arm log&#x27;s command line reads `-n 6 56` instead of the file list, the attempt-resulted test writes its record before the pass and its `fired` hook applies nothing, the fragment overstates that in line 7, and the new verdict word defeats `_record_stalls`&#x27;s one-stall-per-wait dedupe because the refused row precedes the stall row in the same record</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261028T234015324511-review-of-a-launch-reuses-what-queue-time-proved-0baeb0d40d78" data-who="reckon-build" data-when="2026-10-29T00:55:31.433Z">
     <div class="r-comment-body"><p>review of r-20261028T222907809727-a-launch-reuses-what-queue-time-proved at head 0baeb0d40d780256c17223fe67396b938c5723f0 scores goal_fidelity 13, evidence 11, scope_discipline 20, durability 13, fit 18, reuse 19, with added_failure_count 0; one blocking finding (the digest short-circuit at reckon/crew/routing.py:2789 skips the unanswered-findings refusal, so a launch passes a plan a fresh direct dispatch refuses).</p></div>
 </div>
@@ -546,9 +552,6 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261029T145111134871-review-of-a-delivered-run-reaches-a-landing-verdict-c12609ed2938" data-who="reckon-build" data-when="2026-10-29T15:00:19.489Z">
     <div class="r-comment-body"><p>§8 reviewed at c12609ed29 against base c97238c9: goal met, evidence reproducible, 0 added failures, two non-blocking findings (a tautological ledger assertion at the new test's line 260, and a surviving raw commit-entry reader at promotion_scope.py:1253).</p></div>
-</div>
-<div class="r-comment" data-section="s37" data-id="c-run-r-20261105T165246922164-review-of-a-launch-rereads-the-run-it-starts-a1deb2b4fc7a" data-who="reckon-build" data-when="2026-11-05T17:07:49.350Z">
-    <div class="r-comment-body"><p>§37 reviewed at head a1deb2b4fc — `queue_admission._launch_reread_refusal` re-reads the live pointer and the run&#x27;s `attempt-*-exit.json` records under `runs._pointer_lock` immediately before the launch (queue_admission.py:4339) and records a `refused-before-launch` verdict; the gate (3 passed EXIT=0) and two negative controls (each 1 failed/2 passed EXIT=1, reddening a different case) are recorded, and the consumer arm is head 54 passed vs base 1 failed 53 passed with the single base-only `test_the_log_is_trimmed_within_its_size_bound`; scores goal_fidelity 18, evidence 14, scope_discipline 19, durability 17, fit 16, reuse 19, total 103; three non-blocking findings: the attempt-resulted case writes its record before the pass so it does not test the mid-pass window, the fragment overstates that window coverage, and the done-when&#x27;s importer-population clause is measured on six of 57 files because the wider sweep was truncated at 54 percent.</p></div>
 </div>
 </section>
 </main>
