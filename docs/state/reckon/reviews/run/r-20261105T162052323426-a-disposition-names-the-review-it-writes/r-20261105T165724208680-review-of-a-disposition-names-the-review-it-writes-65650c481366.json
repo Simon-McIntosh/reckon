@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-05T17:10:22.319Z",
+  "dispatched_at": "2026-11-05T16:58:43Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review_records.py",
+      "line": 789,
+      "severity": "non-blocking",
+      "text": "newest_delivered_review takes its order from stored_records_for_run, which sorts staged files by mtime (reckon/crew/review_records.py:81). A disposition written onto an older round with --review is an in-place rewrite that moves that file's mtime past the newer round's, so the next un-named call reads the older round as the newest delivered review and stops refusing: the guard decays from 'newest delivered' to 'newest written'. The repository already owns a review ordering by dispatch stamp (review_lifecycle._dispatch_time), which a rewrite does not move."
+    },
+    {
+      "file": "reckon/mcp_crew_actions.py",
+      "line": 108,
+      "severity": "non-blocking",
+      "text": "The crew tool's dispose argument map carries no review parameter, so the remedy the new refusal names (--review <review run id>) cannot be supplied through the tool surface, and a coordinator who reaches the refusal through the tool is told to run a flag that surface cannot pass; reckon/mcp_crew_actions.py:210 has no default for it either."
+    },
+    {
+      "file": "reckon/crew/review_dispositions.py",
+      "line": 489,
+      "severity": "non-blocking",
+      "text": "dispose_commands renders the fold and exempt invocations a duty row hands a coordinator without --review, so in the multi-round case this node exists for, the command a duty prints is now refused and no duty rendering names the newer review run."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "pass \u2014 read commit by commit: f4212c8bd0 adds --review, the newest-review refusal, the two receipt fields and the two store readers; 65650c4813 adds the evidence fragment.",
+    "done_when": "pass \u2014 tests/test_a_disposition_names_the_review_it_writes.py:207 asserts the refusal and the newer review's name with both records byte-identical, :213 asserts the named write lands only on that record, and :256 asserts the receipt fields; base-arm.log ends 374 passed EXIT=0 and head-arm.log 378 passed EXIT=0 for zero added failures, and the named file re-ran independently at 4 passed.",
+    "goal": "pass \u2014 the node's goal is that a disposition names the review it writes; reckon/crew_run_commands.py:1031 refuses a selection that is not the run's newest delivered review and reckon/crew_run_commands.py:1138 names that record in the receipt.",
+    "manifest": "pass \u2014 read; it records the gate command, the base and head arms, the negative control and the selection path that returned the older record, and each figure matches its log.",
+    "write_paths": "pass \u2014 the manifest declares reckon/crew_run_commands.py, reckon/crew/review_records.py, the new test and the evidence fragment, and every path in the diff is one of them."
+  },
+  "plan_slug": "the-crew-does-its-own-bookkeeping",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a disposition names the review it writes; reckon/crew_run_commands.py:1031 refuses a selection that is not the run's newest delivered review and :1138 names that record in the receipt.\nVERDICT done_when: tests/tests/test_a_disposition_names_the_review_it_writes.py:207 asserts the refusal and names the newer review with both records byte-identical, :213 asserts the named write lands only on that record, and :256 asserts the receipt fields; base-arm.log ends 374 passed EXIT=0 and head-arm.log 378 passed EXIT=0, and the named file re-ran independently at 4 passed.\nVERDICT write_paths: the manifest declares reckon/crew_run_commands.py, reckon/crew/review_records.py, the new test and the evidence fragment, and every path in the diff is one of them.\nVERDICT manifest: read; it records the gate command, the base and head arms, the negative control and the selection path that returned the older record, and each figure matches its log.\nVERDICT diff: read commit by commit: f4212c8bd0 adds --review, the newest-review refusal, the two receipt fields and the two store readers; 65650c4813 adds the evidence fragment.\nCALL_SITES: reckon/crew_run_commands.py:crew_dispose, reckon/cli.py:443, reckon/mcp_crew_actions.py:295\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:1031 refuses an un-named selection that is not the newest delivered review and :1138 names the review run and reviewed head on every receipt.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_a_disposition_names_the_review_it_writes.py:207 is the done-when's first case and its result is recorded in base-arm.log and head-arm.log, which I re-read at their summary and EXIT= lines and re-ran independently.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff of e3f3aaf7cc..65650c4813 touches only the four paths the manifest declares, all inside the node's write scope.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_disposition_names_the_review_it_writes.py:207 reddens when the newest-review check at reckon/crew_run_commands.py:1031 is removed, as negative-control.log shows, but no test covers the mtime-ordered recency at reckon/crew/review_records.py:789 that a later write can invert.\nSCORE fit: 18\nJUSTIFICATION fit: the two added readers follow the module's own shape in reckon/crew/review_records.py:1448 and their names state the capability, with no plan or ticket identifier anywhere in the diff.\nSCORE reuse: 17\nJUSTIFICATION reuse: both additions compose the owners already in reckon/crew/review_records.py (stored_records_for_run at :691, record_for_review_run at :1410, _committed_records_for_run at :1512) rather than re-implementing them, though the recency rule at :789 duplicates the ordering review_lifecycle._dispatch_time already owns.\nFINDING reckon/crew/review_records.py:789 non-blocking: newest_delivered_review orders by file mtime through stored_records_for_run (reckon/crew/review_records.py:81), so an in-place write onto an older round with --review moves that file past the newer round and the next un-named call stops refusing; the dispatch-stamp ordering review_lifecycle._dispatch_time owns does not move on a rewrite.\nFINDING reckon/mcp_crew_actions.py:108 non-blocking: the crew tool's dispose argument map carries no review parameter, so the --review remedy the new refusal names cannot be supplied through the tool surface.\nFINDING reckon/crew/review_dispositions.py:489 non-blocking: dispose_commands renders duty commands without --review, so in the multi-round case the command a duty prints is now refused.\n",
+  "review_run_id": "r-20261105T165724208680-review-of-a-disposition-names-the-review-it-writes-65650c481366",
+  "reviewed_base_sha": "e3f3aaf7cc583c7bc9ce4d574a4a619d45b5a6f3",
+  "reviewed_head_sha": "65650c481366d989debe7f80f20e38366555558e",
+  "reviewed_run_id": "r-20261105T162052323426-a-disposition-names-the-review-it-writes",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T17:17:32.308369+00:00",
+  "total": 108
+}
