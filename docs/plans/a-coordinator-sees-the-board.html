@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-project-reads-as-one-picture#s4&quot;,&quot;a-coordinator-sees-the-board#s2&quot;],&quot;s4&quot;:[&quot;a-project-reads-as-one-picture#s2&quot;,&quot;a-coordinator-sees-the-board#s3&quot;],&quot;s5&quot;:[&quot;the-mcp-answers-the-question-asked#s3&quot;,&quot;a-coordinator-sees-the-board#s2&quot;,&quot;a-coordinator-sees-the-board#s3&quot;],&quot;s7&quot;:[&quot;a-coordinator-sees-the-board#s3&quot;,&quot;a-coordinator-sees-the-board#s4&quot;,&quot;a-coordinator-sees-the-board#s5&quot;,&quot;a-coordinator-sees-the-board#s6&quot;],&quot;s8&quot;:[&quot;a-coordinator-sees-the-board#s3&quot;,&quot;a-coordinator-sees-the-board#s4&quot;,&quot;a-coordinator-sees-the-board#s5&quot;,&quot;a-coordinator-sees-the-board#s6&quot;],&quot;s9&quot;:[&quot;a-coordinator-sees-the-board#s2&quot;,&quot;a-coordinator-sees-the-board#s5&quot;],&quot;s10&quot;:[&quot;a-coordinator-sees-the-board#s9&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>A Coordinator Sees the Board | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="21">
 <meta name="plan-modified" content="2026-11-05">
 </head>
 <body>
@@ -106,7 +106,7 @@
     </ul>
 
     <h2 id="s3">§3 — The ready-idle set extends the ready-set view</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><code>ready_set_view</code> (<code>reckon/mcp_views.py:1128</code>) already projects ready sections
     from the canonical roadmap. This section extends it instead of adding a second projection. Each ready
     row gains three fields:</p>
@@ -284,7 +284,10 @@
     <div class="r-comment-body"><p>Independent review of r-20261027T100533445121: the landed ready-set extension does what its goal states (live_run, coordinator, plan_owner, critical_path, closable with closure blockers, ready_idle filter with the view's own paging), its four fixture cases pass at head and its negative control is recorded red; four non-blocking findings and no blocking one, with durability 15 because the auto-derivation branch at reckon/mcp_views.py:1195 is reached by neither a test nor a production caller.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261027T100533445121-the-ready-idle-set-extends-the-ready-set-view" data-who="reckon-build" data-when="2026-11-05T12:57:31.233Z">
-    <div class="r-comment-body"><p>ready_set_view now carries each ready row&#x27;s live_run, coordinator, plan_owner and critical_path flag, names the closable plans with their closure blockers, and filters to rows with no live run under ready_idle (paging with its own cursor, no new view); on the 2026-10-22T08:50Z power_convertor fixture the filtered call names iter-switched-terminal-transients#s13, iter-dummy-load-validation#s4 and shared-coil-supply-model#s9 with their coordinators and jt60sa-coil-circuit-model and tf-co-wound-tape-validation as closable, under the 80,000-character ceiling.</p></div>
+    <div class="r-comment-body"><p>ready_set_view now carries each ready row's live_run, coordinator, plan_owner and critical_path flag, names the closable plans with their closure blockers, and filters to rows with no live run under ready_idle (paging with its own cursor, no new view); on the 2026-10-22T08:50Z power_convertor fixture the filtered call names iter-switched-terminal-transients#s13, iter-dummy-load-validation#s4 and shared-coil-supply-model#s9 with their coordinators and jt60sa-coil-circuit-model and tf-co-wound-tape-validation as closable, under the 80,000-character ceiling.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-11-05T13:35:00Z">
+    <div class="r-comment-body"><p>Section 3 landed at merge <code>25af6fefb</code>: ready_set_view now carries each ready row's live_run, coordinator, plan_owner and critical_path flag, and names the closable plans with their closure blockers. Under ready_idle it filters to rows with no live run and pages with its own cursor; no new view is added. On the power_convertor fixture of 2026-10-22T08:50Z, the filtered call names iter-switched-terminal-transients#s13, iter-dummy-load-validation#s4 and shared-coil-supply-model#s9 with their coordinators, and jt60sa-coil-circuit-model and tf-co-wound-tape-validation as closable, under the 80,000-character ceiling. Coordinator armed pair: the base arm runs no tests (exit 4, the test file is new); head 4 passed. Coordinator importer measure over the 52 test files importing reckon.mcp_views, stacked on main: main 778 passed, stack 782 passed, no failure added. Review 108. Its unreachable coordinators fallback branch is folded into the lane-share node's done-when for deletion; the other three findings are exempted. <a href="/reckon/evidence/archive/a-coordinator-sees-the-board-landed.html#s3">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-20261023-s9-conflict" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
     <div class="r-comment-body"><p>Content review of v11 on 2026-10-23: §9 lists every live host's session, while §5's done-when requires a coordinator whose only plan has no ready section and no run not to appear. Decide which rule the board follows before §9 is dispatched.</p></div>
