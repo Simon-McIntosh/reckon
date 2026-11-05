@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite records revision 3ad29535b1 with exit_status 0, completed true, failure_count 0 and failure_ids [] (gate-repair-base.log: 6 passed, EXIT=0), and after_suite records revision 2811a92a40 with exit_status 0, completed true, failure_count 0 and failure_ids [] (gate-repair-head.log: 6 passed, EXIT=0); no failure id appears in the head arm that the base arm did not already carry, so added_failure_count is 0.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/evidence.py:453",
+    "reckon/doccheck.py:1907",
+    "reckon/compliance.py:93",
+    "reckon/resources.py:244"
+  ],
+  "completed_at": "2026-11-05T17:21:00.828Z",
+  "dispatched_at": "2026-11-05T17:15:37Z",
+  "evidence_notes": "The gained commit is documentation-only: it adds no assertion, so the assertions-the-run-added reading is empty by construction. The fragment's green figure is supported by gate-repair-base.log at exactly the revision it cites; its red figures are supported in outcome by gate-prefix-red.log and gate-base.log but not by the single literal command the paragraph claims. The blocking finding on the done_when's three-file gate is carried forward unchanged from the previous review and is not repaired by this commit.",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": 22,
+      "text": "blocking: the done_when names tests/test_schema.py and tests/test_a_plan_closes_in_one_op.py in its gate, but no run of those files has completed at any revision up to and including the promoted head 2811a92a40: gate-companions.log:29 ends EXIT=124 (a timeout kill at 48%) and gate-full.log stops at 44% with no summary and no EXIT= line, so the write-ordering change remains unmeasured against the two companion files."
+    },
+    {
+      "file": "docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html",
+      "line": 48,
+      "text": "non-blocking: the paragraph asserts that every figure is the literal command PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_close_names_each_deferred_section_and_moves_it.py, but two of the figures it introduces were measured with different commands \u2014 gate-prefix-red.log at 2be71296a4 adds -k test_a_refused_move_writes_nothing_not_even_its_evidence (5 deselected) and gate-base.log at ab87725e67 runs a scratch-tree interpreter (PYTHONPATH=/tmp/... and /home/ITER/mcintos/Code/reckon/.venv/bin/python) \u2014 so the blanket claim is inaccurate for the red arms even though their outcomes are reproducible in substance."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/evidence.py:453 (evidence_record_plan names the landed record a fragment composes into), reckon/doccheck.py:1907 (_record_fragment_dir locates the fragment directory), reckon/compliance.py:93 (_dependencies globs each fragment as a dependency of the record verdict) and reckon/resources.py:244 (_is_evidence_fragment classifies the file as a fragment).",
+    "diff": "read 3ad29535b1..2811a92a40 commit by commit: the single commit 2811a92a40 rewrites only the fragment's evidence paragraph \u2014 it adds the literal pytest command, corrects the green figure's revision from 1fb526b32d (which had no log of its own) to 3ad29535b1, and leaves the refusal, move and schema prose untouched.",
+    "done_when": "the done_when names tests/test_close_names_each_deferred_section_and_moves_it.py plus tests/test_schema.py and tests/test_a_plan_closes_in_one_op.py; only the node-file arm has a completed run (gate-repair-base.log 6 passed EXIT=0 at 3ad29535b1, gate-repair-head.log 6 passed EXIT=0 at 2811a92a40), while gate-companions.log:29 ends EXIT=124 and gate-full.log stops at 44%, so the three-file gate the done_when names is still unmeasured.",
+    "goal": "the source node's goal is close's deferred-section refusal naming both remedies, with a moved_to descope carrying the section's prose, effort, capability, open gates and comments to its successor; the gained commit 2811a92a40 serves it by making the fragment's pytest command explicit and citing 3ad29535b1, which gate-repair-base.log records as 6 passed, EXIT=0.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T102653154559-close-names-each-deferred-section-and-moves-it/manifest.md; status complete, baseline_suite records revision 3ad29535b1 with 0 failures at gate-repair-base.log and after_suite records 2811a92a40 with 0 failures at gate-repair-head.log, both naming the literal pytest command and both logs ending EXIT=0.",
+    "write_paths": "the manifest declares eight paths; the gained commit 2811a92a40 touches only docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html, which is inside them, and git show --stat confirms one file changed with 5 insertions and 3 deletions."
+  },
+  "justifications": {
+    "durability": "the gained commit adds no assertion and no executable code, so nothing in it can regress; the behaviour the fragment describes is guarded by tests/test_close_names_each_deferred_section_and_moves_it.py (6 passed at 2811a92a40), but the fragment's own command attribution is unguarded.",
+    "evidence": "the node-file arm is green and readable at both revisions (gate-repair-base.log at 3ad29535b1 and gate-repair-head.log at 2811a92a40, each 6 passed EXIT=0), but the three-file gate the done_when names still has no completed run: gate-companions.log:29 ends EXIT=124 and gate-full.log stops at 44% with no summary and no EXIT= line.",
+    "fit": "the edit keeps the fragment's existing structure (h2/h3 sections with id-bearing p elements) and its prose idiom, touching only the evidence paragraph at docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html:48-58.",
+    "goal_fidelity": "docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html:49-52 now states the pytest command in full beside the green figure and the figure cites 3ad29535b1, which gate-repair-base.log records as 6 passed EXIT=0, resolving the previous round's uncited-revision finding.",
+    "reuse": "the commit adds no function, class or module, so there is no new capability to compare against an owner; a search over reckon/ for evidence-fragment composition finds the existing owners reckon/evidence.py:453, reckon/doccheck.py:1907 and reckon/compliance.py:93, which the fragment is already consumed by.",
+    "scope_discipline": "git show --stat 2811a92a40 reports one file changed, docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html, which is inside the manifest's eight declared write paths and carries no code or plan-state change."
+  },
+  "node": "review-of-close-names-each-deferred-section-and-moves-it-2811a92a404a",
+  "node:reviewed": "close-names-each-deferred-section-and-moves-it",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is close's deferred-section refusal naming both remedies, with a moved_to descope carrying the section's prose, effort, capability, open gates and comments to its successor; the gained commit 2811a92a40 serves it by making the fragment's pytest command explicit and citing 3ad29535b1, which gate-repair-base.log records as 6 passed, EXIT=0.\nVERDICT done_when: the done_when names tests/test_close_names_each_deferred_section_and_moves_it.py plus tests/test_schema.py and tests/test_a_plan_closes_in_one_op.py; only the node-file arm has a completed run (gate-repair-base.log 6 passed EXIT=0 at 3ad29535b1, gate-repair-head.log 6 passed EXIT=0 at 2811a92a40), while gate-companions.log:29 ends EXIT=124 and gate-full.log stops at 44%, so the three-file gate the done_when names is still unmeasured.\nVERDICT write_paths: the manifest declares eight paths; the gained commit 2811a92a40 touches only docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html, which is inside them, and git show --stat confirms one file changed with 5 insertions and 3 deletions.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T102653154559-close-names-each-deferred-section-and-moves-it/manifest.md; status complete, baseline_suite records revision 3ad29535b1 with 0 failures at gate-repair-base.log and after_suite records 2811a92a40 with 0 failures at gate-repair-head.log, both naming the literal pytest command and both logs ending EXIT=0.\nVERDICT diff: read 3ad29535b1..2811a92a40 commit by commit: the single commit 2811a92a40 rewrites only the fragment's evidence paragraph \u2014 it adds the literal pytest command, corrects the green figure's revision from 1fb526b32d (which had no log of its own) to 3ad29535b1, and leaves the refusal, move and schema prose untouched.\nCALL_SITES: reckon/evidence.py:453, reckon/doccheck.py:1907, reckon/compliance.py:93, reckon/resources.py:244\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html:49-52 now states the pytest command in full beside the green figure and the figure cites 3ad29535b1, which gate-repair-base.log records as 6 passed EXIT=0, resolving the previous round's uncited-revision finding.\nSCORE evidence: 12\nJUSTIFICATION evidence: the node-file arm is green and readable at both revisions (gate-repair-base.log at 3ad29535b1 and gate-repair-head.log at 2811a92a40, each 6 passed EXIT=0), but the three-file gate the done_when names still has no completed run: gate-companions.log:29 ends EXIT=124 and gate-full.log stops at 44% with no summary and no EXIT= line.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 2811a92a40 reports one file changed, docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html, which is inside the manifest's eight declared write paths and carries no code or plan-state change.\nSCORE durability: 17\nJUSTIFICATION durability: the gained commit adds no assertion and no executable code, so nothing in it can regress; the behaviour the fragment describes is guarded by tests/test_close_names_each_deferred_section_and_moves_it.py (6 passed at 2811a92a40), but the fragment's own command attribution is unguarded.\nSCORE fit: 19\nJUSTIFICATION fit: the edit keeps the fragment's existing structure (h2/h3 sections with id-bearing p elements) and its prose idiom, touching only the evidence paragraph at docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html:48-58.\nSCORE reuse: 20\nJUSTIFICATION reuse: the commit adds no function, class or module, so there is no new capability to compare against an owner; a search over reckon/ for evidence-fragment composition finds the existing owners reckon/evidence.py:453, reckon/doccheck.py:1907 and reckon/compliance.py:93, which the fragment is already consumed by.\nFINDING manifest.md:22 blocking: the done_when names tests/test_schema.py and tests/test_a_plan_closes_in_one_op.py in its gate, but no run of those files has completed at any revision up to and including the promoted head 2811a92a40 \u2014 gate-companions.log:29 ends EXIT=124 and gate-full.log stops at 44% \u2014 so the write-ordering change remains unmeasured against the two companion files.\nFINDING docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html:48 non-blocking: the paragraph asserts every figure is the literal pytest command, but gate-prefix-red.log (2be71296a4) adds a -k filter and gate-base.log (ab87725e67) runs a scratch-tree interpreter, so the blanket command claim is inaccurate for the red arms even though their outcomes reproduce in substance.\n",
+  "review_run_id": "r-20261105T171232144382-review-of-close-names-each-deferred-section-and-moves-it-2811a92a404a",
+  "reviewed_base_sha": "3ad29535b1f42f46c55218ab198895aa076ff6b7",
+  "reviewed_head_sha": "2811a92a404abe4125f869616646f0ad742c5a90",
+  "reviewed_run_id": "r-20261027T102653154559-close-names-each-deferred-section-and-moves-it",
+  "scores": {
+    "durability": 17,
+    "evidence": 12,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T17:19:00+00:00",
+  "total": 106
+}
