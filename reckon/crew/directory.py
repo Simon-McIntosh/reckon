@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import json
+import threading
 from collections import defaultdict
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +17,11 @@ from reckon.crew.runs import list_live
 
 class DirectoryError(RuntimeError):
     """A directory selector does not identify one live run."""
+
+
+#: Guards the ready-idle join against re-entry: the plan-coordinator resolver
+#: reads this view to decide which sessions are still dispatching.
+_JOIN_STATE = threading.local()
 
 
 #: The fields a directory run row carries.
@@ -34,6 +40,7 @@ DIRECTORY_RUN_FIELDS = (
     "repository",
     "plan",
     "section",
+    "plan_section",
     "phase",
     "classification",
     "process_alive",
@@ -112,6 +119,10 @@ def _run_row(record: Mapping[str, Any]) -> dict[str, Any]:
         "classification": str(classified.get("classification") or ""),
         "process_alive": classified.get("process_alive"),
     }
+    if row["plan"] and row["section"]:
+        row["plan_section"] = (
+            f"{row['plan']}#{ledger.normalize_section(row['section'])}"
+        )
     sprint = record.get("sprint") or node.get("sprint")
     if sprint:
         row["sprint"] = str(sprint)
@@ -126,6 +137,142 @@ def _is_dispatching(run: Mapping[str, Any]) -> bool:
     if run.get("process_alive") is True:
         return True
     return str(run.get("classification") or "") in {"running", "waiting"}
+
+
+def _held_paths(
+    record: Mapping[str, Any], row: Mapping[str, Any]
+) -> list[dict[str, Any]]:
+    """The write paths one run holds, each with the scope check's own verdict.
+
+    The claim a run publishes is the same claim the dispatch scope check judges,
+    so the verdict is read from that check (``claim_disposition``) rather than
+    inferred here: a reader asking which files a peer holds needs to know
+    whether the claim still fences them, and a second opinion about that is how
+    the board and the enforcer come to disagree.
+    """
+    from reckon.crew.node import claim_disposition
+
+    node = _node(record)
+    declared = [
+        str(path) for path in node.get("write_paths") or () if str(path).strip()
+    ]
+    if not declared:
+        return []
+    disposition = claim_disposition(record)
+    return [
+        {
+            "path": path,
+            "run_id": str(row.get("run_id") or ""),
+            "node": str(row.get("node") or ""),
+            "binding": bool(disposition.binding),
+            "disposition_reason": str(disposition.reason or ""),
+        }
+        for path in declared
+    ]
+
+
+def _queued_rows(
+    records: Sequence[Mapping[str, Any]],
+    rows_by_run: Mapping[str, Mapping[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    """Each queued request's place, by run id, from the admission pass's order.
+
+    The place is the one the admission pass will launch at, read through
+    :func:`reckon.crew.queue_admission.queued_placements`, so the board and the
+    pass cannot disagree about which request goes first.
+    """
+    from reckon.crew.queue_admission import queued_placements
+
+    queued = [
+        record for record in records if str(record.get("phase") or "") == "queued"
+    ]
+    if not queued:
+        return {}
+    placements = queued_placements(records)
+    placed: dict[str, dict[str, Any]] = {}
+    for record in queued:
+        run_id = str(record.get("run_id") or "")
+        row = rows_by_run.get(run_id) or {}
+        placement = placements.get(run_id) or {}
+        entry: dict[str, Any] = {
+            "run_id": run_id,
+            "node": str(row.get("node") or ""),
+        }
+        if row.get("plan_section"):
+            entry["plan_section"] = row["plan_section"]
+        for key in ("position", "rank", "effective_rank", "reason"):
+            if placement.get(key) is not None:
+                entry[key] = placement[key]
+        placed[run_id] = entry
+    return placed
+
+
+def _ready_idle_rows(
+    project: str, pointers: Sequence[Mapping[str, Any]]
+) -> list[dict[str, Any]]:
+    """The ready-idle section rows a coordinator owns, from the existing views.
+
+    This joins two owners and derives neither fact: the plan-coordinator
+    resolver names each plan's session, and the ready-set view filters the
+    canonical roadmap to the rows with no live run. A plan whose coordinator
+    owns no ready-idle row contributes nothing.
+
+    The resolver reads the directory to decide which sessions are still
+    dispatching, so this join is not made again inside that read: the re-entry
+    would recurse between the two, and the inner read is about liveness rather
+    than about ready work.
+    """
+    if getattr(_JOIN_STATE, "running", False):
+        return []
+    _JOIN_STATE.running = True
+    try:
+        return _ready_idle_rows_from_owners(project, pointers)
+    finally:
+        _JOIN_STATE.running = False
+
+
+def _ready_idle_rows_from_owners(
+    project: str, pointers: Sequence[Mapping[str, Any]]
+) -> list[dict[str, Any]]:
+    from reckon.crew.plan_coordinator import resolve_plan_coordinators
+    from reckon.mcp_discovery import _discover_project, _inventory_row
+    from reckon.mcp_views import ready_set_view
+    from reckon.roadmap import build_roadmap
+
+    resolved = resolve_plan_coordinators(project, pointers=pointers)
+    coordinators = resolved.get("plans") or {}
+    if not coordinators:
+        return []
+    discovered = _discover_project(project, None)
+    roadmap = build_roadmap(
+        project,
+        [_inventory_row(item) for item in discovered.get("inventory") or ()],
+        list(discovered.get("sprints") or ()),
+        active_sprint_id=discovered.get("active_sprint_id"),
+    )
+    view = ready_set_view(roadmap, coordinators=coordinators, ready_idle=True)
+    rows: list[dict[str, Any]] = []
+    for row in view.get("ready") or ():
+        session = str(row.get("coordinator") or "")
+        if not session:
+            continue
+        slug = str(row.get("slug") or "")
+        sections = (
+            [slug]
+            if "#" in slug
+            else [f"{slug}#{section}" for section in row.get("ready_sections") or ()]
+        )
+        if not sections:
+            continue
+        rows.append(
+            {
+                "session": session,
+                "plan": slug.partition("#")[0],
+                "sections": sections,
+                "plan_owner": str(row.get("plan_owner") or ""),
+            }
+        )
+    return rows
 
 
 def directory(
@@ -175,16 +322,33 @@ def directory(
 
     grouped: dict[tuple[str, str, str], list[dict[str, Any]]] = defaultdict(list)
     unowned_runs: list[dict[str, Any]] = []
+    records_by_run: dict[str, Mapping[str, Any]] = {}
+    rows_by_run: dict[str, dict[str, Any]] = {}
     for record in records:
+        row = _run_row(record)
+        run_id = str(row.get("run_id") or "")
+        if run_id:
+            records_by_run[run_id] = record
+            rows_by_run[run_id] = row
         if not str(record.get("session") or ""):
-            unowned_runs.append(_run_row(record))
+            unowned_runs.append(row)
             continue
         key = (
             str(record.get("session") or ""),
             str(record.get("project") or ""),
             str(record.get("repo") or ""),
         )
-        grouped[key].append(_run_row(record))
+        grouped[key].append(row)
+
+    queued_by_run = _queued_rows(records, rows_by_run)
+    ready_idle = (
+        _ready_idle_rows(project, records) if project not in (None, "*") else []
+    )
+    idle_by_session: dict[str, list[str]] = defaultdict(list)
+    idle_owner_by_session: dict[str, str] = {}
+    for row in ready_idle:
+        idle_by_session[row["session"]].extend(row["sections"])
+        idle_owner_by_session[row["session"]] = row["plan_owner"]
 
     coordinators: list[dict[str, Any]] = []
     for (session, project_name, repository), runs in sorted(grouped.items()):
@@ -210,9 +374,47 @@ def directory(
             "live_node_count": sum(_is_dispatching(run) for run in ordered_runs),
             "runs": ordered_runs,
         }
+        held: list[dict[str, Any]] = []
+        for run in ordered_runs:
+            record = records_by_run.get(str(run["run_id"]))
+            if record is not None:
+                held.extend(_held_paths(record, run))
+        if held:
+            coordinator["held_paths"] = sorted(
+                held, key=lambda item: (item["path"], item["run_id"])
+            )
+        queued = [
+            queued_by_run[run["run_id"]]
+            for run in ordered_runs
+            if run["run_id"] in queued_by_run
+        ]
+        if queued:
+            coordinator["queued_runs"] = queued
+        if idle_by_session.get(session):
+            coordinator["ready_idle_sections"] = sorted(idle_by_session[session])
         if transports:
             coordinator["transports"] = [transports[key] for key in sorted(transports)]
         coordinators.append(coordinator)
+
+    listed_sessions = {row["session"] for row in coordinators}
+    coordinators.extend(
+        {
+            "session": session,
+            "project": project if project not in (None, "*") else None,
+            "repository": None,
+            "plans": sorted(
+                {ref.partition("#")[0] for ref in idle_by_session[session]}
+            ),
+            "sprints": [],
+            "state": "idle",
+            "live_node_count": 0,
+            "runs": [],
+            "plan_owner": idle_owner_by_session.get(session, ""),
+            "ready_idle_sections": sorted(idle_by_session[session]),
+            "ready_idle_source": "plan-coordinator",
+        }
+        for session in sorted(set(idle_by_session) - listed_sessions)
+    )
 
     result: dict[str, Any] = {
         "ok": True,
@@ -223,9 +425,15 @@ def directory(
         "coordinators": coordinators,
         "unowned_run_count": len(unowned_runs),
         "unowned_runs": sorted(unowned_runs, key=lambda row: row["run_id"]),
+        # Which scope the ready-idle join ran over. A workstation-scope read
+        # spans every mounted project, so the join is made on the project-scoped
+        # read and named here rather than reported as an empty answer.
+        "ready_idle_join": (
+            "project" if project not in (None, "*") else "workstation_scope"
+        ),
     }
     if selected_by:
-        owned = bool(coordinators)
+        owned = bool(grouped)
         run = coordinators[0]["runs"][0] if owned else unowned_runs[0]
         result["resolved"] = {
             "by": selected_by,
