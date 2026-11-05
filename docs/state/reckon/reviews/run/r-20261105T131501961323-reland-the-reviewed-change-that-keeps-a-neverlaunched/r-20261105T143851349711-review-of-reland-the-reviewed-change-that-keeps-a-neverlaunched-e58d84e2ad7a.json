@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:2263",
+    "reckon/crew/recovery_stream.py:431",
+    "reckon/crew/query.py:402",
+    "reckon/mcp_views.py:4420"
+  ],
+  "completed_at": "2026-11-05T14:56:10.658Z",
+  "dispatched_at": "2026-11-05T14:45:58Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T131501961323-reland-the-reviewed-change-that-keeps-a-neverlaunched/manifest.md",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done-when's ruff clause is carried as prose only, with no log under logs/ beside the four pytest arms, so a later reader cannot re-check it without the tree; re-running ruff at the reviewed head over the four staged paths gives `All checks passed`, so the gap is in the record rather than the code."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T131501961323-reland-the-reviewed-change-that-keeps-a-neverlaunched/manifest.md",
+      "line": "22",
+      "severity": "non-blocking",
+      "text": "non-blocking: baseline_suite runs only tests/test_read_verbs_retire_behind_crew_view.py while after_suite runs that file plus the new test, so their failure delta is not a like-for-like comparison; the like-for-like pair is the importer arms, 86 passed at both revisions."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against cd5edbd573 \u2014 effb92dc47 carries the fix and its tests, e58d84e2ad carries the two evidence fragments, and no commit carries anything the goal does not imply.",
+    "done_when": "the done_when's measurable clauses are recorded \u2014 logs/after-suite.log 23 passed EXIT=0, logs/baseline-suite.log 16 passed EXIT=0, logs/importers-head.log and logs/importers-base.log 86 passed EXIT=0 on both sides \u2014 and the ruff clause is verified by the reviewer rather than by a run log.",
+    "goal": "the node's goal is to re-land the reviewed change that keeps a never-launched request's budget at zero; reckon/crew/recovery_stream.py:328-380 lives at the reviewed head and `git diff 98d07499d1 918894481d` over the code and test paths is byte-identical to `git diff cd5edbd573 effb92dc47`.",
+    "manifest": "read in full; it records status complete, commits effb92dc47 and e58d84e2ad, the literal gate command, and five logs that all exist on disk each ending in a bare EXIT= line.",
+    "write_paths": "the diff touches six files (reckon/crew/recovery_stream.py, reckon/crew/query.py, tests/test_a_parked_request_spends_no_budget.py, tests/test_read_verbs_retire_behind_crew_view.py and two evidence fragments), every one inside the seven paths the node declared, and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_parked_request_spends_no_budget.py:72 fails on `assert True is False` when the recovery_stream hunk is reverted, as logs/negative-control.log records across seven cases.",
+    "evidence": "the four pytest arms are logged with revision, tree, literal command and EXIT under logs/, while the ruff clause rests on manifest.md:25 prose with no log beside it.",
+    "fit": "reckon/crew/recovery_stream.py:286 follows the module's existing timing-helper shape and imports WAITING_REQUEST_PHASES from reckon/crew/node.py:1569 instead of restating the phase set.",
+    "goal_fidelity": "reckon/crew/recovery_stream.py:361 charges elapsed from attempt_started_at or launched_at and passes a never-launched waiting pointer to _parked_budget_timing at reckon/crew/recovery_stream.py:376.",
+    "reuse": "_parked_budget_timing delegates to _token_budget_timing, and the nearest existing owner, _declared_wait_age_seconds at reckon/crew/recovery_liveness.py:811, ages a declared wait block rather than a parked request's time budget.",
+    "scope_discipline": "every path in `git diff --stat cd5edbd573 e58d84e2ad` is inside the node's declared write paths, and the granted figures directory is simply unused."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to re-land the reviewed change that keeps a never-launched request's budget at zero; reckon/crew/recovery_stream.py:328-380 lives at the reviewed head and `git diff 98d07499d1 918894481d` over the code and test paths is byte-identical to `git diff cd5edbd573 effb92dc47`.\nVERDICT done_when: the done_when's measurable clauses are recorded \u2014 logs/after-suite.log 23 passed EXIT=0, logs/baseline-suite.log 16 passed EXIT=0, logs/importers-head.log and logs/importers-base.log 86 passed EXIT=0 on both sides \u2014 and the ruff clause is verified by the reviewer rather than by a run log.\nVERDICT write_paths: the diff touches six files (reckon/crew/recovery_stream.py, reckon/crew/query.py, tests/test_a_parked_request_spends_no_budget.py, tests/test_read_verbs_retire_behind_crew_view.py and two evidence fragments), every one inside the seven paths the node declared, and nothing outside them.\nVERDICT manifest: read in full; it records status complete, commits effb92dc47 and e58d84e2ad, the literal gate command, and five logs that all exist on disk each ending in a bare EXIT= line.\nVERDICT diff: read commit by commit against cd5edbd573 \u2014 effb92dc47 carries the fix and its tests, e58d84e2ad carries the two evidence fragments, and no commit carries anything the goal does not imply.\nCALL_SITES: reckon/crew/recovery_classification.py:2263, reckon/crew/recovery_stream.py:431, reckon/crew/query.py:402, reckon/mcp_views.py:4420\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_stream.py:361 charges elapsed from attempt_started_at or launched_at and passes a never-launched waiting pointer to _parked_budget_timing at reckon/crew/recovery_stream.py:376.\nSCORE evidence: 17\nJUSTIFICATION evidence: the four pytest arms are logged with revision, tree, literal command and EXIT under logs/, while the ruff clause rests on manifest.md:25 prose with no log beside it.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in `git diff --stat cd5edbd573 e58d84e2ad` is inside the node's declared write paths, and the granted figures directory is simply unused.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_parked_request_spends_no_budget.py:72 fails on `assert True is False` when the recovery_stream hunk is reverted, as logs/negative-control.log records across seven cases.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/recovery_stream.py:286 follows the module's existing timing-helper shape and imports WAITING_REQUEST_PHASES from reckon/crew/node.py:1569 instead of restating the phase set.\nSCORE reuse: 19\nJUSTIFICATION reuse: _parked_budget_timing delegates to _token_budget_timing, and the nearest existing owner, _declared_wait_age_seconds at reckon/crew/recovery_liveness.py:811, ages a declared wait block rather than a parked request's time budget.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T131501961323-reland-the-reviewed-change-that-keeps-a-neverlaunched/manifest.md:25 non-blocking: the done-when's ruff clause is carried as prose only, with no log under logs/ beside the four pytest arms, so a later reader cannot re-check it without the tree; re-running ruff at the reviewed head over the four staged paths gives `All checks passed`, so the gap is in the record rather than the code.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T131501961323-reland-the-reviewed-change-that-keeps-a-neverlaunched/manifest.md:22 non-blocking: baseline_suite runs only tests/test_read_verbs_retire_behind_crew_view.py while after_suite runs that file plus the new test, so their failure delta is not a like-for-like comparison; the like-for-like pair is the importer arms, 86 passed at both revisions.",
+  "review_run_id": "r-20261105T143851349711-review-of-reland-the-reviewed-change-that-keeps-a-neverlaunched-e58d84e2ad7a",
+  "reviewed_base_sha": "cd5edbd573654cceab64e47c69c96da38a5aaae2",
+  "reviewed_head_sha": "e58d84e2ad7a5fda3bdf09967b3070a94cf1d3f2",
+  "reviewed_run_id": "r-20261105T131501961323-reland-the-reviewed-change-that-keeps-a-neverlaunched",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T15:08:45.278294+00:00",
+  "total": 113
+}
