@@ -1,0 +1,68 @@
+<section id="a-named-anchor-is-not-preloaded-landing">
+  <h2>A named anchor is recorded on the node and costs the estimate nothing</h2>
+
+  <p><strong>What changed.</strong> A dispatch can now name a path as an anchor with
+  <code>--anchor-path</code> (repeatable, beside <code>--write-path</code> and
+  <code>--regenerate-path</code> on both <code>crew dispatch</code> and
+  <code>crew pick</code>), carried on <code>TaskNode.anchor_paths</code>. An anchored path
+  enters the context census at <strong>zero</strong> rather than at a reference cost: the
+  record keeps provenance <code>anchor</code>, its real <code>bytes</code>, and
+  <code>counted: false</code>, so a reader sees a file the worker was briefed about and not
+  given, rather than a file that happens to look small. The anchor comparison is made on the
+  resolved path, so an anchor written in one spelling withholds a mention or a declared input
+  written in another. A path that is both anchored and declared a write path is
+  <strong>refused</strong> at dispatch with the path named (a regenerated path counts, since
+  <code>TaskNode.__post_init__</code> folds it into the write scope), because a node cannot
+  both edit a file and be briefed without reading it. The field is carried onto the queued
+  request record and across the admission rebuild, which now also carries
+  <code>regenerate_paths</code> — the same field-by-field rebuild had been dropping it.</p>
+
+  <h3>Measured</h3>
+
+  <p>Gate: the node's own test file plus the context-estimate, MCP-tools, queue-landing and
+  queued-launch files, run in the fleet allocation with the repository venv. Each arm is a
+  log whose first line names its revision and whose last line reads
+  <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>head gate (nine files)</td>
+        <td><code>f652394a8a</code></td>
+        <td><strong>109 passed</strong>, exit 0</td></tr>
+      <tr><td>head, armed suite</td>
+        <td><code>f652394a8a</code></td>
+        <td><strong>7 passed</strong>, exit 0</td></tr>
+      <tr><td>base (the new cases copied into the base source)</td>
+        <td><code>d4bb4f37aa</code></td>
+        <td>7 failed, exit 1 — the flag, the field and the refusal do not exist</td></tr>
+      <tr><td>negative control (an anchored path charged its file size)</td>
+        <td>mutated head</td>
+        <td><strong>1 failed</strong>, exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <ul>
+    <li><strong>The lower estimate.</strong> One brief naming a 1&nbsp;000&nbsp;000-byte
+    record, measured twice: without the opt-out the census charges the flat reference
+    (4&nbsp;000 tokens) with provenance <code>reference</code>; with
+    <code>--anchor-path</code> the same brief charges <strong>0</strong> with provenance
+    <code>anchor</code>, while the record still reports
+    <code>bytes: 1000000</code>. An anchored <code>./</code>-prefixed spelling withholds a
+    declared-input charge written without the prefix.</li>
+    <li><strong>The recorded opt-out.</strong> The dry run composes the same
+    <code>TaskNode</code> a launch does, and the node it emits carries
+    <code>anchor_paths</code>; the anchor is not in <code>write_paths</code>, so it is not
+    claimed against a peer. The queued request stores the field through
+    <code>node.as_dict()</code>, and the admission rebuild now reads it back.</li>
+    <li><strong>The refusal.</strong> A dry-run dispatch naming the same path with
+    <code>--anchor-path</code> and <code>--write-path</code> exits non-zero with
+    <code>ok: false</code> and a <code>scoped</code> finding whose text names the path, and
+    <code>validate_node</code> reports the same finding directly.</li>
+    <li><strong>The negative control.</strong> Charging an anchored path its file size again
+    turns <code>test_the_same_brief_estimates_lower_with_the_anchor</code> red on the
+    lower-estimate assertion — exactly the mutation declared for this node.</li>
+    <li><strong>What is not measured here.</strong> Verifying the merged result belongs to a
+    separately dispatched test node.</li>
+  </ul>
+</section>
