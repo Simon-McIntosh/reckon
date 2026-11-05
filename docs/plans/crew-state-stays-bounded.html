@@ -24,8 +24,8 @@
   <title>Crew State Stays Bounded | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="46">
-<meta name="plan-modified" content="2026-11-02">
+<meta name="plan-version" content="47">
+<meta name="plan-modified" content="2026-11-05">
 </head>
 <body>
   <main class="plan-doc">
@@ -70,36 +70,40 @@
     <code>reckon/crew/runs.py</code> that falls back to the pointer, so pointers written before the change
     still read.</p>
     <p>Measured 2026-10-27: moving those six left a test dispatch's pointer at 15.7 KB, and production pointers
-    at 11.8 to 28 KB. The lead decided on 2026-11-02 that further fields move until the bound holds. The content
-    review measured which fields carry the weight on the 54 live pointers of that day. <code>suite_evidence</code>
-    reaches 158 KB, <code>dispatch_options</code> 31 to 41 KB (it also holds a nested copy of
-    <code>picker_selection</code>), and <code>peer_channel</code> 7 to 9 KB. With only the six named fields gone, 15 of
-    the 54 stayed at or above 8 KB. So the moved set is chosen by that measurement: the six above, plus
-    <code>dispatch_options</code> (moved when the request launches, since a queued request launches from it and
-    <code>queue_admission.py</code> and <code>queue_edit.py</code> read it until then), <code>suite_evidence</code>
-    (read by the landing pass in <code>queue_landing.py</code>), <code>peer_channel</code>, and the dispatch-time
-    fields <code>directive</code>, <code>authority</code>, <code>pace</code>, <code>watch</code>,
-    <code>lane_advisory</code> and <code>final_message</code>. <code>node</code> stays on the pointer, because the
-    board reads it for every live run (<code>_crew_rows</code> in <code>reckon/serve.py</code>).</p>
+    at 11.8 to 28 KB. The content reviews of 2026-11-02 measured which fields carry the weight on the live pointers of
+    that day: <code>suite_evidence</code> reaches 158 KB, <code>dispatch_options</code> 31 to 41 KB (it also holds a
+    nested copy of <code>picker_selection</code>), and <code>peer_channel</code> 7 to 9 KB. With the six fields and seven
+    further dispatch-time fields gone, 16 of 57 pointers stayed at or above 8 KB; with every field below moved as well,
+    25 of 57 stayed at or above 8 KB, the largest at 11.4 KB, most of the remainder being <code>node</code>. So the moved
+    set is: the six above; <code>dispatch_options</code>, moved when the request launches, since a queued request
+    launches from it and <code>queue_admission.py</code> and <code>queue_edit.py</code> read it until then;
+    <code>suite_evidence</code>, which <code>_record_suite_evidence</code> in <code>queue_landing.py</code> writes and
+    nothing reads, so it moves with no reader to route; <code>peer_channel</code>; and the dispatch-time fields
+    <code>directive</code>, <code>authority</code>, <code>pace</code>, <code>watch</code>, <code>lane_advisory</code> and
+    <code>final_message</code>. <code>node</code> stays whole on the pointer, because the board reads it for every live run
+    (<code>_crew_rows</code> in <code>reckon/serve.py</code>). The lead decided on 2026-11-05 that the bound is 12 KB, just
+    above the largest pointer that set leaves.</p>
     <p>The readers are taken from an <code>ast</code> walk, not from a list written here. On 2026-11-02 the moved fields
-    were read in <code>queue_admission.py</code>, <code>queue_edit.py</code>, <code>queue_landing.py</code>,
-    <code>dispatch.py</code>, <code>dispatch_claims.py</code>, <code>dispatch_plan.py</code>,
-    <code>dispatch_sessions.py</code>, <code>dispatch_peer.py</code>, <code>dispatch_picker.py</code>,
-    <code>promotion.py</code>, <code>promotion_checks.py</code>, <code>recovery_wait.py</code>,
-    <code>recovery_watch.py</code>, <code>model_catalogue.py</code>, <code>reckon/run_record.py</code>,
-    <code>reckon/pace_report.py</code> and <code>reckon/hooks/native_agent_guard.py</code>. The section runs as three
-    nodes in order. The first re-applies the six-field move preserved at commit 31091b24c on branch
-    <code>preserve/dispatch-detail-moves-off-the-live-pointer</code>, with the nested picker copy and every reader of those
-    six routed through the accessor. The second moves the small dispatch-time fields and <code>peer_channel</code>. The
-    third moves <code>dispatch_options</code> at launch and <code>suite_evidence</code>, whose readers are the queue's
-    own modules, so it is sequenced after the queue owner's pending nodes on those files. No node of this section
-    keeps a write claim while blocked; a blocked node is discarded and dispatched again.</p>
+    were read in <code>queue_admission.py</code>, <code>queue_edit.py</code>, <code>dispatch.py</code>,
+    <code>dispatch_claims.py</code>, <code>dispatch_plan.py</code>, <code>dispatch_sessions.py</code>,
+    <code>dispatch_peer.py</code>, <code>dispatch_picker.py</code>, <code>promotion.py</code>,
+    <code>promotion_checks.py</code>, <code>recovery_wait.py</code>, <code>recovery_watch.py</code>,
+    <code>model_catalogue.py</code>, <code>reckon/run_record.py</code>, <code>reckon/pace_report.py</code> and
+    <code>reckon/hooks/native_agent_guard.py</code>. The section runs as three nodes in order. The first re-applies the
+    six-field move preserved at commit 31091b24c on branch <code>preserve/dispatch-detail-moves-off-the-live-pointer</code>,
+    with the nested picker copy and every reader of those six routed through the accessor. The second moves the small
+    dispatch-time fields and <code>peer_channel</code>. The third moves <code>dispatch_options</code> at launch and
+    <code>suite_evidence</code>; its readers are the queue's own modules, so it is dispatched with <code>--after</code> on
+    the queue owner's pending runs on those files rather than through a section wait, which would hold the first two
+    nodes as well. No node of this section keeps a write claim while blocked; a blocked node is discarded and
+    dispatched again.</p>
     <p>Done when: an <code>ast</code> walk of <code>reckon/</code> finds no read of a moved field on a live pointer except
-    through the accessor; re-reading that day's live pointers with the moved fields served from their detail files
-    leaves none at or above 8 KB, measured over the live crew home and recorded with each pointer's size; a pointer
-    written by a test dispatch is under 8 KB; tests that read each moved field pass for a pointer of the new shape and
-    one of the old; and a promoted ledger row still carries every field it carried before. Negative control: an accessor
-    without the fallback must fail the old-shape test.</p>
+    through the accessor; a frozen copy of the live crew home's pointers, taken when the third node starts and kept in
+    its run directory, re-read with the moved fields served from their detail files, holds none at or above 12 KB, and
+    each pointer's size is recorded as a table in that node's committed evidence fragment, so the measurement outlives
+    the run directory; a pointer written by a test dispatch is under 12 KB; tests that read each moved field pass for a
+    pointer of the new shape and one of the old; and a promoted ledger row still carries every field it carried before.
+    Negative control: an accessor without the fallback must fail the old-shape test.</p>
 
     <h2 id="s3">§3 — Only a run something can still need keeps its directory</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
