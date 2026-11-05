@@ -2596,11 +2596,12 @@ def _watch_stream_snapshots(
 
     moment = _utc_seconds()
     stall_seconds = parse_duration(stall_window)
+    pointers = list(records)
     return {
         str(record.get("run_id") or ""): _watch_snapshot(
-            record, moment=moment, stall_seconds=stall_seconds
+            record, moment=moment, stall_seconds=stall_seconds, pointers=pointers
         )
-        for record in records
+        for record in pointers
         if record.get("run_id")
     }
 
