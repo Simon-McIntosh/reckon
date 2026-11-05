@@ -133,6 +133,10 @@ function DerivedFlow() {
                     // row the bar resolved against: the surface states it, it
                     // derives nothing.
                     const progressPct = Math.round(Number(plan.impl || 0) * 100);
+                    // A plan whose only open sections are deferred carries the
+                    // fact from the server, which derives it once; drawing 100 %
+                    // here would state a finish the plan has not reached.
+                    const doneLabel = plan.deferred_remainder?.label || `${progressPct}%`;
                     return (
                       <a
                         href={`#plan/${plan.nav_key || plan.slug}`}
@@ -143,12 +147,12 @@ function DerivedFlow() {
                           width: `${Math.max(0, flowPercent(item.end, schedule) - flowPercent(item.start, schedule))}%`,
                           opacity: dimmed ? 0.28 : 1,
                         }}
-                        title={`${plan.title || plan.slug} · ${plan.sprint || "unscheduled"} · ${item.state} · ${item.wall_hours}h wall-clock · ${progressPct}%`}
+                        title={`${plan.title || plan.slug} · ${plan.sprint || "unscheduled"} · ${item.state} · ${item.wall_hours}h wall-clock · ${doneLabel}`}
                       >
                         <i className="r-derived-flow-bar-done" style={{ width: `${flowDonePercent(item)}%` }}></i>
                         <span className="r-derived-flow-sprint-chip">{plan.sprint || "—"}</span>
                         <strong>{plan.title || plan.slug}</strong>
-                        <span className="r-derived-flow-progress">{progressPct}%</span>
+                        <span className="r-derived-flow-progress">{doneLabel}</span>
                         <span className="r-derived-flow-hours">{item.wall_hours}h</span>
                       </a>
                     );
