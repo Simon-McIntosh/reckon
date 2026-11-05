@@ -1,0 +1,70 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/mcp_views.py:4127-4155 (serve_crew_view directory branch -> crew_directory and paginate)",
+    "reckon/mcp_views.py:1125 -> 747 (_attach_lane_document -> _session_lane_share -> read_lane_document_with_admission)",
+    "reckon/crew/plan_coordinator.py:209 (_live_sessions -> directory.directory, the re-entry the join guard answers)",
+    "reckon/mcp.py:2848 (MCP crew read -> serve_crew_view)",
+    "reckon/crew_run_commands.py:573 (CLI crew -> serve_crew_view)"
+  ],
+  "completed_at": "2026-11-05T17:02:15.234Z",
+  "dispatched_at": "2026-11-05T16:48:59Z",
+  "findings": [
+    {
+      "file": "reckon/crew/directory.py",
+      "id": "fede936ecde",
+      "line": 252,
+      "severity": "non-blocking",
+      "text": "_mounted_projects re-implements the mounted-project enumeration that reckon/flight.py:527 mounted_project_docs owns (reckon/crew/query.py:740 wraps it in this same package) without extending it, and diverges from that owner: it accepts only the flat registry shape flight.py:556-559 also reads from a {\"mounts\": ...} wrapper, and it swallows an unreadable registry, so on a wrapped or unreadable mounts file the workstation-scope join silently reports every project as having no idle owner. The live registry is flat today, so nothing is broken now."
+    },
+    {
+      "file": "tests/test_the_board_extends_the_directory.py",
+      "id": "f716095124e",
+      "line": 246,
+      "severity": "non-blocking",
+      "text": "test_ready_idle_owner_keeps_every_section_past_one_page seeds 40 sections against _READY_IDLE_PAGE_LIMIT = 200 at reckon/crew/directory.py:28, so the first request returns them all and the test passes with the read-every-page loop at reckon/crew/directory.py:288-297 deleted; the loop's second iteration is never exercised, so the paging the prior review asked for is only guarded up to one page."
+    },
+    {
+      "file": "reckon/crew/directory.py",
+      "id": "f707a1aa1c7",
+      "line": 295,
+      "severity": "non-blocking",
+      "text": "the ready-set limit is passed only when no cursor is held (**({} if cursor else {\"limit\": _READY_IDLE_PAGE_LIMIT})), so every page after the first falls back to DEFAULT_PAGE_SIZE = 25 at reckon/mcp_views.py:2566; the loop is still correct, but the 200 bound its own comment describes covers one request rather than the join, and a wide project costs several times the requests the figure implies."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit over fede2538..e8c5b363: dd6625581b adds the single-read lane accessor and its admission-row helper, runs the ready-idle join per mounted project, reads every ready-set page, adds the queued-run binding assertion and two new cases; e8c5b3633f adds only the evidence fragment.",
+    "done_when": "The done-when names tests/test_the_board_extends_the_directory.py with tests/test_mcp_tools.py as the gate; I ran that literal pair against a scratch extraction of the reviewed head and it reports 39 passed EXIT=0, and logs/negative-control.log records the control coordinator appearing and the test failing at EXIT=1.",
+    "goal": "The goal is crew(view=directory) naming each run's plan section, carrying held paths and queued runs, listing ready-idle owners with no run, and paging under a limit and cursor; the delta closes the workstation-scope gap at reckon/crew/directory.py:230-246 so all four hold, with unowned_runs still returned whole.",
+    "manifest": "Read; it records the four commits, the head gate at 11 passed, the negative control, both adjacent arms, an acted line per folded finding and an evidence_inputs block, though after_suite names a two-file arm while baseline_suite names a five-file adjacent arm.",
+    "write_paths": "Read the declared write paths in prompt.txt and the resume grant; every path in the delta sits inside them, including reckon/crew/lane_document.py which resume-1-advice.txt added alongside the four prior findings."
+  },
+  "justifications": {
+    "durability": "the queued-run binding assertion at tests/test_the_board_extends_the_directory.py:216 is proven load-bearing by logs/queued-binding-control.log (constant binding=True, EXIT=1) and the workstation case by logs/red-arm.log (EXIT=1 at fede2538), but tests/test_the_board_extends_the_directory.py:246 seeds 40 sections against the 200-row page limit, so the read-every-page loop at reckon/crew/directory.py:288-297 is never entered twice.",
+    "evidence": "I re-ran the done-when's gate at the reviewed head in a scratch extraction of e8c5b3633f and it reads 39 passed in 13.48s, EXIT=0 (tests/test_the_board_extends_the_directory.py + tests/test_mcp_tools.py), so the manifest's gate is reproduced rather than taken on its word.",
+    "fit": "the additions follow the module's lazy-import and owner-delegation idiom, but reckon/crew/directory.py:252 re-uses the name _mounted_projects for a list of names where reckon/crew/query.py:740 returns a project-to-path mapping, and the page limit at directory.py:295 is applied to the first request only.",
+    "goal_fidelity": "reckon/crew/directory.py:230-246 now makes the ready-idle join for every mounted project on a workstation-scope read, so reckon/crew/directory.py:388 lists the run-less owner the goal names, and only the unowned rung of reckon/mcp_views.py:4140 is left unpaged.",
+    "reuse": "reckon/crew/directory.py:252 re-implements the mounted-project enumeration that reckon/flight.py:527 mounted_project_docs already owns over the same registry, where the other added joins delegate (queue_admission.queued_placements, crew.node.claim_disposition, crew.plan_coordinator.resolve_plan_coordinators).",
+    "scope_discipline": "every path in fede2538..e8c5b363 (reckon/crew/directory.py, reckon/crew/lane_document.py, reckon/mcp_views.py, the test file, the evidence fragment) is inside the source node's declared write paths, with lane_document.py added to scope by the resume advice at resume-1-advice.txt."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is crew(view=directory) naming each run's plan section, carrying held paths and queued runs, listing ready-idle owners with no run, and paging under a limit and cursor; reckon/crew/directory.py:230-246 closes the workstation-scope gap so all four hold, and reckon/mcp_views.py:4140 pages the coordinator rows.\nVERDICT done_when: the done-when names tests/test_the_board_extends_the_directory.py with tests/test_mcp_tools.py; I ran that literal pair against a scratch extraction of the reviewed head and /tmp/reckon-crew-scratch/r-20261105T164657055017-review-of-the-board-extends-the-coordinator-directory-e8c5b3633fa7/gate-head.log reads 39 passed in 13.48s EXIT=0, and logs/negative-control.log records the control coordinator appearing and the test failing at EXIT=1.\nVERDICT write_paths: read the declared paths in prompt.txt and the resume grant; every path in fede2538..e8c5b363 sits inside them, including reckon/crew/lane_document.py which resume-1-advice.txt added to the node's scope.\nVERDICT manifest: read; it records the four commits, the head gate, the negative control, both adjacent arms, an acted line per folded finding and an evidence_inputs block, but after_suite names a two-file arm while baseline_suite names a five-file adjacent arm, so the pair is not like-for-like.\nVERDICT diff: read commit by commit over fede2538..e8c5b363; dd6625581b adds the single-read lane accessor and its admission-row helper, runs the ready-idle join per mounted project, reads every ready-set page, and adds the queued-run binding assertion with two new cases; e8c5b3633f adds only the evidence fragment.\nCALL_SITES: reckon/mcp_views.py:4127-4155, reckon/mcp_views.py:1125 -> 747, reckon/crew/plan_coordinator.py:209, reckon/mcp.py:2848, reckon/crew_run_commands.py:573\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/directory.py:230-246 makes the ready-idle join for every mounted project on a workstation-scope read, so directory.py:388 lists the run-less owner the goal names; only the unowned rung of reckon/mcp_views.py:4140 stays unpaged.\nSCORE evidence: 16\nJUSTIFICATION evidence: I re-ran the done-when's gate at the reviewed head in a scratch extraction of e8c5b3633f and it reads 39 passed EXIT=0, so the manifest's claim is reproduced, though its after_suite names a two-file arm against the five-file base arm.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in fede2538..e8c5b363 is inside the source node's write paths, with reckon/crew/lane_document.py granted by resume-1-advice.txt before it was touched.\nSCORE durability: 15\nJUSTIFICATION durability: the queued-run binding assertion at tests/test_the_board_extends_the_directory.py:216 is proven load-bearing by logs/queued-binding-control.log (EXIT=1) and the workstation case by logs/red-arm.log (EXIT=1), but tests/test_the_board_extends_the_directory.py:246 seeds 40 sections against the 200-row limit so the paging loop is never entered twice.\nSCORE fit: 15\nJUSTIFICATION fit: the additions follow the module's lazy-import and owner-delegation idiom, but reckon/crew/directory.py:252 re-uses the name _mounted_projects for a list where reckon/crew/query.py:740 returns a mapping, and directory.py:295 applies the page limit to the first request only.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/directory.py:252 re-implements the enumeration reckon/flight.py:527 mounted_project_docs owns over the same registry without extending it, where the other added joins delegate to their owners.\nFINDING reckon/crew/directory.py:252 non-blocking: _mounted_projects duplicates reckon/flight.py:527 mounted_project_docs (wrapped at reckon/crew/query.py:740) and diverges by accepting only the flat registry shape and swallowing read errors, so on a wrapped or unreadable mounts file the workstation-scope join silently reports no idle owner; the live registry is flat today.\nFINDING tests/test_the_board_extends_the_directory.py:246 non-blocking: test_ready_idle_owner_keeps_every_section_past_one_page seeds 40 sections against _READY_IDLE_PAGE_LIMIT = 200 at reckon/crew/directory.py:28, so it passes with the read-every-page loop at reckon/crew/directory.py:288-297 deleted and the loop's second iteration is never exercised.\nFINDING reckon/crew/directory.py:295 non-blocking: the ready-set limit is passed only when no cursor is held, so every page after the first falls back to DEFAULT_PAGE_SIZE = 25 at reckon/mcp_views.py:2566 and the 200 bound its comment describes covers one request rather than the join.\n",
+  "review_run_id": "r-20261105T164657055017-review-of-the-board-extends-the-coordinator-directory-e8c5b3633fa7",
+  "reviewed_base_sha": "fede253832fdff2efd7d5914aa56de5ffe813200",
+  "reviewed_head_sha": "e8c5b3633fa7ba6804cf2d50417e82fe11e9f89f",
+  "reviewed_run_id": "r-20261027T101652349078-the-board-extends-the-coordinator-directory",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T17:05:44.760195+00:00",
+  "total": 88
+}
