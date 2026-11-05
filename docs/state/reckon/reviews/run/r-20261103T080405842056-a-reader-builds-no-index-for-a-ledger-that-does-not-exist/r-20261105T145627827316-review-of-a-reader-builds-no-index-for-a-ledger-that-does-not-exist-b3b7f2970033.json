@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/serve.py:805",
+    "reckon/crew/promotion_gate.py:1006",
+    "reckon/crew/dispatch_admission.py:659",
+    "reckon/crew/dispatch_plan.py:1411",
+    "reckon/run_store.py:757"
+  ],
+  "completed_at": "2026-11-05T15:06:58.177Z",
+  "dispatched_at": "2026-11-05T15:00:08Z",
+  "findings": [
+    {
+      "file": "tests/test_a_read_of_a_missing_ledger.py",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "no such test file is committed \u2014 the guard's only covering test lives in the run's scratch tree and dies with it, so the regression the node fixed is unguarded in the repository even though plan \u00a78 grants \"a new test file\" as a write path; a followup node should land it."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": "1597",
+      "severity": "non-blocking",
+      "text": "the predicate answers true when the runs directory merely exists, so a project holding an empty runs/ directory and no crew.json still builds a ledger-*.sqlite index of nothing \u2014 the same artefact the node set out to stop, reachable through an interrupted-append shape."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against ab87725e; one commit, +26 -1 in reckon/ledger.py adding the predicate and narrowing the `if use_index` route, plus a 76-line evidence fragment.",
+    "done_when": "the done_when names a temporary project with no crew.json writing no ledger-*.sqlite under a temporary cache root plus a present-ledger control and a base arm restoring the unconditional build; the gate at /tmp/reckon-crew-scratch/r-20261103T080405842056-a-reader-builds-no-index-for-a-ledger-that-does-not-exist/ledger-gate/test_a_read_of_a_missing_ledger.py asserts all three and its results are recorded in logs/head-gate.log and logs/base-gate.log.",
+    "goal": "the goal is that a reader builds no index for a ledger that does not exist; reckon/ledger.py:1588 adds _ledger_holds_content and reckon/ledger.py:1647 gates the index route on it, which is exactly that deliverable, and the re-run gate confirms it.",
+    "manifest": "read; it records status complete, commit b3b7f29700, head gate 3 passed EXIT=0, base gate 1 failed at ab87725e, and the 80-test-file ledger suite at 706 passed/5 errors head against 705 passed/1 failed/5 errors base.",
+    "write_paths": "the node was fenced to reckon/ledger.py, the evidence fragment and the figures directory; the diff changes reckon/ledger.py and docs/evidence/fragments/the-crew-home-has-a-bound/a-reader-builds-no-index-for-a-ledger-that-does-not-exist.html and nothing else."
+  },
+  "justifications": {
+    "durability": "the only test exercising the guard is an uncommitted scratch file at /tmp/reckon-crew-scratch/r-20261103T080405842056-a-reader-builds-no-index-for-a-ledger-that-does-not-exist/ledger-gate/test_a_read_of_a_missing_ledger.py, so no test in the repository fails if reckon/ledger.py:1647 regresses.",
+    "evidence": "logs/head-gate.log records 3 passed EXIT=0 at the landed commit and logs/base-gate.log records 1 failed/2 passed EXIT=1 naming the written ledger-*.sqlite, though the manifest leaves baseline_suite and after_suite blank so added_failure_count had to be read from the suite logs rather than from those fields.",
+    "fit": "the private helper at reckon/ledger.py:1588 follows the module's existing _load_aggregate/_run_files naming and docstring idiom, and carries no plan or ticket identifier.",
+    "goal_fidelity": "reckon/ledger.py:1647 takes the index route only when _ledger_holds_content answers true, so an absent ledger reads through _load_aggregate and writes no cache file.",
+    "reuse": "a search of reckon/ for an existing ledger-existence predicate (def .*ledger.*exists, ledger_path(...).exists()) found none, though the guard's two-source test restates the source pair reckon/ledger.py:1168 already reads and could have been expressed through _file_identity.",
+    "scope_discipline": "git diff ab87725e..b3b7f297 touches only reckon/ledger.py and the declared evidence fragment, with no test path, plan meta or peer path in the commit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a reader builds no index for a ledger that does not exist; reckon/ledger.py:1588 adds _ledger_holds_content and reckon/ledger.py:1647 gates the index route on it, which is exactly that deliverable, and the re-run gate confirms it.\nVERDICT done_when: the done_when names a temporary project with no crew.json writing no ledger-*.sqlite under a temporary cache root plus a present-ledger control and a base arm restoring the unconditional build; the gate at /tmp/reckon-crew-scratch/r-20261103T080405842056-a-reader-builds-no-index-for-a-ledger-that-does-not-exist/ledger-gate/test_a_read_of_a_missing_ledger.py asserts all three and its results are recorded in logs/head-gate.log and logs/base-gate.log.\nVERDICT write_paths: the node was fenced to reckon/ledger.py, the evidence fragment and the figures directory; the diff changes reckon/ledger.py and docs/evidence/fragments/the-crew-home-has-a-bound/a-reader-builds-no-index-for-a-ledger-that-does-not-exist.html and nothing else.\nVERDICT manifest: read; it records status complete, commit b3b7f29700, head gate 3 passed EXIT=0, base gate 1 failed at ab87725e, and the 80-test-file ledger suite at 706 passed/5 errors head against 705 passed/1 failed/5 errors base.\nVERDICT diff: read commit by commit against ab87725e; one commit, +26 -1 in reckon/ledger.py adding the predicate and narrowing the `if use_index` route, plus a 76-line evidence fragment.\nCALL_SITES: reckon/serve.py:805, reckon/crew/promotion_gate.py:1006, reckon/crew/dispatch_admission.py:659, reckon/crew/dispatch_plan.py:1411, reckon/run_store.py:757\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1647 takes the index route only when _ledger_holds_content answers true, so an absent ledger reads through _load_aggregate and writes no cache file.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/head-gate.log records 3 passed EXIT=0 at the landed commit and logs/base-gate.log records 1 failed/2 passed EXIT=1 naming the written ledger-*.sqlite, though the manifest leaves baseline_suite and after_suite blank so added_failure_count had to be read from the suite logs rather than from those fields.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff ab87725e..b3b7f297 touches only reckon/ledger.py and the declared evidence fragment, with no test path, plan meta or peer path in the commit.\nSCORE durability: 9\nJUSTIFICATION durability: the only test exercising the guard is an uncommitted scratch file at /tmp/reckon-crew-scratch/r-20261103T080405842056-a-reader-builds-no-index-for-a-ledger-that-does-not-exist/ledger-gate/test_a_read_of_a_missing_ledger.py, so no test in the repository fails if reckon/ledger.py:1647 regresses.\nSCORE fit: 19\nJUSTIFICATION fit: the private helper at reckon/ledger.py:1588 follows the module's existing _load_aggregate/_run_files naming and docstring idiom, and carries no plan or ticket identifier.\nSCORE reuse: 18\nJUSTIFICATION reuse: a search of reckon/ for an existing ledger-existence predicate (def .*ledger.*exists, ledger_path(...).exists()) found none, though the guard's two-source test restates the source pair reckon/ledger.py:1168 already reads and could have been expressed through _file_identity.\nFINDING tests/test_a_read_of_a_missing_ledger.py:1 non-blocking: no such test file is committed \u2014 the guard's only covering test lives in the run's scratch tree and dies with it, so the regression the node fixed is unguarded in the repository even though plan \u00a78 grants \"a new test file\" as a write path; a followup node should land it.\nFINDING reckon/ledger.py:1597 non-blocking: the predicate answers true when the runs directory merely exists, so a project holding an empty runs/ directory and no crew.json still builds a ledger-*.sqlite index of nothing \u2014 the same artefact the node set out to stop, reachable through an interrupted-append shape.",
+  "review_run_id": "r-20261105T145627827316-review-of-a-reader-builds-no-index-for-a-ledger-that-does-not-exist-b3b7f2970033",
+  "reviewed_base_sha": "ab87725e67ab7377c2efb9b60a263578f3f2f8de",
+  "reviewed_head_sha": "b3b7f2970033ee86d9ece0ca186e47eb3efff12b",
+  "reviewed_run_id": "r-20261103T080405842056-a-reader-builds-no-index-for-a-ledger-that-does-not-exist",
+  "scores": {
+    "durability": 9,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T15:19:37.092822+00:00",
+  "total": 103
+}
