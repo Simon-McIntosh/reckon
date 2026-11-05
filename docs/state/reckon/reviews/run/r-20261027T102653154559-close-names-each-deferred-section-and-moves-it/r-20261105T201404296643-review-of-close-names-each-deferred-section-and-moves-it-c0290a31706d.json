@@ -13,6 +13,13 @@
   "completed_at": "2026-11-05T20:24:31.148Z",
   "dispatched_at": "2026-11-05T20:17:17Z",
   "evidence_notes": "Neither gained commit adds a test, so there is no newly added assertion to test for independence from the value under test. The durable guard for the refactor is the pre-existing repository check tests/test_one_raw_text_section_reader.py:218-245: negative-control-reader.log runs it at c6e1200ff7 (pre-refactor) and it fails, with 'reckon/_store.py' in the reported set, EXIT=1; gate4-test_one_raw_text_section_reader.log runs the whole file at c0290a3170 and it is 32 passed, EXIT=0. Reinstating the two regexes in reckon/_store.py would redden it again, so the guard is a regression test for the change rather than a green tick. The refactor's behavioural half is weaker: the node test's prose assertions (tests/test_close_names_each_deferred_section_and_moves_it.py:282-283 and :428) check presence, not the heading/record adjacency the new code reasons about, so neither branch of insert_section_prose is pinned by an assertion; recorded as a non-blocking finding. The three-file gate was run as one command at 277c6cc32c (gate-full-head.log) and as three separate per-file commands at the final head c0290a3170 (gate4-test_close_names_each_deferred_section_and_moves_it.log 7 passed, gate4-test_a_plan_closes_in_one_op.log 13 passed, gate4-test_schema.log 3 failed/3710 passed with the three cross_project_conformance ids the base arm reproduces in gate-base-attribution.log).",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "close-names-each-deferred-section-and-moves-it",
+      "recorded_at": "2026-11-05T20:38:43.459686+00:00"
+    }
+  },
   "findings": [
     {
       "file": "manifest.md",
