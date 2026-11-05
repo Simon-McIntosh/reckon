@@ -25,7 +25,7 @@
   <title>A Read Costs What Changed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="24">
+<meta name="plan-version" content="25">
 <meta name="plan-modified" content="2026-11-05">
 </head>
 <body>
@@ -117,7 +117,10 @@
     <div class="r-comment-body"><p>Reviewed a-persisted-*carries-its-code-version at head 63a95a3887 against base ea176513: `persisted_memo` plus the `_store._read_state` seed are present and the four cases reproduce the plan's done-when (head 4 passed, base arm 3 failed), scored goal_fidelity 19, evidence 16, scope_discipline 19, durability 15, fit 18, reuse 19; two non-blocking findings (the untested `build=False` no-build property, and no ruff log named in the manifest), and added_failure_count 0 against the reviewed run's 3-failure base arm.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261105T061644194563-review-of-a-persisted-answer-still-reuses-rows-10a19d771e5f" data-who="reckon-build" data-when="2026-11-05T06:35:24.654Z">
-    <div class="r-comment-body"><p>Reviewed r-20261103T103857095482-a-persisted-answer-still-reuses-rows at base 86b3c34d and head 10a19d771e: parsed record scoring goal_fidelity 19, evidence 14, scope_discipline 20, durability 18, fit 18, reuse 5 (total 94), with four non-blocking findings — a second stat-keyed digest cache beside file_memo&#x27;s, the head importer log naming the pre-fix revision, the digest/identity pair taken in two separate stats, and no ruff receipt in the manifest — and added_failure_count 0 because the head importer failure set is a strict subset of the base arm&#x27;s.</p></div>
+    <div class="r-comment-body"><p>Reviewed r-20261103T103857095482-a-persisted-answer-still-reuses-rows at base 86b3c34d and head 10a19d771e: parsed record scoring goal_fidelity 19, evidence 14, scope_discipline 20, durability 18, fit 18, reuse 5 (total 94), with four non-blocking findings — a second stat-keyed digest cache beside file_memo's, the head importer log naming the pre-fix revision, the digest/identity pair taken in two separate stats, and no ruff receipt in the manifest — and added_failure_count 0 because the head importer failure set is a strict subset of the base arm's.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261103T103857095482-a-persisted-answer-still-reuses-rows" data-who="reckon-build" data-when="2026-11-04T09:22:03.388Z">
+    <div class="r-comment-body"><p>Revalidating a persisted value no longer hashes the source file of each module that produced it: the envelope records each producer&#x27;s source stat identity beside its digest and reuses the recorded digest when that identity has not moved, so a cold build reuses every covered row by stat identity again; both stat-identity tests and the code-version test pass 8/8 in each of three serial head passes, and reverting the fix turns exactly the two declared tests red.</p></div>
 </div>
 </section>
 </main>
