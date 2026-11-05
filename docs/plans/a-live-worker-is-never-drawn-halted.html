@@ -24,7 +24,7 @@
   <title>A Live Worker Is Never Drawn Halted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="115">
+<meta name="plan-version" content="116">
 <meta name="plan-modified" content="2026-11-05">
 <meta name="plan-section-depends-on" content="{&quot;s11&quot;:[&quot;a-live-worker-is-never-drawn-halted#s13&quot;]}">
 </head>
@@ -395,6 +395,15 @@
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261024T001658902384-review-of-a-wait-nothing-can-lift-needs-the-coordinator-285b17174b1e" data-who="reckon-build" data-when="2026-10-24T00:24:33.896Z">
     <div class="r-comment-body"><p>review of r-20261023T220123081008-a-wait-nothing-can-lift-needs-the-coordinator at 285b17174 from base 3adce740f — parsed record scoring goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 17, reuse 20, added_failure_count 0, one non-blocking finding (reckon/crew/recovery_wait.py:476 return annotation still dict[str, str] while the reader now returns the boolean answered field); the two findings of the prior review at 8861becdd are repaired — the exception arm carries answered:false and the head gate log's `# committed-as: 285b17174` is verified by its tree-state digest 64e62e5618398d05 matching `git diff 8861becdd 285b17174 -- reckon/crew tests`.</p></div>
 </div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261102T231204511301-review-of-census-instrument-cac840d554f3" data-who="reckon-build" data-when="2026-11-02T23:38:29.775Z">
+    <div class="r-comment-body"><p>Reviewed r-20261027T000032986533-census-instrument at head cac840d554 against base 8b935b9e6 and stored a parsed record scoring all six dimensions (goal_fidelity 17, evidence 17, scope_discipline 20, durability 15, fit 16, reuse 12) with added_failure_count 0 and six non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261027T000032986533-census-instrument" data-who="reckon-build" data-when="2026-11-02T23:09:51.497Z">
+    <div class="r-comment-body"><p>Committed the monitor row census and its review-missing sampler as scripts/census/monitor_census.py beside a co-located test; on the 48 hours ending 2026-10-23T12:37Z the three carried-halt kinds read 38 process_alive (24 of them working→running), 128 returns_to_progress and 7 after_status_repair against 242 carried halted rows, and §3's 12:25:51Z row and §4's 12:14:49Z repair row are each counted under their kind.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261105T081147174925-review-of-census-sampler-remedy-c37e3efb5c7b" data-who="reckon-build" data-when="2026-11-05T08:25:19.970Z">
+    <div class="r-comment-body"><p>review of census-sampler-remedy at c37e3efb5c7b scores goal_fidelity 19, evidence 19, scope_discipline 20, durability 18, fit 18, reuse 17 (total 111/120), added_failure_count 0 against baseline_suite and after_suite, two non-blocking findings (COUNTED_LIFT_STATES placed outside the ticker vocabulary it narrows; the fragment&#x27;s logs/ citations do not resolve from the committed file); the record is stored as parsed and accepted by `reckon crew check --review --record`.</p></div>
+</div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261024T010015758684-review-of-a-full-queue-is-a-wait-not-a-refusal-7999dc3bb6a4" data-who="reckon-build" data-when="2026-10-24T01:11:27.190Z">
     <div class="r-comment-body"><p>Independent review of r-20261024T004234132824-a-full-queue-is-a-wait-not-a-refusal at head 7999dc3bb6a4da13dbb59172cefe78e50620b3c4 scores goal_fidelity 15, evidence 15, scope_discipline 20, durability 17, fit 19, reuse 18 (total 104), adds 0 failures against base f56407c1, and records two non-blocking findings.</p></div>
 </div>
@@ -583,12 +592,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261023T220036362628-the-producer-calls-its-seat-decision" data-who="reckon-build" data-when="2026-10-24T03:29:08Z">
     <div class="r-comment-body"><p>The producer calls the seat owner's decision at start-up (recovery_watch._watch_registration, before any seat is claimed) and on every lease renewal (runs.renew_watch_host_lease); a release disables the unit through an injectable runner, erases the record, calls the claim's own teardown, announces once naming both hosts and exits, while the fleet node's own host holds, and the renewal question reads pointers without publishing; head gate over the 12 files reaching these modules is 2 failed / 56 passed at dbda86022 against 4 failed / 48 passed at base dc3ace589, a strict subset, with the new test file's 6 tests passing.</p></div>
-</div>
-<div class="r-comment" data-section="s11" data-id="c-run-r-20261102T231204511301-review-of-census-instrument-cac840d554f3" data-who="reckon-build" data-when="2026-11-02T23:38:29.775Z">
-    <div class="r-comment-body"><p>Reviewed r-20261027T000032986533-census-instrument at head cac840d554 against base 8b935b9e6 and stored a parsed record scoring all six dimensions (goal_fidelity 17, evidence 17, scope_discipline 20, durability 15, fit 16, reuse 12) with added_failure_count 0 and six non-blocking findings.</p></div>
-</div>
-<div class="r-comment" data-section="s11" data-id="c-run-r-20261027T000032986533-census-instrument" data-who="reckon-build" data-when="2026-11-02T23:09:51.497Z">
-    <div class="r-comment-body"><p>Committed the monitor row census and its review-missing sampler as scripts/census/monitor_census.py beside a co-located test; on the 48 hours ending 2026-10-23T12:37Z the three carried-halt kinds read 38 process_alive (24 of them working→running), 128 returns_to_progress and 7 after_status_repair against 242 carried halted rows, and §3&#x27;s 12:25:51Z row and §4&#x27;s 12:14:49Z repair row are each counted under their kind.</p></div>
 </div>
 </section>
 </main>

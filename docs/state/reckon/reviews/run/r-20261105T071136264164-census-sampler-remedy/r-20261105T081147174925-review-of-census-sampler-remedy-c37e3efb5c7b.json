@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "scripts/census/monitor_census.py:547 main (--sample-review-missing / --once path; calls sample_once and run_sampler)",
+    "scripts/census/monitor_census.py:510 run_sampler (calls sample_once on its cadence)"
+  ],
+  "completed_at": "2026-11-05T08:25:19.970Z",
+  "dispatched_at": "2026-11-05T08:15:12Z",
+  "findings": [
+    {
+      "file": "scripts/census/monitor_census.py",
+      "line": "106",
+      "severity": "non-blocking",
+      "text": "non-blocking: COUNTED_LIFT_STATES declares which of ticker.LIFT_STATES count as transitions inside the census script rather than beside the vocabulary it narrows, so a fourth transition state added to reckon/crew/ticker.py would leave the census silently under-counting lifts with no test failing."
+    },
+    {
+      "file": "docs/evidence/fragments/a-live-worker-is-never-drawn-halted/census-sampler-remedy.html",
+      "line": "37",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment cites its gate logs as logs/after-arm.log, logs/baseline-arm.log and logs/negative-control.log, but no logs/ directory exists beside the committed fragment \u2014 the files live in the crew run directory for r-20261105T071136264164-census-sampler-remedy \u2014 so three citations do not resolve for a reader of the artifact."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T071136264164-census-sampler-remedy/after-arm.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T071136264164-census-sampler-remedy/baseline-arm.log"
+  },
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "Read the single commit c37e3efb5c against base 2762a58e37 commit by commit; it adds the reflex branch at scripts/census/monitor_census.py:410-411 with its resolver at :381-395, the review_not_launched reading at :489-493, COUNTED_LIFT_STATES at :106-111, delegation to query.watch_event_paths at :258 and to runs.pointer_path at :395 and :470, removes home= from sample_once and run_sampler, and adds 241 lines of tests.",
+    "done_when": "The done_when names repairs (a)-(d), two repair-kind tests and a three-mutation control; scripts/census/test_monitor_census.py:391 covers (a), :413 the no-launch reading, :432 (b), :471 (c), :561 (d), :495 and :529 the two repair guards, and the run's logs carry the measure: after-arm.log ends \"14 passed ... EXIT=0\" at revision c37e3efb5c7b, base-arm.log ends \"4 failed, 10 passed ... EXIT=1\" with the four defect tests named, negative-control.log records three mutations at EXIT=1 each reddening only its own test, and my re-run of the named gate at the reviewed head reproduced 14 passed, EXIT=0 (gate-recheck.log).",
+    "goal": "The node's goal is that the review-missing sampler classify a reflex-claimed duty by its review's launch; scripts/census/monitor_census.py:410-411 now resolves the pointer from the reflex's own record whenever obligations._reflex_review_in_flight holds, and :486-497 judges the duty against that pointer's own launched_at instead of a swept candidate that may not exist.",
+    "manifest": "Read; it reports status complete, commit c37e3efb5c7b85a4352cd786af749e4849f579b3, changed_paths matching the diff, a 14-passed head arm and a 4-failed base arm, and the logs it names exist and contain those results at those revisions.",
+    "write_paths": "The node is fenced to scripts/census/monitor_census.py, scripts/census/test_monitor_census.py, its evidence fragment and a figures directory; `git diff --stat 2762a58e37 c37e3efb5c` changes exactly the first three and the figures path is unused, and no caller anywhere in the tree passes the removed sample_once(home=...) keyword, so the signature change breaks no call site."
+  },
+  "justifications": {
+    "durability": "base-arm.log makes the four repaired behaviours red at the base revision and negative-control.log makes each repair guard red under its own mutation, so the assertions fail when regressed; the exceptions are tests/test_monitor_census.py:432's textual \".events\" check, which the spy assertion backs, and :561's redirect guard, whose mutation is not logged.",
+    "evidence": "after-arm.log, base-arm.log and negative-control.log record 14 passed EXIT=0, 4 failed EXIT=1 and three EXIT=1 mutations, and my re-run at c37e3efb5c reproduced 14 passed EXIT=0, though the fragment's own citations of those logs (docs/evidence/fragments/a-live-worker-is-never-drawn-halted/census-sampler-remedy.html:37) name paths that do not resolve from the committed file.",
+    "fit": "the addition follows the module's idiom \u2014 a private helper with a mechanism docstring at scripts/census/monitor_census.py:381, a `#:`-commented constant at :106, `_read_json(pointer_path(...))` as the module already read pointers \u2014 with no plan, ticket or version identifier introduced.",
+    "goal_fidelity": "scripts/census/monitor_census.py:410-411 answers a reflex-claimed duty from the pointer the reflex recorded and :486-497 compares the snapshot against that pointer's launched_at, which is exactly the goal's classification.",
+    "reuse": "the change delegates to the owners it can (query.watch_event_paths at :258, runs.pointer_path at :395 and :470, obligations._reflex_review_in_flight at :410, ticker's state constants at :106-111), but COUNTED_LIFT_STATES restates a subset of ticker.LIFT_STATES in a non-owning module and _reflex_review_pointer at :381 re-derives review_dispatch.run_id, which recovery_review_dispatch._recorded_review_is_live already reads.",
+    "scope_discipline": "`git diff --stat 2762a58e37 c37e3efb5c` touches only scripts/census/monitor_census.py, scripts/census/test_monitor_census.py and the node's own evidence fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that the review-missing sampler classify a reflex-claimed duty by its review's launch; scripts/census/monitor_census.py:410-411 now resolves the pointer from the reflex's own record whenever obligations._reflex_review_in_flight holds, and :486-497 judges the duty against that pointer's own launched_at instead of a swept candidate that may not exist.\nVERDICT done_when: The done_when names repairs (a)-(d), two repair-kind tests and a three-mutation control; scripts/census/test_monitor_census.py:391 covers (a), :413 the no-launch reading, :432 (b), :471 (c), :561 (d), :495 and :529 the two repair guards, and the run's logs carry the measure: after-arm.log ends \"14 passed ... EXIT=0\" at revision c37e3efb5c7b, base-arm.log ends \"4 failed, 10 passed ... EXIT=1\" with the four defect tests named, negative-control.log records three mutations at EXIT=1 each reddening only its own test, and my re-run of the named gate at the reviewed head reproduced 14 passed, EXIT=0 (gate-recheck.log).\nVERDICT write_paths: The node is fenced to scripts/census/monitor_census.py, scripts/census/test_monitor_census.py, its evidence fragment and a figures directory; `git diff --stat 2762a58e37 c37e3efb5c` changes exactly the first three and the figures path is unused, and no caller anywhere in the tree passes the removed sample_once(home=...) keyword, so the signature change breaks no call site.\nVERDICT manifest: Read; it reports status complete, commit c37e3efb5c7b85a4352cd786af749e4849f579b3, changed_paths matching the diff, a 14-passed head arm and a 4-failed base arm, and the logs it names exist and contain those results at those revisions.\nVERDICT diff: Read the single commit c37e3efb5c against base 2762a58e37 commit by commit; it adds the reflex branch at scripts/census/monitor_census.py:410-411 with its resolver at :381-395, the review_not_launched reading at :489-493, COUNTED_LIFT_STATES at :106-111, delegation to query.watch_event_paths at :258 and to runs.pointer_path at :395 and :470, removes home= from sample_once and run_sampler, and adds 241 lines of tests.\nCALL_SITES: scripts/census/monitor_census.py:547 main (the CLI's --sample-review-missing / --once path, which calls sample_once and run_sampler and is how the coordinator starts the bounded job), scripts/census/monitor_census.py:510 run_sampler (calls sample_once on its cadence); no other module in the tree imports monitor_census.\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: scripts/census/monitor_census.py:410-411 answers a reflex-claimed duty from the pointer the reflex recorded and :486-497 compares the snapshot against that pointer's launched_at, which is exactly the goal's classification.\nSCORE evidence: 19\nJUSTIFICATION evidence: after-arm.log, base-arm.log and negative-control.log record 14 passed EXIT=0, 4 failed EXIT=1 and three EXIT=1 mutations, and my re-run at c37e3efb5c reproduced 14 passed EXIT=0, though the fragment's own citations of those logs (docs/evidence/fragments/a-live-worker-is-never-drawn-halted/census-sampler-remedy.html:37) name paths that do not resolve from the committed file.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat 2762a58e37 c37e3efb5c` touches only scripts/census/monitor_census.py, scripts/census/test_monitor_census.py and the node's own evidence fragment, all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: base-arm.log makes the four repaired behaviours red at the base revision and negative-control.log makes each repair guard red under its own mutation, so the assertions fail when regressed; the exceptions are tests/test_monitor_census.py:432's textual \".events\" check, which the spy assertion backs, and :561's redirect guard, whose mutation is not logged.\nSCORE fit: 18\nJUSTIFICATION fit: the addition follows the module's idiom \u2014 a private helper with a mechanism docstring at scripts/census/monitor_census.py:381, a `#:`-commented constant at :106, `_read_json(pointer_path(...))` as the module already read pointers \u2014 with no plan, ticket or version identifier introduced.\nSCORE reuse: 17\nJUSTIFICATION reuse: the change delegates to the owners it can (query.watch_event_paths at :258, runs.pointer_path at :395 and :470, obligations._reflex_review_in_flight at :410, ticker's state constants at :106-111), but COUNTED_LIFT_STATES restates a subset of ticker.LIFT_STATES in a non-owning module and _reflex_review_pointer at :381 re-derives review_dispatch.run_id, which recovery_review_dispatch._recorded_review_is_live already reads.\nFINDING scripts/census/monitor_census.py:106 non-blocking: COUNTED_LIFT_STATES declares which of ticker.LIFT_STATES count as transitions inside the census script rather than beside the vocabulary it narrows, so a fourth transition state added to reckon/crew/ticker.py would leave the census silently under-counting lifts with no test failing.\nFINDING docs/evidence/fragments/a-live-worker-is-never-drawn-halted/census-sampler-remedy.html:37 non-blocking: the fragment cites its gate logs as logs/after-arm.log, logs/baseline-arm.log and logs/negative-control.log, but no logs/ directory exists beside the committed fragment \u2014 the files live in the crew run directory for r-20261105T071136264164-census-sampler-remedy \u2014 so three citations do not resolve for a reader of the artifact.\n",
+  "review_run_id": "r-20261105T081147174925-review-of-census-sampler-remedy-c37e3efb5c7b",
+  "reviewed_base_sha": "2762a58e373b0b791ceea621f99cbcb163cce205",
+  "reviewed_head_sha": "c37e3efb5c7b85a4352cd786af749e4849f579b3",
+  "reviewed_run_id": "r-20261105T071136264164-census-sampler-remedy",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T08:23:34.149852+00:00",
+  "total": 111
+}
