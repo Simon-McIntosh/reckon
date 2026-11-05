@@ -515,22 +515,36 @@ def follower_owner() -> tuple[int, str]:
     return _RESOLVED_FOLLOWER_OWNER.resolve()
 
 
+def _no_registration_remains() -> dict[str, Any]:
+    """The answer for a session with no registration file at all.
+
+    Distinct from a release: a path that was never created is a session that
+    never armed a follower, and must not be read as one that gave up.
+    """
+    return {
+        "registered": False,
+        "live": False,
+        "released": False,
+        "not_live_because": "no registration remains",
+        "delivery": None,
+        "follower": {},
+    }
+
+
 def _follower_liveness(path: Path) -> dict[str, Any]:
     """Read one registration and decide whether it still delivers."""
-    if not path.is_file():
-        return {
-            "registered": False,
-            "live": False,
-            # No registration file at all: the session never armed a follower,
-            # which is not the same as a release and must not be treated as one.
-            "released": False,
-            "not_live_because": "no registration remains",
-            "delivery": None,
-            "follower": {},
-        }
     deadline = time.monotonic() + _REGISTRATION_SETTLE_SECONDS
     while True:
-        with path.open("a+b") as handle:
+        # Read-only, because this is a read: a fenced worker's home refuses the
+        # append mode this used to take, and taking an advisory lock needs no
+        # write mode — ``flock`` works on a descriptor opened ``rb``.
+        try:
+            handle = path.open("rb")
+        except FileNotFoundError:
+            # Absent when the read began, or released between the check and this
+            # open. Either way there is no registration to read.
+            return _no_registration_remains()
+        with handle:
             try:
                 fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError:

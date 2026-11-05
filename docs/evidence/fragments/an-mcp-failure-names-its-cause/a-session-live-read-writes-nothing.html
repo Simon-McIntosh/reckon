@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="an-mcp-failure-names-its-cause">
+  <meta name="plan-title" content="An MCP Failure Names Its Cause">
+  <meta name="plan-summary" content="The follower's reloader and the MCP's stale response share one check of whether a moved checkout can be trusted.">
+  <meta name="plan-evidence-for" content="reckon:an-mcp-failure-names-its-cause">
+  <meta name="plan-verifies" content="reckon:an-mcp-failure-names-its-cause#s18">
+  <meta name="plan-commits" content="c927b1cc9714d5e4ac10c04e35582d8ce4a1ef71">
+  <meta name="plan-recorded-at" content="2026-11-02">
+  <meta name="plan-node" content="a-session-live-read-writes-nothing">
+  <title>A session-scoped live read writes nothing — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-session-live-read-writes-nothing-landed" data-node="a-session-live-read-writes-nothing" data-reckon="landed" data-when="2026-11-02">
+  <h2 id="a-session-live-read-writes-nothing-heading">A session-scoped live read writes nothing</h2>
+  <p id="a-session-live-read-writes-nothing-summary">Three write sites sat on the live read's path and only surfaced once the read named a session. <code>_follower_liveness</code> opened each registration <code>"a+b"</code> to take its advisory lock; it now opens <code>"rb"</code>, which <code>flock</code> accepts whatever mode the descriptor was opened in, and an absent path answers as a session that never armed a follower. <code>_fresh_watch_holder</code> released a local lease whose holder this host could read as dead — a read deciding ownership from a process-table probe — and now returns the live holder and the stale one separately, reporting the stale holder as <code>stale_lease</code> while the file stays where it was found. <code>_probe_seat_read_only</code> caught only <code>FileNotFoundError</code>, so a seat the fence refuses to let a reader open raised; it now answers <code>None</code>, an unknown holder, and the visibility block states <code>seat_readable</code> beside <code>seat_held</code> so an unheld seat is distinguishable from one the reader could not look at.</p>
+  <p id="a-session-live-read-writes-nothing-measure">The gate runs green at both arms, from <code>git archive</code> extractions on node-local disk: base <code>27dca04b11dbe5312965ad4d675d895656413421</code> collected 13 tests, none failing; head <code>c927b1cc9714d5e4ac10c04e35582d8ce4a1ef71</code> collected 15, none failing — the same three pre-existing files plus the two new arms, so the change adds no failure. Both arms of <code>tests/test_a_session_live_read_writes_nothing.py</code> fail at base: the read-only arm on a <code>PermissionError</code> opening the mode-000 seat, the writable arm on a missing <code>stale_lease</code> key.</p>
+  <p id="a-session-live-read-writes-nothing-control">The declared negative control restores the <code>a+b</code> open in <code>_follower_liveness</code>. The read-only arm then fails with <code>PermissionError: [Errno 13] Permission denied</code> on the 0444 registration <code>theirs-4c55a8552a2c.lock</code>, <code>1 failed, 1 passed</code>, <code>EXIT=1</code> — the arm is measuring the append open and not the fixture.</p>
+  <p id="a-session-live-read-writes-nothing-registration">Registration and lease release off the read path keep their behaviour: the claim still opens <code>"a+b"</code>, and the producer-side callers in <code>dispatch_watch</code>, <code>recovery_watch</code>, <code>station</code> and <code>fleet_supervisor</code> still call <code>release_holder</code> where they did.</p>
+</article>
+</body>
+</html>
