@@ -248,6 +248,55 @@ def placement_job_alive(
     return state.casefold() in _JOB_LIVE_STATES
 
 
+def _session_process_pids(session_id: str) -> list[int]:
+    """Live processes of this user whose command line carries one session id.
+
+    A worker whose supervisor exited first is reparented to init and writes no
+    attempt record, so no pid the run records names it: every recorded pid is
+    dead while the worker goes on driving the run's session in its worktree.
+    The command line is where it still answers, because a resumed worker is
+    launched with the run's session id as one whole argument.
+
+    The match is on whole arguments. A session id that merely appears inside
+    another argument — a flag spelling it, a longer id containing it — belongs
+    to no launch of this run, and reading it as one would refuse a resume
+    against an unrelated process. The caller and its ancestors are excluded
+    because the process asking the question is never the worker it is asking
+    about, and a wrapper may carry the session id in its own invocation.
+
+    The walk reaches only processes owned by this user and only the host it
+    runs on, which is the same reach the pid probe beside it has.
+    """
+    if not session_id:
+        return []
+    from reckon.crew.dispatch_accounting import _ancestor_processes
+
+    ancestry, _names = _ancestor_processes()
+    excluded = ancestry | {os.getpid()}
+    uid = os.getuid()
+    found: list[int] = []
+    try:
+        entries = os.listdir("/proc")
+    except OSError:
+        return found
+    for name in entries:
+        if not name.isdigit():
+            continue
+        pid = int(name)
+        if pid in excluded:
+            continue
+        try:
+            if os.stat(f"/proc/{pid}").st_uid != uid:
+                continue
+            raw = Path(f"/proc/{pid}/cmdline").read_bytes()
+        except OSError:
+            continue
+        argv = [os.fsdecode(token) for token in raw.split(b"\0") if token]
+        if session_id in argv:
+            found.append(pid)
+    return found
+
+
 def record_process_alive(
     record: Mapping[str, Any] | None,
     alive: Callable[[Any], bool | None] | None = None,
@@ -291,6 +340,16 @@ def record_process_alive(
     guard needs the process that holds the seat, and a running holder is a
     running holder however its recorded identity reads, so it opts out here
     rather than depending on this check being absent.
+
+    A spawned run's worker may outlive every process the record names: a
+    supervisor that exits first leaves the worker reparented to init and
+    unrecorded, so the pid probe answers dead while the worker still drives the
+    run. The command line answers for it, since a resumed worker is launched
+    with the run's session id as one argument, so a record whose pids are all
+    dead is asked one more question — whether a live process of this user
+    carries its session id — and a hit reads alive. A record the pid probe
+    already proved alive never reaches that walk, so a live run costs nothing
+    extra.
     """
     if not record:
         return None
@@ -314,6 +373,10 @@ def record_process_alive(
             actual = _process_start_time(pid)
             if actual is not None:
                 running = actual == expected
+    if running is not True and record.get("launch") == "cli":
+        session_id = str(record.get("session_id") or "").strip()
+        if session_id and _session_process_pids(session_id):
+            running = True
     return running
 
 
