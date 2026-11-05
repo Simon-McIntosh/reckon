@@ -1,0 +1,40 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-05T07:39:24.382Z",
+  "dispatched_at": "2026-11-05T07:34:05Z",
+  "findings": [
+    {
+      "file": "tests/test_the_brief_is_the_default_answer.py",
+      "id": "f737bcabecd",
+      "line": 297,
+      "severity": "non-blocking",
+      "summary": "the docstring says the builder measures exactly ``characters`` serialised characters, but it sets text to ``missing`` and then lines[1]['text'] to prose[-200:], so BRIEF_PAYLOAD_CHARACTERS=25_000 yields 25_200; the stated figure is false for the value the case actually asserts on."
+    },
+    {
+      "file": "docs/evidence/fragments/the-mcp-answers-the-question-asked/the-brief-is-the-default-answer.html",
+      "id": "fbae991f2b3",
+      "line": 77,
+      "severity": "non-blocking",
+      "summary": "the fragment repeats the figure as a brief-shaped payload of 25,000 characters when the guarded case measures 25,200, so a reader takes an unmeasured number as the boundary the two rows are held to."
+    }
+  ],
+  "project": "reckon",
+  "review": "VERDICT goal: the source node's goal is that the project brief be the default answer of roadmap(project) with no view and both skills lead with it; the delta 4b24e94..1532f04 touches no resolution code and reckon/mcp_budget.py:76 still resolves DEFAULT_VIEWS['roadmap'] to 'brief'.\"\nVERDICT done_when: plan section 6 asks a default roadmap call to return the brief, a named summary call to be unchanged, and both skill fast paths to name the brief first; the manifest records 33 passed at 1532f0467e across tests/test_the_brief_is_the_default_answer.py, tests/test_a_slow_roadmap_read_serves_its_last_snapshot.py and tests/test_mcp_recovery.py (logs/head-1532f04-armed-three.txt), with the base arm at 411ddcee at 12 failed/21 passed (logs/base-armed-three.txt).\nVERDICT write_paths: the declared paths are reckon/mcp.py, skills/reckon-roadmap/SKILL.md, skills/reckon-status/SKILL.md, tests/test_the_brief_is_the_default_answer.py, the evidence fragment and the figures directory; the delta touches the test file and the fragment inside that list plus reckon/mcp_budget.py, which the manifest's outside_scope records as granted by the coordinator's reviews of 950565252d and 4b24e9402.\nVERDICT manifest: read; it records the head gate at 33 passed with EXIT=0, the base arm's 12 failure ids, and the row-lowering negative control at logs/negative-control-brief-row.txt with EXIT=1, though its claim that the payload measures exactly 25,000 serialised characters is 200 characters overstated.\nVERDICT diff: read commit by commit from 4b24e94028615b0ca14073721aba414d85acba42 to 1532f0467e5cc017dbef92f36fac85f22dcea98d; 949aa4d296 rewrites the mcp_budget.py row comment, d61c4664cf replaces the self-referential budget assertion and deletes the duplicating 40-plan fixture, and 1532f0467e rewrites the evidence fragment's size section.\nCALL_SITES: reckon/mcp.py:1479, reckon/mcp.py:1517, reckon/mcp_deadlines.py:25 (bound_response reaches mcp_budget.view_budget at reckon/mcp_budget.py:259)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/mcp_budget.py:76 still resolves a view-less roadmap call to the brief, and the delta preserves that behaviour while repairing its budget evidence.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/head-1532f04-armed-three.txt records 33 passed EXIT=0 at revision 1532f0467e and logs/negative-control-brief-row.txt records the row-lowering mutation red at EXIT=1.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the three delta commits touch only reckon/mcp_budget.py:22-33, tests/test_the_brief_is_the_default_answer.py and the evidence fragment, with mcp_budget.py's grant disclosed at manifest outside_scope.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_brief_is_the_default_answer.py:334 compares a test-built 25,200-character payload against mcp_budget.view_budget's own resolution, and the recorded mutation at logs/negative-control-brief-row.txt reddens it at EXIT=1.\nSCORE fit: 15\nJUSTIFICATION fit: the rewritten comment at reckon/mcp_budget.py:25-31 states the mechanism in the surrounding style, but tests/test_the_brief_is_the_default_answer.py:297 promises an exact size the builder does not deliver.\nSCORE reuse: 20\nJUSTIFICATION reuse: d61c4664cf deletes the 40-plan synthetic-project fixture that duplicated tests/test_every_default_read_fits.py:260-265, whose sweep already covers roadmap view='brief'.\nFINDING tests/test_the_brief_is_the_default_answer.py:297 non-blocking: the docstring says the builder measures exactly ``characters`` serialised characters, but it sets text to ``missing`` and then lines[1]['text'] to prose[-200:], so BRIEF_PAYLOAD_CHARACTERS=25_000 yields 25_200; the stated figure is false for the value the case actually asserts on.\nFINDING docs/evidence/fragments/the-mcp-answers-the-question-asked/the-brief-is-the-default-answer.html:77 non-blocking: the fragment repeats the figure as a brief-shaped payload of 25,000 characters when the guarded case measures 25,200, so a reader takes an unmeasured number as the boundary the two rows are held to.",
+  "review_run_id": "r-20261105T071536280136-review-of-the-brief-is-the-default-answer-1532f0467e5c",
+  "reviewed_base_sha": "4b24e94028615b0ca14073721aba414d85acba42",
+  "reviewed_head_sha": "1532f0467e5cc017dbef92f36fac85f22dcea98d",
+  "reviewed_run_id": "r-20261027T100759949584-the-brief-is-the-default-answer",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T07:56:46.399473+00:00",
+  "total": 105
+}
