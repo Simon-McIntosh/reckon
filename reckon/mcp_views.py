@@ -765,23 +765,18 @@ def _session_lane_share(session: str, moment: datetime) -> dict[str, Any]:
     from reckon.crew import obligations as obligations_module
     from reckon.crew import paid_lanes
 
-    payload: object = None
-    try:
-        payload = json.loads(paid_lanes.local_lane_path().read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        payload = None
-    report = lane_document_module.read_lane_document(payload, now=moment)
-    admission = lane_document_module.read_lane_admission(payload)
-    listed = (
-        admission["sessions"].get(session)
-        if admission.get("sessions_present")
-        else None
-    )
-    live_runs = (
-        listed.get(lane_document_module.SESSION_LIVE_RUNS_KEY)
-        if isinstance(listed, Mapping)
-        else lane_document_module.UNKNOWN
-    )
+    path = paid_lanes.local_lane_path()
+    # One read of the document: the report this view quotes and the admission
+    # row beside it come from the same parse, so they cannot describe two
+    # vintages of a file the lane rewrites under them.
+    reading = lane_document_module.read_lane_document_with_admission(path, now=moment)
+    report = reading["report"]
+    row = lane_document_module.session_admission_row(reading["admission"], session)
+    live_runs = lane_document_module.UNKNOWN
+    if row is not None:
+        published = row.get(lane_document_module.SESSION_LIVE_RUNS_KEY)
+        if published is not None:
+            live_runs = published
     return {
         "session": session,
         "worker_slots": obligations_module._published_worker_slots(session),
@@ -4216,7 +4211,23 @@ def serve_crew_view(
             }
     if view == "directory":
         try:
-            return crew_directory(project, run_id=run_id, node_id=node, fields=fields)
+            payload = crew_directory(
+                project,
+                run_id=run_id,
+                node_id=node,
+                fields=fields,
+                ready_idle=True,
+            )
+            if run_id or node:
+                # A selection resolves one run rather than listing rows, so it
+                # is answered whole; paging it would report a page of one.
+                return payload
+            page, pagination = paginate(
+                payload["coordinators"], cursor=cursor, limit=limit
+            )
+            payload["coordinators"] = page
+            payload["page"] = pagination
+            return payload
         except (DirectoryError, RunQueryError) as exc:
             return {
                 "ok": False,
@@ -4224,6 +4235,10 @@ def serve_crew_view(
                 "project": project,
                 "detail": str(exc),
             }
+        except ViewRequestError as error:
+            return error_response(
+                error.code, error.message, operation="read", hint=error.hint
+            )
     if not project:
         return {
             "ok": False,

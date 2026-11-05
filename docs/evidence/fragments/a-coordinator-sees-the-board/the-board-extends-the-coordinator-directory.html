@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="evidence-project" content="reckon">
+<meta name="plan" content="a-coordinator-sees-the-board">
+<meta name="plan-node" content="the-board-extends-the-coordinator-directory">
+<title>the-board-extends-the-coordinator-directory — landed</title>
+</head>
+<body>
+<main class="plan-doc">
+<h2 id="the-board-extends-the-coordinator-directory-what">What landed</h2>
+<p>Each directory run row now carries <code>plan_section</code> beside its
+<code>plan</code> and <code>section</code>. Each coordinator row carries
+<code>held_paths</code> — every write path its runs declare, each with the
+binding verdict <code>claim_disposition</code> gives it — and
+<code>queued_runs</code>, with the place the admission pass
+(<code>queued_placements</code>) will launch each request at. A coordinator
+that owns ready-idle sections appears even with no run at all, with
+<code>ready_idle_sections</code>, its <code>plan_owner</code> and
+<code>state: "idle"</code>. The join calls the plan-coordinator resolver and
+the ready-set view and derives neither fact.</p>
+<p>The <code>directory</code> branch of the crew view now pages its coordinator
+rows through the same <code>limit</code> and <code>cursor</code> every other
+view answers with, so a workstation-scope read is bounded.</p>
+
+<h2 id="the-board-extends-the-coordinator-directory-measure">Measure</h2>
+<p>Gate: <code>tests/test_the_board_extends_the_directory.py</code> plus
+<code>tests/test_mcp_tools.py</code> — 37 passed, EXIT=0, at the head tree.</p>
+<p>Negative control: the board mutated to list every plan's coordinator
+whatever its plans hold. The control coordinator appeared and the test failed
+on <code>assert "gated-coordinator" not in by_session</code>; the log is
+<code>logs/negative-control.log</code> in the run directory.</p>
+<h2 id="the-board-extends-the-coordinator-directory-discovery-lock">Discovery lock</h2>
+<p>Merged with main, the board deadlocked. Plan discovery holds the server's
+discovery lock while it builds the roadmap; the roadmap's critical path asks the
+plan-coordinator resolver who owns each plan; that resolver reads the directory
+view to decide which sessions are still dispatching; and a directory read that
+always derived ready-idle owners ran plan discovery again, waiting on the
+non-reentrant lock its own caller held.</p>
+<p><code>directory()</code> now takes <code>ready_idle</code>, off by default, and
+the crew view asks for it. The resolver's read derives no plan facts, and the
+payload names which join ran (<code>not_requested</code>, <code>project</code>
+or <code>workstation_scope</code>) so a read that did not ask is not mistaken
+for one that found nothing.</p>
+<p>Case:
+<code>test_discovery_returns_while_the_roadmap_reads_coordinators</code> drives <code>discover_plans</code> in a thread bounded at 30 s against a
+real plan tree whose critical path reaches the resolver. It fails at the node's
+pre-fix head merged with main (<code>logs/deadlock-control.log</code>, the
+assertion that discovery returned) and returns in 3.6 s with the change.</p>
+<p>Gate at the fix, one log each: <code>test_the_board_extends_the_directory.py</code>
+5 passed, <code>test_the_ready_idle_set.py</code> 4 passed, the plan-coordinator
+ledger suite 11 passed, all EXIT=0.</p>
+
+<h2 id="the-board-extends-the-coordinator-directory-repair">Repair round</h2>
+<p>Review returned four findings and all four are folded into commit
+<code>dd6625581b</code>.</p>
+<ul>
+<li><strong>One read of the lane document.</strong> The lane-share block read the
+file twice — once through <code>read_lane_document_file</code> for the report it
+quotes and again through its own <code>json.loads</code> for the admission block
+— so a lane rewriting the file between the two reads produced a report and a
+session row from different vintages. <code>lane_document.read_lane_document_with_admission</code>
+now reads and parses once and returns both, and the view's own parse helper is
+deleted. The per-session row lookup is
+<code>lane_document.session_admission_row</code>, beside the block it reads.</li>
+<li><strong>The idle join reads every page.</strong> The join pages the
+ready-set view and unions the pages, carrying its page size on every request,
+so an owner whose ready-idle sections sort past a page is not listed as idle
+over nothing. Case: the join is held to a page of seven and a plan of 40
+ready-idle sections is seeded, so six pages are read and all 40 sections are
+named on the owner. With the loop replaced by a single page the case fails
+(<code>logs/paging-control.log</code>, EXIT=1).</li>
+<li><strong>The mounted set comes from its owner.</strong> The workstation-scope
+join reads the project registry through the wrapper the rest of the package
+uses, so a registry written in either shape is read and an unreadable one fails
+closed instead of reading as no projects.</li>
+<li><strong>Workstation scope joins.</strong> The join runs once per mounted
+project when the read names none, so the default directory lists a run-less
+owner. Case: <code>directory()</code> with no project lists
+<code>idle-coordinator</code>, and still does not list the gated one.</li>
+<li><strong>The queued claim is asserted.</strong> A queued run holds no worker
+and no worktree, so its claim reads as disregarded; the test now asserts
+<code>binding is False</code> and that its reason says so.</li>
+</ul>
+<p>Red arm: the new cases run against the reviewed revision
+(<code>fede253832</code>) in <code>logs/red-arm.log</code> — the
+workstation-scope case fails there (<code>KeyError: 'idle-coordinator'</code>,
+EXIT=1) and the other three pass, which is why two of them are coverage rather
+than repair: the reviewed code already computed the queued verdict correctly and
+already returned the unpaged set unpaged, so those cases guard the property
+instead of repairing it. The queued assertion is shown load-bearing by the
+mutation in <code>logs/queued-binding-control.log</code>: with every held path
+forced to <code>binding: True</code> the board test fails, EXIT=1.</p>
+<p>Gate after the repair: <code>test_the_board_extends_the_directory.py</code>
+plus <code>test_the_lane_share_lives_on_the_lanes_view.py</code> — 11 passed,
+EXIT=0 (<code>logs/gate-resume.log</code>). The adjacent suite including
+<code>test_mcp_tools.py</code> — 68 passed, EXIT=0
+(<code>logs/adjacent-resume.log</code>).</p>
+
+<p>The adjacent suite that imports the changed modules (<code>test_crew_directory</code>,
+<code>test_a_plans_coordinator_is_derived_from_the_ledger</code>,
+<code>test_directory_row_reads_the_derived_phase</code>,
+<code>test_directory_claim_asks_first</code>, <code>test_ready_set_composition</code>)
+reports 33 passed on both arms, so no failure is added against the base.</p>
+</main>
+</body>
+</html>
