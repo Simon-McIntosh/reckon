@@ -1,0 +1,81 @@
+<section id="a-reduced-brief-leaves-a-trace-landing">
+  <h2>A brief cut after a context refusal leaves a trace</h2>
+
+  <p><strong>What changed.</strong> A dispatch refused on context fit stops before a worktree
+  exists, so a coordinator who shortens the brief and dispatches the same node again left no
+  record that the cut happened: the accepted run looked exactly like one whose brief had
+  always fitted. A context refusal now writes what it measured under the crew home — the
+  estimate, the window, the shortfall and the repository inputs it charged — in the new
+  module <code>reckon/crew/dispatch_refusals.py</code>. The next dispatch of that same
+  (project, plan, section, node id) that fits records the reduction on the live pointer's
+  node block, which promotion rebuilds the committed row from, so the record reaches the
+  reader auditing landed work as well as the one watching the dispatch.</p>
+
+  <p>The record is the flag plus the two token figures the plan's decision chose, never a
+  stored brief diff:</p>
+
+  <pre id="a-reduced-brief-leaves-a-trace-marker">"brief_reduction": {
+  "retried_after_refusal": true,
+  "refused_estimated_tokens": 220000,
+  "accepted_estimated_tokens": 20003,
+  "refused_window_tokens": 30000,
+  "removed_paths": ["package/payload.py"],
+  "removed_text_bytes": 33,
+  "refused_at": "2026-11-05T13:52:16Z"
+}</pre>
+
+  <p>It answers nothing unless the accepted attempt measures below the refused one
+  <em>and</em> something in the brief actually differs, so a brief dispatched unchanged to a
+  lane whose own agent layout measures differently records no reduction, and a first-attempt
+  run carries no marker at all. The trace is consumed once the run is published, so a later
+  dispatch of the same node cannot inherit an older reduction.</p>
+
+  <h3 id="a-reduced-brief-leaves-a-trace-measured">Measured</h3>
+
+  <table id="a-reduced-brief-leaves-a-trace-arms">
+    <caption>Every arm is a log whose first line names its revision, tree and command and
+    whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>gate (this change, worktree)</td>
+        <td><code>3328143c59</code></td>
+        <td>ARMS_HEAD</td></tr>
+      <tr><td>base (same gate, base tree)</td>
+        <td><code>04cf3e4227</code></td>
+        <td>ARMS_BASE</td></tr>
+      <tr><td>negative control (the refusal writes no trace)</td>
+        <td>mutated head</td>
+        <td>ARMS_NEGATIVE</td></tr>
+    </tbody>
+  </table>
+
+  <ul>
+    <li><strong>The refusal is recorded, not the intention.</strong> The refused dispatch is
+    asserted to leave its trace file under the crew home, and the same assertion reads the
+    generated repository back with <code>git status --porcelain</code> unchanged and no
+    path matching <code>*refusal*</code> anywhere in it, so a record written into the
+    repository would fail.</li>
+    <li><strong>The accepted run carries the figures the refuser measured.</strong> The
+    marker's <code>refused_estimated_tokens</code> and <code>refused_window_tokens</code> are
+    the refusal's own, read from the raised <code>CompetenceLimit</code> verdict rather than
+    from the trace, and the accepted figure is asserted below the refused one.</li>
+    <li><strong>The record survives promotion.</strong> The dispatched run is promoted with
+    <code>crew.complete</code> and the reduction is read back off the committed ledger row's
+    <code>node_definition</code>, so a pointer-only record would fail the case.</li>
+    <li><strong>The marker means something.</strong> A node accepted on its first attempt is
+    asserted to carry no <code>brief_reduction</code> key and to leave no trace directory
+    behind, so the marker's presence is evidence of a retry rather than of the feature
+    existing.</li>
+    <li><strong>The negative control.</strong> Declared as <em>skip recording the refusal; the
+    accepted run carries no reduction marker and the test fails</em>: with
+    <code>record_context_refusal</code> made a no-op the two acceptance cases fail on the
+    missing marker and the first-attempt case still passes, which is what makes the red
+    attributable to the record rather than to the dispatch.</li>
+    <li><strong>What is not measured here.</strong> The estimate is measured through routing's
+    own verdict function with the standing instruction chain pinned, so the two attempts
+    differ only in the brief the test wrote. A census cache keyed without the node's declared
+    write paths can serve one brief's estimate for another brief that differs only there;
+    that is recorded as outside this node's scope, and the fixture shortens the brief text
+    as well as its declared path, which is the shape a coordinator cutting a brief takes.</li>
+  </ul>
+</section>

@@ -23,13 +23,17 @@ import pytest
 
 from reckon import crew, ledger
 from reckon.crew import routing
-from reckon.crew.dispatch_refusals import RECORD_DIRECTORY, record_path
 
 PROJECT = "project-a"
 PLAN = f"{PROJECT}-plan"
 SECTION = "dispatch"
 NODE_ID = "reduced-brief"
 SESSION = "a-reduced-brief-leaves-a-trace"
+
+# The refusal trace is found by the directory it is written into rather than by
+# importing the module that writes it, so the cases that assert its absence also
+# run against a tree that does not have the module at all.
+REFUSAL_TRACES = "refusal-traces"
 
 STANDING_INSTRUCTION_TOKENS = 20_000
 USABLE_INPUT_WINDOW = 30_000
@@ -163,9 +167,9 @@ def test_a_refused_node_that_fits_on_a_second_attempt_records_the_reduction(
 
     verdict = refused.value.verdict
     assert verdict["reason"].startswith("context-window-exceeded")
-    trace = record_path(_oversized(), project=PROJECT)
-    assert trace.is_file(), "the refusal left no trace under the crew home"
-    assert trace.is_relative_to(home / "crew" / RECORD_DIRECTORY)
+    traces = sorted((home / "crew" / REFUSAL_TRACES).glob("*.json"))
+    assert len(traces) == 1, f"the refusal left {len(traces)} traces, not one"
+    trace = traces[0]
 
     record = _dispatch(_shortened(), repository)
 
@@ -204,7 +208,7 @@ def test_a_first_attempt_carries_no_reduction_marker(
     record = _dispatch(_shortened(), repository)
 
     assert "brief_reduction" not in record["node"]
-    assert not (home / "crew" / RECORD_DIRECTORY).exists()
+    assert not (home / "crew" / REFUSAL_TRACES).exists()
 
 
 def test_a_refusal_is_never_written_into_the_repository(
