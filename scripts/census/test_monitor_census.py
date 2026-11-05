@@ -236,8 +236,15 @@ def _build_home(
     review_head: str | None = HEAD,
     write_review: bool = True,
     computed_at: datetime = AFTER_LAUNCH,
+    launched_at: datetime | None = LAUNCH,
+    reflex_dispatch: bool = False,
 ) -> Path:
-    """A synthetic crew home: a snapshot, the reviewed run, and its review."""
+    """A synthetic crew home: a snapshot, the reviewed run, and its review.
+
+    ``reflex_dispatch`` records the review the reflex launched on the reviewed
+    run, which is how a run tells its own standing review apart from one the
+    live-pointer sweep would recognise by the record paths it was granted.
+    """
     home = tmp_path / "crew"
     (home / "live").mkdir(parents=True, exist_ok=True)
     (home / "obligations" / "proj").mkdir(parents=True, exist_ok=True)
@@ -254,6 +261,13 @@ def _build_home(
         "worktree": str(worktree),
         "node": {"id": "node-reviewed"},
     }
+    if reflex_dispatch:
+        reviewed["review_dispatch"] = {
+            "run_id": REVIEW_RUN,
+            "head": review_head or HEAD,
+            "status": "dispatched",
+            "at": _iso(LAUNCH),
+        }
     (home / "live" / f"{REVIEWED_RUN}.json").write_text(
         json.dumps(reviewed), encoding="utf-8"
     )
@@ -265,12 +279,13 @@ def _build_home(
             "phase": review_phase,
             "status": review_phase,
             "role": "review",
-            "launched_at": _iso(LAUNCH),
             "node": {
                 "id": f"review-of-{REVIEWED_RUN}",
                 "write_paths": _review_paths(tmp_path, review_head or HEAD),
             },
         }
+        if launched_at is not None:
+            review["launched_at"] = _iso(launched_at)
         (home / "live" / f"{REVIEW_RUN}.json").write_text(
             json.dumps(review), encoding="utf-8"
         )
@@ -287,9 +302,9 @@ def _build_home(
     return home
 
 
-def _sample(tmp_path: Path, home: Path) -> tuple[dict, list[dict]]:
+def _sample(tmp_path: Path) -> tuple[dict, list[dict]]:
     samples = tmp_path / "samples.jsonl"
-    counts = monitor_census.sample_once(home=home, samples_path=samples)
+    counts = monitor_census.sample_once(samples_path=samples)
     entries = []
     if samples.exists():
         entries = [
@@ -305,9 +320,9 @@ def test_sampler_counts_a_live_review_as_the_defect(
 ) -> None:
     """One duty beside a live review counts once, copying both records."""
     monkeypatch.setenv("RECKON_HOME", str(tmp_path))
-    home = _build_home(tmp_path)
+    _build_home(tmp_path)
 
-    counts, entries = _sample(tmp_path, home)
+    counts, entries = _sample(tmp_path)
 
     assert counts["review_missing_duties"] == 1
     assert counts["defect"] == 1
@@ -324,9 +339,9 @@ def test_sampler_counts_no_defect_without_a_review_pointer(
 ) -> None:
     """A duty with no live review standing for it is not the defect."""
     monkeypatch.setenv("RECKON_HOME", str(tmp_path))
-    home = _build_home(tmp_path, write_review=False)
+    _build_home(tmp_path, write_review=False)
 
-    counts, _entries = _sample(tmp_path, home)
+    counts, _entries = _sample(tmp_path)
 
     assert counts["review_missing_duties"] == 1
     assert counts["defect"] == 0
@@ -338,9 +353,9 @@ def test_sampler_counts_no_defect_for_a_queued_review(
 ) -> None:
     """A review accepted into the queue is not yet working on the revision."""
     monkeypatch.setenv("RECKON_HOME", str(tmp_path))
-    home = _build_home(tmp_path, review_phase="queued")
+    _build_home(tmp_path, review_phase="queued")
 
-    counts, _entries = _sample(tmp_path, home)
+    counts, _entries = _sample(tmp_path)
 
     assert counts["defect"] == 0
     assert counts["live_review"] == 0
@@ -351,9 +366,9 @@ def test_sampler_counts_no_defect_for_a_review_of_an_older_head(
 ) -> None:
     """A review granted the record for an older head does not stand for this one."""
     monkeypatch.setenv("RECKON_HOME", str(tmp_path))
-    home = _build_home(tmp_path, review_head=OLDER_HEAD)
+    _build_home(tmp_path, review_head=OLDER_HEAD)
 
-    counts, _entries = _sample(tmp_path, home)
+    counts, _entries = _sample(tmp_path)
 
     assert counts["defect"] == 0
     assert counts["live_review"] == 0
@@ -364,10 +379,208 @@ def test_sampler_counts_a_snapshot_computed_before_the_launch_as_stale(
 ) -> None:
     """A snapshot older than the launch is stale, not the publisher's defect."""
     monkeypatch.setenv("RECKON_HOME", str(tmp_path))
-    home = _build_home(tmp_path, computed_at=BEFORE_LAUNCH)
+    _build_home(tmp_path, computed_at=BEFORE_LAUNCH)
 
-    counts, entries = _sample(tmp_path, home)
+    counts, entries = _sample(tmp_path)
 
     assert counts["defect"] == 0
     assert counts["stale_snapshot"] == 1
     assert entries[0]["reading"] == "stale_snapshot"
+
+
+def test_a_reflex_claimed_duty_reads_its_recorded_review_as_the_defect(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """A duty whose review the reflex launched is the defect, whatever head it read.
+
+    The reflex composed its review for an older revision than the run now
+    carries, so the live-pointer sweep no longer recognises it as standing for
+    the duty's head: only the reflex's own dispatch record names it.
+    """
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path))
+    _build_home(tmp_path, review_head=OLDER_HEAD, reflex_dispatch=True)
+
+    counts, entries = _sample(tmp_path)
+
+    assert counts["live_review"] == 1
+    assert counts["defect"] == 1
+    assert counts["stale_snapshot"] == 0
+    assert counts["review_not_launched"] == 0
+    assert entries[0]["review_pointer"]["run_id"] == REVIEW_RUN
+    assert entries[0]["reading"] == "defect"
+
+
+def test_a_resolved_review_with_no_launch_reads_review_not_launched(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """A review run that has not launched is its own reading, not a stale snapshot."""
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path))
+    _build_home(
+        tmp_path, review_head=OLDER_HEAD, reflex_dispatch=True, launched_at=None
+    )
+
+    counts, entries = _sample(tmp_path)
+
+    assert counts["live_review"] == 1
+    assert counts["defect"] == 0
+    assert counts["stale_snapshot"] == 0
+    assert counts["review_not_launched"] == 1
+    assert entries[0]["review_pointer"]["run_id"] == REVIEW_RUN
+    assert entries[0]["reading"] == "review_not_launched"
+
+
+def test_watch_streams_are_enumerated_through_the_query_reader(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The census asks the query module for the streams, never globbing the suffix."""
+    watch = tmp_path / "watch"
+    root = tmp_path / "runs"
+    run_id = "r-20261023T120000000030-enumerated"
+    _write_stream(
+        watch,
+        [_event(run_id, "working", "blocked", WINDOW_START + timedelta(minutes=5))],
+    )
+    _run_directory(root, run_id)
+
+    from reckon.crew import query
+
+    seen: list[Path | None] = []
+    original = query.watch_event_paths
+
+    def spy(*, home=None):
+        paths = original(home=home)
+        seen.append(home)
+        return paths
+
+    monkeypatch.setattr(query, "watch_event_paths", spy)
+
+    census = monitor_census.census_streams(
+        since=WINDOW_START, until=WINDOW_END, watch_dir=watch, runs_root=root
+    )
+
+    assert census["halted_rows"] == 1
+    assert seen == [watch.parent]
+
+    source = (Path(__file__).resolve().parent / "monitor_census.py").read_text(
+        encoding="utf-8"
+    )
+    assert '".events"' not in source
+    assert "'.events'" not in source
+
+
+def test_a_row_that_is_not_a_lift_state_creates_no_lift_entry(tmp_path: Path) -> None:
+    """A limit-reset row carrying a lift id is not a lift transition."""
+    watch = tmp_path / "watch"
+    root = tmp_path / "runs"
+    run_id = "r-20261023T120000000031-lift"
+    at = WINDOW_START + timedelta(minutes=5)
+    _write_stream(
+        watch,
+        [
+            _event(run_id, "lift-in-force", "limit-reset", at, lift_id="lift-reset"),
+            _event(run_id, "lift-in-force", "lift-granted", at, lift_id="lift-counted"),
+        ],
+    )
+    _run_directory(root, run_id)
+
+    census = monitor_census.census_streams(
+        since=WINDOW_START, until=WINDOW_END, watch_dir=watch, runs_root=root
+    )
+
+    assert census["lift_transitions"] == {
+        "lift-counted": {"granted": 1, "ended": 0, "in_force": 0}
+    }
+
+
+def test_a_halted_row_after_the_repair_window_is_not_counted(tmp_path: Path) -> None:
+    """Only a row inside the window after the repair is the repair's transition."""
+    watch = tmp_path / "watch"
+    root = tmp_path / "runs"
+    inside = "r-20261023T120000000032-repair-inside"
+    outside = "r-20261023T120000000033-repair-outside"
+    halt = WINDOW_START + timedelta(minutes=10)
+    _write_stream(
+        watch,
+        [
+            _event(inside, "complete", "blocked", halt),
+            _event(outside, "complete", "blocked", halt),
+        ],
+    )
+    _run_directory(
+        root,
+        inside,
+        repaired_at=halt - timedelta(seconds=monitor_census.REPAIR_WINDOW_SECONDS - 1),
+    )
+    _run_directory(
+        root,
+        outside,
+        repaired_at=halt - timedelta(seconds=monitor_census.REPAIR_WINDOW_SECONDS + 1),
+    )
+
+    census = monitor_census.census_streams(
+        since=WINDOW_START, until=WINDOW_END, watch_dir=watch, runs_root=root
+    )
+
+    rows = census["kinds"]["after_status_repair"]["rows"]
+    assert census["kinds"]["after_status_repair"]["count"] == 1
+    assert [row["run_id"] for row in rows] == [inside]
+
+
+def test_a_claim_between_the_repair_and_the_row_is_not_counted(tmp_path: Path) -> None:
+    """A claim strictly after the repair means an attempt ran, so the halt is real."""
+    watch = tmp_path / "watch"
+    root = tmp_path / "runs"
+    attempted = "r-20261023T120000000034-repair-claimed"
+    quiet = "r-20261023T120000000035-repair-quiet"
+    halt = WINDOW_START + timedelta(minutes=10)
+    repaired_at = halt - timedelta(seconds=19)
+    _write_stream(
+        watch,
+        [
+            _event(attempted, "complete", "blocked", halt),
+            _event(quiet, "complete", "blocked", halt),
+        ],
+    )
+    _run_directory(
+        root,
+        attempted,
+        claims=(("attempt-2.claim", halt - timedelta(seconds=10)),),
+        repaired_at=repaired_at,
+    )
+    _run_directory(root, quiet, repaired_at=repaired_at)
+
+    census = monitor_census.census_streams(
+        since=WINDOW_START, until=WINDOW_END, watch_dir=watch, runs_root=root
+    )
+
+    rows = census["kinds"]["after_status_repair"]["rows"]
+    assert census["kinds"]["after_status_repair"]["count"] == 1
+    assert [row["run_id"] for row in rows] == [quiet]
+
+
+def test_sample_reads_no_pointer_outside_the_crew_home(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Every pointer read resolves through the crew home the fixture owns."""
+    from reckon.crew import runs as runs_module
+
+    operator_live = (Path.home() / ".config/reckon" / "crew" / "live").resolve()
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path))
+    _build_home(tmp_path)
+
+    read_dirs: list[Path] = []
+    original = runs_module.live_dir
+
+    def spy() -> Path:
+        directory = original()
+        read_dirs.append(directory)
+        return directory
+
+    monkeypatch.setattr(runs_module, "live_dir", spy)
+
+    counts, _entries = _sample(tmp_path)
+
+    assert counts["defect"] == 1
+    resolved = {directory.resolve() for directory in read_dirs}
+    assert resolved == {(tmp_path / "crew" / "live").resolve()}
+    assert operator_live not in resolved

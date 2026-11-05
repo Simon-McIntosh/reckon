@@ -43,14 +43,17 @@ view publishes ``review-missing`` from a session's snapshot, and a review that
 is already live for the run makes that duty wrong. The defect cannot be counted
 after the fact — the snapshot is overwritten in place — so the sampler reads
 every session's snapshot on a fixed cadence (at most once a minute), and for
-each ``review-missing`` duty it asks
-:func:`reckon.crew.obligations._current_review_in_flight` about the reviewed
-run's own live pointer, which is the reader that gates the duty when it is
-published. A duty counts as the defect only when that reader returns true and
-the snapshot's ``computed_at`` is at or after the review pointer's
+each ``review-missing`` duty it resolves the review standing for the reviewed
+run's own live pointer, which is the question that gates the duty when it is
+published. A run the reflex dispatched a review for is answered from the
+reflex's own recorded dispatch; every other run is answered by
+:func:`reckon.crew.obligations._in_flight_review` over the live pointers that
+have launched. A duty counts as the defect only when a review stands for it and
+the snapshot's ``computed_at`` is at or after that review pointer's
 ``launched_at``. A snapshot computed before the launch and read after it is the
 sampler's ``stale_snapshot`` reading — a fact about the snapshot's age rather
-than a defect in the publisher.
+than a defect in the publisher — and a review pointer with no launch time yet
+reads ``review_not_launched``.
 
 The sampler is not started by the node that commits it: a crew worker gets no
 turn after its last one and its background tasks end at a 600-second ceiling,
@@ -75,9 +78,13 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from reckon._timestamps import parse_utc  # noqa: E402
-from reckon.crew import obligations, ticker  # noqa: E402
+from reckon.crew import obligations, query, recovery, ticker  # noqa: E402
 from reckon.crew.run_paths import crew_home  # noqa: E402
-from reckon.crew.runs import STATUS_REPAIR_RECORD_NAME, runs_dir  # noqa: E402
+from reckon.crew.runs import (  # noqa: E402
+    STATUS_REPAIR_RECORD_NAME,
+    pointer_path,
+    runs_dir,
+)
 
 #: The pane words a row may draw after a halted row and still describe the run
 #: moving again. ``landed`` is the word a promoted or recorded row draws, and
@@ -93,6 +100,14 @@ REVIEW_MISSING_KIND = "review-missing"
 
 #: The phase a review pointer carries before its worker has launched.
 QUEUED_PHASE = "queued"
+
+#: The states a budget-lift transition is counted in. A row in any other state
+#: carries no transition of this kind, whatever lift id it names.
+COUNTED_LIFT_STATES = (
+    ticker.LIFT_GRANTED,
+    ticker.LIFT_ENDED,
+    ticker.LIFT_IN_FORCE,
+)
 
 #: The duty keys a snapshot entry carries. A duty entry is not a pointer, so the
 #: sampler loads the reviewed run's own pointer by id before asking the reader.
@@ -235,11 +250,12 @@ def census_streams(
 
     ``watch_dir`` defaults to the live fleet's own watch directory and
     ``runs_root`` to its run directory, so the caller measures the fleet by
-    default and a fixture by passing its own.
+    default and a fixture by passing its own. ``watch_dir`` names the ``watch``
+    directory inside a crew home, which is how the streams are enumerated.
     """
     watch = Path(watch_dir) if watch_dir is not None else crew_home() / "watch"
     root = Path(runs_root) if runs_root is not None else runs_dir()
-    events = _iter_events(sorted(watch.glob("*.events")), since, until)
+    events = _iter_events(query.watch_event_paths(home=watch.parent), since, until)
 
     by_run: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for event in events:
@@ -279,7 +295,7 @@ def census_streams(
                 same_word_waits.append(_row_summary(event))
 
             to_state = str(event.get("to_state") or "")
-            if to_state in ticker.LIFT_STATES and event.get("lift_id"):
+            if to_state in COUNTED_LIFT_STATES and event.get("lift_id"):
                 lift = lift_transitions[str(event["lift_id"])]
                 if to_state == ticker.LIFT_GRANTED:
                     lift["granted"] += 1
@@ -362,16 +378,37 @@ def _snapshot_documents(home: Path) -> Iterable[tuple[str, str, dict[str, Any]]]
             yield directory.name, path.stem, document
 
 
+def _reflex_review_pointer(pointer: Mapping[str, Any]) -> Mapping[str, Any] | None:
+    """The review the reflex recorded for this run, when that review is live.
+
+    The reflex's own record names the review run it launched, and it is the
+    reviewer's pointer that carries the launch time a duty is judged against.
+    A recorded review whose pointer is gone reads as no review, which is the
+    rule the reflex and the obligations view both apply.
+    """
+    recorded = pointer.get(recovery.REVIEW_DISPATCH_FIELD)
+    if not isinstance(recorded, Mapping):
+        return None
+    review_run_id = str(recorded.get("run_id") or "")
+    if not review_run_id:
+        return None
+    return _read_json(pointer_path(review_run_id))
+
+
 def _matching_review_pointer(
     pointer: Mapping[str, Any],
 ) -> Mapping[str, Any] | None:
     """The live review pointer standing for a run at its current head, or None.
 
-    The candidates are the project's live pointers that have launched, which is
-    the set the obligations reader itself sweeps. The review standing for the
-    run is resolved by the obligations view's own rule, so a sampler and the
-    publisher cannot disagree about which review covers a duty.
+    A run the reflex dispatched a review for is answered from that record: the
+    reflex's claim is dated from its own launch window and is not re-judged
+    against the revision the run carries now, so only the record names the
+    review while the sweep would find none. Every other run is resolved by the
+    obligations view's own rule, over the candidates that have launched, so a
+    sampler and the publisher cannot disagree about which review covers a duty.
     """
+    if obligations._reflex_review_in_flight(pointer):
+        return _reflex_review_pointer(pointer)
     project = str(pointer.get("project") or "")
     candidates = [
         candidate
@@ -389,19 +426,25 @@ def _matching_review_pointer(
 
 def sample_once(
     *,
-    home: str | Path | None = None,
     samples_path: str | Path | None = None,
 ) -> dict[str, Any]:
     """Take one sample of every session's snapshot and count what it published.
 
+    Every record is read through the crew home, which ``RECKON_HOME`` names: the
+    snapshots, the reviewed run's pointer and the review pointer are all
+    resolved by the same readers the publisher uses, so a sample taken against
+    another home reads only that home.
+
     Each ``review-missing`` duty is judged by the reader that gates the duty
     when it is published. A duty whose review is not in flight counts nothing.
     A duty whose review is in flight counts as the defect when the snapshot was
-    computed at or after that review's launch, and as ``stale_snapshot`` when
-    it was computed before the launch. Every counted pair copies the snapshot
-    entry and the matching pointer into the sample log.
+    computed at or after that review's launch, as ``stale_snapshot`` when it was
+    computed before the launch, and as ``review_not_launched`` when the review
+    pointer carries no launch time yet — the review is recorded and standing,
+    so its snapshot is not being read too late. Every counted pair copies the
+    snapshot entry and the matching pointer into the sample log.
     """
-    base = Path(home) if home is not None else crew_home()
+    base = crew_home()
     samples = Path(samples_path) if samples_path is not None else DEFAULT_SAMPLES_PATH
     counts = {
         "snapshots": 0,
@@ -409,6 +452,7 @@ def sample_once(
         "live_review": 0,
         "defect": 0,
         "stale_snapshot": 0,
+        "review_not_launched": 0,
         "unreadable": 0,
     }
     samples_taken: list[dict[str, Any]] = []
@@ -423,19 +467,15 @@ def sample_once(
                 continue
             counts["review_missing_duties"] += 1
             run_id = str(duty.get("run_id") or "")
-            pointer = _read_json(base / "live" / f"{run_id}.json") if run_id else None
+            pointer = _read_json(pointer_path(run_id)) if run_id else None
             if pointer is None:
                 counts["unreadable"] += 1
                 continue
-            if not obligations._current_review_in_flight(pointer):
+            review_pointer = _matching_review_pointer(pointer)
+            if review_pointer is None:
                 continue
             counts["live_review"] += 1
-            review_pointer = _matching_review_pointer(pointer)
-            launched_at = (
-                parse_utc(review_pointer.get("launched_at"))
-                if review_pointer is not None
-                else None
-            )
+            launched_at = parse_utc(review_pointer.get("launched_at"))
             entry = {
                 "sampled_at": _iso(datetime.now(tz=UTC)),
                 "project_token": project_token,
@@ -446,11 +486,10 @@ def sample_once(
                 "duty": {key: duty.get(key) for key in DUTY_KEYS},
                 "review_pointer": dict(review_pointer) if review_pointer else None,
             }
-            if (
-                computed_at is not None
-                and launched_at is not None
-                and computed_at >= launched_at
-            ):
+            if launched_at is None:
+                counts["review_not_launched"] += 1
+                entry["reading"] = "review_not_launched"
+            elif computed_at is not None and computed_at >= launched_at:
                 counts["defect"] += 1
                 entry["reading"] = "defect"
             else:
@@ -470,7 +509,6 @@ def sample_once(
 
 def run_sampler(
     *,
-    home: str | Path | None = None,
     samples_path: str | Path | None = None,
     interval: float = SAMPLER_INTERVAL_SECONDS,
     iterations: int | None = None,
@@ -478,9 +516,10 @@ def run_sampler(
     """Sample on a fixed cadence, forever or for ``iterations`` samples."""
     taken = 0
     while True:
-        counts = sample_once(home=home, samples_path=samples_path)
+        counts = sample_once(samples_path=samples_path)
         print(
             "review-missing sample: defects {defect} stale {stale_snapshot} "
+            "not-launched {review_not_launched} "
             "duties {review_missing_duties}".format(**counts),
             flush=True,
         )

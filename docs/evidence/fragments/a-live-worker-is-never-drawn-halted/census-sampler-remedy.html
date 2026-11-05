@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-live-worker-is-never-drawn-halted">
+  <meta name="plan-title" content="The review-missing sampler classifies a reflex-claimed duty by its review's launch">
+  <meta name="plan-summary" content="The sampler resolves a reflex-claimed duty's review from the reflex's own dispatch record, reads a resolved-but-unlaunched review as its own kind, enumerates watch streams through the query reader, stops minting empty lift ids, and reads only the crew home it is pointed at. Four defects reproduced at the base revision and repaired; two repair guards already held and are now pinned by tests.">
+  <meta name="plan-evidence-for" content="reckon:a-live-worker-is-never-drawn-halted">
+  <meta name="plan-verifies" content="reckon:a-live-worker-is-never-drawn-halted#s11">
+  <meta name="plan-recorded-at" content="2026-11-05">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,census,sampler,obligations,review">
+</head>
+<body>
+<main class="plan-doc">
+<h2 id="census-sampler-remedy">Landing record — the review-missing sampler reads a reflex-claimed duty by its review's launch</h2>
+
+<p id="census-sampler-remedy-why">The sampler committed by the census node asked <code>obligations._current_review_in_flight</code> whether a duty's review was in flight and then resolved the review pointer by sweeping the project's live pointers. Those are two different questions, and for a run whose review the reflex launched they answer differently: the reflex's claim is dated from its own launch window and survives the run moving past the revision the review read, while the sweep recognises a review only at the head it was granted. The duty therefore read <code>stale_snapshot</code> — a fact about the snapshot's age — where the review was live when it was computed.</p>
+
+<p id="census-sampler-remedy-reflex">The sampler now resolves the pointer from the reflex's own record whenever <code>obligations._reflex_review_in_flight</code> is true, reading the review run the reviewed pointer's <code>review_dispatch.run_id</code> names, and falls through to <code>obligations._in_flight_review</code> over the launched pointers for every other run. The review pointer it resolves is the one that carries <code>launched_at</code>, so the comparison is now against a real launch. A resolved review with no launch time reads the distinct <code>review_not_launched</code>, never <code>stale_snapshot</code>.</p>
+
+<p id="census-sampler-remedy-streams">Watch streams are enumerated through <code>reckon.crew.query.watch_event_paths</code> rather than a local <code>*.events</code> glob, so the census and the query surface see the same set of streams and the suffix is spelled in one place.</p>
+
+<p id="census-sampler-remedy-lift">A row whose state is not one of the three counted budget-lift states no longer mints a <code>lift_transitions</code> entry. A <code>limit-reset</code> row carrying a <code>lift_id</code> previously created an all-zero entry for that id, which reads in the report as a lift that was observed and did nothing.</p>
+
+<p id="census-sampler-remedy-home">The sampler's private <code>home=</code> argument is gone. It pointed the snapshot reader at one directory while the pointer readers resolved the crew home independently, so a caller passing <code>home=</code> without moving the crew home read the operator's live pointers; with the argument removed every reader resolves through <code>crew_home()</code>, which <code>RECKON_HOME</code> names. The test asserts every pointer directory read is the fixture's, and that the operator's live directory is not among them.</p>
+
+<h3>Reproduction before repair</h3>
+<p id="census-sampler-remedy-reproduction">Run at the base revision <code>2762a58e37</code> against the new test file, four of fourteen tests fail — each defect reproduced before it was repaired: <code>test_a_reflex_claimed_duty_reads_its_recorded_review_as_the_defect</code>, <code>test_a_resolved_review_with_no_launch_reads_review_not_launched</code>, <code>test_watch_streams_are_enumerated_through_the_query_reader</code>, and <code>test_a_row_that_is_not_a_lift_state_creates_no_lift_entry</code>. The lift defect reproduces as an extra entry: <code>{'lift-reset': {'ended': 0, 'granted': 0, 'in_force': 0}}</code> beside the counted one. <strong>4 failed, 10 passed, <code>EXIT=1</code></strong>.</p>
+
+<p id="census-sampler-remedy-guards">Two repairs in the census's repair kind were already correct and are pinned rather than reimplemented: a halted row later than <code>REPAIR_WINDOW_SECONDS</code> after <code>repaired_at</code> is not counted, and a claim strictly between the repair and the row is not counted. Both tests pass at the base revision, so they are guards against regression and the mutations below show they fire.</p>
+
+<h3>Gate</h3>
+<p id="census-sampler-remedy-gate">Head arm: <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q scripts/census/test_monitor_census.py</code> — <strong>14 passed, <code>EXIT=0</code></strong> (<code>logs/after-arm.log</code>). Baseline arm over the base revision's own tree (scratch extraction, <code>monitor_census.__file__</code> printed in the log header): <strong>7 passed, <code>EXIT=0</code></strong> (<code>logs/baseline-arm.log</code>). Ruff <code>check</code> and <code>format --check</code> report nothing on both staged paths.</p>
+
+<h3>Negative control</h3>
+<p id="census-sampler-remedy-control">Three mutations are applied to the repaired module one at a time, and each reddens exactly its own test (<code>logs/negative-control.log</code>):</p>
+<ul>
+<li id="census-sampler-remedy-control-reflex">Removing the reflex branch from <code>_matching_review_pointer</code> reddens <code>test_a_reflex_claimed_duty_reads_its_recorded_review_as_the_defect</code> and its no-launch sibling, because the fixture's review was composed for an older revision than the run now carries and the sweep alone finds nothing.</li>
+<li id="census-sampler-remedy-control-window">Removing the <code>REPAIR_WINDOW_SECONDS</code> upper bound reddens <code>test_a_halted_row_after_the_repair_window_is_not_counted</code>.</li>
+<li id="census-sampler-remedy-control-claim">Removing the repair-to-row claim guard reddens <code>test_a_claim_between_the_repair_and_the_row_is_not_counted</code>.</li>
+</ul>
+<p id="census-sampler-remedy-control-figures">Each mutation's run exits non-zero (<code>EXIT=1</code>, three runs), with the failing test ids above and no other test failing.</p>
+
+<p id="census-sampler-remedy-scope">Neither a sampler run nor a stream census was started: nothing here starts the day-long job, which the coordinator runs as one bounded job from the main checkout. The gate measures this node's change only; verifying the merged result belongs to a separately dispatched test node. The gate, baseline and mutation logs named above are the run's own, under the crew run directory for <code>r-20261105T071136264164-census-sampler-remedy</code>.</p>
+</main>
+</body>
+</html>
