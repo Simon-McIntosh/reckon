@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp_views.py:4126 serve_crew_view directory branch (passes ready_idle=True)",
+    "reckon/crew_run_commands.py:449 crew directory command (passes no ready_idle)",
+    "reckon/crew/plan_coordinator.py:209 _live_sessions (passes no ready_idle, the deadlock path)"
+  ],
+  "completed_at": "2026-11-05T19:40:43.237Z",
+  "dispatched_at": "2026-11-05T19:31:44Z",
+  "findings": [
+    {
+      "file": "reckon/crew_run_commands.py",
+      "id": "f405d6aa04f",
+      "line": 449,
+      "severity": "non-blocking",
+      "summary": "crew directory calls directory() without ready_idle, so the unfiltered CLI listing no longer shows a coordinator that has ready-idle work and no run - a row it showed before the fix, and the surface the plan's power_convertor measurement was taken through. The file is outside the node's write paths, the node recorded it in outside_scope with the one-argument remedy, and it should be folded into a one-line node rather than exempted."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T101652349078-the-board-extends-the-coordinator-directory/logs/deadlock-control.log",
+      "id": "ffd39b41f14",
+      "line": 29,
+      "severity": "non-blocking",
+      "summary": "the control log's final receipt reads EXIT=0 while the same log reports '1 failed', so a reader scripting on the EXIT line concludes the pre-fix head passed; the failing assertion is present in the text and the declared negative_control.log ends EXIT=1, so admission is unaffected but the artifact misstates its own outcome."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 18f4e9a4be: e0b02564c6 merges main and resolves all four node files to the node side with no conflict hunk and no main-side edit in them, 406b4a982e adds the ready_idle gate and the discovery test, 177165e0dd records the fragment.",
+    "done_when": "the brief's measure is the board, ready-idle-set and plan-coordinator suites at the fix; all three logs carry revision 177165e0dd or 406b4a982e, a tree and a literal command, and end EXIT=0 (5, 4 and 11 passed).",
+    "goal": "the delta's goal is to stop the merged node deadlocking while directory(readiness) keeps its ready-idle rows; reckon/crew/directory.py:390 gates the join on ready_idle and reckon/mcp_views.py:4131 asks for it, which achieves both, except for the crew CLI.",
+    "manifest": "read; status complete, commits through 177165e0dd, after_suite at 177165e0dd with exit 0, negative_control_log named by bare path, outside_scope naming the crew CLI exactly as I found it.",
+    "write_paths": "read the manifest's declared paths; both non-merge commits stay inside them, and the fixture the new test uses pre-existed at HEAD rather than being added."
+  },
+  "justifications": {
+    "durability": "the deadlock assertion at tests/test_the_board_extends_the_directory.py:134 is proven load-bearing by logs/deadlock-control.log, which reinstates the unconditional join and fails on exactly that assertion, and the crew view's ready_idle=True wiring is guarded by the page-total assertion at :337, but no test fails if a new caller forgets to ask for the join and the crew CLI has already done so silently.",
+    "evidence": "the three gate logs (logs/gate-board.log 5 passed, logs/gate-ready-idle.log 4 passed, logs/gate-plan-coordinator.log 11 passed) each carry a revision/tree/command header and end EXIT=0, and logs/deadlock-control.log fails at 30.95s on the pre-fix merged head with the assertion that discovery returned, but the base arm (coordinator-armed-base.log) collected no tests (EXIT=4) and deadlock-control.log reports EXIT=0 on its own red run.",
+    "fit": "the added parameter, the ready_idle_join vocabulary and the mechanism-stating comments at reckon/crew/directory.py:317-345 follow the module's lazy-import and owner-delegation idiom and introduce no plan, ticket or version label.",
+    "goal_fidelity": "reckon/crew/directory.py:390 now derives ready-idle owners only when the caller passes ready_idle, and reckon/mcp_views.py:4131 passes it, so the crew view keeps the join while the resolver's read that caused the deadlock derives no plan facts.",
+    "reuse": "the delta adds no function, class or module: it threads one keyword through the existing directory() signature and reuses the established bounded-thread test idiom (tests/test_a_cold_read_sweeps_the_directories_once.py:429) and the pre-existing fixture tests/fixtures/coordinator_board_0850, added by 770e07f13a.",
+    "scope_discipline": "commits 406b4a982e and 177165e0dd touch only reckon/crew/directory.py, reckon/mcp_views.py, tests/test_the_board_extends_the_directory.py and the node's evidence fragment, all declared; the merge e0b02564c6 resolved all four node files to the 18f4e9a4be side because main changed none of them, and the one behaviour it loses outside that scope is recorded in outside_scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal under review is that the node's merged head stop deadlocking while directory still serves its ready-idle rows; reckon/crew/directory.py:390 gates the join on ready_idle and reckon/mcp_views.py:4131 passes it, so the crew view keeps them and reckon/crew/plan_coordinator.py:209 no longer triggers discovery.\nVERDICT done_when: the measure is the board, ready-idle-set and plan-coordinator suites at the fix; logs/gate-board.log (revision 177165e0dd, 5 passed), logs/gate-ready-idle.log (406b4a982e, 4 passed) and logs/gate-plan-coordinator.log (406b4a982e, 11 passed) each name revision, tree and literal command and end EXIT=0.\nVERDICT write_paths: the manifest declares reckon/crew/directory.py, reckon/crew/lane_document.py, reckon/mcp_views.py, tests/test_the_board_extends_the_directory.py, the evidence fragment and the figures directory; 406b4a982e touches the first, third and fourth and 177165e0dd the fragment, all inside that scope.\nVERDICT manifest: read; status complete, commits 6671f39178..177165e0dd, baseline_suite and after_suite present, negative_control_log given as a bare path, and outside_scope naming the crew CLI without ready_idle exactly as the code shows.\nVERDICT diff: read commit by commit - e0b02564c6 merges main and resolves reckon/crew/directory.py, reckon/mcp_views.py, reckon/crew/lane_document.py and the test file all to the 18f4e9a4be side with no conflict hunk, and main had changed none of them since the merge base 1f5a6bb236, so the merge took nothing from the node and lost nothing from main; 406b4a982e adds ready_idle with its docstring, the not_requested join name and a bounded-thread discovery test; 177165e0dd records the fragment.\nCALL_SITES: reckon/mcp_views.py:4126 serve_crew_view directory branch, reckon/crew_run_commands.py:449 crew directory command, reckon/crew/plan_coordinator.py:209 _live_sessions\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/directory.py:390 now derives ready-idle owners only when the caller passes ready_idle, and reckon/mcp_views.py:4131 passes it, so the crew view keeps the join while the resolver's read that caused the deadlock derives no plan facts.\nSCORE evidence: 16\nJUSTIFICATION evidence: the three gate logs each carry a revision/tree/command header and end EXIT=0, and logs/deadlock-control.log fails at 30.95s on the pre-fix merged head with the assertion that discovery returned, but the base arm collected no tests (coordinator-armed-base.log, EXIT=4) and deadlock-control.log reports EXIT=0 on its own red run.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: commits 406b4a982e and 177165e0dd touch only reckon/crew/directory.py, reckon/mcp_views.py, tests/test_the_board_extends_the_directory.py and the node's evidence fragment, all declared, and the fixture the new test uses pre-existed at HEAD rather than being added.\nSCORE durability: 16\nJUSTIFICATION durability: the deadlock assertion at tests/test_the_board_extends_the_directory.py:134 is proven load-bearing by logs/deadlock-control.log, which reinstates the unconditional join and fails on exactly that assertion, and the crew view's ready_idle=True wiring is guarded by the page-total assertion at :337, but no test fails if a new caller forgets to ask for the join and reckon/crew_run_commands.py:449 has already done so silently.\nSCORE fit: 18\nJUSTIFICATION fit: the added parameter, the ready_idle_join vocabulary and the mechanism-stating comments at reckon/crew/directory.py:317-345 follow the module's lazy-import and owner-delegation idiom and introduce no plan, ticket or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no function, class or module - it threads one keyword through the existing directory() signature - and reuses the established bounded-thread test idiom (tests/test_a_cold_read_sweeps_the_directories_once.py:429) and the pre-existing fixture tests/fixtures/coordinator_board_0850 added by 770e07f13a.\nFINDING reckon/crew_run_commands.py:449 non-blocking: crew directory calls directory() without ready_idle, so the unfiltered CLI listing no longer shows a coordinator with ready-idle work and no run, which it showed before the fix and which is the surface the plan's power_convertor measurement was taken through; the file is outside the node's write paths, the node recorded it in outside_scope, and the remedy is one argument, so it should be folded into a one-line node.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T101652349078-the-board-extends-the-coordinator-directory/logs/deadlock-control.log:29 non-blocking: the control log's final receipt reads EXIT=0 while the same log reports '1 failed', so a reader scripting on the EXIT line concludes the pre-fix head passed; the failing assertion is in the text and the declared negative_control.log ends EXIT=1, so admission is unaffected but the artifact misstates its own outcome.\n",
+  "review_run_id": "r-20261105T192602380733-review-of-the-board-extends-the-coordinator-directory-177165e0ddbe",
+  "reviewed_base_sha": "18f4e9a4bec9bdcbe5d7c30058b7c06e8984f9a7",
+  "reviewed_head_sha": "177165e0ddbe9fa20c692be9c5ecd6e179631935",
+  "reviewed_run_id": "r-20261027T101652349078-the-board-extends-the-coordinator-directory",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T19:56:27.189928+00:00",
+  "total": 107
+}
