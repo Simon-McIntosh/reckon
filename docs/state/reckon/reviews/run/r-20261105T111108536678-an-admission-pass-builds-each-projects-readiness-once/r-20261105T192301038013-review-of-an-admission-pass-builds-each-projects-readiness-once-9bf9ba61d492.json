@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The reviewed run's completed baseline_suite lists two read-count failures; its completed after_suite lists none.",
+  "after_suite": {
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T111108536678-an-admission-pass-builds-each-projects-readiness-once/final-suite-head.log",
+    "revision": "3605f12d51aff547858fae2b89d437c62b4db641"
+  },
+  "baseline_suite": {
+    "failure_count": 2,
+    "failure_ids": [
+      "tests/test_a_pass_builds_each_project_once.py::test_waiting_requests_share_one_project_read[False]",
+      "tests/test_a_pass_builds_each_project_once.py::test_waiting_requests_share_one_project_read[True]"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T111108536678-an-admission-pass-builds-each-projects-readiness-once/base-regression.log",
+    "revision": "ae04b0b3f1c3480cbe87e832add03644e96f39ea"
+  },
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:4087 admit_once to advance_waiting_requests",
+    "reckon/crew/queue_admission.py:3354 advance_waiting_requests to _resolve_and_move",
+    "reckon/crew/queue_admission.py:3040 resolve_waits to _readiness_rows",
+    "reckon/crew/queue_admission.py:2888 dispatch_waits to _readiness_rows",
+    "reckon/crew/queue_admission.py:2230 request graph resolution to _readiness_rows"
+  ],
+  "completed_at": "2026-11-05T19:37:19Z",
+  "dispatched_at": "2026-11-05T19:27:17Z",
+  "findings": [
+    {
+      "file": "tests/test_a_pass_builds_each_project_once.py",
+      "line": "116",
+      "severity": "non-blocking",
+      "text": "non-blocking: persisted phase is compared with the request object handed to advance_waiting_requests, so both can move together on a wrong phase; exempted because line 129 checks an independent expected phase and the base and mutation logs show that guard reddens."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "commits c4af6ade6ea06562ba9aa5cf53f568ac87422be4, 3605f12d51aff547858fae2b89d437c62b4db641 and 9bf9ba61d4929f4e65ba89883d6a0ad062abfea4 change the cache key, add five tests and record their evidence.",
+    "done_when": "the section's 12-plan and 20-request measure is exercised by tests/test_a_pass_builds_each_project_once.py:120-161, with base-regression.log showing 12 reads and final-suite-head.log showing five passes.",
+    "goal": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html#s28 requires one whole-project readiness read per active pass, and reckon/crew/queue_admission.py:2391-2395 removes plan and refs from that pass key.",
+    "manifest": "the source manifest.md:15-22 records the focused gate, revisioned base and head suite receipts, and final-negative-control.log.",
+    "write_paths": "the source manifest.md:3 grants queue_admission.py, the new test and an evidence fragment, which are exactly the three paths in the base-to-head diff."
+  },
+  "justifications": {
+    "durability": "tests/test_a_pass_builds_each_project_once.py:131 fails if plan and refs return to the pass key, and lines 129, 143, 159-161 and 186 fail on wrong phases, lost edit visibility or a collapsed bounded key; line 116 is coupled to an input object.",
+    "evidence": "base-regression.log and final-suite-head.log record the red base and green head for tests/test_a_pass_builds_each_project_once.py:120-161, while final-negative-control.log restores the old key and fails both read-count cases.",
+    "fit": "reckon/crew/queue_admission.py:2391-2404 changes the existing cache and context flags in place, and the added test names no forbidden source identifier.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:2391-2404 shares the whole-project key only inside readiness_pass and preserves the plan-and-refs key outside it.",
+    "reuse": "the capability search found reckon/crew/queue_admission.py:_readiness_rows and tests/test_a_queued_request_waits_on_its_dependencies.py:107 as existing owners, which the change extends and reuses rather than duplicating.",
+    "scope_discipline": "the three changed paths in the diff match the source manifest.md:3 declared paths and the fragment reports the same measurements."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: docs/plans/work-is-never-stuck-behind-the-admission-loop.html#s28 requires one whole-project readiness read per active pass, and reckon/crew/queue_admission.py:2391-2395 removes plan and refs from that pass key.\nVERDICT done_when: the section's 12-plan and 20-request measure is exercised by tests/test_a_pass_builds_each_project_once.py:120-161, with base-regression.log showing 12 reads and final-suite-head.log showing five passes.\nVERDICT write_paths: the source manifest.md:3 grants queue_admission.py, the new test and an evidence fragment, which are exactly the three paths in the base-to-head diff.\nVERDICT manifest: the source manifest.md:15-22 records the focused gate, revisioned base and head suite receipts, and final-negative-control.log.\nVERDICT diff: commits c4af6ade6ea06562ba9aa5cf53f568ac87422be4, 3605f12d51aff547858fae2b89d437c62b4db641 and 9bf9ba61d4929f4e65ba89883d6a0ad062abfea4 change the cache key, add five tests and record their evidence.\nCALL_SITES: reckon/crew/queue_admission.py:4087 admit_once to advance_waiting_requests, reckon/crew/queue_admission.py:3354 advance_waiting_requests to _resolve_and_move, reckon/crew/queue_admission.py:3040 resolve_waits to _readiness_rows, reckon/crew/queue_admission.py:2888 dispatch_waits to _readiness_rows, reckon/crew/queue_admission.py:2230 request graph resolution to _readiness_rows\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:2391-2404 shares the whole-project key only inside readiness_pass and preserves the plan-and-refs key outside it.\nSCORE evidence: 19\nJUSTIFICATION evidence: base-regression.log and final-suite-head.log record the red base and green head for tests/test_a_pass_builds_each_project_once.py:120-161, while final-negative-control.log restores the old key and fails both read-count cases.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three changed paths in the diff match the source manifest.md:3 declared paths and the fragment reports the same measurements.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_pass_builds_each_project_once.py:131 fails if plan and refs return to the pass key, and lines 129, 143, 159-161 and 186 fail on wrong phases, lost edit visibility or a collapsed bounded key; line 116 is coupled to an input object.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/queue_admission.py:2391-2404 changes the existing cache and context flags in place, and the added test names no forbidden source identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search found reckon/crew/queue_admission.py:_readiness_rows and tests/test_a_queued_request_waits_on_its_dependencies.py:107 as existing owners, which the change extends and reuses rather than duplicating.\nFINDING tests/test_a_pass_builds_each_project_once.py:116 non-blocking: persisted phase is compared with the request object handed to advance_waiting_requests, so both can move together on a wrong phase; exempted because line 129 checks an independent expected phase and the base and mutation logs show that guard reddens.\n",
+  "review_run_id": "r-20261105T192301038013-review-of-an-admission-pass-builds-each-projects-readiness-once-9bf9ba61d492",
+  "reviewed_base_sha": "ae04b0b3f1c3480cbe87e832add03644e96f39ea",
+  "reviewed_head_sha": "9bf9ba61d4929f4e65ba89883d6a0ad062abfea4",
+  "reviewed_node": "an-admission-pass-builds-each-projects-readiness-once",
+  "reviewed_run_id": "r-20261105T111108536678-an-admission-pass-builds-each-projects-readiness-once",
+  "rubric": "landed-node",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T19:49:52.542817+00:00",
+  "total": 117
+}
