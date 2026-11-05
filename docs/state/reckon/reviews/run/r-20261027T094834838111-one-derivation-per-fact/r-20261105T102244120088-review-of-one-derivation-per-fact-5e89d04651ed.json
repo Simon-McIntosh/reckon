@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-05T11:42:21.227Z",
+  "dispatched_at": "2026-11-05T11:36:02Z",
+  "findings": [],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T094834838111-one-derivation-per-fact/round2-head-final.txt",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T094834838111-one-derivation-per-fact/repair-base.txt",
+    "negative_control": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T094834838111-one-derivation-per-fact/round2-negative-control.txt",
+    "reviewer_rerun_mcp_tools": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T102244120088-review-of-one-derivation-per-fact-5e89d04651ed/review-rerun-mcp-tools.log",
+    "reviewer_rerun_section_edge": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T102244120088-review-of-one-derivation-per-fact-5e89d04651ed/review-rerun-at-head.log"
+  },
+  "item_verdicts": {
+    "diff": "Read 82f3a3bdc..5e89d04651 commit by commit; the one commit inverts and renames the status-encoding section-edge test to expect the s3 row at :158, adds a declared-done control at :174-183, adds a checkout-threading guard at :186-219 entering through _read_plan, and updates the evidence fragment, 113 insertions and 13 deletions over two files.",
+    "done_when": "The done_when names the two-file armed gate plus tests/test_mcp_tools.py; repair-base.txt records 25 passed EXIT=0 at 02e72411 and round2-head-final.txt records 33 passed EXIT=0 at 5e89d04651, I re-ran tests/test_section_edge_stays_off_plan_blocking.py at the head as 7 passed EXIT=0 and tests/test_mcp_tools.py at the head as 35 passed EXIT=0 (review-rerun-mcp-tools.log), but no recorded arm of the reviewed run carries tests/test_mcp_tools.py.",
+    "goal": "The node goal replaces each surface's bypass of the owners of run classification, section readiness, plan progress and the active sprint; the single commit gained since the prior review, 5e89d04651, changes only the section-readiness guard and its evidence fragment, and its expectation at tests/test_section_edge_stays_off_plan_blocking.py:158 now matches the row reckon/mcp_views.py:2661-2694 publishes.",
+    "manifest": "Read; status complete, three commits listed, both suite arms carrying their revision, tree, command and EXIT line, both mutation logs named, and the section-edge regression removed from outside_scope, so the prior review's blocking finding is answered rather than restated.",
+    "write_paths": "git diff 82f3a3bdc..5e89d04651 changes only tests/test_section_edge_stays_off_plan_blocking.py and docs/evidence/fragments/the-mcp-answers-the-question-asked/one-derivation-per-fact.html, both inside the manifest's declared paths and the source node's granted paths, and no production source changes."
+  },
+  "justifications": {
+    "durability": "tests/test_section_edge_stays_off_plan_blocking.py:158 reddens if the row's status is read again, :183 reddens if a declared-done section stops resolving as satisfied, and :208 reddens when resource_view stops threading checkout, as round2-negative-control.txt shows with 1 failed EXIT=1.",
+    "evidence": "repair-base.txt ends 25 passed EXIT=0 at 02e72411 and round2-head-final.txt ends 33 passed EXIT=0 at 5e89d04651, each naming revision, tree and literal command, and my own head re-runs give 7 passed for the section-edge file and 35 passed for tests/test_mcp_tools.py, while no recorded arm carries the latter.",
+    "fit": "The added cases extend the file's existing _plan and _summary helpers with optional declarations and checkout_path parameters and are named by the mechanism they assert, matching tests/test_section_edge_stays_off_plan_blocking.py:44.",
+    "goal_fidelity": "tests/test_section_edge_stays_off_plan_blocking.py:158 now expects the s3 row from read_plan for an undeclared section of a shipped plan, which is what reckon/mcp_views.py:2661-2694 publishes.",
+    "reuse": "No added definition forks a capability: readiness stays with reckon/roadmap.py's _section_satisfied at reckon/mcp_views.py:2683, the change is test-and-evidence only, and the nearest existing guard tests/test_surface_parity.py::test_read_plan_resolves_a_section_wait_through_the_target_plan calls _section_blocking directly while the new guard enters through reckon/mcp.py::_read_plan, so the two cover different paths.",
+    "scope_discipline": "git diff 82f3a3bdc..5e89d04651 changes only the two granted paths and adds no production code."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal routes each surface to the owner of run classification, section readiness, plan progress and the active sprint; the one commit gained since the prior review, 5e89d04651, changes only the section-readiness guard and its evidence fragment and aligns tests/test_section_edge_stays_off_plan_blocking.py:158 with reckon/mcp_views.py:2661-2694.\nVERDICT done_when: the done_when names the two-file armed gate plus tests/test_mcp_tools.py; repair-base.txt records 25 passed EXIT=0 at 02e72411 and round2-head-final.txt records 33 passed EXIT=0 at 5e89d04651, and no recorded arm carries tests/test_mcp_tools.py, which I re-ran at the head as 35 passed EXIT=0.\nVERDICT write_paths: git diff 82f3a3bdc..5e89d04651 touches only tests/test_section_edge_stays_off_plan_blocking.py and docs/evidence/fragments/the-mcp-answers-the-question-asked/one-derivation-per-fact.html, both inside the declared paths, and no production source changes.\nVERDICT manifest: read; status complete, three commits, both suite arms with revision, tree, command and EXIT lines, both mutation logs named, and the section-edge regression removed from outside_scope, so the prior review's blocking finding is answered.\nVERDICT diff: read commit by commit from 82f3a3bdc to 5e89d04651; one commit inverts and renames the status-encoding test to expect the s3 row, adds a declared-done control, adds a checkout-threading guard entering through _read_plan, and updates the evidence fragment, 113 insertions and 13 deletions over two files.\nCALL_SITES: reckon/mcp_views.py:2902 (_summary passes checkout into _section_blocking), reckon/mcp_views.py:3257 and :3266 (resource_view threads provenance checkout into _summary and _detail), reckon/mcp_views.py:2696 (_section_blocking), reckon/mcp_views.py:2641 and :2661 (_section_target_plan and _section_target_satisfied resolve the row's target), reckon/mcp.py:_resolve_plan_ref and reckon/mcp.py:_read_plan (the entry points the new guard drives)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_section_edge_stays_off_plan_blocking.py:158 now expects the s3 row read_plan publishes for an undeclared section of a shipped plan, which is what reckon/mcp_views.py:2661-2694 publishes.\nSCORE evidence: 17\nJUSTIFICATION evidence: repair-base.txt ends 25 passed EXIT=0 at 02e72411 and round2-head-final.txt ends 33 passed EXIT=0 at 5e89d04651, my head re-runs give 7 passed for the section-edge file and 35 passed for tests/test_mcp_tools.py, and no recorded arm carries the latter.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 82f3a3bdc..5e89d04651 changes only the two granted paths and adds no production code.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_section_edge_stays_off_plan_blocking.py:158 reddens under the status read, :183 reddens if a declared-done section stops resolving satisfied, and :208 reddens when resource_view drops the checkout as round2-negative-control.txt shows.\nSCORE fit: 19\nJUSTIFICATION fit: the added cases extend the file's existing _plan and _summary helpers and are named by mechanism, following tests/test_section_edge_stays_off_plan_blocking.py:44.\nSCORE reuse: 20\nJUSTIFICATION reuse: readiness stays with reckon/roadmap.py's _section_satisfied reached at reckon/mcp_views.py:2683; the change adds no capability and the nearest guard calls _section_blocking directly rather than duplicating this path.\n",
+  "review_run_id": "r-20261105T102244120088-review-of-one-derivation-per-fact-5e89d04651ed",
+  "reviewed_base_sha": "82f3a3bdc63bbd1f82bff8ffacf119d713be1c17",
+  "reviewed_head_sha": "5e89d04651edfaca74592e22f7b363ce971a3273",
+  "reviewed_run_id": "r-20261027T094834838111-one-derivation-per-fact",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T11:53:27.077797+00:00",
+  "total": 113
+}

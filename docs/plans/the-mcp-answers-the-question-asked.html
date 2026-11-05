@@ -26,7 +26,7 @@
   <title>The MCP Answers the Question Asked | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="41">
+<meta name="plan-version" content="42">
 <meta name="plan-modified" content="2026-11-05">
 </head>
 <body>
@@ -246,6 +246,12 @@
 <div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-27T14:30:00Z">
     <div class="r-comment-body"><p>Section 4 landed at merge <code>3ea53f74c</code>: read_plan takes view="why" for any ref: what it is and its state, what it waits on transitively with each wait's kind read from the roadmap's own section edges, what waits on it, the runs and sessions working on it with their held paths (a plan-level ref names the runs on any of its sections), and its last five events, inside a size budget registered in the shared view budget table. Coordinator importer measure over 156 test files: main 1958 passed, merged 1968 passed, the same two failures at both, so none added. Adding why to VIEW_NAMES in reckon/mcp_views.py is carried with the next node that writes that file. <a href="/reckon/evidence/archive/the-mcp-answers-the-question-asked-landed.html#s4">evidence</a></p></div>
 </div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261105T091632392412-review-of-one-derivation-per-fact-82f3a3bdc63b" data-who="reckon-build" data-when="2026-11-05T09:45:27.264Z">
+    <div class="r-comment-body"><p>reviewed r-20261027T094834838111-one-derivation-per-fact over the two commits gained since its prior review (c3b642292, 82f3a3bdc) at base 02e72411..head 82f3a3bdc: section readiness now resolves through the roadmap owner (18), the gate is recorded with a red mutation (16), scope is clean (20), durability is guarded by a test that reddens under the status-read mutation but leaves the checkout wiring unasserted (17), fit is idiomatic (18), and reuse forks the producer's plan read (12); added_failure_count 0 over the recorded base and head arms, with one blocking finding — tests/test_section_edge_stays_off_plan_blocking.py:148 now fails at head and encodes the removed status reading, needing a coordinator dispatch to invert it.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261105T102244120088-review-of-one-derivation-per-fact-5e89d04651ed" data-who="reckon-build" data-when="2026-11-05T11:42:21.227Z">
+    <div class="r-comment-body"><p>reviewed r-20261027T094838111-one-derivation-per-fact over 82f3a3bdc..5e89d04651 — scores goal_fidelity 18, evidence 17, scope_discipline 20, durability 19, fit 19, reuse 20; no findings; added_failure_count 0 against the two suite arms (25 passed base, 33 passed head).</p></div>
+</div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261027T150928502146-review-of-the-brief-is-the-default-answer-dd8e349f63ea" data-who="reckon-build" data-when="2026-10-27T15:27:52.087Z">
     <div class="r-comment-body"><p>reviewed r-20261027T100759949584-the-brief-is-the-default-answer at base 411ddcee698b3b31ffa368762f827a48bf0d6c44 and head dd8e349f63ea9876151ebb10dfaad59427ddcae2, scoring goal_fidelity 19, evidence 14, scope_discipline 15, durability 14, fit 15, reuse 20, with added_failure_count 0 and three non-blocking findings (stale docstring, out-of-scope test edit, missing brief budget row).</p></div>
 </div>
@@ -272,9 +278,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261021T160220332694-a-newer-flight-key-is-ignored-at-load" data-who="reckon-build" data-when="2026-10-21T17:16:43Z">
     <div class="r-comment-body"><p>Loading a flight config is now forward-compatible while authoring stays strict: the generator emits `extra="ignore"` (scripts/regen_flight_schema.py, one setting, regenerated), and `resolve` walks every contributing layer against the model's own field declarations to report the undeclared key paths on `ResolvedFlight.unknown_keys`, published as `flight_unknown_keys` on `flight_report` — the field `crew(view="flight")` already spreads. `reckon flight --check` resolves with `strict=True` and refuses the first such key by path with `Extra inputs are not permitted`. The two tests that pinned the old load-time strictness kept their cases and moved their vehicle: tests/test_budget_lift.py's ceilings test refuses an undeclared `budget.lift.nope` through the strict read, and tests/test_one_check_trusts_a_moved_checkout.py's probe breaks a declared shipped default (`budget.exhausted_statuses`) instead of adding an unknown key. Measure: a fixture host layer carrying `a_key_from_newer_code` and `budget.a_key_from_newer_code` resolves and reports exactly those two paths (empty for the shipped defaults and for this workstation's real `~/.config/reckon/flight.yaml`), `--check` on the same file exits non-zero naming the key, and a type error on a declared key is still refused at load; the load test fails on the base revision with `Extra inputs are not permitted` (2 failed, EXIT=1 under the declared mutation).</p></div>
-</div>
-<div class="r-comment" data-section="s5" data-id="c-run-r-20261105T091632392412-review-of-one-derivation-per-fact-82f3a3bdc63b" data-who="reckon-build" data-when="2026-11-05T09:45:27.264Z">
-    <div class="r-comment-body"><p>reviewed r-20261027T094834838111-one-derivation-per-fact over the two commits gained since its prior review (c3b642292, 82f3a3bdc) at base 02e72411..head 82f3a3bdc: section readiness now resolves through the roadmap owner (18), the gate is recorded with a red mutation (16), scope is clean (20), durability is guarded by a test that reddens under the status-read mutation but leaves the checkout wiring unasserted (17), fit is idiomatic (18), and reuse forks the producer&#x27;s plan read (12); added_failure_count 0 over the recorded base and head arms, with one blocking finding — tests/test_section_edge_stays_off_plan_blocking.py:148 now fails at head and encodes the removed status reading, needing a coordinator dispatch to invert it.</p></div>
 </div>
 </section>
 </main>
