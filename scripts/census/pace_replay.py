@@ -24,7 +24,10 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from reckon import budget as budget_module  # noqa: E402
-from reckon import ledger  # noqa: E402
+from reckon import (  # noqa: E402
+    ledger,
+    pace_report,
+)
 from reckon._timestamps import parse_utc  # noqa: E402
 from reckon.crew import pace as pace_module  # noqa: E402
 
@@ -618,7 +621,7 @@ def _recomputed_allowance(
         float(utilisation) * 100.0, elapsed_fraction
     )
     if floor_reason is not None:
-        allowance = budget_module._unknown_allowance(
+        allowance = pace_report._unknown_allowance(
             evidence.group, floor_reason, utilisation=float(utilisation)
         )
         allowance.update(
