@@ -2377,9 +2377,10 @@ def _readiness_rows(
 
     ``cache`` is the pass's own, so a pass that launches several requests in
     one project derives that project's roadmap once. The entry is keyed by the
-    project, its docs directory, the plan and refs asked about and
-    :func:`_plan_tree_fingerprint`, so a plan edited or a landing merged while
-    the pass runs misses it.
+    project, its docs directory and :func:`_plan_tree_fingerprint` inside a
+    project-wide pass. A bounded read outside the pass also keys on the plan
+    and refs asked about. A plan edited or a landing merged while the pass
+    runs misses either cache entry.
 
     ``plan`` names the plan a dispatch is judging. Outside an admission pass
     that read covers the plan and the plans its waits name, through
@@ -2388,15 +2389,10 @@ def _readiness_rows(
     and shares it, so the whole-project read is the one that answers.
     """
     fingerprint = _plan_tree_fingerprint(docs_dir)
-    key = "|".join(
-        (
-            project,
-            str(docs_dir or ""),
-            plan,
-            ",".join(sorted(str(ref) for ref in refs)),
-            *(str(part) for part in fingerprint),
-        )
-    )
+    scope = (project, str(docs_dir or ""))
+    if not (_READINESS_PASS_ACTIVE.get() and not _BOUNDED_READ.get()):
+        scope += (plan, ",".join(sorted(str(ref) for ref in refs)))
+    key = "|".join((*scope, *(str(part) for part in fingerprint)))
     cached = cache.get(key)
     if cached is not None:
         return cached
