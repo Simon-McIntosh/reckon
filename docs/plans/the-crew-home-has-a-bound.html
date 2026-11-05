@@ -25,7 +25,7 @@
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="83">
+<meta name="plan-version" content="84">
 <meta name="plan-modified" content="2026-11-05">
 </head>
 <body>
@@ -353,6 +353,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261105T160400828003-review-of-a-reader-builds-no-index-for-a-ledger-that-does-not-exist-5a06e0b5a5b6" data-who="reckon-build" data-when="2026-11-05T16:19:28.388Z">
     <div class="r-comment-body"><p>review of run r-20261103T080405842056-a-reader-builds-no-index-for-a-ledger-that-does-not-exist over the four commits gained since its first review (d5c008a224, 33d4795b8f, 2af9497897, 5a06e0b5a5), reviewed_base_sha b3b7f2970033ee86d9ece0ca186e47eb3efff12b and reviewed_head_sha 5a06e0b5a5b6e9e0341671ede43fd2f2623e9cc5; scores goal_fidelity 19, evidence 17, scope_discipline 20, durability 19, fit 18, reuse 15; added_failure_count 0; three non-blocking findings and no blocking one.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261103T080405842056-a-reader-builds-no-index-for-a-ledger-that-does-not-exist" data-who="reckon-build" data-when="2026-11-05T16:01:40Z">
+    <div class="r-comment-body"><p>fix(ledger): a read of a project ledger holding neither an aggregate file nor a run record returns the empty roster and writes no ledger-*.sqlite index, with the rule held by tests/test_a_reader_builds_no_index_for_a_missing_ledger.py; four cases pass, the runs-directory-exists control turns the empty-runs case red, the unconditional build turns both no-content cases red, and the 81 test files importing reckon.ledger are green at 715 passed / 3 skipped / 0 failed with no added failure against base.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261017T091103780256-review-of-cache-guard-whole-suite-at-merge-c5d4cc9aff99" data-who="reckon-build" data-when="2026-10-17T09:21:01.518Z">
     <div class="r-comment-body"><p>The reviewed node measured the cache-root guard's merge candidate honestly: both suite arms completed (base 33 failed/14135 passed; candidate 41 failed/12 errors/14115 passed), the helper derives 21 added ids (16 deterministic), and the guard at the candidate proves nothing because it fails on its own install self-check ("the cache_root wrapper was never installed") and names no leaking test, so the plan's "no test resolving the real cache" claim is unproven at 5e58a9e9 under -n 12. The review scores goal_fidelity 18, evidence 17, scope_discipline 17, durability 16, fit 18, reuse 20 (total 106), with four follow-on findings: two prose count lines in the manifest disagree with its own artifacts, alone_counts labels environment-caused failures "deterministic regression", and the declared reports write path is empty while all artifacts sit in the run directory outside the declared fence scope.</p></div>
