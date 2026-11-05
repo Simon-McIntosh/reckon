@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="every-launch-of-a-queued-plan-review-is-joined-to-its">
+<meta name="plan-title" content="Every launch of a queued plan review is joined to its composed directory">
+<meta name="plan-evidence-for" content="a-plan-is-reviewed-before-it-is-built">
+<meta name="plan-verifies" content="a-plan-is-reviewed-before-it-is-built#s38">
+<meta name="plan-recorded-at" content="2026-11-03">
+<meta name="plan-verdict" content="passed">
+<meta name="plan-commits" content="3dc7d3ff222ee552be6de4996a863141e0fb48cb,7786ece4f90ad39ef0f8973c35f9e1158a8d35bc,ab6177672897db7a6577ee708d86e5ed17d0c57f,7e5dc1ea7a4ef5a931eb168d247f96235aa3c18d">
+<title>Every launch of a queued plan review is joined to its composed directory | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc">
+<section id="every-launch-of-a-queued-plan-review-is-joined-to-its-verification">
+<h1>Every launch of a queued plan review is joined to its composed directory</h1>
+<table><thead><tr><th>Measure</th><th>Result</th><th>Receipt or qualification</th></tr></thead><tbody>
+<tr><td>Launch paths that bypassed the join</td><td>Two: the yield path and the moved path</td><td>Both launch a queued request through <code>_launch_queued</code> without passing the admission pass's call site; the admission pass itself was the only path that joined</td></tr>
+<tr><td>Defect reproduction, base arm</td><td>2 failed, 2 passed</td><td>base-gate.log at 4da2af6; the yield and moved cases find the sidecar naming no run (<code>assert '' == 'r-20261014T…-plan-review-of-fixture'</code>), while the admission case and the queued-record case pass</td></tr>
+<tr><td>Head arm, importing suite</td><td>3 failed, 626 passed in 413.02s; EXIT=1</td><td>head-gate.log at 7e5dc1ea; the 81 test files importing the two changed modules plus the new test, <code>-n 8</code>, own basetemp</td></tr>
+<tr><td>Added failures against base</td><td>0 attributable to the change</td><td>base 4 failed, 625 passed at 4da2af6 vs head 3 failed, 626 passed; the two new-test launch-path cases fail at base and pass at head. Two failures are red on both arms unchanged (<code>test_each_admission_pass_records_its_verdict.py::test_the_log_is_trimmed_within_its_size_bound</code>, <code>test_overlapping_queued_requests_launch_in_turn.py::test_a_new_dispatch_over_a_queued_claim_at_the_session_cap_is_refused</code>). The one head-only failure, <code>test_a_queued_run_waits_on_its_lane.py::test_the_local_admission_launches_a_request_queued_for_it</code>, raised <code>refusing to unwatch 'sample': producer seat held by 98dci4-clu-2068.iter.org pid 32926 beyond 2s</code> under <code>-n 8</code> and passes alone on both arms (flake-check.log)</td></tr>
+<tr><td>Declared negative control</td><td>2 failed, 2 passed; EXIT=1</td><td>negative-control.log; the join removed from the launch funnel and left at the old admission call site, at the committed head; the sidecar keeps <code>run_id: null</code> on both launch paths, and the admission and queued-record cases still pass</td></tr>
+<tr><td>Scoped lint and format</td><td>0 findings, formatted</td><td><code>ruff check</code> and <code>ruff format --check</code> on the two changed modules and the new test</td></tr>
+</tbody></table>
+<h2>What changed</h2>
+<p>The join that writes a launched plan review's run id into its composed <code>dispatch.json</code> moved from the admission pass's post-launch block into <code>_launch_queued</code>, the one function every launch of a queued request passes through. Three callers reach it: the admission pass's own launch, a dispatch yielding its lane slot to an older request of its session (<code>dispatch._launch_yielded_queued_request</code>), and a queued request moved onto another backend (<code>queue_admission._await_moved_launch</code> via <code>move_queued_run</code>). The first joined; the other two did not, so a review launched by either kept <code>run_id: null</code> in its sidecar, promotion found no run, and the delivered report was never stored.</p>
+<p>The join resolves only after <code>_require_launched_record</code> accepts the returned record, so a dispatch that returns none — or a mapping still carrying <code>phase: queued</code> — writes no sidecar and reaches the refusal its caller reports. A sidecar write that fails on <code>OSError</code> does not report the launch as refused either, because every caller writes the request back when this raises, which would queue a second copy of a request that did launch.</p>
+<h2>Launch paths and their responsible lines</h2>
+<table><thead><tr><th>Path</th><th>Responsible line in the committed blob</th></tr></thead><tbody>
+<tr><td>Every launch (the funnel)</td><td><code>reckon/crew/queue_admission.py</code>, <code>launched = dispatch(</code> at <code>:319</code>, then <code>_require_launched_record(launched)</code> at <code>:363</code> and <code>_join_admitted_plan_review(pointer, str(launched["run_id"]))</code> at <code>:368</code> in <code>_launch_queued</code></td></tr>
+<tr><td>Admission pass</td><td><code>reckon/crew/queue_admission.py</code>, <code>candidate = _launch_queued(</code> at <code>:4198</code> and <code>record = _require_launched_record(candidate)</code> at <code>:4204</code> in <code>admit_once</code></td></tr>
+<tr><td>Dispatch yields its lane slot</td><td><code>reckon/crew/dispatch.py</code>, <code>candidate = queue_admission._launch_queued(</code> at <code>reckon/crew/dispatch.py:519</code> in <code>_launch_yielded_queued_request</code></td></tr>
+<tr><td>Queued request moved to another backend</td><td><code>reckon/crew/queue_admission.py</code>, <code>_require_launched_record(</code> at <code>:463</code> around <code>_launch_queued(</code> at <code>:464</code> in <code>_await_moved_launch</code>, reached from <code>move_queued_run</code></td></tr>
+</tbody></table>
+<h2>Durable receipts</h2>
+<table><thead><tr><th>Artifact</th><th>Path</th></tr></thead><tbody>
+<tr><td>manifest.md</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T070914697594-every-launch-of-a-queued-plan-review-is-joined-to-its/manifest.md</td></tr>
+<tr><td>base-gate.log</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T070914697594-every-launch-of-a-queued-plan-review-is-joined-to-its/logs/base-gate.log</td></tr>
+<tr><td>head-gate.log</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T070914697594-every-launch-of-a-queued-plan-review-is-joined-to-its/logs/head-gate.log</td></tr>
+<tr><td>negative-control.log</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T070914697594-every-launch-of-a-queued-plan-review-is-joined-to-its/logs/negative-control.log</td></tr>
+<tr><td>flake-check.log</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T070914697594-every-launch-of-a-queued-plan-review-is-joined-to-its/logs/flake-check.log</td></tr>
+<tr><td>new test source</td><td>tests/test_every_launch_joins_the_composed_sidecar.py</td></tr>
+</tbody></table>
+</section></main></body></html>

@@ -263,6 +263,13 @@ def _launch_queued(
 
     ``readiness_cache`` is the pass's own, handed to dispatch so this launch
     reads the readiness an earlier launch in the same pass already derived.
+
+    Every launch of a queued request goes through here, whatever chose it — a
+    pass over the queue, a dispatch yielding its lane slot to an older request,
+    or a request moved onto another backend — so the join of a launched plan
+    review to its composed directory is taken here rather than after any one of
+    them. A launch path that reached the dispatch another way would leave the
+    sidecar naming no run, and the delivered review would never be stored.
     """
     from reckon.crew.dispatch import dispatch
 
@@ -309,7 +316,7 @@ def _launch_queued(
     # and keeps the whole-plan check.
     units_token = routing.ADMISSION_REVIEW_UNITS.set(plan_review_units(node.section))
     try:
-        return dispatch(
+        launched = dispatch(
             node=node,
             run_id=str(pointer["run_id"]),
             project=str(pointer["project"]),
@@ -347,6 +354,19 @@ def _launch_queued(
         )
     finally:
         routing.ADMISSION_REVIEW_UNITS.reset(units_token)
+    # The join resolves only for a record the launch check accepts: a dispatch
+    # that returned a request still queued names no run that ran the review.
+    # A sidecar that cannot be written must not report the launch as refused
+    # either, because every caller writes the request back when this raises,
+    # which would queue a second copy of a request that did launch.
+    try:
+        _require_launched_record(launched)
+    except CrewError:
+        pass
+    else:
+        with contextlib.suppress(OSError):
+            _join_admitted_plan_review(pointer, str(launched["run_id"]))
+    return launched
 
 
 # The dispatch options a rebind copies from the request it moves. The waivers a
@@ -4313,7 +4333,6 @@ def admit_once(
                     )
                 continue
             _stamp_admission(str(record["run_id"]), snapshot, admitted_at=_utc_now())
-            joined = _join_admitted_plan_review(snapshot, str(record["run_id"]))
             verdicts.append(
                 _verdict_row(
                     pointer,
@@ -4323,9 +4342,6 @@ def admit_once(
                 )
             )
             result["launched"].append(str(record["run_id"]))
-            if joined:
-                joined_reviews = result.setdefault("joined_plan_reviews", {})
-                joined_reviews[str(record["run_id"])] = joined
             if allowance is not None:
                 remaining[allowance_key] = allowance - 1
         # The queue's own liveness, recorded after the pass has decided what to
@@ -4435,10 +4451,11 @@ def _join_admitted_plan_review(pointer: Mapping[str, Any], launched_run_id: str)
 
     A queued plan review's report directory names the crew run that ran it only
     through ``dispatch.json``, and the compose left that sidecar unlaunched. The
-    join resolves promotion's lookup, so it is part of admitting the request —
-    not a later sweep. A pointer that names no plan review joins nothing and the
-    pass carries on. Imported here rather than at module load so the admission
-    surface does not depend on the review surface's own imports.
+    join resolves promotion's lookup, so it is taken by the launch itself — not
+    a later sweep, and not one call site among the several that launch a queued
+    request. A pointer that names no plan review joins nothing. Imported here
+    rather than at module load so the admission surface does not depend on the
+    review surface's own imports.
     """
     from reckon.crew import recovery_review_dispatch
 

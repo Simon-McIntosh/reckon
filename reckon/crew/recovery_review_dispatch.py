@@ -736,8 +736,8 @@ def join_admitted_plan_review(pointer: Mapping[str, Any], launched_run_id: str) 
     and the admission pass later launches it under a new run id. Nothing in that
     launch writes the id back, so promotion's join finds no run and the delivered
     report is never stored. Writing the launched id into the composed directory's
-    sidecar is what makes the join resolve, and this is the only place a queued
-    plan review's launch is joined.
+    sidecar is what makes the join resolve, and this runs on the one path every
+    launch of a queued request passes, whichever pass or dispatch chose it.
 
     Returns the composed review run id it joined, or ``""`` when the pointer
     names no plan review or names no composed directory to join.
