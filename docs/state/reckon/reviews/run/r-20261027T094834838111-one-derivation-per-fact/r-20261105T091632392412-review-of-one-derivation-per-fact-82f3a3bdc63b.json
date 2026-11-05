@@ -9,6 +9,11 @@
       "node": "one-derivation-per-fact",
       "recorded_at": "2026-11-05T10:07:28.778675+00:00"
     },
+    "1": {
+      "kind": "exempted",
+      "reason": "Correctness holds without it: the projection resolves the target plan itself, so a section-scoped row costs one extra plan read. Carrying the target's section declarations on the row means changing _resolve_plan_ref in reckon/mcp.py, outside this section's write scope; the worker recorded the same shape under outside_scope.",
+      "recorded_at": "2026-11-05T10:07:45.288421+00:00"
+    },
     "2": {
       "kind": "folded",
       "node": "one-derivation-per-fact",
