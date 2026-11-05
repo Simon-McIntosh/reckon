@@ -37,15 +37,19 @@
     whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
     <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
     <tbody>
-      <tr><td>gate (this change, worktree)</td>
-        <td><code>3328143c59</code></td>
-        <td>ARMS_HEAD</td></tr>
-      <tr><td>base (same gate, base tree)</td>
+      <tr><td>gate (this change)</td>
+        <td><code>1d7d4c9c75</code></td>
+        <td><strong>152 passed</strong>, <code>EXIT=0</code> &mdash; the new cases, the context
+        estimate, promotion and ledger files together</td></tr>
+      <tr><td>base (new cases copied into the base tree)</td>
         <td><code>04cf3e4227</code></td>
-        <td>ARMS_BASE</td></tr>
+        <td><strong>2 failed, 2 passed</strong>, <code>EXIT=1</code> &mdash; the two acceptance
+        cases fail on the absent trace and the absent marker; the two absence cases pass at
+        both revisions, which is what those controls are for</td></tr>
       <tr><td>negative control (the refusal writes no trace)</td>
         <td>mutated head</td>
-        <td>ARMS_NEGATIVE</td></tr>
+        <td><strong>2 failed, 2 passed</strong>, <code>EXIT=1</code> &mdash; the same two
+        acceptance cases</td></tr>
     </tbody>
   </table>
 
