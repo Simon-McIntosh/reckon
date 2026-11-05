@@ -464,7 +464,12 @@ _CLOCK_MODULES = (
 #: fields the listing and its successor share: :data:`CLASSIFICATION_FIELDS`,
 #: the set written down in ``tests/test_crew_surface_parity.py``. Captured by
 #: driving the retired verb over :func:`live_listing`; written down rather than
-#: recomputed so the comparison still runs once the verb is a tombstone.
+#: recomputed so the comparison still runs once the verb is a tombstone. The
+#: queued row's budget fields are the one answer since corrected: the verb
+#: charged a request that had never launched, so it answered an elapsed time
+#: and an overrun nothing had spent, and the live view now reports neither.
+#: ``tests/test_a_parked_request_spends_no_budget.py`` holds that answer; every
+#: other field of the capture, and every assertion over it, is untouched.
 CREW_LIST_BASE_ROWS: dict[str, dict[str, dict]] = {
     "project": {
         "r-live-working": {
@@ -478,10 +483,10 @@ CREW_LIST_BASE_ROWS: dict[str, dict[str, dict]] = {
             "process_alive": True,
         },
         "r-live-queued": {
-            "budget_overrun": True,
+            "budget_overrun": False,
             "budget_seconds": 200,
             "classification": "queued",
-            "elapsed_seconds": 300,
+            "elapsed_seconds": None,
             "log_age_seconds": 100,
             "manifest_status": None,
             "next_action": "wait for a local lane slot",
@@ -512,10 +517,10 @@ CREW_LIST_BASE_ROWS: dict[str, dict[str, dict]] = {
             "process_alive": True,
         },
         "r-live-queued": {
-            "budget_overrun": True,
+            "budget_overrun": False,
             "budget_seconds": 200,
             "classification": "queued",
-            "elapsed_seconds": 300,
+            "elapsed_seconds": None,
             "log_age_seconds": 100,
             "manifest_status": None,
             "next_action": "wait for a local lane slot",

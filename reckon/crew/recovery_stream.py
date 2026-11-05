@@ -11,6 +11,7 @@ from typing import Any, Mapping
 from reckon._timestamps import parse_utc
 from reckon.crew.node import (
     _TERMINAL_RUN_PHASES,
+    WAITING_REQUEST_PHASES,
     CrewError,
     parse_duration,
 )
@@ -282,10 +283,58 @@ def _token_budget_timing(
     }
 
 
+def _parked_budget_timing(
+    record: Mapping[str, Any],
+    *,
+    token_budget: int | None,
+    budget_seconds: int | None,
+    now_seconds: float | None = None,
+) -> dict[str, Any]:
+    """Measure a request that has not launched: no elapsed time, and its wait.
+
+    A request is charged for the time it spent running, so a pointer that has
+    never launched — queued, waiting on upstream work, blocked on it, or held —
+    has spent none of its allowance however long it has sat there. The wait is
+    still reported under its own key, measured from the request's creation, so
+    a reader can see how long it has been parked without that figure being
+    charged as budget.
+    """
+    created = parse_utc(str(record.get("created_at") or ""))
+    waiting_seconds = None
+    if created is not None:
+        moment = _utc_seconds() if now_seconds is None else float(now_seconds)
+        waiting_seconds = max(0, int(moment - created.timestamp()))
+    if token_budget is not None:
+        timing = _token_budget_timing(
+            token_budget,
+            _generated_tokens(record),
+            budget_seconds=budget_seconds,
+            elapsed_seconds=None,
+        )
+        # Nothing a request that never launched generated is chargeable.
+        timing["budget_overrun"] = False
+        timing["budget_overrun_tokens"] = 0
+    else:
+        timing = {
+            "budget_seconds": budget_seconds,
+            "elapsed_seconds": None,
+            "budget_overrun": False,
+            "budget_overrun_seconds": 0,
+        }
+    timing["waiting_seconds"] = waiting_seconds
+    return timing
+
+
 def _budget_timing(
     record: Mapping[str, Any], *, now_seconds: float | None = None
 ) -> dict[str, Any]:
     """Measure one run against its declared allowance without mutating it.
+
+    Elapsed time is charged from the run's first launch, never from the moment
+    its request was created: a request that waited a week for its upstream work
+    spent that week parked, not working. A pointer still in a waiting phase has
+    no launch stamp, so it reports no elapsed time and no overrun, and carries
+    its wait under ``waiting_seconds`` instead.
 
     A run whose worker process is gone has finished, so its elapsed is measured
     to its own stream completion — the same stamp promotion records — rather
@@ -301,16 +350,35 @@ def _budget_timing(
     """
     node = record.get("node") or {}
     token_budget = _declared_token_budget(record)
+    budget_seconds: int | None = None
+    waiting_phase = False
+    started = None
     try:
         if "attempt_budget_seconds" in record:
             budget_seconds = int(record["attempt_budget_seconds"])
         else:
             budget_seconds = parse_duration(str(node.get("time_budget") or ""))
-        started = parse_utc(
-            str(record.get("attempt_started_at") or record.get("created_at") or "")
+        launched = parse_utc(
+            str(record.get("attempt_started_at") or record.get("launched_at") or "")
         )
+        waiting_phase = str(record.get("phase") or "").strip() in WAITING_REQUEST_PHASES
+        if launched is not None:
+            started = launched
+        elif waiting_phase:
+            # A request in a waiting phase has never launched, so its creation
+            # stamp measures the wait rather than any budget.
+            started = None
+        else:
+            started = parse_utc(str(record.get("created_at") or ""))
     except (CrewError, TypeError, ValueError):
         started = None
+    if waiting_phase and started is None:
+        return _parked_budget_timing(
+            record,
+            token_budget=token_budget,
+            budget_seconds=budget_seconds,
+            now_seconds=now_seconds,
+        )
     if started is None:
         if token_budget is not None:
             return _token_budget_timing(
