@@ -330,6 +330,7 @@ def clear() -> None:
         roots |= {key[1] for key in _INFLIGHT}
         _CACHE.clear()
         _MARKS.clear()
+        _MODULE_SOURCE_DIGESTS.clear()
         for root in roots:
             _GENERATIONS[root] = _GENERATIONS.get(root, 0) + 1
 
@@ -1870,6 +1871,34 @@ _PERSISTED_MISSING: object = object()
 #: The envelope a persisted memo carries beside its value.
 _PERSISTED_SCHEMA = "reckon.persisted-memo"
 
+#: Source digests already known for a module's file, keyed by the file's path
+#: and stat identity. A digest is a function of the file's bytes, so an
+#: identity that has not moved answers the same digest: a read that revalidates
+#: a persisted value states each producer's digest by comparing the source
+#: file's identity against the one the value was stored with, rather than
+#: hashing unchanged sources again. Keyed on the identity rather than the path
+#: alone, so a source file that moves misses the entry and is hashed afresh.
+#: :func:`clear` drops it with the other caches; the next persisted read seeds
+#: it again from the store it validates.
+_MODULE_SOURCE_DIGESTS: dict[tuple[str, tuple[int, ...]], str] = {}
+
+
+def _module_source_path(module: object) -> Path | None:
+    source = getattr(module, "__file__", None)
+    return Path(source) if source else None
+
+
+def _module_source_identity(module: object) -> list[int] | None:
+    """Return a module's source file identity, or ``None`` when unreadable."""
+
+    path = _module_source_path(module)
+    if path is None:
+        return None
+    try:
+        return _stat_signature(path.stat())
+    except OSError:
+        return None
+
 
 def _module_source_digest(module: object) -> str:
     """Return the byte digest of the source file that defines ``module``.
@@ -1877,15 +1906,28 @@ def _module_source_digest(module: object) -> str:
     A persisted value is a reuse of the code that produced it, so the digest of
     that code rides beside it and a source change discards the value. A module
     with no source file digests as empty, which still compares equal to itself.
+
+    A digest already known for the file's current stat identity is returned
+    without reading it, so the digest a stored value was validated against is
+    the one reused rather than a second hash of the same unchanged source.
     """
 
-    source = getattr(module, "__file__", None)
-    if not source:
+    path = _module_source_path(module)
+    if path is None:
         return ""
+    identity = _module_source_identity(module)
+    key = (os.fspath(path), tuple(identity)) if identity is not None else None
+    if key is not None:
+        held = _MODULE_SOURCE_DIGESTS.get(key)
+        if held is not None:
+            return held
     try:
-        return file_memo.content_digest(Path(source))
+        digest = file_memo.content_digest(path)
     except OSError:
         return ""
+    if key is not None:
+        _MODULE_SOURCE_DIGESTS[key] = digest
+    return digest
 
 
 def persisted_memo(
@@ -1912,26 +1954,45 @@ def persisted_memo(
     this form.
     """
 
-    sources = {
-        str(getattr(module, "__name__", module)): _module_source_digest(module)
-        for module in modules
-    }
+    producers = {str(getattr(module, "__name__", module)): module for module in modules}
     path = _persisted_cache_path(kind, version, *identity)
     if store is not _PERSISTED_MISSING:
-        _write_persisted_memo(path, sources, store)
+        sources = {
+            name: _module_source_digest(module) for name, module in producers.items()
+        }
+        _write_persisted_memo(path, sources, _module_source_stats(producers), store)
         return store
-    held = _read_persisted_memo(path, sources)
+    held = _read_persisted_memo(path, producers)
     if held is not _PERSISTED_MISSING:
         return held
     if compute is None:
         return _PERSISTED_MISSING
+    sources = {
+        name: _module_source_digest(module) for name, module in producers.items()
+    }
     value = compute()
-    _write_persisted_memo(path, sources, value)
+    _write_persisted_memo(path, sources, _module_source_stats(producers), value)
     return value
 
 
-def _read_persisted_memo(path: Path, sources: Mapping[str, str]) -> object:
-    """Return a stored value whose producer sources still match, else absent."""
+def _module_source_stats(
+    producers: Mapping[str, object],
+) -> dict[str, list[int] | None]:
+    """Record each producer's source identity beside the digest it produced."""
+
+    return {name: _module_source_identity(module) for name, module in producers.items()}
+
+
+def _read_persisted_memo(path: Path, producers: Mapping[str, object]) -> object:
+    """Return a stored value whose producer sources still match, else absent.
+
+    A stored entry carries each producer's source identity as well as its
+    digest. When a source file's identity has not moved, the digest recorded
+    for it still describes the file, so it is reused as the file's digest
+    rather than the file being hashed again — a restart revalidates its stored
+    value by stat identity. A source that has moved is digested, and a value
+    from older code is absent either way.
+    """
 
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
@@ -1944,21 +2005,59 @@ def _read_persisted_memo(path: Path, sources: Mapping[str, str]) -> object:
         not isinstance(raw, dict)
         or raw.get("schema") != _PERSISTED_SCHEMA
         or not isinstance(raw.get("sources"), dict)
-        or raw["sources"] != dict(sources)
         or "value" not in raw
     ):
+        return _PERSISTED_MISSING
+    recorded = raw["sources"]
+    stats = raw.get("source_stats")
+    sources = {
+        name: _module_digest_for(module, name, recorded, stats)
+        for name, module in producers.items()
+    }
+    if recorded != sources:
         return _PERSISTED_MISSING
     return raw["value"]
 
 
+def _module_digest_for(
+    module: object,
+    name: str,
+    recorded: Mapping[str, str],
+    stats: object,
+) -> str:
+    """Return a producer's digest, reusing the recorded one when its source held.
+
+    The recorded digest is adopted for the file's current identity only when
+    the store also recorded that identity and it still matches, so a source
+    that moved is digested and a store written before identities were recorded
+    falls back to digesting as well.
+    """
+
+    identity = _module_source_identity(module)
+    if (
+        identity is not None
+        and isinstance(stats, Mapping)
+        and stats.get(name) == identity
+        and isinstance(recorded.get(name), str)
+    ):
+        path = _module_source_path(module)
+        if path is not None:
+            _MODULE_SOURCE_DIGESTS[(os.fspath(path), tuple(identity))] = recorded[name]
+    return _module_source_digest(module)
+
+
 def _write_persisted_memo(
-    path: Path, sources: Mapping[str, str], value: object
+    path: Path,
+    sources: Mapping[str, str],
+    source_stats: Mapping[str, list[int] | None],
+    value: object,
 ) -> None:
     """Persist ``value`` with the source digests of the modules that made it."""
 
     payload = {
         "schema": _PERSISTED_SCHEMA,
         "sources": dict(sources),
+        "source_stats": dict(source_stats),
         "value": value,
     }
     try:

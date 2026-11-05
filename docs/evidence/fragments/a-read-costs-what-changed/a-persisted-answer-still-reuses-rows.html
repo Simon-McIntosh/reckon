@@ -1,0 +1,67 @@
+<section id="a-persisted-answer-still-reuses-rows-landing">
+  <h2>A persisted answer still reuses rows by stat identity</h2>
+
+  <p><strong>What changed.</strong> <code>reckon/metadata_index.py</code> now records each
+  persisted memo's producer source <em>identity</em> beside its source digest, and reuses the
+  recorded digest when that identity has not moved. Before this, revalidating a stored value
+  hashed the source file of every module that produced it, so a reader that revalidated after
+  a restart read and hashed <code>_plan_html.py</code> and <code>metadata_index.py</code> even
+  when every stored row still applied. <code>build_index</code> reused every covered row by
+  stat identity and still touched files, which is what the two stat-identity tests measure
+  and what they caught once the stored value carried its code version.</p>
+
+  <p>The guard itself is unchanged in strength. A write to a module's source moves at least
+  one field of the identity recorded with the entry — the fields are
+  <code>_stat_signature</code>'s, device dropped so a shared filesystem does not invalidate
+  the store on every host — so a source change still makes every stored value absent and each
+  plan is parsed once. An entry written before identities were recorded carries none, falls
+  back to digesting, and is simply not reused until it is rewritten.</p>
+
+  <h3>Measured</h3>
+
+  <p>Gate: <code>tests/test_a_restart_reuses_rows_by_stat_identity.py</code> and
+  <code>tests/test_a_persisted_answer_carries_its_code_version.py</code>, run three times
+  serially at head <code>d006397423</code>. Each run reports <code>8 passed</code>; a
+  <code>file_memo</code>-clearing probe is the cold arm in each case, so a zero is read off a
+  counter that the building pass has already shown to fire.</p>
+
+  <table id="a-persisted-answer-still-reuses-rows-arms">
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>gate, three serial passes</td><td><code>d006397423</code> (head)</td>
+        <td><strong>8 passed</strong> in each of 3 runs</td></tr>
+      <tr><td>importer population of <code>metadata_index</code> and <code>_store</code></td>
+        <td><code>d006397423</code> (head)</td>
+        <td>1,494 passed, 6 failed, 1 error — all 6 in
+        <code>test_a_refused_set_names_the_paths_that_work.py</code>, which passes alone in
+        the same tree</td></tr>
+      <tr><td>the same population</td><td><code>9430f8e207</code> (base)</td>
+        <td>1,490 passed, 8 failed, 3 errors — the same 6, <em>plus</em> the two
+        stat-identity tests this node repairs</td></tr>
+    </tbody>
+  </table>
+
+  <p>The population arm is run with <code>-n 8</code>. The six
+  <code>test_a_refused_set</code> failures and the <code>conftest</code> collection error
+  appear at both revisions under that scheduling and neither appears when the file is run
+  alone at either revision, so they are ordering artefacts of the parallel arm rather than a
+  regression; head is a strict subset of base's failure set either way, so the importer
+  population adds no failure.</p>
+
+  <h3>Negative control</h3>
+
+  <ul>
+    <li><strong>Reverting the fix</strong> (<code>HEAD~1</code>'s
+    <code>reckon/metadata_index.py</code> restored over the head's) turns
+    <code>test_a_second_build_reads_no_file_and_reuses_every_row</code> and
+    <code>test_a_persisted_row_is_reused_when_only_the_device_differs</code> red:
+    <code>2 failed, 2 passed</code>, exit 1. Each fails on
+    <code>assert digests == []</code>, and the two digests it lists are the module sources —
+    the reproduction quoted before the repair. The fix was restored immediately and
+    <code>git diff HEAD</code> is empty.</li>
+  </ul>
+
+  <p>Ruff adds no findings on the staged path: <code>ruff check</code> and
+  <code>ruff format --check</code> both pass on <code>reckon/metadata_index.py</code>, against
+  the same two-clean result for the file at <code>HEAD~1</code>.</p>
+</section>
