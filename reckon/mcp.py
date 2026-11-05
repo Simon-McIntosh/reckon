@@ -100,6 +100,7 @@ from reckon.mcp_views import (
     crew_view_name,
     discovery_view,
     error_response,
+    names_one_project,
     normalize_roadmap_view,
     normalize_selector,
     normalize_view,
@@ -2091,7 +2092,7 @@ def _roadmap_selected_view(
     so a caller naming no view is sent to the brief only where the brief can
     answer.
     """
-    if view is None and project != "*" and not project.startswith("graph:"):
+    if view is None and names_one_project(project):
         return BRIEF_VIEW
     return view
 
@@ -2564,11 +2565,14 @@ def _roadmap_tool(
     so clients request ``view='raw'`` explicitly. Portfolio and graph targets
     retain their existing defaults.
 
-    ``since`` names an instant a previous read returned as its ``observed_at``;
-    given, the answer carries ``change_set``: the plan sections whose
-    declaration moved, the sections their landing released, and the runs whose
-    classification moved in the transition stream. Every answer carries
-    ``observed_at``, the instant to pass back on the next read.
+    ``since`` names an instant a previous read returned as its ``observed_at``,
+    which is how a caller asks what moved in the meantime. A read that passes a
+    ``since`` carries ``observed_at`` — the instant to pass back on the next read —
+    and ``change_set``: the plan sections whose declaration moved, the sections
+    their landing released, and the runs whose classification moved in the
+    transition stream. A read that passes no ``since`` has asked no question
+    about a window and is answered exactly as its view built it, carrying
+    neither key, so ``view='raw'`` stays lossless.
     """
 
     # The roadmap read's own validator decides this, before the scan that builds

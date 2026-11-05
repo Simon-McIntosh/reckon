@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
@@ -589,3 +590,48 @@ def test_a_cross_project_read_names_why_it_cannot_bound_a_window(fixture, config
 
     assert mcp.with_change_set is mcp_views.with_change_set
     assert not hasattr(mcp, "_answer_with_change_set")
+
+
+def test_the_roadmap_description_does_not_promise_observed_at_unconditionally():
+    """The tool's description must not promise a key its own contract omits.
+
+    A read naming no window is returned untouched, so a description saying
+    every answer carries ``observed_at`` sends a caller looking for a key that
+    is absent by design. Every sentence that names the instant must also name
+    the argument that produces it.
+    """
+    from reckon import mcp
+
+    description = " ".join((mcp._roadmap_tool.__doc__ or "").split())
+    assert "observed_at" in description, "the description must document the instant"
+    sentences = re.split(r"(?<=[.:])\s+", description)
+    unconditional = [
+        sentence
+        for sentence in sentences
+        if "observed_at" in sentence and "since" not in sentence
+    ]
+    assert not unconditional, (
+        "these sentences promise observed_at without naming the since argument "
+        f"that produces it: {unconditional}"
+    )
+
+
+def test_every_view_read_plan_serves_is_a_declared_view_name():
+    """The views read_plan dispatches are the set ``VIEW_NAMES`` declares.
+
+    ``read_plan`` routes the why view beside its normaliser rather than through
+    it, so a view can be served while the declared set omits it — and a caller
+    reading either list on its own then holds a different vocabulary from the
+    one the read answers with.
+    """
+    from reckon import mcp
+    from reckon.mcp_views import VIEW_NAMES, normalize_view
+
+    documented = set(re.findall(r"``'([a-z]+)'``", mcp._read_plan_tool.__doc__ or ""))
+    assert "why" in documented, "the read_plan description must name the why view"
+    served = documented | set(VIEW_NAMES) | {mcp.WHY_VIEW}
+    assert served == set(VIEW_NAMES), (
+        "views read_plan serves but VIEW_NAMES omits: "
+        f"{sorted(served - set(VIEW_NAMES))}"
+    )
+    assert normalize_view(mcp.WHY_VIEW) == mcp.WHY_VIEW

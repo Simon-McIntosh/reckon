@@ -52,7 +52,7 @@ from reckon.live_run_classification import (
 from reckon.project_state import _natural_identifier_key
 
 VIEW_NAMES = frozenset(
-    {"summary", "detail", "history", "version", "raw", "schema", "section"}
+    {"summary", "detail", "history", "version", "raw", "schema", "section", "why"}
 )
 #: Summary input key carrying a plan's assembled blocker state. The reading
 #: surface that owns a plan's holds fills it with ``roadmap.plan_blocker_state``'s
