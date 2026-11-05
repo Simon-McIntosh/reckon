@@ -281,6 +281,10 @@ def test_a_move_carries_the_sections_state(setup) -> None:
     target_text = (docs_dir / "plans" / f"{SUCCESSOR}.html").read_text()
     assert "The prose that must follow the work." in target_text
     assert "The successor's own prose." in target_text
+    record_end = target_text.index("</section>", target_text.index('<h2 id="s9"'))
+    assert target_text[record_end:].startswith(
+        "</section>\n<p>§ s2 The prose that must follow the work.</p>"
+    ), "the carried paragraph lands after the record, not between it and the heading"
 
     carried = [g for g in target.get("gates") or [] if g["id"] == "g-moved"]
     assert carried, "the open gate moved with the section"
@@ -549,3 +553,30 @@ def test_a_payload_without_a_slug_cannot_defeat_the_same_plan_refusal(setup) -> 
     assert "another plan" in str(error)
     assert path.read_text() == before, "the refused write left the document alone"
     assert _store_module.read_plan(project, SLUG)[1] == version_before
+
+
+def test_carried_prose_lands_after_an_adjacent_record() -> None:
+    document = (
+        '<main><h2 id="s9">&#167; s9</h2>'
+        '<section data-reckon="section" data-id="s9" data-status="implementable">'
+        "</section><p>own prose</p></main>"
+    )
+
+    placed = _store_module._insert_section_prose(document, "s9", "carried prose")
+
+    assert placed == (
+        '<main><h2 id="s9">&#167; s9</h2>'
+        '<section data-reckon="section" data-id="s9" data-status="implementable">'
+        "</section>\n<p>carried prose</p><p>own prose</p></main>"
+    ), "the paragraph goes after the record, never between it and its heading"
+    assert "</section></h2>" not in placed
+
+
+def test_carried_prose_lands_after_the_heading_without_a_record() -> None:
+    document = '<main><h2 id="s9">&#167; s9</h2><p>own prose</p></main>'
+
+    placed = _store_module._insert_section_prose(document, "s9", "carried prose")
+
+    assert placed == (
+        '<main><h2 id="s9">&#167; s9</h2>\n<p>carried prose</p><p>own prose</p></main>'
+    ), "with no record the paragraph follows the heading itself"
