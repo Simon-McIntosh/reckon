@@ -3218,6 +3218,179 @@ def section_readiness_rows(
     )
 
 
+#: The primary state a critical-path link reports, in the precedence that
+#: decides it. A link is one section the path runs through, so these are the
+#: four ways a section stands between a reader and its work: somebody is on it,
+#: nobody is and it could be taken, a gate holds it, or a wait holds it.
+IN_FLIGHT = "in flight"
+READY_IDLE = "ready-idle"
+GATED = "gated"
+WAITING = "waiting"
+
+
+def _link_holds(
+    named: Iterable[Mapping[str, Any]],
+) -> list[dict[str, str]]:
+    """The open gates and unmet waits among one section's named holds.
+
+    A section row also carries the decisions that govern it, which are not part
+    of what this link reports: the four primary states are about dispatch and
+    the two hold kinds below are what stands in front of one. Gates come first
+    so a link held by both names its gate before its wait, and each kind keeps a
+    stable order by id so two builds of one tree report the same list.
+    """
+
+    gates = sorted(
+        (
+            {
+                "kind": GATE_BLOCKER,
+                "id": str(hold.get("id") or ""),
+                "status": str(hold.get("status") or ""),
+            }
+            for hold in named
+            if hold.get("kind") == GATE_BLOCKER
+        ),
+        key=lambda row: row["id"],
+    )
+    waits = sorted(
+        (
+            {
+                "kind": SECTION_DEPENDENCY_BLOCKER,
+                "id": str(hold.get("ref") or ""),
+            }
+            for hold in named
+            if hold.get("kind") == SECTION_DEPENDENCY_BLOCKER
+        ),
+        key=lambda row: row["id"],
+    )
+    return [*gates, *waits]
+
+
+def _critical_path_links(
+    critical: dict[str, Any],
+    *,
+    section_runs: Mapping[tuple[str, str], list[dict[str, Any]]],
+    ready_sections_by_plan: Mapping[str, list[str]],
+    section_holds_by_plan: Mapping[str, Mapping[str, list[dict[str, Any]]]],
+    coordinators: Mapping[str, Mapping[str, Any]],
+) -> None:
+    """Give each link of the critical path its primary state and its holds.
+
+    The path is read the way a coordinator reads it: what a link is doing first,
+    then what stands in its way. The primary state is the first that applies, in
+    the order in flight (a live run names it), ready-idle (the section is
+    dispatchable and nothing has taken it, so the plan's coordinator is who to
+    ask), gated (an open gate names it) and waiting (an unmet wait names it). A
+    link none of the four describes reports no primary state rather than a fifth
+    one invented here.
+
+    ``holds`` carries every open gate and every unmet wait beside the state, so
+    a link both gated and waiting reads as gated with both listed. The rows are
+    in path order, which puts the head first: the head is the deepest
+    prerequisite the chain forces, and a reader starts there.
+
+    ``critical["sections"]`` stays the list of refs it has always been, so every
+    reader of the path's order keeps reading it, and the rows are carried beside
+    it under ``links``.
+    """
+
+    rows: list[dict[str, Any]] = []
+    for ref in (str(node) for node in critical.get("sections") or ()):
+        plan_slug, _, section = ref.partition("#")
+        named = section_holds_by_plan.get(plan_slug, {}).get(section, [])
+        holds = _link_holds(named)
+        runs = sorted(
+            section_runs.get((plan_slug, section))
+            or section_runs.get((plan_slug, section_record_id(section)))
+            or (),
+            key=lambda run: str(run.get("run_id") or ""),
+        )
+        row: dict[str, Any] = {
+            "ref": ref,
+            "plan": plan_slug,
+            "section": section,
+            "primary_state": "",
+            "holds": holds,
+        }
+        coordinator = str(
+            (coordinators.get(plan_slug) or {}).get("coordinator") or ""
+        ).strip()
+        if runs:
+            row["primary_state"] = IN_FLIGHT
+            row["run_id"] = str(runs[0].get("run_id") or "")
+        elif section in ready_sections_by_plan.get(plan_slug, []):
+            row["primary_state"] = READY_IDLE
+            row["coordinator"] = coordinator or None
+        elif holds and holds[0]["kind"] == GATE_BLOCKER:
+            row["primary_state"] = GATED
+            row["gate"] = holds[0]["id"]
+        elif holds:
+            row["primary_state"] = WAITING
+            row["wait"] = holds[0]["id"]
+        rows.append(row)
+    critical["links"] = rows
+    head = rows[0] if rows else None
+    critical["head"] = str((head or {}).get("ref") or "")
+    critical["head_note"] = _head_note(head)
+
+
+def _head_note(head: Mapping[str, Any] | None) -> str:
+    """One sentence saying what the path starts on, in words.
+
+    An idle head is the case a reader most needs said outright: the path's first
+    link is dispatchable and nobody has taken it, so the sentence names who to
+    ask rather than leaving that to a field the reader has to know to look for.
+    """
+
+    if not head:
+        return "No open path carries work."
+    ref = str(head.get("ref") or "")
+    state = str(head.get("primary_state") or "")
+    if state == IN_FLIGHT:
+        return (
+            f"The head link {ref} is in flight (run {head.get('run_id') or 'unnamed'})."
+        )
+    if state == READY_IDLE:
+        coordinator = head.get("coordinator")
+        said = f"The head link {ref} is idle: ready with no run on it"
+        if coordinator:
+            return f"{said}, coordinated by {coordinator}."
+        return f"{said}, and no coordinator is on record."
+    if state == GATED:
+        return (
+            f"The head link {ref} is gated by {head.get('gate') or 'an unnamed gate'}."
+        )
+    if state == WAITING:
+        return f"The head link {ref} waits on {head.get('wait') or 'an unnamed ref'}."
+    return f"The head link {ref} reports no primary state."
+
+
+def _critical_path_coordinators(
+    project: str,
+    docs_dir: Path | None,
+    pointers: Iterable[Mapping[str, Any]],
+    now: datetime | None,
+) -> dict[str, Any]:
+    """Each plan's coordinator, read from the ledger beside its recorded owner.
+
+    An unreadable ledger names no coordinator, which is the answer a row reports
+    as unowned rather than as a failure: the path still reads, and the session
+    that would take the work is simply not known to this read.
+    """
+
+    from reckon.crew.plan_coordinator import resolve_plan_coordinators
+
+    try:
+        return resolve_plan_coordinators(
+            project,
+            root=docs_dir.parent if docs_dir is not None else None,
+            now=now,
+            pointers=pointers,
+        )["plans"]
+    except Exception:  # noqa: BLE001 — an unreadable ledger names no coordinator
+        return {}
+
+
 def build_roadmap(
     project: str,
     inventory: list[dict[str, Any]],
@@ -3229,6 +3402,7 @@ def build_roadmap(
     project_manifest: dict[str, Any] | None = None,
     review: dict[str, Any] | None = None,
     docs_dir: Path | str | None = None,
+    now: datetime | None = None,
 ) -> dict[str, Any]:
     """Return pending work, execution paths, progress, blockers, and wiring findings.
 
@@ -3236,6 +3410,9 @@ def build_roadmap(
     through to the wiring scan so a worktree-scoped roadmap reads standalone
     declarations from the same tree as the rows it judges. Absent, the wiring
     scan falls back to the project's registered mount.
+
+    ``now`` is the instant a plan's coordinator is judged against when the
+    critical path names who to ask about an idle link; absent, the wall clock.
 
     The pass is read-only, so every slug it resolves shares one scan of each
     docs tree rather than rescanning the tree per plan.
@@ -3252,6 +3429,7 @@ def build_roadmap(
             project_manifest=project_manifest,
             review=review,
             docs_dir=docs_dir,
+            now=now,
         )
     scope = _BUILT_ROADMAP.get()
     if scope is not None:
@@ -3270,6 +3448,7 @@ def _build_roadmap(
     project_manifest: dict[str, Any] | None,
     review: dict[str, Any] | None,
     docs_dir: Path | str | None,
+    now: datetime | None = None,
 ) -> dict[str, Any]:
 
     artifacts: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -4261,6 +4440,19 @@ def _build_roadmap(
     # The sections the critical path runs through, so a ranked section row
     # reports the same membership a plan row does.
     critical_sections = set(critical.get("sections") or [])
+    # The path read link by link: each section it crosses carries its primary
+    # state and everything holding it, so a reader starts at the head with the
+    # work's own answer rather than a list of refs to look up.
+    if critical.get("sections"):
+        _critical_path_links(
+            critical,
+            section_runs=section_runs,
+            ready_sections_by_plan=ready_sections_by_plan,
+            section_holds_by_plan=section_holds_by_plan,
+            coordinators=_critical_path_coordinators(
+                project, resolved_docs, pointers, now
+            ),
+        )
 
     def plan_key(row: dict[str, Any]) -> tuple[Any, ...]:
         return plan_ranking_key(
