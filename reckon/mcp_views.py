@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import base64
 import copy
-import inspect
 import json
 import re
 import sqlite3
@@ -32,6 +31,7 @@ from reckon._timestamps import parse_utc
 from reckon.crew import lane_document as lane_document_module
 from reckon.crew import rollout as rollout_module
 from reckon.crew import staleness as staleness_module
+from reckon.crew.runs import accepts_keyword
 from reckon.doccheck import lifecycle_staleness, modified_age_days
 from reckon.evidence import EXECUTABLE_SECTION_ROLES
 from reckon.lifecycle import (
@@ -1906,7 +1906,7 @@ def partition_live_runs(
     interrupted: dict[str, list[dict[str, str]]] = {}
     recorded = _recorded_live_run_classifications(project)
     classifier = classify_pointer
-    if "pointers" in inspect.signature(classify_pointer).parameters:
+    if accepts_keyword(classify_pointer, "pointers"):
         classifier = partial(classify_pointer, pointers=project_pointers)
     for pointer in project_pointers:
         plan = _run_target_plan(pointer)

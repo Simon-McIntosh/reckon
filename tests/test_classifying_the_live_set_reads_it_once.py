@@ -16,6 +16,58 @@ from reckon.mcp_views import partition_live_runs
 
 PROJECT = "snapshot-fixture"
 PLAN = "fixture-plan"
+BASE_CLASSIFICATIONS = {
+    "r-source-0": "scoring",
+    "r-source-1": "scoring",
+    "r-source-2": "scoring",
+    "r-source-3": "scoring",
+    "r-source-4": "scoring",
+    "r-source-5": "scoring",
+    "r-source-6": "scoring",
+    "r-source-7": "scoring",
+    "r-source-8": "scoring",
+    "r-source-9": "scoring",
+    "r-source-10": "scoring",
+    "r-source-11": "scoring",
+    "r-source-12": "scoring",
+    "r-source-13": "scoring",
+    "r-source-14": "scoring",
+    "r-source-15": "scoring",
+    "r-source-16": "scoring",
+    "r-source-17": "scoring",
+    "r-source-18": "scoring",
+    "r-source-19": "scoring",
+    "r-source-20": "scoring",
+    "r-source-21": "scoring",
+    "r-source-22": "scoring",
+    "r-source-23": "scoring",
+    "r-source-24": "scoring",
+    "r-source-25": "scoring",
+    "r-source-26": "scoring",
+    "r-source-27": "scoring",
+    "r-source-28": "scoring",
+    "r-source-29": "scoring",
+    "r-source-30": "scoring",
+    "r-source-31": "scoring",
+    "r-source-32": "scoring",
+    "r-source-33": "scoring",
+    "r-source-34": "scoring",
+    "r-source-35": "scoring",
+    "r-source-36": "scoring",
+    "r-source-37": "scoring",
+    "r-source-38": "scoring",
+    "r-source-39": "scoring",
+    "r-review-0": "running",
+    "r-review-1": "running",
+    "r-review-2": "running",
+    "r-review-3": "running",
+    "r-review-4": "running",
+    "r-review-5": "running",
+    "r-review-6": "running",
+    "r-review-7": "running",
+    "r-review-8": "running",
+    "r-review-9": "running",
+}
 
 
 def _pointers(tmp_path) -> list[dict[str, Any]]:
@@ -79,21 +131,16 @@ def test_partition_classifies_fifty_from_one_live_read(
     monkeypatch.setattr(recovery_review_dispatch, "list_live", list_live)
     monkeypatch.setattr(recovery_review_delivery, "list_live", list_live)
 
-    # The single-record reading retains the base revision's independent read.
-    # It supplies an oracle for every resulting category before measuring the
-    # partition, whose classifications must stay identical.
-    expected = {
-        pointer["run_id"]: recovery.classify_pointer(pointer)["classification"]
-        for pointer in pointers
-    }
-    assert len(expected) == 50
-    assert len(reads) > 1  # positive control: independent reads are counted
+    # A standalone classification exercises the counter before the partition
+    # is measured; an empty counter must not pass as a cheap live-set read.
+    recovery.classify_pointer(pointers[0])
+    assert reads
     reads.clear()
 
     live, interrupted = partition_live_runs(PROJECT, pointers)
     rows = live[PLAN] + interrupted.get(PLAN, [])
     observed = {row["run_id"]: row["classification"] for row in rows}
-    assert observed == expected
+    assert observed == BASE_CLASSIFICATIONS
     assert len(reads) <= 1
 
 
