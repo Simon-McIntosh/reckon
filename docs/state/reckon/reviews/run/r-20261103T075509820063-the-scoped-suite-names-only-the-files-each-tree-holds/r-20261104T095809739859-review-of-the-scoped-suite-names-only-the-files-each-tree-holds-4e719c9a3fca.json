@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1404",
+    "reckon/crew/promotion_records.py:607",
+    "reckon/crew/recovery_repair_dispatch.py:823"
+  ],
+  "completed_at": "2026-11-04T10:10:21.514Z",
+  "dispatched_at": "2026-11-04T10:05:10Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking, noted at landing",
+      "recorded_at": "2026-11-04T12:29:46.066749+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_scoped_suite_names_only_present_files.py",
+      "line": "245",
+      "severity": "non-blocking",
+      "text": "non-blocking: the acceptance case writes the arms it later asserts on from `_scoped_suite_command`'s own output (at_base/at_head at lines 220-221, written into the manifest at 241-244) and then asserts `suite_delta[\"status\"] == \"clean\"` at 245, so that assertion moves with the code under test and would hold whatever the resolver returned; the real guard is the independent inequality at 222-223, and a durability claim resting on line 245 alone would overstate what the case protects."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "pass \u2014 read commit by commit over 150b6eba028186be10eea92babae838ff6fd86d8..4e719c9a3fcac3eb591490cf94cb98b84194d42f: 40afa2aa82 deletes a second byte-identical `_write_suite_manifest` from the test file, and 4e719c9a3f adds the 75-line evidence fragment; no production code changes.",
+    "done_when": "pass \u2014 the done-when names tests/test_a_scoped_suite_names_only_present_files.py, and its five cases assert per-tree resolution at lines 204-210 and the collected-nothing refusal at lines 317-320, with the manifest recording 5 passed EXIT=0 at base and head, 5 failed against the pre-rule module, and the declared negative control 3 failed EXIT=1.",
+    "goal": "pass \u2014 the goal is that the scoped suite names only the files each tree holds; that behaviour exists at reckon/crew/promotion_records.py:536-543, and the node delivered the verification and landing record the still-open section needed rather than a second implementation.",
+    "manifest": "pass \u2014 the reviewed manifest.md reads status complete with commits 40afa2aa82 and 4e719c9a3f, the literal gate command, five named logs, both suite arms completed with 0 failures, the negative control path, and the velocity.py duplication under outside_scope.",
+    "write_paths": "pass \u2014 the declared scope is reckon/crew/promotion_records.py, tests/test_a_scoped_suite_names_only_present_files.py, docs/evidence/fragments/scoring-should-stop-a-promotion/the-scoped-suite-names-only-the-files-each-tree-holds.html and docs/figures/scoring-should-stop-a-promotion/the-scoped-suite-names-only-the-files-each-tree-holds; the diff touches exactly the test file and the evidence fragment and nothing else."
+  },
+  "justifications": {
+    "durability": "the five guards in tests/test_a_scoped_suite_names_only_present_files.py:204-360 do fail against the pre-rule module (base-arm.log, 5 failed), but this node added no assertion, and re-introducing the shadowing `_write_suite_manifest` duplicate it deleted would redden nothing.",
+    "evidence": "the manifest records both gate arms and the negative control with log paths, and the logs carry their revision header and a bare EXIT line (after-arm.log 5 passed EXIT=0, base-arm.log 5 failed EXIT=1 against the pre-rule module), so the result is recorded rather than claimed.",
+    "fit": "the deletion at tests/test_a_scoped_suite_names_only_present_files.py:356 leaves the surviving definition at line 195 in place, and the evidence fragment follows the plan-evidence meta vocabulary of docs/evidence/fragments/scoring-should-stop-a-promotion/ with no plan or tracker label in a code symbol or path.",
+    "goal_fidelity": "the goal's behaviour is in the tree at reckon/crew/promotion_records.py:536-543, where the scoped placeholder is resolved over `_paths_present_in_tree` at the arm's revision, but this node's own diff implements none of it and contributes a verification record plus a de-duplication.",
+    "reuse": "the diff adds no definition and removes a byte-identical duplicate helper, and the one same-capability owner outside the diff, `_tree_paths` at reckon/velocity.py:337, is outside this node's fence and recorded under outside_scope.",
+    "scope_discipline": "`git diff --stat 150b6eba02..4e719c9a3f` shows only tests/test_a_scoped_suite_names_only_present_files.py and docs/evidence/fragments/scoring-should-stop-a-promotion/the-scoped-suite-names-only-the-files-each-tree-holds.html, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the scoped suite names only the files each tree holds; that behaviour is present at reckon/crew/promotion_records.py:536-543, and this node delivered the verification and landing record for the still-open section rather than a second implementation.\nVERDICT done_when: the done-when names tests/test_a_scoped_suite_names_only_present_files.py; its five cases assert per-tree resolution at lines 204-210 and the collected-nothing refusal at lines 317-320, and the manifest records 5 passed EXIT=0 at base and head, 5 failed against the pre-rule module, and the declared negative control 3 failed EXIT=1.\nVERDICT write_paths: the declared scope names promotion_records.py, the test file, the evidence fragment and the figure directory; the diff at 150b6eba02..4e719c9a3f touches exactly the test file and the evidence fragment and nothing else.\nVERDICT manifest: read; it records status complete, commits 40afa2aa82 and 4e719c9a3f, the literal gate command, five named logs, both suite arms completed with zero failures, and the reckon/velocity.py duplication under outside_scope.\nVERDICT diff: read commit by commit; 40afa2aa82 deletes a byte-identical duplicate `_write_suite_manifest` from tests/test_a_scoped_suite_names_only_present_files.py:356 and 4e719c9a3f adds the 75-line evidence fragment, with no production code change.\nCALL_SITES: reckon/crew/dispatch.py:1404, reckon/crew/promotion_records.py:607, reckon/crew/recovery_repair_dispatch.py:823\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the goal's behaviour is in the tree at reckon/crew/promotion_records.py:536-543, but this node's own diff implements none of it and contributes a verification record plus a de-duplication.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest records both arms and the negative control with log paths, and the logs carry a revision header and a bare EXIT line (after-arm.log 5 passed EXIT=0, base-arm.log 5 failed EXIT=1), so the result is recorded rather than claimed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat 150b6eba02..4e719c9a3f` shows only tests/test_a_scoped_suite_names_only_present_files.py and docs/evidence/fragments/scoring-should-stop-a-promotion/the-scoped-suite-names-only-the-files-each-tree-holds.html, both inside the declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: the five guards at tests/test_a_scoped_suite_names_only_present_files.py:204-360 do fail against the pre-rule module (5 failed), but this node added no assertion and re-introducing the duplicate helper it deleted would redden nothing.\nSCORE fit: 19\nJUSTIFICATION fit: the deletion at tests/test_a_scoped_suite_names_only_present_files.py:356 leaves the surviving definition at line 195 in place, and the fragment follows the plan-evidence meta vocabulary with no plan or tracker label in a symbol or path.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition and removes a byte-identical duplicate helper, and the only same-capability owner outside the diff, `_tree_paths` at reckon/velocity.py:337, is outside this node's fence and recorded under outside_scope.\nFINDING tests/test_a_scoped_suite_names_only_present_files.py:245 non-blocking: the acceptance case writes the arms it later asserts on from `_scoped_suite_command`'s own output (at_base/at_head at lines 220-221) and then asserts `suite_delta[\"status\"] == \"clean\"` at 245, so that assertion moves with the code under test; the real guard is the independent inequality at 222-223, and a durability claim resting on line 245 alone would overstate what the case protects.",
+  "review_run_id": "r-20261104T095809739859-review-of-the-scoped-suite-names-only-the-files-each-tree-holds-4e719c9a3fca",
+  "reviewed_base_sha": "150b6eba028186be10eea92babae838ff6fd86d8",
+  "reviewed_head_sha": "4e719c9a3fcac3eb591490cf94cb98b84194d42f",
+  "reviewed_run_id": "r-20261103T075509820063-the-scoped-suite-names-only-the-files-each-tree-holds",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T10:10:29.311799+00:00",
+  "total": 109
+}
