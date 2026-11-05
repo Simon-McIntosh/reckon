@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own arms: baseline_suite records revision ab87725e67ab7377c2efb9b60a263578f3f2f8de, command 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_close_names_each_deferred_section_and_moves_it.py', exit_status 4, completed true, failure_count 0, failure_ids [] (coordinator-armed-base.log: 'ERROR: file or directory not found', 'no tests ran', EXIT=4, because the node test file does not exist at that revision); after_suite records revision c0290a31706d4ffe793f61ca238837654c599c4d, exit_status 0, completed true, failure_count 0, failure_ids [] (coordinator-armed-head.log: '7 passed in 5.59s', EXIT=0). Both logs were opened and their headers name the revision, tree and literal command, so added_failure_count is 0 and no id was added.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/_store.py:_carry_section_moves",
+    "reckon/_store.py:_write_successor_moves",
+    "reckon/_store.py:1593",
+    "reckon/_store.py:3147"
+  ],
+  "completed_at": "2026-11-05T21:36:47.544Z",
+  "dispatched_at": "2026-11-05T21:23:17Z",
+  "evidence_notes": "The two gained commits' assertions were read against the defect they guard. tests/test_close_names_each_deferred_section_and_moves_it.py:565-571 and :578-582 compare the function's whole output against independently written literals, so reinstating a heading-end insertion for the adjacent-record case would redden :568; negative-control-placement.log does exactly that mutation of reckon/_plan_html.py:587-600 at 101f89ca51 and records '1 failed, 8 deselected ... EXIT=1'. The end-to-end assertion at :284-287 slices from the record's own closing tag, so a paragraph placed before the record fails it. The one exception is :572, recorded as a non-blocking finding: '</section></h2>' is unreachable in either branch, so that line cannot name a falsifying condition, though durability does not rest on it. The evidence fragment's figures were checked against gate-three-final.log (revision 101f89ca51; '3 failed, 3733 passed in 972.22s'; EXIT=1) and gate5-test_close_names_each_deferred_section_and_moves_it.log (revision f059402d4b; 9 passed; EXIT=0).",
+  "findings": [
+    {
+      "file": "tests/test_close_names_each_deferred_section_and_moves_it.py",
+      "line": 572,
+      "text": "non-blocking: 'assert \"</section></h2>\" not in placed' cannot fail for any insertion this function performs, since the paragraph is only ever spliced after a heading or after a record and </h2> always precedes the record; it adds no guard to the placement the case exists to protect, which the exact-equality assertion above it already covers."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/_store.py:_carry_section_moves (:3012) calls the wrapper at :3147 from the close path at :1593; _write_successor_moves (:3099) reaches _insert_section_prose at :3147, and _plan_html.insert_section_prose (:557) has no production caller other than that wrapper.",
+    "diff": "Read c0290a3170..f059402d4b commit by commit: 101f89ca51 adds 31 lines to the node test file (two placement cases plus an end-to-end placement assertion), and f059402d4b rewrites two lines of the evidence fragment to cite 101f89ca51, 3733 passed and 9 node tests at that revision.",
+    "done_when": "The done_when names tests/test_close_names_each_deferred_section_and_moves_it.py plus tests/test_schema.py and tests/test_a_plan_closes_in_one_op.py; gate-three-final.log records that exact command at revision 101f89ca51 with 3 failed, 3733 passed and EXIT=1, and the node file alone is 9 passed at the reviewed head in gate5-test_close_names_each_deferred_section_and_moves_it.log, which I reproduced.",
+    "goal": "The source node's goal is to make close's deferred-section refusal name both remedies and to carry a moved section's prose, effort, capability, open gates and comments to its successor; the gained commits leave that behaviour alone and close the two record/test gaps the earlier review raised, adding placement assertions at tests/test_close_names_each_deferred_section_and_moves_it.py:284-287, :558-572 and :575-582 and restoring an accurate head citation at docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html:67.",
+    "manifest": "Read; status is complete, the checkpoint records the 101f89ca51 three-file gate and the f059402d4b node-file run, and baseline_suite (ab87725e67, EXIT=4, no tests ran, 0 failures) and after_suite carry the literal armed command with completed true on both arms.",
+    "write_paths": "The source node's fence at prompt.txt:78-84 lists tests/test_close_names_each_deferred_section_and_moves_it.py and docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html; both files the gained diff touches are inside it."
+  },
+  "justifications": {
+    "durability": "tests/test_close_names_each_deferred_section_and_moves_it.py:565-571 compares the whole output against an independent literal and negative-control-placement.log reddens exactly that case under the mutated placement (1 failed, 8 deselected, EXIT=1), but :572's second assertion cannot fail under any insertion the function can make.",
+    "evidence": "gate-three-final.log is headed revision 101f89ca51 and ends '3 failed, 3733 passed ... EXIT=1'; its three FAILED ids are byte-identical to the base arm's in gate-base-attribution.log, and I re-ran the node file at the reviewed head myself (9 passed in 10.17s, EXIT=0).",
+    "fit": "The two added cases are plain functions in the file's existing pytest style and are named for the behaviour they pin; tests/test_close_names_each_deferred_section_and_moves_it.py:568's message states the invariant rather than the ticket.",
+    "goal_fidelity": "The two gained commits do what the goal states: tests/test_close_names_each_deferred_section_and_moves_it.py:558 and :575 pin where the carried paragraph lands, and docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html:67-70 now cites the three-file run at the code head 101f89ca51.",
+    "reuse": "The diff defines no production symbol; it exercises the existing owner reckon/_plan_html.py:557 insert_section_prose through its successor wrapper at reckon/_store.py:2965, and a grep of tests/ and reckon/ for insert_section_prose or 'carried prose' outside the node file returns only those two owners, so nothing is forked.",
+    "scope_discipline": "The gained diff touches exactly two files, docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html and tests/test_close_names_each_deferred_section_and_moves_it.py, both inside the source node's declared write paths at prompt.txt:78-84."
+  },
+  "node": "review-of-close-names-each-deferred-section-and-moves-it-f059402d4b2f",
+  "node:reviewed": "close-names-each-deferred-section-and-moves-it",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that close's deferred-section refusal names both remedies and that a moved_to descope carries the section's prose, effort, capability, open gates and comments to its successor; the gained commits leave that behaviour alone and close two record/test gaps, adding placement assertions at tests/test_close_names_each_deferred_section_and_moves_it.py:284-287, :558-572 and :575-582 and restoring an accurate head citation at docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html:67.\nVERDICT done_when: the done_when names tests/test_close_names_each_deferred_section_and_moves_it.py plus tests/test_schema.py and tests/test_a_plan_closes_in_one_op.py; gate-three-final.log records that exact command at revision 101f89ca51 with 3 failed, 3733 passed, EXIT=1, and I re-ran the node file at the reviewed head myself (9 passed in 10.17s, EXIT=0).\nVERDICT write_paths: the source node's fence at prompt.txt:78-84 lists tests/test_close_names_each_deferred_section_and_moves_it.py and docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html, and both files the gained diff touches are inside it.\nVERDICT manifest: read; status is complete, the checkpoint records the 101f89ca51 three-file gate and the f059402d4b node-file run, baseline_suite records ab87725e67 EXIT=4 with no tests run, and after_suite records 7 passed EXIT=0 at c0290a3170, both completed.\nVERDICT diff: read c0290a3170..f059402d4b commit by commit; 101f89ca51 adds 31 lines to tests/test_close_names_each_deferred_section_and_moves_it.py and f059402d4b rewrites two lines of docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html to cite the three-file run at 101f89ca51 (3 failed, 3733 passed, EXIT=1) and 9 node tests there.\nCALL_SITES: reckon/_store.py:_carry_section_moves, reckon/_store.py:_write_successor_moves, reckon/_store.py:1593, reckon/_store.py:3147\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_close_names_each_deferred_section_and_moves_it.py:558 and :575 pin the placement the goal's carried prose depends on, and theirs is the behaviour the successor write reaches through reckon/_store.py:3147.\nSCORE evidence: 19\nJUSTIFICATION evidence: docs/evidence/fragments/a-finished-plan-closes/close-names-each-deferred-section-and-moves-it.html:67 now cites gate-three-final.log, whose header names revision 101f89ca51 and whose three FAILED ids match gate-base-attribution.log exactly.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff of c0290a3170..f059402d4b is two files, both inside the fence listed at prompt.txt:78-84.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_close_names_each_deferred_section_and_moves_it.py:565-571 reddens under the mutation logged in negative-control-placement.log, while :572's 'not in' assertion cannot fail for any insertion the function makes.\nSCORE fit: 19\nJUSTIFICATION fit: the two cases at tests/test_close_names_each_deferred_section_and_moves_it.py:558 and :575 are named for the behaviour they pin and carry no plan or ticket identifiers.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no production definition and exercises the existing owner reckon/_plan_html.py:557 insert_section_prose through reckon/_store.py:2965, a search finding no other carrier of that capability.\nFINDING tests/test_close_names_each_deferred_section_and_moves_it.py:572 non-blocking: the assertion that '</section></h2>' is not in the placed text cannot fail for any insertion this function performs, since </h2> always precedes the record, so it guards nothing the exact-equality assertion above it does not already cover.\n",
+  "review_run_id": "r-20261105T211642039286-review-of-close-names-each-deferred-section-and-moves-it-f059402d4b2f",
+  "reviewed_base_sha": "c0290a31706d4ffe793f61ca238837654c599c4d",
+  "reviewed_head_sha": "f059402d4b2f05ab9653369db1945fdd74501bb4",
+  "reviewed_run_id": "r-20261027T102653154559-close-names-each-deferred-section-and-moves-it",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T21:32:39+00:00",
+  "total": 115
+}
