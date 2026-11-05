@@ -468,6 +468,67 @@ def _fresh_manifest(record: Mapping[str, Any]) -> dict[str, Any] | None:
     return dict(parsed)
 
 
+# How long a promotion waits for a review run's manifest before refusing. A
+# review is promoted the moment its record parses, and the worker writes its
+# manifest a few seconds later while it finishes its own turn; measured on
+# review r-20261021T230313999935, which the loop reported review-ready at 01:34
+# before its manifest existed, and whose first `crew complete` failed reading
+# it. The bound has to cover that write without holding a promotion behind a
+# worker that never writes one, so it is seconds rather than minutes.
+REVIEW_MANIFEST_WAIT_SECONDS = 20.0
+_REVIEW_MANIFEST_POLL_SECONDS = 0.25
+
+
+def _await_review_manifest(
+    run_id: str,
+    record: Mapping[str, Any],
+    *,
+    seconds: float = REVIEW_MANIFEST_WAIT_SECONDS,
+) -> None:
+    """Wait a bound for a review run's manifest, then refuse naming the file.
+
+    A review run's manifest states the node, the status and the commits a
+    promotion reads, so a promotion that starts before the file exists is
+    judging a run whose own account of itself has not been written yet. The
+    review loop promotes as soon as the record parses, which is a few seconds
+    before the worker writes its manifest, so the ordinary case is a manifest
+    that appears while the promotion waits — refusing at once would turn a
+    timing race into an operator's repair.
+
+    Only the absence is waited on: a manifest that is present but older than
+    the attempt is a staleness question the freshness reader already answers,
+    and waiting cannot change what is on disk. A run that declares no manifest
+    path has nothing to wait for, and a non-review run keeps its present
+    behaviour, because this bound exists for the one promotion the fleet starts
+    itself.
+    """
+    from reckon.crew.recovery_review_delivery import _is_review_run
+
+    if not _is_review_run(record):
+        return
+    declared = str(record.get("manifest_path") or "").strip()
+    if not declared:
+        return
+    manifest = Path(declared).expanduser()
+    deadline = time.monotonic() + max(float(seconds), 0.0)
+    while True:
+        try:
+            if manifest.is_file():
+                return
+        except OSError:
+            pass
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        time.sleep(min(_REVIEW_MANIFEST_POLL_SECONDS, remaining))
+    raise CrewError(
+        f"run {run_id!r} has not written its manifest at {manifest} and did not "
+        f"within {seconds:g}s of the promotion being called, so the promotion "
+        "has no account of the run to read. Write the manifest there and "
+        "promote again"
+    )
+
+
 def _manifest_repository_paths(record: Mapping[str, Any]) -> tuple[str, ...]:
     """The paths a run's manifest declares inside the run's own repository.
 
@@ -2365,6 +2426,8 @@ def _landing_preconditions(
         )
     )
     attempt(lambda: _require_no_undisposed_blocking_figure_finding(run_id, record))
+
+    attempt(lambda: _await_review_manifest(run_id, record))
 
     manifest_path = str(record.get("manifest_path") or "")
     manifest_text: str | None = None

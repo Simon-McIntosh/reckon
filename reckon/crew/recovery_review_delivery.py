@@ -356,6 +356,27 @@ def _read_review_record(path: Path) -> tuple[Mapping[str, Any], float] | None:
         return None
 
 
+def _with_derived_total(body: Mapping[str, Any]) -> Mapping[str, Any]:
+    """The record with the total its own six scores sum to, when it carries none.
+
+    A reviewer that scores all six dimensions and leaves the ``total`` line out
+    has delivered a complete review: the total is arithmetic over the record
+    rather than a separate finding, and :func:`reckon.crew.review.read_review`
+    derives it for every other reader. Deriving it here too keeps this verdict
+    from refusing a review that the store, the gate and the promotion all read
+    as complete — the disagreement measured when a coordinator met "record is
+    not a complete review: it lacks total" on a record carrying all six scores.
+
+    A record that does carry a total keeps it: the derivation is only reached
+    where the field is absent, and the stored bytes are never rewritten, so a
+    reader that never goes through this verdict sees the record as it was
+    written.
+    """
+    if review_module._has_integer_total(body):
+        return body
+    return review_module._derive_landed_total(body)
+
+
 def _review_delivery_verdict(record: Mapping[str, Any], project: str) -> dict[str, Any]:
     """The single evaluation of the conditions a review's delivery depends on.
 
@@ -408,7 +429,7 @@ def _review_delivery_verdict(record: Mapping[str, Any], project: str) -> dict[st
             "remedy": "store the review record there, or pass --outcome",
         }
     body, mtime = read
-    missing = _review_missing_measures(body)
+    missing = _review_missing_measures(_with_derived_total(body))
     if missing:
         listed = ", ".join(missing)
         return {
