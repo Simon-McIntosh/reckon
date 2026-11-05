@@ -1,0 +1,115 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-05T20:09:52.252Z",
+  "dispatched_at": "2026-11-05T20:01:30Z",
+  "findings": [
+    {
+      "anchor": "plan.html:66",
+      "id": "single_goal-1",
+      "reason": "a node dispatched on \u00a77 is asked to satisfy a clause its own write paths cannot deliver, and its gate closes on a verdict that covers two deliverables.",
+      "text": "\u00a77 is titled \"Resume and reopen take a halted run, need no new write path, and report their own success\", but its deliverable states \"A resume reporting its own launch is \u00a719's\", so the third clause is another section's goal and its *Why* cites the \u00a719 incident; the plan's own comment `c-20261023-s7-title` records this and asks for a retitle before dispatch",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:46",
+      "id": "single_goal-2",
+      "reason": "\u00a73 is still `implementable`, so the next dispatch inherits a title promising work the section does not do, and one verdict cannot close both.",
+      "text": "\u00a73 is titled \"...and a resumed run's brief names its current head\" while its deliverable says \"The review brief following the run's head is \u00a720's\", so the second half belongs to \u00a720; the comment `c-20261023-s3-title` records the same defect and was declined only because \u00a73 was not being built",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:90",
+      "id": "done_when-1",
+      "reason": "the node's declared falsifier cannot fail, so the gate would certify a guard it never showed firing.",
+      "text": "\u00a711's negative control reads \"removes the retry, and the short lock then fails the append\", but removing the retry also removes the 0.2 s `INDEX_BUSY_TIMEOUT_SECONDS` that only `_retrying` passes (run_store.py:643), leaving the connection sqlite's default 5 s patience (run_store.py:222\u2013230); with `INDEX_RETRY_SECONDS` at 3.0 a lock under the bound is then waited out without the retry, so the control stays green and the clause cannot be satisfied at any hold below 5 s \u2014 the plan's own review comment of 2026-11-05T10:51:57 measures exactly this",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:30",
+      "id": "wiring-1",
+      "reason": "the queue would order \u00a719 behind an unrelated section and let it run beside the section whose code it edits, which is the ordering the declaration exists to prevent.",
+      "text": "the `plan-section-depends-on` map declares `s19: [\"\u2026/the-crew-does-its-own-bookkeeping#s13\"]`, but \u00a719 is \"a resume reports its own launch\" and shares no content with \u00a713 (log paths); \u00a77 does hand it that half (\"A resume reporting its own launch is \u00a719's\", plan.html:69) and both sections rewrite `reckon/crew/resumption.py` and `reckon/crew_run_commands.py`, so the one relationship \u00a719 needs is the one it does not declare",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:155",
+      "id": "reasoning-1",
+      "reason": "the count a coordinator reads in the advice is the one number the round acts on, and two readings of the deliverable both pass the four stated cases.",
+      "text": "\u00a725's second bullet makes \"the blocking count excludes it\" unconditional while the naming half rides the existing stamp-gated rule (`unmarked_findings` at repair.py:260, empty for a record predating `UNMARKED_SEVERITY_AUDIT_STARTED_AT` per `_record_predates_unmarked_audit` at repair.py:182\u2013195), and done-when case 4 tests only a record stamped after that moment \u2014 so for an earlier record the plan does not say whether the unmarked finding is counted, and `blocking_findings` (repair.py:225\u2013240) includes it today",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:137",
+      "id": "single_goal-3",
+      "reason": "as written the section sends a node to reimplement a working guard while the one live defect is tested by a single case under a heading that does not name it.",
+      "text": "\u00a721's heading and deliverable (\"every crew verb that writes a tracked state record commits that path itself\") name one goal, but done-when case 3 tests a different defect \u2014 a second release pass leaving the record byte-identical, a destructive overwrite rather than an uncommitted write; the plan's own build comment of 2026-11-05T09:00:26Z records that the commit half is already repaired at main (`commit_record_write` since `ea059eb6de`, `_commit_landing_writes`) and that the surviving defect is the overwrite alone",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:246",
+      "id": "single_goal-4",
+      "reason": "the build skill dispatches by section id and reads the section body as the authority, so the stale title misleads a reader without changing what the node is asked to do.",
+      "text": "the follow-up `f-tcdiob-016` still titles \u00a716 \"an admitted run that never launches is named as such\", while \u00a716 is now \"A stranded review no longer stands for its run\", and the follow-up recommends dispatching \u00a716",
+      "type": "single_goal",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "2266993b74fc8236d7d2ec0948da78a1cb67803b",
+  "plan_fingerprint": "19d490534d7d990604cc60d4caf8fe17f527c5a44061b79fdbd1fe9f55609988",
+  "plan_slug": "the-crew-does-its-own-bookkeeping",
+  "plan_version": 78,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261105T195031569482-plan-review-of-the-crew-does-its-own-bookkeeping",
+  "reviewed_blob_sha": "4e042b43f5f572d2ae13c301e209c66ee25fa15a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_stranded_launch` (recovery_liveness.py:740), `_review_run_in_flight` (recovery_classification.py:615), the stranded-release branch at recovery_review_dispatch.py:2185\u20132218, `_grant_round_scope` (435), `_repair_launch_refusal` (781), `compose_repair_for_run` (repair.py:764), `declared_severity` (review.py:176), `select_review_for_head` (113), `_accepted_scope_exceptions`, the messages at promotion_scope.py:1439 and :2097, `_crew` (mcp.py:2586), obligations.py:1695 and recovery_review_dispatch.py:2388 all resolve, as does `/reckon/evidence/archive/the-crew-does-its-own-bookkeeping-landed.html` and the two cited plans.",
+    "done_when": "a finding \u2014 \u00a711's negative control cannot go red while `INDEX_RETRY_SECONDS` (3.0 s) is below the sqlite driver's own 5 s patience.",
+    "evidence_paths": "pass \u2014 every gate writes under the run directory, and the arm trees in node-local scratch are inputs rather than evidence, with the logs those runs produce placed on the run's durable path.",
+    "naming": "pass \u2014 the proposed symbols (`_asks_for_a_test`, `review_run_id`, `reviewed_head`) and the test file names speak to their mechanism; no stage labels, ticket numbers or changelog prose reach code.",
+    "reasoning": "a finding \u2014 \u00a725 excludes unclassified findings from the blocking count unconditionally, but names them through the existing stamp-gated `unmarked_findings`, so a record written before `UNMARKED_SEVERITY_AUDIT_STARTED_AT` has no stated count.",
+    "single_goal": "a finding \u2014 \u00a77 and \u00a73 each carry a deliverable their own text hands to another section, and the plan's own comments record the retitle as still owed.",
+    "wiring": "a finding \u2014 \u00a719's declared `depends-on` is `s13` (a log-path check) while \u00a77 explicitly hands \u00a719 its subject and both rewrite `reckon/crew/resumption.py` and `reckon/crew_run_commands.py`."
+  },
+  "section_digests": {
+    "_document": "d228320ae1f898c48abec2566c742a5f988552feda70b66d2e072c90b4897816",
+    "s1": "843bb65a273798e31ae7d542e71c3172be8db96af98b3b5fa5582c0e4b7052b8",
+    "s10": "383abdaed093dc9135b7930e907d6aeaaeff313c10da917e0f90ef21242cc000",
+    "s11": "528ecce7a53f57e54bcf1efa83ff458958c3437b3432895ddecdd835a0e62505",
+    "s12": "cf7304fd49c4d28e5bca798e2fca486ef137e59bce341c819316936d77daf719",
+    "s13": "751a9cd019e8296d87aa5d4f4e45f8a29d84381081120d349dc5bd6b19125ed3",
+    "s14": "37143d66ebad07f999845341b909080392b4fffa341c7553bbece98ce2d93af1",
+    "s15": "327a3b6261f327ba147b39dd2d6fbd1ce595e493e1834f8eb9ef957ea33f55c6",
+    "s16": "be10222fbb926fdc4d836974d1d08c2536144a9031126f7495a6287ee8824637",
+    "s17": "f7a6d1fb09a597263b98f3f9db11f0a156337a303d2ccf5eb3b0d44899d7956f",
+    "s18": "526aabfb15ccc6205c07b6cf24a8c3fd22579f4776d2bd7a971164251a7d6f95",
+    "s19": "0e85b55be35103b90e318507ff6f86e1f640ef451c18250a9bcb4cb4f2e7c1b0",
+    "s2": "0fe853c67da217879c5c8672e5902b9a76353e03c761fc4b411b7d92af3feb8f",
+    "s20": "949f4ed4b742b4afba912a3943856d1af84c9226addd2df16be2024644c5f1ea",
+    "s21": "7e1c07b0431d4b47d90d44bc5d92db9ab1bb89fe6de6fb2f0fb79f61c04261ef",
+    "s22": "5cb33a844f041e4d88c2d1f7620411b91bbffd0c6605f939520cfa7178756424",
+    "s23": "b1aa58f1dbd4f559cc20a27b9f735c21e1c558ba2ab75ee90c390f1a649c6a44",
+    "s24": "dcacf6665c2b437d62dfd9ebfb5bd1f979f111d5438fc6145701595e4d7468bb",
+    "s25": "ca040954bf353ac976d8d5792c30235f6d957564602a674cf827d3f7ccc5b183",
+    "s26": "a0ac709c25dc1d649a9bc70dde6b95c8d7afc430dbf8b8e48c19f08f2376ad18",
+    "s27": "49ce0a37b0cad84e9368042e65abb86b3b21c26be54662c589f95d4b26b968a3",
+    "s28": "48313038856ace751ca6d643dbc5ad6e21b18bac1172db9f777e7b5beb0479be",
+    "s3": "ba6dd9a478bc0199ba62cffc2235c6b7735014d677ac51e4789220cffff43d32",
+    "s4": "725c875cfeb877f71fdc01870943889b9c403c08aa0ee675bdbb100c60d896ee",
+    "s5": "7c304261c964b9ccae1e7148a9bffe48cc81416987e9ed2e9d50d6c5a77df7b7",
+    "s6": "f293425c956b5e910273b5c23cfe8ee7a3a4c1d5565a0c10742e9f7beee7c269",
+    "s7": "9450a2aff439a83861b8a100a49b15e67fd864fa1523edeeafd6c9dd9e0ec5c7",
+    "s8": "1e02f8193f9402b4cf070a0f78feb68f2e3d79a9bb21f00d7c10f33032ed6f37",
+    "s9": "c5acdc2406e91d62930f4e8772839567aca54b6df3e16cbe65878db520b53043"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T20:26:53.504004+00:00"
+}
