@@ -10,18 +10,24 @@ from __future__ import annotations
 
 import html
 import json
+import threading
 from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
-from reckon import _store
+from reckon import _store, serve
 from reckon.crew import directory as directory_module
 from reckon.crew.directory import directory
 from reckon.mcp_views import serve_crew_view
 
 PROJECT = "power_convertor"
 REPOSITORY = "/repos/power_convertor"
+
+#: A real project's plan tree, with a critical path that reaches the
+#: plan-coordinator resolver — the shape that puts plan discovery inside the
+#: discovery lock.
+BOARD_FIXTURE = Path(__file__).parent / "fixtures" / "coordinator_board_0850"
 
 
 def _plan_html(slug: str, *, sections: tuple[str, ...], owner: str = "") -> str:
@@ -90,6 +96,51 @@ def _pointer(
             "log_path": str(log),
         },
     )
+
+
+def test_discovery_returns_while_the_roadmap_reads_coordinators(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Plan discovery holds the server's discovery lock while it builds the
+    # roadmap, and the roadmap's critical path asks the plan-coordinator
+    # resolver who owns each plan. That resolver reads the directory to decide
+    # which sessions are still dispatching, so a directory read that derives
+    # ready-idle owners runs plan discovery again, and waits on the lock its
+    # own caller holds. The read is asked for its idle owners rather than
+    # deriving them unasked, and this is the case that fails when it is not.
+    home = tmp_path / "home"
+    home.mkdir()
+    state_root = tmp_path / "state"
+    state_root.mkdir()
+    mounts = home / "mounts.json"
+    mounts.write_text(
+        json.dumps({PROJECT: str(BOARD_FIXTURE / "docs")}), encoding="utf-8"
+    )
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    monkeypatch.setenv("RECKON_MOUNTS_PATH", str(mounts))
+    monkeypatch.setenv("RECKON_STATE_ROOT", str(state_root))
+    monkeypatch.setattr(serve, "_MOUNTS_FILE", mounts)
+    monkeypatch.setattr(serve, "_STATE_ROOT", state_root)
+    monkeypatch.setattr("reckon.crew.list_live", lambda *a, **k: [])
+    serve._DISC_CACHE.clear()
+    docs = BOARD_FIXTURE / "docs"
+    answer: dict[str, object] = {}
+
+    def discover() -> None:
+        try:
+            answer["result"] = serve.discover_plans(docs, PROJECT, docs / "state")
+        except BaseException as exc:  # noqa: BLE001 — reported as the outcome
+            answer["error"] = exc
+
+    worker = threading.Thread(target=discover, daemon=True)
+    worker.start()
+    worker.join(timeout=30)
+    assert not worker.is_alive(), (
+        "plan discovery did not return: the directory read is running plan "
+        "discovery from inside the discovery lock"
+    )
+    assert "error" not in answer, answer.get("error")
+    assert answer["result"]["inventory"]
 
 
 def _seed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, wide: int = 0) -> Path:
@@ -197,7 +248,7 @@ def test_directory_names_section_held_paths_and_ready_idle_owners(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     home = _seed(tmp_path, monkeypatch)
-    view = directory(PROJECT)
+    view = directory(PROJECT, ready_idle=True)
 
     by_session = {row["session"]: row for row in view["coordinators"]}
 
@@ -252,7 +303,7 @@ def test_ready_idle_owner_keeps_every_section_past_one_page(
     # the join read its first page and stopped.
     monkeypatch.setattr(directory_module, "_READY_IDLE_PAGE_LIMIT", 7)
     _seed(tmp_path, monkeypatch, wide=40)
-    view = directory(PROJECT)
+    view = directory(PROJECT, ready_idle=True)
     by_session = {row["session"]: row for row in view["coordinators"]}
     wide = by_session["wide-coordinator"]
     sections = sorted(ref.partition("#")[2] for ref in wide["ready_idle_sections"])
@@ -265,7 +316,7 @@ def test_workstation_scope_lists_the_idle_owner(
     # The default directory read spans every mounted project, so a coordinator
     # with ready-idle work would be missing if the join were project-only.
     _seed(tmp_path, monkeypatch)
-    view = directory()
+    view = directory(ready_idle=True)
     by_session = {row["session"]: row for row in view["coordinators"]}
     idle = by_session["idle-coordinator"]
     assert idle["runs"] == []

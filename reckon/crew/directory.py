@@ -321,13 +321,20 @@ def directory(
     node_id: str | None = None,
     pointers: Iterable[Mapping[str, Any]] | None = None,
     fields: Iterable[str] | None = None,
+    ready_idle: bool = False,
 ) -> dict[str, Any]:
     """Group every live pointer by its owning coordinator session.
 
-    Each run row is built here and projected here, through the one projection
-    :func:`reckon.crew.query.project_run_rows`, so this view and every other
+    Each run row is built here and projected here, so this view and every other
     view that lists a run carry the same field vocabulary and the same refusal
     for a field the view does not have.
+
+    ``ready_idle`` asks for the ready-idle owners beside the runs. Those rows are
+    not read on every call: deriving them runs plan discovery, which takes the
+    server's discovery lock for this project, and the plan-coordinator resolver
+    reaches this view from inside that same lock when a roadmap is built. A
+    reader that wants them asks; the resolver, which is asking about liveness,
+    does not.
     """
     if run_id and node_id:
         raise DirectoryError("select by run id or node id, not both")
@@ -380,10 +387,10 @@ def directory(
         grouped[key].append(row)
 
     queued_by_run = _queued_rows(records, rows_by_run)
-    ready_idle = _ready_idle_rows(project, records)
+    ready_idle_rows = _ready_idle_rows(project, records) if ready_idle else []
     idle_by_session: dict[str, list[str]] = defaultdict(list)
     idle_owner_by_session: dict[str, str] = {}
-    for row in ready_idle:
+    for row in ready_idle_rows:
         idle_by_session[row["session"]].extend(row["sections"])
         idle_owner_by_session[row["session"]] = row["plan_owner"]
 
@@ -462,11 +469,16 @@ def directory(
         "coordinators": coordinators,
         "unowned_run_count": len(unowned_runs),
         "unowned_runs": sorted(unowned_runs, key=lambda row: row["run_id"]),
-        # Which scope the ready-idle join ran over. A workstation-scope read
-        # spans every mounted project, so the join is made on the project-scoped
-        # read and named here rather than reported as an empty answer.
+        # Which scope the ready-idle join ran over, so a read that did not ask
+        # for those rows is not mistaken for one that found none. A
+        # workstation-scope read spans every mounted project, so its join is
+        # made per project and named here rather than reported as its answer.
         "ready_idle_join": (
-            "project" if project not in (None, "*") else "workstation_scope"
+            "not_requested"
+            if not ready_idle
+            else "project"
+            if project not in (None, "*")
+            else "workstation_scope"
         ),
     }
     if selected_by:

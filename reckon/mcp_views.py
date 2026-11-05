@@ -4126,7 +4126,11 @@ def serve_crew_view(
     if view == "directory":
         try:
             payload = crew_directory(
-                project, run_id=run_id, node_id=node, fields=fields
+                project,
+                run_id=run_id,
+                node_id=node,
+                fields=fields,
+                ready_idle=True,
             )
             if run_id or node:
                 # A selection resolves one run rather than listing rows, so it
