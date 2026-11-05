@@ -3055,13 +3055,26 @@ def _publish_watch_stream(project: str, records: Iterable[Mapping[str, Any]]) ->
     to that sweep rather than re-entered. The transition write never waits on
     the derivation: the sweep runs in its own thread, one at a time, and a
     trigger arriving while one is in flight is skipped.
+
+    The transition write reads the live pointers again for itself: composing a
+    transition classifies each pointer, and a run awaiting review classifies by
+    asking whether a review is in flight, which lists the project's live runs
+    through :func:`list_live`. That listing would publish this stream again, so
+    a call made from inside a running transition on this thread is left to that
+    transition for the same reason the sweep's is.
     """
-    if getattr(_SWEEP_LOCAL, "in_sweep", False):
+    if getattr(_SWEEP_LOCAL, "in_sweep", False) or getattr(
+        _SWEEP_LOCAL, "in_transition", False
+    ):
         return
     producer = _WATCH_STREAM_PRODUCERS.get(project)
     if producer is None:
         return
-    transition_fired = _publish_watch_transitions(project, producer, records)
+    _SWEEP_LOCAL.in_transition = True
+    try:
+        transition_fired = _publish_watch_transitions(project, producer, records)
+    finally:
+        _SWEEP_LOCAL.in_transition = False
     if not producer.sweep_lock.acquire(blocking=False):
         return
     producer.sweep_thread = threading.Thread(
