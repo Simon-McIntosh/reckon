@@ -25,7 +25,7 @@
   <title>A Read Costs What Changed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="29">
 <meta name="plan-modified" content="2026-11-05">
 </head>
 <body>
@@ -128,6 +128,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261105T103332065056-review-of-a-one-plan-read-composes-one-plan-874cc0925004" data-who="reckon-build" data-when="2026-11-05T10:49:44.033Z">
     <div class="r-comment-body"><p>review of r-20261103T022604894618-a-one-plan-read-composes-one-plan at 874cc09250 scores goal_fidelity 16, evidence 14, scope_discipline 19, durability 16, fit 18, reuse 20 (total 103); added_failure_count 0 from the reviewed run's own base arm (44 passed, 2 failed at 87ec84d706, both the node's new count case) and head arm (46 passed, 0 failed); the north-star read no longer composes the project in either layout, but a distributed summary read still composes once through reckon/mcp_views.py:1275 for its inventory, so the plan's distributed zero is unasserted and recorded as a non-blocking finding</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261103T022604894618-a-one-plan-read-composes-one-plan" data-who="reckon-build" data-when="2026-11-05T10:24:23.983Z">
+    <div class="r-comment-body"><p>project_state.read_project_manifest reads the project&#x27;s declaring record in one mode branch and _store._declared_north_stars takes north stars from it instead of compose_project_state, so a plan read or write composes the project zero times on a legacy store and zero times on the plan&#x27;s own read in a distributed one (base: 1 per read and per edit in both), with the north-star diagnostic unchanged in both layouts</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261105T061644194563-review-of-a-persisted-answer-still-reuses-rows-10a19d771e5f" data-who="reckon-build" data-when="2026-11-05T06:35:24.654Z">
     <div class="r-comment-body"><p>Reviewed r-20261103T103857095482-a-persisted-answer-still-reuses-rows at base 86b3c34d and head 10a19d771e: parsed record scoring goal_fidelity 19, evidence 14, scope_discipline 20, durability 18, fit 18, reuse 5 (total 94), with four non-blocking findings — a second stat-keyed digest cache beside file_memo's, the head importer log naming the pre-fix revision, the digest/identity pair taken in two separate stats, and no ruff receipt in the manifest — and added_failure_count 0 because the head importer failure set is a strict subset of the base arm's.</p></div>
