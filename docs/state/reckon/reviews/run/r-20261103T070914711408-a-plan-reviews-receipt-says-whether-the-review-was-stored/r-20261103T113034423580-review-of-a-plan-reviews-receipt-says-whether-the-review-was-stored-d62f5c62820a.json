@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/promotion.py:complete",
+    "reckon/crew/promotion.py:_complete_locked"
+  ],
+  "completed_at": "2026-11-03T11:46:49.605Z",
+  "dispatched_at": "2026-11-03T11:39:09Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_checks.py",
+      "id": "f9bdff33cca",
+      "line": 2664,
+      "severity": "non-blocking",
+      "text": "when the store already holds a delivery under the composed directory but refused it, the sidecar carries stored false and a store_error, and the new branch falls through to the 'no stored record carries the review' message instead of reporting that refusal reason, so a receipt loses the store's own reason in exactly the case the other branch reads it from"
+    }
+  ],
+  "items": {
+    "diff": "read commit by commit from da698581c3 to d62f5c6282: cea40c78c9 adds _delivered_report_in, the store read in the no-join branch and the 275-line test file; 52561ab363 and d62f5c6282 rewrite the evidence fragment's measure paragraphs; nothing else changes.",
+    "done_when": "the done_when asks for a temporary-home test at a base arm and a head arm with no added failing id; the manifest records both arms by log path, gate-head2.log and gate-base2.log both ran the same delivered test in the same population and end in a bare EXIT= line, the head adds no failing id, and negative-control.log shows the refused case reddening when the field is dropped.",
+    "goal": "the node's goal is that a plan review's promotion receipt says whether its review was stored; the delta's reckon/crew/promotion_checks.py:2663-2664 reads the store by the composed directory before the no-join branch reports the silent miss, and tests/test_plan_review_store_receipt.py:237-258 pins that read back.",
+    "manifest": "read; it records status complete, baseline_suite and after_suite with revisions, commands, log paths, completed true, failure counts and ids, negative_control_log as a bare path, a landing line, and a rubric line per dimension.",
+    "write_paths": "the manifest declares docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-plan-reviews-receipt-says-whether-the-review-was-stored.html, reckon/crew/promotion_checks.py and tests/test_plan_review_store_receipt.py; `git diff --stat da698581c3..d62f5c6282` touches exactly those three."
+  },
+  "justifications": {
+    "durability": "tests/test_plan_review_store_receipt.py:237-258 fails if _delivered_report_in is removed because the stored-by-directory case then reads failed, tests/test_plan_review_store_receipt.py:183 fails with KeyError if the field is dropped as negative-control.log shows, though line 232 expects the directory the test itself supplied.",
+    "evidence": "the manifest's baseline_suite and after_suite name the two logs, each header carries revision, tree, cwd, module and literal command and each tail ends EXIT=1, base2 fails the four new plan-review cases and head2 fails neither of them, while negative-control.log shows the mutation's KeyError.",
+    "fit": "reckon/crew/promotion_checks.py:2594 follows the module's private-helper and docstring idiom beside _plan_review_record_for_promoting_run, and no plan, sprint or ticket identifier appears in the diff.",
+    "goal_fidelity": "reckon/crew/promotion_checks.py:2663-2666 now reads the delivery the store holds by the composed directory before the no-join branch reports it unstored, which is the falsehood the prior review found, and the plan's own silent-miss outcome still stands when no stored record carries it.",
+    "reuse": "reckon/crew/promotion_checks.py:2606 selects from plan_review.delivered_reports, the walker that already owns delivery enumeration and the stored flag, rather than opening a second reader of the report tree.",
+    "scope_discipline": "every path in `git diff --stat da698581c3..d62f5c6282` is one of the three declared write paths, and no companion module was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a plan review's promotion receipt says whether its review was stored; reckon/crew/promotion_checks.py:2663-2664 reads the store by the composed directory before the no-join branch reports the silent miss, and tests/test_plan_review_store_receipt.py:237-258 pins it.\nVERDICT done_when: the done_when asks for a temporary-home test at a base arm and a head arm with no added failing id; the manifest records gate-base2.log and gate-head2.log running the same delivered test, each ending in a bare EXIT= line, and negative-control.log shows the dropped field reddening the refused case.\nVERDICT write_paths: the manifest declares the evidence fragment, reckon/crew/promotion_checks.py and tests/test_plan_review_store_receipt.py; `git diff --stat da698581c3..d62f5c6282` touches exactly those three.\nVERDICT manifest: read; it records status complete, both suite arms with log paths and failure ids, negative_control_log as a bare path, and a rubric line per dimension.\nVERDICT diff: read commit by commit; cea40c78c9 adds _delivered_report_in, the store read and the test file, 52561ab363 and d62f5c6282 rewrite the evidence fragment, and no other file changes.\nCALL_SITES: reckon/crew/promotion.py:complete, reckon/crew/promotion.py:_complete_locked\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_checks.py:2663-2666 reads the delivery the store holds by the composed directory before the no-join branch reports it unstored, while the plan's silent-miss outcome still stands when no stored record carries it.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-base2.log and gate-head2.log carry revision, tree, cwd, module, command and a bare EXIT= line, base2 fails the four new plan-review cases and head2 none of them, and negative-control.log shows the mutation's KeyError.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in `git diff --stat da698581c3..d62f5c6282` is one of the three declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_plan_review_store_receipt.py:237-258 fails if _delivered_report_in is removed and line 191's case fails with KeyError when the field is dropped, though line 232 expects the directory the test itself supplied.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/promotion_checks.py:2594 follows the module's private-helper and docstring idiom and the diff carries no plan, sprint or ticket identifier.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/promotion_checks.py:2606 selects from plan_review.delivered_reports, the owner of delivery enumeration and the stored flag, rather than opening a second reader of the report tree.\nFINDING reckon/crew/promotion_checks.py:2664 non-blocking: a delivery the store already holds by the composed directory but refused falls through to 'no stored record carries the review', losing the store's own refusal reason the other branch reads off store_error.\n",
+  "review_run_id": "r-20261103T113034423580-review-of-a-plan-reviews-receipt-says-whether-the-review-was-stored-d62f5c62820a",
+  "reviewed_base_sha": "da698581c3980e57610010dde7cb53e97d11521c",
+  "reviewed_head_sha": "d62f5c62820a53ab6c05a4c03f4f2ca12b82aba1",
+  "reviewed_run_id": "r-20261103T070914711408-a-plan-reviews-receipt-says-whether-the-review-was-stored",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T09:38:36.255714+00:00",
+  "total": 114
+}
