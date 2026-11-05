@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/plan_review.py:4032 review_day_summary calls _finding_type_recurrence",
+    "reckon/mcp_views.py:3844 serve_crew_view serves the plan-review view carrying day_summary.finding_type_recurrence"
+  ],
+  "completed_at": "2026-11-05T12:13:29.107Z",
+  "dispatched_at": "2026-11-05T12:06:13Z",
+  "findings": [
+    {
+      "file": "tests/test_review_finding_recurrence.py",
+      "id": "f252e0a02bb",
+      "line": "47",
+      "severity": "non-blocking",
+      "summary": "the synthesised-store fixture and the _record/_commit_record/_fold helpers are copied from tests/test_plan_review_recurrence_fold.py:42-89, which already owns that fixture, so the two modules must now be kept in step by hand and a change to the store shape reddens one and not the other",
+      "text": "non-blocking: the synthesised-store fixture and the _record/_commit_record/_fold helpers are copied from tests/test_plan_review_recurrence_fold.py:42-89, which already owns that fixture, so the two modules must now be kept in step by hand and a change to the store shape reddens one and not the other."
+    },
+    {
+      "file": "docs/evidence/fragments/every-review-is-kept-as-a-committed-record/finish-the-remaining-reviewrecord-recurrence-fold.html",
+      "id": "f9bd1c7bb99",
+      "line": "27",
+      "severity": "non-blocking",
+      "summary": "the record says what was missing was a gate holding both that the shares read the stored answer and that the view reports them, but tests/test_plan_review_recurrence_fold.py:188-194 already held the first fact, so the record overstates the gap it closed",
+      "text": "non-blocking: the record says what was missing was a gate holding both that the shares read the stored answer and that the view reports them, but tests/test_plan_review_recurrence_fold.py:188-194 already held the first fact, so the record overstates the gap it closed and a reader will believe the fold was previously unguarded."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T083142255959-finish-the-remaining-reviewrecord-recurrence-fold/logs/head-suite.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T083142255959-finish-the-remaining-reviewrecord-recurrence-fold/logs/base-suite.log"
+  },
+  "item_verdicts": {
+    "call_sites": "verified 2 production call sites, plan_review.review_day_summary and mcp_views.serve_crew_view, both reached by the gate.",
+    "diff": "read commit by commit from c15f841ed10a to 45e7884f47e3; one commit adds 218 lines of test and a 91-line evidence fragment, and changes no production source.",
+    "done_when": "the done_when names tests/test_review_finding_recurrence.py computing both shares from stored responses and the plan-review view reporting them; that file is the landed gate and exercises both, directly at :164-206 and through reckon/mcp_views.py:3844 at :208.",
+    "goal": "the node's goal is to finish the review-record recurrence fold; what remained of plan section 9(d) was the gate and the 7-13 October figures, and both landed, while reckon/crew/plan_review.py:3824 already carried the fold and :4032 already put it in the day summary.",
+    "manifest": "read; it records head arm 4 passed EXIT=0, base arm 4 passed EXIT=0 (0 added), and a negative control of 3 failed 1 passed EXIT=1, and its three gate logs carry header revision, tree and command and a bare EXIT= line.",
+    "write_paths": "the manifest declares five paths and the commit 45e7884f changes two, tests/test_review_finding_recurrence.py and the finish-the-remaining-reviewrecord-recurrence-fold.html fragment, both inside the fence."
+  },
+  "justifications": {
+    "durability": "deleting the action filter in reckon/crew/plan_review.py:2518-2522 reddens three of the four tests, and the view assertion at tests/test_review_finding_recurrence.py:208 fails if the day summary drops the fold.",
+    "evidence": "tests/test_review_finding_recurrence.py runs to 4 passed EXIT=0 in logs/head-suite.log at revision 45e7884f, the base arm reads 4 passed EXIT=0 at c15f841e, and the negative control reads 3 failed EXIT=1.",
+    "fit": "the new module follows the fixture-and-assert idiom of tests/test_plan_review_recurrence_fold.py:42-158 and its docstrings state the mechanism rather than any plan label.",
+    "goal_fidelity": "the gate at tests/test_review_finding_recurrence.py:164 asserts both shares per finding type from the answers stored against each finding, which is what plan section 9(d) asked that remained.",
+    "reuse": "the project fixture and helpers at tests/test_review_finding_recurrence.py:47-159 are a copy of the synthesised-store fixture owned by tests/test_plan_review_recurrence_fold.py:42-89, which the new file duplicates rather than extends.",
+    "scope_discipline": "the only two paths in the diff, tests/test_review_finding_recurrence.py and the finish-the-remaining-reviewrecord-recurrence-fold.html fragment, are both declared write paths in the manifest."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to finish the review-record recurrence fold; what remained of plan section 9(d) was the gate and the 7-13 October figures, and both landed, while reckon/crew/plan_review.py:3824 already carried the fold and :4032 already put it in the day summary.\nVERDICT done_when: the done_when names tests/test_review_finding_recurrence.py computing both shares from stored responses and the plan-review view reporting them; that file is the landed gate and exercises both, directly at :164-206 and through reckon/mcp_views.py:3844 at :208.\nVERDICT write_paths: the manifest declares five paths and the commit 45e7884f changes two, tests/test_review_finding_recurrence.py and docs/evidence/fragments/every-review-is-kept-as-a-committed-record/finish-the-remaining-reviewrecord-recurrence-fold.html, both inside the fence.\nVERDICT manifest: read; it records head arm 4 passed EXIT=0, base arm 4 passed EXIT=0 (0 added), and a negative control of 3 failed 1 passed EXIT=1, and its three gate logs carry header revision, tree and command and a bare EXIT= line.\nVERDICT diff: read commit by commit from c15f841ed10a to 45e7884f47e3; one commit adds 218 lines of test and a 91-line evidence fragment, and changes no production source.\nCALL_SITES: reckon/crew/plan_review.py:4032 review_day_summary calls _finding_type_recurrence, reckon/mcp_views.py:3844 serve_crew_view serves the plan-review view carrying day_summary.finding_type_recurrence\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the gate at tests/test_review_finding_recurrence.py:164 asserts both shares per finding type from the answers stored against each finding, which is what plan section 9(d) asked that remained.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_review_finding_recurrence.py runs to 4 passed EXIT=0 in logs/head-suite.log at revision 45e7884f, the base arm reads 4 passed EXIT=0 at c15f841e, and the negative control reads 3 failed EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only two paths in the diff, tests/test_review_finding_recurrence.py and the finish-the-remaining-reviewrecord-recurrence-fold.html fragment, are both declared write paths in the manifest.\nSCORE durability: 18\nJUSTIFICATION durability: deleting the action filter in reckon/crew/plan_review.py:2518-2522 reddens three of the four tests, and the view assertion at tests/test_review_finding_recurrence.py:208 fails if the day summary drops the fold.\nSCORE fit: 18\nJUSTIFICATION fit: the new module follows the fixture-and-assert idiom of tests/test_plan_review_recurrence_fold.py:42-158 and its docstrings state the mechanism rather than any plan label.\nSCORE reuse: 5\nJUSTIFICATION reuse: the project fixture and helpers at tests/test_review_finding_recurrence.py:47-159 are a copy of the synthesised-store fixture owned by tests/test_plan_review_recurrence_fold.py:42-89, which the new file duplicates rather than extends.\nFINDING tests/test_review_finding_recurrence.py:47 non-blocking: the synthesised-store fixture and the _record/_commit_record/_fold helpers are copied from tests/test_plan_review_recurrence_fold.py:42-89, which already owns that fixture, so the two modules must now be kept in step by hand and a change to the store shape reddens one and not the other.\nFINDING docs/evidence/fragments/every-review-is-kept-as-a-committed-record/finish-the-remaining-reviewrecord-recurrence-fold.html:27 non-blocking: the record says what was missing was a gate holding both that the shares read the stored answer and that the view reports them, but tests/test_plan_review_recurrence_fold.py:188-194 already held the first fact, so the record overstates the gap it closed and a reader will believe the fold was previously unguarded.\n",
+  "review_run_id": "r-20261105T120137729756-review-of-finish-the-remaining-reviewrecord-recurrence-fold-45e7884f47e3",
+  "reviewed_base_sha": "c15f841ed10ab5349332c8578bfa65910226fafe",
+  "reviewed_head_sha": "45e7884f47e389e5e1992b4789b4bd76404cd2f2",
+  "reviewed_run_id": "r-20261103T083142255959-finish-the-remaining-reviewrecord-recurrence-fold",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T12:40:34.888504+00:00",
+  "total": 96
+}
