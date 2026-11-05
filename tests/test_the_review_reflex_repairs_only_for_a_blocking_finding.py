@@ -11,6 +11,7 @@ import pytest
 from reckon.crew import recovery_repair_dispatch as reflex
 from reckon.crew import repair, review_dispositions, runs
 from reckon.crew import review as review_module
+from reckon.crew.node import CrewError
 from tests import test_repair_answers_only_blocking_findings as prior
 
 dispatch_project = prior.dispatch_project
@@ -166,3 +167,21 @@ def test_without_the_blocking_filter_follow_ons_start_a_round(
     launched, _ = prior._dispatch_repair(pointer, monkeypatch)
     assert launched["resumed"] is True
     assert prior._expected_id(prior.FOLLOW_ON) in resumed[0]["advice"]
+
+
+@pytest.mark.arms_watch_producer
+def test_unreadable_floors_leave_follow_ons_out_of_repair(
+    dispatch_project: tuple[Path, Path, str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    home, repo, head = dispatch_project
+    pointer = _reviewed_pointer(home, repo)
+    _stored_review(head, [prior.FOLLOW_ON])
+
+    def unavailable(*_args):
+        raise CrewError("flight config unavailable")
+
+    monkeypatch.setattr(reflex, "_resolved_review_config", unavailable)
+    report, _ = prior._dispatch_repair(pointer, monkeypatch)
+    assert not report.get("awaiting_coordinator")
+    assert not report.get("resumed")
+    assert "no blocking finding" in report["reason"]

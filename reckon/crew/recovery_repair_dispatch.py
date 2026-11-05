@@ -32,10 +32,13 @@ REPAIR_ADVICE_HOLD_FIELD = "repair_advice_hold"
 
 
 def _dimension_floors(project: str, config: Mapping[str, Any] | None) -> dict[str, int]:
-    """Resolve the same declared floors used by the review duties."""
+    """Resolve declared floors without blocking a review when config is unreadable."""
     from reckon.crew import review_dispositions
 
-    resolved = _resolved_review_config(project, config) if project else config
+    try:
+        resolved = _resolved_review_config(project, config) if project else config
+    except (CrewError, OSError, ValueError):
+        return {}
     return review_dispositions.declared_dimension_floors(resolved)
 
 
