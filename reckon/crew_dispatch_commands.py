@@ -1138,7 +1138,6 @@ def _queue_dispatch_batch(
     _emit_crew_result(result, pretty)
 
 
-
 @crew.command(name="dispatch")
 @click.option(
     "--batch",

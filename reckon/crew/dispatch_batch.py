@@ -18,8 +18,9 @@ from __future__ import annotations
 import contextlib
 import json
 import re
+from collections.abc import Iterator, Mapping, Sequence
 from pathlib import Path
-from typing import Any, Iterator, Mapping, Sequence
+from typing import Any
 
 from reckon.crew.node import CrewError, TaskNode
 
@@ -56,18 +57,58 @@ BATCH_ENTRY_FIELDS = frozenset(
 )
 
 #: One path token as a section's write-paths sentence names it. A token is a
-#: path when it carries a file extension, or when it names at least three
-#: segments of a directory tree; a bare word, and a pair such as ``and/or``,
-#: are neither, so a sentence that names a file only by description ("the new
-#: test") yields no path for it.
+#: path when it names a directory (`src/payload.py`) or carries a source-file
+#: extension (`.py`, `.md`). Prose abbreviations such as ``e.g`` and version
+#: tags such as ``v1.2`` carry neither, so a sentence that names a file only by
+#: description ("the new test") yields no path for it.
 _PATH_TOKEN = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_./-]*")
-_EXTENSION = re.compile(r"\.[A-Za-z0-9]{1,8}$")
+_SOURCE_EXTENSIONS = frozenset(
+    {
+        ".py",
+        ".pyi",
+        ".js",
+        ".jsx",
+        ".ts",
+        ".tsx",
+        ".json",
+        ".html",
+        ".css",
+        ".md",
+        ".rst",
+        ".toml",
+        ".ini",
+        ".cfg",
+        ".yaml",
+        ".yml",
+        ".sh",
+        ".sql",
+        ".txt",
+        ".lock",
+        ".go",
+        ".rs",
+        ".c",
+        ".h",
+        ".cc",
+        ".cpp",
+        ".hpp",
+        ".f90",
+        ".cmake",
+        ".j2",
+        ".svg",
+    }
+)
+
+#: The write-paths sentence ends at its first full stop. A page's tags are
+#: stripped to text with a space in their place, so a sentence closing on a
+#: ``<code>`` span reads ``one.py .`` — the stop is found whether or not a
+#: space precedes it, while the stops inside a path (``one.py``) never end it.
+_SENTENCE_END = re.compile(r"\.(?=\s|$)")
 
 #: Phases a request reports as waiting for its upstream rather than queued.
 WAITING_UPSTREAM_PHASES = frozenset({"awaiting-upstream", "blocked-upstream"})
 
 
-class BatchEntryRefused(CrewError):
+class BatchEntryRefusedError(CrewError):
     """One entry cannot be queued, and the rest of the batch still can."""
 
 
@@ -119,6 +160,81 @@ def _parsed_once() -> Iterator[None]:
         _plan_html.section_prose = original
 
 
+@contextlib.contextmanager
+def _built_once(
+    cache: dict[tuple[str, str], dict[str, Any]] | None = None,
+) -> Iterator[None]:
+    """Derive each project's roadmap at most once for the whole batch.
+
+    Two readers inside a batch ask for a project's roadmap: queue ordering
+    ranks each stored request against it, and the wait check reads a section's
+    own verdict from it. Left alone, a six-entry batch over one project derives
+    that roadmap six times over — once per stored request and again per section
+    whose waits are checked — which is the cost the batch exists to remove.
+
+    The batch derives each project's roadmap once, over the project's whole
+    inventory, and serves every reader inside it from that one derivation. The
+    whole-inventory build is the one ordering needs, and it answers the
+    bounded per-section question too: a section verdict is computed the same
+    way from either inventory, so the single build carries the subset's answer.
+    """
+    from reckon import roadmap as roadmap_module
+    from reckon.roadmap import roadmap_build_scope
+
+    original = roadmap_module.build_roadmap
+    built: dict[tuple[str, str], dict[str, Any]] = cache if cache is not None else {}
+
+    def once(project, inventory, sprints, **kwargs):
+        from reckon._store import _docs_dir_for_project
+        from reckon.mcp_discovery import _discover_project, _inventory_row
+
+        # Ordering names no docs dir and resolves through the project's mount,
+        # while the wait check names the checkout's own; both answer with the
+        # same tree, so the key is the resolved dir rather than the arguments.
+        docs_dir = kwargs.get("docs_dir")
+        resolved = Path(docs_dir) if docs_dir else _docs_dir_for_project(project, None)
+        key = (str(project), str(resolved or ""))
+        if key not in built:
+            # Discovery derives the project's roadmap to attach its ready set,
+            # and the scope hands that derivation back, so the batch takes it
+            # rather than paying for a second one. The build inside discovery
+            # runs unwrapped: leaving the wrapper in place would re-enter here
+            # for the inventory it is being called to produce.
+            roadmap_module.build_roadmap = original
+            try:
+                with roadmap_build_scope() as scope:
+                    discovered = _discover_project(
+                        str(project), Path(resolved).parent if resolved else None
+                    )
+            except Exception:  # noqa: BLE001 - the caller's inventory carries it
+                discovered = {}
+                scope = None
+            finally:
+                roadmap_module.build_roadmap = once
+            rows = [
+                _inventory_row(item) for item in discovered.get("inventory", ()) or ()
+            ]
+            if scope is not None and scope.built is not None:
+                built[key] = scope.built
+            elif rows:
+                built[key] = original(
+                    project,
+                    rows,
+                    list(discovered.get("sprints") or ()) or list(sprints),
+                    active_sprint_id=discovered.get("active_sprint_id"),
+                    docs_dir=resolved,
+                )
+            else:
+                built[key] = original(project, inventory, sprints, **kwargs)
+        return built[key]
+
+    roadmap_module.build_roadmap = once
+    try:
+        yield
+    finally:
+        roadmap_module.build_roadmap = original
+
+
 class _PlanRead:
     """One plan document, parsed once for every section the batch takes from it.
 
@@ -138,12 +254,10 @@ class _PlanRead:
         try:
             self.document = self.path.read_text(encoding="utf-8")
         except OSError as exc:
-            raise BatchEntryRefused(
+            raise BatchEntryRefusedError(
                 f"{project}:{plan}: plan document {self.path} cannot be read: {exc}"
             ) from exc
-        self.prose: dict[str, str] = {
-            identity: text for identity, text in _plan_html.section_prose(self.document)
-        }
+        self.prose: dict[str, str] = dict(_plan_html.section_prose(self.document))
         self.state = _plan_html.read_state(self.document)
 
     def section_prose(self, section: str) -> str:
@@ -154,7 +268,7 @@ class _PlanRead:
         for identity, prose in self.prose.items():
             if normalize_section(identity) == wanted:
                 return prose
-        raise BatchEntryRefused(
+        raise BatchEntryRefusedError(
             f"{self.project}:{self.plan}#{section}: the plan declares no such section"
         )
 
@@ -163,7 +277,7 @@ class _PlanRead:
 
         paragraph = _done_when_paragraph(self.section_prose(section))
         if not paragraph:
-            raise BatchEntryRefused(
+            raise BatchEntryRefusedError(
                 f"{self.project}:{self.plan}#{section}: the section states no "
                 "done-when, so the entry must give one"
             )
@@ -176,15 +290,21 @@ class _PlanRead:
         match = _WRITE_PATHS_SENTENCE.search(prose)
         if match is None:
             return []
+        sentence = prose[match.end() :]
+        stop = _SENTENCE_END.search(sentence)
+        if stop is not None:
+            sentence = sentence[: stop.start()]
         found: list[str] = []
-        for token in _PATH_TOKEN.findall(prose[match.end() :]):
-            token = token.strip("./-")
-            if not token:
+        for token in _PATH_TOKEN.findall(sentence):
+            candidate = token.strip("./-")
+            if not candidate:
                 continue
-            if not (_EXTENSION.search(token) or token.count("/") >= 2):
+            if "/" not in candidate and (
+                Path(candidate).suffix.lower() not in _SOURCE_EXTENSIONS
+            ):
                 continue
-            if token not in found:
-                found.append(token)
+            if candidate not in found:
+                found.append(candidate)
         return found
 
     def section_record(self, section: str) -> Mapping[str, Any]:
@@ -229,7 +349,7 @@ def _as_list(value: Any) -> list[str]:
         return [value]
     if isinstance(value, (list, tuple)):
         return [str(item) for item in value]
-    raise BatchEntryRefused(f"{value!r} is not a list of strings")
+    raise BatchEntryRefusedError(f"{value!r} is not a list of strings")
 
 
 def _entry_node(
@@ -241,7 +361,7 @@ def _entry_node(
     """Build one entry's node, filling every omitted field from its section."""
     unknown = sorted(set(entry) - BATCH_ENTRY_FIELDS)
     if unknown:
-        raise BatchEntryRefused(
+        raise BatchEntryRefusedError(
             f"entry {index + 1} carries unknown field(s): {', '.join(unknown)}"
         )
     project = str(entry.get("project") or "").strip()
@@ -250,13 +370,15 @@ def _entry_node(
     node_id = str(entry.get("node") or "").strip()
     goal = str(entry.get("goal") or "").strip()
     if not project or not plan or not section:
-        raise BatchEntryRefused(
+        raise BatchEntryRefusedError(
             f"entry {index + 1} must name its project, plan and section"
         )
     if not node_id:
-        raise BatchEntryRefused(f"entry {index + 1} names no node id")
+        raise BatchEntryRefusedError(f"entry {index + 1} names no node id")
     if not goal:
-        raise BatchEntryRefused(f"{project}:{plan}#{section}: the entry gives no goal")
+        raise BatchEntryRefusedError(
+            f"{project}:{plan}#{section}: the entry gives no goal"
+        )
 
     read = plans.read(project, plan)
     record = read.section_record(section)
@@ -266,7 +388,7 @@ def _entry_node(
     if not write_paths:
         write_paths = read.write_paths(section)
     if not write_paths:
-        raise BatchEntryRefused(
+        raise BatchEntryRefusedError(
             f"{project}:{plan}#{section}: the section states no write-paths "
             "sentence and the entry gives none"
         )
@@ -274,7 +396,9 @@ def _entry_node(
     estimated_hours = entry.get("estimated_hours")
     if estimated_hours is None:
         estimate = record.get("effort_hours")
-        estimated_hours = float(estimate) if isinstance(estimate, (int, float)) else None
+        estimated_hours = (
+            float(estimate) if isinstance(estimate, (int, float)) else None
+        )
     spec_level = str(entry.get("spec_level") or "")
 
     node = TaskNode(
@@ -311,6 +435,14 @@ def _peer_scopes(values: Any) -> dict[str, list[str]]:
             path.strip() for path in paths.split(",") if path.strip()
         ]
     return scopes
+
+
+def _require_stored(stored: Mapping[str, Any], project: str, node: TaskNode) -> None:
+    """Refuse an entry whose request the queue did not store."""
+    if not stored:
+        raise BatchEntryRefusedError(
+            f"{project}:{node.plan}#{node.section}: the request was not stored"
+        )
 
 
 def _batch_order(entries: Sequence[Mapping[str, Any]]) -> Iterator[int]:
@@ -351,8 +483,13 @@ def queue_batch(
     repo_root: str | Path,
     launch_kind: str = "cli",
 ) -> dict[str, Any]:
-    """Queue each entry on its own — see :func:`_queue_batch` — parsing once."""
-    with _parsed_once():
+    """Queue each entry on its own — see :func:`_queue_batch`.
+
+    Inside one batch each named plan is parsed once and each named project's
+    roadmap is derived once, so the work of queuing does not grow with the
+    number of sections chosen.
+    """
+    with _parsed_once(), _built_once():
         return _queue_batch(
             entries,
             session=session,
@@ -449,16 +586,17 @@ def _queue_batch(
                 pointer = read_pointer(stored_id)
                 if isinstance(pointer, dict):
                     queue_admission.record_review_contract(pointer)
-            if not stored:
-                raise BatchEntryRefused(
-                    f"{project}:{node.plan}#{node.section}: the request was not stored"
-                )
+            _require_stored(stored, project, node)
             actual_id, row = next(iter(stored.items()))
             phase = str(row.get("phase") or "")
             stored_by_node[node.id] = actual_id
             already = actual_id != run_id
-            status = "already-queued" if already else (
-                "awaiting-upstream" if phase in WAITING_UPSTREAM_PHASES else phase
+            status = (
+                "already-queued"
+                if already
+                else (
+                    "awaiting-upstream" if phase in WAITING_UPSTREAM_PHASES else phase
+                )
             )
             results.append(
                 {
@@ -473,7 +611,7 @@ def _queue_batch(
                     "waits": list(row.get("waits") or ()),
                 }
             )
-        except (BatchEntryRefused, CrewError) as exc:
+        except (BatchEntryRefusedError, CrewError) as exc:
             refuse(index, entry, str(exc))
 
     results.sort(key=lambda row: int(row["index"]))

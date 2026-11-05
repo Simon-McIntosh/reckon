@@ -5,8 +5,8 @@ work is cheap and that the section stays the authority: an entry's omitted
 fields come from its own section, its given fields win, an entry may wait on
 another entry of the same batch, a section that names no write paths is refused
 by name without stopping the rest, a repeat of an already-queued section is
-reported rather than stored twice, and each plan is parsed once for the whole
-batch without building a project's whole roadmap.
+reported rather than stored twice, each plan is parsed once and the project's
+roadmap is derived once for the whole batch.
 """
 
 from __future__ import annotations
@@ -68,6 +68,9 @@ def _section(title: str, paths: str | None) -> str:
     prose = f"<p>{title}.</p>"
     if paths is not None:
         prose += f"<p>Write paths: {paths}.</p>"
+    # A later paragraph naming files: the write-paths sentence ends at its full
+    # stop, so neither this path nor these abbreviations are the section's.
+    prose += "<p>See e.g. notes.py for v1.2.</p>"
     prose += f"<p><strong>Done when</strong> the {title.lower()} check passes.</p>"
     return prose
 
@@ -162,11 +165,15 @@ def batch_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         _plan(
             PLAN_A,
             {
-                "s1": _section("One", "<code>one.py</code>"),
+                # Names one file, then prose abbreviations a token scan would
+                # mistake for paths if it accepted any short suffix.
+                "s1": _section(
+                    "One", "<code>one.py</code>, the v1.2 copy, e.g. the rest"
+                ),
                 "s2": _section("Two", "<code>two.py</code>"),
                 "s3": _section("Three", "<code>three.py</code>"),
             },
-            {name: "implementable" for name in SECTIONS_A},
+            dict.fromkeys(SECTIONS_A, "implementable"),
         ),
         encoding="utf-8",
     )
@@ -177,13 +184,13 @@ def batch_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
                 "s1": _section("B one", "<code>b_one.py</code>"),
                 "s2": _section("B two", None),
             },
-            {name: "implementable" for name in SECTIONS_B},
+            dict.fromkeys(SECTIONS_B, "implementable"),
         ),
         encoding="utf-8",
     )
-    # A third plan the batch never names: a project-wide roadmap build would
-    # carry it, so its absence from every build is what shows the batch never
-    # builds the whole project.
+    # A third plan the batch never names: it makes the plan count differ from
+    # the entry count, so a parse that scaled with entries could not pass as
+    # one-per-named-plan.
     (plans / "plan-c.html").write_text(
         _plan(
             "plan-c",
@@ -251,6 +258,11 @@ def test_a_batch_of_six_entries_queues_the_chosen_sections(batch_repo: Path) -> 
     assert stored["done_when"].endswith("the three check passes.")
     assert stored["write_paths"] == ["three.py"]
 
+    # 2b. The section's write-paths sentence is read to its own full stop and
+    #     only carries paths: the later paragraph's file and the abbreviations
+    #     inside the sentence are neither.
+    assert pointers[f"{PLAN_A}#s1:n-a1"]["node"]["write_paths"] == ["one.py"]
+
     # 3. An entry that gives its own write paths keeps them over the section's.
     assert pointers[f"{PLAN_B}#s1:n-b1"]["node"]["write_paths"] == [
         "custom/own_module.py"
@@ -266,7 +278,7 @@ def test_a_batch_of_six_entries_queues_the_chosen_sections(batch_repo: Path) -> 
     assert len(same) == 1, "a repeat of a queued section stores no second request"
 
 
-def test_a_batch_parses_each_plan_once_and_builds_no_roadmap(
+def test_a_batch_parses_each_plan_once_and_builds_one_roadmap(
     batch_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     parsed: list[str] = []
@@ -304,13 +316,12 @@ def test_a_batch_parses_each_plan_once_and_builds_no_roadmap(
         "wait derivation reads each entry's section through the per-section "
         f"readiness, never the project's whole readiness: {reads}"
     )
-    stored = result["queued"]
-    whole = [slugs for slugs in built if "plan-c" in slugs]
-    assert len(whole) <= len(_batch()), (
-        "no whole-project roadmap build comes from the batch's own wait "
-        f"derivation: at most the queue's ordering rank ({stored} stored, "
-        f"{len(whole)} whole builds out of {len(built)})"
+    # The count itself is the measured property: a batch that derives the
+    # project's roadmap per stored request, or again for each section whose
+    # waits it checks, grows with the sections it queues. One derivation serves
+    # every reader inside the batch, so six entries over one project cost one.
+    assert len(built) == 1, (
+        "the batch derives its project's roadmap exactly once for the whole "
+        f"call, however many entries it queues: {len(built)} builds "
+        f"({result['queued']} stored) {built}"
     )
-    assert all(
-        slugs <= {PLAN_A, PLAN_B} for slugs in built if "plan-c" not in slugs
-    ), f"a bounded build named a plan the batch never chose: {built}"
