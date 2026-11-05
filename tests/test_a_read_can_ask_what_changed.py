@@ -553,11 +553,14 @@ def test_crew_live_carries_the_change_set(fixture, config_home, monkeypatch):
     assert [row["run_id"] for row in answer["change_set"]["runs"]] == ["run-1"]
 
 
-def test_a_read_with_no_window_still_returns_the_instant(fixture, config_home):
-    """The first read has no window to answer, and hands back what to pass next."""
+def test_a_read_with_no_window_is_answered_untouched(fixture, config_home):
+    """A read that asks no question about a window grows no keys.
+
+    A ``raw`` read is lossless by contract, and the only way to keep that true
+    for every view is to attach nothing a caller did not ask for.
+    """
     from reckon import mcp
 
     answer = mcp._roadmap_tool(PROJECT, checkout_path=str(fixture["root"]))
-    assert answer["observed_at"]
-    assert answer["change_set"]["full"] is True
-    assert answer["change_set"]["sections"] == []
+    assert "observed_at" not in answer
+    assert "change_set" not in answer

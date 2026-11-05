@@ -7,6 +7,7 @@ import copy
 import json
 import re
 import sqlite3
+import subprocess
 import threading
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextlib import closing
@@ -4043,6 +4044,47 @@ def crew_view_name(view: str) -> str:
     return view
 
 
+def _with_change_set(
+    answer: dict[str, Any],
+    project: str | None,
+    since: str | None,
+    checkout_path: str | None,
+) -> dict[str, Any]:
+    """Attach the change set a caller asked for with ``since``.
+
+    It is composed here, in the one function both surfaces call, so the crew
+    tool and the ``crew view`` verb answer one document for the same arguments.
+    A read that names no window is returned untouched: it asked no question
+    about a window, and no view should grow keys its caller did not request.
+
+    A change set that cannot be composed is reported in its own field rather
+    than failing the view: the document it rides on is still the one the view
+    serves, and a reader that asked for the window learns why it is absent
+    instead of reading an empty set as "nothing changed".
+    """
+
+    if since is None or not project:
+        return answer
+    from reckon import change_set as change_set_module
+
+    try:
+        composed = change_set_module.change_set(project, since, repo=checkout_path)
+    except (OSError, ValueError, subprocess.SubprocessError) as exc:
+        composed = {
+            "project": project,
+            "since": since,
+            "observed_at": change_set_module.observed_now(),
+            "full": False,
+            "sections": [],
+            "newly_ready": [],
+            "runs": [],
+            "error": f"{type(exc).__name__}: {exc}",
+        }
+    answer["observed_at"] = composed.get("observed_at")
+    answer["change_set"] = composed
+    return answer
+
+
 def serve_crew_view(
     view: str = "summary",
     *,
@@ -4461,14 +4503,19 @@ def serve_crew_view(
                 session=session,
                 pointers=project_pointers,
             )
-            return {
-                "ok": True,
-                "project": project,
-                "view": view,
-                "session": session,
-                "watcher": project_watch_visibility(project, session=session),
-                "runs": runs,
-            }
+            return _with_change_set(
+                {
+                    "ok": True,
+                    "project": project,
+                    "view": view,
+                    "session": session,
+                    "watcher": project_watch_visibility(project, session=session),
+                    "runs": runs,
+                },
+                project,
+                since,
+                checkout_path,
+            )
         if view == "forgotten":
             from reckon.crew import forgotten_runs as forgotten_module
 

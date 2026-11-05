@@ -2598,12 +2598,16 @@ def _answer_with_change_set(
     since: str | None,
     checkout_path: str | None,
 ) -> dict[str, Any]:
-    """Add a read's ``observed_at`` and, when a window is named, its change set.
+    """Add a read's change set when the caller names a window.
 
-    The composition happens after the read, so the roadmap's stored
-    composition — which is keyed on the tree, not on a window — is neither
-    recomputed nor multiplied per ``since``. A portfolio or graph target covers
-    no single project's plans and gets its instant only.
+    A read that names no ``since`` has asked no question about a window, so its
+    answer is returned exactly as the caller's view built it — a ``raw`` read
+    stays lossless and no view grows a key nobody requested. A window that is
+    asked for is answered with the instant it observed and the set it composed.
+
+    The composition happens after the read, so the roadmap's stored composition
+    — which is keyed on the tree, not on a window — is neither recomputed nor multiplied
+    per ``since``.
 
     A change set that cannot be composed is reported in its own field rather
     than failing the read: the answer it rides on is still correct, and a
@@ -2613,10 +2617,10 @@ def _answer_with_change_set(
 
     from reckon import change_set as change_set_module
 
+    if since is None:
+        return answer
     answer["observed_at"] = change_set_module.observed_now()
     single = project != "*" and not project.startswith("graph:")
-    if since is None and not single:
-        return answer
     try:
         composed = change_set_module.change_set(
             project, since, repo=checkout_path if single else None
@@ -2898,7 +2902,7 @@ def _crew(
             advice=advice,
             dry_run=dry_run,
         )
-    answer = serve_crew_view(
+    return serve_crew_view(
         view,
         refresh=refresh,
         project=project,
@@ -2924,9 +2928,6 @@ def _crew(
         phase=phase,
         mine=mine,
     )
-    if view == "live" and isinstance(answer, dict) and answer.get("ok", True):
-        return _answer_with_change_set(answer, str(project or ""), since, checkout_path)
-    return answer
 
 
 # The action names are owned by the module that runs them, so the tool's own
