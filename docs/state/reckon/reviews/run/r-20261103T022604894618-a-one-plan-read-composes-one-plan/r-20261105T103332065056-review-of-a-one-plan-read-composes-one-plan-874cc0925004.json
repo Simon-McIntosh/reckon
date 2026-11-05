@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's baseline_suite (44 passed, 2 failed at 87ec84d706, both failures the node's own new count case) and after_suite (46 passed, 0 failed at 874cc09250): the head arm adds no failure id the base arm does not carry.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/_store.py:861",
+    "reckon/crew/runs.py:1444"
+  ],
+  "completed_at": "2026-11-05T10:49:44.033Z",
+  "dispatched_at": "2026-11-05T10:39:35Z",
+  "findings": [
+    {
+      "file": "tests/test_a_one_plan_read_composes_one_plan.py",
+      "line": 214,
+      "severity": "non-blocking",
+      "summary": "the distributed case asserts the plan read composes no more than the inventory reader rather than the done-when's absolute zero, so a change making both paths compose once more leaves it green and the plan's stated measure unasserted for distributed stores."
+    },
+    {
+      "file": "reckon/mcp_views.py",
+      "line": 1275,
+      "severity": "non-blocking",
+      "summary": "_project_state_lists composes the whole project state on every distributed summary read, so read_plan(view=\"summary\") of one plan still composes once; it predates the change, sits outside the node's fence and is disclosed under outside_scope, and reaching the plan's zero needs its own node."
+    },
+    {
+      "file": "manifest.md",
+      "line": 21,
+      "severity": "non-blocking",
+      "summary": "baseline_suite.command names two test files while its log_path importers-base.log records a four-file command, so the arm's recorded command is not the string the log actually ran."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "one commit 874cc09250 read in full against 87ec84d706: reckon/project_state.py gains read_project_manifest and read_project_derivations reads through it, reckon/_store.py:831 rewires _declared_north_stars to it, the new test adds six cases, and a 75-line landing fragment lands; every change is inside the declared scope.",
+    "done_when": "the plan's s5 done-when requires read_plan(view=\"summary\") and an edit_plan set to compose zero times in a distributed fixture and in a legacy fixture; tests/test_a_one_plan_read_composes_one_plan.py:214 asserts zero only for legacy and asserts equality with the inventory reader for distributed, so the stated measure is not asserted for a distributed store.",
+    "goal": "the node goal is that a read or write of one plan reads north stars through the project's declaring record and never composes the project's state; reckon/project_state.py:1590 adds read_project_manifest and reckon/_store.py:831 takes the ids from it, so the north-star path composes zero times in both stores, while a distributed summary read still composes once for its project inventory at reckon/mcp_views.py:1275.",
+    "manifest": "read in full; it records 6 passed EXIT=0 at head with logs/node-tests-head.log, a base arm of 44 passed 2 failed at 87ec84d706, two red negative controls with their log, and discloses the residual distributed composition under outside_scope; its baseline_suite command names two test files while the log it cites ran four.",
+    "write_paths": "the node was fenced to reckon/project_state.py, reckon/_store.py and tests/test_a_one_plan_read_composes_one_plan.py; the diff's fourth path is the always-permitted landing fragment and no other path is touched."
+  },
+  "justifications": {
+    "durability": "logs/negative-control.log shows reinstating the compose call reddens the count case in both fixtures and dropping the legacy north-star merge reddens test_a_declared_north_star_carries_no_diagnostic[legacy], but the distributed assertion at line 214 pins only \"adds nothing on top\" of a count that can move with it.",
+    "evidence": "logs/node-tests-head.log ends 6 passed EXIT=0 at 874cc09250 and a scratch extraction of that revision reproduced it, but tests/test_a_one_plan_read_composes_one_plan.py:214 asserts an inventory-relative relaxation rather than the done-when's distributed zero.",
+    "fit": "reckon/project_state.py:1590 sits beside read_project_derivations and owns the one mode branch the plan asked for, and no added symbol or comment carries a plan, ticket or stage identifier.",
+    "goal_fidelity": "reckon/_store.py:831 takes north stars from read_project_manifest so no plan read or edit composes for them, but a distributed summary read still composes once at reckon/mcp_views.py:1275, so the goal's \"never composes the project's state\" holds for the north-star path only.",
+    "reuse": "the change extends the existing owner reckon/project_state.py:1615 read_project_derivations into read_project_manifest rather than forking it, and the only other north-star reader, reckon/roadmap.py:3373, consumes an already-composed project manifest in its own whole-project pass.",
+    "scope_discipline": "every source and test change is in reckon/project_state.py, reckon/_store.py and tests/test_a_one_plan_read_composes_one_plan.py, with docs/evidence/fragments/a-read-costs-what-changed/a-one-plan-read-composes-one-plan.html the permitted landing fragment."
+  },
+  "node": "review-of-a-one-plan-read-composes-one-plan-874cc0925004",
+  "node:reviewed": "a-one-plan-read-composes-one-plan",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a read or write of one plan reads north stars through the project's declaring record and never composes the project's state; reckon/project_state.py:1590 adds read_project_manifest and reckon/_store.py:831 takes the ids from it, so the north-star path composes zero times in both stores, while a distributed summary read still composes once for its project inventory at reckon/mcp_views.py:1275.\nVERDICT done_when: the plan's s5 done-when requires read_plan(view=\"summary\") and an edit_plan set to compose zero times in a distributed fixture and in a legacy fixture; tests/test_a_one_plan_read_composes_one_plan.py:214 asserts zero only for legacy and asserts equality with the inventory reader for distributed, so the stated measure is not asserted for a distributed store.\nVERDICT write_paths: the node was fenced to reckon/project_state.py, reckon/_store.py and tests/test_a_one_plan_read_composes_one_plan.py; the diff's fourth path, docs/evidence/fragments/a-read-costs-what-changed/a-one-plan-read-composes-one-plan.html, is the always-permitted landing fragment, and no other path is touched.\nVERDICT manifest: read in full; it records 6 passed EXIT=0 at head with logs/node-tests-head.log, a base arm of 44 passed 2 failed at 87ec84d706, two red negative controls with their log, and discloses the residual distributed composition under outside_scope; its baseline_suite command names two test files while the log it cites ran four.\nVERDICT diff: one commit 874cc09250 read in full against 87ec84d706: reckon/project_state.py gains read_project_manifest and read_project_derivations reads through it, reckon/_store.py:831 rewires _declared_north_stars to it, the new test adds six cases, and a 75-line landing fragment lands; every change is inside the declared scope.\nCALL_SITES: reckon/_store.py:861 _add_north_star_diagnostic reaches _declared_north_stars on every plan read and edit, reckon/crew/runs.py:1444 read_project_derivations\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/_store.py:831 takes north stars from read_project_manifest so no plan read or edit composes for them, but a distributed summary read still composes once at reckon/mcp_views.py:1275, so the goal's \"never composes the project's state\" holds for the north-star path only.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/node-tests-head.log ends 6 passed EXIT=0 at 874cc09250 and a scratch extraction of that revision reproduced it, but tests/test_a_one_plan_read_composes_one_plan.py:214 asserts an inventory-relative relaxation rather than the done-when's distributed zero.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every source and test change is in reckon/project_state.py, reckon/_store.py and tests/test_a_one_plan_read_composes_one_plan.py, with docs/evidence/fragments/a-read-costs-what-changed/a-one-plan-read-composes-one-plan.html the permitted landing fragment.\nSCORE durability: 16\nJUSTIFICATION durability: logs/negative-control.log shows reinstating the compose call reddens the count case in both fixtures and dropping the legacy north-star merge reddens test_a_declared_north_star_carries_no_diagnostic[legacy], but the distributed assertion at line 214 pins only \"adds nothing on top\" of a count that can move with it.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/project_state.py:1590 sits beside read_project_derivations and owns the one mode branch the plan asked for, and no added symbol or comment carries a plan, ticket or stage identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing owner reckon/project_state.py:1615 read_project_derivations into read_project_manifest rather than forking it, and the only other north-star reader, reckon/roadmap.py:3373, consumes an already-composed project manifest in its own whole-project pass.\nFINDING tests/test_a_one_plan_read_composes_one_plan.py:214 non-blocking: the distributed case asserts the plan read composes no more than the inventory reader rather than the done-when's absolute zero, so a change making both paths compose once more leaves it green and the plan's stated measure unasserted for distributed stores.\nFINDING reckon/mcp_views.py:1275 non-blocking: _project_state_lists composes the whole project state on every distributed summary read, so read_plan(view=\"summary\") of one plan still composes once; it predates the change, sits outside the node's fence and is disclosed under outside_scope, and reaching the plan's zero needs its own node.\nFINDING manifest.md:21 non-blocking: baseline_suite.command names two test files while its log_path importers-base.log records a four-file command, so the arm's recorded command is not the string the log actually ran.",
+  "review_run_id": "r-20261105T103332065056-review-of-a-one-plan-read-composes-one-plan-874cc0925004",
+  "reviewed_base_sha": "87ec84d7068151596c8a7408c5139d363649d17f",
+  "reviewed_head_sha": "874cc0925004655416c2e7b651ef4afe37928ce2",
+  "reviewed_run_id": "r-20261103T022604894618-a-one-plan-read-composes-one-plan",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T10:48:25+00:00",
+  "total": 103
+}

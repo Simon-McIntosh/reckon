@@ -25,7 +25,7 @@
   <title>A Read Costs What Changed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="26">
+<meta name="plan-version" content="27">
 <meta name="plan-modified" content="2026-11-05">
 </head>
 <body>
@@ -127,6 +127,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261103T103857095482-a-persisted-answer-still-reuses-rows" data-who="reckon-build" data-when="2026-11-04T09:22:03.388Z">
     <div class="r-comment-body"><p>Revalidating a persisted value no longer hashes the source file of each module that produced it: the envelope records each producer's source stat identity beside its digest and reuses the recorded digest when that identity has not moved, so a cold build reuses every covered row by stat identity again; both stat-identity tests and the code-version test pass 8/8 in each of three serial head passes, and reverting the fix turns exactly the two declared tests red.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261105T103332065056-review-of-a-one-plan-read-composes-one-plan-874cc0925004" data-who="reckon-build" data-when="2026-11-05T10:49:44.033Z">
+    <div class="r-comment-body"><p>review of r-20261103T022604894618-a-one-plan-read-composes-one-plan at 874cc09250 scores goal_fidelity 16, evidence 14, scope_discipline 19, durability 16, fit 18, reuse 20 (total 103); added_failure_count 0 from the reviewed run&#x27;s own base arm (44 passed, 2 failed at 87ec84d706, both the node&#x27;s new count case) and head arm (46 passed, 0 failed); the north-star read no longer composes the project in either layout, but a distributed summary read still composes once through reckon/mcp_views.py:1275 for its inventory, so the plan&#x27;s distributed zero is unasserted and recorded as a non-blocking finding</p></div>
 </div>
 </section>
 </main>
