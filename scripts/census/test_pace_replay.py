@@ -686,7 +686,7 @@ def test_a_primary_only_window_replays_its_own_allowance(
     a receipt or the window-length table. A replay that assumed a fixed week
     would reproduce a different allowance for the same row.
     """
-    from reckon import budget
+    from reckon import budget, pace_report
 
     replay = pace_replay.replay
 
@@ -706,7 +706,7 @@ def test_a_primary_only_window_replays_its_own_allowance(
     )
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
     monkeypatch.setattr(budget, "recorded_windows", lambda *a, **k: {"alpha": reading})
-    monkeypatch.setattr(budget, "_account_surface_readings", lambda *a, **k: {})
+    monkeypatch.setattr(pace_report, "_account_surface_readings", lambda *a, **k: {})
     config = {
         "backends": {
             "alpha": {
@@ -754,7 +754,7 @@ def test_a_new_window_replays_a_withheld_allowance(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A thin account reading retains its position and replays no projection."""
-    from reckon import budget
+    from reckon import budget, pace_report
 
     replay = pace_replay.replay
 
@@ -774,7 +774,7 @@ def test_a_new_window_replays_a_withheld_allowance(
     )
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
     monkeypatch.setattr(budget, "recorded_windows", lambda *a, **k: {"alpha": reading})
-    monkeypatch.setattr(budget, "_account_surface_readings", lambda *a, **k: {})
+    monkeypatch.setattr(pace_report, "_account_surface_readings", lambda *a, **k: {})
     config = {
         "backends": {
             "alpha": {
