@@ -150,6 +150,13 @@ _OPEN_GATE = (
     '<p class="r-gate-required-evidence">evidence</p></div>'
 )
 
+_CLOSED_GATE = (
+    '<div class="r-gate" data-id="g-closed" data-section="s2"'
+    ' data-gated-sections="s2" data-status="closed" data-verdict="passed">'
+    '<h4 class="r-gate-measure">the settled gate</h4>'
+    '<p class="r-gate-required-evidence">evidence</p></div>'
+)
+
 _ANCHORED_COMMENT = (
     '<div class="r-comment" data-section="s2" data-id="c1" data-who="agent"'
     ' data-when="2026-11-01"><div class="r-comment-body">note on s2</div></div>'
@@ -278,6 +285,10 @@ def test_a_move_carries_the_sections_state(setup) -> None:
     assert carried, "the open gate moved with the section"
     assert carried[0]["gated_sections"] == ["s9"]
 
+    assert successor["effort_hours"] == pytest.approx(1.75), (
+        "the moved section's effort is added to the successor's own"
+    )
+
     source_sections = set(source.get("section_declarations") or {})
     assert all(
         set(gate.get("gated_sections") or []) <= source_sections
@@ -291,6 +302,134 @@ def test_a_move_carries_the_sections_state(setup) -> None:
     assert any(record.get("id") == "c1" for record in moved), (
         "the anchored comment travels to the move record"
     )
+
+
+def test_only_open_gates_travel_and_a_closed_gate_stays(setup) -> None:
+    docs_dir, project = setup
+    _write(
+        docs_dir,
+        SLUG,
+        _plan_html(
+            SLUG,
+            _SOURCE_SECTIONS,
+            gates=_OPEN_GATE + _CLOSED_GATE,
+            comments=_ANCHORED_COMMENT,
+            declarations={"s1": "deferred", "s2": "deferred"},
+        ),
+    )
+    _write(docs_dir, SUCCESSOR, _successor_plan())
+    _write_evidence(docs_dir, SLUG)
+
+    result = mcp_module._edit_plan(
+        project,
+        SLUG,
+        [
+            {
+                "op": "set",
+                "path": "section_declarations.s2",
+                "value": {
+                    "status": "descoped",
+                    "reason": "the successor owns this now",
+                    "moved_to": f"{SUCCESSOR}#s9",
+                },
+            }
+        ],
+        0,
+    )
+    assert result["ok"] is True, result
+
+    source, _ = _store_module.read_plan(project, SLUG)
+    target, _ = _store_module.read_plan(project, SUCCESSOR)
+
+    carried_ids = [g["id"] for g in target.get("gates") or []]
+    assert "g-moved" in carried_ids, "the open gate travels with the work"
+    assert "g-closed" not in carried_ids, (
+        "a settled gate is an outcome, not work to carry"
+    )
+
+    source_ids = [g["id"] for g in source.get("gates") or []]
+    assert "g-closed" in source_ids, (
+        "the closed gate stays on the closed plan as evidence"
+    )
+
+
+def test_a_move_resolves_the_successor_against_the_checkout_being_written(
+    setup, tmp_path: Path
+) -> None:
+    docs_dir, project = setup
+    _setup_trees(docs_dir)
+    # The mounts-resolved successor carries no s9, so a move that resolved
+    # against the default root instead of the checkout being written is refused
+    # here instead of silently carrying the work into the wrong tree.
+    _write(
+        docs_dir,
+        SUCCESSOR,
+        _plan_html(
+            SUCCESSOR,
+            [
+                (
+                    "other",
+                    0.5,
+                    "implementable",
+                    {
+                        "reasoning": "standard",
+                        "verification": "standard",
+                        "risk": "low",
+                    },
+                    "A decoy section.",
+                )
+            ],
+        ),
+    )
+    checkout = tmp_path / "checkout"
+    checkout_docs = checkout / "docs"
+    _write(checkout_docs, SLUG, _source_plan())
+    _write(checkout_docs, SUCCESSOR, _successor_plan())
+
+    result = mcp_module._edit_plan(
+        project,
+        SLUG,
+        [
+            {
+                "op": "set",
+                "path": "section_declarations.s2",
+                "value": {
+                    "status": "descoped",
+                    "reason": "the successor owns this now",
+                    "moved_to": f"{SUCCESSOR}#s9",
+                },
+            }
+        ],
+        0,
+    )
+    assert result["ok"] is False, "the mounts tree declares no such successor section"
+
+    result = mcp_module._edit_plan(
+        project,
+        SLUG,
+        [
+            {
+                "op": "set",
+                "path": "section_declarations.s2",
+                "value": {
+                    "status": "descoped",
+                    "reason": "the successor owns this now",
+                    "moved_to": f"{SUCCESSOR}#s9",
+                },
+            }
+        ],
+        0,
+        checkout_path=str(checkout),
+    )
+    assert result["ok"] is True, result
+
+    written = (checkout_docs / "plans" / f"{SUCCESSOR}.html").read_text()
+    assert "The prose that must follow the work." in written, (
+        "the move landed in the checkout that was written"
+    )
+    assert (
+        "A decoy section." in (docs_dir / "plans" / f"{SUCCESSOR}.html").read_text()
+    ), "the default tree is untouched"
 
 
 def test_a_moved_to_that_does_not_resolve_is_refused(setup) -> None:

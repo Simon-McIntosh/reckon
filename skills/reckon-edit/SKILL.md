@@ -471,7 +471,8 @@ the successor section with `moved_to`, `[project:]slug#section`:
 
 The ref must resolve to a section that plan declares, or the write is refused.
 The successor section receives the moved section's authored prose, effort,
-capability requirement and open gates, and lists the move as an incoming link;
+capability requirement and open gates (a closed gate stays here as evidence),
+and lists the move as an incoming link;
 the moved section's comments are re-anchored on a `c-move-<section>` record on
 this plan, so nothing on either plan names a section that has gone. Closing a
 plan refused for a deferred section is exactly where this is read: the refusal

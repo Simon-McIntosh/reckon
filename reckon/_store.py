@@ -1580,7 +1580,7 @@ def _write_state_locked(
             raise OpError(f"append_evidence: no docs dir for project {project!r}")
         _apply_evidence_appends(docs_dir, project, evidence_appends, root)
     successor_moves = (
-        _carry_section_moves(new_data, source_text, section_moves, project)
+        _carry_section_moves(new_data, source_text, section_moves, project, root)
         if section_moves
         else []
     )
@@ -2834,19 +2834,17 @@ def _carry_descope_reason(
     section_id: str,
     declaration: Any,
     reason: str | None,
-    successor_ref: str | None = None,
 ) -> None:
-    """Put the reason and the move on the section's typed record.
+    """Put the reason on the section's typed record.
 
     The record is what the page carries and what a read parses, so the reason
     lives there rather than in a map beside the declarations. A declaration that
     is not ``descoped`` carries no reason, so any reason the section held before
     is cleared rather than left behind contradicting the declaration.
 
-    A ``moved_to`` descope also records the successor as a link on the record:
-    the link is what a later read sees without the declaration, and it is the
-    successor's own half of the move that the surface lists as an incoming
-    link.
+    A move records its successor on the record as a link, but only once the
+    write knows which checkout it is resolving against — the successor is a
+    different document, so the link is set by :func:`_carry_section_moves`.
     """
     if str(declaration or "").strip() == "descoped":
         if not reason:
@@ -2857,7 +2855,6 @@ def _carry_descope_reason(
             )
     else:
         reason = None
-        successor_ref = None
     sections = working.get("sections")
     if not isinstance(sections, list):
         return
@@ -2867,15 +2864,6 @@ def _carry_descope_reason(
                 section.pop("descope_reason", None)
             else:
                 section["descope_reason"] = reason
-            if successor_ref is None:
-                section.pop("moved_to", None)
-            else:
-                section["moved_to"] = successor_ref
-                links = section.get("links")
-                links = list(links) if isinstance(links, list) else []
-                if successor_ref not in links:
-                    links.append(successor_ref)
-                section["links"] = links
             break
 
 
@@ -2998,7 +2986,11 @@ def _insert_section_prose(document: str, section_id: str, prose: str) -> str:
 
 
 def _carry_section_moves(
-    state: dict, source_text: str, moves: list[dict[str, str]], project: str
+    state: dict,
+    source_text: str,
+    moves: list[dict[str, str]],
+    project: str,
+    root: str | Path | None = None,
 ) -> list[dict[str, Any]]:
     """Take each moved section off this plan and describe its successor's half.
 
@@ -3006,8 +2998,14 @@ def _carry_section_moves(
     being written, so it runs before the document is rendered: the moved
     section's open gates are collected to travel with it, and its comments are
     re-anchored on the move record this write leaves, so no comment here still
-    names work that has gone. The successor's half comes back as a payload
-    written after this plan lands, so a refused source write moves nothing.
+    names work that has gone. A closed gate is an outcome already recorded, not
+    work to carry, so it stays on this plan as evidence. The successor's half
+    comes back as a payload written after this plan lands, so a refused source
+    write moves nothing.
+
+    ``root`` is the checkout being written: the successor is resolved against
+    the same one, so a write against an explicit checkout never reads a
+    different tree's plan.
     """
     slug = str(state.get("slug") or "")
     payloads: list[dict[str, Any]] = []
@@ -3015,16 +3013,28 @@ def _carry_section_moves(
         moved_section = str(request.get("section") or "")
         moved_to = str(request.get("moved_to") or "")
         target_project, target_slug, target_section, successor_ref = (
-            _resolve_successor_section(project, moved_section, moved_to)
+            _resolve_successor_section(project, moved_section, moved_to, root)
         )
+        if (target_project, target_slug) == (project, slug):
+            raise OpError(
+                f"section_declarations.{moved_section}.moved_to must name a "
+                "section of another plan: the successor's half is a second plan "
+                "write, and the plan being written cannot receive it"
+            )
         moved_record = _section_record(state, moved_section)
         if moved_record is None:
             continue
+
+        links = list(moved_record.get("links") or [])
+        if successor_ref not in links:
+            links.append(successor_ref)
+        moved_record["links"] = links
 
         moved_gates = [
             gate
             for gate in state.get("gates") or []
             if _gate_touches_section(gate, moved_section)
+            and str(gate.get("status") or "open").strip().lower() == "open"
         ]
 
         comments = state.get("comments")
@@ -3375,21 +3385,20 @@ def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> 
             raise OpError("plan has no section declarations map")
         declarations[section_id] = declaration
         _move_section_record(working, section_id, declaration)
-        successor_ref = None
         if moved_to is not None:
-            _project, _slug, _section, successor_ref = _resolve_successor_section(
-                str(working.get("project") or ""), section_id, moved_to
-            )
-            if (_project, _slug) == (
-                str(working.get("project") or ""),
-                str(working.get("slug") or ""),
-            ):
+            # The successor is resolved against the checkout being written, and a
+            # bare ``apply_ops`` caller has no checkout at all, so the resolution
+            # belongs to the write that carries the move. Only the ref's shape is
+            # judged here, before any op of the batch is accepted.
+            from reckon._schema import parse_plan_ref
+
+            ref = parse_plan_ref(moved_to)
+            if ref is None or not ref.stage:
                 raise OpError(
-                    f"section_declarations.{section_id}.moved_to must name a "
-                    "section of another plan: the successor's half is a second "
-                    "plan write, and the plan being written cannot receive it"
+                    f"section_declarations.{section_id}.moved_to: {moved_to!r} does "
+                    "not name a section; expected [project:]slug#section"
                 )
-        _carry_descope_reason(working, section_id, declaration, reason, successor_ref)
+        _carry_descope_reason(working, section_id, declaration, reason)
         if moved_to is not None:
             _queue_write_effect(
                 "section_moves",

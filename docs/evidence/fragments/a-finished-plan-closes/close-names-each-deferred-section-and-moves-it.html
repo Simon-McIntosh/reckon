@@ -46,14 +46,20 @@ plan names a section it does not declare.
 </h3>
 <p id="close-names-each-deferred-section-and-moves-it-evidence-text">
 Gate: <code>tests/test_close_names_each_deferred_section_and_moves_it.py
-tests/test_schema.py tests/test_a_plan_closes_in_one_op.py</code> — three tests
-in the new file pass at the head and all three fail at the base commit. The
-declared mutation (leaving the moved section's open gate on the closed plan)
-turns exactly the successor-carries-the-gate assertion red.
-<code>moved_to</code> is stated in <code>PLAN-FORMAT.md</code>, the
-<code>reckon-edit</code> skill and
-<code>docs/_shared/plan.schema.json</code>, regenerated with
-<code>write_json_schema</code> in the same commit.
+tests/test_schema.py tests/test_a_plan_closes_in_one_op.py</code> — <strong>3
+failed, 3718 passed in 741.73s (EXIT=1)</strong> on the fleet allocation. The
+five node tests pass; the three failures are
+<code>test_cross_project_conformance</code> rows over mounted plans this commit
+does not touch (two imas-ambix plans naming landing shas absent from the tree,
+and a <code>reckon</code> plan whose section record is not adjacent to its
+heading), and they fail identically on the base revision. Two of the five node
+tests fail at the base commit and one turns red under the declared mutation.
+The mutation (leaving the moved section's open gate on the closed plan) reddens
+exactly the successor-carries-the-gate assertion.
+<code>moved_to</code> is stated in <code>PLAN-FORMAT.md</code> and the
+<code>reckon-edit</code> skill; the durable record on the successor is the
+<code>data-links</code> entry, so the section schema carries no
+<code>moved_to</code> field of its own.
 </p>
 </main>
 </body>

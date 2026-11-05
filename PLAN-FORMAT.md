@@ -333,7 +333,9 @@ same ref as an incoming link. The move carries the section's state with it: its
 authored prose, its `effort_hours` and its capability requirement land on the
 successor section, its open gates travel across, and its comments are
 re-anchored on the move record (`c-move-<section>`) the write leaves on this
-plan. Nothing on either plan is left naming a section that does not exist. A
+plan. A closed gate is an outcome already recorded rather than work to carry,
+so it stays on this plan as evidence. Nothing on either plan is left naming a
+section that does not exist. A
 successor section in the same plan is refused: the successor's half is a second
 plan write.
 
