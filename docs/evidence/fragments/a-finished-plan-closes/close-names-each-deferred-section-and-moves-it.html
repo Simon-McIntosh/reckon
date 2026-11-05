@@ -45,16 +45,20 @@ plan names a section it does not declare.
 <h3 id="close-names-each-deferred-section-and-moves-it-evidence">Evidence
 </h3>
 <p id="close-names-each-deferred-section-and-moves-it-evidence-text">
-Every figure here names the revision it was measured on, and every one is the
-literal command
+Every figure here names the revision it was measured on and the command that
+produced it. The green arm is
 <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
 tests/test_close_names_each_deferred_section_and_moves_it.py</code> —
-written here in full so the arm can be re-run from this record.
-<strong>6 passed, EXIT=0 at <code>3ad29535b1</code></strong>. The case that a
-refused move writes nothing, evidence included, is red against the code before
-the fix (<strong>1 failed, EXIT=1 at <code>2be71296a4</code></strong>). The
-base arm leaves the refusal naming no remedy and is red at
-<code>ab87725e67</code>; the declared mutation — leaving the moved section's
+<strong>6 passed, EXIT=0 at <code>3ad29535b1</code></strong>. The two red arms
+select and resolve differently, so their commands are given as they ran. The
+case that a refused move writes nothing, evidence included, is red against the
+code before the fix: the same pytest invocation with
+<code>-k test_a_refused_move_writes_nothing_not_even_its_evidence</code>
+appended (<strong>1 failed, 5 deselected, EXIT=1 at
+<code>2be71296a4</code></strong>). The base arm leaves the refusal naming no
+remedy and is red at <code>ab87725e67</code>, run against a scratch tree of
+that revision with <code>PYTHONPATH</code> pointing at it and the main
+checkout's interpreter. The declared mutation — leaving the moved section's
 open gate on the closed plan — reddens exactly the successor-carries-the-gate
 assertion.
 <code>moved_to</code> is stated in <code>PLAN-FORMAT.md</code> and the
