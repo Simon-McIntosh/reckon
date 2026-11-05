@@ -1,0 +1,33 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-05T13:45:58Z",
+  "dispatched_at": "2026-11-05T13:37:19Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T123006976743-every-sweep-classifies-from-its-records/manifest.md",
+      "id": "ff667552d1a",
+      "line": "16",
+      "severity": "blocking",
+      "text": "The brief requires ruff check and ruff format --check to add no findings against base, but the manifest and named logs give no command, output or result for either check, so that done-when clause remains unverified."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source brief's goal names three remaining sweeps, and the landed handovers at reckon/crew/runs.py:2599-2605, reckon/roadmap_snapshot.py:315-321 and reckon/crew/station_store.py:794-814 give each snapshot the pointer population that sweep holds.\nVERDICT done_when: the source brief requires six entry-point counters, a base/head caller population, handover mutations and ruff delta; entry-base-scratch.log reports 3 failed/3 passed, entry-ten-head.log reports ten six-test passes, population-base.log and population-head-resumed.log report 5 versus 3 failures with no added IDs, and the three negative-control logs fail their named tests, but no ruff result is recorded.\nVERDICT write_paths: the source manifest's orientation_write_paths lists five files, and git diff b5067388ad5f8798eeda6ee04e278478e0a260a1..212fe44fed278c4c6f9d6fd15d5e04485daf15a8 changes exactly those five paths.\nVERDICT manifest: the source run's manifest.md records status complete, four commits, five changed paths, the focused test command and gate log paths, but leaves baseline_suite and after_suite blank despite the completed population logs.\nVERDICT diff: read a56a9a069c16dd4eede9f798797770f13ae707ab for the three production handovers and six tests, 81924fd2faf3e4332cf5f27fb3f758a2ba52a4e7 for the evidence fragment, 49e2175a0fe9c5c99931385d2e7991a1394ec06f for the ticker thread counter, and 212fe44fed278c4c6f9d6fd15d5e04485daf15a8 for the corrected evidence.\nCALL_SITES: reckon/crew/runs.py:2965 (_publish_watch_transitions), reckon/crew/runs.py:3275 (watch_stream_cursor), reckon/roadmap_snapshot.py:400 (roadmap snapshot reader), reckon/crew/station.py:442 (station tick), reckon/crew/recovery_watch.py:3175 (ticker snapshot pass), reckon/crew/recovery_watch.py:3186 (quiet beat), reckon/crew/recovery_watch.py:2609 (session count reader)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:2599-2605 materialises the iterable once, reckon/roadmap_snapshot.py:320 forwards its listed pointers, and reckon/crew/station_store.py:794-814 parses rows before forwarding the parsed records.\nSCORE evidence: 15\nJUSTIFICATION evidence: population-base.log and population-head-resumed.log have completed summaries and EXIT lines with a zero added-failure set, and negative-publisher-resumed.log, negative-quiet-beat-resumed.log and negative-ticker-resumed.log redden the targeted tests, but the ruff check and format delta required by the brief has no recorded receipt in manifest.md or the named logs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the five changed paths in git diff b5067388ad5f8798eeda6ee04e278478e0a260a1..212fe44fed278c4c6f9d6fd15d5e04485daf15a8 are exactly the source manifest.md orientation_write_paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_every_sweep_classifies_from_its_records.py:68-69 fails if a row stops scoring or the handover triggers a live read; :82 fails if the publisher iterable is consumed zero or multiple times; :88 fails if the roadmap emits no row; :122-124 fails if session reduction emits no counts, no scoring snapshot or an extra live read; :143 and :153 fail if ticker classification reads live on its own thread or never scores; the publisher, quiet-beat and ticker mutations visibly redden those counters, while no assertion uses its own supplied value as both sides of a comparison.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/runs.py:2601-2605 and reckon/roadmap_snapshot.py:315-321 use the existing pointers parameter, and the station store's two-pass parsing at reckon/crew/station_store.py:794-814 follows its row and cache idiom without a plan-labelled source name.\nSCORE reuse: 19\nJUSTIFICATION reuse: the capability search found the direct snapshot counter in tests/test_snapshot_classifies_from_its_read.py:73-113 and the production owner in reckon/crew/recovery_watch.py:1370-1395; the new tests/test_every_sweep_classifies_from_its_records.py:72-153 tests six sweep entry points the earlier direct test does not reach, while all production changes extend the owner's pointers handover.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T123006976743-every-sweep-classifies-from-its-records/manifest.md:16 blocking: the brief requires ruff check and ruff format --check to add no findings against base, but the manifest and named logs give no command, output or result for either check, so that done-when clause remains unverified.",
+  "review_run_id": "r-20261105T133445345987-review-of-every-sweep-classifies-from-its-records-212fe44fed27",
+  "reviewed_base_sha": "b5067388ad5f8798eeda6ee04e278478e0a260a1",
+  "reviewed_head_sha": "212fe44fed278c4c6f9d6fd15d5e04485daf15a8",
+  "reviewed_run_id": "r-20261105T123006976743-every-sweep-classifies-from-its-records",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T21:25:07.239892+00:00",
+  "total": 111
+}
