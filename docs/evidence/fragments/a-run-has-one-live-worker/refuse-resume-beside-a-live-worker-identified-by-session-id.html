@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-run-has-one-live-worker">
+  <meta name="plan-title" content="Refuse resume beside a live worker identified by session id">
+  <meta name="plan-summary" content="A spawned run whose recorded pids are all dead is asked once more whether a live process of this user carries the run's session id as a whole command-line argument; a hit reads alive, so both resume doors refuse a second worker beside it.">
+  <meta name="plan-evidence-for" content="reckon:a-run-has-one-live-worker">
+  <meta name="plan-verifies" content="reckon:a-run-has-one-live-worker#s4">
+  <meta name="plan-recorded-at" content="2026-11-05">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,resume,liveness,session">
+  <title>Refuse resume beside a live worker identified by session id — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="refuse-resume-beside-a-live-worker-identified-by-session-id" data-reckon="landed" data-when="2026-11-05">
+  <h2 id="refuse-resume-beside-a-live-worker-identified-by-session-id-title">Refuse resume beside a live worker identified by session id</h2>
+  <p id="refuse-resume-beside-a-live-worker-identified-by-session-id-mechanism">A supervisor that exits ahead of its worker leaves the worker reparented to init and unrecorded, so every pid a run's pointer names answers dead while the worker goes on driving the run's session. The liveness owner that both resume doors call now takes one more reading. When the pid probe is not True and the record is a spawned (<code>launch: cli</code>) run naming a <code>session_id</code>, it walks <code>/proc</code> for a live process owned by this user whose command line carries that session id as one whole argument, excluding the caller and its ancestors. A hit reads alive, so <code>resume_plan</code> and the sweep's mirror <code>_launcher_refusal</code> both fire their existing live-process refusal, with the same message on both doors. The match is on whole arguments, so a session id embedded in another argument is not a worker; the walk's reach is this host and this user, the same reach the pid probe beside it has. A run whose pid the probe proves alive never reaches the walk.</p>
+  <p id="refuse-resume-beside-a-live-worker-identified-by-session-id-gate">Five cases pass at the head. A run whose recorded pid is dead and which records a session id is refused by <code>resume_plan</code> and by <code>_launcher_refusal</code> with one identical message while a real child process carries that session as an argument element; both admit once that child exits; a live process carrying a different session refuses neither; and a child carrying the id inside <code>--resume=&lt;id&gt;</code> refuses neither. Each case runs against a temporary crew home and asserts the real crew home carries none of its run paths afterwards.</p>
+  <p id="refuse-resume-beside-a-live-worker-identified-by-session-id-control">The declared mutation — the whole-argv session search removed — leaves the two refusal cases building a launch plan instead, and they fail (<code>EXIT=1</code>, 2 failed ids the head arm does not fail). Before the repair the same two cases failed against the unmodified tree, and the three admit-cases passed, so the reproduction names the defect rather than the fixture. Head gate: <code>tests/test_resume_finds_unrecorded_live_session.py</code> at the stated revision, 5 passed, <code>EXIT=0</code>. The six neighbouring liveness and resume modules pass 62 cases at the head. This gate measures only this node's own change; verifying the merged result belongs to a separately dispatched test node.</p>
+</article>
+</body>
+</html>
