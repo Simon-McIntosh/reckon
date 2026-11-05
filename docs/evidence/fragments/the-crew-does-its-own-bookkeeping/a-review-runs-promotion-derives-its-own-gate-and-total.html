@@ -1,0 +1,41 @@
+<article class="evidence-fragment" id="a-review-runs-promotion-derives-its-own-gate-and-total">
+  <h3>A review run's promotion derives its own total and waits for its manifest</h3>
+  <p>Two of the three refusals §1 records are repaired here. A review promoted
+  with <code>crew complete --run &lt;id&gt;</code> and no gate flags no longer
+  loses a record whose six dimension scores are all present but whose
+  <code>total</code> line is absent: the delivery verdict applies the same
+  arithmetic <code>read_review</code> already applies, so the record reads as
+  the complete review it is. And a review promoted a few seconds before its
+  worker writes <code>manifest.md</code> now waits a bounded twenty seconds for
+  that file and, when it never appears, refuses naming the path rather than
+  promoting a run whose own account of itself does not exist.</p>
+
+  <p id="a-review-runs-promotion-derives-its-own-gate-and-total-repro">The
+  third refusal still reproduces at the head this node started from. A review
+  manifest whose <code>tests:</code> field holds a JSON list —
+  <code>["pytest -q tests/a.py", "pytest -q tests/b.py"]</code> — fills the
+  promotion's gate command with the list's own text, and the promotion is
+  refused with <code>'[pytest -q tests/a.py,' names no executable</code>. The
+  derivation that replaces that command with the record's own check lives in
+  <code>reckon/crew/promotion_records.py</code>, outside this node's write
+  grant, so the repair is recorded here rather than applied.</p>
+
+  <table id="a-review-runs-promotion-derives-its-own-gate-and-total-arms">
+    <thead>
+      <tr><th>case</th><th>base arm</th><th>head arm</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>no gate flags, JSON-list <code>tests:</code></td><td>refused</td><td>refused (out-of-scope defect)</td></tr>
+      <tr><td>six scores, no total</td><td>refused</td><td>derivation verified directly; end-to-end refused by the same out-of-scope defect</td></tr>
+      <tr><td>manifest appears a few seconds late</td><td>promoted</td><td>promoted</td></tr>
+      <tr><td>manifest never appears</td><td>promoted (defect)</td><td>refused, naming the path</td></tr>
+    </tbody>
+  </table>
+
+  <p id="a-review-runs-promotion-derives-its-own-gate-and-total-control">The
+  negative control removes the total derivation from
+  <code>_with_derived_total</code> and
+  <code>tests/derivation_test.py::test_a_record_with_six_scores_and_no_total_is_complete</code>
+  fails, recording <code>['total']</code> as the missing measure, so the
+  derivation is load-bearing rather than incidental.</p>
+</article>
