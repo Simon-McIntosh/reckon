@@ -252,6 +252,68 @@ def _steering_brief(pointer: Mapping[str, Any]) -> Path | None:
     return path
 
 
+def _attempt_with_a_result(run_id: str) -> str | None:
+    """Name an attempt of this run that ended having produced something.
+
+    A run directory keeps one immutable exit record per attempt. A launch that
+    never reached a model writes one too, and that attempt has no result: the
+    queue's own retry is what follows it, so it does not refuse a relaunch. Any
+    other exit record says a worker ran and its attempt ended, so launching the
+    request again under the same run id would start a second attempt over the
+    account of the first and overwrite whatever that attempt delivered.
+    """
+    from reckon.crew.recovery_liveness import _exit_record_is_launch_failure
+
+    try:
+        paths = sorted(runs.run_dir(run_id).glob("attempt-*-exit.json"))
+    except OSError:
+        return None
+    for path in paths:
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(payload, Mapping):
+            continue
+        recorded = str(payload.get("run_id") or "")
+        if recorded and recorded != run_id:
+            continue
+        if _exit_record_is_launch_failure(payload):
+            continue
+        return (
+            f"an attempt of the run already exited with a recorded result ({path.name})"
+        )
+    return None
+
+
+def _launch_reread_refusal(pointer: Mapping[str, Any]) -> str | None:
+    """Why this request must not be launched now, or ``None`` when it may be.
+
+    A pass ranks the queued pointers it read at its start and then works
+    through the queue, so a request can move while the pass is busy with the
+    others: a coordinator may promote, discard or stop it, and a supervisor may
+    end an attempt of it that already ran. Launching from the pass's opening
+    read would then start a second attempt on a request that no longer waits,
+    overwriting an attempt's manifest, so the pointer and the run's attempt
+    records are re-read together here, under the same per-run lock every
+    pointer writer takes.
+    """
+    run_id = str(pointer.get("run_id") or "")
+    if not run_id:
+        return None
+    with runs._pointer_lock(run_id):
+        try:
+            runs.pointer_path(run_id).read_text(encoding="utf-8")
+        except FileNotFoundError:
+            return (
+                "the request's live pointer was removed while the pass waited on "
+                "it (promoted, discarded or stopped)"
+            )
+        except OSError as exc:
+            return f"the request's live pointer cannot be read: {exc}"
+        return _attempt_with_a_result(run_id)
+
+
 def _launch_queued(
     pointer: Mapping[str, Any],
     *,
@@ -4271,6 +4333,22 @@ def admit_once(
                         allowance_source=allowance_source,
                         verdict="held-on-plan-review",
                         detail=review_owed,
+                    )
+                )
+                continue
+            reread_refusal = _launch_reread_refusal(pointer)
+            if reread_refusal:
+                # The request moved after this pass read it as queued, so it is
+                # left exactly as it now stands rather than launched from a
+                # reading that has gone stale. Its wait is not a slot hold, so
+                # the stall record names it for a coordinator instead.
+                verdicts.append(
+                    _verdict_row(
+                        pointer,
+                        allowance=allowance,
+                        allowance_source=allowance_source,
+                        verdict="refused-before-launch",
+                        detail=reread_refusal,
                     )
                 )
                 continue
