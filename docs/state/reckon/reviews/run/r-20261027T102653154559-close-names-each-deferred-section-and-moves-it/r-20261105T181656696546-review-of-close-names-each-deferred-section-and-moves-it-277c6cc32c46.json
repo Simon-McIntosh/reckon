@@ -13,6 +13,13 @@
   "completed_at": "2026-11-05T18:24:57.309Z",
   "dispatched_at": "2026-11-05T18:19:42Z",
   "evidence_notes": "The gained commit is a behavioural fix in one private helper pair plus one regression test. The assertions-the-run-added reading: test_a_payload_without_a_slug_cannot_defeat_the_same_plan_refusal adds four assertions \u2014 thread liveness (fails if the write does not stop at the refusal), the OpError type and its 'another plan' text (fails if the same-plan refusal is not raised), and the document text and version equality against values captured before the call (fail if the refused write leaves any disk change). None compares a value against the same variable the test passed into the code under test. gate-prefix-slug-red.log is the negative control: at 3a1ec1aa97 the new test fails because the write never returns, blocked on the lock it holds, which is exactly the failure the assertion catches; at 277c6cc32c it passes. The three-file gate named by the done_when was last run at cf6e12390f (gate-full.log: 3 failed, 3724 passed, EXIT=1, the three test_cross_project_conformance ids reproduced at base in gate-base-attribution.log), so the heads differ; reported as a non-blocking finding. The source manifest's status line reads complete.",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "close-names-each-deferred-section-and-moves-it",
+      "recorded_at": "2026-11-05T18:57:31.542985+00:00"
+    }
+  },
   "findings": [
     {
       "file": "manifest.md",
