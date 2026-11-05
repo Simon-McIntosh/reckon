@@ -1,0 +1,91 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-05T18:31:53.555Z",
+  "dispatched_at": "2026-11-05T18:23:18Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-crew-does-its-own-bookkeeping.html:115",
+      "id": "done_when-1",
+      "reason": "without narrowing \u00a716 to the gap that remains (the in-harness wording for a CLI launch, and the reviewed run's row) or closing it on that evidence, a node spends its gate writing a second stalled-launch classifier whose test cannot distinguish the base from the change.",
+      "text": "s16's first done-when case (\"an admitted run in `starting` past the bound and no attempt record finds it classified as a stalled launch naming its remedy\") already holds at main: `_stranded_launch` (`reckon/crew/recovery_liveness.py:740-771`) with `STRANDED_LAUNCH_BOUND_SECONDS = 900` (line 62) and the `launch-failed` arm (`reckon/crew/recovery_classification.py:2048-2067`) classify exactly a pre-spawn pointer past the bound with no pid, worker record, stream or launch log, and `tests/test_stranded_launch_releases_its_claim.py:88-97` asserts the review case and the \"stranded launch\" detail \u2014 so the case passes on the unfixed code and the node would reimplement a working guard",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-does-its-own-bookkeeping.html:113",
+      "id": "reasoning-1",
+      "reason": "the section's own reproduce-first rule says a defect that no longer reproduces closes with that evidence, so a worker who tests this claim will find the review named and may close \u00a716 instead of building the reporting the incident actually needed, which is a row that says the review is stalled rather than merely in flight.",
+      "text": "s16's Why says of the 5 November stall \"nothing named the review as the cause\", but `_review_run_in_flight` (`reckon/crew/recovery_classification.py:615-651`) resolves a directly dispatched review through `_review_in_flight` (which keys on reviewed run and head, \"never on the reviewer's node id\", `reckon/crew/recovery_review_dispatch.py:538-558`) and `_review_in_flight_phase` accepts `starting` via `_PRE_SPAWN_PHASES` (`reckon/crew/recovery_liveness.py:50`), so the reviewed run's row already reads \"its review is in flight as <id> (phase: starting)\" (`recovery_classification.py:1533-1539`)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-does-its-own-bookkeeping.html:115",
+      "id": "reasoning-2",
+      "reason": "renaming the classification silently drops the run's review duty (unknown values map to \"\") and removes it from promotion's `review_required` test, so the plan must either keep `scoring` and change only the detail/action wording or add the consumer modules and their assertions about the new value to the section.",
+      "text": "s16's second case requires the reviewed run to be \"classified as waiting on that stalled review and naming it, rather than `scoring`\", but a classification value other than `scoring` is read as the specific word by consumers \u00a716 neither names nor may edit: `CLASSIFICATION_DUTY_KINDS` and `REVIEW_CLASSIFICATION_KINDS` (`reckon/crew/obligations.py:53-63`), `obligation_snapshot.py:1435`, `promotion_checks.py:1100-1119` (`classification == \"scoring\"`) and `forgotten_runs.TERMINAL_UNPROMOTED_CLASSIFICATIONS` (`reckon/crew/forgotten_runs.py:42-50`); \u00a716's write paths are only `recovery_classification.py` and `queue_admission.py`",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-does-its-own-bookkeeping.html:163",
+      "id": "done_when-2",
+      "reason": "a control that passes on its own mutated arm measures nothing, and an implementation that records the last asking finding's id would leave the case green while the predicate is broken, so the control must assert the specific wrong outcome (the first finding's test grant present, or two grants recorded) rather than the existence of a grant.",
+      "text": "s27's second negative control says \"a predicate that always answers true makes the second case grant one\", but the second case already grants a test path by construction (its second finding asks for one), so \"grants one\" is true on both the real and the mutated predicate; only the reason field can differ, which is the third control's job",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "ae04b0b3f1c3480cbe87e832add03644e96f39ea",
+  "plan_fingerprint": "a64da362502eac9bd6f63d30cbc9cf37b5ac182fb348c49e1160dec8b0ff35ee",
+  "plan_slug": "the-crew-does-its-own-bookkeeping",
+  "plan_version": 68,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261105T182032499441-plan-review-of-the-crew-does-its-own-bookkeeping",
+  "reviewed_blob_sha": "2c59dce547b32a8563372bdf9d88d8a52aa0653d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/mcp.py:2586` is `_crew` exactly, `reckon/crew/obligations.py:1695` and `reckon/crew/recovery_review_dispatch.py:2388` are the two `dispose_commands` callers exactly, and `_grant_round_scope` at `reckon/crew/recovery_repair_dispatch.py:435-497` and `_grant_reason` at line 500 resolve as cited.",
+    "done_when": "a finding \u2014 s16's first case already passes at the base revision, and s27's second negative control cannot fail.",
+    "evidence_paths": "pass \u2014 every changed unit says \"Every log is under the run directory, starts with its revision and the literal command, and ends in EXIT=\", and s28's gate log is named under it.",
+    "naming": "pass \u2014 `_asks_for_a_test`, `tests/test_a_repair_round_grants_a_missing_test.py` and `tests/test_a_disposition_reaches_its_review_from_every_surface.py` name mechanisms, with no plan label, ticket number or changelog prose.",
+    "reasoning": "a finding \u2014 s16 asserts a defect that main's `_stranded_launch` already repairs, and its \"nothing named the review as the cause\" premise is contradicted by the row the classifier already emits.",
+    "single_goal": "pass \u2014 s28's two surfaces both carry one goal (the record's review id reaching the write), and s27 carries one predicate and its grant.",
+    "wiring": "pass \u2014 every `plan-section-depends-on` entry names a section that exists (max s28); s16 depends on s15, s27 on s25, s28 on s26, and each pair describes the right upstream."
+  },
+  "section_digests": {
+    "_document": "d228320ae1f898c48abec2566c742a5f988552feda70b66d2e072c90b4897816",
+    "s1": "843bb65a273798e31ae7d542e71c3172be8db96af98b3b5fa5582c0e4b7052b8",
+    "s10": "383abdaed093dc9135b7930e907d6aeaaeff313c10da917e0f90ef21242cc000",
+    "s11": "528ecce7a53f57e54bcf1efa83ff458958c3437b3432895ddecdd835a0e62505",
+    "s12": "cf7304fd49c4d28e5bca798e2fca486ef137e59bce341c819316936d77daf719",
+    "s13": "751a9cd019e8296d87aa5d4f4e45f8a29d84381081120d349dc5bd6b19125ed3",
+    "s14": "37143d66ebad07f999845341b909080392b4fffa341c7553bbece98ce2d93af1",
+    "s15": "327a3b6261f327ba147b39dd2d6fbd1ce595e493e1834f8eb9ef957ea33f55c6",
+    "s16": "8271418a314eaa94f33d3dff7bd5b243e823939273fd614b18e9b844743217f2",
+    "s17": "f7a6d1fb09a597263b98f3f9db11f0a156337a303d2ccf5eb3b0d44899d7956f",
+    "s18": "526aabfb15ccc6205c07b6cf24a8c3fd22579f4776d2bd7a971164251a7d6f95",
+    "s19": "0e85b55be35103b90e318507ff6f86e1f640ef451c18250a9bcb4cb4f2e7c1b0",
+    "s2": "0fe853c67da217879c5c8672e5902b9a76353e03c761fc4b411b7d92af3feb8f",
+    "s20": "949f4ed4b742b4afba912a3943856d1af84c9226addd2df16be2024644c5f1ea",
+    "s21": "7e1c07b0431d4b47d90d44bc5d92db9ab1bb89fe6de6fb2f0fb79f61c04261ef",
+    "s22": "5cb33a844f041e4d88c2d1f7620411b91bbffd0c6605f939520cfa7178756424",
+    "s23": "b1aa58f1dbd4f559cc20a27b9f735c21e1c558ba2ab75ee90c390f1a649c6a44",
+    "s24": "dcacf6665c2b437d62dfd9ebfb5bd1f979f111d5438fc6145701595e4d7468bb",
+    "s25": "ca040954bf353ac976d8d5792c30235f6d957564602a674cf827d3f7ccc5b183",
+    "s26": "a0ac709c25dc1d649a9bc70dde6b95c8d7afc430dbf8b8e48c19f08f2376ad18",
+    "s27": "830f00a363bdd5df83871b9c1474ddaa2255804cbe830c77ba075dbf68e30438",
+    "s28": "48313038856ace751ca6d643dbc5ad6e21b18bac1172db9f777e7b5beb0479be",
+    "s3": "ba6dd9a478bc0199ba62cffc2235c6b7735014d677ac51e4789220cffff43d32",
+    "s4": "725c875cfeb877f71fdc01870943889b9c403c08aa0ee675bdbb100c60d896ee",
+    "s5": "7c304261c964b9ccae1e7148a9bffe48cc81416987e9ed2e9d50d6c5a77df7b7",
+    "s6": "f293425c956b5e910273b5c23cfe8ee7a3a4c1d5565a0c10742e9f7beee7c269",
+    "s7": "9450a2aff439a83861b8a100a49b15e67fd864fa1523edeeafd6c9dd9e0ec5c7",
+    "s8": "1e02f8193f9402b4cf070a0f78feb68f2e3d79a9bb21f00d7c10f33032ed6f37",
+    "s9": "c5acdc2406e91d62930f4e8772839567aca54b6df3e16cbe65878db520b53043"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-05T18:41:29.010059+00:00"
+}
