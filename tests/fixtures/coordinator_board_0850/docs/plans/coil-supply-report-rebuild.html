@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="power_convertor">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="coil-supply-report-rebuild">
+  <meta name="plan-title" content="The Coil-Supply Report Rebuilt on Current Findings">
+  <meta name="plan-summary" content="Rebuild the coil-supply report on current results: full coil-set estimates through the DINA scenarios, FDUs under disruptions, and the filters reassessed">
+  <meta name="plan-status" content="in-progress">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="50.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S3">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="iter,jt60sa,power-supply,coil,ripple,protection">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;coil-supply-report-rebuild#s3&quot;,&quot;coil-supply-report-rebuild#s7&quot;,&quot;iter-switched-terminal-transients#s6&quot;,&quot;pf-two-in-hand-capacitance#s4&quot;,&quot;quench-detection-converter-pickup#s3&quot;,&quot;quench-detection-converter-pickup#s4&quot;],&quot;s5&quot;:[&quot;coil-supply-report-rebuild#s3&quot;,&quot;coil-circuit-playback-figures#s8&quot;,&quot;tf-cold-test-validation#s4&quot;,&quot;tf-cold-test-validation#s13&quot;],&quot;s6&quot;:[&quot;coil-supply-report-rebuild#s5&quot;,&quot;coil-supply-report-rebuild#s9&quot;,&quot;shared-coil-supply-model#s10&quot;],&quot;s8&quot;:[&quot;coil-supply-report-rebuild#s2&quot;,&quot;coil-supply-report-rebuild#s4&quot;,&quot;coil-supply-report-rebuild#s5&quot;,&quot;coil-supply-report-rebuild#s6&quot;,&quot;coil-supply-report-rebuild#s7&quot;,&quot;coil-supply-report-rebuild#s9&quot;,&quot;coil-supply-report-rebuild#s10&quot;,&quot;coil-supply-report-rebuild#s11&quot;,&quot;coil-supply-report-rebuild#s12&quot;,&quot;quench-detection-converter-pickup#s5&quot;,&quot;coil-circuit-playback-figures#s3&quot;],&quot;s11&quot;:[&quot;coil-supply-report-rebuild#s5&quot;],&quot;s12&quot;:[&quot;coil-supply-report-rebuild#s11&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
+  <title>The Coil-Supply Report Rebuilt on Current Findings | power_convertor</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="68">
+<meta name="plan-modified" content="2026-10-22">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The Coil-Supply Report Rebuilt on Current Findings</h1>
+
+    <h2 id="s1">§1 — What the report says that is no longer true</h2>
+    <section data-reckon="section" data-id="s1" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p><a href="/power_convertor/research/coil-supply-model-arc">The coil-supply model, from JT-60SA to ITER</a> is the project's report. It was last assembled on 19 October 2026. Since then the fast-discharge breaker model, the PF winding capacitances, the VS3 circuit and the reading of the 22HLVN fast-discharge column have all changed, so several of its headline numbers are now wrong rather than merely old. This section is the review that found them, made on 20 October 2026 against the plan records and the register. Each row names the section that replaces the claim.</p>
+    <table>
+      <thead><tr><th>Report section</th><th>What it says</th><th>What the records now say</th><th>Replaced in</th></tr></thead>
+      <tbody>
+        <tr><td>Coil electrical health</td><td>PF1's initiation insertion reaches 18.65 kV across the coil against 12 kV (−55 %); CS3L reaches 29.53 kV and CS1 12.09 kV</td><td>These are the initiation study's design-case sweep at rated current. On 105069/3, PF1's switching-network insertion puts its resistor at 8.4 kV (98.8 % of 8.5 kV) and its across-coil peak at 9.19 kV against 10 kV. The register ("Plasma-initiation requirements") gives 8.1 kV for each of CS1U and CS1L and 10 kV for CS2, CS3, PF1 and PF6 as the maximum initiation voltage, but the insertion record still judges PF6 and CS3L against the 12 kV insertion envelope (<a href="/power_convertor/evidence/archive/coil-circuit-playback-figures-landed.html#s10">playback §10</a>), so the report must take the register's 10 kV</td><td>§2</td></tr>
+        <tr><td>Coil electrical health, fast discharge</td><td>Terminal peaks are judged against "22HLVN FD limit" as a transient limit; CS1's discharge to ground is 4.93 kV, 99 % of 5 kV</td><td>The 22HLVN fast-discharge column is the quasi-steady I·R voltage of the FDU (V3), not a transient limit (register, 20 October). The FDU breaker opens at its own current zero (merged <code>da9f8f77</code>). The 90 kV plant over-response and the 4.23–4.93 kV ramp band are withdrawn, and PF2's crossing is withdrawn. CS1 has two FDUs, 0.134 Ω each, one per module. Every CS1 number to date is single-FDU and interim</td><td>§2, then §5</td></tr>
+        <tr><td>Fast discharge of every circuit</td><td>CS1's equivalent constant is 9.66 s, 28.8 % over its 7.5 s limit, at a 3.20 kV resistor peak</td><td>That row is one FDU of 0.134 Ω across the CS1 pair. With two in series the cold constant halves, so the exceedance is expected to disappear; cs1-two-fdu (<a href="/power_convertor/plans/coil-circuit-playback-figures#s8">playback §8</a>) measures it. The other rows predate the breaker's own-zero opening and the library FDU</td><td>§5</td></tr>
+        <tr><td>Fast discharge, TF</td><td>The TF case carrier is inferred from 778SPD's energy allocation, with the cold-test analogy k² 0.80 and τ<sub>2</sub> 0.49 s</td><td>The cold tests now give a posterior: k² 0.79, τ<sub>2</sub> 0.51 s, and a measured linear R(E) (<a href="/power_convertor/plans/tf-cold-test-validation#s5">tf-cold-test §5</a>, <a href="/power_convertor/plans/tf-cold-test-validation#s6">§6</a>)</td><td>§2, then §5</td></tr>
+        <tr><td>Models: sectioned winding</td><td>PF6's first mode is 195.8 Hz turn-resolved; the capacitances follow the conductor</td><td>The capacitances now join the turns their insulation separates. PF6's three lowest modes fall 7, 46 and 65 %, PF2's mode moves from 595 to 522 Hz and PF5's band floor from 276 to 249 Hz. Bare PF builds take converged section counts (PF1 64, PF2 60, PF3 64, PF4 88, PF5 32, PF6 36) (<a href="/power_convertor/plans/pf-two-in-hand-capacitance#s2">pf-two-in-hand §2</a>, <a href="/power_convertor/plans/pf-two-in-hand-capacitance#s5">§5</a>)</td><td>§2, numbers final after pf-two-in-hand §4</td></tr>
+        <tr><td>Models: fast discharge</td><td>The switched implementation "connects the resistor through a breaker"</td><td>The library FDU (<code>fast_discharge_unit.py</code>) carries the vacuum breakers, the counter-pulse capacitor, the pyrobreaker and its stray, the snubber attachment, and the shared heated-resistor law. Each breaker opens at its own current zero</td><td>§2</td></tr>
+        <tr><td>Models: quench detection</td><td>Absent</td><td>The PF two-conductor bridge solve and the detector front end are in <code>quench_detection.py</code> (<a href="/power_convertor/plans/quench-detection-converter-pickup#s2">QD pickup §2</a>)</td><td>§2</td></tr>
+        <tr><td>The move to ITER</td><td>The IGBT figure says the switched model builds VS3 as two independent branches</td><td>VS3 is one anti-series loop with its two converters in series (merged <code>26080d52</code>). VS1's switched window peaks at 3.05 kV, 48 % of 6.30 kV, with installed losses</td><td>§2</td></tr>
+        <tr><td>DINA scenarios</td><td>Draft PF2 and PF1 playbacks on an unconverged 10 µs step; the margins figure's worst-case marks are drawn black</td><td>The playback figures are owned by <a href="/power_convertor/plans/coil-circuit-playback-figures">coil-circuit-playback-figures</a> §3 and §9–§11. The worst-case marks follow the population and highlight rule. PF2's ripple window puts the neutral grounding current at 0.25–0.44 A against the 0.1 A minimum the earth-fault detector resolves, not step-converged (playback §9); CS1's is 0.033 A (§11)</td><td>§2, then §8</td></tr>
+        <tr><td>Converter output filters</td><td>Filter candidates are sized against PF2 at 595 Hz and PF5's 276 Hz floor; CS and VS3 are not screened; installed damping bounds the line-to-internal gain at 1.006</td><td>The modes have moved (row above), so the candidates, the gain bound and the recommendation must be recomputed. The neutral grounding current is a new target the screen does not carry</td><td>§7</td></tr>
+        <tr><td>Whole report</td><td>No estimate for the full coil set through the scenarios; no quench-detection margin; no disruption case</td><td>The pieces exist per coil (PF1, PF2, CS1, VS1, the PF3/PF5 edges) but not as one scorecard</td><td>§3, §4, §6, §8</td></tr>
+      </tbody>
+    </table>
+    <p>Two items remain open and belong elsewhere. The nine-pair nova transfer fit predates the thick-coil geometry update and still needs a paired rerun. The distributed-capacitance test of JT-60SA's rising harmonic coupling (<a href="/power_convertor/plans/jt60sa-coil-circuit-model#s16">jt60sa-coil-circuit-model §16</a>) is now unblocked by shared-coil-supply-model §3, but nobody holds it. The report states both as open items rather than resolving them here.</p>
+    <p>Two of the report's prerequisites have changed hands with this plan. shared-coil-supply-model §4 (every supply as a composed circuit) and iter-switched-terminal-transients §6 (the integrated run, gated on §4 by g-istt-3) are now built by this plan's coordinator, as is coil-circuit-playback-figures §7, which this plan's §2 and §8 replace.</p>
+
+    <h2 id="s2">§2 — The report brought current on the records that have landed</h2>
+    <section data-reckon="section" data-id="s2" data-effort-hours="6.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>Correct every row of §1's table whose replacement has already landed, so that the report stops stating withdrawn numbers now rather than after the coil-set runs. The report is assembled, not edited. <code>scripts/figures/arc_overview.py --assemble</code> joins the partials that each <code>scripts/figures/arc_&lt;topic&gt;.py</code> writes to <code>docs/figures/coil-supply-arc/&lt;topic&gt;/section.html</code>. Every change is made in the section scripts, and the document is reassembled, never hand-edited.</p>
+    <p>The changes:</p>
+    <ul>
+      <li><strong>Coil electrical health</strong> (<code>arc_coil_health.py</code>): judge each stress against the reference the register now assigns. The quasi-steady I·R goes against the 22HLVN column. A transient to ground goes against 6REWE2, 778SPD or S9BRS4 where the register names one, and is stated as having no reference where it names none. The initiation insertion is read from the 105069/3 rows against each circuit's own initiation maximum from the register row "Plasma-initiation requirements": 8.1 kV for each of CS1U and CS1L, and 10 kV for CS2, CS3, PF1 and PF6. The design-case sweep is kept as a stated bound beside it. Add the neutral grounding current against the 0.1 A detector minimum. Withdraw the rows §1 lists as superseded.</li>
+      <li><strong>Fast discharge</strong> (<code>arc_fast_discharge.py</code>): state the breaker's own-zero opening and the withdrawals. Mark every CS1 number interim until cs1-two-fdu lands, and carry TF on the cold-test posterior. No number is re-solved here; §5 re-solves.</li>
+      <li><strong>Models</strong> (<code>arc_models.py</code>): describe the hand-capacitance placement and the converged section counts. Describe the library FDU, from breaker and counter-pulse to snubber and heated resistor, with its own-zero opening, and the quench-detection bridge and detector stage, each with one equation and its module. Move the screen-admittance sentence beside its equation, where it currently precedes the earthing stamp. Quote winding modes from the merged network (<code>6cf2e1d1</code>, <code>6cb3f1e9</code>). Mark a number taken from a record computed before those merges as on the old network until pf-two-in-hand §4 republishes that record.</li>
+      <li><strong>The move to ITER</strong> (<code>arc_iter_transition.py</code>): redraw VS3 as the one anti-series loop, remove the duplicated TF row from the supply table, and state the PF1 insertion on both bases (the design case and 105069/3) with the reason they differ.</li>
+      <li><strong>DINA scenarios</strong> (<code>arc_dina.py</code>, inherited from playback §7): draw the worst-case marks under the highlight rule. Move the excursion table from <code>docs/figures/coil-supply-arc/dina/excursions.html</code> into the record <code>scripts/iter/scenario_screen.py</code> writes. Remove the retired per-coil waveform figures from <code>docs/figures/coil-supply-arc/dina</code>.</li>
+      <li><strong>Overview and uncertainties</strong> (<code>arc_overview.py</code>): rewrite the answer paragraph on the corrected numbers, align the overview figure's arrows, and refresh the uncertainty register from the corrected sections.</li>
+    </ul>
+    <p>Out of scope: <code>docs/figures/coil-supply-arc/playback/section.html</code> and <code>docs/figures/coil-supply-arc/filtered-playback/section.html</code>. The playback drawer (<code>scripts/figures/coil_circuit_playback.py</code>) rewrites them on every run, and cs1-two-fdu will run it. They come into this plan at §8.</p>
+    <p>Done when:</p>
+    <ul>
+      <li>The reassembled document carries none of the withdrawn numbers in §1's table. <code>tests/test_coil_supply_model_arc.py</code>, which already asserts the section order and that every embedded figure resolves, gains two assertions: that the withdrawn numbers are absent, and that every record link in every partial resolves to an existing file and anchor. Negative control: re-inserting one withdrawn number into a partial makes the test fail.</li>
+      <li>Every figure under the claimed topic directories is regenerated at the node's head through <code>power_convertor.figure_layout.save_figure</code>, rendered to PNG and inspected, and the inspection is recorded in the gate log. Each caption names the record its numbers come from.</li>
+      <li>A number still in flight is stated as interim and names its owning section. It is never filled from an older record.</li>
+    </ul>
+    <p>Write paths: <code>docs/research/coil-supply-model-arc.html</code>; <code>scripts/figures/arc_overview.py</code>, <code>arc_jt60sa.py</code>, <code>arc_iter_transition.py</code>, <code>arc_models.py</code>, <code>arc_dina.py</code>, <code>arc_coil_health.py</code>, <code>arc_fast_discharge.py</code>, <code>arc_filter.py</code>; the topic directories <code>overview</code>, <code>jt60sa</code>, <code>iter-transition</code>, <code>models</code>, <code>dina</code>, <code>coil-health</code>, <code>fast-discharge</code>, <code>filter</code> and <code>uncertainties</code> under <code>docs/figures/coil-supply-arc/</code>; <code>scripts/iter/scenario_screen.py</code>; <code>docs/research/iter-scenario-screen.html</code>; <code>tests/test_coil_supply_model_arc.py</code>. The section adds no script and no command-line option: every change sits inside the existing section scripts. Heavy re-solves run on the fleet allocation under the thread caps in the repository's AGENTS.md.</p>
+
+    <h2 id="s3">§3 — Each coil's worst windows across the fifty scenarios</h2>
+    <section data-reckon="section" data-id="s3" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>The coil-set estimates of §4 cannot run every scenario switched, so they run the windows that load each supply most. This section chooses them from the 50 complete DINA scenarios that <a href="/power_convertor/research/iter-scenario-screen">the scenario screen</a> already reads. It uses DINA's demand only to place the windows; nothing about the circuit comes from DINA.</p>
+    <p>The selection extends its owner rather than forking it. <code>power_convertor.scenario_loading.ranked_windows</code> and its driver <code>scripts/iter/scenario_loading.py</code> already build the current, voltage-limit fraction, dI/dt, zero-crossing and bridge-mode-transition measures over the same complete DINA census, and rank windows by them. This section adds the two criteria they lack, initiation with the switching-network insertion and the fastest VS1 swing, and a per-supply window file. For each of the thirteen supplies, select one window per applicable criterion:</p>
+    <ul>
+      <li>the largest |I|, which also sets the fast-discharge trip current for §5;</li>
+      <li>the largest voltage demand as a fraction of the converter limit;</li>
+      <li>the largest |dI/dt|;</li>
+      <li>plasma initiation with the switching-network insertion (CS modules, PF1, PF6);</li>
+      <li>the fastest VS1 swing (PF2–PF5, VS1);</li>
+      <li>current zero crossings and the transfers between one-bridge, two-bridge and circulating operation, at the 10 % and 40 % bands of rated current.</li>
+    </ul>
+    <p>Windows within 1 s of each other in the same scenario merge. Each window carries its scenario, start time, criterion, criterion value and the averaged state it starts from.</p>
+    <p>Done when:</p>
+    <ul>
+      <li><code>data/iter/scenario_loading/coil_set_windows.json</code> (main checkout) lists every supply with at least one window per applicable criterion. Ties break by the stated rule: the larger criterion value, then the earlier scenario number.</li>
+      <li>The census record <code>docs/research/iter-coil-set-census.html</code> opens with the window table, an HTML table rather than an image, and one figure. That figure draws each criterion's values over the 50 scenarios as a grey population, with the selected windows highlighted, saved under <code>docs/figures/coil-set-census/</code>.</li>
+      <li>Negative control: a synthetic scenario with a spike injected into one coil's dI/dt is selected for that coil and criterion and for no other coil.</li>
+    </ul>
+    <p>Write paths: <code>src/power_convertor/scenario_loading.py</code>, <code>scripts/iter/scenario_loading.py</code>, <code>tests/test_scenario_loading.py</code>, <code>/home/ITER/mcintos/Code/power_convertor/data/iter/scenario_loading</code>, <code>docs/research/iter-coil-set-census.html</code>, <code>docs/figures/coil-set-census</code>. The section adds two measures to <code>ranked_windows</code>'s callers and one output option to the driver, and no new script.</p>
+
+    <h2 id="s4">§4 — The coil set through its worst windows: ripple, edges, resonances and detector pickup</h2>
+    <section data-reckon="section" data-id="s4" data-effort-hours="10.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p>Run every §3 window on the integrated switched model that <a href="/power_convertor/plans/iter-switched-terminal-transients#s6">iter-switched-terminal-transients §6</a> assembles. All supplies switch together on one composed plant (<a href="/power_convertor/plans/shared-coil-supply-model#s4">shared-coil-supply-model §4</a>), on the republished windings, at installed-loss bounds, with both converter forms as arms. This section adds the windows and the measures; it does not build a second integrated model. The §7 filter candidates the reassessment keeps run as further arms on the windows of the supplies they serve.</p>
+    <p>Each measure family is computed by its existing owner, called on the new windows:</p>
+    <ul>
+      <li>ripple lines, peak-to-peak and the neutral grounding current by <code>scripts/figures/coil_circuit_playback.py</code> (<code>neutral_current</code>, <code>spectrum</code>), as <code>scripts/iter/cs_switched_window.py</code> already calls them;</li>
+      <li>the first turn and the exterior turns by <code>scripts/iter/first_turn_voltage.py</code> and <code>exterior_turn_voltages.py</code>;</li>
+      <li>driven modes and their quality factors by <code>scripts/iter/winding_damping.py</code> and <code>frequency_response_prediction.py</code>;</li>
+      <li>detector pickup by <code>scripts/iter/quench_detection_pickup.py</code> (<code>pickup_detector</code>, and the detector's <code>hold_response</code> from <code>src/power_convertor/ripple_margins.py</code>).</li>
+    </ul>
+    <p>The census is a window loop in the integrated run's own caller, <code>scripts/iter/integrated_simulation.py</code>, not a fifth implementation of any measure.</p>
+    <p>For each coil and window it measures:</p>
+    <ul>
+      <li><strong>Ripple:</strong> terminal lines from 6f to 24f, the 500 Hz carrier and its sidebands, and the 1.6 kHz front-end line, across the coil and to ground; peak-to-peak terminal ripple; current ripple; and the neutral grounding current against the 0.1 A earth-fault detector minimum.</li>
+      <li><strong>Fast edges:</strong> terminal dV/dt; the first-turn peak; the worst section's peak to ground; and the largest voltage between adjacent sections against the 152 V helium Paschen minimum, as an exposure prompt rather than a verdict.</li>
+      <li><strong>Resonances:</strong> each coil's driven winding modes and their quality factors at both loss bounds, and their distance from the 300 and 600 Hz thyristor lines, the 500 Hz carrier and the 1.6 kHz front end, with the line-to-section gain at the nearest line.</li>
+      <li><strong>Quench-detection pickup:</strong> the PF bridge and CS tape signals through the detector front end of <a href="/power_convertor/plans/quench-detection-converter-pickup#s3">QD pickup §3</a>, against the threshold and hold time, as a margin.</li>
+    </ul>
+    <p>The record gives one scorecard row per coil. Each row holds the worst value of each measure, the window and arm it came from, its reference from the IDM register, and the margin. Where the register holds no reference the row says so, and no margin is filled from another component. DINA's coil voltage is compared and reported as a deviation, never as a pass mark.</p>
+    <p>Done when:</p>
+    <ul>
+      <li>Every supply's scorecard row is complete in <code>docs/research/iter-coil-set-census.html</code>, with figures for ripple lines, edges, mode-line proximity and detector margin under <code>docs/figures/coil-set-census/</code>, each rendered and inspected.</li>
+      <li>Step convergence: halving the step moves no reported peak by more than 1 %. A window that does not converge is drawn and tabulated as drafted, with its measured movement.</li>
+      <li>Negative control, the one iter-switched-terminal-transients §6 declares: each coil's 600 Hz current ripple with the passive coupling disabled, divided by its ripple with the coupling in place, equals |Z<sub>screened</sub>|/|Z<sub>bare</sub>| at 600 Hz to within 5 %. A second control: a supply whose converter is held idle shows only the coupled pickup, below its driven ripple.</li>
+    </ul>
+    <p>Write paths: <code>scripts/iter/integrated_simulation.py</code> (the census option), <code>tests/test_integrated_model.py</code>, <code>/home/ITER/mcintos/Code/power_convertor/data/iter/integrated/coil_set_census</code>, <code>docs/research/iter-coil-set-census.html</code>, <code>docs/figures/coil-set-census</code>. The section adds one option to the integrated run's caller and no new script. Runs go on the fleet allocation in chunks of one supply.</p>
+
+    <h2 id="s5">§5 — Fast discharge of every circuit on the current FDU</h2>
+    <section data-reckon="section" data-id="s5" data-effort-hours="6.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
+    <p>Re-solve iter-switched-terminal-transients §8's discharges of every circuit, every group and all together on the library FDU. The re-solve goes through the owners <code>scripts/iter/fast_discharge.py</code>, <code>scripts/iter/tf_fast_discharge.py</code> and <code>scripts/iter/vs1_discharge.py</code>, which call <code>fast_discharge_unit.py</code> and <code>discharge_resistor.py</code> rather than stamping their own breaker. The FDU's elements:</p>
+    <ul>
+      <li>vacuum breakers that open at their own current zero;</li>
+      <li>the counter-pulse capacitor;</li>
+      <li>the pyrobreaker and its stray;</li>
+      <li>the snubber at the register's attachment, with XK23KG's attachment as a second arm until tf-cold-test-validation §4's <code>cold-test-commutation-observables</code> node says which attachment the measured commutation supports;</li>
+      <li>two FDUs in series on CS1, one per module, and one FDU on every other PF and CS circuit (778SPD v1.0 §1.2; register row "Fast discharge units per circuit");</li>
+      <li>the heated resistor on the cold-test law.</li>
+    </ul>
+    <p>Every PF and CS trip follows the PF/CS FDU interlock sequence (Figure 3-19 of the PF/CS FDU description, carried into the IDM register):</p>
+    <ul>
+      <li>the bypass switch opens about 320 ms after the command;</li>
+      <li>the vacuum breaker is commanded at about 420 ms and opens about 22 ms later;</li>
+      <li>the counter-pulse fires 8 ms after it opens;</li>
+      <li>the current reaches zero 6–10 ms after that.</li>
+    </ul>
+    <p>So the resistor is inserted about 0.45 s after the trip command, and the coil current flows through the bypass and the breaker until then. 778SPD caps the whole breaker delay at 0.5 s. Time zero is the trip command. Front quantities are measured from the breaker's contact separation, and currents and energies at the breaker's own current zero, not at the command.</p>
+    <p>X7TDMM v2.0, the approved FDU local I&amp;C description, governs the sequence. G96SWS v1.1's faster sequence runs as a sensitivity arm: bypass at about 280 ms, its check-back at about 350 ms, and the zero check-back at 25–30 ms.</p>
+    <p>The converter's state during the delay is IDM's (register row "PF/CS FDU interlock time sequence"). At the quench trigger the converter goes to inversion, or to freewheeling, rather than being blocked, and the PMS closes later but before the breakers open (7NFVWB v1.0 p. 5; 778SPD v1.0 §3.2). The reference arm is therefore inversion at the converter's inversion limit from the trip until the PMS closes, then freewheeling through the PMS until the breaker separates. IDM gives no PMS closing time, so it is run at both ends: early, and just before the breaker separates. The bound arm is the converter blocked and the coil freewheeling from the trip. That bound is the upper limit on the interrupted current when a disruption is driving the coil current up, and inversion is the design case.</p>
+    <p>No owner models the converter through the delay yet. <code>fast_discharge.py</code> and <code>vs1_discharge.py</code> hold it as a fixed bypass resistance and insert the resistor directly. This section therefore adds the delay as a stage of the <code>fast_discharge.py</code> owner, ahead of the FDU insertion:</p>
+    <ul>
+      <li>the converter as a voltage source at its registered inversion limit from the trip;</li>
+      <li>a PMS make switch that closes at the stated time and shunts the converter;</li>
+      <li>freewheeling through the PMS until the breaker separates;</li>
+      <li>for the bound arm, the PMS closed from the trip.</li>
+    </ul>
+    <p>If the shared <code>ConverterNetwork</code> must carry these elements, that change goes to <code>converter_units.py</code>'s owner as a followup and the stage stays in the owner script until then.</p>
+    <p>Each case trips from two currents: the supply's rated current, and the largest current §3 found for it in the scenarios. Every PF and CS row is run in four arms. That includes the PF2–PF5 discharges that <code>vs1_discharge.py</code> runs with the VS1 converter connected across them, because those trips go through the same PF FDUs and the same interlock. VS3 is normal-conducting and has no FDU, because 778SPD v1.0 §1 and §1.2 assign FDUs only to the superconducting coils (register row "Fast discharge units per circuit"). So it has no row here. The four arms:</p>
+    <ul>
+      <li>the reference arm with the PMS closing early;</li>
+      <li>the reference arm with the PMS closing just before the breaker separates;</li>
+      <li>the blocked bound arm;</li>
+      <li>the reference arm on G96SWS's faster sequence.</li>
+    </ul>
+    <p>For each circuit and arm the record gives:</p>
+    <ul>
+      <li>the resistor peak against its group's 778SPD transient-inclusive pair, read from the supply register: at main-breaker and pyrobreaker operation, TF 8.5/10, CS 6.5/7.0, PF1 and PF6 7.0/7.0, PF2–PF4 7.5/8.0 and PF5 6.5/7.3 kV (register row on the per-group limits). For the CS rows the judged quantity is the full FDR terminal voltage, resistance and inductance together. The reference FDR inductance in every row is tf-cold-test-validation §13's per-section mild-steel model from 48NZDV's prototype TF module (<code>scripts/mctb/fdr_inductance.py</code>, record <a href="/power_convertor/research/tf-cold-test-fdr-inductance">tf-cold-test-fdr-inductance</a>). It is scaled to each FDR through S9BRS4's modules in series and sections in parallel, with the external bus separated as 7JQSNL's 3 µH cable. CS and PF FDRs take the remagnetisation regime, the conservative case. TF takes the residual regime its unipolar FDR rests in, with remagnetisation as an arm. Scaled this way, the CS and PF units land at 0.73–0.91 of 7LDTQA's rows across 6–45 kA, so 7LDTQA's table, with steel buses, runs as the upper-estimate arm. Both tables are energy secants, L<sub>s</sub> = 2W/I², read through the FDU library's <code>SecantInductance</code>, so the terminal voltage carries the incremental inductance L<sub>d</sub> = W′(I)/I = L<sub>s</sub> + (I/2)·dL<sub>s</sub>/dI on the resistor branch's own current. The constant 94.9 µH end is reported beside them as the upper bound. The record states that the 48NZDV values were read by eye from plots and S9BRS4's by OCR, and the rows cite them as such;</li>
+      <li>the quasi-steady I·R against the 22HLVN column;</li>
+      <li>the transient to ground against the transient reference the register names;</li>
+      <li>the across-coil, worst-section and first-turn peaks;</li>
+      <li>the energy per unit against 778SPD's maximum;</li>
+      <li>τ<sub>eq</sub> against the group limit;</li>
+      <li>the counter-pulse margin: the counter-pulse ring current's peak against the breaker current at contact separation, after the delay, which says whether the breaker's current zero is reached. The current at separation is what the counter-pulse must interrupt, and it can exceed the current at the trip when a disruption drives the coil current up during the delay.</li>
+    </ul>
+    <p>TF runs on the cold-test posterior passive mode, and keeps its instantaneous insertion. X7TDMM's sequence belongs to the PF/CS FDU, and the register holds no interlock timing for the TF FDU. The MCTB cold-test sequence of about 0.21 s (GJ4JX4 v1.2) is a test-bench sequence, so it is not carried to ITER here. The TF rows state that the delay is not modelled.</p>
+    <p>Done when:</p>
+    <ul>
+      <li>Every row is regenerated with its log path in <code>docs/research/iter-fast-discharge.html</code> and <code>docs/research/iter-tf-fast-discharge.html</code>, and each changed figure is rendered and inspected.</li>
+      <li>A per-circuit table covers the PF and CS rows, the VS1-connected PF2–PF5 rows included. It names each arm and gives the breaker current at separation, the counter-pulse margin, the energy per unit and the resistor peak in each arm, with the spread between the arms. The reference arm is the reported design case and the bound arm its upper limit. The TF rows carry one column, the instantaneous insertion, marked as having no delay modelled.</li>
+      <li>Arm control: with zero delay and the PMS closed at the trip, every arm reproduces the row without the delay stage to 0.1 %.</li>
+      <li>Inductance control: with the FDR inductance held at 94.9 µH, CS1U's row reproduces the 6.82 kV FDR terminal peak in the register row "CS FDR voltage limit" to within 1 %.</li>
+      <li>The rows that cs1-two-fdu and the FDU library already pinned are reproduced to within their recorded bands.</li>
+      <li>The CS1 rows reuse the landed two-FDU plant rows in <code>data/iter/switched-discharge-insertion/</code> and carry §13's range, 0.73–0.91 of 7LDTQA, as their inductance uncertainty (register 3078bd1b). The CS1 rerun at the current at VCB separation, with the arc and §13's scaled inductance, belongs to coil-circuit-playback-figures §12 ("The fast-discharge rows at the resistor's scaled inductance and the current at breaker separation"), and §5 does not wait for it.</li>
+      <li>Negative control: replacing the FDU with an ideal switch that opens at the analytic instant reproduces the withdrawn over-response on CS1, so the comparison has resolution.</li>
+    </ul>
+    <p>Write paths: the three owner scripts above and their tests, the two records, <code>/home/ITER/mcintos/Code/power_convertor/data/iter/fast_discharge</code>, <code>docs/figures/iter-fast-discharge</code>, <code>docs/figures/iter-tf-fast-discharge</code>, <code>src/power_convertor/registers/iter_supplies.json</code> (the FDU count per circuit only: the per-group 778SPD pairs are already there as <code>discharge_peak_main_breaker_v</code> and <code>discharge_peak_pyrobreaker_v</code> on every PF and CS supply, landed at a1a1a45b, and are read, not written) and <code>scripts/figures/arc_fast_discharge.py</code> (which then reads the pairs from the register and drops its own mapping). None of <code>fast_discharge_unit.py</code>, <code>discharge_resistor.py</code>, <code>converter_units.py</code> or <code>switched_discharge_insertion.py</code> is written here. A change those owners need goes to their holder as a followup. The section adds the delay stage and one option to <code>fast_discharge.py</code>, and no new script.</p>
+
+    <h2 id="s6">§6 — Whether disruptions must be run to qualify the FDUs, and the cases if so</h2>
+    <section data-reckon="section" data-id="s6" data-effort-hours="6.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p>None of the 78 held DINA cases is a disruption: all are normal pulses or first-plasma cases, and the screen and every fast-discharge row so far trip the FDU from a steady current with the plasma's flux frozen. A disruption differs in three ways that bear on an FDU:</p>
+    <ul>
+      <li>The current quench drives every coil through −dψ<sub>p</sub>/dt, so a coil's current can rise above its reference while the breaker is still to open. The breaker must then interrupt a larger current than the rated one, and its counter-pulse circuit is sized to create a current zero at a stated current.</li>
+      <li>The induced EMF adds to the I·R across the resistor and to the voltage to ground while the FDU is inserted.</li>
+      <li>The plasma's magnetic energy couples into the discharging circuits and adds to the energy each resistor absorbs, against 778SPD's per-unit maximum.</li>
+    </ul>
+    <p>IDM does not treat a trip coincident with a disruption as an FDU design or qualification case. The resistors are sized on the operating scenarios and on single-coil tests, and the load specifications keep disruptions and fast discharge apart. Yet the PF specification allows a fast discharge at any time in nominal operation. 3M9D27 tabulates disruption-induced coil current changes of up to 9.4 kA on PF2 and 5.05 kA on each CS1 module, while the breaker, counter-pulse and pyrobreaker are rated on coil current alone (register row "Fast discharge coincident with a plasma disruption", <code>cae6e45d</code>). The combined case is therefore a margin IDM does not compute. The recommendation is a bounded set of cases, not the whole disruption database. Decision <code>disruption-cases</code>, relocked on 21 October 2026 to the trip-first cases below, fixes the scope, and the decision block carries the relock and its rationale. Gate g-csrr-1 is the closed record of the original 20 October lock and of the register row; it is not the record of the relock. The three cases locked on 20 October (a trip at each group's peak induced current, a disruption during an ongoing discharge, and the fastest quench with the FDUs inserted) are withdrawn.</p>
+    <p>The sequence is fixed by the lead's ruling of 21 October 2026. A fast discharge is never triggered by a disruption. It is triggered to protect the coils, on quench detection. The PF and CS currents it removes end plasma control, so a disruption follows the trip. Every case therefore starts with the FDU trip at t = 0, on the interlock sequence §5 carries: the converter to inversion, the PMS, the bypass and the breaker, then the counter-pulse and the resistor. The disruption onset is placed after the trip. IDM gives no delay between the trip and the loss of plasma control, so the onset is bounded at three instants, stated in the record as an assumption:</p>
+    <ul>
+      <li>during the interlock delay, before the vacuum breaker separates, which is worst for the interrupted current because the induced current adds before the breaker opens;</li>
+      <li>at the resistor's insertion;</li>
+      <li>during the resistive decay, which adds to the resistor voltage and the energy each unit absorbs.</li>
+    </ul>
+    <p>Losing the PF currents removes vertical control as well, so a vertical displacement event is the representative consequence. Each onset therefore runs one slow-quench VDE, with a fast-quench major disruption as the bound on the current-quench rate. The trip set is the one the interlock defines. If IDM does not say whether a single coil's quench discharges only that coil or the whole PF and CS system, both run as arms.</p>
+    <p>The switched coil circuits (converter, FDU and busbars) are driven by the disruption's plasma-linked flux through the same coupled plasma, passive and coil plant that §9 solves, not by coil EMFs computed separately and injected. All the current the plasma loses must reappear in the passive structure and the coils, and the transient circuits must carry that transfer. If the switched owner cannot take a prescribed plasma flux source through NovaPlant's ports, the section names the owner change it needs, and that change goes to the switched owner's holder and merges before any case runs, as the switched-circuit bracket-recursion fix did.</p>
+    <p>The plasma is imposed, not solved, from the ITER disruption database through §9's machinery. The cases come from the DINA-2010 design-basis set (100500–100533, which cites IDM documents 2PN3CN and 2MZWJR). Its largest coil current changes match 3M9D27's table in size: PF2 9.6 against 9.37 kA, PF4 6.7 against 6.6 kA, CS1 5.9 against 5.05 kA per module. The slow-quench VDEs (100506, 100521–100525) give the largest current changes and the fast-quench major disruptions the fastest rates, so each trip case takes one of each family. The measures are §5's, with the counter-pulse margin at the induced current first.</p>
+    <p>Done when:</p>
+    <ul>
+      <li>Each case's rows sit beside the corresponding §5 row in <code>docs/research/iter-fast-discharge.html</code>, with one figure of currents and resistor voltages through the quench, rendered and inspected.</li>
+      <li>Negative control: with the plasma flux held constant, each case reproduces its §5 row to 0.1 %.</li>
+      <li>Positive control: up to breaker separation the circuit is linear, so for each case with its onset during the interlock delay, the coupled case minus its flux-held arm equals the coil current change that §9's freewheeling arm gives for the same case over the same interval, from the onset to separation. It must agree at separation to within 5 %, the margin covering the bypass and PMS resistance that the freewheeling arm omits. §9's machinery is run on §6's own cases for this, not only on §9's two. A build whose disruption coupling is inert gives zero on the left against a non-zero freewheeling change, and fails.</li>
+      <li>Consistency control: with the converters and FDUs replaced by ideal shorts, the switched circuits reproduce §9's freewheeling-arm coil and passive currents to 1e-3 relative at the same time samples.</li>
+      <li>§9's gates hold on every case: flux conservation, the flux budget per circuit, each coil's EMF equal to −dΨ/dt, and DINA's passive-loop coverage, with any missing structure carrying more than 5 % of |ΔI<sub>p</sub>| a blocker.</li>
+    </ul>
+    <p>Write paths: <code>scripts/iter/fast_discharge.py</code> (a disruption option that takes the plasma flux from §9's module), <code>tests/test_fast_discharge.py</code>, <code>/home/ITER/mcintos/Code/power_convertor/data/iter/fast_discharge</code>, <code>docs/figures/iter-fast-discharge</code>, and an appended section of <code>docs/research/iter-fast-discharge.html</code> after §5 has landed. The section adds one option to the fast-discharge owner and no new script.</p>
+
+    <h2 id="s7">§7 — The filters reassessed on the current models</h2>
+    <section data-reckon="section" data-id="s7" data-effort-hours="5.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>The <a href="/power_convertor/research/iter-converter-filter-design">filter screen</a> chose its candidates against winding modes that have since moved (PF2 595 → 522 Hz, PF5 276 → 249 Hz, PF6's lowest three down by 7–65 %). Re-run it on the current network, through its owners <code>scripts/iter/converter_filter_design.py</code> and <code>converter_filter_study.py</code> and the library's <code>filter_network.py</code>, for every supply rather than PF2, PF5 and VS1 alone. The candidates per supply:</p>
+    <ul>
+      <li>as built;</li>
+      <li>the damped LC re-tuned to the moved modes;</li>
+      <li>the 15° interunit phase;</li>
+      <li>on VS1 and VS3, the damped RC on the existing reactors;</li>
+      <li>new: a common-mode option aimed at the neutral grounding current that PF2's ripple window puts over the 0.1 A earth-fault detector minimum, either a neutral RC or a change to the grounding network. It is screened against IDM's grounding design, not in place of it.</li>
+    </ul>
+    <p>Every added component is a screening choice, labelled as not selected ITER hardware.</p>
+    <p>For each supply and candidate the screen gives:</p>
+    <ul>
+      <li>the terminal line attenuation at the lines §1 names;</li>
+      <li>the line-to-section gain bound at both installed-loss bounds, replacing the 1.006 figure;</li>
+      <li>the low-frequency peak the filter adds;</li>
+      <li>the loop phase lost at each coupled crossover;</li>
+      <li>the added stored energy;</li>
+      <li>the resistor loss;</li>
+      <li>the neutral current reduction.</li>
+    </ul>
+    <p>The record ends with one recommendation per supply, and the candidates it keeps run as switched arms in §4. Whether the VS1 RC's targets hold is judged here: coil-terminal slew below 0.5 kV/µs, a first-turn peak below 200 V and at least a 20 % reduction in terminal reflection on the nominal edge, with no loss of the 45° margin floor.</p>
+    <p>Done when:</p>
+    <ul>
+      <li><code>docs/research/iter-converter-filter-design.html</code> carries the table for all thirteen supplies and the recommendation, with each transfer figure regenerated under <code>docs/figures/iter-converter-filter-design</code>, rendered and inspected.</li>
+      <li>Negative control: a candidate with zero added components reproduces the as-built row exactly.</li>
+    </ul>
+    <p>Write paths: the two owner scripts and their tests, that record, that figure directory, <code>/home/ITER/mcintos/Code/power_convertor/data/iter/converter_filter_design</code>. The PF2 filter playback (<a href="/power_convertor/plans/coil-circuit-playback-figures#s6">playback §6</a>) draws the candidate this section keeps.</p>
+
+    <h2 id="s8">§8 — The report completed on the coil-set results</h2>
+    <section data-reckon="section" data-id="s8" data-effort-hours="5.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>Rewrite the report on §4–§7 and on the peer records they wait on, so that it reads as one argument from JT-60SA's measured ripple to ITER's coil-set estimates. That argument rests on three rules:</p>
+    <ul>
+      <li>IDM is the design and DINA the demand;</li>
+      <li>damping is a sourced prior updated by data;</li>
+      <li>the JT-60SA and cold-test validations carry the method, never a fitted ITER parameter.</li>
+    </ul>
+    <p>The changes:</p>
+    <ul>
+      <li>A new "The coil set through the scenarios" section carries §4's scorecard as an HTML table, with its figures.</li>
+      <li>The fast-discharge section carries §5's rows and §6's disruption cases, or §6's recorded reason for not running them.</li>
+      <li>The filter section carries §7's recommendation, redrawn from its new receipt. <code>arc_filter.py</code>'s prose is rewritten from the 13-supply screen, with its over-screening and floating-mode caveats.</li>
+      <li>A quench-detection subsection takes <a href="/power_convertor/plans/quench-detection-converter-pickup#s5">QD pickup §5</a>'s per-coil summary whole.</li>
+      <li>The playback sections take the final figures of coil-circuit-playback-figures §3 and §8. Their partials come into this plan's write scope once cs1-two-fdu has landed and the playback coordinator has stopped its drawer writing them.</li>
+    </ul>
+    <p>This section replaces coil-circuit-playback-figures §7.</p>
+    <p>Done when:</p>
+    <ul>
+      <li>The assembled document cites every number to a record anchor that resolves.</li>
+      <li><code>tests/test_coil_supply_model_arc.py</code> still passes, extended with the withdrawals §4–§7 produce.</li>
+      <li>Every figure is regenerated, rendered and inspected.</li>
+      <li>No section states a result as draft whose run has landed.</li>
+      <li>Negative control: removing one scorecard row from the census record makes the assembled-document test fail by name.</li>
+    </ul>
+    <p>Write paths: §2's, plus <code>docs/figures/coil-supply-arc/playback</code>, <code>docs/figures/coil-supply-arc/filtered-playback</code> and a new topic directory <code>docs/figures/coil-supply-arc/coil-set</code> with its script <code>scripts/figures/arc_coil_set.py</code>. That script follows the report's convention of one script per section, registered in <code>arc_overview.SECTIONS</code>. It retires nothing, because the coil-set section is new.</p>
+
+    <h2 id="s9">§9 — What a disruption induces on the coils: a major disruption and a VDE imposed on nova&#x27;s passive structure</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="8.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
+<p>Show what a current quench puts on the superconducting coils by imposing two stored 15 MA disruptions on nova's grid and solving only the passive structure's response; the plasma is never solved. This is the machinery §6 runs its FDU cases on, and its animation is the report's demonstration of the disruption database. The cases are from the DINA-2010 design-basis set in <code>ITER_DISRUPTIONS</code> (DD 4.0.0, HDF5, citing IDM 2PN3CN and 2MZWJR):</p>
+<ul>
+<li><strong>Major disruption, 100500/1:</strong> downward, thermal and current quench together, 80–20 % current quench in 30 ms, 0.33 s stored.</li>
+<li><strong>VDE, 100501/1:</strong> downward, halo fraction 0.42, the plasma displaced before its quench (magnetic axis from 0.53 to −3.69 m), 80–20 % current quench in 93 ms, 0.90 s stored.</li>
+</ul>
+<p>The thermal quench, the displacement and the current quench are identified from the stored data (stored energy or temperature, magnetic axis height, plasma current), not assumed.</p>
+<p>What the stored equilibria hold, checked on 20 October 2026 in every slice of both cases:</p>
+<ul>
+<li><code>profiles_2d</code> ψ on a 33 × 65 rectangular grid whose extent moves from slice to slice, present in every slice but the last;</li>
+<li>no j<sub>φ</sub>, and no one-dimensional ψ, p′ or FF′;</li>
+<li>no per-slice plasma current (<code>summary</code> carries it), and no <code>boundary_separatrix</code> (DD4);</li>
+<li>the boundary outline and magnetic axis are present, and slice times are at the IDS level.</li>
+</ul>
+<p>So the plasma is read through nova's own routines and nova is not edited here:</p>
+<ul>
+<li>the topology of each slice from raw ψ through nova's contour tree (<code>nova.equilibrium.topology.read</code>, <code>contour_tree.build_contour_tree</code>) under the stored COCOS;</li>
+<li>the flux functions from the map through <code>nova.equilibrium.map_extraction</code> (<code>apply_delta_star</code>, <code>extract_flux_functions</code>), with each slice's receipt reported;</li>
+<li>the current imposed on nova's grid through <code>nova.imas.plasma_source.PlasmaSlice.prescribe</code> and normalised to the stored plasma current.</li>
+</ul>
+<p>A slice whose extraction receipt is unreliable is counted, and is imposed from <code>apply_delta_star</code>'s j<sub>φ</sub> instead. A change nova would need is reported as a blocker naming it.</p>
+<p>The passive structure is nova's ITER passive set, the conductors behind <code>nova_plant</code>'s modes, solved in full in three arms:</p>
+<ul>
+<li><strong>Held:</strong> with the superconducting coils' currents held, it gives the EMF each supply must absorb to hold its current.</li>
+<li><strong>Freewheeling:</strong> with the coils at zero voltage, it gives their current change.</li>
+<li><strong>Regulated:</strong> each supply on its averaged converter under its current controller (<code>design_pi</code> on <code>supply_plants</code>, as <code>scripts/iter/current_controllers.py</code> builds it, not DINA's controller), holding its pre-disruption current, at the register's converter voltage limits, with CS1 as its series pair. This is the arm the lead asked for: the voltage each coil actually receives, with the converter effects. Today <code>current_control.coupled_plant</code> takes plasma flux on the coil ports only, so the converter owner first gains a full-source plasma input on every circuit, passive-state output and the CS1 series port. That change and the regulated rerun are one node, briefed as <code>converter-disruption-voltages</code>, dispatched once cold-test-current-controllers has merged in <code>current_control.py</code>. Until it lands, the held and freewheeling arms are reported as the two bounds and labelled as bounds.</li>
+</ul>
+<p>The source is the whole-wall map throughout. Both cases replay on one common timebase, aligned at thermal-quench onset, with the same output times and the same end time. When a case's plasma is extinguished, its stored current reaching zero or its record ending, its plasma current goes to zero, and nova keeps stepping the passive and coil circuits to the common end. That end is long enough for the slowest passive decay to show.</p>
+<p>Deliverables:</p>
+<ul>
+<li>One GIF, <code>docs/figures/iter-disruption-induced-voltages/md-vs-vde.gif</code>, which reckon lists among its animations. It follows the format the lead set on 21 October 2026, drawn through <code>power_convertor.disruption_frame</code>:
+<ul>
+<li>The two cases side by side on the common timebase.</li>
+<li>Each half shows the total poloidal flux from every current in the frame: plasma, passive structure and coils.</li>
+<li>The flux is solved on nova's rectangular <code>Grid</code> over the whole frame, including around every coil, and drawn as unfilled contours on one set of levels shared by both cases and every frame.</li>
+<li>The machine (coils, first wall, vessel shells and passive structures) is drawn in muted outlines.</li>
+<li>The last closed flux surface is in the feature blue while the plasma has one.</li>
+<li>There are no axes, and each panel's title is its case name only, with no time or current counters.</li>
+<li>Each coil has a gauge showing its voltage against its limit.</li>
+<li>Beneath the cross-sections runs the companion figure's strip, with a moving time cursor that is the frame's clock.</li>
+</ul>
+</li>
+<li>A static companion figure in three rows.
+<ul>
+<li>Top: both plasma currents in one colour, the major disruption solid and the VDE dashed.</li>
+<li>Bottom: the voltage on every coil in both cases, the CS modules and PF1–PF6 in side-by-side panels. Each coil keeps one colour in both cases, with related hues within the CS and within the PF family. The major disruption is solid and the VDE dashed, under one figure-level legend.</li>
+<li>The plotted voltage is the regulated arm's terminal voltage, with the converter limits dotted. Until the regulated arm lands, it is the held-current demand, labelled as a bound.</li>
+<li>A third row gives each coil's current change: the regulated arm's departure from its reference, or, until then, the freewheeling arm's change.</li>
+</ul>
+</li>
+<li>The flux difference between the two cases at points outside the vacuum vessel, beside each coil, against time. This quantifies whether the transient response outside the vessel is similar in both cases.</li>
+<li>The record <code>docs/research/iter-disruption-induced-voltages.html</code>, with one table row per coil and case:
+<ul>
+<li>the peak voltage and its phase (regulated, or the two bounds);</li>
+<li>the time at the converter limit;</li>
+<li>the peak current change against the rated current;</li>
+<li>the freewheeling current change against DINA's own.</li>
+</ul>
+</li>
+</ul>
+<p>Done when:</p>
+<ul>
+<li>Positive control: the freewheeling current change is set against DINA's stored coil currents, in ampere-turns divided by the machine description's turns, per coil. The total passive current is set against DINA's <code>pf_passive</code>. Both agreements are reported.</li>
+<li>Negative control: with the plasma held at its pre-disruption distribution, every coil EMF is zero to solver precision.</li>
+<li>The imposed current integrates to the stored plasma current within 0.1 % on every imposed slice.</li>
+<li>The reduced mode plant reproduces the full passive solve's coil EMF within 1 %, or the difference is reported.</li>
+<li>All the current the plasma loses reappears in the passive structure and the coils:
+<ul>
+<li>with all resistances zero, every circuit's total linked flux is constant to 1e-9;</li>
+<li>with the installed resistances, Ψ(t) − Ψ(0) + ∫RI dt closes to 1e-6;</li>
+<li>each coil's EMF equals −dΨ/dt to 1e-9;</li>
+<li>any of DINA's passive loops missing from nova's set that carries more than 5 % of |ΔI<sub>p</sub>| is a blocker.</li>
+</ul>
+</li>
+<li>§9 closes only when the regulated arm has landed. The bounds-only delivery (the held and freewheeling arms, with the GIF and companion figure drawn on them and labelled as bounds) is merged as a partial landing and recorded as such. It does not close the section, and converter-disruption-voltages closes it.</li>
+<li>The regulated arm is bracketed by the bounds.
+<ul>
+<li>With the converter limits removed and the gains raised until the current error is below 0.1 % of rated, it reproduces the held-current demand to 1 %.</li>
+<li>With zero gain and zero converter voltage, it reproduces the freewheeling arm to 1e-3.</li>
+</ul>
+</li>
+<li>Every figure and the GIF's first, peak and last frames are rendered and inspected.</li>
+</ul>
+<p>Write paths: <code>scripts/iter/disruption_induced_voltages.py</code>, <code>tests/test_disruption_induced_voltages.py</code>, <code>/home/ITER/mcintos/Code/power_convertor/data/iter/disruption_induced_voltages</code>, <code>docs/research/iter-disruption-induced-voltages.html</code>, <code>docs/figures/iter-disruption-induced-voltages</code>, the evidence fragment <code>docs/evidence/fragments/coil-supply-report-rebuild/disruption-induced-voltages.html</code>, and two named colour roles added to <code>src/power_convertor/style.py</code>. The regulated arm's node also writes <code>src/power_convertor/current_control.py</code> and <code>tests/test_current_control.py</code>, adding the full-source option without changing any existing default. This is the one new script the plan adds, because no existing owner solves the passive structure against an imposed plasma. <code>nova_plant</code>'s prescribed-plasma path is reused for the reduced-mode check, and the repository's colour rule requires the two colour roles. Nothing is retired. Runs go on the fleet allocation under the thread caps.</p>
+
+    <h2 id="s10">§10 — The model chapter and the coils&#x27; electrical health, written now on landed results</h2>
+<section data-reckon="section" data-id="s10" data-effort-hours="6.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+<p>The lead asked on 21 October 2026 for the parts of the report that landed results already support, written now rather than waiting for §8. Those parts are a clear overview of the coils' electrical health, a lucid account of the modelling capabilities and approach, an up-to-date circuit description including the FDU snubbers, the scenario ripple analysis, switching-network (SNU) insertion, the FDU analysis, and a table of the design values the models use. This section writes them into <code>docs/research/coil-supply-model-arc.html</code> as new partials. §8 later completes the report around them.</p>
+<p>Every number comes from a landed record and cites it. Every result is marked within, over or open against the IDM limit the lead ruled applies, and an open item names the section or node it waits on. The limits are these:</p>
+<ul>
+<li>across the coil: 10 kV DC across the current leads for CS1 U&amp;L and PF2, from PA Annex B 3BNY8P v5.1;</li>
+<li>to ground: no approved fast-discharge limit, with the 12 kV AC earth-insulation figure shown as a rating;</li>
+<li>FDR terminals: 778SPD's per-group transient-inclusive pair;</li>
+<li>22HLVN V7: compared with the quasi-steady I·R.</li>
+</ul>
+<p>The chapter holds six parts:</p>
+<ul>
+<li><strong>Approach and capabilities.</strong> IDM is the design and DINA is the demand. The chapter covers the composed converter, line and sectioned-winding circuits; distributed capacitance from finite-kernel section matrices; the nova passive plant; installed losses from sourced priors; the switched solver, with its companion and exact integrators, exact resume and event damping; and the FDU library: vacuum breakers at their own current zero, the counter-pulse, the pyrobreaker, the snubber, the heated resistor on the cold-test law, the FDR's incremental inductance and the interlock sequence. It also states what the models do not carry: halo currents, the busbar-reflected term in composed insertion, and the CS tape pickup until its correction.</li>
+<li><strong>The circuit description,</strong> supply by supply: converter units and their 12- or 24-pulse arrangement (PF1 and PF6 at 15°), lines and busbars, the switching network, grounding, the FDUs with their snubbers at the register's attachment and XK23KG's as an arm, and CS1's two FDRs in series. A diagram per circuit family.</li>
+<li><strong>The design-value table.</strong> Every parameter in <code>registers/iter_supplies.json</code> that the models use, with its value, unit and IDM source or stated assumption, generated from the register so it cannot drift from it.</li>
+<li><strong>Scenario ripple and switching.</strong> The playback records and §3's 64 worst windows, and SNU insertion from the playback and composed-pin records. The full switched census of §4 is marked pending.</li>
+<li><strong>The FDU analysis.</strong> The CS1 two-FDU study, the corrected system fast-discharge rows from cs1-two-fdr, and the TF cold-test-validated law. §5's interlock-delay arms and the CS FDR verdict on the material inductance are marked pending.</li>
+<li><strong>The coils' electrical health.</strong> One table and one figure, a coil per row, covering ripple, edges and resonances, insertion, fast discharge and quench-detection pickup, each cell within, over or open against its limit.</li>
+</ul>
+<p>Done when:</p>
+<ul>
+<li>the six parts are assembled into the report with every number linked to its record;</li>
+<li>the design-value table is generated from the register, and a test fails if a register value changes without the table;</li>
+<li><code>test_coil_supply_model_arc</code> passes with the new partials, and re-inserting a withdrawn number fails it;</li>
+<li>every new figure goes through <code>save_figure</code> and is rendered and inspected.</li>
+</ul>
+<p>Write paths: new partials under <code>docs/figures/coil-supply-arc/</code> for the model, circuits, design-values and health topics, their <code>scripts/figures/arc_*.py</code> producers, <code>scripts/figures/arc_overview.py</code> (the section list), <code>docs/research/coil-supply-model-arc.html</code>, and <code>tests/test_coil_supply_model_arc.py</code>. It dispatches after cs1-two-fdr lands, because both write the report.</p>
+
+    <h2 id="s11">§11 — The fast-discharge rows on the cold-test FDR inductance</h2>
+<section data-reckon="section" data-id="s11" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links="tf-cold-test-validation"></section>
+<p>The TF cold-test synthesis (<a href="/power_convertor/research/tf-cold-test-synthesis">synthesis</a>, land <code>a57aa493</code>) gives the FDR-plus-bus inductance as per-section energy-secant tables. They come from 48NZDV's per-section material, scaled through S9BRS4 with the 3 µH 7JQSNL bus. 7LDTQA is an upper estimate:</p><ul><li>TF sits at 0.07–0.23 of it in the residual regime, where a unipolar TF resistor rests, and 0.52–0.80 in remagnetisation;</li><li>CS1U sits at 0.73–0.91.</li></ul><p>§5 builds its FDUs without <code>resistor_inductance</code>, so every row omits this stray. This section passes the owner's <code>SecantInductance</code>, built by <code>scripts/mctb/fdr_inductance.py</code> from the tables in <a href="/power_convertor/research/tf-cold-test-fdr-inductance#scaled">the FDR inductance record</a>. TF takes the residual regime. CS and PF take remagnetisation, the conservative choice.</p><p>Done when:</p><ul><li>Every §5 row carries a second line on the secant inductance, showing its move in peak resistor voltage, transient to ground, counter-pulse margin and resistor energy. A row that crosses a 778SPD limit either way is called out.</li><li>Default unchanged: §5's rows carry no resistor stray (<code>resistor_stray_h</code> is zero), so with no table passed every row reproduces §5's receipt to 1e-12.</li><li>Owner equivalence: a one-value table reproduces the constant-stray path (<code>resistor_stray_h</code> at that value) to 1e-9.</li><li>Negative control: the TF row's resistor voltage at commutation rises by L<sub>d</sub>·di/dt from the table, matching the analytic step to 1 %; with the table dropped from the FDU build, that assertion fails.</li><li>The figures that change are rendered and inspected.</li></ul><p>Write paths are §5's: <code>scripts/iter/fast_discharge.py</code>, <code>tests/test_fast_discharge.py</code>, <code>/home/ITER/mcintos/Code/power_convertor/data/iter/fast_discharge</code>, <code>docs/figures/iter-fast-discharge</code>, and an appended section of <code>docs/research/iter-fast-discharge.html</code>. <code>scripts/mctb/fdr_inductance.py</code> is read, not written.</p>
+
+    <h2 id="s12">§12 — Every FDU interrupts on its counter-pulse, as the design does</h2>
+<section data-reckon="section" data-id="s12" data-effort-hours="5.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links="iter-switched-terminal-transients"></section>
+<p>§11 found that, with the FDR stray in the build, every insertion peak grows as the solver step falls. The growth continues to 6×10<sup>−8</sup> s, below the insertion owner's own scan, and lives in the stray branch alone: with no stray the rows are flat. The cause is in §5's builds, not the stray. <code>scripts/iter/fast_discharge.py</code> places no counter-pulse element in any FDU. It carries the counter-pulse only as a timing and as a margin, rated current over breaker current. So each breaker opens by chopping its full current, which is harmless with no stray and unbounded with one.</p><p>The design does not chop. Every PF and CS FDU interrupts its vacuum breaker at a current zero that the counter-pulse forces, with a pyrobreaker as backup (778SPD v1.0, pp. 9–10 and 38–41). The counter-pulse is 1.6 mF and 16 µH on every circuit (7JQSNL v1.3, Tables 3 and 5). Its initial charge U<sub>co</sub> is:</p><ul><li>7.6 kV on every CS module;</li><li>7.9 kV on PF1, 9.0 kV on PF2, 9.2 kV on PF3, 9.1 kV on PF4, 8.5 kV on PF5 and 8.0 kV on PF6;</li><li>against a rated 10 kV charge.</li></ul><p>The snubber is two identical RC circuits in parallel, 4 mF in total (two 2,000 µF capacitors) and 0.1 Ω. It sits in parallel with the main breaker and pyrobreaker (778SPD §1.1.2.2.6, Table 1.1.2-4).</p><p>This section enters those values in <code>src/power_convertor/registers/iter_supplies.json</code>, each with its IDM source. Every FDU <code>fast_discharge.py</code> builds then carries its <code>CounterPulse</code>, fired on the interlock schedule §5 already uses, and its snubber at the main-breaker attachment. §11's voltage cells are then re-filled where they settle.</p><p>Done when:</p><ul><li>The register carries the counter-pulse capacitance, inductance and U<sub>co</sub> for every PF and CS supply, and the snubber's capacitance, resistance and attachment, each sourced. A test fails on a mutated register value.</li><li>Every PF, CS and VS1-connected FDU interrupts at a breaker current zero that its counter-pulse forces. The breaker current at opening is within one step of zero, and a test reads it.</li><li>With the FDR stray in the build, every insertion peak settles within 1 % between the last two step halvings over the insertion window. §11's terminal, resistor and arm voltage cells are filled at the settled step, with their moves against §5's receipt and any 778SPD or rating crossing called out.</li><li>Negative control: with the counter-pulse removed from one FDU, its insertion peak again fails to settle.</li><li>The counter-pulse margin is restated as the breaker current against U<sub>co</sub>/√(L/C), the most current the pulse can zero (76 kA for CS, 92 kA for PF3), alongside the rated-current figure.</li><li>The energy over-sets are re-stated on the new build. Any row that moves is called out.</li></ul><p>Write paths:</p><ul><li><code>src/power_convertor/registers/iter_supplies.json</code></li><li><code>scripts/iter/fast_discharge.py</code></li><li><code>tests/test_fast_discharge.py</code></li><li><code>/home/ITER/mcintos/Code/power_convertor/data/iter/fast_discharge</code></li><li><code>docs/figures/iter-fast-discharge</code></li><li>an appended section of <code>docs/research/iter-fast-discharge.html</code></li></ul><p><code>src/power_convertor/fast_discharge_unit.py</code> already carries <code>CounterPulse</code> and the <code>main_ccu</code> snubber attachment and is not changed. <code>scripts/iter/switched_discharge_insertion.py</code>'s two-circuit counter-pulse table belongs to its owner, who is told the register now carries every circuit.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="disruption-cases" data-choice="trip-first" data-by="Simon McIntosh" data-when="2026-10-21T10:06:55+00:00">
+    <p class="r-dec-q">Do we run disruption cases to qualify the FDUs (§6)?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="trip-first">Run the trip-first cases: an FDU trip at t = 0 and a disruption onset after it, during the interlock delay, at resistor insertion or during the decay, each with one slow-quench VDE and one fast major disruption (recommended)</button>
+      <button class="r-opt" data-value="bounded-set">Run the three bounded cases on IDM&#x27;s current-quench law, or a DINA disruption run where held (recommended)</button>
+      <button class="r-opt" data-value="idm-review-only">Record IDM&#x27;s disruption load cases and the counter-pulse margin at the induced current, without running the coupled cases</button>
+      <button class="r-opt" data-value="defer">Defer until a DINA disruption run is supplied</button>
+      </p>
+    <p class="r-dec-rat">Lead&#x27;s ruling, 21 October 2026, superseding the bounded set locked on 20 October. A fast discharge is never triggered by a disruption: it is triggered on quench detection to protect the coils, and the loss of the PF and CS currents it causes ends plasma control, so a disruption follows the trip. Every case starts with the FDU trip at t = 0 on the interlock sequence (about 0.45 s from trip command to resistor insertion). The disruption onset is bounded at three instants, an assumption because IDM gives no delay from trip to loss of control: during the interlock delay before the vacuum breaker separates, at resistor insertion, and during the resistive decay. Each onset runs one slow-quench VDE and one fast-quench major disruption from the DINA-2010 design-basis set (100500-100533), imposed through §9. The 20 October cases (a trip at peak induced current, a disruption during an ongoing discharge, the fastest quench with the FDUs inserted) are withdrawn.</p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-csrr-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-20" data-recommends-skill="/reckon-build coil-supply-report-rebuild §2" data-resolved-at="2026-10-20T12:51:24+00:00" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Build §2, §3 and §7 now; §4 after the integrated run, §5 after cs1-two-fdu, §8 last</h4>
+    <div class="r-fu-body"><p>§2, §3 and §7 have disjoint write paths and wait on nothing in flight, so they dispatch together. Before them, shared-coil-supply-model §4 dispatches, because it gates iter-switched-terminal-transients §6 and so this plan's §4. §5 follows cs1-two-fdu (playback §8) and tf-cold-test §4. §6 follows §5 and decision <code>disruption-cases</code>. §8 is last.</p></div>
+    <pre class="r-fu-prompt">/reckon-build coil-supply-report-rebuild §2</pre>
+    <p class="r-fu-outcome">Superseded by f-csrr-002, which adds §9 and the §6 gate.</p>
+    </article>
+<article class="r-fu" data-id="f-csrr-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-20" data-recommends-skill="/reckon-build coil-supply-report-rebuild §9" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §2, §3, §7 and §9 now; §4 after the integrated run, §5 after cs1-two-fdu, §6 after §5 and §9, §8 last</h4>
+    <div class="r-fu-body"><p>§2, §3, §7 and §9 have disjoint write paths and run on landed records and the merged winding network, so they dispatch together. shared-coil-supply-model §4 is already running, because it gates iter-switched-terminal-transients §6 and so this plan's §4. §5 follows cs1-two-fdu (playback §8) and tf-cold-test §4. §6 follows §5, §9 and decision <code>disruption-cases</code> (gate g-csrr-1). §8 is last.</p></div>
+    <pre class="r-fu-prompt">/reckon-build coil-supply-report-rebuild §9</pre>
+    </article>
+</section>
+  <section data-reckon="gates" id="gates" class="r-gates">
+<h2><span class="sec">§</span> Evidence gates</h2>
+<div class="r-gate" data-id="g-csrr-1" data-section="s6" data-gated-sections="s6" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">Decision disruption-cases is locked, and the IDM register carries the row on a fast discharge coincident with a plasma disruption</h4>
+    <p class="r-gate-required-evidence">iter-coil-supply-idm-register</p>
+    <a class="r-gate-evidence" href="Decision disruption-cases locked to bounded-set by the lead on 2026-10-20T13:01:54Z. The register row &#x27;Fast discharge coincident with a plasma disruption&#x27; landed at cae6e45d, and the FDU interlock time sequence row at 42813cec.">Evidence</a>
+</div>
+</section>
+<section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="_top" data-id="c-s9-bounds-landed" data-who="reckon-build" data-when="">
+    <div class="r-comment-body"><p>§9's bounds-only delivery landed at <code>726d539f</code>, a partial landing that does not close §9.</p><ul><li>Cases: the major disruption 100500 and the VDE 100501, imposed on nova's whole-wall passive set on one common timebase.</li><li>Arms: the held-current demand and the CS1-series freewheeling arm.</li><li>Figures: the full-frame flux GIF (<code>md-vs-vde.gif</code>) and the three-row companion figure.</li></ul><p>The freewheeling current changes agree in size with DINA's: about 9 kA on PF2 and 5 kA per CS1 module. The pre-quench demand is the stored plasma's shape and displacement evolving, shown by a frozen-source control. The review scored 17/15/20/16/15/13 with no added failures, and the merged head passes 125 tests.</p><p>Two follow-ons are fixed at <code>82e0440a</code>: the direct import of the frame renderer, and the summation tolerance of the flux check. converter-disruption-voltages closes §9 with the regulated arm. <a href="/power_convertor/research/iter-disruption-induced-voltages">record</a></p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-close-s10" data-who="reckon-build" data-when="">
+    <div class="r-comment-body"><p>§10 landed at <code>020eb0a6</code>, with follow-on fixes at <code>e1a9c5a1</code>. The report gains five parts:</p><ul><li>the modelling approach, separating what JT-60SA validated (the passive plant: 8 of 9 transfer functions, 45 of 45 current windows) from what it did not (the frozen-fit ripple prediction, 0 of 8);</li><li>the per-family circuits with the FDU snubbers;</li><li>the design-value table, generated from the register and guarded by a test that fails on a mutated register value;</li><li>the scenario demand, insertion and FDU results;</li><li>one coil-health overview of 15 coils over 6 stress families, leading the per-coil drill-down.</li></ul><p>Scenario demand above a converter rating is reported as the design's shortfall against DINA. PF1 and PF6 late-termination demand stays open on the passive-reduction caveat. The steady-ripple column is open, because IDM states no ripple limit.</p><p>Review: 17/14/15/19/15/19, nothing blocking. The focused gate passes 30 at the merged head. <a href="/power_convertor/research/coil-supply-model-arc">report</a></p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-close-s5" data-who="reckon-build" data-when="">
+    <div class="r-comment-body"><p>§5 landed at <code>6d979e06</code>, with figure follow-ons at <code>651ea04f</code>. Every PF, CS, VS1-connected and TF fast discharge is re-solved on the library FDU. The PF and CS trips carry the interlock delay stage in four arms (reference with an early PMS, reference with a late PMS, the blocked bound, and the fast sequence), judged against the per-group 778SPD pairs read from the register. The FDU count per circuit is now in the register.</p><p>A block-clock defect re-armed the inversion source in the late-PMS arm, giving PF2 4,310 MJ and a reversed coil current. It was found on the coordinator's read and fixed at 04ea04ef, with a regression control. Each arm's energy balance now closes on the same intake: on PF2, 676 MJ splits between the resistor, the inverting converter and the other coils' bypasses.</p><p>Findings:</p><ul><li>arm-table rows over their resistor energy maximum fall from 13 to 9 of 44, the worst PF6 at 1.205 in the bound arm;</li><li>16 of 72 case rows exceed it, the worst PF6 at 1.47;</li><li>the TF conductor-mode peak of 8.713 kV is 0.213 kV above the 8.5 kV main-breaker pair;</li><li>the largest transient to ground is 7.07 kV (CS1U), shown against the 12 kV AC rating, with no limit line.</li></ul><p>Review: 18/15/16/16/15/5, zero added failures; the merged gate passes 63 tests. <a href="/power_convertor/research/iter-fast-discharge">record</a></p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261021T084700570391-model-chapter" data-who="reckon-build" data-when="2026-10-21T12:17:32Z">
+    <div class="r-comment-body"><p>plan coil-supply-report-rebuild §10 — the report's model chapter and the coils' electrical health overview, landed in docs/research/coil-supply-model-arc.html; evidence at docs/evidence/fragments/coil-supply-report-rebuild/model-chapter.html#model-chapter</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261021T125123471651-review-of-model-chapter-789627ecf33e" data-who="reckon-build" data-when="2026-10-21T13:12:02.122Z">
+    <div class="r-comment-body"><p>review of run r-20261021T084700570391-model-chapter (node model-chapter) recorded at two review-records paths under the reviewed run's directory; the review is a comment-only record, no plan or source edits.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261020T150612761953-review-of-arc-current-506102807b5b" data-who="reckon-build" data-when="2026-10-20T15:20:13.618Z">
+    <div class="r-comment-body"><p>review of run r-20261020T135129748956-arc-current at head 506102807b5b208fe39e0ee892265964245c9cf9 — parsed review record scoring goal_fidelity 18, evidence 17, scope_discipline 19, durability 19, fit 16, reuse 20 (total 109), added_failure_count 0, two follow-on findings, stored under review-records/ in the reviewed run's directory</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261020T135129748956-arc-current" data-who="reckon-build" data-when="2026-10-20T21:18:23Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/coil-supply-report-rebuild/arc-current.html#arc-current-results — reviewed report with six health intervals, per-circuit FDR limits, 10 inspected affected SVGs, 40/40 focused tests versus 35/35 original base and zero added failures</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-20T21:30:00Z">
+    <div class="r-comment-body"><p>§2 landed at <code>010b550e</code>. The report carries no withdrawn number, the health intervals are restored, and every fast-discharge circuit is judged against its own 778SPD limit pair. The CS FDR verdict stays open until the current-dependent inductance (f-tfcv-007) is run. Focused gate 40/40. <a href="/power_convertor/evidence/fragments/coil-supply-report-rebuild/arc-current.html#arc-current-results">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261020T142508877352-review-of-coil-set-windows-c8ba0cf1ef65" data-who="reckon-build" data-when="2026-10-20T14:39:46.828Z">
+    <div class="r-comment-body"><p>Recorded an independent review of r-20261020T135000556786-coil-set-windows at base 8a30177b..head c8ba0cf1: goal_fidelity 19, evidence 16, scope_discipline 17, durability 14, fit 17, reuse 19, added_failure_count 0, with three follow-on findings; nothing blocking.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-20T14:50:00Z">
+    <div class="r-comment-body"><p>§3 landed: 64 worst windows across 50 DINA scenarios and 13 supplies, through an extended <code>ranked_windows</code> with the initiation and VS1-swing criteria. The CS transition bands are corrected to the CS rated current, 45 kA. CS3L's 13.22 kV insertion demand against 8.5 kV is carried to §4. <a href="/power_convertor/evidence/archive/coil-supply-report-rebuild-landed.html#s3">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261020T135000556786-coil-set-windows" data-who="reckon-build" data-when="2026-10-20T14:23:43Z">
+    <div class="r-comment-body"><p>Landed 50-scenario, 13-supply selection with 64 windows and the six-panel population figure in docs/evidence/fragments/coil-supply-report-rebuild/coil-set-windows.html; focused head gate 26/26 and no added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261021T075747060355-review-of-cs1-two-fdr-1a83928ee172" data-who="reckon-build" data-when="2026-10-21T08:17:11.984Z">
+    <div class="r-comment-body"><p>Review of r-20261021T063701302492-cs1-two-fdr at head 1a83928ee172 stored at
+review-records/r-20261021T063701302492-cs1-two-fdr.json; parsed, six
+dimensions scored 19/18/18/19/18/18, added failures 0, two follow-on findings,
+no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261021T063701302492-cs1-two-fdr" data-who="reckon-build" data-when="2026-10-21T07:55:59.538Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/coil-supply-report-rebuild/cs1-two-fdr.html</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261021T183804887248-review-of-fast-discharge-current-fdu-2e9f8b88cf51-figure" data-who="reckon-build" data-when="2026-10-21T18:48:14.599Z">
+    <div class="r-comment-body"><p>Figure review of r-20261021T114725739639-fast-discharge-current-fdu at head 2e9f8b88: both attached figures pass all 6 rubric items with no blocking finding; 3 follow-on findings recorded, the first being that the terminal-voltage-to-ground figure's published caption still names a 22HLVN fast-discharge limit line that the corrected figure no longer draws.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261021T183741243348-review-of-fast-discharge-current-fdu-2e9f8b88cf51" data-who="reckon-build" data-when="2026-10-21T18:55:56.059Z">
+    <div class="r-comment-body"><p>review of r-20261021T114725739639-fast-discharge-current-fdu at 2e9f8b88cf51cd983f0cc88d0a4e77df6017a4ab stored at review-records? no — at review-records/r-20261021T114725739639-fast-discharge-current-fdu.json (parsed; 18/15/16/16/15/5; added failures 0; four follow-on findings, no blocking finding)</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261021T114725739639-fast-discharge-current-fdu" data-who="reckon-build" data-when="2026-10-21T18:36:41Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/coil-supply-report-rebuild/fast-discharge-current-fdu.html. Regenerated at 2e9f8b88 from logs/study-fixed.json. Its result paragraph now reads that no approved limit bounds a transient terminal-to-ground voltage during a fast discharge, so no row is read against one, and that 22HLVN's fast-discharge column bounds the resistor's quasi-steady I.R instead, which the resistor table reports. Its arm rows carry the corrected per-arm resistor energies (PF2's late arm 4,310 MJ falls to 574 MJ, between the reference's 631 MJ and the blocked arm's 648 MJ); the case rows are byte-identical to the previous fragment.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-s5-tf-synthesis" data-who="reckon-build" data-when="2026-10-21T23:41:19Z">
+    <div class="r-comment-body"><p>The TF cold-test validation has closed (<a href="/power_convertor/research/tf-cold-test-synthesis">synthesis</a>, <code>a57aa493</code>). The resistor law §5 uses is confirmed: linear in absorbed energy, slope 1.826 ± 0.132 µΩ/MJ, not the square-root family. The rebuilt cold-test reproduction moves 0.033 s against its 0.5 s tolerance, so no ITER constant changes. The 20 s case mode is bounded at k² 0.03 with the reference decay fixed, and at 0.37 with its slope free. The FDR inductance transfer is not in §5's rows yet; §11 carries it.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261020T144336413402-review-of-filter-reassessment-3919beea0eba" data-who="reckon-build" data-when="2026-10-20T14:58:02Z">
+    <div class="r-comment-body"><p>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T135045725987-filter-reassessment/review-records/r-20261020T135045725987-filter-reassessment.at-3919beea0eba37d37681a6845f5268a2e3d6246e.json — parsed review at base 8a30177b6a43bd7e4f571b7aca0b4fe8b56caa15 and head 3919beea0eba37d37681a6845f5268a2e3d6246e, with two blocking findings and one follow-on.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261020T214933409647-review-of-filter-reassessment-3dede5393850" data-who="reckon-build" data-when="2026-10-20T22:07:08.857Z">
+    <div class="r-comment-body"><p>review of r-20261020T135045725987-filter-reassessment at head 3dede539 stored at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T135045725987-filter-reassessment/review-records/r-20261020T135045725987-filter-reassessment.json</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261020T135045725987-filter-reassessment" data-who="reckon-build" data-when="2026-10-20T22:43:34Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/coil-supply-report-rebuild/filter-reassessment.html — 13 supplies, 54 arms, both installed-loss bounds and 13 switched census recommendations; the mode-coincidence figure now names the 300/500/600 Hz references and highlights PF2 (1 of 12) under the stated 5 % rule; PF2 installed 520.74 Hz versus isolated lossless 740.94 Hz, terminal gain 1.0000/1.0000 versus retired 1.006; the record states the PF2 loss bound depends on the thresholded ladder reference by a measured 9.2x/5.5x; VS1 RC edge pass and five figures inspected.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261020T224347400768-review-of-filter-reassessment-2aab7536d1b3" data-who="reckon-build" data-when="2026-10-20T22:55:02.191Z">
+    <div class="r-comment-body"><p>review of r-20261020T135045725987-filter-reassessment at head 2aab7536d1b3070595ae29d2d6b61bb37776838f (base 3dede539385003df389976144ea309ee1e7bc4b3): parsed record stored at both declared write paths; scores goal_fidelity 18, evidence 17, scope_discipline 20, durability 16, fit 15, reuse 19; added_failure_count 0; two follow-on findings (the report-drawer test still echoes the modes it supplies at tests/test_converter_filter_study.py:168-169, and the new CONVERTER_LINE_HZ at scripts/iter/converter_filter_study.py:56 shadows scripts/iter/winding_damping.py:560 with a different type); no blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-close-s7" data-who="reckon-build" data-when="2026-10-20T23:35:00Z">
+    <div class="r-comment-body"><p>§7 landed at <code>2aab7536</code>: 13 supplies over 54 arms, 13 recommendations, on the current windings at both loss bounds. Follow-ons are batched for §8 and the owners:</p><ul><li>a fixture-echo assertion at <code>tests/test_converter_filter_study.py:169</code>;</li><li><code>CONVERTER_LINE_HZ</code> duplicating the winding study's set of converter lines;</li><li><code>arc_filter.py</code>'s filter prose, which §8 redraws from the new receipt;</li><li>VS3's one-section proxy;</li><li>the selected VS1 RC arm, which goes to the integrated census.</li></ul><p><a href="/power_convertor/evidence/fragments/coil-supply-report-rebuild/filter-reassessment.html">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261021T104424257490-review-of-disruption-induced-voltages-ad91ae2c0226" data-who="reckon-build" data-when="2026-10-21T10:51:49Z">
+    <div class="r-comment-body"><p>Independent review record stored at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T134904187980-disruption-induced-voltages/review-records/r-20261020T134904187980-disruption-induced-voltages.at-ad91ae2c02262f889416e47a8197271232404c56.json; parsed scores goal_fidelity=8 evidence=14 scope_discipline=20 durability=12 fit=15 reuse=5; three blocking findings on figure content and source continuation.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261020T134904187980-disruption-induced-voltages" data-who="reckon-build" data-when="2026-10-21T11:48:22Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/coil-supply-report-rebuild/disruption-induced-voltages.html#disruption-induced-voltages-render-repair — expanded shared flux GIF10106023bytes/260frames, CS/PF demand panels with dotted limits and a third CS1-series current row;125focused tests pass. One review finding acted by2be2a3e0, two declined as explicitly superseded; real commit reversal fails the layout check. Pre-quench shape forcing and all24 current-rating peaks are recorded.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261021T121940724192-review-of-disruption-induced-voltages-1dbb35aa8aee" data-who="reckon-build" data-when="2026-10-21T12:44:50.875Z">
+    <div class="r-comment-body"><p>review-of-disruption-induced-voltages@1dbb35aa8aee — scores goal_fidelity17 evidence15 scope_discipline20 durability16 fit15 reuse13, added_failure_count0, three follow-on findings and no blocking finding; the reviewed GIF, companion figure and record match plan section 9 as rewritten on 21 October, and the previous review's three blocking findings are answered by id in the reviewed manifest.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261021T160248858901-review-of-converter-full-source-plant-87b5f898877c" data-who="reckon-build" data-when="2026-10-21T16:13:39.153Z">
+    <div class="r-comment-body"><p>Reviewed r-20261021T142211695258-converter-full-source-plant at base 9bfa7345f7ddad87a964416de3c9577d7d879b32 -&gt; head 87b5f898877c35807e7dd55ac34bc9a20837e266. Six-dimension scores goal_fidelity 19, evidence 16, scope_discipline 15, durability 18, fit 17, reuse 20; added_failure_count 0 (base 40 passed, head 46 passed, no added failures). Two follow-on findings, no blocking findings. Reviewed head is not an ancestor of this worktree's base (e86f1b4f); the reviewed range was read by sha.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261021T142211695258-converter-full-source-plant" data-who="reckon-build" data-when="2026-10-21T15:59:36Z">
+    <div class="r-comment-body"><p>coupled_plant gained an optional full-source plasma input that puts -L^-1 on every circuit through the existing Schur complement; simulate_coupled takes a plasma rate of either width and a return_state switch, and a two-coil series column is confirmed to carry one measured current. Default matrices are bit-identical to base (diff 0.0), the filament-only positive control matches the analytic two-circuit prediction to 1e-9, lossless linkage is conserved to 1e-9, and the focused gate adds no failures (head 46 passed, base 40 passed).</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261021T184146894214-review-of-regulated-disruption-arm-e43321e81460" data-who="reckon-build" data-when="2026-10-21T18:57:56.344Z">
+    <div class="r-comment-body"><p>review record r-20261021T162414777306-regulated-disruption-arm.at-e43321e814603b51c285636f2f9f55af8087e60b.json — six dimensions scored goal_fidelity 15, evidence 11, scope_discipline 19, durability 14, fit 17, reuse 12; 0 added failures; 2 blocking and 5 follow-on findings.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261021T162414777306-regulated-disruption-arm" data-who="reckon-build" data-when="2026-10-21T19:27:10Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/coil-supply-report-rebuild/regulated-disruption-arm.html</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261021T192737263031-review-of-regulated-disruption-arm-f2e9a0d18ad2" data-who="reckon-build" data-when="2026-10-21T19:52:51Z">
+    <div class="r-comment-body"><p>review records stored at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T162414777306-regulated-disruption-arm/review-records/ (plain .json and .at-f2e9a0d18ad23ac5b1b1792cb281cfea24742eef.json copies)</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-10-21T20:20:00Z">
+    <div class="r-comment-body"><p>§9 closed. The regulated arm landed at <code>b6269de5</code>, and its figures were redrawn at <code>e888dbb8</code>. Every supply saturates at its converter limit in both the major disruption and the VDE. PF3 sits there longest, 4.5 s, and carries the largest departure: 4.18 kA in the major disruption and 3.85 kA in the VDE, 7.6 % and 7.0 % of its rated current. The register holds no overcurrent or quench-detection threshold, so a protection trip is not assessed.</p><p>Follow-ons batched for §8 and the owners:</p><ul><li>the overcurrent and quench thresholds to add to the register;</li><li>a sub-cycle converter for the high-gain bracket;</li><li>the self-referential count assertions;</li><li>the skip-on-absent table test;</li><li>the duplicated exact integrator in <code>regulated_solve</code>;</li><li>the fragment residual quoted as 1.1×10⁻¹⁰ where the receipt holds 1.05×10⁻¹⁴.</li></ul><p><a href="/power_convertor/evidence/archive/coil-supply-report-rebuild-landed.html#s9">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-held-1021" data-who="reckon-build" data-when="2026-10-21T20:35:00Z">
+    <div class="r-comment-body"><p>Held, though §5 and §9 have both closed. The switched owner's plasma input reaches the coil ports only. <code>nova_plant.plasma_input_matrix</code>, which <code>into_switched</code> uses, is −L<sub>c</sub><sup>−1</sup> on the coils, with zeros on every passive mode. That is the coil-only interface §9 found in <code>coupled_plant</code> and closed there at <code>846ac2e3</code>. §6 needs the same full-source option on <code>into_switched</code>: a plasma flux rate on every coil and passive mode, through the joint linkage.</p><p>Two things stand before it:</p><ul><li>shared-coil-supply-model §6 is moving the plant source into <code>nova_plant.py</code> and is held on nova's linkage repair. The pinned plant's joint linkage is indefinite on VSU and VSL, and a full-source −L<sup>−1</sup> on that linkage would grow.</li><li>The full-source option belongs to the switched owner's holder, the shared-model coordinator, and was sent there on 21 October.</li></ul><p>§6 dispatches once the positive-definite plant is adopted and the option merges, with its positive control (a passive-only flux step moving the coils through the mutuals) and its default unchanged bit for bit.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-retarget-1021" data-who="reckon-build" data-when="2026-10-21T20:50:00Z">
+    <div class="r-comment-body"><p>The full-source option is now shared-coil-supply-model §10, "The switched path takes the full plasma source" (plan v166, <code>0e209509</code>), so §6 depends on that section instead of the study-script refactor in its §6.</p><p>§10's done-when matches what §6 needs:</p><ul><li><code>into_switched(..., full_source=True)</code> takes a flux rate on every coil and passive mode, through −L<sup>−1</sup> of the joint linkage;</li><li>off by default, the input matrix unchanged bit for bit;</li><li>positive control: a passive-mode-only flux step moves the coils as an analytic two-circuit case predicts;</li><li>negative control: removing the coil-to-passive mutual leaves them unmoved.</li></ul><p>§10 waits on that plan's §9, the adoption of nova's repaired, positive-definite plant key, which in turn waits on nova:iter-passive-plasma-circuit §7.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-jt60sa-s17" data-who="reckon-build" data-when="2026-10-21T21:05:00Z">
+    <div class="r-comment-body"><p>JT-60SA has given a result §4 must carry (jt60sa-coil-circuit-model §17, merged <code>22fa0d89</code>, review 94/120). The registered 2023 ripple filter and grounding do not explain the 2021-to-2023 change in coil-to-coil harmonic pickup. Eighteen single-converter coil-only pulses were scored through the composed plant with register values only, nothing refitted.</p><ul><li>7 of 120 lines fall within the 10 % rule, with a median absolute error of 90 %.</li><li>The predicted change between years is about 0.93 on almost every line.</li><li>The measured change runs from 0.08× to 74×, median 0.64, in both directions.</li><li>The design change attenuates lines by only 1–7 %.</li></ul><p>For ITER, §4 carries harmonic idle-coil coupling as an empirical factor with measurement requirements:</p><ul><li>tap wiring;</li><li>inter-coil ground return;</li><li>a supply-off baseline;</li><li>each idle supply's firing state.</li></ul><p>A filter or grounding design change is never applied as a predictable correction to measured coupling. The detector-pickup estimates state this uncertainty beside each idle-coil line, and §8 carries it into the report. <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s17-coil-only">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-earthing-neutral" data-who="reckon-build" data-when="2026-10-21T23:41:19Z">
+    <div class="r-comment-body"><p>A bound from the TF cold-test synthesis (<a href="/power_convertor/research/tf-cold-test-synthesis">synthesis</a>, <code>a57aa493</code>): the balanced earthing divider puts the neutral at 0 V, but EFD:DV7 measures 0.83–16.23 V on it. §4 bounds each terminal-to-ground voltage at V/2 + |V<sub>neutral</sub>| rather than V/2, which reaches 96.6 V on the 30 kA cold-test discharge. It states which neutral offset it carries and where it comes from.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261022T054637890358-review-of-fdr-secant-rows-46d4a4249a5f-figure" data-who="reckon-build" data-when="2026-10-22T05:54:56.985Z">
+    <div class="r-comment-body"><p>The figure review for the FDR secant-rows run is attached to the original run's review-records: the report's terminal figure (docs/figures/coil-supply-report-rebuild/fdr-secant-rows/terminal-voltage-to-ground.svg) is judged on its render, passes legibility, data_ink, decoration, contrast, table_form and label_collision, and carries two follow-on findings -- the 12 kV rating line is named only in the top panel, and its direct label is the figure's lowest-contrast text at 3.36:1 -- with no blocking finding. Read-only: no figure, caption or source was changed.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261022T054602285086-review-of-fdr-secant-rows-46d4a4249a5f" data-who="reckon-build" data-when="2026-10-22T05:57:21.066Z">
+    <div class="r-comment-body"><p>Independent review of r-20261021T234457021719-fdr-secant-rows (base 273040e2, head 46d4a424): a parsed six-dimension record scoring 18/16/20/15/17/17 with four follow-on findings and no blocking finding, stored at review-records/r-20261021T234457021719-fdr-secant-rows.json and ...at-46d4a4249a5f86b2c90120fcdf24318f5b910776.json.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261021T234457021719-fdr-secant-rows" data-who="reckon-build" data-when="2026-10-22T05:45:45Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/coil-supply-report-rebuild/fdr-secant-rows.html — every fast-discharge row of the report re-read on the TF cold-test per-section FDR secant inductance, with each unit's own XK23KG snubber fitted across its terminals under the option, imported from the commutation study rather than restated, at either of that study's two brackets. The deposit-side moves are 0.0002 % in a breaker current, 0.016 % in an arm's energy per unit and 0.041 % in a resistor's inserted energy, and they change no over-set on any build. Every voltage in the three row sets is the fast-discharge unit's insertion sample, and it does not settle: carried 20 times finer than the report's own probe and then resolved down to the insertion study's own scan floor, no row's window peak settles, so those cells are delivered as the reading with its step sensitivity and a step-set note rather than as a limit comparison, and the arm rows are split, the blocked-bound arms settling under the snubber and the fast-sequence arm not.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-10-22T06:05:00Z">
+    <div class="r-comment-body"><p>§11 landed at <code>1091df30</code>. The FDR secant inductance moves resistor and arm energies by 0.067 % at most and changes no 778SPD over-set: 16 of 72 resistor rows and 9 of 44 arm rows, the worst PF6 at 1.47. The voltage cells are not qualified: with any stray, the insertion peak diverges down to 6×10<sup>−8</sup> s because §5's FDUs chop the breaker current with no counter-pulse. §12 gives every FDU its IDM counter-pulse and re-fills these cells.</p><p>Follow-ons are batched for §12:</p><ul><li>the snubber test compares the constant with itself;</li><li>a test name overclaims;</li><li>the manifest carries no baseline arm;</li><li>the figure log header names an earlier revision;</li><li>the 12 kV rating line is labelled in one panel only, at 3.4:1.</li></ul><p><a href="/power_convertor/evidence/archive/coil-supply-report-rebuild-landed.html#s11">evidence</a></p></div>
+</div>
+</section>
+</main>
+</body>
+</html>

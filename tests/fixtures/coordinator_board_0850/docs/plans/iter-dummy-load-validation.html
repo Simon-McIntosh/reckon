@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="power_convertor">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="iter-dummy-load-validation">
+  <meta name="plan-title" content="ITER Dummy-Load Validation">
+  <meta name="plan-summary" content="Freeze a blind prediction of the PF dummy-load recorder waveforms before the files arrive, then score it and identify the converter from them">
+  <meta name="plan-status" content="in-progress">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="18.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-sprint" content="S3">
+  <meta name="plan-tags" content="iter,power-supply,dummy-load,converter">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <title>ITER Dummy-Load Validation | power_convertor</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="33">
+<meta name="plan-modified" content="2026-10-21">
+<meta name="plan-commits" content="ade8c8928b04b3cbdd34085b6333331e66f47420">
+</head>
+<body>
+  <main class="plan-doc">
+    <p>The high-voltage dummy-load tests of the ITER PF1-1 and PF6-1 converter units ran on 28 September and
+    12–13 October 2026. The slow archive holds only 2 s indications of them. The waveforms were captured on a
+    stand-alone HIOKI U8975 recorder wired from the LCC terminals, outside UDA and DAN. The recorder files are
+    expected from the commissioning team in the week of 19 October 2026
+    (<a href="/power_convertor/evidence/iter-pf-dummy-load-tests">dummy-load evidence</a>, sections 7 and 8).
+    They will be the first measured switching waveforms of an ITER coil converter.</p>
+    <p>This plan makes those files a test rather than a calibration. The JT-60SA work showed how much that
+    matters. The 2021-fitted booster model failed its pre-registered line criteria on all six held-out 2021
+    cases and all eight judged 2023 cases (<a href="/power_convertor/plans/booster-converter-model">booster-converter-model</a>
+    §5, <a href="/power_convertor/plans/filter-grounding-prediction">filter-grounding-prediction</a> §4). Only
+    because the criteria were frozen first is that failure a measurement of the method's error, not a fit
+    that hides it. The same JT-60SA replay located the error. On the same windows, the frequency-domain
+    model under-predicts the 12f and 18f lines by 4–12 dB and the switched model over-predicts them by
+    2–10 dB. The two forms differ in how a converter commutates under load, not in the coupled plant
+    (<a href="/power_convertor/plans/jt60sa-switched-pulse-replay">jt60sa-switched-pulse-replay</a> §8–§10).</p>
+    <p>A dummy load has no coupled plant: 6.73 mH and a measured loop of about 5.5 mΩ. The recorder sees
+    each bridge's current and voltage. The dummy-load files are therefore the cleanest available test of the
+    one representation the ITER ripple results rest on, the loaded converter. Both of this repository's
+    converter forms are frozen against them before the files are opened.</p>
+    <p>This plan supersedes <a href="/power_convertor/plans/iter-power-supply-model">iter-power-supply-model</a>
+    §5 and §6, which were written for the UDA slow archive, where §4 found no waveform. The converter
+    identification of that §6 moves to §5 here, unchanged in method, on data that can carry it.</p>
+
+    <h2 id="s1">§1 — What the recorder files must carry, asked for now</h2>
+    <section data-reckon="section" data-id="s1" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>The evidence page's section 8 already asks the commissioning team for the files, the recorder's
+    sample rate, anti-alias filter, trigger, clock source and format, whether CU4 was recorded, and the T1–T4
+    loop-resistance paths. This section adds what the JT-60SA work found a ripple measurement cannot be
+    scored without. It sends the combined list before the files arrive, so that a missing item is asked for
+    once, not discovered later.</p>
+    <ul>
+      <li><strong>A source-off window</strong> on each recorded session: the converter blocked with the
+      recorder live. Deblocked at zero reference is a different state, and it still produces ripple. Without
+      this window no line can be told from pickup (<a href="/power_convertor/plans/jt60sa-coil-circuit-model">jt60sa-coil-circuit-model</a>
+      §12).</li>
+      <li><strong>How each voltage tap is wired</strong>: across the bridge or unit, or each terminal to
+      ground. Record the ground return of the dummy-load circuit too, including the
+      <code>GVANCX</code> ground-current monitor. An undocumented tap path is the one candidate JT-60SA could
+      not exclude for its unexplained 12f coupling.</li>
+      <li><strong>Channel scaling and sign</strong> for every probe, with the probe model, and the clock
+      offset between the recorder and the slow archive.</li>
+      <li><strong>The operating sequence</strong> keyed to recorder time: the preset current reference that
+      Mini-CODAC sent, the selector code and the converter state. Ask for the inverting discharge ramps too,
+      if any were run. The slow-archive runs stayed rectifying: 43 of 1,796 PF1 samples and 245 of 5,022 PF6
+      samples sit on the inverting side. A discharge at −80 kA/s or faster is the only way this load
+      exercises inversion.</li>
+    </ul>
+    <p>The deliverable is the request text, added as a subsection of section 8 of
+    <code>docs/evidence/iter-pf-dummy-load-tests.html</code>. The lead sends it. A node never contacts the
+    commissioning team. Done when that subsection lists every item above with the document it rests on,
+    and the lead has recorded the date it was sent.</p>
+
+    <h2 id="s2">§2 — The blind prediction, frozen before the files are opened</h2>
+    <section data-reckon="section" data-id="s2" data-effort-hours="6.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
+    <p>Predict, from design values alone, what the recorder will show at the operating points the slow
+    archive records. The circuit is one PF converter unit as the tests ran it: four six-pulse bridges, with
+    C1 and C3 parallel on the positive polarity and C2 and C4 on the negative. It is fed from the Stage 1 PF
+    transformer and AC busbar with <code>stage1_pf_budget</code>'s commutation range
+    (<code>src/power_convertor/commutation.py</code>). It drives the 6.73 mH ±1 % dummy load through the
+    measured loop: T1 at 5.51 mΩ for PF1 and 5.43 mΩ for PF6. The circuit is built twice:</p>
+    <ul>
+      <li><strong>switched</strong>: <code>ConverterNetwork.add_pf_unit</code> with its
+      <code>FiringGenerator</code> and the documented bridge bands, solved by
+      <code>power_convertor.switched_circuit</code>;</li>
+      <li><strong>analytic</strong>: the source form in <code>power_convertor.bridge</code>
+      (<code>BridgeSet</code>, <code>CirculatingBridgeGroup</code>), as the whole-pulse ripple study uses it.</li>
+    </ul>
+    <p>The operating points come from the 30 high-current runs of the slow-archive pulse table. Use each
+    run's flat-top current and the measured angle of its conducting bridge pair. The firing-angle offset
+    input is the evidence page's comparison of those angles with the design law on the dummy-load line
+    (<a href="/power_convertor/evidence/iter-pf-dummy-load-tests#operating-point">operating point</a>): a
+    median of −3.4° for PF1 and −3.0° for PF6 over |I| &gt; 20 kA, with p10/p90 of −8.8°/+2.5° and
+    −8.2°/+2.5°, which the band carries. The offset profile of
+    <code>scripts/iter/dummy_load_dc_regression.py</code>, with shallow minima near +0.5° and +1.5°, is a
+    conditional fit range that trades against transformer ratio, timing and bridge sharing. It is not an
+    angle calibration and is not an input. Read the operating points and the offset from their owners
+    rather than deriving them again: the points through <code>load_samples</code> and
+    <code>mode_counts</code> in <code>scripts/iter/dummy_load_dc_regression.py</code>, over the session
+    tables of <code>scripts/iter/uda/dummy_load_sessions.py</code> and <code>dummy_load_windows.py</code>, and
+    the offset through <code>law_offset</code> and <code>summary</code> in
+    <code>scripts/figures/iter_dummy_load_operating_point.py</code>. Import them, or extend them where the
+    prediction needs a field they do not return, so that §4 scores against the same points. At each point,
+    and over the circulating and one-bridge bands below 22 kA, predict:</p>
+    <ul>
+      <li>each bridge's current, its share against its parallel partner, and the circulating current;</li>
+      <li>each bridge's voltage, with the commutation notch depth and overlap angle;</li>
+      <li>the unit's terminal-voltage lines at 300, 600, 900 and 1,200 Hz, in amplitude and phase relative to
+      the AC supply;</li>
+      <li>the DC mean voltage against angle and current, the DC regulation curve that sets
+      X<sub>c</sub>;</li>
+      <li>the load-current ripple at 600 Hz;</li>
+      <li>the current at which the unit changes from one bridge to two. The design band puts it at 22 kA,
+      40 % of 55 kA. On the evidence page, the load-line model's constant-rate ramp lines step by about 2° at
+      17 kA, where one bridge starts to carry what two shared. The slow archive shows no single threshold
+      shared by both units: at 20–30 kA PF1 has two same-polarity bridges in all 15 matched instants, while
+      PF6 has one in 12 and two in 17. The prediction states which threshold it expects and why.</li>
+    </ul>
+    <p>Each prediction carries a band from the propagated input ranges: the commutation budget, the load
+    tolerance, the loop resistance from T1 to T4, and the firing-angle offset. The predictions are written to
+    <code>docs/figures/iter-dummy-load-prediction/prediction.json</code>, stamped by
+    <code>power_convertor.provenance.revision</code>, and recorded in <code>docs/research/iter-dummy-load-prediction.html</code>. The record names the
+    tolerance chosen under decision <code>prediction-tolerance</code> and the operating points to be judged.
+    The caller is <code>scripts/iter/dummy_load_prediction.py</code>.</p>
+    <p>Done when the record and the JSON are merged and their commit is written into this section's
+    close note, before any recorder file is placed in the data directory. Two controls are stated in the
+    record. Positive: at a 90° firing angle with the overlap set to zero, both forms reproduce the textbook
+    six-pulse notch area and the 600 Hz line of an ideal twelve-pulse pair within 1 %. Negative: the unit
+    built as an in-phase six-pulse pair, phase shift 0° rather than 30°, predicts 300 Hz lines in the
+    two-bridge band at least 20 dB above the frozen unit's. The scoring section judges that negative arm
+    against the measurement too.</p>
+
+    <h2 id="s3">§3 — Reading the recorder files</h2>
+    <section data-reckon="section" data-id="s3" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>A reader for the HIOKI files in <code>src/power_convertor/recorder_files.py</code>. Its first form is
+    built on a synthetic file the node writes in a stand-in layout: the recorder family's CSV text export,
+    with a header of channel names, units, sampling interval and trigger time. No held document states
+    the file format (the evidence page's section 7 says so), so the module states the layout as an
+    assumption, refuses any other, and is reconciled with the real format when §1's request is answered.
+    It returns each
+    channel as time and value in SI units, in the contract <code>signals.load</code> and
+    <code>signals.units</code> already return, with its sampling rate, scaling and sign stated, and refuses
+    a channel it cannot scale. Channel signs follow the policy <code>channel_sign.py</code> owns. It is a
+    new module because the HIOKI export is a format nothing in the repository reads; one public reader
+    function is the whole surface it adds, and nothing is retired. The files themselves go to
+    <code>/home/ITER/mcintos/Code/power_convertor/data/iter/dummy-load-fast/</code>, an absolute path,
+    because <code>data/</code> is ignored in a worktree.</p>
+    <p>Three checks decide what the files can say. This section builds them into the reader and proves
+    them on the synthetic file. They are run on the first held recorder file as the first step of §4,
+    behind gate g-idlv-1, and each is recorded in the evidence page under a new section on the recorder
+    data.</p>
+    <ul>
+      <li><strong>Calibration</strong>: the recorder's current, averaged to the slow archive's samples,
+      agrees with the archive's bridge-current indication within 2 % over every flat top. A channel that
+      fails is not used for ripple.</li>
+      <li><strong>Resolution</strong>: each characteristic line is marked resolved or aliased against the
+      recorder's sampling rate and anti-alias filter, never against the slow archive's cadence.</li>
+      <li><strong>Origin</strong>: in the source-off window no characteristic line rises more than 6 dB
+      above the off-frequency noise floor. Without a source-off window, each line's origin is recorded as
+      unresolved, and §4 judges it on that footing.</li>
+    </ul>
+    <p>Done when the synthetic file reads through the reader and each of the three checks gives its
+    verdict on a synthetic channel built to pass it and on one built to fail it. A unit test pins the
+    synthetic file's scaled values. The test also shows the reader refusing a channel whose scaling is
+    missing, and turns red when the refusal is removed. Reading a held recorder file is §4's first step,
+    not this section's.</p>
+
+    <h2 id="s4">§4 — Scoring the frozen prediction</h2>
+    <section data-reckon="section" data-id="s4" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p>Score each quantity of §2 at each judged operating point against the recorder, with the line measures
+    in <code>power_convertor.signals</code> and <code>power_convertor.measurement</code>. Pass the
+    recorder's acquisition settings to them explicitly, never the JT-60SA defaults. The tolerance is the one
+    frozen in §2. Each form, switched and analytic, gets its own verdict, and so does the in-phase negative
+    arm. Every miss beyond tolerance is attributed: to an input range, to the converter representation, to
+    the measurement, or left unresolved with the deciding measurement named, as
+    <a href="/power_convertor/plans/filter-grounding-prediction">filter-grounding-prediction</a> §5 did.</p>
+    <p>The held files carry one DC current channel and one DC voltage channel per unit. No bridge current is
+    recorded, so §2's per-bridge quantities have no channel: each bridge's current, its share against its
+    parallel partner and the circulating current. Each of these gets the verdict <em>not measurable from the
+    held channels</em>, with the missing channel named. Never infer a per-bridge value from the unit total.
+    The notch depth and the overlap angle get the same verdict wherever the file's sampling cannot resolve
+    them. A recorder file is paired with a frozen operating point by its current profile, matched against the
+    slow archive in §3's calibration check, and not by its trigger date. The PF1 file's own trigger date reads
+    25 September, three days before the 28 September PF1-1 session whose operating points §2 froze. A file
+    whose profile matches no frozen operating point is unpaired and is not scored, and the record says
+    which file and why.</p>
+    <p>The record is a new section of <code>docs/research/iter-dummy-load-prediction.html</code>. It never
+    rewrites the frozen predictions above it. Its figures go in
+    <code>docs/figures/iter-dummy-load-prediction/</code>: measured against predicted line amplitude by
+    operating point, one panel per unit, with the band, and the measured DC voltage ripple spectrum beside
+    both forms, with the aliased lines marked where they land.</p>
+    <p>Done when §3's three checks are recorded against the held recorder file before any score is
+    computed. Every judged operating point of a paired file needs a verdict for each form: a score, or
+    <em>not measurable</em> with the missing channel named. Each miss must be attributed. The
+    record must also say which form the ITER whole-pulse and switched studies should carry, and by how many
+    decibels at 600 Hz. The negative arm must fail its 300 Hz lines. If it passes, the recorder cannot tell
+    a twelve-pulse unit from a six-pulse pair, and the scoring is void.</p>
+
+    <h2 id="s5">§5 — The converter identified from the recorder, and carried into the ITER model</h2>
+    <section data-reckon="section" data-id="s5" data-effort-hours="5.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>The method is the one <a href="/power_convertor/plans/iter-power-supply-model">iter-power-supply-model</a>
+    §6 wrote. It now runs on data that resolves the lines. Before any fit, commit the split, the tolerance
+    and the held-out runs to <code>docs/research/iter-pf-converter-fit.html</code>. Then identify the line
+    voltage and commutation reactance from the measured DC regulation, and from the overlap angle where the
+    file's sampling resolves it. The parallel-bridge sharing impedance needs the bridge currents, which the
+    held files do not record, so the record states that it is not identified from them. Call
+    <code>fit_base_supply</code> (<code>src/power_convertor/supply.py</code>) with the recorder's sampling
+    rate, phase shift and scored orders. It already takes all three: <code>sample_rate</code> (default
+    <code>FS_JT60SA</code>, 4 kHz), a phase shift through <code>base_configuration</code>, and
+    <code>orders</code>. Extend it only for a parameter the recorder needs that it does not take, keeping
+    its defaults so the JT-60SA callers are unchanged. Its guard refuses a sampling rate at or below twice
+    the highest fitted line, and its default orders (12f and 24f) would refuse both held files. So the
+    orders are set per file. PF6, at 2 kHz, carries orders 6, 12 and 18 (300, 600 and 900 Hz). PF1, at
+    1 kHz, could carry order 6 alone, but its 300 Hz landing is shared with other folded lines under the
+    reader's alias map, so PF1 enters the identification through its DC regulation only. The guard assumes
+    a filtered input, and the recorder's filter was off. The fit therefore uses only the landings the
+    reader marks resolved, and the negative control is scored on PF6. Pass the recorder's acquisition
+    settings for the other two JT-60SA defaults as well, as the scoring tests already do:
+    <code>timing_skew_s=0</code>, because the HIOKI recorder has no interleave skew, and a
+    <code>bandwidth_hz</code> far above the highest fitted line, because with its filter off the recorder
+    applies no low-pass in the fitted band. Never use the 104.57 µs skew or the 10 kHz bandwidth. The caller
+    is a new <code>scripts/iter/identify_pf_converter.py</code> with its test
+    <code>tests/test_identify_pf_converter.py</code>. It reads the reader's settings files under
+    <code>/home/ITER/mcintos/Code/power_convertor/data/iter/dummy-load-fast/derived/</code> and §4's
+    scoring record, and nothing in iter-power-supply-model §6, which is deferred, is assumed to exist.
+    Write the identified values to
+    <code>docs/figures/iter-pf-converter-fit/parameters.json</code>.</p>
+    <p>Each identified value is set beside its IDM design value in the
+    <a href="/power_convertor/research/iter-coil-supply-idm-register">IDM register</a> as a measured
+    deviation. Decision <code>as-built-values</code> settles which value the integrated model then
+    carries. Where the X<sub>c</sub> range that keeps the held-out lines in tolerance spans more than a
+    factor of two, the record states that those points do not identify X<sub>c</sub>. It does not report
+    a fitted value there.</p>
+    <p>Done when the held-out verdict is recorded and the negative control misses the held-out lines by
+    more than the tolerance: the in-phase six-pulse pair, scored on 6f and 18f. The ITER studies whose
+    converter inputs moved must be listed with the size of the move, so the integrated model's owner can
+    rerun them.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-idlv-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-17" data-recommends-skill="/reckon-build iter-dummy-load-validation §1" data-resolved-at="2026-10-21T09:54:24+00:00" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Send the recorder request, then freeze the prediction before the files land</h4>
+    <div class="r-fu-body"><p>§1 and §2 start together today. §2 needs decision <code>prediction-tolerance</code> locked before its record is written, and its merge must precede the arrival of the recorder files: a file read before the freeze makes §4 a fit, not a test. §3 can be built on a synthetic file meanwhile. §4 and §5 wait on gate g-idlv-1.</p></div>
+    <pre class="r-fu-prompt">/reckon-build iter-dummy-load-validation §1</pre>
+    </article>
+<article class="r-fu" data-id="f-idlv-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-21" data-recommends-skill="/reckon-build iter-dummy-load-validation §4" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Score the frozen prediction once the recorder files are read</h4>
+    <div class="r-fu-body"><p>The read node (<code>dummy-load-recorder-read</code>) reads both HIOKI files, runs §3's three checks, pairs each file with a frozen operating point by current profile, and writes <code>data/iter/dummy-load-fast/derived/settings.json</code>. When it lands, score §4 from that settings file, with per-bridge quantities recorded as not measurable from the held channels. §5 follows §4.</p></div>
+    <pre class="r-fu-prompt">/reckon-build iter-dummy-load-validation §4</pre>
+    </article>
+</section>
+
+    <section data-reckon="gates" id="gates" class="r-gates">
+<h2><span class="sec">§</span> Evidence gates</h2>
+<div class="r-gate" data-id="g-idlv-1" data-section="s4" data-gated-sections="s4,s5" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">The HIOKI recorder files for at least one PF1-1 or PF6-1 high-voltage dummy-load run are held in data/iter/dummy-load-fast/ with their sampling rate and channel scaling stated, and §2&#x27;s frozen prediction is merged before they were placed there</h4>
+    <p class="r-gate-required-evidence">iter-pf-dummy-load-tests</p>
+    <a class="r-gate-evidence" href="HIOKI recorder files placed in /home/ITER/mcintos/Code/power_convertor/data/iter/dummy-load-fast/ at 2026-10-21 10:56:07-08 CEST, copied from the lead&#x27;s downloads by power-convertor-02. &#x27;PF1 Converter 55kA  -2609250.csv&#x27; 702,452 B, sha256 b5ae71cfd2d7c20569bfc8f53341cead78b23da7d3463986314feed9764e973c, triggered 9/25/2026 at 100 ms/div (1 ms sample period, 20,976 samples). &#x27;PF6 Converter 55kA-2601009.csv&#x27; 954,003 B, sha256 ff3c68d46515ea2fbb2994c5410e9036923b41e52fa9907e8ee4598f0cf3ceba, triggered 10/12/2026 at 50 ms/div (500 us, 28,633 samples). Channels: CH20-2 IDC at 6.00E+03 A/V and CH21-3 VDC at 2.00E+02 V/V through U8975 units, filter OFF. The frozen prediction (§2) merged at 014639bd on 2026-10-17 14:43 CEST, before the files were placed.">Evidence</a>
+</div>
+</section>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="prediction-tolerance" data-choice="jt60sa-band" data-by="Simon McIntosh" data-when="2026-10-17T09:59:06+00:00">
+    <p class="r-dec-q">What tolerance is pre-registered for the dummy-load prediction?</p>
+    <p class="r-dec-ctx">JT-60SA judged its lines at ±3 dB. There the 6f and 12f lines landed within about 3 dB, while 18f and above missed by 10–13 dB.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="jt60sa-band">±3 dB on lines with SNR of at least 10 dB, ±5 % on the DC mean voltage, ±20 % on the overlap angle</button>
+      <button class="r-opt" data-value="tight">±1 dB on lines, ±2 % on the DC mean voltage, ±10 % on the overlap angle</button>
+      <button class="r-opt" data-value="per-order">±3 dB at 300 and 600 Hz, ±6 dB at 900 and 1,200 Hz, ±5 % on the DC mean voltage</button>
+      </p>
+    <p class="r-dec-rat">The lead chose the band JT-60SA was judged at: within 3 dB on lines whose SNR is at least 10 dB, within 5 percent on the DC mean voltage and within 20 percent on the overlap angle. That makes the ITER dummy-load verdict directly comparable with the JT-60SA verdicts, where 6f and 12f landed within about 3 dB and 18f and above missed by 10-13 dB. A tighter band would likely fail on the input ranges alone, and a per-order band would excuse in advance the orders that failed at JT-60SA.</p>
+    </div>
+<div class="r-dec" data-key="as-built-values" data-choice="as-built" data-by="Simon McIntosh" data-when="2026-10-17T09:59:06+00:00">
+    <p class="r-dec-q">When the recorder identifies a converter parameter that differs from its IDM value, which value does the integrated ITER model carry?</p>
+    <p class="r-dec-ctx">IDM is the design authority, and DINA is never fitted to. A commissioning measurement of the installed converter is evidence about the machine as built, which is neither.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="idm-reported">The IDM value, with the measured deviation reported beside every result it affects</button>
+      <button class="r-opt" data-value="both-arms">Both values as arms, with IDM as the reference arm</button>
+      <button class="r-opt chosen" data-value="as-built">The measured value, with the IDM value reported</button>
+      </p>
+    <p class="r-dec-rat">The lead chose the measured value. A commissioning recording of the installed converter is evidence about the machine as built, not a model to fit to the way DINA is. Where the recorder identifies a parameter, such as the commutation reactance or the parallel-bridge sharing impedance, beyond its held-out tolerance, the integrated model carries the measured value. The IDM design value is reported beside every affected result, and the deviation goes into the IDM register. Parameters the recorder does not identify keep their IDM values, and DINA&#x27;s values are never used for any of them.</p>
+    </div>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s1" data-id="c-run-r-20261017T114010939375-review-of-dummy-load-recorder-request-ade8c8928b04" data-who="reckon-build" data-when="2026-10-17T11:53:52.720Z">
+    <div class="r-comment-body"><p>Independent review of r-20261017T113413581041-dummy-load-recorder-request at head ade8c8928b04b3cbdd34085b6333331e66f47420: goal_fidelity 19, evidence 17, scope_discipline 20, durability 8, fit 16, reuse 20 (total 100); one follow-on finding that the landing fragment is an empty anchor where sibling fragments carry a body; no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20261017T113413581041-dummy-load-recorder-request" data-who="reckon-build" data-when="2026-10-17T11:39:30Z">
+    <div class="r-comment-body"><p>Section 8 now carries the recorder request at /power_convertor/evidence/iter-pf-dummy-load-tests#recorder-request; four item markers, seven resolving source links, and audit-doc OK with zero errors; evidence anchor /power_convertor/evidence/fragments/iter-dummy-load-validation/dummy-load-recorder-request.html#dummy-load-recorder-request.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-land-recorder-request" data-who="reckon-build" data-when="2026-10-17T11:56:00Z">
+    <div class="r-comment-body"><p>Node dummy-load-recorder-request landed (merged at <code>0165e61a</code>): the recorder-file request subsection is in section 8 of the evidence page, with the four items and their sources. §1 stays open until the lead sends it and records the date. <a href="/power_convertor/evidence/archive/iter-dummy-load-validation-landed.html#recorder-request">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-s1-request-sent" data-who="reckon-build" data-when="2026-10-17T19:10:00Z">
+    <div class="r-comment-body"><p>The lead sent the request for the dummy-load recorder data on Thursday 15 October 2026. As of 17 October no files have been received. The request text in section 8 (<code>#recorder-request</code>) was merged on 17 October (<code>0165e61a</code>), after that send. Whether the source-off window, tap wiring, ground return, probe scaling and operating-sequence items reached the commissioning team is unconfirmed. §1 stays open until they are confirmed or sent as an addendum.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-close-s1" data-who="reckon-build" data-when="2026-10-21T09:00:00Z">
+    <div class="r-comment-body"><p>§1 closed because the recorder files are now held (gate g-idlv-1). They arrived before the request text was written into the evidence page, and they carry less than §1 listed. Each file has two channels, the bridge DC current (IDC, 6 kA/V) and the DC voltage (VDC, 200 V/V), with the recorder's anti-alias filter off. They have no source-off window, no tap-wiring or ground-return record, no CU4 channel and no operating sequence keyed to recorder time. §4 records each missing item as a stated gap: in particular, without a source-off window every line's origin is unresolved. PF1 samples at 1 kHz, so it resolves 300 Hz and aliases 600 Hz to 400 Hz; PF6 samples at 2 kHz and resolves both. If the lead wants the remaining items, the list in this section is the request.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261017T114323323618-review-of-hioki-recorder-reader-acac7c0f4397" data-who="reckon-build" data-when="2026-10-17T11:55:10.306Z">
+    <div class="r-comment-body"><p>independent review of run r-20261017T113509963026-hioki-recorder-reader at head acac7c0f scored 6/6 dimensions (total 103) with 3 follow-on findings and no blocking finding; the parsed record is stored under that run's review-records/.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-17T11:58:00Z">
+    <div class="r-comment-body"><p>§3 landed: the HIOKI reader and its three checks on a synthetic stand-in file (merged at <code>9ccd2fcd</code>); 16 tests pass and the refusal's negative control fails as it should. Reading a held recorder file, and reconciling the stand-in layout with it, is §4's first step. <a href="/power_convertor/evidence/archive/iter-dummy-load-validation-landed.html#hioki-recorder-reader">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261017T113509963026-hioki-recorder-reader" data-who="reckon-build" data-when="2026-10-17T11:43:02Z">
+    <div class="r-comment-body"><p>§3 synthetic CSV reader and calibration, resolution, origin checks landed in docs/evidence/fragments/iter-dummy-load-validation/hioki-recorder-reader.html; 16 focused tests passed and missing-scaling mutation failed only its refusal test.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261017T115149246681-review-of-dummy-load-prediction-analytic-ea95d47bb716" data-who="reckon-build" data-when="2026-10-17T11:57:20Z">
+    <div class="r-comment-body"><p>Review of base 7e90ecdbf01a017d1778491c215b1f3d213bf8fa through head ea95d47bb7167d2a0200c1b9125e1b8628770bf2 is stored at the declared revision-keyed review-records path; six dimensions and six checklist items parsed, with one blocking and one follow-on finding.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261017T113440102554-dummy-load-prediction-analytic" data-who="reckon-build" data-when="2026-10-17T12:05:49Z">
+    <div class="r-comment-body"><p>Analytic prediction and bands recorded for 30 high-current flat tops and 16 signed lower-band points in docs/research/iter-dummy-load-prediction.html and prediction.json at fd63d187875d2ca17378d3e9484abfa047a7e130; independent range check now refuses collapsed bands, ideal controls match within 0.001%, in-phase 300 Hz excess is 51.7 dB, switched form pending.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261017T120555455585-review-of-dummy-load-prediction-analytic-fd63d187875d" data-who="reckon-build" data-when="2026-10-17T12:09:39Z">
+    <div class="r-comment-body"><p>Independent review of source base 7e90ecdbf01a017d1778491c215b1f3d213bf8fa through head fd63d187875d2ca17378d3e9484abfa047a7e130 is stored at the declared revision-keyed review-records path; six dimensions and six checklist items parsed, with two follow-on findings and no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261017T123358529261-review-of-dummy-load-prediction-switched-2bb4f2d65f52" data-who="reckon-build" data-when="2026-10-17T12:41:57.686Z">
+    <div class="r-comment-body"><p>Reviewed run r-20261017T121146070491-dummy-load-prediction-switched at head 2bb4f2d6 from base 8abc593: 46/46 points carry both forms with bands that enclose their centre, all 46 analytic objects are identical to the base JSON after the owner-based _bridge_currents replacement, and the recorded controls match the frozen JSON digits; four follow-on findings, no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261017T121146070491-dummy-load-prediction-switched" data-who="reckon-build" data-when="2026-10-17T12:33:39Z">
+    <div class="r-comment-body"><p>[switched prediction fragment](/power_convertor/evidence/fragments/iter-dummy-load-validation/dummy-load-prediction-switched.html#dummy-load-prediction-switched-evidence): both forms at 46/46 points, 16 switched input corners each; 600 Hz switched-minus-analytic range -0.574 to +0.796 dB; 8 focused tests pass.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-17T12:45:00Z">
+    <div class="r-comment-body"><p>§2 closed. The blind prediction is frozen at merge <strong><code>014639bdfe33711b4b9d18d9448b5b3a818f2a1e</code></strong>, before any recorder file was placed in <code>data/iter/dummy-load-fast/</code>. Both forms are in, at 46 operating points, with bands and all four controls. Tolerance <code>jt60sa-band</code>; expected one-to-two bridge threshold 22 kA. <a href="/power_convertor/evidence/archive/iter-dummy-load-validation-landed.html#frozen-prediction">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-scoring-rehearsed" data-who="reckon-build" data-when="2026-10-18T10:40:00Z">
+    <div class="r-comment-body"><p>§4's pipeline is ready and rehearsed on synthetic files (merged at <code>17ece8be</code>); §4 stays open on gate g-idlv-1 until the recorder files arrive. First step on the day: reconcile the delivered format with the reader's provisional CSV layout. <a href="/power_convertor/evidence/archive/iter-dummy-load-validation-landed.html#scoring-rehearsed">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T121615283726-review-of-dummy-load-recorder-read-3b4afa1b44d9" data-who="reckon-build" data-when="2026-10-21T12:32:41.665Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261021T090151645719-dummy-load-recorder-read (base 9190de8c, head 3b4afa1b, two commits over 11 files). Read the source goal, done_when and write_paths from prompt.txt, the manifest and the base-to-head diff commit by commit, the production call sites (dummy_load_scoring.py:416 score_file, dummy_load_recorder.py:902 main), and rendered two of the six figure SVGs to PNG. Scores out of 20: goal_fidelity 17, evidence 12, scope_discipline 18, durability 14, fit 16, reuse 5. One blocking finding: gate-recorder-read.log has no revision/tree/command header and no EXIT= line and the manifest tests field is prose, so promotion cannot fill a re-runnable gate receipt. Four follow-on findings: landing_frequency duplicates ripple_margins.py:163 aliased_frequency; a tautological assert_allclose at tests/test_dummy_load_recorder.py:75; the untested single-sample check_calibration branch at recorder_files.py:140; and the done_when's unmeasurable 22 kA bridge transition. added_failure_count 0 and added_failure_ids [] because the source manifest's baseline_suite and after_suite are null. status parsed; both review-record files pass `reckon crew check --review`.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T135142769835-review-of-dummy-load-recorder-read-911835fc8e2e" data-who="reckon-build" data-when="2026-10-21T14:18:14.280Z">
+    <div class="r-comment-body"><p>Reviewed run r-20261021T090151645719-dummy-load-recorder-read at base 9190de8c / head 911835fc (11 files, three commits). Scores out of 20: goal_fidelity 18, evidence 17, scope_discipline 18, durability 17, fit 16, reuse 5. No blocking finding: the previous round's blocking gate-receipt defect is repaired (gate-recorder-read.log now names its revision, tree and command and ends on a bare EXIT=0), and the two follow-ons that round raised are fixed — the local fold is deleted for ripple_margins.aliased_frequency and the tautological time assertion at tests/test_dummy_load_recorder.py:86-87 now compares the rebuilt axis against an independently computed first + n*period. Three follow-on findings: the spectral line measure is re-implemented at scripts/iter/dummy_load_recorder.py:344 and :841 instead of the owner power_convertor.signals.spectrum/line_peaks the sibling scorer already imports; a refusal message was mis-worded at src/power_convertor/recorder_files.py:338; and that file ends without a trailing newline at :467. added_failure_count 0 with added_failure_ids [] because the source manifest declares no baseline_suite or after_suite, so no added-failure delta is derivable from a pair of arms.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T090151645719-dummy-load-recorder-read" data-who="reckon-build" data-when="2026-10-21T13:50:51Z">
+    <div class="r-comment-body"><p>Both files read through the reader extended to the HIOKI export as delivered, with the rebuilt time span checked against the exported column, and every number below computed by code from the derived settings rather than transcribed. The landing map is derived from each file's own sampling rate, and it overturns the earlier single-source reading of the spectra: PF1 shares all six of its landings and resolves none (600, 2400, 3600 and 5400 Hz all land at 400; 900, 2100, 3900 and 5100 at 100; 1200, 1800, 4200 and 4800 at 200; 1500 and 4500 at 500; 300 with 2700, 3300 and 5700), and PF6 shares nine of ten, resolving only the 3000 Hz line at 1000 Hz (34.4 V). PF6's own 2 kHz reading of the 2700 and 3300 Hz pair at its 700 Hz landing is 19.4 V, so those lines can account for at most that much of PF1's 59.1 V at 300 Hz, leaving at least 39.7 V for the 300 Hz line itself, on the assumption that the two units' spectra are comparable. The 600 Hz line the prediction is judged on is resolved in neither file. Both families are present: PF1's strongest twelve-pulse landing reads 90.6 V at 200 Hz and its strongest six-pulse landing 59.1 V, PF6's read 61.2 V at its 600 Hz landing and 60.5 V at its 500 Hz landing. Both spectra now mark every landing up to 6 kHz with its measured amplitude and candidate sources, in the dummy-load colour; the pulse figures carry a 20 ms filtered mean over the min-max envelope with the flat-top window marked; the voltage zoom marks every sample and the caption states that 1 and 2 kHz cannot show single commutation events. The three checks are recorded per file, and the shared-or-resolved verdict is carried into settings.json, pf6-settings.json and characterisation.json so the scorer cannot read a shared landing as a resolved line. The settings bind no bridge key to a channel: each per-bridge quantity carries a not-measurable reason naming the absent per-bridge channel, so the scorer refuses and names what is missing rather than answering a bridge question from the unit total. Gate: 24 passed, EXIT=0, at 911835fc, the log naming the revision and the exact command in its header; all three negative controls red at that head, log ends EXIT=1. All six figures regenerated from this script and compared with the committed ones, and re-rendered to PNG and inspected.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-recorder-read-20261021" data-who="reckon-build" data-when="2026-10-21T14:35:00Z">
+    <div class="r-comment-body"><p>§4's first step landed: the recorder files are read and characterised, and the three checks are recorded per file (merge 4ea399ef). The 600 Hz line is resolved in neither file, so how §4 scores shared landings awaits the lead's choice between provisional bounded intervals and not-measurable. Three follow-ons go into the scoring node: the reader's line spectrum should use <code>signals.spectrum</code> and <code>line_peaks</code>; one refusal message needs correcting; and the pulse figures need a colour key and a darker label grey. <a href="/power_convertor/evidence/archive/iter-dummy-load-validation-landed.html#recorder-read">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T135244078800-review-of-dummy-load-recorder-read-911835fc8e2e-figure" data-who="reckon-build" data-when="2026-10-21T14:20:35.930Z">
+    <div class="r-comment-body"><p>Figure review of run r-20261021T090151645719-dummy-load-recorder-read at head 911835fc: all six attached renders judged, 36 of 36 rubric verdicts recorded, no blocking finding. Read-only: no file outside the two declared write paths and this run directory was touched.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T175940492599-review-of-dummy-load-alias-separation-97c34422235a" data-who="reckon-build" data-when="2026-10-21T18:30:58.437Z">
+    <div class="r-comment-body"><p>The review of r-20261021T151118725755-dummy-load-alias-separation at head 97c34422 is stored: the aliased-line separation lands what its goal states and the fragment's numbers reconcile with the run's own derived receipts, so what remains is four recorded follow-ons rather than a repair — `scripts/iter/dummy_load_aliasing.py:264` fits each landing's total with `trend=False` while its components use `trend=True`, so PF6's 0 Hz row reports `total_peak_v` 12.83 V against its single 1.51 V component (probe: a pure level returns 1.463x the level untrended and 0.0 trended); `docs/evidence/fragments/iter-dummy-load-validation/alias-separation.html:39` justifies dropping that landing by calling the total "the level", which the same probe and PF1's 306.14 V plateau mean contradict, and the 6000 Hz line the brief asked to fit to 6 kHz therefore appears in no presented table; `src/power_convertor/measurement.py:325` counts three parameters where four are consumed, understating every `landing_amplitude` uncertainty by 0.06 to 0.25 per cent; and `manifest.md:11` names one commit of the four landed and calls the measurement commits part of the base the manifest itself declares as ffba083a.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T183254026518-review-of-dummy-load-alias-separation-97c34422235a-figure" data-who="reckon-build" data-when="2026-10-21T18:46:24.247Z">
+    <div class="r-comment-body"><p>The figure review for r-20261021T151118725755-dummy-load-alias-separation is stored as a parsed, read-only figure-rubric record at both declared paths — all four attached SVGs pass all six rubric items (legibility, data_ink, decoration, contrast, follow-on-free label_collision) with no blocking finding, and three follow-ons are recorded: the scored-line guides on landing-components.svg extend past each record's Nyquist frequency into empty axes; the 600 Hz comparison landing on ramp-tracking.svg is drawn at CONTEXT grey so the comparison carries less weight than the subject and is separated from 300 Hz by hue alone within a dash style; and no figure in the fragment carries a `&lt;figcaption&gt;`, its alt string instead restated the plotted quantities.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261021T151118725755-dummy-load-alias-separation" data-who="reckon-build" data-when="2026-10-21T17:51:49Z">
+    <div class="r-comment-body"><p>The held dummy-load records' aliased converter lines are separated wherever the grid offset allows it, and every reported amplitude is now a peak, 2|A| with its uncertainty doubled, so it reads directly beside the prediction's own `peak_v`: `scripts/iter/dummy_load_aliasing.py` fits each landing jointly at the recorder rate and the fragment `docs/evidence/fragments/iter-dummy-load-validation/alias-separation.html` carries the verdicts — the 2 kHz file separates every landing (δ = 52.75 ± 0.43 mHz, sharing pairs 6.330 Hz apart against a 1.079 Hz resolution), its 600 Hz line reading 74.17 ± 5.79 V peak (its partner 4.37 ± 5.79 V, not significant), which is 0.15 dB from the frozen prediction's analytic 75.42 V at the nearest operating point and 0.94 dB from the 82.66 V switched entry, while the 1200 Hz line sits 5.2 and 5.0 dB below those entries and the 300 Hz line is present at 23.81 ± 6.24 V peak where the parallel-mode prediction has nothing; the 1 kHz file's offset is only bounded, so none of its landings can be split and its 3000 Hz line folds onto dc where the level and the line cannot be told apart; and neither record shows the tenfold rise in the 300 Hz landing that a six-pulse stretch at 22 kA would give, down to floors of 4 to 13 V.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-alias-separation-20261021" data-who="reckon-build" data-when="2026-10-21T18:55:00Z">
+    <div class="r-comment-body"><p>§4 characterisation landed (79ced1fe). PF6's grid offset separates every aliased line. Its 600 Hz line, the one the prediction is judged on, reads 74.2 V peak, within 1 dB of both frozen forms. 1200 Hz falls about 5 dB short, a real 300 Hz line is present, and there is no bridge switchover at 22 kA. PF1 separates nothing. §4's scoring of shared landings still awaits the lead's choice, but PF6's 300, 600, 900 and 1200 Hz lines are now separated measurements rather than shared landings. <a href="/power_convertor/evidence/archive/iter-dummy-load-validation-landed.html#alias-separation">evidence</a></p></div>
+</div>
+</section>
+</main>
+</body>
+</html>

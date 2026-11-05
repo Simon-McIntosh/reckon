@@ -1,0 +1,959 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="power_convertor">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="iter-switched-terminal-transients">
+  <meta name="plan-title" content="ITER Switched Coil-Terminal Transients">
+  <meta name="plan-summary" content="Simulate switched voltages at every ITER PF, CS and VS coil terminal from DINA targets, PI loops and real converter and coil models, and find what strays do">
+  <meta name="plan-status" content="in-progress">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="45.5">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-context" content="extended">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-sprint" content="S3">
+  <meta name="plan-tags" content="iter,power-supply">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
+  <title>ITER Switched Coil-Terminal Transients | power_convertor</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="130">
+<meta name="plan-modified" content="2026-10-22">
+<meta name="plan-section-depends-on" content="{&quot;s6&quot;:[&quot;shared-coil-supply-model#s9&quot;]}">
+</head>
+<body>
+  <main class="plan-doc">
+    <p>The ITER work so far predicts the ripple at the PF coil terminals in the frequency domain. The
+    converters are switching functions driving a linear circuit at fixed operating points
+    (<a href="/power_convertor/plans/iter-power-supply-model">iter-power-supply-model</a> §3). That model
+    cannot show what happens inside one commutation: the notch, the overshoot as the stray inductances ring
+    against the coil and feeder capacitances, the edge an IGBT puts on the VS1 string, or how those
+    transients spread along a winding to its internal nodes. This plan builds an integrated time-domain model
+    of the whole ITER coil power supply system, solved with switches that open and close.</p>
+    <p>DINA's scenario provides the coil current targets and voltage feedforward, and the current controllers
+    turn them into voltage demands. The converter controls fire the actual thyristor and IGBT units into
+    their transformers, DC reactors and busbars, and these drive sectioned coil windings that carry their own
+    capacitance. The windings are coupled through nova to each other, to the passive structure and to a
+    plasma prescribed from DINA. The model simulates the switched voltage at every coil terminal, to ground
+    and inside the windings. It then measures how the stray inductances and coil capacitances shape the
+    switching transients and voltage spikes.</p>
+    <img src="/power_convertor/figures/iter-switched-terminal-transients/architecture.svg" alt="Signal flow from the DINA scenario through one current controller per supply, the converter firing control, the switched converter units and the DC circuit to the sectioned coil windings. Measured coil currents feed back to the controllers, and the windings exchange flux linkage with the nova plant that carries the passive structure and the plasma prescribed from DINA's separatrix and flux functions.">
+    <p class="caption">The integrated model. The coupled plant (blue) is built in nova by
+    <a href="/nova/plans/iter-passive-plasma-circuit">iter-passive-plasma-circuit</a>. Every other block is
+    built here.</p>
+    <p>Five choices were made by the lead on 14 October 2026 and are recorded under Decisions. Four are
+    listed here; the fifth, on the passive coupling, follows below the list:
+    </p>
+    <ul>
+      <li>The solver is a Python electromagnetic-transients (EMTP-style) code in this repository,
+      cross-checked against Simscape Electrical.</li>
+      <li>The scope is every coil supply in the Stage 1 + Stage 2 machine description.</li>
+      <li>The plasma is not solved but prescribed from DINA.</li>
+      <li>Each supply gets its own current controller tracking DINA's coil currents, with stated gain and
+      phase margins.</li>
+    </ul>
+    <p>The passive current model is planned in nova, which owns that mechanism. Every coupling (coil to coil,
+    coil to vessel, plasma to both) is computed by nova from the conductor geometry, and DINA's coupling
+    matrices are not used. nova enters as an imported capability through one narrow call that returns the
+    coupled plant, built from nova's existing machine, Biot, circuit and profile code, and the solver takes
+    it as a state-space multiport. This plan waits on that call only where the coupled plant enters (§6).</p>
+
+    <h2 id="s1">§1 — The DINA scenarios that can drive the model</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>The integrated model needs five things from a DINA case:
+    </p>
+    <ul>
+      <li>the coil currents, as the controllers' targets;</li>
+      <li>the coil voltages, as their feedforward and as the check on the result;</li>
+      <li>a closed separatrix outline, the 1-D flux functions p′(ψ) and FF′(ψ), the 2-D ψ map and the
+      plasma current, from which nova prescribes the plasma current distribution;</li>
+      <li>DINA's own passive-structure currents, against which nova's evolved vessel currents are
+      checked (DINA's coupling matrices are recorded as available but not used: nova computes the
+      couplings);</li>
+      <li>the pulse schedule.</li>
+    </ul>
+    <p>The cases hold different subsets of these. 105001 run 6, the 15 MA case that
+    iter-power-supply-model §8 ranked, holds coil currents and voltages at 5 ms but only the plasma current in
+    its equilibrium. The DINA-IMAS cases 105013 run 1 and 105014 run 1 (DD 3.38.1, about 2 MA) hold the
+    separatrix outline, 1-D profiles and the 2-D ψ map on a 65 × 129 grid, together with
+    <code>pf_passive</code>, <code>em_coupling</code> and <code>pulse_schedule</code>. 105013 has no coil
+    voltages and 105014 has.</p>
+    <p>The census already exists. <code>scripts/iter/scenario_loading.py</code> (<code>scenario_rows</code>,
+    <code>census</code>, <code>extract</code>) lists every DINA scenario <code>scenario_summary</code> gives
+    (78 per §8 of the earlier plan). For each it records pulse, run, reference name, DD version, time span,
+    cadence and coil-voltage availability, in <code>data/iter/scenarios/voltage_availability.csv</code> and a
+    JSON file per scenario. This section extends that census with the columns the integrated model needs; it
+    adds no second inventory script and no second record page. The new columns are:
+    </p>
+    <ul>
+      <li>the workflow and peak plasma current;</li>
+      <li>how many equilibrium slices carry a closed separatrix, the 1-D flux functions and the 2-D ψ map;</li>
+      <li>whether <code>pf_passive</code> carries loop currents;</li>
+      <li>which <code>em_coupling</code> matrices are filled;</li>
+      <li>whether a pulse schedule is present.</li>
+    </ul>
+    <p>The census closes with a ranked recommendation of the cases §4 and §6 run. It is written as a new
+    section of the census's own record, <code>docs/research/iter-scenario-supply-loading.html</code>. Reads
+    use imas-python in each file's own DD version, on the fleet allocation, and the census tests in
+    <code>tests/test_scenario_loading.py</code> carry the new controls.</p>
+    <p>Done when the census holds one row per listed scenario with those columns and the recommendation,
+    and two controls pass. Positive: the rows for 105013/1 and 105014/1 match the fields above, and a closed
+    and an open synthetic outline classify correctly. Negative: a pulse that is not in the database gives an
+    "absent" row, not an error.</p>
+
+    <h2 id="s2">§2 — A switched-circuit solver</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="8.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
+    <p>The repository has no circuit solver with switches. <code>bridge.py</code> writes a bridge's output as
+    a switching function at an assumed constant current, and <code>coupled_circuit.py</code> propagates a
+    linear L/R system. Neither lets a commutation be set by the circuit around it. This section adds
+    <code>src/power_convertor/switched_circuit.py</code>, a fixed-step nodal solver in the EMTP tradition:
+    </p>
+    <ul>
+      <li>Each element becomes its trapezoidal companion model, and the network is solved as one sparse
+      nodal system.</li>
+      <li>Coupled inductors carry a full inductance matrix. A state-space multiport block takes nova's
+      reduced plant: passive eigenmodes and the prescribed plasma flux as driven sources.</li>
+      <li>Switches change the topology. A thyristor turns on when gated and forward biased and turns off at
+      current zero; diodes do the same unprompted. An IGBT follows its gate and carries an antiparallel
+      diode.</li>
+      <li>Each switching instant is located within its step by interpolation. Two backward-Euler half-steps
+      follow each event, which suppresses the trapezoidal rule's numerical oscillation at
+      discontinuities.</li>
+      <li>The sparse factorisation is cached for each switch topology, and the controllers are called back
+      at their own sample period.</li>
+    </ul>
+    <p>A netlist is built in Python from elements with named nodes, so the converter units of §3 and the
+    windings of §5 are fragments that join on shared nodes.</p>
+    <p>Done when <code>tests/test_switched_circuit.py</code> passes these controls:
+    </p>
+    <ul>
+      <li>Analytic circuits. A series RLC step response matches the analytic solution to 10⁻⁴ relative, and
+      an N-section LC ladder's natural frequencies match its analytic eigenvalues to 0.1 %.</li>
+      <li>The six-pulse bridge. Fed through a source inductance into a large DC inductor, it reproduces the
+      overlap angle of <code>SixPulseBridge.overlap</code> to 0.1° and the mean voltage
+      V<sub>d0</sub> cos α − R<sub>c</sub> I to 0.1 %.</li>
+      <li>The twelve-pulse pair. Its steady 12f and 24f lines match <code>BridgePair.harmonic_phasors</code>
+      to 0.1 dB, where the constant-current assumption holds.</li>
+      <li>Negative control. The same bridge, run without the backward-Euler step, shows the alternating-sign
+      inductor voltage at each commutation, and with it shows none.</li>
+      <li>Step convergence. Halving the step changes every peak by less than 0.5 %.</li>
+    </ul>
+    <p>The record also states the measured steps per second for a system of about 1,000 nodes and 500 switches
+    on the fleet allocation, which sets what §6 can afford. The first solver reached 89.7 steps/s, too slow for
+    §6's windows and §7's sweep, so a second node in this section vectorises its internals without changing its
+    interface or results. The section closes when that size runs at no fewer than 5,000 steps/s with the
+    topology fixed, and the record states the rate when about thirty units commute out of step.</p>
+
+    <h2 id="s3">§3 — The converter units as switched circuits</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="10.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
+    <p>Every supply in the machine description's Stage 1 + Stage 2 set (ITER_MACHINE_DESCRIPTION/3/111001,
+    run 204) is built from its units:
+    </p>
+    <ul>
+      <li>the six CS modules, each with units -1 and -2 in series, with CS1U and CS1L sharing one
+      circuit;</li>
+      <li>PF1 and PF6, each a Stage 1 unit in series with a Stage 2 unit;</li>
+      <li>PF2 to PF5, three units each;</li>
+      <li>VS1, six units in one series string across the common nodes of PF2 to PF5: the thyristor pair
+      VS1-1 and VS1-2, and the four IGBT units VS1-3 to VS1-6, each an active front end plus H-bridge
+      modelled switch by switch, all under the one VS1 control loop;</li>
+      <li>VS3-1 and the in-vessel coils.</li>
+    </ul>
+    <p>A thyristor unit is the four-quadrant arrangement of antiparallel bridges, with its circulating-current
+    reactors. The units are fed by 2 × 41 MVA, 66/1.05 kV transformers: Stage 1 sections at 0 and ±15°, and
+    Stage 2 vector groups carried as both recorded readings, Dd0/Yd11 and extended Δ/Δ.</p>
+    <p>The commutation inductance comes from the commutation design: 16.2 to 18.0 µH per bridge, with the
+    Stage 1 value borrowed from Stage 2. Converters on one 66 kV bus share the network reactance: PF3 on bus
+    1; PF2, PF4 and VS1 on bus 2; PF5, PF1 and PF6 on bus 3; the CS buses from the PPEN one-line 35RMBK.
+    The DC side and protection take these values:
+    </p>
+    <ul>
+      <li>DC reactors: 200 µH, 193 to 221 µH.</li>
+      <li>Converter DC busbar: 0.354 µH/m and 2.22 µΩ/m.</li>
+      <li>Interconnecting busbar: 2.5 or 3.6 µΩ/m stated, 0.25 to 0.32 µH/m computed.</li>
+      <li>Thyristor snubbers: a stated range, because no document gives them.</li>
+      <li>Switching network units and fast discharge units in the CS, PF1 and PF6 circuits, with the
+      initiation resistor schedule DINA's controller files carry.</li>
+      <li>The grounding, through the <code>CircuitGround</code> inputs.</li>
+    </ul>
+    <p>The IGBT units take the VS1 design fragments' carriers (1,600 Hz front end, 500 Hz H-bridge, 45°
+    interleave), with edge rates over a stated range. No CS or VS3 converter design is held. The CS units
+    take the Stage 2 PF unit's values, marked borrowed, and VS3 is carried on ranges until its design is
+    fetched. Values are cited to their fragments or marked assumed.</p>
+    <p>The unit parameters already have owners, and the builders read them rather than restating them:
+    <code>SeriesUnit</code> in <code>src/power_convertor/supply.py</code> for each unit's kind, line voltage,
+    transformer phase and carrier phase; <code>Budget</code> and <code>pf_budget</code> in
+    <code>src/power_convertor/commutation.py</code> for the per-phase source inductances; and the machine
+    description's circuits through <code>circuit_connections.py</code> for how the units join. What has no
+    owner, and is all this section adds, is the switched representation: each unit type as a netlist
+    fragment for the solver. <code>supply.py</code> is read only, because another session holds it.</p>
+    <p>Builders go in <code>src/power_convertor/converter_units.py</code>, one per unit type, each returning
+    a netlist fragment. A thin caller, <code>scripts/iter/converter_units.py</code>, runs the controls, and the
+    record is <code>docs/research/iter-switched-converter-units.html</code>. Its figures show one unit's
+    output across a commutation at both ends of the commutation range, the circulating-current changeover,
+    and an IGBT unit's output.</p>
+    <p>Done when these controls pass:
+    </p>
+    <ul>
+      <li>Against the commutation design. A Stage 1 PF unit on an RL load at a steady operating point
+      reproduces the design's overlap angle and DC drop to 1 %, and the frozen prediction's per-unit 12f and
+      24f lines within the commutation range.</li>
+      <li>Independent cross-check. The same unit and load, built in Simscape Electrical by a script, run at
+      the same step with the same firing pulses and run with <code>matlab -batch</code> on the fleet
+      allocation, agree within 1 % rms and 2 % in peak.</li>
+      <li>Negative control. Setting the phase shift between the two bridges of a pair to zero brings up the
+      6f and 18f lines that <code>BridgePair</code> predicts.</li>
+    </ul>
+
+    <h2 id="s4">§4 — A current controller for each supply</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="6.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>DINA's own scenarios ran under the PCS co-simulation controllers in DINA-IMAS
+    (<code>imas/co-simulation/Controllers/</code> on the iterorganization <code>develop</code> branch,
+    5c04815, fetched to <code>~/Code/DINA-IMAS</code> as the <code>iterorganization</code> remote). Those
+    files hold:
+    </p>
+    <ul>
+      <li>a discrete multivariable coil-current controller, <code>cont_curr_1.mat</code>;</li>
+      <li>shape and position controllers for the limiter, divertor and termination phases, and a vertical
+      stabilisation controller;</li>
+      <li>the supply model they assumed: a 15 ms first-order lag per supply, voltage limits (CS1 4.2 kV, the
+      other CS modules, PF1 and PF6 2.1 kV, PF2 to PF5 3.15 kV, VS1 6 kV, VS3 575 V), rate limits, and
+      current limits of 45 to 55 kA.</li>
+    </ul>
+    <p>Here the PCS layer is replaced by one current controller per supply, tracking DINA's coil currents.
+    Each is a discrete PI (with lead where a loop needs it) at the PCS cycle, with DINA's coil voltage as
+    feedforward. Each is designed on its own loop's plant: the coils with §7's mutual matrix and passive
+    structure from the earlier plan, and the converter as its firing delay plus the averaged unit. The
+    plants differ, so the controllers differ. Every loop meets a gain margin of at least 6 dB and a phase
+    margin of at least 45° with the other loops closed, judged by multivariable margins and not
+    loop-at-a-time.</p>
+    <p>The converter's local control sits below the PI loop:
+    </p>
+    <ul>
+      <li>the voltage demand to firing angle, compensated for the commutation drop;</li>
+      <li>the sequential law between series units (the Stage 2 law from FMSLSQ; the Stage 1 law is not
+      documented and takes the same law, marked assumed);</li>
+      <li>the circulating-current mode near zero current;</li>
+      <li>the voltage and current limits;</li>
+      <li>pulse-width-modulated voltage control for the VS1 IGBT units.</li>
+    </ul>
+    <p>The VS1 loop has one current controller, and its voltage demand is shared between the thyristor pair
+    and the four IGBT units by the documented sharing law (or a stated assumed one). The thyristor pair is
+    fired by the firing law and the IGBT units by their modulators with the 45° interleave.</p>
+    <p>The first two already have owners, which this section extends rather than re-implements: the
+    firing-angle inversion <code>firing_angle_deg</code> and the sequential law
+    <code>sequential_unit_voltages</code> in <code>src/power_convertor/scenario_loading.py</code>. The supply
+    limits <code>VOLTAGE_LIMIT</code> and <code>CURRENT_LIMIT</code> move from
+    <code>scripts/iter/scenario_loading.py</code> into that library module, so the census and the controllers
+    read one table. <code>current_control.py</code> adds only the loop design, the discrete controllers, the
+    circulating-current changeover and the IGBT voltage control, which have no owner yet.</p>
+    <p>DINA's own current controller is read (exported from its MATLAB state-space object with
+    <code>matlab -batch</code>) and its margins on the same plant are reported beside ours.</p>
+    <p>The module is <code>src/power_convertor/current_control.py</code>, its caller
+    <code>scripts/iter/current_controllers.py</code>, and the record
+    <code>docs/research/iter-coil-current-controllers.html</code>. The figures show each loop's margins and
+    the closed-loop tracking of a whole DINA scenario on the averaged converter model.</p>
+    <p>Done when each supply's gain margin, phase margin and crossover frequency are tabulated with the
+    other loops closed, and the averaged closed loop over a whole §1 scenario tracks DINA's coil currents
+    within 1 % rms and 3 % peak of each coil's maximum current, with every voltage inside its limit. Two
+    controls hold. Positive: on a single-coil plant with an analytic loop, the computed margins match the
+    analytic ones. Negative: removing the feedforward raises the tracking error by the factor the loop gain
+    predicts.</p>
+    <p>What remains, as of 17 October 2026. Twelve of the thirteen loops are delivered and margined
+    (merged at <code>be1d530</code>, <code>2463d09</code> and <code>12c51d8</code>): crossover 10–85 Hz and
+    phase margin 58–117° with the other loops closed. Two loops keep this section open:</p>
+    <ul>
+      <li><strong>VS1.</strong> Its sampled loop at the 2 ms PCS cycle crosses unity at 229 Hz with its phase
+      already past −180°, which gain alone cannot restore. Every scenario presented so far therefore drives
+      VS1 open-loop from DINA's recorded branch voltages.</li>
+      <li><strong>VS3.</strong> Its gain margin is 3.45 dB against the 6 dB target.</li>
+    </ul>
+    <p>The design inputs for VS1, as IDM holds them. The Stage 2 IGBT units run their own voltage control,
+    reaching a full-scale change between ±1,050 V within 1 ms, with a PI current loop, current-sharing
+    feedforward and a 45° carrier interleave. The CCR sends them a voltage set value
+    (<a href="https://user.iter.org/?uid=FKVZKD">FKVZKD</a> v1.1, pp. 26–28, 32 and 35). The design inputs
+    ask for a full ±1.0 pu polarity change within 20 ms
+    (<a href="https://user.iter.org/?uid=FQ2UMN">FQ2UMN</a> v1.1, p. 5). IDM gives neither the PCS
+    vertical-stabilisation cycle nor how the voltage reference is shared between the thyristor pair VS1-1/2
+    and the four IGBT units; <a href="https://user.iter.org/?uid=G9G46J">G9G46J</a> v1.0 has the CCR send one
+    voltage target to the series string. Both are stated assumptions and enter the IDM register. The PCS
+    cycle is carried at 2 ms, 1 ms and 0.5 ms. The sharing is complementary: the thyristor pair takes the
+    reference low-passed below its firing bandwidth, and the IGBT units take the remainder within their
+    ±1,050 V each.</p>
+    <p>The section closes when both remaining loops have a verdict. VS1 is closed on the sampled loop with
+    that sharing and the 1 ms IGBT voltage response, at each assumed PCS cycle, with the other loops
+    closed. It either meets 6 dB and 45°, or the record shows that no PI-with-lead design at that cycle
+    can, names the delay that limits it, and states the best margins reached. VS3 meets 6 dB, or the record
+    states why its plant does not allow it. The controller research page's stale tracking and margin
+    statements are reconciled by
+    <a href="/power_convertor/plans/iter-integrated-model-assurance">iter-integrated-model-assurance</a> §3,
+    not here.</p>
+
+    <h2 id="s5">§5 — The coil windings and their strays</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="6.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>A switching edge does not divide evenly along a winding, so each coil is modelled as sections: double
+    pancakes for the PF coils, and the module pancake structure for the CS, from the machine description's
+    elements and the published winding layouts. The section inductance matrix comes from nova's narrow
+    import call (iter-passive-plasma-circuit §1 and §4), computed by nova from the geometry. It covers
+    mutuals between every section of every coil, to the passive structure and to the plasma. Until that call
+    lands, a uniform split of the coil's self-inductance from the earlier plan's §7 stands in.</p>
+    <p>The capacitances are computed from geometry and marked computed, each with a range, because no
+    document we hold gives them. They cover:
+    </p>
+    <ul>
+      <li>turn to turn, section to section, and winding to ground;</li>
+      <li>the terminals, the feeder busbars in the cryostat and the current leads;</li>
+      <li>the DC busbars outside the cryostat.</li>
+    </ul>
+    <p>The geometry inputs are the conductor jacket, the insulation thicknesses and their permittivities, from
+    published designs. Joints and the quench-detection voltage taps are nodes of the network. The first
+    winding resonances are compared with <code>ripple_margins.winding_sections</code>.</p>
+    <p>The frequency-domain views extend their existing owners rather than adding a second impedance path.
+    <code>coil_coupling.terminal_impedance</code>, the passive-screened terminal impedance the earlier plan's
+    §7 reports, takes the sectioned network with its capacitances. <code>ripple_margins.winding_profile</code>
+    takes non-uniform sections with their mutual coupling. <code>coil_windings.py</code> adds only what
+    has no owner: the capacitance budget from geometry, and the sectioned winding as a netlist fragment for
+    the switched solver.</p>
+    <p>The module is <code>src/power_convertor/coil_windings.py</code>, its caller
+    <code>scripts/iter/coil_windings.py</code>, and the record
+    <code>docs/research/iter-coil-winding-strays.html</code>. The figures show:
+    </p>
+    <ul>
+      <li>the capacitance budget of each coil;</li>
+      <li>its terminal impedance from 0.1 Hz to 1 MHz, with the resonances marked;</li>
+      <li>the voltage distribution along a winding after a step at its terminal.</li>
+    </ul>
+    <p>Done when these controls pass:
+    </p>
+    <ul>
+      <li>A uniform ladder's resonances match their analytic values to 0.1 %.</li>
+      <li>Each coil's low-frequency terminal inductance equals its self-inductance from the earlier plan's §7
+      to 0.1 %.</li>
+      <li>The impedance near the first resonance agrees with
+      <code>ripple_margins.resonant_impedance</code>.</li>
+      <li>Negative control: with zero capacitance the terminal impedance is purely inductive and the internal
+      voltage distribution is linear.</li>
+    </ul>
+
+    <h2 id="s6">§6 — The integrated simulation along the scenarios</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="8.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p>All supplies and coils run together. VS1 couples PF2 to PF5 galvanically, and every coil couples to
+    the others through mutual inductance and the passive structure. The coupled plant is nova's, taken
+    through <code>src/power_convertor/nova_plant.py</code> (gate g-istt-1 passed). The plasma's flux is
+    prescribed from DINA, and §4's controllers, VS1's at the 2 ms PCS cycle included, track the §1
+    scenarios.</p>
+    <p>Much of the run already exists as studies merged outside this plan's sections. The integrated run
+    assembles them through their owners rather than rewriting them:</p>
+    <ul>
+      <li>the averaged loop over the SRO cases (<a href="/power_convertor/research/iter-scenario-supply-loading">scenario supply loading</a>);</li>
+      <li>the switched PF1/PF6 and PF2–PF5 windows (<a href="/power_convertor/research/iter-pf-switched-pulse">PF switched pulse</a>);</li>
+      <li>the initiation insertion (<a href="/power_convertor/research/iter-initiation-transient">initiation transient</a>);</li>
+      <li>the whole-pulse ripple with the CS circulating mode (<a href="/power_convertor/research/iter-whole-pulse-ripple">whole-pulse ripple</a>);</li>
+      <li>the turn-resolved windings (<a href="/power_convertor/research/iter-coil-winding-strays">winding strays</a>).</li>
+    </ul>
+    <p><strong>Both converter forms run as arms.</strong> This repository has two forms of the loaded
+    converter: the analytic, frequency-domain form and the switched-circuit form. On JT-60SA's 2021
+    windows the analytic form under-predicted the 12f and 18f lines by 4–12 dB and the switched form
+    over-predicted them by 2–10 dB (<a href="/power_convertor/plans/jt60sa-switched-pulse-replay">jt60sa-switched-pulse-replay</a>
+    §8–§10). Both were frozen blind, before any ITER dummy-load recorder file arrived, in
+    <a href="/power_convertor/plans/iter-dummy-load-validation">iter-dummy-load-validation</a> §2; the files score them later and are not an input here. Until
+    that plan's §4 scores them, every interval here is run in both forms on the same coupled plant,
+    controllers and windings, and each ripple line and terminal voltage is reported as the pair with its
+    difference. When §4 lands, the form it selects is carried and the other stays beside it as the bound.
+    No result of this section waits on the recorder files.</p>
+    <p>Two time scales are run:
+    </p>
+    <ul>
+      <li>The whole scenario, on the averaged converter model. This checks tracking, the time at the voltage
+      limits and the energy balance.</li>
+      <li>The intervals that load the supplies most, in each converter form, each started from the averaged
+      state and run for at least three PCS cycles after settling.</li>
+    </ul>
+    <p>The intervals are ranked again for the chosen scenarios with the earlier plan's §8 measures:
+    </p>
+    <ul>
+      <li>initiation, with the switching-network insertion;</li>
+      <li>ramp-up near 90° firing at high current;</li>
+      <li>termination at the voltage limits;</li>
+      <li>current zero crossings and circulating-current changeovers;</li>
+      <li>the fastest VS1 swings.</li>
+    </ul>
+    <p>For each coil the outputs are the terminal voltages to ground and across, the internal section voltages
+    to ground and between adjacent sections, the dv/dt, and the quench-detection signals.</p>
+    <p>The caller is <code>scripts/iter/integrated_simulation.py</code>, with reusable assembly in
+    <code>src/power_convertor/integrated_model.py</code>. Series go to the main checkout's
+    <code>/home/ITER/mcintos/Code/power_convertor/data/iter/integrated/</code> (gitignored; never a
+    worktree-relative <code>data/</code>, which is discarded at cleanup) and the record to <code>docs/research/iter-switched-terminal-voltages.html</code>. Its
+    figures show, per interval, each supply's switched terminal voltage and voltage to ground, with the
+    averaged and DINA voltages overlaid.</p>
+    <p>Before any interval is scored, the run must show it is stable. A seeded perturbation of the initial
+    state, from 1e-10 to 1e-4 relative, decays in every converter form, and every arm switches through an
+    identical event list. This repeats vs1-first-turn-convergence (land <code>ec989853</code>, reviewed
+    head <code>be8dbdf3</code>) on the integrated window. Every resume cut and leg boundary of a staged
+    run falls on a grid instant of the whole run, at one step size. That constraint keeps the production
+    run safe, but it does not test anything. The fragment of vs1-first-turn-convergence names three
+    remaining candidates for the unreproduced 164 A growth:</p>
+    <ul>
+      <li>a leg boundary off the grid of the run held whole;</li>
+      <li>a restart whose two legs are solved at different steps;</li>
+      <li>a window longer than the 4 ms it measured.</li>
+    </ul>
+    <p>The stability stage therefore also runs three arms that violate them deliberately: an off-grid
+    cut, a restart at a changed step, and the integrated window held well past 4 ms. If any arm grows, that
+    is the mechanism; it is recorded and fixed before an interval is scored. A perturbation that grows is a
+    defect to find and fix, never a spread to report.</p>
+    <p>Four limits are carried and stated, not hidden:</p>
+    <ul>
+      <li>VS1's peaks in the composed 4 ms window are not step-converged except PF3's first turn.
+      The 0.125 µs rung (shared-coil-supply-model, vs1-first-turn-rung) moves the PF2–PF5
+      connection points and the terminal by 0.98 % at the 0.5→0.25 µs halving and by 2.45–2.50 % at
+      0.25→0.125 µs, so the movement rises. The 2.7–5.4 MHz line ring is under-resolved: at 0.125 µs
+      a step is a third of the 2.69 MHz mode's period and two-thirds of the 5.37 MHz mode's. The first
+      turns of PF2, PF4 and PF5 move by 1.14–3.13 % at the first halving and 0.15–2.47 % at the second,
+      with at most one halving under 1 %. The record claims no converged VS1 peak except
+      PF3's first turn, and this is the one exception to the step-convergence control below.</li>
+      <li>PF1's and CS3L's insertion pins were quoted from rows built on the retired uncoupled feeder:
+      6.61 µs travel at 170 m, against 2.21 µs on the coupled pair. They are restated on the coupled
+      pair at 170 m and 480 m by the shared model's route-length node. CS3L's to-ground peak stays a
+      design finding against its 12.2 kV limit (shared-coil-supply-model, composed-insertion-busbar).</li>
+      <li>VS3 is terminal-only, so no internal section voltages are claimed for it.</li>
+      <li>After nova's shaped-section flux repair (nova <code>d60da1cec</code>), a cold build of an old
+      case can differ from the pinned plant by up to 1 % on passive-circuit plasma flux. Any
+      cold-against-pinned comparison uses that tolerance. DINA's flux functions and flux maps disagree at
+      the plasma edge, which moves the passive modes by about 1e-3. A DINA comparison at that level on
+      passive structure is therefore not plant evidence.</li>
+    </ul>
+    <p>The first assembly attempt (integrated-run-assembly, discarded on 21 October) left six commits,
+    saved as patches under <code>~/.cache/power_convertor-unmerged/integrated-run-assembly/</code> (head
+    <code>dfc1f5d2</code>). Harvest the coupled interval response in <code>integrated_model.py</code> and
+    the paired PF-ramp controls from them where they still apply, rather than reapplying them blind.</p>
+    <p>The section runs as sequential nodes by stage, each carrying whole supplies:</p>
+    <ol>
+      <li>the integrated assembly, with the stability check and the averaged whole-scenario run
+      (tracking, time at the voltage limits, energy, DINA deviation);</li>
+      <li>the switched intervals in both converter forms (step convergence, the negative control, the
+      frozen-prediction and dummy-load reproduction);</li>
+      <li>the integrated pins, and the record with its figures.</li>
+    </ol>
+    <p>Done when these controls pass:
+    </p>
+    <ul>
+      <li>DINA deviation, reported. The terminal voltage in each form and DINA's coil voltage, both averaged
+      to DINA's 5 ms cadence, are compared rms over each interval as a percentage of the supply's voltage
+      limit. The deviation is reported and attributed between the coupled plant, the converter form and
+      DINA's own circuit model. It is not a pass mark: DINA is the demand and IDM the design.</li>
+      <li>The frozen prediction. At a steady operating point the switched spectrum's 12f and 24f lines fall
+      within the declared band of the earlier plan's frozen §3 prediction.</li>
+      <li>The arms are the frozen forms. With the coupled plant replaced by the 6.73 mH dummy load, each form
+      reproduces its frozen iter-dummy-load-validation §2 prediction at one PF1 operating point to 1 %.</li>
+      <li>Energy. Supply energy equals magnetic plus resistive plus passive dissipation to 1 %.</li>
+      <li>Step convergence. Halving the step moves no peak by more than 1 %.</li>
+      <li>Negative control. The ripple is voltage-driven, so it scales as the inverse of the terminal
+      impedance. Each coil's 600 Hz current ripple with the passive coupling disabled, divided by its ripple
+      with the coupling in place, equals |Z<sub>screened</sub>| / |Z<sub>bare</sub>| at 600 Hz from the same
+      <code>nova_plant.py</code> export, to within 5 %. The ratio is stated in the record before the run.</li>
+<li>The integrated pins. These are the claims-register pins that need every supply switching together, moved here from shared-coil-supply-model §4: the whole-pulse replay pins, the integrated insertion pins and the sampled loop margins. Each is reproduced within its band, or to 1 % where the register states none, or reported as a finding with its cause.</li>
+    </ul>
+    <p>Runs go on the fleet allocation, with logs headed by the revision that ran.</p>
+
+    <h2 id="s7">§7 — What the strays do to switching and voltage spikes</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="6.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>This is the question the plan exists to answer. Each stray is swept over its range one at a time, and
+    then all are varied jointly by a space-filling sample, on the switched form, which alone carries
+    them. The sweep starts now on the switched windows already merged (the PF1/PF6 and PF2–PF5 windows
+    and the initiation insertion) and extends to §6's intervals as they land. The strays are:
+    </p>
+    <ul>
+      <li>the commutation inductance;</li>
+      <li>the DC busbar and interconnecting busbar inductance;</li>
+      <li>the DC reactor tolerance;</li>
+      <li>the thyristor snubber resistance and capacitance;</li>
+      <li>the IGBT edge rate;</li>
+      <li>the winding capacitances to ground and between sections;</li>
+      <li>the feeder and terminal capacitance;</li>
+      <li>the grounding resistances and capacitances.</li>
+    </ul>
+    <p>The measures are:
+    </p>
+    <ul>
+      <li>the peak terminal voltage to ground and across;</li>
+      <li>the peak internal voltage to ground and between adjacent sections;</li>
+      <li>the largest dv/dt at the terminals and inside the winding;</li>
+      <li>the commutation-notch overshoot, with its ringing frequency and damping;</li>
+      <li>the excitation of winding resonances by the twelve-pulse lines and the IGBT carriers;</li>
+      <li>the quench-detection residual.</li>
+    </ul>
+    <p>The drivers of each measure are ranked by sensitivity index. The margins are reported against three
+    references:
+    </p>
+    <ul>
+      <li>the helium Paschen minimum, wherever insulation faces helium: terminals, feeders, joints and
+      instrumentation;</li>
+      <li>the insulation test levels (13.2 kV AC, 48 kV DC and 58 kV impulse on the interconnecting busbar,
+      and the coil test voltages as cited);</li>
+      <li>the quench-detection threshold, as functions of the undocumented detection design, as in the
+      frozen prediction.</li>
+    </ul>
+    <p>The script is <code>scripts/iter/stray_sensitivity.py</code> and the record
+    <code>docs/research/iter-stray-switching-transients.html</code>. Its figures are the ranked drivers for
+    each measure, the peak voltages against capacitance and inductance, and the worst-case waveforms.</p>
+    <p>Done when every measure has its ranked drivers and its margins at both ends of every unknown input's
+    range, and two controls pass. Positive: the simulated notch overshoot near the snubber corner matches
+    the analytic step response of the equivalent snubbed RLC. Negative: an input the circuit cannot reach,
+    such as the capacitance of a disconnected node, ranks at the sampling noise floor.</p>
+
+    <h2 id="s8">§8 — Fast discharge of each coil group, and of all together</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="6.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
+<p>A fast discharge is the largest planned voltage event most coil insulation sees. The plan exists for the model-based qualification of the electrical health of ITER's coils, and a discharge is one of the events that qualification must cover. The lead asked on 18 October 2026 for each coil group's discharge on its own and for all groups at once.</p><p>Each group discharges through its fast-discharge resistors as 778SPD v1.0 gives them. Every resistor is the same cold-rolled mild-steel tape and heats during a discharge (PDF pp. 29–30, 47):</p><ul><li>PF1–PF6 and the CS modules: initial resistances in the IDM register. At 20 °C start, each rises by its own factor at its maximum energy (PDF pp. 43–46): PF1 2.43×, PF2 1.72×, PF3 1.85×, PF4 1.87×, PF5 1.76×, PF6 2.28×, CS1U and CS1L 2.19×, CS2U 2.11×, CS2L 2.10×, CS3U 2.13×, CS3L 2.32×;</li><li>TF, with nine units interleaved between the coil pairs, 0.111 Ω each at 20 °C, rising 2.34 times as each heats to 236 °C (PDF p. 29). Its earthing is the terminal-resistor divider to a common neutral, 500 Ω, with 1 kΩ, and 10 kΩ on a fault, to earth (PDF pp. 102–106).</li></ul><p>The method is the mctb cold-test model for every group: an energy-linear resistor law, each resistor calibrated to its 778SPD factor at its maximum energy, plus each coil's measured passive mode. 778SPD's 14 s (PF), 7.5 s (CS) and 11 s (TF) are equivalent constant-resistance time constants (PDF pp. 10, 39), so the measure is each coil's I²t-equivalent, τ<sub>eq</sub> = 2∫I²dt / I<sub>0</sub>². A heated multi-coil decay has no single exponential.</p><p>The correction coils have no discharge unit; their converters discharge them. The discharges run on the coupled nova plant, so a discharging group induces currents and voltages in the groups that are not discharging.</p><p>Done when the record gives, for each group alone and for all groups together, and for every coil:</p><ul><li>the peak terminal voltage to ground and across the coil, against 22HLVN's fast-discharge limits (PF1 2.0, PF2 1.0, PF3 3.8, PF4 3.3, PF5 3.5, PF6 4.5 kV; CS 5.0 kV; TF 7.0 kV to ground);</li><li>each resistor's peak voltage, against 778SPD's 7.0–8.0 kV, rising to 8.5 kV and 10 kV with the breaker transients;</li><li>the energy deposited in each resistor, against its 778SPD maximum;</li><li>the current induced in every coil that is not discharging, and its peak;</li><li>each coil's τ<sub>eq</sub> against the documented constant, and, for a group, the coupled decay modes with the coils each carries.</li></ul><p>The discharges on the coupled plant are this section's first deliverable: <code>scripts/iter/fast_discharge.py</code> (PF and CS) and <code>scripts/iter/tf_fast_discharge.py</code> (TF), recorded in <code>docs/research/iter-fast-discharge.html</code> and <code>docs/research/iter-tf-fast-discharge.html</code>. The switched breaker opening and discharge-unit insertion, with the internal section voltages, are §11's. VS1's protection cases are §10's. Negative control: with the coupling to other groups removed and the resistance held constant, the induced currents in the non-discharging coils fall to zero, and each discharging coil's decay returns to its single-circuit L/R. Positive control: one coil's discharge with constant resistance matches the analytic exponential within 0.5 %, and the heated TF law with the passive mode off reproduces the closed-form τ<sub>eq</sub> = τ<sub>0</sub> ln(1+β)/β.</p>
+
+    <h2 id="s9">§9 — Every complete DINA scenario against the IDM ratings</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+<p>The switched studies run on one or two cases: 105052/1 and the presentation reference 105069/3. The averaged loop has screened about a dozen 2024-baseline cases. §1's census found 50 of the 78 DINA cases complete enough to drive the model. A qualification of the coils' electrical health must say which scenario stresses each coil most, not rest on one. DINA is the demand and IDM the design, so this section screens every complete case against the IDM ratings and never fits a parameter to DINA.</p><p>Run each of the 50 complete cases through the averaged closed loop on the IDM design values, with the controllers §4 designed. For every case and every supply, record:</p><ul><li>the peak demanded voltage, inside and outside the switching-network windows, against the converter rating and the switching-network maximum;</li><li>the time at the voltage limits;</li><li>the current-tracking departure;</li><li>the peak terminal voltage to ground the averaged model implies.</li></ul><p>Rank the cases for each coil by the measure closest to its limit. The worst case for each coil, and the worst case overall, become the switched windows §6 and §7 run.</p><p>Done when every complete case has a row for every supply, and the record ranks each coil's worst cases with the deciding margin. The figure shows each coil's distribution of margins across the cases. Negative control: a case whose demand is scaled up past a supply's rating is ranked worst for that supply and flagged as exceeding it. Positive control: the twelve SRO envelope cases reproduce the overview's out-of-window demand ratios within 1 %; each ratio is that supply's largest demand over those twelve cases, as the overview's figure caption states, not one case's.</p>
+
+    <h2 id="s10">§10 — Does the VS1 loop discharge together with PF2–PF5?</h2>
+<section data-reckon="section" data-id="s10" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+<p>VS1 has no fast-discharge unit and no coil discharge resistor. On any protection trip its thyristor bypass closes to keep a current path for the superconducting coils (FMWA9F v1.0 p. 17), with an IGBT conduction-mode fallback (p. 50). The PF2–PF5 currents discharge through their own units (778SPD v1.0 p. 36). Neither document says whether VS1 and PF2–PF5 must act together, and FMWA9F is marked Revision Required. The lead asked whether the VS1 loop must discharge in one go.</p><p>Three cases run on the coupled plant from the PF2–PF5 worst-instant and rated currents: (a) VS1 bypassed at the same instant as the PF2–PF5 discharge, (b) bypassed late or still controlling, (c) tripped with no PF discharge. The closed-bypass resistance is a stated assumption with an interval.</p><p>Done when the record answers the question in one sentence and tabulates, for each case, the VS1 loop current and its decay, the PF2–PF5 terminal voltages against 22HLVN, and each resistor's peak voltage and energy against 778SPD. Negative control: with the VS1 branch removed, case (a) reproduces the PF-group discharge within 0.5 %. Positive control: one PF coil with the VS1 bypass shorting its midpoint matches the two-loop analytic decay within 0.5 %.</p>
+
+    <h2 id="s11">§11 — The switched breaker opening and discharge-unit insertion, with internal section voltages</h2>
+<section data-reckon="section" data-id="s11" data-effort-hours="5.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
+<p>The averaged discharges of §8 and §10 give currents, energies and terminal voltages. The breaker opening and the discharge-unit insertion are switched events whose fastest edges land on the first turns, so the internal section voltages need the composed supply circuits of shared-coil-supply-model §4 on the sectioned plant.</p><p>Done when, for the PF1, PF6, CS3L and one VS1-coupled coil insertion, the record gives the peak terminal voltage to ground and across, and the peak voltage between adjacent sections and from each section to ground, at both installed-loss bounds. Each is set against a named reference: the terminal voltage to ground against 22HLVN's fast-discharge limits as §8 lists them; the voltage across the coil against the 12 kV switching-network insertion envelope that <a href="/power_convertor/research/iter-initiation-transient">the initiation transient record</a> cites for the coils that have a switching network, and, for the VS1-coupled PF2–PF5 coil, which has none, against the intrinsic across-coil margin of the 22HXXE grounding note recorded under §6; and the section-to-section and section-to-ground voltages against the helium Paschen minimum (152 V, the library's <code>HELIUM_PASCHEN_MIN_V</code>) and the insulation test levels that <a href="/power_convertor/research/iter-stray-switching-transients">the stray switching record</a> cites. Where a record gives no reference for a measure, the record says so and reports the peak without a margin. The step-convergence gate of shared-coil-supply-model §3 holds for every window. The caller is <code>scripts/iter/switched_discharge_insertion.py</code>, built on the composed circuits, and the record is <code>docs/research/iter-switched-discharge-insertion.html</code>. Negative control: with the winding capacitance removed, the section voltages fall to the inductive division of the terminal voltage.</p>
+
+    <h2 id="s12">§12 — The PF2 current loop on the switched, lossy plant</h2>
+<section data-reckon="section" data-id="s12" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
+<p>§4 designed and margined every loop on the averaged plant. The exact integrator's convergence node (shared-coil-supply-model §4, merged <code>1bec302b</code>) then found two things on the switched PF2 window. With the firing schedule fixed, the end state converges between step sizes to 1e-5. In closed loop it differs by 1.75e-3 at the low installed-loss bound and 9.8e-5 at the high, although both arms make the same switching decisions. The node's measurement is that the 2 ms PCS loop amplifies a sampled-current perturbation about 7–14 times per cycle at low loss. Either the switched plant with installed winding losses erodes the margin §4 found on the averaged plant, or the measure confuses a transient with growth. This section settles which.</p><p>Done when the record gives the loop's small-signal gain per PCS cycle on the switched PF2 window at both installed-loss bounds. It is measured by injecting a small current perturbation at one tick and following it over the next ticks, on the converged exact integrator. Beside it goes the gain the §4 averaged design predicts. If the per-cycle gain exceeds one at either bound, the record names the margin lost against §4 and whether a stable gain exists within the IDM converter ratings; the controller is not changed to make the plant fit. Negative control: with the perturbation amplitude set to zero, the measured growth is zero to rounding. The caller is <code>scripts/iter/pcs_loop_gain.py</code>, built on <code>scripts/iter/pf_switched_pulse.py</code>'s PF2 window and the exact integrator. The record is <code>docs/research/iter-pf2-pcs-loop-gain.html</code>.</p>
+
+    <h2 id="s13">§13 — The stray-sensitivity record republished on the hand-capacitance network</h2>
+<section data-reckon="section" data-id="s13" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p>pf-two-in-hand-capacitance §3's census (main <code>64d6a9a3</code>) attributes a rise in PF6's stray-driven section swing in §7's record, from 1.509 % to 6.24 % (+314 %), entirely to the capacitance placement (<code>6cf2e1d1</code>). No stated reference is crossed, but the published number is stale. That plan's coordinator routed it here, because §7's record belongs to this plan.</p>
+<p>Re-run <code>scripts/iter/stray_sensitivity.py</code> at head and republish the stray-switching transients record (<code>docs/research/iter-stray-switching-transients.html</code>) and its ranking figures, with a dated note naming the placement. Re-measure; the census receipts carry no commit, so do not copy its value. State whether §7's finding still holds: on the fixed integrator the IGBT edge rate leads 7 of 9 measures at low installed loss and 8 of 9 at high.</p>
+<p>Done when every measure of the record is regenerated at head with its log, and the PF6 section swing is set beside the census's 6.24 %. The ranking is restated, or its change is named. Each changed figure is rendered and inspected. Negative control: rerun at the commit before <code>6cf2e1d1</code> in a scratch worktree, the PF6 swing reproduces the published 1.509 % to within its stated tolerance.</p>
+<p>Write paths: <code>scripts/iter/stray_sensitivity.py</code> (only if a call needs the moved network), <code>docs/research/iter-stray-switching-transients.html</code>, <code>docs/figures/iter-stray-switching-transients</code>, <code>/home/ITER/mcintos/Code/power_convertor/data/iter/strays</code>.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-istt-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-14" data-recommends-skill="/reckon-build iter-switched-terminal-transients §2" data-resolved-at="2026-10-17T10:01:55+00:00" data-resolved-by="reckon-edit">
+    <h4 class="r-fu-title">Start the scenario inventory and the switched-circuit solver</h4>
+    <div class="r-fu-body"><p>§1 and §2 have no prerequisite and run in parallel. §3 builds on §2's solver, §4 on §3's averaged unit, and §5 can start alongside §3. §6 waits on gate g-istt-1 (nova's coupled-plant export) and on §3 to §5. §7 follows §6. The design review must be composed and answered before the first dispatch.</p></div>
+    <pre class="r-fu-prompt">/reckon-build iter-switched-terminal-transients §2</pre>
+    <p class="r-fu-outcome"><p>Resolved in the portfolio review of 17 October 2026. §1, §2, §3 and §5 have landed, and gate g-istt-1 passed. The plan moves to S3 with the presentation and dummy-load work. Its real next steps are in the followup that replaces this one.</p></p>
+    </article>
+<article class="r-fu" data-id="f-istt-002" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-edit" data-written-at="2026-10-17" data-recommends-skill="/reckon-build iter-switched-terminal-transients §4" data-resolved-at="2026-10-17T19:06:57+00:00" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Close the controllers for VS1, then assemble the integrated run from what has landed</h4>
+    <div class="r-fu-body"><p>§4 is delivered for 12 of 13 supplies (be1d530, 2463d09 and the sampled margins at 12c51d8). VS1's sampled loop is unstable at the 2 ms PCS cycle, so the averaged scenario loop drives VS1 open-loop from DINA's recorded branch voltages. VS3's gain margin is 3.45 dB against 6 dB. §6 can now be assembled from the studies already merged outside this plan's sections: the averaged loop over the SRO cases, the switched PF1/PF6 and PF2–PF5 windows, the whole-pulse ripple, the CS unit with its circulating mode, and the turn-resolved windings. The converter form it carries is the one iter-dummy-load-validation §4 selects.</p></div>
+    <pre class="r-fu-prompt">/reckon-build iter-switched-terminal-transients §4</pre>
+    <p class="r-fu-outcome">§4 closed for all thirteen supplies on 17 October 2026, VS1 at the 2 ms PCS cycle. The lead agreed the same day that §6 runs both converter forms as arms rather than waiting for iter-dummy-load-validation §4, and that §7 starts on the merged switched windows. Superseded by f-istt-003.</p>
+    </article>
+<article class="r-fu" data-id="f-istt-003" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-17T19:20:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Assemble the integrated run in both converter forms, and start the stray sweep on the merged windows</h4>
+    <div class="r-fu-body"><p>§6 assembles the merged studies (the averaged SRO loop, the switched PF1/PF6 and PF2–PF5 windows, the initiation insertion, the whole-pulse ripple with the CS circulating mode, the turn-resolved windings) into one integrated run, in both converter forms as arms. iter-dummy-load-validation §4 later selects the one carried. §7 runs on the switched form and starts now on the merged switched windows, extending to §6's intervals as they land. The two sections write different scripts and records, so they run in parallel.</p></div>
+    <pre class="r-fu-prompt">/reckon-build iter-switched-terminal-transients §6</pre>
+    </article>
+<article class="r-fu" data-id="f-istt-qd-instrument" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-21" data-recommends-skill="/reckon-build iter-switched-terminal-transients §6" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Measure §6&#x27;s quench-detection residual through the bridge and the detector</h4>
+    <div class="r-fu-body"><p>From quench-detection-converter-pickup §5. Today §6 reads the quench-detection residual through <code>stray_sensitivity.measures</code> as the exterior turns' departure from their mean, which is a proxy rather than a bridge. The quench plan now owns the instrument:</p><ul><li>the balanced two-conductor bridge transfer as weight vectors on the node solve (<code>quench_detection.bridge_weights</code>, <code>pf_bridge</code>, §2);</li><li>the detector with the 423SYN chain, the MCTB bound and the dwell path (<code>ripple_margins.DetectionSection</code>, §3), with a per-line accessor coming in §7.</li></ul><p>Replace the proxy with these, and state the change in §6's record beside the proxy's earlier values.</p></div>
+    <pre class="r-fu-prompt">/reckon-build iter-switched-terminal-transients §6</pre>
+    </article>
+<article class="r-fu" data-id="f-istt-004" data-status="open" data-written-by="power-convertor-ac" data-written-at="2026-10-22" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The TF cold tests&#x27; parallel-bridge control result, for the controllers the integrated simulation runs</h4>
+    <div class="r-fu-body"><p>The TF cold-test validation has closed. Its synthesis (<a href="/power_convertor/research/tf-cold-test-synthesis"><code>docs/research/tf-cold-test-synthesis.html</code></a>) hands this plan three results that apply to any parallel-bridge supply:</p><ul><li><strong>The as-built TF07 gains sit at the stability boundary.</strong> Their phase margin is −1.1°.</li><li><strong>The recommended gains have margin across the envelope.</strong> Designed with a bridge-balancing loop, they hold 45.5–46.0° phase margin and 9.0–9.6 dB gain margin at all sixteen corners (tf-cold-test-validation §11).</li><li><strong>FR3D23's balancing finding and the converter result.</strong> The converter model misses TF17's 50 and 100 Hz lines by 19–24 dB, because the constants it needs are not in accessible IDM. So the controllers are designed over an envelope, not a fitted converter.</li></ul><p>The §4 controllers are done. When §6 runs them along the scenarios, check that each parallel-bridge supply's controller has a balancing loop and holds its margins over the converter's own envelope. Report the margins against the same 45° and 9 dB floors.</p></div>
+    <pre class="r-fu-prompt">/reckon-build iter-switched-terminal-transients §6</pre>
+    </article>
+</section>
+  <section data-reckon="gates" id="gates" class="r-gates">
+<h2><span class="sec">§</span> Evidence gates</h2>
+<div class="r-gate" data-id="g-istt-1" data-section="s6" data-gated-sections="s6" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">nova&#x27;s ITER coupled plant (sectioned coils, passive eigenmodes and the plasma flux prescribed from DINA), every coupling computed by nova, returned by one narrow call this repository imports at Python 3.14 and taken by the switched-circuit solver as a state-space multiport</h4>
+    <p class="r-gate-required-evidence">nova:iter-passive-plasma-circuit#s4</p>
+    <a class="r-gate-evidence" href="nova:iter-passive-plasma-circuit#iter-coupled-plant-call (nova c4c7abd78) and iter-switched-terminal-transients#nova-plant-adapter (power_convertor 26bed2c)">Evidence</a>
+</div>
+<div class="r-gate" data-id="g-istt-2" data-section="s7" data-gated-sections="s7" data-status="closed" data-verdict="failed">
+    <h4 class="r-gate-measure">the JT-60SA 2021 switched replay reproduces, or explains by a named capacitive or grounding path, the measured 12f EF5 to EF4 coupling (|H| 0.557 and 0.560 against M/L 0.288) that no passive model reproduces, so that ITER predictions of harmonic coupling between circuits are calibrated on measured data</h4>
+    <p class="r-gate-required-evidence">jt60sa-switched-pulse-replay#s5</p>
+    <a class="r-gate-evidence" href="Closed by the lead on 2026-10-16 as not achievable with the records JT-60SA holds. Three documented candidates are ruled out: the pickup-terminal circuit fits 0 of 27 scoreable lines (jt60sa-coil-circuit-model §11, merge fb3fcfe); cutting every port band leaves the median nova-to-measured ratio at 0.103 and closes none of 25 under-coupled lines (§13, merge 5f1d0dc); and wall resolution adds screening rather than removing it. The remaining candidate, an electrical path through ground or the voltage-tap wiring, is undocumented. ITER therefore proceeds without a calibrated inter-circuit coupling and carries the outcome instead: a 1.9x inductive pickup factor on idle, nearly open PF coils, plus three requirements on every ITER ripple-coupling measurement: record the voltage-tap wiring, record the inter-coil ground return, and take a supply-off baseline.">Evidence</a>
+</div>
+<div class="r-gate" data-id="g-istt-3" data-section="s6" data-gated-sections="s6" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">every ITER supply is a composed circuit on the shared model with section-resolved winding ports, so the integrated run switches all supplies together on one plant</h4>
+    <p class="r-gate-required-evidence">shared-coil-supply-model#s4</p>
+    <a class="r-gate-evidence" href="Passed on its own measure on 21 October 2026. All thirteen ITER supplies build from the register through build_supply_circuit, with the no-source refusal. VS3 is recomposed as one anti-series loop (26080d52), and the interunit phase is applied (99c0e871, composed-pins-remainder b02cd3c4). Every PF and CS coil has section-resolved ports through SectionedPlant: the PF set assembles as one plant of 1,436 sections, and the VS1 set (PF2–PF5) as 712. The section gates pass. VS1 runs whole, with its line, on the companion integrator with source breakpoints. Its composed first-turn window is stable from 1e-10 to 1e-4 relative, with identical event lists (vs1-first-turn-convergence, land ec989853). Recorded by the shared model&#x27;s owner as shared-coil-supply-model comment c-s4-status-1021 (39864f64). Limits carried into §6: VS1 first-turn peaks are unconverged by 1.1–3.1 % at 1 µs on PF2, PF4 and PF5 (the 0.125 µs rung is unrun); PF1 and CS3L insertion pins are a model gap, with no busbar-reflected term; VS3 is terminal-only.">Evidence</a>
+</div>
+<div class="r-gate" data-id="g-istt-4" data-section="s11" data-gated-sections="s11" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">every ITER supply that a discharge insertion switches is a composed circuit on the sectioned plant with section ports</h4>
+    <p class="r-gate-required-evidence">shared-coil-supply-model#s4</p>
+    <a class="r-gate-evidence" href="Every supply a discharge insertion switches is a composed circuit on the sectioned plant with section ports. compose_supply_circuit attaches the sectioned plant to each factory circuit, PF and CS, in both switched and frequency form, with section-drop transfers to ground and across (merged be9af06d, shared-coil-supply-model #composed-circuits-plant-pins). TF&#x27;s interleaved discharge string is built through the same factory (merged c756f499).">Evidence</a>
+</div>
+<div class="r-gate" data-id="g-istt-5" data-section="s11" data-gated-sections="s11" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">the shared model&#x27;s section-transient step-convergence gate holds, so internal section voltages from a switched insertion are converged</h4>
+    <p class="r-gate-required-evidence">shared-coil-supply-model#s3</p>
+    <a class="r-gate-evidence" href="shared-coil-supply-model §3 closed: the section-transient step-convergence gate holds below 4e-6 % (merged 2ae8b1a9). The exact integrator now converges on the switched PF2 window: the open-loop step-halving gate is met at both installed-loss bounds, and closed-loop peaks agree within 1 % (merged 1bec302b).">Evidence</a>
+</div>
+<div class="r-gate" data-id="g-istt-6" data-section="s6" data-gated-sections="s6" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">the ITER coil-and-passive linkage the integrated run uses is jointly positive definite: every coil&#x27;s bare inductance is positive and physical, VSU and VSL included, and the linearised assembly carries no positive rate from the plant</h4>
+    <p class="r-gate-required-evidence">nova:iter-passive-plasma-circuit#s7</p>
+    </div>
+</section>
+<section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="d-istt-control" data-choice="one PI current controller per supply tracking DINA&#x27;s coil currents with DINA&#x27;s voltage as feedforward, designed for stated gain and phase margins; DINA&#x27;s own PCS controllers read for comparison" data-by="Simon McIntosh" data-when="2026-10-14T16:20:00+00:00">
+    <p class="r-dec-q">How are the supplies driven?</p>
+    <p class="r-dec-rat">Current setpoints come from DINA, and each supply gets a controller designed for its own plant with adequate gain and phase margin, so the controllers will differ between supplies. DINA&#x27;s PCS co-simulation controllers in DINA-IMAS are the reference for what ITER&#x27;s scenarios assumed.</p>
+    </div>
+<div class="r-dec" data-key="d-istt-coupling" data-choice="nova computes every coupling from the geometry; DINA&#x27;s coupling matrices are not used; nova is imported through one narrow call built on its existing capabilities; the VS1 loop models the thyristor pair and all four IGBT units" data-by="Simon McIntosh" data-when="2026-10-14T17:36:37+00:00">
+    <p class="r-dec-q">d-istt-coupling</p>
+    <p class="r-dec-rat">The lead directed on 14 October 2026 that DINA&#x27;s coupling matrices are neither needed nor used, that the couplings are calculated directly with nova, and that nova is an imported capability with a narrow interface, using as much of its existing machinery as possible, integrated with the existing ITER converter models. The VS1 control loop is modelled with both its thyristor units and its four IGBT units. Importing nova moves this repository&#x27;s environment to Python 3.14.</p>
+    </div>
+<div class="r-dec" data-key="d-istt-engine" data-choice="a Python EMTP-style switched-circuit solver in this repository, with one unit cross-checked in Simscape Electrical" data-by="Simon McIntosh" data-when="2026-10-14T16:20:00+00:00">
+    <p class="r-dec-q">Which engine runs the switched time-domain simulation?</p>
+    <p class="r-dec-rat">A solver in this repository is reviewable code, tested with the rest of the library, and reuses the bridge, coupling, machine-description and DINA-loading modules directly. Simscape Electrical (licensed on the fleet node) serves as the independent solver for one unit and its load rather than as the platform.</p>
+    </div>
+<div class="r-dec" data-key="d-istt-plasma" data-choice="prescribe the plasma from DINA (closed separatrix, flux functions, net current adjusted), coupled through nova with a full passive current model planned there" data-by="Simon McIntosh" data-when="2026-10-14T16:20:00+00:00">
+    <p class="r-dec-q">Is the plasma solved or prescribed?</p>
+    <p class="r-dec-rat">The plasma is not solved. Its position and current distribution come from DINA&#x27;s separatrix (checked for a closed loop) and flux functions, with the net current adjusted to DINA&#x27;s. nova owns the passive and plasma coupling and evolves the vessel currents, planned in iter-passive-plasma-circuit.</p>
+    </div>
+<div class="r-dec" data-key="d-istt-scope" data-choice="every coil supply in the Stage 1 + Stage 2 machine description at once: CS, PF1 to PF6, VS1 and VS3" data-by="Simon McIntosh" data-when="2026-10-14T16:20:00+00:00">
+    <p class="r-dec-q">Which coil circuits enter the first integrated model?</p>
+    <p class="r-dec-rat">The full set is needed: VS1 joins PF2 to PF5 galvanically, and every circuit couples to the others through the mutual inductances and the passive structure, so a subset would misstate the loads the converters see.</p>
+    </div>
+<div class="r-dec" data-key="long-window-modelling" data-choice="multi-rate" data-by="lead" data-when="2026-10-19" data-sections="s6,s11" data-recommended="multi-rate" data-recommended-by="reckon-build">
+    <p class="r-dec-q">How long windows are modelled</p>
+    <p class="r-dec-ctx">&lt;p&gt;PF2&#x27;s sectioned plant has 228 modes that rotate more than 100 rad per 200 µs, so a 120 ms window on the full sectioned plant needs about 10⁷ sparse solves, far beyond a batch.&lt;/p&gt;</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="multi-rate">Long windows on the terminal plant with the exact modal path; the section-resolved plant only on short windows around switching events, started from the long run&#x27;s state</button>
+      <button class="r-opt" data-value="truncate-fast-modes">Sectioned plant in long windows, with section modes above a cutoff treated as quasi-static</button>
+      <button class="r-opt" data-value="brute-force-sectioned">Pursue a faster propagator until 120 ms on the full sectioned plant fits a batch</button>
+      </p>
+    <p class="r-dec-rat">The section modes matter at switching events, where §11 already resolves them on short windows. Long windows need the terminal behaviour, which the terminal plant gives cheaply and exactly.</p>
+    </div>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="_top" data-id="c-cocos-105014-20261021" data-who="reckon-build" data-when="2026-10-21T19:30:00Z">
+    <div class="r-comment-body"><p>COCOS caution, from nova's lead ruling d-ippc-dd-cocos (iter-passive-plasma-circuit), relayed by nova-47 on 21 October 2026. nova reads DD3 data as COCOS 11 and DD4 data as COCOS 17, and treats data that does not conform to its own DD version's COCOS as invalid. DINA 105014/1 (DD 3.38.1) carries σ<sub>Bp</sub> = −1, the COCOS 13/17 orientation, in all 732 slices above 1 MA, so it is invalid as DD3 data. 105069/3, this plan's main scenario, conforms, as do 105052/1, 105013/1 and CORSICA 130506/6.</p><p>This plan's results that use 105014/1's equilibrium are the flux balance (<code>scripts/iter/flux_balance.py</code>) and the late PF excess (<code>scripts/iter/late_pf_excess.py</code>). Both also use 105052. Their 105014/1 arms rest on non-conforming data until nova's DD3 translator lands, and are rerun then. The 105014/1 case in the scenario supply loading reads coil currents and voltages, not the equilibrium's flux orientation, and is not expected to move. The integrated run (§6) uses 105069/3 and is unaffected.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-close-s1" data-who="reckon-build" data-when="2026-10-14T17:37:00Z">
+    <div class="r-comment-body"><p>§1 landed: the census is extended in its owner (merged <code>fe4bd2f</code>). 50 of 78 DINA cases carry everything the integrated model needs; 105052/1 (15 MA) is first with 2,691 of 2,924 complete slices once closure is judged at the X-point. <a href="/power_convertor/evidence/archive/iter-switched-terminal-transients-landed.html#dina-scenario-inventory">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-10-18T19:35:00Z">
+    <div class="r-comment-body"><p>§10 closed: VS1 does not need to discharge with PF2–PF5 to keep a current path, but a VS-only trip leaves a loop current of up to 1.84 kA after 1200 s, depending on the bypass resistance, which IDM does not qualify (merged <code>51f6c2cb</code>). <a href="/power_convertor/evidence/archive/iter-switched-terminal-transients-landed.html#vs1-discharge-cases">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261019T094747404844-review-of-switched-discharge-insertion-2-8047cc915c9a" data-who="reckon-build" data-when="2026-10-19T10:05:36.880Z">
+    <div class="r-comment-body"><p>review of r-20261019T090814766315-switched-discharge-insertion-2 at 9e4ee6b8..8047cc91: six dimensions scored goal_fidelity 19, evidence 13, scope_discipline 18, durability 14, fit 14, reuse 5 (total 83), zero added failures, four follow-on findings and no blocking finding; verdict parsed.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-10-19T10:40:00Z">
+    <div class="r-comment-body"><p>§11 closed. All eight insertion rows are complete at both loss bounds, with every peak against its named reference, and step convergence holds (merged <code>467ad98f</code>). Finding: the PF1 and PF6 insertions put about 150–350 V between adjacent winding sections, at or above the 152 V helium Paschen minimum across most of each winding. <a href="/power_convertor/evidence/archive/iter-switched-terminal-transients-landed.html#switched-discharge-insertion">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261019T090814766315-switched-discharge-insertion-2" data-who="reckon-build" data-when="2026-10-19T09:46:03.375Z">
+    <div class="r-comment-body"><p>switched-discharge-insertion-2: the insertion event on PF1, PF6, CS3L and the VS1-coupled PF2 at both installed-loss bounds, eight rows complete — terminal-to-ground, across, and section-to-section/ground peaks each against its named reference; the high-bound refusal is fixed in the section-loss stamp (row remainder -2.71e-20 S, rounding of an exact zero) with a test; the step-convergence gate holds on all eight rows; record docs/research/iter-switched-discharge-insertion.html, figure docs/figures/iter-switched-discharge-insertion/section_voltages.svg</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261019T125146372190-review-of-pcs-loop-gain-2-9bb2885f3f26" data-who="reckon-build" data-when="2026-10-19T13:15:25.900Z">
+    <div class="r-comment-body"><p>Reviewed run r-20261019T091133058536-pcs-loop-gain-2 at head 9bb2885f; the parsed review is stored in that run's review-records directory and nothing else was changed.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261019T091133058536-pcs-loop-gain-2" data-who="reckon-build" data-when="2026-10-19T12:50:47Z">
+    <div class="r-comment-body"><p>docs/research/iter-pf2-pcs-loop-gain.html</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-close-s12" data-who="reckon-build" data-when="2026-10-19T13:45:00Z">
+    <div class="r-comment-body"><p>§12 landed (merged <code>31dab002</code>): the PF2 PCS loop's gain per 2 ms cycle on the switched, lossy plant is 0.856 at low installed loss and 0.841 at high, both below one and below the averaged design's 0.923, so the loop is stable and more damped than designed; the zero-amplitude control reads 0.0 A. <a href="/power_convertor/evidence/archive/iter-switched-terminal-transients-landed.html#pcs-loop-gain">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261019T133807534151-istt-follow-ons" data-who="reckon-build" data-when="2026-10-19T14:35:24.919Z">
+    <div class="r-comment-body"><p>§12 follow-ons: batched non-blocking review findings from the merged §7, §11 and §12 nodes fixed on the PF2 loop-gain caller, the edge-rate ranking and the insertion study — two silent results now refuse, the sampled-loop owner supplies the averaged margins (16.05 dB, 39.91°, 10.218 Hz, moved from 16.35/38.42/9.995), the loop-gain caller runs one loss bound per invocation with a merge, and the insertion rows stay bit-identical at 0.0 relative difference; the earlier PF2 edge-rate fragment is marked superseded against fix 453c6d18.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-land-switched-circuit-solver" data-who="reckon-build" data-when="2026-10-14T17:14:00Z">
+    <div class="r-comment-body"><p>Node switched-circuit-solver landed (merged <code>6ad58fe</code>): 15 controls pass, damping removes the trapezoidal ringing, review 17–20. §2 stays open for the speed node: 89.7 steps/s at 1,001 nodes and 500 switches is too slow for the integrated run. <a href="/power_convertor/evidence/archive/iter-switched-terminal-transients-landed.html#switched-circuit-solver">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-14T18:16:00Z">
+    <div class="r-comment-body"><p>§2 landed: the solver (merged <code>6ad58fe</code>) and its vectorised internals (merged <code>54e02d8</code>): 5,486 steps/s with fixed topology at 1,001 nodes and 500 switches, 406 steps/s under frequent switching, results unchanged to 1e-12. <a href="/power_convertor/evidence/archive/iter-switched-terminal-transients-landed.html#switched-circuit-speed">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-land-converter-units-thyristor" data-who="reckon-build" data-when="2026-10-14T18:25:00Z">
+    <div class="r-comment-body"><p>Node converter-units-thyristor landed (merged <code>adcc099</code>): PF, CS and VS1-1/2 thyristor units with firing generators; overlap 0.31 % and DC drop 0.89 % against the commutation design; review 18–20 after one repair. Next in §3: the four VS1 IGBT units with protection and grounding, then the Simscape cross-check. <a href="/power_convertor/evidence/archive/iter-switched-terminal-transients-landed.html#converter-units-thyristor">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-land-converter-units-igbt-protection" data-who="reckon-build" data-when="2026-10-14T19:45:00Z">
+    <div class="r-comment-body"><p>Node converter-units-igbt-protection landed (merged <code>1b64a07</code>): four VS1 IGBT units, protection and grounding; solver event substep floored at 1e-4 of a step; 18 converter and 18 solver controls; the interleave reduces the 500 Hz carrier only to 309 V, so the frozen PF2 500 Hz figure is provisional; review 17–20. Remaining in §3: the Simscape cross-check. <a href="/power_convertor/evidence/archive/iter-switched-terminal-transients-landed.html#converter-units-igbt-protection">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-15T07:45:00Z">
+    <div class="r-comment-body"><p>§3 landed: thyristor units (<code>adcc099</code>), VS1 IGBT units, protection and grounding (<code>1b64a07</code>), independent switching-network tests (<code>224043d</code>), and the Simscape cross-check within 1 % rms and 2 % peak at both commutation ends (<code>fe6279f</code>). <a href="/power_convertor/evidence/archive/iter-switched-terminal-transients-landed.html#converter-units-simscape">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-s3-alpha-law-measured" data-who="reckon-build" data-when="2026-10-15T16:23:00Z">
+    <div class="r-comment-body"><p>First measured check of the thyristor mean-voltage law on ITER hardware. The dummy-load coordination session compared measured PF1-1 and PF6-1 firing angles (ALPHA_CU1C*, polarity-matched bridges, |I| &gt; 20 kA) with <code>firing_angle_deg</code> on the dummy-load line (I × 5.45 mΩ, <code>pf_budget().reactance</code>, 1050 V, two bridges in parallel). Median offset −3.4° for PF1 (n = 1,247) and −3.0° for PF6 (n = 2,212), with p10/p90 within about ±9°. The converters deliver about 60 V more than the loop needs at 55 kA: roughly 1 mΩ of converter-side resistance, or a commutation budget on the low side. This checks rectification only, at 20–55 kA, with one unit and two parallel bridges per polarity; the dummy-load runs did not use the two-unit sequential law. Node <code>dummy-load-operating-point</code> is drawing it beside PF6's scenario envelope.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-snu-window" data-who="reckon-build" data-when="2026-10-15T06:40:00Z">
+    <div class="r-comment-body"><p>Lead clarification, 15 October 2026: at the end of premagnetisation the CS discharges through a dedicated resistor network (the switching network), separate from the power converters. So during the initiation window the coil current of each switched circuit (the six CS modules, PF1 and PF6) is set by that resistor, not by the converter's current loop. Both runs found this independently. Nova's vessel evolution shows coil voltages of 4–11 kV on those circuits, while DINA's recorded voltage, which is converter-side, sits at the 2.1 kV limit. The controller run needs 1.03–4.7 times the converter limit during 0–3 s. Consequences for this section:</p><ul><li>Judge each switched circuit's tracking outside its switching-network window. Inside it, model the discharge through the resistor, with the converter in series, and report the current trajectory the resistor produces against DINA's.</li><li>Use the switching network's own resistances and staging. DINA's <code>rescs</code>, <code>respf1</code> and <code>respf6</code> are undefined in its tree. The values recovered from DINA's own voltages (0.045–0.25 Ω over 0–3 s; CS1 a further 0.065 Ω to 13 s) stand in until a design source is held. ITER_D_22HXXE gives only the 10 kV maximum.</li><li>The excess that PF1 and PF6 still show after the window has to be located separately.</li></ul><p>For §7: inserting the switching-network resistor is itself a fast step of several kV on the coil terminals, so §7 treats switching-network and fast-discharge insertion as excitations beside converter commutation.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-controllers-landed" data-who="reckon-build" data-when="2026-10-15T07:45:00Z">
+    <div class="r-comment-body"><p>The controller node landed (merged at <code>be1d530</code>); the section stays open. All 13 supplies have discrete PI controllers designed on their own port of the nova-coupled plant. With the other loops closed, 12 of 13 coupled margins are measured: crossover 10–85 Hz, phase margin 58–117°. VS1's crossing lies above the analysed band. PF2–PF5 and VS1 track DINA within about 1 % rms. The CS modules, PF1 and PF6 need 1.03–4.7 times the converter limit in the switching-network window, where the resistor sets the current (see the lead's clarification above), and PF1 and PF6 again later in the pulse. Open items: judge those circuits outside the window; locate the late PF1 and PF6 excess; fix VS3's 83 % error, which comes from the feedforward allocation; measure VS1's margin above 316 Hz. The time-base defect is fixed and has a regression test. The duplicated closed-port inductance is folded into the waveform node.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-open-items-landed" data-who="reckon-build" data-when="2026-10-15T08:55:00Z">
+    <div class="r-comment-body"><p>The open-items node landed (merged at <code>2463d09</code>).</p><ul><li><strong>Switched circuits:</strong> the CS modules, PF1 and PF6 track within 1 % rms and 3 % peak outside their switching-network windows. Inside the windows the resistors carry the discharge.</li><li><strong>PF1 and PF6, late in the pulse:</strong> the trajectory needs 2.62 and 3.63 kV against 2.1 kV. This is a prediction for ITER: on this plant, DINA's currents ask more of these two supplies than they can deliver.</li><li><strong>VS3:</strong> solved at its own port, it tracks exactly and needs at most 267 V of 575 V. The earlier 81 % error came from a static feedforward that cannot cancel coupling from other supplies' clipped voltages. This is a feasibility margin, not the performance of the live vertical-stabilisation loop on a free plasma.</li><li><strong>VS1:</strong> the continuous-time crossing at 330 Hz with 92° phase margin lies above the 250 Hz Nyquist limit of the 2 ms control cycle, so the margin needs a sampled-loop method. That is the one item left in this section.</li></ul><p>The review's reuse finding (the scenario loop duplicates <code>simulate_coupled</code>) and the stale figure names are folded into the time-series figures node.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-late-excess-correction" data-who="reckon-build" data-when="2026-10-15T11:35:00Z">
+    <div class="r-comment-body"><p><strong>Correction to the open-items comment above.</strong> The late PF1 and PF6 excess (2,619 V at 142.13 s in termination; 3,625 V at 141.375 s at the end of ramp-down; against 2.1 kV) is <strong>not established as a prediction about ITER</strong>. DINA's own converter voltage peaks at its 2.1 kV limit on both circuits, so DINA met its limit on its own plant. The excess appears only on our plant, in phases where our inputs are weakest:</p><ul><li>at PF6's peak the plasma term contributes 1,583 V, from 184 interpolated equilibrium slices through ramp-down and termination;</li><li>the passive term contributes 612 V, on a scenario where nova's vessel evolution matched only 33 of 103 of DINA's passive loops.</li></ul><p>Until node late-pf-excess compares DINA's volt-seconds with our flux change term by term, checks the plasma slices and the passive currents there, repeats the check on 105014/1, and reads DINA's stated limits, treat it as a difference between plants of unknown origin.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-late-excess-resolved" data-who="reckon-build" data-when="2026-10-15T12:20:00Z">
+    <div class="r-comment-body"><p>Late PF1/PF6 excess resolved in volt-seconds (merged <code>8bdc07b</code>). The sustained post-plasma excess was the controller's reduced passive model; with nova's evolved vessel, PF6 needs 9,114 V·s against a 9,251 V·s budget, matching DINA. Two short intervals at the plasma's disappearance stay over budget because of an opposite-sign vessel response on coarse slices. Not an established ITER limit violation. <a href="/power_convertor/evidence/archive/iter-switched-terminal-transients-landed.html#late-pf-excess">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-s4-pf6-initiation-recheck" data-who="reckon-build" data-when="2026-10-15T16:25:00Z">
+    <div class="r-comment-body"><p>Follow-on: <code>INITIATION_RESISTANCE_OHM['PF6']</code> = 0.2498 Ω, in <code>scripts/iter/current_controllers.py</code>. It was measured as (V_recorded − V_needed)/I over the premagnetisation window, and it matches to four digits the PF6–CS3L mutual inductance of 0.249822 H in <code>data/iter/passive_structure/matrices.json</code>, the export from which that script builds V_needed. nova's own M(PF6, CS3L) is 0.2477 H. Rerun the measurement with V_needed from nova's coupled plant and confirm or correct the value, together with PF1's 0.1616 Ω and the CS values. Raised by the dummy-load coordination session.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-review-s4" data-who="reckon-edit" data-when="2026-10-17T10:25:00Z">
+    <div class="r-comment-body"><p>Portfolio review, 17 October 2026. The controllers are built and margined for 12 of the 13 supplies: <code>src/power_convertor/current_control.py</code>, <code>scripts/iter/current_controllers.py</code> and <code>scripts/iter/controller_loop_margins.py</code>. What remains of this section is VS1 and VS3. VS1's sampled loop crosses unity at 229 Hz with its phase already past −180°, and cannot be restored by gain alone. Every scenario presented so far therefore runs VS1 open-loop. VS3 has 3.45 dB of gain margin against the 6 dB target. The controller research page still carries statements its later record contradicts. <a href="/power_convertor/plans/iter-integrated-model-assurance">iter-integrated-model-assurance</a> §3 reconciles them.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261017T114244431637-vs1-vs3-loops" data-who="reckon-build" data-when="2026-10-17T11:58:18Z">
+    <div class="r-comment-body"><p>VS1 clears 6 dB and 45 degrees at 2, 1 and 0.5 ms (6.04/61.03, 6.81/46.42, 6.60/45.25); VS3 clears at each cycle; the 0.5 ms closed replay gives VS1 0.00446% rms current error.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261017T115938428952-review-of-vs1-vs3-loops-62ef66f62fc9" data-who="reckon-build" data-when="2026-10-17T12:15:35.509Z">
+    <div class="r-comment-body"><p>Independent review of source base f3cefb547d7afc4f237b7f252644c81603a135ca through head 62ef66f62fc945bb18bf15ed643786e25feb64c3 is stored at the declared revision-keyed review-records paths; six dimensions and six checklist items parsed, with four follow-on findings and no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-land-vs1-vs3-loops" data-who="reckon-build" data-when="2026-10-17T12:19:00Z">
+    <div class="r-comment-body"><p>Node vs1-vs3-loops landed (merged at <code>2c79a951</code>). VS1 closes at the 2 ms PCS cycle: 6.04 dB and 61.0° at 71.4 Hz with the other loops closed, and it also meets the targets at 1 and 0.5 ms. VS3 reaches 6.16 dB and 56.2°. The section closes when <code>vs1-vs3-loops-repair</code> adds the figures and clears the review's follow-ons. <a href="/power_convertor/evidence/archive/iter-switched-terminal-transients-landed.html#vs1-vs3-loops">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261017T125110586182-review-of-vs1-vs3-loops-repair-8c205d4695f1" data-who="reckon-build" data-when="2026-10-17T12:58:53.788Z">
+    <div class="r-comment-body"><p>Independent review of source base f8e8ebc262aefdd72bb14e3f915ce7871f0ca7cd through head 8c205d4695f1421d64035453ffd21026a86eee7b is stored at the declared revision-keyed review-records paths for run r-20261017T121808399553-vs1-vs3-loops-repair; six dimensions scored 19/17/20/15/18/14, six checklist items reported, five production call sites verified, three follow-on findings and no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261017T121808399553-vs1-vs3-loops-repair" data-who="reckon-build" data-when="2026-10-17T12:50:52.188Z">
+    <div class="r-comment-body"><p>[VS1 and VS3 sampled-loop repair fragment](/power_convertor/evidence/fragments/iter-switched-terminal-transients/vs1-vs3-loops-repair.html#vs1-vs3-loops-repair-evidence): loop-gain and phase figures at all three PCS cycles with the 6 dB and 45 deg references and a closed-loop VS1 tracking figure are drawn, rendered and embedded; the VS1 thyristor and IGBT caps now derive from the scenario loader's 6300 V aggregate and its six-unit split; one bilinear lead is shared by the analysed and simulated loops; the split test asserts the split itself and fails on a unity response; 87 focused tests pass and no reported margin moved.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-17T13:02:00Z">
+    <div class="r-comment-body"><p>§4 closed. All thirteen loops are designed and margined. VS1 now closes at the 2 ms PCS cycle (6.04 dB, 61.0° at 71.4 Hz with the other loops closed) and at 1 and 0.5 ms; VS3 reaches 6.16 dB. The figures and repairs are merged at <code>89fffdf1</code>. The PCS cycle and VS1's reference split stand as stated assumptions in the IDM register, IDM being silent on both. The 2 ms scenario tracking with VS1 closed is carried to §6. <a href="/power_convertor/evidence/archive/iter-switched-terminal-transients-landed.html#vs1-vs3-loops-repair">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-10-14T18:10:00Z">
+    <div class="r-comment-body"><p>§5 landed (merged <code>80385ca</code>): sectioned windings with geometry-computed capacitances; the first terminal resonances fall in the converter band (PF 260–690 Hz, CS 728–766 Hz); review 18–20. nova's section matrix replaces the uniform split when the imported call lands. <a href="/power_convertor/evidence/archive/iter-switched-terminal-transients-landed.html#coil-winding-strays">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-22hxxe-grounding" data-who="reckon-build" data-when="2026-10-15T05:10:00Z">
+    <div class="r-comment-body"><p>Design-basis inputs from ITER_D_22HXXE v1.0, <em>Annex 6B: Assessment of the PF coil circuit behaviour during normal and fault conditions</em> (Bareyt, 2001–2002; held at <code>data/iter/sources/22HXXE/</code>, cited, never copied). The report is quasi-static and uses 2001 converter ratings: a 2 kV main converter, two 2.8 kV boosters on PF2–PF5, and an 8 kV return converter. Recompute any voltage envelope from it with present ratings.</p><ul><li><strong>Grounding:</strong> a pair of equal terminal-to-neutral resistors Rtn across each coil, with the midpoint grounded through Rng. Rtn is 1 kΩ on the circuits with switching networks (CS, PF1, PF6) and 2 kΩ on PF2–PF5; Rng is 1 kΩ on every circuit. This differs from the 1 kΩ / 100 Ω used in the frozen PF2 prediction.</li><li><strong>Common mode on PF2–PF5:</strong> with VS1 as the shared return branch, the neutral sits at V<sub>G</sub> = V<sub>VS</sub>/2 + ΣV<sub>e</sub>/8 (its eq. 3.03c). Each PF2–PF5 terminal is therefore offset to ground by half the VS1 voltage, so VS1's IGBT switching appears on the PF2–PF5 terminals. This is a low-frequency positive control for this section.</li><li><strong>Fast discharge:</strong> FDU resistance, initial to hot. CS 0.090–0.103 to 0.212–0.242 Ω; PF1 0.046 to 0.108; PF2 0.019 to 0.045; PF3 0.080 to 0.188; PF4 0.067 to 0.157; PF5 0.071 to 0.167; PF6 0.092 to 0.216 Ω. Discharge time constants are at most 7.5 s (CS) and 14 s (PF).</li><li><strong>Switching networks:</strong> on CS, PF1 and PF6 only, at most 10 kV, with a design energy of 1.3 GJ.</li><li><strong>Quasi-static envelopes (2001 ratings):</strong> operation below 10 kV across a coil and about 5 kV to ground. The intrinsic maxima are 12 kV (CS, PF1, PF6) and 15.6 kV (PF2–PF5) across a coil, and 6, 5 (CS1) and 13.5 kV to ground. A single ground fault raises PF2–PF5 to 23.2 kV, or 15.2 kV in the reordered branch arrangement it proposes. FDU and SNU acting together give 18 kV, clamped to 15 kV by a pyro make-switch.</li><li><strong>Busbar leakage:</strong> 5×10<sup>−7</sup> S/m (pessimistic), giving 4.2–12 kΩ per circuit. This implies about 170–480 m of busbar per circuit, the length scale for the busbar capacitance in §7.</li></ul><p>The report has no capacitances and no switching-frequency analysis. Its resistive dividers stop holding in the converter band: at 600 Hz, a 150 nF coil-to-ground capacitance is about 1.8 kΩ, comparable to Rtn. Its 2002 coil inductances, tabulated in µH per turn² despite the H label, sit 1–17 % below nova's current values (PF2 −15 %, PF6 −17 %), so they are not used.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-22hxxe-correction" data-who="reckon-build" data-when="2026-10-15T05:14:00Z">
+    <div class="r-comment-body"><p>Correction to the previous comment: the 2002 self-inductances are not all below nova's. Against nova's current values they are 3 % lower for CS (0.737 against 0.760 H), 13 % lower for PF2 (0.411 against 0.475 H), 4–4.5 % lower for PF3 and PF4, 15 % lower for PF6 (2.043 against 2.390 H), and about 1 % higher for PF1 and PF5. The conclusion is unchanged: nova's matrix is used.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-jt60sa-validated" data-who="reckon-build" data-when="2026-10-15T05:46:00Z">
+    <div class="r-comment-body"><p>The uncertainties this section carries, as validated on JT-60SA by the coil-circuit plan (S2; <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html">jccm evidence</a>). No ITER integrated-operation data exists yet, so JT-60SA stands in.</p><ul><li><strong>Self-inductance from geometry:</strong> within 1–8 % of fast-discharge measurement, identified near 2 Hz and never in the switching band.</li><li><strong>Coil-to-coil coupling through nova's geometry passive structure,</strong> at nominal resistivity with nothing fitted: about 5–8 % of M/L from 0.1 to 30 Hz. Fitted free passive loops do worse.</li><li><strong>Slow currents from the voltage-driven coupled solve:</strong> within 5 % of each window's largest change, in 45 of 45 windows. Without coupling the solve fails, so the coupling terms carry the prediction.</li><li><strong>Not validated:</strong> coupling at the converter harmonics. At 12f, EF5→EF4 is about 2× M/L and no inductive or passive model reproduces it. Switched-model predictions of harmonic transfer between circuits are therefore uncalibrated until the JT-60SA replay explains it.</li><li><strong>Measurement traps for ITER:</strong> voltage channels that shift with supply state, so judge over short windows referenced to a flat span in the same state; current changes read from the band-limited slow part; weak pickups that scatter shot to shot; channel signs established from data, not wiring sheets.</li></ul></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-weak-pickup-scatter" data-who="reckon-build" data-when="2026-10-15T06:30:00Z">
+    <div class="r-comment-body"><p>A further uncertainty from the JT-60SA coil-circuit plan (S2 §8 interim; <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s8-data">s8-data</a>, <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s8-structure">s8-structure</a>). Weak pickups scatter. A pair with M/L of about 0.2 or less, read as a voltage ratio, carries roughly ±5 % shot-to-shot scatter on top of the 5–8 % coupling uncertainty. On JT-60SA, EF1→EF6 spread 7.8–18.8 % over seven tests with EF1 alone energised, while EF5→EF6 repeats to within half a point. Score such pairs over several shots, or on fast discharges, before calling a model miss. The geometry stands: EF1's self-inductance is within 2.4 % of its fast discharge, and the slow EF6 coupling is 94.4 % of nova's. Adding bounding outboard conductors made the fit worse, so a missing passive conductor is not supported.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-snu-switched" data-who="reckon-build" data-when="2026-10-15T09:45:00Z">
+    <div class="r-comment-body"><p>Lead direction, 15 October 2026: a full integrated simulation of the coil voltages must include the switching-network units. The CS, PF1 and PF6 circuits' switched node therefore carries each unit in series with its converter:</p><ul><li>its resistor stages on the initiation schedule (the averaged loop already uses the resistances recovered from DINA);</li><li>its bypass and insertion switching, with the commutation circuit that moves current from the bypass into the resistor, because that insertion is a step of several kV at the coil terminals and the strongest excitation of the first turns (the first-turn study gives 17–23 % of a µs step on turn 1);</li><li>the fast-discharge units in the same way, for discharge cases.</li></ul><p>The insertion front's rise time and the resistor staging need the switching-network design description, which no held source gives (22HXXE has only the 10 kV maximum and 1.3 GJ rating). Until it is found, carry the rise time as a stated range of 1 µs to 1 ms.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-ripple-not-yet-validated" data-who="reckon-build" data-when="2026-10-15T09:55:00Z">
+    <div class="r-comment-body"><p>What is and is not validated for ITER ripple. The plant (coupling, passive screening, transient pickup) is validated on JT-60SA. The ripple lines themselves are not yet validated on any measured machine: the coil-circuit plan's frequency-domain ripple section is still gated on the booster-converter model. Two routes will supply the validated ripple uncertainty this section's predictions carry. One is the JT-60SA switched replay (§5 of jt60sa-switched-pulse-replay), which simulates the switched converters directly. The other is the TF cold-test bench, which has fast data on ITER hardware with large ripple and is being taken up in its own session (lead, 15 October 2026). Until one of them lands, ITER ripple amplitudes from this section are model predictions without a measured uncertainty, and the record says so.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-gate-istt-1-met" data-who="reckon-build" data-when="2026-10-15T12:50:00Z">
+    <div class="r-comment-body"><p>Gate g-istt-1 is met. nova's coupled ITER plant is returned by one narrow call (nova <code>c4c7abd78</code>, serialiser reuse <code>4de97b2d3</code>), imported here at Python 3.14, and taken by the switched-circuit solver as a state-space multiport through <code>nova_plant.py</code> (merged <code>26bed2c</code>), with the averaged loop on the same plant. <a href="/power_convertor/evidence/archive/iter-switched-terminal-transients-landed.html#nova-plant-adapter">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-pf2-bias-decision" data-who="reckon-build" data-when="2026-10-15T13:00:00Z">
+    <div class="r-comment-body"><p>Coordinator decision on the waveform study's blocker. With the 20 ms pre-roll, plasma drive, imposed non-study currents and corrected VS1 topology in place, the open-loop replay passes the 20 ms mean gate on PF3–PF5 and VS1. PF2's coil residual is +66 to +105 V against a 63 V allowance, which is 1.05–1.67 % of 6.3 kV. It is made of a PF2 branch part (+28 to +67 V) and VS1's common part (+38 V). An isolated five-command test at −7.5 kA passes within 19.6 V, so the negative-current commutation law is not the cause.</p><p>A mean bias this size moves PF2's firing angle by about one degree. That changes its 300/600 Hz ripple by 1–2 %, which does not affect the ripple and filtering question. The residual is recorded as an open-loop converter-model bias, and its origin is left as a follow-on. The study now runs all 36 arms closed loop: switched converters fired by the PI controllers on the 2 ms PCS cycle from sampled currents, as ITER operates. The gates are current tracking within the averaged closed-loop model's error plus 1 % of scale, and 20 ms mean coil voltage within 2 % of the supply limit of the averaged closed-loop model. The figures and tables made with the superseded model are withdrawn from the record rather than kept as historical.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-waveforms-landed" data-who="reckon-build" data-when="2026-10-15T14:05:00Z">
+    <div class="r-comment-body"><p>Waveform study landed as a negative result (merged <code>5125d6d</code>; gate failed, classified negative-result). It carries the switched closed loop for PF2–PF5 and VS1 (PI on the 2 ms PCS cycle from sampled switched currents) and the converter, topology and commutation fixes. All 36 arms ran: four windows, three winding capacitances, all-switched and each technology averaged. Closed loop, none passes. PF2's 20 ms coil mean is up to 6,122 V from the averaged loop's (0.97 of 6.3 kV), while the currents track to about 1.3 %. A mean that large with the current still tracking means the voltage swings: the loop oscillates or carries a bias. No filtering verdict is drawn, and the figures made with the superseded model are withdrawn. The review found no blocking defect. It scored reuse 5 of 20: a duplicated bridge-count helper disagrees with <code>FiringGenerator.mode</code> below 10 % of rated current, and an envelope duplicates <code>firing_angle_deg</code>'s constants. Both are folded into <code>closed-loop-mean-mismatch</code>, now running. That node tests five suspects, one ablation each: aliasing of the 500 Hz carrier into the 2 ms sampled current, the loop code, VS1 acting through the shared node, delay and gain, and the bridge count. One arm must pass before all 36 rerun.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-closed-loop-gates" data-who="reckon-build" data-when="2026-10-15T15:50:00Z">
+    <div class="r-comment-body"><p>The closed-loop kilovolt residuals came from the starting state. At the window cut, the stored averaged state's VS3 currents differed from the imposed DINA currents by 51.6 and 22.2 kA. Starting both runs from one coupled state, with the non-study currents imposed in both, brings every switched arm's current tracking within 0.7 %. The 5 ms switched update was also corrected to the 2 ms PCS cycle.</p><p>Coordinator correction: the 20 ms coil-mean voltage gate set for the closed loop was ill-posed and is withdrawn. In closed loop the voltage is the controller's response to current errors. On coils of about 1 H, 126 V over 20 ms is about 2.5 A, or 0.006 % of scale, far tighter than the 1 % current gate. The worker had cut the PI gain to 0.03 to pass it, which hides the loop's behaviour; design gains are restored. Closed-loop arms are now judged by three checks: current tracking; flux consistency of the integrated voltage difference against the current and passive-state difference; and loop health, meaning no sustained oscillation below 250 Hz that the averaged loop lacks. An oscillation at design gain will be reported as a controller-design finding for §4. Ripple, dv/dt, technology and filtering results then come from arms passing the first two checks.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-scenario-figures-landed" data-who="reckon-build" data-when="2026-10-15T16:31:00Z">
+    <div class="r-comment-body"><p>Full-scenario figures landed (merged <code>070500e</code>). DINA 105052/1 is drawn coil by coil from the averaged closed loop on nova's coupled plant, in four group SVGs: CS modules; PF1 and PF6; PF2–PF5 with VS1; VS3. Each coil has planned and achieved current, planned and predicted coil voltage with the converter limit, predicted voltage to ground at each terminal (22HXXE grounding; VS1's common mode on PF2–PF5), and tracking error. With the switching-network window the initiation currents match within 2.47 % of peak; without it they miss by 22.67 %. The switched ripple close-ups are added once the closed-loop study has passing arms. Review passed (goal 18). Reuse 5 is folded into <code>script-helper-owners</code>, which also stops VS1's absent DINA plan being drawn as a zero line.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-closed-loop-landed" data-who="reckon-build" data-when="2026-10-15T17:05:00Z">
+    <div class="r-comment-body"><p>Closed-loop switched study landed (merged <code>093222a</code>; two reviews, the final one with no findings). PF2–PF5 thyristor converters and VS1 IGBTs ran at design PI gains on the 2 ms PCS cycle, from one coupled starting state shared with the averaged reference, over 36 arms. All 36 track their current. 16 pass the 1 % flux check; the rest need substep volt-seconds from the solver. 6 pass loop health under the all-bin test.</p><p>From admitted arms:</p><ul><li>The largest terminal-to-ground voltage is 5.11 kV, against the 13.5 kV intrinsic envelope.</li><li>The coil edge reaches 218 MV/s all-switched.</li><li>In matched technology-off pairs the largest IGBT coil edge is 525 MV/s and the thyristor's 49 MV/s. IGBT ripple is 1.0–1.9 kV rms against the thyristors' 0.45–1.0 kV rms on the coil.</li><li>13 of 24 coil rows have their dominant line in the 265–690 Hz winding-resonance band, overlapping the 300/600 Hz thyristor lines and the 500 Hz IGBT carrier.</li></ul><p>Verdict: no ground-envelope exceedance, but frequency and edge stress sit in the winding resonance band. A definitive filtering decision needs the facility's turn-insulation and quench-detection frequency limits, the capacitance range, and the 1.6 kHz front-end contribution, which the stiff-link assumption omits.</p><p>Controller finding for §4: the averaged loop's PI outputs carry persistent lines near 160–230 Hz at about 2 kV peak on PF3–PF5. The largest switched-only line is PF4 at 70 Hz, 678 V peak.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-voltseconds-landed" data-who="reckon-build" data-when="2026-10-15T18:15:00Z">
+    <div class="r-comment-body"><p>Exact volt-seconds landed (merged <code>39dfc04</code>; second review had no findings). The switched solver can report the exact volt-seconds of each step, including switching events inside it. With them, all 144 coil flux checks of the 36 closed-loop arms close; endpoint samples had left 38 undecided. A run that does not ask keeps its speed: 5,688 steps/s on Python 3.12, against the recorded 5,486. The closed-loop admitted set is now limited only by the loop-health check (6 arms). Next: <code>waveform-figures</code> redraws the waveform and spectrum figures from the admitted arms under the new figure rule, once <code>figure-layout-check</code> lands.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-vs1-closed" data-who="reckon-build" data-when="2026-10-17T13:02:00Z">
+    <div class="r-comment-body"><p>From §4's close: VS1 no longer needs to be driven open-loop. The scenario loop this section runs closes VS1 at the 2 ms PCS cycle with the lead design merged at <code>2c79a951</code>, and reports its tracking there, where the gain margin is only 6.04 dB. It reads the 1,050 V unit rating from <code>commutation.VALVE_VOLTAGE</code>, and adds a test guarding VS1's derived thyristor and IGBT caps.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-first-interval-parked" data-who="reckon-build" data-when="2026-10-17T20:25:00Z">
+    <div class="r-comment-body"><p>The first integrated-run node (run <code>r-20261017T193125631298</code>, six commits held in its worktree) paired the 105069/3 PF1/PF6 ramp interval in both converter forms. Both frozen forms reproduce the saved dummy-load point, the passive-coupling ratios are 0.8998 for PF1 and 0.8507 for PF6, and the energy residuals are 0.794 % and 0.165 %, all passing. Two things held it. First, the switched-window owner prescribes the other coils' currents and cannot take the shared plant or return every winding tap. Second, halving the step moved settled section peaks by up to 1,743 %, because the sections are undamped. The lead made the consolidation in shared-coil-supply-model the first priority on 17 October 2026. Gate g-istt-3 therefore holds this section on that plan's composed circuits, and the parked commits are folded in there.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-held-instability-20261021" data-who="reckon-build" data-when="2026-10-21T06:00:00Z">
+    <div class="r-comment-body"><p>§6 is held, by decision, until the switched model's instability is found and fixed. On the composed VS1 window a 1e-5 relative state difference grows to order one within 4 ms. The lead ruled on 21 October 2026 that this is instability, not sensitivity: real lossy converters damp perturbations. The old integrated run's 1,743 % settled-section shift under step halving is very likely the same defect. shared-coil-supply-model §4's node vs1-first-turn-convergence (power-convertor-02) is diagnosing the cause: trapezoidal ringing after events, undamped LC modes, VS1 loop margins, event chatter. Once the cause is fixed, §6 is redispatched on the shared model by this session, which owns it again. Its first check is that perturbations decay, and it harvests the parked run r-20261017T193125631298's six patches. That run is then discarded, before 2026-10-22 12:00Z. Gate g-istt-3's evidence, composed-pins-remainder (b8873cd6) and switched-bracket-recursion (d262f7ff), has merged; it closes at dispatch.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-ready-20261021" data-who="reckon-build" data-when="2026-10-21T16:05:00Z">
+    <div class="r-comment-body"><p>g-istt-3 passed on its measure, with three limits carried: the VS1 first-turn step criterion, the PF1 and CS3L insertion-pin model gap, and VS3 terminal-only. §6 now states its stability-first check, those limits, nova's 1 % cold-build and DINA-edge cautions, the saved patches of the discarded first attempt, and its staged nodes. The first node, integrated assembly with stability and the averaged whole-scenario run, dispatches after the plan's content review.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-stability-criterion-20261021" data-who="reckon-build" data-when="2026-10-21T17:40:00Z">
+    <div class="r-comment-body"><p>How "decays" is measured in §6's stability check. The first attempt at stage 1 (integrated-assembly-stability) applied the VS1 study's envelope ratio, below 0.1 over the window, and stopped. Over the pf-high-current-ramp interval at a 1e-5 step, the analytic form's ratios were 0.917, 0.03 and 0.921 at seeds 1e-10, 1e-8 and 1e-6, and 0.244 for the 0.2 s held arm. None of these is growth. That criterion was built for a damped LC ring over 4 ms, and a seeded state here decays at its slowest mode, a coil or passive-circuit L/R that is far longer than the window. The check is therefore decay against growth. For each seed and form, the run fits the envelope's exponential rate, with its uncertainty. It is stable when no fitted rate is positive and the envelope does not rise above its early peak. The fitted rate is checked against the slowest eigenvalue of the assembly linearised about the interval with controllers closed, and the mode it belongs to is named. The 1e-4 seed's different event list is classified as a sub-step shift or a discrete branch. A branch that changes the outcome is a defect to fix.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-held-plant-20261021" data-who="reckon-build" data-when="2026-10-21T20:10:00Z">
+    <div class="r-comment-body"><p>§6 is held on the plant. The first stage (integrated-assembly-stability) stopped correctly on three findings. The analytic form grows: +3.58 ± 0.94 s⁻¹ at a 1e-8 seed, an event branch between 3e-5 and 1e-4, and arms 6.2 kA apart over 4 s. The linearised spectrum carries two positive rates of order 1e7 s⁻¹. The whole-scenario energy closes to 5.19 %, not 1 %. The switched form is stable.</p><p>The spectrum's rates come from the pinned plant's indefinite coil linkage: <code>bare_inductance_h</code> gives VSU −3.84e-08 H and VSL −3.25e-08 H (shared-coil-supply-model comment c-s4-indefinite-cache, commit 9c654e94). nova confirms that a cold build on current main does not fix it, and tracks the defect as nova iter-passive-plasma-circuit §7. The likely mechanism is a coil-to-coil block computed at a different quadrature from the coil-to-jacket mutuals, with each VS coil inside its jacket at coupling near 1. §7 issues a new plant entry and key. shared-coil-supply-model's first §6 node (power-convertor-fe) then adopts the key in <code>nova_plant.py</code> as the one plant source. Stage 1 resumes on that plant. Its first assertion is the joint positive definiteness gate g-istt-6 records, and it also composes the supplies through <code>build_supply_circuit</code>.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-depends-s9-20261021" data-who="reckon-build" data-when="2026-10-21T20:20:00Z">
+    <div class="r-comment-body"><p>§6 now depends on shared-coil-supply-model §9, "One plant owner, on a jointly passive plant" (plan v166, 0e209509), in place of §4. §9 moves the plant source into <code>nova_plant.py</code> and adopts nova iter-passive-plasma-circuit §7's repaired key. It shows S = L − MᵀM with no negative eigenvalue, positive bare inductances, and no positive rate in the averaged spectrum of the thirteen composed supplies, using the old plant as the negative control. It also re-measures every composed pin on the new plant. §4 cannot close while its VS1 first-turn step criterion is open, and that criterion is already carried here as a stated limit, so §4 would hold §6 for no remaining reason. Gate g-istt-3 records what §4 supplied. Gate g-istt-6, nova §7, stands beside the new dependency.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-s7-transient-scoring" data-who="reckon-build" data-when="2026-10-15T07:50:00Z">
+    <div class="r-comment-body"><p>A scoring rule from the JT-60SA coil-circuit plan (S2, EF1 fast discharges): score a single transient, such as a fast discharge, a switching-network insertion or a switched edge, in the time domain, never as a single-event cross-spectral H(f). On the four 2023 EF1 dumps, the cleanest EF1 drive on record, the estimate keeps only 2–3 bins above a 0.9 coherence floor. There EF1→EF6 reads 19–38 % of M/L, and the control pair EF1→EF2 inflates from 7.7 % to 10–22 %, an estimator artefact that looks like a model miss. Instead, drive the model with the measured terminal voltage, predict the pickup waveform, and score the rms difference as a percentage of the measured peak. Include a no-passive arm, which must score worse on every event, or the event is too slow to show the screening. Steady booster ripple, with many cycles per window, remains valid for line ratios.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-s7-dump-waveform-uncertainty" data-who="reckon-build" data-when="2026-10-15T09:10:00Z">
+    <div class="r-comment-body"><p>A provisional waveform-level uncertainty for transients, from the JT-60SA coil-circuit plan (S2), measured on 2023 single-coil fast discharges. Each channel is referenced to its supply state, the model is driven by the measured terminal voltage, and the score is the rms difference as a percentage of the measured pickup peak. The EF5 control dumps are still to come.</p><ul><li><strong>Pickup waveform:</strong> nova's passive structure predicts dump pickup to 1.9–7.1 %. EF1→EF6 is 4.7–7.1 % against 14.5–16.8 % with no passive structure; EF1→EF2 is 1.9–3.1 % against 9.2–10.3 %; the EF6-driven pairs are 5.3–6.7 % against 8.2–16.4 %. Removing the vessel and cryostat worsens all 11 readings, and scaling their resistivity moves the pinned score from 7.1 % to 15.0 %, so the score is sensitive to the structure. The earlier 18.8 % EF1→EF6 outlier now looks like booster-test scatter.</li><li><strong>Peak voltage:</strong> predicted 10–20 % low on every pair, the control included (for example 140 V against 169 V, 432 V against 507 V), possibly because ripple spikes inflate the measured peaks. Until that is checked, carry a +20 % peak-voltage uncertainty on nova-predicted insertion and dump pickup, separate from the rms band.</li><li><strong>Method rule:</strong> in an FFT-based transient predictor the zero-frequency bin of the terminal ratio must take its M/L limit, because superconducting terminals carry no resistive term. Dropping it moved a score from 7.1 % to 61 %.</li></ul></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-s7-dump-peak-correction" data-who="reckon-build" data-when="2026-10-15T09:20:00Z">
+    <div class="r-comment-body"><p><strong>Correction to the dump waveform comment above</strong>, from the JT-60SA coil-circuit plan (S2) after its EF5 positive control; S2's independent review is pending. <strong>The +20 % peak-voltage allowance is withdrawn.</strong> The apparent 10–20 % peak shortfall came from supply-ripple spikes on the measured channel, not from a model amplitude error: raw predicted-to-measured peak ratios run 70–99 %, but averaged over 5 ms both peaks agree at 96–101 %. Carry instead:</p><ul><li>(a) The passive-structure model predicts the 5 ms-smoothed pickup peak within ±4 %.</li><li>(b) Raw peaks can run up to about 1.4 times the smoothed peak because of supply ripple. That belongs to the ripple model, not to the coupled-plant uncertainty, and is not added to the waveform band.</li></ul><p>The control: all 18 pairs on the eight 2023 dumps fit within 10 % rms of the pickup peak, and removing the passive structure worsens every one. EF1→EF6 is 4.7–7.1 %; EF1→EF2 1.9–3.1 %; EF6-driven 5.1–6.7 %; EF5-driven 2.1–3.6 %. The waveform band of 1.9–7.1 % and the zero-frequency M/L rule are unchanged. The 18.8 % EF1→EF6 miss belongs to the 2021 booster tests, not to missing conductors, so nova's passive structure stands.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-s7-dump-confirmed" data-who="reckon-build" data-when="2026-10-15T09:55:00Z">
+    <div class="r-comment-body"><p>Confirmed. The JT-60SA coil-circuit plan's §8 is closed with its independent review stored (102/120, no blockers; <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html#s8-waveform">s8-waveform</a>). The dump numbers above stand unchanged:</p><ul><li>18 of 18 pairs fit within 10 % of pickup peak, in the band 1.9–7.1 %;</li><li>the no-passive arm is worse on every pair;</li><li>5 ms-smoothed peaks agree within ±4 %;</li><li>the zero-frequency bin keeps its M/L limit;</li><li>nova's passive structure stands with no added conductor.</li></ul><p>The coupled-plant uncertainty for transients is therefore validated on measured data.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-s7-first-turn-landed" data-who="reckon-build" data-when="2026-10-15T10:05:00Z">
+    <div class="r-comment-body"><p>First-turn study landed (merged <code>ba3518e</code>): a 1 µs front puts 17–23 % of the step on turn 1 and nearly all of it across the first pancake, against 4–8 % at 1 ms (α 49–102; internal corner 31–209 kHz). It still needs the real front rise times from the waveform study and the switching-network design, and a turn-insulation rating. <a href="/power_convertor/evidence/archive/iter-switched-terminal-transients-landed.html#first-turn-voltage">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-s7-igbt-edge-landed" data-who="reckon-build" data-when="2026-10-15T12:10:00Z">
+    <div class="r-comment-body"><p>IGBT edge study landed (merged <code>3d918c8</code>). A 1,150 V VS1 edge reaches about 2.2 kV across PF3 and PF5 by busbar reflection, about 200 V on turn 1 and 1.4 kV across the first pancake, at up to 8,000 edges a second; the worst pancake peak is 2.76 kV. Bounded by an assumed slew, an unknown busbar split, lossless lines, and no insulation rating. <a href="/power_convertor/evidence/archive/iter-switched-terminal-transients-landed.html#igbt-edge-stress">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-s7-jt60sa-input" data-who="reckon-build" data-when="2026-10-15T15:55:00Z">
+    <div class="r-comment-body"><p>Coordinator decision: §7's switching and spike work does not wait on gate g-istt-2. The JT-60SA EF5→EF4 coupling result (node <code>jt60sa-ef4-coupling</code>, running) is an input to §7's harmonic-coupling predictions between circuits, used when it lands; the IGBT edge study has already landed. The gate stays recorded only because the plan editor cannot unbind a section from a gate. This session no longer dispatches JT-60SA characterisation. The remaining JT-60SA items (2023 pulses, stray bounds, the 12f–30f over-prediction) go to the JT-60SA plan's owner session.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-s7-initiation-landed" data-who="reckon-build" data-when="2026-10-15T16:31:00Z">
+    <div class="r-comment-body"><p>Initiation and fast-discharge transients landed (merged <code>deb91ae</code>). The SNU firing at initiation and an FDU trip at peak current were simulated per CS module, PF1 and PF6 on 105052/1, over front rise time, feeder length and split, and ground case. With the DINA-recovered SNU resistances, the SNU puts 13.4 kV across PF1, above its 12 kV envelope, and 10.1 kV across PF6. The CS modules stay at 4.0–7.8 kV, and an FDU trip reaches 7.8–8.8 kV. Not yet a verdict: <code>initiation-resistance-recheck</code> is re-deriving those resistances on nova's plant, because PF6's value matches an export-matrix mutual inductance to four digits. Review passed (goal 18); reuse 5 folded into <code>script-helper-owners</code>.</p><p>JT-60SA input landed too (merged <code>7ff5b58</code>). On E100318 with EF4 carried as a circuit, no path at EF4's terminals (winding capacitance, grounding, or the idle supply) carries the measured 12f transfer, 0.53 against the inductive 0.29. Imposing EF4's measured current recovers the inductive transfer and nothing more. For ITER this means no capacitive or grounding inter-circuit path is indicated. Harmonic coupling between circuits stays inductive, with a measured factor of about 1.9 at 12f left unexplained.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-s7-snu-resistances" data-who="reckon-build" data-when="2026-10-15T17:42:00Z">
+    <div class="r-comment-body"><p>The switching-network resistances have been re-derived against nova's coupled plant (merged <code>9b7f7ef</code>; two reviews, the final at durability 18). New values, with the old export values in brackets: CS3U 0.0709 (0.0577), CS2U 0.0614 (0.0451), CS1 0.1178 (0.1001), CS2L 0.0635 (0.0505), CS3L 0.0708 (0.0595), PF1 0.1787 (0.1616), PF6 0.2347 (0.2498) Ω. The CS1 late branch is 0.0801 Ω (0.0653). PF6's value is a resistance; the PF6–CS3L mutual contributes about a fifth, and the four-digit match with that mutual was a coincidence. With the new values the SNU puts 13.05 kV across PF1, above its 12 kV envelope, and 6.65 kV to ground. CS1 reaches 9.0 kV and PF6 8.7 kV.</p><p>The builder fix also merged (<code>628bb57</code>): <code>add_switching_network</code> placed the 3–13 s late branch on the CS3 modules, and now places it on CS1 with a caller-supplied resistance. <code>initiation-transient-rerun</code> now reruns the initiation study on the corrected builder and the single owned set of resistances. The PF1 result rests on resistances recovered from DINA; the SNU design values are not held.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-s7-initiation-rerun" data-who="reckon-build" data-when="2026-10-15T18:22:00Z">
+    <div class="r-comment-body"><p>The initiation study was rerun on the owned resistances and the corrected builder (merged <code>aa9421a</code>; review goal 19). The script reads <code>INITIATION_RESISTANCE_OHM</code> and <code>LATE_BRANCH_OHM</code> from their one owner, and the 210-row sweep reproduces the peaks. PF1 at 13.05 kV across and 6.65 kV to ground is the only envelope exceedance. The CS1 late branch acts over 3–13 s and moves no peak. The coordinator rendered both figures: they are readable, but the 10 and 12 kV limit lines are unlabelled (follow-on). The dummy-load coordination session will correct the converter inputs from IDM: a current-dependent bridge count (circulating below 10 % of rated current, one bridge from 10 to 40 %), PF6 at 52 kA, and the Stage 1 VS, PF and CS transformer impedances. The closed-loop arms at 5.5–22 kA will rerun once those land.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-20261016T133139-g-istt-2-bounds" data-who="reckon-build" data-when="2026-10-16T13:31:39Z">
+    <div class="r-comment-body"><p>Gate g-istt-2 stays open. The JT-60SA evidence now bounds the coupling but does not explain it.</p><ul><li><strong>Replay §5</strong> (jt60sa-switched-pulse-replay, merged <code>9e03938</code>). In E100318 the idle EF4, nearly open at ripple frequencies (1.24 A rms against 309 V rms), carries 0.534 of EF5's 12f voltage. The coupled plant gives 0.0647 with its 155 passive modes and 0.288 without them, so the measurement exceeds unshielded mutual induction by about 1.9 times. Scaling the passive resistance from 0.5 to 2 times moves no ratio by more than 0.00002. The line shape excludes a single cross-capacitance: it would have to be 68, 38, 7.4, about 2 and 2.4 nF at 6f to 30f. A cross (22 nF) plus shunt (98 nF) plus common-mode gain (−0.149) fits within the window spreads, but nothing bounds that gain physically.</li><li><strong>jt60sa-coil-circuit-model §12</strong> (closed). 23 lines are coupled, 11 mixed, 0 self-made and 18 unresolved. Nova misses the coupled lines by a median 81, 94 and 100 % at 6f, 12f and 18f. No firing-state record exists in the reachable archive, so the 18 stay unresolved. §11, the pickup terminals and the common-mode and terminal-to-ground path, is running and is expected to name the path.</li></ul><p><strong>Carried into ITER until the gate closes:</strong></p><ul><li>An idle, nearly open PF coil next to a driven one may pick up about 1.9 times the unshielded inductive 12f voltage. Coupling bands on idle coils carry that factor.</li><li>Every ITER ripple-coupling test needs a driver-off baseline and a recorded firing or blocking state for each idle supply.</li></ul></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-20261016-g-istt-2-pickup-circuit" data-who="reckon-build" data-when="2026-10-16T19:05:00Z">
+    <div class="r-comment-body"><p>Gate g-istt-2 evidence, still open. JT-60SA's documented pickup-terminal circuit is ruled out as the carrier of the EF5→EF4 12f coupling. The circuit comprised the installed booster-only filter, the as-built grounding legs, and coil and cable capacitance up to its 5.92 µF bound. It fits 0 of 27 scoreable lines, and the filter moves them by under 0.9 % (jt60sa-coil-circuit-model §11, merge <code>fb3fcfe</code>, <a href="/power_convertor/evidence/archive/jt60sa-coil-circuit-model-landed.html">evidence</a>). No source documents the voltage-tap wiring or any inter-coil transfer element. That plan's §13 now bounds the remaining candidate, port cuts in the passive walls.</p><p>What ITER carries meanwhile:</p><ul><li>the 1.9× inductive pickup factor on idle, nearly open PF coils;</li><li>a requirement that every ITER ripple-coupling measurement records how its voltage taps are wired (across the coil, or each terminal to ground) and the inter-coil ground return;</li><li>a supply-off baseline for every such measurement.</li></ul></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-20261016-g-istt-2-port-cuts" data-who="reckon-build" data-when="2026-10-16T20:20:00Z">
+    <div class="r-comment-body"><p>Gate g-istt-2 evidence, still open. Ports in the passive walls are ruled out as the source of nova's harmonic under-coupling on JT-60SA (jt60sa-coil-circuit-model §13, merge <code>5f1d0dc</code>, review 96/120). Median nova over measured across 27 scoreable lines:</p><ul><li>no cut: 0.092;</li><li>every port band removed outright, 29 of 155 filaments: 0.103, bringing none of the 25 under-coupled lines to the measured value;</li><li>the whole cryostat body removed: 0.44;</li><li>all passive structure removed (M/L): 2.1.</li></ul><p>The cryostat body carries most of the modelled screening on 15 lines and the lower vessel on 10.</p><p>For ITER: its vessel also has ports and is modelled as continuous axisymmetric walls, so the same bound carries over: a port cannot close a gap of this size. The walls stay at their IDM values. Fitting their resistivity or geometry to close the gap would fit the wrong element. The remaining candidate is an electrical path (capacitance to ground, common mode through the grounding, or the voltage-tap wiring), which that plan proposes to test separately. ITER's coils carry grounding paint on their ground insulation, so on ITER such a path would run through ground rather than directly between coils.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261017T201259923286-review-of-stray-sweep-first-window-da0a24aa59d2" data-who="reckon-build" data-when="2026-10-17T20:32:48.079Z">
+    <div class="r-comment-body"><p>the review record for r-20261017T191949050187-stray-sweep-first-window is stored at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261017T191949050187-stray-sweep-first-window/review-records/r-20261017T191949050187-stray-sweep-first-window.json (and its .at-da0a24aa sibling); no plan edit, no repo commit</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261017T211323787378-review-of-stray-sweep-first-window-230461141268" data-who="reckon-build" data-when="2026-10-17T21:23:46.114Z">
+    <div class="r-comment-body"><p>review of r-20261017T191949050187-stray-sweep-first-window at head 23046114126875741152cb32cb9cdb14d934a8a0 stored at review-records/r-20261017T191949050187-stray-sweep-first-window.json (total 91; all four prior blocking findings answered, six follow-on findings raised)</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261017T214419126160-review-of-stray-sweep-first-window-fc643bf13533" data-who="reckon-build" data-when="2026-10-17T21:56:35.665Z">
+    <div class="r-comment-body"><p>review of r-20261017T191949050187-stray-sweep-first-window at head fc643bf13533fdd64538bffb30ff90e6ce39bcd4 stored at review-records/r-20261017T191949050187-stray-sweep-first-window.json (total 98; the four prior blocking findings answered, four follow-on findings raised)</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261017T191949050187-stray-sweep-first-window" data-who="reckon-build" data-when="2026-10-17T21:36:56Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/iter-switched-terminal-transients/stray-sweep-first-window.html</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-s7-first-window" data-who="reckon-build" data-when="2026-10-18T00:02:00Z">
+    <div class="r-comment-body"><p>The one-at-a-time sweep on the PF1/PF6 window landed (merge <code>3eb1f206</code>). Commutation inductance drives the terminal peaks, dV/dt and the 600 Hz line, and snubber capacitance drives the internal peaks. Still open in this section: the joint space-filling sample, and the PF2–PF5 and initiation windows. They run on the shared model once shared-coil-supply-model §2 lands. Four follow-ons from review are folded into that next node. The module's docstrings carry § plan labels. Seven of the eight stray keywords lack an end-to-end test. A red arm for the disconnected-node control was not recorded. The record substitutes the 6 kV PF6 Paschen window for the helium Paschen minimum (152 V, <code>ripple_margins.HELIUM_PASCHEN_MIN_V</code>) without saying why. <a href="/power_convertor/evidence/archive/iter-switched-terminal-transients-landed.html#stray-sweep-first-window">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261018T120215705424-review-of-stray-drivers-remaining-windows-a86b63f70e60" data-who="reckon-build" data-when="2026-10-18T12:10:01Z">
+    <div class="r-comment-body"><p>Independent review stored at both declared review-record paths for base 96ebac613f1a3add747575c43b300b6d73f092c4 and head a86b63f70e60fb3de3219fa5cb3a3839eb77c6bd; total 78/120 with six blocking and three follow-on findings.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261018T130225069113-review-of-stray-drivers-remaining-windows-e69bb1e9650c" data-who="reckon-build" data-when="2026-10-18T13:11:14Z">
+    <div class="r-comment-body"><p>Independent review of base 96ebac613f1a3add747575c43b300b6d73f092c4 and head e69bb1e9650c2623378e58468cd158cefa71f6b1 stored at both declared review-record paths; 68/120 with four blocking and five follow-on findings; source baseline 14 passed and head 38 passed, zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261018T141656592760-review-of-stray-drivers-remaining-windows-e838cb88b447" data-who="reckon-build" data-when="2026-10-18T14:25:31Z">
+    <div class="r-comment-body"><p>Parsed independent review stored for 96ebac613f1a3add747575c43b300b6d73f092c4..e838cb88b4472c36d99323f651fea398a3d9dd68, scoring 89/120 with four blocking and five follow-on findings; the source node remains held for the named repairs.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261018T151257612452-review-of-stray-drivers-remaining-windows-a18f3046a348" data-who="reckon-build" data-when="2026-10-18T15:23:50Z">
+    <div class="r-comment-body"><p>Parsed independent review stored for 96ebac613f1a3add747575c43b300b6d73f092c4..a18f3046a348892f4d8905127f35730485e952ed at both declared paths, scoring 95/120 with two blocking and four follow-on findings; source promotion remains held for the named repairs.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261018T100255375369-stray-drivers-remaining-windows" data-who="reckon-build" data-when="2026-10-18T15:05:56Z">
+    <div class="r-comment-body"><p>The record and the code now agree on the helium reference and agree with the library that owns it. Against 152 V the three measures whose insulation faces helium break it everywhere this window is swept, and the smallest ratio any of them reaches is x1.3, so the helium breakdown finding is no longer diluted by a reference 39 times too large. The figure names every driver on its own panel rather than grouping seven measures on one axis, and the control's zero is measured through the physical circuit.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261018T192651005338-review-of-stray-drivers-pf2-pf5-lossy-389c010da01a" data-who="reckon-build" data-when="2026-10-18T19:33:42Z">
+    <div class="r-comment-body"><p>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T181626662351-stray-drivers-pf2-pf5-lossy/review-records/r-20261018T181626662351-stray-drivers-pf2-pf5-lossy.at-389c010da01ae003c37a357045582162ad9fe8c4.json — parsed review of f5b55b5c84f773be8d65195a6b7b41271de4929d..389c010da01ae003c37a357045582162ad9fe8c4, with one blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261018T181626662351-stray-drivers-pf2-pf5-lossy" data-who="reckon-build" data-when="2026-10-18T19:35:18Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/iter-switched-terminal-transients/stray-drivers-pf2-pf5-lossy.html#stray-drivers-pf2-pf5-lossy-title — PF2 commutation inductance leads its sampled voltage peaks at both installed-loss bounds; the shared ranked-driver figure and 1864 V worst endpoint are recorded with the IGBT edge hook limitation.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261019T072019378270-review-of-stray-edge-rate-converged-caa0caa0a627" data-who="reckon-build" data-when="2026-10-19T07:42:56.243Z">
+    <div class="r-comment-body"><p>review attached to r-20261019T062903143968-stray-edge-rate-converged at head caa0caa0; verdict — the edge-rate factor, the PF2 notch control and the laid_screen screen assembly are real and reachable from production, but one blocking finding (the head arm of the named gate has no recorded summary line) and five follow-on findings stand against it.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261019T082858037420-review-of-stray-edge-rate-converged-99386f7c79c0" data-who="reckon-build" data-when="2026-10-19T08:43:35Z">
+    <div class="r-comment-body"><p>Parsed independent review of caa0caa0a6272fa80a3912a53daf5f1cc0a628cc..99386f7c79c0b874061349e4b38bb9ab8e20422c stored at both assigned record paths; 88/120, zero blocking and two follow-on findings.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261019T062903143968-stray-edge-rate-converged" data-who="reckon-build" data-when="2026-10-19T08:28:41Z">
+    <div class="r-comment-body"><p>in the two-factor PF2 endpoint comparison, exact terminal extrema put commutation inductance ahead of the IGBT edge rate on all nine measures at low installed loss; the edge rate leads seven of nine at high loss, while terminal slew and notch overshoot stay with commutation inductance; the ranked figure and both-end values are in the fragment.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261019T100358213191-review-of-stray-edge-rate-rerun-b5d63160c69c" data-who="reckon-build" data-when="2026-10-19T10:14:57.610Z">
+    <div class="r-comment-body"><p>review-of-stray-edge-rate-rerun-b5d63160c69c: independent review of r-20261019T090521807970-stray-edge-rate-rerun at 9e4ee6b8..b5d63160 stored at both declared review-record paths; parsed, 114/120 (goal 20, evidence 19, scope 20, durability 18, fit 17, reuse 20), zero added failures, two follow-on findings and no blocking finding</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-close-s7" data-who="reckon-build" data-when="2026-10-19T10:40:00Z">
+    <div class="r-comment-body"><p>§7 closed. Every PF2–PF5 measure has its ranked drivers with margins at both ends of every unknown input's range (merged <code>09922bd7</code>, edge rate at <code>d198c432</code>). Finding: on the fixed integrator the IGBT edge rate, not commutation inductance, is the dominant stray driver, leading 7 of 9 measures at low installed loss and 8 of 9 at high. <a href="/power_convertor/evidence/archive/iter-switched-terminal-transients-landed.html#stray-edge-rate">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261019T090521807970-stray-edge-rate-rerun" data-who="reckon-build" data-when="2026-10-19T10:03:28.976Z">
+    <div class="r-comment-body"><p>stray-edge-rate-rerun: regenerated the PF2 edge-rate ranking on the fixed exact integrator; the edge rate now leads seven of nine measures at the lower installed-loss bound (commutation inductance led all nine before) and eight of nine at the upper, with the terminal-to-ground swing of commutation inductance falling from 0.800 to 0.024 at the low bound and the sampled sweep now a ceiling rather than a floor; measure is the regenerated table and figure /power_convertor/figures/iter-stray-switching-transients/stray-edge-rate/ranked-drivers.svg</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261018T104847330454-review-of-fast-discharge-tf-bf298d1157ec" data-who="reckon-build" data-when="2026-10-18T10:56:33Z">
+    <div class="r-comment-body"><p>Independent review of source base 06260776d5ab91e7a5087821fdd96624b7955895 to head bf298d1157ec3963d755e3384f741e02092024fd is stored in the revision-keyed JSON record; all six dimensions and six checklist items parsed, with four blocking and two follow-on findings.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261018T105824919953-review-of-fast-discharge-pf-cs-64485cca4591" data-who="reckon-build" data-when="2026-10-18T11:04:53Z">
+    <div class="r-comment-body"><p>Independent review stored at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T090341085302-fast-discharge-pf-cs/review-records/r-20261018T090341085302-fast-discharge-pf-cs.at-64485cca4591b4fa293202d8657a0b5edba282fd.json for source base 06260776d5ab91e7a5087821fdd96624b7955895 and head 64485cca4591b4fa293202d8657a0b5edba282fd.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261018T114258972990-review-of-fast-discharge-tf-65694fab40bc" data-who="reckon-build" data-when="2026-10-18T11:49:33Z">
+    <div class="r-comment-body"><p>Independent review of base 06260776d5ab91e7a5087821fdd96624b7955895 to head 65694fab40bcd9f08beac622e722071717b056d2 stored in the revision-keyed JSON record; six dimensions and six checklist items parsed, with three blocking and three follow-on findings.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261018T120048296444-review-of-fast-discharge-pf-cs-4c04acc6cd43" data-who="reckon-build" data-when="2026-10-18T12:10:26Z">
+    <div class="r-comment-body"><p>Stored the parsed revision-keyed review for base 06260776d5ab91e7a5087821fdd96624b7955895 and head 4c04acc6cd43a706eec3bb57e3e2c45f34c81898, with six dimension scores and nine findings.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261018T130336223028-review-of-fast-discharge-pf-cs-d5f80868641b" data-who="reckon-build" data-when="2026-10-18T13:12:03Z">
+    <div class="r-comment-body"><p>Independent review of base 06260776d5ab91e7a5087821fdd96624b7955895 through head d5f80868641bdade359c9695f351516798ddc680 stored at both declared review-record paths with six scores, six checklist items, six blocking findings and two follow-on findings.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261018T140846033785-review-of-fast-discharge-pf-cs-1535df367b6a" data-who="reckon-build" data-when="2026-10-18T14:16:16Z">
+    <div class="r-comment-body"><p>Independent review of source base 06260776d5ab91e7a5087821fdd96624b7955895 through head 1535df367b6a9ff090c281309c41598d581b0359 stored at both declared review-record paths with six scores, six checklist items, five blocking findings and four follow-on findings.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261018T154859954603-review-of-fast-discharge-tf-d44a7dbfcfee" data-who="reckon-build" data-when="2026-10-18T15:57:03Z">
+    <div class="r-comment-body"><p>Independent review of source base 06260776d5ab91e7a5087821fdd96624b7955895 through head d44a7dbfcfee7d92fef319ba8464202ed17963c5 stored in both declared JSON paths; six scores and six checklist items parsed, with one blocking and four follow-on findings.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261018T162642624868-review-of-fast-discharge-pf-cs-4831f1dd8eec" data-who="reckon-build" data-when="2026-10-18T16:37:10Z">
+    <div class="r-comment-body"><p>Parsed review record written to both declared review-record paths; source base 06260776d5ab91e7a5087821fdd96624b7955895 and reviewed head 4831f1dd8eec03ecdd6daa563c8faa1f8ae59b9b, ready for plan-section comment on promotion.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261018T163332568892-review-of-fast-discharge-tf-212fd602469f" data-who="reckon-build" data-when="2026-10-18T16:52:00Z">
+    <div class="r-comment-body"><p>Independent parsed review of base 06260776d5ab91e7a5087821fdd96624b7955895 through head 212fd602469ff15ac30508c749a3bbf71ac59b72 stored at both declared review paths; six scores, six checklist items, eight findings, three blocking.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261018T165702028901-review-of-fast-discharge-pf-cs-4831f1dd8eec" data-who="reckon-build" data-when="2026-10-18T17:05:40Z">
+    <div class="r-comment-body"><p>Parsed independent review for source base 06260776d5ab91e7a5087821fdd96624b7955895 and head 4831f1dd8eec03ecdd6daa563c8faa1f8ae59b9b is stored in both declared review-record paths, with six scores, 11 findings and 2 blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261018T171035809679-review-of-fast-discharge-pf-cs-4831f1dd8eec" data-who="reckon-build" data-when="2026-10-18T17:17:33Z">
+    <div class="r-comment-body"><p>Stored parsed independent review for base 06260776d5ab91e7a5087821fdd96624b7955895 and head 4831f1dd8eec03ecdd6daa563c8faa1f8ae59b9b in both declared paths, with six scores, six checklist items, five findings and one blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261018T174852851066-review-of-vs1-discharge-cases-18aebfd67108" data-who="reckon-build" data-when="2026-10-18T17:55:59Z">
+    <div class="r-comment-body"><p>Independent review stored at both declared review-record paths for base f1744f404847fff5ac7b45d9cd7dcfcc058ba548 and head 18aebfd67108155b94d3608f652d7ff9578c587b; scores 15/14/20/15/16/5, one blocking and two follow-on findings.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261018T170327334617-vs1-discharge-cases" data-who="reckon-build" data-when="2026-10-18T18:00:47Z">
+    <div class="r-comment-body"><p>VS1-only protection retains 90 A at 1200 s from a 3.829 kA worst-instant start with the assumed 1 mΩ bypass, while simultaneous PF discharge leaves 8.47 A at 150 s; the 0.1 mΩ sensitivity leaves 1.838 kA at 1200 s. Evidence docs/evidence/fragments/iter-switched-terminal-transients/vs1-discharge-cases.html#vs1-discharge-cases and docs/research/iter-vs1-discharge.html.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-s8-landings-1018-eve" data-who="reckon-build" data-when="2026-10-18T18:20:00Z">
+    <div class="r-comment-body"><p>§8 landings on 18 October (evening):</p><ul><li><strong>PF and CS discharges</strong> with heated resistors on the coupled plant (<code>9e4991e4</code>), covering each group alone, the PF group, the CS group, and the PF+CS simultaneous trip. The record shows two rated PF6 terminal-to-ground exceedances and 16 of 72 resistor energies above their 778SPD maxima. An independent review found that the peaks come from the coarse decay trace (27 of 60 fine peaks are higher) and that the decay modes omit the 167 passive states. <strong>Do not quote these numbers until node <code>fdu-all-groups</code> corrects both.</strong></li><li><strong>VS1 protection cases</strong> (<code>51f6c2cb</code>): VS1 needs no discharge unit to keep a current path, but a VS-only trip leaves a slowly decaying loop current whose long bypass duty IDM does not qualify. From 3.83 kA at the 105069/3 worst-energy instant, a simultaneous PF2–PF5 discharge leaves 8.5 A at 150 s. A VS-only trip leaves −90 A at 1200 s with an assumed 1 mΩ bypass, and 1.84 kA with 0.1 mΩ.</li><li><strong>TF discharge</strong>, in repair. The heated-resistor model gives a 8.71 kV peak, reported against 778SPD's 7.0–8.0, 8.5 and 10 kV, not fitted under them. It puts 4.39 GJ in each resistor against 778SPD's 3.81 GJ, which leaves about 16 % of the 41 GJ for the coil cases. The repair bounds the peak between the passive mode as modelled and a case coupling sized to that allocation; 778SPD is now readable from data/sources for the attribution. The 17.7 H string inductance includes the mutuals: 0.349 H isolated, about 0.98 H effective per coil.</li></ul></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261018T090341085302-fast-discharge-pf-cs" data-who="reckon-build" data-when="2026-10-18T15:39:28Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/iter-switched-terminal-transients/fast-discharge-pf-cs.html — 28 standard runs plus four converter-boundary runs; 2 rated PF6 ground-voltage exceedances and 16/72 physical-resistor energy exceedances.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261018T224415876954-review-of-fast-discharge-tf-f9eef8d2048d" data-who="reckon-build" data-when="2026-10-18T22:51:07Z">
+    <div class="r-comment-body"><p>Parsed independent review of source base 06260776d5ab91e7a5087821fdd96624b7955895 through head f9eef8d2048dd52db3879a4708bc5225dcb3d4f9 stored in both declared JSON records; six dimensions and six checklist items scored, with four blocking and two follow-on findings.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261018T090404491431-fast-discharge-tf" data-who="reckon-build" data-when="2026-10-18T18:22:46Z">
+    <div class="r-comment-body"><p>TF fast discharge with measured-conductor and assumed case-energy paths gives resistor energies 4.385/3.810 GJ per unit, peaks 8.713/8.086 kV, and tau_eq 10.842/9.846 s. 778SPD v1.0 PDF p. 10 gives 41 GJ stored and 34.5 GJ dissipated in the nine-unit set; PDF p. 29 gives 3.81 GJ maximum per unit. The model trace leaves 16.207 percent outside resistor banks at that per-unit maximum. The SDDD names no receiving structure; the case carrier is an mctb-supported assumption, with evidence in docs/evidence/fragments/iter-switched-terminal-transients/fast-discharge-tf.html.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261018T224325566926-review-of-fdu-all-groups-3f8351a4e77b" data-who="reckon-build" data-when="2026-10-18T22:58:01.467Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/iter-switched-terminal-transients/fdu-all-groups.html#fdu-all-groups — review of the fdu-all-groups node at 3f8351a4: goal_fidelity 19, evidence 19, scope_discipline 18, durability 19, fit 17, reuse 5 (total 97), three follow-on findings, no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261018T212526430819-fdu-all-groups" data-who="reckon-build" data-when="2026-10-18T22:43:31Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/iter-switched-terminal-transients/fdu-all-groups.html#fdu-all-groups — 28 converged PF/CS runs, 2 ground-voltage exceedances, 16/72 resistor-energy exceedances, full-state PF+CS slowest mode 79.39 s; figure docs/figures/iter-fast-discharge/terminal-voltage-to-ground.svg.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-10-19T04:50:00Z">
+    <div class="r-comment-body"><p>§8 closed. Every PF and CS group, and all together, run on the coupled plant with heated resistors (merged <code>9e4991e4</code>, <code>cf5e756c</code>), and TF runs with the energy-linear law and its passive mode (merged <code>9ba4309c</code>). Findings against the IDM ratings: PF6 terminal-to-ground reaches 1.11 of 22HLVN's limit in the PF + CS discharge at rated current, and 16 of 72 resistor rows exceed their 778SPD energy maximum (worst PF6, 1.48). TF terminal-to-ground is 4.04–4.36 kV, within 7.0 kV. <a href="/power_convertor/evidence/archive/iter-switched-terminal-transients-landed.html#fast-discharge-groups">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261018T093459960545-review-of-scenario-screen-9490c830fcd4" data-who="reckon-build" data-when="2026-10-18T09:41:10Z">
+    <div class="r-comment-body"><p>Independent review for r-20261018T090433033049-scenario-screen at 9490c830fcd4a33dcb53d9ba7ecd522a82959914 stored under review-records; scores 13/11/20/10/12/5 and seven findings, three blocking.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261018T095810643379-review-of-scenario-screen-833458477db3" data-who="reckon-build" data-when="2026-10-18T10:05:23Z">
+    <div class="r-comment-body"><p>independent review of r-20261018T090433033049-scenario-screen at base 06260776d5ab91e7a5087821fdd96624b7955895 and head 833458477db39f8a94644c77c731a9df1be287b4 is stored at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T090433033049-scenario-screen/review-records/r-20261018T090433033049-scenario-screen.at-833458477db39f8a94644c77c731a9df1be287b4.json; scores are 16/15/20/12/15/5 with one blocking source finding</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261018T104227441511-review-of-scenario-screen-4ee084f12e5f" data-who="reckon-build" data-when="2026-10-18T10:49:47Z">
+    <div class="r-comment-body"><p>Independent review of base 06260776d5ab91e7a5087821fdd96624b7955895 through head 4ee084f12e5f9c416f886cae31b60c4a2f54a789 stored as a parsed record with six scores 13/14/20/12/18/5, five findings including two blocking, and zero added failure ids from the completed head gate.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261018T112941266959-review-of-scenario-screen-b322a4de7fdf" data-who="reckon-build" data-when="2026-10-18T11:35:51Z">
+    <div class="r-comment-body"><p>Independent review of source base 06260776d5ab91e7a5087821fdd96624b7955895 through head b322a4de7fdf32e3fd3a1b7cd7a329448131ef45 stored at the revision-keyed JSON path; six scores 18/16/20/14/18/5, three follow-on findings, zero added failure ids at the completed head gate.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261018T090433033049-scenario-screen" data-who="reckon-build" data-when="2026-10-18T11:27:18Z">
+    <div class="r-comment-body"><p>scenario-screen: all 50 complete DINA cases screened against the IDM ratings, every case carrying a row for all 13 supplies, each supply's row carrying the peak demanded voltage over the interval the converter itself supplies, the ratio against its converter rating, and its own worst case ranked by margin — worst overall PF6 on 105052/1 at -0.726 on out_of_window_demand, 8 of the 13 coils carrying a case past the measure closest to their limit, and the record reconciling with the overview's published out-of-window demand ratios to within 0.45 % through the twelve SRO envelope cases. See docs/research/iter-scenario-screen.html, whose measure's figure is docs/figures/iter-scenario-screen/margins.svg, and whose ranking, count and control sentences are generated from cases.json by scenario_screen.fragment() rather than written beside it</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-10-18T11:40:00Z">
+    <div class="r-comment-body"><p>§9 closed: all 50 complete DINA cases are screened against the IDM ratings for all thirteen supplies (merged at <code>195d9ec8</code>). Eight coils cross a limit in some case; PF6 on 105052/1 is worst at −0.726. The envelope control is within 0.45 %. <a href="/power_convertor/evidence/archive/iter-switched-terminal-transients-landed.html#scenario-screen">evidence</a></p></div>
+</div>
+</section>
+</main>
+</body>
+</html>
