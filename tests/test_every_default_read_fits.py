@@ -67,7 +67,7 @@ pytestmark = pytest.mark.timeout(900)
 #: them. Every other view is held to its declared row.
 LOSSLESS_VIEWS = {("roadmap", "raw"), ("audit", "raw")}
 
-ROADMAP_VIEWS = ("summary", "detail", "raw")
+ROADMAP_VIEWS = ("brief", "summary", "detail", "raw")
 READ_PLAN_VIEWS = (
     "summary",
     "detail",

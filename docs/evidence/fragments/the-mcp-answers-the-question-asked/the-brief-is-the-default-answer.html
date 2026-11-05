@@ -1,0 +1,125 @@
+<!-- Evidence anchor: the-brief-is-the-default-answer -->
+
+<section data-reckon="evidence" id="the-brief-is-the-default-answer-evidence">
+  <h3>§6 — The brief is the default answer</h3>
+
+  <p id="the-brief-is-the-default-answer-default">
+    <strong>A single project's roadmap read now answers with the brief.</strong>
+    <code>_roadmap_selected_view</code> in <code>reckon/mcp.py</code> resolves a
+    call that names no view to <code>brief</code> when the target is one
+    project, and leaves a portfolio (<code>"*"</code>) or <code>graph:</code>
+    target on its own default, because neither carries a single project to
+    brief. <code>view="summary"</code>, <code>"detail"</code> and
+    <code>"raw"</code> are unchanged and remain the drill-downs. The brief view
+    is composed by <code>_brief_view</code>: the summary's own fields, produced
+    by the function the <code>summary</code> view calls, plus
+    <code>text</code> and the typed <code>lines</code> behind it, so the two
+    answers cannot disagree about a figure. An explicit
+    <code>view="brief"</code> against a portfolio or graph target is refused
+    with a <code>detail</code> that names the three views it can take.
+  </p>
+
+  <p id="the-brief-is-the-default-answer-reason">
+    <strong>Every ranked row carries the ranking's own <code>reason</code>.</strong>
+    The brief's <code>ready_sections</code> line already emitted each ranked
+    row's <code>ref</code>, <code>plan</code>, <code>reason</code> and
+    <code>unlocks</code>; this node holds the default answer to it, so the test
+    compares each entry's reason against the payload row it was read from rather
+    than against a literal. The brief does not call §4's <code>why(ref)</code>,
+    which is why this section did not wait on it.
+  </p>
+
+  <p id="the-brief-is-the-default-answer-skills">
+    <strong>Both skills lead with the brief.</strong>
+    <code>skills/reckon-roadmap/SKILL.md</code> now opens its fast path with the
+    brief and describes <code>summary</code>, <code>detail</code> and
+    <code>raw</code> as drill-downs; <code>skills/reckon-status/SKILL.md</code>
+    makes "where are we / what to do next" the brief's question and moves
+    <code>read_plan(project, view="summary")</code> below it. The test parses
+    each file's <code>## Fast path</code> block and requires the first mention
+    of the brief to precede the first named roadmap or plan view, so a later
+    edit that lists <code>summary</code> first fails rather than silently
+    reordering the reader's question.
+  </p>
+
+  <p id="the-brief-is-the-default-answer-measure">
+    <strong>The measure, and the control.</strong>
+    <code>tests/test_the_brief_is_the_default_answer.py</code> asserts a
+    view-less single-project read returns <code>view="brief"</code> with a
+    non-empty <code>text</code> and typed <code>lines</code>, that each ranked
+    row's reason equals its payload row's, that a named
+    <code>view="summary"</code> read is unchanged and carries no
+    <code>text</code>/<code>lines</code>, that the brief's summary fields equal
+    the summary view's, and that both skill fast paths name the brief first. On
+    the base revision the same file answers <strong>5 failed, 1 passed</strong>
+    (the passing arm is the summary-unchanged assertion, which already held);
+    at the head it answers <strong>6 passed</strong>. The declared mutation —
+    resolving the default view to <code>summary</code> again — reds
+    <code>test_a_default_roadmap_read_answers_with_the_brief</code> at
+    <code>EXIT=1</code>.
+  </p>
+
+  <p id="the-brief-is-the-default-answer-size">
+    <strong>The brief has its own row, above the summary's.</strong>
+    <code>reckon/mcp_budget.py</code> now declares
+    <code>("roadmap", "brief")</code> and names <code>brief</code> as the
+    roadmap's default view, so a call that names no view is held to the answer
+    it receives instead of to the summary's row. The row is sized for a
+    project's brief with headroom over that summary row rather than at a figure
+    measured once: a brief carries the summary's own fields plus the composed
+    lines and the typed rows behind them, and grows with the project's
+    dependency graph.
+  </p>
+
+  <p id="the-brief-is-the-default-answer-boundary">
+    <strong>The boundary is measured on an answer, not the table.</strong>
+    The case that guards this builds a brief-shaped payload of
+    <strong>25,000</strong> characters and asks the resolver the MCP read uses
+    two questions: does the view a call naming no view resolves to admit it,
+    and would the summary's <strong>20,000</strong>-character row turn it away.
+    Both hold, so the two rows describe different answers. The earlier form of
+    this assertion compared the table's brief row with the row the default view
+    resolved, and passed with the brief row lowered back to 20,000 because both
+    sides moved together. The case now fails on that mutation:
+    <strong>1 failed, EXIT=1</strong> in
+    <code>logs/negative-control-brief-row.txt</code>. A fixture project was
+    tried first and rejected: a project whose brief exceeds 20,000 characters is
+    large enough that <code>roadmap view="detail"</code> answers
+    <strong>54,389</strong> characters over its own 30,000-character row, so
+    the contract is tested on the composition it governs.
+  </p>
+
+  <p id="the-brief-is-the-default-answer-snapshot">
+    <strong>The slow-read snapshot keeps working, filed under its own shape.</strong>
+    A roadmap read stores every composition as its tree's last answer for the
+    request shape it composed, marked with whether its key held, and answers a
+    read held past its reserve from that record. The shape carries
+    <code>view</code>, and its own documentation states why: two calls that
+    differ in any shape field compose different payloads. A brief answer
+    carries <code>text</code> and <code>lines</code> that a summary answer does
+    not, so a view-less read now files under
+    <code>view="brief"</code> and a named summary read under
+    <code>view="summary"</code>. Nothing in the store changed. On the merge of
+    current main the slow-read cases answered <strong>6 failed, 5 passed</strong>
+    because they pinned the <em>default</em> shape to
+    <code>summary</code>. That constant now names the brief, no assertion was
+    weakened, and the same file answers <strong>11 passed</strong>.
+  </p>
+
+  <p id="the-brief-is-the-default-answer-revision">
+    <strong>A landed test that asserted the default view revised.</strong>
+    <code>tests/test_mcp_recovery.py</code> held
+    <code>test_single_project_roadmap_defaults_to_summary_and_raw_is_explicit</code>,
+    which called the tool with no view and required
+    <code>view == "summary"</code>. It now names <code>view="summary"</code>
+    explicitly and is renamed
+    <code>test_single_project_roadmap_answers_named_summary_and_raw_is_explicit</code>,
+    as the done-when requires. That file is outside this node's declared write
+    paths; the revision is made because the section's own measure names it.
+    The slow-read file above was revised the same way and for the same reason:
+    it named the default answer's shape as <code>summary</code>, and the
+    default answer is now the brief. Both files, and
+    <code>tests/test_every_default_read_fits.py</code>, are now inside this
+    node's write scope, granted when each landed.
+  </p>
+</section>

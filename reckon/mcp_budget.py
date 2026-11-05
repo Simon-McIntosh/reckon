@@ -22,6 +22,13 @@ MINIMUM_RESPONSE_CEILING = 128
 VIEW_BUDGETS = {
     # roadmap: a per-plan table plus a page of graph findings.
     ("roadmap", "summary"): 20_000,
+    # roadmap view=brief: a project's brief, which carries the summary's own
+    # fields plus the composed lines and the typed rows behind them, so a reader
+    # acts on one line without a second call. It is a larger composition than
+    # the summary for the same project and grows with the project's dependency
+    # graph, so its row sits above the summary's with headroom rather than at
+    # the summary's own figure.
+    ("roadmap", "brief"): 30_000,
     ("roadmap", "detail"): 30_000,
     ("roadmap", "raw"): 80_000,
     # read_plan: one plan's page of state, never its whole section list.
@@ -63,7 +70,7 @@ VIEW_BUDGETS = {
 
 #: The view a tool answers with when the call names none.
 DEFAULT_VIEWS = {
-    "roadmap": "summary",
+    "roadmap": "brief",
     "read_plan": "summary",
     "audit": "summary",
     "crew": "summary",

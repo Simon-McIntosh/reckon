@@ -14,10 +14,11 @@ allowed-tools: Read Bash(*) Grep mcp__reckon___read_plan mcp__reckon___audit mcp
 # reckon-status — read-only plan inspection and quality audit
 
 ## Fast path
-- What's open / where are we → `read_plan(project, view="summary")`.
+- Where are we / what to do next / true blockers / critical path → `roadmap(project="<project>")`, which answers with the project brief: the composed lines for completion, the active sprint, the critical path and what holds its head, the ranked ready sections with their reasons, blockers, at-risk work and wiring. Every line carries the payload rows behind it, so one read answers the question.
+- What's open, plan by plan → `read_plan(project, view="summary")`, a drill-down from the brief.
 - Status of one plan → `read_plan(resource={project,type:"plan",id:slug})`.
-- What to ship next / true blockers / critical path → use `reckon-roadmap` and the `roadmap` tool.
 - Audit health → call `audit(project, view="summary")`, then request detail if findings exist.
+- The full roadmap report, when the brief's lines are not enough → `roadmap(project="<project>", view="summary")`, with `view="detail"` or `view="raw"` for the lossless report.
 
 Full detail below.
 

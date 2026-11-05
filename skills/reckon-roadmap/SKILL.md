@@ -15,9 +15,17 @@ allowed-tools: Read Bash(*) Grep mcp__reckon___roadmap mcp__reckon___read_plan m
 
 ## Fast path
 
-- One project → `roadmap(project="<project>")`.
+- One project → `roadmap(project="<project>")`, which answers with the project
+  brief: the composed lines that decide what to do next (completion, active
+  sprint, critical path with what holds its head, the ranked ready sections
+  with the reason each was ranked, blockers, at-risk work, wiring), each line
+  carrying the payload rows behind it.
+- The full report, for a reader that wants every field → `roadmap(project="<project>", view="summary")`,
+  and `view="detail"` or `view="raw"` to go lossless. These are drill-downs from
+  the brief, not the first read.
 - One sprint plus transitive prerequisites → `roadmap(project="<project>", sprint="<id>")`.
-- Mounted portfolio → `roadmap(project="*")`.
+- Mounted portfolio → `roadmap(project="*")`; a portfolio has no single project
+  to brief, so it keeps its own summary default.
 - Worktree → pass the same absolute `checkout_path` used for plan reads.
 
 Never rebuild the dependency graph by hand when the `roadmap` tool is
