@@ -43,9 +43,13 @@
     finished waiting on. Satisfaction is decided by the roadmap's own
     <code>_section_satisfied</code>, so a section released here is one the
     roadmap releases too — including a section carrying no declaration, which
-    a gate closing to <code>passed</code> satisfies. Dependency refs are split
-    by <code>_schema.parse_plan_ref</code>, the grammar every other surface
-    reads them with.
+    a gate closing to <code>passed</code> satisfies. A ref naming no section
+    waits on the plan itself, and is released when that plan completes inside
+    the window, judged by the roadmap's whole-plan rule — a completed plan, or
+    one with a done section, every open section deferred and every authored
+    heading declared — read against the revision rather than the checkout.
+    Dependency refs are split by <code>_schema.parse_plan_ref</code>, the
+    grammar every other surface reads them with.
   </p>
 
   <p id="a-read-can-ask-what-changed-window">
@@ -76,7 +80,7 @@
     previous read's <code>observed_at</code> returns exactly
     <code>a#s1</code> (<code>implementable</code> → <code>done</code>) credited
     to the commit that moved it, exactly <code>b#s1</code> newly ready, and
-    exactly the one run (<strong>14 passed</strong> at head, <strong>49
+    exactly the one run (<strong>15 passed</strong> at head, <strong>50
     passed</strong> with <code>tests/test_mcp_tools.py</code>,
     <code>EXIT=0</code>). Four further cases each fail against the previous
     revision of the module and pass at this one — a second in-window commit
@@ -84,7 +88,9 @@
     observation instant and waiting for the next answer, a gate closing to
     <code>passed</code> releasing its dependent, and a project with no stream
     reporting <code>sources.runs</code> false (<strong>4 failed, 10 passed,
-    EXIT=1</strong>). The base arm
+    EXIT=1</strong>), and a fifth — a dependent on a whole plan that completes
+    in the window — fails against the revision before this round
+    (<strong>1 failed, 14 passed, EXIT=1</strong>). The base arm
     runs <code>tests/test_mcp_tools.py</code> over an extracted
     <code>c15f841ed1</code> tree (<strong>35 passed</strong>) and answers red on
     the new file; a probe against that same tree records the defect the node
