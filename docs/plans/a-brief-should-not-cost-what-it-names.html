@@ -23,9 +23,9 @@
   <title>A Brief Should Not Cost What It Names | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="21">
+<meta name="plan-version" content="22">
 <meta name="plan-modified" content="2026-11-05">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -89,7 +89,7 @@
     writing it up as a finding, which is what makes it a gradient rather than a lapse.</p>
 
     <h2 id="s2">&sect;2 &mdash; The refusal names its dominant term</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 
     <p>The cheapest repair, and most of the value. The refusal already computes the per-file
     breakdown &mdash; the dry-run payload carries <code>repository_files.named_files</code> and
@@ -283,7 +283,10 @@ Section 2 comes first and is nearly free: the per-file breakdown is already comp
     <div class="r-comment-body"><p>Independent review of r-20261027T091726599942-the-printed-refusal-names-its-dominant-term for the commits gained since the previous review (83b2b9a to bf2370a3): parsed, scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 17, reuse 18, no findings, zero added failures; the gained commits resolve the prior review's reuse finding by printing routing's own rendering of the context-fit refusal.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261027T091726599942-the-printed-refusal-names-its-dominant-term" data-who="reckon-build" data-when="2026-11-02T23:14:39Z">
-    <div class="r-comment-body"><p>The context refusal the dispatch CLI prints now carries routing&#x27;s own rendering of the fit — the figures, the contributing files and the origin of the largest (declared write path, mention, or a statement that no repository file dominates) — taken from _context_refusal_detail and imported where it is used, so the printed line and the payload detail are one string and routing.py is unedited; a verdict carrying no fit states the figures it carries, as before. Head gate 12 passed (EXIT=0), base gate 9 passed (EXIT=0), the three new cases fail at the base (3 failed, EXIT=1), and the declared negative control fails exactly those three (EXIT=1).</p></div>
+    <div class="r-comment-body"><p>The context refusal the dispatch CLI prints now carries routing's own rendering of the fit — the figures, the contributing files and the origin of the largest (declared write path, mention, or a statement that no repository file dominates) — taken from _context_refusal_detail and imported where it is used, so the printed line and the payload detail are one string and routing.py is unedited; a verdict carrying no fit states the figures it carries, as before. Head gate 12 passed (EXIT=0), base gate 9 passed (EXIT=0), the three new cases fail at the base (3 failed, EXIT=1), and the declared negative control fails exactly those three (EXIT=1).</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-11-05T08:05:00Z">
+    <div class="r-comment-body"><p>Section 2 landed at merge <code>7fd1fb053</code>: The context refusal a dispatch prints now names its dominant term, its token figure and whether it arrived as a declared write path or a mention, rendered by routing's own refusal detail so the printed message and the payload share one renderer. Coordinator importer measure, stacked with the mention-cost node over 269 test files importing node.py and routing.py: main 2669 passed, stack 2683 passed, no failure the stack adds. <a href="/reckon/evidence/archive/a-brief-should-not-cost-what-it-names-landed.html#s2">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-reopen-s3" data-who="reckon-build" data-when="2026-10-22T07:40:00Z">
     <div class="r-comment-body"><p>Reopened: this section was declared done in error. Its measure charges a mention at a reference cost, but <code>_declared_input_files</code> in <code>reckon/crew/routing.py</code> charges a mention nothing, and the <code>reference-cost</code> decision that selects the behaviour is still open. The code's current answer is <code>zero</code>; choosing among flat, capped-head and zero is the lead's decision.</p></div>
