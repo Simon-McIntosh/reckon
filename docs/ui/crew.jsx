@@ -137,6 +137,13 @@ function DerivedFlow() {
                     // fact from the server, which derives it once; drawing 100 %
                     // here would state a finish the plan has not reached.
                     const doneLabel = plan.deferred_remainder?.label || `${progressPct}%`;
+                    // The served split counts the deferred sections as done,
+                    // so the bar would fill to the now line; the served fact
+                    // carries the resolved share instead, and the bar and the
+                    // label then say the same thing.
+                    const doneShare = plan.deferred_remainder
+                      ? Number(plan.deferred_remainder.done_pct || 0)
+                      : flowDonePercent(item);
                     return (
                       <a
                         href={`#plan/${plan.nav_key || plan.slug}`}
@@ -149,7 +156,7 @@ function DerivedFlow() {
                         }}
                         title={`${plan.title || plan.slug} · ${plan.sprint || "unscheduled"} · ${item.state} · ${item.wall_hours}h wall-clock · ${doneLabel}`}
                       >
-                        <i className="r-derived-flow-bar-done" style={{ width: `${flowDonePercent(item)}%` }}></i>
+                        <i className="r-derived-flow-bar-done" style={{ width: `${doneShare}%` }}></i>
                         <span className="r-derived-flow-sprint-chip">{plan.sprint || "—"}</span>
                         <strong>{plan.title || plan.slug}</strong>
                         <span className="r-derived-flow-progress">{doneLabel}</span>

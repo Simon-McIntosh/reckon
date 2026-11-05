@@ -1053,23 +1053,37 @@ def deferred_remainder(plan: Mapping[str, Any]) -> dict[str, Any] | None:
     ``None`` for every other plan — one that declares nothing, one that still
     admits implementable work, and one whose declarations carry no deferred
     section — because the surfaces fall back to their progress figure there.
+
+    Both readings are asked of the functions that own them rather than tested
+    again here: ``is_closable`` says whether the plan is held open at all —
+    including its reading that an absent declaration set is not resolved, for
+    the reason given at its guard — and ``closure_blockers`` already names the
+    deferred sections among the obstacles it lists, each with the op that
+    clears it. ``done_pct`` carries the share of the declared sections the plan
+    has resolved, so a drawn progress bar can show the deferred tail unfilled
+    without the surface computing it.
     """
 
-    declarations = plan.get("section_declarations")
-    if not isinstance(declarations, Mapping) or not declarations:
-        return None
-    if plan_executable_remainder(plan) != 0:
+    # Deliberate reuse of ``is_closable``'s answer: the empty declaration set it
+    # refuses to read as resolved is the one ``readiness_from_state`` collapses
+    # every discovered plan without declarations to, so the same reading has to
+    # hold here.
+    if not is_closable(plan):
         return None
     deferred = sorted(
-        section
-        for section, classification in declarations.items()
-        if str(classification or "").strip() == SECTION_DECLARATION_DEFERRED
+        str(blocker["id"])
+        for blocker in closure_blockers(dict(plan))
+        if blocker.get("kind") == "section"
+        and blocker.get("status") == SECTION_DECLARATION_DEFERRED
     )
     if not deferred:
         return None
+    declared = len(plan.get("section_declarations") or {})
+    resolved = max(0, declared - len(deferred))
     return {
         "sections": deferred,
         "count": len(deferred),
+        "done_pct": round(100.0 * resolved / declared, 1) if declared else 0.0,
         "label": f"{len(deferred)} deferred, not closable",
     }
 

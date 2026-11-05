@@ -14,18 +14,27 @@ deferred one, which is ordinary ready work and carries no such fact; that is the
 control. Once both deferred sections are descoped the plan drops the fact and
 its closure list ends with the ``close`` op.
 
-The surfaces are checked as sources: each names the served field and neither
-carries the wording, so the label can only come from the server.
+The surfaces are rendered, not read as sources: each module is compiled with
+``reckon.serve.compile_jsx`` and run under node against the served payload, and
+the drawn element is inspected. The crew bar's label and its filled share must
+both come from the served fact, and the plan card's signal must print the served
+label — so deleting the render fails even where the identifier survives in a
+comment.
 """
 
 from __future__ import annotations
 
+import json
+import subprocess
+from datetime import UTC, datetime
 from pathlib import Path
 
-from reckon.roadmap import build_roadmap
+from reckon import serve
+from reckon.roadmap import build_roadmap, schedule_report
 from reckon.serve import _derive_lifecycle
 from tests.roadmap_fixtures import plan_row
 
+REFERENCE = datetime(2026, 9, 4, 4, 0, tzinfo=UTC)
 PROJECT = "deferred-remainder-sample"
 SPRINT = [{"id": "current", "status": "active", "items": ["deferred-only", "building"]}]
 ROOT = Path(__file__).resolve().parents[1]
@@ -87,6 +96,9 @@ def test_the_roadmap_row_reads_the_deferred_sections_not_the_percent() -> None:
     assert row["deferred_remainder"] == {
         "sections": ["s17", "s18"],
         "count": 2,
+        # Sixteen of eighteen declared sections are resolved, so a bar drawn
+        # from the served share leaves the deferred tail unfilled.
+        "done_pct": 88.9,
         "label": LABEL,
     }
     # Nothing implementable is left, so the readiness ladder reads it closable;
@@ -116,6 +128,7 @@ def test_the_served_rows_read_two_deferred() -> None:
     assert served["deferred-only"]["deferred_remainder"] == {
         "sections": ["s17", "s18"],
         "count": 2,
+        "done_pct": 88.9,
         "label": LABEL,
     }
     assert served["building"]["deferred_remainder"] is None
@@ -134,12 +147,153 @@ def test_descoping_both_sections_makes_the_plan_read_closable() -> None:
     assert _served(declarations)["deferred-only"]["deferred_remainder"] is None
 
 
-def test_the_surfaces_render_the_served_fact_without_deriving_it() -> None:
-    crew = CREW_JSX.read_text(encoding="utf-8")
-    plans = PLANS_JSX.read_text(encoding="utf-8")
+NODE_PRELUDE = r"""
+globalThis.window = globalThis;
+const noop = () => {};
+const identity = value => value;
+globalThis.React = {
+  createElement(type, props, ...children) { return { type, props: props || {}, children }; },
+  Fragment: Symbol("Fragment"),
+  useState(value) { return [typeof value === "function" ? value() : value, noop]; },
+  useMemo(factory) { return factory(); },
+  useEffect() {},
+  useLayoutEffect() {},
+  useCallback(fn) { return fn; },
+  useRef(value) { return { current: value }; },
+};
+globalThis.navigator = { clipboard: { writeText: noop } };
+globalThis.fetch = async () => ({ ok: true, json: async () => ({ runs: [] }) });
+window.setInterval = noop;
+window.clearInterval = noop;
+window.setTimeout = noop;
+window.flashSaved = noop;
+window.ReckonShell = window.ReckonShell || { route: { ARTIFACT_ROUTES: [] } };
 
-    for source in (crew, plans):
-        assert "deferred_remainder" in source
-        # The wording is the server's; a surface that carried it would be a
-        # second derivation of the fact.
-        assert "not closable" not in source
+function walk(node, visit) {
+  if (node == null || node === false || node === true) return;
+  if (Array.isArray(node)) { node.forEach(child => walk(child, visit)); return; }
+  if (typeof node !== "object") return;
+  visit(node);
+  for (const child of node.children || []) walk(child, visit);
+}
+
+function hasClass(node, name) {
+  return String(node?.props?.className || "").split(/\s+/).includes(name);
+}
+
+function findAll(node, predicate) {
+  const matches = [];
+  walk(node, candidate => { if (predicate(candidate)) matches.push(candidate); });
+  return matches;
+}
+
+function textOf(node) {
+  if (node == null || node === false || node === true) return "";
+  if (Array.isArray(node)) return node.map(textOf).join("");
+  if (typeof node !== "object") return String(node);
+  return (node.children || []).map(textOf).join("");
+}
+"""
+
+
+def _run_probe(module: Path, exports: str, payload: dict, probe: str) -> object:
+    """Compile one authored module and run ``probe`` against the served payload."""
+
+    source = module.read_text(encoding="utf-8") + exports
+    compiled = serve.compile_jsx(source, filename=f"{module.stem}-probe.jsx").decode()
+    script = "\n".join(
+        (
+            NODE_PRELUDE,
+            compiled,
+            f"const served = {json.dumps(payload)};",
+            f"const inventory = {json.dumps(payload['inventory'])};",
+            f"const schedule = {json.dumps(payload['schedule'])};",
+            "const result = (() => {" + probe + "})();",
+            "process.stdout.write(JSON.stringify(result));",
+        )
+    )
+    result = subprocess.run(
+        ["node"],
+        cwd=ROOT,
+        input=script,
+        text=True,
+        capture_output=True,
+        timeout=60,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    return json.loads(result.stdout)
+
+
+def _payload() -> dict:
+    plans = _plans()
+    return {
+        "inventory": list(_served().values()),
+        "schedule": schedule_report(PROJECT, plans, [], reference=REFERENCE),
+    }
+
+
+def test_the_crew_bar_draws_the_served_fact_in_both_its_label_and_its_fill() -> None:
+    """The bar the crew flow draws states the fact, and does not paint a finish.
+
+    The served schedule splits the bar for a plan at ``impl`` 1.0 at the now
+    line, so a fill drawn from the split covers the bar. The drawn fill must
+    instead carry the share the served fact reports, and the drawn label must
+    carry its wording.
+    """
+
+    payload = _payload()
+    bars = _run_probe(
+        CREW_JSX,
+        "\nwindow.__probe = { DerivedFlow };\n",
+        payload,
+        """
+window.STATE = { project: served.project, inventory, schedule };
+const flow = window.__probe.DerivedFlow({ runs: [], project: "deferred-remainder-sample" });
+const bars = findAll(flow, node => hasClass(node, "r-derived-flow-bar"));
+return Object.fromEntries(bars.map(bar => [bar.props.href, {
+  label: textOf(findAll(bar, node => hasClass(node, "r-derived-flow-progress"))[0]),
+  fill: findAll(bar, node => hasClass(node, "r-derived-flow-bar-done"))[0].props.style.width,
+}]));
+""",
+    )
+
+    served = {plan["slug"]: plan for plan in payload["inventory"]}
+    drawn = bars[f"#plan/{served['deferred-only'].get('nav_key') or 'deferred-only'}"]
+    assert drawn["label"] == LABEL
+    # Sixteen of eighteen sections resolved: the bar shows the deferred tail,
+    # never the whole span the served split would fill.
+    assert served["deferred-only"]["deferred_remainder"]["done_pct"] == 88.9
+    assert drawn["fill"] == "88.9%"
+    # The control plan carries no fact, so its bar keeps the split's share and
+    # its own percentage.
+    control = served["building"].get("nav_key") or "building"
+    assert bars[f"#plan/{control}"]["label"] == "50%"
+
+
+def test_the_plan_card_prints_the_served_label() -> None:
+    payload = _payload()
+    signals = _run_probe(
+        PLANS_JSX,
+        "\nwindow.__probe = { ListCol: window.ReckonShell.plans.ListCol };\n",
+        payload,
+        """
+window.STATE = served;
+const col = window.__probe.ListCol({
+  route: { view: "list", slug: null },
+  onNav: () => {}, onSelectPlan: () => {},
+  items: inventory, sortBy: "slug", setSortBy: () => {},
+  sortDir: "asc", toggleSortDir: () => {},
+  filters: {}, setFilters: () => {}, onClearFilters: () => {},
+  onClearContext: () => {}, onSetContext: () => {},
+});
+return findAll(col, node => hasClass(node, "r-compact-signal")).map(node => ({
+  aria: node.props["aria-label"],
+  text: textOf(node),
+}));
+""",
+    )
+
+    by_aria = {signal["aria"]: signal["text"] for signal in signals}
+    assert by_aria["Deferred-Only: 2 deferred, not closable"] == LABEL
+    assert by_aria["Building: 50%"] == "50%"
