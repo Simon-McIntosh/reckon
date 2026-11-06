@@ -1,0 +1,94 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:watch_ticker",
+    "reckon/crew_follow_commands.py:3496",
+    "reckon/crew/promotion.py:_complete_locked:1319",
+    "reckon/crew/recovery.py:442-443"
+  ],
+  "completed_at": "2026-11-06T06:39:32.337Z",
+  "dispatched_at": "2026-11-06T06:26:42Z",
+  "evidence": {
+    "added_failures": "gate/baseline.log: 6 failed at 85a4c56f; gate/after.log: 0 failed at 55cf7ed7; added_failure_count=0",
+    "gate": "gate/after.log: 6 passed in 3.28s, EXIT=0 at 55cf7ed7",
+    "negative_control": "gate/negative-control.log: 4 failed, 2 passed in 2.36s, EXIT=1 with the notice dropped"
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "id": "f277c5abef1",
+      "line": "1719",
+      "severity": "non-blocking",
+      "text": "the notice is written into the run directory but no prompt, checkpoint contract or resume path tells a worker to read budget-notice.md, so a run past its soft limit still learns nothing it acts on; the source manifest records this under outside_scope, and until reckon/crew/prompts.py binds the read the goal's 'notify a running worker' half is unmet."
+    },
+    {
+      "file": "tests/test_budget_overrun_notifies_worker.py",
+      "id": "f164012be18",
+      "line": "143",
+      "severity": "non-blocking",
+      "text": "the ledger half of the done_when is asserted only against promotion._budget_overrun_facts directly; the wiring that folds it onto the committed row at reckon/crew/promotion.py:1319 is unasserted, so deleting that line leaves all six gate cases green while the row loses the overrun field the measure names."
+    },
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "id": "f5784a020ee",
+      "line": "1711",
+      "severity": "non-blocking",
+      "text": "the no-signal guarantee for the new path is a monkeypatch of two module attributes (tests/test_budget_overrun_notifies_worker.py:73-77) and a signal imported locally inside notify_budget_overrun would evade it, while the call-graph guard at tests/test_an_overrun_names_its_cause.py:142-148 roots its walk in recovery_stream and never reaches reckon.crew.recovery_watch.notify_budget_overrun (verified: the walk's visited set excludes it), so the plan's 'a future contributor cannot add a signal without failing a test' is not met for this path."
+    },
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "id": "f118cd49892",
+      "line": "1576",
+      "severity": "non-blocking",
+      "text": "the SOFT_BUDGET_MULTIPLE docstring describes how far past its declared allowance a run is told, but the token arm at :1616-1618 messages as soon as the declared token budget is exceeded, so a token-budgeted run is told at 1.0x and only a seconds-budgeted run at 1.5x; a reader of the constant is told one rule and the code applies two."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "id": "fe8e30961a9",
+      "line": "1039",
+      "severity": "non-blocking",
+      "text": "the docstring claims the row's figure and the message's figure are one fact, but the row is measured at the run's completion while the message was measured when the threshold was crossed, so the two differ by the remaining run; the equality the gate shows at tests/test_budget_overrun_notifies_worker.py:143-148 holds only because the test passes finished equal to the notification instant it chose."
+    },
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "id": "f583e722dd4",
+      "line": "3361",
+      "severity": "non-blocking",
+      "text": "the comment says a quiet fleet costs one existence test per live pointer, but the exclusive create that is that existence test sits at :1723, after _budget_timing and, for an already-notified overrunning run, a second _budget_timing plus _budget_overrun_cause, so every pass repeats the measurement and the cause lookup for every run already told."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_budget_overrun_notifies_worker.py:66-171 reddens on the declared mutation (dropped notice, 4 failed) and pins the silence boundary at :106-115, but the promotion wiring at reckon/crew/promotion.py:1319 and a locally imported signal at reckon/crew/recovery_watch.py:1711 are both unguarded.",
+    "evidence": "gate/after.log records the gate command's 6 passed at EXIT=0 against gate/baseline.log's 6 failed at EXIT=1 and 4 failed at EXIT=1 in gate/negative-control.log, so the measure is not vacuous; the ledger assertion at tests/test_budget_overrun_notifies_worker.py:143 stops at the helper rather than the promotion entry point.",
+    "fit": "reckon/crew/recovery_watch.py:20 imports _TERMINAL_RUN_PHASES the way reckon/crew/dispatch_peer.py:23 does and reports failures with the neighbouring 'budget-notice-failure:' print idiom, with no plan, version or ticket token in any added name.",
+    "goal_fidelity": "reckon/crew/recovery_watch.py:1686-1738 writes one budget-notice.md per overrunning run and ends nothing, but no reader in reckon/crew/prompts.py or the worker contract opens that file, so the worker-facing half of the goal is not delivered.",
+    "reuse": "reckon/crew/recovery_watch.py:1608 and :1715 call recovery_stream._budget_timing and _budget_overrun_cause rather than recomputing the verdict; the search over reckon/crew for a mid-run delivery owner found only runs.STEERING_FILE (queue-time authority read at launch) and the peer-channel pull, neither of which is a mid-run notice.",
+    "scope_discipline": "every path in the diff from 85a4c56fb to 55cf7ed7 sits inside the five paths declared at prompt.txt:183, and no unrelated file is touched."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261106T061426888773-review-of-notify-a-running-worker-when-its-soft-budget-is-exceeded-55cf7ed763d7",
+  "review_text": "VERDICT goal: the source goal at prompt.txt:38 is \"Notify a running worker when its soft budget is exceeded\"; reckon/crew/recovery_watch.py:1686-1738 measures each live pointer against 1.5x its allowance and writes one budget-notice.md into the run's own directory, but nothing in reckon/crew/prompts.py binds a running worker to read that file, so the notification is written rather than delivered.\nVERDICT done_when: prompt.txt:131 asks for a live run advanced past its time budget, one worker message, a matching ledger overrun field and the worker not ended; tests/test_budget_overrun_notifies_worker.py:66-97 asserts the message and the untouched process, :126-171 the token-denominated arm, and :143-152 the ledger helper, and gate/after.log records 6 passed at EXIT=0 against 6 failed at EXIT=1 on the base arm gate/baseline.log.\nVERDICT write_paths: prompt.txt:183 declares five paths; the diff touches four of them (reckon/crew/recovery_watch.py, reckon/crew/promotion.py, tests/test_budget_overrun_notifies_worker.py, docs/evidence/fragments/crew-observability-truth/notify-a-running-worker-when-its-soft-budget-is-exceeded.html) and nothing outside that list.\nVERDICT manifest: read in full; it records status complete, the single commit 55cf7ed7, the gate command, four log paths, baseline_suite 6 failures at 85a4c56f against after_suite 0 at 55cf7ed7, and its own outside_scope entry for the unbound read contract; it carries rubric lines for five dimensions and no rubric.reuse line.\nVERDICT diff: reviewed the one commit 55cf7ed7 against base 85a4c56f; it adds SOFT_BUDGET_MULTIPLE, the notice writer and a per-pass call in watch_ticker to reckon/crew/recovery_watch.py, folds the verdict onto the committed row in reckon/crew/promotion.py:1028-1059 and :1319, and adds the six-case gate plus its evidence fragment.\nCALL_SITES: reckon/crew/recovery_watch.py:watch_ticker, reckon/crew_follow_commands.py:3496, reckon/crew/promotion.py:_complete_locked:1319, reckon/crew/recovery.py:442-443\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:1686-1738 writes one budget-notice.md per overrunning run and ends nothing, but no reader in reckon/crew/prompts.py or the worker contract opens that file, so the worker-facing half of the goal is not delivered.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate/after.log records the gate command's 6 passed at EXIT=0 against gate/baseline.log's 6 failed at EXIT=1 and 4 failed at EXIT=1 in gate/negative-control.log, so the measure is not vacuous; the ledger assertion at tests/test_budget_overrun_notifies_worker.py:143 stops at the helper rather than the promotion entry point.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff from 85a4c56fb to 55cf7ed7 sits inside the five paths declared at prompt.txt:183, and no unrelated file is touched.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_budget_overrun_notifies_worker.py:66-171 reddens on the declared mutation (dropped notice, 4 failed) and pins the silence boundary at :106-115, but the promotion wiring at reckon/crew/promotion.py:1319 and a locally imported signal at reckon/crew/recovery_watch.py:1711 are both unguarded.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/recovery_watch.py:20 imports _TERMINAL_RUN_PHASES the way reckon/crew/dispatch_peer.py:23 does and reports failures with the neighbouring 'budget-notice-failure:' print idiom, with no plan, version or ticket token in any added name.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/recovery_watch.py:1608 and :1715 call recovery_stream._budget_timing and _budget_overrun_cause rather than recomputing the verdict; the search over reckon/crew for a mid-run delivery owner found only runs.STEERING_FILE (queue-time authority read at launch) and the peer-channel pull, neither of which is a mid-run notice.\nFINDING reckon/crew/recovery_watch.py:1719 non-blocking: the notice is written into the run directory but no prompt, checkpoint contract or resume path tells a worker to read budget-notice.md, so a run past its soft limit still learns nothing it acts on; the source manifest records this under outside_scope, and until reckon/crew/prompts.py binds the read the goal's 'notify a running worker' half is unmet.\nFINDING tests/test_budget_overrun_notifies_worker.py:143 non-blocking: the ledger half of the done_when is asserted only against promotion._budget_overrun_facts directly; the wiring that folds it onto the committed row at reckon/crew/promotion.py:1319 is unasserted, so deleting that line leaves all six gate cases green while the row loses the overrun field the measure names.\nFINDING reckon/crew/recovery_watch.py:1711 non-blocking: the no-signal guarantee for the new path is a monkeypatch of two module attributes (tests/test_budget_overrun_notifies_worker.py:73-77) and a signal imported locally inside notify_budget_overrun would evade it, while the call-graph guard at tests/test_an_overrun_names_its_cause.py:142-148 roots its walk in recovery_stream and never reaches reckon.crew.recovery_watch.notify_budget_overrun (verified: the walk's visited set excludes it), so the plan's 'a future contributor cannot add a signal without failing a test' is not met for this path.\nFINDING reckon/crew/recovery_watch.py:1576 non-blocking: the SOFT_BUDGET_MULTIPLE docstring describes how far past its declared allowance a run is told, but the token arm at :1616-1618 messages as soon as the declared token budget is exceeded, so a token-budgeted run is told at 1.0x and only a seconds-budgeted run at 1.5x; a reader of the constant is told one rule and the code applies two.\nFINDING reckon/crew/promotion.py:1039 non-blocking: the docstring claims the row's figure and the message's figure are one fact, but the row is measured at the run's completion while the message was measured when the threshold was crossed, so the two differ by the remaining run; the equality the gate shows at tests/test_budget_overrun_notifies_worker.py:143-148 holds only because the test passes finished equal to the notification instant it chose.\nFINDING reckon/crew/recovery_watch.py:3361 non-blocking: the comment says a quiet fleet costs one existence test per live pointer, but the exclusive create that is that existence test sits at :1723, after _budget_timing and, for an already-notified overrunning run, a second _budget_timing plus _budget_overrun_cause, so every pass repeats the measurement and the cause lookup for every run already told.\n",
+  "reviewed_base_sha": "85a4c56fba386cd7cb4acdcd6b9c882a0b222eb1",
+  "reviewed_head_sha": "55cf7ed763d771844b9c0477214da57ca2e74100",
+  "reviewed_run_id": "r-20261103T083040632122-notify-a-running-worker-when-its-soft-budget-is-exceeded",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 14,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T07:38:39.273922+00:00",
+  "total": 100,
+  "verdicts": {
+    "diff": "reviewed the one commit 55cf7ed7 against base 85a4c56f; it adds SOFT_BUDGET_MULTIPLE, the notice writer and a per-pass call in watch_ticker to reckon/crew/recovery_watch.py, folds the verdict onto the committed row in reckon/crew/promotion.py:1028-1059 and :1319, and adds the six-case gate plus its evidence fragment.",
+    "done_when": "prompt.txt:131 asks for a live run advanced past its time budget, one worker message, a matching ledger overrun field and the worker not ended; tests/test_budget_overrun_notifies_worker.py:66-97 asserts the message and the untouched process, :126-171 the token-denominated arm, and :143-152 the ledger helper, and gate/after.log records 6 passed at EXIT=0 against 6 failed at EXIT=1 on the base arm gate/baseline.log.",
+    "goal": "the source goal at prompt.txt:38 is \"Notify a running worker when its soft budget is exceeded\"; reckon/crew/recovery_watch.py:1686-1738 measures each live pointer against 1.5x its allowance and writes one budget-notice.md into the run's own directory, but nothing in reckon/crew/prompts.py binds a running worker to read that file, so the notification is written rather than delivered.",
+    "manifest": "read in full; it records status complete, the single commit 55cf7ed7, the gate command, four log paths, baseline_suite 6 failures at 85a4c56f against after_suite 0 at 55cf7ed7, and its own outside_scope entry for the unbound read contract; it carries rubric lines for five dimensions and no rubric.reuse line.",
+    "write_paths": "prompt.txt:183 declares five paths; the diff touches four of them (reckon/crew/recovery_watch.py, reckon/crew/promotion.py, tests/test_budget_overrun_notifies_worker.py, docs/evidence/fragments/crew-observability-truth/notify-a-running-worker-when-its-soft-budget-is-exceeded.html) and nothing outside that list."
+  }
+}
