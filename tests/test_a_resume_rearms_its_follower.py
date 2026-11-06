@@ -6,15 +6,20 @@ by its next request. A dispatch sends that request; a resume sent none, so a
 session whose last action was a resume lost the pane showing the work it had
 just restarted, while the worker ran on and delivered into nothing.
 
-Both cases run against a temporary crew home and a stub host on the session
+The cases run against a temporary crew home and a stub host on the session
 host's FIFO. The first shows the request reaching the host and the host's own
 child re-arming the pair. The second shows that attachment is not the answer:
 another host's live follower for the session leaves the re-arm reporting that
 nothing was re-armed, because that is not a follower this session's host runs.
+The third shows that only the pair's own session may ask: a resume issued from
+a different coordinator writes no request at all, and answers with the session
+that owns the follower.
 
-Two negative controls, one per case: dropping the host request from the resume
+Three negative controls, one per case: dropping the host request from the resume
 leaves the first case with no host child; accepting any live registration makes
-the second case answer success.
+the second case answer success; and re-arming without asking whose session the
+pair is makes the third case send a request and report a follower it did not
+owe.
 """
 
 from __future__ import annotations
@@ -182,7 +187,10 @@ def claude_session(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setenv("XDG_RUNTIME_DIR", str(runtime))
     monkeypatch.setenv("RECKON_SESSION_HOST_STATE_DIR", str(runtime / "session-hosts"))
     monkeypatch.setenv("CLAUDE_PID", str(os.getpid()))
-    monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", "claude-rearm-test")
+    # The process reading as the run's own session is what makes its host the
+    # one that owns the pair; a case that reads as another session is the test
+    # of the ownership rule.
+    monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", SESSION)
     monkeypatch.delenv("CODEX_SESSION_ID", raising=False)
     monkeypatch.delenv("CODEX_THREAD_ID", raising=False)
     return runtime
@@ -395,5 +403,44 @@ def test_a_rearm_answers_failure_when_only_another_hosts_follower_is_live(
     assert host.lines, "the resume must still send the host a follow request"
     assert result["follower_rearmed"] is False, (
         "another host's follower is not this session's re-arm"
+    )
+    assert dispatch_watch._session_host_child_pid(PROJECT, SESSION) is None
+
+
+def test_a_resume_from_another_session_asks_no_host_and_names_the_owner(
+    home: Path,
+    repo: Path,
+    tmp_path: Path,
+    claude_session: Path,
+    bounded_wait: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A different session's resume cannot re-arm the run's pair, and says whose it is.
+
+    The request travels to the host of the Claude process issuing the resume, so
+    a coordinator resuming another session's run would ask its own host for a
+    pair it does not own. The stub here would re-arm on any request, which is
+    what makes the case discriminate: a re-arm that asked anyway would report
+    success and leave a follower in the wrong session's host.
+    """
+    assert home.is_dir(), "the case runs against the temporary crew home"
+    monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", "a-different-coordinator-session")
+    record = _pointer(tmp_path, repo)
+    fifo = _host_fifo(claude_session)
+    fifo.parent.mkdir(parents=True, exist_ok=True)
+    os.mkfifo(fifo)
+    host = _StubSessionHost(fifo, rearm=True)
+    launched: list[int] = []
+    host.start()
+    try:
+        result = _resume(record, launched)
+    finally:
+        host.stop()
+
+    assert launched == [4242], "the resume still launches its worker"
+    assert host.lines == [], "another session's host is asked nothing"
+    assert result["follower_rearmed"] is False
+    assert SESSION in result["follower_note"], (
+        f"the answer must name the session that owns the pair: {result['follower_note']!r}"
     )
     assert dispatch_watch._session_host_child_pid(PROJECT, SESSION) is None

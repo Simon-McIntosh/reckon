@@ -2353,6 +2353,7 @@ def crew_resume(
             # host holds a follower, and a resume sends no dispatch request, so
             # the answer to the re-arm says whether that pane is following.
             "follower_rearmed": bool(result.get("follower_rearmed")),
+            "follower_note": str(result.get("follower_note") or ""),
         }
     )
     _emit_crew_result(payload, pretty)

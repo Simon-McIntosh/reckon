@@ -31,6 +31,12 @@
   not answer — the worker is already running, and the re-arm only decides whether its rows reach a
   pane.</p>
 
+  <p id="rearm-a-sessions-follower-when-its-run-is-resumed-ask"><code>_ask_session_host</code> is
+  now the one bounded ask-and-wait: it writes the request line once and waits, for at most the
+  producer bound, on the answer predicate its caller hands in. Dispatch reads attachment through
+  it and the re-arm reads the host's own child through it, so neither keeps a second copy of the
+  wait.</p>
+
   <p id="rearm-a-sessions-follower-when-its-run-is-resumed-own-host">The answer is the calling
   session's own host, not attachment. <code>_session_host_child_pid</code> reads that host's census
   record and returns the pid of a non-settled child for the pair;
@@ -40,6 +46,14 @@
   one a coordinator armed by hand, keeps <code>session_attached</code> true and is still not a
   re-arm this host made, so it no longer reads as one.</p>
 
+  <p id="rearm-a-sessions-follower-when-its-run-is-resumed-owner">The request can only travel to the
+  host of the Claude process issuing the resume, so the re-arm first asks whether that process is
+  the pair's own session (<code>_calling_session</code> over the coordinator runtime, the same owner
+  <code>crew verify-gate</code> reads). A resume issued from another coordinator writes no request
+  at all and reports <code>follower_rearmed: false</code> with a <code>follower_note</code> naming
+  the session that owns the pair — asking anyway would arm a follower in the wrong session's host
+  and describe one that is not the run's.</p>
+
   <p id="rearm-a-sessions-follower-when-its-run-is-resumed-evidence">Evidence:
   <code>tests/test_a_resume_rearms_its_follower.py</code> drives <code>_resume</code> against a
   temporary crew home and a stub host on the session host's FIFO. Case one: no follow request
@@ -47,15 +61,18 @@
   <code>{"project": …, "session": …}</code> arrives, the stub's re-armed child appears in the
   census, and the result carries <code>follower_rearmed: True</code>. Case two: a live follower
   registration for the session, with the census naming no child for the pair, answers
-  <code>follower_rearmed: False</code> — the discriminator the old criterion could not make. At
-  <code>97c71c15d6</code> both cases fail (<code>2 failed</code>); at head both pass
-  (<code>2 passed</code>).</p>
+  <code>follower_rearmed: False</code> — the discriminator the old criterion could not make. Case
+  three: the process reads as a different coordinator session, the stub host would re-arm on any
+  request, and the resume writes no line at all while the answer names the pair's session. At
+  <code>97c71c15d6</code> all three fail (<code>3 failed</code>); at head all three pass
+  (<code>3 passed</code>).</p>
 
-  <p id="rearm-a-sessions-follower-when-its-run-is-resumed-controls">Both declared negative
-  controls were applied in scratch copies of the head tree and run: dropping the host request from
-  the resume leaves case one with no child (<code>2 failed, EXIT=1</code>), and answering on any
-  live registration instead of the host's own child makes case two report success
-  (<code>2 failed, EXIT=1</code>).</p>
+  <p id="rearm-a-sessions-follower-when-its-run-is-resumed-controls">Three negative controls were
+  applied in scratch copies of the head tree and run: dropping the host request from the resume
+  leaves case one with no child (<code>3 failed, EXIT=1</code>); answering on any live registration
+  instead of the host's own child makes case two report success
+  (<code>2 failed, 1 passed, EXIT=1</code>); and re-arming without asking whose session the pair is
+  makes case three send a request (<code>1 failed, 2 passed, EXIT=1</code>).</p>
 
   <p id="rearm-a-sessions-follower-when-its-run-is-resumed-suite">The 25 test files importing
   <code>reckon.crew.session_host</code> or <code>reckon.crew.resumption</code> run serially on both

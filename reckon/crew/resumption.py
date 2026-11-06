@@ -1501,7 +1501,7 @@ def _resume(
         # did not re-arm changes nothing a resume has to fail over.
         from reckon.crew.dispatch_watch import _rearm_session_follower
 
-        follower_rearmed = _rearm_session_follower(
+        follower_rearmed, follower_note = _rearm_session_follower(
             resume_project, str(record.get("session") or "")
         )
     finally:
@@ -1512,6 +1512,7 @@ def _resume(
         "log_path": str(log_path),
         "plan": plan,
         "follower_rearmed": follower_rearmed,
+        "follower_note": follower_note,
     }
 
 

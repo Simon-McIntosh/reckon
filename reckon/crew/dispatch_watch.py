@@ -15,6 +15,7 @@ from pathlib import (
 )
 from typing import (
     Any,
+    Callable,
     Mapping,
     MutableMapping,
 )
@@ -603,6 +604,19 @@ def _session_host_owner() -> tuple[int, str] | None:
     return pid, start
 
 
+def _calling_session() -> str:
+    """The crew session this process runs under, or "" outside a harness.
+
+    A session host belongs to the harness process that launched it, so the
+    session a host serves is the one its process reports here. A caller that has
+    to decide whether a host it can reach is the right one reads this rather
+    than the session name it is acting on: a run's session names the pair, not
+    the process asking.
+    """
+    harness, session, _transcript = _coordinator_runtime()
+    return str(session or "") if harness else ""
+
+
 def _session_host_fifo_path(owner: tuple[int, str]) -> Path | None:
     """Name the request FIFO a session host owns from its ``(pid, start)`` pair.
 
@@ -729,46 +743,76 @@ def _session_host_runs_follower(
     return _session_host_child_pid(project, session) == follower_pid
 
 
-def _ask_session_host_for_follower(project: str, session: str | None) -> bool:
-    """Ask this session's host to follow the project, returning whether it did.
+def _ask_session_host(
+    project: str, session: str | None, answer: Callable[[], bool]
+) -> bool:
+    """Write one follow request and wait, bounded, for ``answer`` to hold.
 
     The request line is composed once, in ``_request_host_follower``, rather
-    than spelled here too, so a caller that needs only the write -- the follower
-    handing over -- shares the one place the line is written. The caller then
-    waits, for at most the producer bound, until the session reads as attached
-    -- the fact that matters, since the host attaching a follower is what makes
-    the finished run reach the session. Without a host, or when it does not
-    attach within the caller's bound, this reports False and the caller admits
-    exactly as it does today.
-    """
-    if not _request_host_follower(project, session):
-        return False
-    deadline = time.monotonic() + WATCHER_LOAD_BOUND_SECONDS
-    while time.monotonic() < deadline:
-        if watch_state(project, session=session)["session_attached"]:
-            return True
-        time.sleep(0.1)
-    return False
-
-
-def _rearm_session_follower(project: str, session: str | None) -> bool:
-    """Ask this session's host to re-arm a settled follower, returning whether it did.
-
-    A resume launches a worker the session's pane has to show, and a resume
-    sends no dispatch request, so a pair whose host child has settled stays idle
-    until some later dispatch happens to ask again. The request is the one a
-    dispatch writes; the answer is this host's own live child for the pair,
-    because a session attached through another host's follower, or through one a
-    coordinator armed by hand, shows nothing of a re-arm this host did not make.
+    than spelled at each caller, so a caller that needs only the write -- the
+    follower handing over -- shares the one place the line is written. A caller
+    that must see the host act on it hands in its own reading of the answer:
+    dispatch asks whether the session reads as attached, and the re-arm asks
+    whether this host now runs a child for the pair. Without a host, or when the
+    answer does not hold within the producer bound, this reports False and the
+    caller falls back exactly as it does with no host at all.
     """
     if not session or not _request_host_follower(project, session):
         return False
     deadline = time.monotonic() + WATCHER_LOAD_BOUND_SECONDS
     while time.monotonic() < deadline:
-        if _session_host_child_pid(project, session) is not None:
+        if answer():
             return True
         time.sleep(0.1)
     return False
+
+
+def _ask_session_host_for_follower(project: str, session: str | None) -> bool:
+    """Ask this session's host to follow the project, returning whether it did.
+
+    The answer is the session reading as attached -- the fact that matters,
+    since the host attaching a follower is what makes the finished run reach the
+    session. Without a host, or when it does not attach within the caller's
+    bound, this reports False and the caller admits exactly as it does today.
+    """
+    return _ask_session_host(
+        project,
+        session,
+        lambda: bool(watch_state(project, session=session)["session_attached"]),
+    )
+
+
+def _rearm_session_follower(project: str, session: str | None) -> tuple[bool, str]:
+    """Re-arm a settled follower for the run's pair, answering why when it did not.
+
+    A resume launches a worker the session's pane has to show, and a resume
+    sends no dispatch request, so a pair whose host child has settled stays idle
+    until some later dispatch happens to ask again. The request travels to the
+    host of the Claude process issuing the resume, so only that session's own
+    pair can be re-armed: a resume issued from another session would ask its own
+    host for a pair it does not own, and the answer would describe a follower
+    that is not the run's. The pair's session owns its follower, so another
+    session's resume reports that and asks no host.
+
+    The answer, when the re-arm is the session's own, is this host's live child
+    for the pair -- a session attached through another host's follower, or
+    through one a coordinator armed by hand, shows nothing of a re-arm this host
+    did not make.
+    """
+    if not session:
+        return False, "the run records no session, so no host owns its follower"
+    calling = _calling_session()
+    if calling != session:
+        return False, (
+            f"the run belongs to session {session}, and only that session's own "
+            "host can re-arm its follower"
+        )
+    rearmed = _ask_session_host(
+        project, session, lambda: _session_host_child_pid(project, session) is not None
+    )
+    if rearmed:
+        return True, ""
+    return False, f"session {session}'s host runs no follower for the pair"
 
 
 def _request_host_follower(project: str, session: str | None) -> bool:
