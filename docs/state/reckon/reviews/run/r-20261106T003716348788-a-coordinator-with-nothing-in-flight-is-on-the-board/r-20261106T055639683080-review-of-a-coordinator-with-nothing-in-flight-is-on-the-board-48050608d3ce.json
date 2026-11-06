@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:crew_directory",
+    "reckon/crew/plan_coordinator.py:_live_sessions",
+    "reckon/mcp_views.py:crew_directory_view",
+    "reckon/crew/session_host.py:SessionHost.record"
+  ],
+  "completed_at": "2026-11-06T06:26:20.850Z",
+  "dispatched_at": "2026-11-06T06:17:10Z",
+  "findings": [
+    {
+      "file": "reckon/crew/directory.py",
+      "id": "fc0bed95e0b",
+      "line": 564,
+      "severity": "blocking",
+      "text": "_census_rows is passed the listed_sessions set captured at line 544, before the ready-idle rows are appended at 545-563, so a ready-idle session is not excluded and gains a second census row. This is the production path, not a corner: reckon/crew_run_commands.py:449 calls directory(..., ready_idle=True) for crew directory -- the command the plan's Why cites -- and reckon/mcp_views.py:4219 does the same. An idle coordinator that has ready sections AND a settled follower is therefore listed twice, once with plan_owner/ready_idle_sections and once with settled_at/last_dispatch, and coordinator_count is inflated by one. The landed evidence fragment's claim that one session never appears twice is false on that path, while the _census_rows docstring makes the same false claim. Remedy: recompute listed_sessions after the ready-idle extend, or pass set(idle_by_session) into _census_rows as already listed."
+    },
+    {
+      "file": "reckon/crew/directory.py",
+      "id": "f97838e49ef",
+      "line": 332,
+      "severity": "non-blocking",
+      "text": "_last_dispatch_by_session restates the dispatch-stamp rule that reckon/crew/plan_coordinator.py:162 _dispatch_instant already owns -- 'dispatched_at or created_at', then parse_utc -- rather than extending it. The per-session latest projection around it is new, so only the stamp precedence is duplicated; importing the helper, or moving it to a shared owner, would keep one definition of which ledger field says when a run was dispatched."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Verified the change against reckon/crew_run_commands.py:449 (crew directory, ready_idle=True), reckon/crew/plan_coordinator.py:213 (_live_sessions, which filters state == dispatching so idle census rows do not alter resolution), the MCP directory view at reckon/mcp_views.py:4219, and SessionHost.record at reckon/crew/session_host.py:368 which writes the census live_census reads.",
+    "diff": "Read commit by commit against f2f87f2ca59c: a3fad7a3aa adds settled_at, live_census, _census_rows, _last_dispatch_by_session and the 272-line test file; d3c975a01a makes the test wait on the follower process; 48050608d3 removes one ALLOWLIST line. The census rows are appended using a listed_sessions set captured before the ready-idle rows are added, so a ready-idle session is not excluded and can be listed twice.",
+    "done_when": "The done-when names three cases; all three are asserted in tests/test_a_coordinator_with_nothing_in_flight_is_on_the_board.py (settled child keeps session and project at lines 158-171, two-host board with an idle row at 253-264, exited owner excluded at 266) and the gate at logs/gate.log records 8 passed EXIT=0.",
+    "goal": "The goal is to keep a settled follower's session in the session host's census so the board lists a coordinator with no run in flight; reckon/crew/session_host.py:381-384 and reckon/crew/directory.py:564 do exactly that, with project, session, null pid, settled_at, live_node_count 0, no runs and a last_dispatch from the ledger.",
+    "manifest": "The manifest records status complete, the three commits, the gate and arm logs, the negative control and a rubric self-check; its 'one session never appears twice' claim is contradicted by the census/ready-idle path recorded under the diff verdict, but its test results are recorded rather than merely claimed.",
+    "write_paths": "The declared scope is reckon/crew/session_host.py, reckon/crew/directory.py, the new test file and two docs paths; the diff touches the first three plus a granted tests/test_every_module_is_reached.py, and the docs figures directory is unused."
+  },
+  "justifications": {
+    "durability": "The negative control at logs/negative-control.log restores the pid-only census filter and both added test cases fail on it (2 failed, EXIT=1), so the assertions redden on the regression they guard rather than holding whatever the code does.",
+    "evidence": "logs/gate.log records '8 passed in 5.24s' with EXIT=0 over the two done-when test files and logs/negative-control.log records '2 failed in 1.85s' with EXIT=1, but the armed base arm (coordinator-armed-base.log) exits 4 with no tests collected, so the base half of the pair measures nothing.",
+    "fit": "The additions follow directory.py's own row-dict idiom and local-import style at reckon/crew/directory.py:391-407, and every new name (live_census, _census_rows, _last_dispatch_by_session) states a mechanism rather than a plan item.",
+    "goal_fidelity": "reckon/crew/session_host.py:381-384 keeps a settled child in the record with its project, session, null pid and settled_at, and reckon/crew/directory.py:564 adds those sessions to the board's coordinator list.",
+    "reuse": "reckon/crew/session_host.py:231 live_census is the first reader of the host records (nothing else globs _state_dir for RECORD_SUFFIX), but reckon/crew/directory.py:332 restates the dispatch-stamp rule owned by reckon/crew/plan_coordinator.py:162 _dispatch_instant.",
+    "scope_discipline": "Four of the five changed files are inside the declared fence and the fifth, tests/test_every_module_is_reached.py, is named in the coordinator's grant in reopened.json with a single allowlist line removed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to keep a settled follower's session in the session host's census so the board lists a coordinator with no run in flight; reckon/crew/session_host.py:381-384 and reckon/crew/directory.py:564 land it with project, session, null pid, settled_at, live_node_count 0 and no runs.\nVERDICT done_when: the done-when's three cases are all asserted in tests/test_a_coordinator_with_nothing_in_flight_is_on_the_board.py (lines 158-171, 253-264, 266) and logs/gate.log records 8 passed EXIT=0 over the two named files.\nVERDICT write_paths: the declared fence is session_host.py, directory.py, the new test file and two docs paths; the diff touches the first three plus the coordinator-granted tests/test_every_module_is_reached.py, and the figures path is unused.\nVERDICT manifest: read; it records the three commits, gate and arm logs, the negative control and a rubric self-check, but its claim that one session never appears twice does not hold on the ready_idle path.\nVERDICT diff: read commit by commit against f2f87f2ca59c; the census rows are appended with a listed_sessions set captured at directory.py:544 before the ready-idle rows are added, so an idle coordinator can be listed twice on crew directory.\nCALL_SITES: reckon/crew_run_commands.py:crew_directory, reckon/crew/plan_coordinator.py:_live_sessions, reckon/mcp_views.py:crew_directory_view, reckon/crew/session_host.py:SessionHost.record\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/session_host.py:381-384 keeps a settled child with its project, session, null pid and settled_at, and reckon/crew/directory.py:564 puts those sessions on the board.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate.log records 8 passed EXIT=0 and logs/negative-control.log 2 failed EXIT=1, but the armed base arm exits 4 with no tests collected.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: four of five changed files are inside the declared fence; the fifth is named in reopened.json's granted_paths with a single allowlist line removed.\nSCORE durability: 16\nJUSTIFICATION durability: logs/negative-control.log restores the pid-only filter and both added tests fail on it, so they redden on the regression they guard.\nSCORE fit: 18\nJUSTIFICATION fit: the additions follow directory.py's row-dict and local-import idiom at reckon/crew/directory.py:391-407 and every new name states a mechanism.\nSCORE reuse: 14\nJUSTIFICATION reuse: reckon/crew/session_host.py:231 owns census reading with no predecessor, but reckon/crew/directory.py:332 restates the stamp precedence of reckon/crew/plan_coordinator.py:162 _dispatch_instant.\nFINDING reckon/crew/directory.py:564 blocking: listed_sessions is captured at line 544 before the ready-idle rows are appended, so on crew directory (ready_idle=True) a ready-idle session that also has a settled follower is listed twice and coordinator_count is inflated; the evidence fragment's 'never appears twice' claim is false on that path. Remedy: recompute listed_sessions after the ready-idle extend.\nFINDING reckon/crew/directory.py:332 non-blocking: _last_dispatch_by_session restates the dispatched_at-or-created_at precedence and parse_utc call owned by reckon/crew/plan_coordinator.py:162 _dispatch_instant instead of extending it.\n",
+  "review_run_id": "r-20261106T055639683080-review-of-a-coordinator-with-nothing-in-flight-is-on-the-board-48050608d3ce",
+  "reviewed_base_sha": "f2f87f2ca59c49b2d61b3d8a6a6142cb50666b16",
+  "reviewed_head_sha": "48050608d3ce977c0e951ab8b01a3f2e9cbedd5c",
+  "reviewed_run_id": "r-20261106T003716348788-a-coordinator-with-nothing-in-flight-is-on-the-board",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T06:29:31.811865+00:00",
+  "total": 100
+}
