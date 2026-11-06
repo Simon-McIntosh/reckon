@@ -159,6 +159,76 @@ head arm is 7 passed, exit 0.</p>
 <code>negative-control-rewording.log</code>,
 <code>gate-baseline-repair.log</code> and <code>gate-head.log</code> in the run
 directory.</p>
+
+<h2 id="the-skills-read-the-board-views-round3">Second repair round</h2>
+
+<p>Two findings, both about the cases this node added rather than about the
+skills, and both answered in <code>7f1c885b72</code>. Each was still a
+narrower form of the wording lock the first repair set out to retire.</p>
+
+<h3 id="the-skills-read-the-board-views-round3-count">The count case fixed one phrasing of the count</h3>
+
+<p><code>test_the_roadmap_inventory_matches_its_own_count</code> matched the
+stated number only through <code>(two|three|four|five) … views? answer</code>,
+so a correct rewording — "the answer takes three views" — made the case report
+that the section states no count at all while the section was right. The
+pattern now binds the number word and the noun it counts, allowing up to two
+words between them, so the sentence around the pair is free. It still catches
+the defect it exists for: against the pre-repair four-item list it reads
+<code>assert 4 == 3</code>.</p>
+
+<h3 id="the-skills-read-the-board-views-round3-source">The serving case read the source, not the call</h3>
+
+<p><code>test_the_ready_idle_rows_reach_a_served_view</code> asserted on
+<code>inspect.getsource(serve_crew_view)</code>, so moving the
+<code>crew_directory(…, ready_idle=True)</code> call into a helper kept the
+contract true and reddened the test. It is now
+<code>test_the_directory_view_asks_the_directory_for_ready_idle_rows</code>,
+which calls <code>serve_crew_view(view="directory")</code> against a stand-in
+directory and asserts that the view asks for <code>ready_idle=True</code>. Where
+the call is written no longer matters; whether the call is made does.</p>
+
+<h3 id="the-skills-read-the-board-views-round3-controls">Both controls, executed</h3>
+
+<p>Each control runs in its own <code>git archive</code> extraction of the base,
+so the mutation never touches this node's tree, and each pair uses the same
+mutated tree for the old and the new case.</p>
+
+<ul>
+  <li><strong>A correct rewording of the roadmap section.</strong> The old count
+  case fails with "the section does not state how many views answer it"
+  (<code>1 failed, 6 passed</code>, exit 1); the new case passes all seven on
+  that same text (exit 0).</li>
+  <li><strong>The pre-repair four-item list.</strong> The new count case still
+  fails with <code>the section says three views and lists 4</code>, exit 1, so
+  the looser pattern did not become a rubber stamp.</li>
+  <li><strong>The directory call moved into a helper.</strong> The old case
+  fails with "no served crew view asks the directory for the ready-idle rows"
+  (exit 1); the new case passes on the same refactored tree (exit 0).</li>
+  <li><strong>The contract actually broken</strong> — the helper's
+  <code>ready_idle=True</code> changed to <code>False</code>. The new case fails
+  with "the directory view does not ask the directory for the ready-idle rows",
+  exit 1, so it is load-bearing rather than merely permissive.</li>
+</ul>
+
+<p>Logs: <code>negative-control-round3-count-old.log</code>,
+<code>negative-control-round3-count-new.log</code>,
+<code>negative-control-round3-count-mismatch.log</code>,
+<code>negative-control-round3-helper-old.log</code>,
+<code>negative-control-round3-helper-new.log</code> and
+<code>negative-control-round3-helper-broken.log</code> in the run directory.</p>
+
+<h3 id="the-skills-read-the-board-views-round3-gate">The gate, and one failure that is not this node's</h3>
+
+<p>The gate runs the two files together and exits 1 on a single case,
+<code>test_every_registered_crew_verb_is_documented_or_exempt</code>: the
+registered <code>reckon crew queue hold</code> verb is named nowhere in
+<code>skills/reckon-build/SKILL.md</code> and carries no exemption. That file is
+not in this node's write scope, and the case fails identically at the base,
+where this node's test file is the only difference between the two runs — so
+the delta is zero and the failure is pre-existing drift between the crew CLI and
+the build skill. Both runs are logged
+(<code>gate-round2.log</code> and <code>gate-baseline-round3-both.log</code>).</p>
 </main>
 </body>
 </html>
