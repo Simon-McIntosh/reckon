@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T21:58:41.380Z",
+  "dispatched_at": "2026-11-06T21:54:09Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:51",
+      "id": "wiring-1",
+      "reason": "a coordinator reading the followup dispatches \u00a73 and \u00a74 in parallel into `reckon/_store.py`, and the merge of two concurrent edits to one function is exactly what the declared waits are for.",
+      "text": "\u00a74 writes `reckon/_store.py` (for `data-evidence-origin` in `_evidence_section_html`), and so does \u00a73 (line 45), yet \u00a74's only declared wait is on \u00a72 and the followup at line 57 tells the coordinator the two \"can then run together\" \u2014 two concurrent nodes would hold one file, which is the overlap the same paragraph's \u00a72 waits exist to prevent",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:50",
+      "id": "reasoning-1",
+      "reason": "the rule the implementer writes from is an id test that misses a class of generated id the synthesis actually produces, so the node's third case passes while the record gains a duplicate anchored section.",
+      "text": "\u00a74's legacy rule classifies an unmarked section as appended when its id is neither one of the plan's section ids nor `outcome`, but `_render_document` builds `available` from the plan's comment keys and from each ledger run's `section` key (`reckon/evidence.py:340-354`), so it also generates ids that are not plan headings; an unmarked section under such an id (a comment or run anchored to a section since removed from the plan) is therefore both carried forward as \"appended\" and generated again, publishing the same id twice",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "a0660f5e61c295680610ccf81b0969a13d6bee58",
+  "plan_fingerprint": "488455709a63ea3903b231b15b3ac60f981c6e67578bc6025146a8bdafc4f7d0",
+  "plan_slug": "an-evidence-record-counts-only-what-it-read",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T215303128602-plan-review-of-an-evidence-record-counts-only-what-it-read",
+  "reviewed_blob_sha": "5378fe9958dfc5c5652563cf45de310ab44965a9",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_render_document` summary at `reckon/evidence.py:406`, `_overall_verdict` at 294, `plan-evidence-for`/`plan-verdict` at 416\u2013417, the empty-ledger refusal near 660, `_landed_record_shell` at `reckon/_store.py:1184`, its call at 1263, `_evidence_section_html` at 1197 and `evidence-for-missing` at `reckon/doccheck.py:1690` all resolve.",
+    "done_when": "pass \u2014 \u00a72 asserts both shell surfaces plus the retained `reckon-type`/`plan-evidence-for` metas with `audit-doc` as the control, and \u00a74 asserts four named cases with three mutations that each break a distinct one.",
+    "evidence_paths": "pass \u2014 every gate writes under the run directory and the test files land in `tests/`, with no scratchpad path.",
+    "naming": "pass \u2014 \u00a72 and \u00a74 introduce no plan labels or ticket identifiers; `data-evidence-origin` names the mechanism.",
+    "reasoning": "a finding \u2014 \u00a74's legacy classifier treats an unmarked section as appended when its id is neither a plan section id nor `outcome`, but the synthesis also renders ids drawn from ledger run sections and comment keys that are not plan sections, so a section it still generates under such an id is both carried forward and regenerated.",
+    "single_goal": "pass \u2014 \u00a72 is \"the shell claims nothing it did not read\" and \u00a74 is \"a re-synthesis keeps appended anchors\"; neither node carries a second deliverable.",
+    "wiring": "a finding \u2014 \u00a74 and \u00a73 both declare `reckon/_store.py` in their write paths (lines 45 and 51) but \u00a74's declared wait is only on \u00a72 (line 23), and the followup at line 57 says the two \"can then run together\"."
+  },
+  "section_digests": {
+    "_document": "6d35efce52466005f8ee56997c8dc7bcca998d7c41fcd252d254bc7264596281",
+    "s1": "7c52117565966edec5de56bc0448d4a141edbcb73ac18ede5f2cb0c34f424f0a",
+    "s2": "143dc532dde638505b6cf743e1b2af8b2d754fbd94debf4fdb0b351e623a2a39",
+    "s3": "1e19a712fd2dad1c38a11f7b6164b1fcc01c996e78f3297edb135a1d5fd7c0cf",
+    "s4": "2f28020adaf36315c2783ebc49810fc31c49d090bf47a1d2fbf3951c63af5f50"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T22:08:32.950765+00:00",
+  "total": null
+}
