@@ -24,7 +24,7 @@
   <title>A Landing Never Waits On A Shared Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-modified" content="2026-11-06">
 </head>
 <body>
@@ -100,6 +100,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261106T145343774402-review-of-retry-a-held-index-lock-in-a-promotions-commit-and-restore-6f96f4a4cfbc" data-who="reckon-build" data-when="2026-11-06T15:03:49.675Z">
     <div class="r-comment-body"><p>review attached to run r-20261106T124416537003-retry-a-held-index-lock-in-a-promotions-commit-and-restore at head 6f96f4a4cfbc: parsed, six dimensions scored 19/15/19/19/18/20 (total 110), zero added failures, two non-blocking findings (a widened assertion in tests/test_rollback_asks_head.py that no longer reddens on the regression it was edited for, and an importer-arm base comparison that is attributed rather than measured).</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261106T124416537003-retry-a-held-index-lock-in-a-promotions-commit-and-restore" data-who="reckon-build" data-when="2026-11-06T14:40:00Z">
+    <div class="r-comment-body"><p>§5 landed: `_commit_landing_writes` runs its `git commit --only` and the rollback that follows a refusal runs its restore and index drop as one step, both through `reckon.crew.merge._run_waiting_out_a_held_index_lock` under this module&#x27;s own `_INDEX_LOCK_RETRY_ATTEMPTS` (12) and `_INDEX_LOCK_RETRY_INTERVAL_SECONDS` (0.5); gate `tests/test_a_promotion_commit_survives_a_held_index_lock.py` 4 passed at head and 3 failed 1 passed with the base module substituted in place, negative control EXIT=1 on the three wait-dependent cases.</p></div>
 </div>
 </section>
 </main>
