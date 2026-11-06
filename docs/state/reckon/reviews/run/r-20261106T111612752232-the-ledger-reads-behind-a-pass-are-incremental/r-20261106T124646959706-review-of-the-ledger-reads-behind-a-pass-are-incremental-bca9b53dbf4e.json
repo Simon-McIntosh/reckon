@@ -1,0 +1,121 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured: the reviewed manifest's baseline_suite and after_suite both record one failing id, tests/test_crew_obligations.py::test_obligations_reads_scoring_without_observing_or_dispatching, so the head adds no failure against the base.",
+  "assertion_analysis": [
+    {
+      "condition_to_fail": "The per-file identity read is reached on a cache hit, or the directory identity does not invalidate the cache, so a second call stats run files or returns stale namings.",
+      "file": "tests/test_ledger_reads_are_incremental.py",
+      "line": 110
+    },
+    {
+      "condition_to_fail": "The re-read count stays zero after a record is rewritten through the store's atomic rename, or the sweep does not find the rewritten document.",
+      "file": "tests/test_ledger_reads_are_incremental.py",
+      "line": 129
+    },
+    {
+      "condition_to_fail": "The previous tick's namings are reused without re-reading, so the removed run's naming survives.",
+      "file": "tests/test_ledger_reads_are_incremental.py",
+      "line": 151
+    },
+    {
+      "condition_to_fail": "Only if record_station_read_counts fails to store, or station_read_counts fails to parse what it stored; the values are the ones the test itself supplied, so no read producing no count fails it.",
+      "file": "tests/test_ledger_reads_are_incremental.py",
+      "line": 173
+    }
+  ],
+  "base_log_revision": "aff9ba4bf1b10b7be1462f0b1bebf1fb97112351",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/obligations.py:_held_worktree_records_read",
+    "reckon/crew/obligations.py:_held_worktrees_by_session"
+  ],
+  "completed_at": "2026-11-06T13:03:29.390Z",
+  "dispatched_at": "2026-11-06T12:50:41Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "id": "f3e82375140",
+      "line": "355",
+      "severity": "blocking",
+      "text": "record_station_read_counts and station_read_counts (line 365) have no caller anywhere in reckon/ or tests/ except the test, and namings_reread_count at reckon/crew/obligations.py:1307 has none at all, so neither read's re-read count ever reaches the station tick record the done_when's fifth case requires."
+    },
+    {
+      "file": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/the-ledger-reads-behind-a-pass-are-incremental.html",
+      "id": "f9c8dd57a9c",
+      "line": "11",
+      "severity": "blocking",
+      "text": "the landed evidence fragment states reckon/crew/obligation_snapshot.py carries both reads' counts into the station's tick record, which no production caller does, so the record a reader lands on the section asserts a behaviour the head does not have."
+    },
+    {
+      "file": "tests/test_ledger_reads_are_incremental.py",
+      "id": "fa3839bea94",
+      "line": "171",
+      "severity": "blocking",
+      "text": "the fifth case passes namings=1 and attempts=2 into record_station_read_counts and asserts those same values come back from station_read_counts, a round trip that holds whether or not any read produces a count, so it survives the regression it was added to catch; the negative control only strips the helper itself."
+    },
+    {
+      "file": "tests/test_ledger_reads_are_incremental.py",
+      "id": "fbee7e62965",
+      "line": "71",
+      "severity": "non-blocking",
+      "text": "LIVE builds 30 live pointers but is never used, so the fixture holds 2,000 run files and zero live pointers, and the done_when's live-pointer population and the case where a pointer move re-reads exactly one run are not exercised."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "id": "f43707d5837",
+      "line": "1347",
+      "severity": "non-blocking",
+      "text": "the cache is keyed on the runs directory's identity alone while _run_namings reads ledger.runs, which merges crew.json with the per-run documents (reckon/ledger.py:load), so a row that changes only in the aggregate leaves the namings stale until some run document moves."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T111612752232-the-ledger-reads-behind-a-pass-are-incremental/logs/after-gate.log",
+      "id": "f60ffb4d251",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "the gate log the manifest names as test_logs records its revision as \"504545c1bc + working tree\", not the landed head bca9b53dbf, so the receipt alone cannot show the landed tree passed; re-running the test at head gives 3 passed, EXIT=0."
+    }
+  ],
+  "head_log_revision": "76875ef1dd",
+  "item_verdicts": {
+    "diff": "read commit by commit; 504545c1bc adds both halves, 76875ef1dd reverts the section-attempts half and keeps the namings cache, bca9b53dbf writes the evidence fragment, leaving 306 insertions and 1 deletion across four files.",
+    "done_when": "the source prompt's done_when names five cases on 2,000 run files and 30 live pointers; tests/test_ledger_reads_are_incremental.py:83 and :135 cover cases three and four, its :150 case only round-trips its own arguments, and the two section-attempts cases are absent.",
+    "goal": "the source prompt's goal is to make the ledger reads behind an admission pass and a station tick incremental; reckon/crew/obligations.py:1334 delivers the tick's namings read, but the admission pass's section_attempts_by_plan read is absent from the diff, so only half the goal landed.",
+    "manifest": "the source manifest read at manifest.md records status complete, three commits, the three named failure ids in retry_failures, and admits under blockers that \u00a745's first and second deliverables are undelivered; its test_logs names logs/after-gate.log whose header reads \"504545c1bc + working tree\" rather than the landed head.",
+    "write_paths": "the source prompt grants reckon/mcp_views.py, reckon/crew/obligations.py, reckon/crew/obligation_snapshot.py, the new test and the evidence fragment; git diff aff9ba4..bca9b53 changes obligations.py, obligation_snapshot.py, the test and the fragment, all inside the grant."
+  },
+  "justifications": {
+    "durability": "tests/test_ledger_reads_are_incremental.py:110 fails if the per-file stat sweep returns (its negative control is logged red), while the case at :171 asserts a value the test itself passed in and cannot fail if no read ever writes a count.",
+    "evidence": "the gate at tests/test_ledger_reads_are_incremental.py passes 3 tests at head bca9b53dbf (re-run by this reviewer, EXIT=0), but no case exercises the 30 live pointers the done_when names and the two section-attempts cases are missing.",
+    "fit": "reckon/crew/obligations.py:1302-1304 follows the module's style but keeps one process-global cache and a process-global counter list rather than returning the count with the read.",
+    "goal_fidelity": "reckon/crew/obligations.py:1334 makes the tick read incremental, but the admission pass read in reckon/mcp_views.py that the goal also names is reverted at 76875ef1dd and absent from the landed diff.",
+    "reuse": "reckon/crew/obligations.py:1347 adds a second invalidation key beside the ledger's own change key at reckon/ledger.py:1059 (input_stamp), which already covers aggregate and per-run changes; the addition wraps rather than forks that owner but is narrower.",
+    "scope_discipline": "every path in the aff9ba4..bca9b53 diff is inside the four write paths granted by the source prompt, and the reverted mcp_views.py work leaves no residue."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source prompt's goal is to make the ledger reads behind an admission pass and a station tick incremental; reckon/crew/obligations.py:1334 delivers the tick's namings read, but the admission pass's section_attempts_by_plan read is absent from the diff, so only half the goal landed.\nVERDICT done_when: the source prompt's done_when names five cases on 2,000 run files and 30 live pointers; tests/test_ledger_reads_are_incremental.py:83 and :135 cover cases three and four, its :150 case only round-trips its own arguments, and the two section-attempts cases are absent.\nVERDICT write_paths: the source prompt grants reckon/mcp_views.py, reckon/crew/obligations.py, reckon/crew/obligation_snapshot.py, the new test and the evidence fragment; git diff aff9ba4..bca9b53 changes obligations.py, obligation_snapshot.py, the test and the fragment, all inside the grant.\nVERDICT manifest: the source manifest read at manifest.md records status complete, three commits, the three named failure ids in retry_failures, and admits under blockers that \u00a745's first and second deliverables are undelivered; its test_logs names logs/after-gate.log whose header reads \"504545c1bc + working tree\" rather than the landed head.\nVERDICT diff: read commit by commit; 504545c1bc adds both halves, 76875ef1dd reverts the section-attempts half and keeps the namings cache, bca9b53dbf writes the evidence fragment, leaving 306 insertions and 1 deletion across four files.\nCALL_SITES: reckon/crew/obligations.py:_held_worktree_records_read, reckon/crew/obligations.py:_held_worktrees_by_session\nSCORE goal_fidelity: 8\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:1334 makes the tick read incremental, but the admission pass read in reckon/mcp_views.py that the goal also names is reverted at 76875ef1dd and absent from the landed diff.\nSCORE evidence: 9\nJUSTIFICATION evidence: the gate at tests/test_ledger_reads_are_incremental.py passes 3 tests at head bca9b53dbf (re-run by this reviewer, EXIT=0), but no case exercises the 30 live pointers the done_when names and the two section-attempts cases are missing.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the aff9ba4..bca9b53 diff is inside the four write paths granted by the source prompt, and the reverted mcp_views.py work leaves no residue.\nSCORE durability: 11\nJUSTIFICATION durability: tests/test_ledger_reads_are_incremental.py:110 fails if the per-file stat sweep returns (its negative control is logged red), while the case at :171 asserts a value the test itself passed in and cannot fail if no read ever writes a count.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/obligations.py:1302-1304 follows the module's style but keeps one process-global cache and a process-global counter list rather than returning the count with the read.\nSCORE reuse: 12\nJUSTIFICATION reuse: reckon/crew/obligations.py:1347 adds a second invalidation key beside the ledger's own change key at reckon/ledger.py:1059 (input_stamp), which already covers aggregate and per-run changes; the addition wraps rather than forks that owner but is narrower.\nFINDING reckon/crew/obligation_snapshot.py:355 blocking: record_station_read_counts and station_read_counts (line 365) have no caller anywhere in reckon/ or tests/ except the test, and namings_reread_count at reckon/crew/obligations.py:1307 has none at all, so neither read's re-read count ever reaches the station tick record the done_when's fifth case requires.\nFINDING docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/the-ledger-reads-behind-a-pass-are-incremental.html:11 blocking: the landed evidence fragment states reckon/crew/obligation_snapshot.py carries both reads' counts into the station's tick record, which no production caller does, so the record a reader lands on the section asserts a behaviour the head does not have.\nFINDING tests/test_ledger_reads_are_incremental.py:171 blocking: the fifth case passes namings=1 and attempts=2 into record_station_read_counts and asserts those same values come back from station_read_counts, a round trip that holds whether or not any read produces a count, so it survives the regression it was added to catch; the negative control only strips the helper itself.\nFINDING tests/test_ledger_reads_are_incremental.py:71 non-blocking: LIVE builds 30 live pointers but is never used, so the fixture holds 2,000 run files and zero live pointers, and the done_when's live-pointer population and the case where a pointer move re-reads exactly one run are not exercised.\nFINDING reckon/crew/obligations.py:1347 non-blocking: the cache is keyed on the runs directory's identity alone while _run_namings reads ledger.runs, which merges crew.json with the per-run documents (reckon/ledger.py:load), so a row that changes only in the aggregate leaves the namings stale until some run document moves.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T111612752232-the-ledger-reads-behind-a-pass-are-incremental/logs/after-gate.log:1 non-blocking: the gate log the manifest names as test_logs records its revision as \"504545c1bc + working tree\", not the landed head bca9b53dbf, so the receipt alone cannot show the landed tree passed; re-running the test at head gives 3 passed, EXIT=0.\n",
+  "review_run_id": "r-20261106T124646959706-review-of-the-ledger-reads-behind-a-pass-are-incremental-bca9b53dbf4e",
+  "reviewed_base_sha": "aff9ba4bf1b10b7be1462f0b1bebf1fb97112351",
+  "reviewed_commits": [
+    "504545c1bcc4ce31e32443fd7c7066a3f379e420",
+    "76875ef1ddf8f6a36b237de1ce2aa6b1f8c0592f",
+    "bca9b53dbf4e584652d7792b66ce118253271d6c"
+  ],
+  "reviewed_head_sha": "bca9b53dbf4e584652d7792b66ce118253271d6c",
+  "reviewed_run_id": "r-20261106T111612752232-the-ledger-reads-behind-a-pass-are-incremental",
+  "scores": {
+    "durability": 11,
+    "evidence": 9,
+    "fit": 15,
+    "goal_fidelity": 8,
+    "reuse": 12,
+    "scope_discipline": 19
+  },
+  "self_comparison_assertions": [
+    "tests/test_ledger_reads_are_incremental.py:171-173 compares the mapping returned by station_read_counts with the namings=1, attempts=2 arguments the test itself passed to record_station_read_counts on line 171."
+  ],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T13:16:59.929714+00:00",
+  "total": 74
+}
