@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/station.py:512",
+    "reckon/crew_follow_commands.py:584",
+    "reckon/crew_follow_commands.py:1554"
+  ],
+  "completed_at": "2026-11-06T13:24:53.788Z",
+  "dispatched_at": "2026-11-06T13:16:42Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/keep-a-follower-while-its-session-owes-a-review.html",
+      "line": 40,
+      "severity": "non-blocking",
+      "text": "the committed landing record says 'Six cases, 6 passed', but the committed test file holds seven cases and logs/node-tests.log records 7 passed; it also never describes the manifest-commits precondition the shipped rule adds, so a reader of the evidence would not know a delivery naming no commit settles while the obligations still call its review missing. The record understates and partly contradicts the gate it cites."
+    },
+    {
+      "file": "reckon/crew/station_subscriber.py",
+      "line": 101,
+      "severity": "non-blocking",
+      "text": "the added 'if not manifest_commits: return False' precondition narrows the rule beyond the section's deliverable: a scoring run whose manifest names runtime source but omits the commits key still reads review-missing to obligations, yet now settles its pane, so the reflex that would compose that review can still be lost for that population. The plan states no such exemption; it is justified only if the manifest contract guarantees a commits key on every delivery."
+    }
+  ],
+  "findings_source": "review",
+  "item_verdicts": {
+    "call_sites": "The production paths that reach the change are reckon/crew/station.py:512 (the station tick writes the settle reading through live_work_populations) and reckon/crew_follow_commands.py:584,1554 (the fallback settle path through _population_has_live_work).",
+    "diff": "Read commit by commit against 97c71c15: one commit, 553 insertions, adding delivered_run_owes_review, its use in live_work_populations, a 451-line seven-case test file and a 54-line evidence fragment.",
+    "done_when": "The plan's five cases are all present in tests/test_a_follower_stays_while_a_review_is_owed.py (the two hold cases, both settle-once-stored cases, the tier-none case and the drained case), plus a no-commit case; logs/node-tests.log records 7 passed at 6dedfa1b0c.",
+    "goal": "The node goal is to keep a session's follower alive while a delivered run still owes its review; reckon/crew/station_subscriber.py:113-119 now counts such a run in live_work_populations, the one rule both settle paths read.",
+    "manifest": "The manifest records status complete, one commit, the node gate 7 passed, base arm 477 passed and head arm 484 passed, both negative controls reproduced, and names logs/node-tests.log; all of those were found on disk.",
+    "write_paths": "The commit touches reckon/crew/station_subscriber.py, tests/test_a_follower_stays_while_a_review_is_owed.py and the node's evidence fragment, all inside the manifest's declared orientation_write_paths; crew_follow_commands.py was granted and left untouched."
+  },
+  "justifications": {
+    "durability": "restoring the terminal-only rule reddens test_a_station_reading_of_an_owed_review_holds_the_pane and both fallback cases, and dropping the tier check reddens test_a_delivery_that_owes_no_review_settles, each reproduced in logs/negative-control.log.",
+    "evidence": "tests/test_a_follower_stays_while_a_review_is_owed.py drives _check_settle through _follow_watch_lines for both settle paths and the tier-none and no-commit exemptions, and logs/node-tests.log records 7 passed while logs/negative-control.log records both controls failing (EXIT=1).",
+    "fit": "reckon/crew/station_subscriber.py:103 reaches into the private obligations._review_tier_for_duty across a module boundary and re-spells the classification=='scoring' match rather than calling the duty builder, which couples this module to a private symbol.",
+    "goal_fidelity": "reckon/crew/station_subscriber.py:114 counts a terminal pointer back into the live population through delivered_run_owes_review, so a pane stays while the delivered run's review is uncomposed, which is what the node goal names.",
+    "reuse": "the change adds no tier or classification rule of its own: it composes recovery.classify_pointer and obligations._review_tier_for_duty, the resolvers the duty and the sweep already use.",
+    "scope_discipline": "git show --stat 6dedfa1b0c lists only station_subscriber.py, the new test, and the evidence fragment, every one inside the manifest's orientation_write_paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to keep a session's follower alive while a delivered run still owes its review; reckon/crew/station_subscriber.py:113-119 now counts such a run in live_work_populations, the one rule both settle paths read.\nVERDICT done_when: The plan's five cases are all present in tests/test_a_follower_stays_while_a_review_is_owed.py (the two hold cases, both settle-once-stored cases, the tier-none case and the drained case), plus a no-commit case; logs/node-tests.log records 7 passed at 6dedfa1b0c.\nVERDICT write_paths: The commit touches reckon/crew/station_subscriber.py, tests/test_a_follower_stays_while_a_review_is_owed.py and the node's evidence fragment, all inside the manifest's declared orientation_write_paths; crew_follow_commands.py was granted and left untouched.\nVERDICT manifest: The manifest records status complete, one commit, the node gate 7 passed, base arm 477 passed and head arm 484 passed, both negative controls reproduced, and names logs/node-tests.log; all of those were found on disk.\nVERDICT diff: Read commit by commit against 97c71c15: one commit, 553 insertions, adding delivered_run_owes_review, its use in live_work_populations, a 451-line seven-case test file and a 54-line evidence fragment.\nCALL_SITES: reckon/crew/station.py:512, reckon/crew_follow_commands.py:584, reckon/crew_follow_commands.py:1554\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/station_subscriber.py:114 counts a terminal pointer back into the live population through delivered_run_owes_review, so a pane stays while the delivered run's review is uncomposed, which is what the node goal names.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_follower_stays_while_a_review_is_owed.py drives _check_settle through _follow_watch_lines for both settle paths and the tier-none and no-commit exemptions, and logs/node-tests.log records 7 passed while logs/negative-control.log records both controls failing (EXIT=1).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --stat 6dedfa1b0c lists only station_subscriber.py, the new test, and the evidence fragment, every one inside the manifest's orientation_write_paths.\nSCORE durability: 18\nJUSTIFICATION durability: restoring the terminal-only rule reddens test_a_station_reading_of_an_owed_review_holds_the_pane and both fallback cases, and dropping the tier check reddens test_a_delivery_that_owes_no_review_settles, each reproduced in logs/negative-control.log.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/station_subscriber.py:103 reaches into the private obligations._review_tier_for_duty across a module boundary and re-spells the classification=='scoring' match rather than calling the duty builder, which couples this module to a private symbol.\nSCORE reuse: 18\nJUSTIFICATION reuse: the change adds no tier or classification rule of its own: it composes recovery.classify_pointer and obligations._review_tier_for_duty, the resolvers the duty and the sweep already use.\nFINDING docs/evidence/fragments/the-monitor-shows-the-work-it-watches/keep-a-follower-while-its-session-owes-a-review.html:40 non-blocking: the committed landing record says 'Six cases, 6 passed', but the committed test file holds seven cases and logs/node-tests.log records 7 passed; it also never describes the manifest-commits precondition the shipped rule adds, so the evidence understates and partly contradicts the gate it cites.\nFINDING reckon/crew/station_subscriber.py:101 non-blocking: the added 'if not manifest_commits: return False' precondition narrows the rule beyond the section's deliverable: a scoring run whose manifest names runtime source but omits the commits key still reads review-missing to obligations, yet now settles its pane, so the reflex that would compose that review can still be lost for that population.\n",
+  "review_run_id": "r-20261106T130941109460-review-of-keep-a-follower-while-its-session-owes-a-review-6dedfa1b0cea",
+  "reviewed_base_sha": "97c71c15d699aa20a5861d91bbe6ed528b7eaef0",
+  "reviewed_head_sha": "6dedfa1b0cea0ed788ed9c84d2ff7c342522da16",
+  "reviewed_run_id": "r-20261106T121146656787-keep-a-follower-while-its-session-owes-a-review",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 15,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T13:44:54.897516+00:00",
+  "total": 105
+}
