@@ -128,9 +128,6 @@ HOLD_VERDICTS = frozenset(
 #: waits on has not been released. A wait here is the queue working as designed.
 NOT_ADMISSIBLE_PHASES = frozenset({"awaiting-upstream", "blocked-upstream"})
 RECORDED_HOLD_FIELD = "pass_hold"
-REFUSAL_HOLD_VERDICTS = frozenset(
-    {"refused-scope-conflict", "refused-unreconciled-runs"}
-)
 _RETRY_HOLD_VERDICTS = frozenset({"held-on-retry-backoff", "held-until-changed"})
 
 
@@ -1276,11 +1273,21 @@ def _record_pass_hold(
     live_ids = {str(candidate.get("run_id") or "") for candidate in live}
     named = _named_runs(previous)
     if (
+        chosen.get("verdict") == "held-on-claim"
+        and previous.get("verdict") == "refused-scope-conflict"
+        and chosen.get("holder") == previous.get("holder")
+    ):
+        # The current pass found the same binding claim that refused the
+        # launch. Keep its first recorded reason and instant.
+        chosen = previous
+    elif (
         str(chosen.get("verdict") or "") in _RETRY_HOLD_VERDICTS
-        and str(previous.get("verdict") or "") in REFUSAL_HOLD_VERDICTS
+        and previous.get("verdict") == "refused-unreconciled-runs"
         and named
         and all(run_id in live_ids for run_id in named)
     ):
+        # A retry timer cannot settle the named runs. A scope conflict takes
+        # this path only after the claim check found no binding collision.
         chosen = previous
 
     def without_time(row: Mapping[str, Any]) -> dict[str, Any]:

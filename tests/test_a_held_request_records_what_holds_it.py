@@ -29,7 +29,7 @@ from pathlib import Path
 
 from reckon.crew import obligations as obligations_module
 from reckon.crew import queue_admission, runs
-from reckon.crew.node import ScopeConflict
+from reckon.crew.node import ScopeConflict, UnreconciledRuns
 from tests import test_a_queued_request_waits_on_its_dependencies as fixtures
 
 PROJECT = fixtures.PROJECT
@@ -195,10 +195,63 @@ def test_a_launch_refused_on_a_scope_conflict_records_the_holder(
     # The pointer's own reason is the pass's reading, not a stale one.
     assert runs.read_pointer(RUN_ID)["reason"] == recorded["reason"]
 
-    # The pass after it is held by the back-off the refusal recorded, and the
-    # holder has not moved: the reading stands unchanged, instant included.
+    # The next pass observes the holder's actual write claim. The cause has
+    # not changed, so it keeps the refusal and its original recording time.
+    holder = runs.read_pointer(HOLDER_RUN_ID)
+    holder["node"]["write_paths"] = [HELD_PATH]
+    runs._write_json(runs.pointer_path(HOLDER_RUN_ID), holder)
     _admit(config_for, launcher=_refusing_launcher())
 
+    assert _hold(RUN_ID) == recorded
+
+
+def test_a_scope_conflict_expires_when_its_holder_no_longer_claims_the_path(
+    chain_repo, tmp_path: Path
+) -> None:
+    """A live run without the claimed path cannot keep a stale refusal alive."""
+    _queue_waiting(chain_repo)
+    _write_holder(chain_repo)
+    config_for = _config_for(tmp_path, worker_slots=4)
+    _admit(config_for, launcher=_refusing_launcher())
+    assert _hold(RUN_ID)["verdict"] == "refused-scope-conflict"
+
+    result = _admit(config_for, launcher=_refusing_launcher())
+
+    assert RUN_ID in result["held"]
+    recorded = _hold(RUN_ID)
+    assert recorded["verdict"] in {
+        "held-until-changed",
+        "held-on-retry-backoff",
+    }, recorded
+    assert "holder" not in recorded, recorded
+    assert runs.read_pointer(RUN_ID)["reason"] == recorded["reason"]
+    assert _duties(obligations_module.obligations(PROJECT, HOLDER_SESSION)) == []
+
+
+def test_an_unreconciled_runs_refusal_names_every_holding_run(
+    chain_repo, tmp_path: Path
+) -> None:
+    """The request keeps the run ids a launch refusal requires settling."""
+    _queue_waiting(chain_repo)
+    named = ["r-first-holder", "r-second-holder"]
+    for run_id in named:
+        _write_holder(chain_repo, run_id=run_id)
+
+    def refuse(plan, *, log_path, stderr_path, prompt_path):
+        raise UnreconciledRuns(
+            [{"run_id": run_id, "next_action": "settle the run"} for run_id in named],
+            "1h",
+        )
+
+    config_for = _config_for(tmp_path, worker_slots=4)
+    _admit(config_for, launcher=refuse)
+    recorded = _hold(RUN_ID)
+    assert recorded["verdict"] == "refused-unreconciled-runs", recorded
+    assert recorded["runs"] == named, recorded
+    assert all(run_id in recorded["reason"] for run_id in named)
+    assert runs.read_pointer(RUN_ID)["reason"] == recorded["reason"]
+
+    _admit(config_for, launcher=refuse)
     assert _hold(RUN_ID) == recorded
 
 
