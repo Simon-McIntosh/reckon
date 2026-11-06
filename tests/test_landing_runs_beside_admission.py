@@ -130,6 +130,9 @@ def test_an_admission_pass_completes_while_a_landing_is_blocked(
     # moves the waiter, not a promotion.
     waits._declare(chain_repo, "s1")
     head = release_waits._promotable_run(chain_repo, section="s1")
+    runs._mutate_pointer(
+        release_waits.RUN_ID, lambda pointer: {**pointer, "suite_command": "true"}
+    )
     _accept_the_delivery(head)
     assert waits._phase_of(chain_repo, "s2") == queue_admission.AWAITING_UPSTREAM_PHASE
 
@@ -316,7 +319,7 @@ def test_the_land_step_waives_the_impl_move_the_beat_makes(
     result = queue_landing.land_once()
 
     assert result["landed"] == [RUN], result
-    command = commands[0]
+    command = next(command for command in commands if "complete" in command)
     assert "--no-impl-change" in command, command
     reason = command[command.index("--no-impl-change") + 1]
     assert reason == queue_landing.LANDING_BEAT_REASON
