@@ -1,0 +1,55 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T18:54:04.487Z",
+  "dispatched_at": "2026-11-06T18:48:42Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-project-reads-as-one-picture.html:132",
+      "id": "done_when-1",
+      "reason": "without the invocation clause the node's constructed snapshot silently reproduces the dead control the section was rewritten to replace, and the recorded control reads \"did not fire\" for a reason that is a property of the fixture rather than of the derivation.",
+      "text": "\u00a78's second control depends on the waiting plan's followup being attributed to a section, which requires its prompt to carry a `/reckon-<verb> <target> \u00a7N` invocation naming the section that declares the edge; the text says only that the prompt \"names that edge's target section\". Measured on this tree through `roadmap.build_roadmap`: a followup whose prompt is \"waits for o#s3 to land\" with no invocation produces 0 `undeclared-wait` findings both before and after the edge is removed (control dead); an invocation naming the declaring section produces 0 when declared and 1 when removed (the intended arm); an invocation naming a different section produces 1 in both states (false positive at the declared arm)",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "6e193df1b6f432ebff84eaca4e89558b7f0e43a2",
+  "plan_fingerprint": "bcb9300460659f977cde1b76ffb23e0a39241b48ae2fb56cc033f042d2ff57ad",
+  "plan_slug": "a-project-reads-as-one-picture",
+  "plan_version": 80,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T184714998570-plan-review-of-a-project-reads-as-one-picture",
+  "reviewed_blob_sha": "7807df8425281a2e081b9d228b5950a120196feb",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the changed text adds no href; its one citation is \u00a72, and \u00a72's landing comment (line 276) records the three-plan power_convertor critical path that \u00a78 now compares against.",
+    "done_when": "a finding \u2014 \u00a78's second control names a followup whose *prompt* names the removed edge's target section, but `undeclared-wait` only ever reads a followup's mention when the followup carries a parseable `/reckon-<verb> <target> \u00a7N` invocation whose section is the declaring section, so a snapshot built exactly as written leaves that control unable to fire.",
+    "evidence_paths": "pass \u2014 the changed text moves the control snapshot onto a committed builder under `tests/`, so a later reader can rebuild it and re-run both arms, and the results still go to the cumulative landed record.",
+    "naming": "pass \u2014 the changed text introduces no symbol, file or comment that carries a plan, stage or ticket label; \"\u00a72\" is a plan cross-reference in plan prose, not a code name.",
+    "reasoning": "pass \u2014 the section no longer claims the base disagrees with today's coordinators (the 2026-11-06 re-measure at line 363 records that it did not), it dates the premise to the 2026-11-06 snapshots, and it scopes the controls to a constructed snapshot, so each stated mechanism now produces the measure the section asserts.",
+    "single_goal": "pass \u2014 \u00a78 asks for one thing, the four coordinator questions re-asked through the new reads on three mounts, with the two controls measuring that one deliverable.",
+    "wiring": "pass \u2014 \u00a78's `plan-section-depends-on` entry (s2, s3, s4, s5, s7, s15, s16 plus `a-coordinator-sees-the-board#s13` and `the-mcp-answers-the-question-asked#s11`) names nodes that exist; the \u00a78 landing comments record why the two cross-plan waits were added, and the changed text adds no edge it does not need."
+  },
+  "section_digests": {
+    "_document": "3d9071856290ec7a6c7982a166b8cb31ae9efdeb83c9742d8ad9a3089a1b2735",
+    "s1": "1956dcaef74ad7d3216608fe69c2e7baa2a9e32d702ef86431dc746f15c3878a",
+    "s10": "e102e1c4c48bcc4635b2e41c4a84e2b36433f78cee863762cad68b3deae2cf75",
+    "s11": "ff19dc90f42b226ca45a5aaaf02a9894b54846500c87597775cb2806fc9b6156",
+    "s12": "039fc9469fcdd80b1d5482629a5dcefc71359e7124fbbad20e0227170c2760dc",
+    "s13": "95e233ad4cbbcd9c2cf975b7cb717f3f0eec9093cbeade0f4f268890aaff8d73",
+    "s14": "e215eae311c545fa0320f94622e0e806b548177eb68b4ee0c1ca4cb1b202d283",
+    "s15": "ae3d696d3e3b1a44be381a9c1aac5613b8c19982be174e639200aba9532b81b9",
+    "s16": "8897896d19228b1c2ea3616cc20c351aba7d395dc47d19aa773b8926cef67191",
+    "s2": "d5da4569d38701f7f8c91790b979f6e3de48d9e5d4969c4f115a74a7e8317e8c",
+    "s3": "749a131ab7a4c04f7278425172c74a2f6ebd29c0014fbb7befc6a0c8f48f08b4",
+    "s4": "389898eb9ae606e5b51a4f3a7bfafd20cdd843ae6612eb3884809786e45217a6",
+    "s5": "e13040e31816bf168d9b0b3f3a1245e7fa9b90c30cdf82db44726a02a764b6d9",
+    "s6": "d0f702b85752e3605cfbc815d2de3035b6d1e8e89fb584b661e8571aba7aa175",
+    "s7": "c96146ddd026103e827c96ed2e8629450a1f2f8d361d4419b4fe76456edf5ef4",
+    "s8": "b4557c8b7d663d242f51b056d89604e59c6a73584fa4c4c33392b8ef2cd950b8",
+    "s9": "a65c8523c1a05e7389c35e43a8737757ab2c60d08633460c1648c40a88138892"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T18:56:45.023670+00:00"
+}
