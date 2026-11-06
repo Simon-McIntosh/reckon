@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="an-evidence-record-counts-only-what-it-read">
+  <meta name="plan-title" content="An Evidence Record Counts Only What It Read">
+  <meta name="plan-summary" content="A landed record never claims counts it did not compute, and the deferred-work rule reads every spelling of work sent onward.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="mid">
+  <meta name="plan-effort-hours" content="2.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="standard">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S27">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling">
+  <meta name="plan-after" content="a-finished-plan-closes">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
+  <title>An Evidence Record Counts Only What It Read | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: a closed plan's record said nothing landed</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>power-convertor-df reported both on 6 November.</p>
+    <p><strong>A record claiming zero.</strong> power_convertor's <code>docs/evidence/archive/filter-recommendation-for-coil-health-landed.html</code>, written at 18:19Z and committed with the plan's close (<code>f7f7d2d6d</code>), says &ldquo;0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s)&rdquo;. The project ledger holds 58 rows for that plan, and the plan carries 9 close comments. The sentence comes from <code>_render_document</code> (<code>reckon/evidence.py</code> near lines 405&ndash;408). <code>synthesize_landed_record</code> cannot produce zeros, because it refuses a plan with no ledger rows (near line 660). The zeros come from <code>_landed_record_shell</code> (<code>reckon/_store.py</code> near line 1184): when <code>append_evidence</code> finds no record, it creates one by rendering the synthesis document with no runs and no comments (near line 1263). That shell's count sentence is never recomputed, so each later append sits beneath a claim that nothing landed.</p>
+    <p><strong>Deferred work in prose.</strong> Followup bodies and close comments in power_convertor carry phrases such as <code>Three follow-ons carry to §4</code>, <code>Two follow-ons go to §6</code> and <code>the remaining non-blocking items go to a follow-up node</code>. power-convertor-df counted more than 400 across 19 plans, 59 in <code>shared-coil-supply-model</code> alone. power-convertor-df relays the lead's ruling of 6 November: work found beyond a node is a new section or a new linked plan, never prose. Reckon already holds that rule for one spelling. <code>DEFERRED_WORK_TERM_IN_PROSE</code> (<code>reckon/doccheck.py</code> near line 412) warns on <code>follow-on</code> or <code>follow-ons</code> in a plan's prose. The store refuses the same term in an authored body through <code>_prose_deferred_work_term</code> (<code>reckon/_store.py</code> near line 993), and both read one regex, <code>_DEFERRED_WORK_TERM</code> (near line 419). The other spellings pass both checks: <code>carry to §N</code>, <code>go to §N</code> and <code>go to a follow-up node</code>.</p>
+
+    <h2 id="s2">§2 — A record created by an append claims no counts</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> The record <code>_landed_record_shell</code> creates carries no run, comment or commit count. The count sentence is written only by <code>synthesize_landed_record</code>, which reads the ledger. A shell names its plan and says that it holds the evidence appended to it. A record already on disk with the zero sentence is corrected by the next synthesis, as today.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_an_appended_record_claims_no_counts.py</code> shows two things in a temporary repository: an <code>append_evidence</code> onto a plan with no record creates one whose text contains no &ldquo;committed run(s)&rdquo; sentence; and <code>synthesize_landed_record</code> over a temporary ledger of two runs writes &ldquo;2 committed run(s)&rdquo;. One negative control: restoring the shell's delegation to <code>_render_document</code> with empty runs makes the first case carry &ldquo;0 committed run(s)&rdquo;. The test files importing <code>reckon.evidence</code> or <code>reckon._store</code> add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>. Ruff adds no findings on the staged paths. Every log is under the run directory, starts with its revision and the literal command, and ends in <code>EXIT=</code>. Write paths: <code>reckon/_store.py</code>, <code>reckon/evidence.py</code> and the new test.</p>
+
+    <h2 id="s3">§3 — The deferred-work rule reads every spelling of deferred work</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>_DEFERRED_WORK_TERM</code> in <code>reckon/doccheck.py</code> also matches work sent onward to a section or a later node: <code>carry to §N</code>, <code>carries to §N</code>, <code>go to §N</code> and <code>goes to §N</code>, and <code>go to a follow-up</code> or <code>goes to a follow-up</code> followed by node, section or plan. It keeps its current reader, so the audit warning and the store refusal widen together, and text inside <code>&lt;pre&gt;</code> or <code>&lt;code&gt;</code> stays exempt. It does not match a sentence that only cites a landed section, such as <code>landed in §4</code>.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_every_spelling_of_deferred_work_is_read.py</code> shows four things:</p><ul><li>Each new spelling, in a comment body, is reported by <code>reckon audit-doc</code>.</li><li>The same spelling is refused by an <code>edit_plan</code> append of that comment.</li><li><code>landed in §4</code> is neither reported nor refused.</li><li>A spelling inside <code>&lt;code&gt;</code> is neither reported nor refused.</li></ul><p>Two negative controls: restoring the one-spelling regex leaves the first two cases unflagged, and matching a bare <code>§N</code> reports the third case. The command's output and finding count over power_convertor's <code>docs/plans/</code> are recorded in the run directory. The test files importing <code>reckon.doccheck</code> or <code>reckon._store</code> add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>. Ruff adds no findings on the staged paths. Write paths: <code>reckon/doccheck.py</code> and the new test.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-aercowir-001" data-status="open" data-written-by="coordinator" data-written-at="2026-11-06" data-recommends-skill="/reckon-build an-evidence-record-counts-only-what-it-read §2" data-resolved-at="" data-resolved-by="">
+<h4 class="r-fu-title">Build §2 and §3</h4>
+<div class="r-fu-body"><p>The two sections write disjoint files and can run together.</p></div>
+<pre class="r-fu-prompt">/reckon-build an-evidence-record-counts-only-what-it-read §2</pre>
+</article>
+    </section>
+  </main>
+</body>
+</html>

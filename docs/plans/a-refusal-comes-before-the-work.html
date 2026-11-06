@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-refusal-comes-before-the-work">
+  <meta name="plan-title" content="A Refusal Comes Before The Work">
+  <meta name="plan-summary" content="A batch entry is validated like a single dispatch, a brief run's plan link is asked for at dispatch, and an edit refusal names every missing field.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="mid">
+  <meta name="plan-effort-hours" content="3.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="standard">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S27">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-after" content="a-dry-run-must-resolve-what-the-real-call-resolves">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;a-refusal-comes-before-the-work#s2&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <title>A Refusal Comes Before The Work | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: three refusals that arrived after the work they judged</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>power-convertor-df reported these on 6 November from the power_convertor filter-recommendation sprint (session <code>c76cf9d1</code>, 5&ndash;6 November). Each is a check that exists but runs later than the first call that could have made it.</p>
+    <ul>
+      <li><strong>A batch skips the node contract.</strong> <code>crew dispatch --batch</code> queued malformed entries that a single dispatch or <code>--dry-run</code> refuses. The single path runs <code>validate_node</code> (<code>reckon/crew/dispatch_plan.py</code> near line 843). The batch path, <code>queue_batch</code> (<code>reckon/crew/dispatch_batch.py</code> near line 478) into <code>queue_requests</code> (<code>reckon/crew/dispatch.py</code> near line 293), runs only <code>admission_domain_findings</code>, so the contract refusal surfaces later at admission.</li>
+      <li><strong>A brief run's plan link is asked for only at landing.</strong> An implement-role run dispatched with <code>--brief</code> and no <code>--plan</code> must land with <code>--plan-link</code> or <code>--unplanned-reason</code> (<code>reckon/crew/promotion_checks.py</code> near line 1770), at both <code>crew complete</code> and <code>crew merge</code>. Dispatch neither asks for it nor records it, so the coordinator first meets it after the work is done.</li>
+      <li><strong>An edit refusal reveals one missing field at a time.</strong> <code>append_evidence</code> raises on a missing <code>plan</code>, then <code>anchor</code>, then <code>title</code>, then <code>body</code> (<code>reckon/_store.py</code> near lines 1289&ndash;1305); <code>close</code> raises on <code>status</code>, then <code>by</code> (near lines 4141&ndash;4149); <code>append</code> on <code>target</code> (near line 3668). Each retry costs a round trip to learn the next field.</li>
+    </ul>
+    <p>The same report's dry-run write-path fence (a path under <code>~/.cache</code> accepted by <code>--dry-run</code> and refused by the real call) is <code>a-dry-run-must-resolve-what-the-real-call-resolves</code> §2, so it is not repeated here.</p>
+
+    <h2 id="s2">§2 — A batch entry is refused on the node contract when it is queued</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> Each batch entry's node is judged by the same <code>validate_node</code> call, with the same locked decisions and budget ceiling, that a single dispatch makes before it is stored. An entry the contract refuses is reported in the batch result with the same refusal detail the single path gives and is not stored. The rest of the batch is stored as today. The call is shared rather than copied: the batch reaches it through the function the single path uses, so the two cannot drift.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_a_batch_entry_meets_the_node_contract.py</code> shows three things with a temporary crew home: an entry whose goal contains <code>;</code> is refused in the batch result with the single path's detail and leaves no queued pointer; a well-formed entry in the same batch is stored; and the refusal detail is equal to what a single <code>--dry-run</code> of that entry reports. Two negative controls: removing the batch's contract call stores the malformed entry; and a batch-local copy of the check whose message differs fails the third case. The test files importing <code>reckon.crew.dispatch_batch</code> or <code>reckon.crew.dispatch</code> add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>. Ruff adds no findings on the staged paths. Every log is under the run directory, starts with its revision and the literal command, and ends in <code>EXIT=</code>. Write paths: <code>reckon/crew/dispatch_batch.py</code>, <code>reckon/crew/dispatch.py</code> and the new test.</p>
+
+    <h2 id="s3">§3 — A brief run's plan link is recorded at dispatch</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>crew dispatch</code> accepts <code>--plan-link</code> and <code>--unplanned-reason</code> and records the one given on the node. An implement-role dispatch with <code>--brief</code> and no <code>--plan</code> that gives neither is refused at dispatch with the same two-flag remedy the landing refusal names. At <code>crew complete</code> and <code>crew merge</code>, the brief discharge in <code>reckon/crew/promotion_checks.py</code> reads the recorded value when the flag is not passed. A flag passed at landing still overrides it. Runs dispatched before this change carry no recorded value and are judged at landing as today.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_a_brief_run_names_its_plan_at_dispatch.py</code> shows four things with a temporary crew home: an implement-role brief dispatch with neither flag is refused naming both flags; one with <code>--plan-link</code> is stored with the link on its node; its landing discharge passes with no landing flag; and a pointer with no recorded link and no landing flag is refused at landing as today. Three negative controls: dropping the dispatch refusal stores the first dispatch; not reading the recorded link makes the third case refuse; and treating a missing recorded link as a discharge makes the fourth case pass. The test files importing <code>reckon.crew.promotion_checks</code> or <code>reckon.crew.dispatch</code> add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>. Ruff adds no findings on the staged paths. Write paths: <code>reckon/crew_run_commands.py</code>, <code>reckon/crew/dispatch.py</code>, <code>reckon/crew/promotion_checks.py</code> and the new test. It shares <code>reckon/crew/dispatch.py</code> with §2, so it is dispatched after §2 lands.</p>
+
+    <h2 id="s4">§4 — An edit refusal names every missing field at once</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> The <code>append_evidence</code>, <code>close</code> and <code>append</code> ops in <code>reckon/_store.py</code> collect every missing or malformed required field before raising, and raise one <code>OpError</code> naming all of them. A call with one missing field reads as it does today.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_an_edit_refusal_names_every_field.py</code> shows that <code>append_evidence</code> with no <code>plan</code>, <code>anchor</code>, <code>title</code> or <code>body</code> is refused once naming all four; <code>close</code> with neither <code>status</code> nor <code>by</code> is refused naming both; and each op with exactly one field missing gives today's message. One negative control: restoring the first-field raise makes the multi-field cases name one field. The test files importing <code>reckon._store</code> add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>. Ruff adds no findings on the staged paths. Write paths: <code>reckon/_store.py</code> and the new test.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-arcbtw-001" data-status="open" data-written-by="coordinator" data-written-at="2026-11-06" data-recommends-skill="/reckon-build a-refusal-comes-before-the-work §2" data-resolved-at="" data-resolved-by="">
+<h4 class="r-fu-title">Build §2 and §4, then §3</h4>
+<div class="r-fu-body"><p>§2 and §4 are independent. §3 shares <code>reckon/crew/dispatch.py</code> with §2 and is dispatched after it lands.</p></div>
+<pre class="r-fu-prompt">/reckon-build a-refusal-comes-before-the-work §2</pre>
+</article>
+    </section>
+  </main>
+</body>
+</html>

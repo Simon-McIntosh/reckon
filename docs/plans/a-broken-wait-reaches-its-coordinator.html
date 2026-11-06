@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-broken-wait-reaches-its-coordinator">
+  <meta name="plan-title" content="A Broken Wait Reaches Its Coordinator">
+  <meta name="plan-summary" content="A wait declaration the reader refuses is owed to the run's session, and a job id inside an interpreter's -c string is read or named as unread.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="2.25">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="standard">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S27">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-after" content="a-reexec-never-orphans-a-dispatch">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;a-reexec-never-orphans-a-dispatch#s4&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
+  <title>A Broken Wait Reaches Its Coordinator | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: a refused wait left a session idle for eight hours</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>nova-8a reported this on 6 November. Run <code>r-20261106T084812488886-polygon-near-band-quadrature</code> (nova session <code>35a66cc6-f4f1-4358-8dbb-99c9333c7249</code>) parked waiting on Slurm job 1306915 with this probe:</p>
+    <pre>wait_probe: ["python3","-c","import subprocess; p=subprocess.run(['squeue','-h','-j','1306915'],...); print('PENDING' if p.stdout.strip() else 'TERMINAL')"]</pre>
+    <p>The reader refused it as a probe that cannot fail: &ldquo;it names nothing outside the worker &mdash; no job id, pid, port or path&rdquo; (<code>reckon/crew/recovery_liveness.py</code> near lines 1003&ndash;1008). That is false: the job id is in the argument. <code>_wait_probe_reference_kind</code> (<code>reckon/crew/recovery_wait.py</code> near line 683) splits an argument into words only when the command is one of <code>_WAIT_PROBE_SHELL_COMMANDS</code> (near line 668, <code>bash sh zsh dash ksh</code>), so a <code>python3 -c</code> string is one opaque token. Even split by <code>_wait_probe_shell_words</code> (near line 744), the Python list spelling <code>'-j',</code> keeps its trailing comma and the flag rule would not match.</p>
+    <p>The run was classified <code>unreadable</code>, whose recovery verb is <code>repair</code> (<code>reckon/crew/recovery_vocabulary.py</code> near line 88), with next action &ldquo;repair the waiting declaration&rdquo;. But <code>crew view obligations</code> for the session returned count 0 with <code>unreconciled_runs</code> 1: <code>RECOVERY_CLASSIFICATION_DUTY_KINDS</code> (<code>reckon/crew/obligations.py</code> near line 64) lists only <code>needs-help</code>. The follower delivered nothing, the session sat idle from 11:52Z until the lead asked at about 19:40Z, and the awaited Sirius job ended in TIMEOUT and OOM at 15:17Z unseen. nova-8a resumed the run with a <code>sacct</code> argument-vector probe.</p>
+    <p>nova-8a also asked that <code>crew check --manifest</code> refuse the probe when the manifest is written. It already does: <code>audit_manifest</code> (<code>reckon/crew/reports.py</code> near line 2576) runs <code>_wait_declaration_refusal</code> on a waiting manifest. A worker that ran it would have met the same misleading reason, which §2 corrects, so no separate section is needed.</p>
+
+    <h2 id="s2">§2 — A job id inside an interpreter's code string is read, or named as unread</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>_wait_probe_reference_kind</code> reads the code string an interpreter is given with <code>-c</code> (<code>python</code>, <code>python3</code> and versioned <code>python3.N</code>, <code>perl</code>, <code>ruby</code>, <code>node</code> with <code>-e</code>) as words, the way it reads a shell's string, and strips a word's list and call punctuation (<code>,</code> <code>[</code> <code>]</code> and quotes) so <code>'-j', '1306915'</code> reads as the flag and the job id it is. A probe it still finds no reference in keeps its refusal, but the refusal then says that the probe runs an interpreter whose code string named no job id, pid, port or path the reader recognises, and names the argument-vector shape (<code>["squeue","-h","-j","&lt;id&gt;"]</code> or a <code>sacct</code> vector) instead of saying the probe names nothing.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_an_interpreter_probe_names_its_job.py</code> shows three things: the §1 probe, verbatim, is accepted as naming job 1306915; <code>["python3","-c","print('pending')"]</code> is still refused; and that refusal's text names the interpreter and the argument-vector shape. Three negative controls: reading interpreter strings as one token makes the first case refuse; keeping the trailing comma on <code>'-j',</code> makes the first case refuse; and restoring the old refusal text fails the third case. The test files importing <code>reckon.crew.recovery_wait</code> or <code>reckon.crew.recovery_liveness</code> add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>. Ruff adds no findings on the staged paths. Every log is under the run directory, starts with its revision and the literal command, and ends in <code>EXIT=</code>. Write paths: <code>reckon/crew/recovery_wait.py</code>, <code>reckon/crew/recovery_liveness.py</code> and the new test.</p>
+
+    <h2 id="s3">§3 — A run whose recovery is repair is a duty of its session</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>RECOVERY_CLASSIFICATION_DUTY_KINDS</code> in <code>reckon/crew/obligations.py</code> gains an entry for the <code>repair</code> recovery verb, so a run classified <code>unreadable</code> with a refused wait declaration is listed among its session's obligations with its <code>next_action</code> and the refusal text, and the follower emits a row for it. A run already owed under another duty kind is not listed twice. This edits the same map as <code>a-reexec-never-orphans-a-dispatch</code> §4, which adds <code>launch-failed</code>, so it waits for that section to land.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_a_refused_wait_is_an_obligation.py</code> shows three things with a temporary crew home: a waiting run whose manifest carries the §1 shape of refused probe appears in <code>obligations</code> for its session with the refusal text; a waiting run with a valid probe does not; and a run already listed as <code>turn-ended-early</code> is listed once. Three negative controls: dropping the duty-kind entry leaves the first case absent; listing every <code>unreadable</code> run regardless of verb makes a run with another verb appear; and skipping the de-duplication lists the third run twice. The test files importing <code>reckon.crew.obligations</code> add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>. Ruff adds no findings on the staged paths. Write paths: <code>reckon/crew/obligations.py</code> and the new test.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-abwrc-001" data-status="open" data-written-by="coordinator" data-written-at="2026-11-06" data-recommends-skill="/reckon-build a-broken-wait-reaches-its-coordinator §2" data-resolved-at="" data-resolved-by="">
+<h4 class="r-fu-title">Build §2, then §3 once a-reexec-never-orphans-a-dispatch §4 lands</h4>
+<div class="r-fu-body"><p>§2 is independent. §3 shares <code>reckon/crew/obligations.py</code> with a-reexec-never-orphans-a-dispatch §4 and waits on it through its declared section wait.</p></div>
+<pre class="r-fu-prompt">/reckon-build a-broken-wait-reaches-its-coordinator §2</pre>
+</article>
+    </section>
+  </main>
+</body>
+</html>
