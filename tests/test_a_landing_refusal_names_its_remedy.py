@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -30,11 +31,21 @@ PROJECT = "landing-fixture"
 SESSION = "owner"
 RUN = "r-delivered-implementation"
 
-#: The guard the promotion raises for a gate check with no exit status. It is
-#: the wording recorded in the report this node repairs.
-MISSING_EXIT_STATUS_GUARD = (
-    "promote: a passing gate requires the check that produced it; missing exit_status"
-)
+
+def _gate_guard_from_promotion(gate_check: dict[str, object]) -> str:
+    """The guard the promotion itself raises for this gate check.
+
+    The test must not assert against a string it also handed to the lander: a
+    literal proves only that the test agreed with itself. The guard is taken
+    from the production precondition the promotion runs, in the shape ``_land``
+    receives it — the failing step's name and its error text.
+    """
+    with pytest.raises(ledger.LedgerError) as refused:
+        promotion_checks._require_gate_check_precondition(
+            gate_check, gate="passed", require_gate_check=True
+        )
+    return f"promote: {refused.value}"
+
 
 #: A gate log that states its status in prose rather than as a capture record.
 QUOTED_EXIT_STATUS = "# exit status 0 (the gate printed EXIT=0)\n"
@@ -159,18 +170,20 @@ def test_a_gate_log_without_an_exit_record_names_the_log_and_the_record(
     delivery: dict[str, Path | str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _review(base=str(delivery["base"]), head=str(delivery["head"]))
-    monkeypatch.setattr(
-        queue_landing,
-        "_land",
-        lambda run_id: (False, MISSING_EXIT_STATUS_GUARD),
-    )
+    gate_check = {
+        "command": "pytest -q tests/test_marker.py",
+        "log_path": str(delivery["gate_log"]),
+        "exit_status": promotion_evidence._recorded_exit_status(QUOTED_EXIT_STATUS),
+    }
+    guard = _gate_guard_from_promotion(gate_check)
+    monkeypatch.setattr(queue_landing, "_land", lambda run_id: (False, guard))
 
     result = queue_landing.land_once()
 
     assert result["landed"] == []
     refused = runs.read_pointer(RUN)["admission_landing"]
     assert refused["status"] == "refused"
-    assert "missing exit_status" in refused["guard"]
+    assert refused["guard"] == guard
     gate_log = str(delivery["gate_log"])
     assert gate_log in refused["remedy"]
     assert "EXIT=<n>" in refused["remedy"]
@@ -181,6 +194,51 @@ def test_a_gate_log_without_an_exit_record_names_the_log_and_the_record(
     text = str(landing_rows[0]["reason"])
     assert gate_log in text
     assert "EXIT=<n>" in text
+
+
+def test_a_stale_manifest_names_the_rewrite_the_landing_owes(
+    delivery: dict[str, Path | str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A manifest older than the attempt is not repaired by editing its log.
+
+    Promotion reads gate evidence through ``_fresh_manifest``, so for a
+    manifest no newer than this attempt's ``manifest_baseline_mtime_ns`` it
+    reads nothing: whichever field the guard names, no log record can supply
+    it. The remedy must send the coordinator to the manifest write, not to the
+    gate log.
+
+    The run is a resumed attempt carrying the previous attempt's manifest: the
+    classifier reads that acceptance across the attempt chain, so the lander
+    reaches the refusal, while the promotion's own rule ignores it.
+    """
+    _review(base=str(delivery["base"]), head=str(delivery["head"]))
+    manifest = runs.run_dir(RUN) / runs.DEFAULT_MANIFEST_NAME
+    delivered_ns = manifest.stat().st_mtime_ns
+    first_dispatch = datetime.fromtimestamp(delivered_ns / 1_000_000_000, tz=UTC)
+    runs._mutate_pointer(
+        RUN,
+        lambda pointer: {
+            **pointer,
+            "attempt": 2,
+            "created_at": (first_dispatch - timedelta(hours=1)).isoformat(),
+            "manifest_baseline_mtime_ns": delivered_ns,
+        },
+    )
+    guard = _gate_guard_from_promotion(
+        {
+            "command": "pytest -q tests/test_marker.py",
+            "log_path": str(delivery["gate_log"]),
+            "exit_status": promotion_evidence._recorded_exit_status(QUOTED_EXIT_STATUS),
+        }
+    )
+    monkeypatch.setattr(queue_landing, "_land", lambda run_id: (False, guard))
+
+    queue_landing.land_once()
+
+    remedy = str(runs.read_pointer(RUN)["admission_landing"]["remedy"])
+    assert str(manifest) in remedy
+    assert "rewrite the manifest for this attempt" in remedy
+    assert "EXIT=<n>" not in remedy
 
 
 def test_a_quoted_exit_status_is_still_refused_not_read_as_a_pass(

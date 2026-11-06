@@ -358,30 +358,54 @@ _GATE_CHECK_GUARD = "a passing gate requires the check that produced it"
 _GATE_CHECK_MISSING = re.compile(r"missing ([^\n;]+)")
 
 
+def _manifest_evidence_remedy(pointer: Mapping[str, Any]) -> str:
+    """The repair a gate refusal owes when promotion reads no manifest evidence.
+
+    Promotion fills a passing gate's check through ``_fresh_manifest``, which
+    ignores a manifest no newer than the attempt's
+    ``manifest_baseline_mtime_ns`` — a run
+    resumed onto a stale file has delivered nothing this attempt. No field can
+    then be recovered from the manifest however well its cited log reads, so the
+    remedy names the write the coordinator owes rather than a record to add to a
+    log the promotion never opens.
+    """
+    manifest_path = str(pointer.get("manifest_path") or "").strip()
+    present, fresh = runs._manifest_freshness(pointer)
+    if present and fresh:
+        return ""
+    where = f"the manifest at {manifest_path}" if manifest_path else "no manifest"
+    if not present:
+        return (
+            f"the promotion reads no gate evidence because this run has {where}: "
+            "write the manifest for this attempt with its status, gate command "
+            "and test_logs, so the landing reads the delivered evidence"
+        )
+    return (
+        f"the promotion ignores {where} because it is not newer than this "
+        "attempt began (manifest_baseline_mtime_ns): rewrite the manifest for "
+        "this attempt — its status, gate command and test_logs — so the landing "
+        "reads the delivered evidence, rather than editing the gate log alone"
+    )
+
+
 def _gate_log_cited_by_manifest(pointer: Mapping[str, Any]) -> str:
     """The gate log a run's own manifest cites, resolved beside the manifest.
 
-    The same resolution the promotion uses when it fills a passing gate's check
-    from the manifest, so the remedy names the file a promotion would actually
-    read rather than one this module chose.
+    The selection is the promotion's own: ``_default_gate_evidence_from_manifest``
+    is what fills a passing gate's check from a run's manifest, so a remedy
+    naming a log names exactly the file a promotion would read — by the same
+    freshness rule and the same first-entry choice — rather than a second copy
+    of that rule drifting from it.
     """
-    from reckon.crew.promotion_records import _manifest_relative_path
-    from reckon.crew.reports import parse_manifest
+    from reckon.crew.promotion_records import _default_gate_evidence_from_manifest
 
-    manifest_path = str(pointer.get("manifest_path") or "").strip()
-    if not manifest_path:
-        return ""
     try:
-        manifest = parse_manifest(
-            Path(manifest_path).read_text(encoding="utf-8"), path=manifest_path
+        check, _commits = _default_gate_evidence_from_manifest(
+            pointer, verdict="passed", gate_check=None, commits=()
         )
     except (OSError, ValueError):
         return ""
-    for entry in manifest.get("test_logs") or ():
-        cited = str(entry).strip()
-        if cited:
-            return str(_manifest_relative_path(cited, manifest_path=manifest_path))
-    return ""
+    return str(check.get("log_path") or "").strip()
 
 
 def _log_ends_in_exit_record(log_path: str) -> bool | None:
@@ -409,6 +433,9 @@ def _gate_check_remedy(pointer: Mapping[str, Any], missing: Sequence[str]) -> st
     defect is usually the gate log's last line. Naming the log the manifest
     cites and the record it must end in turns that search into one edit.
     """
+    stale = _manifest_evidence_remedy(pointer)
+    if stale:
+        return stale
     if "exit_status" in missing:
         log_path = _gate_log_cited_by_manifest(pointer)
         if log_path and _log_ends_in_exit_record(log_path) is False:
