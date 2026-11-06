@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T22:41:48.112Z",
+  "dispatched_at": "2026-11-06T22:34:44Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-promotion-reads-the-evidence-it-is-given.html:68",
+      "id": "reasoning-1",
+      "reason": "the skip rule the worker is told to implement does not follow from the mechanism the plan states, and an implementer taking the stated mechanism literally would compare ctest ids under a rule the section says never applies to them.",
+      "text": "\u00a77 says \"a log whose last run carries no pytest summary or no ids `gate_log_failure_ids` can read, such as a ctest log: the comparison is skipped, not refused\", but `gate_log_failure_ids` (`reckon/crew/review.py:2123\u20132128`) routes a ctest log to `_ctest_failure_ids`, which returns that run's failure names, or the empty set for a green run \u2014 never `None`; a ctest log is therefore read, not skipped, and no `None` branch can ever skip it",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-promotion-reads-the-evidence-it-is-given.html:68",
+      "id": "done_when-1",
+      "reason": "a control that cannot fail measures nothing, and this is the only control guarding the ctest case, so the sixth case's own claim is unverified.",
+      "text": "the sixth negative control, \"refusing an unreadable log refuses the sixth case\", mutates the code to refuse when the reader returns `None`, but a ctest log returns the empty set (green) or a set of names (red), so the mutation cannot reach the sixth case and the control passes on both the arm and the control tree",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-promotion-reads-the-evidence-it-is-given.html:68",
+      "id": "anchors_resolve-1",
+      "reason": "the line coordinate lands on the exact lambda that must gain `record`, so a worker follows it to the right edit; only the helper's attribution is wrong.",
+      "text": "\u00a77 names `_require_independently` as the caller at `reckon/crew/promotion.py` near line 573, but `_require_independently` is defined at `reckon/crew/promotion_checks.py:1355`; line 573 of `promotion.py` holds the lambda `_require_gate_log_agrees(run_id, gate_check, verdict=verdict)` that sits inside the checker list passed to it",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "8fb9c1a816326afd0649e47deac16b0355f1cbae",
+  "plan_fingerprint": "b074501ecdc73ffac8766110249b57a246748fbe23a47b5386a7bc2513bad616",
+  "plan_slug": "a-promotion-reads-the-evidence-it-is-given",
+  "plan_version": 10,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T223249668857-plan-review-of-a-promotion-reads-the-evidence-it-is-given",
+  "reviewed_blob_sha": "4b6dbb555aec9cc5d188677f35999897d018ac24",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 `_require_independently` is attributed to `reckon/crew/promotion.py` near line 573 but is defined in `promotion_checks.py`; the line coordinate still lands on the lambda that must change.",
+    "done_when": "a finding \u2014 the sixth case's negative control (\"refusing an unreadable log refuses the sixth case\") cannot fire, because a ctest log is readable by the cited reader.",
+    "evidence_paths": "pass \u2014 the \"temporary logs\" are test fixtures created by the new test file; the section's own gate is covered by the run's dispatch, and nothing is directed at a session scratchpad.",
+    "naming": "pass \u2014 no plan labels, ticket numbers, version tags or changelog prose reach a symbol or comment; \u00a77/\u00a72 references occur only in plan prose.",
+    "reasoning": "a finding \u2014 the stated rule that a ctest log's ids are unreadable contradicts the cited reader, which reads ctest logs.",
+    "single_goal": "pass \u2014 s7 carries one deliverable: refuse a passing gate whose `after_suite` figures disagree with the cited log, plus the new test.",
+    "wiring": "pass \u2014 s7's declared wait on \u00a74 matches `plan-section-depends-on`, \u00a74 and \u00a72 both write `promotion_evidence.py` so the shared-file wait is real, and `reckon/crew/promotion.py` (s7's third write path) is written by no other section."
+  },
+  "section_digests": {
+    "_document": "16b7e0ac064041177a182b808ca05352e7de20cac229dccd88501dc6a3e40354",
+    "s1": "5eac0eb57fbf9fccaeee6fb2da59c42ca24c4433f0cffcb4b7de1b6b04324b6c",
+    "s2": "fe74e7e01c9a6ccef1719f555e5352545a20da84a1770862fc2751cdb6598747",
+    "s3": "479c8ebc617467c2744513e850433e87af52a3d22110620dcfdfb48f9975d081",
+    "s4": "80e452e08578901bf28b21ac56f7ff38a65532179befbebd65581a10820c5bd9",
+    "s5": "bb42325f383db769e04822e4d230cc887e0c6fd955d89dc50dd006b4d3715684",
+    "s6": "2e81c0cbe61ef60fc16acb159e81912b5b6263e9d12b8059efbd9482d722976c",
+    "s7": "60fe704da6097210431008a07464104e9cf6ab1de5e10d226d5997bae71433b4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T22:52:54.650294+00:00",
+  "total": null
+}
