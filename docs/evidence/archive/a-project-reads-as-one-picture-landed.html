@@ -179,6 +179,11 @@ for n in rank:
     <p>Run <code>r-20261027T094917475863-a-closures-completion-is-computed-once</code> landed at merge <code>35397df39</code>. _dependency_endpoints no longer counts a closure's shipped and total members itself: its shipped_fraction reads the helper resolve_graph_target uses, in reckon/graph_target.py where both counts moved, so one computation serves both surfaces. A sentinel patched into the shared helper reaches both, which fails at the base. Coordinator importer measure over 66 test files importing graph_target and roadmap: main 632 passed, merged 634 passed, the same two failures at both, so none added. Review 105 of 120.</p>
   </section>
 
+  <section id="s15">
+    <h2>§15 landing</h2>
+    <p>Run <code>r-20261105T211741176711-read-plan-answers-a-followup-wait</code> landed at merge <code>354fc86b8</code>. read_plan now answers a followup wait the way the roadmap does. followup_wait_state in reckon/roadmap.py takes the target plan and returns its status, so a read_plan row for slug#sN@f-id and for slug@f-id reports the same scope, slug, found, status, followup, followup_found, followup_status and satisfied as the roadmap's section-edge row. The second round closed the prior review's finding that staged refs disagreed on status between the two surfaces. Coordinator armed pair at ac18a69a7: base runs no tests (the file is new), head 25 passed. Coordinator importer measure over 218 test files, stacked on main fe67c2ee8 to c79c2312a: main 5 failed / 2425 passed, stack 5 failed / 2450 passed, the same five ids, none added. Review 114 of 120.</p>
+  </section>
+
 </main>
 </body>
 </html>
