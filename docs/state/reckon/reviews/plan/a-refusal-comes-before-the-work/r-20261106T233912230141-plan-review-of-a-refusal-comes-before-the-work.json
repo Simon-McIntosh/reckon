@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T23:47:06.361Z",
+  "dispatched_at": "2026-11-06T23:40:38Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-refusal-comes-before-the-work.html:43",
+      "id": "reasoning-1",
+      "reason": "a node implementing the field is told to read a key real flight configs never carry on a lane, so the fourth refusal would ship as a guard that passes vacuously, and its test could go green by writing the key where the implementation reads it rather than where config declares it; naming `resolve_role_override` (routing.py:238), which exists to resolve a role's settings onto an explicitly named backend, would send it to the real path.",
+      "text": "\u00a72 says execution fit is judged by \"reading that backend's `execution_capable` from the flight config, the field `plan_dispatch` reads for its own backend\", but `execution_capable` is declared per role (`roles.<role>.execution_capable`, validated at reckon/flight.py:1679-1694) and reaches `plan_dispatch` only because `resolve_role` merges the role overlay onto the named lane (`_effective_backend`, reckon/crew/routing.py:159-204); `plan_dispatch`'s own `backend` mapping at dispatch_plan.py:766 is that merged overlay, not a `backends.<lane>` entry \u2014 so a batch implementation that reads the lane's config entry gets `None`, `ExecutionFit.conflict` stays False, and the shared function refuses nothing",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-refusal-comes-before-the-work.html:44",
+      "id": "done_when-1",
+      "reason": "as written the sixth case is not constructible against the real configuration surface, and the negative control (\"omitting execution fit from the shared function stores the sixth case's entry\") would then distinguish two code paths only inside a fixture-only key, which is a guard that passes by not exercising the real path.",
+      "text": "the sixth case says \"an entry whose own `backend` names a lane the config marks not execution-capable while `local_backend` names one that is\", but no lane can be marked that way: flight validation reads `execution_capable` from `roles.<role>` and refuses a read-only sandbox unless that role declares it false (reckon/flight.py:1679-1694), and `_effective_backend` copies the role overlay onto the lane rather than the reverse, so a fixture that writes `backends.<lane>.execution_capable` sets a key production reads nowhere in a real config",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "9a82276c7e63e06d12fd22925553dff986272d86",
+  "plan_fingerprint": "7d0c6af6a8b708fe9d6931715dbc2d6b77f155c0c0a7bd1654c2f645117db375",
+  "plan_slug": "a-refusal-comes-before-the-work",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T233912230141-plan-review-of-a-refusal-comes-before-the-work",
+  "reviewed_blob_sha": "38042a4564f5138478324ae1cfa02feef18cee3e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every line reference in \u00a72 resolves: `_DELIVERABLE_ACTIONS` at reckon/crew/node.py:79, `_deliverable_conjunction` at node.py:252, `gate_population_patterns` at node.py:1099 with `_GATE_POPULATION_IS_A_SET` at 1096, the execution-fit refusal at reckon/crew/dispatch_plan.py:869, `assess_execution_fit` call at 837, `validate_node`/`negative_control_finding`/`gate_population_finding` at node.py:1182/1054/1145, and the lane fallback at reckon/crew/dispatch.py:313 (recorded on the pointer as `backend`, dispatch.py:246).",
+    "done_when": "a finding \u2014 \u00a72's sixth case marks a *lane* not execution-capable, which the flight config cannot express; execution_capable is declared on roles (reckon/flight.py:1679).",
+    "evidence_paths": "pass \u2014 \u00a72 puts every log under the run directory (the crew runs tree, which survives the session) and names a test path in the repository, not a scratchpad.",
+    "naming": "pass \u2014 `tests/test_a_batch_entry_meets_the_node_contract.py` and the prose name the mechanism, carrying no plan, section, sprint or ticket identifiers.",
+    "reasoning": "a finding \u2014 \u00a72 says execution fit reads \"that backend's `execution_capable` from the flight config\", but that field is a role key merged onto the lane by `resolve_role`/`_effective_backend` (reckon/crew/routing.py:159-231); a lane's own `backends.<name>` entry carries no such field, so a lookup there refuses nothing.",
+    "single_goal": "pass \u2014 \u00a72 states one deliverable, the four contract refusals sharing one function that the batch calls, and every case in its done-when measures that deliverable.",
+    "wiring": "pass \u2014 plan-section-depends-on declares s3 and s5 waiting on s2, which matches the file sharing \u00a72 describes (dispatch.py, dispatch_plan.py), and the plan-level `after` names a-dry-run-must-resolve-what-the-real-call-resolves, whose \u00a75 \u00a71 cites as done."
+  },
+  "section_digests": {
+    "_document": "fe86ddc53d6df02ed8681809f4399744a8daf0946c333b28fc3a6b583769f545",
+    "s1": "75df880739e89570186a1c16cae47d54a4d457a4a6e99c09b2d62c21368dc424",
+    "s2": "9b42aef39961da1b0b4ddb0239d762bc4c132c40b87e796c522c8cf9752f5d53",
+    "s3": "b5b62335762566059c1bbb98372fed78bff07b643d64c9fa675596aa8bd81a3a",
+    "s4": "07a4ee8576d20a6230358f2290732b9c4debaa456380d9c2a8e8fd3651cc5e95",
+    "s5": "971aeb8e3a089f473d197e621d3f0c26ead6b1816778ac46d4796b8906360253"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T23:53:01.072886+00:00",
+  "total": null
+}
