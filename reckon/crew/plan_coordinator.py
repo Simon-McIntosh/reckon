@@ -43,7 +43,7 @@ from pathlib import Path
 from typing import Any
 
 from reckon import ledger
-from reckon._plan_html import read_state_and_text_file
+from reckon._plan_html import _parse_meta_head
 from reckon._store import _docs_dir_for_project
 from reckon._timestamps import parse_utc
 from reckon.crew import directory, runs
@@ -60,6 +60,14 @@ from reckon.crew.repair import round_node_source
 #: rather than in the minutes a lane reading is trusted for; a caller that wants
 #: a tighter answer passes its own value.
 DEFAULT_COORDINATOR_WINDOW = "168h"
+
+#: How far before the horizon a run document may have been last written and
+#: still hold a row the resolver keeps. A document is written when its run is
+#: promoted, which is after the run was dispatched, so its modification time is
+#: an upper bound on the dispatch it carries; the margin absorbs a clock or
+#: filesystem skew between the two, and only costs the read of a day of history
+#: the resolver then discards.
+DOCUMENT_AGE_MARGIN = timedelta(days=1)
 
 #: The run fields that name a plan, consulted in this order. Each is a fallback
 #: for the one before it: a run dispatched from a plan section carries ``plan``,
@@ -163,7 +171,11 @@ def _dispatch_instant(row: Mapping[str, Any]) -> datetime | None:
 
 
 def _run_rows(
-    project: str, root: str | Path | None, pointers: Iterable[Mapping[str, Any]]
+    project: str,
+    root: str | Path | None,
+    pointers: Iterable[Mapping[str, Any]],
+    *,
+    modified_since: float | None = None,
 ) -> dict[str, Mapping[str, Any]]:
     """Every run of a project by run id, committed rows and live pointers alike.
 
@@ -173,7 +185,9 @@ def _run_rows(
     most recently wrote.
     """
     rows: dict[str, Mapping[str, Any]] = {}
-    for row in ledger.run_rows_from_documents(project, root=root):
+    for row in ledger.run_rows_from_documents(
+        project, root=root, modified_since=modified_since
+    ):
         run_id = str(row.get("run_id") or "")
         if run_id:
             rows[run_id] = row
@@ -185,7 +199,13 @@ def _run_rows(
 
 
 def _plans_and_owners(docs_dir: Path | None) -> dict[str, str]:
-    """Every plan of a project by slug, with the owner its own meta records."""
+    """Every plan of a project by slug, with the owner its own meta records.
+
+    The owner is a head meta and this resolver wants nothing else from the
+    document, so the head-only reader answers it: a project with hundreds of
+    plans is read here on every roadmap build, and the derived inventory record
+    parses the body to reach a figure this caller never reads.
+    """
     if docs_dir is None:
         return {}
     plans_dir = docs_dir / "plans"
@@ -193,8 +213,8 @@ def _plans_and_owners(docs_dir: Path | None) -> dict[str, str]:
         return {}
     owners: dict[str, str] = {}
     for path in sorted(plans_dir.glob("*.html")):
-        state, _text = read_state_and_text_file(path)
-        owners[path.stem] = str(state.get("owner") or "").strip()
+        record = _parse_meta_head(path)
+        owners[path.stem] = str(record.get("owner") or "").strip()
     return owners
 
 
@@ -261,7 +281,12 @@ def resolve_plan_coordinators(
         if pointers is not None
         else list(runs.list_live(project=project))
     )
-    rows = _run_rows(project, root, live_pointers)
+    rows = _run_rows(
+        project,
+        root,
+        live_pointers,
+        modified_since=(horizon - DOCUMENT_AGE_MARGIN).timestamp(),
+    )
     live_sessions = _live_sessions(project, live_pointers)
 
     winners: dict[str, tuple[datetime, str, Mapping[str, Any], str]] = {}

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The coordinator read is bounded by its window</title>
+</head>
+<body>
+<h1 id="the-coordinator-read-is-bounded-by-its-window-title">The coordinator read is bounded by its window</h1>
+
+<p id="the-coordinator-read-is-bounded-by-its-window-what">The ledger's per-run document
+<code>run_rows_from_documents</code> takes a lower bound on each document's own modification
+time and skips a file at the directory walk when it is older. The plan-coordinator resolver
+passes its horizon less one day of margin. The bound is the document's mtime, never the
+instant its run id names: a run id is stamped when the request is queued while the document
+is written when the run is promoted, so a long-queued run has an old id and a recent
+document.</p>
+
+<table id="the-coordinator-read-is-bounded-by-its-window-probe">
+<caption>One probe, fleet node 98dci4-clu-2068, job 1291586,
+<code>resolve_plan_coordinators('reckon', pointers=[], now=2026-11-06T12:00:00Z)</code>,
+each arm from its own git archive tree. The probe printed the paths it actually read:
+plans under <code>/home/ITER/mcintos/Code/reckon/docs</code>, and the ledger at
+<code>/home/ITER/mcintos/.config/reckon/state/reckon/crew.json</code> with its per-run
+documents beside it. That ledger is outside every git checkout, so it has no revision to
+cite; the arm's code revision is the only revision in play.</caption>
+<thead><tr><th>arm</th><th>elapsed [s]</th><th>plans</th><th>coordinators</th><th>coordinator digest</th></tr></thead>
+<tbody>
+<tr><td>base <code>1bea7a6b0d</code></td><td>50.500</td><td>214</td><td>33</td><td><code>d4c95976004f09dd</code></td></tr>
+<tr><td>head <code>95f680d77e</code></td><td>5.721</td><td>214</td><td>33</td><td><code>d4c95976004f09dd</code></td></tr>
+</tbody>
+</table>
+
+<p id="the-coordinator-read-is-bounded-by-its-window-window">Every plan names the same
+coordinator on both arms, which the equal digest states, and the head call is under the
+section's 10 s figure at 5.721 s.</p>
+
+<table id="the-coordinator-read-is-bounded-by-its-window-stages">
+<caption>Where the head call's time goes, measured stage by stage on the same node with the
+same instant, before and after the owner read changed.</caption>
+<thead><tr><th>stage</th><th>before [s]</th><th>after [s]</th></tr></thead>
+<tbody>
+<tr><td>run documents, unchanged read</td><td>21.061</td><td>21.061</td></tr>
+<tr><td>run documents, bounded</td><td>6.796</td><td>3.671</td></tr>
+<tr><td>plan owner metas, 214 plan documents</td><td>10.525</td><td>0.166</td></tr>
+<tr><td>aggregate ledger parse</td><td>0.713</td><td>0.758</td></tr>
+</tbody>
+</table>
+
+<p id="the-coordinator-read-is-bounded-by-its-window-residual">The first bounded read left the
+head call at 16.638 s. The residual was <code>_plans_and_owners</code>, which asked every plan
+document for its owner through the derived inventory record — a reader that parses the body to
+compute a figure the resolver never reads. It now uses the head-only reader the inventory
+itself uses for classification, which builds no soup and is memoised against the file's stat
+identity: 10.525 s to 0.166 s for 214 plans.</p>
+
+<table id="the-coordinator-read-is-bounded-by-its-window-gates">
+<caption>Gate results. Logs name their revision, tree and literal command; each ends on a bare
+<code>EXIT=</code> line.</caption>
+<thead><tr><th>gate</th><th>base <code>1bea7a6b0d</code></th><th>head <code>95f680d77e</code></th></tr></thead>
+<tbody>
+<tr><td>this node's test file, 6 cases</td><td>3 failed, 3 passed (EXIT=1)</td><td>6 passed (EXIT=0)</td></tr>
+</tbody>
+</table>
+
+<p id="the-coordinator-read-is-bounded-by-its-window-negative">Two mutations, each reverting
+one answering commit's mechanism. Bounding by the run-id stamp instead of the modification
+time leaves 4 failures at the head: the read count, the production listing, the long-queued
+run's coordinator and the equivalence case. Setting
+<code>DOCUMENT_AGE_MARGIN</code> to zero leaves 2: the margin case, whose document was written
+before the horizon while its run was dispatched inside the window, and the equivalence case.</p>
+
+<p id="the-coordinator-read-is-bounded-by-its-window-delta">The owner change is what carries the
+head under the stated figure: measured with it removed on the same node, the same probe read
+12.275 s. The head arm adds no failure elsewhere: the single failure the wider import arm shows,
+<code>test_roster_write_commits.py::test_commit_refuses_roster_with_uncommitted_registration</code>,
+fails identically when run serially at the base revision.</p>
+</body>
+</html>
