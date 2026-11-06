@@ -52,6 +52,9 @@ DISPATCHED_HEAD = "a" * 40
 OTHER_HEAD = "b" * 40
 REVIEWED_BASE = "c" * 40
 TOTAL = 20 * len(review_module.REVIEW_DIMENSIONS)
+# The dimension an incomplete record leaves unscored, so its refusal names a
+# measure the record genuinely lacks rather than one it was never asked for.
+MISSING_DIMENSION = review_module.REVIEW_DIMENSIONS[-1]
 DISPATCH_TIME = "2026-10-19T23:05:58Z"
 DISPATCH_INSTANT = datetime(2026, 10, 19, 23, 5, 58, tzinfo=UTC).timestamp()
 
@@ -59,7 +62,7 @@ DISPATCH_INSTANT = datetime(2026, 10, 19, 23, 5, 58, tzinfo=UTC).timestamp()
 # carry. ``cannot_be_read`` cases are the only ones allowed to say so.
 CASES = {
     "no-head-keyed-path": ["no head-keyed record path"],
-    "not-a-complete-review": ["record is not a complete review", "total"],
+    "not-a-complete-review": ["record is not a complete review", MISSING_DIMENSION],
     "describes-another-head": [
         "record describes a different head",
         DISPATCHED_HEAD,
@@ -141,8 +144,10 @@ def _declared_paths() -> list[str]:
 def _round(head: str, *, total: int | None = TOTAL) -> dict:
     """A review record describing ``head``, scored on all six dimensions.
 
-    ``total`` of ``None`` builds the shape the cited run had: every dimension
-    scored and no total, which is a record that parses and is not complete.
+    ``total`` of ``None`` builds the shape a review wrote before the total was
+    derived on read: every dimension scored and no total line. That record is
+    complete — the total is arithmetic over the six scores — so it delivers and
+    promotes with the total those scores sum to.
     """
     record = {
         "status": "parsed",
@@ -209,7 +214,12 @@ def _build_case(repository: Path, tmp_path: Path, case: str) -> None:
         return
     _write_pointer(repository, tmp_path, _declared_paths())
     if case == "not-a-complete-review":
-        _write_round(_head_path(), _round(DISPATCHED_HEAD, total=None))
+        # Incomplete means a dimension the review never scored, not a total it
+        # left out: the total is derived from the six scores, so a record
+        # carrying all six is complete whether or not it states one.
+        body = _round(DISPATCHED_HEAD)
+        body["scores"].pop(MISSING_DIMENSION)
+        _write_round(_head_path(), body)
     elif case == "describes-another-head":
         _write_round(_head_path(), _round(OTHER_HEAD))
     elif case == "names-another-review":
@@ -297,16 +307,46 @@ def test_no_refusal_for_a_parsing_record_says_it_cannot_be_read(
     assert CASES[case][0] in refusal, (case, refusal)
 
 
-def test_the_incomplete_case_names_the_missing_total(
+def test_the_incomplete_case_names_the_missing_dimension(
     repository: Path, tmp_path: Path
 ) -> None:
-    """Six scored dimensions and no total is refused naming the missing total."""
+    """A record that never scored a dimension is refused naming that dimension."""
     _build_case(repository, tmp_path, "not-a-complete-review")
 
     refusal = _refusal(repository)
 
-    assert "total" in refusal, refusal
+    assert MISSING_DIMENSION in refusal, refusal
     assert "not a complete review" in refusal, refusal
+
+
+def test_six_scores_and_no_total_delivers_and_promotes_with_its_total(
+    repository: Path, tmp_path: Path
+) -> None:
+    """A record carrying all six scores is complete without a stated total.
+
+    The total is arithmetic over the six scores, and every reader derives it —
+    the store's writer, ``read_review`` and the delivery verdict — so a
+    reviewer that left the line out has delivered a complete review rather than
+    a partial one. The promotion records the total those scores sum to.
+    """
+    _write_pointer(repository, tmp_path, _declared_paths())
+    _write_round(_head_path(), _round(DISPATCHED_HEAD, total=None))
+    Path(run_dir(REVIEW_RUN_ID)).mkdir(parents=True, exist_ok=True)
+    (Path(run_dir(REVIEW_RUN_ID)) / "exit.json").write_text(
+        json.dumps({"run_id": REVIEW_RUN_ID, "exit_code": 0}), encoding="utf-8"
+    )
+    pointer = json.loads(pointer_path(REVIEW_RUN_ID).read_text(encoding="utf-8"))
+
+    assert review_delivery_refusal(pointer, PROJECT) is None
+
+    result = crew.complete(
+        REVIEW_RUN_ID,
+        gate="not-run",
+        root=repository,
+        promoted_by="review-self",
+    )
+
+    assert result["record"]["review"]["total"] == TOTAL
 
 
 def test_a_delivered_record_still_promotes_on_its_stored_review(

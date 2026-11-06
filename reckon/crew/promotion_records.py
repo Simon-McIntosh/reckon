@@ -330,6 +330,23 @@ def _default_gate_evidence_from_manifest(
     resolved_commits = tuple(str(sha).strip() for sha in commits if str(sha).strip())
     if str(verdict).strip().lower() != "passed":
         return resolved_gate, resolved_commits
+    # A command and the log it ran against describe one execution, so a caller
+    # that supplies one and leaves the other absent would get a check pairing
+    # its own command with evidence this fill derived from somewhere else. The
+    # half-filled case is refused rather than completed, because the completed
+    # check reads as a run nobody performed.
+    given_command = bool(str(resolved_gate.get("command") or "").strip())
+    given_log = bool(
+        str(resolved_gate.get("log_path") or "").strip()
+        or str(resolved_gate.get("log_digest") or "").strip()
+    )
+    if given_command != given_log:
+        raise CrewError(
+            "a gate check is a command and the evidence it ran against: pass "
+            "--gate-command and --gate-log-path (or --gate-log-digest) "
+            "together, or neither, because a command beside a log the "
+            "promotion found elsewhere records a run that never happened"
+        )
     manifest = _fresh_manifest(record)
     if manifest is None:
         return resolved_gate, resolved_commits
@@ -353,15 +370,26 @@ def _default_gate_evidence_from_manifest(
             log_text = ""
     declared_command = str(manifest.get("tests") or "").strip()
     # A review run's evidence is the record it stored, so its manifest's
-    # ``tests`` line describes a check rather than naming one. Reading it as
-    # the gate command refuses a review whose evidence is already on disk, so
-    # the record stands as the check instead. A review run with no delivered
-    # record is left to the ordinary rules below: a review that stores its
-    # record during promotion has nothing on disk yet, and a prose line still
-    # reaches the executable-gate refusal.
+    # ``tests`` line describes a check rather than naming one — it may be a
+    # list of the checks the node's fence named rather than a command at all.
+    # The record stands as the check instead, so such a line never reaches the
+    # executable-gate refusal on the list's own repr. It fills only what the
+    # caller's flag left absent, so an explicit gate check the operator gives
+    # is kept: that operator states the command and log they want re-executed,
+    # and a derived one replacing it would discard the evidence they named.
+    # A review run with no delivered record is left to the ordinary rules
+    # below: a review that stores its record during promotion has nothing on
+    # disk yet, and a prose line still reaches the executable-gate refusal.
     review_evidence: dict[str, Any] | None = None
     if _review_role_run(record):
         review_evidence = _review_record_evidence(record)
+    if review_evidence is not None:
+        for key, value in _review_record_check(review_evidence).items():
+            if key == "exit_status":
+                if resolved_gate.get(key) is None:
+                    resolved_gate[key] = value
+            elif not str(resolved_gate.get(key) or "").strip():
+                resolved_gate[key] = value
     command_unset = not str(resolved_gate.get("command") or "").strip()
     if command_unset and declared_command and not _gate_command_prose(declared_command):
         resolved_gate["command"] = declared_command
@@ -375,10 +403,7 @@ def _default_gate_evidence_from_manifest(
     # so a run with no recoverable evidence still reaches the ordinary refusal.
     if not str(resolved_gate.get("command") or "").strip():
         recovered = _command_from_gate_log(log_text)
-        if review_evidence is not None:
-            for key, value in _review_record_check(review_evidence).items():
-                resolved_gate.setdefault(key, value)
-        elif recovered:
+        if recovered:
             resolved_gate["command"] = recovered
         elif declared_command:
             resolved_gate["command"] = declared_command
@@ -687,6 +712,7 @@ def _evaluate_suite_delta(
         updated = dict(record)
         updated["suite_delta_refusal"] = refusal
         _write_json(pointer_path(run_id), updated)
+
     manifest_present, fresh = _manifest_freshness(record)
     manifest: dict[str, Any] = {}
     if manifest_present and fresh:
@@ -1044,9 +1070,7 @@ def _retire_disposable_identity(record: Mapping[str, Any]) -> dict[str, Any]:
                     "identity_absent_member": member_id,
                 }
             data["members"] = [
-                entry
-                for entry in data["members"]
-                if str(entry.get("id")) != member_id
+                entry for entry in data["members"] if str(entry.get("id")) != member_id
             ]
             try:
                 ledger.write(
@@ -1069,7 +1093,6 @@ def _retire_disposable_identity(record: Mapping[str, Any]) -> dict[str, Any]:
         "identity_retired": False,
         "identity_withheld": "could not retire the disposable identity after retries",
     }
-
 
 
 from reckon.crew.promotion_checks import (

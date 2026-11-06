@@ -1,0 +1,79 @@
+<article class="evidence-fragment" id="a-review-runs-promotion-derives-its-own-gate-and-total">
+  <h3>A review run's promotion derives its own gate, total and manifest wait</h3>
+  <p>All three refusals §1 records are repaired here, each at the point where a
+  different copy of one record is read. A review promoted with
+  <code>crew complete --run &lt;id&gt;</code> and no gate flags now promotes: the
+  stored record is its whole deliverable and the check a reader can re-execute,
+  so it stands in place of whatever the manifest's <code>tests:</code> line
+  declared. That line may hold a list of the checks the node ran, and its own
+  repr was what reached <code>_require_executable_gate_command</code> and
+  refused the promotion. The derivation fills only what the caller left absent,
+  so a review promoted with an explicit gate command and log path keeps them:
+  that caller named the evidence they want re-executed. A caller that supplies
+  one of the two and not the other is refused rather than completed, because a
+  check pairing its command with a log the promotion found elsewhere records a
+  run nobody performed.</p>
+
+  <p id="a-review-runs-promotion-derives-its-own-gate-and-total-total">A record
+  carrying six dimension scores and no total is now complete, carrying the total
+  those scores sum to. One helper answers that question for every reader of the
+  record a promotion handles — the delivery verdict, the payload the promotion
+  commits, and the ledger block that records it — so no two of them can
+  disagree about what a given record scores. The reviewer's run-directory copy
+  is the one file in the path that never passes through the store's own writer,
+  which is why the committed row previously held the dimensions beside a null
+  total. A record that states its own total keeps it, and one that scores
+  nothing keeps its absent total rather than gaining a sum over a subset of the
+  dimensions.</p>
+
+  <p id="a-review-runs-promotion-derives-its-own-gate-and-total-wait">A review
+  promoted a few seconds before its worker writes <code>manifest.md</code> now
+  waits a bounded twenty seconds for that file and, when it never appears,
+  refuses naming the path, rather than promoting a run whose own account of
+  itself does not exist.</p>
+
+  <table id="a-review-runs-promotion-derives-its-own-gate-and-total-arms">
+    <thead>
+      <tr><th>case</th><th>base arm</th><th>head arm</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>no gate flags, JSON-list <code>tests:</code></td><td>refused</td><td>promoted</td></tr>
+      <tr><td>six scores, no total</td><td>refused</td><td>promoted with the computed total</td></tr>
+      <tr><td>manifest appears a few seconds late</td><td>promoted</td><td>promoted</td></tr>
+      <tr><td>manifest never appears</td><td>promoted (defect)</td><td>refused, naming the path</td></tr>
+      <tr><td>explicit gate command and log given</td><td>kept</td><td>kept</td></tr>
+      <tr><td>only one of command and log given</td><td>promoted, mixing the two</td><td>refused, naming both flags</td></tr>
+    </tbody>
+  </table>
+
+  <p id="a-review-runs-promotion-derives-its-own-gate-and-total-control">The
+  negative control removes the gate derivation, and the two cases that reach
+  the executable gate are refused again at
+  <code>promotion_gate._require_executable_gate_command</code>, the JSON-list
+  text standing as the command: <code>2 failed, 5 passed</code>,
+  <code>EXIT=1</code> over the seven cases, the failures being case 1 and case
+  2 while the rest still pass. Removing the total derivation instead leaves
+  <code>['total']</code> as the missing measure and fails the derived-total
+  case, so each derivation is load-bearing for its own contract rather than
+  incidental to the other.</p>
+
+  <p id="a-review-runs-promotion-derives-its-own-gate-and-total-suite">The gate
+  arm runs <code>21 passed</code> at head against <code>5 failed, 15 passed</code>
+  at base, the base failures being cases 1, 2 and 4 and both halves of case 6 —
+  the two derivations, the manifest wait, and the half-filled gate check. The
+  suite pair runs every test file that imports any of the three changed modules,
+  forty-one files: <code>439 passed</code> at head, and at base
+  <code>1 failed, 437 passed</code>, the single failure being
+  <code>tests/test_promotion_records_the_pick.py::test_promotion_waits_from_the_pick_start_not_the_run_start</code>,
+  which passes at head. Each arm is a checkout of its own revision under the
+  run's scratch directory and each log names that revision, the tree, the
+  command and the selection before its <code>EXIT=</code> line. The six cases
+  live in the repository as
+  <code>tests/test_a_review_runs_promotion_derives_its_own_gate.py</code>, and
+  the gate arm runs that file beside
+  <code>tests/test_a_review_refusal_names_its_failed_condition.py</code>.
+  Three assertions in that second file had encoded the reversed contract — that
+  a record scoring all six dimensions and stating no total is refused naming
+  the missing total — and they now hold incompleteness to a dimension the review
+  never scored, which is a measure the record genuinely lacks.</p>
+</article>
