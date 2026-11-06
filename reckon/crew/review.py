@@ -173,21 +173,46 @@ def current_finding_severity(word: str) -> str:
     return RETIRED_FINDING_SEVERITIES.get(word, word)
 
 
+# A reviewer states a severity either in the ``severity`` field or by opening the
+# finding's own text with the severity and a colon. The prefix is matched only at
+# the start of the claim, so a phrase that merely mentions "blocking:" further in
+# a sentence is not read as a declaration.
+_SEVERITY_PREFIX = re.compile(r"^(non-blocking|blocking)\s*:", re.IGNORECASE)
+
+
+def _severity_stated_in_text(finding: Mapping[str, Any]) -> str | None:
+    """Return the severity a finding's claim opens with, or ``None``.
+
+    The claim is read through :func:`finding_claim`, so a finding that states its
+    text under any of the fields a record may carry states its prefix the same
+    way. The prefix stands only where no ``severity`` key exists: an explicit
+    field is the reviewer's declaration and a value outside the vocabulary in one
+    is an unreadable judgement, not an invitation to re-read the prose.
+    """
+    text = finding_claim(finding)
+    if not text:
+        return None
+    match = _SEVERITY_PREFIX.match(text.strip())
+    return current_finding_severity(match.group(1).lower()) if match else None
+
+
 def declared_severity(finding: Mapping[str, Any]) -> str | None:
     """Return the severity a stored finding declares, or ``None``.
 
     The one reader of a stored finding's severity, so the promotion audit, the
     repair reflex and the parser cannot disagree about which findings carry a
-    judgement. A finding either states one of :data:`FINDING_SEVERITIES` — in
-    its declared spelling, surrounding whitespace trimmed, a retired spelling
-    read as its current one — or it states nothing: an absent key, an empty
-    string and a word outside the vocabulary all mean the same thing here, no
-    declared severity. A value outside the vocabulary is never guessed at,
-    because a defaulted severity is a judgement nobody made.
+    judgement. A finding states one of :data:`FINDING_SEVERITIES` either in its
+    ``severity`` field — in its declared spelling, surrounding whitespace
+    trimmed, a retired spelling read as its current one — or by opening its claim
+    with the severity and a colon. Without either, it states nothing: an absent
+    key with an unprefixed claim, an empty string and a word outside the
+    vocabulary all mean the same thing here, no declared severity. A value
+    outside the vocabulary is never guessed at, because a defaulted severity is a
+    judgement nobody made.
     """
     value = finding.get("severity")
     if value is None:
-        return None
+        return _severity_stated_in_text(finding)
     word = current_finding_severity(str(value).strip())
     return word if word in FINDING_SEVERITIES else None
 
