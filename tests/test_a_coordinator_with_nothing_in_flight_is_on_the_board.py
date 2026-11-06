@@ -9,11 +9,13 @@ pid, and the directory lists each session a live host's census names.
 
 from __future__ import annotations
 
+import html
 import json
 import os
 import subprocess
 import sys
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -138,6 +140,47 @@ def _ledger(home: Path, rows: list[dict[str, Any]]) -> None:
     path.write_text(
         json.dumps({"data": {"_version": 1, "members": [], "holds": [], "runs": rows}}),
         encoding="utf-8",
+    )
+
+
+def _plan_html(slug: str, *, sections: tuple[str, ...], owner: str = "") -> str:
+    body = "".join(
+        f'<h2 id="{section}">Section {index}</h2>'
+        f'<section data-reckon="section" data-id="{section}" '
+        'data-effort-hours="1.0" data-status="implementable" data-links="" '
+        'data-capability-version="1.0" data-capability-class="general" '
+        'data-capability-reasoning="standard" '
+        'data-capability-verification="strict" '
+        'data-capability-risk="low"></section>'
+        for index, section in enumerate(sections, start=1)
+    )
+    return (
+        "<!doctype html><html><head>"
+        f'<meta name="docs-project" content="{PROJECT}">'
+        '<meta name="reckon-type" content="plan">'
+        f'<meta name="plan-slug" content="{slug}">'
+        '<meta name="plan-status" content="active">'
+        '<meta name="plan-effort" content="M">'
+        f'<meta name="plan-owner" content="{owner}">'
+        '<meta name="plan-section-declarations" content="'
+        + html.escape(json.dumps(dict.fromkeys(sections, "implementable")))
+        + '">'
+        f'<title>{slug}</title></head><body><main class="plan-doc">{body}'
+        "</main></body></html>"
+    )
+
+
+def _plan_tree(home: Path) -> None:
+    """A mounted project with one plan holding two ready sections."""
+    docs = home / "repo" / "docs"
+    plans = docs / "plans"
+    plans.mkdir(parents=True)
+    (plans / "coil-build.html").write_text(
+        _plan_html("coil-build", sections=("s1", "s2"), owner="physics-lead"),
+        encoding="utf-8",
+    )
+    (home / "mounts.json").write_text(
+        json.dumps({PROJECT: str(docs)}), encoding="utf-8"
     )
 
 
@@ -270,3 +313,67 @@ def test_the_board_lists_a_settled_coordinator_beside_a_live_one(
         for process in (live_owner, idle_owner):
             process.kill()
             process.wait()
+
+
+def test_a_ready_idle_owner_is_listed_once_with_its_census_facts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """One session both ready-idle and census-named reads as one row.
+
+    The ready-idle join and the census can name the same session, and a board
+    that listed it twice would report two idle coordinators where one exists,
+    so the second source adds its facts to the row the first made.
+    """
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    monkeypatch.setenv(
+        "RECKON_SESSION_HOST_STATE_DIR", str(home / "crew" / "session-hosts")
+    )
+    _plan_tree(home)
+    dispatched = datetime.now(UTC).isoformat()
+    _ledger(
+        home,
+        [
+            {
+                "run_id": "run-earlier",
+                "session": "shared-coordinator",
+                "project": PROJECT,
+                "plan": "coil-build",
+                "dispatched_at": dispatched,
+            }
+        ],
+    )
+
+    owner = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+    host = _host(home, owner, SETTLING_FOLLOWER)
+    try:
+        _request(host, "shared-coordinator")
+        _tick_until_settled(host)
+
+        view = directory(PROJECT, ready_idle=True)
+        rows = [
+            row
+            for row in view["coordinators"]
+            if row["session"] == "shared-coordinator"
+        ]
+        assert len(rows) == 1, view["coordinators"]
+        row = rows[0]
+        # Both sources are on the one row: the join's ready sections and the
+        # census's settle time, source and last dispatch.
+        assert sorted(ref.partition("#")[2] for ref in row["ready_idle_sections"]) == [
+            "s1",
+            "s2",
+        ], row
+        assert row["plan_owner"] == "physics-lead", row
+        assert row["census_source"] == "session-host", row
+        assert row["settled_at"] is not None, row
+        assert row["last_dispatch"] == dispatched, row
+        assert view["coordinator_count"] == len(view["coordinators"]), view[
+            "coordinator_count"
+        ]
+        assert view["coordinator_count"] == 1, view["coordinators"]
+    finally:
+        host.stop("test teardown")
+        owner.kill()
+        owner.wait()

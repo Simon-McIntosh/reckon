@@ -317,48 +317,39 @@ def _ready_idle_rows_from_owners(
 def _last_dispatch_by_session(project: str) -> dict[str, str]:
     """Each session's most recent dispatch, from the ledger's own rows.
 
-    The plan-coordinator resolver reads the same rows to name a plan's
-    coordinator, so the time a board row shows is the ledger's dispatch stamp
-    rather than a second reading of the run pointers — a session whose runs
+    The plan-coordinator resolver reads the same rows to decide which dispatch
+    speaks for a plan, so the stamp a board row shows is that reader's answer
+    rather than a second spelling of the same precedence — a session whose runs
     have all ended still has its last dispatch on record.
     """
-    from reckon._timestamps import parse_utc
+    from reckon.crew.plan_coordinator import _dispatch_instant
 
-    latest: dict[str, tuple[float, str]] = {}
+    latest: dict[str, Any] = {}
     for row in ledger.run_rows_from_documents(project):
         session = str(row.get("session") or "").strip()
         if not session:
             continue
-        stamp = str(row.get("dispatched_at") or row.get("created_at") or "")
-        instant = parse_utc(stamp)
+        instant = _dispatch_instant(row)
         if instant is None:
             continue
         held = latest.get(session)
-        if held is None or instant.timestamp() > held[0]:
-            latest[session] = (instant.timestamp(), stamp)
-    return {session: stamp for session, (_at, stamp) in latest.items()}
+        if held is None or instant > held:
+            latest[session] = instant
+    return {session: instant.isoformat() for session, instant in latest.items()}
 
 
-def _census_rows(
-    project: str | None, listed_sessions: Iterable[str]
-) -> list[dict[str, Any]]:
-    """The sessions a live host's census names, with no runs in flight.
+def _census_facts(project: str | None) -> dict[tuple[str, str], dict[str, Any]]:
+    """What each census-named session says about itself, by project and session.
 
-    A coordinator that has published nothing back is invisible to every other
-    read: its runs are all terminal, so no live pointer names it. Its host is
-    still running and its census still names the session, which is the one
-    record that the session exists. Each such session is listed with what the
-    census knows — its project and the time its follower settled — and with its
-    last dispatch from the ledger, so a stalled coordinator can be seen and
-    asked.
-
-    A session already listed from a run is left to that row: this adds owners
-    the run grouping cannot see, and never a second row for one session.
+    A coordinator that has published nothing back can be invisible to every
+    other read: its runs are all terminal, so no live pointer names it, and a
+    plan-coordinator join may not name it either. Its host is still running and
+    its census still names the session, with the time its follower settled and,
+    from the ledger, its last dispatch.
     """
     from reckon.crew import session_host
 
-    listed = set(listed_sessions)
-    by_pair: dict[tuple[str, str], float | None] = {}
+    settled: dict[tuple[str, str], float | None] = {}
     for host in session_host.live_census():
         for child in host.get("children") or ():
             if not isinstance(child, Mapping):
@@ -369,27 +360,71 @@ def _census_rows(
                 continue
             if project not in (None, "*") and name != project:
                 continue
-            if session in listed:
-                continue
             settled_at = child.get("settled_at")
             key = (name, session)
-            held = by_pair.get(key)
+            held = settled.get(key)
             # The latest settle says how long the session has held no work, so
             # a pair the host settled more than once keeps that one.
             if isinstance(settled_at, int | float):
-                by_pair[key] = (
+                settled[key] = (
                     float(settled_at) if held is None else max(held, float(settled_at))
                 )
             else:
-                by_pair.setdefault(key, None)
-    if not by_pair:
-        return []
+                settled.setdefault(key, None)
+    if not settled:
+        return {}
     dispatches: dict[str, dict[str, str]] = {}
-    for name in sorted({name for name, _session in by_pair}):
+    for name in sorted({name for name, _session in settled}):
         dispatches[name] = _last_dispatch_by_session(name)
+    facts: dict[tuple[str, str], dict[str, Any]] = {}
+    for (name, session), settled_at in settled.items():
+        entry: dict[str, Any] = {"census_source": "session-host"}
+        last_dispatch = dispatches.get(name, {}).get(session)
+        if last_dispatch:
+            entry["last_dispatch"] = last_dispatch
+        if settled_at is not None:
+            entry["settled_at"] = settled_at
+        facts[(name, session)] = entry
+    return facts
+
+
+def _census_rows(
+    facts: Mapping[tuple[str, str], Mapping[str, Any]],
+    listed: Sequence[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """List each census-named session once, beside whatever already names it.
+
+    A session the run grouping or the ready-idle join has already listed keeps
+    that row and has the census facts added to it, so one session reads as one
+    row and the coordinator count counts it once whatever named it. Only a
+    session neither source sees gets a new row here.
+
+    A session can be owned in more than one project, so a row is matched by its
+    project and session first, and by its session alone where that row names no
+    project, which is what a workstation-scope row does.
+    """
+    by_pair: dict[tuple[str, str], dict[str, Any]] = {}
+    by_session: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for listed_row in listed:
+        session = str(listed_row["session"])
+        by_session[session].append(listed_row)
+        if listed_row.get("project"):
+            by_pair[(str(listed_row["project"]), session)] = listed_row
     rows: list[dict[str, Any]] = []
-    for (name, session), settled_at in sorted(by_pair.items()):
-        row: dict[str, Any] = {
+    for (name, session), entry in sorted(facts.items()):
+        target = by_pair.get((name, session))
+        if target is not None:
+            target.update(dict(entry))
+            continue
+        scoped = [
+            candidate
+            for candidate in by_session.get(session) or ()
+            if candidate.get("project") in (None, name)
+        ]
+        if scoped:
+            scoped[0].update(dict(entry))
+            continue
+        new_row: dict[str, Any] = {
             "session": session,
             "project": name,
             "repository": None,
@@ -398,14 +433,9 @@ def _census_rows(
             "state": "idle",
             "live_node_count": 0,
             "runs": [],
-            "census_source": "session-host",
         }
-        last_dispatch = dispatches.get(name, {}).get(session)
-        if last_dispatch:
-            row["last_dispatch"] = last_dispatch
-        if settled_at is not None:
-            row["settled_at"] = settled_at
-        rows.append(row)
+        new_row.update(dict(entry))
+        rows.append(new_row)
     return rows
 
 
@@ -561,7 +591,10 @@ def directory(
         for session in sorted(set(idle_by_session) - listed_sessions)
     )
 
-    coordinators.extend(_census_rows(project, listed_sessions))
+    # The census is read last, over every row this view has built, so a session
+    # the ready-idle join just listed keeps that row and gains the census facts
+    # on it rather than appearing a second time.
+    coordinators.extend(_census_rows(_census_facts(project), coordinators))
 
     result: dict[str, Any] = {
         "ok": True,

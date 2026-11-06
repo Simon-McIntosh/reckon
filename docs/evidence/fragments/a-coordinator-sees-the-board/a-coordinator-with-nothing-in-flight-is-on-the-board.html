@@ -21,12 +21,14 @@ whose owner process still lives and skips a host that has stopped, and
 <code>record()</code> drops a settled child again when it is re-armed, so a
 session that dispatches resumes carrying one child rather than two.</p>
 <p>The board in <code>reckon/crew/directory.py</code> lists each session the
-census names that the run grouping cannot see, with
+census names exactly once. A session no other source lists gets its own row —
 <code>live_node_count: 0</code>, no runs, <code>state: "idle"</code>, its
 project, the time its follower settled, and <code>last_dispatch</code> read
-from the ledger rows the plan-coordinator resolver uses. A session already
-listed from a run is left to that row, so one session never appears twice, and
-a host whose owner has exited names no session at all.</p>
+from the ledger rows the plan-coordinator resolver uses. A session the run
+grouping or the ready-idle join already listed keeps that row and has those
+census facts added to it, so the row carries both what its own source found
+and <code>settled_at</code>, and <code>coordinator_count</code> counts the
+session once. A host whose owner has exited names no session at all.</p>
 
 <h2 id="a-coordinator-with-nothing-in-flight-is-on-the-board-measure">Measure</h2>
 <p>Gate: <code>tests/test_a_coordinator_with_nothing_in_flight_is_on_the_board.py</code>
