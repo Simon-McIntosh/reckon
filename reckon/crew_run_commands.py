@@ -2931,6 +2931,16 @@ def _refuse_a_flag_as_a_reason(
         "release the worktree. Refused with --dry-run, which writes nothing."
     ),
 )
+@click.option(
+    "--candidate",
+    default="",
+    metavar="SHA",
+    help=(
+        "With --land, require this run's measured candidate before promotion, "
+        "then measure the candidate including promotion's committed records "
+        "before publishing it."
+    ),
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_complete(
     run_id,
@@ -2962,6 +2972,7 @@ def crew_complete(
     land,
     pretty,
     project=None,
+    candidate="",
 ):
     """Promote one finished run into the owning repository's committed ledger.
 
@@ -2980,6 +2991,8 @@ def crew_complete(
     report names the command that resumes from it.
     """
     _accept_a_matching_project(run_id, project)
+    if candidate and not land:
+        raise click.UsageError("--candidate requires --land")
     if land and dry_run:
         raise click.ClickException(
             "--land merges and pushes, which --dry-run promises not to do; run "
@@ -3081,6 +3094,19 @@ def crew_complete(
             pretty,
         )
         return
+    if candidate:
+        from reckon.crew import merge as merge_module
+        from reckon.crew import queue_landing
+
+        try:
+            queue_landing._verified_measurement(run_id, candidate)
+        except (
+            OSError,
+            ValueError,
+            crew_module.CrewError,
+            merge_module.MergeError,
+        ) as exc:
+            raise click.ClickException(str(exc)) from exc
     try:
         result = crew_module.complete(
             run_id,
@@ -3136,6 +3162,7 @@ def crew_complete(
             gate=gate,
             checkout_path=checkout_path,
             pointer=pointer,
+            candidate=candidate,
         )
         _emit_crew_result(report, pretty)
         if exit_code:
@@ -3151,6 +3178,7 @@ def _land_a_promoted_run(
     gate: str,
     checkout_path: Path | None,
     pointer: Mapping[str, Any] | None = None,
+    candidate: str = "",
 ) -> tuple[dict[str, Any], int]:
     """Merge, verify and push a promoted run's head, then release its worktree.
 
@@ -3265,7 +3293,24 @@ def _land_a_promoted_run(
         )
         return report, 1
     try:
-        landed = merge_module.land(repository, head=head, message=message, body=body)
+        if candidate:
+            from reckon.crew import queue_landing
+
+            # Promotion writes records onto primary. Measure the resulting
+            # candidate, then pass that identity to the merge's parent guard.
+            candidate = queue_landing._promoted_candidate(
+                {**record, **(pointer or {})},
+                run_id,
+                head,
+                str(worktree or repository),
+            )
+        landed = merge_module.land(
+            repository,
+            head=head,
+            message=message,
+            body=body,
+            **({"candidate": candidate} if candidate else {}),
+        )
     except merge_module.MergePushOutstandingError as exc:
         report["steps"]["land"] = {
             "ok": True,

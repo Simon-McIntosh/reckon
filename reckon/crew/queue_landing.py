@@ -602,10 +602,20 @@ def _record_attempt(
             pointer["admission_landing"]["remedy"] = remedy
         return pointer
 
-    runs._mutate_pointer(run_id, mutation)
+    try:
+        runs._mutate_pointer(run_id, mutation)
+    except CrewError:
+        if runs.pointer_path(run_id).exists():
+            raise
+        runs._write_json(
+            runs.run_dir(run_id) / "admission-landing.json",
+            mutation({})["admission_landing"],
+        )
 
 
-def _record_suite_evidence(run_id: str, measured: landing_measure.Measurement) -> None:
+def _record_suite_evidence(
+    run_id: str, measured: landing_measure.Measurement, *, promoted: bool = False
+) -> None:
     """Keep the measurement where a later reader can open it.
 
     The live pointer loses this at promotion, so the run's own directory holds
@@ -623,7 +633,8 @@ def _record_suite_evidence(run_id: str, measured: landing_measure.Measurement) -
         pointer["suite_evidence"] = record
         return pointer
 
-    runs._mutate_pointer(run_id, mutation)
+    if not promoted:
+        runs._mutate_pointer(run_id, mutation)
 
 
 def _measurement_path(run_id: str) -> Path:
@@ -755,6 +766,8 @@ def _measure_delivery(
     head: str,
     tree: str,
     stored: Sequence[Mapping[str, Any]] = (),
+    *,
+    promoted: bool = False,
 ) -> Any:
     """Measure current primary against the merge of one delivered run.
 
@@ -782,7 +795,7 @@ def _measure_delivery(
             head=head,
             project=str(pointer.get("project") or ""),
         )
-        _record_suite_evidence(run_id, measured)
+        _record_suite_evidence(run_id, measured, promoted=promoted)
         return measured
     base_sha = str(pointer.get("base_sha") or "").strip()
     project = str(pointer.get("project") or "")
@@ -798,6 +811,8 @@ def _measure_delivery(
         )
     timeout = _measure_timeout(pointer)
     logs = runs.run_dir(run_id) / "landing-measure"
+    if promoted:
+        logs = logs / "promoted"
     primary = _primary_revision(pointer)
     if not primary:
         measured = landing_measure.Measurement(
@@ -808,7 +823,7 @@ def _measure_delivery(
             head=head,
             project=project,
         )
-        _record_suite_evidence(run_id, measured)
+        _record_suite_evidence(run_id, measured, promoted=promoted)
         return measured
     try:
         changed = landing_measure.delivered_paths(repo, base_sha, head)
@@ -864,8 +879,19 @@ def _measure_delivery(
             head=head,
             project=project,
         )
-    _record_suite_evidence(run_id, measured)
+    _record_suite_evidence(run_id, measured, promoted=promoted)
     return measured
+
+
+def _promoted_candidate(
+    pointer: Mapping[str, Any], run_id: str, head: str, tree: str
+) -> str:
+    """Measure publication after completion has committed its records."""
+    measured = _measure_delivery(pointer, run_id, head, tree, promoted=True)
+    refusal = _measure_guard(measured)
+    if refusal:
+        raise CrewError(refusal)
+    return str(measured.population["candidate_sha"])
 
 
 def _measure_guard(measured: Any) -> str:
@@ -987,7 +1013,9 @@ def _crew_step(*arguments: str) -> list[str]:
 
 
 def _land_command(run_id: str) -> list[str]:
-    """Promote the measured, merged delivery and finish its release bookkeeping."""
+    """Complete the run before measuring and publishing its final candidate."""
+    record = _measurement_record(run_id) or {}
+    candidate = str((record.get("population") or {}).get("candidate_sha") or "")
     return _crew_step(
         "complete",
         "--run",
@@ -999,35 +1027,11 @@ def _land_command(run_id: str) -> list[str]:
             for revision in _delivered_revisions(run_id)
             for token in ("--commit", revision)
         ],
+        "--candidate",
+        candidate,
         "--no-impl-change",
         LANDING_BEAT_REASON,
         "--land",
-    )
-
-
-def _candidate_merge_command(
-    run_id: str, project: str, measured: landing_measure.Measurement
-) -> list[str]:
-    """Hand the measured candidate to the merge's existing parent check."""
-    return _crew_step(
-        "merge",
-        "--project",
-        project,
-        "--run",
-        run_id,
-        "--head",
-        measured.head,
-        "--candidate",
-        str(measured.population["candidate_sha"]),
-        "--gate",
-        "passed",
-        *[
-            token
-            for revision in _delivered_revisions(run_id)
-            for token in ("--commit", revision)
-        ],
-        "--no-impl-change",
-        LANDING_BEAT_REASON,
     )
 
 
@@ -1068,41 +1072,52 @@ def _land_timeout(run_id: str) -> float:
     return _measure_timeout(pointer)
 
 
-def _land(run_id: str) -> tuple[bool, str]:
-    """Merge the measured candidate before promotion can advance primary.
-
-    The merge CLI checks promotion eligibility without writing the ledger and
-    refuses a candidate whose parents no longer match. Completion then owns
-    promotion, push recovery and worktree release on the already merged head.
-    """
+def _verified_measurement(
+    run_id: str, candidate: str = ""
+) -> landing_measure.Measurement:
+    """Verify the measured delivery and primary before promotion can write."""
     from reckon.crew import merge
 
     record = _measurement_record(run_id)
     measured = landing_measure.Measurement.from_dict(record) if record else None
     guard = _measure_guard(measured)
     if guard:
-        return False, guard
+        raise CrewError(guard)
     if not measured.population.get("candidate_sha") or not measured.population.get(
         "main_sha"
     ):
-        return False, "landing measure unreadable: no measured merge candidate"
-    try:
-        pointer = runs.read_pointer(run_id)
-        repo = Path(str(pointer.get("repo") or ""))
-        head, _tree = recovery._review_head_and_tree(pointer)
-        if not recovery.same_revision(head, measured.head):
-            return False, "the measured delivery head changed before landing"
-        markers = merge.change_markers(repo, measured.population["main_sha"], head)
-        dropped = merge.surviving_change_refusals(
-            repo, measured.population["candidate_sha"], markers
+        raise CrewError("landing measure unreadable: no measured merge candidate")
+    pointer = runs.read_pointer(run_id)
+    repo = Path(str(pointer.get("repo") or ""))
+    head, _tree = recovery._review_head_and_tree(pointer)
+    if not recovery.same_revision(head, measured.head):
+        raise CrewError("the measured delivery head changed before landing")
+    if _primary_revision(pointer) != measured.population["main_sha"]:
+        raise CrewError("the measured primary changed before completion")
+    if (
+        candidate
+        and merge._rev_parse(repo, candidate) != measured.population["candidate_sha"]
+    ):
+        raise CrewError("the supplied candidate differs from the measured candidate")
+    markers = merge.change_markers(repo, measured.population["main_sha"], head)
+    dropped = merge.surviving_change_refusals(
+        repo, measured.population["candidate_sha"], markers
+    )
+    if dropped:
+        raise CrewError(
+            "the measured merge dropped the reviewed change: " + "; ".join(dropped)
         )
-        if dropped:
-            return (
-                False,
-                "the measured merge dropped the reviewed change: " + "; ".join(dropped),
-            )
+    return measured
+
+
+def _land(run_id: str) -> tuple[bool, str]:
+    """Hand the measured delivery to completion, which owns publication."""
+    from reckon.crew import merge
+
+    try:
+        _verified_measurement(run_id)
     except (OSError, ValueError, CrewError, merge.MergeError) as exc:
-        return False, f"the measured candidate could not be read: {exc}"
+        return False, str(exc)
 
     environment = os.environ.copy()
     source = str(Path(__file__).resolve().parents[2])
@@ -1110,14 +1125,7 @@ def _land(run_id: str) -> tuple[bool, str]:
         part for part in (source, environment.get("PYTHONPATH", "")) if part
     )
     timeout = _land_timeout(run_id)
-    for command in (
-        _candidate_merge_command(run_id, str(pointer.get("project") or ""), measured),
-        _land_command(run_id),
-    ):
-        accepted, guard = _run_land_command(command, environment, timeout)
-        if not accepted:
-            return False, guard
-    return True, ""
+    return _run_land_command(_land_command(run_id), environment, timeout)
 
 
 def _run_land_command(

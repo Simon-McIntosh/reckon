@@ -7,23 +7,18 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from click.testing import CliRunner
 
-import reckon.crew as crew_module
-from reckon import cli
 from reckon.crew import (
     landing_measure,
     merge,
-    promotion,
-    promotion_release,
     queue_landing,
     runs,
 )
+from tests import test_queue_landing as cli_checks
 
 RUN = "r-population-delivery"
 FAILURE = "tests/test_consumer.py::test_integration"
 COMMAND = "python -m pytest -q tests/test_node.py"
-LAND = queue_landing._land
 
 
 def _git(repo, *args):
@@ -278,101 +273,107 @@ def test_an_unreadable_delivery_diff_refuses_without_claiming_no_importers(
     assert not delivery["calls"]
 
 
-def _real_landing(delivery, monkeypatch, *, advance=False, promotable=True):
-    """Run the real CLI merge and local push; stub only promotion bookkeeping."""
-    repo = delivery["repo"]
-    origin = repo.parent / "origin"
-    _git(repo, "init", "--bare", "-q", str(origin))
-    _git(repo, "remote", "add", "origin", str(origin))
-    _git(repo, "push", "-q", "-u", "origin", "main")
-    pointer = runs.read_pointer(RUN)
-    record = {**pointer, "commits": [delivery["head"]]}
-    monkeypatch.setattr(merge, "project_repository", lambda _p: repo)
-    monkeypatch.setattr(
-        promotion,
-        "complete_dry_run",
-        lambda *_a, **_k: {
-            "would_promote": promotable,
-            "refusals": ["promotion refused"],
-        },
-    )
-    promoted = []
-
-    def complete(*_args, **_kwargs):
-        promoted.append(RUN)
-        return {"project": pointer["project"], "record": record}
-
-    monkeypatch.setattr(crew_module, "complete", complete)
-    monkeypatch.setattr(
-        promotion_release,
-        "_release_after_promotion",
-        lambda *_a, **_k: {"worktree_released": True},
-    )
-    monkeypatch.setattr(
-        promotion_release,
-        "_record_release_on_ledger",
-        lambda **kw: (kw["release"], None),
-    )
-    steps = []
-    moved = []
-
-    def run(command, **_kwargs):
-        args = command[command.index("crew") :]
-        steps.append(args)
-        if advance and not moved:
-            moved.append(_commit(repo, "reference.txt", "concurrent primary edit\n"))
-        result = CliRunner().invoke(cli.main, args)
-        return subprocess.CompletedProcess(command, result.exit_code, result.output, "")
-
-    monkeypatch.setattr(queue_landing, "_land", LAND)
-    monkeypatch.setattr(queue_landing, "_run_srun", run)
-    return origin, steps, promoted, moved
+@pytest.fixture()
+def actual_delivery(tmp_path, monkeypatch):
+    return cli_checks.promotable_delivery.__wrapped__(tmp_path, monkeypatch)
 
 
 def test_primary_advance_after_measurement_refuses_the_actual_cli_merge(
-    delivery, monkeypatch
+    actual_delivery, monkeypatch
 ):
-    _runner(delivery, monkeypatch, clean=True)
-    origin, steps, promoted, moved = _real_landing(delivery, monkeypatch, advance=True)
+    delivery = actual_delivery
+    moved = []
 
+    def advance(command, **options):
+        moved.append(
+            _commit(delivery["repo"], "concurrent.txt", "concurrent primary edit\n")
+        )
+        return delivery["run_in_shim"](command, **options)
+
+    monkeypatch.setattr(queue_landing, "_run_srun", advance)
+    result = queue_landing.land_once()
+
+    assert not result["landed"], result
+    assert "primary" in result["obligations"][0]["guard"]
+    assert _git(delivery["repo"], "rev-parse", "HEAD") == moved[0]
+    assert _git(delivery["origin"], "rev-parse", "main") == delivery["base"]
+    assert runs.pointer_path(delivery["run_id"]).exists()
+
+
+def test_the_actual_cli_lands_exactly_the_measured_candidate(actual_delivery):
+    delivery = actual_delivery
+    result = queue_landing.land_once()
+
+    assert result["landed"] == [delivery["run_id"]], (result, delivery["receipts"])
+    record = queue_landing._measurement_record(delivery["run_id"])
+    candidate = record["population"]["candidate_sha"]
+    main = record["population"]["main_sha"]
+    assert main != delivery["base"]  # Promotion commits precede the final measurement.
+    assert _git(delivery["repo"], "rev-parse", candidate + "^1") == main
+    assert _git(delivery["repo"], "rev-parse", candidate + "^2") == delivery["head"]
+    _git(delivery["repo"], "merge-base", "--is-ancestor", candidate, "HEAD")
+    assert (
+        _git(delivery["repo"], "show", candidate + ":reviewed.txt")
+        == "accepted delivery"
+    )
+    assert _git(delivery["origin"], "rev-parse", "main") == _git(
+        delivery["repo"], "rev-parse", "HEAD"
+    )
+    receipt = json.loads(delivery["receipts"][-1]["output"])
+    assert receipt["steps"]["promote"]["ok"] is True
+    assert receipt["steps"]["land"]["commit"] == candidate
+    assert not runs.pointer_path(delivery["run_id"]).exists()
+    assert not delivery["worker"].exists()
+    assert all(
+        r["command"][r["command"].index("crew") + 1] != "merge"
+        for r in delivery["receipts"]
+    )
+
+
+def test_candidate_handoff_preserves_the_promotion_guard(actual_delivery, monkeypatch):
+    delivery = actual_delivery
+
+    def remove_gate(command, **options):
+        if "complete" in command:
+            delivery["gate_log"].unlink()
+        return delivery["run_in_shim"](command, **options)
+
+    monkeypatch.setattr(queue_landing, "_run_srun", remove_gate)
+    result = queue_landing.land_once()
+
+    assert not result["landed"], result
+    assert "gate" in result["obligations"][0]["guard"]
+    assert _git(delivery["repo"], "rev-parse", "HEAD") == delivery["base"]
+    assert _git(delivery["origin"], "rev-parse", "main") == delivery["base"]
+    assert runs.pointer_path(delivery["run_id"]).exists()
+    assert delivery["worker"].exists()
+
+
+def test_primary_advance_after_promotion_measurement_refuses_publication(
+    actual_delivery, monkeypatch
+):
+    delivery = actual_delivery
+    original = merge.land
+    moved = []
+
+    def advance(repo, **options):
+        moved.append(_commit(repo, "concurrent.txt", "concurrent primary edit\n"))
+        return original(repo, **options)
+
+    monkeypatch.setattr(merge, "land", advance)
     result = queue_landing.land_once()
 
     assert not result["landed"], result
     assert "parents" in result["obligations"][0]["guard"]
     assert _git(delivery["repo"], "rev-parse", "HEAD") == moved[0]
-    assert _git(origin, "rev-parse", "main") == delivery["main"]
-    assert not promoted
-    assert steps[0][1] == "merge"
-
-
-def test_the_actual_cli_lands_exactly_the_measured_candidate(delivery, monkeypatch):
-    _runner(delivery, monkeypatch, clean=True)
-    origin, steps, promoted, _moved = _real_landing(delivery, monkeypatch)
-
-    result = queue_landing.land_once()
-
-    assert result["landed"] == [RUN], result
-    candidate = _record()["population"]["candidate_sha"]
-    assert _git(delivery["repo"], "rev-parse", "HEAD") == candidate
-    assert _git(origin, "rev-parse", "main") == candidate
-    assert steps[0][steps[0].index("--candidate") + 1] == candidate
-    assert [args[1] for args in steps] == ["merge", "complete"]
-    assert promoted == [RUN]
-
-
-def test_candidate_handoff_preserves_the_promotion_guard(delivery, monkeypatch):
-    _runner(delivery, monkeypatch, clean=True)
-    origin, _steps, promoted, _moved = _real_landing(
-        delivery, monkeypatch, promotable=False
+    assert _git(delivery["origin"], "rev-parse", "main") == delivery["base"]
+    assert not (delivery["repo"] / "reviewed.txt").exists()
+    assert delivery["worker"].exists()
+    saved = json.loads(
+        (runs.run_dir(delivery["run_id"]) / "admission-landing.json").read_text()
     )
-
-    result = queue_landing.land_once()
-
-    assert not result["landed"], result
-    assert "promotion refused" in result["obligations"][0]["guard"]
-    assert _git(delivery["repo"], "rev-parse", "HEAD") == delivery["main"]
-    assert _git(origin, "rev-parse", "main") == delivery["main"]
-    assert not promoted
+    assert saved["status"] == "refused"
+    assert "parents" in saved["guard"]
 
 
 def test_an_unarmed_implementation_cannot_land_unmeasured(delivery, monkeypatch):

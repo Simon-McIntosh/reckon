@@ -374,9 +374,8 @@ def test_land_invokes_the_shared_path_through_the_scheduler_shim(
     )
 
 
-def test_accepted_delivery_uses_the_real_crew_land_path(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+@pytest.fixture()
+def promotable_delivery(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
     home = tmp_path / "config"
     home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(home))
@@ -461,19 +460,57 @@ def test_accepted_delivery_uses_the_real_crew_land_path(
     )
     review_module.store_review(review)
 
+    receipts = []
+
     def run_in_shim(command, **_options):
         assert Path(command[0]).name == "srun"
         assert command[1:3] == ["--overlap", "--ntasks=1"]
         result = CliRunner().invoke(cli_module.main, command[6:])
-        assert result.exit_code == 0, (result.output, result.exception)
+        receipts.append(
+            {"command": command, "exit_code": result.exit_code, "output": result.output}
+        )
         return subprocess.CompletedProcess(command, result.exit_code, result.output, "")
 
     monkeypatch.setattr(queue_landing, "_run_srun", run_in_shim)
-    result = queue_landing.land_once()
+    return {
+        "repo": repository,
+        "origin": origin,
+        "worker": worktree,
+        "base": base,
+        "head": head,
+        "run_id": run_id,
+        "gate_log": gate_log,
+        "manifest": manifest,
+        "run_in_shim": run_in_shim,
+        "receipts": receipts,
+    }
 
-    assert result["landed"] == [run_id], result
-    assert fixture_git(repository, "show", "main:reviewed.txt") == "accepted delivery"
-    assert fixture_git(origin, "rev-parse", "main") == fixture_git(
-        repository, "rev-parse", "main"
+
+def test_accepted_delivery_uses_the_real_crew_land_path(promotable_delivery) -> None:
+    delivery = promotable_delivery
+    result = queue_landing.land_once()
+    assert result["landed"] == [delivery["run_id"]], (result, delivery["receipts"])
+    assert (
+        fixture_git(delivery["repo"], "show", "main:reviewed.txt")
+        == "accepted delivery"
     )
-    assert not runs.pointer_path(run_id).exists()
+    assert fixture_git(delivery["origin"], "rev-parse", "main") == fixture_git(
+        delivery["repo"], "rev-parse", "main"
+    )
+    assert not runs.pointer_path(delivery["run_id"]).exists()
+
+
+def test_an_unarmed_delivery_never_reaches_completion(promotable_delivery) -> None:
+    delivery = promotable_delivery
+    run_id = delivery["run_id"]
+    runs._mutate_pointer(
+        run_id,
+        lambda pointer: {k: v for k, v in pointer.items() if k != "suite_command"},
+    )
+    result = queue_landing.land_once()
+    assert not result["landed"], result
+    assert "suite command" in result["obligations"][0]["guard"]
+    assert not delivery["receipts"]
+    assert fixture_git(delivery["repo"], "rev-parse", "HEAD") == delivery["base"]
+    assert fixture_git(delivery["origin"], "rev-parse", "main") == delivery["base"]
+    assert runs.read_pointer(run_id)["admission_landing"]["status"] == "refused"
