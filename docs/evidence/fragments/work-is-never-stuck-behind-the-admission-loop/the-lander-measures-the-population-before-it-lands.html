@@ -40,4 +40,31 @@
   <code>13d029a6be7f3b245ef03597d0a2ab44b17693e2</code> and
   <code>f680aa26a27fa48a5dd0efff6b2ffc1db886dfbf</code>; the final delivery commit
   adds strict diff reading, its regression case, and this evidence fragment.</p>
+  <section id="the-lander-measures-the-population-before-it-lands-repair">
+    <h3>The measured candidate reaches the merge boundary</h3>
+    <p>Repair commit <code>14a2beea6d991e14b1232b9c426a5c2966deaf73</code>
+    answers all three review findings. The merge runs before promotion writes
+    its ledger, through the existing <code>crew merge --candidate</code> path.
+    Its parent check refuses a changed primary at the actual merge boundary;
+    completion then promotes and releases the already merged delivery.
+    Promotion eligibility and introduced-marker checks remain required.</p>
+    <table>
+      <thead><tr><th>Finding</th><th>Repair and check</th></tr></thead>
+      <tbody>
+        <tr><td><code>f43bb850251</code></td><td>The actual CLI refuses a primary advance between measurement and merge; a successful local push publishes exactly the measured candidate.</td></tr>
+        <tr><td><code>fbc859c712b</code></td><td>An implementation without an armed suite command writes an unreadable measurement and refuses landing. Absence of a measurement also refuses.</td></tr>
+        <tr><td><code>dimension-reuse</code></td><td>The delivery adapter delegates to the merge module's existing strict changed-path reader. A call-site check and a filename containing a newline verify reuse and preserved path boundaries.</td></tr>
+      </tbody>
+    </table>
+    <p>The repair baseline is <code>28d239f9b51f54d40a19b7e6a579fb7c84b1db47</code>.
+    Its scoped suite passes 10 tests; the repaired suite passes 16. Both arms
+    run <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+    tests/test_the_lander_measures_the_population.py</code>. Reversing the
+    answering commit's two product-file changes in a scratch tree, with its
+    assertions retained, reports <strong>6 failed, 10 passed, EXIT=1</strong>.
+    The negative control verifies the reversed files byte-for-byte against
+    the answering commit's parent. Receipts are retained as
+    <code>repair-base.log</code>, <code>repair-answer.log</code>, and
+    <code>repair-negative.log</code> in the same run directory.</p>
+  </section>
 </article>
