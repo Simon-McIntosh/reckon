@@ -1689,19 +1689,40 @@ def promotion_order_key(record: Mapping[str, Any]) -> tuple[str, str]:
     )
 
 
-def _written_since(source: Path, modified_since: float) -> bool:
-    """Whether a run document's own mtime is at or after ``modified_since``.
+def _run_files_written_since(
+    project: str, root: str | Path | None, modified_since: float
+) -> list[Path]:
+    """The run documents whose own mtime is at or after ``modified_since``.
 
     The bound is the file's modification time rather than the instant in its
     name, because a run id is minted when the request is queued while the
     document is written when the run is promoted, so a long-queued run has an
     old id and a recent document. A file whose mtime cannot be read is treated
     as outside the bound: it is no more readable than an absent one.
+
+    The listing goes through :func:`os.scandir` rather than :func:`_run_files`
+    so each entry's metadata comes from the directory walk. A project's history
+    is thousands of files on a shared filesystem, and a second path resolution
+    per file is the difference between a bounded read that is cheap and one
+    that pays most of the cost it exists to avoid.
     """
+    runs = ledger_path(project, root).parent / "runs"
+    kept: list[Path] = []
     try:
-        return source.stat().st_mtime >= modified_since
+        entries = os.scandir(runs)
     except OSError:
-        return False
+        return kept
+    with entries:
+        for entry in entries:
+            if not entry.name.endswith(".json"):
+                continue
+            try:
+                if entry.stat().st_mtime < modified_since:
+                    continue
+            except OSError:
+                continue
+            kept.append(Path(entry.path))
+    return sorted(kept)
 
 
 def _merge_run_documents(
@@ -1740,9 +1761,12 @@ def _merge_run_documents(
         if isinstance(record, Mapping) and record.get("run_id")
     }
     added = False
-    for source in _run_files(project, root):
-        if modified_since is not None and not _written_since(source, modified_since):
-            continue
+    sources = (
+        _run_files(project, root)
+        if modified_since is None
+        else _run_files_written_since(project, root, modified_since)
+    )
+    for source in sources:
         try:
             record = _read_run(source)
         except LedgerError:
