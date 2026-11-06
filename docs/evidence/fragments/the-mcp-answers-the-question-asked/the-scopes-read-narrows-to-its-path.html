@@ -1,0 +1,122 @@
+<!-- Evidence anchor: the-scopes-read-narrows-to-its-path -->
+
+<section data-reckon="evidence" id="the-scopes-read-narrows-to-its-path-evidence">
+  <h3>§11 — The scopes read narrows to the path it is asked about</h3>
+
+  <p id="the-scopes-read-narrows-to-its-path-contract">
+    <strong>The view answered about every file, so the one question it exists
+    for could not be asked.</strong> <code>crew(view="scopes")</code> passed its
+    <code>path</code> argument through the tool signature and then ignored it:
+    the view composed the project's whole live-claim registry whatever the caller
+    named. A coordinator asking who holds one file got the project, and on a
+    project with enough live claims got an over-budget refusal whose
+    <code>narrow_with</code> named only <code>candidates</code>.
+  </p>
+
+  <p id="the-scopes-read-narrows-to-its-path-narrowing">
+    <strong>A named path selects the claims that contain it or lie inside
+    it.</strong> Narrowing is judged by path components, the rule the dispatch
+    scope check applies to two declared scopes
+    (<code>_scopes_overlap</code>), so a claim on a directory answers for a file
+    beneath it and a claim on a file answers for the directory holding it. Each
+    kept claim travels with its owners and the verdict dispatch would apply —
+    <code>binding</code> and <code>disposition_reason</code> — and nothing is
+    trimmed from that answer, because an exact answer for one path is what the
+    call is for. The path is resolved repository-relative with
+    <code>_repository_relative_scope</code>, so an absolute spelling inside the
+    checkout and a relative one answer the same claims; a path that resolves
+    outside the checkout is refused as <code>invalid_path</code> rather than
+    read as an empty claim set.
+  </p>
+
+  <p id="the-scopes-read-narrows-to-its-path-default">
+    <strong>The default read is one page that fits its own row.</strong> With no
+    path and no candidates the view answers a page of held paths with their
+    owners, a <code>summary</code> carrying the totals behind the page
+    (claims, paths, runs, binding and non-binding counts), a
+    <code>pagination</code> cursor to the next page, and a
+    <code>narrow_with</code> naming <code>path</code> before
+    <code>candidates</code>. The page is measured with the budget module's own
+    <code>serialised_characters</code> against
+    <code>VIEW_BUDGETS[("crew", "scopes")]</code> and shortened until it fits,
+    because a kept path carries an unbounded number of owners. Every page that
+    returns a cursor moves past at least one path: a path whose owners alone
+    fill the row is answered in its owners' summary form and named in
+    <code>over_budget_paths</code> with its omitted count, rather than dropped,
+    so a caller following the cursor always advances and the walk terminates.
+    The transport ceiling's <code>narrow_with</code> for this view now names
+    <code>path</code> first as well.
+  </p>
+
+  <p id="the-scopes-read-narrows-to-its-path-served">
+    <strong>The served read, on this node, naming one held file.</strong> The
+    registered <code>crew</code> tool's own entry — the one FastMCP serves, which
+    runs the body under the read deadline inside the shared covered-tree and
+    identity-index request scopes and passes the result through
+    <code>bound_response</code> — was called with
+    <code>project="reckon", view="scopes",
+    path="reckon/crew/queue_admission.py"</code> against
+    <code>/home/ITER/mcintos/Code/reckon</code>. It answered in
+    <strong>20.93 s</strong> against the 30 s read deadline — earlier runs took
+    20.0 s, 15.91 s and 14.58 s — in <strong>4,638 characters</strong> against
+    both the 24,000-character row and the 80,000-character ceiling, with
+    <code>ok: true</code>. The claim map held exactly one key —
+    <code>reckon/crew/queue_admission.py</code> — and five owners: one binding,
+    <code>r-20261105T142439938993-the-lander-skips-a-run-landed-elsewhere</code>,
+    whose reason names the work its stopped worktree still holds; and four
+    disregarded with their phase named,
+    <code>r-20261103T034032348719-a-pass-computes-coverage-once</code> and
+    <code>r-20261105T110326210493-an-admission-pass-finishes-in-under-ten-seconds</code>
+    awaiting upstream, and
+    <code>r-20261105T140205040675-record-what-holds-a-queued-request-only-when-the-holding</code>
+    and <code>r-20261106T131308576817-make-every-hot-path-read-plan-state-through-the-memo</code>
+    queued. The same node's default read for
+    <code>reckon</code> answered in <strong>22.16 s</strong> and
+    <strong>22,879 characters</strong> — inside the 24,000 row — reporting 109
+    claims over 98 paths from 24 runs, returning 16 of them, carrying a
+    <code>next_cursor</code>, and offering <code>AGENTS.md</code> as the
+    <code>path</code> to narrow by. The live fleet moves between runs, which is
+    why the totals differ between calls.
+  </p>
+
+  <p id="the-scopes-read-narrows-to-its-path-measure">
+    <strong>The measure is a fixture holding more claims than the row
+    allows.</strong> <code>tests/test_the_scopes_read_narrows_to_its_path.py</code>
+    writes 60 holders of two files each, one holder of a directory, and one
+    holder of a path outside the checkout, so the claim set is larger than the
+    24,000-character row and the paths it holds exercise both directions of
+    containment. It asserts the path read against the claim map the test
+    computes from the fixture — a wrongly kept claim and a wrongly dropped one
+    both fail — and asserts the default read against the row, including that the
+    <code>path</code> it offers is answerable by the call it invites. One path is
+    held by enough runs that its owners alone fill the row, so the paging case
+    walks the cursor to the end and asserts every cursor strictly advances, the
+    walk terminates, and the union of the pages covers every path — naming the
+    dense path in its summary form rather than dropping it. On the
+    base revision the same file fails all eight cases, the default read
+    measuring <strong>53,565 characters</strong> against the 24,000 row; after
+    the change all eight pass.
+  </p>
+
+  <p id="the-scopes-read-narrows-to-its-path-control">
+    <strong>The control is the mutation each case must catch.</strong> Two
+    mutations were applied and reverted. With the scopes branch made to ignore
+    its <code>path</code> argument again, five of the eight cases fail — every
+    one that asks about a path, including the refusal of an outside path — and
+    the default-read cases still pass. With the paging branch made to return the
+    unchanged cursor on an empty page, the two paging cases fail and the exact
+    narrowing cases still pass. Each guard is therefore seen firing on the
+    behaviour it names rather than only passing beside it. The gate logs, the
+    base arm, the after arm and both red runs are recorded beside this node's
+    manifest.
+  </p>
+
+  <p id="the-scopes-read-narrows-to-its-path-caveat">
+    <strong>The row holds with little to spare.</strong> The served default read
+    lands at 22,879 characters against 24,000, because the page shortens itself
+    until it fits rather than to a fixed page size; a project whose owners carry
+    longer disposition prose therefore returns fewer paths per page rather than
+    a larger answer, which is the contract working, but it means the page size
+    is not a fixed number a reader should predict.
+  </p>
+</section>
