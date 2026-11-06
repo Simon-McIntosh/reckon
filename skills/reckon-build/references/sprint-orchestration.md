@@ -772,6 +772,31 @@ each node its own exclusive write scope. A node waiting on an unlanded section
 parks `awaiting-upstream`; admission releases it when that section lands, with
 no new coordinator dispatch. The queue orders only declared waits.
 
+**Read the set from the views, never from a report you join by hand.** Four
+existing views answer the whole beat, each in one bounded read:
+
+- **The ready-idle set** is the ready-set view filtered to rows with no live run
+  (`ready_idle`). Each ready row carries its `live_run`, its `coordinator` and
+  `plan_owner`, and whether it sits on the critical path; the view also names
+  the `closable` plans with their `closure_blockers`. The filter pages with the
+  view's own cursor, so the answer stays under the MCP ceiling at any project
+  size.
+- **The owners and the held paths are the directory view.**
+  `crew(view="directory", project=<project>)` carries each coordinator's
+  `ready_idle_sections` beside its `held_paths` and `queued_runs`, which is the
+  one call that says who owns a section you must name to a peer.
+- **The critical path is `roadmap(view="summary").critical_path`.** Its `links`
+  rows are in path order with the head first; each reads a `primary_state` — in
+  flight with its `run_id`, ready-idle with its `coordinator`, gated with its
+  `gate`, or waiting with its `wait` — and carries `holds` for every open gate,
+  unmet wait and open decision on that section. `head` and `head_note` name and
+  explain the first link, so an idle head is visible without opening the rows.
+- **The lane's slots are the lanes view.**
+  `crew(view="lanes", session=<session>)` carries `session_share` with
+  `worker_slots`, `live_runs` and the document's `observed_at`, `age_seconds`
+  and `stale`. A full lane is read here, not inferred from your own run count,
+  and a stale document is not sized from.
+
 Read `crew view live` for progress and use the build skill's queue edit,
 reprioritise and drop verbs to steer requests before launch. A plan whose
 `dependency_readiness` reads `closable` still needs its owner to close it or

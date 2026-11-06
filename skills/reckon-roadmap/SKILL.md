@@ -67,8 +67,8 @@ The tool returns:
 | `schedule` | Configured sprint window, ordered sprints holding open work, horizon depth, and schedule-ready/deferred counts |
 | `schedule_deferred` | Plans outside the configured sprint window, retained in roadmap order with the sprint each sits behind |
 | `immediate_roadmap` | Ready work ordered by critical-path membership, sprint order, ROI, unlocks, and remaining effort |
-| `critical_path` | Longest remaining local dependency chain weighted by effort and progress; `critical_path.sections` names its links section by section |
-| `pending_work[].implementable_sections` / `ready_sections` | Per plan, the sections declared buildable and the sections whose section waits and gates are clear; their intersection, less sections with a live run, is the ready-idle set |
+| `critical_path` | Longest remaining local dependency chain weighted by effort and progress; `critical_path.sections` names its links section by section, and `critical_path.links` gives each one its `primary_state`, its `holds`, and the run, coordinator, gate or wait that state names, with `head` and `head_note` naming and explaining the first link |
+| `pending_work[].implementable_sections` / `ready_sections` | Per plan, the sections declared buildable and the sections whose section waits and gates are clear; the ready-set view intersects them and drops the rows with a live run under its `ready_idle` filter, which is the ready-idle set |
 | `open_paths` | Alternative longest execution paths, capped by `max_paths` |
 | `cycles` | Exact local dependency cycles |
 | `wiring_findings` | Invalid, dangling, non-executable, inactive, contradictory, cyclic, sprint-order, and membership faults |
@@ -91,33 +91,37 @@ the schedule axis remains visible but does not silently impose a queue.
 A plan reads `ready` while most of its sections wait, and a ready section with
 no run leaves the lane empty unnoticed. So the plan-level answer is not the
 coordination answer. The coordination answer is section-level, joined with live
-runs and owners:
+runs and owners, and three existing views answer it. Each is one read, and the
+join is the view's own rather than one you reconstruct:
 
-1. **The ready-idle set** is each plan's `implementable_sections ∩
-   ready_sections`, less every section `crew(project, view="live")` shows a run
-   on. A plan whose `dependency_readiness` reads `closable` belongs in the set
-   too: it is owed a close, or a descope decision.
-2. **The owner** of each section is the coordinator that dispatches its plan:
-   `crew(view="directory", project=<project>)`. A plan no live coordinator holds
-   is unowned; report it as such.
-3. **The critical path, link by link.** For each entry in
-   `critical_path.sections`, state one of: in flight (run id), ready-idle
-   (owner), gated (gate id), or waiting (the ref it waits on). An idle link at
-   the head of the path is the most expensive idle work in the project.
-
-`roadmap(view="summary")` carries none of the section fields, and on a project
-with many plans `view="detail"` and `view="raw"` exceed the MCP response ceiling.
-Until the tool serves the set as one bounded view, read the lossless CLI report:
-
-```bash
-reckon roadmap --project <project> --json-output | python3 -c '
-import json,sys; d=json.load(sys.stdin)
-print("critical path:", d["critical_path"].get("sections"))
-for p in d["pending_work"]:
-    ready=set(p.get("ready_sections") or [])&set(p.get("implementable_sections") or [])
-    if ready or p.get("dependency_readiness")=="closable":
-        print(p.get("slug") or p.get("plan"), sorted(ready), p.get("dependency_readiness"))'
-```
+1. **The ready-idle set is the ready-set view, filtered to rows with no live
+   run.** Each ready row already carries its `live_run`, its `coordinator` and
+   `plan_owner`, and whether it sits on the critical path (`critical_path`); the
+   view also names the `closable` plans with their `closure_blockers`. Its
+   `ready_idle` filter keeps the rows with no live run and pages with the same
+   cursor as the unfiltered view, so a bounded read stays bounded. A plan whose
+   `dependency_readiness` reads `closable` is owed a close, or a descope
+   decision, by its owner.
+2. **The owner** of each section is the coordinator that dispatches its plan.
+   `crew(view="directory", project=<project>)` answers this set per owner: each
+   coordinator row carries `ready_idle_sections` — the ready-idle rows whose
+   plan it holds — beside its `held_paths` and its `queued_runs`. A plan no live
+   coordinator holds is unowned; report it as such.
+3. **The critical path, link by link, from the roadmap's own rows.**
+   `roadmap(view="summary")` carries `critical_path`, whose `links` rows are in
+   path order with the head first. Each link reads its `primary_state` — in
+   flight with its `run_id`, ready-idle with its `coordinator`, gated with its
+   `gate`, or waiting with its `wait` — and carries `holds`, every open gate,
+   unmet wait and open decision on that section. `critical_path.head` names the
+   first link and `head_note` says in one sentence what it is doing, so an idle
+   head reads as idle without opening the rows. An idle link at the head of the
+   path is the most expensive idle work in the project.
+4. **The lane's own numbers come from the lanes view.**
+   `crew(view="lanes", session=<session>)` carries `session_share` with the
+   session's `worker_slots` and `live_runs`, and the lane document's
+   `observed_at`, `age_seconds` and `stale`. A stale document reads as stale, so
+   do not size a dispatch from it. Neither the ready set nor the directory
+   copies these figures; the lanes view is where they are read.
 
 This readiness view describes which sections can launch now. It does not limit
 the build skill's one-beat load: that dispatch set also includes implementable
