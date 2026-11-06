@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-reexec-never-orphans-a-dispatch">
+  <meta name="plan-title" content="A Re-exec Never Orphans A Dispatch">
+  <meta name="plan-summary" content="A service that re-executes onto new code never leaves a half-launched dispatch holding a claim, and a run stuck before launch is reported, not drawn halted.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="4.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S27">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-after" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <title>A Re-exec Never Orphans A Dispatch | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-11-06">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: two reviews stuck before launch after a landing</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>nova-39 reported this on 6 November, relayed and confirmed by reckon-e0. Two review runs that the follower composed on clive, <code>r-20261106T151053449404-review-of-bank-solve-trace-head-1a40db649fa0</code> and <code>r-20261106T152717322525-review-of-bank-compact-followups-a663fcd2e239</code>, sat in phase <code>starting</code> with no pid for over 30 minutes. Their run directories held only <code>brief.md</code>, <code>claim.json</code> and <code>classification.json</code>: no <code>attempt.json</code>, <code>worker.json</code>, <code>exit.json</code> or stderr. The monitor drew them as <code>halted</code>, and neither appeared in the obligations, so the owed reviews were invisible.</p>
+    <p>Each was created about a minute after a <code>reckon/</code> landing on main: <code>458f9827f9</code> at 15:09:26Z, then the first run at 15:10:53Z; <code>0004c5f682</code> at 15:20:34Z, then the second at 15:27:17Z. The station's review sweep runs in a daemon thread (<code>reckon/crew/station.py</code> near line 64). Its code reload calls <code>os.execve</code> (near line 384), which ends every thread at once, and followers (<code>reckon/crew/follower_reload.py</code> near line 514) and the admit service (<code>reckon/crew/queue_admission.py</code> near line 876) re-exec the same way. A re-exec between a dispatch writing its claim and launching its worker leaves exactly these leftovers.</p>
+    <p>A redispatch was then refused with &ldquo;already in flight as run &hellip; pid 2082563&rdquo;. Both node dispatch claims named the station, pid 2082563 with process start time 362172960, which still matched <code>/proc</code>: the station re-execs under the same pid, and its reload tree had moved from <code>ed98a062</code> to <code>1ce850f368</code>. <code>_claim_holder_is_alive</code> (<code>reckon/crew/dispatch_claims.py</code> near line 624) reads a claim as held while its pid and start time match, so the orphaned claim stays held until the station process exits, and <code>crew discard</code> of the run did not release it. reckon-e0 released both by renaming each to <code>&lt;name&gt;.json.reclaimed-&lt;run id&gt;</code>, as <code>_reclaim_stale_node_dispatch_claim</code> (near line 674) does. Any <code>reckon/</code> landing can trigger this, so reviews composed near a landing are the ones at risk.</p>
+
+    <h2 id="s2">§2 — A re-exec never orphans an in-flight dispatch</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong></p><ul><li>A node dispatch claim records its holder's exec identity beside the pid and start time: a nonce each process draws once per exec, which a re-exec draws afresh. <code>_claim_holder_is_alive</code> reads a claim as held only while the pid, the start time and the exec identity the holder publishes all match, so a claim written before a re-exec reads as stale and is reclaimed by the existing <code>_reclaim_stale_node_dispatch_claim</code>.</li><li>The station, a follower and the admit service wait, for a bound, for a dispatch their own threads have in flight before they call <code>os.execve</code>, and log any they abandon at the bound with its run id.</li></ul>
+    <p><strong>Done when</strong> a new <code>tests/test_a_reexec_never_orphans_a_dispatch.py</code> shows three things with a temporary crew home and a stubbed exec:</p><ul><li>A claim written by a holder whose published exec identity has since changed, with pid and start time unchanged, reads as stale, and a new dispatch of the same node succeeds.</li><li>A claim whose holder's exec identity is unchanged still reads as held, as today.</li><li>A station reload with a dispatch in flight in its sweep thread waits for it before the stubbed <code>os.execve</code> runs, and one still in flight at the bound is logged with its run id.</li></ul>
+    <p>Three negative controls, one per case: comparing only pid and start time makes the first case refuse the new dispatch; ignoring the claim's identity entirely makes the second case read stale; and calling <code>os.execve</code> without waiting makes the third case exec with the dispatch in flight. The test files importing <code>reckon.crew.dispatch_claims</code> or <code>reckon.crew.station</code> add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>. Ruff adds no findings on the staged paths. Every log is under the run directory, starts with its revision and the literal command, and ends in <code>EXIT=</code>. Write paths: <code>reckon/crew/dispatch_claims.py</code>, <code>reckon/crew/station.py</code>, <code>reckon/crew/follower_reload.py</code> and the new test; the admit service's wait is named in the manifest if <code>queue_admission.py</code> is held by a peer.</p>
+
+    <h2 id="s3">§3 — A discard releases its run's dispatch claim</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>discard</code> (<code>reckon/crew/promotion.py</code> near line 1987) releases the node dispatch claim of the run it discards, through <code>_reclaim_stale_node_dispatch_claim</code>, when that claim names the discarded run. A claim naming another run is left alone.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_a_discard_releases_its_dispatch_claim.py</code> shows two things with a temporary crew home: discarding a run whose claim names it releases the claim, so a dispatch of the same node succeeds; and a discard leaves a claim naming a different run in place. Two negative controls: skipping the release makes the first case refuse the dispatch; and releasing any claim for the node makes the second case lose the other run's claim. The test files importing <code>reckon.crew.promotion</code> add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>. Ruff adds no findings on the staged paths. Write paths: <code>reckon/crew/promotion.py</code> and the new test.</p>
+
+    <h2 id="s4">§4 — A run stuck before launch is reported as a launch failure</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> A live pointer in phase <code>starting</code> with no pid, older than a bound the flight config names, is a launch failure. The obligations list it under its own kind with the command that redispatches it, and the monitor draws it <code>launch-failed</code> rather than <code>halted</code> (<code>reckon/crew/ticker.py</code>, whose phase colours are near lines 193&ndash;205).</p>
+    <p><strong>Done when</strong> a new <code>tests/test_a_run_stuck_before_launch_is_reported.py</code> shows three things with a temporary crew home: a pointer <code>starting</code> with no pid past the bound appears in the obligations as a launch failure carrying a redispatch command; the same pointer within the bound does not; and the ticker draws the first as <code>launch-failed</code>. Two negative controls: dropping the classification leaves the first case absent from the obligations; and drawing every pid-less pointer as <code>halted</code> fails the third case. The test files importing <code>reckon.crew.obligations</code> or <code>reckon.crew.ticker</code> add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>. Ruff adds no findings on the staged paths. Write paths: <code>reckon/crew/obligations.py</code>, <code>reckon/crew/ticker.py</code> and the new test.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-arnoad-001" data-status="open" data-written-by="coordinator" data-written-at="2026-11-06" data-recommends-skill="/reckon-build a-reexec-never-orphans-a-dispatch §2">
+<h3>Build §2, then §3 and §4</h3>
+<div class="r-fu-body"><p>§2 closes the orphaned claim at its cause; §3 and §4 make the remaining cases visible and recoverable. §3 and §4 share no write path with §2 and can run beside it.</p></div>
+<pre class="r-fu-prompt">/reckon-build a-reexec-never-orphans-a-dispatch §2</pre>
+</article>
+    </section>
+    <section data-reckon="comments" id="comments" class="r-comments">
+<h2><span class="sec">§</span> Comments</h2>
+    </section>
+</main>
+</body>
+</html>
