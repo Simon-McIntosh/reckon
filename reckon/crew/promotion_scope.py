@@ -1746,7 +1746,9 @@ def _plan_comment_store_path(
     return [plan_file]
 
 
-def _restore_landing_writes(checkout: Path, paths: Sequence[Path]) -> dict[str, bool]:
+def _restore_landing_writes(
+    checkout: Path, paths: Sequence[Path], *, run_id: str | None = None
+) -> dict[str, bool]:
     """Best-effort reversal of a refused landing's uncommitted store writes.
 
     Each path promotion wrote returns to its committed state: tracked paths
@@ -1755,16 +1757,24 @@ def _restore_landing_writes(checkout: Path, paths: Sequence[Path]) -> dict[str, 
     working tree. Recovery is best-effort because the refusal that triggers it
     (a stuck index or other git failure) can itself block these git calls.
 
-    A refused whole-path restore is an index-write failure, and the same lock
-    that refused the landing is usually what refused it, so the fallback
-    settles each path without the index: a path HEAD carries is rewritten in
-    the working tree from HEAD's blob, read through plumbing that takes no
-    index lock, and a path HEAD never carried is dropped from the index and
-    unlinked once the entry is gone. A path the fallback cannot restore — the
-    index already stages a change at it, or git cannot read its blob or write
-    its file — keeps its landing write and is named in the refusal, so a
-    caller sees which file to restore before re-promoting. What a refusal
-    never leaves behind is a staged entry the run's own commit did not cover.
+    The whole-path restore writes the index, so it runs through
+    :func:`reckon.crew.merge._run_waiting_out_a_held_index_lock` under the
+    staging bound: a lock a peer releases in a moment is waited out, and the
+    landing write is unstaged and its tracked content restored rather than
+    abandoned to the lock. Only a lock that outlasts the bound reaches the
+    index-free fallback, which settles each path without taking the lock: a
+    path HEAD carries is rewritten in the working tree from HEAD's blob, read
+    through plumbing that takes no index lock, and a path HEAD never carried is
+    dropped from the index and unlinked once the entry is gone. A path the
+    fallback cannot restore — the index still stages a change at it, or git
+    cannot read its blob or write its file — keeps its landing write and is
+    named in the refusal, so a caller sees which file to restore before
+    re-promoting. What a refusal never leaves behind is a staged entry the
+    run's own commit did not cover.
+
+    ``run_id`` lets each retry be appended to the run's landing record, so a
+    restore that waited says how often; without it the restore still waits,
+    which is what keeps this call correct for a caller that keeps no record.
 
     The result is a per-path report keyed by the path as written: True for a
     path that no longer carries the landing write — restored from HEAD, or
@@ -1773,18 +1783,38 @@ def _restore_landing_writes(checkout: Path, paths: Sequence[Path]) -> dict[str, 
     this to tell a row that survived the rollback from one the rollback
     reverted.
     """
+
+    def record_retry(attempt: int, result: subprocess.CompletedProcess) -> None:
+        if run_id is None:
+            return
+        _append_landing_record(
+            run_id,
+            {
+                "time": _utc_now(),
+                "step": "restore_retry",
+                "attempt": attempt,
+                "message": result.stderr.strip() or result.stdout.strip(),
+            },
+        )
+
     report: dict[str, bool] = {}
     for path in paths:
         target = str(path)
-        restored = _git(
+        restored, _retries = _run_waiting_out_a_held_index_lock(
             checkout,
-            "restore",
-            "--source=HEAD",
-            "--staged",
-            "--worktree",
-            "--",
-            target,
-            check=False,
+            lambda _attempt: _git(
+                checkout,
+                "restore",
+                "--source=HEAD",
+                "--staged",
+                "--worktree",
+                "--",
+                target,
+                check=False,
+            ),
+            attempts=_INDEX_LOCK_RETRY_ATTEMPTS,
+            retry_seconds=_INDEX_LOCK_RETRY_INTERVAL_SECONDS,
+            on_retry=record_retry,
         )
         if restored.returncode == 0:
             report[target] = True
@@ -2338,7 +2368,12 @@ def _commit_landing_writes(
     Staging waits out a briefly held index lock: a ``git add`` that fails while
     the checkout holds its ``index.lock`` is retried for a bounded number of
     attempts and each retry is recorded, so a lock a peer releases in seconds no
-    longer turns a completed promotion into a failed verb.
+    longer turns a completed promotion into a failed verb. The commit and the
+    rollback a failed commit runs share that bound: a lock that frees while the
+    commit is retrying lets the landing commit, and one that frees while the
+    rollback is retrying lets the rollback unstage the forward writes, so a
+    briefly held lock no longer leaves a half-landed plan staged in the shared
+    index.
 
     Two checks bracket the commit. Before staging, the shared index is read for
     paths already staged in reverse of an earlier landing; they are reported
@@ -2359,7 +2394,7 @@ def _commit_landing_writes(
     staged = _stage_landing_writes(run_id, checkout, targets)
     if staged.returncode != 0:
         head = _head_revision(checkout)
-        rollback = _restore_landing_writes(checkout, targets)
+        rollback = _restore_landing_writes(checkout, targets, run_id=run_id)
         if store_row_written:
             _discard_run_store_row(run_id)
         _record_landing_refusal(
@@ -2402,21 +2437,41 @@ def _commit_landing_writes(
             },
         }
     head_before = _head_revision(checkout)
-    committed = _git(
+
+    def record_commit_retry(
+        attempt: int, result: subprocess.CompletedProcess
+    ) -> None:
+        _append_landing_record(
+            run_id,
+            {
+                "time": _utc_now(),
+                "step": "commit_retry",
+                "attempt": attempt,
+                "message": result.stderr.strip() or result.stdout.strip(),
+            },
+        )
+
+    committed, _retries = _run_waiting_out_a_held_index_lock(
         checkout,
-        "commit",
-        "--only",
-        "-m",
-        subject,
-        "-m",
-        body,
-        "--",
-        *(str(p) for p in targets),
-        check=False,
+        lambda _attempt: _git(
+            checkout,
+            "commit",
+            "--only",
+            "-m",
+            subject,
+            "-m",
+            body,
+            "--",
+            *(str(p) for p in targets),
+            check=False,
+        ),
+        attempts=_INDEX_LOCK_RETRY_ATTEMPTS,
+        retry_seconds=_INDEX_LOCK_RETRY_INTERVAL_SECONDS,
+        on_retry=record_commit_retry,
     )
     if committed.returncode != 0:
         head = _head_revision(checkout)
-        rollback = _restore_landing_writes(checkout, targets)
+        rollback = _restore_landing_writes(checkout, targets, run_id=run_id)
         if store_row_written:
             _discard_run_store_row(run_id)
         _record_landing_refusal(
