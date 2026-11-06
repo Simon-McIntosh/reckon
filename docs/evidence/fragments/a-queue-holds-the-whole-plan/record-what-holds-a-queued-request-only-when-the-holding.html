@@ -1,0 +1,30 @@
+<section id="record-what-holds-a-queued-request-only-when-the-holding-landing">
+  <h2>A queued request keeps its current holding reason</h2>
+  <p>The admission pass now records the hold it acted on in the queued
+  pointer's <code>pass_hold</code> and <code>reason</code>. A live claim uses the
+  freshly read holder pointer, so the record names its run, session, phase and
+  path. A launch refusal on a scope conflict or unreconciled runs keeps the
+  named cause through a later retry backoff while those runs remain live. A
+  repeated reading does not rewrite the pointer or renew
+  <code>recorded_at</code>; a changed reading replaces it once.</p>
+  <p>The obligations view reads that pointer record. A terminal holder raises
+  one duty on its own session naming the waiting request and its promotion
+  command. Once that session has been unattended for six hours, the waiting
+  session also receives the duty. The refreshed claim snapshot is shared by
+  the claim decision and its record, so a second pointer read cannot race
+  with a promotion.</p>
+  <p>The recorded defect reproduced at the starting revision
+  <code>8e08dbdafd</code>: the five new section cases failed, including
+  <code>AttributeError: module 'reckon.crew.queue_admission' has no attribute
+  'recorded_pass_hold'</code>. At the committed head
+  <code>9623b11c5c</code>, the focused suite passed 12 tests. The declared
+  mutation removed the unchanged-reason early return and failed six queue
+  tests, including both byte-identity cases; one test passed. Ruff check and
+  format check passed on all four source and test paths.</p>
+  <p>The direct-importer comparison ran 83 test files at the starting revision
+  and 84 at the head. The base arm had 7 failed and 726 passed; the head arm
+  had 6 failed and 733 passed. Every head failure ID also failed at base, so
+  this change added zero failures. The base-only failure is an observed
+  difference, not evidence that this change repaired that test. The run
+  manifest names the complete logs and their commands.</p>
+</section>
