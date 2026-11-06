@@ -35,6 +35,7 @@ falls back to the configured floor.
 
 from __future__ import annotations
 
+import ast
 import contextlib
 import os
 import re
@@ -221,6 +222,8 @@ def importer_population(changed: Iterable[str], tree: Path) -> tuple[str, ...]:
     population is returned sorted and repository-relative so two measurements
     of one tree name the same files in the same order.
     """
+    from reckon.served_code import _edges
+
     modules = {
         name
         for name in (_module_name(str(path)) for path in changed)
@@ -232,31 +235,23 @@ def importer_population(changed: Iterable[str], tree: Path) -> tuple[str, ...]:
     if not tests_root.is_dir():
         return ()
     population: list[str] = []
+    known = frozenset(modules)
     for path in sorted(tests_root.rglob("test_*.py")):
-        text = ""
+        relative = path.relative_to(tree).as_posix()
         try:
             text = path.read_text(encoding="utf-8", errors="replace")
-        except OSError:
+            parsed = ast.parse(text, filename=relative)
+        except (OSError, SyntaxError):
+            # Let pytest report an unreadable caller instead of treating it as
+            # proof that the file imports none of the changed modules.
+            population.append(relative)
             continue
-        if any(_imports_module(text, module) for module in modules):
-            population.append(path.relative_to(tree).as_posix())
+        imports = _edges(parsed, _module_name(relative), False, known)
+        # A qualified name in a string can name an indirect import. Retain
+        # those callers alongside the syntax tree's resolved import edges.
+        if imports or any(module in text for module in modules):
+            population.append(relative)
     return tuple(population)
-
-
-def _imports_module(text: str, module: str) -> bool:
-    """Whether a file's text imports ``module``, by dotted name or by leaf."""
-    if module in text:
-        return True
-    leaf = module.rsplit(".", 1)[-1]
-    return any(
-        pattern in text
-        for pattern in (
-            f"import {leaf}\n",
-            f"import {leaf},",
-            f"import {leaf} ",
-            f"from {module}",
-        )
-    )
 
 
 def _target_name(token: str) -> str:

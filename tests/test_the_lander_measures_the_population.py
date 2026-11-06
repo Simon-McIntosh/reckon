@@ -412,3 +412,43 @@ def test_delivery_paths_preserves_git_path_boundaries(delivery):
     head = _commit(delivery["worker"], path, "VALUE = 1\n")
     paths = landing_measure.delivered_paths(delivery["repo"], delivery["head"], head)
     assert paths == [path]
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "from reckon.crew import runs, queue_landing\n",
+        "from reckon.crew import (\n    runs,\n    queue_landing,\n)\n",
+        "from reckon.crew import queue_landing as landing\n",
+        "import reckon.crew.queue_landing as landing\n",
+        'import importlib\nmodule = importlib.import_module("reckon.crew.queue_landing")\n',
+    ],
+)
+def test_importer_discovery_reads_import_lists(tmp_path, source):
+    tests = tmp_path / "tests"
+    tests.mkdir()
+    (tests / "test_consumer.py").write_text(source)
+    assert landing_measure.importer_population(
+        ["reckon/crew/queue_landing.py"], tmp_path
+    ) == ("tests/test_consumer.py",)
+
+
+def test_importer_discovery_distinguishes_the_owning_package(tmp_path):
+    tests = tmp_path / "tests"
+    tests.mkdir()
+    (tests / "test_consumer.py").write_text("from reckon.crew import queue_landing\n")
+    (tests / "test_unrelated.py").write_text("from unrelated import queue_landing\n")
+    assert landing_measure.importer_population(
+        ["reckon/crew/queue_landing.py"], tmp_path
+    ) == ("tests/test_consumer.py",)
+
+
+def test_an_unparseable_importer_is_measured_instead_of_discarded(tmp_path):
+    tests = tmp_path / "tests"
+    tests.mkdir()
+    (tests / "test_consumer.py").write_text(
+        "from reckon.crew import (\n queue_landing,\n"
+    )
+    assert landing_measure.importer_population(
+        ["reckon/crew/queue_landing.py"], tmp_path
+    ) == ("tests/test_consumer.py",)
