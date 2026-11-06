@@ -1,7 +1,10 @@
 # ruff: noqa: I001, UP035
 from __future__ import annotations
 
+import hashlib
 import os
+import time
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
@@ -22,6 +25,63 @@ from reckon.crew.runs import (
     list_live,
     read_pointer,
 )
+
+
+REPAIR_ADVICE_HOLD_SECONDS = 60
+REPAIR_ADVICE_HOLD_FIELD = "repair_advice_hold"
+
+
+def _dimension_floors(project: str, config: Mapping[str, Any] | None) -> dict[str, int]:
+    """Resolve declared floors without blocking a review when config is unreadable."""
+    from reckon.crew import review_dispositions
+
+    try:
+        resolved = _resolved_review_config(project, config) if project else config
+    except (CrewError, OSError, ValueError):
+        return {}
+    return review_dispositions.declared_dimension_floors(resolved)
+
+
+def _coordinator_advice_window(
+    run_id: str, round_id: str, *, hold: bool
+) -> tuple[bool, str, str, float]:
+    """Leave one bounded, durable opportunity to add advice before a resume.
+
+    The path is returned in the hold report. A coordinator may write advice to
+    it during the window; the next sweep reads it after the deadline. A retry
+    reads the same file without opening another window.
+    """
+    digest = hashlib.sha256(round_id.encode("utf-8")).hexdigest()[:16]
+    path = runs.run_dir(run_id) / f"repair-advice-{digest}.txt"
+    if not hold:
+        return (
+            False,
+            path.read_text(encoding="utf-8").strip() if path.exists() else "",
+            str(path),
+            0.0,
+        )
+    now = time.time()
+
+    def start(pointer: dict[str, Any]) -> dict[str, Any]:
+        previous = pointer.get(REPAIR_ADVICE_HOLD_FIELD)
+        if not isinstance(previous, Mapping) or previous.get("round_id") != round_id:
+            pointer[REPAIR_ADVICE_HOLD_FIELD] = {
+                "round_id": round_id,
+                "until": now + REPAIR_ADVICE_HOLD_SECONDS,
+                "advice_path": str(path),
+            }
+        return pointer
+
+    current = read_pointer(run_id) or {}
+    window = current.get(REPAIR_ADVICE_HOLD_FIELD)
+    if not isinstance(window, Mapping) or window.get("round_id") != round_id:
+        current = _mutate_pointer(run_id, start)
+        window = current[REPAIR_ADVICE_HOLD_FIELD]
+    until = float(window["until"])
+    if now < until:
+        return True, "", str(path), until
+    advice = path.read_text(encoding="utf-8").strip() if path.exists() else ""
+    return False, advice, str(path), until
 
 
 def _is_repair_node(record: Mapping[str, Any]) -> bool:
@@ -366,6 +426,7 @@ def _record_repair_dispatch(
     backend: str = "",
     node_id: str = "",
     open_findings: Sequence[Mapping[str, Any]] | None = None,
+    dimensions: Sequence[str] = (),
 ) -> int:
     """Write the reflex's repair outcome onto the reviewed run it acted for.
 
@@ -402,7 +463,10 @@ def _record_repair_dispatch(
         # pointer did not last carry starts at one, so a run whose earlier round
         # recorded attempts does not make its next round begin part-way exhausted.
         same_round = str(prior.get("round_id") or "") == str(round_id or "")
-        attempt = int(prior.get("attempt") or 0) + 1 if same_round else 1
+        prior_opened = str(prior.get("status") or "") in REPAIR_ROUND_OPENING_STATUSES
+        attempt = (
+            int(prior.get("attempt") or 0) + 1 if same_round and prior_opened else 1
+        )
         written["attempt"] = attempt
         if status in REPAIR_ROUND_OPENING_STATUSES and round_id:
             existing = pointer.get(REPAIR_ROUNDS_FIELD)
@@ -422,6 +486,8 @@ def _record_repair_dispatch(
             "at": _utc_now(),
             "attempt": attempt,
         }
+        if dimensions:
+            pointer[REPAIR_DISPATCH_FIELD]["dimensions"] = list(dimensions)
         if open_findings is not None:
             pointer[REPAIR_DISPATCH_FIELD]["open_findings"] = [
                 dict(row) for row in open_findings
@@ -548,8 +614,10 @@ def _repair_resume_advice(
     parts = [
         _repair_round_token(round_id),
         "",
-        f"An independent review of this run found {len(findings)} blocking "
-        f"finding(s) ({ids}). Answer each in this run.",
+        (
+            f"An independent review of this run found {len(findings)} blocking "
+            f"finding(s) ({ids}). Answer each in this run."
+        ),
         "",
         str(composed.get("brief") or ""),
         "",
@@ -585,7 +653,12 @@ def _repair_resume_advice(
 
 
 def _fold_findings_into_round(
-    project: str, run_id: str, *, head: str, node_id: str
+    project: str,
+    run_id: str,
+    *,
+    head: str,
+    node_id: str,
+    dimensions: Sequence[str] = (),
 ) -> list[int]:
     """Record each open blocking finding of the round as folded into it.
 
@@ -634,6 +707,19 @@ def _fold_findings_into_round(
                 continue
             if rubric is None:
                 folded.append(index)
+        if rubric is None:
+            for dimension in dimensions:
+                try:
+                    review_dispositions_module.record_dimension_disposition(
+                        project,
+                        run_id,
+                        dimension,
+                        kind="folded",
+                        node=node_id,
+                        reviewed_head_sha=head,
+                    )
+                except (OSError, ValueError):
+                    continue
     return folded
 
 
@@ -667,7 +753,14 @@ def _fold_a_landed_round(
         return []
     if review_module.read_review(project, run_id, reviewed_head_sha=head) is None:
         return []
-    return _fold_findings_into_round(project, run_id, head=head, node_id=node_id)
+    dimensions = recorded.get("dimensions")
+    return _fold_findings_into_round(
+        project,
+        run_id,
+        head=head,
+        node_id=node_id,
+        dimensions=dimensions if isinstance(dimensions, list) else (),
+    )
 
 
 def _promoted_run_ids(project: str) -> set[str]:
@@ -952,7 +1045,9 @@ def dispatch_repair_for_run(
     # finding: the round is never composed and the figure defect waits for a
     # coordinator, which is what the merge exists to prevent.
     review = repair_module.review_with_figure(review)
-    findings = repair_module.review_findings(review)
+    floors = _dimension_floors(project, config)
+    dimension_findings = repair_module.sub_floor_repair_findings(review, floors)
+    findings = [*repair_module.review_findings(review), *dimension_findings]
     if not findings:
         return {
             "run_id": run_id,
@@ -1060,6 +1155,7 @@ def dispatch_repair_for_run(
         run_record=record,
         suite_command=inherited_suite,
         diff=review_diff,
+        dimension_floors=floors,
     )
     if composed is None:
         # The composer returns None for a finding-bearing record in two cases,
@@ -1074,7 +1170,7 @@ def dispatch_repair_for_run(
         # as the round's outcome. Otherwise the record the composer re-read
         # differs from the one selected here, and the round is left for a
         # coordinator rather than dispatched from a stale parse.
-        if not repair_module.blocking_findings(review):
+        if not repair_module.blocking_findings(review) and not dimension_findings:
             non_blocking = repair_module.non_blocking_findings(review)
             unmarked = repair_module.unmarked_findings(review)
             disposed = [
@@ -1115,7 +1211,7 @@ def dispatch_repair_for_run(
     node_id = str(composed["node_id"])
     round_id = str(composed["round_id"])
     run_fence = repair_module._run_fence(record)
-    blocking = repair_module.blocking_findings(review)
+    blocking = [*repair_module.blocking_findings(review), *dimension_findings]
     # The round is decline-only when no *blocking finding cites a repairable
     # path. The decision must read the blocking findings, the same population the
     # scope is composed from: reading every finding let a non-blocking finding
@@ -1127,7 +1223,7 @@ def dispatch_repair_for_run(
     # own files appear, and they are read here. A path inside the run's own fence
     # is repairable whatever its spelling, so an in-fence figure or evidence
     # finding is not mistaken for the fleet's own record.
-    if not _repairable_scope(
+    if not dimension_findings and not _repairable_scope(
         (str(finding.get("file") or "") for finding in blocking), fence=run_fence
     ):
         reason = _decline_only_reason(
@@ -1254,7 +1350,12 @@ def dispatch_repair_for_run(
         same_round = isinstance(recorded, Mapping) and str(
             recorded.get("round_id") or ""
         ) == str(round_id or "")
-        prior = int((recorded or {}).get("attempt") or 0) if same_round else 0
+        opened = (
+            str((recorded or {}).get("status") or "") in REPAIR_ROUND_OPENING_STATUSES
+        )
+        prior = (
+            int((recorded or {}).get("attempt") or 0) if same_round and opened else 0
+        )
         if (
             same_round
             and prior >= 1
@@ -1309,8 +1410,52 @@ def dispatch_repair_for_run(
                 "reason": reason,
             }
 
+        # A review the reflex dispatched carries its dispatch record on the
+        # run. A direct repair call has no review-dispatch transition to hold
+        # after, so it continues without opening a coordinator window.
+        review_dispatched = bool(
+            durable.get(REVIEW_DISPATCH_FIELD)
+            or durable.get(FIGURE_REVIEW_DISPATCH_FIELD)
+        )
+        pending, coordinator_advice, advice_path, hold_until = (
+            _coordinator_advice_window(
+                run_id,
+                round_id,
+                hold=prior == 0 and review_dispatched,
+            )
+        )
+        if pending:
+            recorded_hold = (read_pointer(run_id) or {}).get(REPAIR_DISPATCH_FIELD)
+            if not (
+                isinstance(recorded_hold, Mapping)
+                and recorded_hold.get("status") == "advice-hold"
+                and recorded_hold.get("round_id") == round_id
+            ):
+                deadline = datetime.fromtimestamp(hold_until, UTC).isoformat()
+                _record_repair_dispatch(
+                    run_id,
+                    status="advice-hold",
+                    reason=f"coordinator may add advice at {advice_path} until {deadline}",
+                    round_id=round_id,
+                    node_id=node_id,
+                )
+            return {
+                "run_id": run_id,
+                "dispatched": False,
+                "awaiting_coordinator": True,
+                "round_id": round_id,
+                "advice_path": advice_path,
+                "hold_until": hold_until,
+                "reason": "repair is held for coordinator advice before resume",
+            }
         scope, granted, conflicts = _grant_round_scope(run_id, scope, blocking)
         advice = _repair_resume_advice(composed, scope, round_id, conflicts=conflicts)
+        if coordinator_advice:
+            advice += (
+                "\nCoordinator advice added during the repair hold:\n"
+                + coordinator_advice
+                + "\n"
+            )
         try:
             resumed = resumption_module._resume(
                 run_id, record, config=config, launcher=launcher, advice=advice
@@ -1359,6 +1504,10 @@ def dispatch_repair_for_run(
             reason="the reviewed run was resumed with the composed findings as advice",
             round_id=round_id,
             node_id=node_id,
+            dimensions=[
+                finding["id"].removeprefix("dimension-")
+                for finding in dimension_findings
+            ],
         )
         return {
             "run_id": run_id,
@@ -1458,6 +1607,7 @@ from .recovery_liveness import (  # noqa: E402
 )
 from .recovery_review_dispatch import (  # noqa: E402
     AUTOMATIC_REPAIR_ROUND_LIMIT,
+    FIGURE_REVIEW_DISPATCH_FIELD,
     REPAIR_ADVICE_SCOPE_LINE,
     REPAIR_DISPATCH_FIELD,
     REPAIR_ESCALATED_STATUS,
@@ -1466,6 +1616,7 @@ from .recovery_review_dispatch import (  # noqa: E402
     REPAIR_ROUND_OPENING_STATUSES,
     REPAIR_ROUND_TOKEN_LINE,
     REPAIR_SOURCE_ROLE,
+    REVIEW_DISPATCH_FIELD,
     _diff_between,
     _no_lane_reason,
     _repair_round_token,

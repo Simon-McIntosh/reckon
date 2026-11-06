@@ -240,6 +240,32 @@ def blocking_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
     ]
 
 
+def sub_floor_repair_findings(
+    review: Mapping[str, Any], floors: Mapping[str, Any]
+) -> list[dict[str, str]]:
+    """Turn unanswered dimension floors into work in the same review round.
+
+    A dimension has no source location of its own. The reviewed run's granted
+    scope supplies the files, while the dimension and its measured floor give
+    the worker a stable claim to answer.
+    """
+    from reckon.crew import review_dispositions
+
+    return [
+        {
+            "id": f"dimension-{row['dimension']}",
+            "file": "",
+            "line": "",
+            "text": (
+                f"{row['dimension']} scored {row['score']} below its declared "
+                f"floor {row['floor']}"
+            ),
+            "severity": "blocking",
+        }
+        for row in review_dispositions.sub_floor_dimensions(review, floors)
+    ]
+
+
 def blocking_finding_dispositions(
     review: Mapping[str, Any],
 ) -> list[tuple[int, dict[str, Any], str]]:
@@ -596,6 +622,7 @@ def compose_repair_node(
     suite_command: str = "",
     diff: str = "",
     answers: Sequence[Mapping[str, Any]] = (),
+    dimension_floors: Mapping[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     """Compose the single repair node a finding-bearing review round produces.
 
@@ -617,7 +644,10 @@ def compose_repair_node(
     measured with. An unarmed reviewed run passes no command, and the composed
     node names neither arm.
     """
-    findings = blocking_findings(review)
+    findings = [
+        *blocking_findings(review),
+        *sub_floor_repair_findings(review, dimension_floors or {}),
+    ]
     if not findings:
         return None
     unmarked = unmarked_findings(review)
