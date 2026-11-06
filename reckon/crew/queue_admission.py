@@ -1411,7 +1411,9 @@ def _stamp_failure(
     return record
 
 
-def _requeue_admitted_failures(live: list[dict[str, Any]]) -> list[str]:
+def _requeue_admitted_failures(
+    live: list[dict[str, Any]], *, verdicts: list[dict[str, Any]] | None = None
+) -> list[str]:
     """Re-queue runs this drainer launched that the reaper marked launch-failed.
 
     The admission pass stamps every run it launches with the request it
@@ -1442,13 +1444,57 @@ def _requeue_admitted_failures(live: list[dict[str, Any]]) -> list[str]:
             moment=_now(),
             guard=_dependency_guard(restored, None),
         )
-        _write_pointer(str(pointer["run_id"]), restored)
+        try:
+            _write_pointer(str(pointer["run_id"]), restored)
+        except _PointerWritebackError as exc:
+            if verdicts is not None:
+                verdicts.append(
+                    _verdict_row(
+                        pointer,
+                        allowance=None,
+                        allowance_source="",
+                        verdict="refused",
+                        detail=str(exc),
+                    )
+                )
+            continue
         requeued.append(str(pointer["run_id"]))
     return requeued
 
 
+class _PointerWritebackError(CrewError):
+    """An admission snapshot no longer names a live, unpromoted request."""
+
+
+def _require_live_writeback(snapshot: Mapping[str, Any]) -> None:
+    """Refuse a departed request while the caller holds its pointer lock.
+
+    Promotion records the run before removing its pointer, so its ledger record
+    takes precedence over pointer presence. Both readings and the write share
+    the same lock as promotion and discard.
+    """
+    run_id = str(snapshot["run_id"])
+    project = str(snapshot.get("project") or "")
+    repo = str(snapshot.get("repo") or "")
+    promoted = runs._promoted_record_project(
+        run_id,
+        project or None,
+        roots={project: Path(repo)} if project and repo else None,
+    )
+    if promoted:
+        raise _PointerWritebackError(
+            f"queue writeback refused: promotion of {run_id!r} is recorded in {promoted!r}"
+        )
+    if not runs.pointer_path(run_id).is_file():
+        raise _PointerWritebackError(
+            f"queue writeback refused: live pointer for {run_id!r} was removed"
+        )
+
+
 def _write_pointer(run_id: str, record: dict[str, Any]) -> None:
-    runs._write_json(runs.pointer_path(run_id), record)
+    with runs._pointer_lock(run_id):
+        _require_live_writeback(record)
+        runs._write_json(runs.pointer_path(run_id), record)
 
 
 def _discarded_since(snapshot: Mapping[str, Any]) -> bool:
@@ -1476,11 +1522,9 @@ def _restore_queued(
 ) -> None:
     """Write a launched request back as one queued pointer carrying the failure.
 
-    The restored pointer carries the same bounded back-off a failure annotated
-    in place would: a request whose release already withdrew it is retried once
-    per back-off, not on every pass. A request discarded during the pass is not
-    written back at all: the discard stood, so the restore reads its record and
-    leaves the absence the operator asked for.
+    The restored pointer carries the same bounded back-off as a failure
+    annotated in place. A discarded, promoted or removed request is never
+    restored; the write checks departure under the pointer lock.
     """
     if _discarded_since(snapshot):
         return
@@ -1512,13 +1556,18 @@ def _record_queued_failure(
     failed_at = moment or _now()
 
     def annotate(current: dict[str, Any]) -> dict[str, Any]:
+        _require_live_writeback(snapshot)
         return _stamp_failure(current, failure, moment=failed_at, guard=guard)
 
     try:
         runs._mutate_pointer(original_run_id, annotate)
+    except _PointerWritebackError as exc:
+        return original_run_id, str(exc)
     except Exception as annotate_error:  # noqa: BLE001 - a failed write needs restoration
         try:
             _restore_queued(snapshot, failure, moment=failed_at, guard=guard)
+        except _PointerWritebackError as exc:
+            return original_run_id, str(exc)
         except Exception as restore_error:  # noqa: BLE001 - report storage failure to the pass
             annotation = f"annotation {type(annotate_error).__name__}: {annotate_error}"
             restoration = f"restore {type(restore_error).__name__}: {restore_error}"
@@ -4161,7 +4210,7 @@ def admit_once(
         review_read_pass(),
     ):
         result["requeued"] = _requeue_admitted_failures(
-            runs.list_live(phase=LAUNCH_FAILED_PHASE)
+            runs.list_live(phase=LAUNCH_FAILED_PHASE), verdicts=result["verdicts"]
         )
         live = runs.list_live()
         # Readiness is re-read here, on every pass: a request waiting on its
@@ -4512,7 +4561,11 @@ def admit_once(
                 # The launch outcome is settled here: either the run's own
                 # pointer names the node, or the request has been written back.
                 runs.clear_handover(pointer)
-            if record is None and competence_refusal is not None:
+            if (
+                record is None
+                and competence_refusal is not None
+                and restore_error is None
+            ):
                 route = _route_competence_refusal(
                     pointer,
                     competence_refusal,
@@ -4551,7 +4604,7 @@ def admit_once(
                         {"run_id": reported_id, "detail": str(route["obligation"])}
                     )
             if record is None:
-                if first_report and not hold_only:
+                if first_report and not hold_only and restore_error is None:
                     _report_queued_failure(pointer)
                 key = (
                     "held"
@@ -4579,6 +4632,7 @@ def admit_once(
                             allowance_source=allowance_source,
                             verdict="refused",
                             failure=failure,
+                            detail=restore_error or "",
                         )
                     )
                 result[key].append(reported_id)
@@ -4611,6 +4665,7 @@ def admit_once(
             for row in result["verdicts"]
             if str(row.get("verdict") or "") in HOLD_VERDICTS
         }
+        held_this_pass.update(result.get("restore_failure_detail", {}))
         result["stalls"] = _record_stalls(
             order,
             moment=moment,
