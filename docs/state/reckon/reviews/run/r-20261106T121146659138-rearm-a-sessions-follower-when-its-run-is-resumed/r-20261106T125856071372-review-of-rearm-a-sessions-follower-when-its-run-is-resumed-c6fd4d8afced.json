@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2313",
+    "reckon/crew/recovery_repair_dispatch.py:1460",
+    "reckon/mcp.py:3093",
+    "reckon/crew/resumption.py:2092",
+    "reckon/crew_follow_commands.py:607",
+    "reckon/crew/dispatch_plan.py:1281",
+    "reckon/crew/dispatch.py:403",
+    "reckon/crew/dispatch.py:398"
+  ],
+  "completed_at": "2026-11-06T13:16:58.425Z",
+  "dispatched_at": "2026-11-06T13:06:35Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_watch.py",
+      "line": "739",
+      "severity": "non-blocking",
+      "text": "`_rearm_session_follower` is a near-verbatim twin of `_ask_session_host_for_follower` at the same file's line 732 -- same `_request_host_follower` guard, same WATCHER_LOAD_BOUND_SECONDS deadline, same 0.1 s poll -- so the capability \"ask this session's host and wait, bounded\" now has two bodies that will drift; a single helper taking the answer predicate would carry both callers, and the plan named the existing function as the mechanism this section routes through."
+    },
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": "1504",
+      "severity": "non-blocking",
+      "text": "the re-arm names the run's session (`record[\"session\"]`) while `_request_host_follower` and `_session_host_child_pid` resolve the FIFO and census from the calling Claude process (`_session_host_owner` at reckon/crew/dispatch_watch.py:582), so a resume issued from a session other than the run's dispatcher writes a request for another session's pair to its own host, which spawns a follower writing into the caller's pane and returns follower_rearmed True while the resumed run's own session stays unfollowed."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read both commits against 97c71c15d6; b1458852ce adds _session_host_child_pid and _rearm_session_follower and delegates _session_host_runs_follower to the new reader in dispatch_watch.py, calls the re-arm from resumption._resume, and surfaces follower_rearmed in crew_run_commands.py:2355; c6fd4d8afc adds only the 75-line evidence fragment.",
+    "done_when": "the done_when names tests/test_a_resume_rearms_its_follower.py and its two cases with a temporary crew home and a stubbed host, two negative controls, and a base-vs-head arm over the session_host/resumption importers; logs/armed-suite/base.log is `2 failed ... EXIT=1` at 97c71c15d6 and logs/armed-suite/head.log is `2 passed ... EXIT=0` at b1458852ce, and both controls in logs/negative-control/ end EXIT=1 with the named case failing.",
+    "goal": "the node goal is \"Re-arm a session's follower when its run is resumed\"; reckon/crew/resumption.py:1502-1507 sends the dispatch's host request after the launch is recorded and returns follower_rearmed, so a resume re-arms the pair.",
+    "manifest": "read; it records status complete, the literal pytest command, both arms (2 failed at base, 2 passed at head), the two covered failure attrs with their logs, and the import-coverage arms (base 217 passed + 1 pre-existing failure, head 218 passed EXIT=0).",
+    "write_paths": "read the reviewed prompt's fence; the five changed paths (reckon/crew/dispatch_watch.py, reckon/crew/resumption.py, reckon/crew_run_commands.py, tests/test_a_resume_rearms_its_follower.py, docs/evidence/fragments/.../rearm-a-sessions-follower-when-its-run-is-resumed.html) all sit inside it, and reckon/crew/session_host.py was in scope and deliberately left untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_resume_rearms_its_follower.py:388-398 asserts follower_rearmed against a pid the stub host spawned itself, and the file reddens at the base revision and under both declared mutations, so no assertion is a tautology on the value it was handed.",
+    "evidence": "logs/armed-suite/base.log and head.log both carry revision, tree, command, cwd and the imported resumption.py and end in EXIT=, and both negative controls are red at EXIT=1, but the done_when's \"ruff adds no findings\" clause is claimed in the manifest with no log recorded anywhere under the run directory.",
+    "fit": "reckon/crew/dispatch_watch.py:681 `_session_host_child_pid` and :739 `_rearm_session_follower` follow the surrounding private-helper and bounded-poll idiom, and a scan of the added lines found no plan, stage, ticket or changelog reference.",
+    "goal_fidelity": "reckon/crew/resumption.py:1504-1514 sends the same request line a dispatch writes and reports follower_rearmed on the resume result, so a resumed session's settled pair is reported on and asked for a follower again.",
+    "reuse": "the run consolidated one reader -- reckon/crew/dispatch_watch.py:713 `_session_host_runs_follower` now delegates to `_session_host_child_pid` -- but :739 `_rearm_session_follower` re-walks the whole request-and-wait body of `_ask_session_host_for_follower` at :732, differing only in the answer predicate.",
+    "scope_discipline": "`git diff --stat 97c71c15d6..c6fd4d8afc` names exactly the five declared write paths and nothing else, and the tree is clean at the reviewed head."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"Re-arm a session's follower when its run is resumed\"; reckon/crew/resumption.py:1502-1507 sends the dispatch's host request after the launch is recorded and returns follower_rearmed, so a resume re-arms the pair.\nVERDICT done_when: the done_when names tests/test_a_resume_rearms_its_follower.py and its two cases with a temporary crew home and a stubbed host, two negative controls, and a base-vs-head arm over the session_host/resumption importers; logs/armed-suite/base.log is `2 failed ... EXIT=1` at 97c71c15d6 and logs/armed-suite/head.log is `2 passed ... EXIT=0` at b1458852ce, and both controls in logs/negative-control/ end EXIT=1 with the named case failing.\nVERDICT write_paths: read the reviewed prompt's fence; the five changed paths (reckon/crew/dispatch_watch.py, reckon/crew/resumption.py, reckon/crew_run_commands.py, tests/test_a_resume_rearms_its_follower.py, docs/evidence/fragments/.../rearm-a-sessions-follower-when-its-run-is-resumed.html) all sit inside it, and reckon/crew/session_host.py was in scope and deliberately left untouched.\nVERDICT manifest: read; it records status complete, the literal pytest command, both arms (2 failed at base, 2 passed at head), the two covered failure attrs with their logs, and the import-coverage arms (base 217 passed + 1 pre-existing failure, head 218 passed EXIT=0).\nVERDICT diff: read both commits against 97c71c15d6; b1458852ce adds _session_host_child_pid and _rearm_session_follower and delegates _session_host_runs_follower to the new reader in dispatch_watch.py, calls the re-arm from resumption._resume, and surfaces follower_rearmed in crew_run_commands.py:2355; c6fd4d8afc adds only the 75-line evidence fragment.\nCALL_SITES: reckon/crew_run_commands.py:2313, reckon/crew/recovery_repair_dispatch.py:1460, reckon/mcp.py:3093, reckon/crew/resumption.py:2092, reckon/crew_follow_commands.py:607, reckon/crew/dispatch_plan.py:1281, reckon/crew/dispatch.py:403, reckon/crew/dispatch.py:398\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/resumption.py:1504-1514 sends the same request line a dispatch writes and reports follower_rearmed on the resume result, so a resumed session's settled pair is asked for a follower again.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/armed-suite/base.log and head.log both carry revision, tree, command, cwd and the imported resumption.py and end in EXIT=, and both negative controls are red at EXIT=1, but the done_when's \"ruff adds no findings\" clause is claimed in the manifest with no log recorded anywhere under the run directory.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: `git diff --stat 97c71c15d6..c6fd4d8afc` names exactly the five declared write paths and nothing else, and the tree is clean at the reviewed head.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_resume_rearms_its_follower.py:388-398 asserts follower_rearmed against a pid the stub host spawned itself, and the file reddens at the base revision and under both declared mutations, so no assertion is a tautology on the value it was handed.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/dispatch_watch.py:681 `_session_host_child_pid` and :739 `_rearm_session_follower` follow the surrounding private-helper and bounded-poll idiom, and a scan of the added lines found no plan, stage, ticket or changelog reference.\nSCORE reuse: 14\nJUSTIFICATION reuse: the run consolidated one reader -- reckon/crew/dispatch_watch.py:713 `_session_host_runs_follower` now delegates to `_session_host_child_pid` -- but :739 `_rearm_session_follower` re-walks the whole request-and-wait body of `_ask_session_host_for_follower` at :732, differing only in the answer predicate.\nFINDING reckon/crew/dispatch_watch.py:739 non-blocking: `_rearm_session_follower` is a near-verbatim twin of `_ask_session_host_for_follower` at the same file's line 732 -- same `_request_host_follower` guard, same WATCHER_LOAD_BOUND_SECONDS deadline, same 0.1 s poll -- so the one capability \"ask this session's host and wait, bounded\" now has two bodies that will drift; a single helper taking the answer predicate would carry both callers, and the plan named the existing function as the mechanism this section routes through.\nFINDING reckon/crew/resumption.py:1504 non-blocking: the re-arm names the run's session (`record[\"session\"]`) while `_request_host_follower` and `_session_host_child_pid` resolve the FIFO and census from the calling Claude process (`_session_host_owner` at reckon/crew/dispatch_watch.py:582), so a resume issued from a session other than the run's dispatcher writes a request for another session's pair to its own host, which spawns a follower writing into the caller's pane and returns follower_rearmed True while the resumed run's own session stays unfollowed.\n",
+  "review_run_id": "r-20261106T125856071372-review-of-rearm-a-sessions-follower-when-its-run-is-resumed-c6fd4d8afced",
+  "reviewed_base_sha": "97c71c15d699aa20a5861d91bbe6ed528b7eaef0",
+  "reviewed_head_sha": "c6fd4d8afced62fb543978f757257529be6d2e59",
+  "reviewed_run_id": "r-20261106T121146659138-rearm-a-sessions-follower-when-its-run-is-resumed",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T13:26:37.541194+00:00",
+  "total": 103
+}
