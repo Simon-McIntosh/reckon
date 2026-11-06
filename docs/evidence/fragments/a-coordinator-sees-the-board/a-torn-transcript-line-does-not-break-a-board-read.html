@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-coordinator-sees-the-board">
+  <meta name="plan-evidence-for" content="a-coordinator-sees-the-board">
+  <title>A torn transcript line does not break a board read | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="a-torn-transcript-line-does-not-break-a-board-read-landing">
+      <header>
+        <p class="eyebrow">Execution evidence &middot; fragment</p>
+        <h2>A torn transcript line does not break a board read</h2>
+      </header>
+      <p id="a-torn-transcript-line-does-not-break-a-board-read-change">
+        <code>dispatch_accounting._jsonl_events</code> opens the transcript with
+        <code>errors="replace"</code>. A last line torn in the middle of a
+        multi-byte character now decodes to an undecodable JSON line, which the
+        existing parse guard skips, instead of raising
+        <code>UnicodeDecodeError</code> out of the loop and discarding every
+        whole line before it. The board's context-use read
+        (<code>directory._last_assistant_request</code> falling through to that
+        reader, and <code>directory._context_use</code> above it) inherits the
+        fix at the owner.
+      </p>
+      <p id="a-torn-transcript-line-does-not-break-a-board-read-reproduction">
+        Reproduced at the base revision before repair: a transcript of whole
+        records followed by <code>b'{"type":"assistant","content":"h\xc3'</code>
+        makes <code>list(_jsonl_events(path))</code> raise
+        <code>UnicodeDecodeError: 'utf-8' codec can't decode byte 0xc3 in
+        position 0: unexpected end of data</code>. The board's tail read survives
+        it because it parses raw bytes, which is why the fall-through forward
+        scan is the path that fails.
+      </p>
+      <p id="a-torn-transcript-line-does-not-break-a-board-read-measure">
+        <code>tests/test_a_torn_transcript_line_does_not_break_a_board_read.py</code>
+        writes the torn transcript in a temporary directory and asserts both
+        shapes: <code>_jsonl_events</code> yields the user record and both whole
+        assistant records and raises nothing, and with
+        <code>directory._TRANSCRIPT_TAIL_SIZES</code> shrunk to <code>(32,)</code>
+        so the tail read falls through, the context-use read returns the last
+        whole request at 250,040 charged tokens. Gate at head: 2 passed,
+        EXIT=0. Importer measure over the six test files importing
+        <code>reckon.crew.dispatch_accounting</code> or
+        <code>reckon.crew.directory</code>, both arms from <code>git archive</code>
+        extractions on node-local disk with the checkout's <code>.env</code>
+        linked: 38 passed at base, 38 passed at head, EXIT=0 both, no added
+        failure.
+      </p>
+      <p id="a-torn-transcript-line-does-not-break-a-board-read-negative-control">
+        Negative control, applied and logged: restoring strict decoding in
+        <code>_jsonl_events</code> fails both cases (2 failed, EXIT=1).
+      </p>
+    </section>
+  </main>
+</body>
+</html>
