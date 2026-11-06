@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-project-reads-as-one-picture">
+  <meta name="plan-evidence-for" content="reckon:a-project-reads-as-one-picture">
+  <meta name="plan-verifies" content="reckon:a-project-reads-as-one-picture#s8">
+    <title>The four coordinator questions through the served reads, after the why-view and coordinator-read fixes</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="remeasure-the-picture-reads-on-three-mounts-landing" data-node="remeasure-the-picture-reads-on-three-mounts" data-reckon="landed" data-when="2026-11-06">
+  <h2 id="remeasure-the-picture-reads-on-three-mounts-title">The four coordinator questions through the served reads</h2>
+
+  <h3 id="remeasure-the-picture-reads-on-three-mounts-method">Method</h3>
+  <p id="remeasure-the-picture-reads-on-three-mounts-method-body">Twelve calls: the four questions on <code>power_convertor</code>, <code>nova</code> and <code>reckon</code>. Every call went through the tool function <code>reckon.mcp</code> builds for registration — <code>reckon.mcp.roadmap_tool</code>, <code>read_plan_tool</code> and <code>crew_tool</code>, each produced by <code>_deadline_tool(..., request_scope=True)</code> — so each call enters the covered-tree and identity-index scopes a served read enters. No inner <code>_read_plan</code>, <code>_roadmap</code> or <code>_crew</code> body was called directly. The measuring process imported <code>reckon.mcp</code> from the head worktree (<code>…/remeasure-the-picture-reads-on-three-mounts/reckon/mcp.py</code>), and each record carries that path. <code>RECKON_HOME</code> was a writable copy under the run's scratch directory holding <code>mounts.json</code> and a copy of the live run pointers, so the write fence did not force a cold cache on every call. Each mount was warmed by one discarded <code>roadmap</code> call before its measured calls. Each call ran in its own process under <code>timeout -k 5 55</code> with <code>faulthandler.dump_traceback_later(45, exit=True)</code>, so a call that hung printed every thread's stack and exited rather than blocking the measure. All of it ran in the foreground on the fleet allocation, job 1291586, node 98dci4-clu-2068.</p>
+
+  <table id="remeasure-the-picture-reads-on-three-mounts-table">
+    <thead><tr><th>Question</th><th>Tool</th><th>power_convertor</th><th>nova</th><th>reckon</th></tr></thead>
+    <tbody>
+      <tr><td>What is critical</td><td><code>roadmap(project)</code></td><td>3.17 s, answered</td><td>9.58 s, answered</td><td><strong>over 45 s, no answer</strong></td></tr>
+      <tr><td>What blocks a named section</td><td><code>read_plan(view="why")</code></td><td>4.08 s, answered</td><td>10.70 s, answered</td><td><strong>over 45 s, no answer</strong></td></tr>
+      <tr><td>Who holds a named file</td><td><code>crew(view="scopes")</code></td><td>1.85 s, answered</td><td>5.38 s, answered</td><td><strong>12.41 s, refused: response over budget</strong></td></tr>
+      <tr><td>What should run next</td><td><code>roadmap(project, view="brief")</code></td><td>2.92 s, answered</td><td>9.19 s, answered</td><td><strong>over 45 s, no answer</strong></td></tr>
+    </tbody>
+  </table>
+
+  <p id="remeasure-the-picture-reads-on-three-mounts-answers">The answers, as the reads returned them:</p>
+  <ul id="remeasure-the-picture-reads-on-three-mounts-answers-list">
+    <li><strong>power_convertor, what is critical.</strong> <code>filter-recommendation-for-coil-health</code>, 2.0 h elapsed, no section chain inside it. The brief ranks one ready section, <code>filter-recommendation-for-coil-health#s6</code>. 26 plans, 84.6 % lifecycle, 99.6 % implementation, 1 ready, 0 blocked.</li>
+    <li><strong>power_convertor, what blocks <code>filter-recommendation-for-coil-health#s6</code>.</strong> Nothing: <code>waits_on</code> lists <code>#s4</code> and <code>#s5</code>, both <code>satisfied: true</code>, <code>state: done</code>, and <code>waited_on_by</code> is empty.</li>
+    <li><strong>power_convertor, who holds a named file.</strong> <code>switched_circuit.py</code>: two live path claims returned, <code>conflicts: []</code>.</li>
+    <li><strong>power_convertor, what should run next.</strong> The brief's first line: 1 ready section, <code>filter-recommendation-for-coil-health#s6</code>, under active sprint S4.</li>
+    <li><strong>nova, what is critical.</strong> <code>converged-forward-solve</code> → <code>single-grid-solver-cutover</code>, 78.286 h. 105 plans, 15 ready, 8 blocked. First ready section, <code>forward-solve-api#s2</code>.</li>
+    <li><strong>nova, what blocks <code>iron-core-magnetisation#s7</code>.</strong> Two unsatisfied waits: <code>iron-core-magnetisation#s6</code> (implementable, held by an open <code>formulation</code> decision) and <code>forward-solve-api#s1</code>. <code>waited_on_by</code> is empty. The section is <code>implementable</code> in a plan whose status reads <code>draft</code>, in sprint S24.</li>
+    <li><strong>nova, who holds a named file.</strong> <code>nova/circuit/__init__.py</code>: 26 live path claims on that project returned, <code>conflicts: []</code>; the named file is held by none of them.</li>
+    <li><strong>nova, what should run next.</strong> 15 ready sections, first <code>forward-solve-api#s2</code>, under active sprint S21.</li>
+  </ul>
+
+  <h3 id="remeasure-the-picture-reads-on-three-mounts-reckon">The three reckon calls that did not answer</h3>
+  <p id="remeasure-the-picture-reads-on-three-mounts-reckon-body">All three printed a thread dump at the 45 s bound. <code>critical</code> and <code>next</code> are the same <code>roadmap</code> read, and both were interrupted in one chain, identical in both dumps:</p>
+  <ol id="remeasure-the-picture-reads-on-three-mounts-reckon-stack">
+    <li><code>mcp.py</code> <code>_roadmap</code> → <code>_roadmap_scoped</code> → <code>mcp_discovery._discover_project</code></li>
+    <li><code>serve.py</code> <code>discover_plans</code> → <code>_discover_plans_uncached</code> → <code>_attach_ready_set</code></li>
+    <li><code>roadmap.py</code> <code>build_roadmap</code> → <code>_build_roadmap</code> → <code>_critical_path_links</code> → <code>critical_path_coordinators</code> → <code>_critical_path_coordinators</code></li>
+    <li><code>crew/plan_coordinator.py</code> <code>resolve_plan_coordinators</code> → <code>_plan_of_run</code> → <code>_plan_from_node</code> → <code>_reviewed_run</code></li>
+    <li><code>crew/dispatch_sessions.py</code> <code>_reviewed_run_id</code>, inside its record scan</li>
+  </ol>
+  <p id="remeasure-the-picture-reads-on-three-mounts-reckon-cause">The <code>why</code> call was interrupted in the same chain, one frame lower: <code>read_plan</code> reaches the same <code>critical_path_coordinators</code> path through the roadmap composition it reads. So on <code>reckon</code> the cost is not the why view's own enumeration that §16 removed; it is <strong><code>resolve_plan_coordinators</code>, which walks every run record per plan node</strong>, and it is on the path of both the roadmap and the why read. The same chain answered in 3 to 10 s on <code>power_convertor</code> and <code>nova</code>, so the driver scales with the mount's run-record count, which is largest on <code>reckon</code>'s own ledger.</p>
+
+  <h3 id="remeasure-the-picture-reads-on-three-mounts-budget">The reckon scopes read answered in time and was then refused</h3>
+  <p id="remeasure-the-picture-reads-on-three-mounts-budget-body">The <code>scopes</code> call completed in 12.41 s and returned <code>{"ok": false, "error": "response_over_budget"}</code>: 95,084 characters against an 80,000 ceiling for the whole response and a 24,000-character view budget. The only narrowing the refusal offers is <code>candidates</code>; it names no way to narrow by <code>path</code>, although the call already passed <code>path=reckon/crew/queue_admission.py</code>. So the question "who holds this file" is answered on <code>power_convertor</code> (2 claims) and <code>nova</code> (26 claims) and <strong>unanswered on <code>reckon</code> for a reason that is not time</strong>: the response carries the whole project's claim set regardless of the path asked about.</p>
+
+  <h3 id="remeasure-the-picture-reads-on-three-mounts-base">Control 1 — the base commit</h3>
+  <p id="remeasure-the-picture-reads-on-three-mounts-base-body">Base tree <code>6e2e4b8ef03c85105eb533bc64e97fe16786768d</code>, extracted with <code>git archive</code> into the run scratch directory, imported through the main checkout's interpreter with <code>PYTHONPATH</code> set to the extracted tree; the record carries <code>module.__file__ = …/base-tree/reckon/mcp.py</code>, so the base code is what ran. Both arms read one frozen copy of <code>power_convertor/docs</code> taken at 18:52 (26 plans, sprint S4), passed as <code>checkout_path</code>, and the base arm got its own fresh <code>RECKON_HOME</code> so no composition cached by the head arm could answer it.</p>
+  <table id="remeasure-the-picture-reads-on-three-mounts-base-table">
+    <thead><tr><th>Question</th><th>Head, frozen snapshot</th><th>Base, same snapshot</th><th>Disagrees</th></tr></thead>
+    <tbody>
+      <tr><td>What is critical</td><td><code>filter-recommendation-for-coil-health</code>, 2.0 h, no sections</td><td><code>filter-recommendation-for-coil-health</code>, 2.0 h, no sections</td><td><strong>No</strong></td></tr>
+      <tr><td>What should run next</td><td>1 ready, <code>filter-recommendation-for-coil-health#s6</code>, sprint S4</td><td>The same line, byte for byte</td><td><strong>No</strong></td></tr>
+    </tbody>
+  </table>
+  <p id="remeasure-the-picture-reads-on-three-mounts-base-result"><strong>This control did not fire, and the reason is in the snapshot rather than in the analysers.</strong> <code>6e2e4b8ef</code> already carries the section derivation §2 landed, so both arms compute a section-level critical path; and on today's <code>power_convertor</code> every plan but two is <code>done</code>, one section (<code>filter-recommendation-for-coil-health#s6</code>) is open and it waits only on satisfied sections, so there is no chain for the two arms to disagree about. The first measure's record at <a href="/reckon/evidence/archive/a-project-reads-as-one-picture-landed.html#s8-measure">#s8-measure</a> had a base that disagreed on both items; it was taken against a snapshot with 30 open sections. <strong>A control named after a commit stops being a control when the data it reads no longer carries a decision.</strong> A base for this control has to be chosen against the snapshot, not once for the plan, or the snapshot must be frozen for the whole plan's measure.</p>
+
+  <h3 id="remeasure-the-picture-reads-on-three-mounts-removed">Control 2 — the removed cross-plan edge</h3>
+  <p id="remeasure-the-picture-reads-on-three-mounts-removed-body"><strong>Not applicable on this snapshot, and here is what was read.</strong> The critical paths are: <code>power_convertor</code>, one plan, <code>filter-recommendation-for-coil-health</code> (2.0 h), whose only open section <code>#s6</code> waits on <code>#s4</code> and <code>#s5</code> of its own plan; <code>nova</code>, <code>converged-forward-solve</code> → <code>single-grid-solver-cutover</code> (78.286 h), and neither plan carries a <code>plan-section-depends-on</code> declaration at all, so the link between them is not a cross-plan <em>section</em> edge; <code>reckon</code>, unread — its roadmap did not answer. No cross-plan section edge lies on any critical path this measure could read, so removing one cannot move a path and the control has nothing to act on. This is the same outcome the first measure recorded on an earlier snapshot, for the same structural reason: the critical-path head plan declares only waits on its own sections.</p>
+
+  <h3 id="remeasure-the-picture-reads-on-three-mounts-disagreements">Disagreements counted</h3>
+  <p id="remeasure-the-picture-reads-on-three-mounts-disagreements-body">Two disagreements with the owning coordinator's account, both on <code>power_convertor</code> and both <em>wiring faults</em>: the only coordinator account this plan records is §1's table from 2026-10-21 (17 plans, sprint S3, critical path <code>iter-switched-terminal-transients#s6</code> → <code>coil-supply-report-rebuild#s4</code> → <code>#s8</code>, first-ranked the chain head), and today's snapshot holds 26 plans with all of that work <code>done</code> and one ready section left. The critical path and the first-ranked item both differ for that reason. One <em>derivation defect</em> is counted separately and belongs to no plan repair: <code>resolve_plan_coordinators</code> runs on every roadmap and why read and does not finish on the mount with the largest run ledger. No coordinator account is stored for <code>nova</code> or <code>reckon</code>, so nothing was compared there; the answers above are recorded as they came, unjudged.</p>
+
+  <h3 id="remeasure-the-picture-reads-on-three-mounts-cleanup">Cleanup</h3>
+  <p id="remeasure-the-picture-reads-on-three-mounts-cleanup-body">Deleted afterwards, all under the run's scratch directory: <code>pcroot</code> (the frozen <code>power_convertor</code> copy, 194 MB), <code>base-tree</code> (the base extraction), <code>home</code> and <code>home-base</code> (the two config homes). Each is named here as it was printed by the removal.</p>
+</article>
+</body>
+</html>
