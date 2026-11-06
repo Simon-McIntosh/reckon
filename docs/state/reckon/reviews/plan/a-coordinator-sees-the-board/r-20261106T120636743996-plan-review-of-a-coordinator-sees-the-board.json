@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T12:17:21.438Z",
+  "dispatched_at": "2026-11-06T12:08:45Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html:223",
+      "id": "evidence_paths-1",
+      "reason": "a worker otherwise invents a path and lands the section's only quantitative evidence somewhere no later reader or reviewer is told to look, and the base figure cannot be opened at all.",
+      "text": "the done-when says the elapsed time \"and that comparison are recorded in the evidence fragment beside the base figure\", but it names no fragment, and the base figure it is to sit beside (88 s cold, 62 s warm) is recorded nowhere on disk: `docs/evidence/fragments/a-coordinator-sees-the-board/` holds one file per landed node and none for this measurement",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html:223",
+      "id": "done_when-1",
+      "reason": "the node would either burn a turn chasing a false mismatch or, worse, weaken the bound to make a moving target agree, when pinning `now` (and recording both calls' ledger revision) makes the comparison answer only the question it is asked.",
+      "text": "the arm \"names the same coordinator for every plan as the base does\" compares a head call against a base call on the live fleet ledger taken minutes apart with neither `now` nor a ledger revision pinned, so on a fleet that promotes runs continuously a plan whose coordinator legitimately moves between the two calls fails a gate the change cannot reach",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "09322e2421b7ec437df6c5fdbee4905694af5ab3",
+  "plan_fingerprint": "b25c0b0d224202ec3b28ffd2838d0f68635fb782eb7833eac3f938b6fb713aa4",
+  "plan_slug": "a-coordinator-sees-the-board",
+  "plan_version": 53,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T120636743996-plan-review-of-a-coordinator-sees-the-board",
+  "reviewed_blob_sha": "2a6d2df085df548c4e4615bbd1034bc9db46d55c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_critical_path_coordinators` (`reckon/roadmap.py:3473`), `resolve_plan_coordinators`, `run_rows_from_documents` (`reckon/ledger.py:1745`), `docs/state/<project>/runs/` and all three cited plan slugs resolve; \u00a711 carries no line-number citation.",
+    "done_when": "a finding \u2014 the fleet-node arm compares coordinator names between two live-ledger calls taken at different instants, with neither `now` nor a ledger revision pinned.",
+    "evidence_paths": "a finding \u2014 the done-when records its timing and comparison \"in the evidence fragment beside the base figure\", but no fragment path is named and the 88 s / 62 s base figure exists only in plan prose.",
+    "naming": "pass \u2014 the only symbols named are existing code names, and the plan slugs appear as measured data, not as identifiers a node would create.",
+    "reasoning": "pass \u2014 the stated root cause (every document read and parsed) matches the measured 88 s/62 s and the stack samples; the mechanism produces the done-when (measured 476 documents inside the bound vs 6,915, 0 of 369 needed documents skipped on live data); and it runs on a named production caller, `_critical_path_coordinators` at `reckon/roadmap.py:3473`, reached from the roadmap build at `reckon/roadmap.py:4561`.",
+    "single_goal": "pass \u2014 one deliverable, a lower bound on the ledger document read; the unit test, the equivalence assertion and the fleet-node timing are three measures of that one change.",
+    "wiring": "pass \u2014 `s11` declares no `plan-section-depends-on` entry, but both sections it consumes, `#s2` (`resolve_plan_coordinators`, done) and `#s4` (`_critical_path_coordinators`, done), are landed, so no dependency is missing from the node's closure."
+  },
+  "section_digests": {
+    "_document": "e7dc00c38674d60e6d3dd2f7063df7b43f3337b30dbb8c44cef6b536b31704aa",
+    "s1": "4f48bcfe2c71d1397f0eeb277ff928920d1ed0ae7cfb0da777c94e4943eadf87",
+    "s10": "80dd3bc62e983a2d2a47ca25840ac1947582d34d211d614a5c8429c5b6156137",
+    "s11": "b7bf20ae565e1f0d011538f9c16a840076ac093004cf3c94e5b5afa14c316316",
+    "s2": "e8a77da3ee95b252c49524e82dbed4c7af59fd2cf8813eca867555771e9c15d5",
+    "s3": "e4cd7ce8696d0d9fb511a9be2379e2561a08418a1d1f759c42a926231bad6e36",
+    "s4": "ba6bafca3a7e3ae7fb186980afd26dd26e183bf99b72272ea15f06fbaeb19e5f",
+    "s5": "c7676f30d627a592319ab4f34cbd8352167ba0b9b92a20d5cbafea4a685b90ae",
+    "s6": "b5875d403856eb185e06155d0c62410ab30a447353779fe729a12b57c2607cf0",
+    "s7": "4428c6858fc7f10400173c2e619ad379aa49779cef060ae4b50d866fde4a59a7",
+    "s8": "f9f58e76a5713eb901b1e780fcb93d48ca773a573fded72ec476738a59629b67",
+    "s9": "d2506b05e05f7611a8794a66b56c70ad072e38b6edb29d625161974bb3cc6da4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T12:21:50.166985+00:00"
+}
