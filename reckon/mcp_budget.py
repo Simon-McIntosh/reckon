@@ -175,7 +175,10 @@ def _narrow_with(tool: str, arguments: Mapping[str, Any]) -> list[dict[str, Any]
                 _suggestion("session", "<coordinator-session>"),
             ]
         if view == "scopes":
-            return [_suggestion("candidates", "<fewer candidate nodes>")]
+            return [
+                _suggestion("path", "<file-or-directory>"),
+                _suggestion("candidates", "<fewer candidate nodes>"),
+            ]
         return [
             _suggestion("limit", 10),
             _suggestion("fields", ["classification"]),

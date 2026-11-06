@@ -32,7 +32,11 @@ from reckon._timestamps import parse_utc
 from reckon.crew import lane_document as lane_document_module
 from reckon.crew import rollout as rollout_module
 from reckon.crew import staleness as staleness_module
-from reckon.crew.runs import accepts_keyword
+from reckon.crew.runs import (
+    _repository_relative_scope,
+    _scopes_overlap,
+    accepts_keyword,
+)
 from reckon.doccheck import lifecycle_staleness, modified_age_days
 from reckon.evidence import EXECUTABLE_SECTION_ROLES
 from reckon.lifecycle import (
@@ -4124,6 +4128,139 @@ def with_change_set(
     return answer
 
 
+def _scope_owner(claim: Mapping[str, Any]) -> dict[str, Any]:
+    """One claim owner in the read model, always carrying its verdict.
+
+    A claim that arrives without a verdict is listed as binding, the same answer
+    the read model defaults to and the rule gives a pointer whose worker is not
+    yet recorded; a reader must never have to guess the absence.
+    """
+
+    owner: dict[str, Any] = {
+        "run_id": claim["run_id"],
+        "node": claim["node"],
+        "declared_path": claim["declared_path"],
+        "binding": bool(claim.get("binding", True)),
+        "disposition_reason": str(claim.get("disposition_reason", "")),
+    }
+    if claim.get("derived_from") is not None:
+        owner["derived_from"] = claim["derived_from"]
+    return owner
+
+
+def _scopes_requested_path(path: str | None, repo: Path) -> str | None:
+    """Resolve the path a scopes read is narrowed to, repository-relative.
+
+    A caller names the file it is asking about in whatever form it holds it, so
+    an absolute path inside the checkout and a relative one resolve to the same
+    spelling. A path that resolves outside the checkout names nothing this
+    registry holds, and is refused rather than read as an empty claim set.
+    """
+
+    if path is None or not str(path).strip():
+        return None
+    normalized = _repository_relative_scope(str(path), repo)
+    if normalized is None:
+        raise ViewRequestError(
+            "invalid_path",
+            f"path {path!r} resolves outside the repository {str(repo)!r}.",
+            "Name a file or directory inside the project's checkout.",
+        )
+    return normalized
+
+
+def _narrow_scopes(answer: dict[str, Any], requested: str) -> dict[str, Any]:
+    """Answer only the claims that contain the named path or lie inside it.
+
+    Containment is judged by path components, the rule the dispatch scope check
+    applies to two declared scopes, so a claim on a directory and a claim on a
+    file beneath it both answer for that path. The owners and their verdicts
+    travel with each claim, and nothing else is trimmed: this is the exact
+    answer for one path, so a reader can rely on its completeness.
+    """
+
+    claim_map = {
+        claim_path: owners
+        for claim_path, owners in answer["claim_map"].items()
+        if _scopes_overlap(claim_path, requested)
+    }
+    claims = [claim for claim in answer["claims"] if claim["path"] in claim_map]
+    return {
+        **answer,
+        "path": requested,
+        "claims": claims,
+        "claim_map": claim_map,
+        "claim_count": len(claims),
+        "path_count": len(claim_map),
+        "owner_count": len({claim["run_id"] for claim in claims}),
+    }
+
+
+def _fit_scopes(
+    answer: dict[str, Any],
+    *,
+    limit: int | None,
+    cursor: str | None,
+) -> dict[str, Any]:
+    """Return one page of the claim map that fits the view's row.
+
+    The claim map is the part of this read that grows with the project, and the
+    default call asks about no path, so the default answer is one page of held
+    paths with their owners, the totals behind the page, and the arguments that
+    reach the rest. The page is measured against the view's own row and
+    shortened until it fits, because a kept path carries an unbounded number of
+    owners.
+    """
+
+    from reckon import mcp_budget as mcp_budget_module
+
+    budget = mcp_budget_module.view_budget("crew", {"view": "scopes"}) or 0
+    claim_map = answer["claim_map"]
+    claims = answer["claims"]
+    paths = sorted(claim_map)
+    page, _pagination = paginate(paths, cursor=cursor, limit=limit)
+    offset = paths.index(page[0]) if page else 0
+    kept = list(page)
+
+    narrow_with: list[dict[str, Any]] = []
+    if paths:
+        narrow_with.append({"argument": "path", "value": paths[0]})
+    narrow_with.append({"argument": "candidates", "value": "<fewer candidate nodes>"})
+
+    def render(page_paths: list[str]) -> dict[str, Any]:
+        page_set = set(page_paths)
+        page_claims = [claim for claim in claims if claim["path"] in page_set]
+        reached = offset + len(page_paths)
+        return {
+            **answer,
+            "claim_map": {path: claim_map[path] for path in page_paths},
+            "claims": page_claims,
+            "summary": {
+                "claims": len(claims),
+                "paths": len(paths),
+                "runs": len({claim["run_id"] for claim in claims}),
+                "binding": sum(1 for claim in claims if claim.get("binding", True)),
+                "non_binding": sum(
+                    1 for claim in claims if not claim.get("binding", True)
+                ),
+                "returned_paths": len(page_paths),
+                "returned_claims": len(page_claims),
+            },
+            "narrow_with": narrow_with,
+            "pagination": {
+                "count": len(page_paths),
+                "total": len(paths),
+                "next_cursor": _cursor(reached) if reached < len(paths) else None,
+            },
+        }
+
+    fitted = render(kept)
+    while kept and mcp_budget_module.serialised_characters(fitted) > budget:
+        kept.pop()
+        fitted = render(kept)
+    return fitted
+
+
 def serve_crew_view(
     view: str = "summary",
     *,
@@ -4427,28 +4564,25 @@ def serve_crew_view(
             )
             claim_map: dict[str, list[dict[str, Any]]] = {}
             for claim in planned["claims"]:
-                # Every owner carries a verdict. A claim that arrives without
-                # one is treated as binding, the same answer the read model
-                # defaults to and the rule gives a pointer whose worker is not
-                # yet recorded; a reader must never have to guess the absence.
-                owner: dict[str, Any] = {
-                    "run_id": claim["run_id"],
-                    "node": claim["node"],
-                    "declared_path": claim["declared_path"],
-                    "binding": bool(claim.get("binding", True)),
-                    "disposition_reason": str(claim.get("disposition_reason", "")),
-                }
-                if claim.get("derived_from") is not None:
-                    owner["derived_from"] = claim["derived_from"]
-                claim_map.setdefault(claim["path"], []).append(owner)
-            return {
+                claim_map.setdefault(claim["path"], []).append(_scope_owner(claim))
+            answer: dict[str, Any] = {
+                **planned,
                 "ok": True,
                 "project": project,
                 "view": view,
                 "repository": str(repo_root),
+                "claims": list(planned["claims"]),
                 "claim_map": claim_map,
-                **planned,
             }
+            try:
+                narrowed = _scopes_requested_path(path, repo_root)
+                if narrowed is not None:
+                    return _narrow_scopes(answer, narrowed)
+                return _fit_scopes(answer, limit=limit, cursor=cursor)
+            except ViewRequestError as error:
+                return error_response(
+                    error.code, error.message, operation="read", hint=error.hint
+                )
         if view == "budget":
             config = flight_module.resolve(project, checkout_path=checkout_path).config
             return {
