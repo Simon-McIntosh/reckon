@@ -4224,7 +4224,14 @@ def _fit_scopes(
 
     narrow_with: list[dict[str, Any]] = []
     if paths:
-        narrow_with.append({"argument": "path", "value": paths[0]})
+        # A claim can name a path outside the checkout — a stored record a
+        # review holds — and that spelling is refused by the narrowing read, so
+        # the example offered is one this read can answer.
+        example = next(
+            (path for path in paths if not Path(path).is_absolute()),
+            "<file-or-directory>",
+        )
+        narrow_with.append({"argument": "path", "value": example})
     narrow_with.append({"argument": "candidates", "value": "<fewer candidate nodes>"})
 
     def render(page_paths: list[str]) -> dict[str, Any]:

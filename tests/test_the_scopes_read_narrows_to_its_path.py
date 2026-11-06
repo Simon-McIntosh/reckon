@@ -152,6 +152,20 @@ def claims(home: Path, repo: Path) -> list[dict[str, Any]]:
             }
             for path in paths
         )
+    # One holder declares a path outside the checkout, which a review record
+    # does: it is listed by its absolute spelling, so a suggestion drawn from
+    # the claim set must not offer a path the narrowing read would refuse.
+    outside = str((repo.parent / "records" / "review.json").resolve())
+    _write_pointer("r-outside", repo=repo, paths=[outside])
+    declared.append(
+        {
+            "path": outside,
+            "run_id": "r-outside",
+            "node": "node-r-outside",
+            "declared_path": outside,
+            "binding": True,
+        }
+    )
     # One holder declares a directory, so a path beneath it is claimed by
     # containment rather than by an identical spelling.
     _write_pointer("r-directory", repo=repo, paths=[HELD_DIRECTORY])
@@ -299,7 +313,13 @@ def test_the_default_read_fits_its_row_and_names_how_to_narrow(
     assert result["summary"]["paths"] == len({claim["path"] for claim in claims})
     assert result["summary"]["returned_claims"] < len(claims)
     assert len(result["claims"]) == result["summary"]["returned_claims"]
-    assert any(item["argument"] == "path" for item in result["narrow_with"])
+    suggestions = {item["argument"]: item["value"] for item in result["narrow_with"]}
+    assert "path" in suggestions
+    # The example has to be answerable by the call it invites: a claim on a
+    # stored record outside the checkout is spelled absolutely and refused.
+    narrowed = _scopes(repo, path=suggestions["path"])
+    assert narrowed["ok"] is True
+    assert narrowed["claim_map"]
 
 
 def test_the_default_read_pages_to_every_path(
