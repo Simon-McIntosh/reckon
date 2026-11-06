@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-landing-is-on-main-when-it-says-so">
+  <meta name="plan-title" content="A Landing Is On Main When It Says So">
+  <meta name="plan-summary" content="A promotion with --land either puts the reviewed head on the remote main or reports that it did not, and every landing outcome reaches the pass record.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="3.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S27">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-after" content="work-is-never-stuck-behind-the-admission-loop">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <title>A Landing Is On Main When It Says So | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-11-06">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: a run promoted as landed whose code was not on main</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>On 6 November the admit service's lander promoted run <code>r-20261106T140731148709-leave-a-record-of-why-a-follower-exits</code> (monitor §112) with <code>queue_landing._land_command</code>, which runs <code>crew complete … --gate passed --candidate … --no-impl-change … --land</code> (<code>reckon/crew/queue_landing.py</code> near line 1015). reckon-e0 traced it from the run's records. <code>landing.json</code> logs the promote and release commits at 17:18:57Z and 17:19:07Z (<code>fa64d2efa9</code>, <code>f31e7dc592</code>), and <code>admission-landing.json</code> at 17:24:38Z records the attempt as refused. Three things went wrong:</p>
+    <ul><li>The reviewed head, <code>11f880b126</code>, was never merged, and the two commits sat unpushed on the main checkout's local <code>main</code>. The coordinator found them about an hour later and landed the head by hand at <code>43035e72bd</code>.</li><li>The refusal read &ldquo;the reviewed head landed and was pushed, but the worktree was withheld&rdquo;. That sentence is emitted whenever the worktree release fails (<code>reckon/crew_run_commands.py</code> near lines 3380&ndash;3389), whether or not the land step merged anything. Every coordinator landing today printed it too, including ones whose merge did reach the remote, so the message carries no information about the landing.</li><li>The verdict rows of the passes at 17:11:42Z and 17:15:22Z list the run as deferred, and the pass from 17:19:49Z records nothing for it, so no pass record shows the promotion.</li></ul>
+
+    <h2 id="s2">§2 — A promotion with --land ends with the head on the remote, or says it did not</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> The worker first reproduces, from the run's <code>landing.json</code> and the <code>--land</code> path in <code>reckon/crew_run_commands.py</code>, why the land step left <code>11f880b126</code> unmerged while the promote and release commits were written, and names the cause in the manifest. Then <code>--land</code> is made to end in one of two states: the reviewed head is an ancestor of the remote branch, checked by reading the remote after the push, or the command exits non-zero naming the step that failed and the commits left unpushed. Promote and release commits are never left on the local branch without a push attempt that is reported.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_a_landing_is_on_main_when_it_says_so.py</code> shows three things with a temporary repository and a bare remote: a successful <code>--land</code> leaves the reviewed head an ancestor of the remote branch; a land step whose merge is forced to fail exits non-zero naming the merge step and leaves no unreported local commits; and a push forced to fail exits non-zero naming the unpushed commits. Three negative controls, one per case: skipping the merge after promotion makes the first case's head absent from the remote; swallowing the merge failure makes the second case exit zero; and swallowing the push failure makes the third case exit zero. The test files importing <code>reckon.crew_run_commands</code> or <code>reckon.crew.merge</code> add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>. Ruff adds no findings on the staged paths. Every log is under the run directory, starts with its revision and the literal command, and ends in <code>EXIT=</code>. Write paths: <code>reckon/crew_run_commands.py</code> and the new test; any change the cause needs in <code>reckon/crew/merge.py</code> or <code>reckon/crew/queue_landing.py</code> is named in the manifest.</p>
+
+    <h2 id="s3">§3 — A withheld worktree is reported as a release outcome, not a landing</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> The release refusal states only what the steps show: whether the land step merged, the remote head it confirmed, and why the worktree was withheld. &ldquo;Landed and was pushed&rdquo; appears only when the land step's confirmed remote head contains the reviewed head. The worktree's reachability is judged against the confirmed remote head after the merge, so a worktree whose head did land is released rather than withheld as unreachable.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_a_withheld_worktree_is_a_release_outcome.py</code> shows two things with a temporary repository and a bare remote: after a landing that merged and pushed, the worktree is released, not withheld as unreachable; and when the land step did not merge, the refusal does not say the head landed. Two negative controls: judging reachability against the pre-merge revision makes the first case withhold the worktree; and restoring the unconditional sentence makes the second case claim the landing. The test files importing <code>reckon.crew_run_commands</code> or <code>reckon.crew.promotion_release</code> add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>. Ruff adds no findings on the staged paths. Write paths: <code>reckon/crew_run_commands.py</code>, <code>reckon/crew/promotion_release.py</code> and the new test. It shares <code>crew_run_commands.py</code> with §2, so it is dispatched after §2 lands.</p>
+
+    <h2 id="s4">§4 — Every landing the lander attempts appears in its pass record</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> The admit service's pass record carries one landing row for every run its lander promoted or tried to promote in that pass, with the outcome and, for a refusal, the step that refused. A promotion that happens after a pass has deferred the run is recorded in the pass that performed it.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_every_landing_reaches_its_pass_record.py</code> shows two things with a stubbed landing: a pass whose lander promotes a run records a landing row naming it and its outcome; and a pass whose lander's promotion is refused at release records the refusal and its step. Two negative controls: dropping the row for a promotion makes the first case find none; and recording only landed outcomes makes the second case find none. The test files importing <code>reckon.crew.queue_landing</code> add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>. Ruff adds no findings on the staged paths. Write paths: <code>reckon/crew/queue_landing.py</code> and the new test.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-alomwiss-001" data-status="open" data-written-by="coordinator" data-written-at="2026-11-06" data-recommends-skill="/reckon-build a-landing-is-on-main-when-it-says-so §2">
+<h3>Build §2, then §3; §4 beside them</h3>
+<div class="r-fu-body"><p>§2 finds and fixes why a landing left its head unmerged; §3 follows on the same file; §4 writes only queue_landing.py and can run beside §2.</p></div>
+<pre class="r-fu-prompt">/reckon-build a-landing-is-on-main-when-it-says-so §2</pre>
+</article>
+    </section>
+    <section data-reckon="comments" id="comments" class="r-comments">
+<h2><span class="sec">§</span> Comments</h2>
+    </section>
+</main>
+</body>
+</html>
