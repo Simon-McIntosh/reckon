@@ -314,7 +314,12 @@ class SuiteObservation(TypedDict):
     failure_ids: list[str] | None
 
 
-def parse_manifest(text: str, *, path: str | None = None) -> dict[str, Any]:
+def parse_manifest(
+    text: str,
+    *,
+    path: str | None = None,
+    shape_findings: list[str] | None = None,
+) -> dict[str, Any]:
     """Parse a worker manifest into structured fields.
 
     Two formats are read. A body whose first character is ``{`` or ``[`` is a
@@ -341,9 +346,9 @@ def parse_manifest(text: str, *, path: str | None = None) -> dict[str, Any]:
     formatting.
     """
     if text.lstrip().startswith(("{", "[")):
-        fields = _read_json_manifest(text, path=path)
+        fields = _read_json_manifest(text, path=path, shape_findings=shape_findings)
     else:
-        fields = _parse_text_manifest(text, path=path)
+        fields = _parse_text_manifest(text, path=path, shape_findings=shape_findings)
         if not fields and text.strip():
             # A non-blank text body from which no ``key: value`` field could be
             # read at all — a markdown-heading layout, say, where ``status`` and
@@ -363,7 +368,12 @@ def _line_indent(raw: str) -> int:
     return len(raw) - len(raw.lstrip(" \t"))
 
 
-def _parse_text_manifest(text: str, *, path: str | None = None) -> dict[str, Any]:
+def _parse_text_manifest(
+    text: str,
+    *,
+    path: str | None = None,
+    shape_findings: list[str] | None = None,
+) -> dict[str, Any]:
     """Read the tolerant ``key: value`` text form, keeping unknown keys.
 
     The least-indented recognised manifest field establishes the top-level
@@ -399,7 +409,13 @@ def _parse_text_manifest(text: str, *, path: str | None = None) -> dict[str, Any
     def flush() -> None:
         nonlocal key, body_lines, body_is_block
         if key is not None:
-            fields[key] = _read_field_body(key, body_lines, body_is_block, path=path)
+            fields[key] = _read_field_body(
+                key,
+                body_lines,
+                body_is_block,
+                path=path,
+                shape_findings=shape_findings,
+            )
         key = None
         body_lines = []
         body_is_block = False
@@ -466,7 +482,9 @@ def _parse_text_manifest(text: str, *, path: str | None = None) -> dict[str, Any
                 fields.setdefault(key, "")
                 body_is_block = True
                 continue
-            fields[key] = _read_inline_value(key, raw_value)
+            fields[key] = _read_inline_value(
+                key, raw_value, path=path, shape_findings=shape_findings
+            )
             key = None
     flush()
     return fields
@@ -608,7 +626,12 @@ def _schema_shape_message(
 
 
 def _read_field_body(
-    name: str, lines: list[str], is_block: bool, *, path: str | None
+    name: str,
+    lines: list[str],
+    is_block: bool,
+    *,
+    path: str | None,
+    shape_findings: list[str] | None = None,
 ) -> Any:
     """Build a field's value from the body written beneath its key."""
     allowed = _MANIFEST_SCHEMA.get(name)
@@ -646,10 +669,27 @@ def _read_field_body(
         # protection the worker never wrote. A list field does not reach here:
         # its mapping body was read as one item per labelled line above.
         raise ManifestParseError(_schema_shape_message(path, name, shape, allowed))
-    return _joined_body_text(lines) if shape == "list" else "\n".join(lines).strip()
+    if shape == "list":
+        # A list under a field whose schema declares text or a mapping is a
+        # shape no reader of that field declares. The parse still yields the
+        # joined text the tolerant reader has always produced, so an older
+        # manifest keeps reading, but the manifest check collects the refusal
+        # and names the field, because the joined value looks like the text the
+        # reader expects while the entries the worker wrote are no longer
+        # separable.
+        if shape_findings is not None:
+            shape_findings.append(_schema_shape_message(path, name, "list", allowed))
+        return _joined_body_text(lines)
+    return "\n".join(lines).strip()
 
 
-def _read_inline_value(name: str, raw_value: str) -> Any:
+def _read_inline_value(
+    name: str,
+    raw_value: str,
+    *,
+    path: str | None = None,
+    shape_findings: list[str] | None = None,
+) -> Any:
     """Build a field's value from the text written after its key on one line.
 
     An inline value is one scalar in this format, so it is returned as the
@@ -666,10 +706,28 @@ def _read_inline_value(name: str, raw_value: str) -> Any:
         items = _literal_list_items(raw_value)
         if items is not None:
             return items
-    return _strip_matching_quotes(raw_value)
+    stripped = _strip_matching_quotes(raw_value)
+    allowed = _MANIFEST_SCHEMA.get(name)
+    if allowed is not None and "list" not in allowed and stripped.startswith("["):
+        # A JSON array written on the key's own line is the same shape defect a
+        # block list under a non-list field is: the reader would carry the
+        # array's literal text where it expects one command, so the field is
+        # named rather than read as a plausible string.
+        try:
+            parsed = json.loads(stripped)
+        except (TypeError, json.JSONDecodeError):
+            parsed = None
+        if isinstance(parsed, list) and shape_findings is not None:
+            shape_findings.append(_schema_shape_message(path, name, "list", allowed))
+    return stripped
 
 
-def _read_json_manifest(text: str, *, path: str | None) -> dict[str, Any]:
+def _read_json_manifest(
+    text: str,
+    *,
+    path: str | None,
+    shape_findings: list[str] | None = None,
+) -> dict[str, Any]:
     """Read a JSON manifest body, refusing anything that is not an object."""
     try:
         raw = json.loads(text)
@@ -677,6 +735,25 @@ def _read_json_manifest(text: str, *, path: str | None) -> dict[str, Any]:
         raise ManifestParseError(_unreadable_manifest_message(path)) from exc
     if not isinstance(raw, dict):
         raise ManifestParseError(_unreadable_manifest_message(path))
+    for name, value in raw.items():
+        allowed = _MANIFEST_SCHEMA.get(name)
+        if not allowed:
+            # A key the schema does not declare has no declared shape to judge.
+            continue
+        shape = _shape_of(value)
+        if shape in allowed:
+            continue
+        if shape == "list":
+            # The same rule the text reader applies: a list under a field whose
+            # reader declares text or a mapping is carried forward as written,
+            # and the value is not separable the way its reader expects, so the
+            # manifest check names the field. Every other shape is left to the
+            # readers that already judge it — a JSON manifest writes a scalar
+            # where the schema declares a list, and refusing that here would
+            # reject records the text form has always accepted.
+            if shape_findings is not None:
+                shape_findings.append(_schema_shape_message(path, name, shape, allowed))
+            continue
     return raw
 
 
@@ -2466,8 +2543,9 @@ def audit_manifest(
     manifest_path: Path | None = None,
 ) -> dict[str, Any]:
     """Judge a delivered manifest: is it complete, and does it stay in scope?"""
+    shape_findings: list[str] = []
     try:
-        manifest = parse_manifest(text)
+        manifest = parse_manifest(text, shape_findings=shape_findings)
     except ManifestParseError as exc:
         # An unreadable manifest is a finding, not an exception: the audit is
         # itself a reader of the file and must survive a body no reader can
@@ -2477,7 +2555,7 @@ def audit_manifest(
             "findings": [f"manifest could not be read: {exc}"],
             "ok": False,
         }
-    findings: list[str] = []
+    findings: list[str] = list(shape_findings)
     retry_failures = manifest["retry_failures"]
     if not isinstance(retry_failures, list):
         findings.append("retry_failures must be a list of failure ids")
