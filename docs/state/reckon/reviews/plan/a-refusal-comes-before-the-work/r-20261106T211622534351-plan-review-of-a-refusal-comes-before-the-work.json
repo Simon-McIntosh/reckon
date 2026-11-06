@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T21:22:20.590Z",
+  "dispatched_at": "2026-11-06T21:17:51Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-refusal-comes-before-the-work.html:43",
+      "id": "reasoning-1",
+      "reason": "a worker implementing \u00a72 as written will find one of the four refusals has no backend to judge, and will either silently judge it against the wrong lane or drop it; the plan sentence needs to say which, or narrow the claim to the three refusals that are node-local.",
+      "text": "\u00a72 says all four `plan_dispatch` refusals \"move into one function ... that both paths call, and each batch entry's node is judged by it, with the same locked decisions and budget ceiling\", but the fourth of them \u2014 the execution-fit refusal at `reckon/crew/dispatch_plan.py:869` \u2014 is judged from `execution_fit = capability.assess_execution_fit(node.done_when, role=..., execution_capable=backend.get(\"execution_capable\"))`, where `backend` is the backend `plan_dispatch` resolves for the node's role and section (`dispatch_plan.py:752`/`:770`). The queue path, `queue_requests` (`reckon/crew/dispatch.py:293`), is handed only a lane name (`backend_name`, defaulting to the config's local/default backend) and never resolves role or section routing, because the queued request is routed later by the picker. Sharing that refusal therefore either judges execution fit against a lane the node may never run on \u2014 a different input from the single path, so \"the same refusal detail\" is false for it \u2014 or forces the queue to resolve routing at queue time, which is a behaviour change \u00a72 does not declare and which the section's own \"the rest of the batch is stored as today\" forbids.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-refusal-comes-before-the-work.html:44",
+      "id": "done_when-1",
+      "reason": "the measure is what a worker optimises to; without a case per shared refusal, a worker can satisfy the gate while sharing two refusals of four, and the plan's central claim would ship untested.",
+      "text": "\u00a72's done-when exercises the shared function with two cases only: the goal-conjunction refusal (`validate_node`) and the missing negative control (`negative_control_finding`). Its negative controls are \"removing the batch's contract call\" and \"calling `validate_node` alone stores the fourth case's entry\", so if the batch called `validate_node` plus `negative_control_finding` and nothing else, every case in the measure would pass. The `gate_population_finding` and execution-fit refusals \u2014 two of the four the deliverable names \u2014 are never exercised, so \"the call is shared rather than copied: ... so the two cannot drift\" is unmeasured for half the contract, and the gate cannot show that the drift the section exists to prevent is prevented.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "0bb6db6494d637b3ede9a2b5050892c70be6e9dc",
+  "plan_fingerprint": "b70ec5a46d8684116372ddeca744519f4f92dae0ac8de15353d49934086b9986",
+  "plan_slug": "a-refusal-comes-before-the-work",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T211622534351-plan-review-of-a-refusal-comes-before-the-work",
+  "reviewed_blob_sha": "ef788c3736c5c76f47ab4f5e1e1ebeb5139ca908",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every line anchor in \u00a71's evidence and \u00a72's case (dispatch_plan.py:843/851/862/869/911, node.py:79) resolves, and the cited `a-dry-run-must-resolve-what-the-real-call-resolves` \u00a75 is present and done.",
+    "done_when": "a finding \u2014 the done-when exercises only two of the four refusals the deliverable says are shared, so half the contract is unmeasured.",
+    "evidence_paths": "pass \u2014 gate logs go \"under the run directory\", i.e. the durable `~/.config/reckon/crew/runs/<run>/` tree, and the test is a committed path under `tests/`.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach a symbol, filename or comment; `_DELIVERABLE_ACTIONS` is the real symbol.",
+    "reasoning": "a finding \u2014 the execution-fit refusal is judged against a backend the queue path does not resolve, so the \"one function both paths call, same refusal detail\" mechanism cannot hold for that refusal as written.",
+    "single_goal": "pass \u2014 \u00a72 names one deliverable (batch entries judged by the single path's contract) and one measure; extracting the shared function is its mechanism, not a second goal.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares s3\u2192s2 and s5\u2192s2, which matches the two sections that share `reckon/crew/dispatch.py` and `reckon/crew/dispatch_plan.py` with s2 (both say so in their own text); s4 shares no file with s2 and declares no wait, matching the followup's \"\u00a72 and \u00a74 are independent\"."
+  },
+  "section_digests": {
+    "_document": "fe86ddc53d6df02ed8681809f4399744a8daf0946c333b28fc3a6b583769f545",
+    "s1": "75df880739e89570186a1c16cae47d54a4d457a4a6e99c09b2d62c21368dc424",
+    "s2": "fea09911c2a6156191ae19ad96b435e85a9cb657e585c00b2b53956ad13c8ea3",
+    "s3": "b5b62335762566059c1bbb98372fed78bff07b643d64c9fa675596aa8bd81a3a",
+    "s4": "07a4ee8576d20a6230358f2290732b9c4debaa456380d9c2a8e8fd3651cc5e95",
+    "s5": "971aeb8e3a089f473d197e621d3f0c26ead6b1816778ac46d4796b8906360253"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T21:30:19.719949+00:00",
+  "total": null
+}
