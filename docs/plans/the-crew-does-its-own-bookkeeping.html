@@ -22,7 +22,7 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="It collects the crew-command defects the power_convertor fleet reported on 2026-10-22; the monitor&#x27;s own items are filed in the-monitor-shows-the-work-it-watches §81–§88, related duty fixes live in a-coordinator-can-clear-its-own-duties, and no section waits on another plan.">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;implementable&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;implementable&quot;,&quot;s25&quot;:&quot;implementable&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;implementable&quot;,&quot;s28&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
-  <meta name="plan-version" content="95">
+  <meta name="plan-version" content="96">
   <meta name="plan-modified" content="2026-11-06">
   <title>The Crew Does Its Own Bookkeeping | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -395,6 +395,12 @@
 <div class="r-comment" data-section="s23" data-id="c-close-s23" data-who="reckon-build" data-when="2026-10-23T11:30:00Z">
     <div class="r-comment-body"><p>Section 23 landed at merge <code>53bc0d08b</code>: a stopped peer with a current terminal manifest no longer blocks another run's accepted path. <a href="/reckon/evidence/archive/the-crew-does-its-own-bookkeeping-landed.html#s23">evidence</a></p></div>
 </div>
+<div class="r-comment" data-section="s25" data-id="c-run-r-20261106T123725729642-review-of-a-repair-round-reads-each-findings-severity-and-its-ab95fedaef7a" data-who="reckon-build" data-when="2026-11-06T12:48:50.200Z">
+    <div class="r-comment-body"><p>Independent review of head ab95fedaef7abbb90df8768343108baaa89a071c against base 3a790e840ef31e09301d88e44cf7a9c3709c008c: goal met for prefix severity, unclassified counting and the integrated-head guard, with four non-blocking findings — the branch-tip exclusion, a duplicated ancestry probe, an unresolvable sha in the landing record, and an after_suite that names a different population from baseline_suite.</p></div>
+</div>
+<div class="r-comment" data-section="s25" data-id="c-run-r-20261106T113435098365-a-repair-round-reads-each-findings-severity-and-its" data-who="reckon-build" data-when="2026-11-06T13:13:28Z">
+    <div class="r-comment-body"><p>A finding&#x27;s severity is read from its claim prefix when no severity field exists, so three &quot;non-blocking:&quot; findings start no repair round (the gate reads each as non-blocking); an unclassified finding is counted apart and named in the advice; and a reviewed head the integration branch moved past starts no round. The integration guard now asks the checkout&#x27;s own branch reader, the promotion&#x27;s head-revision lookup and the shared ancestor probe instead of probing git itself, and a fifth case proves that delegation.</p></div>
+</div>
 <div class="r-comment" data-section="s26" data-id="c-run-r-20261105T165724208680-review-of-a-disposition-names-the-review-it-writes-65650c481366" data-who="reckon-build" data-when="2026-11-05T17:10:22.319Z">
     <div class="r-comment-body"><p>Independent review of r-20261105T162052323426-a-disposition-names-the-review-it-writes at head 65650c481366 scored goal_fidelity 19, evidence 19, scope_discipline 19, durability 16, fit 18, reuse 17, with three non-blocking findings: the newest-review order follows file mtime and is moved by a later write, the crew tool's dispose map carries no review argument, and the duty commands dispose_commands renders omit it.</p></div>
 </div>
@@ -430,9 +436,6 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-20261023-s8-review" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
     <div class="r-comment-body"><p>Content review of v11 on 2026-10-23: <code>_committed_scope</code> in <code>reckon/crew/promotion_evidence.py</code> deliberately diffs each cited commit rather than the base-to-head span, so §8's prescribed base-to-head comparison is the span diff that function rejects. Rework §8 before dispatch.</p></div>
-</div>
-<div class="r-comment" data-section="s25" data-id="c-run-r-20261106T123725729642-review-of-a-repair-round-reads-each-findings-severity-and-its-ab95fedaef7a" data-who="reckon-build" data-when="2026-11-06T12:48:50.200Z">
-    <div class="r-comment-body"><p>Independent review of head ab95fedaef7abbb90df8768343108baaa89a071c against base 3a790e840ef31e09301d88e44cf7a9c3709c008c: goal met for prefix severity, unclassified counting and the integrated-head guard, with four non-blocking findings — the branch-tip exclusion, a duplicated ancestry probe, an unresolvable sha in the landing record, and an after_suite that names a different population from baseline_suite.</p></div>
 </div>
 </section>
 </main>
