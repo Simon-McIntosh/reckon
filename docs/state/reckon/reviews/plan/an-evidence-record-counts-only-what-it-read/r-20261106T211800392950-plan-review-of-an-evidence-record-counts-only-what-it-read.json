@@ -1,0 +1,68 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T21:25:57.523Z",
+  "dispatched_at": "2026-11-06T21:19:32Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:39",
+      "id": "reasoning-1",
+      "reason": "without a clause saying what a shell's verdict is, the builder will leave a pass claim derived from an empty ledger in every record an append creates, and the plan's own thesis is that a record claims only what it read.",
+      "text": "\u00a72 removes the count sentence but leaves the shell's `plan-verdict=\"qualified\"`, which `_render_document` derives from `_overall_verdict([])` (reckon/evidence.py:417,294-326); every op-created record therefore still publishes a verdict computed from no run, which is the same defect class the plan exists to remove",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:50",
+      "id": "reasoning-2",
+      "reason": "an implementer following the rule literally publishes stale generated content under a resolved anchor, and the done-when's fixture cannot show it because its fixture section is always produced.",
+      "text": "\u00a74's rule keys on whether a section id appears in this run's render (\"the synthesis does not itself produce\"), not on whether the synthesis generated it, so a section an earlier synthesis generated but this run does not (the `outcome` section when plan-level comments have changed, or a numbered section whose ledger rows no longer map) is carried forward verbatim as if an append had written it",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:40",
+      "id": "done_when-1",
+      "reason": "all three counts are one sentence in `_render_document`, so removing it removes all three, and the risk of a passing partial fix is small rather than a wrong direction.",
+      "text": "the \u00a72 assertion looks only for the substring \"committed run(s)\", while the deliverable forbids run, comment and commit counts; a replacement summary naming comments or commits would pass the gate",
+      "type": "done_when",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:49",
+      "id": "reasoning-3",
+      "reason": "the discrepancy is in the narrative provenance, not in the mechanism or the fixture, so it does not send the builder down a different path.",
+      "text": "\u00a74's Why says the rebuild read 14 runs on the record \u00a71 quotes, while \u00a71 states the ledger holds 58 rows for that plan; `synthesize_landed_record` renders `len(records)` (reckon/evidence.py:658,673), so the two figures describe the same read and cannot both be right",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "0bb6db6494d637b3ede9a2b5050892c70be6e9dc",
+  "plan_fingerprint": "9de4975f324d7917e74e5a529d41100881b775b6ce93c366aa66b790d6b40e49",
+  "plan_slug": "an-evidence-record-counts-only-what-it-read",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T211800392950-plan-review-of-an-evidence-record-counts-only-what-it-read",
+  "reviewed_blob_sha": "dd8dcd8d7ece0a142901d791ced967e378d98aa0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited `plan-evidence-for` meta is at `reckon/evidence.py:416`, `synthesize_landed_record` is at `reckon/evidence.py:636`, `_landed_record_shell` at `reckon/_store.py:1184`, and the append-created path at `reckon/_store.py:1263`; the followup anchor `s2` and the \u00a7N headings all resolve.",
+    "done_when": "a finding \u2014 the \u00a72 gate greps only the \"committed run(s)\" phrase, while the deliverable it measures forbids all three counts.",
+    "evidence_paths": "pass \u2014 both units put their logs \"under the run directory\", and the test files are repository paths, so every artifact survives the run.",
+    "naming": "pass \u2014 the two new test filenames and the described code contain no plan labels, stage identifiers, ticket numbers or changelog prose.",
+    "reasoning": "a finding \u2014 \u00a72 leaves a `plan-verdict` derived from an empty ledger in every op-created record, and \u00a74's preservation rule cannot tell a synthesis-generated section from an appended one.",
+    "single_goal": "pass \u2014 \u00a72 has one deliverable (a shell that claims no counts) and \u00a74 has one (a re-synthesis that keeps appended sections).",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `s3` and `s4` waiting on `s2`, which is the file each shares (`_store.py` and `evidence.py` respectively), and `plan-after: a-finished-plan-closes` resolves to `docs/plans/a-finished-plan-closes.html`."
+  },
+  "section_digests": {
+    "_document": "6d35efce52466005f8ee56997c8dc7bcca998d7c41fcd252d254bc7264596281",
+    "s1": "64d6c924b95b190c9e9b96a1c6090d17642db3a4e47368bd0fc0fb34e799ab6d",
+    "s2": "af5983388bea23fb12fcd1305308d68ad681cec3266ed84695f03e27d356f757",
+    "s3": "1e19a712fd2dad1c38a11f7b6164b1fcc01c996e78f3297edb135a1d5fd7c0cf",
+    "s4": "23063d45d27cf20e55056e4b13350cd12a551045e800880fdfa0f52479577334"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T21:37:45.353520+00:00",
+  "total": null
+}
