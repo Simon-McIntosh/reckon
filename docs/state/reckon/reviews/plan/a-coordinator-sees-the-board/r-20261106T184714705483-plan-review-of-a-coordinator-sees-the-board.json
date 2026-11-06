@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T18:54:30.500Z",
+  "dispatched_at": "2026-11-06T18:48:42Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html:23",
+      "id": "wiring-1",
+      "reason": "both upstreams (\u00a72 and \u00a711) are `done` and landed, so a \u00a713 node loses no dependency and no dispatch order changes; the entry is record hygiene only.",
+      "text": "`plan-section-depends-on` carries no `s13` key although \u00a713 rewrites `resolve_plan_coordinators` (\u00a72) and builds on \u00a711's landed document bound, so the record does not state the dependency the section has",
+      "type": "wiring",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "6e193df1b6f432ebff84eaca4e89558b7f0e43a2",
+  "plan_fingerprint": "badef9b44080b33ea237e13174c94aba1b8480c9b959c5e91afe6aeb914e39ed",
+  "plan_slug": "a-coordinator-sees-the-board",
+  "plan_version": 67,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T184714705483-plan-review-of-a-coordinator-sees-the-board",
+  "reviewed_blob_sha": "b2f80f3b10ad37561318c2114adc46fd7b955c6c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `resolve_plan_coordinators` (reckon/crew/plan_coordinator.py:256), `_plan_of_run` (:104), `_plan_from_node` (:143), `_reviewed_run` (:125) and `dispatch_sessions._reviewed_run_id` (reckon/crew/dispatch_sessions.py:458) all exist; the 45 s figure resolves to a-project-reads-as-one-picture.html:369, \"the three reckon roadmap and why calls did not answer within 45 s and were interrupted inside resolve_plan_coordinators\"; the 5.7 s figure resolves in the \u00a711 fragment; the \"30 s read deadline\" resolves to `READ_DEADLINE_SECONDS = 30.0` (reckon/mcp_deadlines.py:47).",
+    "done_when": "pass \u2014 the done-when names the base profile of the served read, the fixture shaped to the profiled stage, a count through the code's own reader, an equivalence against base, and a 30 s served-read target with the base figure recorded beside it; the base arm is the negative control.",
+    "evidence_paths": "pass \u2014 the fragment `docs/evidence/fragments/a-coordinator-sees-the-board/the-coordinator-resolver-resolves-each-review-once.html` is a durable path under a directory that exists, and both base and head figures are required there.",
+    "naming": "pass \u2014 the section names mechanisms (`_reviewed_run_id`, \"the review-subject resolution\") and carries no ticket numbers, stage labels or changelog prose into code.",
+    "reasoning": "pass \u2014 the stated cause is \"not yet known\" and is supported rather than overclaimed; every load-bearing claim was checked in code and holds, and the mechanism runs on a named caller.",
+    "single_goal": "pass \u2014 one deliverable: remove the cost of the dominant stage in the served coordinator read.",
+    "wiring": "a finding \u2014 s13 has no `plan-section-depends-on` entry although it edits `resolve_plan_coordinators` (\u00a72) and builds on \u00a711's landed bound."
+  },
+  "section_digests": {
+    "_document": "103d6eeba4272f2ee872bf4ffdbe7612a81d7a1c94aa364b8ecfa817a75071e3",
+    "s1": "4f48bcfe2c71d1397f0eeb277ff928920d1ed0ae7cfb0da777c94e4943eadf87",
+    "s10": "80dd3bc62e983a2d2a47ca25840ac1947582d34d211d614a5c8429c5b6156137",
+    "s11": "b7bf20ae565e1f0d011538f9c16a840076ac093004cf3c94e5b5afa14c316316",
+    "s12": "bf696484c1fe51f7597bee5268e93815e84b8fd595be92a3477da828a9a7009e",
+    "s13": "abbb05bcfcf87dc4eadbeca777a762a412ed950e47688526c6c1851bdd9dcb1d",
+    "s2": "e8a77da3ee95b252c49524e82dbed4c7af59fd2cf8813eca867555771e9c15d5",
+    "s3": "e4cd7ce8696d0d9fb511a9be2379e2561a08418a1d1f759c42a926231bad6e36",
+    "s4": "ba6bafca3a7e3ae7fb186980afd26dd26e183bf99b72272ea15f06fbaeb19e5f",
+    "s5": "c7676f30d627a592319ab4f34cbd8352167ba0b9b92a20d5cbafea4a685b90ae",
+    "s6": "b5875d403856eb185e06155d0c62410ab30a447353779fe729a12b57c2607cf0",
+    "s7": "4428c6858fc7f10400173c2e619ad379aa49779cef060ae4b50d866fde4a59a7",
+    "s8": "f9f58e76a5713eb901b1e780fcb93d48ca773a573fded72ec476738a59629b67",
+    "s9": "d2506b05e05f7611a8794a66b56c70ad072e38b6edb29d625161974bb3cc6da4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T19:01:31.912485+00:00"
+}
