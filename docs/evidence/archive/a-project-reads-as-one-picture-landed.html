@@ -189,6 +189,11 @@ for n in rank:
     <p>Run <code>r-20261105T194853218973-measure-the-picture-reads-on-three-mounts</code> merged at <code>5816b1619a</code> as a negative result. The four coordinator questions were asked through the CLI reads on power_convertor, nova and reckon. Six of twelve calls missed the 30 s deadline: roadmap 20.7 s warm on power_convertor, 43.3 s cold on nova and over 50 s cold on reckon; brief 31.2 s and 32.7 s, and over its deadline on reckon; scopes answered on all three. The why view answered on no mount, because <code>why_view._waited_on_by</code> decodes the persisted metadata index once per plan (§16). The run's write fence makes the cache read-only, so the cold timings include rebuilding the index on every call. The base-commit control held: the base disagrees with the coordinator's account on the critical path and the first-ranked item. The removed-edge control could not fire on this snapshot. Its critical-path head, <code>filter-recommendation-for-coil-health</code>, declares only waits on its own sections, so removing either of two cross-plan edges moved neither the path nor any wiring finding. Four disagreements were counted: three wiring faults, since the coordinator account dates from 2026-10-21 against a later snapshot, and one derivation defect. The fragment is <code>docs/evidence/fragments/a-project-reads-as-one-picture/measure-the-picture-reads-on-three-mounts.html</code>.</p>
   </section>
 
+  <section id="s8-measure-correction">
+    <h2>§8 measure: correction to the why-view cause</h2>
+    <p>Correction to the §8 measure entry above. Its cause for the why view, a decode of the persisted metadata index once per plan, was measured by a probe that called <code>_read_plan</code> outside the request scopes the served read enters. The content review of §16 re-measured inside <code>discovery_file_scope()</code> and <code>resource_scan_scope()</code>. The why read for <code>power_convertor:shared-coil-supply-model#s9</code> answered in 6.3 s with six decodes, and the read for <code>reckon:a-project-reads-as-one-picture#s8</code> did not answer within 110 s. The why view is slow on some mounts, and §16 now finds the cost on reckon before changing code.</p>
+  </section>
+
 </main>
 </body>
 </html>
