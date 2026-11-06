@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The reviewed manifest's after_suite points to after-suite.log, whose completed summary is 5 passed / EXIT=0 and therefore has no failing ids; the baseline_suite points to base-suite.log, which ended EXIT=124 without a summary and cannot be used as a completed comparison. The separate completed direct-importer logs show five base failure ids and four head failure ids, all four present at base, so that broader comparison also adds zero.",
+  "assertion_analysis": [
+    "tests/test_queue_ranking_builds_no_coordinators.py:127 becomes false if ranking returns no rows; :128 reddens if it builds zero or more than one roadmap; :129 reddens if ranking calls coordinator resolution.",
+    "tests/test_queue_ranking_builds_no_coordinators.py:132 becomes false if readiness returns no rows; :133 reddens if readiness builds more than one roadmap; :134 reddens if readiness calls coordinator resolution.",
+    "tests/test_queue_ranking_builds_no_coordinators.py:143 reddens if the MCP critical path has no links; :144 reddens if the MCP path skips the patched resolver; :145 reddens if no critical link carries the resolver's fixture coordinator.",
+    "tests/test_queue_ranking_builds_no_coordinators.py:153 compares every output run id and signal against a fixed list recorded from the base revision and reddens on order or signal drift.",
+    "tests/test_queue_ranking_builds_no_coordinators.py:164 reddens if an unchanged second ranking call rebuilds a roadmap.",
+    "tests/test_queue_ranking_builds_no_coordinators.py:179 reddens if a plan edit does not cause exactly one new roadmap build; :180 reddens if the edited ROI does not alter the queued section's priority key. No added assertion compares output against the same variable passed as its input."
+  ],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/dispatch.py:482",
+    "reckon/crew/queue_admission.py:2436",
+    "reckon/crew/queue_admission.py:3948",
+    "reckon/crew/queue_admission.py:4007",
+    "reckon/crew/obligations.py:1217",
+    "reckon/crew/obligations.py:1788",
+    "reckon/mcp.py:2506"
+  ],
+  "completed_at": "2026-11-06T06:13:40Z",
+  "dispatched_at": "2026-11-06T06:04:31Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T214831970273-queue-ranking-and-readiness-build-no-coordinators/manifest.md",
+      "line": "27",
+      "text": "blocking: the required hand-run crew admit --once pass did not finish within 60 s or produce a verdict row; the two recorded receipts ended EXIT=124 after 90 s and 70 s, so the plan's live admission measure remains unmet."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/dispatch.py:482, reckon/crew/queue_admission.py:2436, reckon/crew/queue_admission.py:3948, reckon/crew/queue_admission.py:4007, reckon/crew/obligations.py:1217, reckon/crew/obligations.py:1788, reckon/mcp.py:2506",
+    "diff": "Read de7a4816889696e1bb02b2dfa54237ef1ad1900e and 3be0d57a8addb6ad18576868be9da05afd97a2f3 against 7a8098ad231c211417b6073f296a8fef4fbd551a commit by commit; the first changes queue_order.py, roadmap.py, plan_review.py, and adds five tests, while the second adds only the evidence fragment.",
+    "done_when": "Plan section \u00a741 requires five synthetic checks, four negative controls, importer parity, warm ranking below 5 s, and a live admit verdict below 60 s; after-suite.log:5 records 5 passed and the four mutation logs each end EXIT=1, but admit-once.log:4 and admit-once-retry.log:6 end EXIT=124 without verdict and live-timing.log:39 has one 7.792 s warm call.",
+    "goal": "The dispatched goal in prompt.txt:35 requires one coordinator-free roadmap per project per call and discovery-validated priority caching; reckon/crew/queue_order.py:43-86, reckon/crew/plan_review.py:5286, and reckon/roadmap.py:3210-3228 implement those paths.",
+    "manifest": "The source manifest.md:5-27 reports complete with commits de7a4816889696e1bb02b2dfa54237ef1ad1900e and 3be0d57a8addb6ad18576868be9da05afd97a2f3, focused gate 5 passed, zero added importer failures, an incomplete base_suite, and two timed-out live admit attempts.",
+    "write_paths": "The source prompt.txt:79-85 declares three Python modules, one test, an evidence fragment, and its figures directory; git diff --name-status 7a8098ad..3be0d57a shows only the three modules, the test, and the fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_queue_ranking_builds_no_coordinators.py:128-180 has independent build-count, coordinator-call, fixed-base-order, cache-reuse, and changed-key assertions, and the four mutation logs record the intended tests failing when those behaviors regress.",
+    "evidence": "tests/test_queue_ranking_builds_no_coordinators.py:121-180 covers the five synthetic measures with four recorded failing mutations, but manifest.md:27 confirms the required sub-60-second live admit verdict was not produced and live-timing.log:39 records an initial 7.792 s warm call.",
+    "fit": "reckon/roadmap.py:3210-3228 extends the existing context-managed build scope with an explicit default that preserves ordinary reads, and the added names in queue_order.py:17 and roadmap.py:4526 describe their mechanisms.",
+    "goal_fidelity": "reckon/crew/queue_order.py:43-86 reuses discovery's scoped roadmap and stores derived keys against the validated discovery object, while reckon/crew/plan_review.py:5286 enters the same coordinator-free scope.",
+    "reuse": "A capability search found the existing discovery validation owner at reckon/serve.py:1518 and ranking-key owner at reckon/roadmap_ranking.py, which queue_order.py:47-86 invokes rather than cloning; roadmap.py:4526 also retains the existing critical-link builder.",
+    "scope_discipline": "The two-commit diff changes only reckon/crew/queue_order.py, reckon/roadmap.py, reckon/crew/plan_review.py, tests/test_queue_ranking_builds_no_coordinators.py, and the declared evidence fragment listed at manifest.md:3."
+  },
+  "node": "review-of-queue-ranking-and-readiness-build-no-coordinators-3be0d57a8add",
+  "node:reviewed": "queue-ranking-and-readiness-build-no-coordinators",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The dispatched goal in prompt.txt:35 requires one coordinator-free roadmap per project per call and discovery-validated priority caching; reckon/crew/queue_order.py:43-86, reckon/crew/plan_review.py:5286, and reckon/roadmap.py:3210-3228 implement those paths.\nVERDICT done_when: Plan section \u00a741 requires five synthetic checks, four negative controls, importer parity, warm ranking below 5 s, and a live admit verdict below 60 s; after-suite.log:5 records 5 passed and the four mutation logs each end EXIT=1, but admit-once.log:4 and admit-once-retry.log:6 end EXIT=124 without verdict and live-timing.log:39 has one 7.792 s warm call.\nVERDICT write_paths: The source prompt.txt:79-85 declares three Python modules, one test, an evidence fragment, and its figures directory; git diff --name-status 7a8098ad..3be0d57a shows only the three modules, the test, and the fragment.\nVERDICT manifest: The source manifest.md:5-27 reports complete with commits de7a4816889696e1bb02b2dfa54237ef1ad1900e and 3be0d57a8addb6ad18576868be9da05afd97a2f3, focused gate 5 passed, zero added importer failures, an incomplete base_suite, and two timed-out live admit attempts.\nVERDICT diff: Read de7a4816889696e1bb02b2dfa54237ef1ad1900e and 3be0d57a8addb6ad18576868be9da05afd97a2f3 against 7a8098ad231c211417b6073f296a8fef4fbd551a commit by commit; the first changes queue_order.py, roadmap.py, plan_review.py, and adds five tests, while the second adds only the evidence fragment.\nCALL_SITES: reckon/crew/dispatch.py:482, reckon/crew/queue_admission.py:2436, reckon/crew/queue_admission.py:3948, reckon/crew/queue_admission.py:4007, reckon/crew/obligations.py:1217, reckon/crew/obligations.py:1788, reckon/mcp.py:2506\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_order.py:43-86 reuses discovery's scoped roadmap and stores derived keys against the validated discovery object, while reckon/crew/plan_review.py:5286 enters the same coordinator-free scope.\nSCORE evidence: 10\nJUSTIFICATION evidence: tests/test_queue_ranking_builds_no_coordinators.py:121-180 covers the five synthetic measures with four recorded failing mutations, but manifest.md:27 confirms the required sub-60-second live admit verdict was not produced and live-timing.log:39 records an initial 7.792 s warm call.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The two-commit diff changes only reckon/crew/queue_order.py, reckon/roadmap.py, reckon/crew/plan_review.py, tests/test_queue_ranking_builds_no_coordinators.py, and the declared evidence fragment listed at manifest.md:3.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_queue_ranking_builds_no_coordinators.py:128-180 has independent build-count, coordinator-call, fixed-base-order, cache-reuse, and changed-key assertions, and the four mutation logs record the intended tests failing when those behaviors regress.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/roadmap.py:3210-3228 extends the existing context-managed build scope with an explicit default that preserves ordinary reads, and the added names in queue_order.py:17 and roadmap.py:4526 describe their mechanisms.\nSCORE reuse: 20\nJUSTIFICATION reuse: A capability search found the existing discovery validation owner at reckon/serve.py:1518 and ranking-key owner at reckon/roadmap_ranking.py, which queue_order.py:47-86 invokes rather than cloning; roadmap.py:4526 also retains the existing critical-link builder.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T214831970273-queue-ranking-and-readiness-build-no-coordinators/manifest.md:27 blocking: the required hand-run crew admit --once pass did not finish within 60 s or produce a verdict row; the two recorded receipts ended EXIT=124 after 90 s and 70 s, so the plan's live admission measure remains unmet.",
+  "review_run_id": "r-20261106T060242162049-review-of-queue-ranking-and-readiness-build-no-coordinators-3be0d57a8add",
+  "reviewed_base_sha": "7a8098ad231c211417b6073f296a8fef4fbd551a",
+  "reviewed_head_sha": "3be0d57a8addb6ad18576868be9da05afd97a2f3",
+  "reviewed_run_id": "r-20261105T214831970273-queue-ranking-and-readiness-build-no-coordinators",
+  "scores": {
+    "durability": 19,
+    "evidence": 10,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T06:09:47+00:00",
+  "total": 107
+}
