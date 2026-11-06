@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T20:52:00.640Z",
+  "dispatched_at": "2026-11-06T20:41:33Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-broken-wait-reaches-its-coordinator.html:46",
+      "id": "reasoning-1",
+      "reason": "the exclusion rests on a false fact about existing routing, so the author's scope decision may leave the second repair-verb run class unowed while believing it is already covered.",
+      "text": "\u00a73 says `exited-unfinished` is out of scope because \"such a run is already owed as `turn-ended-early`\", but that duty kind is produced only for the classification `interrupted` (`reckon/crew/obligations.py:53-58` keys `INTERRUPTED_RUN_PHASE`, and its recovery verb is `redispatch`); resolving the two readings on the current tree gives `exited-unfinished: verb='repair' duty_kind=''` against `interrupted: verb='redispatch' duty_kind='turn-ended-early'`, so an exited-unfinished run is owed nothing today",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-broken-wait-reaches-its-coordinator.html:46",
+      "id": "reasoning-2",
+      "reason": "a worker implementing the deliverable as written fails its own done-when, and the repair (widen the item projection in `_live_item`, which both the direct and the snapshot payload paths read) is a deliverable the plan does not name.",
+      "text": "\u00a73's mechanism is \"`RECOVERY_CLASSIFICATION_DUTY_KINDS` gains an entry\", but its done-when requires the obligation be listed \"with its `next_action` and the refusal text\"; `_live_item` (`reckon/crew/obligations.py:727-736`) projects only `kind`, `run_id`, `node`, `plan`, `age_seconds` and `next_command`, and the refusal text lives in the row's `detail` (`reckon/crew/recovery_classification.py:1716-1723`), not in `next_action` (\"repair the waiting declaration in \u2026 before resuming\"), so a map-only change produces an item carrying no refusal text",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-broken-wait-reaches-its-coordinator.html:47",
+      "id": "done_when-1",
+      "reason": "the third run's recovery reading is `interrupted`, which the new entry never touches, so no mutation of the declared mechanism can make it appear twice; the case and its control should be replaced by one that can fail (for example, listing every waiting-or-unreadable run makes the second case, the valid probe, appear).",
+      "text": "\u00a73's third case (\"a run already listed as `turn-ended-early` is listed once\") and its control (\"skipping the de-duplication lists the third run twice\") cannot fail: the obligations loop takes at most one kind per row through a single `if recovery_classification in \u2026: \u2026 else: \u2026` followed by one `items.append` (`reckon/crew/obligations.py:1967-1972`), so no implementation of the declared mechanism can list a run twice and there is no de-duplication step to skip",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "1a860cd8fb146d6c4dac6c2adb53cd0c2048b5ca",
+  "plan_fingerprint": "4639c2d9587896f7d0ffe07f808aef7ab77ee78506652c43ed8f3e7cf19e4500",
+  "plan_slug": "a-broken-wait-reaches-its-coordinator",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T204021866821-plan-review-of-a-broken-wait-reaches-its-coordinator",
+  "reviewed_blob_sha": "4a3ccbe3d305e806b8f4f7e9da473df461449eca",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol resolves (`reckon/crew/recovery_wait.py:668`, `:683`, `:744`; `reckon/crew/recovery_liveness.py:1006`; `reckon/crew/recovery_vocabulary.py:88`; `reckon/crew/recovery_classification.py:487`, `:535`; `reckon/crew/obligations.py:75`, `:1917`, `:1968`; `reckon/crew/reports.py:2536`, `:2576`); the two `obligations.py` line hints drifted by 11\u201314 lines after the upstream section landed, and the symbols rather than the numbers are what resolve.",
+    "done_when": "a finding \u2014 \u00a73's third test case and its \"skipping the de-duplication\" control cannot fail.",
+    "evidence_paths": "pass \u2014 \u00a72 requires every log to sit under the run directory with its revision, literal command and a closing `EXIT=`; no done-when names a scratchpad or node-local temporary path, and \u00a73/\u00a74 logs land under the run directory through the manifest's `test_logs`.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or version tags reach any named symbol or file; `_wait_probe_reference_kind`, `_wait_probe_job_id` and the three new test filenames are named by what they read.",
+    "reasoning": "two findings \u2014 \u00a73's claim that an `exited-unfinished` run is \"already owed as `turn-ended-early`\" is false, and the map entry \u00a73 declares does not carry the refusal text its done-when asserts.",
+    "single_goal": "pass \u2014 \u00a72 names one reader plus its refusal text, \u00a73 one duty-map entry, \u00a74 one producer-gone reader, each a single reviewable deliverable.",
+    "wiring": "pass \u2014 \u00a73 depends on `a-reexec-never-orphans-a-dispatch#s4` and \u00a74 on this plan's `#s2`, both of which resolve, and the upstream section is already `done` (its `launch-failed` entry is present at `reckon/crew/obligations.py:75`), so the declared wait releases immediately."
+  },
+  "section_digests": {
+    "_document": "d03f5f33ba4e3c3040d3555977705f88d6fe07b3409e73c3c07db45f1032f907",
+    "s1": "261438fe26041f770a527d758f1d74089637c1787c8d78d49957c57b9c122a42",
+    "s2": "7f638147397793c27168d9f3abf7057cba00c63109ec7df9ec06dc38a784bda7",
+    "s3": "f8c2dfd5ad0fbe468c23885c3d7aa3d6b53fe492172d4cba5c34c18208b46ba4",
+    "s4": "56f29b4064cc7a3d087cf2380bd8311ded02ce5526e7295d449d9b7fdebc5930"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T21:01:57.819365+00:00",
+  "total": null
+}
