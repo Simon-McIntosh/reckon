@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="an-orchestrator-can-discharge-a-refusal">
+  <meta name="plan-title" content="An orchestrator can discharge a refusal">
+  <meta name="plan-summary" content="A week of coordinator transcripts reads 18.8 uses of --no-impl-change per hundred corrective runs and 51.0 uses of --outcome per hundred review runs, against 18.5 and 52.5 in the coordinator-overhead census. The target was zero.">
+  <meta name="plan-evidence-for" content="an-orchestrator-can-discharge-a-refusal">
+  <meta name="plan-recorded-at" content="2026-11-06">
+  <meta name="plan-verdict" content="measured-no-move">
+  <title>Count uses of the retired refusal escapes | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1 id="count-uses-of-the-retired-refusal-escapes-title">Count uses of the retired refusal escapes</h1>
+
+    <section id="count-uses-of-the-retired-refusal-escapes-what-changed">
+      <h2>What changed</h2>
+      <p><span class="badge">measured, not landed</span> This node measured, and wrote
+        one research record. It changed no product source and no test. The record is
+        <code>docs/research/refusal-escape-census.html</code>; the instrument is
+        <code>refusal_escape_census.py</code> in the run directory, with its output
+        <code>census.json</code> and the exemption breakdown from
+        <code>classify_uses.py</code>.</p>
+    </section>
+
+    <section id="count-uses-of-the-retired-refusal-escapes-measure">
+      <h2>The measure</h2>
+      <p>One week of coordinator transcripts, 2026-10-05T00:00Z to 2026-10-12T00:00Z,
+        read for operator uses of <code>--no-impl-change</code> and
+        <code>--outcome</code> on <code>crew complete</code>, against the same read of
+        the coordinator-overhead census's frozen corpus over its own window
+        (2026-09-12 to 2026-09-26).</p>
+      <table>
+        <thead><tr><th>Rate per hundred relevant runs</th><th>Census</th><th>New week</th><th>Target</th></tr></thead>
+        <tbody>
+          <tr><td><code>--no-impl-change</code> on corrective runs (invocations)</td><td>18.5</td><td>18.8</td><td>0</td></tr>
+          <tr><td><code>--no-impl-change</code> on corrective runs (distinct)</td><td>12.4</td><td>15.2</td><td>0</td></tr>
+          <tr><td><code>--outcome</code> on review runs (invocations)</td><td>52.5</td><td>51.0</td><td>0</td></tr>
+          <tr><td><code>--outcome</code> on review runs (distinct)</td><td>47.7</td><td>46.7</td><td>0</td></tr>
+        </tbody>
+      </table>
+      <p><strong>The target is not met.</strong> The rates are flat across two months.
+        The ledger gives the matched figure: of the 327 corrective promotions the
+        narrowing exempts from the impl-move check in the new week, 113 (34.6 per cent)
+        still carried <code>--no-impl-change</code>, where it cannot change the outcome.</p>
+    </section>
+
+    <section id="count-uses-of-the-retired-refusal-escapes-evidence">
+      <h2>Evidence and controls</h2>
+      <ul>
+        <li>Coordinator sessions, new arm: 152 known, 72 with a transcript on disk, 23
+          with records in the window. Those 23 completed 2,201 of the 2,916 runs the
+          week completed — 75 per cent — so absolute counts are a floor and the rate is
+          measured over most of the fleet's work.</li>
+        <li>Comparator arm: the census's 39 frozen transcript snapshots and its
+          <code>inputs/runs.json.gz</code> cohort, re-read with this instrument. The
+          census itself reported neither count, so the comparator column is this
+          measurement of that corpus.</li>
+        <li>Positive control: the scanner recovers the command for 143 of the 164
+          comparator promotions the ledger records as <code>waived</code> (87 per cent)
+          and 117 of 166 (70 per cent) in the new arm.</li>
+        <li>Regime control: the ledger's <code>corrective-run:*</code> impl-move
+          exemption reason is absent from the census window and present 327 times in
+          the new week, so the two arms compare two regimes and not two readings of
+          one.</li>
+        <li>Excluded from every figure: 2,604 text mentions of the flags in the new arm
+          and 2,657 in the comparator, empty flag values, <code>--outcomes</code>,
+          heredoc and script bodies, and sidechain records.</li>
+      </ul>
+    </section>
+
+    <section id="count-uses-of-the-retired-refusal-escapes-remaining">
+      <h2>What the coordinator owns</h2>
+      <p>The plan section's done-when is that the census reads zero; it does not, so
+        the section is not closed by this node. Two residual classes are counted as
+        uses but are not the retired escape: a review run with no delivered record
+        still needs an <code>--outcome</code>, and 231 outcome uses and 38 no-impl uses
+        name their run through a variable set in an earlier turn and so cannot be
+        classified.</p>
+    </section>
+  </main>
+</body>
+</html>

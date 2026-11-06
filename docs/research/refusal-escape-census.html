@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="refusal-escape-census">
+  <meta name="plan-title" content="The Retired Refusal-Escape Census">
+  <meta name="plan-summary" content="A week after the impl-move and review-outcome exemptions landed, coordinators still passed --no-impl-change on 18.8 per cent of corrective runs (census 18.5) and --outcome on 51.0 per cent of review runs (census 52.5). The target was zero; the refusal was retired and the habit was not.">
+  <meta name="plan-status" content="reference">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,measurement,promotion">
+  <meta name="plan-informs" content="an-orchestrator-can-discharge-a-refusal">
+  <title>The Retired Refusal-Escape Census | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Verdict</h2>
+    <p><strong>The target was zero and the census does not read zero.</strong> In the
+      first week after the two narrowings became due, coordinators passed
+      <code>--no-impl-change</code> on <strong>18.8</strong> of every hundred corrective runs and
+      <code>--outcome</code> on <strong>51.0</strong> of every hundred review runs. The
+      coordinator-overhead census, read over its own earlier window with the same
+      instrument and the same denominators, gives <strong>18.5</strong> and
+      <strong>52.5</strong>.</p>
+    <p>The two readings are the same reading. A week after the guard stopped
+      refusing a corrective run for a plan that did not move, and stopped demanding a
+      hand-typed summary from a review run, the operators reached for the same flags at
+      the same rate. <strong>The refusal was retired; the habit was not.</strong></p>
+    <p>The absolute counts rose — 183 corrective uses against 99, 745 review uses
+      against 414 — and that rise is the cohort, not the behaviour: the covered
+      coordinators completed 972 corrective and 1,471 review runs in the new week
+      against 534 and 788 in the census window. Per run, the line is flat.</p>
+    <p>The sharpest reading is the one the ledger can confirm independently. Of the
+      <strong>327</strong> corrective promotions the narrowing exempted from the impl-move
+      check in the new week, <strong>113 (34.6 per cent)</strong> still carried
+      <code>--no-impl-change</code>. On those runs the flag could not have changed the
+      outcome: the exemption is unconditional and is evaluated before the waiver. It
+      was typed, and it did nothing.</p>
+
+    <h2 id="s2">§2 — What was counted, and over what</h2>
+    <table>
+      <thead><tr><th>Item</th><th>Comparator (coordinator-overhead census)</th><th>New week</th></tr></thead>
+      <tbody>
+        <tr><td>Window</td>
+          <td>2026-09-12T00:00Z to 2026-09-26T10:00Z</td>
+          <td>2026-10-05T00:00Z to 2026-10-12T00:00Z</td></tr>
+        <tr><td>Why this window</td>
+          <td>The census's own frozen corpus, measured before the narrowings landed on 2026-09-28</td>
+          <td>The seven days beginning at the measure's due date, six days after the second narrowing merged</td></tr>
+        <tr><td>Coordinator sessions</td>
+          <td>52 known; 39 with a transcript file</td>
+          <td>152 known in the run store; 72 with a transcript file; 23 with records inside the window</td></tr>
+        <tr><td>Assistant records read</td><td>77,400</td><td>58,789</td></tr>
+        <tr><td>Runs completed by covered coordinators</td>
+          <td>1,935 (534 corrective, 788 review)</td>
+          <td>2,201 (972 corrective, 1,471 review)</td></tr>
+      </tbody>
+    </table>
+    <p><strong>The unit is one promotion invocation.</strong> A use is a
+      <code>crew complete</code> or <code>crew merge</code> command — CLI or the
+      <code>mcp__reckon__crew</code> action — that carries the flag with a non-empty
+      value. An invocation counts once per command segment, and the same flag value
+      re-issued for the same run is reported a second time as a <em>retry</em>: the
+      table gives both the invocation count and the distinct
+      <code>(run, flag, value)</code> count.</p>
+    <p><strong>What is deliberately not a use.</strong> Text mentions of either flag
+      (2,604 in the new arm, 2,657 in the comparator) are counted separately and never
+      reported as uses: the flag appears in plan prose, in worker manifests pasted into
+      a tool result, in <code>--help</code> output and in refusal messages. A flag with
+      an empty value is not a use. The picker's <code>--outcomes</code> option is not
+      <code>--outcome</code>. Heredoc and script bodies are stripped before a command
+      is read, so a script that mentions the flag is not an operator use. Sidechain
+      records are excluded, so a subagent's own tool calls are not the coordinator's.</p>
+    <p><strong>The population is coordinators, not sessions.</strong> A session enters
+      the arm when a run it dispatched records it as
+      <code>node_definition.coordinator.runtime_session_id</code> in the run store. The
+      new arm reads the live store; the comparator arm reads the census's own
+      <code>inputs/runs.json.gz</code> and its 39 frozen transcript snapshots, so the
+      comparator number cannot drift with a rewrite of history.</p>
+    <p><strong>The flags and what retired them.</strong> Both belong to
+      <code>crew complete</code>. <code>--no-impl-change REASON</code> waived the
+      impl-move check; <code>reckon/crew/promotion_checks.py</code> now exempts a
+      <code>resume</code> or <code>redispatch</code> attempt and a run whose dispatch
+      declares <code>--repairs RUN_ID</code> before it reads that waiver. A review
+      run's <code>--outcome</code> is now composed from its stored review's total score
+      and finding count. Neither narrowing removes the flag; both make it unnecessary
+      on the runs named here.</p>
+
+    <h2 id="s3">§3 — The two flags, a week against the census</h2>
+    <table>
+      <thead><tr><th>Measure</th><th>Comparator</th><th>New week</th></tr></thead>
+      <tbody>
+        <tr><td><code>--no-impl-change</code> invocations / distinct</td><td>388 / 282</td><td>495 / 384</td></tr>
+        <tr><td>&nbsp;&nbsp;of which on a corrective run</td><td>99 / 66</td><td>183 / 148</td></tr>
+        <tr><td>&nbsp;&nbsp;of which on a review run (never applicable)</td><td>15</td><td>63</td></tr>
+        <tr><td>&nbsp;&nbsp;of which on a non-passing gate (still needed)</td><td>14</td><td>19</td></tr>
+        <tr><td>&nbsp;&nbsp;target unresolved in the command</td><td>37</td><td>38</td></tr>
+        <tr><td><code>--outcome</code> invocations / distinct</td><td>2,172 / 1,698</td><td>1,844 / 1,587</td></tr>
+        <tr><td>&nbsp;&nbsp;of which on a review run</td><td>414 / 376</td><td>745 / 687</td></tr>
+        <tr><td>&nbsp;&nbsp;of which on another run (still needed)</td><td>1,344</td><td>868</td></tr>
+        <tr><td>&nbsp;&nbsp;target unresolved in the command</td><td>414</td><td>231</td></tr>
+      </tbody>
+    </table>
+    <p>The raw counts answer the wrong question, because the two weeks are not the
+      same size. The relevant denominator is the runs the covered coordinators
+      completed, split by the kind of run the retired flag used to be needed on:</p>
+    <table>
+      <thead><tr><th>Rate, matched to covered coordinators</th><th>Comparator</th><th>New week</th></tr></thead>
+      <tbody>
+        <tr><td>Corrective runs completed</td><td>534</td><td>972</td></tr>
+        <tr><td><code>--no-impl-change</code> per 100 corrective runs, invocations</td><td>18.5</td><td>18.8</td></tr>
+        <tr><td><code>--no-impl-change</code> per 100 corrective runs, distinct</td><td>12.4</td><td>15.2</td></tr>
+        <tr><td>Review runs completed</td><td>788</td><td>1,471</td></tr>
+        <tr><td><code>--outcome</code> per 100 review runs, invocations</td><td>52.5</td><td>51.0</td></tr>
+        <tr><td><code>--outcome</code> per 100 review runs, distinct</td><td>47.7</td><td>46.7</td></tr>
+      </tbody>
+    </table>
+    <p><strong>The ledger confirms the transcript reading from the other side.</strong>
+      Each promotion records its impl-move verdict on the run row. In the new week the
+      store holds 327 promotions whose verdict is <code>exempt</code> for reason
+      <code>corrective-run:*</code> — the exemption the narrowing added. The census
+      window holds <strong>none</strong>: the reason string did not exist, so the code
+      that writes it was not running then. That is the control that the narrowing was
+      live inside the measured week, and that these counts compare two different
+      regimes rather than two free-floating numbers.</p>
+    <table>
+      <thead><tr><th>Ledger cross-check</th><th>Comparator</th><th>New week</th></tr></thead>
+      <tbody>
+        <tr><td>Promotions with impl-move verdict <code>waived</code> (the flag changed the outcome)</td><td>164</td><td>166</td></tr>
+        <tr><td>Promotions with verdict <code>exempt</code> for <code>corrective-run:*</code></td><td>0</td><td>327</td></tr>
+        <tr><td>Those corrective-exempt promotions that also carried the flag</td><td>—</td><td>113 (34.6&nbsp;%)</td></tr>
+      </tbody>
+    </table>
+    <p>The <code>waived</code> row is the flag doing its job on an ordinary implement
+      run whose plan impl did not move: 164 before, 166 after. The narrowing was never
+      meant to touch those. It does show that the flag as a whole did not shrink —
+      what changed is that its legitimate use held steady while the population nearly
+      doubled, and the unnecessary uses grew with the population.</p>
+
+    <h2 id="s4">§4 — What the counts mean</h2>
+    <p><strong>The narrowing removed a refusal and left a habit in place.</strong> A
+      corrective run no longer needs <code>--no-impl-change</code>, and a review run no
+      longer needs <code>--outcome</code>. Operators passed both at the same rate in
+      the week after as in the fortnight before. Nothing broke — an unnecessary waiver
+      still records a reason on the row, and an unnecessary outcome is still written —
+      which is why the behaviour is invisible without a count.</p>
+    <p>Three readings are available and the numbers distinguish them:</p>
+    <ul>
+      <li><em>The narrowing did not reach the operators.</em> The rate is flat across
+        two different months and two different coordinator populations, so it is not
+        one team's habit. A change that lands in the code but not in the habits of the
+        people typing the command measures the code, not the surface.</li>
+      <li><em>The flags are cheap.</em> Nothing refuses an unnecessary
+        <code>--no-impl-change</code> or an unnecessary <code>--outcome</code>; both
+        are accepted and recorded. A retired escape whose use is never surfaced costs
+        nothing to repeat, so it is repeated.</li>
+      <li><em>The flags are re-derived each time from a template.</em> The same run and
+        the same flag value recur across a session: distinct uses run between a
+        seventh and a quarter below the invocation count on both flags, which is what
+        a retried or copied command looks like rather than a fresh decision each
+        time.</li>
+    </ul>
+    <p><strong>What would move the number.</strong> The measure cannot say which; the
+      census can only show that a week of ordinary work did not move it. A refusal of
+      an unnecessary flag, a default already supplied by the tool that the operator
+      sees, and a dispatch brief that stops modelling the flag are three different
+      mechanisms, and none of them is in this node's scope.</p>
+
+    <h2 id="s5">§5 — Coverage, controls and caveats</h2>
+    <p><strong>Coverage is partial on sessions and strong on runs.</strong> The harness
+      prunes session transcripts, so only 23 of the 152 coordinator sessions the run
+      store knows about had records inside the new window. Those 23 completed 2,201 of
+      the 2,916 runs completed in the week — 75 per cent — so the rate is measured over
+      most of the fleet's work even though it is read from a minority of sessions. The
+      absolute counts are a floor: an uncovered session's uses are missing, a covered
+      one's are not.</p>
+    <p><strong>Two residual classes are counted as uses but are not the retired
+      escape.</strong> An <code>--outcome</code> on a review run that has delivered no
+      stored review is still required, and the census cannot tell that case from the
+      rest; and 231 outcome uses and 38 no-impl uses name a run through a variable
+      assigned in an earlier turn, so the command does not state its target. Both are
+      reported in their own rows rather than folded into a rate.</p>
+    <p><strong>The controls.</strong> The instrument finds a known use: of the 164
+      comparator promotions the ledger records as <code>waived</code> — the flag changed
+      the outcome — the scanner recovers the command for <strong>143 (87 per cent)</strong>,
+      and in the new arm for <strong>117 of 166 (70 per cent)</strong>. The remainder are
+      promotions whose command fell outside the covered coordinator sessions or named its
+      run through an unresolved variable, which is the coverage gap reported above rather
+      than a scanner miss. It does not count the flag where
+      it is not typed: 2,604 text mentions in the new arm and 2,657 in the comparator
+      are excluded from every figure above. It distinguishes the regime: the
+      <code>corrective-run:*</code> exemption reason is absent before the narrowing and
+      present 327 times after. And the negative control for the instrument is that a
+      transcript containing either flag is counted — a run of the scanner over a corpus
+      with a known flag in it cannot report zero, which is the failure this census had
+      to rule out before reporting any figure.</p>
+    <p><strong>What the comparator is not.</strong> It is the coordinator-overhead
+      census's own frozen corpus, re-read with this instrument, not a fresh capture of
+      the census's window. The census itself did not report these two counts, so the
+      comparator column is this node's measurement of that corpus; a later reader can
+      rerun it against the same immutable snapshots.</p>
+
+    <h2 id="s6">§6 — Reproducing it</h2>
+    <p>The measure is one script over the run store and the transcript corpus:
+      <code>refusal_escape_census.py</code>, with its output <code>census.json</code>
+      and the exemption breakdown from <code>classify_uses.py</code>, under
+      <code>~/.config/reckon/crew/runs/r-20261103T082606754290-count-uses-of-the-retired-refusal-escapes/</code>.
+      Coordinator identities and run kinds come from
+      <code>~/.config/reckon/crew/run_store.db</code>; transcripts from
+      <code>~/.claude/projects/*/*.jsonl</code>, filtered by record timestamp; the
+      comparator transcripts and run cohort from the coordinator-overhead census's
+      frozen inputs. Rerunning it against the same week reproduces the same figures;
+      rerunning it later reads a longer corpus and will not.</p>
+  </main>
+</body>
+</html>
