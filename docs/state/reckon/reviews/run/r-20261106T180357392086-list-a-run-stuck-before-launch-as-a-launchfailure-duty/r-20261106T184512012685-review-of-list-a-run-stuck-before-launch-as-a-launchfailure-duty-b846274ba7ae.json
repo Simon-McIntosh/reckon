@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/obligations.py:1968",
+    "reckon/crew/obligation_snapshot.py:1340"
+  ],
+  "completed_at": "2026-11-06T18:55:23.955Z",
+  "dispatched_at": "2026-11-06T18:47:10Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "77",
+      "severity": "non-blocking",
+      "text": "non-blocking: keying the duty on the recovery word also gives a duty row to the ordinary launch-failure reading at reckon/crew/recovery_classification.py:1994 (a pointer holding the launch-failed phase, or an exit record marking a launch failure), which the node's test and its evidence fragment never exercise, so the observable reach is wider than the case the change is measured on."
+    },
+    {
+      "file": "docs/evidence/fragments/a-reexec-never-orphans-a-dispatch/list-a-run-stuck-before-launch-as-a-launchfailure-duty.html",
+      "line": "50",
+      "severity": "non-blocking",
+      "text": "non-blocking: \"Each mutation fails exactly its own case\" does not match logs/negative-control-entry-dropped-only.log, which reports 2 failed of 3 because the entry mutation also reddens test_the_bound_is_read_from_its_one_constant \u2014 the sentence is true of the two cases the plan names but reads as covering the file."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read both commits against d98b74b531ae310d1119a315d531767c23dbb792 \u2014 ac01f29885 changes one dict and its comment in obligations.py and adds the 150-line test, b846274ba7ae adds the 58-line landing fragment; no other path is touched.",
+    "done_when": "the done_when names tests/test_a_run_stuck_before_launch_is_reported.py, two obligations cases and two named controls; the file adds exactly those plus one in-suite bound case, and logs/after-suite.log records \"3 passed in 1.75s\" with EXIT=0 at ac01f29885.",
+    "goal": "the node goal is that a run cut off before its launch spawns a worker reaches its coordinator as a launch-failure duty; reckon/crew/obligations.py:77 adds the `launch-failed` recovery word to RECOVERY_CLASSIFICATION_DUTY_KINDS and the duties loop at reckon/crew/obligations.py:1968 reads that map first, so the stranded pointer becomes a row.",
+    "manifest": "read; it records status complete, the head gate (3 passed, EXIT=0), the base arm (2 failed, EXIT=1 with the two ids named), two single-control logs, and a 68-file obligations-importing population whose FAILED sets are identical between arms.",
+    "write_paths": "read the manifest's declared write paths \u2014 reckon/crew/obligations.py, the new test, and the evidence fragment; `git diff --stat d98b74b5..b846274b` touches exactly those three and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_run_stuck_before_launch_is_reported.py:98 (`assert duty is not None`) reddens when obligations.py:77 is removed, shown by logs/negative-control-entry-dropped-only.log, and line :142 reddens when the bound is zeroed, shown by logs/negative-control-bound-zero-only.log.",
+    "evidence": "logs/after-suite.log and logs/baseline-suite.log each carry their revision and tree on the header lines and a bare EXIT= line last, and re-running the named gate at b846274ba7ae returned \"3 passed\".",
+    "fit": "the `#:` block above RECOVERY_CLASSIFICATION_DUTY_KINDS at reckon/crew/obligations.py:63-74 follows the `#:` convention already used at obligations.py:61-62 and carries no plan, ticket or phase label.",
+    "goal_fidelity": "reckon/crew/obligations.py:1968-1969 now yields kind `launch-failed` for a row whose recovery word is `launch-failed`, and _live_item at reckon/crew/obligations.py:727 fills its next_command from the row's own next_action.",
+    "reuse": "the entry extends the one map both derivations already read \u2014 reckon/crew/obligations.py:1968 and reckon/crew/obligation_snapshot.py:1340 through module.RECOVERY_CLASSIFICATION_DUTY_KINDS \u2014 and adds no second mapping or helper.",
+    "scope_discipline": "every path in the diff \u2014 reckon/crew/obligations.py, tests/test_a_run_stuck_before_launch_is_reported.py and the evidence fragment \u2014 is inside the manifest's orientation_write_paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a run cut off before its launch spawns a worker reaches its coordinator as a launch-failure duty; reckon/crew/obligations.py:77 adds the `launch-failed` recovery word to RECOVERY_CLASSIFICATION_DUTY_KINDS and the duties loop at reckon/crew/obligations.py:1968 reads that map first, so the stranded pointer becomes a row.\nVERDICT done_when: the done_when names tests/test_a_run_stuck_before_launch_is_reported.py, two obligations cases and two named controls; the file adds exactly those plus one in-suite bound case, and logs/after-suite.log records \"3 passed in 1.75s\" with EXIT=0 at ac01f29885.\nVERDICT write_paths: read the manifest's declared write paths \u2014 reckon/crew/obligations.py, the new test, and the evidence fragment; `git diff --stat d98b74b5..b846274b` touches exactly those three and nothing else.\nVERDICT manifest: read; it records status complete, the head gate (3 passed, EXIT=0), the base arm (2 failed, EXIT=1 with the two ids named), two single-control logs, and a 68-file obligations-importing population whose FAILED sets are identical between arms.\nVERDICT diff: read both commits against d98b74b531ae310d1119a315d531767c23dbb792 \u2014 ac01f29885 changes one dict and its comment in obligations.py and adds the 150-line test, b846274ba7ae adds the 58-line landing fragment; no other path is touched.\nCALL_SITES: reckon/crew/obligations.py:1968, reckon/crew/obligation_snapshot.py:1340\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:1968-1969 now yields kind `launch-failed` for a row whose recovery word is `launch-failed`, and _live_item at reckon/crew/obligations.py:727 fills its next_command from the row's own next_action.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/after-suite.log and logs/baseline-suite.log each carry their revision and tree on the header lines and a bare EXIT= line last, and re-running the named gate at b846274ba7ae returned \"3 passed\".\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff \u2014 reckon/crew/obligations.py, tests/test_a_run_stuck_before_launch_is_reported.py and the evidence fragment \u2014 is inside the manifest's orientation_write_paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_run_stuck_before_launch_is_reported.py:98 (`assert duty is not None`) reddens when obligations.py:77 is removed, shown by logs/negative-control-entry-dropped-only.log, and line :142 reddens when the bound is zeroed, shown by logs/negative-control-bound-zero-only.log.\nSCORE fit: 18\nJUSTIFICATION fit: the `#:` block above RECOVERY_CLASSIFICATION_DUTY_KINDS at reckon/crew/obligations.py:63-74 follows the `#:` convention already used at obligations.py:61-62 and carries no plan, ticket or phase label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the entry extends the one map both derivations already read \u2014 reckon/crew/obligations.py:1968 and reckon/crew/obligation_snapshot.py:1340 through module.RECOVERY_CLASSIFICATION_DUTY_KINDS \u2014 and adds no second mapping or helper.\nFINDING reckon/crew/obligations.py:77 non-blocking: keying the duty on the recovery word also gives a duty row to the ordinary launch-failure reading at reckon/crew/recovery_classification.py:1994 (a pointer holding the launch-failed phase, or an exit record marking a launch failure), which the node's test and its evidence fragment never exercise, so the observable reach is wider than the case the change is measured on.\nFINDING docs/evidence/fragments/a-reexec-never-orphans-a-dispatch/list-a-run-stuck-before-launch-as-a-launchfailure-duty.html:50 non-blocking: \"Each mutation fails exactly its own case\" does not match logs/negative-control-entry-dropped-only.log, which reports 2 failed of 3 because the entry mutation also reddens test_the_bound_is_read_from_its_one_constant \u2014 the sentence is true of the two cases the plan names but reads as covering the file.\nReviewed base: d98b74b531ae310d1119a315d531767c23dbb792\nReviewed head: b846274ba7ae617d05e601ddd890c3af2d26faf5\nReviewed run: r-20261106T180357392086-list-a-run-stuck-before-launch-as-a-launchfailure-duty",
+  "review_run_id": "r-20261106T184512012685-review-of-list-a-run-stuck-before-launch-as-a-launchfailure-duty-b846274ba7ae",
+  "reviewed_base_sha": "d98b74b531ae310d1119a315d531767c23dbb792",
+  "reviewed_head_sha": "b846274ba7ae617d05e601ddd890c3af2d26faf5",
+  "reviewed_run_id": "r-20261106T180357392086-list-a-run-stuck-before-launch-as-a-launchfailure-duty",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T19:07:55.338880+00:00",
+  "total": 112
+}
