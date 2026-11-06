@@ -1,0 +1,59 @@
+<article class="r-evidence" data-node="read-only-one-plans-reviews-when-judging-its-coverage">
+<h3 id="read-only-one-plans-reviews-when-judging-its-coverage-title">A plan's review coverage reads only that plan's reviews</h3>
+
+<p><strong>What changed.</strong> <code>list_plan_reviews</code>
+(<code>reckon/crew/plan_review.py</code>) takes an optional plan slug. With one,
+it reads only the committed <code>plan/&lt;slug&gt;/*.json</code> directory and
+the staging <code>plan-&lt;slug&gt;.v*.json</code> glob, whose <code>.v</code>
+immediately follows the slug so a plan whose slug prefixes another's reads only
+its own. The pass cache key carries the slug, so a pass that asks about two
+plans does not answer the second from the first's listing.</p>
+
+<p>Every caller in the module that filtered one plan out of a project-wide
+listing now passes the slug: <code>review_coverage</code>,
+<code>newest_design_review</code>, <code>review_scope</code>,
+<code>compose_burst_refusal</code> and <code>review_day_summary</code>. The
+callers that genuinely read across plans (<code>declined_recurrence</code>, the
+review reflex's whole-project pass, <code>_stored_review_run_ids</code>) are
+unchanged.</p>
+
+<h3 id="read-only-one-plans-reviews-when-judging-its-coverage-arms">Measured</h3>
+
+<p>Three cases over a synthetic store of 200 records across 20 plans, half
+committed and half staged. The read is counted through a patch on
+<code>_read_record</code>.</p>
+
+<table id="read-only-one-plans-reviews-when-judging-its-coverage-table">
+  <caption>Every arm is a log whose first line names its revision, tree and
+  command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+  <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+  <tbody>
+    <tr><td>node cases</td><td>worktree</td>
+      <td>3 passed, <code>EXIT=0</code></td></tr>
+    <tr><td>negative control: drop the slug from the call</td>
+      <td>worktree + mutation</td>
+      <td>2 failed, <code>EXIT=1</code> &mdash; the read opens all 200</td></tr>
+    <tr><td>negative control: skip the staging records</td>
+      <td>worktree + mutation</td>
+      <td>2 failed, <code>EXIT=1</code> &mdash; the scoped read differs from a
+      full read</td></tr>
+    <tr><td>negative control: prefix glob</td><td>worktree + mutation</td>
+      <td>2 failed, <code>EXIT=1</code> &mdash; <code>a</code> opens
+      <code>a-b</code>'s records</td></tr>
+    <tr><td>wide gate, head (test files importing the module)</td>
+      <td>worktree</td>
+      <td>see the gate log</td></tr>
+    <tr><td>wide gate, base</td><td><code>b04ed13ddd</code>, extraction</td>
+      <td>8 failed, 822 passed, <code>EXIT=1</code></td></tr>
+  </tbody>
+</table>
+
+<p><strong>Live read on the operator's store.</strong> Reading coverage for
+<code>work-is-never-stuck-behind-the-admission-loop</code> opens 101 records
+instead of the project's 3,477 and takes 22.6 s warm. The project-wide listing
+it replaces takes 3.0&ndash;5.0 s, so the listing is no longer where this read
+spends its time: the post-write read an edit pays is 27.2 s against the base
+tree's 26.6 s, dominated by the per-record snapshot-evidence stat that this
+section does not change. Both are under the 60 s bound; the remaining cost is
+recorded for the coordinator rather than fixed here.</p>
+</article>

@@ -1005,8 +1005,8 @@ def review_coverage(
     content = document if document is not None else plan
     records = [
         record
-        for record in list_plan_reviews(project, base_dir=base_dir)
-        if record.get("plan_slug") == plan_slug and not _review_is_incomplete(record)
+        for record in list_plan_reviews(project, plan_slug, base_dir=base_dir)
+        if not _review_is_incomplete(record)
     ]
     forms = _fingerprint_forms(content)
     whole = [record for record in records if record.get("plan_fingerprint") in forms]
@@ -1380,6 +1380,7 @@ def _review_store_stamp(root: Path, project: str) -> tuple[int, int]:
 
 def list_plan_reviews(
     project: str | None = None,
+    plan_slug: str | None = None,
     *,
     base_dir: str | Path | None = None,
 ) -> list[dict[str, Any]]:
@@ -1393,6 +1394,12 @@ def list_plan_reviews(
     one project directory; omitted, every project directory under the root is
     read. Each returned record carries its ``review_path`` so a caller can
     rewrite the very file it read.
+
+    ``plan_slug`` restricts each project's walk to one plan: the committed
+    ``plan/<slug>/*.json`` directory and the staging ``plan-<slug>.v*.json``
+    glob, whose ``.v`` immediately follows the slug so a slug that prefixes
+    another plan's does not read that plan's records. A caller asking about one
+    plan reads that plan's reviews rather than every review in the project.
 
     A record present in both trees is listed once, as the committed copy: the
     committed tree is read first and the staging enumeration skips a review run
@@ -1409,9 +1416,14 @@ def list_plan_reviews(
 
     root = _review_store.review_store_root(base_dir)
     cache = _REVIEW_READ_PASS.get()
-    cache_key: tuple[str, str, int, int] | None = None
+    cache_key: tuple[str, str, str, int, int] | None = None
     if cache is not None and project is not None:
-        cache_key = (project, str(base_dir or ""), *_review_store_stamp(root, project))
+        cache_key = (
+            project,
+            str(plan_slug or ""),
+            str(base_dir or ""),
+            *_review_store_stamp(root, project),
+        )
         cached = cache.get(cache_key)
         if cached is not None:
             # A caller sets keys on the records it holds, so the pass hands out
@@ -1448,15 +1460,22 @@ def list_plan_reviews(
         plan_root = committed / _review_store.COMMITTED_PLAN_DIRNAME
         if not plan_root.is_dir():
             continue
-        for slug_dir in sorted(plan_root.iterdir()):
+        if plan_slug is None:
+            slug_dirs = sorted(entry for entry in plan_root.iterdir() if entry.is_dir())
+        else:
+            slug_dirs = [plan_root / plan_slug]
+        for slug_dir in slug_dirs:
             if not slug_dir.is_dir():
                 continue
             for path in sorted(slug_dir.glob("*.json")):
                 _collect(path, directory.name)
+    staging_glob = (
+        PLAN_REVIEW_FILE_GLOB if plan_slug is None else f"plan-{plan_slug}.v*.json"
+    )
     for directory in directories:
         if not directory.is_dir():
             continue
-        for path in sorted(directory.glob(PLAN_REVIEW_FILE_GLOB)):
+        for path in sorted(directory.glob(staging_glob)):
             _collect(path, directory.name)
     records.sort(
         key=lambda item: (str(item.get("timestamp") or ""), item["review_path"])
@@ -1511,8 +1530,8 @@ def newest_design_review(
     """
     records = [
         record
-        for record in list_plan_reviews(project, base_dir=base_dir)
-        if record.get("plan_slug") == plan_slug and is_design_review(record)
+        for record in list_plan_reviews(project, plan_slug, base_dir=base_dir)
+        if is_design_review(record)
     ]
     return max(
         records, key=lambda record: int(record.get("plan_version") or 0), default=None
@@ -1855,8 +1874,8 @@ def review_scope(
     design = rubric == DESIGN_RUBRIC
     prior = [
         record
-        for record in list_plan_reviews(project, base_dir=base_dir)
-        if record.get("plan_slug") == plan_slug and is_design_review(record) == design
+        for record in list_plan_reviews(project, plan_slug, base_dir=base_dir)
+        if is_design_review(record) == design
     ]
     if not prior:
         return ""
@@ -2985,7 +3004,7 @@ def compose_burst_refusal(
     listed = (
         records
         if records is not None
-        else list_plan_reviews(project, base_dir=base_dir)
+        else list_plan_reviews(project, plan_slug, base_dir=base_dir)
     )
     for unit in units:
         refusal = review_burst_refusal(
@@ -3916,11 +3935,7 @@ def review_day_summary(
     if end is None:
         raise ValueError(f"until names no instant: {until!r}")
 
-    records = [
-        record
-        for record in list_plan_reviews(project, base_dir=base_dir)
-        if plan is None or str(record.get("plan_slug") or "") == plan
-    ]
+    records = list_plan_reviews(project, plan, base_dir=base_dir)
     # Each plan's whole review history, ordered by dispatch instant, so a
     # re-review's predecessor is resolved over every review of the plan and not
     # only those inside the window.
