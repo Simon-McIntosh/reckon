@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The coordinator read is bounded by its window</title>
+</head>
+<body>
+<h1 id="the-coordinator-read-is-bounded-by-its-window-title">The coordinator read is bounded by its window</h1>
+
+<p id="the-coordinator-read-is-bounded-by-its-window-what">The ledger's per-run document
+<code>run_rows_from_documents</code> takes a lower bound on each document's own modification
+time and skips a file at the directory walk when it is older. The plan-coordinator resolver
+passes its horizon less one day of margin. The bound is the document's mtime, never the
+instant its run id names: a run id is stamped when the request is queued while the document
+is written when the run is promoted, so a long-queued run has an old id and a recent
+document.</p>
+
+<table id="the-coordinator-read-is-bounded-by-its-window-probe">
+<caption>One probe, fleet node 98dci4-clu-2068, job 1291586,
+<code>resolve_plan_coordinators('reckon', pointers=[], now=2026-11-06T12:00:00Z)</code>,
+each arm from its own git archive tree against the main checkout's ledger
+(<code>docs/state/reckon</code> at <code>edfcc560019cf11986f621dde414c26d44c3ec94</code>).</caption>
+<thead><tr><th>arm</th><th>elapsed [s]</th><th>plans</th><th>coordinators</th><th>coordinator digest</th></tr></thead>
+<tbody>
+<tr><td>base <code>1bea7a6b0d</code></td><td>62.487</td><td>214</td><td>33</td><td><code>d4c95976004f09dd</code></td></tr>
+<tr><td>head <code>3ff783a8eb</code></td><td>16.638</td><td>214</td><td>33</td><td><code>d4c95976004f09dd</code></td></tr>
+</tbody>
+</table>
+
+<p id="the-coordinator-read-is-bounded-by-its-window-window">Every plan names the same
+coordinator on both arms, which the equal digest states. The head call is 3.8 times faster,
+and it does <strong>not</strong> meet the section's under-10-second figure: 16.6 s.</p>
+
+<table id="the-coordinator-read-is-bounded-by-its-window-stages">
+<caption>Where the head call's time goes, measured stage by stage on the same node
+(cold process, same instant).</caption>
+<thead><tr><th>stage</th><th>elapsed [s]</th></tr></thead>
+<tbody>
+<tr><td>run documents, unchanged read</td><td>24.656</td></tr>
+<tr><td>run documents, bounded</td><td>6.796</td></tr>
+<tr><td>plan owner metas, 214 plan documents</td><td>10.525</td></tr>
+<tr><td>aggregate ledger parse</td><td>0.713</td></tr>
+</tbody>
+</table>
+
+<p id="the-coordinator-read-is-bounded-by-its-window-residual">The residual is the plan-state
+read, not the run documents: <code>_plans_and_owners</code> parses 214 plan documents through
+BeautifulSoup on a cold call (0.35 s on a second call in the same process, so the cost is the
+first parse). That reader is a different one from the ledger's, and it is reported under
+<code>outside_scope</code> rather than changed here.</p>
+
+<table id="the-coordinator-read-is-bounded-by-its-window-gates">
+<caption>Gate results. Logs name their revision, tree and literal command; each ends on a
+bare <code>EXIT=</code> line.</caption>
+<thead><tr><th>gate</th><th>base</th><th>head</th></tr></thead>
+<tbody>
+<tr><td>this node's test file</td><td>1 failed, 4 passed (EXIT=1)</td><td>5 passed (EXIT=0)</td></tr>
+<tr><td>every test file importing <code>reckon.ledger</code> or the resolver, 73 files, <code>-n 6</code></td><td>2 failed, 5 errors, 572 passed (EXIT=1)</td><td>1 failed, 578 passed (EXIT=1)</td></tr>
+</tbody>
+</table>
+
+<p id="the-coordinator-read-is-bounded-by-its-window-negative">The declared mutation — bound by
+the run-id stamp instead of the modification time — leaves 3 failures at the head: the read
+count, the long-queued run's coordinator, and the equivalence case. The equivalence case fails
+with <code>plan-queued</code> resolving to <code>unowned</code> against the base's
+<code>session-queued</code>.</p>
+
+<p id="the-coordinator-read-is-bounded-by-its-window-delta">The head arm's single failure,
+<code>test_roster_write_commits.py::test_commit_refuses_roster_with_uncommitted_registration</code>,
+fails identically when run serially at the base, so it adds no failure. The base arm's five
+<code>test_held_worktree_records_match_each_record_once</code> errors pass when that file is
+re-run serially at the base, so they are parallel-run noise rather than a defect.</p>
+</body>
+</html>
