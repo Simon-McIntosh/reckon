@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T21:37:03.337Z",
+  "dispatched_at": "2026-11-06T21:31:39Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/queue_admission.py:2351",
+      "id": "reuse_search-1",
+      "reason": "naming the constant, the predicate and the owner test module changes three lines of the deliverable and removes a new test file from the surface entirely.",
+      "text": "the plan searched the wait machinery but missed three prior owners it will fork: `REVIEW_ROLE` in `reckon/crew/recovery_vocabulary.py:155` (already how review nodes are discriminated at `reckon/crew/promotion_checks.py:1171`, `reckon/crew/reports.py:1835`, `reckon/crew/recovery_repair_dispatch.py:108`, `reckon/crew/picker/snapshot.py:1620`); `_needs_own_section_verdict` at `reckon/crew/queue_admission.py:2924`, whose docstring is exactly \"ask the roadmap about the node's section when authored holds can apply\"; and two test modules that already build the fixture \u00a72 asks for a new file to build \u2014 `tests/test_a_queued_request_waits_on_its_dependencies.py:258` (`_gate_section`, which authors a gate onto one section and asserts the queued request's wait refs) and `tests/test_queue_dag_waits.py:61` (a `gates` parameter on the plan fixture). The plan's done-when instead creates `tests/test_a_run_review_waits_on_no_plan_decision.py`, which both forks that fixture and puts a plan slug in a filename.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/queue_admission.py:2325",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should extend `_needs_own_section_verdict` with the role rule and have `dispatch.py:333` pass it per node, which is a different edit site and removes one of the two premises instead of adding one.",
+      "text": "the premise \"should this node's own section verdict be read\" already has an owner, `_needs_own_section_verdict` at `reckon/crew/queue_admission.py:2924`, which `dispatch_waits` consults at line 2948 and passes as `read_own_verdict`; the batch admission pass at `reckon/crew/dispatch.py:333` bypasses that predicate altogether and relies on the default `True`. The plan adds a third statement of the premise inline (role condition) rather than extending the owner, so after this change the same question is answered in two places and the direct-dispatch path still asks the roadmap for a review node's readiness it will then discard.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/queue_admission.py:2351",
+      "id": "duplicate_owner-2",
+      "reason": "it is a one-word change to \u00a72's deliverable text that prevents the fork; without it the plan specifies a duplicate of a shared constant.",
+      "text": "the plan writes the role test as a bare `\"review\"` literal while the role vocabulary is owned by `REVIEW_ROLE` at `reckon/crew/recovery_vocabulary.py:155` (documented there as the dispatch role that produces reviews, with the promotion boundary keyed on the same fact). A literal in a second module forks a vocabulary the rest of the crew imports, so a renamed or added review role silently leaves this one hold armed.",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "92e1acd8d19f7cd77f879ca4ec0b909ee6686ee1",
+  "plan_fingerprint": "42b1fb3c814c628e6bdb00eff8a32c50306ab2bf88cc9abbdf16446325e9586b",
+  "plan_slug": "a-run-review-waits-on-no-plan-decision",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T212902951186-plan-review-of-a-run-review-waits-on-no-plan-decision",
+  "reviewed_blob_sha": "26cdfe369f75451ae6c3ab375f5a8be0bb21d0d6",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the change adds no module and no interface: one condition inside the existing `_validated_batch_waits` branch, with the plan explicitly declining a new helper or parameter, so the depth-to-surface ratio is unchanged rather than thinned.",
+    "duplicate_owner": "a finding \u2014 the rule \"does this node read its own section's verdict\" is already owned by `_needs_own_section_verdict` at `reckon/crew/queue_admission.py:2924`, and the role vocabulary is owned by `REVIEW_ROLE` at `reckon/crew/recovery_vocabulary.py:155`; the plan adds a second premise for the first and a bare string literal for the second.",
+    "interface_budget": "pass \u2014 public_definitions 2360, cli_options 465, mcp_views 15, refusal_families 23; \u00a72 adds nothing to any of the four families: no new public definition (a private condition, no new helper or parameter by design), no CLI option, no MCP view, no refusal or phase name, so there is nothing to retire or merge and nothing needing a \"nothing can be\" clause.",
+    "reuse_search": "a finding \u2014 the plan cites the wait machinery it extends (`_validated_batch_waits`, `queue_admission.py:2322-2358`, commit `b34d800ad7`, verified present with that subject) but searched neither the shared review-role vocabulary, nor the predicate that already owns \"read this node's own section verdict\", nor the two test modules that already build a gated section for queue-wait assertions.",
+    "thin_wrapper": "pass \u2014 no layer is added over existing machinery; the plan extends `reckon/crew/queue_admission.py` in place and keeps the authored `section_wait_refs`, `--after` and `depends_on` waits a review may still need, so the one route by which a review can still declare a decision dependency survives."
+  },
+  "section_digests": {
+    "_document": "ff78fec02046b7008b5e81bcdf3bf415c2ace4954e91bf649808b2b4573b409c",
+    "s1": "fc44e7127c3eb077cf95e640994d56912c9889031095f95b9934639211d12212",
+    "s2": "681763962bf4ab829d2dcdb4e65dc6770657cdd125c730cfc363123ac24e4baa"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T21:43:07.414468+00:00",
+  "total": null
+}
