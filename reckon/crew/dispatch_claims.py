@@ -6,6 +6,7 @@ import heapq
 import json
 import os
 import re
+import secrets
 import shutil
 import sqlite3
 import time
@@ -577,6 +578,37 @@ def _repository_scope_claims(
 # aside, so one killed dispatcher cannot block the node for everyone.
 NODE_DISPATCH_CLAIM_DIRECTORY = "claims"
 
+# This value changes when an interpreter starts after exec, even when the
+# kernel keeps its pid and process start time. Publishing by pid lets a later
+# dispatch judge the holder using only the record it is trying to reclaim.
+_EXEC_IDENTITY = secrets.token_hex(16)
+_PUBLISHED_EXEC_IDENTITY_PATHS: set[Path] = set()
+
+
+def _exec_identity_path(pid: int) -> Path:
+    return crew_home() / NODE_DISPATCH_CLAIM_DIRECTORY / f"exec-{pid}.identity"
+
+
+def _publish_exec_identity() -> str | None:
+    """Publish this execution's identity before its claims can be judged."""
+    path = _exec_identity_path(os.getpid())
+    if path in _PUBLISHED_EXEC_IDENTITY_PATHS:
+        return _EXEC_IDENTITY
+    temporary = path.with_name(f"{path.name}.{_EXEC_IDENTITY}.tmp")
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temporary.write_text(_EXEC_IDENTITY, encoding="utf-8")
+        os.replace(temporary, path)
+    except OSError:
+        with contextlib.suppress(OSError):
+            temporary.unlink(missing_ok=True)
+        return None
+    _PUBLISHED_EXEC_IDENTITY_PATHS.add(path)
+    return _EXEC_IDENTITY
+
+
+_publish_exec_identity()
+
 # How long a refused dispatch re-reads the holder's record before naming it
 # without a run id. The holder writes its record immediately after the
 # exclusive create, so the window is microseconds; the bound exists so a
@@ -649,7 +681,16 @@ def _claim_holder_is_alive(holder: Mapping[str, Any]) -> bool:
     current_start = _process_start_time(holder_pid)
     if current_start is None:
         return False
-    return current_start == recorded_start
+    if current_start != recorded_start:
+        return False
+    recorded_exec = holder.get("exec_identity")
+    if not isinstance(recorded_exec, str) or not recorded_exec:
+        return True
+    try:
+        published_exec = _exec_identity_path(holder_pid).read_text(encoding="utf-8")
+    except OSError:
+        return True
+    return not published_exec or published_exec == recorded_exec
 
 
 def _empty_claim_is_stale(path: Path, holder: Mapping[str, Any]) -> bool:
@@ -755,6 +796,9 @@ def _claim_node_dispatch(
         "process_start_time": _process_start_time(os.getpid()),
         "created_at": _utc_now(),
     }
+    exec_identity = _publish_exec_identity()
+    if exec_identity is not None:
+        record["exec_identity"] = exec_identity
     reclaimed: dict[str, Any] | None = None
     for _attempt in range(_NODE_CLAIM_ATTEMPTS):
         try:
