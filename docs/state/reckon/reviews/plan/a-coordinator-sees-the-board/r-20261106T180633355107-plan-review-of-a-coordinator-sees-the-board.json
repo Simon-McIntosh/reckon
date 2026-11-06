@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T18:14:36.857Z",
+  "dispatched_at": "2026-11-06T18:08:07Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html:231",
+      "id": "reasoning-1",
+      "reason": "a node dispatched on \u00a713 will remove the scan, re-measure the served read, and find it still outside the 30 s deadline with no declared second lever, so the section either blocks or the node invents a change beyond its brief; the mechanism needs to name what else the served path spends (the `_live_sessions` \u2192 `crew/directory.directory()` call it never mentions is the obvious candidate) or the deadline needs a figure the cited evidence actually supports.",
+      "text": "\u00a713 says the resolver \"walks every row: the aggregate's rows, which \u00a711 left unbounded \u2026 For a review row that resolution calls `_reviewed_run_id` with every row, which copies the list and scans it\", and treats that scan as the cost of the served read; but \u00a711's probe at `reckon/crew/plan_coordinator.py:256` with `pointers=[]` reads the identical aggregate rows and runs the identical `_plan_of_run` \u2192 `_reviewed_run` \u2192 `_reviewed_run_id(source, list(rows.values()))` path for the identical review rows, and answered in 5.7 s, while `reckon/roadmap.py:3421-3423` memoises the resolver to one call per roadmap build, so the served read pays that scan once too \u2014 the plan's own two measurements therefore bound the scan well under 6 s and leave ~40 s of the 45 s unexplained, with no other cost named",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "d98b74b531ae310d1119a315d531767c23dbb792",
+  "plan_fingerprint": "45b61364db8d25badea359bfb301a0299d8ed36e8e8089174cd1a2fc9929b6b9",
+  "plan_slug": "a-coordinator-sees-the-board",
+  "plan_version": 63,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T180633355107-plan-review-of-a-coordinator-sees-the-board",
+  "reviewed_blob_sha": "581fddaceee1c4a838abfc9624b087d5a7c9e261",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/plan_coordinator.py:299` resolves each row's plan before the window check at `:303`, `:140` passes `list(rows.values())` into `dispatch_sessions._reviewed_run_id`, `reckon/ledger.py:1764-1767` bounds only the per-run documents and leaves the aggregate unbounded, and `a-project-reads-as-one-picture` \u00a78 carries the 45 s re-measure the section cites.",
+    "done_when": "pass \u2014 every assertion in \u00a713 fails at its base arm (the quadratic scan, the coordinator equality on a fixture with a long-queued row and in-window review pointers, and the served read), and the fixture carries the discriminating cases rather than only the easy ones.",
+    "evidence_paths": "pass \u2014 the fragment \u00a713 names is the plan's own `docs/evidence/fragments/a-coordinator-sees-the-board/` directory, which is durable, in-repo, and already holds ten landed sections' fragments, though the section itself names no filename.",
+    "naming": "pass \u2014 \u00a713 introduces no symbol, file or comment carrying a section label, ticket number or version tag.",
+    "reasoning": "a finding \u2014 \u00a713 blames the >45 s served read on a quadratic review-subject scan, but that same scan runs in \u00a711's 5.7 s probe over the same aggregate rows, so the plan names no mechanism for the ~40 s it has to remove.",
+    "single_goal": "pass \u2014 \u00a713 carries one deliverable, the resolver's review-subject resolution made cheap, and its three assertions all measure that one thing.",
+    "wiring": "pass \u2014 \u00a713's code builds on \u00a72 and \u00a711, both declared done and landed on main (`resolve_plan_coordinators`, `run_rows_from_documents(modified_since=\u2026)`), and the section that waits on it declares the relationship on its own side (`a-project-reads-as-one-picture` \u00a78 now waits on `a-coordinator-sees-the-board` \u00a713), so no missing `depends-on` entry can starve the node."
+  },
+  "section_digests": {
+    "_document": "103d6eeba4272f2ee872bf4ffdbe7612a81d7a1c94aa364b8ecfa817a75071e3",
+    "s1": "4f48bcfe2c71d1397f0eeb277ff928920d1ed0ae7cfb0da777c94e4943eadf87",
+    "s10": "80dd3bc62e983a2d2a47ca25840ac1947582d34d211d614a5c8429c5b6156137",
+    "s11": "b7bf20ae565e1f0d011538f9c16a840076ac093004cf3c94e5b5afa14c316316",
+    "s12": "bf696484c1fe51f7597bee5268e93815e84b8fd595be92a3477da828a9a7009e",
+    "s13": "7b9ff1124e55d8f3803424223264d4f7dfccfa92976940ffbb3cff8a27659bbb",
+    "s2": "e8a77da3ee95b252c49524e82dbed4c7af59fd2cf8813eca867555771e9c15d5",
+    "s3": "e4cd7ce8696d0d9fb511a9be2379e2561a08418a1d1f759c42a926231bad6e36",
+    "s4": "ba6bafca3a7e3ae7fb186980afd26dd26e183bf99b72272ea15f06fbaeb19e5f",
+    "s5": "c7676f30d627a592319ab4f34cbd8352167ba0b9b92a20d5cbafea4a685b90ae",
+    "s6": "b5875d403856eb185e06155d0c62410ab30a447353779fe729a12b57c2607cf0",
+    "s7": "4428c6858fc7f10400173c2e619ad379aa49779cef060ae4b50d866fde4a59a7",
+    "s8": "f9f58e76a5713eb901b1e780fcb93d48ca773a573fded72ec476738a59629b67",
+    "s9": "d2506b05e05f7611a8794a66b56c70ad072e38b6edb29d625161974bb3cc6da4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T18:17:21.231067+00:00"
+}
