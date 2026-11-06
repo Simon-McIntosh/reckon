@@ -485,9 +485,22 @@ def old_style_host(tmp_path: Path):
 
 
 def _retired(harness: _Host) -> bool:
-    """Whether the census lists no running child: the pair has been retired."""
-    record = harness.record()
-    return "children" in record and not record["children"]
+    """Whether the census lists children and none of them is running.
+
+    A retired pair is not an empty census: the census keeps a settled child
+    with a null pid and the time it settled, so the session that holds no work
+    stays named for readers of the board. A child is settled when its pid is
+    null and ``settled_at`` is set, and the pair is retired once every child
+    the census names is settled. A child the host restarted carries a pid, so
+    a restarted pair never reads as retired.
+    """
+    children = harness.record().get("children")
+    if not children:
+        return False
+    return all(
+        child.get("pid") is None and child.get("settled_at") is not None
+        for child in children
+    )
 
 
 def test_the_host_retires_a_settled_child_and_stays_alive(settling_host: _Host) -> None:
