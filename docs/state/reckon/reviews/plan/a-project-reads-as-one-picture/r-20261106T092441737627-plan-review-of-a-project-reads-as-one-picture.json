@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T10:20:53.057Z",
+  "dispatched_at": "2026-11-06T10:08:38Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-project-reads-as-one-picture.html:165",
+      "id": "done_when-1",
+      "reason": "a done-when arm that already passes at the base cannot show the fix worked, so the node would close on an arm that measures nothing; the arm must name a mount where the base fails (reckon did not return within 110 s) or be dropped in favour of the decode-count control.",
+      "text": "the arm \"One read_plan(view=\\\"why\\\") call on the power_convertor mount ... answers within the 30 s read deadline\" holds on the unfixed code: measured through the real MCP read path on this tree, the call returns in 6.3 s with no error",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-project-reads-as-one-picture.html:165",
+      "id": "reasoning-1",
+      "reason": "a node dispatched on \"26 decodes per call\" will size the fix and the gate against a repetition that the read scope already collapses, and the 6 that remain come from three `_reuse_covered_once` misses, so the fix the section describes is not the one that removes the measured cost.",
+      "text": "the section attributes the cost to \"one question decodes it 26 times or more\" via `_read_persisted_memo`, but that function is reached through `_reuse_covered`, which `metadata_index.discovery_file_scope()` memoises per `(docs_dir, project)` for the whole read (reckon/metadata_index.py:93 and :918), so the per-plan repetition the section describes does not happen on the path `read_plan` runs: the measured count on power_convertor is 6 decodes, not 26 or more",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "d11487f54c2b143cec3b67a97d7299050fd4d9c4",
+  "plan_fingerprint": "3d4eab1db0346095b1a9842ce1f4d5c5acd90d62e3e738769b82192de38197d4",
+  "plan_slug": "a-project-reads-as-one-picture",
+  "plan_version": 69,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T092441737627-plan-review-of-a-project-reads-as-one-picture",
+  "reviewed_blob_sha": "a7b2c7755c73f7a03a59c0465a075d1dec429bb1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `/reckon/evidence/archive/a-project-reads-as-one-picture-landed.html#s8-measure` resolves (the file exists in this tree and carries `id=\"s8-measure\"`), and each cited symbol resolves: `why_view._waited_on_by` (reckon/why_view.py:363), `why_view._section_edges` (:180), `roadmap._section_scoped_edges` (reckon/roadmap.py:1539), `roadmap._plan_authored_state` (:171), `resources.resolve_resource` (reckon/resources.py:881), `metadata_index._read_persisted_memo` (reckon/metadata_index.py:1986).",
+    "done_when": "a finding \u2014 s16's timing arm on power_convertor already passes at the base commit (6.3 s against a 30 s deadline), so that arm cannot fail and measures nothing.",
+    "evidence_paths": "pass \u2014 the landing evidence is the cumulative record at docs/evidence/archive/a-project-reads-as-one-picture-landed.html, a durable repository path, and the done-when sends the gate figures there rather than to a scratchpad.",
+    "naming": "pass \u2014 s16 introduces no code symbol, and the section text names mechanisms (a decode count, one owner for the persisted index) rather than plan, ticket or version labels.",
+    "reasoning": "a finding \u2014 the stated cost (\"one question decodes it 26 times or more\", \"no call answered\") is not what the code path the done-when measures does; the same question answers in 6.3 s with 6 decodes on the plan's own named mount.",
+    "single_goal": "pass \u2014 s16 carries one deliverable, decoding the persisted index once per call; the timing and parity arms measure that same deliverable rather than adding a second.",
+    "wiring": "pass \u2014 `plan-section-depends-on` at docs/plans/a-project-reads-as-one-picture.html:25 gives `s8` a wait on `a-project-reads-as-one-picture#s16`, so the re-measure is held until s16 lands, and s16 needs no upstream of its own."
+  },
+  "section_digests": {
+    "_document": "3d9071856290ec7a6c7982a166b8cb31ae9efdeb83c9742d8ad9a3089a1b2735",
+    "s1": "1956dcaef74ad7d3216608fe69c2e7baa2a9e32d702ef86431dc746f15c3878a",
+    "s10": "e102e1c4c48bcc4635b2e41c4a84e2b36433f78cee863762cad68b3deae2cf75",
+    "s11": "ff19dc90f42b226ca45a5aaaf02a9894b54846500c87597775cb2806fc9b6156",
+    "s12": "039fc9469fcdd80b1d5482629a5dcefc71359e7124fbbad20e0227170c2760dc",
+    "s13": "95e233ad4cbbcd9c2cf975b7cb717f3f0eec9093cbeade0f4f268890aaff8d73",
+    "s14": "e215eae311c545fa0320f94622e0e806b548177eb68b4ee0c1ca4cb1b202d283",
+    "s15": "ae3d696d3e3b1a44be381a9c1aac5613b8c19982be174e639200aba9532b81b9",
+    "s16": "7626244c8f778de3909866b41e74a66bfd7079f6f3cd6741dea0109fea1e403e",
+    "s2": "d5da4569d38701f7f8c91790b979f6e3de48d9e5d4969c4f115a74a7e8317e8c",
+    "s3": "749a131ab7a4c04f7278425172c74a2f6ebd29c0014fbb7befc6a0c8f48f08b4",
+    "s4": "389898eb9ae606e5b51a4f3a7bfafd20cdd843ae6612eb3884809786e45217a6",
+    "s5": "e13040e31816bf168d9b0b3f3a1245e7fa9b90c30cdf82db44726a02a764b6d9",
+    "s6": "d0f702b85752e3605cfbc815d2de3035b6d1e8e89fb584b661e8571aba7aa175",
+    "s7": "c96146ddd026103e827c96ed2e8629450a1f2f8d361d4419b4fe76456edf5ef4",
+    "s8": "1f13b98a4d7476b083792c060d8da48918e0ca44b3b27c910d2cfb7ae1aa69d3",
+    "s9": "a65c8523c1a05e7389c35e43a8737757ab2c60d08633460c1648c40a88138892"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T10:25:45.335775+00:00"
+}
