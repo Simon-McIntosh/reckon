@@ -67,4 +67,32 @@
     <code>repair-base.log</code>, <code>repair-answer.log</code>, and
     <code>repair-negative.log</code> in the same run directory.</p>
   </section>
+  <section id="the-lander-measures-the-population-before-it-lands-compatibility-repair">
+    <h3>Armed fixtures expose the actual completion failure</h3>
+    <p>Commit <code>c1a851524b1f9b5fdf688292df1ad9cb69033643</code>
+    supplies suite commands, base revisions, paired receipts and current candidate
+    identities to seven existing test files. Review and refusal checks reach
+    their intended guards while the missing-suite refusal remains enabled.
+    The real CLI test now asserts the completion receipt itself.</p>
+    <table>
+      <thead><tr><th>Expanded gate arm</th><th>Observed result</th></tr></thead>
+      <tbody>
+        <tr><td>Base <code>a99866a42b8af18a267b2e452c7f0e7b1adf40fe</code></td><td>23 failed, 53 passed; EXIT=1</td></tr>
+        <tr><td>Fixture commit <code>c1a851524b1f9b5fdf688292df1ad9cb69033643</code></td><td>1 failed, 75 passed; EXIT=1</td></tr>
+        <tr><td>Fixture commit reversed, parent bytes verified</td><td>23 failed, 53 passed; EXIT=1</td></tr>
+      </tbody>
+    </table>
+    <p>The reversal restores 22 failure ids absent from the repaired fixture arm.
+    Logs are <code>expanded-repair-base.log</code>,
+    <code>expanded-repair-head.log</code> and
+    <code>expanded-fixture-negative.log</code> in the run directory.</p>
+    <p>The remaining real CLI failure reports that the reviewed head was pushed
+    but its worktree is no longer available. Merging before actual promotion
+    lets promotion release the tree before the subsequent landing release.
+    Separately, an actual completion refusal after an allowed dry-run verdict
+    leaves the candidate on both local primary and the test remote while
+    <code>land_once</code> reports no landing. These observations invalidate
+    any reading of the earlier mocked-completion checks as a complete landing
+    proof. This partial fixture repair does not close the current review.</p>
+  </section>
 </article>
