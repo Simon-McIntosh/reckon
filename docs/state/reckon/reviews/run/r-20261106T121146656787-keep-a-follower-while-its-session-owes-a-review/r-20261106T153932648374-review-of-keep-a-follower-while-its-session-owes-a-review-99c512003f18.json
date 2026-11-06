@@ -1,0 +1,86 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/station.py:512",
+    "reckon/crew_follow_commands.py:584",
+    "reckon/crew_follow_commands.py:1554",
+    "reckon/crew_follow_commands.py:2109",
+    "reckon/cli.py:353"
+  ],
+  "completed_at": "2026-11-06T15:49:54.494Z",
+  "dispatched_at": "2026-11-06T15:43:56Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the grace expression is restated in three modules; lifting it into one named owner touches obligation_snapshot.py, outside this section, and changes no behaviour",
+      "recorded_at": "2026-11-06T15:56:21.575159+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "a stale docstring on the fallback wrapper; the rule it describes lives in live_work_populations, whose docstring is current",
+      "recorded_at": "2026-11-06T15:56:30.501094+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "a restart repeating the warning once is acceptable for a rare duty-read failure; a pointer-stamped report is a refinement, not a defect",
+      "recorded_at": "2026-11-06T15:56:40.982052+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/station_subscriber.py",
+      "line": 181,
+      "severity": "non-blocking",
+      "text": "_review_grace still restates str((config.get(\"fences\") or {}).get(\"unreconciled_run_grace\") or \"15m\"), the same derivation inlined at reckon/crew/obligations.py:1784 and reckon/crew/obligation_snapshot.py:1294; the previous review raised this and the two gained commits do not touch it, and the docstring's claim that the grace is read through the obligations module rather than restated is contradicted by the expression two lines below it."
+    },
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": 574,
+      "severity": "non-blocking",
+      "text": "the docstring of _population_has_live_work still says a pointer already in a terminal phase waits on the coordinator rather than on a producer, which the landed rule makes false for a delivered run that still owes its review; the file is inside this node's declared write paths and was left untouched, so a reader of the fallback path is told the opposite of what it now does."
+    },
+    {
+      "file": "reckon/crew/station_subscriber.py",
+      "line": 74,
+      "severity": "non-blocking",
+      "text": "_WARNED_DUTY_READ_FAILURES is process-local and keyed on the run id alone, so a station restart reports every unreadable run again and a second, different failure for a run already named is dropped silently; the repository already keeps a once-per-run report stamp on the pointer itself (failure_reported_at, read at reckon/crew/queue_admission.py:4497), which survives a restart and distinguishes a changed error."
+    }
+  ],
+  "findings_source": "review",
+  "item_verdicts": {
+    "call_sites": "The production paths reaching the change are reckon/crew/station.py:512 (the station tick writes the settle reading from live_work_populations), reckon/crew_follow_commands.py:584 (population_has_live_work delegating to the rule), :1554 (the fallback listing) and :2109 (the watched check); reckon/cli.py:353 re-exports the helper.",
+    "diff": "Read 002737cd3d..99c512003f commit by commit: two commits, three files, 113 insertions and 16 deletions, where be572379f0 deletes the second recovery._review_head_and_tree call and the un-memoised warning and adds the memo and its two cases, and 99c512003f records the single head read and the once-per-run warning in the landing fragment.",
+    "done_when": "The done_when names a new tests/test_a_follower_stays_while_a_review_is_owed.py driving _check_settle through a follower, two negative controls failing their cases, no failure against the base revision at -n 4, and no ruff findings on the staged paths; logs/node-tests.log records 10 passed EXIT=0 at 99c512003f, logs/negative-control.log records four controls each with EXIT=1, logs/base-arm.log 477 passed and logs/head-arm.log 487 passed both EXIT=0, and this review ran ruff check and ruff format --check over reckon/crew/station_subscriber.py and tests/test_a_follower_stays_while_a_review_is_owed.py as they stand at 99c512003f (All checks passed; 2 files already formatted).",
+    "goal": "The node goal is to keep a follower while its session owes a review; the commits gained since the last review leave that rule alone and repair the two costs the previous review named, reading the head off the duty item at reckon/crew/station_subscriber.py:162-166 rather than resolving it a second time, and memoising the unreadable-duty warning at reckon/crew/station_subscriber.py:74-89.",
+    "manifest": "Read; it records five commits, status complete with blockers none, base 477 against head 487 with no failure in either arm, four controls with their failing ids, and the node gate 10 passed; its baseline_suite and after_suite command fields still substitute a pointer to the log's command line for the literal command, which is a recording shape defect rather than a missing measurement.",
+    "write_paths": "The manifest declares reckon/crew/station_subscriber.py, reckon/crew_follow_commands.py, tests/test_a_follower_stays_while_a_review_is_owed.py, the evidence fragment and a figures directory; the two gained commits touch only the module, the test and the fragment, all inside them, and reckon/crew_follow_commands.py is granted but untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_follower_stays_while_a_review_is_owed.py:541 asserts exactly one head resolution per delivered pointer and :529 asserts exactly one warning per run across three passes, and the logged controls put each back to 2 and 3 respectively.",
+    "evidence": "logs/node-tests.log records 10 passed EXIT=0, logs/negative-control.log records four controls with distinct failing ids and EXIT=1, and logs/base-arm.log 477 against logs/head-arm.log 487 with EXIT=0 in both, so added_failure_count is 0 from the reviewed run's own arms.",
+    "fit": "reckon/crew/station_subscriber.py:74 introduces a process-global mutable memo where the module otherwise holds only constants, and reckon/crew_follow_commands.py:574 now states a rule the change contradicts.",
+    "goal_fidelity": "reckon/crew/station_subscriber.py:162-166 now holds the pane on the head the duty carries instead of resolving it again, so the hold rule is unchanged and its one avoidable read is gone.",
+    "reuse": "the delta retires one duplicated head resolution and adds no new copy of a repository-owned mechanism, but reckon/crew/station_subscriber.py:181 still restates the grace derivation inlined at reckon/crew/obligations.py:1784 and reckon/crew/obligation_snapshot.py:1294.",
+    "scope_discipline": "git diff --name-only 002737cd3d..99c512003f lists only reckon/crew/station_subscriber.py, tests/test_a_follower_stays_while_a_review_is_owed.py and the evidence fragment, every one inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to keep a follower while its session owes a review; the commits gained since the last review leave that rule alone and repair the two costs the previous review named, reading the head off the duty item at reckon/crew/station_subscriber.py:162-166 rather than resolving it a second time, and memoising the unreadable-duty warning at reckon/crew/station_subscriber.py:74-89.\nVERDICT done_when: The done_when names a new tests/test_a_follower_stays_while_a_review_is_owed.py driving _check_settle through a follower, two negative controls failing their cases, no failure against the base revision at -n 4, and no ruff findings on the staged paths; logs/node-tests.log records 10 passed EXIT=0 at 99c512003f, logs/negative-control.log records four controls each with EXIT=1, logs/base-arm.log 477 passed and logs/head-arm.log 487 passed both EXIT=0, and this review ran ruff check and ruff format --check over reckon/crew/station_subscriber.py and tests/test_a_follower_stays_while_a_review_is_owed.py as they stand at 99c512003f (All checks passed; 2 files already formatted).\nVERDICT write_paths: The manifest declares reckon/crew/station_subscriber.py, reckon/crew_follow_commands.py, tests/test_a_follower_stays_while_a_review_is_owed.py, the evidence fragment and a figures directory; the two gained commits touch only the module, the test and the fragment, all inside them, and reckon/crew_follow_commands.py is granted but untouched.\nVERDICT manifest: Read; it records five commits, status complete with blockers none, base 477 against head 487 with no failure in either arm, four controls with their failing ids, and the node gate 10 passed; its baseline_suite and after_suite command fields still substitute a pointer to the log's command line for the literal command, which is a recording shape defect rather than a missing measurement.\nVERDICT diff: Read 002737cd3d..99c512003f commit by commit: two commits, three files, 113 insertions and 16 deletions, where be572379f0 deletes the second recovery._review_head_and_tree call and the un-memoised warning and adds the memo and its two cases, and 99c512003f records the single head read and the once-per-run warning in the landing fragment.\nCALL_SITES: reckon/crew/station.py:512, reckon/crew_follow_commands.py:584, reckon/crew_follow_commands.py:1554, reckon/crew_follow_commands.py:2109, reckon/cli.py:353\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/station_subscriber.py:162-166 now holds the pane on the head the duty carries instead of resolving it again, so the hold rule is unchanged and its one avoidable read is gone.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/node-tests.log records 10 passed EXIT=0, logs/negative-control.log records four controls with distinct failing ids and EXIT=1, and logs/base-arm.log 477 against logs/head-arm.log 487 with EXIT=0 in both, so added_failure_count is 0 from the reviewed run's own arms.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 002737cd3d..99c512003f lists only reckon/crew/station_subscriber.py, tests/test_a_follower_stays_while_a_review_is_owed.py and the evidence fragment, every one inside the manifest's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_follower_stays_while_a_review_is_owed.py:541 asserts exactly one head resolution per delivered pointer and :529 asserts exactly one warning per run across three passes, and the logged controls put each back to 2 and 3 respectively.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/station_subscriber.py:74 introduces a process-global mutable memo where the module otherwise holds only constants, and reckon/crew_follow_commands.py:574 now states a rule the change contradicts.\nSCORE reuse: 17\nJUSTIFICATION reuse: the delta retires one duplicated head resolution and adds no new copy of a repository-owned mechanism, but reckon/crew/station_subscriber.py:181 still restates the grace derivation inlined at reckon/crew/obligations.py:1784 and reckon/crew/obligation_snapshot.py:1294.\nFINDING reckon/crew/station_subscriber.py:181 non-blocking: _review_grace still restates str((config.get(\"fences\") or {}).get(\"unreconciled_run_grace\") or \"15m\"), the same derivation inlined at reckon/crew/obligations.py:1784 and reckon/crew/obligation_snapshot.py:1294; the previous review raised this and the two gained commits do not touch it, and the docstring's claim that the grace is read through the obligations module rather than restated is contradicted by the expression two lines below it.\nFINDING reckon/crew_follow_commands.py:574 non-blocking: the docstring of _population_has_live_work still says a pointer already in a terminal phase waits on the coordinator rather than on a producer, which the landed rule makes false for a delivered run that still owes its review; the file is inside this node's declared write paths and was left untouched, so a reader of the fallback path is told the opposite of what it now does.\nFINDING reckon/crew/station_subscriber.py:74 non-blocking: _WARNED_DUTY_READ_FAILURES is process-local and keyed on the run id alone, so a station restart reports every unreadable run again and a second, different failure for a run already named is dropped silently; the repository already keeps a once-per-run report stamp on the pointer itself (failure_reported_at, read at reckon/crew/queue_admission.py:4497), which survives a restart and distinguishes a changed error.\n",
+  "review_run_id": "r-20261106T153932648374-review-of-keep-a-follower-while-its-session-owes-a-review-99c512003f18",
+  "reviewed_base_sha": "002737cd3d37669918b100263c4277f06a4112c5",
+  "reviewed_head_sha": "99c512003f189257578417d8e40b46f523335eb7",
+  "reviewed_run_id": "r-20261106T121146656787-keep-a-follower-while-its-session-owes-a-review",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T15:58:49.006530+00:00",
+  "total": 110
+}
