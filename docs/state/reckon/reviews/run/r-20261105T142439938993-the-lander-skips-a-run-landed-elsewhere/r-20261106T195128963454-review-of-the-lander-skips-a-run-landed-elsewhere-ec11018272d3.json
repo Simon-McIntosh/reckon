@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:land_once",
+    "reckon/crew/queue_admission.py:_LandingWorker._run",
+    "reckon/crew/queue_admission.py:admit_until_stopped",
+    "reckon/crew/queue_admission.py:_pass_verdict_record",
+    "reckon/crew/queue_admission.py:_record_pass_verdicts"
+  ],
+  "completed_at": "2026-11-06T20:02:23Z",
+  "dispatched_at": "2026-11-06T19:54:25Z",
+  "findings": [
+    {
+      "file": "tests/test_the_lander_skips_a_run_landed_elsewhere.py",
+      "line": "134",
+      "severity": "blocking",
+      "text": "The record and skipped input share the same landing object through queue_admission.py:1879, so mutating the skipped status before return changes both sides of this assertion and the later written comparison; the persisted landed-elsewhere identity has no independent literal assertion."
+    },
+    {
+      "file": "verdict-compatibility.log",
+      "line": "1",
+      "severity": "blocking",
+      "text": "The latest importer comparison is importers-head-final.log at 1463f0b6, before both later source repairs; the 12-test compatibility run at ec110182 does not establish the done_when requirement that all queue_landing importers add no failure against the base."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "git show of a77c71b8, 4333372d, 5998e224, and ec110182 shows the attempt-write catch, evidence update, skipped-row writer and test, and final evidence update in four paths.",
+    "done_when": "prompt.txt:114 requires race controls, an importer comparison and complete logs; repair-negative-control.log and verdict-negative-control.log fail as intended, verdict-baseline-suite.log and verdict-after-suite.log pass 3/4, but importers-head-final.log:1 predates this head.",
+    "goal": "prompt.txt:38 and plan \u00a736 require a landed-elsewhere skip; reckon/crew/queue_landing.py:1470-1484 handles attempt-write disappearance and reckon/crew/queue_admission.py:1859-1920 persists a skipped-only row.",
+    "manifest": "manifest.md:1-29 reports eight commits, focused 3/4 passing gate arms, two verdict red controls, and zero failure ids; the cited suite logs have complete EXIT=0 receipts.",
+    "write_paths": "manifest.md:3 declares the four changed paths including the later grant of reckon/crew/queue_admission.py; git diff 61b9147844e5815a780f79ae233c7b56ae1c32b0..ec11018272d39abcdb81e32a89ac7d13de9f7274 changes exactly those four."
+  },
+  "justifications": {
+    "durability": "tests/test_the_lander_skips_a_run_landed_elsewhere.py:108-109 and :133-136 fail under the recorded inverse controls, but :134 and :137 compare verdict content to the input object aliased by reckon/crew/queue_admission.py:1879.",
+    "evidence": "verdict-baseline-suite.log:5 and verdict-after-suite.log:5 show 3 and 4 passes with no failed ids, while importers-head-final.log:1 is at 1463f0b6 before both repair commits.",
+    "fit": "reckon/crew/queue_admission.py:1914-1920 reuses its existing record builder and log writer, and reckon/crew/queue_landing.py:1470-1484 follows the adjacent CrewError handling.",
+    "goal_fidelity": "reckon/crew/queue_landing.py:1470-1484 skips a disappeared pointer and reckon/crew/queue_admission.py:1859-1920 records the skip in a verdict row.",
+    "reuse": "A capability search for verdict persistence found reckon/crew/queue_admission.py:_pass_verdict_record and _record_pass_verdicts as the owners extended by this change, with logging still delegated to reckon/crew/picker/__init__.py:_append_crew_log_line.",
+    "scope_discipline": "The diff from 61b9147844e5815a780f79ae233c7b56ae1c32b0 to ec11018272d39abcdb81e32a89ac7d13de9f7274 changes only the four paths in manifest.md:3."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 and plan \u00a736 require a landed-elsewhere skip; reckon/crew/queue_landing.py:1470-1484 handles attempt-write disappearance and reckon/crew/queue_admission.py:1859-1920 persists a skipped-only row.\nVERDICT done_when: prompt.txt:114 requires race controls, an importer comparison and complete logs; repair-negative-control.log and verdict-negative-control.log fail as intended, verdict-baseline-suite.log and verdict-after-suite.log pass 3/4, but importers-head-final.log:1 predates this head.\nVERDICT write_paths: manifest.md:3 declares the four changed paths including the later grant of reckon/crew/queue_admission.py; git diff 61b9147844e5815a780f79ae233c7b56ae1c32b0..ec11018272d39abcdb81e32a89ac7d13de9f7274 changes exactly those four.\nVERDICT manifest: manifest.md:1-29 reports eight commits, focused 3/4 passing gate arms, two verdict red controls, and zero failure ids; the cited suite logs have complete EXIT=0 receipts.\nVERDICT diff: git show of a77c71b8, 4333372d, 5998e224, and ec110182 shows the attempt-write catch, evidence update, skipped-row writer and test, and final evidence update in four paths.\nCALL_SITES: reckon/crew/queue_landing.py:land_once, reckon/crew/queue_admission.py:_LandingWorker._run, reckon/crew/queue_admission.py:admit_until_stopped, reckon/crew/queue_admission.py:_pass_verdict_record, reckon/crew/queue_admission.py:_record_pass_verdicts\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/queue_landing.py:1470-1484 skips a disappeared pointer and reckon/crew/queue_admission.py:1859-1920 records the skip in a verdict row.\nSCORE evidence: 14\nJUSTIFICATION evidence: verdict-baseline-suite.log:5 and verdict-after-suite.log:5 show 3 and 4 passes with no failed ids, while importers-head-final.log:1 is at 1463f0b6 before both repair commits.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: The diff from 61b9147844e5815a780f79ae233c7b56ae1c32b0 to ec11018272d39abcdb81e32a89ac7d13de9f7274 changes only the four paths in manifest.md:3.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_the_lander_skips_a_run_landed_elsewhere.py:108-109 and :133-136 fail under the recorded inverse controls, but :134 and :137 compare verdict content to the input object aliased by reckon/crew/queue_admission.py:1879.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/queue_admission.py:1914-1920 reuses its existing record builder and log writer, and reckon/crew/queue_landing.py:1470-1484 follows the adjacent CrewError handling.\nSCORE reuse: 20\nJUSTIFICATION reuse: A capability search for verdict persistence found reckon/crew/queue_admission.py:_pass_verdict_record and _record_pass_verdicts as the owners extended by this change, with logging still delegated to reckon/crew/picker/__init__.py:_append_crew_log_line.\nFINDING tests/test_the_lander_skips_a_run_landed_elsewhere.py:134 blocking: The record and skipped input share the same landing object through queue_admission.py:1879, so mutating the skipped status before return changes both sides of this assertion and the later written comparison; the persisted landed-elsewhere identity has no independent literal assertion.\nFINDING verdict-compatibility.log:1 blocking: The latest importer comparison is importers-head-final.log at 1463f0b6, before both later source repairs; the 12-test compatibility run at ec110182 does not establish the done_when requirement that all queue_landing importers add no failure against the base.\n",
+  "review_run_id": "r-20261106T195128963454-review-of-the-lander-skips-a-run-landed-elsewhere-ec11018272d3",
+  "reviewed_base_sha": "61b9147844e5815a780f79ae233c7b56ae1c32b0",
+  "reviewed_head_sha": "ec11018272d39abcdb81e32a89ac7d13de9f7274",
+  "reviewed_run_id": "r-20261105T142439938993-the-lander-skips-a-run-landed-elsewhere",
+  "scores": {
+    "durability": 14,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T20:09:39.723990+00:00",
+  "total": 104
+}

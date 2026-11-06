@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="303">
+<meta name="plan-version" content="304">
 <meta name="plan-modified" content="2026-11-06">
 </head>
 <body>
@@ -622,6 +622,9 @@
 </div>
 <div class="r-comment" data-section="s36" data-id="c-run-r-20261106T171536810712-review-of-the-lander-skips-a-run-landed-elsewhere-61b9147844e5" data-who="reckon-build" data-when="2026-11-06T17:25:05Z">
     <div class="r-comment-body"><p>Parsed independent review of ad4269927f577138e8e4e1adebc10637383333ee..61b9147844e5815a780f79ae233c7b56ae1c32b0 stored at both granted paths with six scores, zero added failure ids, and two blocking findings; both records pass crew check --review.</p></div>
+</div>
+<div class="r-comment" data-section="s36" data-id="c-run-r-20261106T195128963454-review-of-the-lander-skips-a-run-landed-elsewhere-ec11018272d3" data-who="reckon-build" data-when="2026-11-06T20:02:23Z">
+    <div class="r-comment-body"><p>Parsed review of 61b9147844e5815a780f79ae233c7b56ae1c32b0..ec11018272d39abcdb81e32a89ac7d13de9f7274 stored at both granted paths; six dimensions scored 0..20, zero added failure ids, and two blocking findings.</p></div>
 </div>
 <div class="r-comment" data-section="s37" data-id="c-run-r-20261105T165246922164-review-of-a-launch-rereads-the-run-it-starts-a1deb2b4fc7a" data-who="reckon-build" data-when="2026-11-05T17:07:49.350Z">
     <div class="r-comment-body"><p>§37 reviewed at head a1deb2b4fc — `queue_admission._launch_reread_refusal` re-reads the live pointer and the run's `attempt-*-exit.json` records under `runs._pointer_lock` immediately before the launch (queue_admission.py:4339) and records a `refused-before-launch` verdict; the gate (3 passed EXIT=0) and two negative controls (each 1 failed/2 passed EXIT=1, reddening a different case) are recorded, and the consumer arm is head 54 passed vs base 1 failed 53 passed with the single base-only `test_the_log_is_trimmed_within_its_size_bound`; scores goal_fidelity 18, evidence 14, scope_discipline 19, durability 17, fit 16, reuse 19, total 103; three non-blocking findings: the attempt-resulted case writes its record before the pass so it does not test the mid-pass window, the fragment overstates that window coverage, and the done-when's importer-population clause is measured on six of 57 files because the wider sweep was truncated at 54 percent.</p></div>
