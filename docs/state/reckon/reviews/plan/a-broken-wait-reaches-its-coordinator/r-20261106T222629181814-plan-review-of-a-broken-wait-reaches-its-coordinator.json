@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T22:34:31.818Z",
+  "dispatched_at": "2026-11-06T22:28:21Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-broken-wait-reaches-its-coordinator.html:47",
+      "id": "done_when-1",
+      "reason": "without it a node can build the case with a live pid, see no obligation, and be pulled into the classifier instead of the map it was sent to change.",
+      "text": "the first case (\"a waiting run whose manifest carries a probe that stays refused after \u00a72 \u2026 appears in obligations\") names no process state, but that appearance depends on it: `classification = \"unreadable\"` for a refused wait is reached only in the arm `elif wait is not None and process_gone` (reckon/crew/recovery_classification.py:1717-1723), and a run whose worker is still alive takes the live-run arms instead and classifies `running`, which no duty kind maps. \u00a74's own first case states the equivalent condition (\"no live process and a value unchanged past WAIT_PRODUCER_GONE_SECONDS\"), so the omission is a gap in s3 rather than a house convention.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-broken-wait-reaches-its-coordinator.html:46",
+      "id": "reasoning-1",
+      "reason": "it removes the DUTY_ROW_FIELDS edit and the fourth case, and prevents one datum having two field names in the same row.",
+      "text": "the deliverable makes `_live_item` project the row's `detail` and adds `detail` to `DUTY_ROW_FIELDS`, but `_producer_gone_item` already carries a recovery row's `detail` into `item[\"reason\"]` (reckon/crew/obligations.py:815) and `reason` is already declared in `DUTY_ROW_FIELDS` (obligations.py:110). A duty built like the producer-gone one would therefore carry the same prose under two names, and `crew view obligations --fields reason` already returns it. The stated need \u2014 \"an obligation for a refused wait says what to repair\" \u2014 is met by projecting into `reason` at the two new kinds, which needs no vocabulary change and no fourth case.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "8fb9c1a816326afd0649e47deac16b0355f1cbae",
+  "plan_fingerprint": "9dce4df1d77705be569109e843834e5a4b0038649f186ca0db2a13b478873f27",
+  "plan_slug": "a-broken-wait-reaches-its-coordinator",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T222629181814-plan-review-of-a-broken-wait-reaches-its-coordinator",
+  "reviewed_blob_sha": "fe8a9ed7af1829fe189c94c6d02f1679e8106fdc",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 verified at HEAD 8fb9c1a8: recovery_vocabulary.py:88-89 are `unreadable`/`exited-unfinished` \u2192 `repair`; DUTY_ROW_FIELDS spans obligations.py:95-134 and lacks `detail`; `_live_item` is at obligations.py:723-731 projecting exactly the six named fields; `recovery_classification` is read at obligations.py:1917 and keyed at :1968; recovery_classification.py:1716-1723 is the `unreadable` arm whose `detail` and action read \"repair the waiting declaration\".",
+    "done_when": "a finding \u2014 the first of s3's four cases does not state the run state the classification it depends on requires (no live process), so a fixture carrying a live pid reads `running` and can never appear.",
+    "evidence_paths": "pass \u2014 s3's write paths are source plus one test and it names no gate log; its sibling \u00a72 carries the run-directory log rule, and no path s3 names is a scratchpad or node-local temporary.",
+    "naming": "pass \u2014 the section's prose, field names and test path carry no plan label, stage name, ticket number or changelog prose.",
+    "reasoning": "a finding \u2014 the plan adds a new `detail` surface when an existing projection already carries the same row field under `reason`, which is already in the fourth case's own vocabulary; the mechanism therefore duplicates a name rather than reaching a field the view lacks.",
+    "single_goal": "pass \u2014 the map entries, the `_live_item` projection and the `DUTY_ROW_FIELDS` vocabulary all serve one measurable goal: a repair-verb run listed with what to repair.",
+    "wiring": "pass \u2014 s3 declares no section wait and needs none: a-reexec-never-orphans-a-dispatch \u00a74's `launch-failed` entry is already present in `RECOVERY_CLASSIFICATION_DUTY_KINDS` (reckon/crew/obligations.py:75-77), so the edited map is stable and the section is dispatchable."
+  },
+  "section_digests": {
+    "_document": "d03f5f33ba4e3c3040d3555977705f88d6fe07b3409e73c3c07db45f1032f907",
+    "s1": "261438fe26041f770a527d758f1d74089637c1787c8d78d49957c57b9c122a42",
+    "s2": "7f638147397793c27168d9f3abf7057cba00c63109ec7df9ec06dc38a784bda7",
+    "s3": "0454c16f1195e8dc850f3d3746216a374020ea5d56b69d3e679f2695416961ba",
+    "s4": "56f29b4064cc7a3d087cf2380bd8311ded02ce5526e7295d449d9b7fdebc5930"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T22:39:19.902437+00:00",
+  "total": null
+}
