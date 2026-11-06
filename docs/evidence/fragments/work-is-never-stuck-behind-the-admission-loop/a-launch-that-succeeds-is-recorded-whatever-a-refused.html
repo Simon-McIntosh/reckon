@@ -1,0 +1,16 @@
+<article id="a-launch-that-succeeds-is-recorded-whatever-a-refused-measure">
+<h3>A successful launch retains its complete record</h3>
+<p><code>dispatch.dispatch</code> republishes the complete launch record through the pointer mutation lock after the launcher returns, preserving newer supervisor state. Its <code>launch_recorded_at</code> stamp identifies that publication without inventing the worker’s <code>launched_at</code>. Queue failure annotation, queue restoration and dispatcher refusal rollback retain a published launch and append the refusal to <code>admission_history</code>. The active launch excludes its own worktree claim only while it prepares that tree; peer claims still refuse removal.</p>
+<p>The historical records establish the refused path through <code>routing._stale_launch_tree_refusal</code> and the successful <code>dispatch.dispatch</code> launch at 22:45:22Z on 2 November. No surviving record identifies the dispatcher’s caller. The coordinator’s revised evidence requirement is therefore measured at the shared dispatcher through direct dispatch and <code>admit_once</code>. The completion case calls <code>crew.complete</code> without repairing its pointer.</p>
+<table><thead><tr><th>Arm</th><th>Recorded result</th><th>Log</th></tr></thead><tbody>
+<tr><td>Node baseline</td><td>10 failed, 2 passed in 35.59s; EXIT=1</td><td><code>base-node-paired.log</code></td></tr>
+<tr><td>Node head</td><td>12 passed in 54.05s; EXIT=0</td><td><code>node-committed.log</code></td></tr>
+<tr><td>Importer baseline</td><td>9 failed, 1268 passed, 8 warnings, 5 errors in 809.04s (0:13:29); EXIT=1</td><td><code>importers-base.log</code></td></tr>
+<tr><td>Importer head</td><td>9 failed, 1280 passed, 8 warnings, 5 errors in 768.11s (0:12:48); EXIT=1</td><td><code>importers-head.log</code></td></tr>
+<tr><td>Count the request as its own holder</td><td>1 failed, 11 passed in 45.68s; EXIT=1</td><td><code>negative-holder.log</code></td></tr>
+<tr><td>Replace the pointer on a late refusal</td><td>7 failed, 5 passed in 65.87s (0:01:05); EXIT=1</td><td><code>negative-refusal.log</code></td></tr>
+<tr><td>Publish only the process identity</td><td>9 failed, 3 passed in 44.12s; EXIT=1</td><td><code>negative-publication.log</code></td></tr>
+</tbody></table>
+<p>Added importer failure IDs: <strong>1</strong>; the broad delta gate remains unmet, and the outside-scope difference is recorded in the manifest. The baseline contains nine test failures and five setup errors; the changed arm is compared against those identities. Ruff findings remain eight at both revisions, with zero additions. Formatting differences against the formatter are unchanged: 24 existing changed lines in <code>routing.py</code>, zero in the other changed Python files.</p>
+<p>Implementation commits: <code>7b5bfac5e7df9b52e8a173dc0992a89fdadda63c</code> and <code>1c2f83743f15e6362e57aac25cd45d13347dbb75</code>. Regression file: <code>tests/test_a_successful_launch_is_recorded.py</code>. Full receipts, exact mutation patches, historical excerpts and the manifest are retained under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T092431693986-a-launch-that-succeeds-is-recorded-whatever-a-refused</code>.</p>
+</article>
