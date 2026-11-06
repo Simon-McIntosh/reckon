@@ -1,0 +1,76 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "This figure review ran no suite; the count is the neutral value the record shape requires, not a measurement.",
+  "attachment_map": {
+    "image-0.png": "docs/figures/a-coordinator-sees-the-board/a-coordinators-context-use-is-on-the-board/context-use-on-the-board.svg"
+  },
+  "attachment_note": "One rendered image was handed to this node and was opened directly with the read tool at its native 1400x720 pixels before any verdict was formed. No SVG was opened, listed, searched, rendered or shown; the only numerical measurements below were taken from the pixels of that handed-in PNG.",
+  "call_sites": [
+    "none"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-06T11:16:16Z",
+  "figure_checks": {
+    "caption": "The caption in docs/evidence/fragments/a-coordinator-sees-the-board/a-coordinators-context-use-is-on-the-board.html:52-58 does not merely repeat the title: it names the source of the read ('the view's own output'), the population and timestamp (eight live coordinator sessions at 2026-11-06T10:55Z), the model and window (claude-opus-5-5, 1,000,000 tokens) and the span (16.3 % to 52.7 %), all of which the rendered bars bear out. No caption finding.",
+    "clearance": "Per-bar gap between a bar's right end and the first glyph ink of its value label: 22, 22, 15, 15, 22, 18, 19, 19 px. No label touches a bar, another label or the frame.",
+    "clipping": "Outer 4 px frame: 0 ink pixels. Overall ink bounding box x 20..1378, y 50..696, so the nearest content is 20 px from the left edge and 22 px from the right edge, and the lowest ink (the axis label's descenders) reaches y=696 of 720.",
+    "provenance": "reviewed_base_sha 0cb152d789 is an ancestor of reviewed_head_sha f8917a71d7 (git merge-base --is-ancestor confirmed in the worktree), and the figure path resolves at the reviewed head. The run's own manifest names the same figure as its artifact. The data behind the bars is the run's context-use-data.json (8 rows, 16.3-52.7 % of a 1,000,000-token window), and the extremes match the rendered bars exactly.",
+    "render": "The one attachment was opened at native resolution; every verdict below is about those pixels. Dimensions 1400x720 RGBA; no cropping, scaling or re-rendering was performed (this review is read-only and created no image)."
+  },
+  "figure_verdicts": [
+    {
+      "figure": "docs/figures/a-coordinator-sees-the-board/a-coordinators-context-use-is-on-the-board/context-use-on-the-board.svg",
+      "render": "image-0.png (1400x720)",
+      "rubric": {
+        "contrast": "pass. Near-black text on white throughout; the bar fill reaches about 4.2:1 against white, and every value label is drawn on white to the right of its bar rather than over the fill.",
+        "data_ink": "pass. Pixel measurements on the handed-in PNG: bar fill 24.0 % of the canvas, any ink 26.2 %. Bars are 40 px thick with 34-35 px white gaps, the only non-data ink being the labels and the bottom axis.",
+        "decoration": "pass. White canvas, flat rgb(46,139,87) fill, no gradient, no shading, no gridlines, no top, right or left spine; only the bottom axis carries a scale.",
+        "label_collision": "pass. Zero ink pixels in the outer 4 px frame of the 1400x720 render (ink bbox x 20..1378, y 50..696). Each value label clears its own bar end by 15-22 px with no overlap of the bar, the neighbouring row's label or the canvas edge; the longest bar ends at x=1186 and its label at x=1237, 163 px short of the right edge.",
+        "legibility": "pass. Eight bars, each with its value printed at its end (52.7, 50.7, 46.4, 44.7, 39.6, 24.7, 24.0, 16.3), one named axis, ticks at 0/10/20/30/40/50/60. The reader gets the ranking and the spread immediately. The row labels are 8-character session-id prefixes, so the reader gets the distribution but not who is who; that is finding 1 and it does not stop the figure being read.",
+        "table_form": "pass. Eight (session, percent) pairs with the bar length carrying the comparison; the ranking and spread are the point, so a chart rather than a table is the right form."
+      }
+    }
+  ],
+  "findings": [
+    {
+      "file": "docs/figures/a-coordinator-sees-the-board/a-coordinators-context-use-is-on-the-board/context-use-on-the-board.svg",
+      "id": "fbdde79ce23",
+      "line": null,
+      "severity": "non-blocking",
+      "summary": "Every row is labelled with an 8-character session-id prefix (704ee605, c76cf9d1, efd0ee8c, 67139f13, 35a66cc6, 4f554c2d, 5b10be66, 404513fc) and nothing names those sessions: the figure carries no title, the y axis has no label naming what the identifiers are, and the caption says only 'eight live coordinator sessions' without listing them. A reader can see that some coordinator sits at 52.7 % of its window but cannot tell which one without leaving the figure for the board view to match a prefix, which is the one question the figure exists to answer after the spread (which coordinator is near its window). The drawing script truncates the identifier at eight characters (row[\"session\"][:8]) and leaves the y label empty. Fix: label each bar with the session's project and a short name where the board holds one, or list the eight full session ids in the caption, leaving the bar order and the percentages unchanged. Nothing is unreadable or clipped, so this does not hold the node."
+    }
+  ],
+  "item_verdicts": {
+    "caption_independence": "The caption is substantive and adds the population, the model, the window and the timestamp the bars cannot carry; it does not restate a title, and the figure carries no title of its own.",
+    "finding_materiality": "One non-blocking finding, no blocking finding: no label is clipped, no label overlaps another label or the data, no text is unreadable, and the data the figure exists to show (each session's percentage and the spread) are all visible, so none of the blocking categories is met.",
+    "rendered_artifact": "The single attached PNG was opened and measured; the verdict is about the picture, not about the generating script or the SVG source."
+  },
+  "justifications": {
+    "durability": "The record is written at both declared paths and checked with reckon crew check --review --record before the manifest is closed.",
+    "evidence": "Every measurement (outer-frame ink 0, ink bbox, bar thickness and gaps, per-label clearances, canvas and fill colours, ink fractions) was taken from the pixels of the one handed-in PNG; the revision pair was confirmed with git merge-base --is-ancestor and the artifact named in the reviewed run's manifest rather than assumed.",
+    "legibility": "Read from the 1400x720 render opened at native resolution.",
+    "scope_discipline": "This review is read-only. No figure, caption, script, fragment or plan was edited, created, moved, deleted, redrawn, relabelled or reformatted; the only writes are this record at its two declared paths and the manifest."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261106T111408387900-review-of-a-coordinators-context-use-is-on-the-board-f8917a71d76b-figure",
+  "reviewed_base_sha": "0cb152d789aafe83725ade9e1ef871bf6481418b",
+  "reviewed_figures": [
+    "docs/figures/a-coordinator-sees-the-board/a-coordinators-context-use-is-on-the-board/context-use-on-the-board.svg"
+  ],
+  "reviewed_head_sha": "f8917a71d76b557086c53d8a8ab301322d783f52",
+  "reviewed_run_id": "r-20261106T054659697315-a-coordinators-context-use-is-on-the-board",
+  "rubric": "figure",
+  "rubric_lines": [
+    "RUBRIC legibility: pass. Eight horizontal bars sorted by length, each carrying its own one-decimal value beside it, an x axis named 'context used at last turn [% of window]' with 0-60 ticks every ten, so the population's spread from 16.3 to 52.7 is readable at a glance. The row identities are truncated session ids, recorded as finding 1.",
+    "RUBRIC data_ink: pass. Measured on the 1400x720 render: the green bars cover 24.0 % of canvas pixels against 26.2 % any-ink, so the data are essentially all of the figure's ink, and the only other ink is eight value labels, eight row labels, the tick labels and the axis name.",
+    "RUBRIC decoration: pass. No gradient, no background fill, no band, no gridline and no frame beyond the bottom axis; the canvas is pure white (sampled at (5,5) as 255,255,255) and the bars are a flat single value (sampled at (300,67) as rgb(46,139,87)).",
+    "RUBRIC contrast: pass. All text is near-black on white; the bar fill rgb(46,139,87) measures about 4.2:1 against white, above the 3:1 a graphical object needs, and the value labels sit on white rather than inside the bars.",
+    "RUBRIC table_form: pass. Eight ranked magnitudes against a common zero baseline is what a bar chart is for; a table would show the same numbers but not the spread, which is the sentence the fragment draws from the figure ('the population spans 16.3 % to 52.7 %').",
+    "RUBRIC label_collision: pass. Zero ink in the outer 4 px frame of the 1400x720 render and an ink bounding box of x 20..1378, y 50..696; each value label clears its bar end by 15-22 px and no label overlaps another label, a bar or the canvas edge."
+  ],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T11:28:33.433566+00:00",
+  "total": null
+}

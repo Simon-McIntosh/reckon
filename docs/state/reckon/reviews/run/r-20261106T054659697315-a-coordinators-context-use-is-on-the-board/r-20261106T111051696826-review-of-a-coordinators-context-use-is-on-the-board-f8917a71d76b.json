@@ -1,0 +1,33 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-06T11:23:20.274Z",
+  "dispatched_at": "2026-11-06T11:13:37Z",
+  "findings": [
+    {
+      "file": "reckon/crew/directory.py",
+      "id": "f08a693288f",
+      "line": 168,
+      "severity": "non-blocking",
+      "text": "the forward fallback now reads through dispatch_accounting._jsonl_events, which opens with strict UTF-8, so a live transcript whose last line is torn mid-codepoint raises UnicodeDecodeError out of the board read, where the removed inline reader opened with errors=\"replace\"; reproduced by feeding _jsonl_events a file ending b'\"h\\\\xc3'."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that every coordinator row carries the context the session used at its last turn and the window it runs in; the gained commits leave that intact, attaching the figure at reckon/crew/directory.py:794 and only rerouting how the transcript is read.\nVERDICT done_when: the done_when requires a fixture transcript to yield its figure and a missing transcript to yield unmeasured; tests/test_a_coordinators_context_use_is_on_the_board.py:124 and :151 assert those, and the repair gate at head f8917a71d76b reports 6 passed EXIT=0 (coordinator-armed-head.log).\nVERDICT write_paths: the manifest declares reckon/crew/directory.py, tests/test_a_coordinators_context_use_is_on_the_board.py, the evidence fragment and a figures directory; the two gained commits touch only directory.py, the test file and the fragment, all inside that scope.\nVERDICT manifest: read; it records the repair head gate at e9d6656e16 as 6 passed EXIT=0 against 5 passed at a12116c0df, and a negative control of 1 failed/5 passed EXIT=1, all three logs present and readable on disk; its armed baseline row still records an exit-4 collection error as completed, which the previous review already recorded.\nVERDICT diff: read commit by commit from a12116c0dfbd; e9d6656e16 is the reuse repair (directory.py now calls dispatch_accounting._latest_transcript and _jsonl_events) and f8917a71d76b is its evidence, 69 insertions against 36 deletions across three files, nothing outside the declared paths.\nCALL_SITES: reckon/crew_run_commands.py:446, reckon/mcp_views.py:4188, reckon/crew/plan_coordinator.py:213\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/directory.py:794 still attaches one context_use figure to every coordinator row, and e9d6656e16 changes only how the transcript behind it is read.\nSCORE evidence: 18\nJUSTIFICATION evidence: coordinator-armed-head.log reports 6 passed EXIT=0 at f8917a71d76b, and logs/negative-control-repair.log shows tests/test_a_coordinators_context_use_is_on_the_board.py:239 reddening with assert 1005 == 250040, so the guard fired rather than merely passing.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff a12116c0df..f8917a71d7 touches only reckon/crew/directory.py, tests/test_a_coordinators_context_use_is_on_the_board.py and the evidence fragment, all declared in the manifest.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_coordinators_context_use_is_on_the_board.py:239 fails if the forward fallback returns the first charged request (proved by the recorded control) and compares against a literal the fixture supplies, but a revert to the removed inline forward read leaves it green and the torn-write behaviour at reckon/crew/directory.py:168 is untested.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/directory.py:78 and :121 keep the module's deferred-import idiom for optional readers and the docstrings state the mechanism, introducing no name the repository naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: every capability the repair needed is the owner's own -- _charged_claude_tokens, _jsonl_events and _latest_transcript from reckon/crew/dispatch_accounting.py:32-122; the only retained new iteration is the bounded backwards read, which no owner in the repository provides (reckon/_backends.py:3097 _last_line_boundary locates an offset and parses nothing).\nFINDING reckon/crew/directory.py:168 non-blocking: the forward fallback now reads through dispatch_accounting._jsonl_events, which opens the file with strict UTF-8, so a live transcript whose last line is torn mid-codepoint raises UnicodeDecodeError out of the board read; the inline reader this diff removed opened with errors=\"replace\". Reproduced by passing _jsonl_events a file ending in b'\"h\\\\xc3', which raises UnicodeDecodeError (probe in the run scratch), and the fallback is the path taken exactly when a multi-megabyte trailing tool result follows the last request.",
+  "review_run_id": "r-20261106T111051696826-review-of-a-coordinators-context-use-is-on-the-board-f8917a71d76b",
+  "reviewed_base_sha": "a12116c0dfbd37e9884f4e606bc1fdbd42969979",
+  "reviewed_head_sha": "f8917a71d76b557086c53d8a8ab301322d783f52",
+  "reviewed_run_id": "r-20261106T054659697315-a-coordinators-context-use-is-on-the-board",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T11:32:21.419381+00:00",
+  "total": 114
+}
