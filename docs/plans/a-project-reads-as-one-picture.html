@@ -27,7 +27,7 @@
   <title>A Project Reads as One Picture | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="64">
+<meta name="plan-version" content="65">
 <meta name="plan-modified" content="2026-11-06">
 </head>
 <body>
@@ -224,7 +224,10 @@
     <div class="r-comment-body"><p>review of r-20261105T211741176711-read-plan-answers-a-followup-wait at head 7627c01bda against base 116da9e9f: parsed, six dimensions scored 19/19/20/19/20/20, added_failure_count 0, one non-blocking finding (staged followup refs untested; status differs between surfaces for slug#sN@f-id)</p></div>
 </div>
 <div class="r-comment" data-section="s15" data-id="c-run-r-20261106T004239601630-review-of-read-plan-answers-a-followup-wait-ac18a69a7621" data-who="reckon-build" data-when="2026-11-06T00:50:34.245Z">
-    <div class="r-comment-body"><p>Independent review of r-20261105T211741176711-read-plan-answers-a-followup-wait covering only the commits gained since its prior review (7627c01bda..ac18a69a76): parsed, six dimensions scored 19/17/20/19/19/20, added_failure_count 0, one non-blocking finding (the manifest&#x27;s baseline_suite/after_suite arms still name the previous attempt&#x27;s revisions and logs).</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261105T211741176711-read-plan-answers-a-followup-wait covering only the commits gained since its prior review (7627c01bda..ac18a69a76): parsed, six dimensions scored 19/17/20/19/19/20, added_failure_count 0, one non-blocking finding (the manifest's baseline_suite/after_suite arms still name the previous attempt's revisions and logs).</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261105T211741176711-read-plan-answers-a-followup-wait" data-who="reckon-build" data-when="2026-11-05T22:26:09Z">
+    <div class="r-comment-body"><p>§15 landed across d2e789cbe and 6ca488dea: `followup_wait_state(followups, followup_id, plan)` in `reckon/roadmap.py` is the one derivation of a ref&#x27;s followup half, read by `_section_scoped_edges` and by `reckon/mcp.py::_resolve_plan_ref`, so read_plan&#x27;s deps and section-dependency rows carry the roadmap&#x27;s `status`, `followup`, `followup_found`, `followup_status` and `satisfied` values for both the bare `slug@f-id` and the staged `slug#sN@f-id` form — a staged ref reports the target plan&#x27;s status, not the waited section&#x27;s declaration; `tests/test_read_plan_answers_a_followup_wait.py` reads 25 passed at head 6ca488dea against 20 failed/5 passed at base 116da9e9f, and `tests/test_a_section_can_wait_on_a_followup.py` reads 11 passed unchanged.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261021T173748462446-review-of-the-critical-path-runs-through-sections-c19a077d50e7" data-who="reckon-build" data-when="2026-10-21T17:56:59.106Z">
     <div class="r-comment-body"><p>the review of r-20261021T161245050192-the-critical-path-runs-through-sections at c19a077d reads parsed with goal_fidelity 19, evidence 18, scope_discipline 18, durability 15, fit 16, reuse 17, added_failure_count 0 over the reviewed run's own arm logs, and three follow-on findings</p></div>
