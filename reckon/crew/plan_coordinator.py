@@ -205,8 +205,14 @@ def _live_sessions(project: str, pointers: Iterable[Mapping[str, Any]]) -> set[s
     ended coordinator reads as ended rather than as one that never existed. The
     verdict comes from the directory's own grouping, which is the one place the
     fleet already decides what a dispatching session is.
+
+    Queue places are not read: liveness does not depend on them, and reading
+    them runs plan discovery from inside the discovery lock a roadmap build
+    already holds when it reaches this resolver.
     """
-    view = directory.directory(project=project, pointers=list(pointers))
+    view = directory.directory(
+        project=project, pointers=list(pointers), queue_places=False
+    )
     return {
         str(row["session"])
         for row in view["coordinators"]

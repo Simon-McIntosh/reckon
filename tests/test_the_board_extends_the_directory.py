@@ -98,8 +98,9 @@ def _pointer(
     )
 
 
+@pytest.mark.parametrize("queued", [False, True], ids=["idle-queue", "queued-request"])
 def test_discovery_returns_while_the_roadmap_reads_coordinators(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, queued: bool
 ) -> None:
     # Plan discovery holds the server's discovery lock while it builds the
     # roadmap, and the roadmap's critical path asks the plan-coordinator
@@ -108,6 +109,9 @@ def test_discovery_returns_while_the_roadmap_reads_coordinators(
     # ready-idle owners runs plan discovery again, and waits on the lock its
     # own caller holds. The read is asked for its idle owners rather than
     # deriving them unasked, and this is the case that fails when it is not.
+    # A queued request's place is read from the admission order, which reads
+    # the project's roadmap through plan discovery too, so the resolver's read
+    # leaves queue places out as well; the queued case fails when it does not.
     home = tmp_path / "home"
     home.mkdir()
     state_root = tmp_path / "state"
@@ -121,7 +125,29 @@ def test_discovery_returns_while_the_roadmap_reads_coordinators(
     monkeypatch.setenv("RECKON_STATE_ROOT", str(state_root))
     monkeypatch.setattr(serve, "_MOUNTS_FILE", mounts)
     monkeypatch.setattr(serve, "_STATE_ROOT", state_root)
-    monkeypatch.setattr("reckon.crew.list_live", lambda *a, **k: [])
+    live = (
+        [
+            {
+                "run_id": "run-queued",
+                "session": "queued-coordinator",
+                "project": PROJECT,
+                "repo": REPOSITORY,
+                "plan": "coil-supply-report-rebuild",
+                "section": "s1",
+                "node": {
+                    "id": "queued-node",
+                    "plan": "coil-supply-report-rebuild",
+                    "section": "s1",
+                    "write_paths": ["src/supply.py"],
+                },
+                "phase": "queued",
+                "queued_at": datetime.now(UTC).isoformat(),
+            }
+        ]
+        if queued
+        else []
+    )
+    monkeypatch.setattr("reckon.crew.list_live", lambda *a, **k: list(live))
     serve._DISC_CACHE.clear()
     docs = BOARD_FIXTURE / "docs"
     answer: dict[str, object] = {}
