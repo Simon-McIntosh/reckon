@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The completed after_suite has zero failed ids, so its added-id set is empty for any baseline set; baseline_suite itself stopped at 3 percent and does not establish a complete paired gate.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:_LandingWorker._land",
+    "reckon/crew/queue_admission.py:admit_until_stopped",
+    "reckon/crew/queue_admission.py:_pass_verdict_record",
+    "reckon/crew/queue_admission.py:_record_pass_verdicts",
+    "reckon/crew/queue_landing.py:_measure_delivery"
+  ],
+  "completed_at": "2026-11-06T17:25:05Z",
+  "dispatched_at": "2026-11-06T17:17:46Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "1859",
+      "severity": "blocking",
+      "text": "blocking: _pass_verdict_record and _record_pass_verdicts require landed or obligations and ignore skipped, so a pass whose only landing outcome is landed-elsewhere writes no verdict row despite the node's explicit durable-record requirement."
+    },
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "line": "1470",
+      "severity": "blocking",
+      "text": "blocking: The pointer may disappear after the final _landed_elsewhere read but before _record_attempt writes attempting; that CrewError is outside the new catch and becomes the landing stage error the change promises to avoid."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Commits 33d37d448500cea4f386673e50c50c71ed76c94b, 4b97f908e2e93f16230f96be3b3e62a234aa75f9, 1463f0b6a4de9be786b4217517ca2c3473aacbbd, and 61b9147844e5815a780f79ae233c7b56ae1c32b0 add the current-state guard, strengthen the measurement patch, preserve own promotion results, and add the evidence fragment in the three declared paths.",
+    "done_when": "The source prompt at prompt.txt:114 requires two temporary-home cases, two negative controls, importer comparison, and complete logs; after-suite.log:5 has 2 passed, negative-control.log:76-78 has 2 failed, importers-base.log:8 has 102 passed, importers-head-final.log:6 has 104 passed, while baseline-suite.log:20 ended incomplete at EXIT=143.",
+    "goal": "The source prompt at prompt.txt:38 asks the lander to skip a run landed elsewhere; reckon/crew/queue_landing.py:1409 and :1462 return landed-elsewhere, but a skip-only pass is not stored by reckon/crew/queue_admission.py:1859.",
+    "manifest": "The source manifest.md reports four commits, the focused 2-pass gate, both negative-control failures, 102 base and 104 head importer passes, and an incomplete baseline_suite with EXIT=143.",
+    "write_paths": "The granted source paths in prompt.txt:77-80 include reckon/crew/queue_landing.py, tests/test_the_lander_skips_a_run_landed_elsewhere.py, and the evidence fragment; git diff ad4269927f577138e8e4e1adebc10637383333ee..61b9147844e5815a780f79ae233c7b56ae1c32b0 changes exactly those three."
+  },
+  "justifications": {
+    "durability": "tests/test_the_lander_skips_a_run_landed_elsewhere.py:50-52 fail if pointer loss becomes a landing error or a landing success, and :82-83 fail if a ledger row reaches measurement or loses its skip, but no assertion reaches the persisted verdict row or the pointer race after the final read.",
+    "evidence": "after-suite.log:5 and negative-control.log:76-78 demonstrate the two guard outcomes, while baseline-suite.log:20 is incomplete and cannot establish the exact paired base gate.",
+    "fit": "reckon/crew/queue_landing.py:29-53 uses the existing pointer, ledger, and CrewError conventions and adds no forbidden source name, while the new status follows the landing result shape.",
+    "goal_fidelity": "reckon/crew/queue_landing.py:1545 returns a skip to the landing stage, but reckon/crew/queue_admission.py:1859 drops a skip-only pass instead of recording its landing block in a verdict row.",
+    "reuse": "Searching pointer and ledger ownership found reckon/crew/queue_admission.py:_run_record_held and reckon/crew/promotion.py:1738; neither checks both current pointer and validated ledger row with the lander's refusal semantics, so reckon/crew/queue_landing.py:34 extends the landing owner's capability.",
+    "scope_discipline": "git diff ad4269927f577138e8e4e1adebc10637383333ee..61b9147844e5815a780f79ae233c7b56ae1c32b0 changes only the three paths granted in prompt.txt:77-80."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt at prompt.txt:38 asks the lander to skip a run landed elsewhere; reckon/crew/queue_landing.py:1409 and :1462 return landed-elsewhere, but a skip-only pass is not stored by reckon/crew/queue_admission.py:1859.\nVERDICT done_when: The source prompt at prompt.txt:114 requires two temporary-home cases, two negative controls, importer comparison, and complete logs; after-suite.log:5 has 2 passed, negative-control.log:76-78 has 2 failed, importers-base.log:8 has 102 passed, importers-head-final.log:6 has 104 passed, while baseline-suite.log:20 ended incomplete at EXIT=143.\nVERDICT write_paths: The granted source paths in prompt.txt:77-80 include reckon/crew/queue_landing.py, tests/test_the_lander_skips_a_run_landed_elsewhere.py, and the evidence fragment; git diff ad4269927f577138e8e4e1adebc10637383333ee..61b9147844e5815a780f79ae233c7b56ae1c32b0 changes exactly those three.\nVERDICT manifest: The source manifest.md reports four commits, the focused 2-pass gate, both negative-control failures, 102 base and 104 head importer passes, and an incomplete baseline_suite with EXIT=143.\nVERDICT diff: Commits 33d37d448500cea4f386673e50c50c71ed76c94b, 4b97f908e2e93f16230f96be3b3e62a234aa75f9, 1463f0b6a4de9be786b4217517ca2c3473aacbbd, and 61b9147844e5815a780f79ae233c7b56ae1c32b0 add the current-state guard, strengthen the measurement patch, preserve own promotion results, and add the evidence fragment in the three declared paths.\nCALL_SITES: reckon/crew/queue_admission.py:_LandingWorker._land, reckon/crew/queue_admission.py:admit_until_stopped, reckon/crew/queue_admission.py:_pass_verdict_record, reckon/crew/queue_admission.py:_record_pass_verdicts, reckon/crew/queue_landing.py:_measure_delivery\nSCORE goal_fidelity: 12\nJUSTIFICATION goal_fidelity: reckon/crew/queue_landing.py:1545 returns a skip to the landing stage, but reckon/crew/queue_admission.py:1859 drops a skip-only pass instead of recording its landing block in a verdict row.\nSCORE evidence: 14\nJUSTIFICATION evidence: after-suite.log:5 and negative-control.log:76-78 demonstrate the two guard outcomes, while baseline-suite.log:20 is incomplete and cannot establish the exact paired base gate.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff ad4269927f577138e8e4e1adebc10637383333ee..61b9147844e5815a780f79ae233c7b56ae1c32b0 changes only the three paths granted in prompt.txt:77-80.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_the_lander_skips_a_run_landed_elsewhere.py:50-52 fail if pointer loss becomes a landing error or a landing success, and :82-83 fail if a ledger row reaches measurement or loses its skip, but no assertion reaches the persisted verdict row or the pointer race after the final read.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/queue_landing.py:29-53 uses the existing pointer, ledger, and CrewError conventions and adds no forbidden source name, while the new status follows the landing result shape.\nSCORE reuse: 18\nJUSTIFICATION reuse: Searching pointer and ledger ownership found reckon/crew/queue_admission.py:_run_record_held and reckon/crew/promotion.py:1738; neither checks both current pointer and validated ledger row with the lander's refusal semantics, so reckon/crew/queue_landing.py:34 extends the landing owner's capability.\nFINDING reckon/crew/queue_admission.py:1859 blocking: _pass_verdict_record and _record_pass_verdicts require landed or obligations and ignore skipped, so a pass whose only landing outcome is landed-elsewhere writes no verdict row despite the node's explicit durable-record requirement.\nFINDING reckon/crew/queue_landing.py:1470 blocking: The pointer may disappear after the final _landed_elsewhere read but before _record_attempt writes attempting; that CrewError is outside the new catch and becomes the landing stage error the change promises to avoid.\n",
+  "review_run_id": "r-20261106T171536810712-review-of-the-lander-skips-a-run-landed-elsewhere-61b9147844e5",
+  "reviewed_base_sha": "ad4269927f577138e8e4e1adebc10637383333ee",
+  "reviewed_head_sha": "61b9147844e5815a780f79ae233c7b56ae1c32b0",
+  "reviewed_run_id": "r-20261105T142439938993-the-lander-skips-a-run-landed-elsewhere",
+  "scores": {
+    "durability": 13,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 12,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T17:29:34.838582+00:00",
+  "total": 95
+}
