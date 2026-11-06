@@ -98,22 +98,6 @@ def follower_rows(project: str) -> list[dict[str, Any]]:
     return list(runs.list_followers(project))
 
 
-def live_sessions(project: str) -> list[str]:
-    """The sessions a follower is currently delivering for, oldest name first.
-
-    The same registrations the producer's sweep publishes for: deriving for a
-    session nobody is delivering to would spend the station on a coordinator
-    that is not there.
-    """
-    return sorted(
-        {
-            str(row.get("session") or "")
-            for row in follower_rows(project)
-            if row.get("live") and row.get("session")
-        }
-    )
-
-
 def payload_identity(payload: Mapping[str, Any]) -> str:
     """A digest of a payload that does not move as its duties age.
 
