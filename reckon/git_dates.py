@@ -20,8 +20,19 @@ from reckon.git_head import (  # noqa: F401 — re-exported for existing importe
 
 @dataclass(frozen=True)
 class _GitCreationEntry:
+    """A date map, the commit it was last resolved at, and any head it missed.
+
+    ``head`` is the commit the map's times are complete up to, and is empty
+    when no query has ever answered, so the next query covers the whole
+    history. ``timed_out_head`` is the commit a query ran out of time at: it
+    suppresses another query only while the checkout stands still, and it never
+    becomes the point an incremental query starts from, because nothing between
+    ``head`` and it was read.
+    """
+
     head: str
     times: dict[str, int]
+    timed_out_head: str | None = None
 
 
 class _GitQueryTimedOut:
@@ -59,6 +70,7 @@ def _git_creation_payload(cache_key: tuple[str, str], entry: _GitCreationEntry) 
         "docs": rel_docs,
         "head": entry.head,
         "times": entry.times,
+        "timed_out_head": entry.timed_out_head,
     }
     checksum = hashlib.sha256(
         json.dumps(core, sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -94,13 +106,15 @@ def _load_git_creation_cache(
         and timestamp >= 0
         for name, timestamp in times.items()
     )
+    timed_out_head = raw.get("timed_out_head")
     valid_identity = (
         raw.get("schema") == _GIT_CREATION_SCHEMA
         and raw.get("version") == _GIT_CREATION_SCHEMA_VERSION
         and raw.get("repository") == cache_key[0]
         and raw.get("docs") == cache_key[1]
         and isinstance(raw.get("head"), str)
-        and bool(raw["head"])
+        and (bool(raw["head"]) or bool(timed_out_head))
+        and (timed_out_head is None or isinstance(timed_out_head, str))
     )
     if not valid_times or not valid_identity:
         LOGGER.warning("Ignoring incompatible Git creation cache %s", path)
@@ -113,7 +127,9 @@ def _load_git_creation_cache(
     if raw.get("checksum") != checksum:
         LOGGER.warning("Ignoring corrupt Git creation cache %s", path)
         return None
-    return _GitCreationEntry(head=raw["head"], times=dict(times))
+    return _GitCreationEntry(
+        head=raw["head"], times=dict(times), timed_out_head=timed_out_head
+    )
 
 
 def _store_git_creation_cache(
@@ -287,18 +303,25 @@ def _remember_unanswered_lookup(
     memo: dict[tuple[str, str], _GitCreationEntry],
     store: Callable[[tuple[str, str], _GitCreationEntry], None],
     cache_key: tuple[str, str],
+    cached: _GitCreationEntry | None,
     head: str,
     times: dict[str, int],
 ) -> None:
-    """Record a lookup that did not answer at this head, with the fallback it used.
+    """Record that a lookup ran out of time at ``head``, without moving the map on.
 
-    The recorded entry carries the head the bound expired under, so the map is
-    reused while the checkout stands still and is resolved afresh once a commit
-    moves it. It holds the same fallback the lookup returned, so a reused entry
-    and a fresh timeout tell a reader the same thing about the file times.
+    The entry keeps the last commit a query answered at as the point its
+    incremental range starts from, and records the commit that ran out of time
+    beside it. Suppression therefore lasts only while the checkout stands still:
+    once HEAD moves the next query covers the whole gap from the last answer, or
+    the whole history when there has never been one, because nothing between
+    those two commits was ever read.
     """
 
-    entry = _GitCreationEntry(head=head, times=times)
+    entry = _GitCreationEntry(
+        head=cached.head if cached else "",
+        times=times,
+        timed_out_head=head,
+    )
     memo[cache_key] = entry
     store(cache_key, entry)
 
@@ -340,9 +363,11 @@ def _git_first_committed(repo_dir: Path, docs_dir: Path) -> dict[str, int]:
         return dict(cached.times) if cached else {}
     if cached and cached.head == head:
         return dict(cached.times)
+    if cached and cached.timed_out_head == head:
+        return dict(cached.times)
 
     args = ["git", "log"]
-    if cached:
+    if cached and cached.head:
         args.append(f"{cached.head}..{head}")
     args.extend(
         [
@@ -362,6 +387,7 @@ def _git_first_committed(repo_dir: Path, docs_dir: Path) -> dict[str, int]:
             _GIT_CREATION_CACHE,
             _store_git_creation_cache,
             cache_key,
+            cached,
             head,
             fallback,
         )
@@ -399,6 +425,7 @@ def _git_last_modified_payload(
         "docs": rel_docs,
         "head": entry.head,
         "times": entry.times,
+        "timed_out_head": entry.timed_out_head,
     }
     checksum = hashlib.sha256(
         json.dumps(core, sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -434,13 +461,15 @@ def _load_git_last_modified_cache(
         and timestamp >= 0
         for name, timestamp in times.items()
     )
+    timed_out_head = raw.get("timed_out_head")
     valid_identity = (
         raw.get("schema") == _GIT_LAST_MODIFIED_SCHEMA
         and raw.get("version") == _GIT_LAST_MODIFIED_SCHEMA_VERSION
         and raw.get("repository") == cache_key[0]
         and raw.get("docs") == cache_key[1]
         and isinstance(raw.get("head"), str)
-        and bool(raw["head"])
+        and (bool(raw["head"]) or bool(timed_out_head))
+        and (timed_out_head is None or isinstance(timed_out_head, str))
     )
     if not valid_times or not valid_identity:
         LOGGER.warning("Ignoring incompatible Git last-modified cache %s", path)
@@ -453,7 +482,9 @@ def _load_git_last_modified_cache(
     if raw.get("checksum") != checksum:
         LOGGER.warning("Ignoring corrupt Git last-modified cache %s", path)
         return None
-    return _GitCreationEntry(head=raw["head"], times=dict(times))
+    return _GitCreationEntry(
+        head=raw["head"], times=dict(times), timed_out_head=timed_out_head
+    )
 
 
 def _store_git_last_modified_cache(
@@ -516,9 +547,11 @@ def _git_last_committed(repo_dir: Path, docs_dir: Path) -> dict[str, int]:
         return dict(cached.times) if cached else {}
     if cached and cached.head == head:
         return dict(cached.times)
+    if cached and cached.timed_out_head == head:
+        return dict(cached.times)
 
     args = ["git", "log"]
-    if cached:
+    if cached and cached.head:
         args.append(f"{cached.head}..{head}")
     args.extend(["--format=COMMIT %at", "--name-only", "--", rel_docs])
     result = _run_git(
@@ -532,6 +565,7 @@ def _git_last_committed(repo_dir: Path, docs_dir: Path) -> dict[str, int]:
             _GIT_LAST_MODIFIED_CACHE,
             _store_git_last_modified_cache,
             cache_key,
+            cached,
             head,
             fallback,
         )
