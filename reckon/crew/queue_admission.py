@@ -3962,14 +3962,6 @@ def weighted_project_order(
     return result
 
 
-def _priority_override(pointer: Mapping[str, Any]) -> int | None:
-    """The explicit priority a coordinator recorded on a request, or ``None``."""
-    value = pointer.get("priority_override")
-    return (
-        int(value) if isinstance(value, int) and not isinstance(value, bool) else None
-    )
-
-
 def priorities_first(
     order: Sequence[Mapping[str, Any]],
 ) -> list[Mapping[str, Any]]:
@@ -3986,6 +3978,11 @@ def priorities_first(
     A delivered review keeps its place at the head: it is what lets a run that
     has already finished land, and it is dispatched ahead of implementation
     however long that has waited.
+
+    Which requests are raised and which are reviews is read from the readers
+    that already own those definitions (:func:`reckon.crew.queue_order._override`
+    and the review-delivery module), so the lane's ordering and this hoist can
+    never disagree about what an override or a review is.
     """
     from reckon.crew.recovery_review_delivery import _is_review_run
 
@@ -3993,9 +3990,10 @@ def priorities_first(
         (
             pointer
             for pointer in order
-            if _priority_override(pointer) is not None and not _is_review_run(pointer)
+            if queue_order._override(pointer) is not None
+            and not _is_review_run(pointer)
         ),
-        key=lambda pointer: -_priority_override(pointer),
+        key=lambda pointer: -queue_order._override(pointer),
     )
     if not raised:
         return list(order)
@@ -4100,7 +4098,7 @@ def queued_placements(
         session_rank[session] = session_rank.get(session, 0) + 1
         project_rank[project] = project_rank.get(project, 0) + 1
         reason = reasons[str(pointer.get("run_id") or "")]
-        override = _priority_override(pointer)
+        override = queue_order._override(pointer)
         if (
             override is not None
             and not _is_review_run(pointer)
