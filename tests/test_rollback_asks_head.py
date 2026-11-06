@@ -114,8 +114,14 @@ def test_real_index_lock_preserves_head_path(repository, monkeypatch):
     print(f"index.lock receipts: {calls!r}")
     sequence = [(cmd, code) for cmd, code, _ in calls if cmd in {"add", "restore"}]
     assert len(sequence) >= 2
-    assert all(cmd == "add" and code == 128 for cmd, code in sequence[:-1])
-    assert sequence[-1] == ("restore", 128)
+    # Both calls retry while the lock is held, so every attempt is refused and
+    # the rollback's attempts follow the staging's rather than replacing them.
+    assert all(code == 128 for _, code in sequence), (
+        "every add and restore must be refused while the lock is held"
+    )
+    assert {cmd for cmd, _ in sequence} == {"add", "restore"}
+    assert sequence[0][0] == "add", "the staging comes before the rollback"
+    assert sequence[-1][0] == "restore", "the rollback's restore comes last"
     assert tracked.is_file()
 
 
