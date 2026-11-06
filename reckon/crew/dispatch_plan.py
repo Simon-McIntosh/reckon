@@ -240,6 +240,30 @@ def _backend_serving_picked_model(
         raise CrewError(str(exc)) from exc
 
 
+def _offered_local_backend(
+    selection: Mapping[str, Any] | None, config: Mapping[str, Any]
+) -> str | None:
+    """The local backend among a picker answer's offered candidates, or ``None``.
+
+    A picker answer lists the candidates it weighed, each marked with the lane
+    it names. A hold whose offered candidates include the local lane is a wait
+    for that lane, not a refusal, so the caller continues the request there. The
+    local backend is the configured ``local_backend``; a candidate is local when
+    the picker marked it so, or when its backend names the configured local lane.
+    """
+    if selection is None:
+        return None
+    local_backend = str(config.get("local_backend") or "").strip()
+    if local_backend:
+        for candidate in selection.get("offered") or ():
+            if not isinstance(candidate, Mapping):
+                continue
+            name = str(candidate.get("backend") or "")
+            if candidate.get("local") is True or name == local_backend:
+                return name or local_backend
+    return None
+
+
 def continue_hold_on_its_offered_local_lane(
     *,
     picker_selection: Mapping[str, Any] | None,
@@ -266,11 +290,6 @@ def continue_hold_on_its_offered_local_lane(
         or str(picker_selection.get("action") or "") != "hold"
     ):
         return picker_selection, None
-    # Imported lazily: the dispatcher imports this module as its resolution
-    # step, so the candidate rule is read from its one owner at call time
-    # rather than duplicated here.
-    from .dispatch import _offered_local_backend
-
     local_backend = _offered_local_backend(picker_selection, config)
     lifted_serving_lane = any(
         isinstance(candidate, Mapping)

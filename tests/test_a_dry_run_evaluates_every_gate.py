@@ -19,6 +19,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli, crew_dispatch_commands
+from reckon.crew.picker.outcomes import OVERRIDDEN_HOLD_ROUTE_MODE
 from tests import test_dispatch_names_its_backend as backend_tests
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
@@ -164,7 +165,11 @@ def test_a_dry_run_routes_a_held_node_where_the_launch_routes_it(
     assert dry_payload["local"] is True
     # Jev's own answer stays on both documents beside the lane it landed on, so
     # the preview reads as the decision the launch made rather than as a hold
-    # that silently evaporated.
-    assert dry_payload["route_mode"] == real_payload["route_mode"]
+    # that silently evaporated. Both route modes are checked against the
+    # recorded outcome vocabulary rather than against each other, so a preview
+    # that invented a mode of its own cannot agree with the launch by agreeing
+    # with itself.
+    assert dry_payload["route_mode"] == OVERRIDDEN_HOLD_ROUTE_MODE
+    assert real_payload["route_mode"] == OVERRIDDEN_HOLD_ROUTE_MODE
     assert dry_payload["picker_selection"]["action"] == "hold"
     assert real_payload["picker_selection"]["action"] == "hold"
