@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s111">
+  <meta name="plan-recorded-at" content="2026-11-06">
+  <title>A follower stays while its session owes a review | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="keep-a-follower-while-its-session-owes-a-review-landing" data-node="keep-a-follower-while-its-session-owes-a-review" data-reckon="landed" data-when="2026-11-06">
+  <h2>A follower stays while its session owes a review</h2>
+
+  <p><code>live_work_populations</code> in <code>reckon/crew/station_subscriber.py</code> is the one
+  statement of the has-live-work rule: the station writes the reading a pane settles by from it on
+  every tick, and a pane with no fresh reading asks the same function through
+  <code>population_has_live_work</code>. It read every run in a terminal phase as drained, so a
+  session whose last run had delivered settled its follower while the review that run owed was still
+  uncomposed — and the reflex that composes that review lives inside that follower.</p>
+
+  <p id="keep-a-follower-while-its-session-owes-a-review-reads-obligations">The rule now also counts a
+  delivered run that still owes its review. The judgement is the obligations' own rather than a second
+  rule derived here: the run is classified and its reading must be <code>scoring</code>, the
+  classification the obligations map to <code>review-missing</code>, and its review tier is read
+  through <code>obligations._review_tier_for_duty</code> — the resolver the duty itself uses, including
+  its <code>none</code> exemption, so an evidence-only delivery owes nothing and does not hold the
+  pane. Both settle paths read this one function, so a station reading and a fallback listing cannot
+  disagree about which run holds a pane.</p>
+
+  <p id="keep-a-follower-while-its-session-owes-a-review-evidence">The new
+  <code>tests/test_a_follower_stays_while_a_review_is_owed.py</code> drives <code>_check_settle</code>
+  through <code>_follow_watch_lines</code> on an injected clock, with a temporary crew home and a
+  handful of stubbed station, so each case measures the pane's own judgement rather than the predicate
+  alone. Six cases, <code>6 passed</code>: a station reading written by <code>record_live_work</code>
+  from <code>live_work_populations</code> holds the pane over a delivered run owing a review; the same
+  follower with no station reading holds it through the fallback listing; each arm settles once the
+  review is stored; a delivery whose tier is <code>none</code> settles; and a session with nothing live
+  or owed settles.</p>
+
+  <p id="keep-a-follower-while-its-session-owes-a-review-controls">Two negative controls, both
+  reproduced. Restoring the terminal-only rule (dropping the <code>delivered_run_owes_review</code>
+  call) turns the station-reading and fallback cases red — they settle over the review they owe — and
+  leaves the tier-<code>none</code> case green. Counting every delivered run without the tier check
+  (return true for every <code>scoring</code> run) turns the tier-<code>none</code> case red, so the
+  exemption is load-bearing.</p>
+</article>
+</body>
+</html>

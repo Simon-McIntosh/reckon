@@ -64,6 +64,45 @@ SKIPPED_DAYS_TEXT = (
 LIVE_WORK_KEY = "live-work"
 
 
+def delivered_run_owes_review(pointer: Mapping[str, Any]) -> bool:
+    """Whether an ended run still owes the review that only a pane can compose.
+
+    A delivered run is terminal to the has-live-work rule, yet the review it
+    owes is dispatched by the reflex running inside the session's own follower.
+    Reading every terminal run as drained therefore ends the pane over exactly
+    the work whose composer lives in it, and the review is never composed.
+
+    The judgement is the obligations' own, not one re-derived here: a run whose
+    classifier reading carries the review-missing duty owes a review. That duty
+    already exempts a run whose review tier is ``none`` -- an evidence-only
+    delivery asks the merged-head gate instead -- so the tier is read through
+    the resolver the duty itself uses rather than restated. A run that has not
+    delivered, or whose review is already stored, owes nothing and leaves its
+    pane to settle.
+
+    A review reads the head the run delivered, so a manifest naming no commit
+    has left nothing for one to read: the run still needs the coordinator, and
+    the obligations name it, but no review is owed and the pane is not held for
+    one. The head is taken from the classifier's own reading of the manifest,
+    which is the same list the tier resolver is asked about.
+    """
+    from reckon import review_tiers
+    from reckon.crew import obligations, recovery
+
+    try:
+        row = recovery.classify_pointer(pointer)
+    except Exception:  # noqa: BLE001 - no readable head, so no review to hold for
+        return False
+    # ``scoring`` is the classifier's reading for a delivered run whose review
+    # is not yet stored; it is the classification the obligations map to
+    # ``review-missing``. Any other reading has no review outstanding.
+    if str(row.get("classification") or "") != "scoring":
+        return False
+    if not list(row.get("manifest_commits") or []):
+        return False
+    return obligations._review_tier_for_duty(row, pointer) != review_tiers.NONE
+
+
 def live_work_populations(
     pointers: Iterable[Mapping[str, Any]],
 ) -> tuple[bool, bool, list[str]]:
@@ -74,16 +113,20 @@ def live_work_populations(
     the same rule of the pointers directly, so the two cannot disagree about
     which run makes a population live.
 
-    Only a run that has not reached a terminal phase is work still owed a pane:
-    a pointer already terminal waits on the coordinator's promotion rather than
-    on a follower. An ownerless pointer keeps every session's reading live,
-    because without an owner nothing shows the work is not the reader's own.
+    A run that has not reached a terminal phase is work still owed a pane. A
+    terminal run is too, while it has delivered and its review is not yet
+    stored: the follower that would compose that review is the pane itself, so
+    ending on the delivery would leave the review uncomposed forever. An
+    ownerless pointer keeps every session's reading live, because without an
+    owner nothing shows the work is not the reader's own.
     """
     project_live = False
     unowned = False
     sessions: set[str] = set()
     for pointer in pointers:
-        if str(pointer.get("phase") or "") in node._TERMINAL_RUN_PHASES:
+        if str(
+            pointer.get("phase") or ""
+        ) in node._TERMINAL_RUN_PHASES and not delivered_run_owes_review(pointer):
             continue
         project_live = True
         owner = str(pointer.get("session") or "")
