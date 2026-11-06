@@ -14,6 +14,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
+from reckon import ledger
 from reckon.crew import landing_measure, recovery, runs
 from reckon.crew.node import CrewError
 from reckon.crew.promotion_records import _node_test_files
@@ -23,6 +24,33 @@ from reckon.crew.recovery_review_acceptance import (
 )
 
 _run_srun = subprocess.run
+
+
+class _LandedElsewhereError(Exception):
+    """The selected run no longer needs a landing attempt here."""
+
+
+def _landed_elsewhere(pointer: Mapping[str, Any], run_id: str) -> bool:
+    """Read current ownership, not the live-set snapshot used for selection."""
+    try:
+        runs.read_pointer(run_id)
+    except CrewError:
+        if not runs.pointer_path(run_id).is_file():
+            return True
+        raise
+    project = str(pointer.get("project") or "")
+    repo = str(pointer.get("repo") or "")
+    row_path = ledger.run_path(project, run_id, ledger._run_ledger_root(project, repo))
+    if not row_path.is_file():
+        return False
+    try:
+        row = json.loads(row_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise CrewError(f"ledger row unreadable for {run_id!r}: {exc}") from exc
+    if not isinstance(row, Mapping) or row.get("run_id") != run_id:
+        raise CrewError(f"ledger row names a different run: {row_path}")
+    return True
+
 
 # A revision as a manifest entry may spell it: hexadecimal, at least the
 # seven characters git abbreviates to.
@@ -832,12 +860,18 @@ def _measure_delivery(
         with ExitStack() as stack:
             measured_head, measured_tree = head, Path(tree)
             if primary != head:
+                if _landed_elsewhere(pointer, run_id):
+                    raise _LandedElsewhereError
                 measured_head, measured_tree = stack.enter_context(
                     landing_measure.candidate_checkout(repo, primary, head, timeout)
                 )
+            if _landed_elsewhere(pointer, run_id):
+                raise _LandedElsewhereError
             base_tree = stack.enter_context(
                 landing_measure.base_checkout(repo, primary, timeout)
             )
+            if _landed_elsewhere(pointer, run_id):
+                raise _LandedElsewhereError
             try:
                 measured = landing_measure.measure_run(
                     command=command,
@@ -985,9 +1019,9 @@ def _landing_beat(pointer: Mapping[str, Any], run_id: str) -> str:
     return ""
 
 
-#: Why the land step waives the plan's impl move. The landing pass ticks the
+#: Why the land step waives the implementation fraction move. The pass ticks the
 #: run's section done in ``_landing_beat``, and only after the merge this step
-#: makes, so at the moment the step completes the plan's impl has not moved yet
+#: makes, so at the moment the step completes the fraction has not moved yet
 #: and ``crew complete`` refuses a passing implement run without this. Recorded
 #: on the ledger row of every run the pass lands.
 LANDING_BEAT_REASON = (
@@ -1211,6 +1245,7 @@ def land_once() -> dict[str, Any]:
     on its code review alone.
     """
     landed: list[str] = []
+    skipped: list[dict[str, str]] = []
     obligations: list[dict[str, str]] = []
     deferred: list[str] = []
     measured_this_pass = False
@@ -1374,6 +1409,9 @@ def land_once() -> dict[str, Any]:
                 }
             )
             continue
+        if _landed_elsewhere(pointer, run_id):
+            skipped.append({"run_id": run_id, "status": "landed-elsewhere"})
+            continue
         command = str(pointer.get("suite_command") or "").strip()
         measured = (
             _stored_measurement(run_id, head, command, primary) if primary else None
@@ -1389,7 +1427,11 @@ def land_once() -> dict[str, Any]:
             if project not in history:
                 history[project] = _pass_history(live, project)
             stored = history[project]
-            measured = _measure_delivery(pointer, run_id, head, tree, stored)
+            try:
+                measured = _measure_delivery(pointer, run_id, head, tree, stored)
+            except _LandedElsewhereError:
+                skipped.append({"run_id": run_id, "status": "landed-elsewhere"})
+                continue
             measured_this_pass = measured_this_pass or measured is not None
             if measured is not None:
                 # A run measured in this pass is part of its project's history
@@ -1417,6 +1459,9 @@ def land_once() -> dict[str, Any]:
         if measured is not None and primary and _primary_revision(pointer) != primary:
             deferred.append(run_id)
             continue
+        if _landed_elsewhere(pointer, run_id):
+            skipped.append({"run_id": run_id, "status": "landed-elsewhere"})
+            continue
         # The review's non-blocking findings do not hold the landing, and the
         # finding a reviewer raised must not vanish with the pointer that
         # carried it. Exemptions are recorded only once the landing has
@@ -1433,8 +1478,16 @@ def land_once() -> dict[str, Any]:
         )
         try:
             accepted, guard = _land(run_id)
+        except CrewError:
+            if _landed_elsewhere(pointer, run_id):
+                skipped.append({"run_id": run_id, "status": "landed-elsewhere"})
+                continue
+            raise
         except (OSError, ValueError) as exc:
             accepted, guard = False, f"{type(exc).__name__}: {exc}"
+        if not accepted and _landed_elsewhere(pointer, run_id):
+            skipped.append({"run_id": run_id, "status": "landed-elsewhere"})
+            continue
         if accepted:
             landed.append(run_id)
             try:
@@ -1485,4 +1538,9 @@ def land_once() -> dict[str, Any]:
             if remedy:
                 refused["remedy"] = remedy
             obligations.append(refused)
-    return {"landed": landed, "obligations": obligations, "deferred": deferred}
+    return {
+        "landed": landed,
+        "skipped": skipped,
+        "obligations": obligations,
+        "deferred": deferred,
+    }
