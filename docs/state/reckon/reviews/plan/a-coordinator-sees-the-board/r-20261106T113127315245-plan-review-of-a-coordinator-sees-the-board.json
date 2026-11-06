@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T11:51:54.697Z",
+  "dispatched_at": "2026-11-06T11:34:52Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html:223",
+      "id": "reasoning-1",
+      "reason": "a node implementing the bound as written would silently blank real coordinators, and the queue waits that produce this are the weeks-long queue waits admission itself creates, so the defect grows with the behaviour \u00a711 exists to serve.",
+      "text": "\u00a711 asserts \"The answer for every plan inside the window does not change\", but a run id is minted when the dispatch request is queued while `dispatched_at` is written when admission launches it, so a document can be named months-old and still hold a row the resolver keeps; measured on reckon's committed ledger at 2026-11-06T11:40Z (6,912 per-run documents, 168 h window, the section's own one-day margin), the bound reads 372 documents instead of 6,912 and turns three plans from a named coordinator to unowned: `a-finished-plan-closes` (base `efd0ee8c-9d4e-4fa3-a440-ac05791d4758`, dispatched 2026-11-05T21:23Z, run id stamped 2026-10-27), `the-mcp-answers-the-question-asked` (dispatched 2026-11-05T20:14Z) and `the-suite-is-green-at-head` (dispatched 2026-11-02T22:04Z), with the fleet's own long-queued \u00a73\u2013\u00a77 nodes of this plan among the 14 skipped-but-kept rows",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html:223",
+      "id": "done_when-1",
+      "reason": "the fixture as specified cannot fail on the defect the section ships, so a node would deliver a green gate and a wrong resolver; the fixture needs one long-queued document whose run-id stamp predates the bound and whose dispatch instant is inside the window.",
+      "text": "\u00a711's done-when asserts \"the resolved coordinators equal those the base returns\" on a fixture holding only documents wholly older than the window and documents inside it, which contains no document whose name predates the bound while its `dispatched_at` falls inside the window, so the assertion passes on exactly the code that fails on real rows",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html:23",
+      "id": "wiring-1",
+      "reason": "both upstream sections are declared done and landed, so a dispatched s11 node loses no dependency in practice; adding the entry is closure hygiene rather than a change to what the node does.",
+      "text": "`plan-section-depends-on` has no `s11` entry, though \u00a711 changes `_critical_path_coordinators` (which \u00a74 introduced) and reads through `resolve_plan_coordinators` (\u00a72).",
+      "type": "wiring",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "42c2123df841778711aaba3699be5ee825266d0a",
+  "plan_fingerprint": "bd46619bac8c01617ad5c3a5b3ad7fb1c72f1563da9551892d3faf67902678a1",
+  "plan_slug": "a-coordinator-sees-the-board",
+  "plan_version": 48,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T113127315245-plan-review-of-a-coordinator-sees-the-board",
+  "reviewed_blob_sha": "a6e7a934f5d0c745efe9336e59aebe79282ae826",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_critical_path_coordinators` resolves at `reckon/roadmap.py:3473`, `resolve_plan_coordinators` at `reckon/crew/plan_coordinator.py:236`, `run_rows_from_documents` at `reckon/ledger.py:1745`, and the 168 h default at `plan_coordinator.py:62`.",
+    "done_when": "a finding \u2014 `s11`'s equivalence assertion is run on a fixture that cannot contain a long-queued run, so it passes while the real answer moves.",
+    "evidence_paths": "pass \u2014 `s11` puts its timing into the plan's evidence fragment under the repository's `docs/evidence/fragments/` tree and its test into a temporary project, no session scratchpad and no node-local path.",
+    "naming": "pass \u2014 `s11` adds no plan labels, stage names, ticket numbers or version tags to any symbol or comment it proposes.",
+    "reasoning": "a finding \u2014 `s11`'s lower bound is keyed to the run-id stamp, which is not the instant the resolver filters on, so its claim that the answer does not change is false on reckon's own ledger.",
+    "single_goal": "pass \u2014 `s11` carries one deliverable, a lower bound on the ledger's per-run document read, and the 10 s figure is the verification of that one change.",
+    "wiring": "a finding \u2014 `s11` is absent from `plan-section-depends-on` (docs/plans/a-coordinator-sees-the-board.html:23) although its mechanism modifies the roadmap caller `s4` landed and the resolver `s2` landed."
+  },
+  "section_digests": {
+    "_document": "e7dc00c38674d60e6d3dd2f7063df7b43f3337b30dbb8c44cef6b536b31704aa",
+    "s1": "4f48bcfe2c71d1397f0eeb277ff928920d1ed0ae7cfb0da777c94e4943eadf87",
+    "s10": "80dd3bc62e983a2d2a47ca25840ac1947582d34d211d614a5c8429c5b6156137",
+    "s11": "cef11db167ff9834db2fea0f7895d8f753db65da50d73cb46f9f2c73feea4bf1",
+    "s2": "e8a77da3ee95b252c49524e82dbed4c7af59fd2cf8813eca867555771e9c15d5",
+    "s3": "e4cd7ce8696d0d9fb511a9be2379e2561a08418a1d1f759c42a926231bad6e36",
+    "s4": "ba6bafca3a7e3ae7fb186980afd26dd26e183bf99b72272ea15f06fbaeb19e5f",
+    "s5": "c7676f30d627a592319ab4f34cbd8352167ba0b9b92a20d5cbafea4a685b90ae",
+    "s6": "b5875d403856eb185e06155d0c62410ab30a447353779fe729a12b57c2607cf0",
+    "s7": "4428c6858fc7f10400173c2e619ad379aa49779cef060ae4b50d866fde4a59a7",
+    "s8": "f9f58e76a5713eb901b1e780fcb93d48ca773a573fded72ec476738a59629b67",
+    "s9": "d2506b05e05f7611a8794a66b56c70ad072e38b6edb29d625161974bb3cc6da4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T12:02:46.989285+00:00"
+}
