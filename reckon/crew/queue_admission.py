@@ -3218,9 +3218,25 @@ def _record_release_failure(run_id: str, detail: str) -> bool:
     return True
 
 
+def _release_section_key(ref: str, project: str) -> tuple[str, str, str] | None:
+    """Identify a section wait by project, plan, and normalized section."""
+    from reckon._schema import parse_plan_ref
+
+    if ref.startswith((GATE_REF_PREFIX, REQUEST_REF_PREFIX, "readiness:")):
+        return None
+    plan_ref, separator, section = ref.partition("#")
+    if not separator or not section or "#" in section or "@" in section:
+        return None
+    parsed = parse_plan_ref(plan_ref)
+    if parsed is None or parsed.stage or parsed.followup:
+        return None
+    return parsed.project or project, parsed.slug, normalize_section(section)
+
+
 def _release_waiters(
     refs: Iterable[str],
     *,
+    project: str = "",
     live: Sequence[Mapping[str, Any]] | None = None,
     cache: dict[str, Any] | None = None,
     docs_dir_for: Callable[[Mapping[str, Any]], Path] | None = None,
@@ -3246,6 +3262,16 @@ def _release_waiters(
             "blocked": [],
             "failed": {},
         }
+    section_keys = (
+        {key for ref in landed if (key := _release_section_key(ref, project))}
+        if project
+        else set()
+    )
+    exact_refs = {
+        ref
+        for ref in landed
+        if not project or _release_section_key(ref, project) is None
+    }
     pointers = list(live if live is not None else runs.list_live())
     shared = cache if cache is not None else {}
     promoted: list[str] = []
@@ -3257,7 +3283,13 @@ def _release_waiters(
             continue
         if str(pointer.get("phase") or "") not in WAITING_UPSTREAM_PHASES:
             continue
-        if not landed.intersection(section_waits_for(pointer)):
+        waits = section_waits_for(pointer)
+        waiter_project = str(pointer.get("project") or "").strip()
+        if not any(
+            ref in exact_refs
+            or _release_section_key(ref, waiter_project) in section_keys
+            for ref in waits
+        ):
             continue
         run_id = str(pointer.get("run_id") or "")
         candidates.append(run_id)

@@ -709,7 +709,9 @@ def _release_waiters_of_the_landed_section(
         }
     ref = f"{plan}#{section}"
     try:
-        return queue_admission._release_waiters([ref])
+        return queue_admission._release_waiters(
+            [ref], project=str(record.get("project") or "").strip()
+        )
     except Exception as exc:  # noqa: BLE001 - the landing has already happened
         return {
             "candidates": [],
