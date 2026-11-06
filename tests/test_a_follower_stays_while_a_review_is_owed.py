@@ -47,6 +47,10 @@ POLL = 0.005
 # it resolves to the review tier ``none``.
 EVIDENCE_PATH = "docs/evidence/fragments/demo/a-delivered-note.html"
 
+# The full object id a delivery's manifest names, so the head resolves from the
+# record without a worktree to read and without git resolving a citation.
+DELIVERED_HEAD = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+
 
 class _Clock:
     """A monotonic stand-in the case advances by hand."""
@@ -76,7 +80,7 @@ def _manifest_path(home: Path, run_id: str) -> Path:
 
 
 def _write_manifest(
-    home: Path, run_id: str, *, changed_paths=None, commits="beef1234"
+    home: Path, run_id: str, *, changed_paths=None, commits=DELIVERED_HEAD
 ) -> None:
     path = _manifest_path(home, run_id)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -103,6 +107,9 @@ def _pointer_record(home: Path, run_id: str, *, phase: str) -> dict:
         "created_at": runs._utc_now(),
         "manifest_path": str(_manifest_path(home, run_id)),
         "log_path": str(log),
+        # A worktree the collector has already reclaimed: the run's own record
+        # then carries its head, which is the reading a settled run leaves.
+        "worktree": str(home / "reclaimed" / run_id),
         # The worker has ended, so a finished manifest is the delivery rather
         # than an outcome its still-running process could supersede.
         "process_alive": False,
@@ -120,7 +127,7 @@ def _read_pointer(run_id: str) -> dict:
 
 
 def _deliver(
-    home: Path, run_id: str, *, changed_paths=None, commits="beef1234"
+    home: Path, run_id: str, *, changed_paths=None, commits=DELIVERED_HEAD
 ) -> None:
     """Deliver a run in place: its manifest reports completion, it is ended."""
     _write_manifest(home, run_id, changed_paths=changed_paths, commits=commits)
@@ -406,16 +413,14 @@ def test_a_delivery_that_owes_no_review_settles(home: Path, tmp_path: Path) -> N
             arming.end()
 
 
-def test_a_delivery_naming_no_commit_still_holds_the_pane(
-    home: Path, tmp_path: Path
-) -> None:
-    """A delivery whose manifest names no commit holds the pane while it is owed.
+def test_a_delivery_with_no_resolvable_head_settles(home: Path, tmp_path: Path) -> None:
+    """A delivery naming no resolvable head settles, however owed it reads.
 
-    The pane follows the obligations rather than a rule of its own about what a
-    delivery must carry: while the obligations call this run's review missing,
-    the review is uncomposed and the reflex that composes it is this follower.
-    A manifest can omit its commits and still deliver work a review reads, so a
-    pane that settled here would end over a duty the coordinator is still shown.
+    The review is keyed on the head the run delivered, and the head reader
+    answers none for a run whose record names no revision, so a review of this
+    run can never be composed and a hold for it would never end. The
+    obligations still list the run as review-missing to the coordinator, which
+    is where a run with nothing reviewable belongs.
     """
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
         assert acquired
@@ -432,12 +437,54 @@ def test_a_delivery_naming_no_commit_still_holds_the_pane(
             _deliver(home, RUN, commits=None)
             _publish(store, [_read_pointer(RUN)])
             _advance_past_grace(arming)
-            assert not arming.settles(), (
-                "the pane settled over a delivery the obligations call missing "
-                "its review"
+            _wait_for_settle(
+                arming,
+                description="the pane to settle over a delivery with no head",
             )
         finally:
             arming.end()
+
+
+def test_a_duty_that_cannot_be_read_warns_and_settles(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog
+) -> None:
+    """A duty read that raises is named in a warning and the pane settles.
+
+    Settling silently would make a corrupt record look like a drained session,
+    and holding would keep a pane alive for ever over a record nothing can
+    read. The warning names the run, so the defect is visible from the log.
+    """
+    from reckon.crew import obligations
+
+    def _explode(*_args, **_kwargs):
+        raise ValueError("manifest unreadable")
+
+    monkeypatch.setattr(obligations, "_review_duty_item", _explode)
+    with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
+        assert acquired
+        _write_pointer(home, RUN, phase="working")
+        store = _station(tmp_path)
+        clock = _Clock()
+        subscriber = station_subscriber.StationSubscriber(
+            store, PROJECT, session=SESSION, clock=clock
+        )
+        _publish(store, [_read_pointer(RUN)])
+        arming = _Arming(clock=clock, subscriber=subscriber).start()
+        try:
+            _let_a_sample_land(arming)
+            _deliver(home, RUN)
+            _publish(store, [_read_pointer(RUN)])
+            _advance_past_grace(arming)
+            _wait_for_settle(
+                arming,
+                description="the pane to settle over a duty that could not be read",
+            )
+        finally:
+            arming.end()
+    warnings = [r.getMessage() for r in caplog.records if r.levelname == "WARNING"]
+    assert any(RUN in line and "manifest unreadable" in line for line in warnings), (
+        warnings
+    )
 
 
 def test_a_drained_session_settles(home: Path, tmp_path: Path) -> None:

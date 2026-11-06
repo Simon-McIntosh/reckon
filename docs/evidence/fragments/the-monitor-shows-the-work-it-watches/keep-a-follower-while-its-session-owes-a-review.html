@@ -36,22 +36,36 @@
   snapshot of the live directory, one admission ordering and one grace per project, so the duty is
   asked of one read rather than one read per pointer.</p>
 
+  <p id="keep-a-follower-while-its-session-owes-a-review-needs-a-head">One condition sits outside the
+  duty, and it is the head. A review is keyed on the head the run delivered, and
+  <code>select_review_for_head</code> answers none for an empty head, so a run whose head will not
+  resolve can never receive a review: holding a pane for it would never end. Such a run is not held
+  for, however missing the obligations call its review; the obligations still name it to the
+  coordinator, which is where a run with nothing reviewable belongs.</p>
+
+  <p id="keep-a-follower-while-its-session-owes-a-review-cannot-be-read">A duty that cannot be read at
+  all is a warning and a settle, not a silence and not a hold: the warning names the run and the
+  error, so a corrupt record is visible in the log rather than looking like a drained session or
+  keeping a pane alive for ever.</p>
+
   <p id="keep-a-follower-while-its-session-owes-a-review-evidence">The new
   <code>tests/test_a_follower_stays_while_a_review_is_owed.py</code> drives <code>_check_settle</code>
   through <code>_follow_watch_lines</code> on an injected clock, with a temporary crew home and a
   stubbed station, so each case measures the pane's own judgement rather than the predicate alone.
-  Seven cases, <code>7 passed</code>: a station reading written by <code>record_live_work</code> from
+  Eight cases, <code>8 passed</code>: a station reading written by <code>record_live_work</code> from
   <code>live_work_populations</code> holds the pane over a delivered run owing a review; the same
   follower with no station reading holds it through the fallback listing; each arm settles once the
-  review is stored; a delivery naming no commit still holds the pane, because the obligations still
-  call its review missing; a delivery whose tier is <code>none</code> settles; and a session with
-  nothing live or owed settles.</p>
+  review is stored; a delivery with no resolvable head settles, and a duty that raises warns and
+  settles; a delivery whose tier is <code>none</code> settles; and a session with nothing live or owed
+  settles.</p>
 
   <p id="keep-a-follower-while-its-session-owes-a-review-controls">Two negative controls, both
   reproduced. Restoring the terminal-only rule (dropping the <code>delivered_run_owes_review</code>
   call) turns the station-reading and fallback cases red — they settle over the review they owe — and
   leaves the tier-<code>none</code> case green. Counting every delivered run without the duty's own
-  reading turns the tier-<code>none</code> case red, so the exemption is load-bearing.</p>
+  reading turns the tier-<code>none</code> case red, so the exemption is load-bearing. The head
+  requirement is measured by its own case: a delivery whose record names no revision settles, and
+  that case is the only one that reads the requirement at all.</p>
 </article>
 </body>
 </html>

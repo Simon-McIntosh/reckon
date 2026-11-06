@@ -27,6 +27,7 @@ idle poll is two cheap reads and no event query.
 from __future__ import annotations
 
 import json
+import logging
 import time
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from datetime import UTC, date, datetime
@@ -35,6 +36,8 @@ from typing import Any
 from reckon._timestamps import parse_utc
 from reckon.crew import node, station_store, ticker
 from reckon.crew.follow_checkpoint import cap_history
+
+_LOGGER = logging.getLogger(__name__)
 
 # How old a reading may be before it is treated as no answer. The station beats
 # once a tick, so this is many missed ticks rather than one slow pass; past it a
@@ -93,19 +96,27 @@ def delivered_run_owes_review(
     one derivation, so a pass over many pointers asks one question of one read
     rather than listing the live directory once per pointer. A caller holding
     none lets the duty read them for itself.
+
+    A run whose head will not resolve is not held for, however missing the
+    obligations call its review: the review is keyed on the head
+    (:func:`reckon.crew.recovery.select_review_for_head` answers none for an
+    empty head), so a hold for such a run would never end. The duty still names
+    it to the coordinator, which is where a run with no reviewable head
+    belongs.
     """
     from reckon.crew import obligations, recovery
 
+    run_id = str(pointer.get("run_id") or "")
     try:
         row = recovery.classify_pointer(pointer)
-    except Exception:  # noqa: BLE001 - an unreadable delivery has no duty to read
-        return False
-    if (
-        str(row.get("classification") or "")
-        not in obligations.REVIEW_CLASSIFICATION_KINDS
-    ):
-        return False
-    try:
+        if (
+            str(row.get("classification") or "")
+            not in obligations.REVIEW_CLASSIFICATION_KINDS
+        ):
+            return False
+        head, _tree = recovery._review_head_and_tree(pointer)
+        if not head:
+            return False
         item = obligations._review_duty_item(
             str(pointer.get("project") or ""),
             row,
@@ -119,24 +130,32 @@ def delivered_run_owes_review(
             live_pointers=live_pointers,
             placements=placements,
         )
-    except Exception:  # noqa: BLE001 - a duty that cannot be read is not missing
+    except Exception as error:  # noqa: BLE001 - a record we cannot read is not a hold
+        _LOGGER.warning(
+            "settling over run %s: its review duty could not be read (%s: %s)",
+            run_id or "<unnamed>",
+            type(error).__name__,
+            error,
+        )
         return False
     return bool(item) and str(item.get("kind") or "") == "review-missing"
 
 
 def _review_grace(project: str) -> int:
-    """The unreconciled-run grace the obligations view derives its duties with."""
-    from reckon import flight
-    from reckon.crew import node
+    """The unreconciled-run grace the obligations derive their duties with.
+
+    Read through the obligations module rather than restated, so the pane
+    settles by the same grace the duties it reads were built with.
+    """
+    from reckon.crew import obligations
 
     try:
-        resolved = flight.resolve(project)
-        config = resolved.config
-        return node.parse_duration(
+        config = obligations.flight.resolve(project).config
+        return obligations.parse_duration(
             str((config.get("fences") or {}).get("unreconciled_run_grace") or "15m")
         )
-    except Exception:  # noqa: BLE001 - the view's own default stands
-        return node.parse_duration("15m")
+    except Exception:  # noqa: BLE001 - the obligations' own default stands
+        return obligations.parse_duration("15m")
 
 
 def live_work_populations(
