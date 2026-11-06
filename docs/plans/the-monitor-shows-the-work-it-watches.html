@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="695">
+<meta name="plan-version" content="696">
 <meta name="plan-modified" content="2026-11-06">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -2349,6 +2349,9 @@ Both cases run under the file's existing temporary crew home.</li>
 </div>
 <div class="r-comment" data-section="s112" data-id="c-run-r-20261106T165804693641-review-of-leave-a-record-of-why-a-follower-exits-11f880b12644" data-who="reckon-build" data-when="2026-11-06T17:07:42.163Z">
     <div class="r-comment-body"><p>Review of §112 landed at 11f880b1264463f9977b0ad9dbcba86a4e2cae9e: scores goal_fidelity 19, evidence 17, scope_discipline 19, durability 15, fit 16, reuse 14 (total 100), added_failure_count 0; five non-blocking findings, the sharpest being the unsuppressed SIGTERM-handler restore at reckon/crew/follower_registration.py:508 which can raise in the release finally and lose the exit record.</p></div>
+</div>
+<div class="r-comment" data-section="s112" data-id="c-run-r-20261106T140731148709-leave-a-record-of-why-a-follower-exits" data-who="reckon-build" data-when="2026-11-06T16:57:09.714Z">
+    <div class="r-comment-body"><p>§112 landed: _FollowerRegistration.release writes an exit record beside the registration named for the exiting pid, carrying the reason (settled / the signal&#x27;s name / the exception type / the exit code), the time and the pid, and _StationRegistration.release delegates to the same release so both delivery branches leave one; measure 4 passed at head, 4 failed under the first negative control, importer population 148 passed at head against 144 at base. Evidence: /reckon/evidence/fragments/the-monitor-shows-the-work-it-watches/leave-a-record-of-why-a-follower-exits.html</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
