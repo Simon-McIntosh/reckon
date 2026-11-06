@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/serve.py:1302",
+    "reckon/serve.py:1587",
+    "reckon/doccheck.py:279"
+  ],
+  "completed_at": "2026-11-06T16:14:15.474Z",
+  "dispatched_at": "2026-11-06T16:07:00Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-project-reads-as-one-picture/the-served-why-read-answers-within-its-deadline.html",
+      "id": "f02be2a1493",
+      "line": 24,
+      "severity": "non-blocking",
+      "text": "the landing figure is the warm-home read (15.9 s), while the node's goal names the cost a fresh profile finds and the fragment's own table records 103.6 s for the first read of a fresh RECKON_HOME on reckon, still over the 30 s deadline; the figure is disclosed at line 35, but the headline reads as the mount meeting its deadline in every case"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T152414248028-the-served-why-read-answers-within-its-deadline/logs/negative-control.log",
+      "id": "f5df40689ce",
+      "line": 3,
+      "severity": "non-blocking",
+      "text": "the header names revision c849288268, the base where both tests already fail, while the code under test was the head tree \u2014 the same log's warnings cite git_dates.py:179, the head file's warning line \u2014 so a reader could dismiss the control as a re-run of an already-failing base"
+    },
+    {
+      "file": "docs/evidence/fragments/a-project-reads-as-one-picture/the-served-why-read-answers-within-its-deadline.html",
+      "id": "fae161a073a",
+      "line": 27,
+      "severity": "non-blocking",
+      "text": "the fragment says the head arm ran head edebdc6b, but logs/head-reckon-2.log and logs/head-nova-2.log name revision a5dafa2056; edebdc6b is formatting-only so the figures stand, yet the record's stated revision does not match its sources"
+    },
+    {
+      "file": "reckon/git_dates.py",
+      "id": "f346695ca6e",
+      "line": 361,
+      "severity": "non-blocking",
+      "text": "a timeout, which the new _GitQueryTimedOut docstring calls an answer about the machine, is persisted as though it were the repository's answer, so one transient expiry on a quiet repository leaves the date maps empty until HEAD moves; an expiry on the recorded entry would bound it"
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit: a5dafa20 adds the timeout sentinel and the head-keyed record, edebdc6b reformats those two paths, 3831c35a adds the evidence fragment; no fourth path and no plan edit",
+    "done_when": "the measure is elapsed seconds of a scoped _read_plan(view=\"why\") call per mount plus a test that fails at the base; logs/measure_why.py enters both request scopes and logs/head-reckon-2.log prints ANSWERED in 15.9 s with counts equal to the base arm (waits_on 14, waited_on_by 0)",
+    "goal": "the node goal is that the served why read answers within its 30 s deadline on the reckon and nova mounts by removing the discovery cost; reckon/git_dates.py:356 and :521 now report a timed-out lookup distinctly and record it against HEAD, and the recorded runs show reckon 38.4 s to 15.9 s and nova 10.4 s to 9.5 s at a warm RECKON_HOME",
+    "manifest": "read; it records status complete, the three commits, both armed arms and the importer arms with log paths, the one flaky importer id under retry_failures with its attribution, and the cold-home stage under outside_scope",
+    "write_paths": "the prompt declares reckon/git_dates.py, tests/test_the_served_why_read_answers_within_its_deadline.py and the evidence fragment, and git diff --stat c8492882..3831c35a shows exactly those three files"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that the served why read answers within its 30 s deadline on the reckon and nova mounts by removing the discovery cost a fresh profile finds; reckon/git_dates.py:356 and reckon/git_dates.py:521 now ask _run_git to report a bound expiring and record the fallback against HEAD, and the recorded runs show reckon 38.4 s to 15.9 s and nova 10.4 s to 9.5 s at a warm RECKON_HOME.\nVERDICT done_when: The measure is elapsed seconds of a scoped reckon.mcp._read_plan(view=\"why\") call per mount plus a base-failing test; logs/measure_why.py enters discovery_file_scope() and resource_scan_scope(), and logs/head-reckon-2.log prints ANSWERED in 15.9 s with counts equal to logs/base-reckon-warm.log (waits_on 14, waited_on_by 0).\nVERDICT write_paths: The prompt declares reckon/git_dates.py, tests/test_the_served_why_read_answers_within_its_deadline.py and the evidence fragment, and git diff --stat c8492882..3831c35a shows exactly those three files and nothing else.\nVERDICT manifest: Read; it records status complete, the three commits, both armed suite arms and the importer arms with log paths and EXIT lines, the one flaky importer id under retry_failures with an attribution, and the cold-home stage under outside_scope.\nVERDICT diff: Read commit by commit: a5dafa20 adds the timeout sentinel and the head-keyed record at reckon/git_dates.py:30-40 and :288-303, edebdc6b reformats the two staged paths, and 3831c35a adds only the evidence fragment.\nCALL_SITES: reckon/serve.py:1302, reckon/serve.py:1587, reckon/doccheck.py:279\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/git_dates.py:359 now reuses a recorded timeout at one HEAD, cutting the warm-home reckon read to 15.9 s, though the fresh-home first read stays at 103.6 s.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/measure_why.py runs the call inside both request scopes and logs/head-reckon-2.log carries the elapsed figure the fragment quotes, while the fragment's head revision (line 27) does not match the logs' a5dafa2056.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three changed files are the prompt's declared paths shown by git diff --stat c8492882..3831c35a, and the out-of-scope cold-home stage is recorded under outside_scope rather than changed.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_the_served_why_read_answers_within_its_deadline.py:26 counts git log spawns the code performs and logs/base-arm.log fails there with assert 4 == 2, though the sentinel's separation from a spawn error is untested.\nSCORE fit: 19\nJUSTIFICATION fit: the helper at reckon/git_dates.py:288 sits among its sibling lookup helpers and follows the module's persisted-map idiom, with no plan label or ticket reference in any added name or docstring.\nSCORE reuse: 20\nJUSTIFICATION reuse: the addition extends the module's own persisted-map owner (same _GitCreationEntry, same _store_git_creation_cache, same head-keyed reuse) rather than adding a second store, and no other mechanism in the repository records a bounded git query outcome.\nFINDING docs/evidence/fragments/a-project-reads-as-one-picture/the-served-why-read-answers-within-its-deadline.html:24 non-blocking: the landing figure is the warm-home read (15.9 s), while the node's goal names the cost a fresh profile finds and the fragment's own table records 103.6 s for the first read of a fresh RECKON_HOME on reckon, still over the 30 s deadline; the figure is disclosed at line 35, but the headline reads as the mount meeting its deadline in every case.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T152414248028-the-served-why-read-answers-within-its-deadline/logs/negative-control.log:3 non-blocking: the header names revision c849288268, the base where both tests already fail, while the code under test was the head tree \u2014 the same log's warnings cite git_dates.py:179, the head file's warning line \u2014 so a reader could dismiss the control as a re-run of an already-failing base.\nFINDING docs/evidence/fragments/a-project-reads-as-one-picture/the-served-why-read-answers-within-its-deadline.html:27 non-blocking: the fragment says the head arm ran head edebdc6b, but logs/head-reckon-2.log and logs/head-nova-2.log name revision a5dafa2056; edebdc6b is formatting-only so the figures stand, yet the record's stated revision does not match its sources.\nFINDING reckon/git_dates.py:361 non-blocking: a timeout \u2014 which the new _GitQueryTimedOut docstring at line 27 calls an answer about the machine \u2014 is persisted as though it were the repository's answer, so one transient expiry on a quiet repository leaves the date maps empty until HEAD moves and the warning is logged once; an expiry on the recorded entry would bound it.",
+  "review_run_id": "r-20261106T160541043405-review-of-the-served-why-read-answers-within-its-deadline-3831c35a3df2",
+  "reviewed_base_sha": "c849288268cba8c6f0187bda23e11d1562fc8f34",
+  "reviewed_head_sha": "3831c35a3df267c0dd563d0760bb11949f207d4d",
+  "reviewed_run_id": "r-20261106T152414248028-the-served-why-read-answers-within-its-deadline",
+  "rubric": "landed-node review",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T16:15:59.880637+00:00",
+  "total": 110
+}
