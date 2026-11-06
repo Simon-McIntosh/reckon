@@ -19,15 +19,22 @@ The second half is what the failed commit left behind. After a refusal
 <code>git restore --source=HEAD --staged --worktree</code> per path and fell
 straight to its index-free fallback, which declines to clear a path the index
 still stages while the lock is held — so two forward writes stayed staged in
-the shared index for any path-less commit to sweep up. Each path's restore now
-runs through the same helper under the same bound, so a lock that frees while
-the rollback is retrying unstages the forward writes and returns their tracked
-content to HEAD. No second wait loop, no new bound and no new landing-record
-entry was added: only the commit's retries are appended to
+the shared index for any path-less commit to sweep up. The rollback now issues
+one <code>git restore</code> over every tracked write and one
+<code>git rm --cached</code> over every write HEAD never carried, both inside a
+single step run through the same helper under the same bound, so a lock that
+frees while the rollback is retrying unstages the forward writes and returns
+their tracked content to HEAD. Because both index operations are one step, a
+rollback of any number of writes spends one bound rather than one per path: a
+lock held for the whole rollback costs the same 5.5&nbsp;s whether it reverts
+one write or ten. No second wait loop, no new bound and no new landing-record
+entry was added — only the commit's retries are appended to
 <code>landing.json</code>, so the record's existing step vocabulary is
-unchanged, and the fallback is reached only once a lock has outlasted the
-bound, which is the refusal that names the paths a coordinator must
-restore.</p>
+unchanged — and the index-free fallback is reached only once a lock has
+outlasted the bound, which is the refusal that names the paths a coordinator
+must restore. A single write HEAD never carried still has a restore attempted
+before its index drop, so the rollback's git receipts keep showing both steps
+even though only the drop can settle such a path.</p>
 <p id="retry-a-held-index-lock-in-a-promotions-commit-and-restore-test"><strong>Test.</strong>
 <code>tests/test_a_promotion_commit_survives_a_held_index_lock.py</code> drives
 <code>_commit_landing_writes</code> against a temporary repository, taking a real
@@ -39,15 +46,20 @@ calls the real staging and then writes the lock, which puts it after the
 asserts no <code>stage_retry</code> was recorded, which is what shows the lock
 was met by the commit and not by staging. Each case also requires that the
 retry it relies on was observed while the lock file still existed, so a slow
-setup cannot stand in for a wait.</p>
+setup cannot stand in for a wait. A fourth case seeds three tracked landing
+writes, holds the lock for every attempt and counts the rollback's
+<code>git restore</code> calls: it requires exactly the attempt bound and not
+the bound multiplied by three, which is what makes the one-bound claim
+falsifiable — a per-path wait records three times as many calls and reddens
+it.</p>
 <p id="retry-a-held-index-lock-in-a-promotions-commit-and-restore-measure"><strong>Measure.</strong>
 Gate: <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
 tests/test_a_promotion_commit_survives_a_held_index_lock.py</code>. Head arm:
-<code>3 passed</code>, <code>EXIT=0</code>. Base arm at
+<code>4 passed</code>, <code>EXIT=0</code>. Base arm at
 <code>edfcc560019</code>, with the base revision of
 <code>reckon/crew/promotion_scope.py</code> substituted in place so the module
-the run imported was the base one: <code>2 failed, 1 passed</code>,
-<code>EXIT=1</code> — the two cases the wait exists for fail, and the
+the run imported was the base one: <code>3 failed, 1 passed</code>,
+<code>EXIT=1</code> — the three cases the waits exist for fail, and the
 held-past-both-bounds case passes on both arms because it depends on neither
 wait. The lock is held past the commit's bound and released one second after
 the commit step gives up; the rollback's own bound of 12 attempts at 0.5 s is
@@ -60,22 +72,23 @@ imported and the literal command, and closing with a bare
 <p id="retry-a-held-index-lock-in-a-promotions-commit-and-restore-control"><strong>Negative control.</strong>
 The two controls this section names were applied together and reverted: the
 commit's <code>_run_waiting_out_a_held_index_lock</code> wrapper replaced by a
-single direct <code>_git</code> call, and the rollback's likewise.
+single direct <code>_git</code> call, and the rollback's single step replaced
+by one unretried call.
 <code>test_a_commit_waits_out_a_lock_taken_after_staging</code> then reddens
-because the landing refuses instead of committing, and
+with the promotion refusing — <code>could not commit the landing writes</code>
+— because the lock is still held when the one call returns, and
 <code>test_a_rollback_waits_out_a_lock_that_outlasted_the_commit</code> reddens
-at <code>assert 1 == 12</code> — the commit made one call rather than using its
-whole bound, and the forward write is left staged. The task that did not depend
-on either wait, <code>test_a_lock_held_past_both_bounds_refuses_naming_every_path</code>,
-still passes, which is what shows the controls redden the cases that measure
-the waits rather than the harness. Log <code>logs/negative_control.log</code>,
-last line <code>EXIT=1</code>, both failing ids named above.</p>
+at <code>assert 1 == 12</code>: the commit made one call rather than using its
+whole bound. The three-path case reddens at <code>assert 1 == 4</code> with the
+rollback making a single restore call, which is the bound collapse the mutation
+also removes. The case that depends on neither wait,
+<code>test_a_lock_held_past_both_bounds_refuses_naming_every_path</code>, still
+passes, which is what shows the controls redden the cases that measure the
+waits rather than the harness. Log <code>logs/negative_control.log</code>,
+<code>3 failed, 1 passed</code>, last line <code>EXIT=1</code>.</p>
 <p id="retry-a-held-index-lock-in-a-promotions-commit-and-restore-followons"><strong>Follow-ons.</strong>
-None outside this node's scope. One thing a later reader should know: the
-restore bound is per path, so a lock held for the whole restore spends one
-bound per landing write rather than one for the whole rollback. That bounds a
-refusal's wait at <em>n</em> × 5.5 s for <em>n</em> writes, which is what the
-existing per-path restore structure already implied; it is left as it stands
-because collapsing it to one call per rollback is a change to what a restore
-reports per path, not to the wait this section closes.</p>
+None outside this node's scope. A rollback that has to fall back to the
+index-free path still reports per path, so a coordinator reading the refusal
+learns which writes were settled and which were not; the wait is one bound for
+the rollback as a whole, and the fallback's per-path work is not a wait.</p>
 </article>
