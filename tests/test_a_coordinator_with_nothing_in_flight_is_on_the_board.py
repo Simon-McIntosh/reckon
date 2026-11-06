@@ -76,13 +76,24 @@ def _census(host: session_host.SessionHost) -> dict[str, Any]:
 
 
 def _tick_until_settled(host: session_host.SessionHost) -> None:
-    """Run the host's supervision ticks until its follower has settled."""
+    """Supervise the host until its follower has exited and that is recorded.
+
+    The wait is on the follower process, not on the census: the census is the
+    subject of these cases, so a helper that waited for the settled child to
+    appear there would time out rather than let the assertion say what is
+    missing.
+    """
     deadline = time.monotonic() + SETTLE_BOUND
+    follower: int | None = None
     while time.monotonic() < deadline:
         host.tick()
-        if any(
-            child.get("settled_at") is not None for child in _census(host)["children"]
-        ):
+        children = _census(host)["children"]
+        if follower is None:
+            pids = [child["pid"] for child in children if child.get("pid")]
+            follower = pids[0] if pids else None
+        elif not session_host.process_alive(follower):
+            # One more tick records the exit the reap observed.
+            host.tick()
             return
         time.sleep(0.05)
     pytest.fail("timed out waiting for the follower to settle")
