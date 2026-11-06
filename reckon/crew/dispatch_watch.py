@@ -678,6 +678,38 @@ def _session_host_record_path() -> Path | None:
     return _state_dir() / f"{pid}-{start}{RECORD_SUFFIX}"
 
 
+def _session_host_child_pid(project: str, session: str) -> int | None:
+    """The live child this session's own host runs for a pair, or None.
+
+    The census is the only record of what the calling session's host started: a
+    settled child is named with a null pid, so a pid here is a follower running
+    now. A follower another host registered, or one a coordinator armed by hand,
+    appears in the session's attachment and in no census of this host's, so a
+    caller deciding whether *its own* session is followed reads this and not the
+    session-wide attachment.
+    """
+    path = _session_host_record_path()
+    if path is None:
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(payload, Mapping):
+        return None
+    for child in payload.get("children") or ():
+        if not isinstance(child, Mapping):
+            continue
+        if str(child.get("project")) != project:
+            continue
+        if str(child.get("session")) != session:
+            continue
+        pid = child.get("pid")
+        if isinstance(pid, int) and pid > 0:
+            return pid
+    return None
+
+
 def _session_host_runs_follower(
     project: str, session: str, follower_pid: int | None
 ) -> bool:
@@ -692,27 +724,9 @@ def _session_host_runs_follower(
     holds is the fact that the follower is the host's rather than one a
     coordinator armed by hand.
     """
-    path = _session_host_record_path()
-    if path is None:
+    if follower_pid is None:
         return False
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return False
-    if not isinstance(payload, Mapping):
-        return False
-    for child in payload.get("children") or ():
-        if not isinstance(child, Mapping):
-            continue
-        if str(child.get("project")) != project:
-            continue
-        if str(child.get("session")) != session:
-            continue
-        if follower_pid is None:
-            continue
-        if child.get("pid") == follower_pid:
-            return True
-    return False
+    return _session_host_child_pid(project, session) == follower_pid
 
 
 def _ask_session_host_for_follower(project: str, session: str | None) -> bool:
@@ -732,6 +746,26 @@ def _ask_session_host_for_follower(project: str, session: str | None) -> bool:
     deadline = time.monotonic() + WATCHER_LOAD_BOUND_SECONDS
     while time.monotonic() < deadline:
         if watch_state(project, session=session)["session_attached"]:
+            return True
+        time.sleep(0.1)
+    return False
+
+
+def _rearm_session_follower(project: str, session: str | None) -> bool:
+    """Ask this session's host to re-arm a settled follower, returning whether it did.
+
+    A resume launches a worker the session's pane has to show, and a resume
+    sends no dispatch request, so a pair whose host child has settled stays idle
+    until some later dispatch happens to ask again. The request is the one a
+    dispatch writes; the answer is this host's own live child for the pair,
+    because a session attached through another host's follower, or through one a
+    coordinator armed by hand, shows nothing of a re-arm this host did not make.
+    """
+    if not session or not _request_host_follower(project, session):
+        return False
+    deadline = time.monotonic() + WATCHER_LOAD_BOUND_SECONDS
+    while time.monotonic() < deadline:
+        if _session_host_child_pid(project, session) is not None:
             return True
         time.sleep(0.1)
     return False
