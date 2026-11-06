@@ -75,6 +75,11 @@
     <p>Run <code>r-20261106T130015159551-a-torn-transcript-line-does-not-break-a-board-read</code> landed at merge <code>98eeff208</code>. dispatch_accounting._jsonl_events decodes transcripts with replacement, so a last line torn in the middle of a multi-byte character is skipped as an unparsable line while every whole line still yields its event. The board's context-use read and dispatch's coordinator.authoring_turn no longer raise on a transcript caught mid-write. Coordinator armed pair at 1d2c22e1a: base runs no tests (the file is new), head 2 passed. Measure over 271 importer files, stacked on main 817b155e2: main 9 failed, stack 6 failed; the one id only the stack failed passed three of three serially at both revisions. Review 113. Review 113 of 120.</p>
   </section>
 
+  <section id="s11">
+    <h2>§11 landing</h2>
+    <p>Run <code>r-20261106T122510887219-the-coordinator-read-is-bounded-by-its-window</code> landed at merge <code>0004c5f68</code>. Naming critical-path coordinators no longer reads every per-run ledger document. ledger.run_rows_from_documents takes a modified_since bound. The plan-coordinator resolver passes its 168 h horizon less a day of margin, so a document last written before it is skipped at the stat, unread and uncopied. The bound is the document's modification time, not the run-id stamp, because a long-queued run has an old id and a recent dispatch. The resolver reads each plan's owner through _plan_html's head-only reader instead of the full parse. Fleet probe under a pinned now, base and head against the same ledger: 50.5 s at the base, 5.7 s at the head, every plan naming the same coordinator. Coordinator armed pair at debcd4dd5: base runs no tests (the file is new), head 8 passed. Measure over 344 files importing ledger, plan_coordinator or roadmap, stacked on main aa925c528: main 13 failed, stack 13 failed plus 5 setup timeouts in the run-store append under load, which passed at both revisions in an interleaved serial rerun; none added. Reviews 99, 104, 112. Review 112 of 120.</p>
+  </section>
+
 </main>
 </body>
 </html>
