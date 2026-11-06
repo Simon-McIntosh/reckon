@@ -1,0 +1,51 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T20:13:07.921Z",
+  "dispatched_at": "2026-11-06T20:05:17Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-broken-wait-reaches-its-coordinator.html:41",
+      "id": "reasoning-1",
+      "reason": "an implementer following the stated mechanism (shell-style split plus edge-strip) leaves case 1 refusing, so the node's own gate goes red or it re-derives the split rule the plan should have named.",
+      "text": "\u00a72 says the fix reads an interpreter's code string \"as words, the way it reads a shell's string, and strips a word's list and call punctuation (`,` `[` `]` and quotes)\", but for the verbatim \u00a71 probe the list elements are comma-adjacent with no whitespace: `_wait_probe_shell_words` on the code string returns the entire list as one token `\"['squeue','-h','-j','1306915'],...\"` (reproduced against HEAD), so edge-stripping that token yields `squeue','-h','-j','1306915'],...` and matches no job flag; only splitting on the comma/bracket set produces `-j` then `1306915` and returns kind `job`. \u00a71's supporting sentence says the split leaves `'-j',` as a word, which the splitter never produces for this probe.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-broken-wait-reaches-its-coordinator.html:46",
+      "id": "reasoning-2",
+      "reason": "keying by the verb leaves every unreadable run absent from the obligations and fails the node's case 1, and the verb-vs-classification ambiguity decides whether a second key is in scope.",
+      "text": "\u00a73 says `RECOVERY_CLASSIFICATION_DUTY_KINDS` \"gains an entry for the `repair` recovery verb, so a run classified `unreadable` ... is listed\", but the map at reckon/crew/obligations.py:64 is keyed by the row's `recovery_classification` (the value `unreadable`, read at obligations.py:1903 and matched at 1954), while `repair` is the separate `recovery` verb field; an entry keyed `repair` never matches an `unreadable` row. Separately, the `repair` verb covers two classifications, `unreadable` and `exited-unfinished`, so the section's title (\"a run whose recovery is repair\") and its deliverable (only the refused-wait `unreadable` arm) disagree on whether both keys belong.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "ccc236bcdf3a42b6c3e85890ed2dc2556cded01f",
+  "plan_fingerprint": "34b6c5bd22c345ee9b4d9ecf60af3807b1d882aecaf784c0634d835362851ce3",
+  "plan_slug": "a-broken-wait-reaches-its-coordinator",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T200400610598-plan-review-of-a-broken-wait-reaches-its-coordinator",
+  "reviewed_blob_sha": "ebb6873a5681d6d3220ce71e8fa6bc0e23bb0822",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 recovery_liveness.py:1006, recovery_wait.py:668/683/744, recovery_vocabulary.py:88, obligations.py:64 and reports.py:2576 all resolve; plan sections s1\u2013s3 and a-reexec-never-orphans-a-dispatch#s4 exist.",
+    "done_when": "pass \u2014 \u00a72 and \u00a73 each name measurable cases plus declared negative controls; the control wording that references a non-existent `'-j',` token is reported under reasoning as part of the mechanism defect, not as a missing control.",
+    "evidence_paths": "pass \u2014 \u00a72 requires each log to live under the run directory with its revision, literal command and trailing `EXIT=`, a durable path that survives the run.",
+    "naming": "pass \u2014 the two new test filenames and cited symbols are descriptive and carry no plan labels, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 \u00a72's stated mechanism cannot satisfy its own done-when case 1, and \u00a73 keys the duty map by the `repair` verb where the code keys by the `unreadable` classification.",
+    "single_goal": "pass \u2014 \u00a72 (interpreter code-string reference reading) and \u00a73 (repair-verb runs as session duties) each declare one deliverable.",
+    "wiring": "pass \u2014 plan-after names a-reexec-never-orphans-a-dispatch (exists), and plan-section-depends-on routes s3 to a-reexec-never-orphans-a-dispatch#s4, which exists and edits the same obligations.py duty map; no reverse dependency creates a cycle."
+  },
+  "section_digests": {
+    "_document": "4ca6cffec09b31d38ccc49c6230f39e606a72e96df6861941936ebc2a47f2d6c",
+    "s1": "22265fec46f3ec7d8e88283159f23abdaa6575a324efa09febdd6253ce088a16",
+    "s2": "b58f86877b406fad2890aaf56acffc86cfd8c976dfeac85fdae3c2f59e8167e9",
+    "s3": "60507d7ceaf2a20dca41e52adacb4389ab1546bd5b8d0eb84e1d1fc2548c79bc"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T20:19:14.685277+00:00",
+  "total": null
+}
