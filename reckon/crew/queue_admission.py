@@ -1445,7 +1445,7 @@ def _requeue_admitted_failures(
             guard=_dependency_guard(restored, None),
         )
         try:
-            _write_pointer(str(pointer["run_id"]), restored)
+            _writeback_pointer(str(pointer["run_id"]), restored)
         except _PointerWritebackError as exc:
             if verdicts is not None:
                 verdicts.append(
@@ -1492,9 +1492,13 @@ def _require_live_writeback(snapshot: Mapping[str, Any]) -> None:
 
 
 def _write_pointer(run_id: str, record: dict[str, Any]) -> None:
+    runs._write_json(runs.pointer_path(run_id), record)
+
+
+def _writeback_pointer(run_id: str, record: dict[str, Any]) -> None:
     with runs._pointer_lock(run_id):
         _require_live_writeback(record)
-        runs._write_json(runs.pointer_path(run_id), record)
+        _write_pointer(run_id, record)
 
 
 def _discarded_since(snapshot: Mapping[str, Any]) -> bool:
@@ -1541,7 +1545,7 @@ def _restore_queued(
         "admitted_at",
     ):
         restored.pop(key, None)
-    _write_pointer(str(snapshot["run_id"]), restored)
+    _writeback_pointer(str(snapshot["run_id"]), restored)
 
 
 def _record_queued_failure(
