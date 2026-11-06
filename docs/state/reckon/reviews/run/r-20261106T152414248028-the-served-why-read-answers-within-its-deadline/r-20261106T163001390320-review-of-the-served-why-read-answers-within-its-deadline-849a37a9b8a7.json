@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/serve.py:1302",
+    "reckon/serve.py:1587",
+    "reckon/doccheck.py:279"
+  ],
+  "completed_at": "2026-11-06T16:36:59.761Z",
+  "dispatched_at": "2026-11-06T16:31:26Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-project-reads-as-one-picture/the-served-why-read-answers-within-its-deadline.html",
+      "id": "fa46b3e4d3c",
+      "line": 37,
+      "severity": "non-blocking",
+      "text": "the two \"first read of a brand-new home\" rows sit under a table header naming head ae1bf9d7, but both figures (103.6 s reckon, 35.0 s nova) come from logs/head-reckon-1.log and logs/head-nova-1.log, which name revision a5dafa20, and neither log appears in the log list at line 56; the provenance mismatch the earlier review raised survives in the cold rows."
+    },
+    {
+      "file": "reckon/git_dates.py",
+      "id": "f23f8061e61",
+      "line": 53,
+      "severity": "non-blocking",
+      "text": "_GIT_CREATION_SCHEMA_VERSION (and _GIT_LAST_MODIFIED_SCHEMA_VERSION at line 408) stay at 1 while the checksum core gains \"timed_out_head\", so a persisted map written before this change fails the recomputed checksum and is discarded with the message \"Ignoring corrupt Git creation cache\" -- one extra full-history lookup per home on upgrade, reported as corruption it is not."
+    },
+    {
+      "file": "reckon/git_dates.py",
+      "id": "f377f917ebe",
+      "line": 320,
+      "severity": "non-blocking",
+      "text": "the timeout is still persisted as the repository's answer, so a transient expiry on a repository whose HEAD does not move leaves the date maps empty until the next commit; the earlier review asked for an expiry on the recorded entry to bound it, and this change bounds the range corruption instead without bounding the staleness."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T152414248028-the-served-why-read-answers-within-its-deadline/manifest.md",
+      "id": "f468c284448",
+      "line": 25,
+      "severity": "non-blocking",
+      "text": "baseline_suite records exit_status 4 with \"ERROR: file or directory not found\" because the base archive predates the node's own test file, yet records completed true and failure_count 0, so the armed base-versus-head delta measures nothing; the \"adds no failure\" claim actually rests on logs/base-arm.log (test file copied in, 2 failed 2 passed) and on logs/importer-base.log versus logs/importer-head.log, whose failure sets differ by one flaky poll test."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from 3831c35a to 849a37a9 -- ae1bf9d7 adds timed_out_head to _GitCreationEntry and threads it through both persisted payloads, both cache loaders and both lookup functions, and 849a37a9 rewrites the evidence fragment's landing, table, test and log-list sections; ae1bf9d7 is the substantive commit.",
+    "done_when": "the done_when is elapsed seconds of a scoped _read_plan(view=\"why\") call per mount plus a test that fails at the base; logs/head3-reckon.log prints \"ANSWERED in 15.7 s\" and logs/head3-nova.log \"ANSWERED in 11.7 s\" with the base row counts (waits_on 14 / 7), and logs/old-head-arm.log shows the two new tests failing at 3831c35a, 2 failed 2 passed EXIT=1.",
+    "goal": "the source node's goal is that the served why read answers within its 30 s deadline on the reckon and nova mounts by removing the discovery cost; reckon/git_dates.py:320-325 keeps the last answered commit as the entry's head and records the timed-out commit beside it, and logs/head3-reckon.log and logs/head3-nova.log record 15.7 s and 11.7 s at a warm RECKON_HOME from revision ae1bf9d7.",
+    "manifest": "read at the reviewed run's manifest.md; it reports status complete, gate 4 passed at ae1bf9d7, the two new tests failing at the old head, a negative control ending EXIT=1, and attributes the one importer-arm failure to a flaky stat-count assertion.",
+    "write_paths": "the source prompt declares reckon/git_dates.py, tests/test_the_served_why_read_answers_within_its_deadline.py and the evidence fragment; the increment 3831c35a..849a37a9 touches exactly those three files, 139 insertions and 28 deletions."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that the served why read answers within its 30 s deadline on the reckon and nova mounts by removing the discovery cost; reckon/git_dates.py:320-325 keeps the last answered commit as the entry's head and records the timed-out commit beside it, and logs/head3-reckon.log and logs/head3-nova.log record 15.7 s and 11.7 s at a warm RECKON_HOME from revision ae1bf9d7.\nVERDICT done_when: the done_when is elapsed seconds of a scoped _read_plan(view=\"why\") call per mount plus a test that fails at the base; logs/head3-reckon.log prints \"ANSWERED in 15.7 s\" and logs/head3-nova.log \"ANSWERED in 11.7 s\" with the base row counts (waits_on 14 / 7), and logs/old-head-arm.log shows the two new tests failing at 3831c35a, 2 failed 2 passed EXIT=1.\nVERDICT write_paths: the source prompt declares reckon/git_dates.py, tests/test_the_served_why_read_answers_within_its_deadline.py and the evidence fragment; the increment 3831c35a..849a37a9 touches exactly those three files, 139 insertions and 28 deletions.\nVERDICT manifest: read at the reviewed run's manifest.md; it reports status complete, gate 4 passed at ae1bf9d7, the two new tests failing at the old head, a negative control ending EXIT=1, and attributes the one importer-arm failure to a flaky stat-count assertion.\nVERDICT diff: read commit by commit from 3831c35a to 849a37a9 -- ae1bf9d7 adds timed_out_head to _GitCreationEntry and threads it through both persisted payloads, both cache loaders and both lookup functions, and 849a37a9 rewrites the evidence fragment's landing, table, test and log-list sections; ae1bf9d7 is the substantive commit.\nCALL_SITES: reckon/serve.py:1302, reckon/serve.py:1587, reckon/doccheck.py:279\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/git_dates.py:320-325 stores the last answered commit as the entry's head and keeps the timed-out one apart, so the range start no longer skips the unanswered gap while a discovery at an unchanged HEAD still reuses the record.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/gate.log records 4 passed EXIT=0 at revision ae1bf9d7 and logs/old-head-arm.log records 2 failed at 3831c35a, but the armed baseline arm (coordinator-armed-base.log) collected nothing at EXIT=4 while the manifest records it completed with failure_count 0, and the table's cold rows cite a revision their source logs do not name.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in 3831c35a..849a37a9 -- reckon/git_dates.py, tests/test_the_served_why_read_answers_within_its_deadline.py and the evidence fragment -- is inside the prompt's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_served_why_read_answers_within_its_deadline.py:217 asserts at_h2[\"docs/second.html\"] == SECOND_TS against an independent constant, and logs/old-head-arm.log shows that assertion and its sibling reddening at 3831c35a and again under the negative-control mutation.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/git_dates.py:21-35 extends the existing frozen dataclass with a documented field in the module's own idiom, though reckon/git_dates.py:53 leaves _GIT_CREATION_SCHEMA_VERSION at 1 while the checksum core gained a key.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the owner of the capability it needs -- _GitCreationEntry and _git_creation_payload at reckon/git_dates.py:66 -- and a search over reckon/ for another persisted lookup-record mechanism found none.\nFINDING docs/evidence/fragments/a-project-reads-as-one-picture/the-served-why-read-answers-within-its-deadline.html:37 non-blocking: the two \"first read of a brand-new home\" rows sit under a table header naming head ae1bf9d7, but both figures (103.6 s reckon, 35.0 s nova) come from logs/head-reckon-1.log and logs/head-nova-1.log, which name revision a5dafa20, and neither log appears in the log list at line 56; the provenance mismatch the earlier review raised survives in the cold rows.\nFINDING reckon/git_dates.py:53 non-blocking: _GIT_CREATION_SCHEMA_VERSION (and _GIT_LAST_MODIFIED_SCHEMA_VERSION at line 408) stay at 1 while the checksum core gains \"timed_out_head\", so a persisted map written before this change fails the recomputed checksum and is discarded with the message \"Ignoring corrupt Git creation cache\" -- one extra full-history lookup per home on upgrade, reported as corruption it is not.\nFINDING reckon/git_dates.py:320 non-blocking: the timeout is still persisted as the repository's answer, so a transient expiry on a repository whose HEAD does not move leaves the date maps empty until the next commit; the earlier review asked for an expiry on the recorded entry to bound it, and this change bounds the range corruption instead without bounding the staleness.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T152414248028-the-served-why-read-answers-within-its-deadline/manifest.md:25 non-blocking: baseline_suite records exit_status 4 with \"ERROR: file or directory not found\" because the base archive predates the node's own test file, yet records completed true and failure_count 0, so the armed base-versus-head delta measures nothing; the \"adds no failure\" claim actually rests on logs/base-arm.log (test file copied in, 2 failed 2 passed) and on logs/importer-base.log versus logs/importer-head.log, whose failure sets differ by one flaky poll test.",
+  "review_run_id": "r-20261106T163001390320-review-of-the-served-why-read-answers-within-its-deadline-849a37a9b8a7",
+  "reviewed_base_sha": "3831c35a3df267c0dd563d0760bb11949f207d4d",
+  "reviewed_head_sha": "849a37a9b8a755e139a66140ed5022fb32aef2cd",
+  "reviewed_run_id": "r-20261106T152414248028-the-served-why-read-answers-within-its-deadline",
+  "rubric": "landed-node review, increment since the prior review at 3831c35a",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T16:47:50.071240+00:00",
+  "total": 109
+}
