@@ -1,0 +1,58 @@
+<section id="list-a-run-stuck-before-launch-as-a-launchfailure-duty">
+  <h2>A stranded launch reaches its coordinator as a duty</h2>
+
+  <p><strong>What changed.</strong> <code>RECOVERY_CLASSIFICATION_DUTY_KINDS</code> in
+  <code>reckon/crew/obligations.py</code> gains a <code>launch-failed</code> entry, so
+  the recovery word the classifier already derives for a launch cut off before it
+  spawned a worker becomes a duty row. A pointer holding a pre-spawn phase with no pid,
+  worker record, stream and launch log, past
+  <code>STRANDED_LAUNCH_BOUND_SECONDS</code>, now appears in the obligations view with
+  the classifier's own next command rather than as silence while it holds whatever
+  dispatch claim it took. The bound is unchanged, so a launch that is merely young
+  still reads as starting.</p>
+
+  <h3>Measured</h3>
+
+  <p>Gate: <code>tests/test_a_run_stuck_before_launch_is_reported.py</code>, one arm per
+  revision, each in a log whose first line names its revision and whose last line reads
+  <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base (base source, new test copied in)</td>
+        <td><code>d98b74b53</code></td>
+        <td>2 failed, 1 passed, exit 1 — the defect reproduces</td></tr>
+      <tr><td>head</td><td><code>ac01f2988</code></td>
+        <td><strong>3 passed</strong>, exit 0</td></tr>
+      <tr><td>negative control, duty-kind entry dropped</td>
+        <td>mutated <code>ac01f2988</code></td><td>2 failed, exit 1</td></tr>
+      <tr><td>negative control, bound lowered to zero</td>
+        <td>mutated <code>ac01f2988</code></td><td>1 failed, exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <ul>
+    <li><strong>The defect, reproduced at base.</strong> The stranded pointer is
+    classified <code>launch-failed</code> at <code>d98b74b53</code> — the case's first
+    three assertions on <code>classification</code>, <code>recovery_classification</code>
+    and the <code>"stranded launch"</code> detail all pass — and then
+    <code>assert duty is not None</code> fails with <code>assert None is not None</code>:
+    the run is absent from the obligations. That absence is the whole defect.</li>
+    <li><strong>The two cases.</strong> A pointer past the bound appears as a
+    <code>launch-failed</code> duty naming its node and plan, carrying the classifier's
+    own <code>next_action</code> as <code>next_command</code>, which reads
+    <em>compose run &lt;id&gt; again</em>. The same pointer twenty seconds old appears
+    in no duty, because a launch that young has not been shown to be cut off.</li>
+    <li><strong>The two controls §4 names, each applied alone.</strong> Dropping the
+    <code>launch-failed</code> entry fails the past-the-bound case and nothing about the
+    bound; lowering <code>STRANDED_LAUNCH_BOUND_SECONDS</code> to zero fails only the
+    within-the-bound case. Each mutation fails exactly its own case, so neither case
+    passes for the other's reason.</li>
+    <li><strong>Existing coverage.</strong> The sixty-eight test files that import
+    <code>reckon.crew.obligations</code> were run one arm per revision with
+    <code>-n 4</code>; the head arm adds no failure id against the base arm.</li>
+    <li><strong>Lint delta.</strong> <code>ruff check</code> and
+    <code>ruff format --check</code> are clean on both staged paths.</li>
+  </ul>
+</section>
