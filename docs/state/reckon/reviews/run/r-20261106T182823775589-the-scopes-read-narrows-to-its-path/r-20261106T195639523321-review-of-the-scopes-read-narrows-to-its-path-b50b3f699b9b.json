@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-06T20:07:48.858Z",
+  "dispatched_at": "2026-11-06T19:58:06Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-mcp-answers-the-question-asked/the-scopes-read-narrows-to-its-path.html",
+      "line": "104",
+      "severity": "non-blocking",
+      "text": "the fragment states that ignoring the path argument fails five of the eight cases, but no log under the run directory retains that path-ignoring mutation; the only red log, negative-control.log, is the paging mutation at 2 failed/6 passed, and the five-of-eight figure is carried from a seven-test run recorded only in the worker's own stream, so the count was not re-measured on the final tree."
+    },
+    {
+      "file": "tests/test_the_scopes_read_narrows_to_its_path.py",
+      "line": "415",
+      "severity": "non-blocking",
+      "text": "`shortened_entry[\"owners_returned\"] == len(shortened_owners)` compares two values the implementation derives from the same `shortened` mapping (over_budget_paths owners_returned is len(shortened[path]) and claim_map[path] is shortened[path]), so it holds whatever the paging code does and cannot redden on the shortening or cursor regression the test exists to catch; the surrounding assertions against DENSE_HOLDERS and the fixture's run ids are independent."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: pass \u2014 the node goal is that the crew scopes read narrow to the path it is asked about and that its default read fit its own row budget; this increment closes the three findings the earlier review raised, and reckon/mcp_views.py:4199 _fit_scopes now returns at least one path on every page that hands back a cursor, so the narrowed read is complete and the default read terminates.\nVERDICT done_when: pass \u2014 the source done_when names tests/test_the_scopes_read_narrows_to_its_path.py failing at the base and passing at the head, plus a served scopes read; base-arm.log records 8 failures at 36f6a1a591, gate.log records 12 passed with EXIT=0 at b50b3f699b, and served-scopes-read.log and served-scopes-default.log re-take the served calls at 5842a1bd, whose reckon/ and tests/ trees are byte-identical to the reviewed head (git diff --stat 5842a1bd..b50b3f699b touches only the fragment).\nVERDICT write_paths: pass \u2014 the source node was fenced to reckon/mcp_views.py, reckon/mcp_budget.py, tests/test_the_scopes_read_narrows_to_its_path.py, the \u00a711 fragment and a figures directory; the three commits under review (5842a1bd, e99b67a1ae, b50b3f699b) touch only reckon/mcp_views.py, the test file and the fragment, all inside that fence.\nVERDICT manifest: pass \u2014 read; status complete, seven commits listed, baseline_suite and after_suite are JSON with revisions, literal commands, log paths and completed true (8 failures at base, 0 at head), negative_control_log is a bare path whose last line is EXIT=1, and each of the three prior findings is named with the commit that acts on it; the one imprecision is that its note says the earlier path-ignoring mutation is \"recorded beside\" the paging log, which holds only the paging run.\nVERDICT diff: pass \u2014 read commit by commit from d976545b05 to b50b3f699b: 78 lines reworking _fit_scopes so the first path of a page is returned shortened rather than dropped and the empty-page offset becomes len(paths), 92 lines adding the dense-path fixture and the cursor-walk case and replacing the self-comparing absolute/relative assertion with a fixture-computed oracle, and fragment text; the two trailing commits are documentation only.\nCALL_SITES: reckon/mcp.py:2870,reckon/crew_run_commands.py:573\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp_views.py:4266-4310 walks the page prefix, returning the first path shortened in its owners' summary form when it alone exceeds the row, so both the narrowing and the fitting halves of the goal hold and the paging case's fixture-driven walk confirms it.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate.log at b50b3f699b records 12 passed EXIT=0, negative-control.log records the reinstated paging defect at 2 failed/6 passed EXIT=1, and the fragment's 4,638 and 22,879 character figures match served-scopes-read.log and served-scopes-default.log, but the fragment's \"five of the eight cases fail\" path-mutation figure at line 104 is carried from an older seven-test run with no retained log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat d976545b05..b50b3f699b changes only the \u00a711 fragment, reckon/mcp_views.py and tests/test_the_scopes_read_narrows_to_its_path.py, all inside the declared write paths, and the two trailing commits touch the fragment alone.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_the_scopes_read_narrows_to_its_path.py:398 fails when the empty-page cursor is returned unchanged, which negative-control.log shows firing, and the prior self-comparing assertion at line 293 is now checked against _expected(claims, held) at lines 303-306, though line 415 still compares two values derived from the same shortened mapping.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/mcp_views.py:4237-4310 follows the module's existing shape \u2014 a declared budget from mcp_budget.view_budget, a render closure, a fits predicate and the same summary/pagination keys \u2014 and adds no plan, sprint or ticket identifier in a name or comment.\nSCORE reuse: 17\nJUSTIFICATION reuse: the change measures against mcp_budget.serialised_characters and view_budget rather than re-deriving the budget, and the nearest sibling, reckon/mcp.py:1520 _fit_why, is a different capability (trimming several answer lists with no paging or cursor), so the local fits/render pair extends rather than duplicates an owner.\nFINDING docs/evidence/fragments/the-mcp-answers-the-question-asked/the-scopes-read-narrows-to-its-path.html:104 non-blocking: the fragment states that ignoring the path argument fails five of the eight cases, but no log under the run directory retains that path-ignoring mutation; the only red log, negative-control.log, is the paging mutation at 2 failed/6 passed, and the five-of-eight figure is carried from a seven-test run recorded only in the worker's own stream, so the count was not re-measured on the final tree.\nFINDING tests/test_the_scopes_read_narrows_to_its_path.py:415 non-blocking: `shortened_entry[\"owners_returned\"] == len(shortened_owners)` compares two values the implementation derives from the same `shortened` mapping (over_budget_paths owners_returned is len(shortened[path]) and claim_map[path] is shortened[path]), so it holds whatever the paging code does and cannot redden on the shortening or cursor regression the test exists to catch; the surrounding assertions against DENSE_HOLDERS and the fixture's run ids are independent.",
+  "review_run_id": "r-20261106T195639523321-review-of-the-scopes-read-narrows-to-its-path-b50b3f699b9b",
+  "reviewed_base_sha": "d976545b054efb144af3b095847fda35929eef5f",
+  "reviewed_head_sha": "b50b3f699b9b09b4849c5135ddc7adc374c0c89a",
+  "reviewed_run_id": "r-20261106T182823775589-the-scopes-read-narrows-to-its-path",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T20:19:42.543346+00:00",
+  "total": 108
+}
