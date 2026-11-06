@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-06T19:19:09.643Z",
+  "dispatched_at": "2026-11-06T19:09:29Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-mcp-answers-the-question-asked/the-scopes-read-narrows-to-its-path.html",
+      "line": "105",
+      "severity": "non-blocking",
+      "text": "the caveat states the served default read lands at 23,606 characters, while the same fragment at line 71 and served-scopes-default.log:6 record 23,026, and no log under the run directory carries 23,606."
+    },
+    {
+      "file": "tests/test_the_scopes_read_narrows_to_its_path.py",
+      "line": "280",
+      "severity": "non-blocking",
+      "text": "absolute and relative claim maps are compared against each other rather than an independent oracle, so the case cannot fail on a narrowing regression; at base both return the whole set and only the missing path key reddens it."
+    },
+    {
+      "file": "reckon/mcp_views.py",
+      "line": "4260",
+      "severity": "non-blocking",
+      "text": "an over-budget single path empties the page while next_cursor stays at the unchanged offset, so a paging caller loops on an empty page forever."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the crew scopes read narrow to the path it is asked about and that its default read fit its own row; reckon/mcp_views.py:4188 _narrow_scopes keeps exactly the claims _scopes_overlap matches and reckon/mcp_views.py:4199 _fit_scopes pages the default answer until serialised_characters falls under VIEW_BUDGETS[(\"crew\",\"scopes\")], and the served read at served-scopes-read.log answers reckon/crew/queue_admission.py in 4,722 characters with five owners and verdicts while served-scopes-default.log answers the default in 23,026 characters, so both halves of the goal are present and observed.\nVERDICT done_when: the done_when names tests/test_the_scopes_read_narrows_to_its_path.py measured against the 24,000 row, both assertions failing at base plus a served read and the ruff delta; base-arm.log records '7 failed in 20.77s' EXIT=1 at 36f6a1a591 and after-arm.log '7 passed in 52.68s' EXIT=0 at d976545b05, the fixture self-check at tests/test_the_scopes_read_narrows_to_its_path.py:236 proves the fixture exceeds the row, and served-scopes-read.log is the served call; the ruff half is not recorded anywhere in the manifest and I re-ran it (identical three pre-existing findings at base and head, format clean), and the delta sweep in delta-head.log ran at 982af3d1b0 rather than the reviewed head, so nine lines dafb9bd3e3 added to _fit_scopes are outside that arm.\nVERDICT write_paths: the node was fenced to reckon/mcp_views.py, reckon/mcp_budget.py, tests/test_the_scopes_read_narrows_to_its_path.py, the \u00a711 fragment and a figures directory; git diff --stat 36f6a1a591 d976545b05 changes exactly the first four, 611 insertions and 18 deletions, and no figure was written, which the done-when did not name.\nVERDICT manifest: read; status complete, four commits listed, baseline_suite and after_suite both JSON with revision, literal command, log_path and completed true (7 failures at base, 0 at head), negative_control_log a bare path, outside_scope naming an unrelated schema-view budget failure; it records ruff only in the run's final chat message and not in the manifest, and its artifacts/base_default_fit 53,565 characters is the base test's own assertion figure rather than a served measurement.\nVERDICT diff: read commit by commit against 36f6a1a591; 982af3d1b0 adds _scope_owner, _scopes_requested_path, _narrow_scopes, _fit_scopes and the seven-case test, dafb9bd3e3 narrows the offered narrowing example to a non-absolute path after finding an outside-checkout claim would be suggested then refused, 4945e67cec writes the landing fragment, and d976545b05 corrects figures in that fragment to match the re-taken logs.\nCALL_SITES: reckon/mcp.py:2870 (the registered crew tool forwards path into serve_crew_view), reckon/crew_run_commands.py:573 (the crew view CLI forwards path into the same function), reckon/mcp_deadlines.py:626 (bound_response still backstops the transport ceiling for both)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp_views.py:4211 filters the claim map through _scopes_overlap and reckons/crew/runs.py:1126 owns that containment rule, so the read answers the path it was given rather than the project, and reckon/mcp_views.py:4265 shortens the default page to the view's own row.\nSCORE evidence: 15\nJUSTIFICATION evidence: base-arm.log and after-arm.log are real receipts with EXIT lines at the two revisions and served-scopes-read.log is the served call, but the done-who's ruff half is unrecorded in the manifest and delta-head.log was taken at 982af3d1b0 rather than the reviewed head, leaving nine later _fit_scopes lines outside the sweep.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 36f6a1a591 d976545b05 lists only reckon/mcp_views.py, reckon/mcp_budget.py, tests/test_the_scopes_read_narrows_to_its_path.py and the \u00a711 fragment, all declared, and the fragment's element ids all carry the the-scopes-read-narrows-to-its-path- prefix.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_the_scopes_read_narrows_to_its_path.py:244 compares the read against _expected, an oracle computed from the fixture's own declarations at :214 rather than from production code, and negative-control.log shows five of seven cases red under the declared mutation, but :280 compares two outputs of the code under test against each other and cannot fail on a narrowing regression, and no mutation proves the default-fit loop.\nSCORE fit: 18\nJUSTIFICATION fit: the new helpers sit in the module's own idiom beside the scopes branch they serve, the function-local mcp_budget import at reckon/mcp_views.py:4214 matches the local-import style serve_crew_view already uses, and importing _scopes_overlap and _repository_relative_scope from reckon/crew/runs.py follows the precedent at reckon/roadmap.py:1871 and reckon/crew/dispatch_claims.py:62.\nSCORE reuse: 17\nJUSTIFICATION reuse: reckon/mcp_views.py:4211, :4217 and :4221 extend owners that already exist (reckon/crew/runs.py:1126 _scopes_overlap, :1094 _repository_relative_scope, reckon/mcp_views.py:2568 paginate) and the budget is read from reckon/mcp_budget.py:80 view_budget rather than restated, though the trim-until-it-fits loop at :4265 repeats the shape of reckon/mcp.py:1523 _fit_why without a shared owner.\nFINDING docs/evidence/fragments/the-mcp-answers-the-question-asked/the-scopes-read-narrows-to-its-path.html:105 non-blocking: the caveat states the served default read lands at 23,606 characters against the 24,000 row, while line 71 of the same fragment and served-scopes-default.log:6 record 23,026 for that call, and no log under the run directory carries 23,606; a reader reconciling the evidence record against the artefact it cites meets two figures for one measurement, and the commit that rewrote these figures to match the logs missed this one.\nFINDING tests/test_the_scopes_read_narrows_to_its_path.py:280 non-blocking: assert absolute[\"claim_map\"] == relative[\"claim_map\"] compares two returns of the code under test against each other rather than against an independent source, so it holds whatever the narrowing does as long as both spellings are treated alike; at the base revision both calls return the whole claim set and the case reddens only on the missing path key asserted at :281, so this line is not a regression guard for the behaviour it is named after.\nFINDING reckon/mcp_views.py:4260 non-blocking: when one path's owners alone exceed the 24,000 row the loop at :4265 empties the page and still returns next_cursor = _cursor(offset) with offset unchanged, so a paging caller receives an empty page with the same cursor indefinitely; the fix needs a floor of one path per page, or a terminal cursor when nothing fits, so an over-budget path fails loudly instead of looping.\n",
+  "review_run_id": "r-20261106T190619953972-review-of-the-scopes-read-narrows-to-its-path-d976545b054e",
+  "reviewed_base_sha": "36f6a1a59113f1d6e91dd1675bea5db5db2be449",
+  "reviewed_head_sha": "d976545b054efb144af3b095847fda35929eef5f",
+  "reviewed_run_id": "r-20261106T182823775589-the-scopes-read-narrows-to-its-path",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T19:15:41.881928+00:00",
+  "total": 105
+}
