@@ -1,0 +1,45 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T20:50:12.373Z",
+  "dispatched_at": "2026-11-06T20:43:02Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-refusal-comes-before-the-work.html:44",
+      "id": "done_when-1",
+      "reason": "a node implementing \u00a72 verbatim writes a test whose first case cannot pass, and the only way to green it is to substitute a different goal input, which is exactly the class of silent input substitution the case exists to prevent.",
+      "text": "\u00a72's first done-when case specifies the goal `read the config; reload the lane` as an entry the node contract refuses, but `_deliverable_conjunction` (reckon/crew/node.py:252) refuses a separator only when the following clause opens with a verb in `_DELIVERABLE_ACTIONS` (node.py:79-104), which contains neither `read` nor `reload` \u2014 running the shipped function on that exact string returns None, and `validate_node` on a node carrying it reports no `single-goal` finding (control: `read the config; run the lane` returns `;`), so the well-formed refusal the case asserts never happens and the batch would store the entry",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "1a860cd8fb146d6c4dac6c2adb53cd0c2048b5ca",
+  "plan_fingerprint": "2da4f364591a3402032481949f5a6c7e069abccfb48b65a1bd8b3bd97758f18d",
+  "plan_slug": "a-refusal-comes-before-the-work",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T204145041750-plan-review-of-a-refusal-comes-before-the-work",
+  "reviewed_blob_sha": "ded910240982086416d9607448f2287681c92362",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every line anchor in the changed units resolves in the tree at fb05bda7ec: dispatch_plan.py:843 (`validate_node`), :851 (`negative_control_finding`), :862 (`gate_population_finding`), :869 (execution-fit refusal), :911 (`_require_write_paths_in_authority`, defined at dispatch_admission.py:1983); dispatch_batch.py:478 (`queue_batch`); dispatch.py:293 (`queue_requests`); promotion_checks.py:1775 (`_require_brief_owner`); and the prior plan's \u00a75 exists and carries `data-status=\"done\"`, which is what \u00a71 and \u00a75 rely on.",
+    "done_when": "a finding \u2014 \u00a72's first done-when case names a goal the node contract does not refuse, so the case cannot pass as written (see FINDING done_when below).",
+    "evidence_paths": "pass \u2014 \u00a72 and \u00a75 both require every log under the run directory with its revision, its literal command and a trailing `EXIT=`, which is the durable run path and not a scratch or node-local temporary directory.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or changelog prose reach the code the sections describe; section numbers appear only as plan-document cross-references, and the new function and test are named by what they do.",
+    "reasoning": "pass \u2014 all three checks hold for the changed units. \u00a72's root cause matches \u00a71's evidence (the batch path reaches only `admission_domain_findings` at dispatch.py:323, which I confirmed, while the single path runs the four refusals at dispatch_plan.py:843-879); its mechanism can produce its measure, since `_queue_batch` already catches a per-entry `CrewError` into a refusal row at dispatch_batch.py:552-554, so a per-entry contract refusal is achievable without aborting the batch; and it runs on the real path, naming `plan_dispatch` and the `queue_batch` -> `queue_requests` chain. \u00a75's mechanism names the check and its call site, and the skip condition it sends the worker to find is real and locatable: `_require_write_paths_in_authority` sits inside `if verdict.ok and repo is not None:` (dispatch_plan.py:889-911), and a dry run invoked without `--repo` keeps `repo` as None (dispatch_plan.py:616-617 only resolves a repo it was given), so the check is skipped while the real dispatch resolves the project mount and runs it.",
+    "single_goal": "pass \u2014 \u00a72 states one deliverable (the four contract refusals become one function both paths call) and \u00a75 states one (the dry run applies the real call's write-path fence); \u00a75's reproduction step is the repair protocol's precondition, not a second deliverable.",
+    "wiring": "pass \u2014 `plan-section-depends-on` now declares s5 -> s2 alongside the existing s3 -> s2, and both are correct: s2, s3 and s5 all write a file but s5 (dispatch_plan.py) and s3 (dispatch.py) each share a file with s2, so each waits on it; the followup title and body name the same order; `plan-after` names a-dry-run-must-resolve-what-the-real-call-resolves, which exists at docs/plans/a-dry-run-must-resolve-what-the-real-call-resolves.html."
+  },
+  "section_digests": {
+    "_document": "fe86ddc53d6df02ed8681809f4399744a8daf0946c333b28fc3a6b583769f545",
+    "s1": "75df880739e89570186a1c16cae47d54a4d457a4a6e99c09b2d62c21368dc424",
+    "s2": "01167d85958feeeb0fea1bb368d0eab5a1cdfeae8dc13a5d4a23220af16f6c25",
+    "s3": "b5b62335762566059c1bbb98372fed78bff07b643d64c9fa675596aa8bd81a3a",
+    "s4": "07a4ee8576d20a6230358f2290732b9c4debaa456380d9c2a8e8fd3651cc5e95",
+    "s5": "971aeb8e3a089f473d197e621d3f0c26ead6b1816778ac46d4796b8906360253"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T20:57:34.017236+00:00",
+  "total": null
+}
