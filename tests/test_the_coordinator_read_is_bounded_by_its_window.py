@@ -33,10 +33,10 @@ NOW = datetime(2026, 11, 6, 12, 0, 0, tzinfo=UTC)
 WINDOW = "168h"
 
 #: The lower bound the resolver derives: its horizon, less a day of margin. The
-#: fixture's stamps sit far from it on both sides, so the exact margin does not
-#: decide any case here; the ancient document is 200 days back and the two read
-#: documents are within two days of now.
-BOUND = NOW - timedelta(seconds=parse_duration(WINDOW)) - timedelta(days=1)
+#: the horizon the resolver derives from its window, less the margin the
+#: resolver applies. The margin case below is placed inside it deliberately.
+HORIZON = NOW - timedelta(seconds=parse_duration(WINDOW))
+BOUND = HORIZON - timedelta(days=1)
 
 #: Each fixture document: run id (also its file stem), plan, dispatching
 #: session, dispatch instant, and the instant its document was last written.
@@ -65,7 +65,18 @@ LONG_QUEUED = (
     NOW - timedelta(hours=50),
 )
 
-ROWS = (ANCIENT, INSIDE, LONG_QUEUED)
+#: Dispatched inside the window, but its document was written before the
+#: horizon and inside the margin. Only the margin keeps this row: a bound set
+#: exactly at the horizon would skip the document and lose its coordinator.
+MARGIN_EDGE = (
+    "r-20261030T000000000000-margin-edge",
+    "plan-margin",
+    "session-margin",
+    "2026-10-30T14:00:00Z",
+    HORIZON - timedelta(hours=12),
+)
+
+ROWS = (ANCIENT, INSIDE, LONG_QUEUED, MARGIN_EDGE)
 
 
 def _write_plan(docs: Path, slug: str) -> None:
@@ -177,19 +188,44 @@ def test_the_long_queued_run_keeps_its_coordinator(project_root: Path) -> None:
 
 
 def test_the_bound_is_the_document_time_not_the_run_id(project_root: Path) -> None:
-    """The long-queued run's id stamp sits before the bound while its document
-    does not, so the two bounds would answer differently for it.
+    """The production bound keeps a document whose run-id stamp is before it.
+
+    The listing the reader uses is called directly, so the assertion turns on
+    the bound the code applies rather than on constants the case computes. The
+    long-queued run was minted before the bound and written after it, which is
+    the shape a run-id bound would lose.
     """
-    id_stamp = datetime.strptime(LONG_QUEUED[0][2:17], "%Y%m%dT%H%M%S").replace(
+    kept = {
+        path.stem
+        for path in ledger._run_files_written_since(
+            PROJECT, project_root, BOUND.timestamp()
+        )
+    }
+    assert LONG_QUEUED[0] in kept
+    assert MARGIN_EDGE[0] in kept
+    assert ANCIENT[0] not in kept
+    minted = datetime.strptime(LONG_QUEUED[0][2:17], "%Y%m%dT%H%M%S").replace(
         tzinfo=UTC
     )
-    assert id_stamp < BOUND
-    assert LONG_QUEUED[4] >= BOUND
-    ancient_stamp = datetime.strptime(ANCIENT[0][2:17], "%Y%m%dT%H%M%S").replace(
-        tzinfo=UTC
-    )
-    assert ancient_stamp < BOUND
-    assert ANCIENT[4] < BOUND
+    assert minted < BOUND
+
+
+def test_a_document_written_inside_the_margin_still_keeps_its_coordinator(
+    project_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The margin, not the horizon, is the bound the resolver applies.
+
+    The margin case's document was written before the horizon while its run was
+    dispatched inside the window, so only a bound set a margin earlier than the
+    horizon reads it. With the margin removed the same fixture loses that
+    coordinator, which is what makes the assertion above load-bearing.
+    """
+    plans = _resolve(project_root)["plans"]
+    assert plans[MARGIN_EDGE[1]]["coordinator"] == MARGIN_EDGE[2]
+
+    monkeypatch.setattr(plan_coordinator, "DOCUMENT_AGE_MARGIN", timedelta(0))
+    without_margin = _resolve(project_root)["plans"]
+    assert without_margin[MARGIN_EDGE[1]]["coordinator"] is None
 
 
 def test_the_bounded_answer_equals_the_unbounded_answer(

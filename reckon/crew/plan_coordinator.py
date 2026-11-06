@@ -43,7 +43,7 @@ from pathlib import Path
 from typing import Any
 
 from reckon import ledger
-from reckon._plan_html import read_state_and_text_file
+from reckon._plan_html import _parse_meta_head
 from reckon._store import _docs_dir_for_project
 from reckon._timestamps import parse_utc
 from reckon.crew import directory, runs
@@ -199,7 +199,13 @@ def _run_rows(
 
 
 def _plans_and_owners(docs_dir: Path | None) -> dict[str, str]:
-    """Every plan of a project by slug, with the owner its own meta records."""
+    """Every plan of a project by slug, with the owner its own meta records.
+
+    The owner is a head meta and this resolver wants nothing else from the
+    document, so the head-only reader answers it: a project with hundreds of
+    plans is read here on every roadmap build, and the derived inventory record
+    parses the body to reach a figure this caller never reads.
+    """
     if docs_dir is None:
         return {}
     plans_dir = docs_dir / "plans"
@@ -207,8 +213,8 @@ def _plans_and_owners(docs_dir: Path | None) -> dict[str, str]:
         return {}
     owners: dict[str, str] = {}
     for path in sorted(plans_dir.glob("*.html")):
-        state, _text = read_state_and_text_file(path)
-        owners[path.stem] = str(state.get("owner") or "").strip()
+        record = _parse_meta_head(path)
+        owners[path.stem] = str(record.get("owner") or "").strip()
     return owners
 
 
