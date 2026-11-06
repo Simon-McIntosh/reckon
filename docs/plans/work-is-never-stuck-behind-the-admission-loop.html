@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="252">
+<meta name="plan-version" content="253">
 <meta name="plan-modified" content="2026-11-06">
 </head>
 <body>
@@ -368,6 +368,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-close-s28" data-who="" data-when="">
     <div class="r-comment-body"><p>Landed 5 November from run <code>r-20261105T111108536678</code>. An admission pass keys its readiness cache on the project, so requests across plans share one project read per pass. Reviewed clean; importer arms 3 failures at base and 2 at head, none added.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-s41-landed-partial" data-who="" data-when="">
+    <div class="r-comment-body"><p>Landed 6 November as <code>cabcc7320a</code> from run <code>r-20261105T214831970273</code>, with the section left open. Ranking and readiness build each project's roadmap once with coordinator resolution off, reusing discovery's roadmap. The priority keys are cached on the discovery signature. The worker measured live ranking at 168 s before and 23 s cold, about 4 s warm, after. Importer population on the merge candidate: 8 failures at base, 7 at head, none added. The node test errored at base and passed at head. Still open: the live admit pass under 60 s. It needs the admit service restarted on this code, and the supervisor does not do that itself (§42). The first pass after the restart, the one before it for comparison, is 49 min (release 1,127 s, launch 1,822 s, 05:33&ndash;06:22Z).</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261029T155223893067-review-of-a-landing-measure-is-bounded-by-what-it-measures-35f4d6af36d0" data-who="reckon-build" data-when="2026-10-29T16:00:54.656Z">
     <div class="r-comment-body"><p>Independent review of r-20261028T230039168008-a-landing-measure-is-bounded-by-what-it-measures at 35f4d6af36 against base 1ed6b58d0e: parsed, total 95/120 (goal_fidelity 19, evidence 17, scope_discipline 20, durability 16, fit 18, reuse 5), added_failure_count 0, four non-blocking findings — two self-referential assertions in the new test and two reuse/cost notes on queue_landing — and no blocking finding.</p></div>
