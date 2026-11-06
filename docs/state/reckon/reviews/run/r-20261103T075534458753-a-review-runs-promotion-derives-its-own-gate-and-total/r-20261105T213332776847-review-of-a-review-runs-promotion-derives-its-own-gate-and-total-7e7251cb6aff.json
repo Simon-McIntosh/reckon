@@ -1,0 +1,83 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-06T06:08:33.292Z",
+  "dispatched_at": "2026-11-06T05:59:45Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_checks.py",
+      "id": "review-durability-gate-cases-uncommitted",
+      "line": 481,
+      "severity": "non-blocking",
+      "text": "Three of the four done-when cases -- the JSON-list gate derivation, the manifest that appears a few seconds late, and the manifest that never appears -- are asserted only by tests/gate_review_promotion_test.py, which is not tracked at the reviewed head (git ls-tree 7e7251cb6a returns nothing for it) and lives only under /tmp scratch; deleting _await_review_manifest at promotion_checks.py:481, or reverting the unconditional resolved_gate.update at promotion_records.py:379, reddens no test in the repository, so the node's two largest behaviours have no regression guard once the scratch tree is gone."
+    },
+    {
+      "file": "docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-review-runs-promotion-derives-its-own-gate-and-total.html",
+      "id": "review-record-wrong-base-figure",
+      "line": 49,
+      "severity": "non-blocking",
+      "text": "The fragment states the gate arm runs '4 passed' at head against '2 failed, 2 passed' at base, and the manifest's artifacts and landing lines repeat that figure, but logs/gate-base.log -- the log the manifest cites -- records '3 failed, 1 passed in 8.93s'; the number is understated by one, so a coordinator landing this record on the plan lands a figure its own evidence contradicts."
+    },
+    {
+      "file": "docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-review-runs-promotion-derives-its-own-gate-and-total.html",
+      "id": "review-record-misdescribes-negative-control",
+      "line": 41,
+      "severity": "non-blocking",
+      "text": "The fragment says the negative control 'removes the gate derivation and case 1 is refused again ... 2 failed, 2 passed', but logs/negative-control.log records a different mutation ('_with_derived_total reduced to return body') and a different result ('2 failed, 16 passed'), and in it test_case1_no_gate_flags_with_a_json_list_tests_field passes -- so the clause the done_when names, that the first case is refused again under the control, is not shown by the control that was actually recorded."
+    },
+    {
+      "file": "reckon/crew/recovery_review_delivery.py",
+      "id": "review-duplicate-total-derivation-wrapper",
+      "line": 359,
+      "severity": "non-blocking",
+      "text": "_with_derived_total duplicates reckon/crew/promotion_checks.py:2867 _with_a_derived_total: both are the same 'return the record unchanged when it carries an integer total, else review_module._derive_landed_total(body)' guard under two names in two modules, with two near-identical docstrings; the owner is reckon/crew/review.py:965 _derive_landed_total and one shared helper beside it would keep the two copies from diverging."
+    },
+    {
+      "file": "reckon/crew/promotion_checks.py",
+      "id": "review-comment-cites-incident",
+      "line": 474,
+      "severity": "non-blocking",
+      "text": "The comment introducing REVIEW_MANIFEST_WAIT_SECONDS names a specific review run id and a 'measured across nine reviews in one night' incident in a different file's comment, which is changelog prose in source: once the run directory is cleaned the reference resolves to nothing, and the sentence that actually justifies twenty seconds -- that a review is promoted the moment its record parses while the worker writes its manifest a few seconds later -- carries the reason without it."
+    },
+    {
+      "file": "reckon/crew/promotion_records.py",
+      "id": "review-review-gate-overwrites-operator-flags",
+      "line": 379,
+      "severity": "non-blocking",
+      "text": "_default_gate_evidence_from_manifest now applies _review_record_check unconditionally, so a review run promoted with an explicit --gate-command and --gate-log-path has both replaced by 'test -s <record>' and the record path; the done_when covers only the no-gate-flags case and no test exercises the explicit-flag case, so an operator who hands a review promotion its own check silently loses it."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/promotion.py:_default_gate_evidence_from_manifest (lines 357 and 877, reached from crew complete and the ledger re-fill), reckon/crew/promotion.py:_delivered_review_payloads_for_commit (line 1419, the committed review payload), reckon/crew/recovery_review_delivery.py:_review_delivery_verdict (line 490 via review_delivery_refusal, line 507 via the review loop's self-promotion), reckon/crew/promotion_checks.py:_landing_preconditions (line 2430, the manifest wait on every promotion)",
+    "diff": "read commit by commit against 2266993b74; 8da2d7f8ff, 9c7ab88a12, b13dfd993c, b1ff2a15a2, e02ad76d12 and 9d9e1bf889 change the three modules and the refusal case, 7e7251cb6a changes only the 8-line evidence fragment, for 225 insertions and 18 deletions across five files.",
+    "done_when": "the done_when names four cases, both arms as git checkouts under the run's scratch, EXIT= on every log and zero added failures; the recorded gate logs show 4 passed at head and 3 failed/1 passed at base, the suite pair is 438 passed base against 439 passed head, and the negative control records 2 failed/16 passed, though the control exercises the total derivation rather than the case 1 refusal the done_when names.",
+    "goal": "the goal is that a review run's promotion derives its own gate and total; reckon/crew/promotion_records.py:361-380 now takes the gate from the stored record for every review-role run, and reckon/crew/recovery_review_delivery.py:432 plus reckon/crew/promotion_checks.py:2882 derive the total at each copy a promotion reads.",
+    "manifest": "read; it states status complete, names five changed paths and seven commits, records both arm logs and ends them in EXIT=, and its artifacts and landing lines report the base gate arm as '2 failed/2 passed' where logs/gate-base.log records '3 failed, 1 passed'.",
+    "write_paths": "the dispatch fence named four paths; the live pointer's node.write_paths now names six, adding reckon/crew/promotion_records.py and tests/test_a_review_refusal_names_its_failed_condition.py, and every path in the diffstat is inside that widened grant."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a review run's promotion derives its own gate and total; reckon/crew/promotion_records.py:361-380 now takes the gate from the stored record for every review-role run, and reckon/crew/recovery_review_delivery.py:432 plus reckon/crew/promotion_checks.py:2882 derive the total at each copy a promotion reads.\nVERDICT done_when: the done_when names four cases, both arms as git checkouts under the run's scratch, EXIT= on every log and zero added failures; the recorded gate logs show 4 passed at head and 3 failed/1 passed at base, the suite pair is 438 passed base against 439 passed head, and the negative control records 2 failed/16 passed, though the control exercises the total derivation rather than the case 1 refusal the done_when names.\nVERDICT write_paths: the dispatch fence named four paths; the live pointer's node.write_paths now names six, adding reckon/crew/promotion_records.py and tests/test_a_review_refusal_names_its_failed_condition.py, and every path in the diffstat is inside that widened grant.\nVERDICT manifest: read; it states status complete, names five changed paths and seven commits, records both arm logs and ends them in EXIT=, and its artifacts and landing lines report the base gate arm as '2 failed/2 passed' where logs/gate-base.log records '3 failed, 1 passed'.\nVERDICT diff: read commit by commit against 2266993b74; 8da2d7f8ff, 9c7ab88a12, b13dfd993c, b1ff2a15a2, e02ad76d12 and 9d9e1bf889 change the three modules and the refusal case, 7e7251cb6a changes only the 8-line evidence fragment, for 225 insertions and 18 deletions across five files.\nCALL_SITES: reckon/crew/promotion.py:_default_gate_evidence_from_manifest (lines 357 and 877, reached from crew complete and the ledger re-fill), reckon/crew/promotion.py:_delivered_review_payloads_for_commit (line 1419, the committed review payload), reckon/crew/recovery_review_delivery.py:_review_delivery_verdict (line 490 via review_delivery_refusal, line 507 via the review loop's self-promotion), reckon/crew/promotion_checks.py:_landing_preconditions (line 2430, the manifest wait on every promotion)\nSCORE goal_fidelity: 18\nSCORE evidence: 13\nSCORE scope_discipline: 16\nSCORE durability: 8\nSCORE fit: 14\nSCORE reuse: 12\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_records.py:379-380 replaces the manifest's JSON-list tests line with the record's own check, and reckon/crew/promotion_checks.py:2882 and recovery_review_delivery.py:432 both derive the total a review states no total for.\nJUSTIFICATION evidence: logs/gate-head.log ends '4 passed ... EXIT=0' at 9d9e1bf889 and logs/suite-base.log and suite-head.log record 438 and 439 passed, but the manifest's own artifacts line states the base gate arm as '2 failed/2 passed' against the log's '3 failed, 1 passed'.\nJUSTIFICATION scope_discipline: every changed path is inside the live pointer's six-path grant, though promotion_records.py and the test file were added by a widen the original FENCE SCOPE block did not name and the manifest's blockers line still reports the widen as outstanding.\nJUSTIFICATION durability: the only assertion that outlives the run is tests/test_a_review_refusal_names_its_failed_condition.py:334 ('review total == TOTAL', reddening if the derivation returns null), while three of the four done-when cases live in tests/gate_review_promotion_test.py, which git ls-tree at the reviewed head shows untracked, so deleting reckon/crew/promotion_checks.py:481 _await_review_manifest reddens no test in the repository.\nJUSTIFICATION fit: the new code follows the surrounding style of reckon/crew/promotion_checks.py, but the constant's comment at promotion_checks.py:472-475 cites a specific review run id and a nine-review incident where a mechanism sentence would carry the same reason.\nJUSTIFICATION reuse: reckon/crew/recovery_review_delivery.py:359 _with_derived_total and reckon/crew/promotion_checks.py:2867 _with_a_derived_total are the same guard-and-derive over review_module._derive_landed_total under two names rather than one owned helper.\nFINDING reckon/crew/promotion_checks.py:481 non-blocking: Three of the four done-when cases -- the JSON-list gate derivation, the manifest that appears a few seconds late, and the manifest that never appears -- are asserted only by tests/gate_review_promotion_test.py, which is not tracked at the reviewed head (git ls-tree 7e7251cb6a returns nothing for it) and lives only under /tmp scratch; deleting _await_review_manifest at promotion_checks.py:481, or reverting the unconditional resolved_gate.update at promotion_records.py:379, reddens no test in the repository, so the node's two largest behaviours have no regression guard once the scratch tree is gone.\nFINDING docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-review-runs-promotion-derives-its-own-gate-and-total.html:49 non-blocking: The fragment states the gate arm runs '4 passed' at head against '2 failed, 2 passed' at base, and the manifest's artifacts and landing lines repeat that figure, but logs/gate-base.log -- the log the manifest cites -- records '3 failed, 1 passed in 8.93s'; the number is understated by one, so a coordinator landing this record on the plan lands a figure its own evidence contradicts.\nFINDING docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-review-runs-promotion-derives-its-own-gate-and-total.html:41 non-blocking: The fragment says the negative control 'removes the gate derivation and case 1 is refused again ... 2 failed, 2 passed', but logs/negative-control.log records a different mutation ('_with_derived_total reduced to return body') and a different result ('2 failed, 16 passed'), and in it test_case1_no_gate_flags_with_a_json_list_tests_field passes -- so the clause the done_when names, that the first case is refused again under the control, is not shown by the control that was actually recorded.\nFINDING reckon/crew/recovery_review_delivery.py:359 non-blocking: _with_derived_total duplicates reckon/crew/promotion_checks.py:2867 _with_a_derived_total: both are the same 'return the record unchanged when it carries an integer total, else review_module._derive_landed_total(body)' guard under two names in two modules, with two near-identical docstrings; the owner is reckon/crew/review.py:965 _derive_landed_total and one shared helper beside it would keep the two copies from diverging.\nFINDING reckon/crew/promotion_checks.py:474 non-blocking: The comment introducing REVIEW_MANIFEST_WAIT_SECONDS names a specific review run id and a 'measured across nine reviews in one night' incident in a different file's comment, which is changelog prose in source: once the run directory is cleaned the reference resolves to nothing, and the sentence that actually justifies twenty seconds -- that a review is promoted the moment its record parses while the worker writes its manifest a few seconds later -- carries the reason without it.\nFINDING reckon/crew/promotion_records.py:379 non-blocking: _default_gate_evidence_from_manifest now applies _review_record_check unconditionally, so a review run promoted with an explicit --gate-command and --gate-log-path has both replaced by 'test -s <record>' and the record path; the done_when covers only the no-gate-flags case and no test exercises the explicit-flag case, so an operator who hands a review promotion its own check silently loses it.",
+  "review_run_id": "r-20261105T213332776847-review-of-a-review-runs-promotion-derives-its-own-gate-and-total-7e7251cb6aff",
+  "reviewed_base_sha": "2266993b74fc8236d7d2ec0948da78a1cb67803b",
+  "reviewed_head_sha": "7e7251cb6affc71008037411089ee59a432723c7",
+  "reviewed_run_id": "r-20261103T075534458753-a-review-runs-promotion-derives-its-own-gate-and-total",
+  "scores": {
+    "durability": 8,
+    "evidence": 13,
+    "fit": 14,
+    "goal_fidelity": 18,
+    "reuse": 12,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T06:06:18.133664+00:00",
+  "total": 81,
+  "verdicts": {
+    "diff": "VERDICT diff: read commit by commit against 2266993b74; 8da2d7f8ff, 9c7ab88a12, b13dfd993c, b1ff2a15a2, e02ad76d12 and 9d9e1bf889 change the three modules and the refusal case, 7e7251cb6a changes only the 8-line evidence fragment, for 225 insertions and 18 deletions across five files.",
+    "done_when": "VERDICT done_when: the done_when names four cases, both arms as git checkouts under the run's scratch, EXIT= on every log and zero added failures; the recorded gate logs show 4 passed at head and 3 failed/1 passed at base, the suite pair is 438 passed base against 439 passed head, and the negative control records 2 failed/16 passed, though the control exercises the total derivation rather than the case 1 refusal the done_when names.",
+    "goal": "VERDICT goal: the goal is that a review run's promotion derives its own gate and total; reckon/crew/promotion_records.py:361-380 now takes the gate from the stored record for every review-role run, and reckon/crew/recovery_review_delivery.py:432 plus reckon/crew/promotion_checks.py:2882 derive the total at each copy a promotion reads.",
+    "manifest": "VERDICT manifest: read; it states status complete, names five changed paths and seven commits, records both arm logs and ends them in EXIT=, and its artifacts and landing lines report the base gate arm as '2 failed/2 passed' where logs/gate-base.log records '3 failed, 1 passed'.",
+    "write_paths": "VERDICT write_paths: the dispatch fence named four paths; the live pointer's node.write_paths now names six, adding reckon/crew/promotion_records.py and tests/test_a_review_refusal_names_its_failed_condition.py, and every path in the diffstat is inside that widened grant."
+  }
+}

@@ -22,7 +22,7 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="It collects the crew-command defects the power_convertor fleet reported on 2026-10-22; the monitor&#x27;s own items are filed in the-monitor-shows-the-work-it-watches §81–§88, related duty fixes live in a-coordinator-can-clear-its-own-duties, and no section waits on another plan.">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;implementable&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;implementable&quot;,&quot;s25&quot;:&quot;implementable&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;implementable&quot;,&quot;s28&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
-  <meta name="plan-version" content="86">
+  <meta name="plan-version" content="87">
   <meta name="plan-modified" content="2026-11-06">
   <title>The Crew Does Its Own Bookkeeping | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -299,6 +299,9 @@
 <div class="r-comment" data-section="s1" data-id="c-20261023-design-review" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
     <div class="r-comment-body"><p>The design review composed on 2026-10-23 (run <code>r-20261023T080346066999</code>) raised twelve findings on §1, §4, §5, §7, §8, §10, §11 and §16, declined for that wave because only §22 was built. Among them: §4's <code>crew complete --dry-run</code> already exists (<code>complete_dry_run</code> in <code>reckon/crew/promotion.py</code>); §5's dry run already evaluates the plan-review gate; §1's total derivation is owned by <code>reckon/crew/review.py</code>; §8's scope check is owned by <code>reckon/crew/promotion_scope.py</code>; §11's backoff exists as <code>_retry_backoff</code> in <code>reckon/ledger.py</code>. Read the stored review and act on its findings before building any of those sections.</p></div>
 </div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20261105T213332776847-review-of-a-review-runs-promotion-derives-its-own-gate-and-total-7e7251cb6aff" data-who="reckon-build" data-when="2026-11-06T06:08:33.292Z">
+    <div class="r-comment-body"><p>Reviewed r-20261103T075534458753-a-review-runs-promotion-derives-its-own-gate-and-total against base 2266993b74fc and head 7e7251cb6aff: scores goal_fidelity 18, evidence 13, scope_discipline 16, durability 8, fit 14, reuse 12 (total 81), 0 added failures from the 438-passed base arm to the 439-passed head arm, and 6 non-blocking findings — the largest being that three of the node&#x27;s four done-when cases are asserted only by an untracked scratch test, and that the manifest and evidence fragment report the base gate arm as 2 failed/2 passed where the cited log records 3 failed/1 passed.</p></div>
+</div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261104T091756019009-review-of-a-locked-ledger-store-is-retried-1c8b055dd404" data-who="reckon-build" data-when="2026-11-04T09:35:14.850Z">
     <div class="r-comment-body"><p>reviewed run r-20261103T073033751153-a-locked-ledger-store-is-retried at base 327ce7a6bbd9bb2db4f178ec00aadbc1262c11cc and head 1c8b055dd4047483f8ebeafc301e2873aa084866; scores goal_fidelity 16, evidence 13, scope_discipline 20, durability 4, fit 16, reuse 5; one blocking finding (no repository test guards the retry, because the dispatch granted no tests/ path) and three non-blocking (repair_index/unindexed_run_ids duplicate run_store.import_ledger and have no caller; the shortened busy timeout reaches every RunStore connection; the recorded head suite arm predates the reviewed head).</p></div>
 </div>
@@ -395,14 +398,14 @@
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261103T075956692165-a-merge-refuses-a-run-whose-promotion-would-be-refused" data-who="reckon-build" data-when="2026-11-05T13:17:43Z">
     <div class="r-comment-body"><p>Merge now refuses unpromotable run heads; committed regression test tests/test_merge_requires_promotable_run.py passed with its importers (49/49) at final head, failed when the guard was removed, and disappeared when its answering commit was reverted.</p></div>
 </div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261105T211638044911-review-of-a-dispatch-dry-run-evaluates-every-gate-the-real-dispatch-254cb11f8a06" data-who="reckon-build" data-when="2026-11-06T06:03:38.373Z">
+    <div class="r-comment-body"><p>An independent review of run r-20261103T080038233718 scored goal_fidelity 17, evidence 18, scope_discipline 8, durability 16, fit 18, reuse 5 at base 682bc6cd25 to head 254cb11f8a, with zero added failures against the reviewed run's own base arm and four recorded findings, one of them blocking (the landed test file sits outside the node's declared write paths).</p></div>
+</div>
 <div class="r-comment" data-section="s7" data-id="c-20261023-s7-title" data-who="reckon-build" data-when="2026-10-23T08:00:00Z">
     <div class="r-comment-body"><p>Content review of v10 on 2026-10-23, finding single_goal-1, declined for that wave because §7 was not being built: §7's heading and <em>Why</em> still promise that a resume reports its own success, and cite the already-has-a-resume-launching incident, which its deliverable hands to §19. Retitle §7 and its followup before dispatching it.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-20261023-s8-review" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
     <div class="r-comment-body"><p>Content review of v11 on 2026-10-23: <code>_committed_scope</code> in <code>reckon/crew/promotion_evidence.py</code> deliberately diffs each cited commit rather than the base-to-head span, so §8's prescribed base-to-head comparison is the span diff that function rejects. Rework §8 before dispatch.</p></div>
-</div>
-<div class="r-comment" data-section="s5" data-id="c-run-r-20261105T211638044911-review-of-a-dispatch-dry-run-evaluates-every-gate-the-real-dispatch-254cb11f8a06" data-who="reckon-build" data-when="2026-11-06T06:03:38.373Z">
-    <div class="r-comment-body"><p>An independent review of run r-20261103T080038233718 scored goal_fidelity 17, evidence 18, scope_discipline 8, durability 16, fit 18, reuse 5 at base 682bc6cd25 to head 254cb11f8a, with zero added failures against the reviewed run&#x27;s own base arm and four recorded findings, one of them blocking (the landed test file sits outside the node&#x27;s declared write paths).</p></div>
 </div>
 </section>
 </main>
