@@ -1,0 +1,78 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-06T06:03:38.373Z",
+  "dispatched_at": "2026-11-06T05:57:46Z",
+  "findings": [
+    {
+      "disposition": "folded",
+      "disposition_note": "Folded into the coordinator's scope grant for this run; no code change is needed.",
+      "file": "tests/test_a_dry_run_evaluates_every_gate.py",
+      "id": "review-scope-outside-fence",
+      "line": 1,
+      "severity": "blocking",
+      "text": "The new test file is not one of the node's four declared write paths, so the diff lands outside the fence it was granted; promotion refuses the run on exactly this path, and the manifest records it under blockers rather than resolving it, so the node cannot land until the coordinator grants the path or the dispatch template stops omitting test paths a done-when requires."
+    },
+    {
+      "disposition": "folded",
+      "disposition_note": "Folded into the deduplication node the manifest records under outside_scope, which owns reckon/crew/dispatch.py.",
+      "file": "reckon/crew/dispatch_plan.py",
+      "id": "review-reuse-duplicate-hold-continuation",
+      "line": 243,
+      "severity": "non-blocking",
+      "text": "continue_hold_on_its_offered_local_lane re-implements the hold-continuation rule that reckon/crew/dispatch.py:1684-1707 already owns inline; it reuses _offered_local_backend but duplicates the lifted-serving-lane test and the continued-selection construction, and the owner was not moved onto the helper because that file belongs to other concurrent nodes, so the two copies can now diverge in what a preview and a launch call a hold."
+    },
+    {
+      "disposition": "folded",
+      "disposition_note": "Folded into the same evidence-record repair the coordinator already owes for the fragment's missing trailing newline.",
+      "file": "docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-dispatch-dry-run-evaluates-every-gate-the-real-dispatch.html",
+      "id": "review-fragment-unmatched-span",
+      "line": 5,
+      "severity": "non-blocking",
+      "text": "The landing fragment closes a </span> it never opens (the Measure paragraph reads '...</span>. <code>ruff check</code>'), so the record carries malformed markup; browsers drop the stray close tag, but a composer that extracts this fragment into the parent evidence record can mis-nest it."
+    },
+    {
+      "disposition": "exempted",
+      "disposition_note": "Exempted: the routing guard the node exists to add is carried by the independent assertions at lines 159-164 (exit 0, backend == LOCAL, local is True), which do redden when the preview's call is removed; the route-mode literal is nameable in the dedup node's test rewrite.",
+      "exempted_reason": "The guard against the regression this node fixes does not rest on this assertion.",
+      "file": "tests/test_a_dry_run_evaluates_every_gate.py",
+      "id": "review-durability-route-mode-parity",
+      "line": 168,
+      "severity": "non-blocking",
+      "text": "The route_mode parity assertion compares dry_payload route_mode against real_payload route_mode, and both values come from the same constant helper reckon/crew/dispatch.py:740, so a regression that stopped flagging an overridden hold on both paths at once leaves the assertion true; the literal 'overridden-hold' is never named against an independent source."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew_dispatch_commands.py:1906 is the only caller of continue_hold_on_its_offered_local_lane, reached from the crew_dispatch CLI on --dry-run under picker routing; it imports reckon/crew/dispatch.py:543 _offered_local_backend and reckon/crew/dispatch.py:740 _overridden_hold_route_mode.",
+    "diff": "Read commit by commit against base 682bc6cd25: 7729d9a7e5 adds the helper and its preview call, 254cb11f8a adds the landing fragment; 256 added lines across four files, no deletions.",
+    "done_when": "The done_when names two cases, a preview refusing plan-review-missing where the launch refuses and a preview routing where the launch routes rather than reporting a hold; tests/test_a_dry_run_evaluates_every_gate.py:130 and :144 assert both, each against the real dispatch's own exit code and payload.",
+    "goal": "The node's goal is that a dispatch dry run evaluates every gate the real dispatch does; the landed change makes the preview continue a picker hold onto the local lane the launch continues it onto, at reckon/crew_dispatch_commands.py:1898-1916 calling reckon/crew/dispatch_plan.py:243.",
+    "manifest": "The manifest is complete and honest: it records base arm 5 failed / 1068 passed, head rerun 5 failed / 1070 passed with the same five ids, the negative control red with one failing id, and it declares the out-of-scope test file itself under blockers.",
+    "write_paths": "The declared write paths are the four FENCE SCOPE entries (reckon/crew/dispatch_plan.py, reckon/crew_dispatch_commands.py, the evidence fragment, the figures directory); three of the four diff paths are inside them and tests/test_a_dry_run_evaluates_every_gate.py is not."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a dispatch dry run evaluates every gate the real dispatch does; reckon/crew_dispatch_commands.py:1898-1916 now applies the launch's hold-continuation rule before the preview resolves, so the routing gate it used to answer differently is answered the same.\nVERDICT done_when: the done_when names a plan-review case and a routing case, and tests/test_a_dry_run_evaluates_every_gate.py:130 and :144 assert each against the real dispatch's own exit code and payload.\nVERDICT write_paths: read the four declared FENCE SCOPE paths against the diffstat; three land inside them and tests/test_a_dry_run_evaluates_every_gate.py, 170 lines of it, lands outside.\nVERDICT manifest: read; it records base arm 5 failed/1068 passed, head rerun 5 failed/1070 passed with the same five ids, a red negative control, and it names its own scope breach under blockers.\nVERDICT diff: read both commits against 682bc6cd25; 7729d9a7e5 adds a 51-line helper in reckon/crew/dispatch_plan.py and a 25-line preview call, 254cb11f8a adds the 10-line evidence fragment, with no deletions anywhere.\nCALL_SITES: reckon/crew_dispatch_commands.py:crew_dispatch, reckon/crew/dispatch_plan.py:continue_hold_on_its_offered_local_lane, reckon/crew/dispatch.py:_offered_local_backend, reckon/crew/dispatch.py:_overridden_hold_route_mode\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_plan.py:243 continues a held picker answer onto the lane the launch continues it onto, closing the divergence the goal names for the routing gate.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/base-arm.log ends '5 failed, 1068 passed, 1 skipped' at 682bc6cd25 and logs/head-arm-rerun.log ends '5 failed, 1070 passed, 1 skipped' at 7729d9a7e5 with the same five ids, and logs/negative-control.log exits 1 with one failing id.\nSCORE scope_discipline: 8\nJUSTIFICATION scope_discipline: tests/test_a_dry_run_evaluates_every_gate.py:1 is absent from the node's declared write paths, so 170 of the diff's 256 added lines sit outside the fence.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_dry_run_evaluates_every_gate.py:138-141 reddens under the recorded mutation and :159-164 reddens if the preview's helper call is removed, though :168 compares two values from one constant helper.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/dispatch_plan.py:243 names the capability it implements and follows the surrounding module's keyword-only, Mapping-typed style at :220-240.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/dispatch_plan.py:243 duplicates the hold-continuation rule reckon/crew/dispatch.py:1684-1707 already owns and does not move the owner onto it.\nFINDING tests/test_a_dry_run_evaluates_every_gate.py:1 blocking: the new test file is outside the node's four declared write paths, so the landed diff lands outside its fence and promotion refuses the run on it.\nFINDING reckon/crew/dispatch_plan.py:243 non-blocking: the helper re-implements the hold-continuation rule reckon/crew/dispatch.py:1684-1707 owns inline, leaving two copies of the rule that can diverge.\nFINDING docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-dispatch-dry-run-evaluates-every-gate-the-real-dispatch.html:5 non-blocking: the fragment closes a </span> it never opens, so the landing record carries malformed markup.\nFINDING tests/test_a_dry_run_evaluates_every_gate.py:168 non-blocking: the route_mode parity assertion compares two values from the same constant helper, so it cannot detect a wrong route-mode value applied on both paths.",
+  "review_run_id": "r-20261105T211638044911-review-of-a-dispatch-dry-run-evaluates-every-gate-the-real-dispatch-254cb11f8a06",
+  "reviewed_base_sha": "682bc6cd25400b4ca7a2db4cffd38080557a85ac",
+  "reviewed_head_sha": "254cb11f8a06298de4f5f42b788669594a0123fd",
+  "reviewed_run_id": "r-20261103T080038233718-a-dispatch-dry-run-evaluates-every-gate-the-real-dispatch",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 8
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T06:50:22.588329+00:00",
+  "total": 82,
+  "verdicts": {
+    "diff": "VERDICT diff: read both commits against 682bc6cd25; 7729d9a7e5 adds a 51-line helper in reckon/crew/dispatch_plan.py and a 25-line preview call, 254cb11f8a adds the 10-line evidence fragment, with no deletions anywhere.",
+    "done_when": "VERDICT done_when: the done_when names a plan-review case and a routing case, and tests/test_a_dry_run_evaluates_every_gate.py:130 and :144 assert each against the real dispatch's own exit code and payload.",
+    "goal": "VERDICT goal: the node's goal is that a dispatch dry run evaluates every gate the real dispatch does; reckon/crew_dispatch_commands.py:1898-1916 now applies the launch's hold-continuation rule before the preview resolves, so the routing gate it used to answer differently is answered the same.",
+    "manifest": "VERDICT manifest: read; it records base arm 5 failed/1068 passed, head rerun 5 failed/1070 passed with the same five ids, a red negative control, and it names its own scope breach under blockers.",
+    "write_paths": "VERDICT write_paths: read the four declared FENCE SCOPE paths against the diffstat; three land inside them and tests/test_a_dry_run_evaluates_every_gate.py, 170 lines of it, lands outside."
+  }
+}
