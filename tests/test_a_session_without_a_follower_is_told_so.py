@@ -224,14 +224,19 @@ def test_a_second_publish_leaves_the_absent_sessions_file_exactly_as_written(
         + 5
     )
     store.heartbeat(now=later)
-    station_snapshot = obligation_snapshot.station_snapshot_path(PROJECT, home=config_home)
+    station_snapshot = obligation_snapshot.station_snapshot_path(
+        PROJECT, home=config_home
+    )
     station_before = station_snapshot.stat() if station_snapshot.exists() else None
     published = station_obligations.publish(
         store, project=PROJECT, home=config_home, changed=True, now=later
     )
     assert published == station_snapshot, "the export path did not run"
     station_after = station_snapshot.stat()
-    assert station_before is None or station_after.st_mtime_ns != station_before.st_mtime_ns
+    assert (
+        station_before is None
+        or station_after.st_mtime_ns != station_before.st_mtime_ns
+    )
 
     after = session_path.stat()
     assert (after.st_mtime_ns, after.st_size) == (before.st_mtime_ns, before.st_size)

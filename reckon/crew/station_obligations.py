@@ -242,9 +242,7 @@ def refresh(
     return written
 
 
-def _drop_absent(
-    store: Any, project: str, sessions: Iterable[str]
-) -> list[str]:
+def _drop_absent(store: Any, project: str, sessions: Iterable[str]) -> list[str]:
     """Remove this project's rows for sessions no follower is delivering for.
 
     Returns the sessions whose row went, so the caller can leave each of them a
