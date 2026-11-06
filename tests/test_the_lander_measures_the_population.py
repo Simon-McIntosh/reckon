@@ -7,12 +7,23 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from click.testing import CliRunner
 
-from reckon.crew import landing_measure, queue_landing, runs
+import reckon.crew as crew_module
+from reckon import cli
+from reckon.crew import (
+    landing_measure,
+    merge,
+    promotion,
+    promotion_release,
+    queue_landing,
+    runs,
+)
 
 RUN = "r-population-delivery"
 FAILURE = "tests/test_consumer.py::test_integration"
 COMMAND = "python -m pytest -q tests/test_node.py"
+LAND = queue_landing._land
 
 
 def _git(repo, *args):
@@ -265,3 +276,138 @@ def test_an_unreadable_delivery_diff_refuses_without_claiming_no_importers(
     assert not result["landed"]
     assert "delivered changes could not be read" in result["obligations"][0]["guard"]
     assert not delivery["calls"]
+
+
+def _real_landing(delivery, monkeypatch, *, advance=False, promotable=True):
+    """Run the real CLI merge and local push; stub only promotion bookkeeping."""
+    repo = delivery["repo"]
+    origin = repo.parent / "origin"
+    _git(repo, "init", "--bare", "-q", str(origin))
+    _git(repo, "remote", "add", "origin", str(origin))
+    _git(repo, "push", "-q", "-u", "origin", "main")
+    pointer = runs.read_pointer(RUN)
+    record = {**pointer, "commits": [delivery["head"]]}
+    monkeypatch.setattr(merge, "project_repository", lambda _p: repo)
+    monkeypatch.setattr(
+        promotion,
+        "complete_dry_run",
+        lambda *_a, **_k: {
+            "would_promote": promotable,
+            "refusals": ["promotion refused"],
+        },
+    )
+    promoted = []
+
+    def complete(*_args, **_kwargs):
+        promoted.append(RUN)
+        return {"project": pointer["project"], "record": record}
+
+    monkeypatch.setattr(crew_module, "complete", complete)
+    monkeypatch.setattr(
+        promotion_release,
+        "_release_after_promotion",
+        lambda *_a, **_k: {"worktree_released": True},
+    )
+    monkeypatch.setattr(
+        promotion_release,
+        "_record_release_on_ledger",
+        lambda **kw: (kw["release"], None),
+    )
+    steps = []
+    moved = []
+
+    def run(command, **_kwargs):
+        args = command[command.index("crew") :]
+        steps.append(args)
+        if advance and not moved:
+            moved.append(_commit(repo, "reference.txt", "concurrent primary edit\n"))
+        result = CliRunner().invoke(cli.main, args)
+        return subprocess.CompletedProcess(command, result.exit_code, result.output, "")
+
+    monkeypatch.setattr(queue_landing, "_land", LAND)
+    monkeypatch.setattr(queue_landing, "_run_srun", run)
+    return origin, steps, promoted, moved
+
+
+def test_primary_advance_after_measurement_refuses_the_actual_cli_merge(
+    delivery, monkeypatch
+):
+    _runner(delivery, monkeypatch, clean=True)
+    origin, steps, promoted, moved = _real_landing(delivery, monkeypatch, advance=True)
+
+    result = queue_landing.land_once()
+
+    assert not result["landed"], result
+    assert "parents" in result["obligations"][0]["guard"]
+    assert _git(delivery["repo"], "rev-parse", "HEAD") == moved[0]
+    assert _git(origin, "rev-parse", "main") == delivery["main"]
+    assert not promoted
+    assert steps[0][1] == "merge"
+
+
+def test_the_actual_cli_lands_exactly_the_measured_candidate(delivery, monkeypatch):
+    _runner(delivery, monkeypatch, clean=True)
+    origin, steps, promoted, _moved = _real_landing(delivery, monkeypatch)
+
+    result = queue_landing.land_once()
+
+    assert result["landed"] == [RUN], result
+    candidate = _record()["population"]["candidate_sha"]
+    assert _git(delivery["repo"], "rev-parse", "HEAD") == candidate
+    assert _git(origin, "rev-parse", "main") == candidate
+    assert steps[0][steps[0].index("--candidate") + 1] == candidate
+    assert [args[1] for args in steps] == ["merge", "complete"]
+    assert promoted == [RUN]
+
+
+def test_candidate_handoff_preserves_the_promotion_guard(delivery, monkeypatch):
+    _runner(delivery, monkeypatch, clean=True)
+    origin, _steps, promoted, _moved = _real_landing(
+        delivery, monkeypatch, promotable=False
+    )
+
+    result = queue_landing.land_once()
+
+    assert not result["landed"], result
+    assert "promotion refused" in result["obligations"][0]["guard"]
+    assert _git(delivery["repo"], "rev-parse", "HEAD") == delivery["main"]
+    assert _git(origin, "rev-parse", "main") == delivery["main"]
+    assert not promoted
+
+
+def test_an_unarmed_implementation_cannot_land_unmeasured(delivery, monkeypatch):
+    _runner(delivery, monkeypatch)
+    runs._mutate_pointer(
+        RUN, lambda p: {k: v for k, v in p.items() if k != "suite_command"}
+    )
+
+    result = queue_landing.land_once()
+
+    assert not result["landed"], result
+    assert "suite command" in result["obligations"][0]["guard"]
+    assert _record()["unreadable"]
+    assert not delivery["calls"]
+
+
+def test_delivery_paths_reuses_the_strict_merge_reader(delivery, monkeypatch):
+    owner = merge._changed_paths
+    calls = []
+
+    def read(*args):
+        calls.append(args)
+        return owner(*args)
+
+    monkeypatch.setattr(merge, "_changed_paths", read)
+    paths = landing_measure.delivered_paths(
+        delivery["repo"], delivery["base"], delivery["head"]
+    )
+
+    assert paths == ["subject.py"]
+    assert calls == [(delivery["repo"], delivery["base"], delivery["head"])]
+
+
+def test_delivery_paths_preserves_git_path_boundaries(delivery):
+    path = "nested/line\nbreak.py"
+    head = _commit(delivery["worker"], path, "VALUE = 1\n")
+    paths = landing_measure.delivered_paths(delivery["repo"], delivery["head"], head)
+    assert paths == [path]

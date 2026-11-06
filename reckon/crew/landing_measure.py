@@ -765,17 +765,15 @@ class BaseCheckoutError(ValueError):
 
 
 def delivered_paths(repo: Path, base: str, head: str) -> list[str]:
-    """Read the delivery's scope, refusing an unreadable diff instead of zero."""
-    from reckon.velocity import run_git
+    """Use the merge reader's strict diff and preserve its path boundaries."""
+    from reckon.crew import merge
 
     try:
-        result = run_git(repo, "diff", "--name-only", base, head)
-        result.check_returncode()
-    except (OSError, subprocess.SubprocessError) as exc:
+        return [path for _status, path in merge._changed_paths(repo, base, head)]
+    except (OSError, merge.MergeError) as exc:
         raise BaseCheckoutError(
             f"the delivered changes could not be read: {exc}"
         ) from exc
-    return result.stdout.decode().splitlines()
 
 
 @contextlib.contextmanager
@@ -790,8 +788,9 @@ def candidate_checkout(
             repo,
             primary,
             head,
-            "test(landing): prepare merge candidate",
-            "Combine the delivered head with the current primary revision for measurement.",
+            "merge: integrate the measured delivery",
+            "Combine the reviewed delivery with the pinned primary revision "
+            "for population measurement and landing.",
         )
     except (OSError, merge.MergeError) as exc:
         raise BaseCheckoutError(

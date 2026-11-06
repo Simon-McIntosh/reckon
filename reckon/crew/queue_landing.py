@@ -636,8 +636,8 @@ def _stored_measurement(
     """The measurement already recorded for this head, or ``None``.
 
     A record is reusable for its delivered head, command and primary revision.
-    A primary change rebuilds the candidate and measures again. A head already
-    on primary needs no merge, so its delivery record can finish bookkeeping.
+    A primary change rebuilds the candidate and measures again. The candidate
+    identity is required so the merge can consume exactly what was measured.
 
     A record the measurement could not be taken for is not one: it states the
     bound the arm exceeded or the failure to build the base tree, and reusing
@@ -658,9 +658,13 @@ def _stored_measurement(
         return None
     if str(record.get("unreadable") or ""):
         return None
-    if primary and primary != head:
+    if primary:
         population = record.get("population")
-        if not isinstance(population, Mapping) or population.get("main_sha") != primary:
+        if (
+            not isinstance(population, Mapping)
+            or population.get("main_sha") != primary
+            or not population.get("candidate_sha")
+        ):
             return None
     return landing_measure.Measurement.from_dict(record)
 
@@ -754,9 +758,8 @@ def _measure_delivery(
 ) -> Any:
     """Measure current primary against the merge of one delivered run.
 
-    A run that armed no command has nothing to measure; the landing path keeps
-    its earlier behaviour for such a run rather than inventing a command. A
-    measurement that cannot be taken — no base revision, or a base checkout
+    A run that armed no command is unmeasurable and cannot land. A
+    measurement that cannot be taken — no command, no base revision, or a base checkout
     that cannot be built — yields an unreadable measurement so the caller
     refuses the landing instead of inferring a verdict from nothing.
 
@@ -771,7 +774,16 @@ def _measure_delivery(
     """
     command = str(pointer.get("suite_command") or "").strip()
     if not command:
-        return None
+        measured = landing_measure.Measurement(
+            command="",
+            suite={},
+            population={},
+            unreadable="the run armed no suite command; configure one before landing",
+            head=head,
+            project=str(pointer.get("project") or ""),
+        )
+        _record_suite_evidence(run_id, measured)
+        return measured
     base_sha = str(pointer.get("base_sha") or "").strip()
     project = str(pointer.get("project") or "")
     repo = Path(str(pointer.get("repo") or tree or ""))
@@ -859,7 +871,7 @@ def _measure_delivery(
 def _measure_guard(measured: Any) -> str:
     """The refusal a measurement states, or "" when the run may land."""
     if measured is None:
-        return ""
+        return "landing measure unreadable: the run has no population measurement"
     if measured.unreadable:
         return f"landing measure unreadable: {measured.unreadable}"
     if not measured.real:
@@ -958,16 +970,8 @@ LANDING_BEAT_REASON = (
 )
 
 
-def _land_command(run_id: str) -> list[str]:
-    """Run the coordinator's land command in one explicit fleet step.
-
-    The revision the run's manifest delivers is presented to the promotion, so
-    the step asserts the revision this pass read rather than leaving the
-    promotion to read the worker's commit entry for itself. An entry carrying
-    its subject after the revision, or several revisions on one line, is then
-    the delivery it was to the pass, instead of a citation no store can resolve
-    under the entry's own spelling.
-    """
+def _crew_step(*arguments: str) -> list[str]:
+    """Run one crew operation through the bounded fleet subprocess."""
     from reckon.nested_launch import shim_directory
 
     return [
@@ -978,6 +982,13 @@ def _land_command(run_id: str) -> list[str]:
         "-c",
         "from reckon.cli import main; main()",
         "crew",
+        *arguments,
+    ]
+
+
+def _land_command(run_id: str) -> list[str]:
+    """Promote the measured, merged delivery and finish its release bookkeeping."""
+    return _crew_step(
         "complete",
         "--run",
         run_id,
@@ -991,7 +1002,33 @@ def _land_command(run_id: str) -> list[str]:
         "--no-impl-change",
         LANDING_BEAT_REASON,
         "--land",
-    ]
+    )
+
+
+def _candidate_merge_command(
+    run_id: str, project: str, measured: landing_measure.Measurement
+) -> list[str]:
+    """Hand the measured candidate to the merge's existing parent check."""
+    return _crew_step(
+        "merge",
+        "--project",
+        project,
+        "--run",
+        run_id,
+        "--head",
+        measured.head,
+        "--candidate",
+        str(measured.population["candidate_sha"]),
+        "--gate",
+        "passed",
+        *[
+            token
+            for revision in _delivered_revisions(run_id)
+            for token in ("--commit", revision)
+        ],
+        "--no-impl-change",
+        LANDING_BEAT_REASON,
+    )
 
 
 def _delivered_revisions(run_id: str) -> tuple[str, ...]:
@@ -1032,15 +1069,61 @@ def _land_timeout(run_id: str) -> float:
 
 
 def _land(run_id: str) -> tuple[bool, str]:
-    # The CLI calls the same promotion lease and merge index-lock retry a
-    # coordinator uses. Its gate also runs inside this step, off the service.
+    """Merge the measured candidate before promotion can advance primary.
+
+    The merge CLI checks promotion eligibility without writing the ledger and
+    refuses a candidate whose parents no longer match. Completion then owns
+    promotion, push recovery and worktree release on the already merged head.
+    """
+    from reckon.crew import merge
+
+    record = _measurement_record(run_id)
+    measured = landing_measure.Measurement.from_dict(record) if record else None
+    guard = _measure_guard(measured)
+    if guard:
+        return False, guard
+    if not measured.population.get("candidate_sha") or not measured.population.get(
+        "main_sha"
+    ):
+        return False, "landing measure unreadable: no measured merge candidate"
+    try:
+        pointer = runs.read_pointer(run_id)
+        repo = Path(str(pointer.get("repo") or ""))
+        head, _tree = recovery._review_head_and_tree(pointer)
+        if not recovery.same_revision(head, measured.head):
+            return False, "the measured delivery head changed before landing"
+        markers = merge.change_markers(repo, measured.population["main_sha"], head)
+        dropped = merge.surviving_change_refusals(
+            repo, measured.population["candidate_sha"], markers
+        )
+        if dropped:
+            return (
+                False,
+                "the measured merge dropped the reviewed change: " + "; ".join(dropped),
+            )
+    except (OSError, ValueError, CrewError, merge.MergeError) as exc:
+        return False, f"the measured candidate could not be read: {exc}"
+
     environment = os.environ.copy()
     source = str(Path(__file__).resolve().parents[2])
     environment["PYTHONPATH"] = os.pathsep.join(
         part for part in (source, environment.get("PYTHONPATH", "")) if part
     )
-    command = _land_command(run_id)
     timeout = _land_timeout(run_id)
+    for command in (
+        _candidate_merge_command(run_id, str(pointer.get("project") or ""), measured),
+        _land_command(run_id),
+    ):
+        accepted, guard = _run_land_command(command, environment, timeout)
+        if not accepted:
+            return False, guard
+    return True, ""
+
+
+def _run_land_command(
+    command: list[str], environment: Mapping[str, str], timeout: float
+) -> tuple[bool, str]:
+    """Read the crew operation's receipt, preserving refusal and timeout details."""
     try:
         finished = _run_srun(
             command,
