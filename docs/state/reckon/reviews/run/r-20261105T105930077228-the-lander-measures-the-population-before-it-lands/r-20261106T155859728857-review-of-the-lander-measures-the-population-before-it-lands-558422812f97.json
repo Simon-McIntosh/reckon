@@ -1,0 +1,139 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "fails_if": "The scheduler shim invokes a different CLI step, omits the reviewed commit, or drops the landing flags; line 366 checks a fixture-provided head and establishes handoff only.",
+      "file": "tests/test_queue_landing.py",
+      "lines": "363-372"
+    },
+    {
+      "fails_if": "An accepted real completion fails to land the reviewed file, synchronize the remote, or remove the live pointer.",
+      "file": "tests/test_queue_landing.py",
+      "lines": "492-499"
+    },
+    {
+      "fails_if": "An unarmed run reaches completion, changes primary or origin, or fails to record the missing-suite refusal.",
+      "file": "tests/test_queue_landing.py",
+      "lines": "510-516"
+    },
+    {
+      "fails_if": "A primary advance after the first measurement is ignored or published.",
+      "file": "tests/test_the_lander_measures_the_population.py",
+      "lines": "296-300"
+    },
+    {
+      "fails_if": "Actual completion fails, the final candidate has the wrong parents or content, the remote differs, the receipt omits promotion, or the worktree and pointer survive; line 324 is only a consistency assertion between two code-derived values.",
+      "file": "tests/test_the_lander_measures_the_population.py",
+      "lines": "307-330"
+    },
+    {
+      "fails_if": "Deleting the gate log after measurement still permits promotion, modifies primary or origin, or releases the worktree.",
+      "file": "tests/test_the_lander_measures_the_population.py",
+      "lines": "344-349"
+    },
+    {
+      "fails_if": "A primary advance at publication writes the reviewed file or origin, releases the worktree, or loses its durable refusal.",
+      "file": "tests/test_the_lander_measures_the_population.py",
+      "lines": "367-378"
+    },
+    {
+      "fails_if": "Comma-list, parenthesized, aliased, qualified or indirect imports are missed, an unrelated package is counted, or an unparseable caller is silently discarded.",
+      "file": "tests/test_the_lander_measures_the_population.py",
+      "lines": "432-454"
+    }
+  ],
+  "assertion_independence": "The new receipt equality at tests/test_the_lander_measures_the_population.py:324 compares two outputs of the same landing path; the command-head assertion at tests/test_queue_landing.py:366 compares emitted command with a head supplied by the fixture and proves forwarding, not independent head selection. The real Git parent, content, local and remote assertions provide separate checks.",
+  "call_sites": [
+    "reckon/crew/queue_admission.py:4765",
+    "reckon/crew/queue_landing.py:1435",
+    "reckon/crew/queue_landing.py:1113",
+    "reckon/crew_run_commands.py:3102",
+    "reckon/crew_run_commands.py:3159",
+    "reckon/crew_run_commands.py:3301"
+  ],
+  "completed_at": "2026-11-06T16:10:22Z",
+  "dispatched_at": "2026-11-06T16:00:33Z",
+  "failure_evidence": {
+    "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T105930077228-the-lander-measures-the-population-before-it-lands/publication-final.log",
+    "after_suite_result": "85 passed, EXIT=0",
+    "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T105930077228-the-lander-measures-the-population-before-it-lands/expanded-repair-base.log",
+    "baseline_suite_result": "23 failed, 53 passed, EXIT=1",
+    "importer_discovery_negative_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T105930077228-the-lander-measures-the-population-before-it-lands/importer-discovery-negative.log",
+    "importer_discovery_negative_result": "4 failed, 3 passed, EXIT=1",
+    "promotion_comparison": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T105930077228-the-lander-measures-the-population-before-it-lands/publication-promotion-comparison.json",
+    "promotion_comparison_result": "Actual run still refuses baseline_suite.revision_matches_base_sha; source manifest assigns that separate bookkeeping change outside this run's scope.",
+    "publication_negative_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T105930077228-the-lander-measures-the-population-before-it-lands/publication-negative.log",
+    "publication_negative_result": "5 failed, 73 passed, EXIT=1",
+    "remaining_importer_base_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T105930077228-the-lander-measures-the-population-before-it-lands/publication-importers-base.log",
+    "remaining_importer_head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T105930077228-the-lander-measures-the-population-before-it-lands/publication-importers-final.log"
+  },
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the independent parent and content assertions in the real CLI test carry this check, as the reviewer notes",
+      "recorded_at": "2026-11-06T16:13:48.457036+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the independent parent and content assertions in the real CLI test carry this check, as the reviewer notes",
+      "recorded_at": "2026-11-06T16:13:53.548513+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_the_lander_measures_the_population.py",
+      "id": "fb002313828",
+      "line": 324,
+      "severity": "non-blocking",
+      "text": "The receipt commit is compared with candidate_sha read from the measurement record produced by the same landing path; both values can move together if the wrong candidate is measured, so this line alone does not prove that the population ran on the published object. The separate parent and content assertions protect part of that handoff."
+    },
+    {
+      "file": "tests/test_queue_landing.py",
+      "id": "f90e758fdb1",
+      "line": 366,
+      "severity": "non-blocking",
+      "text": "The expected commit is delivery['head'], which the fixture also placed in the live pointer read by the lander; changing that supplied head moves both sides, so this line verifies forwarding but cannot independently establish that the selected commit is the worktree's reviewed head. The real CLI test's Git parent and content checks supply the independent evidence."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "I read c1a851524b1f, 2d027b9f0151, 0069a7230915, 7afacffd0659, and 558422812f97 against a99866a42b8a: fixtures become armed, completion precedes publication, importer discovery reuses served_code._edges, and the evidence fragment appends receipts.",
+    "done_when": "Plan s29:237 requires four delivery outcomes, a red population bypass, and no added importer failures; expanded-repair-base.log records 23 failed/53 passed, publication-final.log records 85 passed, and the two product reversals record 5 and 4 failures.",
+    "goal": "The source goal in prompt.txt:38 and plan s29:237 requires population measurement before landing; queue_landing.py:1113 sends an accepted measurement to actual completion, and crew_run_commands.py:3301 measures the final candidate after promotion.",
+    "manifest": "The source manifest.md records the five new commits, both complete paired suite arms, the negative-control logs, and an outside-scope baseline revision refusal in publication-promotion-comparison.json.",
+    "write_paths": "The source resume-3-advice.txt grants the seven importer fixtures and resume-4-advice.txt adds crew_run_commands.py; the twelve changed paths in the a99866a42b8a..558422812f97 diff are within the cumulative source manifest.md:3 grant."
+  },
+  "justifications": {
+    "durability": "tests/test_queue_landing.py:492-516 and tests/test_the_lander_measures_the_population.py:296-454 contain branch, receipt, refusal, and importer assertions that redden under the recorded product reversals; line 324 alone compares two code-derived candidate values.",
+    "evidence": "The source manifest.md paired arm receipts and publication-final.log show 0 added failures (23 base, 0 head), while publication-negative.log and importer-discovery-negative.log demonstrate that the new checks can fail.",
+    "fit": "reckon/crew_run_commands.py:3094-3111 adds candidate validation to the existing complete --land path, and reckon/crew/queue_landing.py:1113 keeps landing in its existing worker thread.",
+    "goal_fidelity": "reckon/crew/queue_landing.py:1113 and reckon/crew_run_commands.py:3301 require a measured candidate on the actual completion path before merge.land publishes it.",
+    "reuse": "reckon/crew/landing_measure.py:222-250 delegates Python import resolution to reckon/served_code.py:1170, while reckon/crew_run_commands.py:3308 passes the candidate to merge.land rather than adding a second merge publisher.",
+    "scope_discipline": "The twelve paths in git diff a99866a42b8a..558422812f97 appear in the expanded source manifest.md:3 write grant and its resume-3/4 advice."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source goal in prompt.txt:38 and plan s29:237 requires population measurement before landing; queue_landing.py:1113 sends an accepted measurement to actual completion, and crew_run_commands.py:3301 measures the final candidate after promotion.\nVERDICT done_when: Plan s29:237 requires four delivery outcomes, a red population bypass, and no added importer failures; expanded-repair-base.log records 23 failed/53 passed, publication-final.log records 85 passed, and the two product reversals record 5 and 4 failures.\nVERDICT write_paths: The source resume-3-advice.txt grants the seven importer fixtures and resume-4-advice.txt adds crew_run_commands.py; the twelve changed paths in the a99866a42b8a..558422812f97 diff are within the cumulative source manifest.md:3 grant.\nVERDICT manifest: The source manifest.md records the five new commits, both complete paired suite arms, the negative-control logs, and an outside-scope baseline revision refusal in publication-promotion-comparison.json.\nVERDICT diff: I read c1a851524b1f, 2d027b9f0151, 0069a7230915, 7afacffd0659, and 558422812f97 against a99866a42b8a: fixtures become armed, completion precedes publication, importer discovery reuses served_code._edges, and the evidence fragment appends receipts.\nCALL_SITES: reckon/crew/queue_admission.py:4765, reckon/crew/queue_landing.py:1435, reckon/crew/queue_landing.py:1113, reckon/crew_run_commands.py:3102, reckon/crew_run_commands.py:3159, reckon/crew_run_commands.py:3301\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_landing.py:1113 and reckon/crew_run_commands.py:3301 require a measured candidate on the actual completion path before merge.land publishes it.\nSCORE evidence: 19\nJUSTIFICATION evidence: The source manifest.md paired arm receipts and publication-final.log show 0 added failures (23 base, 0 head), while publication-negative.log and importer-discovery-negative.log demonstrate that the new checks can fail.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The twelve paths in git diff a99866a42b8a..558422812f97 appear in the expanded source manifest.md:3 write grant and its resume-3/4 advice.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_queue_landing.py:492-516 and tests/test_the_lander_measures_the_population.py:296-454 contain branch, receipt, refusal, and importer assertions that redden under the recorded product reversals; line 324 alone compares two code-derived candidate values.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew_run_commands.py:3094-3111 adds candidate validation to the existing complete --land path, and reckon/crew/queue_landing.py:1113 keeps landing in its existing worker thread.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/landing_measure.py:222-250 delegates Python import resolution to reckon/served_code.py:1170, while reckon/crew_run_commands.py:3308 passes the candidate to merge.land rather than adding a second merge publisher.\nFINDING tests/test_the_lander_measures_the_population.py:324 non-blocking: The receipt commit is compared with candidate_sha read from the measurement record produced by the same landing path; both values can move together if the wrong candidate is measured, so this line alone does not prove that the population ran on the published object. The separate parent and content assertions protect part of that handoff.\nFINDING tests/test_queue_landing.py:366 non-blocking: The expected commit is delivery['head'], which the fixture also placed in the live pointer read by the lander; changing that supplied head moves both sides, so this line verifies forwarding but cannot independently establish that the selected commit is the worktree's reviewed head. The real CLI test's Git parent and content checks supply the independent evidence.\n",
+  "review_run_id": "r-20261106T155859728857-review-of-the-lander-measures-the-population-before-it-lands-558422812f97",
+  "reviewed_base_sha": "a99866a42b8af18a267b2e452c7f0e7b1adf40fe",
+  "reviewed_head_sha": "558422812f973ae91f0ea2521bcb152e13a7dabb",
+  "reviewed_run_id": "r-20261105T105930077228-the-lander-measures-the-population-before-it-lands",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_commits": [
+    "c1a851524b1f9b5fdf688292df1ad9cb69033643",
+    "2d027b9f0151a68b6c4fe2d51327b52561796fbf",
+    "0069a7230915c350f09a20bb9ad1e398edc50c78",
+    "7afacffd0659ec3636635c4db7d650e565d27eee",
+    "558422812f973ae91f0ea2521bcb152e13a7dabb"
+  ],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T16:10:26.304969+00:00",
+  "total": 114
+}
