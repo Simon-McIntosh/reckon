@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The manifest baseline and after receipts name different test sets; importer-base-source.log and importer-regression.log compare the shared importer tests and show the same single failure.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:2715",
+    "reckon/crew/dispatch_claims.py:764"
+  ],
+  "completed_at": "2026-11-06T18:48:32Z",
+  "dispatched_at": "2026-11-06T18:39:33Z",
+  "findings": [
+    {
+      "file": "tests/test_a_reexec_never_orphans_a_dispatch.py",
+      "line": "56",
+      "severity": "non-blocking",
+      "text": "non-blocking: The recorded process start time is compared with the same _process_start_time helper used to write it, so a wrong helper result moves both sides together; exempted because the three independent reclaim/refusal assertions and their red controls protect this node's behavior."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Commit e393965fc53509a8e88e99320534b08ad290bb06 adds publication, claim recording, liveness comparison, and three tests in reckon/crew/dispatch_claims.py and tests/test_a_reexec_never_orphans_a_dispatch.py; commit 48d871cf2230aff1d95db3772c0f33d1f70cae01 adds only the five-line landing fragment.",
+    "done_when": "The three cases required by prompt.txt:113-114 run in tests/test_a_reexec_never_orphans_a_dispatch.py:38-93, with three passing results in after-suite.log:5 and the three named controls failing in negative-control.log:134-139.",
+    "goal": "The source goal in prompt.txt:38 asks for a per-exec identity on every node dispatch claim, and reckon/crew/dispatch_claims.py:584,610,797-801 publishes and records it.",
+    "manifest": "The source manifest.md:7-20 names both commits, the scoped 3-pass gate, three failing controls, and base and after receipts, while importer-base-source.log:41-42 and importer-regression.log:35-37 show the same single failure.",
+    "write_paths": "The fence in prompt.txt:77-81 names dispatch_claims.py, the new test, and the landing fragment; both reviewed commits change only those three paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_reexec_never_orphans_a_dispatch.py:59-65,75-78,89-92 make stale, live, and legacy claims behave differently under the three red controls, although the supplementary comparison at line 56 uses the same start-time helper as the writer.",
+    "evidence": "after-suite.log:5 and negative-control.log:134-139 establish the three outcomes, and importer-base-source.log:41-42 versus importer-regression.log:35-37 establish zero added importer failures despite baseline_suite and after_suite in manifest.md:19-20 naming different test sets.",
+    "fit": "reckon/crew/dispatch_claims.py:588-610 places the identity publication beside the existing claim lifecycle and uses the existing claim reclamation path at lines 764-769.",
+    "goal_fidelity": "reckon/crew/dispatch_claims.py:686-693 reclaims an identity mismatch after the unchanged pid and start checks, while lines 797-801 add the identity to new claims.",
+    "reuse": "A capability search across reckon/crew found pid start checks in reckon/crew/process_liveness.py:404-407 but no existing per-exec publisher, and reckon/crew/dispatch_claims.py:588-610 extends the claim owner instead of duplicating it.",
+    "scope_discipline": "The two commits change only reckon/crew/dispatch_claims.py, tests/test_a_reexec_never_orphans_a_dispatch.py, and the landing fragment named in prompt.txt:77-81."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source goal in prompt.txt:38 asks for a per-exec identity on every node dispatch claim, and reckon/crew/dispatch_claims.py:584,610,797-801 publishes and records it.\nVERDICT done_when: The three cases required by prompt.txt:113-114 run in tests/test_a_reexec_never_orphans_a_dispatch.py:38-93, with three passing results in after-suite.log:5 and the three named controls failing in negative-control.log:134-139.\nVERDICT write_paths: The fence in prompt.txt:77-81 names dispatch_claims.py, the new test, and the landing fragment; both reviewed commits change only those three paths.\nVERDICT manifest: The source manifest.md:7-20 names both commits, the scoped 3-pass gate, three failing controls, and base and after receipts, while importer-base-source.log:41-42 and importer-regression.log:35-37 show the same single failure.\nVERDICT diff: Commit e393965fc53509a8e88e99320534b08ad290bb06 adds publication, claim recording, liveness comparison, and three tests in reckon/crew/dispatch_claims.py and tests/test_a_reexec_never_orphans_a_dispatch.py; commit 48d871cf2230aff1d95db3772c0f33d1f70cae01 adds only the five-line landing fragment.\nCALL_SITES: reckon/crew/dispatch.py:2715, reckon/crew/dispatch_claims.py:764\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_claims.py:686-693 reclaims an identity mismatch after the unchanged pid and start checks, while lines 797-801 add the identity to new claims.\nSCORE evidence: 17\nJUSTIFICATION evidence: after-suite.log:5 and negative-control.log:134-139 establish the three outcomes, and importer-base-source.log:41-42 versus importer-regression.log:35-37 establish zero added importer failures despite baseline_suite and after_suite in manifest.md:19-20 naming different test sets.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The two commits change only reckon/crew/dispatch_claims.py, tests/test_a_reexec_never_orphans_a_dispatch.py, and the landing fragment named in prompt.txt:77-81.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_reexec_never_orphans_a_dispatch.py:59-65,75-78,89-92 make stale, live, and legacy claims behave differently under the three red controls, although the supplementary comparison at line 56 uses the same start-time helper as the writer.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/dispatch_claims.py:588-610 places the identity publication beside the existing claim lifecycle and uses the existing claim reclamation path at lines 764-769.\nSCORE reuse: 20\nJUSTIFICATION reuse: A capability search across reckon/crew found pid start checks in reckon/crew/process_liveness.py:404-407 but no existing per-exec publisher, and reckon/crew/dispatch_claims.py:588-610 extends the claim owner instead of duplicating it.\nFINDING tests/test_a_reexec_never_orphans_a_dispatch.py:56 non-blocking: The recorded process start time is compared with the same _process_start_time helper used to write it, so a wrong helper result moves both sides together; exempted because the three independent reclaim/refusal assertions and their red controls protect this node's behavior.\nASSERTION tests/test_a_reexec_never_orphans_a_dispatch.py:51 fails if importing dispatch_claims in another process does not publish its identity file.\nASSERTION tests/test_a_reexec_never_orphans_a_dispatch.py:56 fails only if the record and a second call to the same start-time helper disagree; it does not catch a shared helper regression.\nASSERTION tests/test_a_reexec_never_orphans_a_dispatch.py:57 fails if the recorded identity differs from the published file.\nASSERTION tests/test_a_reexec_never_orphans_a_dispatch.py:62-65 fail if identity mismatch does not reclaim the old claim, archives the wrong run, omits the archive, or fails to write the second run's claim.\nASSERTION tests/test_a_reexec_never_orphans_a_dispatch.py:73 fails if a newly recorded identity differs from its published file.\nASSERTION tests/test_a_reexec_never_orphans_a_dispatch.py:75-78 fail if a matching identity permits a competing claim or overwrites the original run.\nASSERTION tests/test_a_reexec_never_orphans_a_dispatch.py:89-92 fail if an identity-free legacy claim is reclaimed or overwritten while its pid and start time still match.\n",
+  "review_run_id": "r-20261106T183817945372-review-of-record-a-perexec-identity-on-each-node-dispatch-claim-48d871cf2230",
+  "reviewed_base_sha": "3316c0812de42e7ee6b9e8aa0a6198266e122d23",
+  "reviewed_head_sha": "48d871cf2230aff1d95db3772c0f33d1f70cae01",
+  "reviewed_run_id": "r-20261106T180357375578-record-a-perexec-identity-on-each-node-dispatch-claim",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T18:58:04.017165+00:00",
+  "total": 113
+}
