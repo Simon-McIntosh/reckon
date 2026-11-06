@@ -6,8 +6,10 @@ import hashlib
 import json
 import os
 import re
+import signal
 import socket
 import stat
+import sys
 import time
 from collections.abc import Mapping
 from contextlib import contextmanager, suppress
@@ -49,6 +51,15 @@ def follower_lock_path(project: str, session: str) -> Path:
     readable = re.sub(r"[^A-Za-z0-9._-]", "-", session).strip("-") or "session"
     digest = hashlib.sha256(session.encode()).hexdigest()[:12]
     return follower_dir(project) / f"{readable}-{digest}.lock"
+
+
+def follower_exit_path(project: str, session: str, pid: int) -> Path:
+    """Exit record path for one follower image, named for its own pid.
+
+    The registration is one per project-and-session pair, so a record under the
+    registration's own name would let two followers overwrite each other's end.
+    """
+    return follower_lock_path(project, session).with_suffix(f".{pid}.exit.json")
 
 
 def follower_lease_path(project: str, session: str) -> Path:
@@ -248,6 +259,55 @@ def delivery_mode_of(pid: int, *, hops: int = 4) -> str | None:
 DELIVERING_MODES = ("stream", "terminal")
 
 
+class FollowerSignalled(BaseException):
+    """Unwind a follower when a termination signal arrives.
+
+    A dedicated type rather than a ``SystemExit``: an exit code is the
+    follower's own convention, and a signal read as one would be recorded as a
+    deliberate end.
+    """
+
+    def __init__(self, signum: int) -> None:
+        super().__init__(signum)
+        self.signum = int(signum)
+
+    @property
+    def signal_name(self) -> str:
+        try:
+            return signal.Signals(self.signum).name
+        except ValueError:
+            return f"signal-{self.signum}"
+
+
+def _raise_on_signal(signum, _frame) -> None:
+    raise FollowerSignalled(signum)
+
+
+def exit_reason(exc: BaseException | None = None) -> str:
+    """Name why a follower is leaving, from the exception ending its loop.
+
+    A signal wins over anything it interrupts, because the unwind it caused is
+    the reason the process is ending. Without an exception in flight the caller
+    supplied no reason, so the process ended without one being observed.
+    """
+    if exc is None:
+        exc = sys.exc_info()[1]
+    if isinstance(exc, FollowerSignalled):
+        return exc.signal_name
+    if isinstance(exc, SystemExit):
+        from reckon.crew.session_host import SETTLED_EXIT_CODE
+
+        code = exc.code
+        if code == SETTLED_EXIT_CODE:
+            return "settled"
+        if code is None:
+            return "exit-0"
+        return f"exit-{code}"
+    if exc is not None:
+        return type(exc).__name__
+    return "ended"
+
+
 class _FollowerRegistration:
     """One session's delivery registration, claimable now or later.
 
@@ -367,7 +427,7 @@ class _FollowerRegistration:
         if self._handle is not None:
             os.set_inheritable(self._handle.fileno(), False)
 
-    def release(self) -> None:
+    def release(self, reason: str | None = None) -> None:
         """Drop the claim, leaving the file as a record rather than removing it.
 
         Deleting it would orphan a second follower that is holding the same
@@ -375,14 +435,36 @@ class _FollowerRegistration:
         unlinked file, so it would believe it was registered while every reader
         looked up a path that no longer exists. Liveness is the lock plus the
         pid, so a leftover record cannot lie about either.
+
+        A follower that held the claim writes an exit record beside it, so a
+        later reader can tell a settle from a signal or a crash. The record is
+        named for this process's pid: the registration is one per
+        project-and-session pair, and two followers over one pair would
+        otherwise overwrite each other's end.
         """
         if self._handle is None:
             return
         if self.held:
+            self._write_exit_record(reason if reason is not None else exit_reason())
             fcntl.flock(self._handle.fileno(), fcntl.LOCK_UN)
             self.held = False
         self._handle.close()
         self._handle = None
+
+    def _write_exit_record(self, reason: str) -> None:
+        write_json_atomically(
+            follower_exit_path(self.project, self.session, os.getpid()),
+            {
+                "project": self.project,
+                "session": self.session,
+                "pid": os.getpid(),
+                "reason": reason,
+                "exited_at": _utc_now(),
+                "host": socket.gethostname(),
+            },
+            indent=None,
+            mode=0o644,
+        )
 
 
 @contextmanager
@@ -409,11 +491,23 @@ def follower_registration(
     registration = _FollowerRegistration(
         project, session, delivery=delivery or delivery_mode(), scope=scope
     )
+    # A follower killed by a signal leaves the same record a settle does, so
+    # the handler unwinds the loop and the exit reason carries the signal's
+    # name. Installed for the life of the registration and restored after it.
+    previous_handlers: dict[int, Any] = {}
+    for signum in (signal.SIGTERM,):
+        # Not the main thread: there is no handler to install, and the follower
+        # still leaves through whatever ends it.
+        with suppress(ValueError, OSError):
+            previous_handlers[signum] = signal.signal(signum, _raise_on_signal)
     registration.acquire()
     try:
         yield registration
     finally:
-        registration.release()
+        reason = exit_reason()
+        for signum, previous in previous_handlers.items():
+            signal.signal(signum, previous)
+        registration.release(reason)
 
 
 @contextmanager

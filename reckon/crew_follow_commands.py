@@ -169,13 +169,19 @@ class _StationRegistration:
             self.subscriber.register(delivery=self.delivery, scope=self.scope)
         return held
 
-    def release(self) -> None:
+    def release(self, reason: str | None = None) -> None:
+        """Drop the claim, delegating the exit record to the registration.
+
+        A station-attached follower ends through the same registration, so its
+        end is recorded the same way as the producer path's: the reason comes
+        from the exception unwinding the loop, exactly as there.
+        """
         if self._claim is None:
             return
         if self._claim.held:
             self.subscriber.detach()
         self.subscriber.persist = False
-        self._claim.release()
+        self._claim.release(reason)
 
 
 def _station_subscriber_for(
