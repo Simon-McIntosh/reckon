@@ -22,12 +22,23 @@ dispatch record cannot disagree about what a turn cost.</p>
 the live pointer already carries, under <code>~/.claude/projects/*/&lt;session&gt;
 .jsonl</code>. One walk of that root resolves every session on the board
 (<code>_session_transcripts</code>), taking the newest transcript where a session
-is recorded under more than one working directory. The last request is read from
+is recorded under more than one working directory, by
+<code>_latest_transcript</code>. The last request is read from
 the end of the file (<code>_last_assistant_request</code>): the read starts at
-256&#160;KiB, grows to 1&#160;MiB and then 4&#160;MiB, and falls back to a forward
-scan when the request sits deeper. Measured on this workstation, eight live
-coordinators resolved in 20&#160;ms in total, so the board's cost is the read it
-already made rather than a parse of half-gigabyte session files.</p>
+256&#160;KiB, grows to 1&#160;MiB and then 4&#160;MiB, and falls back to the
+dispatch accounting's own forward read (<code>_jsonl_events</code>) when the
+request sits deeper. Measured on this workstation, eight live coordinators
+resolved in 20&#160;ms in total, so the board's cost is the read it already made
+rather than a parse of half-gigabyte session files.</p>
+<p>Nothing about the last request is restated. The charging rule is
+<code>_charged_claude_tokens</code>, the forward read is <code>_jsonl_events</code>,
+and the newest file for a session recorded under two working directories is
+picked by <code>_latest_transcript</code> — all three the dispatch accounting's
+own, so the board and <code>coordinator.authoring_turn</code> cannot disagree
+about which request is last or what it cost. The bounded backwards read is the
+only new iteration, and
+<code>test_a_request_deeper_than_the_tail_is_read_forward</code> holds it to the
+same answer as the shared forward read.</p>
 <p>Three states are kept apart, because collapsing them is how a series reports
 a measurement it never took. A session with no transcript reads
 <code>unmeasured</code> with no figure and no window. A readable transcript whose

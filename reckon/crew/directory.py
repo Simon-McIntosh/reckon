@@ -72,12 +72,17 @@ def _session_transcripts(sessions: Iterable[str]) -> dict[str, Path]:
     The harness names a session's transcript after the session, so a board row
     resolves its own transcript from the session it already carries. One walk of
     the transcript root answers every session on the board, and a session with
-    no transcript is simply absent from the answer.
+    no transcript is simply absent from the answer. Where a session was recorded
+    under more than one working directory, the newest file wins, by the rule the
+    dispatch accounting already picks a transcript with (``_latest_transcript``)
+    rather than a second ordering that could disagree with it.
     """
+    from reckon.crew.dispatch_accounting import _latest_transcript
+
     wanted = {str(session) for session in sessions if str(session or "").strip()}
     if not wanted:
         return {}
-    found: dict[str, tuple[int, Path]] = {}
+    candidates: dict[str, list[Path]] = defaultdict(list)
     try:
         directories = sorted(
             directory for directory in _TRANSCRIPT_ROOT.iterdir() if directory.is_dir()
@@ -90,16 +95,14 @@ def _session_transcripts(sessions: Iterable[str]) -> dict[str, Path]:
         except OSError:
             continue
         for path in paths:
-            if path.stem not in wanted:
-                continue
-            try:
-                stamp = path.stat().st_mtime_ns
-            except OSError:
-                continue
-            held = found.get(path.stem)
-            if held is None or stamp > held[0]:
-                found[path.stem] = (stamp, path)
-    return {session: path for session, (_stamp, path) in found.items()}
+            if path.stem in wanted:
+                candidates[path.stem].append(path)
+    found: dict[str, Path] = {}
+    for session, paths in candidates.items():
+        newest = _latest_transcript(paths)
+        if newest is not None:
+            found[session] = newest
+    return found
 
 
 def _last_assistant_request(path: Path) -> dict[str, Any] | None:
@@ -107,13 +110,15 @@ def _last_assistant_request(path: Path) -> dict[str, Any] | None:
 
     The latest request is the one the context figure describes, and it is read
     from the end of the file so a board read does not parse a transcript that can
-    be half a gigabyte. The charging rule is the dispatch reader's own
-    (``_charged_claude_tokens``), which is what records
-    ``coordinator.authoring_turn``, so the two surfaces cannot disagree about
-    what a turn cost. A request whose usage charges nothing is skipped, exactly
-    as the forward reader skips it.
+    be half a gigabyte. Both the charging rule (``_charged_claude_tokens``) and
+    the forward read (``_jsonl_events``, the reader that records
+    ``coordinator.authoring_turn``) are the dispatch accounting's own, so the two
+    surfaces cannot disagree about which request is the last one or what it
+    cost. Only the bounded backwards read is new, and it is the same answer for
+    a smaller cost: a request whose usage charges nothing is skipped, exactly as
+    the forward reader skips it.
     """
-    from reckon.crew.dispatch_accounting import _charged_claude_tokens
+    from reckon.crew.dispatch_accounting import _charged_claude_tokens, _jsonl_events
 
     def figure(event: Any) -> dict[str, Any] | None:
         if not isinstance(event, Mapping) or event.get("type") != "assistant":
@@ -158,20 +163,10 @@ def _last_assistant_request(path: Path) -> dict[str, Any] | None:
         if start == 0:
             return None
     # The request is further back than the last figure: read the transcript
-    # forward, which is the read the dispatch accounting does.
+    # forward through the dispatch accounting's own event reader.
     latest = None
-    try:
-        with path.open(encoding="utf-8", errors="replace") as stream:
-            for line in stream:
-                if '"assistant"' not in line:
-                    continue
-                try:
-                    event = json.loads(line)
-                except ValueError:
-                    continue
-                latest = figure(event) or latest
-    except OSError:
-        return None
+    for event in _jsonl_events(path):
+        latest = figure(event) or latest
     return latest
 
 

@@ -220,3 +220,20 @@ def test_the_newest_transcript_of_a_session_is_the_one_read(
 
     assert use["used_tokens"] == 900_000
     assert stale.is_file()
+
+
+def test_a_request_deeper_than_the_tail_is_read_forward(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The tail read starts inside a line and drops the fragment it lands in, so a
+    # tail shorter than the last request cannot see it. The reader then falls
+    # back to the forward read the dispatch accounting owns, and answers the same
+    # figure rather than reporting the session unmeasured.
+    record = _seed(tmp_path, monkeypatch, session=SESSION)
+    _transcript(tmp_path / "projects", SESSION)
+    monkeypatch.setattr(directory_module, "_TRANSCRIPT_TAIL_SIZES", (32,))
+
+    use = _row(directory(PROJECT, pointers=[record]), SESSION)["context_use"]
+
+    assert use["status"] == "measured"
+    assert use["used_tokens"] == 250_040
