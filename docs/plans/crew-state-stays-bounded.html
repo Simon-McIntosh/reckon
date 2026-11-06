@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;the-monitor-reads-each-fact-once#s12&quot;],&quot;s5&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s7&quot;:[&quot;crew-state-stays-bounded#s3&quot;],&quot;s8&quot;:[&quot;crew-state-stays-bounded#s7&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <title>Crew State Stays Bounded | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="60">
-<meta name="plan-modified" content="2026-11-05">
+<meta name="plan-version" content="61">
+<meta name="plan-modified" content="2026-11-06">
 </head>
 <body>
   <main class="plan-doc">
@@ -246,6 +246,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s2" data-id="c-20261023-s2-owners" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
     <div class="r-comment-body"><p>Design review on 2026-10-23: <code>supervisor.json</code>, composed at dispatch by <code>_supervisor_spec</code> in <code>reckon/crew/dispatch_launch.py</code>, already carries <code>argv</code> in the run directory, so §2 should extend it rather than add a second sidecar. The review also lists the live-pointer read sites §2 must route, among them <code>reckon/run_record.py</code>, <code>reckon/crew/promotion.py</code>, <code>reckon/crew/queue_admission.py</code>, <code>reckon/crew/recovery_watch.py</code> and <code>reckon/serve.py</code>.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-park-s2-20261106" data-who="reckon-build" data-when="2026-11-06T12:58:00Z">
+    <div class="r-comment-body"><p>Node <code>the-first-six-fields-leave-the-live-pointer</code> (run <code>r-20261105T072351171046</code>) was stopped and discarded on 2026-11-06 at 13:58 to release its claims on <code>dispatch.py</code>, <code>promotion.py</code> and <code>queue_admission.py</code>. Two admission and launch fixes from another session were queued behind them, and this run could not land within about two hours. It had delivered five commits on base <code>5cb869148e</code>: a3950714f8, 1a66484eb7, 393a6c68f0, 45d1bb6260 and a01b008cd8, 11 files, 496 lines added. They move six dispatch fields to run detail and migrate the readers it could reach. One reader stays open: <code>reckon/crew/dispatch_sessions.py:933</code> reads <code>argv</code> from the slim pointer on the observe and resume paths. The commits are kept as a patch series in <code>~/.config/reckon/crew/runs/r-20261105T072351171046-the-first-six-fields-leave-the-live-pointer/parked-commits/</code>, and the worktree is withheld from removal. The node is to be dispatched again after the admission fixes land, with <code>dispatch_sessions.py</code> in scope. Its sibling <code>the-dispatch-time-fields-leave-the-live-pointer</code> was discarded with it and goes behind it.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261023T102142975294-review-of-only-a-run-something-can-still-need-keeps-its-directory-cee4634d6dfb" data-who="reckon-build" data-when="2026-10-23T11:00:38.141Z">
     <div class="r-comment-body"><p>Reviewed run r-20261023T090019521065-only-a-run-something-can-still-need-keeps-its-directory at base ad415ded61249c82a3302f00f9a579685b9274bd / head cee4634d6dfb5b8e7bbd32136e91c66894d311fe: scores goal 18, evidence 14, scope 19, durability 14, fit 16, reuse 4; added failures 0; five non-blocking findings (a duplicated duration parser, a duplicated committed-review walk, an untested grace parser, a fragment that misstates the negative control, and a checkout_path omission).</p></div>
