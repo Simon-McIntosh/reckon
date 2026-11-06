@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite records 5 failing ids at 8aaf1035 and after_suite records 0 at bd7c77f5 with EXIT=0, so the change adds no failure; the five baseline ids are the node's own new cases, which the base revision is not expected to satisfy).",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:4907",
+    "reckon/crew/queue_admission.py:4936",
+    "reckon/crew/queue_admission.py:4230",
+    "reckon/crew/directory.py:196",
+    "reckon/crew/obligations.py:1217",
+    "reckon/crew/obligations.py:1788",
+    "reckon/crew/obligation_snapshot.py:1466",
+    "reckon/crew/query.py:456"
+  ],
+  "completed_at": "2026-11-06T07:02:24.858Z",
+  "dispatched_at": "2026-11-06T06:51:27Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "3965",
+      "severity": "non-blocking",
+      "text": "_priority_override copies reckon/crew/queue_order.py:68 _override verbatim (same body, same bool guard) rather than importing the owner; queue_admission already imports queue_order at line 33, so the two readings of priority_override can drift apart with no test noticing."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "4005",
+      "severity": "non-blocking",
+      "text": "the delivered-review exemption in priorities_first is not exercised by any test (no test in tests/ references priorities_first), so hoisting a raised request past or behind a review run is behaviour nothing asserts; only its effect through fair_share_admission_order on non-review requests is covered."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/queue_admission.py:4907/4936 (admit_until_stopped calls admit_once), :4230 (admit_once builds the order via fair_share_admission_order), reckon/crew/directory.py:196, reckon/crew/obligations.py:1217 and :1788, reckon/crew/obligation_snapshot.py:1466 and reckon/crew/query.py:456 (all call queued_placements).",
+    "diff": "read all three commits against 8aaf103: f885bc9269 adds the fenced-hold skip; bd7c77f59f adds the six-case test file and the priorities_first hoist with its two call sites; 2c43d70f0c adds the 68-line evidence fragment and two formatting-only line changes.",
+    "done_when": "\u00a730's done_when names tests/test_a_held_request_holds_nothing_behind_it.py with six cases (four holds, one control, one cross-lane reprioritisation); the file carries all six and they pass (6 passed, EXIT=0, re-run by me), but the done_when's clause that the importing test files add no failure against the base revision is not evidenced: the wide importer population was stopped incomplete and the manifest records it under retry_failures rather than claiming a result.",
+    "goal": "\u00a730's deliverable is that a held request fences nothing behind it and that a priority override ranks across the lane; reckon/crew/queue_admission.py:754 _non_binding_holds plus the fenced argument at :763 implement the first and :3973 priorities_first the second, both present in the landed diff.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T110043797131-a-held-request-holds-nothing-behind-it/manifest.md; status complete, commits f885bc9269/bd7c77f59f/2c43d70f0c, head 6 passed, base 5 failed / 1 passed, negative control 4 failed / 2 passed, ruff clean, and the wide importer gate recorded as incomplete rather than as a pass.",
+    "write_paths": "the manifest declares reckon/crew/queue_admission.py, tests/test_a_held_request_holds_nothing_behind_it.py and this node's evidence fragment/figure directory; git diff --stat 8aaf103..2c43d70 lists exactly those three files (queue_admission.py +104/-5, the test +343, the fragment +68) and nothing else."
+  },
+  "justifications": {
+    "durability": "logs/negative-control.log proves the guard by reinstating the regression (fenced=() again) and reddening four of the six cases, so the added assertions fail when the change is reverted; the review-preservation branch at reckon/crew/queue_admission.py:4005 has no test (finding below).",
+    "evidence": "the three logs under the run's logs/ carry a revision-and-tree header, a command line, the module path actually imported and a terminal EXIT line (head 6 passed EXIT=0, base 5 failed EXIT=1, control 4 failed EXIT=1), but \u00a730's clause that the importer population adds no base failure is unmeasured: the manifest records that population stopped at ~90% without a summary line.",
+    "fit": "the change follows the module's idiom (module-level frozenset of verdict names, a small predicate, a docstring per public helper) and introduces no plan label, ticket reference or version suffix; the only blemish is a duplicated local import of _is_review_run at :3990 and :4095.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:4382 passes fenced=_non_binding_holds(verdicts) into the overlap pre-check and :3973 priorities_first is applied by both fair_share_admission_order and queued_placements, so each \u00a730 deliverable has landed code behind it.",
+    "reuse": "reckon/crew/queue_admission.py:3965 _priority_override re-implements reckon/crew/queue_order.py:68 _override character for character instead of reusing the owner, so the added definition duplicates a capability the repository already holds.",
+    "scope_discipline": "git diff --stat 8aaf103..2c43d70 changes only reckon/crew/queue_admission.py, tests/test_a_held_request_holds_nothing_behind_it.py and this node's own evidence fragment, all inside the manifest's declared write paths."
+  },
+  "node": "review-of-a-held-request-holds-nothing-behind-it-2c43d70f0c80",
+  "node:reviewed": "a-held-request-holds-nothing-behind-it",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a730's deliverable is that a held request fences nothing behind it and that a priority override ranks across the lane; reckon/crew/queue_admission.py:754 _non_binding_holds plus the fenced argument at :763 implement the first and :3973 priorities_first the second, both present in the landed diff.\nVERDICT done_when: \u00a730's done_when names tests/test_a_held_request_holds_nothing_behind_it.py with six cases (four holds, one control, one cross-lane reprioritisation); the file carries all six and they pass (6 passed, EXIT=0, re-run by me), but the done_when's clause that the importing test files add no failure against the base revision is not evidenced: the wide importer population was stopped incomplete and the manifest records it under retry_failures rather than claiming a result.\nVERDICT write_paths: the manifest declares reckon/crew/queue_admission.py, tests/test_a_held_request_holds_nothing_behind_it.py and this node's evidence fragment/figure directory; git diff --stat 8aaf103..2c43d70 lists exactly those three files (queue_admission.py +104/-5, the test +343, the fragment +68) and nothing else.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T110043797131-a-held-request-holds-nothing-behind-it/manifest.md; status complete, commits f885bc9269/bd7c77f59f/2c43d70f0c, head 6 passed, base 5 failed / 1 passed, negative control 4 failed / 2 passed, ruff clean, and the wide importer gate recorded as incomplete rather than as a pass.\nVERDICT diff: read all three commits against 8aaf103: f885bc9269 adds the fenced-hold skip; bd7c77f59f adds the six-case test file and the priorities_first hoist with its two call sites; 2c43d70f0c adds the 68-line evidence fragment and two formatting-only line changes.\nCALL_SITES: reckon/crew/queue_admission.py:4907, reckon/crew/queue_admission.py:4936, reckon/crew/queue_admission.py:4230, reckon/crew/directory.py:196, reckon/crew/obligations.py:1217, reckon/crew/obligations.py:1788, reckon/crew/obligation_snapshot.py:1466, reckon/crew/query.py:456\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:4382 passes fenced=_non_binding_holds(verdicts) into the overlap pre-check and :3973 priorities_first is applied by both fair_share_admission_order and queued_placements, so each \u00a730 deliverable has landed code behind it.\nSCORE evidence: 15\nJUSTIFICATION evidence: the three logs under the run's logs/ carry a revision-and-tree header, a command line, the module path actually imported and a terminal EXIT line (head 6 passed EXIT=0, base 5 failed EXIT=1, control 4 failed EXIT=1), but \u00a730's clause that the importer population adds no base failure is unmeasured: the manifest records that population stopped at ~90% without a summary line.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 8aaf103..2c43d70 changes only reckon/crew/queue_admission.py, tests/test_a_held_request_holds_nothing_behind_it.py and this node's own evidence fragment, all inside the manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: logs/negative-control.log proves the guard by reinstating the regression (fenced=() again) and reddening four of the six cases, so the added assertions fail when the change is reverted; the review-preservation branch at reckon/crew/queue_admission.py:4005 has no test (finding below).\nSCORE fit: 18\nJUSTIFICATION fit: the change follows the module's idiom (module-level frozenset of verdict names, a small predicate, a docstring per public helper) and introduces no plan label, ticket reference or version suffix; the only blemish is a duplicated local import of _is_review_run at :3990 and :4095.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/queue_admission.py:3965 _priority_override re-implements reckon/crew/queue_order.py:68 _override character for character instead of reusing the owner, so the added definition duplicates a capability the repository already holds.\nFINDING reckon/crew/queue_admission.py:3965 non-blocking: _priority_override copies reckon/crew/queue_order.py:68 _override verbatim (same body, same bool guard) rather than importing the owner; queue_admission already imports queue_order at line 33, so the two readings of priority_override can drift apart with no test noticing.\nFINDING reckon/crew/queue_admission.py:4005 non-blocking: the delivered-review exemption in priorities_first is not exercised by any test (no test in tests/ references priorities_first), so hoisting a raised request past or behind a review run is behaviour nothing asserts; only its effect through fair_share_admission_order on non-review requests is covered.\n",
+  "review_run_id": "r-20261106T062958589532-review-of-a-held-request-holds-nothing-behind-it-2c43d70f0c80",
+  "reviewed_base_sha": "8aaf1035b1bdb61dfcb43669648877c85be63c5e",
+  "reviewed_head_sha": "2c43d70f0c80c36e4b580c53ba3b6f0f3bb80637",
+  "reviewed_run_id": "r-20261105T110043797131-a-held-request-holds-nothing-behind-it",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T07:58:00+00:00",
+  "total": 94
+}
