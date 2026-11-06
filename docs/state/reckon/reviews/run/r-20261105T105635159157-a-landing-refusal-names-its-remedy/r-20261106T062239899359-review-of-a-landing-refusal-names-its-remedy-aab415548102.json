@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:1279 (land_once",
+    "the writer of admission_landing.remedy)",
+    "reckon/crew/obligations.py:1164 (_review_duty_item",
+    "reached from obligations.obligations and obligation_snapshot.py:1437)"
+  ],
+  "completed_at": "2026-11-06T06:45:48.387Z",
+  "dispatched_at": "2026-11-06T06:34:43Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "line": "375",
+      "severity": "non-blocking",
+      "text": "non-blocking: the manifest is parsed unconditionally, where the promotion this docstring claims to mirror goes through _fresh_manifest (promotion_checks.py:451) and fills nothing from a manifest whose mtime does not postdate the pointer's manifest_baseline_mtime_ns, so for a stale manifest the remedy names a log the promotion never reads and asks for an EXIT=<n> record in it while the repair the coordinator actually owes (rewriting the manifest for this attempt) goes unnamed."
+    },
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "line": "380",
+      "severity": "non-blocking",
+      "text": "non-blocking: the first-test_logs-entry selection is written a second time here rather than taken from promotion_records.py:338, so if the promotion's fill changes which entry it reads the remedy names a different log and the coordinator edits the wrong file."
+    },
+    {
+      "file": "tests/test_a_landing_refusal_names_its_remedy.py",
+      "line": "173",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion reads refused[\"guard\"] against MISSING_EXIT_STATUS_GUARD, the literal the test supplies to _land at line 165, so it holds whatever land_once does with the guard and survives a regression in the remedy it was added beside."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against b4ec6217eb \u2014 8105ae004f adds _landing_remedy and its helpers to queue_landing.py plus a remedy append in obligations.py:1164, and aab4155481 adds the evidence fragment; 338 insertions and 7 deletions across four files, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_a_landing_refusal_names_its_remedy.py with two cases (the row names the log and the missing record; the quoted exit form is still refused); both are present at lines 154 and 188 and the manifest records the gate run as 2 passed.",
+    "goal": "the node's goal is that a landing refusal names its remedy; plan \u00a727 states it for a gate log lacking a terminal EXIT=<n> record, and reckon/crew/queue_landing.py:440 _landing_remedy derives that sentence from the run's manifest and records it as admission_landing.remedy.",
+    "manifest": "read; status complete, it records the gate (2 passed), the negative control (1 failed, 1 passed, EXIT=1) and both population arms (base 5 failed/487 passed, head 5 failed/489 passed) with their log paths and exit statuses.",
+    "write_paths": "the manifest declares five paths (queue_landing.py, obligations.py, the new test, the evidence fragment, a figures directory); the diff touches four of them and nothing outside them, and the figures directory was correctly left unused."
+  },
+  "justifications": {
+    "durability": "the negative control proves tests/test_a_landing_refusal_names_its_remedy.py:182 reddens when the remedy is dropped, though the assertion at line 173 compares a guard the test itself handed to _land and cannot fail.",
+    "evidence": "the new test is the done-when's own file and its recorded run is 2 passed in after-node-gate.log, while negative-control.log shows the remedy-free row failing the very assertion that reads the log path and EXIT=<n>.",
+    "fit": "queue_landing.py:356-358 follows the module's module-level constant and `#:` comment idiom and every added name states its mechanism, and ruff check reports nothing on the three staged Python paths.",
+    "goal_fidelity": "queue_landing.py:404 _gate_check_remedy names the log the manifest cites and the terminal EXIT=<n> record it must end in, and the exit reader it consults (promotion_evidence._recorded_exit_status) is unchanged so the quoted form stays refused.",
+    "reuse": "queue_landing.py:368 reuses the owners _manifest_relative_path and _recorded_exit_status, but line 380 re-derives the first-test_logs selection that promotion_records.py:338 already owns and the parse skips the freshness gate at promotion_checks.py:451.",
+    "scope_discipline": "the four changed paths are all inside the manifest's declared write paths and the change carries no refactor of the surrounding landing pass."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a landing refusal names its remedy; plan \u00a727 states it for a gate log lacking a terminal EXIT=<n> record, and reckon/crew/queue_landing.py:440 _landing_remedy derives that sentence from the run's manifest and records it as admission_landing.remedy.\nVERDICT done_when: the done_when names tests/test_a_landing_refusal_names_its_remedy.py with two cases (the row names the log and the missing record; the quoted exit form is still refused); both are present at lines 154 and 188 and the manifest records the gate run as 2 passed.\nVERDICT write_paths: the manifest declares five paths (queue_landing.py, obligations.py, the new test, the evidence fragment, a figures directory); the diff touches four of them and nothing outside them, and the figures directory was correctly left unused.\nVERDICT manifest: read; status complete, it records the gate (2 passed), the negative control (1 failed, 1 passed, EXIT=1) and both population arms (base 5 failed/487 passed, head 5 failed/489 passed) with their log paths and exit statuses.\nVERDICT diff: read commit by commit against b4ec6217eb \u2014 8105ae004f adds _landing_remedy and its helpers to queue_landing.py plus a remedy append in obligations.py:1164, and aab4155481 adds the evidence fragment; 338 insertions and 7 deletions across four files, all inside the declared scope.\nCALL_SITES: reckon/crew/queue_landing.py:1279 (land_once, the writer of admission_landing.remedy), reckon/crew/obligations.py:1164 (_review_duty_item, reached from obligations.obligations and obligation_snapshot.py:1437)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: queue_landing.py:404 _gate_check_remedy names the log the manifest cites and the terminal EXIT=<n> record it must end in, and the exit reader it consults (promotion_evidence._recorded_exit_status) is unchanged so the quoted form stays refused.\nSCORE evidence: 19\nJUSTIFICATION evidence: the new test is the done-when's own file and its recorded run is 2 passed in after-node-gate.log, while negative-control.log shows the remedy-free row failing the very assertion that reads the log path and EXIT=<n>.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the four changed paths are all inside the manifest's declared write paths and the change carries no refactor of the surrounding landing pass.\nSCORE durability: 17\nJUSTIFICATION durability: the negative control proves tests/test_a_landing_refusal_names_its_remedy.py:182 reddens when the remedy is dropped, though the assertion at line 173 compares a guard the test itself handed to _land and cannot fail.\nSCORE fit: 18\nJUSTIFICATION fit: queue_landing.py:356-358 follows the module's module-level constant and `#:` comment idiom and every added name states its mechanism, and ruff check reports nothing on the three staged Python paths.\nSCORE reuse: 15\nJUSTIFICATION reuse: queue_landing.py:368 reuses the owners _manifest_relative_path and _recorded_exit_status, but line 380 re-derives the first-test_logs selection that promotion_records.py:338 already owns and the parse skips the freshness gate at promotion_checks.py:451.\nFINDING reckon/crew/queue_landing.py:375 non-blocking: the manifest is parsed unconditionally, where the promotion this docstring claims to mirror goes through _fresh_manifest (promotion_checks.py:451) and fills nothing from a manifest whose mtime does not postdate the pointer's manifest_baseline_mtime_ns, so for a stale manifest the remedy names a log the promotion never reads and asks for an EXIT=<n> record in it while the repair the coordinator actually owes (rewriting the manifest for this attempt) goes unnamed. \nFINDING reckon/crew/queue_landing.py:380 non-blocking: the first-test_logs-entry selection is written a second time here rather than taken from promotion_records.py:338, so if the promotion's fill changes which entry it reads the remedy names a different log and the coordinator edits the wrong file.\nFINDING tests/test_a_landing_refusal_names_its_remedy.py:173 non-blocking: the assertion reads refused[\"guard\"] against MISSING_EXIT_STATUS_GUARD, the literal the test supplies to _land at line 165, so it holds whatever land_once does with the guard and survives a regression in the remedy it was added beside.",
+  "review_run_id": "r-20261106T062239899359-review-of-a-landing-refusal-names-its-remedy-aab415548102",
+  "reviewed_base_sha": "b4ec6217eb8934ae611c82f5958c51f4eeb338ac",
+  "reviewed_head_sha": "aab415548102ea5c0782011f06ba1c3726c81a87",
+  "reviewed_run_id": "r-20261105T105635159157-a-landing-refusal-names-its-remedy",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T07:16:19.342919+00:00",
+  "total": 107
+}
