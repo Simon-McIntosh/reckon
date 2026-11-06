@@ -1,0 +1,53 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-06T12:48:50.200Z",
+  "dispatched_at": "2026-11-06T12:41:08Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_repair_dispatch.py",
+      "id": "f476f3f1ce8",
+      "line": "877",
+      "severity": "non-blocking",
+      "summary": "The integration guard returns false when the reviewed head equals the branch tip, and a hand merge that fast-forwards main onto the reviewed head leaves exactly that state, so such a run still starts a repair round despite the plan's rule that no round starts for a head the integration branch already carries."
+    },
+    {
+      "file": "reckon/crew/recovery_repair_dispatch.py",
+      "id": "fd9c406a89c",
+      "line": "879",
+      "severity": "non-blocking",
+      "summary": "_reviewed_head_is_integrated inlines the git merge-base --is-ancestor probe that reckon/crew/promotion_scope.py:2461 (_revision_is_ancestor) already owns; the addition duplicates that capability rather than extending it, where dispatch_claims.py:2038 imports the owner lazily for the same reason a lazy import would work here."
+    },
+    {
+      "file": "docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-repair-round-reads-each-findings-severity-and-its.html",
+      "id": "f65f5f92ff9",
+      "line": "9",
+      "severity": "non-blocking",
+      "summary": "The landing record cites the head arm as 3a790e840e..adca106f98, but adca106f98 resolves to no object; the head commit is adca106f968ec9e730e5b3d370ae41c57884a586, as the manifest records it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T113435098365-a-repair-round-reads-each-findings-severity-and-its/manifest.md",
+      "id": "f7ef4e693ad",
+      "line": "16",
+      "severity": "non-blocking",
+      "summary": "after_suite names only the new test (0 failures) while baseline_suite names the 181-file importer population (2 failures), so the recorded pair does not measure the done_when's 'add no failure against the base revision' claim; the matched head arm exists only in after-importers.log and the artifacts line."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261106T123725729642-review-of-a-repair-round-reads-each-findings-severity-and-its-ab95fedaef7a",
+  "reviewed_base_sha": "3a790e840ef31e09301d88e44cf7a9c3709c008c",
+  "reviewed_head_sha": "ab95fedaef7abbb90df8768343108baaa89a071c",
+  "reviewed_run_id": "r-20261106T113435098365-a-repair-round-reads-each-findings-severity-and-its",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T12:52:43.037718+00:00",
+  "total": 91
+}
