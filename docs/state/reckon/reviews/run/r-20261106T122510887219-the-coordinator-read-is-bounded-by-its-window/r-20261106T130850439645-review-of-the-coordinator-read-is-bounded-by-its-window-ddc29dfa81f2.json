@@ -1,0 +1,85 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/plan_coordinator.py:_run_rows",
+    "reckon/crew/plan_coordinator.py:resolve_plan_coordinators",
+    "reckon/roadmap.py:3489",
+    "reckon/crew/directory.py:450"
+  ],
+  "call_sites_emission": "sites",
+  "completed_at": "2026-11-06T13:19:31.476Z",
+  "dispatched_at": "2026-11-06T13:10:55Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-coordinator-sees-the-board/the-coordinator-read-is-bounded-by-its-window.html",
+      "line": "31",
+      "severity": "blocking",
+      "text": "blocking: the plan's Done-when (docs/plans/a-coordinator-sees-the-board.html:223) requires the head resolve_plan_coordinators call to complete in under 10 s on the fleet node; the fragment records 16.638 s (line 26) and the manifest's evidence_inputs says the figure is NOT met, so the section's own quantitative measure fails. The residual _plans_and_owners read named in outside_scope sits in reckon/crew/plan_coordinator.py, a file inside this node's declared write paths, so the gap is not purely outside its fence."
+    },
+    {
+      "file": "docs/evidence/fragments/a-coordinator-sees-the-board/the-coordinator-read-is-bounded-by-its-window.html",
+      "line": "22",
+      "severity": "non-blocking",
+      "text": "non-blocking: the probe caption cites 'docs/state/reckon at edfcc560019cf11986f621dde414c26d44c3ec94', but that commit changes only docs/plans/the-monitor-shows-the-work-it-watches.html and touches no state, while the probe's own log header (probe_final.log) records the ledger's revision as 93d83155bccb4a07dca6c9638d300cccd713cc0d; a reader reproducing the probe is pointed at state the probe did not read."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T122510887219-the-coordinator-read-is-bounded-by-its-window/manifest.md",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "non-blocking: baseline_suite records completed true with failure_count 0 for coordinator-armed-base.log, whose body reads 'ERROR: file or directory not found ... no tests ran in 0.00s' and ends EXIT=4; a run that collected nothing is recorded as a completed arm, while the as-delivered manifest.md.asdelivered held the real base arm (suite_node_base.log: 1 failed, 4 passed, EXIT=1)."
+    },
+    {
+      "file": "tests/test_the_coordinator_read_is_bounded_by_its_window.py",
+      "line": "179",
+      "severity": "non-blocking",
+      "text": "non-blocking: test_the_bound_is_the_document_time_not_the_run_id asserts only relations among constants the test itself computes (id_stamp parsed from LONG_QUEUED[0], BOUND from NOW and WINDOW-derived BOUND at line 39), so it exercises no production path and cannot fail on a regression of the bound; it guards fixture separation, and counting it as coverage overstates durability."
+    },
+    {
+      "file": "tests/test_the_coordinator_read_is_bounded_by_its_window.py",
+      "line": "39",
+      "severity": "non-blocking",
+      "text": "non-blocking: no assertion pins DOCUMENT_AGE_MARGIN. The fixture's stamps sit 50 h, 27 h and 200 days from the bound, so setting the production margin to zero (reckon/crew/plan_coordinator.py:70) passes all five tests, leaving the clock-skew cushion the margin exists for unguarded."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified 4 production call sites: reckon/crew/plan_coordinator.py:_run_rows (the changed caller), reckon/crew/plan_coordinator.py:resolve_plan_coordinators, reckon/roadmap.py:3489 and reckon/crew/directory.py:450; the two unchanged callers of run_rows_from_documents (reckon/crew/directory.py:513, reckon/crew/obligations.py:1356) pass no bound and keep the unbounded behaviour.",
+    "diff": "Three commits (15b666b875, 3ff783a8eb, ddc29dfa81) against base 1bea7a6b change two production modules, add one hermetic test file and add one evidence fragment; no out-of-scope path and no behaviour beyond the bound is touched.",
+    "done_when": "The done_when (prompt.txt:123, docs/plans/a-coordinator-sees-the-board.html:223) names a three-kind fixture, a read count through the code's own reader, failure at base, base-answer equivalence, and an under-10-second probe; the fixture and read count are asserted at tests/test_the_coordinator_read_is_bounded_by_its_window.py:136-214, but the probe measured 16.638 s (the-coordinator-read-is-bounded-by-its-window.html:26), so the quantitative measure is unmet.",
+    "goal": "The node goal is to give the ledger's per-run document reader a modification-time lower bound so the resolver reads only documents written inside its window while keeping every coordinator; reckon/ledger.py:1692 and reckon/crew/plan_coordinator.py:282 deliver exactly that and the probe digest is equal on both arms.",
+    "manifest": "manifest.md reports head 5 passed, names its logs and records the 16.638 s miss honestly under evidence_inputs and outside_scope, but its baseline_suite at manifest.md:25 marks an arm 'completed' with failure_count 0 whose log reads 'no tests ran ... EXIT=4'.",
+    "write_paths": "The declared paths are the ledger, the plan-coordinator resolver, one new test file, and the evidence fragment/figures directory; the diff writes only reckon/ledger.py, reckon/crew/plan_coordinator.py, tests/test_the_coordinator_read_is_bounded_by_its_window.py and the fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_the_coordinator_read_is_bounded_by_its_window.py:136 fails at the base arm (suite_node_base.log: 1 failed, 4 passed, EXIT=1) and reddens under the declared mutation (negative_control_run_id_bound.log: 3 failed), but nothing pins DOCUMENT_AGE_MARGIN and test_the_bound_is_the_document_time_not_the_run_id at :179 exercises no production code.",
+    "evidence": "The gate measures the done_when's read count and equivalence through a monkeypatched ledger._read_run (tests/test_the_coordinator_read_is_bounded_by_its_window.py:136-167) and its result is recorded, but the same done_when's under-10-second probe figure is recorded as 16.638 s at the-coordinator-read-is-bounded-by-its-window.html:31, so the stated measure is not met.",
+    "fit": "reckon/ledger.py:1692 _run_files_written_since follows the module's private-helper idiom beside _run_files at :926, and the new names (DOCUMENT_AGE_MARGIN, modified_since) describe mechanism with no plan, stage or ticket label.",
+    "goal_fidelity": "reckon/crew/plan_coordinator.py:282 passes (horizon - DOCUMENT_AGE_MARGIN) into reckon/ledger.py:1745 run_rows_from_documents, and the probe's equal coordinator digest d4c95976004f09dd on both arms shows every plan keeps the coordinator the node was told to keep.",
+    "reuse": "No other bounded directory listing exists in reckon/ (the only os.scandir use in the package is this diff at reckon/ledger.py:1712), but _run_files_written_since duplicates _run_files's directory resolution and *.json selector at reckon/ledger.py:926 instead of parameterising that owner.",
+    "scope_discipline": "Every path in the diff (reckon/ledger.py, reckon/crew/plan_coordinator.py, tests/test_the_coordinator_read_is_bounded_by_its_window.py, docs/evidence/fragments/a-coordinator-sees-the-board/the-coordinator-read-is-bounded-by-its-window.html) is inside the manifest's orientation_write_paths and the dispatch FENCE-SCOPE list."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to give the ledger's per-run document reader a modification-time lower bound so the resolver reads only documents written inside its window while keeping every coordinator; reckon/ledger.py:1692 and reckon/crew/plan_coordinator.py:282 deliver that and the probe digest d4c95976004f09dd is equal on both arms.\nVERDICT done_when: the done_when at prompt.txt:123 and docs/plans/a-coordinator-sees-the-board.html:223 names a three-kind fixture, a read count through the code's own reader, failure at base, base-answer equivalence and an under-10-second probe; tests/test_the_coordinator_read_is_bounded_by_its_window.py:136 asserts the fixture and read count and the base arm fails, but the probe measured 16.638 s at the-coordinator-read-is-bounded-by-its-window.html:26, so the quantitative measure is unmet.\nVERDICT write_paths: the declared paths are reckon/ledger.py, reckon/crew/plan_coordinator.py, tests/test_the_coordinator_read_is_bounded_by_its_window.py and the evidence fragment; every path in the diff is inside them.\nVERDICT manifest: manifest.md reports head 5 passed and names its logs, and records the 16.638 s miss honestly under evidence_inputs and outside_scope, but its baseline_suite at manifest.md:25 marks an arm completed with failure_count 0 whose log reads no tests ran and ends EXIT=4.\nVERDICT diff: three commits 15b666b875, 3ff783a8eb and ddc29dfa81 against base 1bea7a6b change two production modules, add one hermetic test file and add one evidence fragment, with no out-of-scope path and no behaviour beyond the bound.\nCALL_SITES: reckon/crew/plan_coordinator.py:_run_rows, reckon/crew/plan_coordinator.py:resolve_plan_coordinators, reckon/roadmap.py:3489, reckon/crew/directory.py:450\nSCORE goal_fidelity: 19\nSCORE evidence: 12\nSCORE scope_discipline: 19\nSCORE durability: 17\nSCORE fit: 18\nSCORE reuse: 14\nJUSTIFICATION goal_fidelity: reckon/crew/plan_coordinator.py:282 passes horizon less DOCUMENT_AGE_MARGIN into reckon/ledger.py:1745 and the probe digest is equal on both arms.\nJUSTIFICATION evidence: the gate counts reads through the code's own reader at tests/test_the_coordinator_read_is_bounded_by_its_window.py:136, but the done_when's under-10-second figure is recorded unmet at the-coordinator-read-is-bounded-by-its-window.html:31.\nJUSTIFICATION scope_discipline: every diff path is inside the orientation_write_paths listed in manifest.md.\nJUSTIFICATION durability: tests/test_the_coordinator_read_is_bounded_by_its_window.py:136 fails at the base and reddens under the declared mutation, but nothing pins DOCUMENT_AGE_MARGIN.\nJUSTIFICATION fit: reckon/ledger.py:1692 follows the private-helper idiom of _run_files at reckon/ledger.py:926 and introduces no plan, stage or ticket label.\nJUSTIFICATION reuse: no bounded directory listing exists elsewhere in reckon/, but _run_files_written_since duplicates the directory resolution and json selector of _run_files at reckon/ledger.py:926.\nFINDING docs/evidence/fragments/a-coordinator-sees-the-board/the-coordinator-read-is-bounded-by-its-window.html:31 blocking: the plan Done-when requires the head call under 10 s and the fragment records 16.638 s, so the section's quantitative measure fails while the residual read sits in reckon/crew/plan_coordinator.py, a declared write path.\nFINDING docs/evidence/fragments/a-coordinator-sees-the-board/the-coordinator-read-is-bounded-by-its-window.html:22 non-blocking: the caption cites edfcc560 for docs/state/reckon, but that commit changes only a plan document and the probe's own log names 93d83155 as the ledger revision.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T122510887219-the-coordinator-read-is-bounded-by-its-window/manifest.md:25 non-blocking: baseline_suite records completed true with failure_count 0 for a log that reads no tests ran and ends EXIT=4, while the as-delivered arm was 1 failed and 4 passed.\nFINDING tests/test_the_coordinator_read_is_bounded_by_its_window.py:179 non-blocking: test_the_bound_is_the_document_time_not_the_run_id asserts only relations among constants the test computes itself, so it exercises no production path and cannot fail on a regression.\nFINDING tests/test_the_coordinator_read_is_bounded_by_its_window.py:39 non-blocking: no assertion pins DOCUMENT_AGE_MARGIN, so setting the production margin to zero passes all five tests and leaves the skew cushion unguarded.\n",
+  "review_run_id": "r-20261106T130850439645-review-of-the-coordinator-read-is-bounded-by-its-window-ddc29dfa81f2",
+  "reviewed_base": "1bea7a6b0dda798763f8cfa3af644643bc47c64c",
+  "reviewed_base_sha": "1bea7a6b0dda798763f8cfa3af644643bc47c64c",
+  "reviewed_head": "ddc29dfa81f29198f3d6782109e5e9d4aac2a10e",
+  "reviewed_head_sha": "ddc29dfa81f29198f3d6782109e5e9d4aac2a10e",
+  "reviewed_run_id": "r-20261106T122510887219-the-coordinator-read-is-bounded-by-its-window",
+  "scores": {
+    "durability": 17,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T13:24:31.531261+00:00",
+  "total": 99
+}
