@@ -88,20 +88,27 @@
     containment. It asserts the path read against the claim map the test
     computes from the fixture — a wrongly kept claim and a wrongly dropped one
     both fail — and asserts the default read against the row, including that the
-    <code>path</code> it offers is answerable by the call it invites. On the
-    base revision the same file fails all seven cases, the default read
+    <code>path</code> it offers is answerable by the call it invites. One path is
+    held by enough runs that its owners alone fill the row, so the paging case
+    walks the cursor to the end and asserts every cursor strictly advances, the
+    walk terminates, and the union of the pages covers every path — naming the
+    dense path in its summary form rather than dropping it. On the
+    base revision the same file fails all eight cases, the default read
     measuring <strong>53,565 characters</strong> against the 24,000 row; after
-    the change all seven pass.
+    the change all eight pass.
   </p>
 
   <p id="the-scopes-read-narrows-to-its-path-control">
-    <strong>The control is the mutation the narrowing case must catch.</strong>
-    With the scopes branch made to ignore its <code>path</code> argument again,
-    five of the seven cases fail — every one that asks about a path, including
-    the refusal of an outside path — and the two default-read cases still pass,
-    so the guard is seen firing on the behaviour it names rather than only
-    passing beside it. The gate logs, the base arm, the after arm and that red
-    run are recorded beside this node's manifest.
+    <strong>The control is the mutation each case must catch.</strong> Two
+    mutations were applied and reverted. With the scopes branch made to ignore
+    its <code>path</code> argument again, five of the eight cases fail — every
+    one that asks about a path, including the refusal of an outside path — and
+    the default-read cases still pass. With the paging branch made to return the
+    unchanged cursor on an empty page, the two paging cases fail and the exact
+    narrowing cases still pass. Each guard is therefore seen firing on the
+    behaviour it names rather than only passing beside it. The gate logs, the
+    base arm, the after arm and both red runs are recorded beside this node's
+    manifest.
   </p>
 
   <p id="the-scopes-read-narrows-to-its-path-caveat">
