@@ -1,0 +1,40 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-06T18:17:45.646Z",
+  "dispatched_at": "2026-11-06T18:10:56Z",
+  "findings": [
+    {
+      "file": "reckon/crew/station_obligations.py",
+      "id": "f398b8832ab",
+      "line": 223,
+      "severity": "non-blocking",
+      "text": "a failed rewrite is reported and never retried because the store row it keys on was already deleted, so the frozen reflex text this node removes can persist for that session after a transient write error"
+    }
+  ],
+  "item_verdicts": {
+    "diff": "pass \u2014 read all five commits against 4dc1488f6e53; the landed change is the rewrite on drop, its helper, the three-case test and the evidence fragment, plus one refactor folding the registration read into a single pass.",
+    "done_when": "pass \u2014 the done_when names tests/test_a_session_without_a_follower_is_told_so.py with three cases; the head gate at 2fd1b62da7 reads 3 passed (logs/head-arm.log) and the base arm reads 1 failed / 2 passed (logs/base-arm.log).",
+    "goal": "pass \u2014 the goal is to tell a session without a follower so; reckon/crew/station_obligations.py:250-287 rewrites each dropped session's snapshot through obligation_snapshot.write_snapshot and stamps a follower block reading live false.",
+    "manifest": "pass \u2014 read; it records status complete, five commits, the gate command and the importer delta, and its failure ids reconcile with the logs (head's five are the base's six minus this node's own test).",
+    "write_paths": "pass \u2014 the declared paths are reckon/crew/station_obligations.py, reckon/crew/obligation_snapshot.py, the new test and the evidence fragment; the diff touches the first, third and fourth and leaves the second unchanged as the manifest states."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to tell a session without a follower so; reckon/crew/station_obligations.py:250 rewrites each dropped session's snapshot through obligation_snapshot.write_snapshot and its follower block at line 278 reads live false.\nVERDICT done_when: the done_when names tests/test_a_session_without_a_follower_is_told_so.py with three cases; the manifest records the head run 3 passed at logs/head-arm.log and the base arm 1 failed / 2 passed at logs/base-arm.log.\nVERDICT write_paths: the declared scope is station_obligations.py, obligation_snapshot.py, the new test and the evidence fragment; the diff touches three of the four and leaves obligation_snapshot.py unchanged, as the manifest states.\nVERDICT manifest: read; it reads status complete with five commits, the literal gate command and the importer delta, and I confirmed the head failure ids are the base's six minus this node's own test.\nVERDICT diff: read commit by commit against 4dc1488f6e53; five commits add the rewrite, its helper, the three-case test and the evidence fragment, and remove the now-unused live_sessions helper.\nCALL_SITES: reckon/crew/station.py:525, reckon/crew/station_obligations.py:390\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/station_obligations.py:212-227 rewrites each session _drop_absent removed, through obligation_snapshot's own writer, with no duty deferring to the reflex.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/head-arm.log reads 3 passed at revision 2fd1b62da7 and logs/base-arm.log shows the reflex text surviving after departure, so the gate measures the done_when and the base reproduces the defect.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/station_obligations.py, tests/test_a_session_without_a_follower_is_told_so.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/tell-a-session-without-a-follower-so.html) is inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_session_without_a_follower_is_told_so.py:180-190 reddens if the rewrite is dropped and :243-247 reddens if it runs on every publish, and both controls were applied and logged red.\nSCORE fit: 18\nJUSTIFICATION fit: the helper at reckon/crew/station_obligations.py:250 follows the module's derive-then-write idiom and introduces no name the naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the rewrite composes obligation_snapshot.payload_for, document_for and write_snapshot rather than re-deriving duties, so the no-follower path cannot drift from the ordinary one.\nFINDING reckon/crew/station_obligations.py:223 non-blocking: a failed rewrite is reported and never retried because the store row it keys on was already deleted, so the frozen reflex text this node removes can persist for that session after a transient write error.",
+  "review_run_id": "r-20261106T180916353431-review-of-tell-a-session-without-a-follower-so-2fd1b62da7dd",
+  "reviewed_base_sha": "4dc1488f6e53a7b80a2719ec6b52a1ea33fe6d60",
+  "reviewed_head_sha": "2fd1b62da7dd538f86956b2dee950556c37b80b6",
+  "reviewed_run_id": "r-20261106T172623769806-tell-a-session-without-a-follower-so",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T18:23:27.971688+00:00",
+  "total": 115
+}
