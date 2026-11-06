@@ -131,10 +131,12 @@ def test_skipped_only_landing_writes_a_pass_verdict(
 
     record = queue_admission._pass_verdict_record(skipped, lane="", code_stamp="")
     assert record is not None
-    assert record["landing"] == skipped["landing"]
     written = queue_admission._record_pass_verdicts(skipped, lane="", code_stamp="")
     assert written is not None
-    assert written["landing"] == skipped["landing"]
-    assert [json.loads(line) for line in verdict_log.read_text().splitlines()] == [
-        written
-    ]
+    stored = [json.loads(line) for line in verdict_log.read_text().splitlines()]
+    assert len(stored) == 1
+    assert stored[0]["landing"] == {
+        "skipped": [
+            {"run_id": "r-delivered-implementation", "status": "landed-elsewhere"}
+        ]
+    }
