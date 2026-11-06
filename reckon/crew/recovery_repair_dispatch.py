@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import subprocess
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -607,17 +608,51 @@ def _repair_resume_advice(
     The advice opens with the round id, so a worker's refusal that quotes the
     advice names the round it refused and a retry can tell it from a manifest
     quoting an earlier round's advice.
+
+    The opening count is of the findings the record classified as blocking. A
+    finding that states neither a severity nor a prefix is repaired as blocking
+    but is not counted with them: its severity is one nobody stated, so the
+    count is reported apart from it and the finding is named as unclassified. A
+    record written before the severity audit began flags no such finding, and
+    its unmarked finding is counted as blocking exactly as it always was.
     """
     findings = list(composed.get("findings") or ())
-    ids = ", ".join(str(finding.get("id") or "") for finding in findings)
+    unclassified = [
+        str(finding.get("id") or "")
+        for finding in composed.get("unmarked_findings") or ()
+    ]
+    classified = [
+        finding
+        for finding in findings
+        if str(finding.get("id") or "") not in set(unclassified)
+    ]
+    ids = ", ".join(str(finding.get("id") or "") for finding in classified)
     scope = [str(path) for path in scope]
+    if classified:
+        opening = (
+            f"An independent review of this run found {len(classified)} blocking "
+            f"finding(s) ({ids}). Answer each in this run."
+        )
+    else:
+        opening = (
+            "An independent review of this run found no finding carrying a "
+            "blocking severity it can count."
+        )
     parts = [
         _repair_round_token(round_id),
         "",
-        (
-            f"An independent review of this run found {len(findings)} blocking "
-            f"finding(s) ({ids}). Answer each in this run."
-        ),
+        opening,
+    ]
+    if unclassified:
+        parts += [
+            "",
+            (
+                f"This record also carries {len(unclassified)} unclassified "
+                "finding(s) naming neither a severity nor a prefix, repaired "
+                f"as blocking: {', '.join(unclassified)}."
+            ),
+        ]
+    parts += [
         "",
         str(composed.get("brief") or ""),
         "",
@@ -791,6 +826,58 @@ def _live_pointer_or_absent(run_id: str) -> Mapping[str, Any] | None:
     except CrewError:
         return None
     return fresh if isinstance(fresh, Mapping) else None
+
+
+def _reviewed_head_is_integrated(record: Mapping[str, Any], reviewed_head: str) -> bool:
+    """Whether the integration branch has already moved past the reviewed head.
+
+    The run's repository is the project's shared checkout, whose checked-out
+    branch is the integration branch a coordinator lands on. A reviewed head the
+    branch has moved past is work already integrated — a coordinator merged it
+    by hand, or a promotion left the branch ahead of the head the review read —
+    so the findings describe code the branch already carries and no repair round
+    is owed. The branch's own tip is excluded: a head sitting exactly where the
+    branch sits is the tree the run holds, not work the branch has taken in
+    beyond it, and the promoted and live-worker guards are what settle that case.
+
+    An unreadable answer never starts nor stops a round on its own: a repository
+    the record does not name, a detached checkout, an unresolvable revision or a
+    git that cannot run all answer false, so a repository this cannot decide
+    about is repaired as before rather than skipped on the strength of a
+    question nobody answered.
+    """
+    repository_value = str(record.get("repo") or "").strip()
+    head = str(reviewed_head or "").strip()
+    if not repository_value or not head:
+        return False
+    repository = Path(repository_value)
+
+    def git(*args: str) -> subprocess.CompletedProcess[str] | None:
+        try:
+            return subprocess.run(
+                ["git", "-C", str(repository), *args],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        except OSError:
+            return None
+
+    branch = git("symbolic-ref", "--quiet", "--short", "HEAD")
+    if branch is None or branch.returncode != 0 or not branch.stdout.strip():
+        return False
+    integration = branch.stdout.strip()
+    resolved = git("rev-parse", "--verify", f"{head}^{{commit}}")
+    if resolved is None or resolved.returncode != 0 or not resolved.stdout.strip():
+        return False
+    tip = git("rev-parse", "--verify", f"{integration}^{{commit}}")
+    if tip is None or tip.returncode != 0 or not tip.stdout.strip():
+        return False
+    reviewed_revision = resolved.stdout.strip()
+    if tip.stdout.strip() == reviewed_revision:
+        return False
+    reachable = git("merge-base", "--is-ancestor", reviewed_revision, integration)
+    return reachable is not None and reachable.returncode == 0
 
 
 def _opened_repair_rounds(record: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -1121,6 +1208,26 @@ def dispatch_repair_for_run(
     # repair never stood on. A promoted run never reaches here (the launch
     # refusal above settles it), so this is the unpromoted case by construction.
     reviewed_head = _review_carried_head(review)
+    # A reviewed head the integration branch has already taken in is work the
+    # findings no longer describe: the coordinator merged it by hand, and a
+    # round composed against it would repair code the branch carries. The round
+    # is reported and recorded rather than dispatched, so a coordinator sees why
+    # nothing followed the review.
+    if _reviewed_head_is_integrated(record, reviewed_head):
+        reason = (
+            "the reviewed head is already integrated: the integration branch has "
+            f"moved past it ({reviewed_head})"
+        )
+        _record_repair_dispatch(
+            run_id, status="refused", reason=reason, round_id=round_id
+        )
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "integrated": True,
+            "round_id": round_id,
+            "reason": reason,
+        }
     # A later round's brief carries only the work since the previous round was
     # reviewed, not the whole run again: the last reviewed head is named by the
     # round id the reflex last opened, which is ``<run>@<head>``.
