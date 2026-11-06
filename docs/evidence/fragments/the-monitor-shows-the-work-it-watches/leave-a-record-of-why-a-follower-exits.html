@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s112">
+  <meta name="plan-recorded-at" content="2026-11-06">
+  <title>A follower that exits leaves a record of why | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="leave-a-record-of-why-a-follower-exits-landing" data-node="leave-a-record-of-why-a-follower-exits" data-reckon="landed" data-when="2026-11-06">
+  <h2>A follower that exits leaves a record of why</h2>
+
+  <p id="leave-a-record-of-why-a-follower-exits-record">A follower used to end silently. Two
+  followers named in the plan's evidence stopped renewing while their runs were still working, and
+  nothing on disk said whether they had settled, been signalled or crashed. <code>_FollowerRegistration.release</code>
+  in <code>reckon/crew/follower_registration.py</code> now writes an exit record beside the
+  registration file when this follower held the claim, carrying the reason, the moment it ended, its
+  pid and its host. The record is named for the follower's own pid
+  (<code>follower_exit_path</code>), because the registration is one per project-and-session pair and
+  a shared name would let two followers overwrite each other's end.</p>
+
+  <p id="leave-a-record-of-why-a-follower-exits-reason">The reason is taken from the exception that
+  unwinds the follower's loop, so it needs no opt-in at the exit site. The settle path leaves through
+  <code>sys.exit(SETTLED_EXIT_CODE)</code> and reads <code>settled</code>; any other
+  <code>SystemExit</code> reads its exit code; a crash reads the exception's type. A SIGTERM handler
+  installed for the life of the registration raises its own exception type carrying the signal
+  rather than a <code>SystemExit</code>, so a signal is never recorded as a deliberate exit code,
+  and the signal's name wins wherever both could apply. The station-attached branch releases through
+  the same registration from its own <code>finally</code>, so both delivery paths leave one record.</p>
+
+  <p id="leave-a-record-of-why-a-follower-exits-evidence">The new
+  <code>tests/test_a_follower_exit_leaves_a_record.py</code> runs real follower images under a
+  temporary crew home and asserts the record each one leaves. The head arm is
+  <code>4 passed</code>. The base arm, with the node's test carried into the base tree, is
+  <code>4 failed</code>: without the release write there is no record at all. Three negative
+  controls each turn exactly the case they name red while the rest stay green: dropping the
+  exit-record write fails all four cases including the settle case; dropping the station branch's
+  delegation fails only the station case (1 failed, 3 passed); installing no SIGTERM handler fails
+  only the signal case (1 failed, 3 passed). The 27 test files importing
+  <code>reckon.crew.follower_registration</code> or <code>reckon.crew_follow_commands</code> are
+  <code>148 passed</code> at head, and the extracted base tree shows 142 passed and 2 failed, both
+  reexec probes in a non-git tree, so the change adds no failure.</p>
+</article>
+</body>
+</html>
