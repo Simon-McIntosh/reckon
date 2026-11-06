@@ -1746,9 +1746,7 @@ def _plan_comment_store_path(
     return [plan_file]
 
 
-def _restore_landing_writes(
-    checkout: Path, paths: Sequence[Path], *, run_id: str | None = None
-) -> dict[str, bool]:
+def _restore_landing_writes(checkout: Path, paths: Sequence[Path]) -> dict[str, bool]:
     """Best-effort reversal of a refused landing's uncommitted store writes.
 
     Each path promotion wrote returns to its committed state: tracked paths
@@ -1772,10 +1770,6 @@ def _restore_landing_writes(
     re-promoting. What a refusal never leaves behind is a staged entry the
     run's own commit did not cover.
 
-    ``run_id`` lets each retry be appended to the run's landing record, so a
-    restore that waited says how often; without it the restore still waits,
-    which is what keeps this call correct for a caller that keeps no record.
-
     The result is a per-path report keyed by the path as written: True for a
     path that no longer carries the landing write — restored from HEAD, or
     dropped because HEAD never had it, with nothing of it staged — and False
@@ -1783,20 +1777,6 @@ def _restore_landing_writes(
     this to tell a row that survived the rollback from one the rollback
     reverted.
     """
-
-    def record_retry(attempt: int, result: subprocess.CompletedProcess) -> None:
-        if run_id is None:
-            return
-        _append_landing_record(
-            run_id,
-            {
-                "time": _utc_now(),
-                "step": "restore_retry",
-                "attempt": attempt,
-                "message": result.stderr.strip() or result.stdout.strip(),
-            },
-        )
-
     report: dict[str, bool] = {}
     for path in paths:
         target = str(path)
@@ -1814,7 +1794,6 @@ def _restore_landing_writes(
             ),
             attempts=_INDEX_LOCK_RETRY_ATTEMPTS,
             retry_seconds=_INDEX_LOCK_RETRY_INTERVAL_SECONDS,
-            on_retry=record_retry,
         )
         if restored.returncode == 0:
             report[target] = True
@@ -2394,7 +2373,7 @@ def _commit_landing_writes(
     staged = _stage_landing_writes(run_id, checkout, targets)
     if staged.returncode != 0:
         head = _head_revision(checkout)
-        rollback = _restore_landing_writes(checkout, targets, run_id=run_id)
+        rollback = _restore_landing_writes(checkout, targets)
         if store_row_written:
             _discard_run_store_row(run_id)
         _record_landing_refusal(
@@ -2471,7 +2450,7 @@ def _commit_landing_writes(
     )
     if committed.returncode != 0:
         head = _head_revision(checkout)
-        rollback = _restore_landing_writes(checkout, targets, run_id=run_id)
+        rollback = _restore_landing_writes(checkout, targets)
         if store_row_written:
             _discard_run_store_row(run_id)
         _record_landing_refusal(

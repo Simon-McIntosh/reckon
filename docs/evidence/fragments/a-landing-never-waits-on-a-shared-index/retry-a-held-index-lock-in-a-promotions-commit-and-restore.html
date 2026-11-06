@@ -20,12 +20,14 @@ The second half is what the failed commit left behind. After a refusal
 straight to its index-free fallback, which declines to clear a path the index
 still stages while the lock is held — so two forward writes stayed staged in
 the shared index for any path-less commit to sweep up. Each path's restore now
-runs through the same helper under the same bound, and records
-<code>restore_retry</code> when a <code>run_id</code> is supplied, so a lock
-that frees while the rollback is retrying unstages the forward writes and
-returns their tracked content to HEAD. No second wait loop and no new bound was
-added; the fallback is reached only once a lock has outlasted the bound, which
-is the refusal that names the paths a coordinator must restore.</p>
+runs through the same helper under the same bound, so a lock that frees while
+the rollback is retrying unstages the forward writes and returns their tracked
+content to HEAD. No second wait loop, no new bound and no new landing-record
+entry was added: only the commit's retries are appended to
+<code>landing.json</code>, so the record's existing step vocabulary is
+unchanged, and the fallback is reached only once a lock has outlasted the
+bound, which is the refusal that names the paths a coordinator must
+restore.</p>
 <p id="retry-a-held-index-lock-in-a-promotions-commit-and-restore-test"><strong>Test.</strong>
 <code>tests/test_a_promotion_commit_survives_a_held_index_lock.py</code> drives
 <code>_commit_landing_writes</code> against a temporary repository, taking a real

@@ -180,17 +180,21 @@ def test_a_rollback_waits_out_a_lock_that_outlasted_the_commit(repository, monke
     lock = _stage_then_hold(root, monkeypatch)
     real_git = promotion_scope._git
     commits = {"made": 0}
+    restores = {"made": 0, "first_under_the_lock": False}
 
     def counting_git(checkout, *args, check=True):
         result = real_git(checkout, *args, check=check)
         if args and args[0] == "commit":
             commits["made"] += 1
-            if commits["made"] == attempts:
+        elif args and args[0] == "restore":
+            restores["made"] += 1
+            if restores["made"] == 1:
+                # The first restore runs the moment the commit step gives up.
+                restores["first_under_the_lock"] = lock.exists()
                 threading.Timer(1.0, lambda: lock.unlink(missing_ok=True)).start()
         return result
 
     monkeypatch.setattr(promotion_scope, "_git", counting_git)
-    releaser, observed = _release_lock_after_first_retry(RUN, lock, "restore_retry")
     try:
         with pytest.raises(promotion.CrewError) as caught:
             promotion._commit_landing_writes(
@@ -200,7 +204,6 @@ def test_a_rollback_waits_out_a_lock_that_outlasted_the_commit(repository, monke
                 paths=[plan],
             )
     finally:
-        releaser.join(timeout=60.0)
         lock.unlink(missing_ok=True)
 
     assert commits["made"] == attempts, (
@@ -215,14 +218,14 @@ def test_a_rollback_waits_out_a_lock_that_outlasted_the_commit(repository, monke
     assert plan.read_text(encoding="utf-8") == SEEDED, (
         "the rollback's wait must restore the plan file to its HEAD content"
     )
+    assert restores["first_under_the_lock"], (
+        "the first restore must be observed while the lock was still held"
+    )
+    assert restores["made"] > 1, (
+        "the rollback must retry its restore rather than falling straight back"
+    )
     entries = _landing_entries(RUN)
     assert _steps(entries, "commit_retry"), "the commit's retries must be recorded"
-    assert _steps(entries, "restore_retry"), (
-        "the rollback must be observed retrying rather than falling straight back"
-    )
-    assert observed["retried_under_the_lock"], (
-        "the rollback's retry must be observed while the lock was still held"
-    )
     assert _steps(entries, "commit"), "the refusal is recorded at step commit"
 
 
