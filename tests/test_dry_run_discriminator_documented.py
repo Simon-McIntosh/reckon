@@ -45,9 +45,7 @@ def _dry_run_block(help_text: str) -> str:
     """Return the wrapped help text belonging to the ``--dry-run`` option."""
     lines = help_text.splitlines()
     starts = [
-        index
-        for index, line in enumerate(lines)
-        if re.match(r"^\s+--dry-run\b", line)
+        index for index, line in enumerate(lines) if re.match(r"^\s+--dry-run\b", line)
     ]
     assert len(starts) == 1, (
         f"expected one --dry-run entry in the dispatch help, found {len(starts)}"

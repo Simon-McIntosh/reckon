@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-dry-run-must-resolve-what-the-real-call-resolves">
+  <meta name="plan-verifies" content="reckon:a-dry-run-must-resolve-what-the-real-call-resolves#s4">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-06">
+  <title>The dry-run discriminator sits beside the option | reckon</title>
+  <link rel="stylesheet" href="/reckon/_shared/foundation.css">
+  <link rel="stylesheet" href="/reckon/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="document-the-dryrun-discriminator-beside-its-cli-option-landing">
+  <h2>The dry-run discriminator sits beside the option</h2>
+  <p>The <code>--dry-run</code> help on <code>reckon crew dispatch</code> carried the promise
+  (&ldquo;Validate and resolve only: no worktree, no process, no record&rdquo;) and nothing that would
+  stop the next check being added to the surface from repeating the defect. It now carries the
+  discriminator in one sentence beside that promise: <em>ask of any check added here: what would
+  make this field wrong while it still printed the same value?</em> The sentence says what a green
+  preview is &mdash; a true statement standing in for the one the caller is asking &mdash; so the
+  affirmative answer is named as the hazard rather than left to a plan the reader would have to know
+  to find.</p>
+  <p><code>tests/test_dry_run_discriminator_documented.py</code> reads the rendered
+  <code>reckon crew dispatch --help</code> through click&rsquo;s runner and extracts the
+  <code>--dry-run</code> option&rsquo;s own wrapped block, so a question parked elsewhere in the same
+  help does not satisfy it. It requires the question, the green-preview clause it disarms, and the
+  original skip promise, so the documentation is added to rather than replaced.</p>
+  <table>
+    <caption>Suite arms over the node&rsquo;s test file.</caption>
+    <thead><tr><th>Arm</th><th>Revision / tree</th><th>Result</th><th>Log</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td><code>c845c2bb5</code>, <code>git archive</code> extraction plus this node&rsquo;s new test</td><td>2 failed, 1 passed, EXIT=1</td><td><code>baseline-suite.log</code> (run directory)</td></tr>
+      <tr><td>head</td><td><code>4e6caecda</code>, the worktree</td><td>3 passed, EXIT=0</td><td><code>after-suite.log</code> (run directory)</td></tr>
+    </tbody>
+  </table>
+  <p>The declared negative control removes the recorded sentence from the help string: the head arm
+  then reports 2 failed ids (<code>test_the_dry_run_help_asks_the_discriminator_question</code>,
+  <code>test_the_question_names_the_green_preview_it_disarms</code>) with EXIT=1, so the check is
+  shown to fire rather than merely to pass. That is the same measurement the base arm records, run
+  once as a mutation of the head and once as the base revision itself.</p>
+</section>
+</main>
+</body>
+</html>
