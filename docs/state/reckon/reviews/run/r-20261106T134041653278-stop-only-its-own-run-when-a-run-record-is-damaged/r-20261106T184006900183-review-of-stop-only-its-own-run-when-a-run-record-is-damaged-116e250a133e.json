@@ -1,0 +1,85 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Both broad importer arms ended EXIT=124 without summaries; zero is the count of named added failure IDs available from these incomplete receipts, not a measured suite delta. Completion of the paired gate is a blocking finding.",
+  "assertion_analysis": [
+    {
+      "failure_condition": "Fails if the read drops the healthy row, includes the corrupt row, or omits the independently stored damaged path.",
+      "location": "tests/test_a_damaged_run_record_stops_only_its_run.py:62-63"
+    },
+    {
+      "failure_condition": "Fails if the indexed or aggregate reader does not log the corrupted file path.",
+      "location": "tests/test_a_damaged_run_record_stops_only_its_run.py:71,80"
+    },
+    {
+      "failure_condition": "Fails if a blanket refusal blocks the fresh promotion, a damaged promotion succeeds or lacks its path, or promotion rewrites the damaged file.",
+      "location": "tests/test_a_damaged_run_record_stops_only_its_run.py:141-147"
+    },
+    {
+      "failure_condition": "Fails if a malformed first document hides later fixed fixture rows, the side channel omits its path, or the warning is silent; the rows passed to the fixture remain an independent expected value because place_rows does not mutate them.",
+      "location": "tests/test_ledger_files_and_index_agree.py:257-259"
+    }
+  ],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/promotion.py:_complete_locked",
+    "reckon/crew/runs.py:2141",
+    "reckon/crew/runs.py:2206",
+    "reckon/crew/plan_coordinator.py:188",
+    "reckon/crew/obligations.py:1355",
+    "reckon/crew/directory.py:513"
+  ],
+  "completed_at": "2026-11-06T18:51:30Z",
+  "dispatched_at": "2026-11-06T18:41:50Z",
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": "1837",
+      "severity": "blocking",
+      "text": "blocking: Catching only DamagedRunRecordError now propagates OSError-derived LedgerError through run_rows_from_documents(refuse=False), although its documented best effort contract skips unreadable files; production callers in reckon/crew/plan_coordinator.py:188, obligations.py:1355, and directory.py:513 can now fail on one unreadable run file."
+    },
+    {
+      "file": "manifest.md",
+      "line": "21",
+      "severity": "blocking",
+      "text": "blocking: The baseline_suite and after_suite importer runs both have completed=false and EXIT=124 without a summary, so the required no-added-failure comparison cannot be derived and the coordinator must complete a paired importer gate before landing."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "I read commits 25fed3476cd0d69dd325b717ff02ee39438caef1, a6fb33db2ca228642812ce6da559c79770920d36, 9d566e5f9f8d9dd4b80dae048400219c09e015ef, and 116e250a133e995a1803d8b3896f7cfed8aa08b1 against fc5a7fb2b29353a0593a774e19bb289e0806fd7d; they change the ledger, promotion, two test files, and one evidence fragment.",
+    "done_when": "The plan at docs/plans/the-crew-home-has-a-bound.html:175 requires both readers, selective promotion, three negative controls, and no added importer failures; logs/head-gate.log and logs/negative-controls.log establish the targeted behavior, but the paired importer logs end EXIT=124 without summaries.",
+    "goal": "The goal in the reviewed run's prompt.txt:38 is to isolate a damaged run, and reckon/crew/promotion.py:1149-1153 checks only the requested run's damaged path after the ledger read.",
+    "manifest": "The reviewed manifest.md:5,11-27 names four commits, targeted passes and negative controls, and explicitly records incomplete baseline_suite and after_suite arms with no added failure verdict.",
+    "write_paths": "The prompt.txt:77-82 grant and resume-1-advice.txt extension include all five paths in git diff --name-only from fc5a7fb2b29353a0593a774e19bb289e0806fd7d to 116e250a133e995a1803d8b3896f7cfed8aa08b1."
+  },
+  "justifications": {
+    "durability": "tests/test_a_damaged_run_record_stops_only_its_run.py:62-80,141-147 and tests/test_ledger_files_and_index_agree.py:257-259 fail on the isolated regressions in logs/negative-controls.log, although no assertion protects the best effort reader from the changed OSError handling at reckon/ledger.py:1837.",
+    "evidence": "logs/head-gate.log and logs/negative-controls.log show passing targeted tests and failing mutations, but manifest.md:21-23 records both importer arms as incomplete with EXIT=124.",
+    "fit": "reckon/ledger.py:65-81 keeps the damage report in the ledger owner and follows the existing ContextVar idiom, but the narrowed catch at line 1837 contradicts the best effort reader contract at lines 1869-1875.",
+    "goal_fidelity": "reckon/ledger.py:1562-1577 and 1834-1841 skip malformed documents for the indexed and aggregate reads, while reckon/crew/promotion.py:1149-1153 refuses the damaged run itself.",
+    "reuse": "A capability search of reckon/crew and reckon/ledger.py found no separate malformed run reader; the new definitions at reckon/ledger.py:71-81,227,1361, and the existing index and merge functions extend that module's owner.",
+    "scope_discipline": "The five paths in the diff are within prompt.txt:77-82 and the explicit extension in resume-1-advice.txt."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal in the reviewed run's prompt.txt:38 is to isolate a damaged run, and reckon/crew/promotion.py:1149-1153 checks only the requested run's damaged path after the ledger read.\nVERDICT done_when: The plan at docs/plans/the-crew-home-has-a-bound.html:175 requires both readers, selective promotion, three negative controls, and no added importer failures; logs/head-gate.log and logs/negative-controls.log establish the targeted behavior, but the paired importer logs end EXIT=124 without summaries.\nVERDICT write_paths: The prompt.txt:77-82 grant and resume-1-advice.txt extension include all five paths in git diff --name-only from fc5a7fb2b29353a0593a774e19bb289e0806fd7d to 116e250a133e995a1803d8b3896f7cfed8aa08b1.\nVERDICT manifest: The reviewed manifest.md:5,11-27 names four commits, targeted passes and negative controls, and explicitly records incomplete baseline_suite and after_suite arms with no added failure verdict.\nVERDICT diff: I read commits 25fed3476cd0d69dd325b717ff02ee39438caef1, a6fb33db2ca228642812ce6da559c79770920d36, 9d566e5f9f8d9dd4b80dae048400219c09e015ef, and 116e250a133e995a1803d8b3896f7cfed8aa08b1 against fc5a7fb2b29353a0593a774e19bb289e0806fd7d; they change the ledger, promotion, two test files, and one evidence fragment.\nCALL_SITES: reckon/crew/promotion.py:_complete_locked, reckon/crew/runs.py:2141, reckon/crew/runs.py:2206, reckon/crew/plan_coordinator.py:188, reckon/crew/obligations.py:1355, reckon/crew/directory.py:513\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1562-1577 and 1834-1841 skip malformed documents for the indexed and aggregate reads, while reckon/crew/promotion.py:1149-1153 refuses the damaged run itself.\nSCORE evidence: 8\nJUSTIFICATION evidence: logs/head-gate.log and logs/negative-controls.log show passing targeted tests and failing mutations, but manifest.md:21-23 records both importer arms as incomplete with EXIT=124.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The five paths in the diff are within prompt.txt:77-82 and the explicit extension in resume-1-advice.txt.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_damaged_run_record_stops_only_its_run.py:62-80,141-147 and tests/test_ledger_files_and_index_agree.py:257-259 fail on the isolated regressions in logs/negative-controls.log, although no assertion protects the best effort reader from the changed OSError handling at reckon/ledger.py:1837.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/ledger.py:65-81 keeps the damage report in the ledger owner and follows the existing ContextVar idiom, but the narrowed catch at line 1837 contradicts the best effort reader contract at lines 1869-1875.\nSCORE reuse: 20\nJUSTIFICATION reuse: A capability search of reckon/crew and reckon/ledger.py found no separate malformed run reader; the new definitions at reckon/ledger.py:71-81,227,1361, and the existing index and merge functions extend that module's owner.\nFINDING reckon/ledger.py:1837 blocking: Catching only DamagedRunRecordError now propagates OSError-derived LedgerError through run_rows_from_documents(refuse=False), although its documented best effort contract skips unreadable files; production callers in reckon/crew/plan_coordinator.py:188, obligations.py:1355, and directory.py:513 can now fail on one unreadable run file.\nFINDING manifest.md:21 blocking: The baseline_suite and after_suite importer runs both have completed=false and EXIT=124 without a summary, so the required no-added-failure comparison cannot be derived and the coordinator must complete a paired importer gate before landing.\n",
+  "review_run_id": "r-20261106T184006900183-review-of-stop-only-its-own-run-when-a-run-record-is-damaged-116e250a133e",
+  "reviewed_base_sha": "fc5a7fb2b29353a0593a774e19bb289e0806fd7d",
+  "reviewed_head_sha": "116e250a133e995a1803d8b3896f7cfed8aa08b1",
+  "reviewed_run_id": "r-20261106T134041653278-stop-only-its-own-run-when-a-run-record-is-damaged",
+  "scores": {
+    "durability": 17,
+    "evidence": 8,
+    "fit": 15,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T18:55:20.010482+00:00",
+  "total": 97
+}
