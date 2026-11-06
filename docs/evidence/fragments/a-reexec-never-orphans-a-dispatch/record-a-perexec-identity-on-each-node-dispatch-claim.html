@@ -1,0 +1,5 @@
+<section id="record-a-perexec-identity-on-each-node-dispatch-claim-landing">
+  <h2>Node dispatch claims identify the holder's execution</h2>
+  <p>Each import of <code>reckon.crew.dispatch_claims</code> publishes a new execution identity in the crew home's claims directory. New node claims record it beside the holder's pid and process start time. A claim with a matching pid and start time becomes reclaimable when that published identity changes; an unchanged identity or a legacy claim with no identity remains held.</p>
+  <p>The new temporary-home gate passed all three cases (<code>EXIT=0</code>). Applied separately, comparing only pid and start time, ignoring the recorded identity, and treating a missing identity as a mismatch each failed its corresponding case; the combined control log records three failed test ids and <code>EXIT=1</code>. The wider importer run passed 112 tests and failed one queue-capacity assertion. That same assertion failed with the prechange claim source loaded, so it is not a new failure from this change.</p>
+</section>
