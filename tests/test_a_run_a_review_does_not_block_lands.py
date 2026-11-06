@@ -110,7 +110,6 @@ def _pointer(
     base: str,
     manifest: Path,
     session: str = SESSION,
-    with_suite: bool = False,
     delivered_at: datetime | None = None,
     worktree: Path | None = None,
 ) -> dict:
@@ -136,9 +135,8 @@ def _pointer(
         },
         "dispatched_at": (delivered_at or datetime.now(UTC)).isoformat(),
     }
-    if with_suite:
-        pointer["base_sha"] = base
-        pointer["suite_command"] = SUITE
+    pointer["base_sha"] = base
+    pointer["suite_command"] = SUITE
     return pointer
 
 
@@ -197,6 +195,9 @@ def delivery(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         landing_measure,
         "base_checkout",
         lambda repo, sha, timeout=0.0: _Yield(base_tree),
+    )
+    monkeypatch.setattr(
+        landing_measure, "_RUN", _stub([], suite_head=(0, "3 passed\n"), isolated={})
     )
     return {
         "repo": repo,
@@ -568,7 +569,6 @@ def test_a_persisting_population_failure_is_not_landed_and_names_the_test(
             repo=delivery["repo"],
             base=str(delivery["base"]),
             manifest=delivery["manifest"],
-            with_suite=True,
         ),
     )
     calls: list[dict] = []
@@ -612,7 +612,6 @@ def test_an_added_failure_that_passes_alone_at_both_revisions_lands(
             repo=delivery["repo"],
             base=str(delivery["base"]),
             manifest=delivery["manifest"],
-            with_suite=True,
         ),
     )
     calls: list[dict] = []

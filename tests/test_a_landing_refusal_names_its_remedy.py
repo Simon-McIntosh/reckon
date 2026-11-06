@@ -66,6 +66,7 @@ def delivery(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Path 
     home = tmp_path / "config"
     home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(home))
+    monkeypatch.setenv("RECKON_WORKER_SCRATCH_ROOT", str(tmp_path / "scratch"))
     repo = tmp_path / "repo"
     repo.mkdir()
     _git(repo, "init", "-q", "-b", "main")
@@ -132,6 +133,8 @@ def delivery(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Path 
             "session": SESSION,
             "repo": str(repo),
             "worktree": str(repo),
+            "base_sha": base,
+            "suite_command": "true",
             "process_alive": False,
             "launch": "in-harness",
             "role": "implement",

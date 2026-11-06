@@ -765,7 +765,7 @@ def test_a_second_pass_reuses_the_stored_measurement(delivery, monkeypatch) -> N
         landing_measure.Measurement(
             command=SUITE,
             suite={"command": SUITE, "base": {}, "head": {}},
-            population={"files": []},
+            population={"files": [], "main_sha": head, "candidate_sha": head},
             head=head,
         ),
     )

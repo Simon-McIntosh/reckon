@@ -9,6 +9,8 @@ import subprocess
 import sys
 import time
 from collections.abc import Mapping, Sequence
+from contextlib import ExitStack
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -600,10 +602,20 @@ def _record_attempt(
             pointer["admission_landing"]["remedy"] = remedy
         return pointer
 
-    runs._mutate_pointer(run_id, mutation)
+    try:
+        runs._mutate_pointer(run_id, mutation)
+    except CrewError:
+        if runs.pointer_path(run_id).exists():
+            raise
+        runs._write_json(
+            runs.run_dir(run_id) / "admission-landing.json",
+            mutation({})["admission_landing"],
+        )
 
 
-def _record_suite_evidence(run_id: str, measured: landing_measure.Measurement) -> None:
+def _record_suite_evidence(
+    run_id: str, measured: landing_measure.Measurement, *, promoted: bool = False
+) -> None:
     """Keep the measurement where a later reader can open it.
 
     The live pointer loses this at promotion, so the run's own directory holds
@@ -621,7 +633,8 @@ def _record_suite_evidence(run_id: str, measured: landing_measure.Measurement) -
         pointer["suite_evidence"] = record
         return pointer
 
-    runs._mutate_pointer(run_id, mutation)
+    if not promoted:
+        runs._mutate_pointer(run_id, mutation)
 
 
 def _measurement_path(run_id: str) -> Path:
@@ -629,13 +642,13 @@ def _measurement_path(run_id: str) -> Path:
 
 
 def _stored_measurement(
-    run_id: str, head: str, command: str
+    run_id: str, head: str, command: str, primary: str = ""
 ) -> landing_measure.Measurement | None:
     """The measurement already recorded for this head, or ``None``.
 
-    A pass never re-measures a head it has already measured: the record is kept
-    under the run's directory and is valid only for the head and the command it
-    names, so a moved head or a changed command measures again.
+    A record is reusable for its delivered head, command and primary revision.
+    A primary change rebuilds the candidate and measures again. The candidate
+    identity is required so the merge can consume exactly what was measured.
 
     A record the measurement could not be taken for is not one: it states the
     bound the arm exceeded or the failure to build the base tree, and reusing
@@ -656,6 +669,14 @@ def _stored_measurement(
         return None
     if str(record.get("unreadable") or ""):
         return None
+    if primary:
+        population = record.get("population")
+        if (
+            not isinstance(population, Mapping)
+            or population.get("main_sha") != primary
+            or not population.get("candidate_sha")
+        ):
+            return None
     return landing_measure.Measurement.from_dict(record)
 
 
@@ -729,20 +750,36 @@ def _measure_timeout(pointer: Mapping[str, Any]) -> float:
     return landing_measure.measure_timeout(resolved.config)
 
 
+def _primary_revision(pointer: Mapping[str, Any]) -> str:
+    """Pin the checkout revision the automatic landing would merge into."""
+    from reckon.crew import merge
+
+    try:
+        return merge._rev_parse(Path(str(pointer.get("repo") or "")), "HEAD")
+    except (OSError, merge.MergeError):
+        return ""
+
+
 def _measure_delivery(
     pointer: Mapping[str, Any],
     run_id: str,
     head: str,
     tree: str,
     stored: Sequence[Mapping[str, Any]] = (),
+    *,
+    promoted: bool = False,
 ) -> Any:
-    """Run the three suite readings for one delivered run.
+    """Measure current primary against the merge of one delivered run.
 
-    A run that armed no command has nothing to measure; the landing path keeps
-    its earlier behaviour for such a run rather than inventing a command. A
-    measurement that cannot be taken — no base revision, or a base checkout
+    A run that armed no command is unmeasurable and cannot land. A
+    measurement that cannot be taken — no command, no base revision, or a base checkout
     that cannot be built — yields an unreadable measurement so the caller
     refuses the landing instead of inferring a verdict from nothing.
+
+    The importer set follows the modules the run changed since dispatch, read
+    in the candidate tree so it includes callers added on primary meanwhile.
+    An already incorporated head is its own candidate; its base arm still runs
+    at current primary, never at the dispatch revision.
 
     ``stored`` is the project's measurement history, read by the pass once for
     all its runs; a caller that names none measures with the floor as its only
@@ -750,7 +787,16 @@ def _measure_delivery(
     """
     command = str(pointer.get("suite_command") or "").strip()
     if not command:
-        return None
+        measured = landing_measure.Measurement(
+            command="",
+            suite={},
+            population={},
+            unreadable="the run armed no suite command; configure one before landing",
+            head=head,
+            project=str(pointer.get("project") or ""),
+        )
+        _record_suite_evidence(run_id, measured, promoted=promoted)
+        return measured
     base_sha = str(pointer.get("base_sha") or "").strip()
     project = str(pointer.get("project") or "")
     repo = Path(str(pointer.get("repo") or tree or ""))
@@ -765,22 +811,55 @@ def _measure_delivery(
         )
     timeout = _measure_timeout(pointer)
     logs = runs.run_dir(run_id) / "landing-measure"
+    if promoted:
+        logs = logs / "promoted"
+    primary = _primary_revision(pointer)
+    if not primary:
+        measured = landing_measure.Measurement(
+            command=command,
+            suite={},
+            population={},
+            unreadable="the primary revision could not be read",
+            head=head,
+            project=project,
+        )
+        _record_suite_evidence(run_id, measured, promoted=promoted)
+        return measured
     try:
+        changed = landing_measure.delivered_paths(repo, base_sha, head)
         # Only the checkout is inside this except: an error raised by the
         # measurement itself is a different failure and is reported as one.
-        with landing_measure.base_checkout(repo, base_sha, timeout) as base_tree:
+        with ExitStack() as stack:
+            measured_head, measured_tree = head, Path(tree)
+            if primary != head:
+                measured_head, measured_tree = stack.enter_context(
+                    landing_measure.candidate_checkout(repo, primary, head, timeout)
+                )
+            base_tree = stack.enter_context(
+                landing_measure.base_checkout(repo, primary, timeout)
+            )
             try:
                 measured = landing_measure.measure_run(
                     command=command,
-                    tree=Path(tree),
-                    base_sha=base_sha,
-                    head_sha=head,
+                    tree=measured_tree,
+                    base_sha=primary,
+                    head_sha=measured_head,
                     base_tree=base_tree,
                     logs_dir=logs,
                     test_files=_node_test_files(pointer),
                     timeout=timeout,
                     stored=stored,
                     project=project,
+                    changed=changed,
+                )
+                measured = replace(
+                    measured,
+                    head=head,
+                    population={
+                        **measured.population,
+                        "main_sha": primary,
+                        "candidate_sha": measured_head,
+                    },
                 )
             except (OSError, ValueError) as exc:
                 measured = landing_measure.Measurement(
@@ -800,14 +879,25 @@ def _measure_delivery(
             head=head,
             project=project,
         )
-    _record_suite_evidence(run_id, measured)
+    _record_suite_evidence(run_id, measured, promoted=promoted)
     return measured
+
+
+def _promoted_candidate(
+    pointer: Mapping[str, Any], run_id: str, head: str, tree: str
+) -> str:
+    """Measure publication after completion has committed its records."""
+    measured = _measure_delivery(pointer, run_id, head, tree, promoted=True)
+    refusal = _measure_guard(measured)
+    if refusal:
+        raise CrewError(refusal)
+    return str(measured.population["candidate_sha"])
 
 
 def _measure_guard(measured: Any) -> str:
     """The refusal a measurement states, or "" when the run may land."""
     if measured is None:
-        return ""
+        return "landing measure unreadable: the run has no population measurement"
     if measured.unreadable:
         return f"landing measure unreadable: {measured.unreadable}"
     if not measured.real:
@@ -819,7 +909,17 @@ def _measure_guard(measured: Any) -> str:
             f"{test_id} failed {sum(results['head'])}/{len(results['head'])} at head "
             f"and {sum(results['base'])}/{len(results['base'])} at base"
         )
-    return "added suite regression: " + "; ".join(details)
+    logs = [
+        str(arm["log_path"])
+        for pair in (measured.suite, measured.population)
+        for name in ("base", "head")
+        if isinstance(arm := pair.get(name), Mapping) and arm.get("log_path")
+    ]
+    return (
+        "added suite regression: "
+        + "; ".join(details)
+        + ("; logs: " + ", ".join(logs) if logs else "")
+    )
 
 
 def _landing_beat(pointer: Mapping[str, Any], run_id: str) -> str:
@@ -896,16 +996,8 @@ LANDING_BEAT_REASON = (
 )
 
 
-def _land_command(run_id: str) -> list[str]:
-    """Run the coordinator's land command in one explicit fleet step.
-
-    The revision the run's manifest delivers is presented to the promotion, so
-    the step asserts the revision this pass read rather than leaving the
-    promotion to read the worker's commit entry for itself. An entry carrying
-    its subject after the revision, or several revisions on one line, is then
-    the delivery it was to the pass, instead of a citation no store can resolve
-    under the entry's own spelling.
-    """
+def _crew_step(*arguments: str) -> list[str]:
+    """Run one crew operation through the bounded fleet subprocess."""
     from reckon.nested_launch import shim_directory
 
     return [
@@ -916,6 +1008,15 @@ def _land_command(run_id: str) -> list[str]:
         "-c",
         "from reckon.cli import main; main()",
         "crew",
+        *arguments,
+    ]
+
+
+def _land_command(run_id: str) -> list[str]:
+    """Complete the run before measuring and publishing its final candidate."""
+    record = _measurement_record(run_id) or {}
+    candidate = str((record.get("population") or {}).get("candidate_sha") or "")
+    return _crew_step(
         "complete",
         "--run",
         run_id,
@@ -926,10 +1027,12 @@ def _land_command(run_id: str) -> list[str]:
             for revision in _delivered_revisions(run_id)
             for token in ("--commit", revision)
         ],
+        "--candidate",
+        candidate,
         "--no-impl-change",
         LANDING_BEAT_REASON,
         "--land",
-    ]
+    )
 
 
 def _delivered_revisions(run_id: str) -> tuple[str, ...]:
@@ -969,16 +1072,66 @@ def _land_timeout(run_id: str) -> float:
     return _measure_timeout(pointer)
 
 
+def _verified_measurement(
+    run_id: str, candidate: str = ""
+) -> landing_measure.Measurement:
+    """Verify the measured delivery and primary before promotion can write."""
+    from reckon.crew import merge
+
+    record = _measurement_record(run_id)
+    measured = landing_measure.Measurement.from_dict(record) if record else None
+    guard = _measure_guard(measured)
+    if guard:
+        raise CrewError(guard)
+    if not measured.population.get("candidate_sha") or not measured.population.get(
+        "main_sha"
+    ):
+        raise CrewError("landing measure unreadable: no measured merge candidate")
+    pointer = runs.read_pointer(run_id)
+    repo = Path(str(pointer.get("repo") or ""))
+    head, _tree = recovery._review_head_and_tree(pointer)
+    if not recovery.same_revision(head, measured.head):
+        raise CrewError("the measured delivery head changed before landing")
+    if _primary_revision(pointer) != measured.population["main_sha"]:
+        raise CrewError("the measured primary changed before completion")
+    if (
+        candidate
+        and merge._rev_parse(repo, candidate) != measured.population["candidate_sha"]
+    ):
+        raise CrewError("the supplied candidate differs from the measured candidate")
+    markers = merge.change_markers(repo, measured.population["main_sha"], head)
+    dropped = merge.surviving_change_refusals(
+        repo, measured.population["candidate_sha"], markers
+    )
+    if dropped:
+        raise CrewError(
+            "the measured merge dropped the reviewed change: " + "; ".join(dropped)
+        )
+    return measured
+
+
 def _land(run_id: str) -> tuple[bool, str]:
-    # The CLI calls the same promotion lease and merge index-lock retry a
-    # coordinator uses. Its gate also runs inside this step, off the service.
+    """Hand the measured delivery to completion, which owns publication."""
+    from reckon.crew import merge
+
+    try:
+        _verified_measurement(run_id)
+    except (OSError, ValueError, CrewError, merge.MergeError) as exc:
+        return False, str(exc)
+
     environment = os.environ.copy()
     source = str(Path(__file__).resolve().parents[2])
     environment["PYTHONPATH"] = os.pathsep.join(
         part for part in (source, environment.get("PYTHONPATH", "")) if part
     )
-    command = _land_command(run_id)
     timeout = _land_timeout(run_id)
+    return _run_land_command(_land_command(run_id), environment, timeout)
+
+
+def _run_land_command(
+    command: list[str], environment: Mapping[str, str], timeout: float
+) -> tuple[bool, str]:
+    """Read the crew operation's receipt, preserving refusal and timeout details."""
     try:
         finished = _run_srun(
             command,
@@ -1035,9 +1188,10 @@ def land_once() -> dict[str, Any]:
 
     At most one delivered run is measured per pass. A measurement runs the
     suite at two revisions plus up to six isolated re-runs, so measuring every
-    waiting run in one pass would hold admission for as long as the slowest
-    suites take. The rest wait for later passes in delivery order, and a head
-    already measured is reused rather than measured again.
+    waiting run in one pass would delay the next landing for the sum of their
+    suite times. Admission runs independently. The rest wait for later passes
+    in delivery order, and a measurement is reused while its primary, delivered
+    head and command stay unchanged.
 
     A head refused on an earlier pass is judged again as soon as the rule that
     refused it or the review it read has changed, so a run held by a rule since
@@ -1118,7 +1272,11 @@ def land_once() -> dict[str, Any]:
             reviews[tier] = record
             if described and not stale:
                 stale, stale_tier = described, tier
+        command = str(pointer.get("suite_command") or "").strip()
+        primary = _primary_revision(pointer) if command else ""
         review_stamp = _owed_review_stamp(reviews)
+        if primary and primary != head:
+            review_stamp += ":" + primary
         awaiting_tier = next((tier for tier in owed if reviews.get(tier) is None), "")
         stale_tier = stale_tier or awaiting_tier
         review = reviews.get(CODE_REVIEW_TIER)
@@ -1217,7 +1375,9 @@ def land_once() -> dict[str, Any]:
             )
             continue
         command = str(pointer.get("suite_command") or "").strip()
-        measured = _stored_measurement(run_id, head, command)
+        measured = (
+            _stored_measurement(run_id, head, command, primary) if primary else None
+        )
         if measured is not None:
             # The stored head is this head: reuse it, and re-apply it to the
             # pointer so a promoted pass still records what it measured on.
@@ -1253,6 +1413,9 @@ def land_once() -> dict[str, Any]:
                     "guard": measure_guard,
                 }
             )
+            continue
+        if measured is not None and primary and _primary_revision(pointer) != primary:
+            deferred.append(run_id)
             continue
         # The review's non-blocking findings do not hold the landing, and the
         # finding a reviewer raised must not vanish with the pointer that

@@ -61,6 +61,7 @@ def delivery(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, str |
     home = tmp_path / "config"
     home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(home))
+    monkeypatch.setenv("RECKON_WORKER_SCRATCH_ROOT", str(tmp_path / "scratch"))
     repo = tmp_path / "repo"
     repo.mkdir()
     _git(repo, "init", "-q", "-b", "main")
@@ -116,6 +117,8 @@ def delivery(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, str |
             "session": SESSION,
             "repo": str(repo),
             "worktree": str(repo),
+            "base_sha": base,
+            "suite_command": "true",
             "process_alive": False,
             "launch": "in-harness",
             "role": "implement",
@@ -340,6 +343,7 @@ def test_an_unchanged_head_is_not_reviewed_a_second_time(
 
 
 def test_land_invokes_the_shared_path_through_the_scheduler_shim(
+    delivery,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     captured: dict = {}
@@ -349,17 +353,18 @@ def test_land_invokes_the_shared_path_through_the_scheduler_shim(
         return subprocess.CompletedProcess(command, 0, json.dumps({"ok": True}), "")
 
     monkeypatch.setattr(queue_landing, "_run_srun", run)
+    measured = queue_landing._measure_delivery(
+        runs.read_pointer(RUN), RUN, str(delivery["head"]), str(delivery["repo"])
+    )
+    assert queue_landing._measure_guard(measured) == ""
     assert queue_landing._land(RUN) == (True, "")
     command = captured["command"]
     assert Path(command[0]).name == "srun"
     assert command[1:3] == ["--overlap", "--ntasks=1"]
-    assert command[-9:] == [
-        "crew",
-        "complete",
-        "--run",
-        RUN,
-        "--gate",
-        "passed",
+    assert command[command.index("crew") + 1] == "complete"
+    assert command[command.index("--run") + 1] == RUN
+    assert command[command.index("--commit") + 1] == delivery["head"]
+    assert command[-3:] == [
         "--no-impl-change",
         queue_landing.LANDING_BEAT_REASON,
         "--land",
@@ -369,12 +374,12 @@ def test_land_invokes_the_shared_path_through_the_scheduler_shim(
     )
 
 
-def test_accepted_delivery_uses_the_real_crew_land_path(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+@pytest.fixture()
+def promotable_delivery(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
     home = tmp_path / "config"
     home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(home))
+    monkeypatch.setenv("RECKON_WORKER_SCRATCH_ROOT", str(tmp_path / "scratch"))
     origin, repository = _write_origin_and_checkout(tmp_path)
     (home / "mounts.json").write_text(
         json.dumps({LANDING_PROJECT: str(repository / "docs")}), encoding="utf-8"
@@ -398,6 +403,22 @@ def test_accepted_delivery_uses_the_real_crew_land_path(
         f"test_logs: [{gate_log}]\n",
         encoding="utf-8",
     )
+    observations = {}
+    for arm, revision in (("baseline_suite", base), ("after_suite", head)):
+        log = tmp_path / f"{arm}.log"
+        log.write_text(f"# revision: {revision}\n# command: true\nEXIT=0\n")
+        observations[arm] = {
+            "revision": revision,
+            "command": "true",
+            "exit_status": 0,
+            "log_path": str(log),
+            "completed": True,
+            "failure_count": 0,
+            "failure_ids": [],
+        }
+    with manifest.open("a") as stream:
+        for arm, observation in observations.items():
+            stream.write(f"{arm}: {json.dumps(observation)}\n")
     run_id = "r-20261024T090000000000-accepted-delivery"
     runs._write_json(
         runs.pointer_path(run_id),
@@ -413,6 +434,7 @@ def test_accepted_delivery_uses_the_real_crew_land_path(
             "backend": "native",
             "created_at": "2026-10-24T09:00:00Z",
             "base_sha": base,
+            "suite_command": "true",
             "manifest_path": str(manifest),
             "node": {
                 "id": "implementation",
@@ -438,18 +460,57 @@ def test_accepted_delivery_uses_the_real_crew_land_path(
     )
     review_module.store_review(review)
 
+    receipts = []
+
     def run_in_shim(command, **_options):
         assert Path(command[0]).name == "srun"
         assert command[1:3] == ["--overlap", "--ntasks=1"]
         result = CliRunner().invoke(cli_module.main, command[6:])
+        receipts.append(
+            {"command": command, "exit_code": result.exit_code, "output": result.output}
+        )
         return subprocess.CompletedProcess(command, result.exit_code, result.output, "")
 
     monkeypatch.setattr(queue_landing, "_run_srun", run_in_shim)
-    result = queue_landing.land_once()
+    return {
+        "repo": repository,
+        "origin": origin,
+        "worker": worktree,
+        "base": base,
+        "head": head,
+        "run_id": run_id,
+        "gate_log": gate_log,
+        "manifest": manifest,
+        "run_in_shim": run_in_shim,
+        "receipts": receipts,
+    }
 
-    assert result["landed"] == [run_id], result
-    assert fixture_git(repository, "show", "main:reviewed.txt") == "accepted delivery"
-    assert fixture_git(origin, "rev-parse", "main") == fixture_git(
-        repository, "rev-parse", "main"
+
+def test_accepted_delivery_uses_the_real_crew_land_path(promotable_delivery) -> None:
+    delivery = promotable_delivery
+    result = queue_landing.land_once()
+    assert result["landed"] == [delivery["run_id"]], (result, delivery["receipts"])
+    assert (
+        fixture_git(delivery["repo"], "show", "main:reviewed.txt")
+        == "accepted delivery"
     )
-    assert not runs.pointer_path(run_id).exists()
+    assert fixture_git(delivery["origin"], "rev-parse", "main") == fixture_git(
+        delivery["repo"], "rev-parse", "main"
+    )
+    assert not runs.pointer_path(delivery["run_id"]).exists()
+
+
+def test_an_unarmed_delivery_never_reaches_completion(promotable_delivery) -> None:
+    delivery = promotable_delivery
+    run_id = delivery["run_id"]
+    runs._mutate_pointer(
+        run_id,
+        lambda pointer: {k: v for k, v in pointer.items() if k != "suite_command"},
+    )
+    result = queue_landing.land_once()
+    assert not result["landed"], result
+    assert "suite command" in result["obligations"][0]["guard"]
+    assert not delivery["receipts"]
+    assert fixture_git(delivery["repo"], "rev-parse", "HEAD") == delivery["base"]
+    assert fixture_git(delivery["origin"], "rev-parse", "main") == delivery["base"]
+    assert runs.read_pointer(run_id)["admission_landing"]["status"] == "refused"

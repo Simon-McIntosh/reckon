@@ -35,6 +35,7 @@ falls back to the configured floor.
 
 from __future__ import annotations
 
+import ast
 import contextlib
 import os
 import re
@@ -61,7 +62,7 @@ POPULATION_WORKERS = 8
 #: Wall-clock bound for one measurement subprocess, in seconds. A flight config
 #: may retune it under ``landing.measure_timeout_seconds``; this is the floor a
 #: project with no measurement history is bounded by, and it is deliberately
-#: modest because the landing pass runs inside the admission loop.
+#: modest so an unreadable arm releases the landing worker promptly.
 DEFAULT_MEASURE_TIMEOUT_SECONDS = 600.0
 
 #: How many times a population's own measured seconds per file an arm's bound
@@ -100,7 +101,9 @@ class Arm:
 
     @property
     def readable(self) -> bool:
-        return self.exit_status is not None
+        return self.exit_status == 0 or (
+            self.exit_status == 1 and bool(self.failure_ids)
+        )
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -139,6 +142,11 @@ class Measurement:
             "population": self.population,
             "isolated": self.isolated,
             "real": list(self.real),
+            "flakes": [
+                test_id
+                for test_id in self.isolated
+                if test_id not in self.real and not self.unreadable
+            ],
             "unreadable": self.unreadable,
         }
 
@@ -214,6 +222,8 @@ def importer_population(changed: Iterable[str], tree: Path) -> tuple[str, ...]:
     population is returned sorted and repository-relative so two measurements
     of one tree name the same files in the same order.
     """
+    from reckon.served_code import _edges
+
     modules = {
         name
         for name in (_module_name(str(path)) for path in changed)
@@ -225,31 +235,23 @@ def importer_population(changed: Iterable[str], tree: Path) -> tuple[str, ...]:
     if not tests_root.is_dir():
         return ()
     population: list[str] = []
+    known = frozenset(modules)
     for path in sorted(tests_root.rglob("test_*.py")):
-        text = ""
+        relative = path.relative_to(tree).as_posix()
         try:
             text = path.read_text(encoding="utf-8", errors="replace")
-        except OSError:
+            parsed = ast.parse(text, filename=relative)
+        except (OSError, SyntaxError):
+            # Let pytest report an unreadable caller instead of treating it as
+            # proof that the file imports none of the changed modules.
+            population.append(relative)
             continue
-        if any(_imports_module(text, module) for module in modules):
-            population.append(path.relative_to(tree).as_posix())
+        imports = _edges(parsed, _module_name(relative), False, known)
+        # A qualified name in a string can name an indirect import. Retain
+        # those callers alongside the syntax tree's resolved import edges.
+        if imports or any(module in text for module in modules):
+            population.append(relative)
     return tuple(population)
-
-
-def _imports_module(text: str, module: str) -> bool:
-    """Whether a file's text imports ``module``, by dotted name or by leaf."""
-    if module in text:
-        return True
-    leaf = module.rsplit(".", 1)[-1]
-    return any(
-        pattern in text
-        for pattern in (
-            f"import {leaf}\n",
-            f"import {leaf},",
-            f"import {leaf} ",
-            f"from {module}",
-        )
-    )
 
 
 def _target_name(token: str) -> str:
@@ -539,6 +541,7 @@ def measure_run(
     timeout: float = DEFAULT_MEASURE_TIMEOUT_SECONDS,
     stored: Iterable[Mapping[str, Any]] = (),
     project: str = "",
+    changed: Iterable[str] | None = None,
 ) -> Measurement:
     """Run the three readings for one delivered run and return the verdict.
 
@@ -548,7 +551,10 @@ def measure_run(
     the project's stored measurements, whose arms size each bound above that
     floor from how long this project's populations actually take. ``run`` is
     the command runner, ``subprocess.run``-shaped, so a caller can drive the
-    measurement without executing a real suite.
+    measurement without executing a real suite. ``changed`` optionally names
+    the run's own changed modules independently of the compared revisions;
+    the landing caller compares current primary with a merge candidate while
+    selecting importers of the delivered change.
     """
     runner = run or _RUN
     node_tests = [str(path).strip() for path in test_files if str(path).strip()]
@@ -600,7 +606,10 @@ def measure_run(
         environment,
         file_count=len(node_tests),
     )
-    files = importer_population(changed_paths(tree, base_sha, head_sha), tree)
+    files = importer_population(
+        changed_paths(tree, base_sha, head_sha) if changed is None else changed, tree
+    )
+    _carry_missing_tests(base_tree, tree, files)
     population_command = [*argv, *files, "-n", str(POPULATION_WORKERS)]
     population_bound = bound(len(files))
     if files:
@@ -748,6 +757,42 @@ def _slug(test_id: str) -> str:
 
 class BaseCheckoutError(ValueError):
     """The base checkout could not be built, so there is nothing to measure."""
+
+
+def delivered_paths(repo: Path, base: str, head: str) -> list[str]:
+    """Use the merge reader's strict diff and preserve its path boundaries."""
+    from reckon.crew import merge
+
+    try:
+        return [path for _status, path in merge._changed_paths(repo, base, head)]
+    except (OSError, merge.MergeError) as exc:
+        raise BaseCheckoutError(
+            f"the delivered changes could not be read: {exc}"
+        ) from exc
+
+
+@contextlib.contextmanager
+def candidate_checkout(
+    repo: Path, primary: str, head: str, timeout: float
+) -> Iterator[tuple[str, Path]]:
+    """Build the same merge as landing, and measure it without moving a branch."""
+    from reckon.crew import merge
+
+    try:
+        candidate = merge.build_merge_commit(
+            repo,
+            primary,
+            head,
+            "merge: integrate the measured delivery",
+            "Combine the reviewed delivery with the pinned primary revision "
+            "for population measurement and landing.",
+        )
+    except (OSError, merge.MergeError) as exc:
+        raise BaseCheckoutError(
+            f"the merge candidate could not be built: {exc}"
+        ) from exc
+    with base_checkout(repo, candidate, timeout) as tree:
+        yield candidate, tree
 
 
 def _git(repo: Path, *arguments: str, timeout: float):

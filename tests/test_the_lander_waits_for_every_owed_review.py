@@ -103,6 +103,7 @@ def _pointer(repo: Path, *, base: str, manifest: Path) -> dict:
         "repo": str(repo),
         "worktree": str(repo),
         "base_sha": base,
+        "suite_command": "true",
         "process_alive": False,
         "launch": "in-harness",
         "role": "implement",

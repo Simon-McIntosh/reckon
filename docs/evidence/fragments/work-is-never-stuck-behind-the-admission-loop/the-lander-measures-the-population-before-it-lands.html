@@ -1,0 +1,137 @@
+<article class="r-evidence" id="the-lander-measures-the-population-before-it-lands" data-node="the-lander-measures-the-population-before-it-lands">
+  <h3>The lander measures current primary against the merge candidate</h3>
+  <p>The delivery measurement builds a merge candidate without moving either
+  branch, discovers importers of the delivered modules in that candidate, and
+  runs the armed suite and importer population at current primary and the
+  candidate. Added failure ids are rerun serially three times at each revision.
+  Refusals name their failure ids and log paths; accepted intermittent failures
+  are recorded under <code>flakes</code>. Evidence names both
+  <code>main_sha</code> and <code>candidate_sha</code>.</p>
+  <p>The reproduction starts with an importer added on main after the worker
+  branched. At base <code>5cb869148eacf537fd7e0a9845aeef7f83df2b08</code>,
+  the first case reports <code>landed: ['r-population-delivery']</code> despite
+  the candidate's reproducible failure. The reproduction reports
+  <strong>4 failed, 1 passed</strong>; the new focused gate reports
+  <strong>10 passed</strong>.</p>
+  <table>
+    <thead><tr><th>Candidate observation</th><th>Serial confirmation</th><th>Landing result</th></tr></thead>
+    <tbody>
+      <tr><td>One added failure</td><td>Candidate 3/3; main 0/3</td><td>Refused, naming the id and logs</td></tr>
+      <tr><td>One added failure</td><td>Candidate 0/3; main 0/3</td><td>Landed, recorded as a flake</td></tr>
+      <tr><td>No added failure</td><td>No rerun needed</td><td>Landed after both population arms</td></tr>
+      <tr><td>The same failure on main and candidate</td><td>No added id to rerun</td><td>Landed; zero added failures</td></tr>
+    </tbody>
+  </table>
+  <p>The declared negative control replaces importer discovery with an empty
+  population. The reproducing-failure test then fails because the run lands:
+  <strong>1 failed, EXIT=1</strong>. Additional cases verify cache invalidation
+  and refusal reconsideration when primary moves, deferral when it moves during
+  measurement, and refusal on unreadable test runs or an unreadable delivery
+  diff. Candidate-parent assertions verify both input revisions.</p>
+  <p>The existing tests importing <code>reckon.crew.queue_landing</code> report
+  <strong>77 passed at base and 77 passed at head</strong>, with zero added
+  failures. The additional real subprocess test importing
+  <code>reckon.crew.landing_measure</code> passes at both revisions. Ruff reports
+  zero findings on the staged Python paths and all three files are formatted.
+  The frozen-base logs record the imported module and working directory.
+  Gate logs and the complete delivery record are retained in run
+  <code>r-20261105T105930077228-the-lander-measures-the-population-before-it-lands</code>.</p>
+  <p>Implementation commits:
+  <code>13d029a6be7f3b245ef03597d0a2ab44b17693e2</code> and
+  <code>f680aa26a27fa48a5dd0efff6b2ffc1db886dfbf</code>; the final delivery commit
+  adds strict diff reading, its regression case, and this evidence fragment.</p>
+  <section id="the-lander-measures-the-population-before-it-lands-repair">
+    <h3>The measured candidate reaches the merge boundary</h3>
+    <p>Repair commit <code>14a2beea6d991e14b1232b9c426a5c2966deaf73</code>
+    answers all three review findings. The merge runs before promotion writes
+    its ledger, through the existing <code>crew merge --candidate</code> path.
+    Its parent check refuses a changed primary at the actual merge boundary;
+    completion then promotes and releases the already merged delivery.
+    Promotion eligibility and introduced-marker checks remain required.</p>
+    <table>
+      <thead><tr><th>Finding</th><th>Repair and check</th></tr></thead>
+      <tbody>
+        <tr><td><code>f43bb850251</code></td><td>The actual CLI refuses a primary advance between measurement and merge; a successful local push publishes exactly the measured candidate.</td></tr>
+        <tr><td><code>fbc859c712b</code></td><td>An implementation without an armed suite command writes an unreadable measurement and refuses landing. Absence of a measurement also refuses.</td></tr>
+        <tr><td><code>dimension-reuse</code></td><td>The delivery adapter delegates to the merge module's existing strict changed-path reader. A call-site check and a filename containing a newline verify reuse and preserved path boundaries.</td></tr>
+      </tbody>
+    </table>
+    <p>The repair baseline is <code>28d239f9b51f54d40a19b7e6a579fb7c84b1db47</code>.
+    Its scoped suite passes 10 tests; the repaired suite passes 16. Both arms
+    run <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+    tests/test_the_lander_measures_the_population.py</code>. Reversing the
+    answering commit's two product-file changes in a scratch tree, with its
+    assertions retained, reports <strong>6 failed, 10 passed, EXIT=1</strong>.
+    The negative control verifies the reversed files byte-for-byte against
+    the answering commit's parent. Receipts are retained as
+    <code>repair-base.log</code>, <code>repair-answer.log</code>, and
+    <code>repair-negative.log</code> in the same run directory.</p>
+  </section>
+  <section id="the-lander-measures-the-population-before-it-lands-compatibility-repair">
+    <h3>Armed fixtures expose the actual completion failure</h3>
+    <p>Commit <code>c1a851524b1f9b5fdf688292df1ad9cb69033643</code>
+    supplies suite commands, base revisions, paired receipts and current candidate
+    identities to seven existing test files. Review and refusal checks reach
+    their intended guards while the missing-suite refusal remains enabled.
+    The real CLI test now asserts the completion receipt itself.</p>
+    <table>
+      <thead><tr><th>Expanded gate arm</th><th>Observed result</th></tr></thead>
+      <tbody>
+        <tr><td>Base <code>a99866a42b8af18a267b2e452c7f0e7b1adf40fe</code></td><td>23 failed, 53 passed; EXIT=1</td></tr>
+        <tr><td>Fixture commit <code>c1a851524b1f9b5fdf688292df1ad9cb69033643</code></td><td>1 failed, 75 passed; EXIT=1</td></tr>
+        <tr><td>Fixture commit reversed, parent bytes verified</td><td>23 failed, 53 passed; EXIT=1</td></tr>
+      </tbody>
+    </table>
+    <p>The reversal restores 22 failure ids absent from the repaired fixture arm.
+    Logs are <code>expanded-repair-base.log</code>,
+    <code>expanded-repair-head.log</code> and
+    <code>expanded-fixture-negative.log</code> in the run directory.</p>
+    <p>The remaining real CLI failure reports that the reviewed head was pushed
+    but its worktree is no longer available. Merging before actual promotion
+    lets promotion release the tree before the subsequent landing release.
+    Separately, an actual completion refusal after an allowed dry-run verdict
+    leaves the candidate on both local primary and the test remote while
+    <code>land_once</code> reports no landing. These observations invalidate
+    any reading of the earlier mocked-completion checks as a complete landing
+    proof. This partial fixture repair does not close the current review.</p>
+  </section>
+  <section id="the-lander-measures-the-population-before-it-lands-publication-after-completion">
+    <h3>Actual completion precedes candidate publication</h3>
+    <p>Commit <code>0069a7230915c350f09a20bb9ad1e398edc50c78</code>
+    routes the measured delivery through <code>crew complete --land --candidate</code>.
+    Completion validates the incoming measurement and executes actual promotion
+    before any candidate merge or push. Because promotion commits records onto
+    primary, the landing step measures a fresh candidate against that primary
+    and passes its identity to the existing merge parent guard.</p>
+    <p>The tests share the real CLI promotion fixture. Removing its gate log
+    after initial measurement reproduces a completion refusal that leaves
+    primary and the remote untouched. The successful receipt names exactly the
+    candidate measured after promotion and releases the worktree. Advancing
+    primary after that measurement refuses publication. A refusal after pointer
+    removal survives in the run directory. The missing-suite refusal remains
+    enabled and is checked against the same real CLI fixture.</p>
+    <p>A known-present discovery check found only three of ten importer files.
+    Commit <code>7afacffd0659ec3636635c4db7d650e565d27eee</code> reuses the
+    existing Python import graph to cover comma lists, parenthesized imports
+    and aliases, while retaining qualified indirect imports. An unreadable
+    caller stays in the population for collection to report. Both known-present
+    controls now appear, and the population contains all ten files.</p>
+    <table>
+      <thead><tr><th>Recorded check</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Required gate after the publication repair</td><td>78 passed; EXIT=0</td></tr>
+        <tr><td>Publication product changes reversed; assertions retained</td><td>5 failed, 73 passed; EXIT=1</td></tr>
+        <tr><td>Node module including discovery checks</td><td>24 passed; EXIT=0</td></tr>
+        <tr><td>Discovery product change reversed; assertions retained</td><td>4 failed, 3 passed; EXIT=1</td></tr>
+        <tr><td>Remaining importer files, base and publication head</td><td>17 passed in each arm</td></tr>
+        <tr><td>Existing merge CLI tests, base and publication head</td><td>10 passed in each arm</td></tr>
+      </tbody>
+    </table>
+    <p>Each reversed product file matches its answering commit's parent bytes.
+    The receipts are <code>publication-negative.log</code> and
+    <code>importer-discovery-negative.log</code>. The final combined gate and
+    its original repair-base comparison are recorded in the manifest, with
+    the final-head receipt in <code>publication-final.log</code>. Test arms
+    run sequentially, and all logs remain in the same run directory.</p>
+  </section>
+</article>
