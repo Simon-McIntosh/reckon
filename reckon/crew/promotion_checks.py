@@ -469,12 +469,10 @@ def _fresh_manifest(record: Mapping[str, Any]) -> dict[str, Any] | None:
 
 
 # How long a promotion waits for a review run's manifest before refusing. A
-# review is promoted the moment its record parses, and the worker writes its
-# manifest a few seconds later while it finishes its own turn; measured on
-# review r-20261021T230313999935, which the loop reported review-ready at 01:34
-# before its manifest existed, and whose first `crew complete` failed reading
-# it. The bound has to cover that write without holding a promotion behind a
-# worker that never writes one, so it is seconds rather than minutes.
+# review is promoted the moment its record parses, which is a few seconds
+# before the worker writes its manifest as it finishes its own turn, so the
+# bound has to cover that write without holding a promotion behind a worker
+# that never writes one: seconds rather than minutes.
 REVIEW_MANIFEST_WAIT_SECONDS = 20.0
 _REVIEW_MANIFEST_POLL_SECONDS = 0.25
 
@@ -2864,26 +2862,6 @@ def _committed_review_rounds(
     return ids, heads
 
 
-def _with_a_derived_total(payload: Mapping[str, Any]) -> dict[str, Any]:
-    """The record a promotion commits, carrying the total its scores sum to.
-
-    A reviewer that scores all six dimensions and leaves the total line out has
-    written a complete review: the total is arithmetic over the record, and
-    every reader — the store's own writer, ``read_review``, the delivery
-    verdict — derives it. The record a promotion commits is read straight from
-    the reviewer's run directory, which is the one copy that never passes
-    through that writer, so without this the committed row records the review's
-    dimensions beside a null total.
-
-    A record that states its own total keeps it, and a record that scores
-    nothing is left alone: the derivation withholds a total rather than
-    inventing one over a subset of the dimensions.
-    """
-    if review_module._has_integer_total(payload):
-        return dict(payload)
-    return dict(review_module._derive_landed_total(payload))
-
-
 def _delivered_review_payloads_for_commit(
     record: Mapping[str, Any],
     project: str,
@@ -2946,6 +2924,7 @@ def _delivered_review_payloads_for_commit(
     rolled-back landing rather than as a silently dropped round.
     """
     from reckon.crew import recovery
+    from reckon.crew.recovery_review_delivery import _with_derived_total
 
     if not recovery._is_review_run(record):
         return []
@@ -2955,7 +2934,7 @@ def _delivered_review_payloads_for_commit(
     def include(payload: Mapping[str, Any] | None) -> None:
         if not payload:
             return
-        payload = _with_a_derived_total(payload)
+        payload = _with_derived_total(payload)
         key = str(payload.get("review_run_id") or "").strip()
         if key:
             if key in seen:

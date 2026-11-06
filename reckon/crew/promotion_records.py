@@ -353,14 +353,13 @@ def _default_gate_evidence_from_manifest(
             log_text = ""
     declared_command = str(manifest.get("tests") or "").strip()
     # A review run's evidence is the record it stored, so its manifest's
-    # ``tests`` line describes a check rather than naming one — and the shape
-    # that line may take belongs to the worker's report rather than to a
-    # command, so it may be a list of the checks the node's fence named. The
-    # record stands as the check instead, replacing whatever the manifest
-    # declared rather than filling only where the operator left the flag
-    # absent: a review whose ``tests:`` line is a list otherwise reaches the
-    # executable-gate refusal on the list's own repr, which is the refusal
-    # measured across nine reviews in one night.
+    # ``tests`` line describes a check rather than naming one — it may be a
+    # list of the checks the node's fence named rather than a command at all.
+    # The record stands as the check instead, so such a line never reaches the
+    # executable-gate refusal on the list's own repr. It fills only what the
+    # caller's flag left absent, so an explicit gate check the operator gives
+    # is kept: that operator states the command and log they want re-executed,
+    # and a derived one replacing it would discard the evidence they named.
     # A review run with no delivered record is left to the ordinary rules
     # below: a review that stores its record during promotion has nothing on
     # disk yet, and a prose line still reaches the executable-gate refusal.
@@ -368,7 +367,12 @@ def _default_gate_evidence_from_manifest(
     if _review_role_run(record):
         review_evidence = _review_record_evidence(record)
     if review_evidence is not None:
-        resolved_gate.update(_review_record_check(review_evidence))
+        for key, value in _review_record_check(review_evidence).items():
+            if key == "exit_status":
+                if resolved_gate.get(key) is None:
+                    resolved_gate[key] = value
+            elif not str(resolved_gate.get(key) or "").strip():
+                resolved_gate[key] = value
     command_unset = not str(resolved_gate.get("command") or "").strip()
     if command_unset and declared_command and not _gate_command_prose(declared_command):
         resolved_gate["command"] = declared_command

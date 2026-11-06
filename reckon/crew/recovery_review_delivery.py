@@ -360,17 +360,20 @@ def _with_derived_total(body: Mapping[str, Any]) -> Mapping[str, Any]:
     """The record with the total its own six scores sum to, when it carries none.
 
     A reviewer that scores all six dimensions and leaves the ``total`` line out
-    has delivered a complete review: the total is arithmetic over the record
-    rather than a separate finding, and :func:`reckon.crew.review.read_review`
-    derives it for every other reader. Deriving it here too keeps this verdict
-    from refusing a review that the store, the gate and the promotion all read
-    as complete — the disagreement measured when a coordinator met "record is
-    not a complete review: it lacks total" on a record carrying all six scores.
+    has written a complete review: the total is arithmetic over the record
+    rather than a separate finding, and
+    :func:`reckon.crew.review.read_review` derives it for every other reader.
+    Every reader of a promotion's copy of the record asks this question — the
+    delivery verdict, and the payload a promotion commits, which is read
+    straight from the reviewer's run directory and so is the one copy that
+    never passes through the store's writer. One helper answers it for all of
+    them, so no reader can disagree with another about what a given record
+    scores.
 
-    A record that does carry a total keeps it: the derivation is only reached
-    where the field is absent, and the stored bytes are never rewritten, so a
-    reader that never goes through this verdict sees the record as it was
-    written.
+    A record that already states a total keeps it: the derivation is only
+    reached where the field is absent, and the stored bytes are never
+    rewritten, so a reader that never goes through this helper sees the record
+    as it was written.
     """
     if review_module._has_integer_total(body):
         return body
