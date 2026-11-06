@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite records repair-base.log at 2c43d70f0c with completed true, exit_status 0 and failure_count 0, and after_suite records repair-head.log at a47d4b78aa with completed true, exit_status 0 and failure_count 0, so the delta adds no failure; the head commit c4638178bc is docs-only and gates nothing further.",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:4837",
+    "reckon/crew/queue_admission.py:4121",
+    "reckon/crew/queue_admission.py:4228",
+    "reckon/crew/obligations.py:1217",
+    "reckon/crew/obligations.py:1788",
+    "reckon/crew/obligation_snapshot.py:1466",
+    "reckon/crew/query.py:456",
+    "reckon/crew/directory.py:196"
+  ],
+  "completed_at": "2026-11-06T08:11:22.252Z",
+  "dispatched_at": "2026-11-06T07:59:57Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "eight production call sites verified in the reviewed tree: admit_until_stopped, admit_once, fair_share_admission_order, and five queued_placements callers outside queue_admission.",
+    "diff": "both delta commits read commit by commit: a47d4b78aa removes the duplicate reader and shares the queue fixtures, c4638178bc records the repair and its control in the evidence fragment.",
+    "done_when": "the done_when names tests/test_a_held_request_holds_nothing_behind_it.py; repair-head.log records 7 passed EXIT=0 at a47d4b7, repair-base.log 6 passed EXIT=0 at 2c43d70, repair-negative-control.log 1 failed 6 passed EXIT=1.",
+    "goal": "the delta answers the previous review's reuse finding: reckon/crew/queue_admission.py:3993 reads the priority override through reckon/crew/queue_order.py:68 _override, and the local _priority_override is gone.",
+    "manifest": "read; status complete, five commits recorded, both suite arms completed with zero failures, and the truncated importer population disclosed under retry_failures.",
+    "write_paths": "git diff --name-only 2c43d70f0c..c4638178bc lists exactly the three declared paths: the fragment, reckon/crew/queue_admission.py and the test file."
+  },
+  "justifications": {
+    "durability": "tests/test_a_held_request_holds_nothing_behind_it.py:287 asserts the position moves from 1 to 3 when queue_order._override is patched to None, and the run's logs/repair-negative-control.log shows it reddening (assert 1 == 3) against product code that keeps its own reader.",
+    "evidence": "the three repair logs carry revision, tree, command and EXIT (repair-head.log 7 passed EXIT=0 at a47d4b7; repair-base.log 6 passed EXIT=0 at 2c43d70; repair-negative-control.log 1 failed/6 passed EXIT=1), and the base arm runs the base tree's own six-case file rather than the head's seven-case one, which the fragment states at line 76.",
+    "fit": "the test at tests/test_a_held_request_holds_nothing_behind_it.py:132 rewrites a queued pointer through runs._write_json because the shared _queue builder fixes backend=LANE, and the new case at :287 patches the owner's private _override, both of which reach into private helpers rather than a public seam.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:3993 and :4101 read the override through queue_order._override and a grep over reckon/ finds priority_override read in exactly one place, reckon/crew/queue_order.py:69, so the answering commit removes the duplicate reader it was dispatched to remove.",
+    "reuse": "the delta deletes reckon/crew/queue_admission.py's _priority_override and imports the owner's reader at :3993 and :4101, and the test file imports the sibling suite's fixtures instead of rebuilding them, leaving one definition of the override, the one at reckon/crew/queue_order.py:68.",
+    "scope_discipline": "git diff --name-only 2c43d70f0c..c4638178bc returns only reckon/crew/queue_admission.py, tests/test_a_held_request_holds_nothing_behind_it.py and the node's own evidence fragment."
+  },
+  "node": "review-of-a-held-request-holds-nothing-behind-it-c4638178bc00",
+  "node:reviewed": "a-held-request-holds-nothing-behind-it",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the delta answers the previous review's reuse finding \u2014 reckon/crew/queue_admission.py:3993 now reads the priority override through reckon/crew/queue_order.py:68 _override instead of the local copy removed by a47d4b78aa, so the hoist and the lane ordering share one reader.\nVERDICT done_when: the node's done_when names tests/test_a_held_request_holds_nothing_behind_it.py; the delta's gate is recorded in the reviewed run's manifest as repair-head.log (a47d4b7, 7 passed, EXIT=0), repair-base.log (2c43d70, 6 passed, EXIT=0) and repair-negative-control.log (1 failed, 6 passed, EXIT=1), and all three logs carry a revision-and-tree header, the literal command and a bare terminal EXIT line.\nVERDICT write_paths: the manifest declares reckon/crew/queue_admission.py, tests/test_a_held_request_holds_nothing_behind_it.py and docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-held-request-holds-nothing-behind-it.html; git diff --name-only 2c43d70f0c..c4638178bc lists exactly those three paths.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T110043797131-a-held-request-holds-nothing-behind-it/manifest.md; status complete, commits f885bc9269/bd7c77f59f/2c43d70f0c/a47d4b78aa/c4638178bc, after_suite 0 failures at a47d4b78aa and baseline_suite 0 failures at 2c43d70f0c, both completed true with EXIT=0, and the residual wide-importer population recorded under retry_failures as incomplete rather than claimed.\nVERDICT diff: read both delta commits against 2c43d70; a47d4b78aa deletes _priority_override and points priorities_first (:3993/:3996) and queued_placements (:4101) at queue_order._override, and rewrites the test file to import LANE/PROJECT/SESSION_A/SESSION_B/SHARED/START/_config/_lane_document/_launcher/_queue from tests/test_overlapping_queued_requests_launch_in_turn.py; c4638178bc adds the 31-line \"Repair: one reader per fact\" section to the evidence fragment.\nCALL_SITES: reckon/crew/queue_admission.py:4837 admit_until_stopped, reckon/crew/queue_admission.py:4121 admit_once, reckon/crew/queue_admission.py:4228 fair_share_admission_order, reckon/crew/obligations.py:1217, reckon/crew/obligations.py:1788, reckon/crew/obligation_snapshot.py:1466, reckon/crew/query.py:456, reckon/crew/directory.py:196\n\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:3993 and :4101 read the override through queue_order._override and a grep over reckon/ finds priority_override read in exactly one place, reckon/crew/queue_order.py:69, so the answering commit removes the duplicate reader it was dispatched to remove.\nSCORE evidence: 17\nJUSTIFICATION evidence: the three repair logs carry revision, tree, command and EXIT (repair-head.log 7 passed EXIT=0 at a47d4b7; repair-base.log 6 passed EXIT=0 at 2c43d70; repair-negative-control.log 1 failed/6 passed EXIT=1), and the base arm runs the base tree's own six-case file rather than the head's seven-case one, which the fragment states at line 76.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 2c43d70f0c..c4638178bc returns only reckon/crew/queue_admission.py, tests/test_a_held_request_holds_nothing_behind_it.py and the node's own evidence fragment.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_held_request_holds_nothing_behind_it.py:287 asserts the position moves from 1 to 3 when queue_order._override is patched to None, and the run's logs/repair-negative-control.log shows it reddening (assert 1 == 3) against product code that keeps its own reader.\nSCORE fit: 18\nJUSTIFICATION fit: the test at tests/test_a_held_request_holds_nothing_behind_it.py:132 rewrites a queued pointer through runs._write_json because the shared _queue builder fixes backend=LANE, and the new case at :287 patches the owner's private _override, both of which reach into private helpers rather than a public seam.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta deletes reckon/crew/queue_admission.py's _priority_override and imports the owner's reader at :3993 and :4101, and the test file imports the sibling suite's fixtures instead of rebuilding them, leaving one definition of the override, the one at reckon/crew/queue_order.py:68.\n",
+  "review_run_id": "r-20261106T075339964446-review-of-a-held-request-holds-nothing-behind-it-c4638178bc00",
+  "reviewed_base_sha": "2c43d70f0c80c36e4b580c53ba3b6f0f3bb80637",
+  "reviewed_head_sha": "c4638178bc00ff60ca247763f288eeae2d7be62e",
+  "reviewed_run_id": "r-20261105T110043797131-a-held-request-holds-nothing-behind-it",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T09:10:00+00:00",
+  "total": 113
+}
