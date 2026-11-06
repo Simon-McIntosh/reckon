@@ -12,7 +12,6 @@ from typing import (
 )
 
 
-
 def _jsonl_events(path: Path) -> Iterable[Mapping[str, Any]]:
     """Yield readable objects from an append-only harness transcript."""
     try:
