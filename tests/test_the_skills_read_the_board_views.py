@@ -121,7 +121,7 @@ def test_the_roadmap_inventory_matches_its_own_count() -> None:
     )[1]
     section = section.split("\n## ", 1)[0]
     stated = re.search(
-        r"\b(two|three|four|five) views answer it\b", normalized(section)
+        r"\b(two|three|four|five)\s+(?:[a-z]+\s+)?views? answer", normalized(section)
     )
     assert stated, "the section does not state how many views answer it"
     listed = re.findall(r"(?m)^\d+\. \*\*", section)
