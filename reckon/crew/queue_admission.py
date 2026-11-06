@@ -737,12 +737,36 @@ def _queued_requests_overlap(
     )
 
 
+#: The holds after which an earlier request cannot launch in this pass, so it
+#: fences nothing behind it. Each names a reason for waiting that lies outside
+#: the queue itself: a live run's claim, the lane's gate, a failed attempt's
+#: back-off, and a plan whose text has moved since the request was queued.
+_NON_BINDING_HOLD_VERDICTS = frozenset(
+    {
+        "held-on-claim",
+        "held-by-gate",
+        "held-on-retry-backoff",
+        "held-on-plan-review",
+    }
+)
+
+
+def _non_binding_holds(verdicts: Sequence[Mapping[str, Any]]) -> set[str]:
+    """The requests this pass has held for a reason outside the queue."""
+    return {
+        str(row.get("run_id") or "")
+        for row in verdicts
+        if str(row.get("verdict") or "") in _NON_BINDING_HOLD_VERDICTS
+    }
+
+
 def _earlier_overlapping_request(
     pointer: Mapping[str, Any],
     earlier: Sequence[Mapping[str, Any]],
     *,
     moment: datetime,
     claims: dict[str, list[tuple[Path | None, Path]]],
+    fenced: Collection[str] = (),
 ) -> Mapping[str, Any] | None:
     """An earlier-ranked queued request whose write paths overlap this one.
 
@@ -753,13 +777,21 @@ def _earlier_overlapping_request(
     whose own session is never granted a slot. ``claims`` is the pass's resolved
     claims, so each comparison reads a request's paths rather than resolving
     them again.
+
+    An earlier request holds a later one only while it could launch: one the
+    same pass has already held on a claim, a gate, a back-off or a plan review
+    is named in ``fenced`` and holds nothing, so a request waiting on something
+    outside the queue never parks the work behind it.
     """
     queued_at = parse_utc(pointer.get("queued_at"))
     if queued_at is not None and (
         (moment - queued_at).total_seconds() > queue_order.STARVATION_AGE_SECONDS
     ):
         return None
+    skipping = set(fenced)
     for candidate in earlier:
+        if str(candidate.get("run_id") or "") in skipping:
+            continue
         if _queued_requests_overlap(pointer, candidate, claims=claims):
             return candidate
     return None
@@ -3930,6 +3962,49 @@ def weighted_project_order(
     return result
 
 
+def priorities_first(
+    order: Sequence[Mapping[str, Any]],
+) -> list[Mapping[str, Any]]:
+    """Hoist explicitly reprioritised requests ahead of the rest of the lane.
+
+    ``crew queue reprioritise`` states that a higher override sorts ahead of
+    the roadmap key, and a coordinator reaching for one is overriding the
+    session and project ranking as well: a request raised to 100 while it waits
+    behind another session's older work is still behind. The queue's ordering
+    ranks within a session and then within a project, so the override is
+    applied once more over the lane's whole order, highest first, and every
+    other request keeps the order it was given.
+
+    A delivered review keeps its place at the head: it is what lets a run that
+    has already finished land, and it is dispatched ahead of implementation
+    however long that has waited.
+
+    Which requests are raised and which are reviews is read from the readers
+    that already own those definitions (:func:`reckon.crew.queue_order._override`
+    and the review-delivery module), so the lane's ordering and this hoist can
+    never disagree about what an override or a review is.
+    """
+    from reckon.crew.recovery_review_delivery import _is_review_run
+
+    raised = sorted(
+        (
+            pointer
+            for pointer in order
+            if queue_order._override(pointer) is not None
+            and not _is_review_run(pointer)
+        ),
+        key=lambda pointer: -queue_order._override(pointer),
+    )
+    if not raised:
+        return list(order)
+    hoisted = {id(pointer) for pointer in raised}
+    rest = [pointer for pointer in order if id(pointer) not in hoisted]
+    lead = 0
+    while lead < len(rest) and _is_review_run(rest[lead]):
+        lead += 1
+    return rest[:lead] + raised + rest[lead:]
+
+
 def fair_share_admission_order(
     queued: Sequence[Mapping[str, Any]],
     live: Sequence[Mapping[str, Any]],
@@ -3951,9 +4026,9 @@ def fair_share_admission_order(
         now=now,
     )
     weights = _fair_use_weights(queued, config_for=config_for)
-    if weights is None:
-        return order
-    return weighted_project_order(order, weights)
+    if weights is not None:
+        order = weighted_project_order(order, weights)
+    return priorities_first(order)
 
 
 def queued_placements(
@@ -4014,12 +4089,22 @@ def queued_placements(
     order = [pointer for pointer, _reason in details]
     if weights is not None:
         order = weighted_project_order(order, weights)
+    order = priorities_first(order)
+    from reckon.crew.recovery_review_delivery import _is_review_run
+
     for position, pointer in enumerate(order, 1):
         session = str(pointer.get("session") or "")
         project = str(pointer.get("project") or "")
         session_rank[session] = session_rank.get(session, 0) + 1
         project_rank[project] = project_rank.get(project, 0) + 1
         reason = reasons[str(pointer.get("run_id") or "")]
+        override = queue_order._override(pointer)
+        if (
+            override is not None
+            and not _is_review_run(pointer)
+            and not reason.startswith("priority override")
+        ):
+            reason = f"priority override {override}"
         if weights is not None:
             reason = f"weighted fair use ({project}: {weights[project]:g}); {reason}"
         placements[str(pointer.get("run_id") or "")] = {
@@ -4288,14 +4373,21 @@ def admit_once(
                 )
                 continue
             overlap = _earlier_overlapping_request(
-                pointer, order[:index], moment=moment, claims=claims
+                pointer,
+                order[:index],
+                moment=moment,
+                claims=claims,
+                fenced=_non_binding_holds(verdicts),
             )
             if overlap is not None:
                 # An earlier-ranked queued request names a path this one also
                 # names, so this launch would be refused against a claim that
                 # fences nothing while both wait. It is left exactly as it is —
                 # queued, with no failure recorded — and the head of the queue,
-                # which has no earlier overlap, is never held this way.
+                # which has no earlier overlap, is never held this way. An
+                # earlier request the pass has already held is not a fence: it
+                # cannot launch, so holding this one behind it would stop the
+                # lane on a request that is waiting elsewhere.
                 result["held"].append(str(pointer["run_id"]))
                 result.setdefault("hold_detail", {})[str(pointer["run_id"])] = (
                     f"held behind earlier queued request "

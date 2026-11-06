@@ -1,0 +1,99 @@
+<section id="a-held-request-holds-nothing-behind-it-landing">
+  <h2>A held request parks nothing behind it</h2>
+
+  <p><strong>What changed.</strong> The admission pass held a later request
+  behind an earlier overlapping one whatever state the earlier one was in
+  (<code>reckon/crew/queue_admission.py</code>,
+  <code>_earlier_overlapping_request</code>). On 3 November the pass that ended
+  at 11:25Z held the repair for two tests red on main behind a request naming
+  the same path, and that earlier request was itself <code>held-on-claim</code>
+  behind another run's worktree. Neither launched, and the repair's priority
+  override of 100 changed nothing.</p>
+
+  <p>The pre-check now skips every request the same pass has already held on a
+  claim, a gate, a retry back-off or a plan review
+  (<code>_non_binding_holds</code> over the pass's own verdict rows): each of
+  those is a reason to wait that lies outside the queue, so the earlier request
+  cannot launch in this pass and fences nothing. A request the pass holds for
+  its session's allowance, or one that has already launched, still holds the
+  later one, which is what the existing overlap case pins.</p>
+
+  <p>A priority override is also applied over the lane's whole order
+  (<code>priorities_first</code>, used by
+  <code>fair_share_admission_order</code> and <code>queued_placements</code>),
+  so a request raised through <code>crew queue reprioritise</code> ranks ahead
+  of every request without one across sessions and projects, not only within
+  its own session. A delivered review keeps its place at the head, because it
+  is what lets a finished run land.</p>
+
+  <h3 id="a-held-request-holds-nothing-behind-it-arms">Measured</h3>
+
+  <p>The node's test file drives one admission pass over a temporary crew home
+  with a stubbed launcher. Four cases hold the earlier request on a claim, a
+  gate, a back-off and a plan review in turn; in each the later request
+  launches in that same pass. A fifth case has the earlier request able to
+  launch, and the later one is still held
+  <code>held-behind-earlier-request</code>. A sixth ranks three queued requests
+  across three sessions and three projects with one of them reprioritised to
+  100. The plan-review case stands in
+  <code>_plan_review_owed</code>; the hold it writes and the overlap check that
+  follows are the real ones.</p>
+
+  <table id="a-held-request-holds-nothing-behind-it-table">
+    <caption>Every arm is a log whose first line names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>after suite (node's test file)</td>
+        <td><code>bd7c77f</code>, worktree</td>
+        <td>6 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>base suite, same test file placed in the base tree</td>
+        <td><code>8aaf103</code>, extraction</td>
+        <td>5 failed, 1 passed, <code>EXIT=1</code> &mdash; the four held cases
+        and the reprioritised case fail; the control passes</td></tr>
+      <tr><td>negative control: count held requests as overlaps again</td>
+        <td><code>bd7c77f</code> + mutation</td>
+        <td>4 failed, 2 passed, <code>EXIT=1</code> &mdash;
+        <code>test_a_request_held_on_a_peers_claim_holds_nothing_behind_it</code>
+        fails first</td></tr>
+      <tr><td>overlap, ordering and admission neighbours, head</td>
+        <td><code>f885bc9</code>, worktree</td>
+        <td>51 passed and 7 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>wide gate, head (59 files importing the module)</td>
+        <td><code>bd7c77f</code>, worktree</td>
+        <td>incomplete: the run was stopped at 470 s at about 90% of its tests
+        on this shared node, so no summary line was produced</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="a-held-request-holds-nothing-behind-it-repair">Repair: one reader per fact</h3>
+
+  <p>The first cut of the hoist carried its own reader of
+  <code>priority_override</code> beside the one the queue ordering already ranks
+  by, and this node's test file rebuilt the checkout, lane document, request
+  builder and launcher that the overlapping-queue suite already provides. Two
+  definitions of one fact agree only until one of them moves. The hoist now asks
+  <code>queue_order._override</code>, and the test imports those fixtures from
+  <code>tests/test_overlapping_queued_requests_launch_in_turn.py</code>.</p>
+
+  <p>A case patches that reader and asserts the hoist follows it and stops when
+  the ordering stops seeing an override, so a second local copy fails here rather
+  than diverging quietly.</p>
+
+  <table id="a-held-request-holds-nothing-behind-it-repair-table">
+    <caption>Every arm is a log whose first line names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>after suite</td><td><code>a47d4b7</code>, worktree</td>
+        <td>7 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>base suite</td><td><code>2c43d70</code>, extraction</td>
+        <td>6 passed, <code>EXIT=0</code> (the base tree carries the earlier
+        six-case file)</td></tr>
+      <tr><td>negative control: the answering commit reverted, head test kept</td>
+        <td><code>2c43d70</code>, extraction</td>
+        <td>1 failed, 6 passed, <code>EXIT=1</code> &mdash;
+        <code>test_the_hoist_reads_the_override_the_queue_ordering_reads</code></tr>
+    </tbody>
+  </table>
+</section>
