@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="700">
+<meta name="plan-version" content="701">
 <meta name="plan-modified" content="2026-11-06">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1331,6 +1331,9 @@ Both cases run under the file's existing temporary crew home.</li>
 <div class="r-comment" data-section="s109" data-id="c-run-r-20261106T180916353431-review-of-tell-a-session-without-a-follower-so-2fd1b62da7dd" data-who="reckon-build" data-when="2026-11-06T18:17:45.646Z">
     <div class="r-comment-body"><p>Review of r-20261106T172623769806-tell-a-session-without-a-follower-so at head 2fd1b62da7 against base 4dc1488f6e53 is stored parsed with six dimension scores, 0 added failures, and one non-blocking finding on the rewrite's failure path.</p></div>
 </div>
+<div class="r-comment" data-section="s109" data-id="c-run-r-20261106T172623769806-tell-a-session-without-a-follower-so" data-who="reckon-build" data-when="2026-11-06T18:05:02.879Z">
+    <div class="r-comment-body"><p>The station rewrites a departed session&#x27;s per-session snapshot on the tick its stored row is dropped, so the document says no follower is delivering and its review-missing duty names the review dispatch command instead of deferring to a reflex that has gone; the removed row makes the rewrite one-off (head 3 passed; base 1 failed / 2 passed; 73-file importer set adds no failure and no error).</p></div>
+</div>
 <div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-10-21T05:10:00Z">
     <div class="r-comment-body"><p>§11 closed with no build: it carries no deliverable of its own. It ordered §7 before §8 and waited on §9's sweep decision. §9 is done and its decision is locked, and the order is now the section edge from §8 to §7. A currency audit at <code>03896d0a3</code> (run <code>r-20261021T043410178390-currency-mon-s7-s11</code>) found §7 and §8 partly built and §10 not built, and that their named write paths had moved; those sections now name the modules that hold the code.</p></div>
 </div>
@@ -1363,6 +1366,9 @@ Both cases run under the file's existing temporary crew home.</li>
 </div>
 <div class="r-comment" data-section="s112" data-id="c-run-r-20261106T140731148709-leave-a-record-of-why-a-follower-exits" data-who="reckon-build" data-when="2026-11-06T16:57:09.714Z">
     <div class="r-comment-body"><p>§112 landed: _FollowerRegistration.release writes an exit record beside the registration named for the exiting pid, carrying the reason (settled / the signal's name / the exception type / the exit code), the time and the pid, and _StationRegistration.release delegates to the same release so both delivery branches leave one; measure 4 passed at head, 4 failed under the first negative control, importer population 148 passed at head against 144 at base. Evidence: /reckon/evidence/fragments/the-monitor-shows-the-work-it-watches/leave-a-record-of-why-a-follower-exits.html</p></div>
+</div>
+<div class="r-comment" data-section="s113" data-id="c-run-r-20261106T184216290719-review-of-keep-a-follower-exit-record-through-a-failed-restore-or-397c4d5f4231" data-who="reckon-build" data-when="2026-11-06T18:50:47.970Z">
+    <div class="r-comment-body"><p>§113 reviewed at head 397c4d5f42 against base 70b61e04: a parsed record scoring all six dimensions (goal_fidelity 19, evidence 16, scope_discipline 20, durability 19, fit 19, reuse 19; total 113 of 120), zero added failures, one non-blocking finding that the done-when's ruff clause is claimed in the manifest with no log recording it.</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-s12-deferred-on-scheduling-surface" data-who="reckon-build" data-when="2026-10-17T05:30:00Z">
     <div class="r-comment-body"><p>Deferred. The plan review of 2026-10-17 found §12 declared implementable while its own text says the coverage figure belongs to work-scheduling-surface §3, which is unbuilt. Its done-when asks for a value from the roadmap's own derivation, and that derivation does not exist yet. §12 becomes implementable when work-scheduling-surface §3 lands.</p></div>
@@ -2368,9 +2374,6 @@ Both cases run under the file's existing temporary crew home.</li>
 </div>
 <div class="r-comment" data-section="s99" data-id="c-run-r-20261105T131501961323-reland-the-reviewed-change-that-keeps-a-neverlaunched" data-who="reckon-build" data-when="2026-11-05T14:36:18.629Z">
     <div class="r-comment-body"><p>Re-landed the reviewed parked-request budget fix unchanged on base cd5edbd573 (patch byte-identical to git diff 98d07499d1 918894481d); elapsed now charges from launch, a never-launched pointer reports no elapsed/overrun and carries waiting_seconds (declared in LIVE_CLASSIFICATION_FIELDS); gate 23 passed at head effb92dc47 against 16 passed at base, importers 86 passed both sides, declared negative control EXIT=1 with the awaiting-upstream case failing on the overrun assertion.</p></div>
-</div>
-<div class="r-comment" data-section="s113" data-id="c-run-r-20261106T184216290719-review-of-keep-a-follower-exit-record-through-a-failed-restore-or-397c4d5f4231" data-who="reckon-build" data-when="2026-11-06T18:50:47.970Z">
-    <div class="r-comment-body"><p>§113 reviewed at head 397c4d5f42 against base 70b61e04: a parsed record scoring all six dimensions (goal_fidelity 19, evidence 16, scope_discipline 20, durability 19, fit 19, reuse 19; total 113 of 120), zero added failures, one non-blocking finding that the done-when&#x27;s ruff clause is claimed in the manifest with no log recording it.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
