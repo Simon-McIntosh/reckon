@@ -744,13 +744,16 @@ def _read_json_manifest(
         if shape in allowed:
             continue
         if shape == "list":
-            # The same rule the text reader applies: the value is carried
-            # forward as written, and the manifest check names the field rather
-            # than leaving a record whose entries the worker wrote inseparable.
+            # The same rule the text reader applies: a list under a field whose
+            # reader declares text or a mapping is carried forward as written,
+            # and the value is not separable the way its reader expects, so the
+            # manifest check names the field. Every other shape is left to the
+            # readers that already judge it — a JSON manifest writes a scalar
+            # where the schema declares a list, and refusing that here would
+            # reject records the text form has always accepted.
             if shape_findings is not None:
                 shape_findings.append(_schema_shape_message(path, name, shape, allowed))
             continue
-        raise ManifestParseError(_schema_shape_message(path, name, shape, allowed))
     return raw
 
 
