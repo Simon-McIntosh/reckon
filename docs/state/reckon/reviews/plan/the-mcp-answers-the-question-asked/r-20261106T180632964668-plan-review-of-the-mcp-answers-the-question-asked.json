@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T18:15:00.729Z",
+  "dispatched_at": "2026-11-06T18:08:04Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-mcp-answers-the-question-asked.html:173",
+      "id": "done_when-1",
+      "reason": "the done-when would name the 24,000 row the landed test enforces, so the worker's two assertions cannot pass against different ceilings.",
+      "text": "\"the default read fits the budget and names how to narrow\" is measured against no number, and the two numbers the code offers disagree by more than three times: \u00a711's own evidence quotes the global `DEFAULT_RESPONSE_CEILING` of 80,000 (reckon/mcp_budget.py:11), while `VIEW_BUDGETS[(\"crew\",\"scopes\")]` is 24,000 (reckon/mcp_budget.py:52) and the landed `tests/test_every_default_read_fits.py::test_every_default_read_fits_its_row` calls exactly this default read with no path and no candidates and fails it above that row (line 306). A worker who builds the bounded default to the 80,000 ceiling \u00a711 names satisfies \u00a711's new test and leaves the landed per-view contract unasserted at its own number; the case is live because \u00a711's fixture deliberately makes the claim set exceed the budget, which is the first fixture on which the row bites.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-mcp-answers-the-question-asked.html:173",
+      "id": "evidence_paths-1",
+      "reason": "an unnamed durable path leaves the served-measurement arm of the done-when with no place to land, and a reader cannot open it afterwards.",
+      "text": "\"the call, its size and its answer are recorded in the evidence fragment\" names no path, and the plan carries exactly one evidence artifact, `docs/evidence/archive/the-mcp-answers-the-question-asked-landed.html` (cited at lines 49 and by every landed section's comment), so a worker cannot know whether to append there under `#s11` or to create a new file; this is the same defect an earlier review raised against \u00a71 and the author acted on there.",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-mcp-answers-the-question-asked.html:24",
+      "id": "wiring-1",
+      "reason": "the declaration is a one-key edit, and a reader or the queue checking \u00a711's prerequisites currently finds none.",
+      "text": "\u00a711 states its mechanism \"fits the budget by construction in the way \u00a72 set\" and its bounded default reuses \u00a72's `view_budget`/`_narrow_with`/landed per-view test, yet `plan-section-depends-on` has no `s11` key, so the plan reads \u00a711 as depending on nothing while \u00a711's own text makes \u00a72 its prerequisite; \u00a72's landing carries a caveat that a view's registration \"is carried with the next node that writes that file\", so \u00a711 is the node that inherits \u00a72's unfinished declaration.",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "d98b74b531ae310d1119a315d531767c23dbb792",
+  "plan_fingerprint": "b6f25a409edaba50e522425f40aaec242fc0b94076be6b5a5a6214b08a3a763e",
+  "plan_slug": "the-mcp-answers-the-question-asked",
+  "plan_version": 56,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T180632964668-plan-review-of-the-mcp-answers-the-question-asked",
+  "reviewed_blob_sha": "810dcca214d9dc037003fd9413fd2c48c9e44672",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `crew(view=\"scopes\")`, `candidates`, `path`, `response_over_budget` and the `a-project-reads-as-one-picture` \u00a78 re-measure all resolve (`docs/plans/a-project-reads-as-one-picture.html` carries `<h2 id=\"s8\">\u00a78 \u2014 Measured on power_convertor and two other mounts</h2>`), and \u00a711's own element exists in the snapshot with `data-status=\"implementable\"` matching its `plan-section-declarations` entry.",
+    "done_when": "a finding \u2014 \u00a711's \"the default read fits the budget\" (line 173) names no number, while the code holds that read to two different ones (the 80,000 response ceiling it quotes and the 24,000 `(\"crew\",\"scopes\")` row the landed `test_every_default_read_fits_its_row` asserts).",
+    "evidence_paths": "a finding \u2014 \u00a711 says the served scopes read \"is recorded in the evidence fragment\" (line 173) without naming the file, and no evidence artifact for this plan other than `docs/evidence/archive/the-mcp-answers-the-question-asked-landed.html` exists.",
+    "naming": "pass \u2014 \u00a711 names no plan label, stage name, ticket number or version tag, and the mechanism is stated in terms of the view, the argument and the receipt.",
+    "reasoning": "pass \u2014 the root cause matches the code (the `scopes` branch of `serve_crew_view`, reckon/mcp_views.py:4408, never reads its `path` parameter, which only the `findings` branch consumes at reckon/mcp_views.py:4264, and `_narrow_with` names only `candidates` at reckon/mcp_budget.py:176-177, so the refusal indeed offers one narrowing); the mechanism produces both arms of the done-when; and it runs on the real path, since the crew tool already declares and forwards `path` (reckon/mcp.py:2613, 2872) to that branch, so the caller is named and reachable rather than hypothetical.",
+    "single_goal": "pass \u2014 \u00a711 delivers one view's read contract (a path-narrowed answer for a named file, a bounded default with the ways to narrow); both assertions measure that one contract, as \u00a72 did for three views.",
+    "wiring": "a finding \u2014 \u00a711 has no entry in `plan-section-depends-on` (docs/plans/the-mcp-answers-the-question-asked.html:24) although its own mechanism is stated as an extension of \u00a72's budget contract."
+  },
+  "section_digests": {
+    "_document": "a037489c33018ef3eb1b312e92241904c72911a271f5dd6a6c6234f3efeb70fd",
+    "s1": "daef4b527685c5d986aa210cce10bb0f4cd5772ef762521051f5920fcb02c98b",
+    "s10": "817583319a1fadf8a657b5c2981faadfdd56d0da60ee50bc471c63ca5c29b8cb",
+    "s11": "64ec9ae2b5adb6c5a24e9006830606370f9a1674236cf32b991317ac2d9bf63f",
+    "s2": "a0440f416fa80f8451c518eb60d4c1a08c9c1c3370f691c7d170cd70e7ba5758",
+    "s3": "647001e0a60af5feceb57b19761d4ce65f0a71625325a5006e4cb99c4a10aefb",
+    "s4": "3ca97d7774b26b36ca14a01534224ffd077491ba49080047a5b94a7b0e2271fe",
+    "s5": "bdc42e40b84e0fa988f8b3f38a8a495bab1729904d9546f4b6d61792a65b1099",
+    "s6": "72d443bc7a7499a314bb8fb3b01da359881bffc36e31bdbe2f88986736c43444",
+    "s7": "a053ed4c541d8d5123269c5f548899613fe4acb2da257ecc23542f2df20fca79",
+    "s8": "27fe0be42478903a55544ca3b72d0fc75b3b096044a368408d31c52ce87bb548",
+    "s9": "ff6dcb1200f273dcfd647c7fa404014d43f233766c8fc65de5824d9a3e86d8db"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T18:24:04.380472+00:00"
+}
