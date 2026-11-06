@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-project-reads-as-one-picture">
+  <meta name="plan-evidence-for" content="reckon:a-project-reads-as-one-picture">
+  <meta name="plan-verifies" content="reckon:a-project-reads-as-one-picture#s8">
+    <title>The four coordinator questions through the CLI reads</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="measure-the-picture-reads-on-three-mounts-landing" data-node="measure-the-picture-reads-on-three-mounts" data-reckon="landed" data-when="2026-11-06">
+  <h2 id="measure-the-picture-reads-on-three-mounts-title">The four coordinator questions through the CLI reads</h2>
+
+  <h3 id="measure-the-picture-reads-on-three-mounts-method">Method, and which timings were cold</h3>
+  <p id="measure-the-picture-reads-on-three-mounts-method-body">Each question was put to one command-line read per mount, timed around the process with <code>date +%s.%N</code> and bounded by <code>timeout 50</code>. The three mounts' calls for one question ran concurrently, so each figure carries three-way contention and is an upper bound on an isolated call. The run's write fence makes <code>~/.config/reckon/cache</code> read-only, which forces a full metadata-index rebuild on every call, so a writable <code>RECKON_HOME</code> copy was used throughout. <strong>power_convertor's 20.67 s was taken with a warm index</strong> (two warm-up calls preceded it); <strong>nova's and reckon's timings were taken cold</strong>, with an empty index directory, and therefore include the rebuild. The nova and reckon figures are not comparable to power_convertor's for that reason.</p>
+
+  <table id="measure-the-picture-reads-on-three-mounts-table">
+    <thead><tr><th>Question</th><th>Read</th><th>power_convertor</th><th>nova</th><th>reckon</th></tr></thead>
+    <tbody>
+      <tr><td>What is critical</td><td><code>roadmap --json-output</code></td><td>20.67 s warm, answered</td><td><strong>43.25 s cold, over deadline</strong></td><td><strong>50 s cold, timed out</strong></td></tr>
+      <tr><td>What blocks a named section</td><td><code>read_plan(view="why")</code></td><td><strong>243.7 s, killed at the 240 s bound</strong></td><td>not reached</td><td>not reached</td></tr>
+      <tr><td>Who holds a named file</td><td><code>crew view scopes</code></td><td>3.98 s, answered (no holders)</td><td>9.10 s cold, answered (no holders)</td><td>15.29 s cold, answered (no holders)</td></tr>
+      <tr><td>What should run next</td><td><code>roadmap --brief</code></td><td><strong>31.18 s warm, over deadline</strong></td><td><strong>32.65 s cold, over deadline</strong></td><td><strong>50 s cold, timed out</strong></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="measure-the-picture-reads-on-three-mounts-why-head">Clause 1 — why the why view never returns</h3>
+  <p id="measure-the-picture-reads-on-three-mounts-why-body">The one call was re-run once under <code>timeout -s INT 240</code>. It was still running when the interrupt arrived, printed its stack, and exited 124 after <strong>243.71 s</strong>. The interrupt landed in <code>_read_persisted_memo</code> (<code>reckon/metadata_index.py:1998</code>) inside <code>path.read_text()</code>, decoding a persisted metadata-index file. That is where it was standing; the defect is the call path that put it there. <strong>The function that never converges is <code>why_view._waited_on_by</code></strong>: it enumerates every plan in the project and asks <code>read(slug)</code> for each plan's edges, and <code>_section_edges</code> → <code>_section_scoped_edges</code> → <code>_plan_authored_state</code> → <code>resolve_resource</code> → <code>_identity_listing</code> → <code>_reuse_covered</code> re-reads and re-decodes the persisted index <em>per plan</em>. power_convertor's index is 2,285,197 bytes over 26 plans; nothing memoises the decoded payload across those calls. The whole stack, which is all 23 frames the interpreter printed and so more than the last 30 asked for:</p>
+  <ol id="measure-the-picture-reads-on-three-mounts-0f-wait-stack">
+    <li><code>why_probe.py:11</code> in <code>&lt;module&gt;</code></li>
+    <li><code>mcp.py:923</code> in <code>_read_plan</code></li>
+    <li><code>mcp.py:1586</code> in <code>_read_plan_view</code></li>
+    <li><code>mcp.py:1500</code> in <code>_served_why</code></li>
+    <li><code>why_view.py:118</code> in <code>why_answer</code></li>
+    <li><code>why_view.py:370</code> in <code>_waited_on_by</code></li>
+    <li><code>why_view.py:174</code> in <code>read</code></li>
+    <li><code>why_view.py:193</code> in <code>_section_edges</code></li>
+    <li><code>roadmap.py:1652</code> in <code>_section_scoped_edges</code></li>
+    <li><code>roadmap.py:199</code> in <code>_plan_authored_state</code></li>
+    <li><code>resources.py:898</code> in <code>resolve_resource</code></li>
+    <li><code>resources.py:772</code> in <code>_resolve_canonical</code></li>
+    <li><code>resources.py:794</code> in <code>_canonical_identity_is_unique</code></li>
+    <li><code>resources.py:857</code> in <code>_directory_identity_index</code></li>
+    <li><code>resources.py:816</code> in <code>_identity_listing</code></li>
+    <li><code>metadata_index.py:922</code> in <code>_reuse_covered</code></li>
+    <li><code>metadata_index.py:934</code> in <code>_reuse_covered_once</code></li>
+    <li><code>metadata_index.py:2105</code> in <code>_load_persisted</code></li>
+    <li><code>metadata_index.py:2092</code> in <code>_persisted_payload</code></li>
+    <li><code>metadata_index.py:1965</code> in <code>persisted_memo</code></li>
+    <li><code>metadata_index.py:1998</code> in <code>_read_persisted_memo</code></li>
+    <li><code>pathlib/__init__.py:788</code> in <code>read_text</code></li>
+    <li><code>&lt;frozen codecs&gt;:322</code> in <code>decode</code></li>
+  </ol>
+
+  <h3 id="measure-the-picture-reads-on-three-mounts-base">Clause 2 — the base-commit control</h3>
+  <p id="measure-the-picture-reads-on-three-mounts-base-body">The base tree was taken at <code>6e2e4b8ef03c85105eb533bc64e97fe16786768d</code> with <code>git archive</code> into a scratch tree, the main checkout's <code>.venv</code> linked in, and <code>PYTHONPATH</code> set to that tree; <code>reckon.__file__</code> resolved to the scratch tree. <strong><code>git worktree add</code> was refused</strong> — <code>fatal: could not create directory of '/home/ITER/mcintos/Code/reckon/.git/worktrees/base-wt': Read-only file system</code> — so an extracted tree stood in for the worktree. Both calls exited 0 within the 240 s bound, reading the same power_convertor snapshot as the head arm. The owning coordinator's account is the one recorded in the plan's §1 table from 2026-10-21.</p>
+  <table id="measure-the-picture-reads-on-three-mounts-base-table">
+    <thead><tr><th>Question</th><th>Base commit, on the snapshot</th><th>Coordinator's account</th><th>Disagrees</th></tr></thead>
+    <tbody>
+      <tr><td>What is critical</td><td><code>filter-recommendation-for-coil-health#s2 → #s4 → #s6</code>, 8.0 h</td><td><code>iter-switched-terminal-transients#s6</code> (8 h) → <code>coil-supply-report-rebuild#s4</code> (10 h) → <code>#s8</code> (5 h), with a link one step further back to <code>shared-coil-supply-model#s4</code></td><td>Yes</td></tr>
+      <tr><td>What should run next</td><td><code>filter-recommendation-for-coil-health#s2</code> first, one ready plan</td><td>the chain head, <code>iter-switched-terminal-transients#s6</code></td><td>Yes</td></tr>
+    </tbody>
+  </table>
+  <p id="measure-the-picture-reads-on-three-mounts-base-note">One base-versus-head difference shows the base is not simply echoing the newer code: on the identical snapshot the base brief prints <code>No active sprint is declared.</code> where the head brief prints <code>Active sprint S4</code>. The base therefore does disagree with the coordinators on both required items, and does agree with the head on the critical-path head.</p>
+
+  <h3 id="measure-the-picture-reads-on-three-mounts-removed">Clause 3 — the removed-edge control</h3>
+  <p id="measure-the-picture-reads-on-three-mounts-removed-body">The snapshot was copied to node-local <code>/tmp</code> and one declared cross-plan edge deleted from a plan's <code>plan-section-depends-on</code>. <strong>Two edges were removed in separate copies, because the first moved nothing.</strong> First, <code>iter-switched-terminal-transients#s6 → shared-coil-supply-model#s9</code> (the meta went from <code>{"s6":["shared-coil-supply-model#s9"],"s20":[...]}</code> to <code>{"s20":[...]}</code>). Second, <code>coil-supply-report-rebuild#s21 → shared-coil-supply-model#s4</code>, the very wait the coordinators called undeclared. In both copies the critical path stayed at <code>filter-recommendation-for-coil-health#s2</code>, 8.0 h, and the wiring findings stayed the same five, with <strong>no <code>undeclared-wait</code> raised</strong>. The reason is visible in the data: the critical-path head plan's <code>plan-section-depends-on</code> names only its own sections, so no cross-plan edge can move that path. <strong>This control fails on this snapshot</strong> — it cannot make the measure move.</p>
+  <p id="measure-the-picture-reads-on-three-mounts-cleanup">Both copies were deleted afterwards: <code>snap-removed</code> and <code>snap-removed2</code>, with their <code>home-removed</code> and <code>home-removed2</code> config homes, all under the run scratch directory.</p>
+
+  <h3 id="measure-the-picture-reads-on-three-mounts-disagreements">Disagreements counted</h3>
+  <p id="measure-the-picture-reads-on-three-mounts-disagreements-body">Four disagreements are counted. Three are with the owning coordinator's account and are <em>wiring faults</em>, all for one reason: the account is dated 2026-10-21 and describes 17 plans in sprint S3, while the snapshot describes 26 plans in sprint S4, so the plans have moved under the account. The fourth is between the base and head analysers on identical input and is a <em>derivation defect</em>.</p>
+  <ol id="measure-the-picture-reads-on-three-mounts-disagreements-list">
+    <li><strong>Critical path.</strong> The read names <code>filter-recommendation-for-coil-health#s2</code>; the coordinators named <code>iter-switched-terminal-transients#s6</code>. <em>Wiring fault</em>: the account is dated 2026-10-21 with 17 plans and sprint S3, while the snapshot holds 26 plans and sprint S4, so the two describe different plan sets and the account is stale rather than wrong.</li>
+    <li><strong>First-ranked item.</strong> Same pair of answers as above. <em>Wiring fault</em>, for the same reason.</li>
+    <li><strong>The undeclared wait.</strong> The coordinators said no plan declares a wait on <code>shared-coil-supply-model#s4</code>; the snapshot declares exactly that edge from <code>coil-supply-report-rebuild#s21</code>. <em>Wiring fault</em>, in the plans having changed since the account.</li>
+    <li><strong>The active sprint.</strong> On the identical snapshot the base brief prints <code>No active sprint is declared.</code> where the head brief prints <code>Active sprint S4</code>. <em>Derivation defect, fixed between base and head</em>: the sprint declaration is present in the data and the base analyser did not reach it.</li>
+  </ol>
+  <p id="measure-the-picture-reads-on-three-mounts-defect">Separately from those four, the <code>why</code> view's <code>_waited_on_by</code> enumeration never converges, so the question "what blocks a named section" has no answer on any mount. That is a derivation defect the plan set cannot explain, and it is the one item in this measure that needs a section of its own rather than a wiring repair.</p>
+</article>
+</body>
+</html>
