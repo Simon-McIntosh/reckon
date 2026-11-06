@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="evidence-project" content="reckon">
+<meta name="plan" content="a-coordinator-sees-the-board">
+<meta name="plan-node" content="a-coordinators-context-use-is-on-the-board">
+<title>a-coordinators-context-use-is-on-the-board — landed</title>
+</head>
+<body>
+<main class="plan-doc">
+<h2 id="a-coordinators-context-use-is-on-the-board-what">What landed</h2>
+<p>Every coordinator row the directory lists now carries <code>context_use</code>:
+the context the session had used at its last turn, the window its model runs in,
+and the fraction between them. The figure is the charged input of the session's
+last assistant request — uncached input plus cache creation plus cache read —
+read through <code>_charged_claude_tokens</code> in
+<code>reckon/crew/dispatch_accounting.py</code>, the same rule that records
+<code>coordinator.authoring_turn</code> at dispatch, so the board's figure and the
+dispatch record cannot disagree about what a turn cost.</p>
+<p>The transcript is the one a dispatch already reads, named after the session
+the live pointer already carries, under <code>~/.claude/projects/*/&lt;session&gt;
+.jsonl</code>. One walk of that root resolves every session on the board
+(<code>_session_transcripts</code>), taking the newest transcript where a session
+is recorded under more than one working directory, by
+<code>_latest_transcript</code>. The last request is read from
+the end of the file (<code>_last_assistant_request</code>): the read starts at
+256&#160;KiB, grows to 1&#160;MiB and then 4&#160;MiB, and falls back to the
+dispatch accounting's own forward read (<code>_jsonl_events</code>) when the
+request sits deeper. Measured on this workstation, eight live coordinators
+resolved in 20&#160;ms in total, so the board's cost is the read it already made
+rather than a parse of half-gigabyte session files.</p>
+<p>Nothing about the last request is restated. The charging rule is
+<code>_charged_claude_tokens</code>, the forward read is <code>_jsonl_events</code>,
+and the newest file for a session recorded under two working directories is
+picked by <code>_latest_transcript</code> — all three the dispatch accounting's
+own, so the board and <code>coordinator.authoring_turn</code> cannot disagree
+about which request is last or what it cost. The bounded backwards read is the
+only new iteration, and
+<code>test_a_request_deeper_than_the_tail_is_read_forward</code> holds it to the
+same answer as the shared forward read.</p>
+<p>Three states are kept apart, because collapsing them is how a series reports
+a measurement it never took. A session with no transcript reads
+<code>unmeasured</code> with no figure and no window. A readable transcript whose
+assistant records charge nothing reads <code>unmeasured</code> with its own
+reason. A model with no declared window keeps its measured use, carries
+<code>window_tokens: null</code>, and reports no fraction rather than a guessed
+one. No case returns zero: zero is the measurement of an empty context.</p>
+
+<h2 id="a-coordinators-context-use-is-on-the-board-figure">The board's own reading</h2>
+<p><img src="/reckon/figures/a-coordinator-sees-the-board/a-coordinators-context-use-is-on-the-board/context-use-on-the-board.svg" alt="context used at last turn, as a percentage of the window, for each live coordinator session"></p>
+<p>The figure above is the view's own output over the eight live coordinator
+sessions on this workstation at 2026-11-06T10:55Z, drawn from the reader rather
+than typed in: every session runs <code>claude-opus-5-5</code> on a
+1,000,000-token window, and the population spans 16.3&#160;% to 52.7&#160;% of it.
+The window is the model's published figure, bounded from below by this machine's
+own transcripts: across 116 session transcripts the largest charged input was
+967,427 tokens, so the ceiling is at least that.</p>
+
+<h2 id="a-coordinators-context-use-is-on-the-board-measure">Measure</h2>
+<p>Gate: <code>tests/test_a_coordinators_context_use_is_on_the_board.py</code>
+plus <code>tests/test_the_board_extends_the_directory.py</code>. Base arm at
+<code>0cb152d789</code>, resolved over that tree, where the new test file does not
+exist: 6 passed, EXIT=0. Head arm at <code>a65cda08b3</code>: 11 passed, EXIT=0.
+Both arms ran from <code>git archive</code> extractions on node-local disk with
+the main checkout's <code>.env</code> linked, and each log's header names the
+tree, the resolved working directory and the module path imported.</p>
+<p>Negative control: the reader returns zero for a missing transcript, the
+declared mutation. <code>test_a_missing_transcript_reads_unmeasured_never_zero</code>
+failed and the rest passed — 1 failed, 4 passed, EXIT=1 — which is the second
+case of the section's done-when doing its work.</p>
+<p>Repair round on <code>a12116c0df</code>: the review's reuse finding was that
+the transcript scan restated the dispatch accounting's. After the repair the
+gate is <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+tests/test_a_coordinators_context_use_is_on_the_board.py</code> — at
+<code>a12116c0df</code> 5 passed, at <code>e9d6656e16</code> 6 passed, both
+EXIT=0, both from <code>git archive</code> extractions. Its negative control
+returns the first charged request from the forward fallback instead of the last,
+the divergence two implementations invite;
+<code>test_a_request_deeper_than_the_tail_is_read_forward</code> failed — 1
+failed, 5 passed, EXIT=1.</p>
+</main>
+</body>
+</html>

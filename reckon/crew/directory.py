@@ -28,6 +28,191 @@ _JOIN_STATE = threading.local()
 #: every page, so this figure only bounds one request's rows.
 _READY_IDLE_PAGE_LIMIT = 200
 
+#: Where the Claude Code harness writes one JSONL transcript per session, in a
+#: directory named for the session's working directory.
+_TRANSCRIPT_ROOT = Path.home() / ".claude" / "projects"
+
+#: How far back a transcript is read for its last assistant request. The request
+#: sits at the end of the file, so the read starts small and grows only when the
+#: tail holds no such record — a tool result between the request and the end of
+#: the file can be megabytes long. A transcript whose last request is deeper than
+#: the last figure is read from its start instead, so the answer is the same one
+#: a forward scan gives.
+_TRANSCRIPT_TAIL_SIZES = (256 * 1024, 1024 * 1024, 4 * 1024 * 1024)
+
+#: The context window each harness model runs in, by model-id prefix, in tokens.
+#:
+#: The Claude 5 family's window is 1,000,000 tokens. The figure is bounded from
+#: below by this workstation's own transcripts: over 116 session transcripts the
+#: largest charged input was 967,427 tokens, on claude-opus-5-5, so the window is
+#: at least that and the family's published figure is what remains above it. A
+#: model absent from this table carries no window rather than a guessed one.
+_CONTEXT_WINDOWS = (
+    ("claude-fable-5", 1_000_000),
+    ("claude-opus-5", 1_000_000),
+    ("claude-sonnet-5", 1_000_000),
+    ("claude-haiku-5", 1_000_000),
+    ("claude-haiku-4", 1_000_000),
+)
+
+
+def _context_window(model: str | None) -> int | None:
+    """The context window a model id runs in, or ``None`` where none is declared."""
+    if not model:
+        return None
+    for prefix, window in _CONTEXT_WINDOWS:
+        if model.startswith(prefix):
+            return window
+    return None
+
+
+def _session_transcripts(sessions: Iterable[str]) -> dict[str, Path]:
+    """The newest transcript of each named harness session, by session id.
+
+    The harness names a session's transcript after the session, so a board row
+    resolves its own transcript from the session it already carries. One walk of
+    the transcript root answers every session on the board, and a session with
+    no transcript is simply absent from the answer. Where a session was recorded
+    under more than one working directory, the newest file wins, by the rule the
+    dispatch accounting already picks a transcript with (``_latest_transcript``)
+    rather than a second ordering that could disagree with it.
+    """
+    from reckon.crew.dispatch_accounting import _latest_transcript
+
+    wanted = {str(session) for session in sessions if str(session or "").strip()}
+    if not wanted:
+        return {}
+    candidates: dict[str, list[Path]] = defaultdict(list)
+    try:
+        directories = sorted(
+            directory for directory in _TRANSCRIPT_ROOT.iterdir() if directory.is_dir()
+        )
+    except OSError:
+        return {}
+    for directory in directories:
+        try:
+            paths = sorted(directory.glob("*.jsonl"))
+        except OSError:
+            continue
+        for path in paths:
+            if path.stem in wanted:
+                candidates[path.stem].append(path)
+    found: dict[str, Path] = {}
+    for session, paths in candidates.items():
+        newest = _latest_transcript(paths)
+        if newest is not None:
+            found[session] = newest
+    return found
+
+
+def _last_assistant_request(path: Path) -> dict[str, Any] | None:
+    """The last assistant request a transcript records, with its tokens and model.
+
+    The latest request is the one the context figure describes, and it is read
+    from the end of the file so a board read does not parse a transcript that can
+    be half a gigabyte. Both the charging rule (``_charged_claude_tokens``) and
+    the forward read (``_jsonl_events``, the reader that records
+    ``coordinator.authoring_turn``) are the dispatch accounting's own, so the two
+    surfaces cannot disagree about which request is the last one or what it
+    cost. Only the bounded backwards read is new, and it is the same answer for
+    a smaller cost: a request whose usage charges nothing is skipped, exactly as
+    the forward reader skips it.
+    """
+    from reckon.crew.dispatch_accounting import _charged_claude_tokens, _jsonl_events
+
+    def figure(event: Any) -> dict[str, Any] | None:
+        if not isinstance(event, Mapping) or event.get("type") != "assistant":
+            return None
+        message = event.get("message")
+        if not isinstance(message, Mapping):
+            return None
+        usage = message.get("usage")
+        if not isinstance(usage, Mapping):
+            return None
+        tokens = _charged_claude_tokens(usage)
+        if tokens is None:
+            return None
+        return {"tokens": tokens, "model": str(message.get("model") or "")}
+
+    try:
+        end = path.stat().st_size
+    except OSError:
+        return None
+    for size in _TRANSCRIPT_TAIL_SIZES:
+        start = max(0, end - size)
+        try:
+            with path.open("rb") as stream:
+                stream.seek(start)
+                data = stream.read()
+        except OSError:
+            return None
+        lines = data.split(b"\n")
+        # A read from the middle of the file starts inside one line, and half a
+        # line does not parse: the first fragment is dropped, and a read that
+        # begins at the file's start keeps every line.
+        for raw in reversed(lines[1:] if start else lines):
+            if b'"assistant"' not in raw:
+                continue
+            try:
+                event = json.loads(raw)
+            except ValueError:
+                continue
+            found = figure(event)
+            if found is not None:
+                return found
+        if start == 0:
+            return None
+    # The request is further back than the last figure: read the transcript
+    # forward through the dispatch accounting's own event reader.
+    latest = None
+    for event in _jsonl_events(path):
+        latest = figure(event) or latest
+    return latest
+
+
+def _context_use(session: str, transcript: Path | None) -> dict[str, Any]:
+    """The context one coordinator session had used at its last turn, and its window.
+
+    A session with no transcript, and a transcript that records no charged
+    assistant request, both read ``unmeasured`` with no figure and no window:
+    zero is a measurement of an empty context, and neither case measured one.
+    """
+    source = "claude-code-session-transcript"
+    unmeasured = {
+        "status": "unmeasured",
+        "used_tokens": None,
+        "window_tokens": None,
+        "fraction": None,
+        "model": None,
+        "source": source,
+    }
+    if transcript is None:
+        return {
+            **unmeasured,
+            "detail": "no claude-code session transcript for this session",
+        }
+    request = _last_assistant_request(transcript)
+    if request is None:
+        return {
+            **unmeasured,
+            "detail": "the session transcript records no charged assistant request",
+        }
+    used = int(request["tokens"]["input_tokens"])
+    model = request["model"] or None
+    window = _context_window(model)
+    measured: dict[str, Any] = {
+        "status": "measured",
+        "used_tokens": used,
+        "window_tokens": window,
+        "fraction": used / window if window else None,
+        "model": model,
+        "source": source,
+        "transcript": str(transcript),
+    }
+    if window is None:
+        measured["detail"] = "no declared context window for this session's model"
+    return measured
+
 
 #: The fields a directory run row carries.
 #:
@@ -595,6 +780,18 @@ def directory(
     # the ready-idle join just listed keeps that row and gains the census facts
     # on it rather than appearing a second time.
     coordinators.extend(_census_rows(_census_facts(project), coordinators))
+
+    # Every listed session carries the context it had used at its last turn,
+    # whatever named it — a live run, the ready-idle join or the census — so a
+    # coordinator nearing its window is visible on the board before it stalls.
+    # A session with no readable transcript reads unmeasured rather than absent
+    # from the row.
+    transcripts = _session_transcripts(
+        str(row.get("session") or "") for row in coordinators
+    )
+    for coordinator in coordinators:
+        session = str(coordinator.get("session") or "")
+        coordinator["context_use"] = _context_use(session, transcripts.get(session))
 
     result: dict[str, Any] = {
         "ok": True,
