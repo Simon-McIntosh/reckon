@@ -95,4 +95,43 @@
     any reading of the earlier mocked-completion checks as a complete landing
     proof. This partial fixture repair does not close the current review.</p>
   </section>
+  <section id="the-lander-measures-the-population-before-it-lands-publication-after-completion">
+    <h3>Actual completion precedes candidate publication</h3>
+    <p>Commit <code>0069a7230915c350f09a20bb9ad1e398edc50c78</code>
+    routes the measured delivery through <code>crew complete --land --candidate</code>.
+    Completion validates the incoming measurement and executes actual promotion
+    before any candidate merge or push. Because promotion commits records onto
+    primary, the landing step measures a fresh candidate against that primary
+    and passes its identity to the existing merge parent guard.</p>
+    <p>The tests share the real CLI promotion fixture. Removing its gate log
+    after initial measurement reproduces a completion refusal that leaves
+    primary and the remote untouched. The successful receipt names exactly the
+    candidate measured after promotion and releases the worktree. Advancing
+    primary after that measurement refuses publication. A refusal after pointer
+    removal survives in the run directory. The missing-suite refusal remains
+    enabled and is checked against the same real CLI fixture.</p>
+    <p>A known-present discovery check found only three of ten importer files.
+    Commit <code>7afacffd0659ec3636635c4db7d650e565d27eee</code> reuses the
+    existing Python import graph to cover comma lists, parenthesized imports
+    and aliases, while retaining qualified indirect imports. An unreadable
+    caller stays in the population for collection to report. Both known-present
+    controls now appear, and the population contains all ten files.</p>
+    <table>
+      <thead><tr><th>Recorded check</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Required gate after the publication repair</td><td>78 passed; EXIT=0</td></tr>
+        <tr><td>Publication product changes reversed; assertions retained</td><td>5 failed, 73 passed; EXIT=1</td></tr>
+        <tr><td>Node module including discovery checks</td><td>24 passed; EXIT=0</td></tr>
+        <tr><td>Discovery product change reversed; assertions retained</td><td>4 failed, 3 passed; EXIT=1</td></tr>
+        <tr><td>Remaining importer files, base and publication head</td><td>17 passed in each arm</td></tr>
+        <tr><td>Existing merge CLI tests, base and publication head</td><td>10 passed in each arm</td></tr>
+      </tbody>
+    </table>
+    <p>Each reversed product file matches its answering commit's parent bytes.
+    The receipts are <code>publication-negative.log</code> and
+    <code>importer-discovery-negative.log</code>. The final combined gate and
+    its original repair-base comparison are recorded in the manifest, with
+    the final-head receipt in <code>publication-final.log</code>. Test arms
+    run sequentially, and all logs remain in the same run directory.</p>
+  </section>
 </article>
