@@ -764,6 +764,20 @@ class BaseCheckoutError(ValueError):
     """The base checkout could not be built, so there is nothing to measure."""
 
 
+def delivered_paths(repo: Path, base: str, head: str) -> list[str]:
+    """Read the delivery's scope, refusing an unreadable diff instead of zero."""
+    from reckon.velocity import run_git
+
+    try:
+        result = run_git(repo, "diff", "--name-only", base, head)
+        result.check_returncode()
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise BaseCheckoutError(
+            f"the delivered changes could not be read: {exc}"
+        ) from exc
+    return result.stdout.decode().splitlines()
+
+
 @contextlib.contextmanager
 def candidate_checkout(
     repo: Path, primary: str, head: str, timeout: float

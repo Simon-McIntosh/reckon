@@ -147,7 +147,12 @@ def test_a_reproducing_candidate_failure_refuses_landing(delivery, monkeypatch):
     assert record["real"] == [FAILURE]
     assert record["isolated"][FAILURE] == {"base": [False] * 3, "head": [True] * 3}
     assert record["population"]["main_sha"] == delivery["main"]
-    assert Path(record["population"]["head"]["log_path"]).is_file()
+    candidate = record["population"]["candidate_sha"]
+    assert _git(delivery["repo"], "rev-parse", candidate + "^1") == delivery["main"]
+    assert _git(delivery["repo"], "rev-parse", candidate + "^2") == delivery["head"]
+    log = Path(record["population"]["head"]["log_path"])
+    assert FAILURE in log.read_text()
+    assert str(log) in result["obligations"][0]["guard"]
 
 
 def test_an_added_failure_passing_serial_reruns_lands_as_a_flake(delivery, monkeypatch):
@@ -249,3 +254,14 @@ def test_a_primary_moving_during_measurement_defers_landing(delivery, monkeypatc
     result = queue_landing.land_once()
     assert result["landed"] == []
     assert result["deferred"] == [RUN]
+
+
+def test_an_unreadable_delivery_diff_refuses_without_claiming_no_importers(
+    delivery, monkeypatch
+):
+    _runner(delivery, monkeypatch, clean=True)
+    runs._mutate_pointer(RUN, lambda p: {**p, "base_sha": "missing-revision"})
+    result = queue_landing.land_once()
+    assert not result["landed"]
+    assert "delivered changes could not be read" in result["obligations"][0]["guard"]
+    assert not delivery["calls"]

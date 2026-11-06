@@ -1,0 +1,43 @@
+<article class="r-evidence" id="the-lander-measures-the-population-before-it-lands" data-node="the-lander-measures-the-population-before-it-lands">
+  <h3>The lander measures current primary against the merge candidate</h3>
+  <p>The delivery measurement builds a merge candidate without moving either
+  branch, discovers importers of the delivered modules in that candidate, and
+  runs the armed suite and importer population at current primary and the
+  candidate. Added failure ids are rerun serially three times at each revision.
+  Refusals name their failure ids and log paths; accepted intermittent failures
+  are recorded under <code>flakes</code>. Evidence names both
+  <code>main_sha</code> and <code>candidate_sha</code>.</p>
+  <p>The reproduction starts with an importer added on main after the worker
+  branched. At base <code>5cb869148eacf537fd7e0a9845aeef7f83df2b08</code>,
+  the first case reports <code>landed: ['r-population-delivery']</code> despite
+  the candidate's reproducible failure. The reproduction reports
+  <strong>4 failed, 1 passed</strong>; the new focused gate reports
+  <strong>10 passed</strong>.</p>
+  <table>
+    <thead><tr><th>Candidate observation</th><th>Serial confirmation</th><th>Landing result</th></tr></thead>
+    <tbody>
+      <tr><td>One added failure</td><td>Candidate 3/3; main 0/3</td><td>Refused, naming the id and logs</td></tr>
+      <tr><td>One added failure</td><td>Candidate 0/3; main 0/3</td><td>Landed, recorded as a flake</td></tr>
+      <tr><td>No added failure</td><td>No rerun needed</td><td>Landed after both population arms</td></tr>
+      <tr><td>The same failure on main and candidate</td><td>No added id to rerun</td><td>Landed; zero added failures</td></tr>
+    </tbody>
+  </table>
+  <p>The declared negative control replaces importer discovery with an empty
+  population. The reproducing-failure test then fails because the run lands:
+  <strong>1 failed, EXIT=1</strong>. Additional cases verify cache invalidation
+  and refusal reconsideration when primary moves, deferral when it moves during
+  measurement, and refusal on unreadable test runs or an unreadable delivery
+  diff. Candidate-parent assertions verify both input revisions.</p>
+  <p>The existing tests importing <code>reckon.crew.queue_landing</code> report
+  <strong>77 passed at base and 77 passed at head</strong>, with zero added
+  failures. The additional real subprocess test importing
+  <code>reckon.crew.landing_measure</code> passes at both revisions. Ruff reports
+  zero findings on the staged Python paths and all three files are formatted.
+  The frozen-base logs record the imported module and working directory.
+  Gate logs and the complete delivery record are retained in run
+  <code>r-20261105T105930077228-the-lander-measures-the-population-before-it-lands</code>.</p>
+  <p>Implementation commits:
+  <code>13d029a6be7f3b245ef03597d0a2ab44b17693e2</code> and
+  <code>f680aa26a27fa48a5dd0efff6b2ffc1db886dfbf</code>; the final delivery commit
+  adds strict diff reading, its regression case, and this evidence fragment.</p>
+</article>

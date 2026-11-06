@@ -786,7 +786,6 @@ def _measure_delivery(
         )
     timeout = _measure_timeout(pointer)
     logs = runs.run_dir(run_id) / "landing-measure"
-    changed = landing_measure.changed_paths(repo, base_sha, head)
     primary = _primary_revision(pointer)
     if not primary:
         measured = landing_measure.Measurement(
@@ -800,6 +799,7 @@ def _measure_delivery(
         _record_suite_evidence(run_id, measured)
         return measured
     try:
+        changed = landing_measure.delivered_paths(repo, base_sha, head)
         # Only the checkout is inside this except: an error raised by the
         # measurement itself is a different failure and is reported as one.
         with ExitStack() as stack:
