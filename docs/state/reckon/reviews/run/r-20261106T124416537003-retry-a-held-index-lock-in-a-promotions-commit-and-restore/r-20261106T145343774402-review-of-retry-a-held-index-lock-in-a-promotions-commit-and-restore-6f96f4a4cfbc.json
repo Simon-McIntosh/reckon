@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:_complete_locked",
+    "reckon/crew/promotion_gate.py:record_gate_rerun_at_integrated_revision",
+    "reckon/crew/promotion_release.py:_record_release_on_ledger",
+    "reckon/crew_run_commands.py:supersede_run_review"
+  ],
+  "completed_at": "2026-11-06T15:03:49.675Z",
+  "dispatched_at": "2026-11-06T14:55:34Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "test strength: the case shows the rollback's refused calls but cannot tell one retry loop from one call; the three-path case and the commit-retry case still fail without the wait",
+      "recorded_at": "2026-11-06T15:07:51.498849+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "evidence labelling: the landing measures the importer population at base and head itself, so the done-when is checked at landing",
+      "recorded_at": "2026-11-06T15:08:00.051889+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_rollback_asks_head.py",
+      "line": 119,
+      "severity": "non-blocking",
+      "text": "The widened assertions no longer distinguish a retried rollback from a single-shot one: if the rollback's wait were removed again the recorded sequence would still be a run of refused adds followed by one refused restore, so all(code == 128), the verb set, the first-is-add and the last-is-restore lines all hold and this case would stay green through exactly the regression it was edited for; the new three-write case in tests/test_a_promotion_commit_survives_a_held_index_lock.py:321 is what carries that guard, so this is a stale guard rather than a lost one."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T124416537003-retry-a-held-index-lock-in-a-promotions-commit-and-restore/manifest.md",
+      "line": 19,
+      "severity": "non-blocking",
+      "text": "The manifest's claim that the surviving importer failure is scaffolding rests on logs/related_tests_head.log, whose own header names revision edfcc560019 with 'node change in promotion_scope.py' in the worktree \u2014 a pre-fix head arm, not a base arm \u2014 so the done-when clause that the files importing promotion_scope add no failure against the base revision is not measured by any log on disk; the attribution itself looks right (the traceback is bwrap refusing a write to results.txt on a read-only file system in a fence-mask test that never touches promotion_scope) but the manifest carries no failure_attribution entry recording it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified reckon/crew/promotion.py:1063 _complete_locked reaches both _commit_landing_writes at :1183 and :1817 and _restore_landing_writes at :1793, and that reckon/crew/promotion_gate.py:955, reckon/crew/promotion_release.py:633 and reckon/crew_run_commands.py:1381 reach the commit step, so the changed rollback is on the live promotion path.",
+    "diff": "Read the two commits gained since the reviewed head 5568106b9358 commit by commit: 25cb21c400 collapses the rollback's per-path wait into one step over all tracked and all missing writes and adds the three-write case, and 6f96f4a4cf rewrites the evidence fragment to match.",
+    "done_when": "The done-when asks for three cases in tests/test_a_promotion_commit_survives_a_held_index_lock.py each failed by its named control, no failure added by the files importing promotion_scope, and no ruff finding on the staged paths; the gate and both arms are recorded and I re-ran ruff myself, but the importer clause is inferred from a pre-fix head arm rather than measured at the base revision.",
+    "goal": "The source node's goal is 'Retry a held index lock in a promotion's commit and restore'; reckon/crew/promotion_scope.py:1840 waits out the lock for the rollback and :2501 for the commit, so both halves of the goal are landed.",
+    "manifest": "Read the reviewed manifest; it records status complete, both suite arms with log paths that exist, the negative control, and names the fourth changed file under outside_scope, with no failure_attribution entry for the one remaining importer failure.",
+    "write_paths": "Read the reviewed manifest's orientation_write_paths and the coordinator's widening in resume-1-advice.txt:1; the diff touches reckon/crew/promotion_scope.py, tests/test_a_promotion_commit_survives_a_held_index_lock.py, tests/test_rollback_asks_head.py and the evidence fragment, all sanctioned."
+  },
+  "justifications": {
+    "durability": "tests/test_a_promotion_commit_survives_a_held_index_lock.py:321 asserts restores[\"made\"] == attempts against a literal 4 while counting calls the code made, and the two bottom arms show it redden independently: 3 == 4 with the base module and 1 == 4 under the declared mutant.",
+    "evidence": "The gate's own arms are on disk and readable (logs/gate_head.log 4 passed EXIT=0 at 6f96f4a4, logs/baseline_arm.log 3 failed 1 passed EXIT=1 at edfcc560, logs/negative_control.log 3 failed 1 passed EXIT=1), and I re-measured the ruff clause myself, but the done-when's importer clause is attributed by inspection rather than measured against the base revision.",
+    "fit": "The new step follows the module's existing idiom, returning a subprocess.CompletedProcess from reckons/crew/promotion_scope.py:1799 the way the staging step at :2374 does, and introduces no plan, node or ticket label.",
+    "goal_fidelity": "The source node's goal, retry a held index lock in a promotion's commit and restore, is met by the gained commits: reckon/crew/promotion_scope.py:1799 builds one rollback step over every tracked write and every missing write and :1840 runs it through merge._run_waiting_out_a_held_index_lock under this module's own bound at :1957, with the commit's wait already at :2501.",
+    "reuse": "The bound itself is extended rather than forked, promotion_scope.py:1840 calling reckon/crew/merge.py:555 rather than adding a second wait loop; the only added helper, _relative_to_checkout at :1863, names an idiom I searched for across reckon/ by the capability relative_to(checkout and found owned by no function.",
+    "scope_discipline": "Every path in the diff 5568106b9358..6f96f4a4 is one of the four the node declares, and the one file outside the run record's orientation_write_paths is tests/test_rollback_asks_head.py, which the coordinator's resume advice at resume-1-advice.txt:1 widened by name and which the manifest reports under outside_scope."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261106T145343774402-review-of-retry-a-held-index-lock-in-a-promotions-commit-and-restore-6f96f4a4cfbc",
+  "reviewed_base_sha": "5568106b9358fcfb47cac0e430e1292a9b815b4c",
+  "reviewed_head_sha": "6f96f4a4cfbcc4b00d5af94bc7eed426a4fd0114",
+  "reviewed_run_id": "r-20261106T124416537003-retry-a-held-index-lock-in-a-promotions-commit-and-restore",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T15:57:00+00:00",
+  "total": 110
+}
