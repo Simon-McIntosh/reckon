@@ -249,6 +249,49 @@ def test_a_reviewed_head_the_branch_moved_past_starts_no_round(
 
 
 @pytest.mark.arms_watch_producer
+def test_the_integration_guard_asks_the_shared_ancestor_probe(
+    round_fixture, monkeypatch
+):
+    """The containment answer is the shared probe's, not a second one of its own."""
+    from reckon.crew import promotion_scope
+
+    repo = round_fixture["repo"]
+    reviewed_head = round_fixture["head"]
+    tree = repo.parent / "guard-tree"
+    _git(repo, "worktree", "add", "--detach", str(tree), reviewed_head)
+    (repo / "later.txt").write_text("later\n", encoding="utf-8")
+    _git(repo, "add", "later.txt")
+    _git(repo, "commit", "-q", "-m", "chore: integrate the reviewed head")
+    round_fixture["pointer"]["worktree"] = str(tree)
+    crew._write_json(crew.pointer_path(RUN_ID), round_fixture["pointer"])
+    _store(
+        round_fixture,
+        [
+            {
+                "file": "reckon/crew/first.py",
+                "line": "10",
+                "text": "a defect",
+                "severity": "blocking",
+            }
+        ],
+        head=reviewed_head,
+    )
+
+    asked: list[tuple[str, str, str]] = []
+
+    def probe(checkout, revision, target):
+        asked.append((str(checkout), revision, target))
+        return False
+
+    monkeypatch.setattr(promotion_scope, "_revision_is_ancestor", probe)
+
+    result, _resumed = _round(round_fixture, monkeypatch)
+
+    assert result.get("resumed") is True, result
+    assert (str(repo), reviewed_head, "main") in asked
+
+
+@pytest.mark.arms_watch_producer
 def test_an_unclassified_finding_is_counted_apart_and_named(round_fixture, monkeypatch):
     blocking = {
         "file": "reckon/crew/first.py",

@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import hashlib
 import os
-import subprocess
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -840,44 +839,33 @@ def _reviewed_head_is_integrated(record: Mapping[str, Any], reviewed_head: str) 
     branch sits is the tree the run holds, not work the branch has taken in
     beyond it, and the promoted and live-worker guards are what settle that case.
 
+    Every git question is asked of the reader that already owns it: the
+    checkout's branch of the landing's own branch reader, its tip of the
+    promotion's head-revision lookup, and the containment of the shared ancestor
+    probe, so a spelling that resolves for one caller resolves for all of them.
     An unreadable answer never starts nor stops a round on its own: a repository
     the record does not name, a detached checkout, an unresolvable revision or a
     git that cannot run all answer false, so a repository this cannot decide
     about is repaired as before rather than skipped on the strength of a
     question nobody answered.
     """
+    from reckon.crew.merge import MergeError, _current_branch
+    from reckon.crew.promotion_scope import _head_revision, _revision_is_ancestor
+    from reckon.crew.recovery_review_subject import same_revision
+
     repository_value = str(record.get("repo") or "").strip()
     head = str(reviewed_head or "").strip()
     if not repository_value or not head:
         return False
     repository = Path(repository_value)
-
-    def git(*args: str) -> subprocess.CompletedProcess[str] | None:
-        try:
-            return subprocess.run(
-                ["git", "-C", str(repository), *args],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-        except OSError:
-            return None
-
-    branch = git("symbolic-ref", "--quiet", "--short", "HEAD")
-    if branch is None or branch.returncode != 0 or not branch.stdout.strip():
+    try:
+        integration = _current_branch(repository)
+        tip = _head_revision(repository)
+        if not tip or same_revision(tip, head):
+            return False
+        return _revision_is_ancestor(repository, head, integration)
+    except (CrewError, MergeError, OSError):
         return False
-    integration = branch.stdout.strip()
-    resolved = git("rev-parse", "--verify", f"{head}^{{commit}}")
-    if resolved is None or resolved.returncode != 0 or not resolved.stdout.strip():
-        return False
-    tip = git("rev-parse", "--verify", f"{integration}^{{commit}}")
-    if tip is None or tip.returncode != 0 or not tip.stdout.strip():
-        return False
-    reviewed_revision = resolved.stdout.strip()
-    if tip.stdout.strip() == reviewed_revision:
-        return False
-    reachable = git("merge-base", "--is-ancestor", reviewed_revision, integration)
-    return reachable is not None and reachable.returncode == 0
 
 
 def _opened_repair_rounds(record: Mapping[str, Any]) -> Mapping[str, Any]:
