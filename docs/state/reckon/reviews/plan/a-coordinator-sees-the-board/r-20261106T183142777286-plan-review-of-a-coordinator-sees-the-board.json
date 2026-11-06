@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T18:39:22.900Z",
+  "dispatched_at": "2026-11-06T18:33:02Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html:231",
+      "id": "done_when-1",
+      "reason": "the node would have to either deviate from the done-when or measure a stage the profile did not name, so the done-when needs to tie the fixture's scale to whichever stage the profile names rather than to one candidate.",
+      "text": "the done-when prescribes a fixture shaped for the review-subject scan (\"at least 2,000 aggregate rows, most outside the window and many of them reviews, plus live pointers carrying review nodes\") and requires it to reproduce \"that stage's cost\", but the same section states the dominant stage is unknown; a profile that lands on a stage the prescribed fixture cannot reproduce \u2014 `_plans_and_owners` parsing every plan head (`plan_coordinator.py:201-218`), `_load_aggregate` (`ledger.py:1819`), or `crew.list_live()` at `roadmap.py:3601` \u2014 leaves the node with a fixture that cannot make its cost assertion fail at the base",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "744e21043673493898a0194729a03694157ab3fe",
+  "plan_fingerprint": "dcb0692d243f078fb74e8609643fbfc19493b78ccb79dacfe1c166a6d58b061e",
+  "plan_slug": "a-coordinator-sees-the-board",
+  "plan_version": 66,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T183142777286-plan-review-of-a-coordinator-sees-the-board",
+  "reviewed_blob_sha": "a78c2bba4292b3050e6515a3606b5a58776b0bec",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol resolves at the line named, the 5.7 s probe figure resolves to the \u00a711 fragment's 5.721 s row, and the cross-plan anchor `a-project-reads-as-one-picture \u00a78` records the 45 s reckon interruption at `dispatch_sessions._reviewed_run_id`.",
+    "done_when": "a finding \u2014 the done-when fixes the reproduction fixture to the review-scan hypothesis (2,000 aggregate rows, many reviews, live pointers with review nodes) while the mechanism says the dominant stage is unknown and may be anywhere in the resolver or its callees.",
+    "evidence_paths": "pass \u2014 `docs/evidence/fragments/a-coordinator-sees-the-board/the-coordinator-resolver-resolves-each-review-once.html` is a durable path under the repository's evidence tree, and the sibling fragments for \u00a711 and \u00a712 sit in the same directory.",
+    "naming": "pass \u2014 the section title, the fragment filename and the mechanism prose name what the code does, with no stage labels, ticket numbers or changelog prose.",
+    "reasoning": "pass \u2014 the revised root cause is \"not yet known\" and matches its evidence, the mechanism (profile, then remove the dominant stage at its owner) is capable of producing the stated measures, and it runs on a named production caller: `build_roadmap` \u2192 `_critical_path_coordinators` (`roadmap.py:4561`) \u2192 `resolve_plan_coordinators` with live pointers, once per build.",
+    "single_goal": "pass \u2014 one deliverable, the coordinator resolver's served cost, measured by one profile, one fixture test and one served read.",
+    "wiring": "pass \u2014 \u00a713 declares no `plan-section-depends-on` entry and loses none: the sections it builds on (\u00a72 and \u00a74 for the resolver, \u00a711 for the read bound) are all `data-status=\"done\"` and their code is present at `plan_coordinator.py:288` and `roadmap.py:3473`."
+  },
+  "section_digests": {
+    "_document": "103d6eeba4272f2ee872bf4ffdbe7612a81d7a1c94aa364b8ecfa817a75071e3",
+    "s1": "4f48bcfe2c71d1397f0eeb277ff928920d1ed0ae7cfb0da777c94e4943eadf87",
+    "s10": "80dd3bc62e983a2d2a47ca25840ac1947582d34d211d614a5c8429c5b6156137",
+    "s11": "b7bf20ae565e1f0d011538f9c16a840076ac093004cf3c94e5b5afa14c316316",
+    "s12": "bf696484c1fe51f7597bee5268e93815e84b8fd595be92a3477da828a9a7009e",
+    "s13": "d5986bf2b0c83dc27f216a801ec59f970aec926c4df430a9d94cf45a69bc3b3a",
+    "s2": "e8a77da3ee95b252c49524e82dbed4c7af59fd2cf8813eca867555771e9c15d5",
+    "s3": "e4cd7ce8696d0d9fb511a9be2379e2561a08418a1d1f759c42a926231bad6e36",
+    "s4": "ba6bafca3a7e3ae7fb186980afd26dd26e183bf99b72272ea15f06fbaeb19e5f",
+    "s5": "c7676f30d627a592319ab4f34cbd8352167ba0b9b92a20d5cbafea4a685b90ae",
+    "s6": "b5875d403856eb185e06155d0c62410ab30a447353779fe729a12b57c2607cf0",
+    "s7": "4428c6858fc7f10400173c2e619ad379aa49779cef060ae4b50d866fde4a59a7",
+    "s8": "f9f58e76a5713eb901b1e780fcb93d48ca773a573fded72ec476738a59629b67",
+    "s9": "d2506b05e05f7611a8794a66b56c70ad072e38b6edb29d625161974bb3cc6da4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T18:44:31.683822+00:00"
+}
