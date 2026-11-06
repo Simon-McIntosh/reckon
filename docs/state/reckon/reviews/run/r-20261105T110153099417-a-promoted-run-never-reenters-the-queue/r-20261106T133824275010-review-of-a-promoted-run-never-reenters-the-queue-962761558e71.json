@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:4213 admit_once requeues failed launches",
+    "reckon/crew/queue_admission.py:4558 admit_once records launch failure",
+    "reckon/crew/queue_admission.py:1548 _restore_queued",
+    "reckon/crew/queue_admission.py:1563 _record_queued_failure"
+  ],
+  "completed_at": "2026-11-06T13:49:32Z",
+  "dispatched_at": "2026-11-06T13:40:47Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the still-queued control would catch an unconditional promotion result, as the reviewer notes",
+      "recorded_at": "2026-11-06T14:00:21.416243+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "independent phase, failure and departed-pointer assertions carry the guard, as the reviewer notes",
+      "recorded_at": "2026-11-06T14:00:27.063869+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_promoted_run_never_reenters_the_queue.py",
+      "id": "f543ec7a9bb",
+      "line": "26",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fixture checks the promotion lookup against PROJECT, the same project it passed in, so an implementation returning its requested project without reading the ledger would satisfy this line; disposition exempted because the still-queued control at :105-117 would catch an unconditional promotion result."
+    },
+    {
+      "file": "tests/test_a_promoted_run_never_reenters_the_queue.py",
+      "id": "fa962b4d0da",
+      "line": "116",
+      "severity": "non-blocking",
+      "text": "non-blocking: restored node is compared with request node from the same request passed to _restore_queued, so this line cannot detect an incorrectly chosen fixture node; disposition exempted because independent phase, failure and departed-pointer assertions carry the node's guard measure."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "the four commits from 521f97b6a71ec6be8ae5e6133e4b832a6aa92c9d through 962761558e71337e1aa9655312e82f99a2cc4ee0 add the test, guard both writebacks, correct initial creation and document evidence in the three declared paths.",
+    "done_when": "prompt.txt:120 requires three queue cases, a red promotion mutation, no importer failures added and clean Ruff; tests/test_a_promoted_run_never_reenters_the_queue.py:30-117 and the manifest's named logs record those measures.",
+    "goal": "prompt.txt:38 asks that a promoted run never re-enter the queue; reckon/crew/queue_admission.py:1469 and :1498 refuse restoration when promotion is recorded.",
+    "manifest": "manifest.md:21-24 records a completed base arm with four failures, a corrected head arm with five passes, a three-failure promotion mutation and an importer comparison with zero added failures.",
+    "write_paths": "prompt.txt:77-81 grants queue_admission.py, the regression test and an evidence fragment; git diff 93d83155bccb4a07dca6c9638d300cccd713cc0d..962761558e71337e1aa9655312e82f99a2cc4ee0 changes exactly those three paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_promoted_run_never_reenters_the_queue.py:52-58 and :94-101 fail when a departed pointer is republished or its refusal omits promotion, as negative-control-corrected.log confirms; ancillary assertions at :26 and :116 use supplied values as oracles.",
+    "evidence": "manifest.md:21-24 names completed base, head and mutation gates, while importers-base.log and importers-corrected.log each report the same three failure ids.",
+    "fit": "reckon/crew/queue_admission.py:1465-1501 follows the existing per-run lock and verdict-row idioms, and its added names describe queue behavior without plan labels.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:1477-1501 checks the recorded promotion and pointer under the run lock before either admission writeback.",
+    "reuse": "the capability search found reckon/crew/runs.py:359 and :1801 already own pointer locking and promotion lookup, which queue_admission.py:1477-1501 calls rather than duplicating.",
+    "scope_discipline": "the diff from 93d83155bccb4a07dca6c9638d300cccd713cc0d to 962761558e71337e1aa9655312e82f99a2cc4ee0 changes only the three paths granted in prompt.txt:77-81."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 asks that a promoted run never re-enter the queue; reckon/crew/queue_admission.py:1469 and :1498 refuse restoration when promotion is recorded.\nVERDICT done_when: prompt.txt:120 requires three queue cases, a red promotion mutation, no importer failures added and clean Ruff; tests/test_a_promoted_run_never_reenters_the_queue.py:30-117 and the manifest's named logs record those measures.\nVERDICT write_paths: prompt.txt:77-81 grants queue_admission.py, the regression test and an evidence fragment; git diff 93d83155bccb4a07dca6c9638d300cccd713cc0d..962761558e71337e1aa9655312e82f99a2cc4ee0 changes exactly those three paths.\nVERDICT manifest: manifest.md:21-24 records a completed base arm with four failures, a corrected head arm with five passes, a three-failure promotion mutation and an importer comparison with zero added failures.\nVERDICT diff: the four commits from 521f97b6a71ec6be8ae5e6133e4b832a6aa92c9d through 962761558e71337e1aa9655312e82f99a2cc4ee0 add the test, guard both writebacks, correct initial creation and document evidence in the three declared paths.\nCALL_SITES: reckon/crew/queue_admission.py:4213 admit_once requeues failed launches, reckon/crew/queue_admission.py:4558 admit_once records launch failure, reckon/crew/queue_admission.py:1548 _restore_queued, reckon/crew/queue_admission.py:1563 _record_queued_failure\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:1477-1501 checks the recorded promotion and pointer under the run lock before either admission writeback.\nSCORE evidence: 19\nJUSTIFICATION evidence: manifest.md:21-24 names completed base, head and mutation gates, while importers-base.log and importers-corrected.log each report the same three failure ids.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff from 93d83155bccb4a07dca6c9638d300cccd713cc0d to 962761558e71337e1aa9655312e82f99a2cc4ee0 changes only the three paths granted in prompt.txt:77-81.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_promoted_run_never_reenters_the_queue.py:52-58 and :94-101 fail when a departed pointer is republished or its refusal omits promotion, as negative-control-corrected.log confirms; ancillary assertions at :26 and :116 use supplied values as oracles.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/queue_admission.py:1465-1501 follows the existing per-run lock and verdict-row idioms, and its added names describe queue behavior without plan labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search found reckon/crew/runs.py:359 and :1801 already own pointer locking and promotion lookup, which queue_admission.py:1477-1501 calls rather than duplicating.\nFINDING tests/test_a_promoted_run_never_reenters_the_queue.py:26 non-blocking: the fixture checks the promotion lookup against PROJECT, the same project it passed in, so an implementation returning its requested project without reading the ledger would satisfy this line; disposition exempted because the still-queued control at :105-117 would catch an unconditional promotion result.\nFINDING tests/test_a_promoted_run_never_reenters_the_queue.py:116 non-blocking: restored node is compared with request node from the same request passed to _restore_queued, so this line cannot detect an incorrectly chosen fixture node; disposition exempted because independent phase, failure and departed-pointer assertions carry the node's guard measure.\n",
+  "review_run_id": "r-20261106T133824275010-review-of-a-promoted-run-never-reenters-the-queue-962761558e71",
+  "reviewed_base_sha": "93d83155bccb4a07dca6c9638d300cccd713cc0d",
+  "reviewed_head_sha": "962761558e71337e1aa9655312e82f99a2cc4ee0",
+  "reviewed_run_id": "r-20261105T110153099417-a-promoted-run-never-reenters-the-queue",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T13:49:35.490704+00:00",
+  "total": 115
+}
