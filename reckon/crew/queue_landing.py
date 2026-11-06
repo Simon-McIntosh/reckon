@@ -860,17 +860,17 @@ def _measure_delivery(
         with ExitStack() as stack:
             measured_head, measured_tree = head, Path(tree)
             if primary != head:
-                if _landed_elsewhere(pointer, run_id):
+                if not promoted and _landed_elsewhere(pointer, run_id):
                     raise _LandedElsewhereError
                 measured_head, measured_tree = stack.enter_context(
                     landing_measure.candidate_checkout(repo, primary, head, timeout)
                 )
-            if _landed_elsewhere(pointer, run_id):
+            if not promoted and _landed_elsewhere(pointer, run_id):
                 raise _LandedElsewhereError
             base_tree = stack.enter_context(
                 landing_measure.base_checkout(repo, primary, timeout)
             )
-            if _landed_elsewhere(pointer, run_id):
+            if not promoted and _landed_elsewhere(pointer, run_id):
                 raise _LandedElsewhereError
             try:
                 measured = landing_measure.measure_run(
@@ -1485,7 +1485,11 @@ def land_once() -> dict[str, Any]:
             raise
         except (OSError, ValueError) as exc:
             accepted, guard = False, f"{type(exc).__name__}: {exc}"
-        if not accepted and _landed_elsewhere(pointer, run_id):
+        if (
+            not accepted
+            and "no live run" in guard
+            and _landed_elsewhere(pointer, run_id)
+        ):
             skipped.append({"run_id": run_id, "status": "landed-elsewhere"})
             continue
         if accepted:
@@ -1538,9 +1542,7 @@ def land_once() -> dict[str, Any]:
             if remedy:
                 refused["remedy"] = remedy
             obligations.append(refused)
-    return {
-        "landed": landed,
-        "skipped": skipped,
-        "obligations": obligations,
-        "deferred": deferred,
-    }
+    result = {"landed": landed, "obligations": obligations, "deferred": deferred}
+    if skipped:
+        result["skipped"] = skipped
+    return result
