@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T12:39:17.517Z",
+  "dispatched_at": "2026-11-06T12:34:01Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html:227",
+      "id": "done_when-1",
+      "reason": "as written the node will build a small fixture whose board assertion is already green at base, so the section would close claiming a board-read repair it never exercised; the fixture must exceed the 4 MiB tail (or the board clause be dropped as already true).",
+      "text": "\u00a712's done-when asserts \"the board's context-use read for that transcript returns the last whole request rather than raising\", but on a fixture of whole assistant lines followed by one torn last line the board read already returns that request at the base: `_last_assistant_request` reads the tail as bytes and its `except ValueError` catches the torn line's UnicodeDecodeError (a ValueError subclass, reckon/crew/directory.py:150-153), and the forward read through `_jsonl_events` is reached only when the file exceeds the largest tail size of 4 MiB (reckon/crew/directory.py:41,141-167). Measured at base on a 90-byte torn transcript: `_jsonl_events` raised UnicodeDecodeError, `_last_assistant_request` returned `{'tokens': {'input_tokens': 5, ...}}` \u2014 so that assertion passes unchanged at the base and the test fails there only on the direct `_jsonl_events` arm.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html:227",
+      "id": "evidence_paths-1",
+      "reason": "the dispatch fence already places run logs, so the node writes them correctly by convention; adding the sentence is hygiene, not a change in what the node does.",
+      "text": "\u00a712 says nothing about where its gate log, negative-control log and importer measure are written, where \u00a79 and \u00a710 each end \"Every log is under the run directory\"; the node's done-when names the armed pair and importer measure but no durable artifact a later reader can open.",
+      "type": "evidence_paths",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "fa54fe2e31e6b88c1ce7434860d6e1c259fd66ad",
+  "plan_fingerprint": "2c36909888ccb2984dfb6798abea823ca1fe05c5b250e2fc9eb3504782088219",
+  "plan_slug": "a-coordinator-sees-the-board",
+  "plan_version": 54,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T123214918028-plan-review-of-a-coordinator-sees-the-board",
+  "reviewed_blob_sha": "0b12731d9d16b7ed65b3b84324b011e82220f6c8",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_jsonl_events` resolves at reckon/crew/dispatch_accounting.py:16, its board caller at reckon/crew/directory.py:168, the strict open at dispatch_accounting.py:19, and the cited review reproduction (`b'\"h\\xc3'`) resolves in the \u00a710 review record at f8917a71d7.",
+    "done_when": "a finding \u2014 \u00a712's board-read assertion cannot fail at the base, because the primary tail read already skips the torn line and the forward fallback runs only above the 4 MiB tail.",
+    "evidence_paths": "a finding \u2014 \u00a712 names no log or evidence path, where \u00a79 and \u00a710 both state every log goes under the run directory.",
+    "naming": "pass \u2014 \u00a712 carries no plan labels, ticket numbers or version tags; its section numbers are plan structure, not code names.",
+    "reasoning": "pass \u2014 the root cause matches the evidence (the reuse refactor replaced an inline reader opened with errors=\"replace\" by `_jsonl_events`'s strict open), the replacement mechanism produces the done-when's outcome, and both callers are named (directory.py:168, dispatch_accounting.py:67 for `coordinator.authoring_turn`).",
+    "single_goal": "pass \u2014 \u00a712 states one deliverable: decode with replacement inside `_jsonl_events` at the owner.",
+    "wiring": "pass \u2014 \u00a712 declares no depends-on and needs none: its only upstream (\u00a710's board read) is done and landed at merge 9b76cf1be, and the followup f-acstb-012 carries the right one-line \u00a712 invocation."
+  },
+  "section_digests": {
+    "_document": "87f42a771b0f6ce2e3278f6793e0806763df47812ed4d0b8f0580f6ab05c9d1c",
+    "s1": "4f48bcfe2c71d1397f0eeb277ff928920d1ed0ae7cfb0da777c94e4943eadf87",
+    "s10": "80dd3bc62e983a2d2a47ca25840ac1947582d34d211d614a5c8429c5b6156137",
+    "s11": "b7bf20ae565e1f0d011538f9c16a840076ac093004cf3c94e5b5afa14c316316",
+    "s12": "bf696484c1fe51f7597bee5268e93815e84b8fd595be92a3477da828a9a7009e",
+    "s2": "e8a77da3ee95b252c49524e82dbed4c7af59fd2cf8813eca867555771e9c15d5",
+    "s3": "e4cd7ce8696d0d9fb511a9be2379e2561a08418a1d1f759c42a926231bad6e36",
+    "s4": "ba6bafca3a7e3ae7fb186980afd26dd26e183bf99b72272ea15f06fbaeb19e5f",
+    "s5": "c7676f30d627a592319ab4f34cbd8352167ba0b9b92a20d5cbafea4a685b90ae",
+    "s6": "b5875d403856eb185e06155d0c62410ab30a447353779fe729a12b57c2607cf0",
+    "s7": "4428c6858fc7f10400173c2e619ad379aa49779cef060ae4b50d866fde4a59a7",
+    "s8": "f9f58e76a5713eb901b1e780fcb93d48ca773a573fded72ec476738a59629b67",
+    "s9": "d2506b05e05f7611a8794a66b56c70ad072e38b6edb29d625161974bb3cc6da4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T12:43:28.298100+00:00"
+}
