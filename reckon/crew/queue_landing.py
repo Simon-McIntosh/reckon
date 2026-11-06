@@ -351,6 +351,135 @@ def _is_environmental(guard: str) -> bool:
     )
 
 
+#: The promotion guard a passing gate raises when the check it rests on is
+#: missing a required field, and the word that introduces the field list.
+_GATE_CHECK_GUARD = "a passing gate requires the check that produced it"
+
+_GATE_CHECK_MISSING = re.compile(r"missing ([^\n;]+)")
+
+
+def _manifest_evidence_remedy(pointer: Mapping[str, Any]) -> str:
+    """The repair a gate refusal owes when promotion reads no manifest evidence.
+
+    Promotion fills a passing gate's check through ``_fresh_manifest``, which
+    ignores a manifest no newer than the attempt's
+    ``manifest_baseline_mtime_ns`` — a run
+    resumed onto a stale file has delivered nothing this attempt. No field can
+    then be recovered from the manifest however well its cited log reads, so the
+    remedy names the write the coordinator owes rather than a record to add to a
+    log the promotion never opens.
+    """
+    manifest_path = str(pointer.get("manifest_path") or "").strip()
+    present, fresh = runs._manifest_freshness(pointer)
+    if present and fresh:
+        return ""
+    where = f"the manifest at {manifest_path}" if manifest_path else "no manifest"
+    if not present:
+        return (
+            f"the promotion reads no gate evidence because this run has {where}: "
+            "write the manifest for this attempt with its status, gate command "
+            "and test_logs, so the landing reads the delivered evidence"
+        )
+    return (
+        f"the promotion ignores {where} because it is not newer than this "
+        "attempt began (manifest_baseline_mtime_ns): rewrite the manifest for "
+        "this attempt — its status, gate command and test_logs — so the landing "
+        "reads the delivered evidence, rather than editing the gate log alone"
+    )
+
+
+def _gate_log_cited_by_manifest(pointer: Mapping[str, Any]) -> str:
+    """The gate log a run's own manifest cites, resolved beside the manifest.
+
+    The selection is the promotion's own: ``_default_gate_evidence_from_manifest``
+    is what fills a passing gate's check from a run's manifest, so a remedy
+    naming a log names exactly the file a promotion would read — by the same
+    freshness rule and the same first-entry choice — rather than a second copy
+    of that rule drifting from it.
+    """
+    from reckon.crew.promotion_records import _default_gate_evidence_from_manifest
+
+    try:
+        check, _commits = _default_gate_evidence_from_manifest(
+            pointer, verdict="passed", gate_check=None, commits=()
+        )
+    except (OSError, ValueError):
+        return ""
+    return str(check.get("log_path") or "").strip()
+
+
+def _log_ends_in_exit_record(log_path: str) -> bool | None:
+    """Whether a gate log's last line is a terminal ``EXIT=<n>`` record.
+
+    ``None`` when the log cannot be read, because an absent file is not a log
+    whose exit line is wrong, and the remedy must not assert a shape nobody
+    read. The reader is the promotion's own, so a remedy never tells an author
+    to write a line the gate would not accept.
+    """
+    from reckon.crew.promotion_evidence import _recorded_exit_status
+
+    try:
+        text = Path(log_path).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    return _recorded_exit_status(text) is not None
+
+
+def _gate_check_remedy(pointer: Mapping[str, Any], missing: Sequence[str]) -> str:
+    """The one action that supplies each field a gate check is missing.
+
+    The refusal's own words name only the absent field, and a coordinator who
+    reads "missing exit_status" goes looking at the promotion command when the
+    defect is usually the gate log's last line. Naming the log the manifest
+    cites and the record it must end in turns that search into one edit.
+    """
+    stale = _manifest_evidence_remedy(pointer)
+    if stale:
+        return stale
+    if "exit_status" in missing:
+        log_path = _gate_log_cited_by_manifest(pointer)
+        if log_path and _log_ends_in_exit_record(log_path) is False:
+            return (
+                f"the gate log {log_path} does not end in a terminal EXIT=<n> "
+                "record, so the promotion has no exit status to read: re-run the "
+                "gate with its output captured and `echo EXIT=$?` written last, "
+                f"so {log_path} ends in a line reading EXIT=<n>"
+            )
+        return (
+            "the promotion's gate check carries no exit_status: make the gate "
+            "log the manifest cites end in a terminal EXIT=<n> record, or pass "
+            "--gate-exit-status <n>"
+        )
+    if "command" in missing:
+        return (
+            "the promotion's gate check names no command: write the command a "
+            "shell was given on the manifest's `tests:` line, or pass "
+            "--gate-command '<command>'"
+        )
+    if "log path or digest" in missing:
+        return (
+            "the promotion cites no gate log: pass --gate-log-path <path> "
+            "naming the file the gate's output was captured to"
+        )
+    return ""
+
+
+def _landing_remedy(pointer: Mapping[str, Any], guard: str) -> str:
+    """The action a landing refusal's guard calls for, or "" when it names none.
+
+    Only a guard this module can state a remedy for gets one: a guard it does
+    not understand is left exactly as recorded rather than given a remedy that
+    may be wrong.
+    """
+    if _GATE_CHECK_GUARD not in str(guard or ""):
+        return ""
+    match = _GATE_CHECK_MISSING.search(str(guard))
+    if match is None:
+        return ""
+    missing = [part.strip() for part in match.group(1).split(",") if part.strip()]
+    return _gate_check_remedy(pointer, missing)
+
+
 def _retry_backoff(attempts: int) -> float:
     """Seconds to wait before judging an environmental refusal again.
 
@@ -446,6 +575,7 @@ def _record_attempt(
     code_stamp: str = "",
     review_stamp: str = "",
     previous: Mapping[str, Any] | None = None,
+    remedy: str = "",
     now: float | None = None,
 ) -> None:
     """Keep a refusal on the live run, with what made it, so a later pass can
@@ -466,6 +596,8 @@ def _record_attempt(
             "attempts": _refusal_attempts(previous, head=head, guard=guard),
             "failed_at": time.time() if now is None else float(now),
         }
+        if remedy:
+            pointer["admission_landing"]["remedy"] = remedy
         return pointer
 
     runs._mutate_pointer(run_id, mutation)
@@ -1171,6 +1303,7 @@ def land_once() -> dict[str, Any]:
                 )
         else:
             guard = guard or "crew land refused without a guard"
+            remedy = _landing_remedy(pointer, guard)
             _record_attempt(
                 run_id,
                 head=head,
@@ -1179,12 +1312,14 @@ def land_once() -> dict[str, Any]:
                 code_stamp=code_stamp,
                 review_stamp=review_stamp,
                 previous=previous,
+                remedy=remedy,
             )
-            obligations.append(
-                {
-                    "run_id": run_id,
-                    "session": str(pointer.get("session") or ""),
-                    "guard": guard,
-                }
-            )
+            refused = {
+                "run_id": run_id,
+                "session": str(pointer.get("session") or ""),
+                "guard": guard,
+            }
+            if remedy:
+                refused["remedy"] = remedy
+            obligations.append(refused)
     return {"landed": landed, "obligations": obligations, "deferred": deferred}

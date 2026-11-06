@@ -1156,6 +1156,14 @@ def _review_duty_item(
         item = _live_item(row, kind="landing-refused", now=now)
         item["head"] = resumed_head
         item["reason"] = f"automatic landing refused: {landing['guard']}"
+        # The guard names the rule that refused; the remedy names the one edit
+        # that satisfies it. A coordinator reading only the guard goes looking
+        # at the command it ran, when the defect is usually a missing record in
+        # the evidence behind it. The remedy is carried only when the lander
+        # recorded one, so a guard it cannot repair reads exactly as recorded.
+        remedy = str(landing.get("remedy") or "").strip()
+        if remedy:
+            item["reason"] += f"; remedy: {remedy}"
         return item
 
     if _review_tier_for_duty(row, pointer) == review_tiers.NONE:
