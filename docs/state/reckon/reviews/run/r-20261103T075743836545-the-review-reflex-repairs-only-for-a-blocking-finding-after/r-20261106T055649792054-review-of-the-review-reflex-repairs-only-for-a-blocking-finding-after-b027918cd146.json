@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:660 sweep_recovery",
+    "reckon/crew/recovery_repair_dispatch.py:1142 dispatch_repair_for_run",
+    "reckon/crew/repair.py:816 compose_repair_for_run"
+  ],
+  "completed_at": "2026-11-06T06:10:43Z",
+  "dispatched_at": "2026-11-06T06:01:18Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_repair_dispatch.py",
+      "line": "34",
+      "severity": "non-blocking",
+      "text": "non-blocking: _dimension_floors duplicates the config resolution and declared-floor lookup already in _sub_floor_dimensions_named at line 325, so their error handling can diverge; disposition exempted because the new path needs the raw floor mapping while the existing path formats decline text, and the overlap is local."
+    }
+  ],
+  "gate_logs": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T075743836545-the-review-reflex-repairs-only-for-a-blocking-finding-after/head_importers_final_revision.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T075743836545-the-review-reflex-repairs-only-for-a-blocking-finding-after/base_importers_final.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "git show of e3e428157a9b4fc8929785afea6916c2d30fd6cf and b027918cd1469afd9655d895e4b583b1d8817335 adds the advice hold, sub-floor repair handling, four tests, and one evidence fragment within the enlarged grant.",
+    "done_when": "prompt.txt:131-132 requires follow-on refusal, delayed blocking resume with coordinator advice, a red mutation, and clean importer arms; assigned_focused_final.log records 4 passed, negative_control_final_revision.log records the follow-on test failed, and base_importers_final.log and head_importers_final_revision.log each record 338 passed.",
+    "goal": "the dispatched goal in prompt.txt:38 asks for blocking-only repair after advice; reckon/crew/recovery_repair_dispatch.py:1414 holds reflex reviews before resume and repair.py:647 selects blocking findings.",
+    "manifest": "manifest.md reports complete, names both commits and the gate logs, and records the already-correct follow-on refusal at the base.",
+    "write_paths": "prompt.txt:77-81 and resume-1-advice.txt:1 grant the four paths changed by e3e428157a9b4fc8929785afea6916c2d30fd6cf and b027918cd1469afd9655d895e4b583b1d8817335."
+  },
+  "justifications": {
+    "durability": "tests/test_the_review_reflex_repairs_only_for_a_blocking_finding.py:55-91 fails if follow-ons open a round, the hold no longer lasts 60 seconds, or written coordinator advice is omitted from resume, while lines 114-151 fail if sub-floor advice or its later disposition disappears.",
+    "evidence": "assigned_focused_final.log ends 4 passed and EXIT=0, negative_control_final_revision.log ends with the follow-on case failed and EXIT=1, and the importer arm logs each end 338 passed and EXIT=0.",
+    "fit": "reckon/crew/recovery_repair_dispatch.py:1414 follows the existing pointer-backed repair record flow, and the added source names describe the mechanism without a plan label.",
+    "goal_fidelity": "reckon/crew/recovery_repair_dispatch.py:1414 holds a reflex-dispatched blocking round, and lines 1452-1456 append coordinator advice before resume.",
+    "reuse": "reckon/crew/recovery_repair_dispatch.py:34 re-resolves declared floors although the existing _sub_floor_dimensions_named at line 325 already resolves those same floors through review_dispositions.py:68.",
+    "scope_discipline": "the two git show diffs change only reckon/crew/recovery_repair_dispatch.py, reckon/crew/repair.py, the granted test, and the granted evidence fragment named in prompt.txt and resume-1-advice.txt."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the dispatched goal in prompt.txt:38 asks for blocking-only repair after advice; reckon/crew/recovery_repair_dispatch.py:1414 holds reflex reviews before resume and repair.py:647 selects blocking findings.\nVERDICT done_when: prompt.txt:131-132 requires follow-on refusal, delayed blocking resume with coordinator advice, a red mutation, and clean importer arms; assigned_focused_final.log records 4 passed, negative_control_final_revision.log records the follow-on test failed, and base_importers_final.log and head_importers_final_revision.log each record 338 passed.\nVERDICT write_paths: prompt.txt:77-81 and resume-1-advice.txt:1 grant the four paths changed by e3e428157a9b4fc8929785afea6916c2d30fd6cf and b027918cd1469afd9655d895e4b583b1d8817335.\nVERDICT manifest: manifest.md reports complete, names both commits and the gate logs, and records the already-correct follow-on refusal at the base.\nVERDICT diff: git show of e3e428157a9b4fc8929785afea6916c2d30fd6cf and b027918cd1469afd9655d895e4b583b1d8817335 adds the advice hold, sub-floor repair handling, four tests, and one evidence fragment within the enlarged grant.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:660 sweep_recovery, reckon/crew/recovery_repair_dispatch.py:1142 dispatch_repair_for_run, reckon/crew/repair.py:816 compose_repair_for_run\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_repair_dispatch.py:1414 holds a reflex-dispatched blocking round, and lines 1452-1456 append coordinator advice before resume.\nSCORE evidence: 18\nJUSTIFICATION evidence: assigned_focused_final.log ends 4 passed and EXIT=0, negative_control_final_revision.log ends with the follow-on case failed and EXIT=1, and the importer arm logs each end 338 passed and EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two git show diffs change only reckon/crew/recovery_repair_dispatch.py, reckon/crew/repair.py, the granted test, and the granted evidence fragment named in prompt.txt and resume-1-advice.txt.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_review_reflex_repairs_only_for_a_blocking_finding.py:55-91 fails if follow-ons open a round, the hold no longer lasts 60 seconds, or written coordinator advice is omitted from resume, while lines 114-151 fail if sub-floor advice or its later disposition disappears.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/recovery_repair_dispatch.py:1414 follows the existing pointer-backed repair record flow, and the added source names describe the mechanism without a plan label.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/recovery_repair_dispatch.py:34 re-resolves declared floors although the existing _sub_floor_dimensions_named at line 325 already resolves those same floors through review_dispositions.py:68.\nFINDING reckon/crew/recovery_repair_dispatch.py:34 non-blocking: _dimension_floors duplicates the config resolution and declared-floor lookup already in _sub_floor_dimensions_named at line 325, so their error handling can diverge; disposition exempted because the new path needs the raw floor mapping while the existing path formats decline text, and the overlap is local.\n",
+  "review_run_id": "r-20261106T055649792054-review-of-the-review-reflex-repairs-only-for-a-blocking-finding-after-b027918cd146",
+  "reviewed_base_sha": "fd7aa5bf0a539b8e2bf72297439030a437d3c34a",
+  "reviewed_head_sha": "b027918cd1469afd9655d895e4b583b1d8817335",
+  "reviewed_run_id": "r-20261103T075743836545-the-review-reflex-repairs-only-for-a-blocking-finding-after",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T06:31:38.372057+00:00",
+  "total": 97
+}
