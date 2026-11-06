@@ -81,3 +81,29 @@ def test_ledger_row_skips_measurement_with_surviving_pointer(
     assert runs.pointer_path(RUN).exists()
     assert calls == []
     assert landing["skipped"] == [{"run_id": RUN, "status": "landed-elsewhere"}]
+
+
+def test_pointer_removed_while_recording_attempt_is_skipped(
+    delivery_case, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _accept(base=str(delivery_case["base"]), head=str(delivery_case["head"]))
+    monkeypatch.setattr(
+        queue_landing,
+        "_measure_delivery",
+        lambda _pointer, _run_id, head, _tree, _stored: _measurement(head),
+    )
+    original_record = queue_landing._record_attempt
+
+    def record(run_id, **kwargs):
+        if kwargs["status"] == "attempting":
+            runs.pointer_path(run_id).unlink()
+            raise CrewError(f"no live run {run_id!r}")
+        return original_record(run_id, **kwargs)
+
+    monkeypatch.setattr(queue_landing, "_record_attempt", record)
+    worker = queue_admission._LandingWorker(queue_landing.land_once)
+    worker.tick()
+    landing = worker.settle()
+
+    assert "error" not in landing, landing
+    assert landing["skipped"] == [{"run_id": RUN, "status": "landed-elsewhere"}]

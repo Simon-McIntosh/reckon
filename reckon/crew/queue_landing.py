@@ -1467,15 +1467,21 @@ def land_once() -> dict[str, Any]:
         # carried it. Exemptions are recorded only once the landing has
         # succeeded: a refusal here leaves the run unlanded, and marking its
         # findings exempted would say a landing happened that did not.
-        _record_attempt(
-            run_id,
-            head=head,
-            guard="crew land",
-            status="attempting",
-            code_stamp=code_stamp,
-            review_stamp=review_stamp,
-            previous=previous,
-        )
+        try:
+            _record_attempt(
+                run_id,
+                head=head,
+                guard="crew land",
+                status="attempting",
+                code_stamp=code_stamp,
+                review_stamp=review_stamp,
+                previous=previous,
+            )
+        except CrewError:
+            if _landed_elsewhere(pointer, run_id):
+                skipped.append({"run_id": run_id, "status": "landed-elsewhere"})
+                continue
+            raise
         try:
             accepted, guard = _land(run_id)
         except CrewError:
