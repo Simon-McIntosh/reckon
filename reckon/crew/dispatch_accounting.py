@@ -16,7 +16,11 @@ from typing import (
 def _jsonl_events(path: Path) -> Iterable[Mapping[str, Any]]:
     """Yield readable objects from an append-only harness transcript."""
     try:
-        lines = path.open(encoding="utf-8")
+        # A transcript is appended to while it is read, so its last line can end
+        # inside a multi-byte character. Replacement decoding turns that line
+        # into an undecodable JSON line, which the parse below already skips,
+        # rather than raising out of every whole line before it.
+        lines = path.open(encoding="utf-8", errors="replace")
     except OSError:
         return
     with lines:
