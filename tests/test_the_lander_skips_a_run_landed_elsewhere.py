@@ -68,12 +68,12 @@ def test_ledger_row_skips_measurement_with_surviving_pointer(
 
     calls: list[str] = []
 
-    def measure(_pointer, run_id, _head, _tree, _stored):
-        calls.append(run_id)
+    def measure(**_kwargs):
+        calls.append("measure_run")
         return _measurement(str(delivery_case["head"]))
 
     monkeypatch.setattr(queue_landing, "_merge_conflicts", finish_elsewhere)
-    monkeypatch.setattr(queue_landing, "_measure_delivery", measure)
+    monkeypatch.setattr(landing_measure, "measure_run", measure)
     monkeypatch.setattr(queue_landing, "_land", lambda _run_id: (True, ""))
 
     landing = queue_landing.land_once()
