@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/roadmap.py:3489",
+    "reckon/crew/directory.py:450"
+  ],
+  "call_sites_emission": "sites",
+  "completed_at": "2026-11-06T14:11:04.205Z",
+  "dispatched_at": "2026-11-06T14:03:41Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_coordinator.py",
+      "line": "216",
+      "severity": "non-blocking",
+      "text": "non-blocking: _plans_and_owners moving to _parse_meta_head is the change that carries the section's under-10-second figure, and no case asserts either the reader used or the plan_owner value the resolver returns; restoring read_state_and_text_file, or returning an empty owner for every plan, passes all six cases in tests/test_the_coordinator_read_is_bounded_by_its_window.py."
+    },
+    {
+      "file": "tests/test_the_coordinator_read_is_bounded_by_its_window.py",
+      "line": "35",
+      "severity": "non-blocking",
+      "text": "non-blocking: the comment above HORIZON is a duplicated half-sentence ('The lower bound the resolver derives: its horizon, less a day of margin. The the horizon the resolver derives from its window, less the margin the resolver applies'), so a reader cannot tell which sentence states the constant's rationale."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T122510887219-the-coordinator-read-is-bounded-by-its-window/manifest.md",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "non-blocking: baseline_suite records completed true with failure_count 0 for coordinator-armed-base.log, which reads 'ERROR: file or directory not found ... no tests ran' and ends EXIT=4; the fragment's real base arm (3 failed, 3 passed, EXIT=1) comes from repair_base_node.log, which the record does not name in baseline_suite."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified the two production callers of resolve_plan_coordinators that reach _plans_and_owners: reckon/roadmap.py:3489 (_critical_path_coordinators) and reckon/crew/directory.py:450 (the board), both of which now read owners through _parse_meta_head.",
+    "diff": "Two commits against ddc29dfa81: 95f680d77e moves _plans_and_owners to the head-only reader and adds the margin case plus a listing call in the test file, and 28dbc2e63a rewrites the fragment's probe, stage table and gate table; no other path is touched.",
+    "done_when": "The plan Done-when at docs/plans/a-coordinator-sees-the-board.html:223 requires a three-kind fixture, a read count through the code's own reader that fails at base, base-answer equivalence and a fleet call under 10 s; tests/test_the_coordinator_read_is_bounded_by_its_window.py:147-228 carries the first three at head 6 passed EXIT=0 and the fragment records 5.721 s against 50.500 s, but the manifest's recorded base arm collected no tests.",
+    "goal": "The node goal is a modification-time lower bound on the per-run document read that keeps every coordinator the resolver names; reckon/crew/plan_coordinator.py:280-285 passes the horizon less DOCUMENT_AGE_MARGIN into the ledger and the fragment's equal digest d4c95976004f09dd on both arms shows every plan keeps its coordinator.",
+    "manifest": "manifest.md reports head 6 passed at 28dbc2e63a, names its logs and records the 5.721 s repair, but its baseline_suite marks coordinator-armed-base.log completed with failure_count 0 although that log reads 'no tests ran' and ends EXIT=4.",
+    "write_paths": "The declared paths are reckon/ledger.py, reckon/crew/plan_coordinator.py, the node's test file and the evidence fragment; the two repair commits touch only the latter three, each inside that list."
+  },
+  "justifications": {
+    "durability": "The margin is now pinned by tests/test_the_coordinator_read_is_bounded_by_its_window.py:226 with a logged red arm (negative_control_margin_zero.log: 2 failed), but the production change that carries the figure, reckon/crew/plan_coordinator.py:216, has no case asserting either its reader or the plan_owner it returns.",
+    "evidence": "The head gate at tests/test_the_coordinator_read_is_bounded_by_its_window.py:147-228 is recorded as 6 passed EXIT=0 and the probe figure is recorded in the fragment, but the reviewed run's baseline_suite names coordinator-armed-base.log, which reads 'no tests ran' and ends EXIT=4, so the base arm behind added_failure_count is unreadable.",
+    "fit": "reckon/crew/plan_coordinator.py:213 follows the module's private-helper idiom and the reasoning in its docstring, and reckon/resources.py:387 already reads plans through _parse_meta_head, but the comment above HORIZON at tests/test_the_coordinator_read_is_bounded_by_its_window.py:35-37 is a duplicated half-sentence.",
+    "goal_fidelity": "The repair carries the section's measure to 5.721 s at docs/evidence/fragments/a-coordinator-sees-the-board/the-coordinator-read-is-bounded-by-its-window.html:31 with the coordinator digest d4c95976004f09dd equal to the 50.500 s base, so the bounded read keeps every coordinator and now meets the under-10-second figure.",
+    "reuse": "The repair removes a fork rather than adding one: _plans_and_owners now reads through the existing head-only owner at reckon/_plan_html.py:2442, the same reader reckon/resources.py:387 uses, and a search of reckon/ found no second head-meta reader to duplicate.",
+    "scope_discipline": "Every path in the two repair commits (reckon/crew/plan_coordinator.py, tests/test_the_coordinator_read_is_bounded_by_its_window.py, docs/evidence/fragments/a-coordinator-sees-the-board/the-coordinator-read-is-bounded-by-its-window.html) is inside the manifest's orientation_write_paths and the dispatch fence, and no behaviour beyond the owner read and the test fixture is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a modification-time lower bound on the per-run document read that keeps every coordinator it names; reckon/crew/plan_coordinator.py:280-285 passes the horizon less DOCUMENT_AGE_MARGIN into the ledger and the fragment's equal digest d4c95976004f09dd shows every plan keeps its coordinator on both arms.\nVERDICT done_when: the plan Done-when at docs/plans/a-coordinator-sees-the-board.html:223 names a three-kind fixture, a read count through the code's own reader that fails at base, base-answer equivalence and a fleet call under 10 s; tests/test_the_coordinator_read_is_bounded_by_its_window.py:147-228 carries the first three at head 6 passed EXIT=0 and the fragment records 5.721 s against 50.500 s, but the manifest's recorded base arm collected no tests.\nVERDICT write_paths: the declared paths are reckon/ledger.py, reckon/crew/plan_coordinator.py, the node's test file and the evidence fragment; the repair touches only the latter three, all inside that list.\nVERDICT manifest: manifest.md reports head 6 passed at 28dbc2e63a and records the 5.721 s repair, but its baseline_suite marks coordinator-armed-base.log completed with failure_count 0 although that log reads no tests ran and ends EXIT=4.\nVERDICT diff: two commits against ddc29dfa81, 95f680d77e and 28dbc2e63a, change the owner read in reckon/crew/plan_coordinator.py:213-218, extend the test file's margin and listing cases, and rewrite the evidence fragment's probe, stage and gate tables; no other path is touched.\nCALL_SITES: reckon/roadmap.py:3489, reckon/crew/directory.py:450\nSCORE goal_fidelity: 19\nSCORE evidence: 15\nSCORE scope_discipline: 19\nSCORE durability: 15\nSCORE fit: 16\nSCORE reuse: 20\nJUSTIFICATION goal_fidelity: the fragment at the-coordinator-read-is-bounded-by-its-window.html:31 records 5.721 s at the head against 50.500 s at the base with coordinator digest d4c95976004f09dd equal on both arms.\nJUSTIFICATION evidence: the head gate is recorded as 6 passed EXIT=0 at tests/test_the_coordinator_read_is_bounded_by_its_window.py:147-228, but the run's baseline_suite names coordinator-armed-base.log, which reads no tests ran and ends EXIT=4, so the base arm is unreadable.\nJUSTIFICATION scope_discipline: every path in the two repair commits is inside the manifest's orientation_write_paths and no behaviour beyond the owner read and its fixture is touched.\nJUSTIFICATION durability: tests/test_the_coordinator_read_is_bounded_by_its_window.py:226 pins DOCUMENT_AGE_MARGIN with a logged red arm, but reckon/crew/plan_coordinator.py:216 has no case asserting its reader or the plan_owner value.\nJUSTIFICATION fit: reckon/crew/plan_coordinator.py:213 follows the module's private-helper idiom and reckon/resources.py:387 already reads plans through _parse_meta_head, but the comment at tests/test_the_coordinator_read_is_bounded_by_its_window.py:35-37 repeats a half-sentence.\nJUSTIFICATION reuse: the repair reads owners through the existing head-only reader at reckon/_plan_html.py:2442 that reckon/resources.py:387 uses, adding no second mechanism; a search of reckon/ found no other head-meta reader.\nFINDING reckon/crew/plan_coordinator.py:216 non-blocking: the owner read that carries the under-10-second figure has no test asserting its reader or the plan_owner value, so reverting it or returning an empty owner passes all six cases.\nFINDING tests/test_the_coordinator_read_is_bounded_by_its_window.py:35 non-blocking: the comment above HORIZON repeats a half-sentence, leaving the constant's rationale unreadable.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T122510887219-the-coordinator-read-is-bounded-by-its-window/manifest.md:25 non-blocking: baseline_suite records a collection error (no tests ran, EXIT=4) as a completed arm with failure_count 0, while the fragment's base figure comes from repair_base_node.log, which the record does not name.\n",
+  "review_run_id": "r-20261106T140204578112-review-of-the-coordinator-read-is-bounded-by-its-window-28dbc2e63add",
+  "reviewed_base": "ddc29dfa81f29198f3d6782109e5e9d4aac2a10e",
+  "reviewed_base_sha": "ddc29dfa81f29198f3d6782109e5e9d4aac2a10e",
+  "reviewed_head": "28dbc2e63add8c20f82eb65a6eb18cd17660ed89",
+  "reviewed_head_sha": "28dbc2e63add8c20f82eb65a6eb18cd17660ed89",
+  "reviewed_run_id": "r-20261106T122510887219-the-coordinator-read-is-bounded-by-its-window",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T14:16:13.621605+00:00",
+  "total": 104
+}
