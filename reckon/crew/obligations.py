@@ -61,7 +61,21 @@ CLASSIFICATION_DUTY_KINDS = {
 # whose head moved past the revision its stored review recorded reads
 # review-missing naming both heads, whatever the classifier's own reading said.
 REVIEW_CLASSIFICATION_KINDS = frozenset({"scoring", "promotable"})
-RECOVERY_CLASSIFICATION_DUTY_KINDS = {"needs-help": "needs-help"}
+#: Recovery readings that owe their session a duty under a word the lifecycle
+#: classification does not carry.
+#:
+#: A ``launch-failed`` run whose pointer holds a pre-spawn phase past the bound
+#: is one no evidence can move: the launch was cut off between composing the
+#: record and spawning the worker, so there is no process to observe, no stream
+#: to watch and nothing that ends on its own. It reads ``launch-failed`` rather
+#: than any lifecycle word, so without an entry here it reaches no duty at all
+#: and the abandoned pointer holds whatever claim it took in silence. The row
+#: carries the classifier's own next action, which is the command that releases
+#: it.
+RECOVERY_CLASSIFICATION_DUTY_KINDS = {
+    "needs-help": "needs-help",
+    "launch-failed": "launch-failed",
+}
 
 # A duty kind whose evidence is a stored review rather than a live run's state:
 # the row is owed while the dimension carries no disposition, and it names the
