@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "baseline_suite (9350a422feca) 7 passed, failure_count 0; after_suite (5efeb80b95) 7 passed, failure_count 0; the single two-file gate failure test_every_registered_crew_verb_is_documented_or_exempt is identical at both arms and lies outside this node's write paths.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp_views.py:serve_crew_view",
+    "reckon/mcp_views.py:ready_set_view",
+    "reckon/crew/directory.py:directory"
+  ],
+  "completed_at": "2026-11-06T09:23:29.854Z",
+  "dispatched_at": "2026-11-06T09:13:13Z",
+  "findings": [
+    {
+      "file": "tests/test_the_skills_read_the_board_views.py",
+      "id": "fd694a6f5df",
+      "line": 107,
+      "text": "non-blocking: the case patches reckon.crew.directory.directory, which serve_crew_view imports inside its own body (reckon/mcp_views.py:4188), so the stand-in intercepts only while that call is made through the submodule at call time; if the import moved to module scope, or the directory branch called any other accessor, the patch would stop biting and the case would redden on a contract that is still true. It is a much narrower dependency than the getsource regex it replaced, but the evidence fragment's claim that 'where the call is written no longer matters' is slightly wider than what the case holds."
+    }
+  ],
+  "item_aggregate": {},
+  "item_verdicts": {
+    "diff": "Read both commits: 7f1c885b72 replaces inspect.getsource on serve_crew_view with a monkeypatched stand-in and names the assertion, and loosens the count regex from 'views? answer' to a number word plus up to two words plus 'views'; 5efeb80b95 appends one 'Second repair round' section to the evidence fragment and ends the file at </html>, appending rather than rewriting.",
+    "done_when": "The done_when names the gate tests/test_the_skills_read_the_board_views.py with an executed negative control; gate-after-round3.log records 7 passed EXIT=0 at 5efeb80b95 and gate-baseline-round3.log 7 passed EXIT=0 at 9350a422feca, both from the armed command with a revision header, and the round-3 controls (negative-control-round3-count-mismatch.log assert 4 == 3, negative-control-round3-helper-broken.log assert on the ready-idle request) show the guarded defects reddening the cases.",
+    "goal": "The node goal is to retire the lossless-report recipe from the build and roadmap skills in favour of the ready-set filter, the critical-path fields, the directory and the lanes view; the gained commits complete the test half of that claim: skills/reckon-roadmap/SKILL.md and skills/reckon-build/references/sprint-orchestration.md are unchanged since the base and tests/test_the_skills_read_the_board_views.py:88,142 now hold them by call and by count rather than by wording.",
+    "manifest": "The manifest reports status complete, both arms 7 passed with their log paths, the four controls with their ids, one pre-existing gate failure recorded under outside_scope, and a rubric line per dimension; each arm JSON names its revision, literal command, exit_status 0 and completed true, matching the logs I opened.",
+    "write_paths": "The node was fenced to skills/reckon-build/references/sprint-orchestration.md, skills/reckon-roadmap/SKILL.md, tests/test_the_skills_read_the_board_views.py, the evidence fragment and a figures directory; the gained range touches only the test file and the fragment, both declared, and `git show --stat` on 5efeb80b95 shows 70 insertions and 0 deletions of the fragment, so no predecessor's evidence was replaced."
+  },
+  "justifications": {
+    "durability": "Each added assertion can fail on a stated regression: removing ready_idle=True from reckon/mcp_views.py:4210 leaves asked without the key and reddens tests/test_the_skills_read_the_board_views.py:110, and a four-item list under a stated 'three' reddens :147 with assert 4 == 3; both failures are shown in negative-control-round3-helper-broken.log and negative-control-round3-count-mismatch.log, and the count pattern no longer binds the sentence around the number.",
+    "evidence": "gate-after-round3.log names revision 5efeb80b95, tree and the literal pytest command and ends '7 passed' with EXIT=0, gate-baseline-round3.log does the same at 9350a422feca with '7 passed' EXIT=0, and the six round-3 control logs are on disk; the counted delta is zero, and I confirmed the production path the serving case patches rather than re-running the file.",
+    "fit": "The new case follows the file's shape -- module-level constants, plain asserts, the pattern-breaking commit's own docstring -- and the same monkeypatch-on-directory_module idiom tests/test_the_board_extends_the_directory.py:330 already uses, with no plan label, ticket id or version suffix introduced.",
+    "goal_fidelity": "The two gained commits carry out the node goal's own test contract -- 'a skill contract test in tests/test_the_skills_read_the_board_views.py asserts the build skill and the roadmap skill name them' -- and at 5efeb80b95 tests/test_the_skills_read_the_board_views.py:88 and :142 now hold that contract through a call and a count rather than a fixed sentence.",
+    "reuse": "The diff adds no production definition and no repository-wide helper is duplicated: the only new symbol is the test-local stand_in at tests/test_the_skills_read_the_board_views.py:102, and a search of tests/ for a shared directory stand-in found one per-test idiom (tests/test_the_board_extends_the_directory.py:330) with no owner to extend.",
+    "scope_discipline": "git diff --stat over 9350a422feca..5efeb80b95 lists exactly tests/test_the_skills_read_the_board_views.py and docs/evidence/fragments/a-coordinator-sees-the-board/the-skills-read-the-board-views.html, both inside the node's declared write paths, with no production, skill or plan file touched."
+  },
+  "node": "the-skills-read-the-board-views",
+  "node:reviewed": "the-skills-read-the-board-views",
+  "project": "reckon",
+  "review_run_id": "r-20261106T090834294998-review-of-the-skills-read-the-board-views-5efeb80b95e6",
+  "reviewed_base_sha": "9350a422feca956f5f5e2ff2b51ac73a6ffdefd7",
+  "reviewed_head_sha": "5efeb80b95e6db9c8728ca434a2ebb80cbeb8f7a",
+  "reviewed_run_id": "r-20261027T103909465247-the-skills-read-the-board-views",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T09:18:01.706991+00:00",
+  "total": 109
+}

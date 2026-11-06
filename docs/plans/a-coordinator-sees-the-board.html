@@ -25,7 +25,7 @@
   <title>A Coordinator Sees the Board | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="42">
+<meta name="plan-version" content="43">
 <meta name="plan-modified" content="2026-11-06">
 </head>
 <body>
@@ -340,6 +340,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261106T074702041282-review-of-the-skills-read-the-board-views-9350a422feca" data-who="reckon-build" data-when="2026-11-06T08:08:05.383Z">
     <div class="r-comment-body"><p>Independent review of run r-20261027T103909465247-the-skills-read-the-board-views at base 5da16be129a2be6b126a9e5bfc6acadc715a0c95..head 9350a422feca956f5f5e2ff2b51ac73a6ffdefd7 recorded at review-records/r-20261027T103909465247-the-skills-read-the-board-views.json: parsed, six dimensions (goal_fidelity 19, evidence 18, scope_discipline 20, durability 17, fit 18, reuse 20), item count 6 of 6, added_failure_count 0, two non-blocking findings on the test file.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261106T090834294998-review-of-the-skills-read-the-board-views-5efeb80b95e6" data-who="reckon-build" data-when="2026-11-06T09:23:29.854Z">
+    <div class="r-comment-body"><p>Reviewed the two commits the node gained since it was last reviewed (7f1c885b72 test repair, 5efeb80b95 evidence fragment) against base 9350a422feca and head 5efeb80b95; both prior non-blocking findings are answered — the count case now binds the number word and its noun and still reads assert 4 == 3 on the pre-repair four-item list, and the serving case calls serve_crew_view against a stand-in directory and asserts ready_idle=True is requested, which I confirmed intercepts the production path at reckon/mcp_views.py:4188 and :4210. One non-blocking finding: the stand-in binds the in-function import, so a move to a module-scope import would redden a contract that is still true, and the evidence fragment&#x27;s &quot;where the call is written no longer matters&quot; is slightly wider than what the case holds.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-20261023-s9-conflict" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
     <div class="r-comment-body"><p>Content review of v11 on 2026-10-23: §9 lists every live host's session, while §5's done-when requires a coordinator whose only plan has no ready section and no run not to appear. Decide which rule the board follows before §9 is dispatched.</p></div>
