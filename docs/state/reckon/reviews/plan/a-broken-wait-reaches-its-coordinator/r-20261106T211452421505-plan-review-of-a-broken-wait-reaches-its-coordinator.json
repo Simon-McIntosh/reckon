@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T21:25:00.892Z",
+  "dispatched_at": "2026-11-06T21:16:13Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-broken-wait-reaches-its-coordinator.html:47",
+      "id": "done_when-1",
+      "reason": "the node cannot meet its own done-when as written; the fixture must be a probe that stays refused after \u00a72, such as \u00a72's own still-refused `[\"python3\",\"-c\",\"print('pending')\"]`.",
+      "text": "the first case asks for \"a waiting run whose manifest carries the \u00a71 shape of refused probe\", but \u00a72 explicitly makes that probe accepted (\"the \u00a71 probe, verbatim, is accepted as naming job 1306915\"). Measured at HEAD 97eb0f321d: `_wait_probe_reference_kind(\u00a71 probe)` returns `None`, so `_wait_probe_cannot_fail` (reckon/crew/recovery_wait.py:800) refuses it and the run classifies `unreadable`; after \u00a72's stated split of the `-c` string the same probe yields the words `squeue -h -j 1306915` and the reference kind measures `job`, so the probe is no longer refused and no run can carry the `unreadable` classification the case needs. Under the plan's own order (`f-abwrc-001`: \"Build \u00a72, then \u00a74; \u00a73 once \u2026\") the case is unbuildable; built before \u00a72 it passes only while testing the pre-\u00a72 refusal and turns red as soon as \u00a72 lands. The fourth negative control inherits the same fate, since it asserts the refusal text on the same fixture",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-broken-wait-reaches-its-coordinator.html:46",
+      "id": "reasoning-1",
+      "reason": "the deliverable needs one more clause naming `DUTY_ROW_FIELDS`; without it the implementer can pass the gate and still leave the new field unrequestable.",
+      "text": "the deliverable adds `detail` to `_live_item`'s projection (reckon/crew/obligations.py:727-736) but leaves out `DUTY_ROW_FIELDS` (reckon/crew/obligations.py:95-135), the vocabulary `project_run_rows` validates a narrowed request against at obligations.py:2018-2025. Its own docstring states the rule being broken: \"A field whose value is empty is left off the row by the projection; a name is accepted here whether or not any duty of that kind is currently owed.\" With `detail` absent from the vocabulary, `crew view obligations --fields detail` is refused whenever no live duty happens to carry a non-empty detail, so the field the section exists to surface is requestable only in some fleet states, and the section's done-when cannot catch it because case 1 reads the item directly with no field selection",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-broken-wait-reaches-its-coordinator.html:46",
+      "id": "wiring-1",
+      "reason": "the clause tells a reader \u00a73 is blocked on unlanded upstream work when it is dispatchable now, and it is a one-line correction in the same paragraph this review was asked to read.",
+      "text": "\u00a73 says \"This edits the same map as `a-reexec-never-orphans-a-dispatch` \u00a74, which adds `launch-failed`, so it waits for that section to land\", but that section is `data-status=\"done\"` in docs/plans/a-reexec-never-orphans-a-dispatch.html and its entry is already present in the map at reckon/crew/obligations.py:66-67 (landed in ac01f29885), so the shared-file conflict the sentence guards against has already been resolved",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "0bb6db6494d637b3ede9a2b5050892c70be6e9dc",
+  "plan_fingerprint": "6862d28b398700ef0146f1fdaca5bec758aa8c5ca3903ae7f48e29f66722c5ab",
+  "plan_slug": "a-broken-wait-reaches-its-coordinator",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T211452421505-plan-review-of-a-broken-wait-reaches-its-coordinator",
+  "reviewed_blob_sha": "b96bbd37c50e2352fef9630d81ebb50f0d0af73b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `recovery_vocabulary.py:88\u201389` is exact, `_live_item` is at `obligations.py:727`, the map's docstring begins at `obligations.py:64`, both `recovery_classification` read sites are at `1917`/`1968` (the text says 1903/1954) and the `detail` block sits at `recovery_classification.py:1719\u20131723`.",
+    "done_when": "a finding \u2014 \u00a73's first done-when case uses the \u00a71 probe as a refused fixture, and \u00a72 makes that same probe valid, so the case cannot be constructed once \u00a72 lands.",
+    "evidence_paths": "pass \u2014 write paths are two repository paths (`reckon/crew/obligations.py` and a new test under `tests/`), with no session scratchpad or node-local temporary path named.",
+    "naming": "pass \u2014 the new test file is named for its mechanism and the two new map keys are the classifier's own classification words, not plan labels or ticket numbers.",
+    "reasoning": "a finding \u2014 the mechanism names `_live_item` as the only projection change, but a duty field also has to be admitted by `DUTY_ROW_FIELDS` before a narrowed `obligations` read can ask for it.",
+    "single_goal": "pass \u2014 the section has one goal (a repair-classified run owes its session a duty), and the `_live_item` widening serves that goal rather than adding a second deliverable.",
+    "wiring": "a finding \u2014 \u00a73 declares its wait on `a-reexec-never-orphans-a-dispatch` \u00a74 as still unlanded, but that section is `done` and the entry it adds is already in the map."
+  },
+  "section_digests": {
+    "_document": "d03f5f33ba4e3c3040d3555977705f88d6fe07b3409e73c3c07db45f1032f907",
+    "s1": "261438fe26041f770a527d758f1d74089637c1787c8d78d49957c57b9c122a42",
+    "s2": "7f638147397793c27168d9f3abf7057cba00c63109ec7df9ec06dc38a784bda7",
+    "s3": "79aaae72bc2e23460f4085c77bd8c672accb3b17e1b937baab52e1cd4004e2a7",
+    "s4": "56f29b4064cc7a3d087cf2380bd8311ded02ce5526e7295d449d9b7fdebc5930"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T21:34:30.000332+00:00",
+  "total": null
+}
