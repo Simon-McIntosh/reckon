@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T23:50:15.941Z",
+  "dispatched_at": "2026-11-06T23:42:11Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/an-evidence-record-counts-only-what-it-read.html:51",
+      "id": "done_when-1",
+      "reason": "a worker on an exact-spec node cannot tell whether a seventh case is missing or the first paragraph carries the second, and the node's own measure is \"seven things\".",
+      "text": "the done-when says it shows \"seven things\" and then enumerates a first case, a third, fourth, fifth, sixth and seventh: no second case is stated, and there are six negative controls for the six named cases, so the gate cannot be reconciled against the count it is graded by",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-evidence-record-counts-only-what-it-read.html:50",
+      "id": "reasoning-1",
+      "reason": "a node told to implement exactly as written reaches a function that cannot compute the check it was given and must either pour disk access into the pure op validator or deviate, and the plan should name `_apply_evidence_appends`.",
+      "text": "the refusal is placed \"beside its anchor-shape guard (`reckon/_store.py` near lines 1292\u20131299)\" inside `_apply_append_evidence`, but that handler runs under `apply_ops`, whose contract is \"Pure: never touches disk\"; one of the three inputs the refusal needs \u2014 every id `_section_key` makes of the current ledger runs' `section` keys \u2014 is readable only from `ledger.runs(project, root=..., plan=...)`, which `_apply_append_evidence(working, op, is_index, warnings)` has no way to reach (no docs_dir, no root, no docs_dir/root anywhere; the impure half is `_apply_evidence_appends` at `reckon/_store.py:1230`, which does take them)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-evidence-record-counts-only-what-it-read.html:50",
+      "id": "reasoning-2",
+      "reason": "the plan's stated guarantee is a property of the operator-visible surface, and the surface that would carry it is out of the node's declared scope, so the node would deliver a field only a test reads.",
+      "text": "the deliverable accepts the residual collision because \"it is never silent: when the rendered-id exclusion drops an appended section, the synthesis names it in its result\", but the only production caller, `synthesize_evidence` (`reckon/project_maintenance_commands.py:1473-1485`), echoes just path, run count, comment count and commit count, and `EvidenceSynthesisResult` (`reckon/evidence.py:24-31`) has no field for a dropped name; that module is not among \u00a74's write paths, so on the real code path the loss stays silent",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "91b8fa2e163480ecafccd2105511ca010730a7f3",
+  "plan_fingerprint": "327554de96bced3f0e340886baad4ce7370463db608e5c77d3676e8fed63fc02",
+  "plan_slug": "an-evidence-record-counts-only-what-it-read",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T234051628576-plan-review-of-an-evidence-record-counts-only-what-it-read",
+  "reviewed_blob_sha": "3b35f1a602a9defad39e4a6feffaee133c70a0f4",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_render_document`'s comment-key/run-section derivation is at `reckon/evidence.py:338-349`, `_evidence_section_html` at `reckon/_store.py:1197` and the anchor-shape `fullmatch` guard at `reckon/_store.py:1292-1299`; each cited target resolves.",
+    "done_when": "a finding \u2014 \u00a74's done-when claims seven cases but names a first, then a third, fourth, fifth, sixth and seventh, leaving one case unnumbered and its negative control unmatchable.",
+    "evidence_paths": "pass \u2014 \u00a74 requires every log under the run directory, opening with its revision and literal command and ending in `EXIT=`, which is a durable path.",
+    "naming": "pass \u2014 `data-evidence-origin` names what it records (an appended section) and no plan label, stage name or ticket number reaches the new code.",
+    "reasoning": "findings \u2014 the stated root cause (a rewrite that renders only comments and ledger runs) matches the cited `_render_document` evidence, but the refusal's named landing site cannot reach the ledger, and the \"never silent\" guarantee has no caller that prints it.",
+    "single_goal": "pass \u2014 the carry-forward and the append refusal are two mechanisms serving one invariant, that a published anchor keeps resolving.",
+    "wiring": "pass \u2014 the snapshot's `plan-section-depends-on` meta declares `s4: [s2, s3]`, matching both files \u00a74 writes (`reckon/_store.py`, `reckon/evidence.py`), and the followup orders \u00a72, \u00a73, \u00a74."
+  },
+  "section_digests": {
+    "_document": "6d35efce52466005f8ee56997c8dc7bcca998d7c41fcd252d254bc7264596281",
+    "s1": "7c52117565966edec5de56bc0448d4a141edbcb73ac18ede5f2cb0c34f424f0a",
+    "s2": "143dc532dde638505b6cf743e1b2af8b2d754fbd94debf4fdb0b351e623a2a39",
+    "s3": "1e19a712fd2dad1c38a11f7b6164b1fcc01c996e78f3297edb135a1d5fd7c0cf",
+    "s4": "2a5ea49bb60a8b1432c38ed94ef89dde638bef313e931d40df1401161009994e"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T23:57:42.968045+00:00",
+  "total": null
+}
