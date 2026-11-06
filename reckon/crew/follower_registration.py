@@ -4,6 +4,7 @@ from __future__ import annotations
 import fcntl
 import hashlib
 import json
+import logging
 import os
 import re
 import signal
@@ -25,6 +26,8 @@ from reckon.crew import obligation_snapshot
 # ``obligation_snapshot``, so a caller reaching either one shares one memo.
 _source_content_digest = obligation_snapshot._source_content_digest
 _follower_source_digests = obligation_snapshot._source_digests
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def follower_code_stamp() -> str:
@@ -445,7 +448,16 @@ class _FollowerRegistration:
         if self._handle is None:
             return
         if self.held:
-            self._write_exit_record(reason if reason is not None else exit_reason())
+            # The record is a courtesy to a later reader; the exit is the
+            # follower's own. A read-only or full crew home must not turn a
+            # settle into a crash, so the failure is reported and the release
+            # carries on.
+            try:
+                self._write_exit_record(reason if reason is not None else exit_reason())
+            except OSError as exc:
+                _LOGGER.warning(
+                    "the follower's exit record could not be written: %s", exc
+                )
             fcntl.flock(self._handle.fileno(), fcntl.LOCK_UN)
             self.held = False
         self._handle.close()
@@ -506,7 +518,11 @@ def follower_registration(
     finally:
         reason = exit_reason()
         for signum, previous in previous_handlers.items():
-            signal.signal(signum, previous)
+            # A handler the process installed outside Python reads back as
+            # None, and signal.signal refuses it. That refusal must not skip
+            # the release below, or the follower's end goes unrecorded.
+            with suppress(ValueError, TypeError):
+                signal.signal(signum, previous)
         registration.release(reason)
 
 
