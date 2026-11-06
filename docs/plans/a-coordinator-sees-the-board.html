@@ -25,7 +25,7 @@
   <title>A Coordinator Sees the Board | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="50">
+<meta name="plan-version" content="51">
 <meta name="plan-modified" content="2026-11-06">
 </head>
 <body>
@@ -278,6 +278,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261106T111408387900-review-of-a-coordinators-context-use-is-on-the-board-f8917a71d76b-figure" data-who="reckon-build" data-when="2026-11-06T11:28:23.744Z">
     <div class="r-comment-body"><p>Figure review of r-20261106T054659697315-a-coordinators-context-use-is-on-the-board at head f8917a71d7 (base 0cb152d789): parsed read-only figure rubric over the one attached render (image-0.png, 1400x720), all six items pass — zero ink in the outer 4 px frame, ink bbox x 20..1378 y 50..696, bar fill 24.0 % of canvas pixels against 26.2 % any-ink, per-label clearance 15-22 px, flat rgb(46,139,87) at about 4.2:1 on white, no gradient or gridline — with one non-blocking finding: every row is labelled with an 8-character session-id prefix and nothing in the figure or its caption names those sessions, so a reader learns which coordinator sits at 52.7 % only by leaving the figure for the board.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261106T054659697315-a-coordinators-context-use-is-on-the-board" data-who="reckon-build" data-when="2026-11-06T11:08:49Z">
+    <div class="r-comment-body"><p>Every coordinator row on the directory view carries `context_use` — the charged input of the session&#x27;s last assistant request, with the model&#x27;s window and the fraction between them — read through the dispatch accounting&#x27;s own readers (`_charged_claude_tokens`, `_jsonl_events`, `_latest_transcript`), with a missing transcript, an uncharged transcript and an undeclared window each reading unmeasured (never zero). Gate at head 6 passed, EXIT=0; at the repair&#x27;s base 5 passed; negative control (forward fallback keeps the first charged request) 1 failed/5 passed, EXIT=1, on tests/test_a_coordinators_context_use_is_on_the_board.py::test_a_request_deeper_than_the_tail_is_read_forward. Measured over the eight live coordinators on this workstation, all claude-opus-5-5 on a 1,000,000-token window, context use spans 16.3% to 52.7%, at 20 ms for the whole board read.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261023T064458793164-review-of-a-plans-coordinator-is-derived-from-the-ledger-20030d0d081a" data-who="reckon-build" data-when="2026-10-23T07:21:57.992Z">
     <div class="r-comment-body"><p>the review of run r-20261023T002639713681-a-plans-coordinator-is-derived-from-the-ledger is stored at both declared review-records paths, scoring goal_fidelity 14, evidence 16, scope_discipline 20, durability 13, fit 18, reuse 5, total 86, reviewed at 017b346cb43a597da2b3d4c37bea6657eac1c886..20030d0d081a8cbbe50705de9db140dc1835eae2, with one blocking finding: reckon/crew/plan_coordinator.py:122 resolves a review's subject run by looking a node id up in a run-id-keyed map, so the run-review match returns no plan on real ledger data.</p></div>
