@@ -61,6 +61,14 @@ from reckon.crew.repair import round_node_source
 #: a tighter answer passes its own value.
 DEFAULT_COORDINATOR_WINDOW = "168h"
 
+#: How far before the horizon a run document may have been last written and
+#: still hold a row the resolver keeps. A document is written when its run is
+#: promoted, which is after the run was dispatched, so its modification time is
+#: an upper bound on the dispatch it carries; the margin absorbs a clock or
+#: filesystem skew between the two, and only costs the read of a day of history
+#: the resolver then discards.
+DOCUMENT_AGE_MARGIN = timedelta(days=1)
+
 #: The run fields that name a plan, consulted in this order. Each is a fallback
 #: for the one before it: a run dispatched from a plan section carries ``plan``,
 #: a brief-dispatched run carries ``plan_link``, and a review carries neither and
@@ -163,7 +171,11 @@ def _dispatch_instant(row: Mapping[str, Any]) -> datetime | None:
 
 
 def _run_rows(
-    project: str, root: str | Path | None, pointers: Iterable[Mapping[str, Any]]
+    project: str,
+    root: str | Path | None,
+    pointers: Iterable[Mapping[str, Any]],
+    *,
+    modified_since: float | None = None,
 ) -> dict[str, Mapping[str, Any]]:
     """Every run of a project by run id, committed rows and live pointers alike.
 
@@ -173,7 +185,9 @@ def _run_rows(
     most recently wrote.
     """
     rows: dict[str, Mapping[str, Any]] = {}
-    for row in ledger.run_rows_from_documents(project, root=root):
+    for row in ledger.run_rows_from_documents(
+        project, root=root, modified_since=modified_since
+    ):
         run_id = str(row.get("run_id") or "")
         if run_id:
             rows[run_id] = row
@@ -261,7 +275,12 @@ def resolve_plan_coordinators(
         if pointers is not None
         else list(runs.list_live(project=project))
     )
-    rows = _run_rows(project, root, live_pointers)
+    rows = _run_rows(
+        project,
+        root,
+        live_pointers,
+        modified_since=(horizon - DOCUMENT_AGE_MARGIN).timestamp(),
+    )
     live_sessions = _live_sessions(project, live_pointers)
 
     winners: dict[str, tuple[datetime, str, Mapping[str, Any], str]] = {}

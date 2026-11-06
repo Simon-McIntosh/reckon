@@ -1689,12 +1689,28 @@ def promotion_order_key(record: Mapping[str, Any]) -> tuple[str, str]:
     )
 
 
+def _written_since(source: Path, modified_since: float) -> bool:
+    """Whether a run document's own mtime is at or after ``modified_since``.
+
+    The bound is the file's modification time rather than the instant in its
+    name, because a run id is minted when the request is queued while the
+    document is written when the run is promoted, so a long-queued run has an
+    old id and a recent document. A file whose mtime cannot be read is treated
+    as outside the bound: it is no more readable than an absent one.
+    """
+    try:
+        return source.stat().st_mtime >= modified_since
+    except OSError:
+        return False
+
+
 def _merge_run_documents(
     project: str,
     root: str | Path | None,
     data: dict[str, Any],
     *,
     refuse: bool,
+    modified_since: float | None = None,
 ) -> bool:
     """Fold the per-run documents into ``data['runs']``, in promotion order.
 
@@ -1708,6 +1724,14 @@ def _merge_run_documents(
 
     Returns whether the union gained a row, so a caller whose documents changed
     nothing leaves the stored order alone.
+
+    ``modified_since`` is an epoch-seconds lower bound a caller that keeps only
+    recent rows passes, so a document last written before it is skipped at the
+    stat rather than read, parsed and copied. A run's document is written when
+    its run is promoted, which is after the run was dispatched, so a document
+    older than a dispatch horizon cannot hold a row dispatched inside it. Files
+    that cannot be stat'd are skipped, which is the same outcome the unreadable
+    document would reach through :func:`_read_run`.
     """
     path = ledger_path(project, root)
     by_id = {
@@ -1717,6 +1741,8 @@ def _merge_run_documents(
     }
     added = False
     for source in _run_files(project, root):
+        if modified_since is not None and not _written_since(source, modified_since):
+            continue
         try:
             record = _read_run(source)
         except LedgerError:
@@ -1743,7 +1769,10 @@ def _merge_run_documents(
 
 
 def run_rows_from_documents(
-    project: str, root: str | Path | None = None
+    project: str,
+    root: str | Path | None = None,
+    *,
+    modified_since: float | None = None,
 ) -> list[dict[str, Any]]:
     """The rows the aggregate and the per-run documents hold, merged unrefused.
 
@@ -1756,6 +1785,11 @@ def run_rows_from_documents(
     aggregate that cannot be read at all contributes its rows to no one, and
     the documents are still read: they are what a run's own writer put there,
     and they are present whatever happened to the aggregate that copies them.
+
+    ``modified_since`` is the lower bound on each document's own modification
+    time that a caller keeping only recent rows passes; every document written
+    before it is skipped at the stat, so a bounded read costs no read, parse or
+    copy for the history it cannot use.
     """
     try:
         data, _version = _load_aggregate(project, root)
@@ -1765,7 +1799,9 @@ def run_rows_from_documents(
         # truncated write has damaged raises the store's own error, which is no
         # more a reason to lose the documents than a malformed list is.
         data = {"members": [], "runs": [], "holds": []}
-    _merge_run_documents(project, root, data, refuse=False)
+    _merge_run_documents(
+        project, root, data, refuse=False, modified_since=modified_since
+    )
     return list(data["runs"])
 
 
