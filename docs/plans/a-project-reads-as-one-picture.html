@@ -27,7 +27,7 @@
   <title>A Project Reads as One Picture | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="80">
+<meta name="plan-version" content="81">
 <meta name="plan-modified" content="2026-11-06">
 </head>
 <body>
@@ -129,8 +129,10 @@
       the plan set had moved on since §2's landing, which recorded a three-plan critical path there.
       The snapshot is built by a committed builder under <code>tests/</code>, so a later reader can
       rebuild it and re-run both controls. It is a project whose critical path runs through a declared
-      cross-plan section wait, and whose waiting plan carries an open followup whose prompt names that
-      edge's target section. The four questions put to it through the base commit, the revision before
+      cross-plan section wait, and whose waiting plan carries an open followup whose prompt is a
+      <code>/reckon-build &lt;waiting plan&gt; §N</code> invocation naming the section that declares
+      the edge, and that also names the edge's target section; that invocation is the form
+      <code>undeclared-wait</code> attributes a mention by. The four questions put to it through the base commit, the revision before
       §2 derived section edges, must disagree with the head on the critical path. And removing that
       cross-plan edge from a copy must move the head's critical path, and must raise
       <code>undeclared-wait</code> for the followup that still names the removed edge.
