@@ -235,9 +235,7 @@ def test_case4_manifest_never_appears(repository: Path, tmp_path: Path) -> None:
     assert str(manifest) in str(refusal.value)
 
 
-def test_case5_an_explicit_gate_check_is_kept(
-    repository: Path, tmp_path: Path
-) -> None:
+def test_case5_an_explicit_gate_check_is_kept(repository: Path, tmp_path: Path) -> None:
     """A caller's own gate command and log are kept, not replaced by the record."""
     delivered, manifest = _stage_delivered(repository, tmp_path)
     manifest.write_text(_manifest_body(), encoding="utf-8")
