@@ -1,0 +1,40 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:3330",
+    "reckon/crew_follow_commands.py:3324",
+    "reckon/crew/follower_registration.py:538"
+  ],
+  "completed_at": "2026-11-06T18:50:47.970Z",
+  "dispatched_at": "2026-11-06T18:44:46Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T181926154431-keep-a-follower-exit-record-through-a-failed-restore-or/manifest.md",
+      "line": "24",
+      "severity": "non-blocking",
+      "text": "the done_when requires that ruff add no findings on the staged paths, but the manifest records that result only as text in the artifacts line and no ruff log exists under logs/, so the clause is claimed rather than shown."
+    }
+  ],
+  "node": "review-of-keep-a-follower-exit-record-through-a-failed-restore-or-397c4d5f4231",
+  "node:reviewed": "keep-a-follower-exit-record-through-a-failed-restore-or",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to keep a follower's exit record through a failed handler restore or a failed record write; reckon/crew/follower_registration.py:518-526 suppresses the restore's refusal so release still runs, and :455-461 guards the exit-record write, both committed at 58fd025c36.\nVERDICT done_when: the done_when names a new tests/test_a_follower_exit_record_survives_its_failures.py whose two cases are each failed by a named negative control, plus a no-added-failure arm over the test files importing the module; logs/node-gate.log (2 passed, EXIT=0), logs/base-reproduces.log (2 failed, EXIT=1), logs/base-arm.log (181 passed), logs/head-arm.log (183 passed) and logs/negative-controls.log (mutation 1 reddens test_a_record_survives_a_handler_that_cannot_be_restored, mutation 2 reddens test_a_follower_whose_record_write_fails_keeps_its_own_exit) all assert exactly that measure.\nVERDICT write_paths: the manifest declares reckon/crew/follower_registration.py, tests/test_a_follower_exit_record_survives_its_failures.py, one docs/evidence fragment and one docs/figures directory; git diff --stat 70b61e04..397c4d5f42 lists exactly the module, the new test and the fragment, all inside them.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T181926154431-keep-a-follower-exit-record-through-a-failed-restore-or/manifest.md; status complete, commits 58fd025c36 and 397c4d5f42, node gate 2 passed EXIT=0, base arm 181 passed, after arm 183 passed with no failure id, both negative controls red; its ruff claim carries no log.\nVERDICT diff: read both commits against base 70b61e04: 58fd025c36 changes reckon/crew/follower_registration.py (+18/-2, one logger, a try/except OSError around the exit-record write, and suppress(ValueError, TypeError) around the handler restore) and adds the 142-line test file; 397c4d5f42 adds only the 9-line evidence fragment.\nCALL_SITES: reckon/crew_follow_commands.py:3330, reckon/crew_follow_commands.py:3324, reckon/crew/follower_registration.py:538\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/follower_registration.py:524-525 wraps the restore in suppress(ValueError, TypeError) so the release at :526 still runs, and :455-460 guards the exit-record write, covering both ways the record was lost.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/node-gate.log and logs/base-reproduces.log show 2 passed EXIT=0 at head and 2 failed EXIT=1 at base 70b61e04, but the done_when's ruff requirement is reported only as prose in the manifest's artifacts line at manifest.md:24 with no log recording it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 70b61e04..397c4d5f42 changes only the two declared source/test paths and the always-permitted landing fragment, and the declared docs/figures directory stays empty.\nSCORE durability: 19\nJUSTIFICATION durability: logs/negative-controls.log shows each mutation reddening exactly its own case (mutation 1 removes the suppression and test_a_record_survives_a_handler_that_cannot_be_restored fails; mutation 2 removes the write guard and test_a_follower_whose_record_write_fails_keeps_its_own_exit fails), so the two assertions at tests/test_a_follower_exit_record_survives_its_failures.py:126-130 and :139-141 fail if the change regresses.\nSCORE fit: 19\nJUSTIFICATION fit: the module-level _LOGGER at reckon/crew/follower_registration.py:30 matches reckon/crew/station_subscriber.py and reckon/crew/queue_order.py, and the suppression mirrors reckon/serve.py:4249-4255 _remove_termination_unwind, which the diff cites.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change adds no new definition beyond a logger and reuses the existing write_json_atomically path at reckon/crew/follower_registration.py:467; the search over reckon/ found the closest owner, reckon/serve.py:4249 _remove_termination_unwind, is SIGTERM-specific and not importable, so nothing was forked.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T181926154431-keep-a-follower-exit-record-through-a-failed-restore-or/manifest.md:24 non-blocking: the done_when requires that ruff add no findings on the staged paths, but the manifest records that result only as text in the artifacts line and no ruff log exists under logs/, so the clause is claimed rather than shown.",
+  "review_run_id": "r-20261106T184216290719-review-of-keep-a-follower-exit-record-through-a-failed-restore-or-397c4d5f4231",
+  "reviewed_base_sha": "70b61e04e06328492d123ce977a44c812ef01f8b",
+  "reviewed_head_sha": "397c4d5f4231eb03b7b17646fa806453ca9af207",
+  "reviewed_run_id": "r-20261106T181926154431-keep-a-follower-exit-record-through-a-failed-restore-or",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T19:01:04.670080+00:00",
+  "total": 112
+}
