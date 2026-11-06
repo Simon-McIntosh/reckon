@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/roadmap.py:3489",
+    "reckon/crew/directory.py:450"
+  ],
+  "call_sites_emission": "sites",
+  "completed_at": "2026-11-06T14:33:25.315Z",
+  "dispatched_at": "2026-11-06T14:25:23Z",
+  "findings": [
+    {
+      "file": "tests/test_the_coordinator_read_is_bounded_by_its_window.py",
+      "line": "201",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert len({_owner_for(row[1]) for row in ROWS}) == len(ROWS) compares the test's own helper against itself and touches no value the resolver returns, so no regression in reckon/crew/plan_coordinator.py could make it fail; the guard the case exists for is the following loop assertion at :203."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T122510887219-the-coordinator-read-is-bounded-by-its-window/manifest.md",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "non-blocking: baseline_suite records completed true and failure_count 0 for coordinator-armed-base.log, but that log reads 'ERROR: file or directory not found: tests/test_the_coordinator_read_is_bounded_by_its_window.py' and ends EXIT=4, because the file this node created does not exist at the base revision; the record's real base arm is repair_base_node.log, which baseline_suite does not name, so the base side of the added-failure pair measures nothing."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Both production callers of the resolver were read: reckon/roadmap.py:3489 (_critical_path_coordinators) and reckon/crew/directory.py:450 (the coordinator directory read), neither of which the delta alters.",
+    "diff": "Read commit-by-commit from 28dbc2e63a to debcd4dd58: one commit, one file, +41/-5, adding _owner_for, test_each_plan_row_carries_its_own_owner and test_the_resolver_answers_without_building_a_soup and replacing the duplicated half-sentence above HORIZON.",
+    "done_when": "The node's done-when requires a three-kind mtime fixture, reads counted through the code's own reader, base-answer equivalence, a sub-10-second fleet probe and an armed suite pair; the delta closes the prior review's finding that the owner read had no case, and the after arm at debcd4dd58 records 8 passed EXIT=0 in coordinator-armed-head.log while baseline_suite names a base arm that ran no tests (EXIT=4).",
+    "goal": "The node goal is a modification-time lower bound on the per-run document read that keeps every coordinator it names; the reviewed delta (commit debcd4dd58) adds no production change and instead pins tests/test_the_coordinator_read_is_bounded_by_its_window.py:194-223 to the plan_owner value and document-head reader behind reckon/crew/plan_coordinator.py:216-218.",
+    "manifest": "Read the reviewed run's manifest: it records the gate command, the after arm as 8 passed with a named log, the negative-control log for the owner mutations and the probe figures, but its baseline_suite records exit_status 4 with failure_count 0 for coordinator-armed-base.log, which reads 'ERROR: file or directory not found ... no tests ran'.",
+    "write_paths": "The reviewed node declared reckon/ledger.py, reckon/crew/plan_coordinator.py, tests/test_the_coordinator_read_is_bounded_by_its_window.py and the evidence fragment/figures directory; commit debcd4dd58 changes only tests/test_the_coordinator_read_is_bounded_by_its_window.py."
+  },
+  "justifications": {
+    "durability": "Both new cases are shown red under applied mutations in negative-control-owner.log (empty owner: 2 failed; reinstated read_state_and_text_file: 1 failed at test_the_resolver_answers_without_building_a_soup), but the fixture-distinctness assertion at tests/test_the_coordinator_read_is_bounded_by_its_window.py:201 compares the test's own helper with itself and cannot fail on any code regression.",
+    "evidence": "The reviewed run's after_suite names coordinator-armed-head.log, which reads 8 passed in 8.33s and EXIT=0 at revision debcd4dd58, so the head arm is recorded and readable, but baseline_suite names coordinator-armed-base.log whose base arm ran no tests ('file or directory not found', EXIT=4), so the base side of the pair measures nothing and the added_failure_count of 0 rests on an empty base arm rather than a base run.",
+    "fit": "The two added cases follow the file's existing fixture-and-assert idiom at tests/test_the_coordinator_read_is_bounded_by_its_window.py:147-192, and debcd4dd58 also replaces the duplicated half-sentence above HORIZON at :34-36 that the prior review flagged; the added names (_owner_for, test_each_plan_row_carries_its_own_owner, test_the_resolver_answers_without_building_a_soup) describe mechanism with no plan, stage or ticket label.",
+    "goal_fidelity": "The node goal is a modification-time lower bound on the per-run document read that keeps every coordinator; commit debcd4dd58 adds no production behaviour but pins tests/test_the_coordinator_read_is_bounded_by_its_window.py:194-223 to the plan_owner value and the head-only reader that reckon/crew/plan_coordinator.py:216-218 depends on, which is the property the goal's coordinator comparison rests on.",
+    "reuse": "The delta adds only test-local fixture material (_owner_for at tests/test_the_coordinator_read_is_bounded_by_its_window.py:81 and two cases); a search of reckon/ found no production definition added, and the per-file _write_plan builder it extends is the established tests/ idiom seen at tests/test_a_plans_coordinator_is_derived_from_the_ledger.py:209, so no repository capability is forked.",
+    "scope_discipline": "Commit debcd4dd58 touches only tests/test_the_coordinator_read_is_bounded_by_its_window.py (+41/-5), inside the reviewed node's declared write paths for reckon/ledger.py, reckon/crew/plan_coordinator.py, that test file and the evidence fragment, and no path outside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a modification-time lower bound on the per-run document read that keeps every coordinator it names; the reviewed delta at commit debcd4dd58 adds no production change and instead pins tests/test_the_coordinator_read_is_bounded_by_its_window.py:194-223 to the plan_owner value and document-head reader behind reckon/crew/plan_coordinator.py:216-218.\nVERDICT done_when: the node's done-when names a three-kind mtime fixture, reads counted through the code's own reader, base-answer equivalence, a sub-10-second fleet probe and an armed suite pair; the delta closes the prior review's finding that the owner read had no case, and the after arm at debcd4dd58 records 8 passed EXIT=0 in coordinator-armed-head.log while baseline_suite names a base arm that ran no tests (EXIT=4).\nVERDICT write_paths: the reviewed node declared reckon/ledger.py, reckon/crew/plan_coordinator.py, tests/test_the_coordinator_read_is_bounded_by_its_window.py and the evidence fragment/figures directory; commit debcd4dd58 changes only tests/test_the_coordinator_read_is_bounded_by_its_window.py.\nVERDICT manifest: read the reviewed run's manifest; it records the literal gate command, the after arm as 8 passed with a named log, and the owner negative-control log, but its baseline_suite records exit_status 4 with failure_count 0 for coordinator-armed-base.log, which reads 'ERROR: file or directory not found ... no tests ran'.\nVERDICT diff: read commit-by-commit from 28dbc2e63a to debcd4dd58; one commit, one file, +41/-5, adding _owner_for, test_each_plan_row_carries_its_own_owner and test_the_resolver_answers_without_building_a_soup, and replacing the duplicated half-sentence above HORIZON at :34-36.\nCALL_SITES: reckon/roadmap.py:3489, reckon/crew/directory.py:450\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_the_coordinator_read_is_bounded_by_its_window.py:194-223 now pins the plan_owner value and the head-only reader that reckon/crew/plan_coordinator.py:216-218 supplies, which is the property the goal's coordinator comparison rests on.\nSCORE evidence: 16\nJUSTIFICATION evidence: coordinator-armed-head.log records 8 passed in 8.33s and EXIT=0 at debcd4dd58, but baseline_suite's coordinator-armed-base.log ends EXIT=4 with 'no tests ran' at manifest.md:25, so the base side of the pair measures nothing.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commit debcd4dd58 touches only tests/test_the_coordinator_read_is_bounded_by_its_window.py, inside the reviewed node's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control-owner.log shows both new cases red under applied mutations (empty owner: 2 failed; reinstated read_state_and_text_file: 1 failed), but the fixture-distinctness assertion at tests/test_the_coordinator_read_is_bounded_by_its_window.py:201 cannot fail on any code regression.\nSCORE fit: 19\nJUSTIFICATION fit: the added cases follow the file's existing fixture idiom at tests/test_the_coordinator_read_is_bounded_by_its_window.py:147-192 and the names describe mechanism with no plan, stage or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds only test-local material at tests/test_the_coordinator_read_is_bounded_by_its_window.py:81 and :194-223; no production definition is added and the per-file _write_plan idiom matches tests/test_a_plans_coordinator_is_derived_from_the_ledger.py:209.\nFINDING tests/test_the_coordinator_read_is_bounded_by_its_window.py:201 non-blocking: assert len({_owner_for(row[1]) for row in ROWS}) == len(ROWS) compares the test's own helper against itself and touches no value the resolver returns, so it cannot fail on any regression; the guard the case exists for is the loop assertion at :203.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T122510887219-the-coordinator-read-is-bounded-by-its-window/manifest.md:25 non-blocking: baseline_suite records completed true and failure_count 0 for coordinator-armed-base.log, which ends EXIT=4 after 'file or directory not found ... no tests ran', so the base side of the added-failure pair measures nothing and the real base arm (repair_base_node.log) is not the log it names.\n",
+  "review_run_id": "r-20261106T142343160265-review-of-the-coordinator-read-is-bounded-by-its-window-debcd4dd583b",
+  "reviewed_base": "28dbc2e63add8c20f82eb65a6eb18cd17660ed89",
+  "reviewed_base_sha": "28dbc2e63add8c20f82eb65a6eb18cd17660ed89",
+  "reviewed_head": "debcd4dd583bc8d0b6e0a4675f6dfb8d27ec8d93",
+  "reviewed_head_sha": "debcd4dd583bc8d0b6e0a4675f6dfb8d27ec8d93",
+  "reviewed_run_id": "r-20261106T122510887219-the-coordinator-read-is-bounded-by-its-window",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T14:39:03.906700+00:00",
+  "total": 112
+}
