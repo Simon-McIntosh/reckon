@@ -21,7 +21,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import ledger
+from reckon import _plan_html, ledger
 from reckon.crew import plan_coordinator
 from reckon.crew.node import parse_duration
 
@@ -32,9 +32,8 @@ PROJECT = "reckon"
 NOW = datetime(2026, 11, 6, 12, 0, 0, tzinfo=UTC)
 WINDOW = "168h"
 
-#: The lower bound the resolver derives: its horizon, less a day of margin. The
-#: the horizon the resolver derives from its window, less the margin the
-#: resolver applies. The margin case below is placed inside it deliberately.
+#: The horizon the resolver derives from its window, and the bound it reads the
+#: ledger's documents with: that horizon less a day of margin.
 HORIZON = NOW - timedelta(seconds=parse_duration(WINDOW))
 BOUND = HORIZON - timedelta(days=1)
 
@@ -79,13 +78,18 @@ MARGIN_EDGE = (
 ROWS = (ANCIENT, INSIDE, LONG_QUEUED, MARGIN_EDGE)
 
 
+def _owner_for(slug: str) -> str:
+    """The accountable owner each fixture plan records, distinct per plan."""
+    return f"Owner of {slug}"
+
+
 def _write_plan(docs: Path, slug: str) -> None:
     plans = docs / "plans"
     plans.mkdir(parents=True, exist_ok=True)
     (plans / f"{slug}.html").write_text(
         "<!doctype html>\n<html><head>"
         f'<meta name="docs-project" content="{PROJECT}">\n'
-        '<meta name="plan-owner" content="Simon McIntosh">\n'
+        f'<meta name="plan-owner" content="{_owner_for(slug)}">\n'
         f"</head><body><h1>{slug}</h1></body></html>\n",
         encoding="utf-8",
     )
@@ -185,6 +189,38 @@ def test_the_long_queued_run_keeps_its_coordinator(project_root: Path) -> None:
     # Nothing dispatches plan-ancient inside the window, so the plan is still
     # named and still unowned, rather than dropped with the history behind it.
     assert plans[ANCIENT[1]]["coordinator"] is None
+
+
+def test_each_plan_row_carries_its_own_owner(project_root: Path) -> None:
+    """Every plan's owner comes from that plan's own document.
+
+    Each fixture plan records a different owner, so a reader that returns one
+    value for all plans, or no owner at all, cannot satisfy this case.
+    """
+    plans = _resolve(project_root)["plans"]
+    assert len({_owner_for(row[1]) for row in ROWS}) == len(ROWS)
+    for _run_id, slug, *_rest in ROWS:
+        assert plans[slug]["plan_owner"] == _owner_for(slug)
+
+
+def test_the_resolver_answers_without_building_a_soup(
+    project_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The owner is read from the document head, so no page is parsed.
+
+    The full-state reader and the parser it drives both refuse here, and nothing
+    is resolved before they are patched, so a resolver that reaches either to
+    learn an owner cannot answer at all.
+    """
+
+    def refuse(*_args, **_kwargs):
+        raise AssertionError("the resolver parsed a plan document")
+
+    monkeypatch.setattr(_plan_html, "read_state_and_text_file", refuse)
+    monkeypatch.setattr(_plan_html, "BeautifulSoup", refuse)
+    answered = _resolve(project_root)["plans"]
+    for _run_id, slug, *_rest in ROWS:
+        assert answered[slug]["plan_owner"] == _owner_for(slug)
 
 
 def test_the_bound_is_the_document_time_not_the_run_id(project_root: Path) -> None:
