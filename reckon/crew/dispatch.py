@@ -540,31 +540,6 @@ def _launch_yielded_queued_request(
     return record
 
 
-def _offered_local_backend(
-    selection: Mapping[str, Any] | None, config: Mapping[str, Any]
-) -> str | None:
-    """The local backend among a picker answer's offered candidates, or ``None``.
-
-    A picker answer lists the candidates it weighed, each marked with the lane
-    it names. A hold whose offered candidates include the local lane is a wait
-    for that lane, not a refusal, so the caller continues the request there. The
-    local backend is the configured ``local_backend``; a candidate is local when
-    the picker marked it so, or when its backend names the configured local lane.
-    """
-    if selection is None:
-        return None
-    local_backend = str(config.get("local_backend") or "").strip()
-    if not local_backend:
-        return None
-    for candidate in selection.get("offered") or ():
-        if not isinstance(candidate, Mapping):
-            continue
-        name = str(candidate.get("backend") or "")
-        if candidate.get("local") is True or name == local_backend:
-            return name or local_backend
-    return None
-
-
 def _gating_input_window(resolution: DispatchPlan, repo: Path) -> int | None:
     """The token figure that gates this lane's context fit, or ``None``.
 
@@ -1680,31 +1655,17 @@ def dispatch(
     # lane, not a refusal: the request is validated and continued there, and the
     # lane allowance then launches it if the lane has room or queues it. The hold
     # is kept aside so the run still records Jev's answer, and the picker-hold
-    # record is written with the run it became.
-    held_selection: dict[str, Any] | None = None
-    if (
-        picker_selection is not None
-        and resolve_dispatch_route(config, route) == "picker"
-        and picker_selection.get("action") == "hold"
-    ):
-        held_local_backend = _offered_local_backend(picker_selection, config)
-        lifted_serving_lane = any(
-            isinstance(candidate, Mapping)
-            and not candidate.get("local")
-            and not candidate.get("reasons")
-            and candidate.get("worker_slots") != 0
-            and (candidate.get("congestion") or {}).get("lift")
-            for candidate in picker_selection.get("offered") or ()
-        )
-        if held_local_backend and not ((due or urgency) and lifted_serving_lane):
-            held_selection = picker_selection
-            picker_selection = {
-                **picker_selection,
-                "action": "route",
-                "backend": held_local_backend,
-                "local": True,
-            }
-            local = True
+    # record is written with the run it became. The rule lives beside the
+    # resolution step so a preview continues a hold exactly as this does.
+    picker_selection, held_selection = continue_hold_on_its_offered_local_lane(
+        picker_selection=picker_selection,
+        config=config,
+        route=route,
+        due=due,
+        urgency=urgency,
+    )
+    if held_selection is not None:
+        local = True
     try:
         resolution = plan_dispatch(
             node=node,
@@ -3890,11 +3851,13 @@ from .dispatch_plan import (  # noqa: E402
     _dispatch_lane_allowance as _dispatch_lane_allowance,
     _lane_allowance_unknown as _lane_allowance_unknown,
     _lane_worker_allowance as _lane_worker_allowance,
+    _offered_local_backend as _offered_local_backend,
     _plan_impl_at_dispatch as _plan_impl_at_dispatch,
     _repairs_ledger_root as _repairs_ledger_root,
     _require_repairs_target as _require_repairs_target,
     _resolved_wave_id as _resolved_wave_id,
     _session_unreconciled_refusal as _session_unreconciled_refusal,
+    continue_hold_on_its_offered_local_lane as continue_hold_on_its_offered_local_lane,
     open_endedness_score as open_endedness_score,
     plan_dispatch as _raw_plan_dispatch,
 )

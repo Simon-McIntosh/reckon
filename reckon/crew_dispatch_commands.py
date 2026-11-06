@@ -1895,7 +1895,24 @@ def crew_dispatch(
         _emit_crew_result(pair_record, pretty)
         raise click.exceptions.Exit(0)
 
+    held_picker_selection: dict[str, Any] | None = None
     if dry_run:
+        # A hold that offered the local lane is continued there by the launch,
+        # so the preview continues it too: without this step the preview answers
+        # a budget hold for a node the launch dispatches.
+        from reckon.crew.dispatch_plan import continue_hold_on_its_offered_local_lane
+
+        picker_selection, held_picker_selection = (
+            continue_hold_on_its_offered_local_lane(
+                picker_selection=picker_selection,
+                config=config,
+                route=route,
+                due=due,
+                urgency=urgency,
+            )
+        )
+        if held_picker_selection is not None:
+            local = True
         try:
             resolution = crew_module.plan_dispatch(
                 node=node,
@@ -2119,6 +2136,14 @@ def crew_dispatch(
             )
             raise click.exceptions.Exit(75)
         payload = {"dry_run": True, **resolution.as_dict()}
+        if held_picker_selection is not None:
+            # The preview reports the picker's own answer beside the lane the
+            # request was continued on, exactly as the run record keeps it, so
+            # the two read as one decision rather than as a hold that vanished.
+            from reckon.crew.dispatch import _overridden_hold_route_mode
+
+            payload["picker_selection"] = held_picker_selection
+            payload["route_mode"] = _overridden_hold_route_mode()
         _emit_crew_result(
             _with_resolved_overrides(payload, override_resolution), pretty
         )

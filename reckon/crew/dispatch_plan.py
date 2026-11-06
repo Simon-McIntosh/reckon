@@ -240,6 +240,76 @@ def _backend_serving_picked_model(
         raise CrewError(str(exc)) from exc
 
 
+def _offered_local_backend(
+    selection: Mapping[str, Any] | None, config: Mapping[str, Any]
+) -> str | None:
+    """The local backend among a picker answer's offered candidates, or ``None``.
+
+    A picker answer lists the candidates it weighed, each marked with the lane
+    it names. A hold whose offered candidates include the local lane is a wait
+    for that lane, not a refusal, so the caller continues the request there. The
+    local backend is the configured ``local_backend``; a candidate is local when
+    the picker marked it so, or when its backend names the configured local lane.
+    """
+    if selection is None:
+        return None
+    local_backend = str(config.get("local_backend") or "").strip()
+    if local_backend:
+        for candidate in selection.get("offered") or ():
+            if not isinstance(candidate, Mapping):
+                continue
+            name = str(candidate.get("backend") or "")
+            if candidate.get("local") is True or name == local_backend:
+                return name or local_backend
+    return None
+
+
+def continue_hold_on_its_offered_local_lane(
+    *,
+    picker_selection: Mapping[str, Any] | None,
+    config: Mapping[str, Any],
+    route: str | None,
+    due: str | None = None,
+    urgency: str | None = None,
+) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
+    """Continue a picker hold onto the local lane it offered, as the launch does.
+
+    A hold whose offered candidates include the local lane is a wait for that
+    lane rather than a refusal, and the dispatching path continues the request
+    there instead of raising a budget hold. Resolving the same answer here is
+    what makes a preview route where the launch routes: a validating caller that
+    skipped this step reported a hold for a node the launch dispatched.
+
+    Returns the selection to resolve with, and the picker's own hold answer when
+    the request was continued onto the lane it offered — ``None`` for the second
+    value when the selection stands as given.
+    """
+    if (
+        picker_selection is None
+        or resolve_dispatch_route(config, route) != "picker"
+        or str(picker_selection.get("action") or "") != "hold"
+    ):
+        return picker_selection, None
+    local_backend = _offered_local_backend(picker_selection, config)
+    lifted_serving_lane = any(
+        isinstance(candidate, Mapping)
+        and not candidate.get("local")
+        and not candidate.get("reasons")
+        and candidate.get("worker_slots") != 0
+        and (candidate.get("congestion") or {}).get("lift")
+        for candidate in picker_selection.get("offered") or ()
+    )
+    if not local_backend or ((due or urgency) and lifted_serving_lane):
+        return picker_selection, None
+    continued = {
+        **picker_selection,
+        "action": "route",
+        "backend": local_backend,
+        "local": True,
+    }
+    return continued, dict(picker_selection)
+
+
 # How many times the estimate a default fence must reach before the dispatch
 # stops mentioning it. A caller who names no --time-budget gets whatever the
 # role overlay resolves, and the shipped implement figure is minutes where a
