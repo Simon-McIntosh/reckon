@@ -1758,17 +1758,20 @@ def _restore_landing_writes(checkout: Path, paths: Sequence[Path]) -> dict[str, 
     The whole-path restore writes the index, so it runs through
     :func:`reckon.crew.merge._run_waiting_out_a_held_index_lock` under the
     staging bound: a lock a peer releases in a moment is waited out, and the
-    landing write is unstaged and its tracked content restored rather than
-    abandoned to the lock. Only a lock that outlasts the bound reaches the
-    index-free fallback, which settles each path without taking the lock: a
-    path HEAD carries is rewritten in the working tree from HEAD's blob, read
-    through plumbing that takes no index lock, and a path HEAD never carried is
-    dropped from the index and unlinked once the entry is gone. A path the
-    fallback cannot restore — the index still stages a change at it, or git
-    cannot read its blob or write its file — keeps its landing write and is
-    named in the refusal, so a caller sees which file to restore before
-    re-promoting. What a refusal never leaves behind is a staged entry the
-    run's own commit did not cover.
+    landing writes are unstaged and their tracked content restored rather than
+    abandoned to the lock. Both index operations — the restore of the paths
+    HEAD carries and the index drop of the paths it does not — are one step, so
+    a rollback of any number of writes spends one bound rather than one per
+    path. Only a lock that outlasts the bound reaches the index-free fallback,
+    which settles each path without taking the lock: a path HEAD carries is
+    rewritten in the working tree from HEAD's blob, read through plumbing that
+    takes no index lock, and a path HEAD never carried is dropped from the
+    index and unlinked once the entry is gone. A path the fallback cannot
+    restore — the index still stages a change at it, or git cannot read its
+    blob or write its file — keeps its landing write and is named in the
+    refusal, so a caller sees which file to restore before re-promoting. What a
+    refusal never leaves behind is a staged entry the run's own commit did not
+    cover.
 
     The result is a per-path report keyed by the path as written: True for a
     path that no longer carries the landing write — restored from HEAD, or
@@ -1777,29 +1780,97 @@ def _restore_landing_writes(checkout: Path, paths: Sequence[Path]) -> dict[str, 
     this to tell a row that survived the rollback from one the rollback
     reverted.
     """
-    report: dict[str, bool] = {}
+    tracked: list[Path] = []
+    created: list[Path] = []
+    unsettled: dict[str, bool] = {}
     for path in paths:
-        target = str(path)
-        restored, _retries = _run_waiting_out_a_held_index_lock(
-            checkout,
-            lambda _attempt: _git(
+        relative = _relative_to_checkout(checkout, path)
+        if relative is None:
+            unsettled[str(path)] = False
+        elif _git(
+            checkout, "cat-file", "-e", f"HEAD:{relative}", check=False
+        ).returncode:
+            created.append(path)
+        else:
+            tracked.append(path)
+    if not tracked and not created:
+        return unsettled
+
+    def revert_every_write(_attempt: int) -> subprocess.CompletedProcess:
+        if tracked:
+            reverted = _git(
                 checkout,
                 "restore",
                 "--source=HEAD",
                 "--staged",
                 "--worktree",
                 "--",
-                target,
+                *(str(p) for p in tracked),
                 check=False,
-            ),
-            attempts=_INDEX_LOCK_RETRY_ATTEMPTS,
-            retry_seconds=_INDEX_LOCK_RETRY_INTERVAL_SECONDS,
+            )
+            if reverted.returncode != 0:
+                return reverted
+            if not created:
+                return reverted
+        else:
+            # A path HEAD never carried cannot be restored, so this call is made
+            # for the record rather than the effect: a reader of the rollback's
+            # git receipts sees both steps, and the index drop below is what
+            # settles the path.
+            _git(
+                checkout,
+                "restore",
+                "--source=HEAD",
+                "--staged",
+                "--worktree",
+                "--",
+                *(str(p) for p in created),
+                check=False,
+            )
+        return _git(
+            checkout,
+            "rm",
+            "--cached",
+            "--force",
+            "--",
+            *(str(p) for p in created),
+            check=False,
         )
-        if restored.returncode == 0:
-            report[target] = True
-            continue
-        report[target] = _restore_one_landing_write(checkout, path)
+
+    reverted, _retries = _run_waiting_out_a_held_index_lock(
+        checkout,
+        revert_every_write,
+        attempts=_INDEX_LOCK_RETRY_ATTEMPTS,
+        retry_seconds=_INDEX_LOCK_RETRY_INTERVAL_SECONDS,
+    )
+    report = dict(unsettled)
+    if reverted.returncode == 0:
+        for path in tracked:
+            report[str(path)] = True
+        for path in created:
+            try:
+                Path(path).unlink(missing_ok=True)
+            except OSError:
+                report[str(path)] = False
+                continue
+            report[str(path)] = True
+        return report
+    for path in (*tracked, *created):
+        report[str(path)] = _restore_one_landing_write(checkout, path)
     return report
+
+
+def _relative_to_checkout(checkout: Path, path: Path) -> str | None:
+    """The path as git names it inside ``checkout``, or None when it is outside.
+
+    A path outside the checkout is not one this rollback can name on a git
+    command line, so the caller reports it unrestored rather than asking git
+    about a path the repository does not contain.
+    """
+    try:
+        return Path(path).resolve().relative_to(checkout.resolve()).as_posix()
+    except (OSError, ValueError):
+        return None
 
 
 def _restore_one_landing_write(checkout: Path, path: Path) -> bool:
@@ -1818,9 +1889,8 @@ def _restore_one_landing_write(checkout: Path, path: Path) -> bool:
     drop would otherwise leave the index staging a path no longer on disk,
     which is a commit of content a reader cannot see in the working tree.
     """
-    try:
-        relative = Path(path).resolve().relative_to(checkout.resolve()).as_posix()
-    except (OSError, ValueError):
+    relative = _relative_to_checkout(checkout, path)
+    if relative is None:
         return False
     committed = _git(checkout, "cat-file", "-e", f"HEAD:{relative}", check=False)
     if committed.returncode == 0:
@@ -2417,9 +2487,7 @@ def _commit_landing_writes(
         }
     head_before = _head_revision(checkout)
 
-    def record_commit_retry(
-        attempt: int, result: subprocess.CompletedProcess
-    ) -> None:
+    def record_commit_retry(attempt: int, result: subprocess.CompletedProcess) -> None:
         _append_landing_record(
             run_id,
             {

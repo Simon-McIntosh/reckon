@@ -271,3 +271,59 @@ def test_a_lock_held_past_both_bounds_refuses_naming_every_path(
     )
     entries = _landing_entries(RUN)
     assert _steps(entries, "commit"), "the refusal is recorded at step commit"
+
+
+def test_a_rollback_of_three_writes_spends_one_bound(repository, monkeypatch):
+    """A held lock costs the rollback one bound however many writes it reverts.
+
+    Three tracked landing writes and a lock held for every attempt. The rollback
+    issues one ``git restore`` per attempt over all three paths, so the number of
+    restore calls is the attempt bound itself rather than the bound multiplied by
+    the number of paths, and every path is still named in the refusal. A
+    per-path wait would record three times as many calls.
+    """
+    root, plan = repository
+    attempts = 4
+    monkeypatch.setattr(promotion_scope, "_INDEX_LOCK_RETRY_ATTEMPTS", attempts)
+    monkeypatch.setattr(promotion_scope, "_INDEX_LOCK_RETRY_INTERVAL_SECONDS", 0.02)
+    extra = []
+    for name in ("notes.html", "ledger.json"):
+        path = root / name
+        path.write_text("committed\n", encoding="utf-8")
+        extra.append(path)
+    _git(root, "add", "--", *(str(p) for p in extra))
+    _git(root, "commit", "-qm", "test: seed more", "-m", "Seed more tracked files.")
+    writes = [plan, *extra]
+    for path in writes:
+        path.write_text(LANDING, encoding="utf-8")
+    lock = _stage_then_hold(root, monkeypatch)
+    real_git = promotion_scope._git
+    restores = {"made": 0}
+
+    def counting_git(checkout, *args, check=True):
+        result = real_git(checkout, *args, check=check)
+        if args and args[0] == "restore":
+            restores["made"] += 1
+        return result
+
+    monkeypatch.setattr(promotion_scope, "_git", counting_git)
+    try:
+        with pytest.raises(promotion.CrewError) as caught:
+            promotion._commit_landing_writes(
+                run_id=RUN,
+                verdict="passed",
+                checkout=root,
+                paths=writes,
+            )
+    finally:
+        lock.unlink(missing_ok=True)
+
+    assert restores["made"] == attempts, (
+        "the rollback must wait once per attempt over all three paths, not once "
+        f"per path per attempt; saw {restores['made']} restore calls"
+    )
+    for path in writes:
+        assert str(path) in str(caught.value), (
+            "the refusal must name every landing write it could not restore"
+        )
+    assert _staged_names(root) == ["ledger.json", "notes.html", "plan.html"]
