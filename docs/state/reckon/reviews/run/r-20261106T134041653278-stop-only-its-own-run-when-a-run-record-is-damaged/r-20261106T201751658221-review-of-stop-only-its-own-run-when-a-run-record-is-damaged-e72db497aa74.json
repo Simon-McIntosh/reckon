@@ -1,0 +1,65 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The declared baseline_suite and after_suite logs both exit 124 without summaries, and both manifest failure_ids lists are empty. Zero is the count of identifiable added failure IDs in those incomplete receipts, not a measured population delta. The completed base halves have 22 failing IDs, while head half 1 remains incomplete.",
+  "assertion_analysis": [
+    {
+      "failure_condition": "Fails if the fixture did not create the target file; this positive control establishes that the later absence is caused by the simulated permission error.",
+      "location": "tests/test_ledger_files_and_index_agree.py:267"
+    },
+    {
+      "failure_condition": "Fails if the initial strict read cannot return both placed healthy fixture rows.",
+      "location": "tests/test_ledger_files_and_index_agree.py:268"
+    },
+    {
+      "failure_condition": "Fails if the strict read swallows the injected PermissionError instead of raising LedgerError.",
+      "location": "tests/test_ledger_files_and_index_agree.py:277-278"
+    },
+    {
+      "failure_condition": "Fails if best-effort reading aborts, keeps the unreadable document, or loses the separate healthy row; rows[1:] is an independent fixture value passed to the writer, not derived from the reader.",
+      "location": "tests/test_ledger_files_and_index_agree.py:279"
+    },
+    {
+      "failure_condition": "Fails if the reader omits the damaged path, reports a different path, or retains an unrelated stale path.",
+      "location": "tests/test_ledger_files_and_index_agree.py:280"
+    },
+    {
+      "failure_condition": "Fails if no warning identifies the unreadable path.",
+      "location": "tests/test_ledger_files_and_index_agree.py:281"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew/plan_coordinator.py:188",
+    "reckon/crew/obligations.py:1355",
+    "reckon/crew/directory.py:513",
+    "reckon/crew/promotion.py:1149"
+  ],
+  "completed_at": "2026-11-06T20:29:07Z",
+  "dispatched_at": "2026-11-06T20:20:06Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "22",
+      "severity": "blocking",
+      "text": "blocking: The after_suite importer log exits 124 without a summary at an earlier revision, so the required no-added-failure comparison cannot be derived; complete a paired importer gate at the reviewed head before landing."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal in prompt.txt:38 is to isolate a damaged run; reckon/ledger.py:1834-1843 now skips and reports unreadable documents for best-effort readers while retaining strict refusal.\nVERDICT done_when: docs/plans/the-crew-home-has-a-bound.html:175 requires selective reads, promotion and no added importer failures; logs/unreadable-focused-gate.log passes 108 cases, but manifest.md:21-23 has no completed head importer arm.\nVERDICT write_paths: prompt.txt:77-82 plus resume-1-advice.txt:1 grant the three paths changed between 116e250a133e995a1803d8b3896f7cfed8aa08b1 and e72db497aa74d42d9c82684f80688fc45caa83f8.\nVERDICT manifest: manifest.md:11-27 lists the three new commits, the focused pass, completed base importer halves, and the head importer timeout without claiming a measured delta.\nVERDICT diff: Commits cc7d5258c9f8dd921f7b8f75679388b4b11060b7, a1c3f74f524b27fd5fdebfe5d77c2664f4525f58, and e72db497aa74d42d9c82684f80688fc45caa83f8 change reckon/ledger.py, tests/test_ledger_files_and_index_agree.py and the evidence fragment.\nCALL_SITES: reckon/crew/plan_coordinator.py:188, reckon/crew/obligations.py:1355, reckon/crew/directory.py:513, reckon/crew/promotion.py:1149\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1837-1843 restores healthy rows for non-refusing readers without changing the strict refusal exercised by tests/test_ledger_files_and_index_agree.py:277-281.\nSCORE evidence: 10\nJUSTIFICATION evidence: head-single-test-scratch.log proves the new case at e72db497aa74d42d9c82684f80688fc45caa83f8, but manifest.md:21-23 records incomplete paired importer receipts.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The three files in the 116e250a133e995a1803d8b3896f7cfed8aa08b1..e72db497aa74d42d9c82684f80688fc45caa83f8 diff are granted by prompt.txt:77-82 and resume-1-advice.txt:1.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_ledger_files_and_index_agree.py:277-281 fails on strict swallowing, best-effort abort, missing healthy rows, missing damaged-path reporting, or a missing warning; logs/unreadable-reproduction.log demonstrates the best-effort abort.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/ledger.py:1837-1843 extends the existing reader's refuse switch and preserves its documented strict and best-effort behavior at lines 1805-1809.\nSCORE reuse: 20\nJUSTIFICATION reuse: The capability search for run_rows_from_documents and _merge_run_documents found the existing owner in reckon/ledger.py:1795-1897; the change extends that owner and adds no definition.\nFINDING manifest.md:22 blocking: The after_suite importer log exits 124 without a summary at an earlier revision, so the required no-added-failure comparison cannot be derived; complete a paired importer gate at the reviewed head before landing.\n",
+  "review_run_id": "r-20261106T201751658221-review-of-stop-only-its-own-run-when-a-run-record-is-damaged-e72db497aa74",
+  "reviewed_base_sha": "116e250a133e995a1803d8b3896f7cfed8aa08b1",
+  "reviewed_head_sha": "e72db497aa74d42d9c82684f80688fc45caa83f8",
+  "reviewed_run_id": "r-20261106T134041653278-stop-only-its-own-run-when-a-run-record-is-damaged",
+  "scores": {
+    "durability": 18,
+    "evidence": 10,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T20:35:28.539204+00:00",
+  "total": 106
+}

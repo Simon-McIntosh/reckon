@@ -25,7 +25,7 @@
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="96">
+<meta name="plan-version" content="97">
 <meta name="plan-modified" content="2026-11-06">
 </head>
 <body>
@@ -248,6 +248,12 @@
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261017T025720212315-single-run-gc-population-at-merge" data-who="reckon-build" data-when="2026-10-17T03:18:27.133Z">
     <div class="r-comment-body"><p>measured the 76-file importer population at candidate ec65f1fdb49c541f657905efe1650058051070c7 (1 failed, 748 passed) and at base b1a087325df20877650852361fc6add52020b2ea (1 failed, 746 passed); 0 added failing ids, the one failure being tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window, pre-existing and identical at both revisions, so merging the candidate adds no failing test id over the importer population.</p></div>
 </div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261106T184006900183-review-of-stop-only-its-own-run-when-a-run-record-is-damaged-116e250a133e" data-who="reckon-build" data-when="2026-11-06T18:51:30Z">
+    <div class="r-comment-body"><p>A parsed six-dimension review of fc5a7fb2b29353a0593a774e19bb289e0806fd7d..116e250a133e995a1803d8b3896f7cfed8aa08b1 is stored with two blocking findings: a best effort reader regression and an incomplete paired importer measure.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261106T201751658221-review-of-stop-only-its-own-run-when-a-run-record-is-damaged-e72db497aa74" data-who="reckon-build" data-when="2026-11-06T20:29:07Z">
+    <div class="r-comment-body"><p>Parsed independent review stored for 116e250a133e995a1803d8b3896f7cfed8aa08b1..e72db497aa74d42d9c82684f80688fc45caa83f8; all six dimensions scored, one blocking finding, and zero identifiable added failure IDs from incomplete paired logs.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261011T002644790277-gc-sweeps-ledger-indexes" data-who="reckon-build" data-when="2026-10-11T01:11:49.247Z">
     <div class="r-comment-body"><p>crew gc now sweeps ledger indexes whose checkout is gone: each run index records the resolved ledger path it serves in its metadata table, and gc reports, and under --apply removes, every ledger-*.sqlite in the pick-input cache root whose recorded path no longer exists or which records no path and has not been opened for seven days, leaving picker-*.json inputs and any index a live process holds — the record sits at docs/evidence/fragments/the-crew-home-has-a-bound/gc-sweeps-ledger-indexes.html</p></div>
 </div>
@@ -391,9 +397,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261017T141450191818-cache-guard-whole-suite-at-merge-2" data-who="reckon-build" data-when="2026-10-17T15:06:46.086Z">
     <div class="r-comment-body"><p>two-arm whole-suite measurement under the cache-root guard - base a5d6f187de73b70a4b803e52f2ef8a1d29cc130f 36F/14166P, candidate 04be2a6dc06aecaf72f2b88777e4d37389037171 32F/14170P, zero added failing ids, guard names no test resolving the real cache; no repository path changed by this node</p></div>
-</div>
-<div class="r-comment" data-section="s12" data-id="c-run-r-20261106T184006900183-review-of-stop-only-its-own-run-when-a-run-record-is-damaged-116e250a133e" data-who="reckon-build" data-when="2026-11-06T18:51:30Z">
-    <div class="r-comment-body"><p>A parsed six-dimension review of fc5a7fb2b29353a0593a774e19bb289e0806fd7d..116e250a133e995a1803d8b3896f7cfed8aa08b1 is stored with two blocking findings: a best effort reader regression and an incomplete paired importer measure.</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
