@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-project-reads-as-one-picture">
+  <meta name="plan-evidence-for" content="reckon:a-project-reads-as-one-picture">
+  <meta name="plan-verifies" content="reckon:a-project-reads-as-one-picture#s8">
+  <meta name="plan-verdict" content="partial">
+  <title>The four coordinator questions through the CLI reads</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="measure-the-picture-reads-on-three-mounts-landing" data-node="measure-the-picture-reads-on-three-mounts" data-reckon="landed" data-when="2026-11-06">
+  <h2>The four coordinator questions through the CLI reads</h2>
+
+  <p id="measure-the-picture-reads-on-three-mounts-method">Each question was put to one command-line read per mount, timed around the process with <code>date +%s.%N</code> and bounded by <code>timeout 50</code>. The three mounts' calls for one question ran concurrently, so each figure carries three-way contention and is an upper bound on an isolated call. The config home was a writable copy (<code>RECKON_HOME</code>) because the run's write fence makes <code>~/.config/reckon/cache</code> read-only, which otherwise forces a full metadata-index recompute on every call. Raw timings and outputs are in the run directory under <code>calls/</code>.</p>
+
+  <table id="measure-the-picture-reads-on-three-mounts-table">
+    <thead><tr><th>Question</th><th>Read</th><th>power_convertor</th><th>nova</th><th>reckon</th></tr></thead>
+    <tbody>
+      <tr><td>What is critical</td><td><code>roadmap --json-output</code></td><td>20.67 s, answered</td><td><strong>43.25 s, over deadline</strong></td><td><strong>50 s, timed out</strong></td></tr>
+      <tr><td>What blocks a named section</td><td><code>read_plan(view="why")</code></td><td><strong>&gt;180 s, hung</strong></td><td>not reached</td><td>not reached</td></tr>
+      <tr><td>Who holds a named file</td><td><code>crew view scopes</code></td><td>3.98 s, answered (no holders)</td><td>9.10 s, answered (no holders)</td><td>15.29 s, answered (no holders)</td></tr>
+      <tr><td>What should run next</td><td><code>roadmap --brief</code></td><td><strong>31.18 s, over deadline</strong></td><td><strong>32.65 s, over deadline</strong></td><td><strong>50 s, timed out</strong></td></tr>
+    </tbody>
+  </table>
+
+  <p id="measure-the-picture-reads-on-three-mounts-answers">The Python path answers, where it completed: power_convertor's critical path is <code>filter-recommendation-for-coil-health#s2 → #s4 → #s6</code> at 8 h with one ready section; nova's is <code>converged-forward-solve → single-grid-solver-cutover</code> at 78.286 h with fifteen ready. The <code>why</code> view returned no answer on any mount, so the blocking question is unanswered through this surface.</p>
+
+  <p id="measure-the-picture-reads-on-three-mounts-finding">Two causes are separable. First, <code>reckon/git_dates.py</code> runs a hard-coded ten-second bounded Git query per mount, so a live checkout pays that before composing anything. Second, the <code>why view</code> path did not return within 180 s and no error was emitted, which is a defect of the derivation rather than of storage. Both leave this measure short of its done-when: the base-commit arm and the removed-edge arm were not run, and six of the twelve calls did not complete inside the read deadline.</p>
+</article>
+</body>
+</html>
