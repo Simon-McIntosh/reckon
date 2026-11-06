@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T22:01:07.768Z",
+  "dispatched_at": "2026-11-06T21:51:31Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-run-review-waits-on-no-plan-decision/r-20261106T214935433904-plan-review-of-a-run-review-waits-on-no-plan-decision/plan.html:35",
+      "id": "anchors_resolve-1",
+      "reason": "a later coordinator asking that plan whether the mismatch is already owned is sent to an unrelated landing measure, so the discharged work reads as owned when no section carries it.",
+      "text": "\u00a71 says \"that mismatch is `work-is-never-stuck-behind-the-admission-loop` \u00a729's\", but that plan's \u00a729 is \"The lander measures the population before it lands\" (a landing gate over an importer population); the obligation row that reads \"waiting for a lane slot\" is discussed in \u00a713 of the same plan (\"a request admission has stalled reads the same as one that is simply queued\") and `held-by-gate` appears in its \u00a715, not \u00a729",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-run-review-waits-on-no-plan-decision/r-20261106T214935433904-plan-review-of-a-run-review-waits-on-no-plan-decision/plan.html:39",
+      "id": "reasoning-1",
+      "reason": "the done-when's third arm (calling `_validated_batch_waits` without `read_own_verdict`) and its negative control pin both edits, so a builder that reads the sentence as a description of existing behaviour fails the named gate rather than landing a wrong fix.",
+      "text": "\u00a72 states that `_validated_batch_waits` \"reads a node's own verdict only when its caller's `read_own_verdict` and `_needs_own_section_verdict(node)` both hold\", but at HEAD the sole guard is `read_own_verdict` (`reckon/crew/queue_admission.py:2328`) and `_needs_own_section_verdict` (`reckon/crew/queue_admission.py:2927-2934`) carries no role test, so both stated conditions are targets rather than facts; the same sentence names `reckon/crew/dispatch.py:333` as the batch path while that file is outside the declared write paths, leaving the builder to infer that the whole change lands inside `_validated_batch_waits`",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "a5f2ffb0916226653d822a33411878d1aee3e46a",
+  "plan_fingerprint": "27cf253ed95914575e0c68634638782508bb1d3ba4c86f762cf88365bcbf6629",
+  "plan_slug": "a-run-review-waits-on-no-plan-decision",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T214935433904-plan-review-of-a-run-review-waits-on-no-plan-decision",
+  "reviewed_blob_sha": "1f8c7581550e3a3420064caeb452ed21301b8b22",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a71 assigns the obligation-row mismatch to `work-is-never-stuck-behind-the-admission-loop` \u00a729, and that section is about the lander's population measurement.",
+    "done_when": "pass \u2014 \u00a72's three arms discriminate against HEAD (today `_needs_own_section_verdict` returns True for a review node, so both paths do emit the readiness ref) and a concrete negative control is named.",
+    "evidence_paths": "pass \u2014 the gate is a named test file inside the repository plus ruff on the staged paths; no scratchpad or node-local path is named.",
+    "naming": "pass \u2014 the plan binds to the existing `REVIEW_ROLE` constant and adds no `\"review\"` literal and no plan label or ticket number to code.",
+    "reasoning": "a finding \u2014 \u00a72 states as present fact two conditions the code does not carry, and the sentence that names `dispatch.py` as the batch path can read as an edit site outside the declared write paths.",
+    "single_goal": "pass \u2014 \u00a72 carries one deliverable: the role test that releases a review from its section's readiness verdict.",
+    "wiring": "pass \u2014 `plan-after` names `work-is-never-stuck-behind-the-admission-loop`, which exists, and the section declares no dependency it does not consume."
+  },
+  "section_digests": {
+    "_document": "ff78fec02046b7008b5e81bcdf3bf415c2ace4954e91bf649808b2b4573b409c",
+    "s1": "fc44e7127c3eb077cf95e640994d56912c9889031095f95b9934639211d12212",
+    "s2": "dc0fa2b4a7cb37451d7e1134da8796ec34952ce580094fc196d27c44acd172d8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T22:08:07.542239+00:00",
+  "total": null
+}
