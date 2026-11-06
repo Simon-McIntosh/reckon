@@ -85,22 +85,17 @@ def _iso(instant: datetime) -> str:
     return instant.astimezone(UTC).isoformat().replace("+00:00", "Z")
 
 
-def live_sessions(project: str) -> list[str]:
-    """The sessions a follower is currently delivering for, oldest name first.
+def follower_rows(project: str) -> list[dict[str, Any]]:
+    """Every delivery registration the project holds, live or released.
 
-    The same registrations the producer's sweep publishes for: a released
-    registration keeps its file after its follower goes, and deriving for one
-    would spend the station on a session nobody is coordinating under.
+    A released registration keeps its file after its follower goes, so the
+    list carries sessions nothing is delivering for. Its ``reason`` is the
+    registration's own account of what ended it, which is what a rewritten
+    snapshot quotes rather than a second reading of the same files.
     """
     from reckon.crew import runs
 
-    return sorted(
-        {
-            str(row.get("session") or "")
-            for row in runs.list_followers(project)
-            if row.get("live") and row.get("session")
-        }
-    )
+    return list(runs.list_followers(project))
 
 
 def payload_identity(payload: Mapping[str, Any]) -> str:
@@ -174,7 +169,19 @@ def refresh(
     if not due:
         return []
 
-    sessions = live_sessions(project)
+    registrations = follower_rows(project)
+    sessions = sorted(
+        {
+            str(row.get("session") or "")
+            for row in registrations
+            if row.get("live") and row.get("session")
+        }
+    )
+    ended = {
+        str(row.get("session") or ""): str(row.get("reason") or "")
+        for row in registrations
+        if not row.get("live") and row.get("session")
+    }
     state = obligation_snapshot.fleet_state(project, now=instant)
     producer = _station_producer(store)
     written: list[str] = []
@@ -202,14 +209,33 @@ def refresh(
             changed_at=instant,
         )
         written.append(session)
-    _drop_absent(store, project, sessions)
+    dropped = _drop_absent(store, project, sessions)
+    for session in dropped:
+        try:
+            _rewrite_without_follower(
+                project,
+                session,
+                state=state,
+                now=instant,
+                producer=producer,
+                reason=ended.get(session, ""),
+            )
+        except Exception:  # noqa: BLE001 - one session's rewrite costs one session
+            _report_failure(project, "absent-snapshot")
     _REFRESHES[key] = _Memory(at=instant)
     return written
 
 
-def _drop_absent(store: Any, project: str, sessions: Iterable[str]) -> None:
-    """Remove this project's rows for sessions no follower is delivering for."""
+def _drop_absent(store: Any, project: str, sessions: Iterable[str]) -> list[str]:
+    """Remove this project's rows for sessions no follower is delivering for.
+
+    Returns the sessions whose row went, so the caller can leave each of them a
+    snapshot that says so. The removed row is what makes the rewrite a one-off:
+    a session already dropped has no row left, so the next pass finds nothing
+    to drop and leaves its file alone.
+    """
     live = set(sessions)
+    dropped: list[str] = []
     for row in store.obligation_rows():
         session = str(row.get("session") or "")
         if session in live:
@@ -217,6 +243,48 @@ def _drop_absent(store: Any, project: str, sessions: Iterable[str]) -> None:
         document = stored_document(row) or {}
         if str(document.get("project") or "") == project:
             store.delete_obligation(session)
+            dropped.append(session)
+    return dropped
+
+
+def _rewrite_without_follower(
+    project: str,
+    session: str,
+    *,
+    state: Any,
+    now: datetime,
+    producer: Mapping[str, Any],
+    reason: str,
+) -> Path:
+    """Leave one departed session a snapshot that does not defer to a reflex.
+
+    The station stops deriving a session the moment nothing delivers for it,
+    and the producer's last snapshot would otherwise stand as that session's
+    answer however long it waits. So the departure itself is published: the
+    duties are derived once more for the session -- with no live follower, so
+    every review dispatch names the command rather than claiming the reflex
+    will make it -- and the document says plainly that no follower is
+    delivering. What it must not leave behind is the earlier text telling a
+    coordinator to wait for an actor that has gone.
+    """
+    payload = obligation_snapshot.payload_for(state, session)
+    document = obligation_snapshot.document_for(
+        payload,
+        computed_at=now,
+        stream_offset=0,
+        producer=producer,
+        findings=state.findings,
+    )
+    document["follower"] = {
+        "live": False,
+        "session": session,
+        "reason": reason or "no registration remains",
+        "statement": (
+            "no follower is delivering for this session, so nothing will "
+            "dispatch on its behalf; every duty below names the command to run"
+        ),
+    }
+    return obligation_snapshot.write_snapshot(project, session, document)
 
 
 def _station_producer(store: Any) -> dict[str, Any]:

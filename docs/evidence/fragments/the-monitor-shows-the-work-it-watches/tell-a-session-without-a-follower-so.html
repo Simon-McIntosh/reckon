@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s109">
+  <meta name="plan-recorded-at" content="2026-11-06">
+  <meta name="plan-verdict" content="passed">
+  <title>A session whose follower has gone is told so | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="tell-a-session-without-a-follower-so-landing" data-node="tell-a-session-without-a-follower-so" data-reckon="landed" data-when="2026-11-06">
+  <h2>A departed session's snapshot is rewritten instead of left frozen</h2>
+  <p>The station derives obligations only for sessions a follower delivers for, and <code>_drop_absent</code> removed a departed session's stored row without touching the per-session snapshot the producer had last written. A coordinator therefore kept reading a duty saying &ldquo;the review reflex owns this dispatch&rdquo; on exactly the session where no reflex would run again. <code>station_obligations.refresh</code> now collects the sessions its drop removes, and rewrites each one's <code>obligation_snapshot.snapshot_path</code> through the snapshot module's own writer on that tick. The rewritten document carries a <code>follower</code> block stating that no follower is delivering, and its duties are derived with the registration no longer live, so a <code>review-missing</code> row names the review dispatch command (<code>reckon crew dispatch &hellip; --role review</code>) rather than deferring to the reflex. The removed store row is what makes the rewrite one-off: a session already dropped has no row left to drop, so later ticks leave the file untouched. <strong>Commits <code>256a510e1a</code>, <code>ba6c2f5d49</code>.</strong></p>
+  <p><strong>Gate.</strong> <code>tests/test_a_session_without_a_follower_is_told_so.py</code> over a temporary crew home: (a) a session with a live follower and a delivered run owing a review reads the reflex claim first — the reported state reproduced — and after the registration is released the next publish replaces it with a snapshot naming the dispatch command and no reflex text; (b) a second publish made after <code>EXPORT_HEARTBEAT_REFRESH_SECONDS</code>, with the station export proven rewritten, leaves the session file's mtime and size unchanged; (c) a live follower keeps today's text, with <code>review_owner: reflex</code>. Head arm 3 passed, <code>EXIT=0</code>. Base arm, the same test file run against the base revision in an extracted tree, reads 1 failed / 2 passed, <code>EXIT=1</code>: the departure case fails with the frozen reflex text quoted in the assertion, so the check fails without the change. <code>ruff check</code> and <code>ruff format --check</code> are clean on both staged paths. Logs: <code>logs/head-arm.log</code>, <code>logs/base-arm.log</code>.</p>
+  <p><strong>Population.</strong> The 73 test files importing <code>reckon.crew.station_obligations</code> or <code>reckon.crew.obligations</code> ran at <code>-n 4</code> against the base revision and against the head. Base: 6 failed / 439 passed / 10 errors; head: 5 failed / 440 passed / 10 errors, <strong>0 added failures and 0 added errors</strong>. The six failures are the same five ids on both arms — <code>test_crew_obligations.py::test_obligations_reads_scoring_without_observing_or_dispatching</code>, <code>test_obligations_hook_reads_the_snapshot.py::test_the_prompt_path_loads_no_derivation_module</code>, and three in <code>test_queued_work_shows_where_held_work_shows.py</code> — plus, on the base arm only, this node's own test file, which was placed in the base tree to prove it reddens there. The ten errors are setup errors in <code>test_the_held_worktree_read_is_bounded.py</code> and <code>test_held_worktree_records_match_each_record_once.py</code>, identical on both arms. Logs: <code>logs/importers-base.log</code>, <code>logs/importers-head.log</code>.</p>
+  <p><strong>Negative controls.</strong> Both controls §109 names were applied and run. Leaving the file as last written (the rewrite loop short-circuited to an empty drop list) fails the departure case: 1 failed / 2 passed, <code>EXIT=1</code>, <code>logs/negative-control-1-no-rewrite.log</code>. Rewriting on every publish fails the mtime case: 1 failed / 2 passed, <code>EXIT=1</code>, <code>logs/negative-control-2-rewrite-every-publish.log</code>. Each control reddens a different case, so neither assertion is satisfied by a writer that never writes or one that always does.</p>
+</article>
+</body>
+</html>
