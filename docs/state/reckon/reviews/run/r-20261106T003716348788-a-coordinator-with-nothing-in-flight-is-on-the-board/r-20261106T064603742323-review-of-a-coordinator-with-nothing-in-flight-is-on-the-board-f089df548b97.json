@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:449",
+    "reckon/mcp_views.py:4214",
+    "reckon/crew/plan_coordinator.py:213",
+    "reckon/crew/directory.py:285"
+  ],
+  "completed_at": "2026-11-06T07:06:29.215Z",
+  "dispatched_at": "2026-11-06T06:58:02Z",
+  "findings": [
+    {
+      "file": "tests/test_a_coordinator_with_nothing_in_flight_is_on_the_board.py",
+      "id": "fff2fff0253",
+      "line": 371,
+      "severity": "non-blocking",
+      "text": "assert row['last_dispatch'] == dispatched compares the row against the exact ISO string the test wrote to its own ledger fixture, so it guards that the field is surfaced and round-trips but cannot fail on a wrong dispatch-stamp precedence: a reimplementation reading only created_at, or echoing the raw stamp, would leave it true. The uniqueness assertion at line 360 is the independent one; this one is plumbing coverage, not a guard on reckon/crew/directory.py:317."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew_run_commands.py:449; reckon/mcp_views.py:4214; reckon/crew/plan_coordinator.py:213; reckon/crew/directory.py:285",
+    "diff": "read both commits against 48050608d3ce: 2a45e394c3 makes _retired read a pair as retired when every child the census names is settled, and f089df548b replaces the listed_sessions pre-snapshot with _census_facts/_census_rows that merge onto existing rows and routes the dispatch stamp through plan_coordinator._dispatch_instant",
+    "done_when": "the done-when names the census-keeps-a-settled-child case, the two-coordinator board case and the exited-owner case; logs/gate-round3.log records '48 passed in 66.66s' EXIT=0 over the new test file beside the pane, session-host and directory suites, and the gained case at tests/test_a_coordinator_with_nothing_in_flight_is_on_the_board.py:318 covers the one-row rule the done-when's negative control speaks to",
+    "goal": "the node's \u00a79 goal is a coordinator with nothing in flight on the board; the two gained commits close the duplicate-row and duplicated-stamp defects that stood between the landed change and that goal, with reckon/crew/directory.py:597 merging the census facts onto a row that already names the session",
+    "manifest": "the source manifest records status complete, the round-3 gate '48 passed' EXIT=0, the negative control '1 failed' EXIT=1 and a rubric self-check; its armed base arm (coordinator-armed-base.log) exits 4 with 'no tests ran' because the test file did not exist at the base revision",
+    "write_paths": "the node's declared fence is reckon/crew/session_host.py, reckon/crew/directory.py, the new test file and two docs paths; the two commits touch directory.py, the new test file and the evidence fragment inside it, plus tests/test_a_pane_settles_when_no_work_is_live.py which reopened.json:4 grants"
+  },
+  "justifications": {
+    "durability": "logs/negative-control-round3.log reinstates the pre-ready-idle listed set and test_a_ready_idle_owner_is_listed_once_with_its_census_facts fails on two rows for one session (tests/test_a_coordinator_with_nothing_in_flight_is_on_the_board.py:360), though the last_dispatch assertion at line 371 only round-trips the string the test itself wrote",
+    "evidence": "logs/gate-round3.log records '48 passed in 66.66s' with EXIT=0 over all six touched-file suites and logs/negative-control-round3.log records '1 failed in 1.75s' with EXIT=1, but the run's armed base arm (coordinator-armed-base.log) exits 4 with no tests collected",
+    "fit": "_census_facts separates census reading from the row merge in the row-dict and local-import idiom already used at reckon/crew/directory.py:317-325, and no added name carries a plan label or attribution",
+    "goal_fidelity": "reckon/crew/directory.py:597 now extends coordinators with _census_rows(_census_facts(project), coordinators), so a session the ready-idle join already listed gains census facts instead of a second row",
+    "reuse": "_last_dispatch_by_session imports reckon/crew/plan_coordinator.py:154 _dispatch_instant rather than restating the dispatched_at-or-created_at precedence, and _census_facts reads session_host.live_census, the owner of census reading",
+    "scope_discipline": "every path in the two commits is inside the node's declared fence or the grant at reopened.json:4 for tests/test_a_pane_settles_when_no_work_is_live.py"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's \u00a79 goal is a coordinator with nothing in flight on the board; the two gained commits close the duplicate-row and duplicated-stamp defects that stood between the landed change and that goal, with reckon/crew/directory.py:597 merging the census facts onto a row that already names the session\nVERDICT done_when: the done-when names the census-keeps-a-settled-child case, the two-coordinator board case and the exited-owner case; logs/gate-round3.log records '48 passed in 66.66s' EXIT=0 over the new test file beside the pane, session-host and directory suites, and the gained case at tests/test_a_coordinator_with_nothing_in_flight_is_on_the_board.py:318 covers the one-row rule the done-when's negative control speaks to\nVERDICT write_paths: the node's declared fence is reckon/crew/session_host.py, reckon/crew/directory.py, the new test file and two docs paths; the two commits touch directory.py, the new test file and the evidence fragment inside it, plus tests/test_a_pane_settles_when_no_work_is_live.py which reopened.json:4 grants\nVERDICT manifest: the source manifest records status complete, the round-3 gate '48 passed' EXIT=0, the negative control '1 failed' EXIT=1 and a rubric self-check; its armed base arm (coordinator-armed-base.log) exits 4 with 'no tests ran' because the test file did not exist at the base revision\nVERDICT diff: read both commits against 48050608d3ce: 2a45e394c3 makes _retired read a pair as retired when every child the census names is settled, and f089df548b replaces the listed_sessions pre-snapshot with _census_facts/_census_rows that merge onto existing rows and routes the dispatch stamp through plan_coordinator._dispatch_instant\nCALL_SITES: reckon/crew_run_commands.py:449, reckon/mcp_views.py:4214, reckon/crew/plan_coordinator.py:213, reckon/crew/directory.py:285\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/directory.py:597 now extends coordinators with _census_rows(_census_facts(project), coordinators), so a session the ready-idle join already listed gains census facts instead of a second row\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/gate-round3.log records '48 passed in 66.66s' with EXIT=0 over all six touched-file suites and logs/negative-control-round3.log records '1 failed in 1.75s' with EXIT=1, but the run's armed base arm (coordinator-armed-base.log) exits 4 with no tests collected\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the two commits is inside the node's declared fence or the grant at reopened.json:4 for tests/test_a_pane_settles_when_no_work_is_live.py\nSCORE durability: 18\nJUSTIFICATION durability: logs/negative-control-round3.log reinstates the pre-ready-idle listed set and test_a_ready_idle_owner_is_listed_once_with_its_census_facts fails on two rows for one session (tests/test_a_coordinator_with_nothing_in_flight_is_on_the_board.py:360), though the last_dispatch assertion at line 371 only round-trips the string the test itself wrote\nSCORE fit: 18\nJUSTIFICATION fit: _census_facts separates census reading from the row merge in the row-dict and local-import idiom already used at reckon/crew/directory.py:317-325, and no added name carries a plan label or attribution\nSCORE reuse: 20\nJUSTIFICATION reuse: _last_dispatch_by_session imports reckon/crew/plan_coordinator.py:154 _dispatch_instant rather than restating the dispatched_at-or-created_at precedence, and _census_facts reads session_host.live_census, the owner of census reading\nFINDING tests/test_a_coordinator_with_nothing_in_flight_is_on_the_board.py:371 non-blocking: assert row['last_dispatch'] == dispatched compares the row against the exact ISO string the test wrote to its own ledger fixture, so it guards that the field is surfaced and round-trips but cannot fail on a wrong dispatch-stamp precedence: a reimplementation reading only created_at, or echoing the raw stamp, would leave it true. The uniqueness assertion at line 360 is the independent one; this one is plumbing coverage, not a guard on reckon/crew/directory.py:317.\n",
+  "review_run_id": "r-20261106T064603742323-review-of-a-coordinator-with-nothing-in-flight-is-on-the-board-f089df548b97",
+  "reviewed_base_sha": "48050608d3ce977c0e951ab8b01a3f2e9cbedd5c",
+  "reviewed_head_sha": "f089df548b97060640804ebac4e5b91dc6c65db0",
+  "reviewed_run_id": "r-20261106T003716348788-a-coordinator-with-nothing-in-flight-is-on-the-board",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T07:07:20.910322+00:00",
+  "total": 111
+}
