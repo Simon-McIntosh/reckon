@@ -1,0 +1,34 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-06T00:50:34.245Z",
+  "dispatched_at": "2026-11-06T00:45:14Z",
+  "emitted": "VERDICT goal: the goal under review is the plan section's premise that read_plan answers a followup wait as the roadmap does; the two commits since the prior review close the one key still disagreeing, and reckon/roadmap.py:662's followup_wait_state now returns status for reckon/mcp.py:1987 and roadmap.py:1660 alike.\nVERDICT done_when: the done_when asks for a test comparing read_plan rows with the roadmap's section-edge rows for an open, a resolved and a missing followup; tests/test_read_plan_answers_a_followup_wait.py:189-243 parametrizes six refs (bare and staged) and compares every shared key through _compared at line 184.\nVERDICT write_paths: the manifest declares reckon/mcp.py, reckon/roadmap.py, tests/test_read_plan_answers_a_followup_wait.py, the evidence fragment and a figures directory; git diff 7627c01bda..ac18a69a76 touches exactly the first four, and the figures directory is unused.\nVERDICT manifest: read; it records status complete, four commits, 25 passed at head 6ca488dea and 20 failed/5 passed at base 116da9e9f, but its baseline_suite and after_suite JSON lines at lines 24-25 still name the previous attempt's revisions and logs.\nVERDICT diff: read commit by commit; 6ca488dea4 moves the status choice into reckon/roadmap.py:662 (47 added / 23 deleted) and passes the target plan at reckon/mcp.py:1987 (9 added / 0 deleted), with 304 lines of test; ac18a69a76 changes only the evidence fragment, which replaces its own still-unlanded figures.\nCALL_SITES: reckon/mcp.py:1100 _read_plan deps, reckon/mcp.py:1938 _section_dependency_rows, reckon/mcp.py:3564 link audit, reckon/roadmap.py:3939 build_roadmap via _section_scoped_edges, reckon/why_view.py:193 _section_edges_for\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/roadmap.py:696 derives status beside the four followup keys and reckon/mcp.py:1987 reads that one helper, so a staged ref reports the target plan's status on both surfaces.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-after.log reads 25 passed EXIT=0 at 6ca488dea and gate-base.log 20 failed/5 passed EXIT=1 at 116da9e9f, both on disk, but the manifest's after_suite at line 25 still names revision 7627c01bda.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits touch only reckon/mcp.py, reckon/roadmap.py, tests/test_read_plan_answers_a_followup_wait.py and the node's own evidence fragment, all inside the declared paths.\nSCORE durability: 19\nJUSTIFICATION durability: at the pre-fix head 7627c01bda the nine staged cases at tests/test_read_plan_answers_a_followup_wait.py:207-260 redden (gate-before-fix-head.log, 9 failed), so putting the section-status derivation back fails the guard rather than passing it.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/roadmap.py:662 extends followup_wait_state in place beside dependency_row_state, the docstring states the mechanism rather than a ticket or plan label, and the module's Mapping import already existed.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the one owner at reckon/roadmap.py:662 and reads status through the existing _status owner at roadmap.py:629; a search across reckon/ for a second followup-wait or plan-status derivation found none.\nFINDING manifest.md:25 non-blocking: baseline_suite and after_suite still name the previous attempt's revisions and logs, so the arms a promotion reader parses show an unreadable base arm and a head one commit behind the delivered one.",
+  "findings": [
+    {
+      "detail": "after_suite records revision 7627c01bda with coordinator-armed-head.log (8 passed), not the delivered 6ca488dea, and baseline_suite records exit_status 4 against coordinator-armed-base.log, whose text is `ERROR: file or directory not found: tests/test_read_plan_answers_a_followup_wait.py` / `no tests ran`, while claiming completed: true and failure_count 0. The current figures (20 failed/5 passed at base 116da9e9f, 25 passed at head 6ca488dea) live only in gate-base.log and gate-after.log, which the manifest names under test_logs and artifacts but the two JSON arms do not point at. A promotion reader of the arms alone sees an unreadable base arm and a head that is one commit behind.",
+      "file": "manifest.md",
+      "id": "f8f83105881",
+      "line": 25,
+      "severity": "non-blocking",
+      "summary": "The manifest's baseline_suite and after_suite still name the previous attempt's revisions and logs, so the machine-readable arms do not describe the delivered head"
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261106T004239601630-review-of-read-plan-answers-a-followup-wait-ac18a69a7621",
+  "reviewed_base_sha": "116da9e9f83cef80494bc4da9997815145d9b510",
+  "reviewed_head_sha": "ac18a69a762164cb052f13a915e395aa3c3f6112",
+  "reviewed_run_id": "r-20261105T211741176711-read-plan-answers-a-followup-wait",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T05:35:59.839305+00:00",
+  "total": 114
+}
