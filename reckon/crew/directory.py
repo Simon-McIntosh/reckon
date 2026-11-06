@@ -322,6 +322,7 @@ def directory(
     pointers: Iterable[Mapping[str, Any]] | None = None,
     fields: Iterable[str] | None = None,
     ready_idle: bool = False,
+    queue_places: bool = True,
 ) -> dict[str, Any]:
     """Group every live pointer by its owning coordinator session.
 
@@ -335,6 +336,11 @@ def directory(
     reaches this view from inside that same lock when a roadmap is built. A
     reader that wants them asks; the resolver, which is asking about liveness,
     does not.
+
+    ``queue_places`` reads each queued request's place from the admission
+    order. That order ranks requests by their project's roadmap, which runs plan
+    discovery too, so the resolver turns it off for the same reason: from inside
+    the discovery lock it would wait on the lock its own caller holds.
     """
     if run_id and node_id:
         raise DirectoryError("select by run id or node id, not both")
@@ -386,7 +392,7 @@ def directory(
         )
         grouped[key].append(row)
 
-    queued_by_run = _queued_rows(records, rows_by_run)
+    queued_by_run = _queued_rows(records, rows_by_run) if queue_places else {}
     ready_idle_rows = _ready_idle_rows(project, records) if ready_idle else []
     idle_by_session: dict[str, list[str]] = defaultdict(list)
     idle_owner_by_session: dict[str, str] = {}
