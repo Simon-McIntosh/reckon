@@ -1,0 +1,45 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T22:40:10.507Z",
+  "dispatched_at": "2026-11-06T22:30:31Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-refusal-comes-before-the-work.html:43",
+      "id": "reasoning-1",
+      "reason": "the section rests a scope decision on a premise its own cited path refutes, so the worker will meet a resolved backend at queue time and cannot tell whether to share the fourth refusal; the author must state the real reason (the launching lane may differ from the queued lane after admission rerouting) or reconsider sharing it.",
+      "text": "\u00a72 says that because \"a queued request has no such backend until the picker routes it\" the execution-fit refusal is not shared, but `queue_requests` (`reckon/crew/dispatch.py:293`) *requires* a lane (`backend_name` or the config's `local_backend`/`default_backend`, raising `queueing a request names no backend to queue it for` when neither is set) and `resolve_role` (`reckon/crew/routing.py:200`) resolves that lane's effective backend settings, role overlay included, with no picker involved \u2014 which is exactly where `plan_dispatch` reads `backend.get(\"execution_capable\")` (`reckon/crew/dispatch_plan.py:840`) before `assess_execution_fit` at `:837`, so the backend the refusal needs exists at queue time",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "8fb9c1a816326afd0649e47deac16b0355f1cbae",
+  "plan_fingerprint": "7923abfce6236df59529c4d00808857564ca97654d5d979649700ce2cb1f6dd4",
+  "plan_slug": "a-refusal-comes-before-the-work",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T222833696412-plan-review-of-a-refusal-comes-before-the-work",
+  "reviewed_blob_sha": "a65cc944599d69fd045af231f314fb2b9b7d9915",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every line anchor in the changed unit resolves at or beside the number given: `validate_node` at `reckon/crew/dispatch_plan.py:843`, the execution-fit refusal at `:869`, `_DELIVERABLE_ACTIONS` at `reckon/crew/node.py:79` (and it contains `run`), and `gate_population_patterns` at `reckon/crew/node.py:1099`.",
+    "done_when": "pass \u2014 the changed \u00a72 now carries one case and one negative control per shared refusal, and its fifth case uses a glob `gate_population_patterns` actually keeps (`_GATE_POPULATION_IS_A_SET` at `reckon/crew/node.py:1096` requires `[?*\\[]`, so `tests/test_missing_*.py` reaches the check while a literal file name would not).",
+    "evidence_paths": "pass \u2014 every gate log is placed under the run directory, which is durable, rather than a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 the new test path names the behaviour it measures, and no plan label, stage name, ticket number or version tag reaches a symbol, file name or comment in the unit.",
+    "reasoning": "a finding \u2014 \u00a72 justifies leaving the execution-fit refusal at launch on a claim about the queue path that the queue path itself contradicts.",
+    "single_goal": "pass \u2014 the deliverable is one mechanism (share the three node-local refusals and call it from both paths); the explicit exclusion of the execution-fit refusal is a scope boundary on that mechanism, not a second deliverable.",
+    "wiring": "pass \u2014 `plan-section-depends-on` makes both file-sharing units declare their wait on s2 (`s3` and `s5` share `reckon/crew/dispatch.py` and `reckon/crew/dispatch_plan.py`), s4 writes `reckon/_store.py` alone and is independent, and `plan-after` names the finished predecessor `a-dry-run-must-resolve-what-the-real-call-resolves`."
+  },
+  "section_digests": {
+    "_document": "fe86ddc53d6df02ed8681809f4399744a8daf0946c333b28fc3a6b583769f545",
+    "s1": "75df880739e89570186a1c16cae47d54a4d457a4a6e99c09b2d62c21368dc424",
+    "s2": "71c92e1a3d6187c0ffc5ae1abeb7f05a5edcbca86863e44b73c59b0f9a9875e6",
+    "s3": "b5b62335762566059c1bbb98372fed78bff07b643d64c9fa675596aa8bd81a3a",
+    "s4": "07a4ee8576d20a6230358f2290732b9c4debaa456380d9c2a8e8fd3651cc5e95",
+    "s5": "971aeb8e3a089f473d197e621d3f0c26ead6b1816778ac46d4796b8906360253"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T22:49:00.531055+00:00",
+  "total": null
+}
