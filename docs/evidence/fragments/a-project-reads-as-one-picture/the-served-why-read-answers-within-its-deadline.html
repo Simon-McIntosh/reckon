@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-project-reads-as-one-picture">
+  <meta name="plan-title" content="A git date lookup that ran out of time is not paid again">
+  <meta name="plan-summary" content="A project discovery asks for the first-commit and last-modified maps, and each runs a bounded git log. On the reckon mount both bounds expire and the lookup recorded nothing, so every cold discovery paid 20 s again. The lookup now records the commit it ran out of time at, kept apart from the commit the incremental range starts from. The served why read answers in 15.7 s on the reckon mount and 11.7 s on nova at a home already used, within 30 s; the first read against a brand-new RECKON_HOME is 103.6 s on reckon, still over 30 s because of a one-time ledger index build.">
+  <meta name="plan-evidence-for" content="reckon:a-project-reads-as-one-picture">
+  <meta name="plan-verifies" content="reckon:a-project-reads-as-one-picture#s16">
+  <meta name="plan-recorded-at" content="2026-11-06">
+  <meta name="plan-verdict" content="done">
+  <meta name="plan-tags" content="why-view,discovery,git-dates,deadline">
+  <title>A git date lookup that ran out of time is not paid again — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-served-why-read-answers-within-its-deadline" data-reckon="done" data-when="2026-11-06">
+  <h2 id="the-served-why-read-answers-within-its-deadline-title">A git date lookup that ran out of time is not paid again</h2>
+
+  <p id="the-served-why-read-answers-within-its-deadline-landing">landing: at a warm writable <code>RECKON_HOME</code>, the served why read through head <code>ae1bf9d7</code> answers in <strong>15.7 s on the reckon mount</strong> and <strong>11.7 s on the nova mount</strong>, both within the 30 s deadline. The first read against a brand-new <code>RECKON_HOME</code> is <strong>103.6 s on reckon</strong>, still over 30 s; that stage is the one-time ledger index build in <code>mcp_views.py:1765 section_attempts_by_plan</code> → <code>ledger.py:1242 picker_runs</code>, which the base pays identically and which is outside this node. The cost removed here is in <code>reckon/git_dates.py</code>: <code>_git_first_committed</code> and <code>_git_last_committed</code> each run a bounded <code>git log</code>, and when the ten-second bound expired they returned their fallback and recorded nothing, so every cold discovery at the same commit paid both bounds again. Each now records the commit it ran out of time at — kept apart from the commit its incremental range starts from — so a discovery at an unchanged HEAD reuses the record, while a commit moves the range start past the unanswered gap instead of over it.</p>
+
+  <h3 id="the-served-why-read-answers-within-its-deadline-method">How the figures were taken</h3>
+  <p id="the-served-why-read-answers-within-its-deadline-method-body">Every figure is one call to <code>reckon.mcp._read_plan(project, slug, section, view="why", checkout_path=&lt;mount root&gt;)</code>, made inside <code>metadata_index.discovery_file_scope()</code> and <code>resources.resource_scan_scope()</code>, the two scopes <code>mcp_deadlines._deadline_tool(request_scope=True)</code> enters, under <code>timeout -s INT 240</code>, on the fleet allocation (node <code>98dci4-clu-2068</code>, job <code>1291586</code>). <code>RECKON_HOME</code> was a writable directory on node-local scratch holding a copy of the user's <code>mounts.json</code>; the ledger rows the read consumes live in the mount's own <code>docs/state/&lt;project&gt;/runs</code>, so the figures measure the real mount's content. The base arm ran base revision <code>c849288268</code> from this worktree. The head arm ran head <code>ae1bf9d7</code> from a <code>git archive</code> extraction, which is the revision the head logs name: <code>logs/head3-reckon.log</code> and <code>logs/head3-nova.log</code>. The two refs are <code>reckon:a-project-reads-as-one-picture#s8</code> and <code>nova:iron-core-magnetisation#s9</code>.</p>
+
+  <h3 id="the-served-why-read-answers-within-its-deadline-table-section">Before and after, per mount and home state</h3>
+  <table id="the-served-why-read-answers-within-its-deadline-table">
+    <thead>
+      <tr><th>mount and RECKON_HOME</th><th>base <code>c849288268</code></th><th>head <code>ae1bf9d7</code></th></tr>
+    </thead>
+    <tbody>
+      <tr><td>reckon — read at a home already used</td><td>38.4 s</td><td><strong>15.7 s</strong></td></tr>
+      <tr><td>nova — read at a home already used</td><td>10.4 s</td><td><strong>11.7 s</strong></td></tr>
+      <tr><td>reckon — first read of a brand-new home</td><td>141.9 s</td><td>103.6 s</td></tr>
+      <tr><td>nova — first read of a brand-new home</td><td>32.9 s</td><td>35.0 s</td></tr>
+    </tbody>
+  </table>
+  <p id="the-served-why-read-answers-within-its-deadline-table-reading">Every head figure answers with the same row counts as its base arm — <code>waits_on</code> 14 and <code>waited_on_by</code> 0 for the supplied ref, <code>waits_on</code> 7 and <code>waited_on_by</code> 0 for the nova ref — so the waited-on-by rows the view returns are unchanged by the fix. The nova mount's git lookups answer inside their bound, so its cold cost is the first-time index build rather than a timeout, which is why its two cold readings straddle 30 s and its warm readings do not. The reckon mount's first read is still over 30 s because of the cold ledger build, described under <em>What is left</em>.</p>
+
+  <h3 id="the-served-why-read-answers-within-its-deadline-stage">The stage that took the time</h3>
+  <p id="the-served-why-read-answers-within-its-deadline-stage-body">A <code>cProfile</code> run of the base call on the reckon mount attributed 47.9 s of its 51.0 s to <code>reckon/mcp_discovery.py:149 _discover_project</code>, and 20.1 s of that to four subprocess calls — two <code>reckon/git_dates.py:_run_git</code> spawns, each printing <code>Git history lookup timed out after 10 seconds</code> or <code>Git last-modified lookup timed out after 10 seconds</code>. The same profile puts <code>reckon/serve.py:1852 _attach_ready_set</code> at 15.3 s, of which <code>roadmap.py:3473 _critical_path_coordinators</code> is 9.8 s: the coordinator resolution that once dominated this read is now a minority of it. At the head, the only two timeout warnings of a fresh-home read are still those same two lookups, and the next read of that home prints none because it reuses what they recorded.</p>
+
+  <h3 id="the-served-why-read-answers-within-its-deadline-range">A timeout must not move the range start</h3>
+  <p id="the-served-why-read-answers-within-its-deadline-range-body">Both lookups query incrementally from the commit their map was last answered at (<code>cached.head..head</code>). Recording the timed-out commit as that entry's head would have made the next query start past everything added between the last answer and the timeout: with no prior map, an empty map recorded at H1 would have meant only pages touched after H1 ever got a date, and the full-history query is exactly the one that runs out of time on the reckon mount. The entry therefore keeps the last answered commit as its range start — empty, meaning the whole history, when nothing has ever answered — and carries the timed-out commit in a separate field that suppresses a re-query only while HEAD is unchanged.</p>
+  <p id="the-served-why-read-answers-within-its-deadline-range-tests">Two tests cover it in <code>tests/test_the_served_why_read_answers_within_its_deadline.py</code>. With a successful map at H0, a timeout at H1 and a successful query at H2, the H2 map holds the page added at H1. With no prior map, a timeout at H1 and a successful query at H2 give the full-history map. Both fail against head <code>3831c35a</code>, where the timeout moved the range start; the negative control records the timed-out head as the range start and case (a) fails again, with <code>EXIT=1</code> in <code>logs/negative-control.log</code>.</p>
+
+  <h3 id="the-served-why-read-answers-within-its-deadline-test">The test, and what it fails against</h3>
+  <p id="the-served-why-read-answers-within-its-deadline-test-body"><code>tests/test_the_served_why_read_answers_within_its_deadline.py</code> builds a temporary repository and drives the reader the discovery calls, with a stand-in for the <code>subprocess</code> module that lets <code>git rev-parse</code> answer normally and makes <code>git log</code> run past its bound, counting the <code>git log</code> spawns through it. Two discoveries at one HEAD spawn two <code>git log</code> queries in total and any number after that spawn none; a commit moves HEAD and the next discovery spawns two more. A further test clears the process memo and keeps the persisted maps, so a fresh process reuses the recorded outcome. All four assert on counts and map contents the code produces rather than on literals about time. The gate at head <code>ae1bf9d7</code> is 4 passed, <code>EXIT=0</code> (<code>logs/gate.log</code>); the same file against base <code>c849288268</code> fails both spawn-count tests with <code>assert 4 == 2</code>.</p>
+
+  <h3 id="the-served-why-read-answers-within-its-deadline-scope">What is left, and why it is not this node's</h3>
+  <p id="the-served-why-read-answers-within-its-deadline-scope-body">The first read of a brand-new <code>RECKON_HOME</code> is still over 30 s on both mounts, and the stage is not <code>reckon/git_dates.py</code>: a head profile of that read on the reckon mount puts 95.9 s of 189.7 s in <code>reckon/serve.py:1852 _attach_ready_set</code> → <code>roadmap.py:3499 build_roadmap</code>, of which 82.6 s is <code>mcp_views.py:1765 section_attempts_by_plan</code> → <code>ledger.py:1242 picker_runs</code> building the ledger for the first time. That is a one-time index build at the read's first contact with a home, present at the base too, and it is outside this node's write scope; it is recorded under <code>outside_scope</code> in the run's manifest rather than changed here.</p>
+
+  <p id="the-served-why-read-answers-within-its-deadline-logs">Logs, all under the run directory <code>r-20261106T152414248028-the-served-why-read-answers-within-its-deadline</code>: <code>logs/base-reckon.log</code>, <code>logs/base-nova.log</code>, <code>logs/base-reckon-warm.log</code>, <code>logs/base-nova-warm.log</code>, <code>logs/head3-reckon.log</code>, <code>logs/head3-nova.log</code>, <code>logs/base-reckon-profile.log</code>, <code>logs/head-reckon-cold-profile.log</code>, <code>logs/old-head-arm.log</code>, <code>logs/gate.log</code>, <code>logs/negative-control.log</code>, <code>logs/importer-base.log</code>, <code>logs/importer-head.log</code>.</p>
+</article>
+</body>
+</html>
