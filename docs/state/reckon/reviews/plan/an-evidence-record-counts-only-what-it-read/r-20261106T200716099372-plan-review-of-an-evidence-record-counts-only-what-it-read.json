@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T20:15:32.209Z",
+  "dispatched_at": "2026-11-06T20:08:31Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:43",
+      "id": "reasoning-1",
+      "reason": "a node that implements only the stated mechanism produces a widened regex that refuses nothing on the comment path, and its gate case 2 fails for reasons the plan attributes to the regex rather than to a missing caller.",
+      "text": "\u00a73 claims the audit warning and the store refusal \"widen together\" by keeping the one reader, but the store's comment path never calls that reader: `_apply_append`'s comments branch (reckon/_store.py:3798-3807) performs only `_refuse_duplicate_id`, and the only callers of `_refuse_forged_body_structure` are insert_section (1074) and append_evidence (1202). Reproduced at 58806555: `_apply_append({\"type\":\"plan\",\"status\":\"active\",\"comments\":{},\"sections\":[]}, {\"op\":\"append\",\"target\":\"comments\",\"section\":\"s1\",\"item\":{\"id\":\"c1\",\"body\":\"<p>Three follow-ons carry to \u00a74</p>\"}}, False, [])` returns normally and stores the body, with the positive control `_prose_deferred_work_term(\"<p>Three follow-ons</p>\")` returning 'follow-ons'. So the refusal \u00a73's second done-when case measures does not exist even for the term the store already matches today",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:44",
+      "id": "done_when-1",
+      "reason": "the node would either fail its gate or write outside its scope, and the fix is to add `reckon/_store.py` to the write paths and name the comment-append caller, or to drop case 2.",
+      "text": "\u00a73's done-when requires \"the same spelling is refused by an `edit_plan` append of that comment\", but making that true needs a refusal call in the comment branch of `reckon/_store.py`, which is not in \u00a73's declared write paths (`reckon/doccheck.py` and the new test only); as written the measure cannot be satisfied inside the node's own scope",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:39",
+      "id": "done_when-2",
+      "reason": "the measure as written can be satisfied while the defect \u00a71 quotes survives in the meta, so name both surfaces in the done-when to make the gate measure the deliverable.",
+      "text": "\u00a72's first case asserts the created record's \"text\" carries no \"committed run(s)\" sentence, but `_landed_record_shell` embeds that sentence twice: in `<meta name=\"plan-summary\">` and in a `<p>` (reproduced at 58806555 \u2014 both lines read \"Closure synthesis for Some Plan: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s)\"). A test asserting on extracted text passes with the meta summary, which is what a plan card renders, still claiming zero",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "ccc236bcdf3a42b6c3e85890ed2dc2556cded01f",
+  "plan_fingerprint": "a1fdc2703a00832fc3fa8faa3502eb95089c6e756906f2c253f7a4839c0a90d0",
+  "plan_slug": "an-evidence-record-counts-only-what-it-read",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T200716099372-plan-review-of-an-evidence-record-counts-only-what-it-read",
+  "reviewed_blob_sha": "fe0a0ed52e8ef609ff61c9be31f6eb102775e54e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 verified all cited code anchors: reckon/evidence.py:407 (the count sentence), reckon/evidence.py:636 (synthesize_landed_record, refusal of a plan with no ledger rows at 662), reckon/_store.py:1184 and 1194 (_landed_record_shell delegates to _render_document with []), reckon/_store.py:1263 (append_evidence creating the shell), reckon/_store.py:993 (_prose_deferred_work_term), reckon/doccheck.py:412 and 419 (DEFERRED_WORK_TERM_IN_PROSE, the follow-ons regex); reckon audit-doc resolves to project_maintenance_commands.py:1618; the cross-repo anchors resolve too \u2014 power_convertor commit f7f7d2d6d exists and docs/evidence/archive/filter-recommendation-for-coil-health-landed.html carries the quoted \"0 committed run(s)\" sentence verbatim.",
+    "done_when": "a finding \u2014 \u00a72's first case asserts \"text contains no 'committed run(s)' sentence\", but the shell emits that sentence in two places and only one of them is document text.",
+    "evidence_paths": "pass \u2014 \u00a72 puts every log under the run directory starting with its revision and literal command and ending EXIT=, and \u00a73 records the audit command's output and finding count there; both are durable, neither is a scratchpad or node-local path.",
+    "naming": "pass \u2014 the two new test filenames name the mechanism (test_an_appended_record_claims_no_counts, test_every_spelling_of_deferred_work_is_read) and no plan label, stage name, ticket number or version tag appears in any proposed symbol, file or comment.",
+    "reasoning": "a finding \u2014 \u00a73 widens one regex, but no production caller refuses a comment body, so the mechanism does not run on the path its own done-when measures.",
+    "single_goal": "pass \u2014 \u00a72 is one deliverable (the append-created shell stops claiming counts) and \u00a73 is one (the deferred-work term reads every spelling); the widening in \u00a73 is one regex with a shared reader, not two goals.",
+    "wiring": "pass \u2014 plan-after=\"a-finished-plan-closes\" resolves to docs/plans/a-finished-plan-closes.html and satisfies the schema's wiring minimum for a plan in implementable state; \u00a72 and \u00a73 write disjoint files (reckon/_store.py + reckon/evidence.py vs reckon/doccheck.py) and declare no section-level wait, so no depends-on/informs/gates relationship is missing."
+  },
+  "section_digests": {
+    "_document": "94380abd5c82f3fb93060939b3f8307a96f0ac7e295a2890b5fc3b2da57ce334",
+    "s1": "64d6c924b95b190c9e9b96a1c6090d17642db3a4e47368bd0fc0fb34e799ab6d",
+    "s2": "948a4df736bf77df537f298f1d5722b716abd6b04c0676e22958e6b27b3c7877",
+    "s3": "dbebe794b26e204ba453b72d912c2ac512d1691115cf977143b3c36b56e6859e"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T20:27:15.852448+00:00",
+  "total": null
+}
