@@ -72,6 +72,9 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
     monkeypatch.delenv(follow_commands.FOLLOWER_SETTLE_GRACE_ENV, raising=False)
+    # The once-per-run warning memo is process state, so a case measures its own
+    # reports rather than whichever run an earlier case had already named.
+    monkeypatch.setattr(station_subscriber, "_WARNED_DUTY_READ_FAILURES", set())
     return config_home
 
 
@@ -485,6 +488,65 @@ def test_a_duty_that_cannot_be_read_warns_and_settles(
     assert any(RUN in line and "manifest unreadable" in line for line in warnings), (
         warnings
     )
+
+
+def test_a_duty_that_cannot_be_read_warns_once_per_run(
+    home: Path, monkeypatch: pytest.MonkeyPatch, caplog
+) -> None:
+    """An unreadable record is reported once per run, not once per tick.
+
+    The station asks this rule of every live pointer on every tick, so a
+    warning that is not memoised prints about once a second for as long as the
+    record stays unreadable, and the repetition buries the first report. Each
+    run is named once, and a second run is still named for itself.
+    """
+    from reckon.crew import obligations
+
+    def _explode(*_args, **_kwargs):
+        raise ValueError("manifest unreadable")
+
+    monkeypatch.setattr(obligations, "_review_duty_item", _explode)
+    other_run = "r-delivered-two"
+    _deliver(home, RUN)
+    _deliver(home, other_run)
+    with caplog.at_level("WARNING"):
+        for _ in range(3):
+            assert not station_subscriber.live_work_populations([_read_pointer(RUN)])[0]
+            assert not station_subscriber.live_work_populations(
+                [_read_pointer(other_run)]
+            )[0]
+    warnings = [r.getMessage() for r in caplog.records if r.levelname == "WARNING"]
+    assert len([line for line in warnings if RUN in line]) == 1, warnings
+    assert len([line for line in warnings if other_run in line]) == 1, warnings
+
+
+def test_a_delivered_pointer_costs_one_head_resolution(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """One pass resolves a delivered run's head once, not once per reader.
+
+    The duty resolves the head for the review it looks for and carries it on
+    the item, so the hold reads that same head rather than resolving it again.
+    Two resolutions per pointer would double the manifest and git reads the
+    station makes for every delivered run it shows.
+    """
+    from reckon.crew import recovery
+
+    resolved: list[dict] = []
+    resolve = recovery._review_head_and_tree
+
+    def _counting(pointer):
+        resolved.append(dict(pointer))
+        return resolve(pointer)
+
+    monkeypatch.setattr(recovery, "_review_head_and_tree", _counting)
+    _deliver(home, RUN)
+    project_live, _unowned, sessions = station_subscriber.live_work_populations(
+        [_read_pointer(RUN)]
+    )
+    assert project_live
+    assert sessions == [SESSION]
+    assert len(resolved) == 1, resolved
 
 
 def test_a_drained_session_settles(home: Path, tmp_path: Path) -> None:

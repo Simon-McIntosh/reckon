@@ -66,6 +66,27 @@ SKIPPED_DAYS_TEXT = (
 # no file under the crew home.
 LIVE_WORK_KEY = "live-work"
 
+# The runs whose review duty could not be read in this process. The station
+# asks every live pointer on every tick, so an unguarded warning over an
+# unreadable record prints once a second for as long as the record stays that
+# way, and the repetition buries the first report rather than adding to it. One
+# warning per run is what makes the defect visible; the rest are noise.
+_WARNED_DUTY_READ_FAILURES: set[str] = set()
+
+
+def _warn_duty_read_failure(run_id: str, error: BaseException) -> None:
+    """Report an unreadable duty once per run per process, then stay quiet."""
+    key = run_id or "<unnamed>"
+    if key in _WARNED_DUTY_READ_FAILURES:
+        return
+    _WARNED_DUTY_READ_FAILURES.add(key)
+    _LOGGER.warning(
+        "settling over run %s: its review duty could not be read (%s: %s)",
+        key,
+        type(error).__name__,
+        error,
+    )
+
 
 def delivered_run_owes_review(
     pointer: Mapping[str, Any],
@@ -102,7 +123,14 @@ def delivered_run_owes_review(
     (:func:`reckon.crew.recovery.select_review_for_head` answers none for an
     empty head), so a hold for such a run would never end. The duty still names
     it to the coordinator, which is where a run with no reviewable head
-    belongs.
+    belongs. That head is read off the duty, which resolves it once for the
+    review it looks for, so a delivered pointer costs one resolution rather
+    than two.
+
+    A duty that cannot be read at all is named in a warning and settles, and
+    the warning is printed once per run per process: the station asks this of
+    every live pointer on every tick, so an unreadable record would otherwise
+    repeat it every second until it was repaired.
     """
     from reckon.crew import obligations, recovery
 
@@ -113,9 +141,6 @@ def delivered_run_owes_review(
             str(row.get("classification") or "")
             not in obligations.REVIEW_CLASSIFICATION_KINDS
         ):
-            return False
-        head, _tree = recovery._review_head_and_tree(pointer)
-        if not head:
             return False
         item = obligations._review_duty_item(
             str(pointer.get("project") or ""),
@@ -131,14 +156,15 @@ def delivered_run_owes_review(
             placements=placements,
         )
     except Exception as error:  # noqa: BLE001 - a record we cannot read is not a hold
-        _LOGGER.warning(
-            "settling over run %s: its review duty could not be read (%s: %s)",
-            run_id or "<unnamed>",
-            type(error).__name__,
-            error,
-        )
+        _warn_duty_read_failure(run_id, error)
         return False
-    return bool(item) and str(item.get("kind") or "") == "review-missing"
+    if not item or str(item.get("kind") or "") != "review-missing":
+        return False
+    # The duty resolves the head once, for the review it looks for, and carries
+    # it on the item when the run has one. Reading it back from there is the
+    # same reading without resolving it a second time; a duty that carries no
+    # head has nothing a review could be keyed on.
+    return bool(str(item.get("head") or ""))
 
 
 def _review_grace(project: str) -> int:
