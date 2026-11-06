@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T20:51:49.094Z",
+  "dispatched_at": "2026-11-06T20:44:42Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:40",
+      "id": "done_when-1",
+      "reason": "the node's only measure is the count sentence, so the plan would spend an implementable section removing one claim from a document while silently removing a different, load-bearing one.",
+      "text": "\u00a72 replaces a document the shell currently renders whole through `_render_document`, and its deliverable says only that the shell \"names its plan and says that it holds the evidence appended to it\"; the done-when then asserts nothing but the absence of \"committed run(s)\". `reckon/doccheck.py:1684-1694` warns `evidence-for-missing` on any `-landed` document without a `plan-evidence-for` meta, and that meta is written only by `_render_document:416` \u2014 one of the lines a shell that stops delegating is most likely to drop, together with `reckon-type=evidence`, which resource resolution reads. A worker can satisfy \u00a72's measure exactly as written and leave every record created by an append without the plan\u2192evidence back-link until the next synthesis overwrites it.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:51",
+      "id": "done_when-2",
+      "reason": "as written the node can be closed green on a deduplication rule that was never exercised, and the duplicated-section bug lands in the records the section exists to protect.",
+      "text": "\u00a74's second case (\"a section the synthesis produces is written once, not duplicated\") is given the same fixture as the first: \"a record holding an appended section `x-appended`, re-synthesised over a two-run ledger\". That fixture contains no synthesis-produced section, so nothing in it can be duplicated, and the matching negative control (\"carrying every existing section without skipping the synthesis's own duplicates the second case\") has nothing to duplicate either. Both the case and its control therefore pass on a mechanism that skips nothing, which is exactly the defect the case exists to catch. The fixture must state that the existing record already holds a section the synthesis also produces \u2014 which is the real state of any record written by a previous synthesis (`_render_document` emits `<section id=\"{section_id}\">` for every section with comments or runs).",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "1a860cd8fb146d6c4dac6c2adb53cd0c2048b5ca",
+  "plan_fingerprint": "06a0d996abd4f8877b3f65b90ce7c31b3643a84114bdccfbf53ba03897729c84",
+  "plan_slug": "an-evidence-record-counts-only-what-it-read",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T204321753581-plan-review-of-an-evidence-record-counts-only-what-it-read",
+  "reviewed_blob_sha": "9b38ffdaf20eac85556899cd2897129152092b00",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 each cited symbol resolves at the base revision: `_landed_record_shell` (`reckon/_store.py:1184`, called at `1263`), `_render_document` (`reckon/evidence.py:329`), the summary sentence at `406-408` with its `plan-summary` meta at `415` and body paragraph at `442`, the no-records refusal near `660` (actually `663-668`), `_DEFERRED_WORK_TERM` (`reckon/doccheck.py:419`), `DEFERRED_WORK_TERM_IN_PROSE` (`412`, emitted at `1733`), `_prose_deferred_work_term` (`reckon/_store.py:993`), and the comments branch of `_apply_append` (`3796-3807`, cited as `3798-3807`).",
+    "done_when": "a finding \u2014 \u00a72's done-when measures only the absence of the count sentence, so a shell that also drops the `plan-evidence-for` back-link passes the measure and hands every newly created record an audit warning.",
+    "evidence_paths": "pass \u2014 every log and every recorded audit output is placed \"under the run directory\", which is the durable per-run directory under the crew runs tree, never a node-local scratch path.",
+    "naming": "pass \u2014 no unit introduces a symbol, file or comment that names a plan label, stage, ticket or version; \u00a73's new spellings are described as prose behaviour, and `_DEFERRED_WORK_TERM` keeps its existing name.",
+    "reasoning": "pass \u2014 the three checks hold for the changed units. Root causes match the cited evidence: the shell really does render the synthesis document with `[], Path(\".\")` (`reckon/_store.py:1194`), so the zero sentence is `_render_document`'s own at `406-408`; `synthesize_landed_record` really does write the whole rendered document over the destination (`reckon/evidence.py:673-681`), which is why appended sections vanish; and the regex really is `\\bfollow-ons?\\b` (`reckon/doccheck.py:419`), so the other spellings pass both readers. Each mechanism can produce its done-when, and each runs on a live path: `append_evidence` reaches the shell through `_apply_evidence_appends` (`reckon/_store.py:1263`), `append` is dispatched to `_apply_append` (`4181`), and `synthesize_landed_record` is called by the `evidence synthesize` command (`reckon/project_maintenance_commands.py:1479`).",
+    "single_goal": "pass \u2014 \u00a72 (the shell claims no counts), \u00a73 (the deferred-work rule reads every spelling, applied in both the audit and the store), and \u00a74 (a re-synthesis keeps appended anchors) each name one deliverable with one verdict.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `s3\u2192s2` and `s4\u2192s2`, and both are correct: \u00a73 shares `reckon/_store.py` with \u00a72, \u00a74 shares `reckon/evidence.py` with \u00a72, while \u00a73 and \u00a74 write disjoint files and correctly declare no wait on each other; the `plan-section-declarations` entry now carries `s4` and the followup body matches the declared waits."
+  },
+  "section_digests": {
+    "_document": "6d35efce52466005f8ee56997c8dc7bcca998d7c41fcd252d254bc7264596281",
+    "s1": "64d6c924b95b190c9e9b96a1c6090d17642db3a4e47368bd0fc0fb34e799ab6d",
+    "s2": "9a12f8a3ff0dda651f2743e63942ef7021b0251f3c1b1aa1815b4e9bf3f8aa06",
+    "s3": "1e19a712fd2dad1c38a11f7b6164b1fcc01c996e78f3297edb135a1d5fd7c0cf",
+    "s4": "b26b272635a1b032746ded838fc624309924ad1c76cf286f67dd12c929b2e4ff"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T21:05:35.978276+00:00",
+  "total": null
+}
