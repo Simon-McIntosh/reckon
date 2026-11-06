@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-06T08:17:31.069Z",
+  "dispatched_at": "2026-11-06T08:05:12Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "id": "review-scope-outside-fence-dispatch",
+      "line": 1660,
+      "severity": "blocking",
+      "text": "This file is not one of the node's four recorded write paths, so the landed commit sits outside the fence the dispatch granted and promotion refuses the run until the coordinator records the write grant the manifest requests under blockers."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "id": "review-dead-reexport-offered-local-backend",
+      "line": 3854,
+      "severity": "non-blocking",
+      "text": "The refactor re-exports _offered_local_backend under an alias nothing reads (no module or test imports it), leaving a dead second binding of a capability the commit had just given one owner."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read 265e2f365b against 254cb11f8a commit by commit: four files, +46/-59; _offered_local_backend and continue_hold_on_its_offered_local_lane now live at reckon/crew/dispatch_plan.py:243-318, the launch's 30-line inline copy at reckon/crew/dispatch.py:1655-1672 is replaced by a call at :1660, the route-mode assertion at tests/test_a_dry_run_evaluates_every_gate.py:172-173 now reads OVERRIDDEN_HOLD_ROUTE_MODE, and the fragment's stray closing span is gone.",
+    "done_when": "the done_when's two cases are asserted at tests/test_a_dry_run_evaluates_every_gate.py:139-142 (both arms refuse plan-review-missing with exit 4) and :160-175 (both arms route to backend clive, local true, exit 0, route_mode against the recorded vocabulary), and the gained commit changes only the route-mode pair at :172-173 to assert the constant rather than compare the arms.",
+    "goal": "the node's goal is that a dispatch dry run evaluates every gate the real dispatch does; the gained commit 265e2f365b serves it by giving the picker-hold continuation one implementation in reckon/crew/dispatch_plan.py:267 that both the launch (reckon/crew/dispatch.py:1660) and the preview (reckon/crew_dispatch_commands.py:1906) call, so the routing gate cannot diverge between the two paths.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T080038233718-a-dispatch-dry-run-evaluates-every-gate-the-real-dispatch/manifest.md; it records head arm 5 failed / 1070 passed at 265e2f365b against base arm 5 failed / 1068 passed at 682bc6cd25 with the same five ids, a red negative control at the head, ruff clean on the changed paths, three commits, and it names the reckon/crew/dispatch.py scope gap under blockers.",
+    "write_paths": "the node's four recorded write paths are reckon/crew/dispatch_plan.py, reckon/crew_dispatch_commands.py, the evidence fragment and its figures directory; the gained commit changes those four targets plus reckon/crew/dispatch.py and tests/test_a_dry_run_evaluates_every_gate.py, which the plan section names as the module the manifest identifies and the new test but which the dispatch's recorded fence does not list."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a dispatch dry run evaluates every gate the real dispatch does; the gained commit 265e2f365b serves it by giving the picker-hold continuation one implementation in reckon/crew/dispatch_plan.py:267 that both the launch (reckon/crew/dispatch.py:1660) and the preview (reckon/crew_dispatch_commands.py:1906) call, so the routing gate cannot diverge between the two paths.\nVERDICT done_when: the done_when's two cases are asserted at tests/test_a_dry_run_evaluates_every_gate.py:139-142 (both arms refuse plan-review-missing with exit 4) and :160-175 (both arms route to backend clive, local true, exit 0, route_mode against the recorded vocabulary), and the gained commit changes only the route-mode pair at :172-173 to assert the constant rather than compare the arms.\nVERDICT write_paths: the node's four recorded write paths are reckon/crew/dispatch_plan.py, reckon/crew_dispatch_commands.py, the evidence fragment and its figures directory; the gained commit changes those four targets plus reckon/crew/dispatch.py and tests/test_a_dry_run_evaluates_every_gate.py, which the plan section names as the module the manifest identifies and the new test but which the dispatch's recorded fence does not list.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T080038233718-a-dispatch-dry-run-evaluates-every-gate-the-real-dispatch/manifest.md; it records head arm 5 failed / 1070 passed at 265e2f365b against base arm 5 failed / 1068 passed at 682bc6cd25 with the same five ids, a red negative control at the head, ruff clean on the changed paths, three commits, and it names the reckon/crew/dispatch.py scope gap under blockers.\nVERDICT diff: read 265e2f365b against 254cb11f8a commit by commit: four files, +46/-59; _offered_local_backend and continue_hold_on_its_offered_local_lane now live at reckon/crew/dispatch_plan.py:243-318, the launch's 30-line inline copy at reckon/crew/dispatch.py:1655-1672 is replaced by a call at :1660, the route-mode assertion at tests/test_a_dry_run_evaluates_every_gate.py:172-173 now reads OVERRIDDEN_HOLD_ROUTE_MODE, and the fragment's stray closing span is gone.\nCALL_SITES: reckon/crew/dispatch.py:1660, reckon/crew_dispatch_commands.py:1906, reckon/crew/dispatch_plan.py:291\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_plan.py:267 is now the only implementation of the hold continuation, called at reckon/crew/dispatch.py:1660 and at reckon/crew_dispatch_commands.py:1906, so the preview's routing gate reads the rule the launch reads.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/head-arm.log ends '5 failed, 1070 passed, 1 skipped' at revision 265e2f365b and logs/base-arm.log ends '5 failed, 1068 passed, 1 skipped' at 682bc6cd25 with the same five ids, and logs/negative-control.log exits 1 at the head.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: reckon/crew/dispatch.py:1660 is outside the four write paths the dispatch recorded, and the manifest itself records that promotion refuses on it until the coordinator grants the path.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_dry_run_evaluates_every_gate.py:172-173 reddens if either path records a route mode other than OVERRIDDEN_HOLD_ROUTE_MODE and :160-164 redden if the preview stops continuing the hold, but no test reddens if reckon/crew/dispatch.py regrows an inline copy of the rule, which is the duplication this commit removed.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/dispatch_plan.py:267 follows the module's keyword-only, Mapping-typed helper idiom and is named for its mechanism, though the refactor leaves a dead re-export at reckon/crew/dispatch.py:3854.\nSCORE reuse: 19\nJUSTIFICATION reuse: the hold continuation and the offered-candidate scan now have one owner at reckon/crew/dispatch_plan.py:243-318 that both callers use, and the only other 'offered'-candidate readers found (dispatch_picker.py:1284 _chosen_offered_row, dispatch_picker.py:906 lane_family) select the chosen row or classify a backend name, not the local candidate.\nFINDING reckon/crew/dispatch.py:1660 blocking: this file is not one of the node's four recorded write paths, so the landed commit sits outside the fence the dispatch granted and promotion refuses the run until the coordinator records the write grant the manifest requests under blockers.\nFINDING reckon/crew/dispatch.py:3854 non-blocking: the refactor re-exports _offered_local_backend under an alias nothing reads (no module or test imports it), leaving a dead second binding of a capability the commit had just given one owner.",
+  "review_run_id": "r-20261106T080101097639-review-of-a-dispatch-dry-run-evaluates-every-gate-the-real-dispatch-265e2f365bea",
+  "reviewed_base_sha": "254cb11f8a06298de4f5f42b788669594a0123fd",
+  "reviewed_head_sha": "265e2f365beaf29482d1a38b3ebd8a3426949152",
+  "reviewed_run_id": "r-20261103T080038233718-a-dispatch-dry-run-evaluates-every-gate-the-real-dispatch",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T08:24:44.635622+00:00",
+  "total": 98,
+  "verdicts": {
+    "diff": "VERDICT diff: read 265e2f365b against 254cb11f8a commit by commit: four files, +46/-59; _offered_local_backend and continue_hold_on_its_offered_local_lane now live at reckon/crew/dispatch_plan.py:243-318, the launch's 30-line inline copy at reckon/crew/dispatch.py:1655-1672 is replaced by a call at :1660, the route-mode assertion at tests/test_a_dry_run_evaluates_every_gate.py:172-173 now reads OVERRIDDEN_HOLD_ROUTE_MODE, and the fragment's stray closing span is gone.",
+    "done_when": "VERDICT done_when: the done_when's two cases are asserted at tests/test_a_dry_run_evaluates_every_gate.py:139-142 (both arms refuse plan-review-missing with exit 4) and :160-175 (both arms route to backend clive, local true, exit 0, route_mode against the recorded vocabulary), and the gained commit changes only the route-mode pair at :172-173 to assert the constant rather than compare the arms.",
+    "goal": "VERDICT goal: the node's goal is that a dispatch dry run evaluates every gate the real dispatch does; the gained commit 265e2f365b serves it by giving the picker-hold continuation one implementation in reckon/crew/dispatch_plan.py:267 that both the launch (reckon/crew/dispatch.py:1660) and the preview (reckon/crew_dispatch_commands.py:1906) call, so the routing gate cannot diverge between the two paths.",
+    "manifest": "VERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T080038233718-a-dispatch-dry-run-evaluates-every-gate-the-real-dispatch/manifest.md; it records head arm 5 failed / 1070 passed at 265e2f365b against base arm 5 failed / 1068 passed at 682bc6cd25 with the same five ids, a red negative control at the head, ruff clean on the changed paths, three commits, and it names the reckon/crew/dispatch.py scope gap under blockers.",
+    "write_paths": "VERDICT write_paths: the node's four recorded write paths are reckon/crew/dispatch_plan.py, reckon/crew_dispatch_commands.py, the evidence fragment and its figures directory; the gained commit changes those four targets plus reckon/crew/dispatch.py and tests/test_a_dry_run_evaluates_every_gate.py, which the plan section names as the module the manifest identifies and the new test but which the dispatch's recorded fence does not list."
+  }
+}
