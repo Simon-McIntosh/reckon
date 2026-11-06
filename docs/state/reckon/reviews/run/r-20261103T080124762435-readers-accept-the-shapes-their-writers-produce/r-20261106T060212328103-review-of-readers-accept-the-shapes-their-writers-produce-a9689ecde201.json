@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/promotion_checks.py:566",
+    "reckon/crew/queue_landing.py:147",
+    "reckon/crew/obligations.py:1672",
+    "reckon/crew/repair.py:705",
+    "reckon/crew/recovery_repair_dispatch.py:612",
+    "reckon/crew/recovery_review_subject.py:141",
+    "reckon/crew/recovery_review_dispatch.py:1085",
+    "reckon/crew_run_commands.py:1188"
+  ],
+  "completed_at": "2026-11-06T06:21:35.473Z",
+  "dispatched_at": "2026-11-06T06:13:26Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "id": "fd7907aba32",
+      "line": "234",
+      "severity": "non-blocking",
+      "text": "non-blocking: the landed change carries no test in the repository, because tests/ was outside the dispatch fence although the plan's own write paths for this section name the new test; the measure test lives only at the run directory's measure_readers_normalise_shapes.py, and no test under tests/ supplies a record with string findings, so reverting either commit leaves the suite green with nothing to catch it. Fold into a node that adds tests/test_readers_normalise_shapes.py."
+    },
+    {
+      "file": "reckon/crew/reports.py",
+      "id": "f6187227b01",
+      "line": "725",
+      "severity": "non-blocking",
+      "text": "non-blocking: _read_json_manifest takes no shape_findings, so a JSON-body manifest carrying a list under a field the schema declares text is read unchanged and the manifest check names nothing, while the identical content in the text form is refused by name; a worker who writes its manifest as JSON meets no refusal, which is the half of the guard the change exists to provide."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified against read_review at promotion_checks.py:566, queue_landing.py:147, obligations.py:1672, repair.py:705, recovery_repair_dispatch.py:612 and recovery_review_subject.py:141, and against audit_manifest at crew_run_commands.py:1188.",
+    "diff": "read commit by commit against 922001b305: 17f8c1ddeb adds normalised_findings and with_normalised_findings and wires them into both store and read, ccba432736 converts the shape refusal from a raise to a finding the manifest check reports, and a9689ecde201 adds the landing fragment.",
+    "done_when": "the done_when is measured by tests/test_readers_normalise_shapes.py in both arms; measure_final.log records 8 passed at the head and measure_base.log 6 failed 2 passed at the base, and the manifest records both runs.",
+    "goal": "the goal is that readers accept the shapes their writers produce; reckon/crew/review.py:234 lifts string findings to the declared object shape on read and write, and reckon/crew/reports.py:2522 names a text field written as a list.",
+    "manifest": "read; it states the head arm at 1 failed 2191 passed against base 7 failed 2185 passed, the measure arms and the negative control, and names every log path it cites.",
+    "write_paths": "the fence declared reckon/crew/reports.py, reckon/crew/review.py, the landing fragment and a figures directory; every path in the diff is inside that set, and the new test the plan's write paths also name was outside the fence and is recorded under outside_scope."
+  },
+  "justifications": {
+    "durability": "reckon/crew/review.py:234 and reckon/crew/reports.py:2522 carry no test in tests/: the measure test exists only at the run directory's measure_readers_normalise_shapes.py, and no file under tests/ supplies a record with string findings, so reverting both commits leaves the repository suite green.",
+    "evidence": "gate_base.log (7 failed, 2185 passed, EXIT=1), gate_head2.log (1 failed, 2191 passed, EXIT=1), measure_base.log (6 failed, 2 passed), measure_final.log (8 passed) and negative_control.log (3 failed, 5 passed, EXIT=1) each open with their revision and literal command and close with EXIT=, and the one head failure is the same id failing at base.",
+    "fit": "reckon/crew/review.py:234 follows the claim vocabulary the module already owns (finding_claim, FINDING_CLAIM_FIELDS) and ruff check and ruff format --check pass on both changed modules at the head revision.",
+    "goal_fidelity": "reckon/crew/review.py:234 normalises a record's findings to the object shape on both store_review and read_review, and reckon/crew/reports.py:2522 collects a shaped-field refusal into the manifest check; only the JSON-body manifest path is left uncovered.",
+    "reuse": "reckon/crew/review.py:234 extends finding_claim rather than adding a second reader of a finding's claim, and reckon/crew/reports.py:2522 reuses the existing _schema_shape_message and the audit's findings list; a search of reckon/ for an existing shape normaliser found none.",
+    "scope_discipline": "the diff touches only reckon/crew/review.py, reckon/crew/reports.py and docs/evidence/fragments/the-crew-does-its-own-bookkeeping/readers-accept-the-shapes-their-writers-produce.html, all inside the dispatch fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that readers accept the shapes their writers produce; reckon/crew/review.py:234 normalises a record's findings to the object shape and reckon/crew/reports.py:2522 names a text field written as a list, and both landed.\nVERDICT done_when: the done_when names a test reading string and object findings and a YAML test_logs list with the manifest check naming a shaped field; measure_final.log records 8 passed at head against measure_base.log's 6 failed 2 passed.\nVERDICT write_paths: read the dispatch fence at prompt.txt; every path in the diff (reckon/crew/review.py, reckon/crew/reports.py, the landing fragment) is inside it, and the new test the plan also names was outside it.\nVERDICT manifest: read; it records the head arm at 1 failed 2191 passed against base 7 failed 2185 passed, the measure arms, the negative control and every log path it cites.\nVERDICT diff: read commit by commit against 922001b305; three commits, 118 insertions and 13 deletions across three files, all inside the declared scope.\nCALL_SITES: reckon/crew/promotion_checks.py:566, reckon/crew/queue_landing.py:147, reckon/crew/obligations.py:1672, reckon/crew/repair.py:705, reckon/crew/recovery_repair_dispatch.py:612, reckon/crew/recovery_review_subject.py:141, reckon/crew/recovery_review_dispatch.py:1085, reckon/crew_run_commands.py:1188\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:234 normalises findings on both store and read and reckon/crew/reports.py:2522 names a shaped field, leaving only the JSON-body manifest path uncovered.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate_base.log, gate_head2.log, measure_base.log, measure_final.log and negative_control.log each carry their revision, literal command and a closing EXIT= line, and the single head failure is the same id failing at base.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/review.py, reckon/crew/reports.py and the landing fragment, all inside the dispatch fence.\nSCORE durability: 7\nJUSTIFICATION durability: no test under tests/ exercises reckon/crew/review.py:234, so the guard rests on a measure test that exists only at the run directory and is not run at promotion; the equal-lists assertion in it is also checked only by its sibling literal assertions.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/review.py:234 follows the claim vocabulary the module already owns and ruff check and ruff format --check pass on both changed modules at the head revision.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/review.py:234 extends finding_claim rather than adding a second claim reader, and a search of reckon/ for an existing shape normaliser found no owner to extend.\nFINDING reckon/crew/review.py:234 non-blocking: the landed change carries no test in the repository, because tests/ was outside the dispatch fence although the plan's write paths name the new test; the measure test lives only at the run directory, and no test under tests/ supplies string findings, so reverting either commit leaves the suite green. Fold into a node that adds tests/test_readers_normalise_shapes.py.\nFINDING reckon/crew/reports.py:725 non-blocking: _read_json_manifest takes no shape_findings, so a JSON-body manifest carrying a list under a text field is named by nothing while the identical text-form content is refused by name.\n",
+  "review_run_id": "r-20261106T060212328103-review-of-readers-accept-the-shapes-their-writers-produce-a9689ecde201",
+  "reviewed_base_sha": "922001b305ee5c3e77dcef4dc487ae6b4e71d6ec",
+  "reviewed_head_sha": "a9689ecde20116a32e452a13d280c7d7b4df42fb",
+  "reviewed_run_id": "r-20261103T080124762435-readers-accept-the-shapes-their-writers-produce",
+  "scores": {
+    "durability": 7,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T07:00:23.602438+00:00",
+  "total": 101
+}
