@@ -9,6 +9,8 @@ import subprocess
 import sys
 import time
 from collections.abc import Mapping, Sequence
+from contextlib import ExitStack
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -629,7 +631,7 @@ def _measurement_path(run_id: str) -> Path:
 
 
 def _stored_measurement(
-    run_id: str, head: str, command: str
+    run_id: str, head: str, command: str, primary: str = ""
 ) -> landing_measure.Measurement | None:
     """The measurement already recorded for this head, or ``None``.
 
@@ -656,6 +658,10 @@ def _stored_measurement(
         return None
     if str(record.get("unreadable") or ""):
         return None
+    if primary and primary != head:
+        population = record.get("population")
+        if not isinstance(population, Mapping) or population.get("main_sha") != primary:
+            return None
     return landing_measure.Measurement.from_dict(record)
 
 
@@ -729,6 +735,16 @@ def _measure_timeout(pointer: Mapping[str, Any]) -> float:
     return landing_measure.measure_timeout(resolved.config)
 
 
+def _primary_revision(pointer: Mapping[str, Any]) -> str:
+    """Pin the checkout revision the automatic landing would merge into."""
+    from reckon.crew import merge
+
+    try:
+        return merge._rev_parse(Path(str(pointer.get("repo") or "")), "HEAD")
+    except (OSError, merge.MergeError):
+        return ""
+
+
 def _measure_delivery(
     pointer: Mapping[str, Any],
     run_id: str,
@@ -765,22 +781,52 @@ def _measure_delivery(
         )
     timeout = _measure_timeout(pointer)
     logs = runs.run_dir(run_id) / "landing-measure"
+    primary = _primary_revision(pointer)
+    if not primary:
+        measured = landing_measure.Measurement(
+            command=command,
+            suite={},
+            population={},
+            unreadable="the primary revision could not be read",
+            head=head,
+            project=project,
+        )
+        _record_suite_evidence(run_id, measured)
+        return measured
     try:
         # Only the checkout is inside this except: an error raised by the
         # measurement itself is a different failure and is reported as one.
-        with landing_measure.base_checkout(repo, base_sha, timeout) as base_tree:
+        with ExitStack() as stack:
+            measured_head, measured_tree = head, Path(tree)
+            if primary != head:
+                measured_head, measured_tree = stack.enter_context(
+                    landing_measure.candidate_checkout(repo, primary, head, timeout)
+                )
+                base_sha = primary
+            base_tree = stack.enter_context(
+                landing_measure.base_checkout(repo, base_sha, timeout)
+            )
             try:
                 measured = landing_measure.measure_run(
                     command=command,
-                    tree=Path(tree),
+                    tree=measured_tree,
                     base_sha=base_sha,
-                    head_sha=head,
+                    head_sha=measured_head,
                     base_tree=base_tree,
                     logs_dir=logs,
                     test_files=_node_test_files(pointer),
                     timeout=timeout,
                     stored=stored,
                     project=project,
+                )
+                measured = replace(
+                    measured,
+                    head=head,
+                    population={
+                        **measured.population,
+                        "main_sha": primary,
+                        "candidate_sha": measured_head,
+                    },
                 )
             except (OSError, ValueError) as exc:
                 measured = landing_measure.Measurement(
@@ -819,7 +865,17 @@ def _measure_guard(measured: Any) -> str:
             f"{test_id} failed {sum(results['head'])}/{len(results['head'])} at head "
             f"and {sum(results['base'])}/{len(results['base'])} at base"
         )
-    return "added suite regression: " + "; ".join(details)
+    logs = [
+        str(arm["log_path"])
+        for pair in (measured.suite, measured.population)
+        for name in ("base", "head")
+        if isinstance(arm := pair.get(name), Mapping) and arm.get("log_path")
+    ]
+    return (
+        "added suite regression: "
+        + "; ".join(details)
+        + ("; logs: " + ", ".join(logs) if logs else "")
+    )
 
 
 def _landing_beat(pointer: Mapping[str, Any], run_id: str) -> str:
@@ -1118,7 +1174,11 @@ def land_once() -> dict[str, Any]:
             reviews[tier] = record
             if described and not stale:
                 stale, stale_tier = described, tier
+        command = str(pointer.get("suite_command") or "").strip()
+        primary = _primary_revision(pointer) if command else ""
         review_stamp = _owed_review_stamp(reviews)
+        if primary and primary != head:
+            review_stamp += ":" + primary
         awaiting_tier = next((tier for tier in owed if reviews.get(tier) is None), "")
         stale_tier = stale_tier or awaiting_tier
         review = reviews.get(CODE_REVIEW_TIER)
@@ -1217,7 +1277,7 @@ def land_once() -> dict[str, Any]:
             )
             continue
         command = str(pointer.get("suite_command") or "").strip()
-        measured = _stored_measurement(run_id, head, command)
+        measured = _stored_measurement(run_id, head, command, primary)
         if measured is not None:
             # The stored head is this head: reuse it, and re-apply it to the
             # pointer so a promoted pass still records what it measured on.
@@ -1253,6 +1313,9 @@ def land_once() -> dict[str, Any]:
                     "guard": measure_guard,
                 }
             )
+            continue
+        if measured is not None and primary and _primary_revision(pointer) != primary:
+            deferred.append(run_id)
             continue
         # The review's non-blocking findings do not hold the landing, and the
         # finding a reviewer raised must not vanish with the pointer that

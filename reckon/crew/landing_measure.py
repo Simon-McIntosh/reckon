@@ -100,7 +100,9 @@ class Arm:
 
     @property
     def readable(self) -> bool:
-        return self.exit_status is not None
+        return self.exit_status == 0 or (
+            self.exit_status == 1 and bool(self.failure_ids)
+        )
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -139,6 +141,11 @@ class Measurement:
             "population": self.population,
             "isolated": self.isolated,
             "real": list(self.real),
+            "flakes": [
+                test_id
+                for test_id in self.isolated
+                if test_id not in self.real and not self.unreadable
+            ],
             "unreadable": self.unreadable,
         }
 
@@ -601,6 +608,7 @@ def measure_run(
         file_count=len(node_tests),
     )
     files = importer_population(changed_paths(tree, base_sha, head_sha), tree)
+    _carry_missing_tests(base_tree, tree, files)
     population_command = [*argv, *files, "-n", str(POPULATION_WORKERS)]
     population_bound = bound(len(files))
     if files:
@@ -748,6 +756,29 @@ def _slug(test_id: str) -> str:
 
 class BaseCheckoutError(ValueError):
     """The base checkout could not be built, so there is nothing to measure."""
+
+
+@contextlib.contextmanager
+def candidate_checkout(
+    repo: Path, primary: str, head: str, timeout: float
+) -> Iterator[tuple[str, Path]]:
+    """Build the same merge as landing, and measure it without moving a branch."""
+    from reckon.crew import merge
+
+    try:
+        candidate = merge.build_merge_commit(
+            repo,
+            primary,
+            head,
+            "test(landing): prepare merge candidate",
+            "Combine the delivered head with the current primary revision for measurement.",
+        )
+    except (OSError, merge.MergeError) as exc:
+        raise BaseCheckoutError(
+            f"the merge candidate could not be built: {exc}"
+        ) from exc
+    with base_checkout(repo, candidate, timeout) as tree:
+        yield candidate, tree
 
 
 def _git(repo: Path, *arguments: str, timeout: float):
