@@ -659,6 +659,47 @@ def dependency_row_state(
     return str(declarations.get(section) or "").strip() or plan_status
 
 
+def followup_wait_state(
+    followups: Iterable[Any],
+    followup_id: str,
+    plan: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    """The answers every surface reports for a ref that waits on one followup.
+
+    A followup wait is satisfied when that one followup resolves, never when
+    the plan or section carrying it moves, so a ref naming a followup is
+    answered from the target's own followup records. One function answers it
+    for every surface that builds such a row, so a wait read on one surface
+    and reported on another cannot disagree.
+
+    ``status`` is the target plan's own state even when the ref also names a
+    section (``slug#sN@f-id``): the section half says where the followup
+    belongs, while the wait itself is on the followup, so reporting that
+    section's declaration here would answer a question the ref did not ask and
+    would disagree with the plan status the roadmap reports for the same wait.
+
+    A followup the target does not carry reports ``followup_found: False`` and
+    stays unsatisfied: a wait nothing can satisfy must not read as no wait.
+    """
+
+    followup = next(
+        (
+            item
+            for item in followups or ()
+            if isinstance(item, Mapping) and str(item.get("id") or "") == followup_id
+        ),
+        None,
+    )
+    status = str(followup.get("status") or "open") if followup is not None else ""
+    return {
+        "status": _status(plan if isinstance(plan, Mapping) else {}),
+        "followup": followup_id,
+        "followup_found": followup is not None,
+        "followup_status": status,
+        "satisfied": followup is not None and status != "open",
+    }
+
+
 def _section_satisfied(
     plan: dict[str, Any],
     section: str,
@@ -1616,38 +1657,21 @@ def _section_scoped_edges(
                 # naming a followup the target does not carry holds its waiting
                 # section and is reported: an edge that can never be satisfied
                 # must not read as no edge at all.
-                followup = next(
-                    (
-                        item
-                        for item in _plan_followups(
-                            target, docs_dir, project, parsed.slug
-                        )
-                        if isinstance(item, Mapping)
-                        and str(item.get("id") or "") == parsed.followup
-                    ),
-                    None,
-                )
-                resolved = followup is not None and (
-                    str(followup.get("status") or "open") != "open"
+                wait = followup_wait_state(
+                    _plan_followups(target, docs_dir, project, parsed.slug),
+                    parsed.followup,
+                    target,
                 )
                 row.update(
                     {
                         "scope": "local",
                         "slug": parsed.slug,
                         "found": True,
-                        "status": _status(target),
-                        "followup": parsed.followup,
-                        "followup_found": followup is not None,
-                        "followup_status": (
-                            str(followup.get("status") or "open")
-                            if followup is not None
-                            else ""
-                        ),
-                        "satisfied": resolved,
+                        **wait,
                     }
                 )
                 rows.append(row)
-                if followup is None:
+                if not wait["followup_found"]:
                     findings.append(
                         _finding(
                             "dangling-hard-dependency",

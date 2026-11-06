@@ -132,6 +132,7 @@ from reckon.roadmap import (
     GraphTargetError,
     build_roadmap,
     dependency_row_state,
+    followup_wait_state,
 )
 
 # Names moved into sibling modules stay importable from reckon.mcp so that
@@ -1977,6 +1978,14 @@ def _resolve_plan_ref(
     row["status"] = dependency_row_state(data, parsed.stage)
     row["impl"] = data.get("impl", 0)
     row["title"] = data.get("title", "")
+    if parsed.followup:
+        # A ref that names one followup is answered by that followup, not by
+        # the plan or section holding it, through the same derivation the
+        # roadmap's section-edge rows take — status included, which is the
+        # target plan's state even when the ref also names a section.
+        row.update(
+            followup_wait_state(data.get("followups") or [], parsed.followup, data)
+        )
     return row
 
 
