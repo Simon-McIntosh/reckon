@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="305">
+<meta name="plan-version" content="306">
 <meta name="plan-modified" content="2026-11-06">
 </head>
 <body>
@@ -628,6 +628,9 @@
 </div>
 <div class="r-comment" data-section="s36" data-id="c-run-r-20261106T205549980947-review-of-the-lander-skips-a-run-landed-elsewhere-d7e5f13b18ce" data-who="reckon-build" data-when="2026-11-06T21:05:46Z">
     <div class="r-comment-body"><p>Parsed review record written at the revision-specific review-records path; the new test fixes the input-aliased assertion, while the earlier importer-gate evidence gap remains blocking.</p></div>
+</div>
+<div class="r-comment" data-section="s36" data-id="c-run-r-20261105T142439938993-the-lander-skips-a-run-landed-elsewhere" data-who="reckon-build" data-when="2026-11-06T20:22:40Z">
+    <div class="r-comment-body"><p>The lander records landed-elsewhere for a vanished pointer or ledger row, including a disappearance during attempt recording. A skipped-only pass persists one verdict row. The stored row is now checked against literal run id and outcome: exact suite arms 4 passed at base and 4 passed at head, and a corrupted-outcome control failed.</p></div>
 </div>
 <div class="r-comment" data-section="s37" data-id="c-run-r-20261105T165246922164-review-of-a-launch-rereads-the-run-it-starts-a1deb2b4fc7a" data-who="reckon-build" data-when="2026-11-05T17:07:49.350Z">
     <div class="r-comment-body"><p>§37 reviewed at head a1deb2b4fc — `queue_admission._launch_reread_refusal` re-reads the live pointer and the run's `attempt-*-exit.json` records under `runs._pointer_lock` immediately before the launch (queue_admission.py:4339) and records a `refused-before-launch` verdict; the gate (3 passed EXIT=0) and two negative controls (each 1 failed/2 passed EXIT=1, reddening a different case) are recorded, and the consumer arm is head 54 passed vs base 1 failed 53 passed with the single base-only `test_the_log_is_trimmed_within_its_size_bound`; scores goal_fidelity 18, evidence 14, scope_discipline 19, durability 17, fit 16, reuse 19, total 103; three non-blocking findings: the attempt-resulted case writes its record before the pass so it does not test the mid-pass window, the fragment overstates that window coverage, and the done-when's importer-population clause is measured on six of 57 files because the wider sweep was truncated at 54 percent.</p></div>
