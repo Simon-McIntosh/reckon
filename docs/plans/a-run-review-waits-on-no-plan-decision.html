@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-run-review-waits-on-no-plan-decision">
+  <meta name="plan-title" content="A Run Review Waits On No Plan Decision">
+  <meta name="plan-summary" content="A queued review of a delivered run is admitted without waiting on its section's open decisions or gates, which govern new work, not the review of work done.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="1.25">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="standard">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S27">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-after" content="work-is-never-stuck-behind-the-admission-loop">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
+  <title>A Run Review Waits On No Plan Decision | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-11-06">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: two run reviews held five hours on design decisions</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>On 6 November two queued reviews of delivered runs, <code>r-20261106T161252641125</code> (review of <code>r-20261103T080731600837</code>, section <code>a-dry-run-must-resolve-what-the-real-call-resolves</code> §4) and <code>r-20261106T162114428730</code> (review of <code>r-20261103T082706369314</code>, section <code>an-orchestrator-can-discharge-a-refusal</code> §10), sat at queue positions 1 and 2 for about five hours while the local lane ran two workers against a published allowance of 43. Every admit pass recorded the same verdict for both: <code>held-by-gate</code>, &ldquo;waiting on readiness:reckon:&lt;plan&gt;#&lt;section&gt;&rdquo;. Neither plan's section had changed; each plan carries open decisions with no choice (<code>member-repository-requirement</code> on the first, <code>discharge-surface-shape</code> and <code>undischargeable-row-disposition</code> on the second), which only the lead locks.</p>
+    <p>The wait comes from <code>_validated_batch_waits</code> in <code>reckon/crew/queue_admission.py</code> (near lines 2322&ndash;2358, added in <code>b34d800ad7</code>). For every queued request it reads its own section's verdict, and when the section is held by a <code>gate</code> or <code>decision</code> blocker it appends <code>readiness:&lt;section key&gt;</code>. It does this for every role. A gate or open decision says new work on the section must not start; a review reads code that a run has already written and judges it, and nothing it does depends on how the decision is settled. Holding it parks a finished run's landing behind a design question for as long as that question stays open. The obligation rows for both requests also read &ldquo;waiting for a lane slot&rdquo; while the pass said <code>held-by-gate</code>; that mismatch is <code>work-is-never-stuck-behind-the-admission-loop</code> §29's, and this plan does not touch it.</p>
+
+    <h2 id="s2">§2 — A queued review is not held on its section's gates or decisions</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> In <code>_validated_batch_waits</code> (<code>reckon/crew/queue_admission.py</code>), the own-section readiness wait is appended only for a request whose <code>TaskNode.role</code> is not <code>review</code>. A review request keeps every other wait it has: its explicit <code>--after</code> runs, its section's authored waits from <code>section_wait_refs</code>, and its plan's <code>depends_on</code>. Implementation, investigation and every other role keep the readiness wait exactly as now. No new helper and no new parameter: the condition sits on the existing <code>if read_own_verdict and node.plan and node.section</code> branch.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_a_run_review_waits_on_no_plan_decision.py</code> shows two things with a synthesised temporary repository whose plan section carries an open decision, calling <code>_validated_batch_waits</code> directly: a request node with <code>role="review"</code> on that section gets no <code>readiness:</code> ref; and a request node with <code>role="implement"</code> on the same section gets <code>readiness:&lt;project&gt;:&lt;plan&gt;#&lt;section&gt;</code>. Negative control: removing the role condition makes the review node receive the readiness ref. The test files importing <code>reckon.crew.queue_admission</code> add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>. Ruff check and ruff format --check add no findings on the staged paths. Write paths: <code>reckon/crew/queue_admission.py</code> and the new test.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-arrwonpd-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="coordinator" data-written-at="2026-11-06" data-recommends-skill="/reckon-build a-run-review-waits-on-no-plan-decision §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §2</h4>
+    <div class="r-fu-body"><p>One condition in <code>_validated_batch_waits</code>; queue behind the run holding <code>reckon/crew/queue_admission.py</code>.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-run-review-waits-on-no-plan-decision §2</pre>
+    </article>
+</section>
+
+</main>
+</body>
+</html>
