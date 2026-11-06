@@ -85,15 +85,31 @@ def test_every_crew_view_a_skill_names_is_served() -> None:
         )
 
 
-def test_the_ready_idle_rows_reach_a_served_view() -> None:
-    """The projection has no view of its own, so the rows must reach one."""
+def test_the_directory_view_asks_the_directory_for_ready_idle_rows(monkeypatch) -> None:
+    """The projection has no view of its own, so a served view must ask for it.
+
+    Asserted by calling the serving function against a stand-in directory rather
+    than by reading its source: where the call is written — inline or inside a
+    helper — is not the contract. That the directory view asks for the rows is.
+    """
 
     assert "ready_idle" in inspect.signature(mcp_views.ready_set_view).parameters
 
-    serving = inspect.getsource(mcp_views.serve_crew_view)
-    assert re.search(
-        r"crew_directory\((?:[^()]|\([^()]*\))*?ready_idle=True", serving
-    ), "no served crew view asks the directory for the ready-idle rows"
+    from reckon.crew import directory as directory_module
+
+    asked: dict[str, object] = {}
+
+    def stand_in(project=None, **kwargs):
+        asked["project"] = project
+        asked.update(kwargs)
+        return {"coordinators": []}
+
+    monkeypatch.setattr(directory_module, "directory", stand_in)
+    mcp_views.serve_crew_view(view="directory", project="example")
+
+    assert asked.get("ready_idle") is True, (
+        "the directory view does not ask the directory for the ready-idle rows"
+    )
 
 
 def test_a_skills_ready_idle_set_names_a_call_that_serves_it() -> None:
@@ -120,8 +136,11 @@ def test_the_roadmap_inventory_matches_its_own_count() -> None:
         "## Ready-idle sections, owners and the critical path", 1
     )[1]
     section = section.split("\n## ", 1)[0]
+    # Only the number word and the noun it counts are fixed: "three views
+    # answer it", "the answer takes three views" and "three existing views"
+    # all state the same count, and the sentence around them is free.
     stated = re.search(
-        r"\b(two|three|four|five)\s+(?:[a-z]+\s+)?views? answer", normalized(section)
+        r"\b(two|three|four|five)\b\s+(?:\w+\s+){0,2}views?\b", normalized(section)
     )
     assert stated, "the section does not state how many views answer it"
     listed = re.findall(r"(?m)^\d+\. \*\*", section)
