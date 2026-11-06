@@ -108,3 +108,23 @@ def test_a_skills_ready_idle_set_names_a_call_that_serves_it() -> None:
                 f"{path} states the ready-idle set with no call that serves it: "
                 f"{sentence}"
             )
+
+
+NUMBER_WORDS = {"two": 2, "three": 3, "four": 4, "five": 5}
+
+
+def test_the_roadmap_inventory_matches_its_own_count() -> None:
+    """A section that states how many views answer must list that many."""
+
+    section = ROADMAP.read_text().split(
+        "## Ready-idle sections, owners and the critical path", 1
+    )[1]
+    section = section.split("\n## ", 1)[0]
+    stated = re.search(
+        r"\b(two|three|four|five) views answer it\b", normalized(section)
+    )
+    assert stated, "the section does not state how many views answer it"
+    listed = re.findall(r"(?m)^\d+\. \*\*", section)
+    assert len(listed) == NUMBER_WORDS[stated.group(1)], (
+        f"the section says {stated.group(1)} views and lists {len(listed)}"
+    )
