@@ -772,19 +772,20 @@ each node its own exclusive write scope. A node waiting on an unlanded section
 parks `awaiting-upstream`; admission releases it when that section lands, with
 no new coordinator dispatch. The queue orders only declared waits.
 
-**Read the set from the views, never from a report you join by hand.** Four
-existing views answer the whole beat, each in one bounded read:
+**Read the set from the views, never from a report you join by hand.** Three
+views answer the whole beat, each in one bounded read:
 
-- **The ready-idle set** is the ready-set view filtered to rows with no live run
-  (`ready_idle`). Each ready row carries its `live_run`, its `coordinator` and
-  `plan_owner`, and whether it sits on the critical path; the view also names
-  the `closable` plans with their `closure_blockers`. The filter pages with the
-  view's own cursor, so the answer stays under the MCP ceiling at any project
-  size.
-- **The owners and the held paths are the directory view.**
-  `crew(view="directory", project=<project>)` carries each coordinator's
-  `ready_idle_sections` beside its `held_paths` and `queued_runs`, which is the
-  one call that says who owns a section you must name to a peer.
+- **The ready-idle set is a filter on the ready-set projection, and
+  `crew(view="directory", project=<project>)` is the call that serves it.** The
+  projection computes the ready rows with their `live_run`, `coordinator`,
+  `plan_owner` and `critical_path` fields, its `ready_idle` filter drops the
+  rows with a live run, and it names the `closable` plans with their
+  `closure_blockers`. It has no view name of its own — no crew or roadmap view
+  serves it, and the HTTP discovery payload carries it whole as `ready_set` —
+  so a coordinator reads the filtered set per owner from the directory view,
+  whose coordinator rows carry `ready_idle_sections` beside `held_paths` and
+  `queued_runs`. That is the one call that says which sections are idle, who
+  owns each, and which paths that coordinator already holds.
 - **The critical path is `roadmap(view="summary").critical_path`.** Its `links`
   rows are in path order with the head first; each reads a `primary_state` — in
   flight with its `run_id`, ready-idle with its `coordinator`, gated with its
