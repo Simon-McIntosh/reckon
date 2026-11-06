@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own arms: baseline_suite at 5da16be129 records exit_status 0, failure_count 0, failure_ids [] (gate-baseline-repair.log, '4 passed in 1.72s'), and after_suite at 9350a422fe records exit_status 0, failure_count 0, failure_ids [] (gate-head.log, '7 passed in 6.59s'), so no failure id appears in the after arm that the base arm did not carry.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp_views.py:serve_crew_view",
+    "reckon/mcp_views.py:ready_set_view",
+    "reckon/crew/directory.py:crew_directory"
+  ],
+  "completed_at": "2026-11-06T08:08:05.383Z",
+  "dispatched_at": "2026-11-06T07:52:04Z",
+  "findings": [
+    {
+      "file": "tests/test_the_skills_read_the_board_views.py",
+      "id": "f76546307b8",
+      "line": 124,
+      "text": "non-blocking: test_the_roadmap_inventory_matches_its_own_count matches the stated count only through the literal pattern '(two|three|four|five) ... views? answer', so a correct rewording of skills/reckon-roadmap/SKILL.md:94 (for example 'the answer takes three views') makes `stated` None and the case fails with 'the section does not state how many views answer it' even though the section is right; it is a narrower version of the wording lock the repair set out to retire."
+    },
+    {
+      "file": "tests/test_the_skills_read_the_board_views.py",
+      "id": "fa6a7aedeb2",
+      "line": 88,
+      "text": "non-blocking: test_the_ready_idle_rows_reach_a_served_view asserts on `inspect.getsource(mcp_views.serve_crew_view)` text with a regex for `crew_directory(... ready_idle=True`, so moving that call into a helper that still asks for the ready-idle rows keeps the contract true and reddens the test; the signature half of the case is behavioural, the source half is not."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Read commit by commit from 5da16be129 to 9350a422fe \u2014 6e80e818c3, d5fb7f0fe3, 3c0ae98a0d and 9350a422fe touch four files, all declared; the skills replace the phantom ready-set view with `crew(view=\"directory\", project=<project>)` and the test now reads the crew view registry and the serving call rather than prose.",
+    "done_when": "The done_when names tests/test_the_skills_read_the_board_views.py plus an executed negative control; gate-head.log records revision 9350a422fe, 7 passed, EXIT=0 for the armed command, and I reproduced 7 passed EXIT=0 independently from a git-archive extraction of 9350a422fe, while negative-control-revert-skills.log shows the pre-repair skill text failing two ids, EXIT=1.",
+    "goal": "The node goal is to retire the lossless-report recipe from the reckon-build and reckon-roadmap skills in favour of the ready-set filter, the critical-path fields, the directory and the lanes view; skills/reckon-build/references/sprint-orchestration.md:775-800 and skills/reckon-roadmap/SKILL.md:96-119 now name all four against served surfaces, and the retired `reckon roadmap --json-output | python3 -c` recipe is absent from both files at 9350a422fe.",
+    "manifest": "Read; it records the six-run commit chain, the head arm (7 passed, EXIT=0 at 9350a422fe), the base arm (4 passed, EXIT=0 at 5da16be129), the revert control (2 failed, EXIT=1) and a per-dimension rubric self-check.",
+    "write_paths": "The node was fenced to the two skills, tests/test_the_skills_read_the_board_views.py, the evidence fragment and a figures directory; every path in `git diff --stat 5da16be1 9350a422fe` is one of those, and the figures directory is untouched by this range."
+  },
+  "justifications": {
+    "durability": "Reverting the skill half reddens tests/test_the_skills_read_the_board_views.py:99 and :116 (negative-control-revert-skills.log, assert 4 == 3, EXIT=1), and :77 fails on any crew view outside CREW_VIEWS; :124 additionally requires a literal 'views answer' phrase, which is a residual wording lock rather than a hole.",
+    "evidence": "gate-head.log and gate-baseline-repair.log each name their revision, tree and literal command and end EXIT=0, and my independent run of tests/test_the_skills_read_the_board_views.py at 9350a422fe reproduced 7 passed EXIT=0.",
+    "fit": "The added cases follow the file's existing shape \u2014 module-level constants, plain asserts, the shared `normalized` helper from tests/test_skill_contracts.py:22 \u2014 and introduce no plan label, ticket id or version suffix.",
+    "goal_fidelity": "Both skills state the set as a filter on the projection and name the served call at skills/reckon-roadmap/SKILL.md:96-111 and skills/reckon-build/references/sprint-orchestration.md:778-786, matching the production path reckon/mcp_views.py:4219 -> reckon/crew/directory.py:444.",
+    "reuse": "The diff adds no production definition; the only helper is the two-line `_sentences` at tests/test_the_skills_read_the_board_views.py:51, and a search over reckon/ and tests/ for sentence-splitting mechanisms found only narrower, differently-shaped local helpers (tests/test_a_worker_prompt_never_forbids_its_landing_record.py:68), so there is no owner to extend.",
+    "scope_discipline": "`git diff --stat` over the reviewed range lists only the two skills, the test file and the evidence fragment, all inside the manifest's declared write paths."
+  },
+  "node": "review-of-the-skills-read-the-board-views-9350a422feca",
+  "node:reviewed": "the-skills-read-the-board-views",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to retire the lossless-report recipe from the reckon-build and reckon-roadmap skills in favour of the ready-set filter, the critical-path fields, the directory and the lanes view; skills/reckon-build/references/sprint-orchestration.md:775-800 and skills/reckon-roadmap/SKILL.md:96-119 now name all four against served surfaces, and the retired `reckon roadmap --json-output | python3 -c` recipe is absent from both files at 9350a422fe.\nVERDICT done_when: The done_when names tests/test_the_skills_read_the_board_views.py plus an executed negative control; gate-head.log records revision 9350a422fe, 7 passed, EXIT=0 for the armed command, and I reproduced 7 passed EXIT=0 independently from a git-archive extraction of 9350a422fe, while negative-control-revert-skills.log shows the pre-repair skill text failing two ids, EXIT=1.\nVERDICT write_paths: The node was fenced to the two skills, tests/test_the_skills_read_the_board_views.py, the evidence fragment and a figures directory; every path in `git diff --stat 5da16be1 9350a422fe` is one of those, and the figures directory is untouched by this range.\nVERDICT manifest: Read; it records the six-run commit chain, the head arm (7 passed, EXIT=0 at 9350a422fe), the base arm (4 passed, EXIT=0 at 5da16be129), the revert control (2 failed, EXIT=1) and a per-dimension rubric self-check.\nVERDICT diff: Read commit by commit from 5da16be129 to 9350a422fe \u2014 6e80e818c3, d5fb7f0fe3, 3c0ae98a0d and 9350a422fe touch four files, all declared; the skills replace the phantom ready-set view with `crew(view=\"directory\", project=<project>)` and the test now reads the crew view registry and the serving call rather than prose.\nCALL_SITES: reckon/mcp_views.py:serve_crew_view, reckon/mcp_views.py:ready_set_view, reckon/crew/directory.py:crew_directory\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: Both skills state the set as a filter on the projection and name the served call at skills/reckon-roadmap/SKILL.md:96-111 and skills/reckon-build/references/sprint-orchestration.md:778-786, matching the production path reckon/mcp_views.py:4219 -> reckon/crew/directory.py:444.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-head.log and gate-baseline-repair.log each name their revision, tree and literal command and end EXIT=0, and my independent run of tests/test_the_skills_read_the_board_views.py at 9350a422fe reproduced 7 passed EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat` over the reviewed range lists only the two skills, the test file and the evidence fragment, all inside the manifest's declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: Reverting the skill half reddens tests/test_the_skills_read_the_board_views.py:99 and :116 (negative-control-revert-skills.log, assert 4 == 3, EXIT=1), and :77 fails on any crew view outside CREW_VIEWS; :124 additionally requires a literal 'views answer' phrase, which is a residual wording lock rather than a hole.\nSCORE fit: 18\nJUSTIFICATION fit: The added cases follow the file's existing shape \u2014 module-level constants, plain asserts, the shared `normalized` helper from tests/test_skill_contracts.py:22 \u2014 and introduce no plan label, ticket id or version suffix.\nSCORE reuse: 20\nJUSTIFICATION reuse: The diff adds no production definition; the only helper is the two-line `_sentences` at tests/test_the_skills_read_the_board_views.py:51, and a search over reckon/ and tests/ for sentence-splitting mechanisms found only narrower, differently-shaped local helpers (tests/test_a_worker_prompt_never_forbids_its_landing_record.py:68), so there is no owner to extend.\nFINDING tests/test_the_skills_read_the_board_views.py:124 non-blocking: test_the_roadmap_inventory_matches_its_own_count matches the stated count only through the literal pattern '(two|three|four|five) ... views? answer', so a correct rewording of skills/reckon-roadmap/SKILL.md:94 (for example 'the answer takes three views') makes `stated` None and the case fails with 'the section does not state how many views answer it' even though the section is right; it is a narrower version of the wording lock the repair set out to retire.\nFINDING tests/test_the_skills_read_the_board_views.py:88 non-blocking: test_the_ready_idle_rows_reach_a_served_view asserts on `inspect.getsource(mcp_views.serve_crew_view)` text with a regex for `crew_directory(... ready_idle=True`, so moving that call into a helper that still asks for the ready-idle rows keeps the contract true and reddens the test; the signature half of the case is behavioural, the source half is not.",
+  "review_run_id": "r-20261106T074702041282-review-of-the-skills-read-the-board-views-9350a422feca",
+  "reviewed_base_sha": "5da16be129a2be6b126a9e5bfc6acadc715a0c95",
+  "reviewed_head_sha": "9350a422feca956f5f5e2ff2b51ac73a6ffdefd7",
+  "reviewed_run_id": "r-20261027T103909465247-the-skills-read-the-board-views",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T08:00:48+00:00",
+  "total": 112
+}
