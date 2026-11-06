@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T200824843523-record-what-holds-a-queued-request-only-when-the-holding/importers_head.log",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T200824843523-record-what-holds-a-queued-request-only-when-the-holding/importers_base.log",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:5218 manual admission",
+    "reckon/crew/queue_admission.py:5247 admit service loop",
+    "reckon/crew/obligations.py:1835 public obligations view"
+  ],
+  "completed_at": "2026-11-06T22:25:08Z",
+  "dispatched_at": "2026-11-06T22:16:23Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "1282",
+      "severity": "blocking",
+      "text": "blocking: a prior scope-conflict reason is retained whenever the named run remains live, even if the refreshed claim no longer collides, so the pointer and finished-holder duty can name a holder that no longer fences the path."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "1250",
+      "severity": "blocking",
+      "text": "blocking: no added test raises UnreconciledRuns, so removing this named-runs branch would leave the focused gate green while a required refusal loses the runs that hold the request."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read fa2272863aa30bc22a6a4e664c81b38e3d50f374, 9623b11c5cc22a2f98b122bb6f248576fa84381b and 95808ee971f887fbbe5eba60b109385aefa09958 commit by commit; queue_admission.py:1250 adds an untested refusal branch.",
+    "done_when": "docs/plans/a-queue-holds-the-whole-plan.html:164 names four cases and a negative arm; after_suite.log records 12 passes and negative_control.log records six failures, while importers_base.log and importers_head.log show zero added failure IDs.",
+    "goal": "\u00a729 of docs/plans/a-queue-holds-the-whole-plan.html:162-164 asks for current hold reasons and finished-holder duties; reckon/crew/queue_admission.py:1264 records holds, but line 1282 can preserve a no-longer-binding claim.",
+    "manifest": "the reviewed run's manifest.md is complete and names three commits, the focused gate, the mutation log and base/head importer receipts.",
+    "write_paths": "the source manifest.md declares obligations.py, queue_admission.py, two tests and the evidence fragment; git diff --name-only 8e08dbdafd..95808ee971f8 lists only those five files."
+  },
+  "justifications": {
+    "durability": "tests/test_a_held_request_records_what_holds_it.py:189-202 would fail if scope-conflict recording or unchanged-record protection vanished, but no added assertion reaches queue_admission.py:1250 or a cleared live claim.",
+    "evidence": "after_suite.log ends with 12 passed and EXIT=0, negative_control.log ends with six failed and EXIT=1, and importers_head.log has no failure ID absent from importers_base.log.",
+    "fit": "queue_admission.py:1264 keeps pointer hold recording beside admission and obligations.py:219 reuses the existing session attendance rule without adding a forbidden source label.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:1282 retains a scope-conflict record based on holder liveness even after the current claim check at line 4570 finds no collision.",
+    "reuse": "capability searches for hold recording, pointer mutation and session attendance found queue_admission.py:2039 for pass verdicts and runs.py:4084 for attendance; the additions extend these owners through queue_admission.py:1264 and obligations.py:219.",
+    "scope_discipline": "the five paths in git diff --name-only 8e08dbdafd..95808ee971f8 are all declared by the source manifest.md orientation_write_paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a729 of docs/plans/a-queue-holds-the-whole-plan.html:162-164 asks for current hold reasons and finished-holder duties; reckon/crew/queue_admission.py:1264 records holds, but line 1282 can preserve a no-longer-binding claim.\nVERDICT done_when: docs/plans/a-queue-holds-the-whole-plan.html:164 names four cases and a negative arm; after_suite.log records 12 passes and negative_control.log records six failures, while importers_base.log and importers_head.log show zero added failure IDs.\nVERDICT write_paths: the source manifest.md declares obligations.py, queue_admission.py, two tests and the evidence fragment; git diff --name-only 8e08dbdafd..95808ee971f8 lists only those five files.\nVERDICT manifest: the reviewed run's manifest.md is complete and names three commits, the focused gate, the mutation log and base/head importer receipts.\nVERDICT diff: read fa2272863aa30bc22a6a4e664c81b38e3d50f374, 9623b11c5cc22a2f98b122bb6f248576fa84381b and 95808ee971f887fbbe5eba60b109385aefa09958 commit by commit; queue_admission.py:1250 adds an untested refusal branch.\nCALL_SITES: reckon/crew/queue_admission.py:5218 manual admission, reckon/crew/queue_admission.py:5247 admit service loop, reckon/crew/obligations.py:1835 public obligations view\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:1282 retains a scope-conflict record based on holder liveness even after the current claim check at line 4570 finds no collision.\nSCORE evidence: 18\nJUSTIFICATION evidence: after_suite.log ends with 12 passed and EXIT=0, negative_control.log ends with six failed and EXIT=1, and importers_head.log has no failure ID absent from importers_base.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the five paths in git diff --name-only 8e08dbdafd..95808ee971f8 are all declared by the source manifest.md orientation_write_paths.\nSCORE durability: 12\nJUSTIFICATION durability: tests/test_a_held_request_records_what_holds_it.py:189-202 would fail if scope-conflict recording or unchanged-record protection vanished, but no added assertion reaches queue_admission.py:1250 or a cleared live claim.\nSCORE fit: 18\nJUSTIFICATION fit: queue_admission.py:1264 keeps pointer hold recording beside admission and obligations.py:219 reuses the existing session attendance rule without adding a forbidden source label.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability searches for hold recording, pointer mutation and session attendance found queue_admission.py:2039 for pass verdicts and runs.py:4084 for attendance; the additions extend these owners through queue_admission.py:1264 and obligations.py:219.\nFINDING reckon/crew/queue_admission.py:1282 blocking: a prior scope-conflict reason is retained whenever the named run remains live, even if the refreshed claim no longer collides, so the pointer and finished-holder duty can name a holder that no longer fences the path.\nFINDING reckon/crew/queue_admission.py:1250 blocking: no added test raises UnreconciledRuns, so removing this named-runs branch would leave the focused gate green while a required refusal loses the runs that hold the request.",
+  "review_run_id": "r-20261106T221248725564-review-of-record-what-holds-a-queued-request-only-when-the-holding-95808ee971f8",
+  "reviewed_base_sha": "8e08dbdafdd416c86aa79e44ad5f98267fef9df7",
+  "reviewed_head_sha": "95808ee971f887fbbe5eba60b109385aefa09958",
+  "reviewed_run_id": "r-20261106T200824843523-record-what-holds-a-queued-request-only-when-the-holding",
+  "scores": {
+    "durability": 12,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T22:30:59.347731+00:00",
+  "total": 103
+}
