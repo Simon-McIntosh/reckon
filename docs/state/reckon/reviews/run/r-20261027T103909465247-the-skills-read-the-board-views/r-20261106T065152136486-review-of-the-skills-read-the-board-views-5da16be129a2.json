@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite at fe67c2ee recorded exit_status 4 with failure_count 0 and failure_ids [] (gate-base.log: 'ERROR: file or directory not found ... no tests ran in 0.00s'), and after_suite at 5da16be129 recorded exit_status 0 with failure_count 0 and failure_ids [] (gate-head.log: '4 passed in 2.67s'), so no failure id appears in the after arm that the base arm did not carry.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-06T07:19:38.711Z",
+  "dispatched_at": "2026-11-06T07:07:14Z",
+  "findings": [
+    {
+      "file": "skills/reckon-build/references/sprint-orchestration.md",
+      "id": "fce2f5c57e1",
+      "line": 778,
+      "text": "non-blocking: the bullet tells a coordinator the ready-idle set is 'the ready-set view filtered to rows with no live run (ready_idle)' and that the filter 'pages with the view's own cursor', but no crew view serves it -- reckon/mcp_views.py:4196-4619 has no ready-set view name, ready_set_view is reached unfiltered only through reckon/serve.py:1878's discovery payload and filtered only through reckon/crew/directory.py:282 -- so a coordinator following the bullet has no call to make and cannot obtain the row fields live_run/coordinator/plan_owner/critical_path it promises; skills/reckon-roadmap/SKILL.md:97-103 makes the same claim."
+    },
+    {
+      "file": "skills/reckon-roadmap/SKILL.md",
+      "id": "f3199a2c1e6",
+      "line": 94,
+      "text": "non-blocking: the sentence says 'three existing views answer it' and the numbered list below holds four (ready-idle set, directory view, critical path, lanes view), where the build skill at sprint-orchestration.md:775 and the plan section both count four; the miscount misstates the deliverable's own inventory."
+    },
+    {
+      "file": "tests/test_the_skills_read_the_board_views.py",
+      "id": "f54bd72c1ee",
+      "line": 62,
+      "text": "non-blocking: test_the_ready_idle_set_is_a_filter_on_the_ready_set_view asserts two literal prose substrings ('ready-set view, filtered to rows with no live run' and 'pages with the same cursor') in the roadmap skill, so a correct rewording reddens it while an edit that keeps those phrases and states the wrong view still passes; it locks wording rather than the contract the file's docstring claims."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "No production call site reaches the landed change: the diff is two skill documents, one test file and one evidence fragment, and no module under reckon/ imports or reads them. The production mechanisms the prose names were read instead -- reckon/mcp_views.py:1209 ready_set_view, reckon/mcp_views.py:1133 session_share, reckon/roadmap.py:3429 critical['links'] and reckon/crew/directory.py:444 ready_idle_sections -- and all four name the fields the skills cite.",
+    "diff": "Read both commits against base fe67c2ee: 38db965bc7 adds 25 lines of view guidance to the build skill, replaces the roadmap skill's hand-join and CLI recipe with four view-named steps, and adds a 64-line contract test; 5da16be129 adds the 100-line evidence fragment, and nothing else changes.",
+    "done_when": "The done_when names tests/test_the_skills_read_the_board_views.py plus an executed negative control restoring the recipe line; the file holds four tests covering both skills' view names and the recipe's absence, the head log records '4 passed' EXIT=0, and negative-control.log records '1 failed, 3 passed' EXIT=1 on test_neither_skill_carries_the_lossless_report_recipe.",
+    "goal": "The node goal is to retire the lossless-report recipe from the reckon-build and reckon-roadmap skills in favour of the ready-set filter, the critical-path fields, the directory and the lanes view; both skills now name all four at skills/reckon-build/references/sprint-orchestration.md:775-800 and skills/reckon-roadmap/SKILL.md:97-116, and the roadmap recipe that stood at skills/reckon-roadmap/SKILL.md:110-120 is deleted.",
+    "manifest": "Read the reviewed run's manifest: status complete, commits 38db965bc7 and 5da16be129, tests line PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_skills_read_the_board_views.py, baseline_suite exit 4 with 0 failures at fe67c2ee and after_suite exit 0 with 0 failures at 5da16be129, negative_control_log gate named and its note accurate against the log.",
+    "write_paths": "The declared paths are the two skill files, the new test file, the evidence fragment and a figures directory; git show --stat on 38db965bc7 and 5da16be129 lists exactly the two skills, the test file and the fragment, so the diff sits inside the scope with the figures path unused."
+  },
+  "justifications": {
+    "durability": "tests/test_the_skills_read_the_board_views.py:46-55 fails when either skill stops naming a view or when the retired recipe returns, and the negative control demonstrates the second; the checks are token-presence only, so a skill that names a view incorrectly still passes, and tests/test_the_skills_read_the_board_views.py:62-64 asserts two literal prose substrings rather than any behaviour, so the file guards wording rather than the contract.",
+    "evidence": "The gate the done_when names is tests/test_the_skills_read_the_board_views.py, and its recorded head log at 5da16be129 reports '4 passed' EXIT=0 with the tree and literal command on its header; the base arm reports EXIT=4 'no tests ran' because the test file is new at fe67c2ee, and negative-control.log records the executed mutation reddening test_neither_skill_carries_the_lossless_report_recipe, an id the head arm passes.",
+    "fit": "The added prose follows each skill's existing voice and names the real production fields (ready_idle, primary_state, holds, head_note, ready_idle_sections, session_share) as reckon/mcp_views.py:1209-1295, reckon/roadmap.py:3408-3435 and reckon/crew/directory.py:444 do; no plan, sprint, ticket or version identifier was added to a path, symbol or comment, but skills/reckon-roadmap/SKILL.md:94 says 'three existing views' above a list of four.",
+    "goal_fidelity": "The goal is to retire the lossless-report recipe in favour of the ready-set filter, the critical-path fields, the directory view and the lanes view; skills/reckon-roadmap/SKILL.md:97-116 names all four and the recipe is gone from that file, while skills/reckon-build/references/sprint-orchestration.md:775-800 names them under section 12's Queue the chosen work, so the deliverable is present though the ready-set bullet names a filter no crew view serves (see FINDING at sprint-orchestration.md:778).",
+    "reuse": "The change retires a hand-join in favour of mechanisms the repository already owns and adds no second projection: the ready-set view is reckon/mcp_views.py:1209 ready_set_view, the critical-path rows are reckon/roadmap.py:3429 critical['links'], the owners are reckon/crew/directory.py:444 ready_idle_sections, and the test imports normalized from tests/test_skill_contracts.py rather than restating it.",
+    "scope_discipline": "Every path in the diff of fe67c2ee..5da16be129 is one of the declared write paths -- skills/reckon-build/references/sprint-orchestration.md, skills/reckon-roadmap/SKILL.md, tests/test_the_skills_read_the_board_views.py and docs/evidence/fragments/a-coordinator-sees-the-board/the-skills-read-the-board-views.html -- and no plan file, production module or concurrent node's path is touched."
+  },
+  "node": "review-of-the-skills-read-the-board-views-5da16be129a2",
+  "node:reviewed": "the-skills-read-the-board-views",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to retire the lossless-report recipe from the reckon-build and reckon-roadmap skills in favour of the ready-set filter, the critical-path fields, the directory and the lanes view; both skills now name all four at skills/reckon-build/references/sprint-orchestration.md:775-800 and skills/reckon-roadmap/SKILL.md:97-116, and the roadmap recipe that stood at skills/reckon-roadmap/SKILL.md:110-120 is deleted.\nVERDICT done_when: the done_when names tests/test_the_skills_read_the_board_views.py plus an executed negative control restoring the recipe line; the file holds four tests covering both skills' view names and the recipe's absence, the head log records '4 passed' EXIT=0, and negative-control.log records '1 failed, 3 passed' EXIT=1 on test_neither_skill_carries_the_lossless_report_recipe.\nVERDICT write_paths: the declared paths are the two skill files, the new test file, the evidence fragment and a figures directory; git show --stat on 38db965bc7 and 5da16be129 lists exactly the two skills, the test file and the fragment, so the diff sits inside the scope with the figures path unused.\nVERDICT manifest: read the reviewed run's manifest; status complete, commits 38db965bc7 and 5da16be129, tests line PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_skills_read_the_board_views.py, baseline_suite exit 4 with 0 failures at fe67c2ee and after_suite exit 0 with 0 failures at 5da16be129, negative_control_log named and its note accurate against the log.\nVERDICT diff: read both commits against base fe67c2ee: 38db965bc7 adds 25 lines of view guidance to the build skill, replaces the roadmap skill's hand-join and CLI recipe with four view-named steps, and adds a 64-line contract test; 5da16be129 adds the 100-line evidence fragment, and nothing else changes.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: skills/reckon-roadmap/SKILL.md:97-116 names the ready-set filter, the critical-path fields, the directory view and the lanes view and the recipe is gone there, and skills/reckon-build/references/sprint-orchestration.md:775-800 names the same four under section 12, so the deliverable is present though its ready-set bullet names a filter no crew view serves.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_the_skills_read_the_board_views.py is the gate the done_when names, gate-head.log records '4 passed' EXIT=0 at 5da16be129, gate-base.log records the honest EXIT=4 'no tests ran' at fe67c2ee, and negative-control.log records the executed mutation reddening an id the head arm passes.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat on 38db965bc7 and 5da16be129 lists only the two skills, tests/test_the_skills_read_the_board_views.py and the declared evidence fragment, with no plan file, production module or concurrent node's path touched.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_the_skills_read_the_board_views.py:46-55 and :62-64 redden when a view name or the retired recipe returns, which the negative control demonstrates, but every check is token or literal-prose presence, so a skill that names a view wrongly stays green.\nSCORE fit: 17\nJUSTIFICATION fit: the prose cites real production fields as reckon/mcp_views.py:1209-1295 and reckon/roadmap.py:3429 define them and adds no plan or ticket identifier, but skills/reckon-roadmap/SKILL.md:94 miscounts 'three existing views' above a list of four.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the mechanisms the repository already owns -- reckon/mcp_views.py:1209 ready_set_view, reckon/roadmap.py:3429 critical['links'], reckon/crew/directory.py:444 ready_idle_sections and reckon/mcp_views.py:1133 session_share -- and imports tests.test_skill_contracts.normalized rather than restating it.\nFINDING skills/reckon-build/references/sprint-orchestration.md:778 non-blocking: the bullet tells a coordinator the ready-idle set is 'the ready-set view filtered to rows with no live run (ready_idle)' and that the filter pages with the view's own cursor, but no crew view serves it -- reckon/mcp_views.py:4196-4619 names none, ready_set_view is reached unfiltered only through reckon/serve.py:1878 and filtered only through reckon/crew/directory.py:282 -- so a coordinator following the bullet has no call to make and cannot obtain the live_run/coordinator/plan_owner/critical_path fields it promises; skills/reckon-roadmap/SKILL.md:97-103 repeats the claim.\nFINDING skills/reckon-roadmap/SKILL.md:94 non-blocking: the sentence says 'three existing views answer it' and the numbered list below holds four (ready-idle set, directory view, critical path, lanes view), while the build skill at sprint-orchestration.md:775 and the plan section both count four.\nFINDING tests/test_the_skills_read_the_board_views.py:62 non-blocking: test_the_ready_idle_set_is_a_filter_on_the_ready_set_view asserts two literal prose substrings in the roadmap skill, so a correct rewording reddens it while an edit that keeps the phrases and states the wrong view still passes; it locks wording rather than the contract its docstring claims.",
+  "review_run_id": "r-20261106T065152136486-review-of-the-skills-read-the-board-views-5da16be129a2",
+  "reviewed_base_sha": "fe67c2ee8525395c74b0749337181ef2028efbc0",
+  "reviewed_head_sha": "5da16be129a2be6b126a9e5bfc6acadc715a0c95",
+  "reviewed_run_id": "r-20261027T103909465247-the-skills-read-the-board-views",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T07:30:00+00:00",
+  "total": 108
+}
