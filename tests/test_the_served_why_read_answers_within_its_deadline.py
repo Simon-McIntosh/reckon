@@ -85,26 +85,20 @@ class _PersistedMaps:
         self.creation: dict[tuple[str, str], git_dates._GitCreationEntry] = {}
         self.last_modified: dict[tuple[str, str], git_dates._GitCreationEntry] = {}
 
+    def store_creation(self, key, entry) -> None:
+        self.creation[key] = entry
+
+    def store_last_modified(self, key, entry) -> None:
+        self.last_modified[key] = entry
+
     def install(self, monkeypatch) -> None:
+        monkeypatch.setattr(git_dates, "_load_git_creation_cache", self.creation.get)
+        monkeypatch.setattr(git_dates, "_store_git_creation_cache", self.store_creation)
         monkeypatch.setattr(
-            git_dates,
-            "_load_git_creation_cache",
-            lambda key: self.creation.get(key),
+            git_dates, "_load_git_last_modified_cache", self.last_modified.get
         )
         monkeypatch.setattr(
-            git_dates,
-            "_store_git_creation_cache",
-            lambda key, entry: self.creation.__setitem__(key, entry),
-        )
-        monkeypatch.setattr(
-            git_dates,
-            "_load_git_last_modified_cache",
-            lambda key: self.last_modified.get(key),
-        )
-        monkeypatch.setattr(
-            git_dates,
-            "_store_git_last_modified_cache",
-            lambda key, entry: self.last_modified.__setitem__(key, entry),
+            git_dates, "_store_git_last_modified_cache", self.store_last_modified
         )
 
 

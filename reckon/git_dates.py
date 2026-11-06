@@ -353,9 +353,7 @@ def _git_first_committed(repo_dir: Path, docs_dir: Path) -> dict[str, int]:
             rel_docs,
         ]
     )
-    result = _run_git(
-        args, repo_dir, operation="history lookup", report_timeout=True
-    )
+    result = _run_git(args, repo_dir, operation="history lookup", report_timeout=True)
     if result is None:
         return dict(cached.times) if cached else {}
     if result is _GIT_QUERY_TIMED_OUT:
