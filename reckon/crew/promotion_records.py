@@ -330,6 +330,23 @@ def _default_gate_evidence_from_manifest(
     resolved_commits = tuple(str(sha).strip() for sha in commits if str(sha).strip())
     if str(verdict).strip().lower() != "passed":
         return resolved_gate, resolved_commits
+    # A command and the log it ran against describe one execution, so a caller
+    # that supplies one and leaves the other absent would get a check pairing
+    # its own command with evidence this fill derived from somewhere else. The
+    # half-filled case is refused rather than completed, because the completed
+    # check reads as a run nobody performed.
+    given_command = bool(str(resolved_gate.get("command") or "").strip())
+    given_log = bool(
+        str(resolved_gate.get("log_path") or "").strip()
+        or str(resolved_gate.get("log_digest") or "").strip()
+    )
+    if given_command != given_log:
+        raise CrewError(
+            "a gate check is a command and the evidence it ran against: pass "
+            "--gate-command and --gate-log-path (or --gate-log-digest) "
+            "together, or neither, because a command beside a log the "
+            "promotion found elsewhere records a run that never happened"
+        )
     manifest = _fresh_manifest(record)
     if manifest is None:
         return resolved_gate, resolved_commits
@@ -695,6 +712,7 @@ def _evaluate_suite_delta(
         updated = dict(record)
         updated["suite_delta_refusal"] = refusal
         _write_json(pointer_path(run_id), updated)
+
     manifest_present, fresh = _manifest_freshness(record)
     manifest: dict[str, Any] = {}
     if manifest_present and fresh:
@@ -1052,9 +1070,7 @@ def _retire_disposable_identity(record: Mapping[str, Any]) -> dict[str, Any]:
                     "identity_absent_member": member_id,
                 }
             data["members"] = [
-                entry
-                for entry in data["members"]
-                if str(entry.get("id")) != member_id
+                entry for entry in data["members"] if str(entry.get("id")) != member_id
             ]
             try:
                 ledger.write(
@@ -1077,7 +1093,6 @@ def _retire_disposable_identity(record: Mapping[str, Any]) -> dict[str, Any]:
         "identity_retired": False,
         "identity_withheld": "could not retire the disposable identity after retries",
     }
-
 
 
 from reckon.crew.promotion_checks import (

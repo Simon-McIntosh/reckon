@@ -260,3 +260,32 @@ def test_case5_an_explicit_gate_check_is_kept(repository: Path, tmp_path: Path) 
     assert written["command"] == command, written
     assert written["log_path"] != str(delivered), written
     assert Path(written["log_path"]).read_text(encoding="utf-8") == "EXIT=0\n"
+
+
+@pytest.mark.parametrize(
+    "half", ["command", "log"], ids=["command-without-log", "log-without-command"]
+)
+def test_case6_a_half_filled_gate_check_is_refused(
+    repository: Path, tmp_path: Path, half: str
+) -> None:
+    """One of the command and its log is refused rather than completed.
+
+    Completing it would pair the caller's half with evidence the promotion
+    derived from the record, which records a run nobody performed.
+    """
+    delivered, manifest = _stage_delivered(repository, tmp_path)
+    manifest.write_text(_manifest_body(), encoding="utf-8")
+    _review_pointer(repository, declared=[str(delivered)], manifest=manifest)
+    gate_log = tmp_path / "operator-gate.log"
+    gate_log.write_text("EXIT=0\n", encoding="utf-8")
+    given = (
+        {"command": "pytest -q tests/operator_check.py"}
+        if half == "command"
+        else {"log_path": str(gate_log), "exit_status": 0}
+    )
+
+    with pytest.raises(CrewError) as refusal:
+        _promote(repository, gate_check=given)
+
+    assert "gate-command" in str(refusal.value), refusal.value
+    assert "gate-log-path" in str(refusal.value), refusal.value
