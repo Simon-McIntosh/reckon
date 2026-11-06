@@ -1,0 +1,78 @@
+{
+  "added_failure_count": 3,
+  "added_failure_ids": [
+    "tests/test_a_pane_settles_when_no_work_is_live.py::test_a_settle_prints_no_line_even_with_an_outstanding_run",
+    "tests/test_follow_drain_line.py::test_a_drain_with_an_outstanding_run_prints_no_line",
+    "tests/test_the_pane_carries_counts_not_names.py::test_a_settle_with_outstanding_runs_prints_no_line_and_still_emits"
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/station.py:512",
+    "reckon/crew_follow_commands.py:584",
+    "reckon/crew_follow_commands.py:1554",
+    "reckon/crew_follow_commands.py:2109"
+  ],
+  "completed_at": "2026-11-06T14:15:42.764Z",
+  "dispatched_at": "2026-11-06T14:07:47Z",
+  "findings": [
+    {
+      "file": "reckon/crew/station_subscriber.py",
+      "line": 108,
+      "severity": "blocking",
+      "text": "removing the manifest-commits precondition makes delivered_run_owes_review hold the pane for a delivered run whose head cannot be resolved, which is the fixture of the three tests the head arm now fails: logs/head-arm.log records 481 passed and 3 failed against logs/base-arm.log's 477 passed and 0 failed, so the done_when's 'The test files importing reckon.crew.station_subscriber or reckon.crew_follow_commands add no failure against the base revision' is unmet and the node cannot land until a coordinator either extends scope to update those three tests or narrows the rule."
+    },
+    {
+      "file": "tests/test_a_follower_stays_while_a_review_is_owed.py",
+      "line": 435,
+      "severity": "non-blocking",
+      "text": "the new no-commit case asserts only that the pane holds and has no settle arm, and select_review_for_head (reckon/crew/recovery_review_subject.py:138) returns no review for an empty head, so a live pointer with no resolvable head reads review-missing permanently and its pane never settles; the liveness risk is untested and no case shows the hold can ever end."
+    },
+    {
+      "file": "reckon/crew/station_subscriber.py",
+      "line": 122,
+      "severity": "non-blocking",
+      "text": "the broad 'except Exception: return False' around obligations._review_duty_item settles the pane whenever the duty cannot be read, which is the fail-open direction the rule exists to prevent: a corrupt review record or a malformed live pointer ends the follower over an owed review instead of holding it."
+    },
+    {
+      "file": "reckon/crew/station_subscriber.py",
+      "line": 127,
+      "severity": "non-blocking",
+      "text": "_review_grace is a third copy of the unreconciled_run_grace derivation, already inlined at reckon/crew/obligations.py:1783 and reckon/crew/obligation_snapshot.py:1294, so a change to how the grace resolves has three places to land in and the pane could read a different grace than the view it claims to agree with."
+    }
+  ],
+  "findings_source": "review",
+  "item_verdicts": {
+    "call_sites": "The production paths reaching the change are reckon/crew/station.py:512 (the station tick writes its reading from live_work_populations), reckon/crew_follow_commands.py:584 (the fallback listing through population_has_live_work), :1554 (the settle sample) and :2109 (the watched check).",
+    "diff": "Read 6dedfa1b0c..52ac66ce2c commit by commit: three files, 148 insertions and 67 deletions, replacing the reconstructed scoring/tier rule with obligations._review_duty_item over one snapshot, one placements order and one grace per project, flipping the no-commit case from settle to hold, and advancing the injected clock in the settle waits.",
+    "done_when": "The five plan cases and both negative controls are present and recorded (logs/node-tests.log 7 passed EXIT=0; logs/negative-control.log both controls EXIT=1), but logs/head-arm.log records 481 passed and 3 failed against logs/base-arm.log's 477 passed and 0 failed, so the done_when's 'add no failure against the base revision' condition is unmet, and no ruff log was recorded for its ruff condition.",
+    "goal": "The node goal is to keep a follower while its session owes a review; reckon/crew/station_subscriber.py:108-124 now builds the run's review duty through obligations._review_duty_item and holds the pane when that duty reads review-missing, which does what the goal states.",
+    "manifest": "Read; it records both commits, the node gate 7 passed, both controls reproduced, base 477 passed, head 481 passed with 3 failed, the three failure ids and their attribution, and names those failures as gating the merge; status reads complete while blockers and wait_condition are both populated, and the three out-of-scope test updates sit under blockers rather than the outside_scope field.",
+    "write_paths": "The manifest declares reckon/crew/station_subscriber.py, reckon/crew_follow_commands.py, tests/test_a_follower_stays_while_a_review_is_owed.py, the evidence fragment and the figures directory; the diff at 52ac66ce2c touches only the module, the test and the fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "the hold and settle cases redden under the recorded controls (logs/negative-control.log: 4 and 3 failures), but the new no-commit case at tests/test_a_follower_stays_while_a_review_is_owed.py:435 asserts only the hold and has no settle arm.",
+    "evidence": "logs/node-tests.log (7 passed, EXIT=0) and logs/negative-control.log (both controls EXIT=1) are recorded, but logs/head-arm.log records 3 failures against a clean logs/base-arm.log (477 passed), so the done_when's 'add no failure against the base revision' is unmet, and no ruff receipt exists for its 'Ruff adds no findings on the staged paths'.",
+    "fit": "reckon/crew/station_subscriber.py:109 reaches the private obligations._review_duty_item across a module boundary, coupling this module to an underscore symbol the plan asked it to read through.",
+    "goal_fidelity": "reckon/crew/station_subscriber.py:108-124 builds the run's duty through obligations._review_duty_item and holds exactly on kind review-missing, which is the plan's Deliverable, but it widens the hold past the five cases to a delivery whose head cannot be resolved.",
+    "reuse": "delivered_run_owes_review delegates to the obligations owner rather than restating the rule, but reckon/crew/station_subscriber.py:127 adds a third copy of the unreconciled_run_grace derivation already inlined at reckon/crew/obligations.py:1783 and reckon/crew/obligation_snapshot.py:1294.",
+    "scope_discipline": "git show --stat 52ac66ce2c lists reckon/crew/station_subscriber.py, tests/test_a_follower_stays_while_a_review_is_owed.py and the evidence fragment, every one inside the manifest's declared write paths; the granted reckon/crew_follow_commands.py is untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to keep a follower while its session owes a review; reckon/crew/station_subscriber.py:108-124 now builds the run's review duty through obligations._review_duty_item and holds the pane when that duty reads review-missing, which does what the goal states.\nVERDICT done_when: The five plan cases and both negative controls are present and recorded (logs/node-tests.log 7 passed EXIT=0; logs/negative-control.log both controls EXIT=1), but logs/head-arm.log records 481 passed and 3 failed against logs/base-arm.log's 477 passed and 0 failed, so the done_when's 'add no failure against the base revision' condition is unmet, and no ruff log was recorded for its ruff condition.\nVERDICT write_paths: The manifest declares reckon/crew/station_subscriber.py, reckon/crew_follow_commands.py, tests/test_a_follower_stays_while_a_review_is_owed.py, the evidence fragment and the figures directory; the diff at 52ac66ce2c touches only the module, the test and the fragment, all inside them.\nVERDICT manifest: Read; it records both commits, the node gate 7 passed, both controls reproduced, base 477 passed, head 481 passed with 3 failed, the three failure ids and their attribution, and names those failures as gating the merge; status reads complete while blockers and wait_condition are both populated, and the three out-of-scope test updates sit under blockers rather than the outside_scope field.\nVERDICT diff: Read 6dedfa1b0c..52ac66ce2c commit by commit: three files, 148 insertions and 67 deletions, replacing the reconstructed scoring/tier rule with obligations._review_duty_item over one snapshot, one placements order and one grace per project, flipping the no-commit case from settle to hold, and advancing the injected clock in the settle waits.\nCALL_SITES: reckon/crew/station.py:512, reckon/crew_follow_commands.py:584, reckon/crew_follow_commands.py:1554, reckon/crew_follow_commands.py:2109\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/station_subscriber.py:108-124 builds the run's duty through obligations._review_duty_item and holds exactly on kind review-missing, which is the plan's Deliverable, but it widens the hold past the five cases to a delivery whose head cannot be resolved.\nSCORE evidence: 10\nJUSTIFICATION evidence: logs/node-tests.log (7 passed, EXIT=0) and logs/negative-control.log (both controls EXIT=1) are recorded, but logs/head-arm.log records 3 failures against a clean logs/base-arm.log (477 passed), so the done_when's 'add no failure against the base revision' is unmet, and no ruff receipt exists for its 'Ruff adds no findings on the staged paths'.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 52ac66ce2c lists reckon/crew/station_subscriber.py, tests/test_a_follower_stays_while_a_review_is_owed.py and the evidence fragment, every one inside the manifest's declared write paths; the granted reckon/crew_follow_commands.py is untouched.\nSCORE durability: 15\nJUSTIFICATION durability: the hold and settle cases redden under the recorded controls (logs/negative-control.log: 4 and 3 failures), but the new no-commit case at tests/test_a_follower_stays_while_a_review_is_owed.py:435 asserts only the hold and has no settle arm.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/station_subscriber.py:109 reaches the private obligations._review_duty_item across a module boundary, coupling this module to an underscore symbol the plan asked it to read through.\nSCORE reuse: 16\nJUSTIFICATION reuse: delivered_run_owes_review delegates to the obligations owner rather than restating the rule, but reckon/crew/station_subscriber.py:127 adds a third copy of the unreconciled_run_grace derivation already inlined at reckon/crew/obligations.py:1783 and reckon/crew/obligation_snapshot.py:1294.\nFINDING reckon/crew/station_subscriber.py:108 blocking: removing the manifest-commits precondition makes delivered_run_owes_review hold the pane for a delivered run whose head cannot be resolved, which is the fixture of the three tests the head arm now fails: logs/head-arm.log records 481 passed and 3 failed against logs/base-arm.log's 477 passed and 0 failed, so the done_when's 'The test files importing reckon.crew.station_subscriber or reckon.crew_follow_commands add no failure against the base revision' is unmet and the node cannot land until a coordinator either extends scope to update those three tests or narrows the rule.\nFINDING tests/test_a_follower_stays_while_a_review_is_owed.py:435 non-blocking: the new no-commit case asserts only that the pane holds and has no settle arm, and select_review_for_head (reckon/crew/recovery_review_subject.py:138) returns no review for an empty head, so a live pointer with no resolvable head reads review-missing permanently and its pane never settles; the liveness risk is untested and no case shows the hold can ever end.\nFINDING reckon/crew/station_subscriber.py:122 non-blocking: the broad 'except Exception: return False' around obligations._review_duty_item settles the pane whenever the duty cannot be read, which is the fail-open direction the rule exists to prevent: a corrupt review record or a malformed live pointer ends the follower over an owed review instead of holding it.\nFINDING reckon/crew/station_subscriber.py:127 non-blocking: _review_grace is a third copy of the unreconciled_run_grace derivation, already inlined at reckon/crew/obligations.py:1783 and reckon/crew/obligation_snapshot.py:1294, so a change to how the grace resolves has three places to land in and the pane could read a different grace than the view it claims to agree with.\n",
+  "review_run_id": "r-20261106T140346828267-review-of-keep-a-follower-while-its-session-owes-a-review-52ac66ce2c59",
+  "reviewed_base_sha": "6dedfa1b0cea0ed788ed9c84d2ff7c342522da16",
+  "reviewed_head_sha": "52ac66ce2c593b5d3140264fe3ef75ac6a13bdb1",
+  "reviewed_run_id": "r-20261106T121146656787-keep-a-follower-while-its-session-owes-a-review",
+  "scores": {
+    "durability": 15,
+    "evidence": 10,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T14:23:18.468598+00:00",
+  "total": 94
+}
