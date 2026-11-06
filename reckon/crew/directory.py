@@ -314,6 +314,101 @@ def _ready_idle_rows_from_owners(
     return rows
 
 
+def _last_dispatch_by_session(project: str) -> dict[str, str]:
+    """Each session's most recent dispatch, from the ledger's own rows.
+
+    The plan-coordinator resolver reads the same rows to name a plan's
+    coordinator, so the time a board row shows is the ledger's dispatch stamp
+    rather than a second reading of the run pointers — a session whose runs
+    have all ended still has its last dispatch on record.
+    """
+    from reckon._timestamps import parse_utc
+
+    latest: dict[str, tuple[float, str]] = {}
+    for row in ledger.run_rows_from_documents(project):
+        session = str(row.get("session") or "").strip()
+        if not session:
+            continue
+        stamp = str(row.get("dispatched_at") or row.get("created_at") or "")
+        instant = parse_utc(stamp)
+        if instant is None:
+            continue
+        held = latest.get(session)
+        if held is None or instant.timestamp() > held[0]:
+            latest[session] = (instant.timestamp(), stamp)
+    return {session: stamp for session, (_at, stamp) in latest.items()}
+
+
+def _census_rows(
+    project: str | None, listed_sessions: Iterable[str]
+) -> list[dict[str, Any]]:
+    """The sessions a live host's census names, with no runs in flight.
+
+    A coordinator that has published nothing back is invisible to every other
+    read: its runs are all terminal, so no live pointer names it. Its host is
+    still running and its census still names the session, which is the one
+    record that the session exists. Each such session is listed with what the
+    census knows — its project and the time its follower settled — and with its
+    last dispatch from the ledger, so a stalled coordinator can be seen and
+    asked.
+
+    A session already listed from a run is left to that row: this adds owners
+    the run grouping cannot see, and never a second row for one session.
+    """
+    from reckon.crew import session_host
+
+    listed = set(listed_sessions)
+    by_pair: dict[tuple[str, str], float | None] = {}
+    for host in session_host.live_census():
+        for child in host.get("children") or ():
+            if not isinstance(child, Mapping):
+                continue
+            name = str(child.get("project") or "")
+            session = str(child.get("session") or "")
+            if not name or not session:
+                continue
+            if project not in (None, "*") and name != project:
+                continue
+            if session in listed:
+                continue
+            settled_at = child.get("settled_at")
+            key = (name, session)
+            held = by_pair.get(key)
+            # The latest settle says how long the session has held no work, so
+            # a pair the host settled more than once keeps that one.
+            if isinstance(settled_at, int | float):
+                by_pair[key] = (
+                    float(settled_at) if held is None else max(held, float(settled_at))
+                )
+            else:
+                by_pair.setdefault(key, None)
+    if not by_pair:
+        return []
+    dispatches: dict[str, dict[str, str]] = {}
+    for name in sorted({name for name, _session in by_pair}):
+        dispatches[name] = _last_dispatch_by_session(name)
+    rows: list[dict[str, Any]] = []
+    for (name, session), settled_at in sorted(by_pair.items()):
+        row: dict[str, Any] = {
+            "session": session,
+            "project": name,
+            "repository": None,
+            "plans": [],
+            "sprints": [],
+            "state": "idle",
+            "live_node_count": 0,
+            "runs": [],
+            "census_source": "session-host",
+        }
+        last_dispatch = dispatches.get(name, {}).get(session)
+        if last_dispatch:
+            row["last_dispatch"] = last_dispatch
+        if settled_at is not None:
+            row["settled_at"] = settled_at
+        rows.append(row)
+    return rows
+
+
 def directory(
     project: str | None = None,
     *,
@@ -465,6 +560,8 @@ def directory(
         }
         for session in sorted(set(idle_by_session) - listed_sessions)
     )
+
+    coordinators.extend(_census_rows(project, listed_sessions))
 
     result: dict[str, Any] = {
         "ok": True,

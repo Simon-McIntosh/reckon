@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="evidence-project" content="reckon">
+<meta name="plan" content="a-coordinator-sees-the-board">
+<meta name="plan-node" content="a-coordinator-with-nothing-in-flight-is-on-the-board">
+<title>a-coordinator-with-nothing-in-flight-is-on-the-board — landed</title>
+</head>
+<body>
+<main class="plan-doc">
+<h2 id="a-coordinator-with-nothing-in-flight-is-on-the-board-what">What landed</h2>
+<p>A session whose runs have all ended and whose follower has settled was
+named nowhere: the run pointers were all gone, so nothing on the board said the
+session existed. The session host's census in
+<code>reckon/crew/session_host.py</code> kept only children with a pid, and a
+settled child has none. It now keeps a settled child with its project, its
+session, a null <code>pid</code>, and <code>settled_at</code>, the time its
+follower left. <code>live_census(environ=None)</code> reads every host record
+whose owner process still lives and skips a host that has stopped, and
+<code>record()</code> drops a settled child again when it is re-armed, so a
+session that dispatches resumes carrying one child rather than two.</p>
+<p>The board in <code>reckon/crew/directory.py</code> lists each session the
+census names that the run grouping cannot see, with
+<code>live_node_count: 0</code>, no runs, <code>state: "idle"</code>, its
+project, the time its follower settled, and <code>last_dispatch</code> read
+from the ledger rows the plan-coordinator resolver uses. A session already
+listed from a run is left to that row, so one session never appears twice, and
+a host whose owner has exited names no session at all.</p>
+
+<h2 id="a-coordinator-with-nothing-in-flight-is-on-the-board-measure">Measure</h2>
+<p>Gate: <code>tests/test_a_coordinator_with_nothing_in_flight_is_on_the_board.py</code>
+plus <code>tests/test_the_board_extends_the_directory.py</code> — 8 passed,
+EXIT=0, at the head tree.</p>
+<p>Negative control: settled children dropped from the census, restoring the
+pid-only filter. The idle coordinator vanished from the board and the case
+failed on the missing <code>idle-coordinator</code> row; the log is named in
+the manifest's <code>negative_control_log</code> line.</p>
+</main>
+</body>
+</html>
