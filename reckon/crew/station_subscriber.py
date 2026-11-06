@@ -28,7 +28,7 @@ from __future__ import annotations
 
 import json
 import time
-from collections.abc import Iterable, Iterator, Mapping
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from datetime import UTC, date, datetime
 from typing import Any
 
@@ -64,7 +64,14 @@ SKIPPED_DAYS_TEXT = (
 LIVE_WORK_KEY = "live-work"
 
 
-def delivered_run_owes_review(pointer: Mapping[str, Any]) -> bool:
+def delivered_run_owes_review(
+    pointer: Mapping[str, Any],
+    *,
+    now: Any = None,
+    live_pointers: Sequence[Mapping[str, Any]] | None = None,
+    placements: Mapping[str, Mapping[str, int]] | None = None,
+    grace: int | None = None,
+) -> bool:
     """Whether an ended run still owes the review that only a pane can compose.
 
     A delivered run is terminal to the has-live-work rule, yet the review it
@@ -72,35 +79,64 @@ def delivered_run_owes_review(pointer: Mapping[str, Any]) -> bool:
     Reading every terminal run as drained therefore ends the pane over exactly
     the work whose composer lives in it, and the review is never composed.
 
-    The judgement is the obligations' own, not one re-derived here: a run whose
-    classifier reading carries the review-missing duty owes a review. That duty
-    already exempts a run whose review tier is ``none`` -- an evidence-only
-    delivery asks the merged-head gate instead -- so the tier is read through
-    the resolver the duty itself uses rather than restated. A run that has not
-    delivered, or whose review is already stored, owes nothing and leaves its
-    pane to settle.
+    The judgement is the obligations' own and nothing is re-derived here: the
+    run's review duty is built by :func:`reckon.crew.obligations._review_duty_item`,
+    the same call the obligations view makes, and the pane is held exactly when
+    that duty reads ``review-missing``. Every exemption the duty carries is
+    therefore carried here too, including the run whose review tier is ``none``
+    (an evidence-only delivery asks the merged-head gate instead, and its duty
+    reads ``review-ready``), a review already queued for the head, and a
+    delivered review the lane refused. A run whose command is not the duty's to
+    print leaves its pane to settle.
 
-    A review reads the head the run delivered, so a manifest naming no commit
-    has left nothing for one to read: the run still needs the coordinator, and
-    the obligations name it, but no review is owed and the pane is not held for
-    one. The head is taken from the classifier's own reading of the manifest,
-    which is the same list the tier resolver is asked about.
+    ``now``, ``live_pointers`` and ``placements`` are the caller's snapshot of
+    one derivation, so a pass over many pointers asks one question of one read
+    rather than listing the live directory once per pointer. A caller holding
+    none lets the duty read them for itself.
     """
-    from reckon import review_tiers
     from reckon.crew import obligations, recovery
 
     try:
         row = recovery.classify_pointer(pointer)
-    except Exception:  # noqa: BLE001 - no readable head, so no review to hold for
+    except Exception:  # noqa: BLE001 - an unreadable delivery has no duty to read
         return False
-    # ``scoring`` is the classifier's reading for a delivered run whose review
-    # is not yet stored; it is the classification the obligations map to
-    # ``review-missing``. Any other reading has no review outstanding.
-    if str(row.get("classification") or "") != "scoring":
+    if (
+        str(row.get("classification") or "")
+        not in obligations.REVIEW_CLASSIFICATION_KINDS
+    ):
         return False
-    if not list(row.get("manifest_commits") or []):
+    try:
+        item = obligations._review_duty_item(
+            str(pointer.get("project") or ""),
+            row,
+            pointer,
+            now=now if now is not None else obligations._utc_now(),
+            grace=(
+                grace
+                if grace is not None
+                else _review_grace(str(pointer.get("project") or ""))
+            ),
+            live_pointers=live_pointers,
+            placements=placements,
+        )
+    except Exception:  # noqa: BLE001 - a duty that cannot be read is not missing
         return False
-    return obligations._review_tier_for_duty(row, pointer) != review_tiers.NONE
+    return bool(item) and str(item.get("kind") or "") == "review-missing"
+
+
+def _review_grace(project: str) -> int:
+    """The unreconciled-run grace the obligations view derives its duties with."""
+    from reckon import flight
+    from reckon.crew import node
+
+    try:
+        resolved = flight.resolve(project)
+        config = resolved.config
+        return node.parse_duration(
+            str((config.get("fences") or {}).get("unreconciled_run_grace") or "15m")
+        )
+    except Exception:  # noqa: BLE001 - the view's own default stands
+        return node.parse_duration("15m")
 
 
 def live_work_populations(
@@ -123,10 +159,39 @@ def live_work_populations(
     project_live = False
     unowned = False
     sessions: set[str] = set()
-    for pointer in pointers:
-        if str(
-            pointer.get("phase") or ""
-        ) in node._TERMINAL_RUN_PHASES and not delivered_run_owes_review(pointer):
+    snapshot = list(pointers)
+    # One read serves every pointer: the duties are asked of one snapshot of the
+    # live directory and one ordering, so two runs in one pass cannot be judged
+    # against two different views of the fleet.
+    duty_inputs: dict[str, Any] = {}
+    if any(
+        str(pointer.get("phase") or "") in node._TERMINAL_RUN_PHASES
+        for pointer in snapshot
+    ):
+        from reckon.crew import obligations, queue_admission
+
+        duty_inputs["now"] = obligations._utc_now()
+        duty_inputs["live_pointers"] = snapshot
+        try:
+            duty_inputs["placements"] = queue_admission.queued_placements(
+                snapshot, now=duty_inputs["now"]
+            )
+        except Exception:  # noqa: BLE001 - the duty reads the ordering itself
+            duty_inputs["placements"] = None
+    graces: dict[str, int] = {}
+    for pointer in snapshot:
+        if str(pointer.get("phase") or "") not in node._TERMINAL_RUN_PHASES:
+            project_live = True
+            owner = str(pointer.get("session") or "")
+            if owner:
+                sessions.add(owner)
+            else:
+                unowned = True
+            continue
+        project = str(pointer.get("project") or "")
+        if project not in graces:
+            graces[project] = _review_grace(project)
+        if not delivered_run_owes_review(pointer, grace=graces[project], **duty_inputs):
             continue
         project_live = True
         owner = str(pointer.get("session") or "")

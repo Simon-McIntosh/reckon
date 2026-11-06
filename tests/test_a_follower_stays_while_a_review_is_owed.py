@@ -174,6 +174,24 @@ def _wait_until(predicate, *, timeout: float, description: str) -> None:
     pytest.fail(f"timed out after {timeout:g}s waiting for {description}")
 
 
+def _wait_for_settle(arming: _Arming, *, description: str) -> None:
+    """Wait for a settle while keeping the pane's clock moving.
+
+    The grace is measured on the pane's clock, so a wait that only sleeps in
+    real time can never see it elapse: the pane takes its reading, finds the
+    population empty, and needs its clock to move past the grace before it
+    ends. Advancing one grace per real-time poll lets the sample that starts
+    the emptiness and the sample that ends it both land.
+    """
+    deadline = time.monotonic() + 15.0
+    while time.monotonic() < deadline:
+        if arming.settles():
+            return
+        arming.clock.advance(GRACE)
+        time.sleep(0.05)
+    pytest.fail(f"timed out waiting for {description}")
+
+
 class _Arming:
     """One follower generator consumed on a thread, with its own clock."""
 
@@ -323,10 +341,8 @@ def test_the_station_arm_settles_once_the_review_is_stored(
             _store_review(home)
             _publish(store, [_read_pointer(RUN)])
             _advance_past_grace(arming)
-            _wait_until(
-                arming.settles,
-                timeout=5.0,
-                description="the pane to settle once the review was stored",
+            _wait_for_settle(
+                arming, description="the pane to settle once the review was stored"
             )
         finally:
             arming.end()
@@ -353,10 +369,8 @@ def test_the_fallback_arm_settles_once_the_review_is_stored(
 
             _store_review(home)
             _advance_past_grace(arming)
-            _wait_until(
-                arming.settles,
-                timeout=5.0,
-                description="the pane to settle once the review was stored",
+            _wait_for_settle(
+                arming, description="the pane to settle once the review was stored"
             )
         finally:
             arming.end()
@@ -384,22 +398,24 @@ def test_a_delivery_that_owes_no_review_settles(home: Path, tmp_path: Path) -> N
             _deliver(home, RUN, changed_paths=EVIDENCE_PATH)
             _publish(store, [_read_pointer(RUN)])
             _advance_past_grace(arming)
-            _wait_until(
-                arming.settles,
-                timeout=5.0,
+            _wait_for_settle(
+                arming,
                 description="the pane to settle over an evidence-only delivery",
             )
         finally:
             arming.end()
 
 
-def test_a_delivery_naming_no_commit_settles(home: Path, tmp_path: Path) -> None:
-    """A delivery that names no head owes no review: there is nothing to read.
+def test_a_delivery_naming_no_commit_still_holds_the_pane(
+    home: Path, tmp_path: Path
+) -> None:
+    """A delivery whose manifest names no commit holds the pane while it is owed.
 
-    The coordinator still owes this run its promotion, and the obligations name
-    it, but a review reads the head the run delivered. A manifest that names no
-    commit has delivered none, so holding the pane would wait for a review no
-    reflex could compose.
+    The pane follows the obligations rather than a rule of its own about what a
+    delivery must carry: while the obligations call this run's review missing,
+    the review is uncomposed and the reflex that composes it is this follower.
+    A manifest can omit its commits and still deliver work a review reads, so a
+    pane that settled here would end over a duty the coordinator is still shown.
     """
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
         assert acquired
@@ -416,10 +432,9 @@ def test_a_delivery_naming_no_commit_settles(home: Path, tmp_path: Path) -> None
             _deliver(home, RUN, commits=None)
             _publish(store, [_read_pointer(RUN)])
             _advance_past_grace(arming)
-            _wait_until(
-                arming.settles,
-                timeout=5.0,
-                description="the pane to settle over a delivery naming no commit",
+            assert not arming.settles(), (
+                "the pane settled over a delivery the obligations call missing "
+                "its review"
             )
         finally:
             arming.end()
@@ -442,10 +457,8 @@ def test_a_drained_session_settles(home: Path, tmp_path: Path) -> None:
             crew.pointer_path(RUN).unlink()
             _publish(store, [])
             _advance_past_grace(arming)
-            _wait_until(
-                arming.settles,
-                timeout=5.0,
-                description="the pane to settle once the session drained",
+            _wait_for_settle(
+                arming, description="the pane to settle once the session drained"
             )
         finally:
             arming.end()
