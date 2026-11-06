@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-monitor-reads-each-fact-once">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;descoped&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;descoped&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
   <title>A Landing Never Waits On A Shared Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1">
-<meta name="plan-modified" content="2026-11-03">
+<meta name="plan-version" content="2">
+<meta name="plan-modified" content="2026-11-06">
 </head>
 <body>
   <main class="plan-doc">
@@ -75,6 +75,10 @@
     did not reproduce and how often it was tried.</p>
 
     
+
+    <h2 id="s5">§5 — A promotion&#x27;s commit retries a held index lock and never leaves writes staged</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> reckon-e0 relayed this on 6 November from nova-39. At 07:45:02Z nova-39 ran <code>crew complete --no-commit</code> on review run <code>r-20261106T064850727420-review-of-bank-solve-trace-1e446dd29abe-figure</code> while a peer promotion ran in the same checkout. The commit step failed with &ldquo;File exists&rdquo; on <code>.git/index.lock</code>. <code>landing.json</code> records step <code>commit</code>, head <code>b97d2301f</code>, and <code>rollback: false</code> for both paths. So two forward writes stayed staged in the shared index: the plan file at plan-version 169 and the new <code>docs/state</code> run JSON. The run stayed unpromoted, and the CLI's only sign was the tail line &ldquo;landing writes could not be restored&rdquo; (<code>reckon/crew/promotion_scope.py</code> near line 2158). A plain retry a minute later promoted it and landed <code>31dfb3564</code>. For that minute, any commit in the checkout that named no paths would have swept in a half-landed plan. Crew-runtime-positive-controls §39 says a failed landing commit leaves nothing staged, and scoring-should-stop-a-promotion §17 says a landing write waits out a briefly held lock. This path, the commit step in <code>_commit_landing_writes</code> (near line 2307), does neither. §2, which removes the shared index from landings, is descoped, so this section closes the gap within the shared index.</p><p><strong>Deliverable.</strong></p><ul><li>The commit step in <code>_commit_landing_writes</code> retries on <code>.git/index.lock</code> the way <code>crew merge</code> does, with the same bound and backoff.</li><li>When the retries are exhausted it unstages the forward writes it staged and restores their tracked content before returning.</li><li>When forward writes do stay staged, the command fails with an error that names each staged path and the remedy, not a tail line.</li></ul><p><strong>Done when</strong> a new <code>tests/test_a_promotion_commit_survives_a_held_index_lock.py</code> shows three things on a temporary repository:</p><ul><li>With <code>.git/index.lock</code> held for less than the bound, the promotion commits and lands.</li><li>With the lock held past the bound, the promotion fails, leaves nothing staged, and leaves the plan file's content as it was at HEAD.</li><li>When the unstage itself is forced to fail, the error names both staged paths.</li></ul><p>One negative control per arm: removing the retry makes the first case fail; removing the unstage leaves the second case's paths staged; and restoring the tail line makes the third case name no paths. The test files importing <code>reckon.crew.promotion_scope</code> add no failure against the base revision. Ruff adds no findings on the staged paths. Every log is under the run directory, starts with its revision and the literal command, and ends in <code>EXIT=</code>. Write paths: <code>reckon/crew/promotion_scope.py</code> and the new test.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
