@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="691">
+<meta name="plan-version" content="692">
 <meta name="plan-modified" content="2026-11-06">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1325,13 +1325,16 @@ Both cases run under the file's existing temporary crew home.</li>
     <div class="r-comment-body"><p>Independent review of r-20261106T121146659138 over c6fd4d8afc..08e404d598 scored goal_fidelity 18, evidence 18, scope_discipline 19, durability 18, fit 18, reuse 16, with three non-blocking findings and zero added failures.</p></div>
 </div>
 <div class="r-comment" data-section="s110" data-id="c-run-r-20261106T121146659138-rearm-a-sessions-follower-when-its-run-is-resumed" data-who="reckon-build" data-when="2026-11-06T13:42:24Z">
-    <div class="r-comment-body"><p>The resume path now asks the pair&#x27;s own session host for a follower once the launch is recorded, through the same request line a dispatch writes and through one shared bounded ask-and-wait, and reports `follower_rearmed` plus a `follower_note` on the resume result and the `crew resume` payload, so a session whose last action was a resume keeps a follower after its host child settles; the answer is the calling host&#x27;s own live child for the pair, never another host&#x27;s live registration, and a resume issued from another session asks no host and names the session that owns the pair. Measure: tests/test_a_resume_rearms_its_follower.py is 3 failed at base 97c71c15d6 and 3 passed at head; all three declared negative controls fail their named case.</p></div>
+    <div class="r-comment-body"><p>The resume path now asks the pair's own session host for a follower once the launch is recorded, through the same request line a dispatch writes and through one shared bounded ask-and-wait, and reports `follower_rearmed` plus a `follower_note` on the resume result and the `crew resume` payload, so a session whose last action was a resume keeps a follower after its host child settles; the answer is the calling host's own live child for the pair, never another host's live registration, and a resume issued from another session asks no host and names the session that owns the pair. Measure: tests/test_a_resume_rearms_its_follower.py is 3 failed at base 97c71c15d6 and 3 passed at head; all three declared negative controls fail their named case.</p></div>
 </div>
 <div class="r-comment" data-section="s111" data-id="c-run-r-20261106T130941109460-review-of-keep-a-follower-while-its-session-owes-a-review-6dedfa1b0cea" data-who="reckon-build" data-when="2026-11-06T13:24:53.788Z">
     <div class="r-comment-body"><p>Review of r-20261106T121146656787-keep-a-follower-while-its-session-owes-a-review at head 6dedfa1b0cea0ed788ed9c84d2ff7c342522da16 stored a parsed record scoring goal_fidelity 17, evidence 18, scope_discipline 19, durability 18, fit 15, reuse 18 with two non-blocking findings; both written records pass crew check --review.</p></div>
 </div>
 <div class="r-comment" data-section="s111" data-id="c-run-r-20261106T140346828267-review-of-keep-a-follower-while-its-session-owes-a-review-52ac66ce2c59" data-who="reckon-build" data-when="2026-11-06T14:15:42.764Z">
     <div class="r-comment-body"><p>Independent review of r-20261106T121146656787-keep-a-follower-while-its-session-owes-a-review over the commits gained since the prior review (base 6dedfa1b0cea0ed788ed9c84d2ff7c342522da16, head 52ac66ce2c593b5d3140264fe3ef75ac6a13bdb1): parsed record scoring all six dimensions (goal_fidelity 17, evidence 10, scope_discipline 20, durability 15, fit 16, reuse 16), added_failure_count 3 with the three ids from the reviewed run's own arms, one blocking and three non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s111" data-id="c-run-r-20261106T145058045505-review-of-keep-a-follower-while-its-session-owes-a-review-002737cd3d37" data-who="reckon-build" data-when="2026-11-06T15:01:17.141Z">
+    <div class="r-comment-body"><p>Reviewed 52ac66ce2c593b5d3140264fe3ef75ac6a13bdb1..002737cd3d37669918b100263c4277f06a4112c5 (one commit, three files) and stored a parsed review scoring goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 16, reuse 15, with added_failure_count 0 and three non-blocking findings; the prior review&#x27;s blocking finding is resolved because logs/head-arm.log now records 485 passed against logs/base-arm.log&#x27;s 477 passed, both EXIT=0.</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-s12-deferred-on-scheduling-surface" data-who="reckon-build" data-when="2026-10-17T05:30:00Z">
     <div class="r-comment-body"><p>Deferred. The plan review of 2026-10-17 found §12 declared implementable while its own text says the coverage figure belongs to work-scheduling-surface §3, which is unbuilt. Its done-when asks for a value from the roadmap's own derivation, and that derivation does not exist yet. §12 becomes implementable when work-scheduling-surface §3 lands.</p></div>

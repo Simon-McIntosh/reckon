@@ -1,0 +1,68 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/station.py:512",
+    "reckon/crew_follow_commands.py:584",
+    "reckon/crew_follow_commands.py:1554",
+    "reckon/crew_follow_commands.py:2109"
+  ],
+  "completed_at": "2026-11-06T15:01:17.141Z",
+  "dispatched_at": "2026-11-06T14:53:31Z",
+  "findings": [
+    {
+      "file": "reckon/crew/station_subscriber.py",
+      "line": 134,
+      "severity": "non-blocking",
+      "text": "the new warning fires once per pointer per live_work_populations pass, and the station calls that pass on every tick (reckon/crew/station.py:512) at a default interval of one second (reckon/crew/station.py:556), so a pointer whose duty cannot be read for as long as it stays live floods the log with one warning per second per pointer; a once-per-run dedupe would keep the record visible without the flood."
+    },
+    {
+      "file": "reckon/crew/station_subscriber.py",
+      "line": 155,
+      "severity": "non-blocking",
+      "text": "_review_grace still restates str((config.get(\"fences\") or {}).get(\"unreconciled_run_grace\") or \"15m\"), the same derivation inlined at reckon/crew/obligations.py:1784 and reckon/crew/obligation_snapshot.py:1294, so the prior review's third-copy finding is only half addressed: the imports were rerouted through obligations but the derivation itself was never lifted into one named owner."
+    },
+    {
+      "file": "reckon/crew/station_subscriber.py",
+      "line": 115,
+      "severity": "non-blocking",
+      "text": "the head is resolved here with recovery._review_head_and_tree(pointer) and again inside obligations._review_duty_item at reckon/crew/obligations.py:1145, which that function calls on the same pointer, so every terminal delivered run pays two head resolutions per station tick, each a git read while the worktree is intact; the duty item already carries the head it resolved, so reading that field would be one resolution and one rule."
+    }
+  ],
+  "findings_source": "review",
+  "item_verdicts": {
+    "call_sites": "The production paths reaching the change are reckon/crew/station.py:512 (the station tick writes the settle reading from live_work_populations), reckon/crew_follow_commands.py:584 (population_has_live_work delegating to the rule), :1554 (the fallback listing) and :2109 (the watched check); reckon/cli.py:353 re-exports the helper.",
+    "diff": "Read 52ac66ce2c..002737cd3d commit by commit: one commit, three files, 116 insertions and 36 deletions, adding a head precondition and a warning on an unreadable duty, rerouting _review_grace's imports through obligations, giving every fixture a resolvable head, flipping the no-commit case from hold to settle, and adding a case for a duty that raises.",
+    "done_when": "The done_when asks for \u00a7111's cases, both negative controls failing their case, no failure against the base revision at -n 4, and no ruff findings on the staged paths; logs/node-tests.log (8 passed EXIT=0), logs/negative-control.log (4 and 3 failing ids, EXIT=1), logs/base-arm.log (477 passed EXIT=0) and logs/head-arm.log (485 passed EXIT=0) satisfy the first three, and this review ran ruff check and ruff format --check over the two staged Python paths (All checks passed, 2 files already formatted).",
+    "goal": "The node goal is to keep a follower while its session owes a review; reckon/crew/station_subscriber.py:96-146 now holds the pane exactly when the obligations call the run's review review-missing and the run's head resolves, so the goal's rule survives and its one unbounded case is closed.",
+    "manifest": "Read; it records the three commits, the node gate 8 passed, both controls with their failing ids, base 477 against head 485 with no failure in either arm, and status complete with blockers none; its baseline_suite and after_suite command fields point at the log's own literal command line rather than repeating it, which is a recording shape defect rather than a missing measurement.",
+    "write_paths": "The manifest declares reckon/crew/station_subscriber.py, reckon/crew_follow_commands.py, tests/test_a_follower_stays_while_a_review_is_owed.py, the evidence fragment and a figures directory; the commits from 97c71c15d6 to 002737cd3d touch only the module, the test and the fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "restoring the pre-002737cd3d rule (deleting the 'if not head: return False' at reckon/crew/station_subscriber.py:116) makes tests/test_a_follower_stays_while_a_review_is_owed.py:459 wait 15 seconds for a settle that never comes and fail, and removing the warning at :127 makes the caplog assertion at :466 fail while the settle still passes.",
+    "evidence": "logs/node-tests.log records 8 passed EXIT=0 at 002737cd3d, logs/base-arm.log 477 passed EXIT=0 and logs/head-arm.log 485 passed EXIT=0, and logs/negative-control.log carries both arms with 4 and 3 failing ids and EXIT=1; the new case at tests/test_a_follower_stays_while_a_review_is_owed.py:459 is the only one that reads the head requirement.",
+    "fit": "reckon/crew/station_subscriber.py:115 reaches recovery._review_head_and_tree exactly as obligations.py:1145 does, so the private reach follows the caller's own idiom, but the head requirement now lives in the station as well as in the duty it calls, and the duty still reports a headless run review-missing to the coordinator, so the two readings must be kept in step by hand.",
+    "goal_fidelity": "reckon/crew/station_subscriber.py:112-117 settles a delivered run whose head will not resolve, which is exactly the repair the node needed: a hold for an unreviewable head could never end, and the run stays listed to the coordinator through obligations._review_duty_item's own review-missing duty.",
+    "reuse": "_review_grace at reckon/crew/station_subscriber.py:150 now reads flight and parse_duration through the obligations module rather than importing them again, which is the delegation the prior review asked for, but it still restates the derivation string also inlined at obligations.py:1784 and obligation_snapshot.py:1294, and the head is resolved twice per terminal pointer per tick.",
+    "scope_discipline": "git diff --name-only 52ac66ce2c..002737cd3d lists only reckon/crew/station_subscriber.py, tests/test_a_follower_stays_while_a_review_is_owed.py and the evidence fragment, every one inside the manifest's declared write paths, and the source worktree is clean at 002737cd3d."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to keep a follower while its session owes a review; reckon/crew/station_subscriber.py:96-146 now holds the pane exactly when the obligations call the run's review review-missing and the run's head resolves, so the goal's rule survives and its one unbounded case is closed.\nVERDICT done_when: The done_when asks for \u00a7111's cases, both negative controls failing their case, no failure against the base revision at -n 4, and no ruff findings on the staged paths; logs/node-tests.log (8 passed EXIT=0), logs/negative-control.log (4 and 3 failing ids, EXIT=1), logs/base-arm.log (477 passed EXIT=0) and logs/head-arm.log (485 passed EXIT=0) satisfy the first three, and this review ran ruff check and ruff format --check over the two staged Python paths (All checks passed, 2 files already formatted).\nVERDICT write_paths: The manifest declares reckon/crew/station_subscriber.py, reckon/crew_follow_commands.py, tests/test_a_follower_stays_while_a_review_is_owed.py, the evidence fragment and a review figure directory; the commits from 97c71c15d6 to 002737cd3d touch only the module, the test and the fragment, all inside them.\nVERDICT manifest: Read; it records the three commits, the node gate 8 passed, both controls with their failing ids, base 477 against head 485 with no failure in either arm, and status complete with blockers none; its baseline_suite and after_suite command fields point at the log's own literal command line rather than repeating it, which is a recording shape defect rather than a missing measurement.\nVERDICT diff: Read 52ac66ce2c..002737cd3d commit by commit: one commit, three files, 116 insertions and 36 deletions, adding a head precondition and a warning on an unreadable duty, rerouting _review_grace's imports through obligations, giving every fixture a resolvable head, flipping the no-commit case from hold to settle, and adding a case for a duty that raises.\nCALL_SITES: reckon/crew/station.py:512, reckon/crew_follow_commands.py:584, reckon/crew_follow_commands.py:1554, reckon/crew_follow_commands.py:2109\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/station_subscriber.py:112-117 settles a delivered run whose head will not resolve, which is exactly the repair the node needed: a hold for an unreviewable head could never end, and the run stays listed to the coordinator through obligations._review_duty_item's own review-missing duty.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/node-tests.log records 8 passed EXIT=0 at 002737cd3d, logs/base-arm.log 477 passed EXIT=0 and logs/head-arm.log 485 passed EXIT=0, and logs/negative-control.log carries both arms with 4 and 3 failing ids and EXIT=1; the new case at tests/test_a_follower_stays_while_a_review_is_owed.py:459 is the only one that reads the head requirement.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 52ac66ce2c..002737cd3d lists only reckon/crew/station_subscriber.py, tests/test_a_follower_stays_while_a_review_is_owed.py and the evidence fragment, every one inside the manifest's declared write paths, and the source worktree is clean at 002737cd3d.\nSCORE durability: 19\nJUSTIFICATION durability: restoring the pre-002737cd3d rule (deleting the 'if not head: return False' at reckon/crew/station_subscriber.py:116) makes tests/test_a_follower_stays_while_a_review_is_owed.py:459 wait 15 seconds for a settle that never comes and fail, and removing the warning at :127 makes the caplog assertion at :466 fail while the settle still passes.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/station_subscriber.py:115 reaches recovery._review_head_and_tree exactly as obligations.py:1145 does, so the private reach follows the caller's own idiom, but the head requirement now lives in the station as well as in the duty it calls, and the duty still reports a headless run review-missing to the coordinator, so the two readings must be kept in step by hand.\nSCORE reuse: 15\nJUSTIFICATION reuse: _review_grace at reckon/crew/station_subscriber.py:150 now reads flight and parse_duration through the obligations module rather than importing them again, which is the delegation the prior review asked for, but it still restates the derivation string also inlined at obligations.py:1784 and obligation_snapshot.py:1294, and the head is resolved twice per terminal pointer per tick.\nFINDING reckon/crew/station_subscriber.py:134 non-blocking: the new warning fires once per pointer per live_work_populations pass, and the station calls that pass on every tick (reckon/crew/station.py:512) at a default interval of one second (reckon/crew/station.py:556), so a pointer whose duty cannot be read for as long as it stays live floods the log with one warning per second per pointer; a once-per-run dedupe would keep the record visible without the flood.\nFINDING reckon/crew/station_subscriber.py:155 non-blocking: _review_grace still restates str((config.get(\"fences\") or {}).get(\"unreconciled_run_grace\") or \"15m\"), the same derivation inlined at reckon/crew/obligations.py:1784 and reckon/crew/obligation_snapshot.py:1294, so the prior review's third-copy finding is only half addressed: the imports were rerouted through obligations but the derivation itself was never lifted into one named owner.\nFINDING reckon/crew/station_subscriber.py:115 non-blocking: the head is resolved here with recovery._review_head_and_tree(pointer) and again inside obligations._review_duty_item at reckon/crew/obligations.py:1145, which that function calls on the same pointer, so every terminal delivered run pays two head resolutions per station tick, each a git read while the worktree is intact; the duty item already carries the head it resolved, so reading that field would be one resolution and one rule.\n",
+  "review_run_id": "r-20261106T145058045505-review-of-keep-a-follower-while-its-session-owes-a-review-002737cd3d37",
+  "reviewed_base_sha": "52ac66ce2c593b5d3140264fe3ef75ac6a13bdb1",
+  "reviewed_head_sha": "002737cd3d37669918b100263c4277f06a4112c5",
+  "reviewed_run_id": "r-20261106T121146656787-keep-a-follower-while-its-session-owes-a-review",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T15:06:02.749842+00:00",
+  "total": 107
+}
