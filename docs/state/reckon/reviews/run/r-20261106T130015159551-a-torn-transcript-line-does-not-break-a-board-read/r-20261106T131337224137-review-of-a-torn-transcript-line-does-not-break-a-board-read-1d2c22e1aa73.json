@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "baseline_suite ran no tests (the added test file is absent at base, EXIT=4); after_suite ran the same command at head, 2 passed; the base/head importer arms logs/importers-base.log and logs/importers-head.log both report 38 passed.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/directory.py:168 (_last_assistant_request forward fall-through)",
+    "reckon/crew/dispatch_accounting.py:70 (_claude_authoring_turn)",
+    "reckon/crew/dispatch_accounting.py:83 (_codex_authoring_turn)",
+    "reckon/crew/dispatch.py:3526 (import of _jsonl_events)"
+  ],
+  "completed_at": "2026-11-06T13:21:29.471Z",
+  "dispatched_at": "2026-11-06T13:15:33Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T130015159551-a-torn-transcript-line-does-not-break-a-board-read/manifest.md",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "non-blocking: baseline_suite records EXIT=4 with zero collected tests as a completed arm, so a promotion reading only the baseline_suite/after_suite pair learns nothing about regression; the manifest's importer arms at logs/importers-base.log and logs/importers-head.log carry that evidence but are not in the armed fields."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit \u2014 9b0e2d6f80 adds the one-argument fix and the 84-line test, 3993dbde59 removes a blank line and adds the file's closing newline, 1d2c22e1aa adds the 63-line evidence fragment; nothing lands outside the declared scope.",
+    "done_when": "the done_when names tests/test_a_torn_transcript_line_does_not_break_a_board_read.py with both cases failing at base and a strict-decoding negative control; the manifest records the head gate 2 passed EXIT=0 and the negative control 2 failed EXIT=1 in logs/negative-control.log.",
+    "goal": "the goal asks the shared transcript reader to decode with replacement so a torn last line no longer raises; reckon/crew/dispatch_accounting.py:22 opens the transcript with errors=\"replace\" and the parse guard below skips the resulting torn line.",
+    "manifest": "read; it records status complete, the single-test gate command, after_suite exit 0 at 1d2c22e1aa, baseline_suite exit 4 because the new test is absent at base, and importer arms 38 passed at both base and head.",
+    "write_paths": "the manifest declares four paths under reckon/crew/dispatch_accounting.py, tests/, and docs/evidence/fragments/; the diff touches exactly three files, all inside them, and the unused figures directory carries nothing."
+  },
+  "justifications": {
+    "durability": "restoring strict decoding makes tests/test_a_torn_transcript_line_does_not_break_a_board_read.py:57 and :78 red with UnicodeDecodeError as logged, and the assertions at :60 and :80 compare against independent literals (250_040 from two distinct fixture turns) rather than a value the test hands the code.",
+    "evidence": "the gate at logs/after-arm-head.log records 2 passed EXIT=0 and logs/negative-control.log records 2 failed EXIT=1, but baseline_suite is a non-run (coordinator-armed-base.log: EXIT=4, \"file or directory not found\"), so the armed pair carries no base regression signal and the six-file importer arms at logs/importers-base.log and logs/importers-head.log (38 passed each) are what actually support zero added failures.",
+    "fit": "the change uses the repository's existing replacement-decoding idiom (reckon/ledger.py:3154) and its comment states why, and ruff check --no-cache passes on both staged source paths.",
+    "goal_fidelity": "reckon/crew/dispatch_accounting.py:22 is the single production change and is the goal sentence itself, decoding with replacement instead of raising.",
+    "reuse": "the change extends the existing owner reckon/crew/dispatch_accounting.py:15 rather than adding a reader, and the search for a second replacement-decoding jsonl reader over reckon/ found none.",
+    "scope_discipline": "the three files in git diff 93d83155bc..1d2c22e1aa sit inside the manifest's declared write paths, with no plan, index or peer path touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal asks the shared transcript reader to decode with replacement so a torn last line no longer raises; reckon/crew/dispatch_accounting.py:22 opens the transcript with errors=\"replace\" and the parse guard below skips the resulting torn line.\nVERDICT done_when: the done_when names tests/test_a_torn_transcript_line_does_not_break_a_board_read.py with both cases failing at base and a strict-decoding negative control; the manifest records the head gate 2 passed EXIT=0 and the negative control 2 failed EXIT=1 in logs/negative-control.log.\nVERDICT write_paths: the manifest declares four paths under reckon/crew/dispatch_accounting.py, tests/, and docs/evidence/fragments/; the diff touches exactly three files, all inside them, and the unused figures directory carries nothing.\nVERDICT manifest: read; it records status complete, the single-test gate command, after_suite exit 0 at 1d2c22e1aa, baseline_suite exit 4 because the new test is absent at base, and importer arms 38 passed at both base and head.\nVERDICT diff: read commit by commit \u2014 9b0e2d6f80 adds the one-argument fix and the 84-line test, 3993dbde59 removes a blank line and adds the file's closing newline, 1d2c22e1aa adds the 63-line evidence fragment; nothing lands outside the declared scope.\nCALL_SITES: reckon/crew/directory.py:168 (_last_assistant_request forward fall-through), reckon/crew/dispatch_accounting.py:70 (_claude_authoring_turn), reckon/crew/dispatch_accounting.py:83 (_codex_authoring_turn), reckon/crew/dispatch.py:3526 (import of _jsonl_events)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_accounting.py:22 is the single production change and is the goal sentence itself, decoding with replacement instead of raising.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate at logs/after-arm-head.log records 2 passed EXIT=0 and logs/negative-control.log records 2 failed EXIT=1, but baseline_suite is a non-run (coordinator-armed-base.log: EXIT=4, \"file or directory not found\"), so the armed pair carries no base regression signal and the six-file importer arms at logs/importers-base.log and logs/importers-head.log (38 passed each) are what actually support zero added failures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three files in git diff 93d83155bc..1d2c22e1aa sit inside the manifest's declared write paths, with no plan, index or peer path touched.\nSCORE durability: 19\nJUSTIFICATION durability: restoring strict decoding makes tests/test_a_torn_transcript_line_does_not_break_a_board_read.py:57 and :78 red with UnicodeDecodeError as logged, and the assertions at :60 and :80 compare against independent literals (250_040 from two distinct fixture turns) rather than a value the test hands the code.\nSCORE fit: 19\nJUSTIFICATION fit: the change uses the repository's existing replacement-decoding idiom (reckon/ledger.py:3154) and its comment states why, and ruff check --no-cache passes on both staged source paths.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing owner reckon/crew/dispatch_accounting.py:15 rather than adding a reader, and the search for a second replacement-decoding jsonl reader over reckon/ found none.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T130015159551-a-torn-transcript-line-does-not-break-a-board-read/manifest.md:21 non-blocking: baseline_suite records EXIT=4 with zero collected tests as a completed arm, so a promotion reading only the baseline_suite/after_suite pair learns nothing about regression; the manifest's importer arms at logs/importers-base.log and logs/importers-head.log carry that evidence but are not in the armed fields.",
+  "review_run_id": "r-20261106T131337224137-review-of-a-torn-transcript-line-does-not-break-a-board-read-1d2c22e1aa73",
+  "reviewed_base_sha": "93d83155bccb4a07dca6c9638d300cccd713cc0d",
+  "reviewed_head_sha": "1d2c22e1aa7339e0948f7cf27f52094e939c72bd",
+  "reviewed_run_id": "r-20261106T130015159551-a-torn-transcript-line-does-not-break-a-board-read",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T13:29:51.323835+00:00",
+  "total": 113
+}
