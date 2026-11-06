@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="evidence-project" content="reckon">
+<meta name="plan" content="a-coordinator-sees-the-board">
+<meta name="plan-node" content="the-skills-read-the-board-views">
+<title>the-skills-read-the-board-views — landed</title>
+</head>
+<body>
+<main class="plan-doc">
+<h2 id="the-skills-read-the-board-views-what">What landed</h2>
+
+<p>Both coordinator skills now name the four existing reads that answer the
+coordination question, and neither hands a coordinator a report to join by
+hand.</p>
+
+<ul>
+  <li><strong>The ready-idle set</strong> is the ready-set view filtered to rows
+  with no live run (<code>ready_idle</code>). Each ready row already carries its
+  <code>live_run</code>, its <code>coordinator</code> and <code>plan_owner</code>,
+  and its <code>critical_path</code> flag, and the view names the
+  <code>closable</code> plans with their <code>closure_blockers</code>; the
+  filter pages with the view's own cursor.</li>
+  <li><strong>The owners and the held paths</strong> are
+  <code>crew(view="directory", project=&lt;project&gt;)</code>, whose coordinator
+  rows carry <code>ready_idle_sections</code> beside <code>held_paths</code> and
+  <code>queued_runs</code>.</li>
+  <li><strong>The critical path</strong> is
+  <code>roadmap(view="summary").critical_path</code>: a <code>links</code> row per
+  section in path order, each with its <code>primary_state</code> — in flight with
+  <code>run_id</code>, ready-idle with <code>coordinator</code>, gated with
+  <code>gate</code>, waiting with <code>wait</code> — and its <code>holds</code>,
+  with <code>head</code> and <code>head_note</code> naming and explaining the
+  first link.</li>
+  <li><strong>The lane's slots</strong> are
+  <code>crew(view="lanes", session=&lt;session&gt;).session_share</code>, carrying
+  <code>worker_slots</code>, <code>live_runs</code> and the document's
+  <code>observed_at</code>, <code>age_seconds</code> and <code>stale</code>.</li>
+</ul>
+
+<p>Where they sit: the build skill's section 12 <em>Queue the chosen work after
+the review round</em> gains the four views as the way to read the beat's set,
+and the roadmap skill's <em>Ready-idle sections, owners and the critical
+path</em> section replaces the recipe with them. The roadmap skill's field table
+also stops describing the ready-idle set as an intersection a reader computes:
+<code>critical_path</code> now names <code>links</code>, <code>head</code> and
+<code>head_note</code>, and the ready-set row names the filter that produces the
+set.</p>
+
+<h3 id="the-skills-read-the-board-views-defect">The defect, measured before and after</h3>
+
+<p>The plan records that both skills carry a lossless-report recipe as a stopgap.
+That is true of one of them today. The build skill's copy was already retired on
+2026-10-26 by <code>690bebf45f</code>, which removed the <em>An idle lane with
+ready work is a defect</em> heading and the <code>reckon roadmap --json-output |
+python3 -c</code> block under it and left <em>Queue the chosen work after the
+review round</em> in its place; the remaining gap there was that the section
+named no view. The roadmap skill still carried the recipe verbatim, at
+<code>skills/reckon-roadmap/SKILL.md:110-120</code> as this node found it.</p>
+
+<p>At the head, <code>grep -n "json-output\|python3 -c"</code> over both skills
+returns nothing, and each skill carries every view token the contract test
+asserts: <code>ready_idle</code>, <code>primary_state</code>,
+<code>head_note</code>, <code>crew(view="directory"</code>,
+<code>crew(view="lanes"</code> and <code>session_share</code>.</p>
+
+<h3 id="the-skills-read-the-board-views-arms">The arms, as run</h3>
+
+<p>Both arms run the armed template,
+<code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+tests/test_the_skills_read_the_board_views.py</code>, resolved over each arm's
+own tree. The head arm collects and passes all four cases. The base arm, run
+from a <code>git archive</code> extraction of
+<code>fe67c2ee8525395c74b0749337181ef2028efbc0</code> on node-local disk with
+the main checkout's <code>.env</code> linked, resolves the template to no test
+file — the file is new in this node — and exits 4 having collected nothing.
+That is the arm's honest answer, and it is why the negative control below
+carries the red measurement rather than the base arm.</p>
+
+<h3 id="the-skills-read-the-board-views-controls">The negative control, executed</h3>
+
+<p>The declared mutation is <em>restore the recipe line; the contract test
+fails</em>. Restoring the recipe block into the roadmap skill and re-running the
+gate gives <code>1 failed, 3 passed, EXIT=1</code>:
+<code>test_neither_skill_carries_the_lossless_report_recipe</code> fails on the
+restored <code>--json-output</code> match, an id the head arm does not fail. The
+mutation was then removed and the head arm re-run green at
+<code>4 passed, EXIT=0</code>. The log is
+<code>negative_control.log</code> in the run directory.</p>
+
+<h3 id="the-skills-read-the-board-views-scope">Scope</h3>
+
+<p>Two skills and one new test file. No production module changes, so no
+importer arm is owed: the only module the test imports is
+<code>tests.test_skill_contracts</code>' <code>normalized</code> helper, which
+this node does not touch.</p>
+</main>
+</body>
+</html>
