@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-06T11:02:50.949Z",
+  "dispatched_at": "2026-11-06T10:53:08Z",
+  "findings": [
+    {
+      "file": "reckon/crew/directory.py",
+      "id": "f4d651ac776",
+      "line": 105,
+      "severity": "non-blocking",
+      "text": "_last_assistant_request duplicates the scan _claude_authoring_turn owns at reckon/crew/dispatch_accounting.py:63, including a line-for-line re-implementation of its forward read at reckon/crew/directory.py:162-176; the charging rule itself is reused (_charged_claude_tokens), so the divergence risk is in the iteration and not in the token accounting. _session_transcripts:69 likewise re-selects newest-by-mtime that _latest_transcript:115 already owns."
+    },
+    {
+      "file": "tests/test_a_coordinators_context_use_is_on_the_board.py",
+      "id": "fe70a59100b",
+      "line": 193,
+      "severity": "non-blocking",
+      "text": "every fixture transcript is a few hundred bytes, so _TRANSCRIPT_TAIL_SIZES never advances past its first size and the mid-file fragment drop at reckon/crew/directory.py:148 and the forward-scan fallback at reckon/crew/directory.py:162 are exercised by no assertion."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T054659697315-a-coordinators-context-use-is-on-the-board/coordinator-armed-base.log",
+      "id": "f3b485ff560",
+      "line": 2,
+      "severity": "non-blocking",
+      "text": "the armed base arm exits 4 with 'file or directory not found' and runs no tests, so baseline_suite.completed:true in the manifest describes a collection error as a completed suite; the node's own gate pair (logs/base-arm.log 6 passed, logs/head-arm.log 11 passed) is the readable baseline."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that every coordinator row on the board carries the context the session used at its last turn and the window it runs in; reckon/crew/directory.py:799 sets coordinator[\"context_use\"] on every row after the transcript walk at :794.\nVERDICT done_when: the done_when requires a fixture transcript to yield its context-use figure and a missing transcript to yield unmeasured with zero failing the second case; tests/test_a_coordinators_context_use_is_on_the_board.py:114-134 and :137-152 assert exactly those, and the negative-control log shows :145 reddening on the declared mutation.\nVERDICT write_paths: the manifest declares reckon/crew/directory.py, tests/test_a_coordinators_context_use_is_on_the_board.py, an evidence fragment and a figures directory; the diff from 0cb152d789 touches only those four paths.\nVERDICT manifest: read; it reports 11 passed at head (logs/head-arm.log EXIT=0), 6 passed at base (logs/base-arm.log EXIT=0), and a negative control of 1 failed/4 passed EXIT=1, all logs present on disk; its armed baseline row records an exit-4 collection error as completed.\nVERDICT diff: read commit by commit from 0cb152d789 (a65cda08b3 implementation, a12116c0df evidence); four files, 1632 insertions, no deletions, nothing outside the declared scope.\nCALL_SITES: reckon/crew_run_commands.py:449 (crew_directory CLI), reckon/mcp_views.py:4214 (crew_directory MCP payload), reckon/crew/plan_coordinator.py:213 (directory.directory call)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/directory.py:178-205 returns used_tokens, window_tokens, fraction, model and source, and :799 attaches one to every row in the coordinators list.\nSCORE evidence: 18\nJUSTIFICATION evidence: the negative-control log at tests/test_a_coordinators_context_use_is_on_the_board.py:145 records AssertionError: assert 'measured' == 'unmeasured', which is the guard firing rather than a suite passing.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff from 0cb152d789 touches only reckon/crew/directory.py, tests/test_a_coordinators_context_use_is_on_the_board.py, the evidence fragment and one SVG, all four declared in the manifest.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_coordinators_context_use_is_on_the_board.py:137 fails if a missing transcript reads zero, but no fixture exceeds a few hundred bytes so reckon/crew/directory.py:148's mid-file fragment drop and :162's forward-scan fallback are exercised by no assertion.\nSCORE fit: 17\nJUSTIFICATION fit: the helpers follow the module's constant-plus-helper style above reckon/crew/directory.py:30, and the dispatch_accounting import is deferred inside reckon/crew/directory.py:113 as the module's other optional readers are.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/directory.py:105 re-implements the last-charged-assistant-request scan that reckon/crew/dispatch_accounting.py:63 already owns, duplicating its loop in the forward fallback at reckon/crew/directory.py:162-176 instead of extending or calling it.\nFINDING reckon/crew/directory.py:105 non-blocking: _last_assistant_request duplicates the scan _claude_authoring_turn owns at reckon/crew/dispatch_accounting.py:63, including a line-for-line re-implementation of its forward read at reckon/crew/directory.py:162-176; the charging rule itself is reused (_charged_claude_tokens), so the divergence risk is in the iteration and not in the token accounting. _session_transcripts:69 likewise re-selects newest-by-mtime that _latest_transcript:115 already owns.\nFINDING tests/test_a_coordinators_context_use_is_on_the_board.py:193 non-blocking: every fixture transcript is a few hundred bytes, so _TRANSCRIPT_TAIL_SIZES never advances past its first size and the mid-file fragment drop at reckon/crew/directory.py:148 and the forward-scan fallback at reckon/crew/directory.py:162 are exercised by no assertion.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T054659697315-a-coordinators-context-use-is-on-the-board/coordinator-armed-base.log:2 non-blocking: the armed base arm exits 4 with 'file or directory not found' and runs no tests, so baseline_suite.completed:true in the manifest describes a collection error as a completed suite; the node's own gate pair (logs/base-arm.log 6 passed, logs/head-arm.log 11 passed) is the readable baseline.",
+  "review_run_id": "r-20261106T095848769440-review-of-a-coordinators-context-use-is-on-the-board-a12116c0dfbd",
+  "reviewed_base_sha": "0cb152d789aafe83725ade9e1ef871bf6481418b",
+  "reviewed_head_sha": "a12116c0dfbd37e9884f4e606bc1fdbd42969979",
+  "reviewed_run_id": "r-20261106T054659697315-a-coordinators-context-use-is-on-the-board",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T11:03:00.076512+00:00",
+  "total": 95
+}

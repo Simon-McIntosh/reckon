@@ -25,7 +25,7 @@
   <title>A Coordinator Sees the Board | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="46">
+<meta name="plan-version" content="47">
 <meta name="plan-modified" content="2026-11-06">
 </head>
 <body>
@@ -260,6 +260,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s10" data-id="c-20261023-s10-source" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
     <div class="r-comment-body"><p>Content review of v11 on 2026-10-23: the transcript read §10 names (<code>_coordinator_accounting</code> in <code>reckon/crew/dispatch_accounting.py</code>) resolves only the calling process's own session, so it cannot serve every coordinator on the board. §10 needs another source before dispatch.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261106T095848769440-review-of-a-coordinators-context-use-is-on-the-board-a12116c0dfbd" data-who="reckon-build" data-when="2026-11-06T11:02:50.949Z">
+    <div class="r-comment-body"><p>Independent review of r-20261106T054659697315-a-coordinators-context-use-is-on-the-board at head a12116c0df from base 0cb152d789: parsed record with all six dimensions scored (goal_fidelity 20, evidence 18, scope_discipline 20, durability 15, fit 17, reuse 5), added_failure_count 0 with no added failure ids derived from the run&#x27;s baseline_suite (exit 4, 0 failures) and after_suite (exit 0, 0 failures), and three non-blocking findings: the transcript reader duplicates dispatch_accounting&#x27;s scan, the tail-growth and forward-fallback branches have no test, and the armed baseline records a collection error as a completed suite.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261023T064458793164-review-of-a-plans-coordinator-is-derived-from-the-ledger-20030d0d081a" data-who="reckon-build" data-when="2026-10-23T07:21:57.992Z">
     <div class="r-comment-body"><p>the review of run r-20261023T002639713681-a-plans-coordinator-is-derived-from-the-ledger is stored at both declared review-records paths, scoring goal_fidelity 14, evidence 16, scope_discipline 20, durability 13, fit 18, reuse 5, total 86, reviewed at 017b346cb43a597da2b3d4c37bea6657eac1c886..20030d0d081a8cbbe50705de9db140dc1835eae2, with one blocking finding: reckon/crew/plan_coordinator.py:122 resolves a review's subject run by looking a node id up in a run-id-keyed map, so the run-review match returns no plan on real ledger data.</p></div>
