@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="701">
+<meta name="plan-version" content="702">
 <meta name="plan-modified" content="2026-11-06">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1332,7 +1332,7 @@ Both cases run under the file's existing temporary crew home.</li>
     <div class="r-comment-body"><p>Review of r-20261106T172623769806-tell-a-session-without-a-follower-so at head 2fd1b62da7 against base 4dc1488f6e53 is stored parsed with six dimension scores, 0 added failures, and one non-blocking finding on the rewrite's failure path.</p></div>
 </div>
 <div class="r-comment" data-section="s109" data-id="c-run-r-20261106T172623769806-tell-a-session-without-a-follower-so" data-who="reckon-build" data-when="2026-11-06T18:05:02.879Z">
-    <div class="r-comment-body"><p>The station rewrites a departed session&#x27;s per-session snapshot on the tick its stored row is dropped, so the document says no follower is delivering and its review-missing duty names the review dispatch command instead of deferring to a reflex that has gone; the removed row makes the rewrite one-off (head 3 passed; base 1 failed / 2 passed; 73-file importer set adds no failure and no error).</p></div>
+    <div class="r-comment-body"><p>The station rewrites a departed session's per-session snapshot on the tick its stored row is dropped, so the document says no follower is delivering and its review-missing duty names the review dispatch command instead of deferring to a reflex that has gone; the removed row makes the rewrite one-off (head 3 passed; base 1 failed / 2 passed; 73-file importer set adds no failure and no error).</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-10-21T05:10:00Z">
     <div class="r-comment-body"><p>§11 closed with no build: it carries no deliverable of its own. It ordered §7 before §8 and waited on §9's sweep decision. §9 is done and its decision is locked, and the order is now the section edge from §8 to §7. A currency audit at <code>03896d0a3</code> (run <code>r-20261021T043410178390-currency-mon-s7-s11</code>) found §7 and §8 partly built and §10 not built, and that their named write paths had moved; those sections now name the modules that hold the code.</p></div>
@@ -1369,6 +1369,9 @@ Both cases run under the file's existing temporary crew home.</li>
 </div>
 <div class="r-comment" data-section="s113" data-id="c-run-r-20261106T184216290719-review-of-keep-a-follower-exit-record-through-a-failed-restore-or-397c4d5f4231" data-who="reckon-build" data-when="2026-11-06T18:50:47.970Z">
     <div class="r-comment-body"><p>§113 reviewed at head 397c4d5f42 against base 70b61e04: a parsed record scoring all six dimensions (goal_fidelity 19, evidence 16, scope_discipline 20, durability 19, fit 19, reuse 19; total 113 of 120), zero added failures, one non-blocking finding that the done-when's ruff clause is claimed in the manifest with no log recording it.</p></div>
+</div>
+<div class="r-comment" data-section="s113" data-id="c-run-r-20261106T181926154431-keep-a-follower-exit-record-through-a-failed-restore-or" data-who="reckon-build" data-when="2026-11-06T18:39:39.671Z">
+    <div class="r-comment-body"><p>§113 landed — the registration manager&#x27;s restore of a displaced handler suppresses ValueError/TypeError (a None `previous` is what a handler installed outside Python reads back as) so the release still runs, and the exit-record write is guarded so an OSError from a read-only or full crew home is logged on reckon.crew.follower_registration and the follower keeps its own exit; node gate 2 passed at 58fd025c36, base arm 181 passed / after arm 183 passed with no added failure id, and both negative controls red.</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-s12-deferred-on-scheduling-surface" data-who="reckon-build" data-when="2026-10-17T05:30:00Z">
     <div class="r-comment-body"><p>Deferred. The plan review of 2026-10-17 found §12 declared implementable while its own text says the coverage figure belongs to work-scheduling-surface §3, which is unbuilt. Its done-when asks for a value from the roadmap's own derivation, and that derivation does not exist yet. §12 becomes implementable when work-scheduling-surface §3 lands.</p></div>
