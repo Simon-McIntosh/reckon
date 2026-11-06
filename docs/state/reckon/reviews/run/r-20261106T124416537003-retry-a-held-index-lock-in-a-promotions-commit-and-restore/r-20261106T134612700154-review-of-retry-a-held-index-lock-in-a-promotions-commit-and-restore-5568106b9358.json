@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/promotion.py:_promote_run",
+    "reckon/crew/promotion.py:_restore_landing_writes caller",
+    "reckon/crew/promotion_gate.py:_record_integrated_gate",
+    "reckon/crew/promotion_release.py:_commit_landing_writes caller",
+    "reckon/crew_run_commands.py:complete"
+  ],
+  "completed_at": "2026-11-06T13:57:16.941Z",
+  "dispatched_at": "2026-11-06T13:48:37Z",
+  "findings": [
+    {
+      "file": "tests/test_rollback_asks_head.py",
+      "line": 117,
+      "severity": "blocking",
+      "text": "The landed change makes test_real_index_lock_preserves_head_path fail at 5568106b9358: the assertion that every recorded add/restore call before the last is an add now sees the rollback's 11 extra restore attempts, and I reproduced the failure at the reviewed head, so section s5's done-when clause that the tests importing reckon.crew.promotion_scope add no failure against the base revision is unmet and landing this leaves the suite red; the assertion needs to accept a retried restore (every call is a failure, the calls before the restores are adds, the last is a restore), which is outside the node's write fence and was not requested as a scope extension."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T124416537003-retry-a-held-index-lock-in-a-promotions-commit-and-restore/manifest.md",
+      "line": 12,
+      "severity": "non-blocking",
+      "text": "test_logs names logs/related_after.log, which does not exist in the run directory, so the post-correction state of the 13-file promotion_scope importer arm is recorded only by a pre-fix run that is red (related_tests_head.log, 3 failed); I re-ran the two change-caused ids at head and found test_a_held_index_lock_records_the_stage_step passing and test_real_index_lock_preserves_head_path failing, so the claim of one remaining failure is right but its evidence is not on disk."
+    },
+    {
+      "file": "reckon/crew/promotion_scope.py",
+      "line": 1783,
+      "severity": "non-blocking",
+      "text": "The rollback's wait is inside the per-path loop, so a lock held for the whole rollback now costs attempts x interval (5.5 s) for every landing write and stretches a multi-path refusal to n x 5.5 s after the commit has already spent its own bound; the fragment discloses the bound but no test or measurement covers a refusal with more than two paths."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified reckon/crew/promotion.py:1183 and :1817, reckon/crew/promotion_gate.py:1057, reckon/crew/promotion_release.py:716 and reckon/crew_run_commands.py:1478 all reach _commit_landing_writes, and reckon/crew/promotion.py:1793 reaches _restore_landing_writes, so both changed functions are live promotion paths.",
+    "diff": "Read both commits against edfcc560019 commit by commit: aa8ab137ba81 adds both waits, the commit_retry record and the new test, and 5568106b9358 removes the rollback's record entries so the landing step vocabulary is unchanged.",
+    "done_when": "Section s5's done-when names three cases in tests/test_a_promotion_commit_survives_a_held_index_lock.py; the head and base arms are recorded and show 3 passed against 2 failed 1 passed, but the same done-when also requires the promotion_scope importers to add no failure and one does at head.",
+    "goal": "The node's goal is to make a promotion's landing commit and its rollback both survive a held index lock; reckon/crew/promotion_scope.py:2416 and :1783 wrap both git calls in reckon/crew/merge.py:555, which is what the goal asks.",
+    "manifest": "Read the reviewed manifest; it records the gate command, three logs that exist plus logs/related_after.log which does not, and states one out-of-scope failure in tests/test_rollback_asks_head.py.",
+    "write_paths": "Read the reviewed manifest's declared paths in tests and the production module; every path in the diff under either commit is inside them, and the reviewed worktree at 5568106b9358 is clean."
+  },
+  "justifications": {
+    "durability": "tests/test_a_promotion_commit_survives_a_held_index_lock.py:139 asserts the git log subject, :141 the on-disk plan content and :142 the empty staged set under a real held index.lock, and the recorded negative control reddens exactly those cases when the waits are removed.",
+    "evidence": "The gate's own arms are recorded and readable (logs/gate_head.log 3 passed EXIT=0, logs/baseline_arm.log 2 failed 1 passed EXIT=1, logs/negative_control.log EXIT=1), but the section's done-when clause that the promotion_scope importers add no failure is not met and the after log the manifest names at line 12 does not exist on disk.",
+    "fit": "reckon/crew/promotion_scope.py:2416 reuses the staging helper and the module constants at :1878, and the record step name commit_retry mirrors the existing stage_retry at :2289.",
+    "goal_fidelity": "reckon/crew/promotion_scope.py:2416 runs the landing commit through merge._run_waiting_out_a_held_index_lock with the module's own bound and :1783 runs the rollback restore the same way, so both deliverables of plan section s5 land as written.",
+    "reuse": "The diff adds no mechanism: reckon/crew/merge.py:555 _run_waiting_out_a_held_index_lock already owns the bounded lock wait and the change extends its call sites rather than forking a second loop.",
+    "scope_discipline": "The diff between edfcc560019 and 5568106b9358 touches only reckon/crew/promotion_scope.py, tests/test_a_promotion_commit_survives_a_held_index_lock.py and the evidence fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261106T134612700154-review-of-retry-a-held-index-lock-in-a-promotions-commit-and-restore-5568106b9358",
+  "reviewed_base_sha": "edfcc560019cf11986f621dde414c26d44c3ec94",
+  "reviewed_head_sha": "5568106b9358fcfb47cac0e430e1292a9b815b4c",
+  "reviewed_run_id": "r-20261106T124416537003-retry-a-held-index-lock-in-a-promotions-commit-and-restore",
+  "scores": {
+    "durability": 17,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T14:01:14.108765+00:00",
+  "total": 101
+}
