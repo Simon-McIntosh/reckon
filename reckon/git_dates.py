@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import subprocess
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -21,6 +22,19 @@ from reckon.git_head import (  # noqa: F401 — re-exported for existing importe
 class _GitCreationEntry:
     head: str
     times: dict[str, int]
+
+
+class _GitQueryTimedOut:
+    """The answer of a bounded git query that ran past its timeout.
+
+    A distinct object rather than ``None`` so a caller that records the outcome
+    can tell the query's bound expiring apart from a spawn error or a non-zero
+    exit, which are answers about the machine or the repository and are never
+    recorded.
+    """
+
+
+_GIT_QUERY_TIMED_OUT = _GitQueryTimedOut()
 
 
 _GIT_CREATION_CACHE: dict[tuple[str, str], _GitCreationEntry] = {}
@@ -130,7 +144,8 @@ def _run_git(
     *,
     operation: str,
     report_failure: bool = False,
-) -> subprocess.CompletedProcess[str] | None:
+    report_timeout: bool = False,
+) -> subprocess.CompletedProcess[str] | _GitQueryTimedOut | None:
     """Run one bounded Git query and make every failure observable.
 
     The spawn runs in the C locale whatever the caller's environment asks for,
@@ -143,6 +158,9 @@ def _run_git(
     receives the completed process instead. A timeout and a spawn error are
     answers about the machine rather than about the repository and stay
     ``None`` for every caller, so neither can be mistaken for git's verdict.
+    The one exception is a caller that records what a bound expiring cost it:
+    it sets ``report_timeout`` and receives :data:`_GIT_QUERY_TIMED_OUT` on a
+    timeout, while a spawn error still returns ``None``.
     """
     from reckon.serve import LOGGER
 
@@ -159,7 +177,7 @@ def _run_git(
         )
     except subprocess.TimeoutExpired:
         LOGGER.warning("Git %s timed out after 10 seconds in %s", operation, repo_dir)
-        return None
+        return _GIT_QUERY_TIMED_OUT if report_timeout else None
     except OSError as exc:
         LOGGER.warning("Git %s could not start in %s: %s", operation, repo_dir, exc)
         return None
@@ -265,6 +283,26 @@ def _git_head(repo_dir: Path) -> str | None:
     return head
 
 
+def _remember_unanswered_lookup(
+    memo: dict[tuple[str, str], _GitCreationEntry],
+    store: Callable[[tuple[str, str], _GitCreationEntry], None],
+    cache_key: tuple[str, str],
+    head: str,
+    times: dict[str, int],
+) -> None:
+    """Record a lookup that did not answer at this head, with the fallback it used.
+
+    The recorded entry carries the head the bound expired under, so the map is
+    reused while the checkout stands still and is resolved afresh once a commit
+    moves it. It holds the same fallback the lookup returned, so a reused entry
+    and a fresh timeout tell a reader the same thing about the file times.
+    """
+
+    entry = _GitCreationEntry(head=head, times=times)
+    memo[cache_key] = entry
+    store(cache_key, entry)
+
+
 def _parse_first_committed(output: str) -> dict[str, int]:
     times: dict[str, int] = {}
     timestamp: int | None = None
@@ -315,9 +353,21 @@ def _git_first_committed(repo_dir: Path, docs_dir: Path) -> dict[str, int]:
             rel_docs,
         ]
     )
-    result = _run_git(args, repo_dir, operation="history lookup")
+    result = _run_git(
+        args, repo_dir, operation="history lookup", report_timeout=True
+    )
     if result is None:
         return dict(cached.times) if cached else {}
+    if result is _GIT_QUERY_TIMED_OUT:
+        fallback = dict(cached.times) if cached else {}
+        _remember_unanswered_lookup(
+            _GIT_CREATION_CACHE,
+            _store_git_creation_cache,
+            cache_key,
+            head,
+            fallback,
+        )
+        return fallback
 
     times = dict(cached.times) if cached else {}
     additions = _parse_first_committed(result.stdout)
@@ -473,9 +523,21 @@ def _git_last_committed(repo_dir: Path, docs_dir: Path) -> dict[str, int]:
     if cached:
         args.append(f"{cached.head}..{head}")
     args.extend(["--format=COMMIT %at", "--name-only", "--", rel_docs])
-    result = _run_git(args, repo_dir, operation="last-modified lookup")
+    result = _run_git(
+        args, repo_dir, operation="last-modified lookup", report_timeout=True
+    )
     if result is None:
         return dict(cached.times) if cached else {}
+    if result is _GIT_QUERY_TIMED_OUT:
+        fallback = dict(cached.times) if cached else {}
+        _remember_unanswered_lookup(
+            _GIT_LAST_MODIFIED_CACHE,
+            _store_git_last_modified_cache,
+            cache_key,
+            head,
+            fallback,
+        )
+        return fallback
 
     # Commits in the new range are the freshest touch for any path they name;
     # only paths untouched since the cached head keep their cached time.
