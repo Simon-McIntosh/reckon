@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s110">
+  <meta name="plan-recorded-at" content="2026-11-06">
+  <title>A resume re-arms its session's follower | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="rearm-a-sessions-follower-when-its-run-is-resumed-landing" data-node="rearm-a-sessions-follower-when-its-run-is-resumed" data-reckon="landed" data-when="2026-11-06">
+  <h2>A resume sends the host request a dispatch sends, and the host re-arms the pair</h2>
+
+  <p>A session's pane is fed by one follower its host runs, and <code>SessionHost.tick</code> does
+  not restart a child that exited settled — the pair waits for its next request. A dispatch sends
+  that request; a resume sent none, so a session whose last action was a resume stopped following
+  once that child settled while the resumed worker ran on and delivered into nothing.</p>
+
+  <p id="rearm-a-sessions-follower-when-its-run-is-resumed-resume-path"><code>resumption._resume</code>
+  now asks the calling session's host for a follower after the launch is recorded, through the same
+  request line a dispatch writes (<code>_request_host_follower</code>), and reports the answer as
+  <code>follower_rearmed</code> on the resume result and on the <code>crew resume</code> payload.
+  Both doors reach it: the CLI verb and the repair reflex both launch through <code>_resume</code>,
+  so neither needed a second statement of the rule. The launch is not failed over a host that did
+  not answer — the worker is already running, and the re-arm only decides whether its rows reach a
+  pane.</p>
+
+  <p id="rearm-a-sessions-follower-when-its-run-is-resumed-own-host">The answer is the calling
+  session's own host, not attachment. <code>_session_host_child_pid</code> reads that host's census
+  record and returns the pid of a non-settled child for the pair;
+  <code>_rearm_session_follower</code> answers success only on that pid, and
+  <code>_session_host_runs_follower</code> now shares the same reader so dispatch and the re-arm
+  cannot disagree about what a child of this host is. A live follower another host registered, or
+  one a coordinator armed by hand, keeps <code>session_attached</code> true and is still not a
+  re-arm this host made, so it no longer reads as one.</p>
+
+  <p id="rearm-a-sessions-follower-when-its-run-is-resumed-evidence">Evidence:
+  <code>tests/test_a_resume_rearms_its_follower.py</code> drives <code>_resume</code> against a
+  temporary crew home and a stub host on the session host's FIFO. Case one: no follow request
+  reaches the host at base, and at head exactly one line
+  <code>{"project": …, "session": …}</code> arrives, the stub's re-armed child appears in the
+  census, and the result carries <code>follower_rearmed: True</code>. Case two: a live follower
+  registration for the session, with the census naming no child for the pair, answers
+  <code>follower_rearmed: False</code> — the discriminator the old criterion could not make. At
+  <code>97c71c15d6</code> both cases fail (<code>2 failed</code>); at head both pass
+  (<code>2 passed</code>).</p>
+
+  <p id="rearm-a-sessions-follower-when-its-run-is-resumed-controls">Both declared negative
+  controls were applied in scratch copies of the head tree and run: dropping the host request from
+  the resume leaves case one with no child (<code>2 failed, EXIT=1</code>), and answering on any
+  live registration instead of the host's own child makes case two report success
+  (<code>2 failed, EXIT=1</code>).</p>
+
+  <p id="rearm-a-sessions-follower-when-its-run-is-resumed-suite">The 25 test files importing
+  <code>reckon.crew.session_host</code> or <code>reckon.crew.resumption</code> run serially on both
+  arms: 218 passed at head (<code>EXIT=0</code>); at base 217 passed and
+  <code>test_dispatch_session_host.py::test_dispatch_asks_the_session_host_and_is_admitted_by_it</code>
+  failed with <code>_FollowerAdmissionUnmet</code>. That id passes at head serially and fails at
+  base, so the delta is zero added failures and the base failure is pre-existing and load-sensitive
+  — under <code>-n 4</code> a different settle case timed out at head and passed serially, the same
+  signature.</p>
+
+  <p id="rearm-a-sessions-follower-when-its-run-is-resumed-scope">No rule was added for the two live
+  followers per session seen on 6 November, and the exit record is §112's. Nothing in
+  <code>reckon/crew/session_host.py</code> changed: <code>handle</code> already re-arms a settled
+  pair on request, which is what the resume now supplies.</p>
+</article>
+</body>
+</html>
