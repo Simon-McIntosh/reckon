@@ -1075,7 +1075,7 @@ def _refreshed_claim(
     repo: str,
     shared_files: frozenset[str],
     dispositions: dict[str, Any],
-) -> tuple[Any, str] | None:
+) -> tuple[Any, str, Mapping[str, Any]] | None:
     """Re-read the one pointer that holds a claim, and judge it as of now.
 
     The live set is read once per pass, and the stage that judges requests
@@ -1099,22 +1099,24 @@ def _refreshed_claim(
     except CrewError:
         return None
     if fresh == dict(holder):
-        return _claim_collision(
+        collision = _claim_collision(
             fresh,
             ours,
             repo=repo,
             shared_files=shared_files,
             disposition=lambda written: _claim_disposition_of(written, dispositions),
         )
+        return (*collision, fresh) if collision is not None else None
     from reckon.crew.node import claim_disposition
 
-    return _claim_collision(
+    collision = _claim_collision(
         fresh,
         ours,
         repo=repo,
         shared_files=shared_files,
         disposition=claim_disposition,
     )
+    return (*collision, fresh) if collision is not None else None
 
 
 def _live_claim_hold(
@@ -1184,9 +1186,8 @@ def _live_claim_detail(
         )
         if fresh is None:
             continue
-        disposition, collision = fresh
+        disposition, collision, holder = fresh
         holder_run = str(other.get("run_id") or "unknown")
-        holder = runs.read_pointer(holder_run)
         return {
             "reason": f"run {holder_run!r} holds {collision!r}: {disposition.reason}",
             "holder": {
