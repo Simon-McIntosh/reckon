@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/queue_landing.py:land_once",
+    "reckon/crew/queue_admission.py:5011",
+    "reckon/crew/queue_admission.py:5042"
+  ],
+  "completed_at": "2026-11-06T21:05:46Z",
+  "dispatched_at": "2026-11-06T20:58:48Z",
+  "findings": [
+    {
+      "file": "importers-head-final.log",
+      "line": "1",
+      "severity": "blocking",
+      "text": "The latest full queue_landing importer comparison ran at 1463f0b6, before the later source repairs and this head; the done_when requirement of no added importer failures against the base remains unproved."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "git show d7e5f13b18ceece0ccbf1d615551eb78c8257f32 changes one test: lines 137-142 replace input-aliased comparisons with a one-row count and literal persisted landing identity.",
+    "done_when": "manifest.md:21-22 names exact focused base and head arms, each 4 passed in literal-baseline-suite.log:5 and literal-after-suite.log:5; literal-negative-control.log:51-53 fails the corrupted outcome, while importers-head-final.log:1 remains at an earlier source revision.",
+    "goal": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:263 requires a landed-elsewhere verdict; tests/test_the_lander_skips_a_run_landed_elsewhere.py:138-142 now checks its persisted identity and status independently.",
+    "manifest": "manifest.md:1-29 reports d7e5f13b18ceece0ccbf1d615551eb78c8257f32, the focused base and head logs, and a failing mutation control; those logs end in EXIT=0, EXIT=0, and EXIT=1 respectively.",
+    "write_paths": "manifest.md:3 grants tests/test_the_lander_skips_a_run_landed_elsewhere.py; git diff ec11018272d39abcdb81e32a89ac7d13de9f7274..d7e5f13b18ceece0ccbf1d615551eb78c8257f32 changes only that path."
+  },
+  "justifications": {
+    "durability": "tests/test_the_lander_skips_a_run_landed_elsewhere.py:137 fails if the stored row is missing or duplicated, and :138-142 fails if its run id or status changes; literal-negative-control.log:38-53 demonstrates the wrong-status failure.",
+    "evidence": "literal-baseline-suite.log:5 and literal-after-suite.log:5 each report 4 passed, and literal-negative-control.log:51-53 fails as expected, but importers-head-final.log:1 predates the later source repairs.",
+    "fit": "tests/test_the_lander_skips_a_run_landed_elsewhere.py:136-142 follows the file's existing pytest assertions and JSON log read without introducing a new name.",
+    "goal_fidelity": "tests/test_the_lander_skips_a_run_landed_elsewhere.py:138-142 checks the durable skipped verdict named by the plan's goal.",
+    "reuse": "tests/test_the_lander_skips_a_run_landed_elsewhere.py:132-142 adds no definition and exercises the existing queue_admission.py:1896-1920 verdict writer.",
+    "scope_discipline": "git show d7e5f13b18ceece0ccbf1d615551eb78c8257f32 changes only tests/test_the_lander_skips_a_run_landed_elsewhere.py:131-142, which manifest.md:3 grants."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: docs/plans/work-is-never-stuck-behind-the-admission-loop.html:263 requires a landed-elsewhere verdict; tests/test_the_lander_skips_a_run_landed_elsewhere.py:138-142 now checks its persisted identity and status independently.\nVERDICT done_when: manifest.md:21-22 names exact focused base and head arms, each 4 passed in literal-baseline-suite.log:5 and literal-after-suite.log:5; literal-negative-control.log:51-53 fails the corrupted outcome, while importers-head-final.log:1 remains at an earlier source revision.\nVERDICT write_paths: manifest.md:3 grants tests/test_the_lander_skips_a_run_landed_elsewhere.py; git diff ec11018272d39abcdb81e32a89ac7d13de9f7274..d7e5f13b18ceece0ccbf1d615551eb78c8257f32 changes only that path.\nVERDICT manifest: manifest.md:1-29 reports d7e5f13b18ceece0ccbf1d615551eb78c8257f32, the focused base and head logs, and a failing mutation control; those logs end in EXIT=0, EXIT=0, and EXIT=1 respectively.\nVERDICT diff: git show d7e5f13b18ceece0ccbf1d615551eb78c8257f32 changes one test: lines 137-142 replace input-aliased comparisons with a one-row count and literal persisted landing identity.\nCALL_SITES: reckon/crew/queue_landing.py:land_once, reckon/crew/queue_admission.py:5011, reckon/crew/queue_admission.py:5042\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_the_lander_skips_a_run_landed_elsewhere.py:138-142 checks the durable skipped verdict named by the plan's goal.\nSCORE evidence: 14\nJUSTIFICATION evidence: literal-baseline-suite.log:5 and literal-after-suite.log:5 each report 4 passed, and literal-negative-control.log:51-53 fails as expected, but importers-head-final.log:1 predates the later source repairs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show d7e5f13b18ceece0ccbf1d615551eb78c8257f32 changes only tests/test_the_lander_skips_a_run_landed_elsewhere.py:131-142, which manifest.md:3 grants.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_the_lander_skips_a_run_landed_elsewhere.py:137 fails if the stored row is missing or duplicated, and :138-142 fails if its run id or status changes; literal-negative-control.log:38-53 demonstrates the wrong-status failure.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_the_lander_skips_a_run_landed_elsewhere.py:136-142 follows the file's existing pytest assertions and JSON log read without introducing a new name.\nSCORE reuse: 20\nJUSTIFICATION reuse: tests/test_the_lander_skips_a_run_landed_elsewhere.py:132-142 adds no definition and exercises the existing queue_admission.py:1896-1920 verdict writer.\nFINDING importers-head-final.log:1 blocking: The latest full queue_landing importer comparison ran at 1463f0b6, before the later source repairs and this head; the done_when requirement of no added importer failures against the base remains unproved.\n",
+  "review_run_id": "r-20261106T205549980947-review-of-the-lander-skips-a-run-landed-elsewhere-d7e5f13b18ce",
+  "reviewed_base_sha": "ec11018272d39abcdb81e32a89ac7d13de9f7274",
+  "reviewed_head_sha": "d7e5f13b18ceece0ccbf1d615551eb78c8257f32",
+  "reviewed_run_id": "r-20261105T142439938993-the-lander-skips-a-run-landed-elsewhere",
+  "scores": {
+    "durability": 20,
+    "evidence": 14,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T21:11:21.147270+00:00",
+  "total": 113
+}
