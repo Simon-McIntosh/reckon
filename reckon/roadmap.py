@@ -3214,10 +3214,11 @@ def _held_paths_by_section(
 class _RoadmapScope:
     """The roadmap the builds inside one scope produced, read after its work."""
 
-    __slots__ = ("built",)
+    __slots__ = ("built", "resolve_coordinators")
 
-    def __init__(self) -> None:
+    def __init__(self, *, resolve_coordinators: bool) -> None:
         self.built: dict[str, Any] | None = None
+        self.resolve_coordinators = resolve_coordinators
 
 
 #: The scope whose builds record their roadmap, when a caller opened one. A
@@ -3230,15 +3231,18 @@ _BUILT_ROADMAP: ContextVar[_RoadmapScope | None] = ContextVar(
 
 
 @contextmanager
-def roadmap_build_scope() -> Iterator[_RoadmapScope]:
+def roadmap_build_scope(
+    *, resolve_coordinators: bool = True
+) -> Iterator[_RoadmapScope]:
     """Record the roadmap the builds inside this scope produce.
 
     The caller reads ``scope.built`` once the work inside the scope is done. A
     caller that needs the whole project's roadmap for more than the ready set
-    uses it to make one derivation serve both answers.
+    uses it to make one derivation serve both answers. A caller that only needs
+    section verdicts or ranking keys can omit critical-link coordinators.
     """
 
-    scope = _RoadmapScope()
+    scope = _RoadmapScope(resolve_coordinators=resolve_coordinators)
     token = _BUILT_ROADMAP.set(scope)
     try:
         yield scope
@@ -4542,14 +4546,19 @@ def _build_roadmap(
     # a plan-level path compares that payload as it stands and there is no link
     # to describe.
     if critical.get("sections"):
+
+        def critical_path_coordinators() -> Mapping[str, Mapping[str, Any]]:
+            scope = _BUILT_ROADMAP.get()
+            if scope is not None and not scope.resolve_coordinators:
+                return {}
+            return _critical_path_coordinators(project, resolved_docs, pointers, now)
+
         _critical_path_links(
             critical,
             section_runs=section_runs,
             ready_sections_by_plan=ready_sections_by_plan,
             section_holds_by_plan=section_holds_by_plan,
-            resolve_coordinators=lambda: _critical_path_coordinators(
-                project, resolved_docs, pointers, now
-            ),
+            resolve_coordinators=critical_path_coordinators,
         )
 
     def plan_key(row: dict[str, Any]) -> tuple[Any, ...]:

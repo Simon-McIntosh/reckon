@@ -1,0 +1,17 @@
+<section data-reckon="evidence" data-node="queue-ranking-and-readiness-build-no-coordinators" id="queue-ranking-and-readiness-build-no-coordinators">
+  <h3 id="queue-ranking-and-readiness-build-no-coordinators-heading">Ranking and readiness reuse one coordinator-free roadmap</h3>
+  <p>Commit <code>de7a4816889696e1bb02b2dfa54237ef1ad1900e</code> adds an opt-out for critical-link coordinator resolution inside <code>roadmap_build_scope</code>. Ranking takes discovery's build, and retains section priority keys while the discovery result's validated signature is unchanged. Readiness uses the same opt-out.</p>
+  <table>
+    <thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Synthetic project</td><td>40 plans, 20 queued requests and 15 live runs. Ranking built one roadmap and resolved zero coordinators. Readiness built at most one roadmap and resolved zero coordinators.</td></tr>
+      <tr><td>Read parity</td><td>An MCP roadmap read outside the scope named the ready critical link's coordinator. All 20 request positions and named signals matched the base implementation. An unchanged second call built no roadmap; changing a plan's ROI changed its priority key.</td></tr>
+      <tr><td>Focused gate</td><td>5 passed in 6.73 s. Four separate mutations each failed its intended test at <code>EXIT=1</code>: coordinator resolution restored, coordinator omission applied to MCP, unconditional rebuild, and project-only cache key.</td></tr>
+      <tr><td>Live ranking</td><td>16 queued pointers across two projects: base cold 167.606 s and warm 66.256 s; delivered cold 23.389 s and first warm 7.792 s. On the next live set of 15 pointers, two warm calls took 3.922 s and 4.085 s. The first delivered warm sample exceeded the 5 s target, while the subsequent samples met it.</td></tr>
+      <tr><td>Importer comparison</td><td>Direct importers: base 5 failed, 1,039 passed in 302.62 s across 119 files; delivered 4 failed, 1,045 passed in 517.22 s across 120 files. The four head failures have the same IDs on the base, so there are zero added failures; one base failure is absent at the head.</td></tr>
+      <tr><td>Ruff</td><td>Check and format check pass on the four changed Python paths.</td></tr>
+    </tbody>
+  </table>
+  <p>Two hand-run <code>crew admit --once</code> calls against the live store exceeded bounds of 90 s and 70 s before writing a verdict row; the second named the local lane. Both include release and landing stages beyond this node's source scope, so the required under-60-second pass remains unproved. The exact base-arm command expands to the full suite because the new test file does not exist at the base revision. It reached a 1,100 s bound at 4% without a summary; the direct-importer base arm above completed separately.</p>
+  <p>Commands and logs are under run <code>r-20261105T214831970273-queue-ranking-and-readiness-build-no-coordinators</code>: <code>after-suite.log</code>, <code>base-suite.log</code>, <code>negative-coordinators.log</code>, <code>negative-mcp.log</code>, <code>negative-rebuild.log</code>, <code>negative-project_only.log</code>, <code>live-timing.log</code>, <code>importer-base.log</code>, <code>importer-head.log</code>, <code>admit-once.log</code>, <code>admit-once-retry.log</code> and <code>ruff.log</code>.</p>
+</section>

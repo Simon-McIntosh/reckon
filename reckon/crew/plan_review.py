@@ -5283,7 +5283,7 @@ def project_section_readiness(
             section_verdicts_by_plan,
         )
 
-        with roadmap_build_scope() as scope:
+        with roadmap_build_scope(resolve_coordinators=False) as scope:
             discovered = _discover_project(project, None)
             roadmap = scope.built
             if roadmap is None:
