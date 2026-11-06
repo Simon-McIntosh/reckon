@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T200824843523-record-what-holds-a-queued-request-only-when-the-holding/repair_after_suite.log",
+  "assertion_review": [
+    "test_a_held_request_records_what_holds_it.py:205 fails if an unchanged binding claim rewrites the refusal or its timestamp; the stale-claim red control observes this failure.",
+    "test_a_held_request_records_what_holds_it.py:216 and 220 fail if the first refusal is not recorded or the next pass does not keep the request held.",
+    "test_a_held_request_records_what_holds_it.py:222-228 fail if a released claim keeps its refusal, holder metadata, pointer reason, or finished-holder duty; the stale-claim red control observes the verdict failure.",
+    "test_a_held_request_records_what_holds_it.py:249-252 fail if the named-runs branch disappears, drops either fixed run id, changes their order, omits an id from reason text, or diverges from the pointer reason; the named-runs red control observes the missing-branch failure.",
+    "test_a_held_request_records_what_holds_it.py:255 fails if a retry rewrites an unchanged named-runs refusal or its timestamp."
+  ],
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T200824843523-record-what-holds-a-queued-request-only-when-the-holding/repair_baseline_suite.log",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:4593 admit_once claim hold",
+    "reckon/crew/queue_admission.py:4878 admit_once launch refusal",
+    "reckon/crew/queue_admission.py:5218 and 5247 manual and service admission",
+    "reckon/crew/obligations.py:1970 finished-holder duty"
+  ],
+  "completed_at": "2026-11-06T23:06:46Z",
+  "dispatched_at": "2026-11-06T22:58:46Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "22",
+      "severity": "blocking",
+      "text": "blocking: the only importer-wide head receipt is importers_head.log at 9623b11c, before the queue_admission.py repair at 2b29cfdd, so the done-when's no-added-importer-failures measure is unverified for the delivered source."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Read 2b29cfdd1a90aefde3ceeb7ac4bb8d4d858cdc51 and 7694bf20cdc1908ed2c8f3404acf811b44c4a924 commit by commit; the first repairs stale claim retention and adds two tests, and the second appends the evidence fragment.",
+    "done_when": "The source prompt.txt:112 requires focused behavior and no added importer failures; repair_after_suite.log records 14 passes, but importers_head.log ran at 9623b11c before the repair at 2b29cfdd.",
+    "goal": "The source prompt.txt:38 asks to record a queued request's holding reason only when it changes; queue_admission.py:1275-1291 now distinguishes a binding claim from a stale scope refusal.",
+    "manifest": "The source manifest.md:11-25 names both repair commits, 12 and 14 focused passes, and two red controls, while its importer receipt predates the repair.",
+    "write_paths": "The source prompt.txt:77-84 declares the queue module, test, and evidence fragment among its paths; the two incremental commits change only those three paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_held_request_records_what_holds_it.py:205-255 fails on a restored stale-claim branch or a removed named-runs branch, as both recorded red controls demonstrate.",
+    "evidence": "repair_baseline_suite.log and repair_after_suite.log show 12 and 14 passes, but importers_head.log identifies revision 9623b11c rather than the repaired 2b29cfdd.",
+    "fit": "reckon/crew/queue_admission.py:1275-1291 extends the existing pass-hold recorder with mechanism-based names and stays beside admission's claim check.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:1275-1291 preserves a refusal only for the same current claim and retires it when a retry sees no binding claim.",
+    "reuse": "Capability search for stale-claim and named-run refusal coverage found no competing test owner; queue_admission.py:1262 remains the single hold recorder and the new cases extend its existing test module.",
+    "scope_discipline": "git diff 95808ee9..7694bf20 changes only queue_admission.py, its declared test file, and the declared evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt.txt:38 asks to record a queued request's holding reason only when it changes; queue_admission.py:1275-1291 now distinguishes a binding claim from a stale scope refusal.\nVERDICT done_when: The source prompt.txt:112 requires focused behavior and no added importer failures; repair_after_suite.log records 14 passes, but importers_head.log ran at 9623b11c before the repair at 2b29cfdd.\nVERDICT write_paths: The source prompt.txt:77-84 declares the queue module, test, and evidence fragment among its paths; the two incremental commits change only those three paths.\nVERDICT manifest: The source manifest.md:11-25 names both repair commits, 12 and 14 focused passes, and two red controls, while its importer receipt predates the repair.\nVERDICT diff: Read 2b29cfdd1a90aefde3ceeb7ac4bb8d4d858cdc51 and 7694bf20cdc1908ed2c8f3404acf811b44c4a924 commit by commit; the first repairs stale claim retention and adds two tests, and the second appends the evidence fragment.\nCALL_SITES: reckon/crew/queue_admission.py:4593 admit_once claim hold, reckon/crew/queue_admission.py:4878 admit_once launch refusal, reckon/crew/queue_admission.py:5218 and 5247 manual and service admission, reckon/crew/obligations.py:1970 finished-holder duty\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:1275-1291 preserves a refusal only for the same current claim and retires it when a retry sees no binding claim.\nSCORE evidence: 13\nJUSTIFICATION evidence: repair_baseline_suite.log and repair_after_suite.log show 12 and 14 passes, but importers_head.log identifies revision 9623b11c rather than the repaired 2b29cfdd.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 95808ee9..7694bf20 changes only queue_admission.py, its declared test file, and the declared evidence fragment.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_held_request_records_what_holds_it.py:205-255 fails on a restored stale-claim branch or a removed named-runs branch, as both recorded red controls demonstrate.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/queue_admission.py:1275-1291 extends the existing pass-hold recorder with mechanism-based names and stays beside admission's claim check.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability search for stale-claim and named-run refusal coverage found no competing test owner; queue_admission.py:1262 remains the single hold recorder and the new cases extend its existing test module.\nFINDING manifest.md:22 blocking: the only importer-wide head receipt is importers_head.log at 9623b11c, before the queue_admission.py repair at 2b29cfdd, so the done-when's no-added-importer-failures measure is unverified for the delivered source.",
+  "review_run_id": "r-20261106T225558348289-review-of-record-what-holds-a-queued-request-only-when-the-holding-7694bf20cdc1",
+  "reviewed_base_sha": "95808ee971f887fbbe5eba60b109385aefa09958",
+  "reviewed_head_sha": "7694bf20cdc1908ed2c8f3404acf811b44c4a924",
+  "reviewed_run_id": "r-20261106T200824843523-record-what-holds-a-queued-request-only-when-the-holding",
+  "scores": {
+    "durability": 19,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_commit_shas": [
+    "2b29cfdd1a90aefde3ceeb7ac4bb8d4d858cdc51",
+    "7694bf20cdc1908ed2c8f3404acf811b44c4a924"
+  ],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T23:10:41.609077+00:00",
+  "total": 109
+}
