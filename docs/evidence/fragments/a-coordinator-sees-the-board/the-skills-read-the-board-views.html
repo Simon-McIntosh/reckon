@@ -16,16 +16,15 @@ coordination question, and neither hands a coordinator a report to join by
 hand.</p>
 
 <ul>
-  <li><strong>The ready-idle set</strong> is the ready-set view filtered to rows
-  with no live run (<code>ready_idle</code>). Each ready row already carries its
-  <code>live_run</code>, its <code>coordinator</code> and <code>plan_owner</code>,
-  and its <code>critical_path</code> flag, and the view names the
-  <code>closable</code> plans with their <code>closure_blockers</code>; the
-  filter pages with the view's own cursor.</li>
-  <li><strong>The owners and the held paths</strong> are
-  <code>crew(view="directory", project=&lt;project&gt;)</code>, whose coordinator
-  rows carry <code>ready_idle_sections</code> beside <code>held_paths</code> and
-  <code>queued_runs</code>.</li>
+  <li><strong>The ready-idle set and its owners</strong> come from one call.
+  The rows are a filter (<code>ready_idle</code>) on the ready-set projection,
+  which carries each row's <code>live_run</code>, <code>coordinator</code>,
+  <code>plan_owner</code> and <code>critical_path</code> flag, and names the
+  <code>closable</code> plans with their <code>closure_blockers</code>; that
+  projection has no view name of its own, so a coordinator reads the filtered set
+  per owner from <code>crew(view="directory", project=&lt;project&gt;)</code>,
+  whose coordinator rows carry <code>ready_idle_sections</code> beside
+  <code>held_paths</code> and <code>queued_runs</code>.</li>
   <li><strong>The critical path</strong> is
   <code>roadmap(view="summary").critical_path</code>: a <code>links</code> row per
   section in path order, each with its <code>primary_state</code> — in flight with
@@ -40,7 +39,7 @@ hand.</p>
 </ul>
 
 <p>Where they sit: the build skill's section 12 <em>Queue the chosen work after
-the review round</em> gains the four views as the way to read the beat's set,
+the review round</em> gains the three views as the way to read the beat's set,
 and the roadmap skill's <em>Ready-idle sections, owners and the critical
 path</em> section replaces the recipe with them. The roadmap skill's field table
 also stops describing the ready-idle set as an intersection a reader computes:
@@ -92,9 +91,74 @@ mutation was then removed and the head arm re-run green at
 <h3 id="the-skills-read-the-board-views-scope">Scope</h3>
 
 <p>Two skills and one new test file. No production module changes, so no
-importer arm is owed: the only module the test imports is
-<code>tests.test_skill_contracts</code>' <code>normalized</code> helper, which
-this node does not touch.</p>
+importer arm is owed: the modules the test imports are
+<code>tests.test_skill_contracts</code>' <code>normalized</code> helper and
+<code>reckon.mcp_views</code>, which this node reads and does not change.</p>
+
+<h2 id="the-skills-read-the-board-views-repair">Repair round</h2>
+
+<p>Three findings, all answered.</p>
+
+<h3 id="the-skills-read-the-board-views-repair-call">The set named no call a coordinator could make</h3>
+
+<p>Both skills said the ready-idle set was "the ready-set view filtered to rows
+with no live run". No such view exists. <code>CREW_VIEWS</code> carries no
+ready-set name, the roadmap serves only <code>summary</code>,
+<code>detail</code> and <code>raw</code>, and
+<code>ready_set_view</code> is reached unfiltered only by
+<code>reckon/serve.py:1878</code>'s discovery payload and filtered only by
+<code>reckon/crew/directory.py:282</code>. Both skills now say what is true and
+what is callable: the rows are a filter on the projection, and
+<code>crew(view="directory", project=&lt;project&gt;)</code> is the served call
+that carries them per owner as <code>ready_idle_sections</code>.</p>
+
+<h3 id="the-skills-read-the-board-views-repair-count">The inventory miscounted itself</h3>
+
+<p>The roadmap section said three views answered it and listed four. Two of the
+four were the same call, so the list is now three items and the sentence's
+count is right. A test reads the stated number word and the numbered items in
+that section and requires them to agree; under the pre-repair text it reads
+<code>assert 4 == 3</code>.</p>
+
+<h3 id="the-skills-read-the-board-views-repair-test">The test locked wording</h3>
+
+<p>The removed case asserted two literal prose substrings. The replacement
+asserts the contract: every <code>crew(view=…)</code> a skill names is one the
+crew surface serves; the projection's <code>ready_idle</code> filter is a
+parameter of <code>ready_set_view</code> and <code>serve_crew_view</code> asks
+the directory for those rows; and a statement of the ready-idle set carries
+either a call that serves it or the field that call returns. The domain term
+"ready-idle set" stays required, because it is the name the plan and the
+<code>ready_idle</code> field share; every word around it is free.</p>
+
+<h3 id="the-skills-read-the-board-views-repair-arms">The repair's arms and controls</h3>
+
+<p>Both arms run
+<code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+tests/test_the_skills_read_the_board_views.py</code>. The base arm, from a
+<code>git archive</code> extraction of
+<code>5da16be129a2be6b126a9e5bfc6acadc715a0c95</code>, is 4 passed, exit 0. The
+head arm is 7 passed, exit 0.</p>
+
+<ul>
+  <li><strong>Reverting the skill half of the repair</strong> leaves the
+  pre-repair text beside the repaired tests, and two cases go red:
+  <code>test_a_skills_ready_idle_set_names_a_call_that_serves_it</code> and
+  <code>test_the_roadmap_inventory_matches_its_own_count</code>
+  (<code>assert 4 == 3</code>), exit 1.</li>
+  <li><strong>A correct rewording</strong> of both skills passes all seven,
+  while the pre-repair contract test — kept verbatim from
+  <code>5da16be129</code> — fails on the same text. That is the finding
+  reproduced and then retired.</li>
+  <li><strong>A skill naming <code>crew(view="ready-set")</code></strong> fails
+  <code>test_every_crew_view_a_skill_names_is_served</code>, exit 1, so the
+  registry check is load-bearing rather than decorative.</li>
+</ul>
+
+<p>Logs: <code>negative-control-revert-skills.log</code>,
+<code>negative-control-rewording.log</code>,
+<code>gate-baseline-repair.log</code> and <code>gate-head.log</code> in the run
+directory.</p>
 </main>
 </body>
 </html>
