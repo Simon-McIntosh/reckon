@@ -1,0 +1,68 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T23:15:07.322Z",
+  "dispatched_at": "2026-11-06T23:06:08Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:50",
+      "id": "anchors_resolve-1",
+      "reason": "a node that opens the cited lines finds only the shape guard and may treat the sixth case as already satisfied, costing a failing gate; the sibling \u00a73 words the same situation correctly (\"That branch gains the same refusal, which today's `follow-on` term then reaches as well\"), so one wording change removes the trap.",
+      "text": "\"append_evidence refuses an anchor equal to one of the plan's section ids or outcome (reckon/_store.py near lines 1292\u20131299)\" does not resolve: lines 1292\u20131299 are the anchor-shape `re.fullmatch` guard only, and `_apply_append_evidence` (lines 1278\u20131313) contains no comparison against plan section ids or `outcome` anywhere \u2014 its only record-side anchor check is the duplicate-id refusal in `_append_evidence_to_text`. The sentence is present tense inside the Deliverable, so it reads as a guarantee already held",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:50",
+      "id": "reasoning-1",
+      "reason": "the plan claims an absolute guarantee its mechanism does not carry, and the residual case is precisely the defect under repair; either the refusal must also cover ids the ledger can render, or the guarantee must be scoped to plan section ids and the shadowing stated as a designed trade-off.",
+      "text": "the guarantee \"so an appended section cannot later collide with a generated one\" is not produced by refusing only plan section ids and `outcome`: `_render_document` builds its rendered ids from `set(comments_by_section) | set(runs_by_section)` (reckon/evidence.py:349), and `_section_key` normalises an arbitrary section string into an id, so a comment key or a ledger run's `section` key can render an id equal to an existing append's anchor; the rendered-id exclusion then silently drops that append \u2014 the same anchor loss \u00a74 exists to fix \u2014",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:51",
+      "id": "done_when-1",
+      "reason": "\u00a72's identical sentence reads \"importing `reckon.evidence` or `reckon._store`\", so this is a one-word widening that makes the gate cover the module its own case six exercises.",
+      "text": "\"The test files importing `reckon.evidence` add no failure against the base revision\" scopes the regression arm to one module, but the sixth case calls `append_evidence` through `reckon._store` (and the fixture reads plan state through `reckon._plan_html`), so a regression in the `_store` importers the new test reaches would not be in the arm",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:51",
+      "id": "evidence_paths-1",
+      "reason": "a base arm whose log is not written to a durable path cannot be read by the coordinator or a later review, and the measure's evidence would rest on the worker's word alone.",
+      "text": "s4's done-when requires a base-revision arm and a ruff check but names no path for either log, unlike \u00a72 and \u00a73 which both require the run directory",
+      "type": "evidence_paths",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "b7565196c2860daeb8280b7ab38c4259cd225e8b",
+  "plan_fingerprint": "277125f4a358c20fe012b6807e19941bca8c7ae73c048a5aa98689ab34866510",
+  "plan_slug": "an-evidence-record-counts-only-what-it-read",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T230437332009-plan-review-of-an-evidence-record-counts-only-what-it-read",
+  "reviewed_blob_sha": "c5f6ff038a214287014a5913f6949d4b7202ade8",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the anchor-refusal citation resolves to code that does not contain the refusal.",
+    "done_when": "a finding \u2014 s4's six cases and five negative controls are measurable, but the regression arm is scoped to \"test files importing `reckon.evidence`\" while the sixth case exercises `reckon._store.append_evidence`, the module \u00a72 and \u00a73 both name.",
+    "evidence_paths": "a finding \u2014 s4's done-when names no durable path for its gate log or its base arm, while \u00a72 (\"Every log is under the run directory, starts with its revision and the literal command, and ends in `EXIT=`\") and \u00a73 (\"The command's output and finding count ... are recorded in the run directory\") both do.",
+    "naming": "pass \u2014 `data-evidence-origin`, the test module name and the case ids carry no plan labels, stage names, ticket numbers or version tags, and no changelog prose.",
+    "reasoning": "a finding \u2014 the stated guarantee (\"an appended section cannot later collide with a generated one\") is broader than what the stated mechanism refuses; the root cause (a rewrite that renders only plan-and-ledger content) does match the cited evidence, and the caller (`reckon evidence synthesize`, named in the Why) is real.",
+    "single_goal": "pass \u2014 carrying appended anchors forward and refusing an anchor that would collide with a generated section are one deliverable, the second stated as the guarantee of the first.",
+    "wiring": "pass \u2014 `plan-section-depends-on` carries `s4: [s2, s3]`, which matches s4's prose (\"shares both with \u00a72 and `reckon/_store.py` with \u00a73, so it waits for both\") and the followup's \u00a72\u2192\u00a73\u2192\u00a74 order; both dependencies are nodes that write the files s4 writes."
+  },
+  "section_digests": {
+    "_document": "6d35efce52466005f8ee56997c8dc7bcca998d7c41fcd252d254bc7264596281",
+    "s1": "7c52117565966edec5de56bc0448d4a141edbcb73ac18ede5f2cb0c34f424f0a",
+    "s2": "143dc532dde638505b6cf743e1b2af8b2d754fbd94debf4fdb0b351e623a2a39",
+    "s3": "1e19a712fd2dad1c38a11f7b6164b1fcc01c996e78f3297edb135a1d5fd7c0cf",
+    "s4": "8298be2ae761eb16b83d1e9a5534629fdc1042ff33df728eb8ca47708493a42a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T23:28:07.819473+00:00",
+  "total": null
+}
