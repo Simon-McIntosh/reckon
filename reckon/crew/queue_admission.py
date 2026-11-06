@@ -1848,7 +1848,7 @@ def _record_gated_verdicts(
 def _pass_verdict_record(
     result: Mapping[str, Any], *, lane: str, code_stamp: str
 ) -> dict[str, Any] | None:
-    """The one record a pass leaves, or ``None`` when it examined no pointer.
+    """The one record a pass leaves, or ``None`` when it had no outcome.
 
     The same object is what the verdict log holds and what the service loop
     prints, so a coordinator reading the log and a caller reading stdout see
@@ -1856,7 +1856,12 @@ def _pass_verdict_record(
     """
     verdicts = result.get("verdicts") or []
     landing = result.get("landing") or {}
-    if not verdicts and not landing.get("landed") and not landing.get("obligations"):
+    if (
+        not verdicts
+        and not landing.get("landed")
+        and not landing.get("skipped")
+        and not landing.get("obligations")
+    ):
         return None
     return {
         "at": _utc_now(),
@@ -1891,10 +1896,10 @@ def _publish_pass_verdicts(record: Mapping[str, Any] | None) -> None:
 def _record_pass_verdicts(
     result: Mapping[str, Any], *, lane: str, code_stamp: str
 ) -> dict[str, Any] | None:
-    """Write one log line for a pass whose lane had a queued pointer.
+    """Write one log line for a pass with an admission or landing outcome.
 
-    A pass that examined no queued pointer writes nothing: an idle pass is the
-    absence of a line, not a line saying so. The line goes through the shared
+    A pass with no pointer verdict or landing outcome writes nothing: an idle
+    pass is the absence of a line, not a line saying so. The line uses the shared
     crew-home log writer, so this log and the picker's timings are written the
     same way, and the bound that follows is the shared service-log trim.
 
@@ -1906,14 +1911,12 @@ def _record_pass_verdicts(
     swallowed: a storage error while bounding the record must not end a service
     whose admission decision has already been made.
     """
-    verdicts = result.get("verdicts") or []
-    landing = result.get("landing") or {}
-    if not verdicts and not landing.get("landed") and not landing.get("obligations"):
+    record = _pass_verdict_record(result, lane=lane, code_stamp=code_stamp)
+    if record is None:
         return None
     from reckon.crew.fleet_supervisor import trim_service_log
     from reckon.crew.picker import _append_crew_log_line
 
-    record = _pass_verdict_record(result, lane=lane, code_stamp=code_stamp)
     _append_crew_log_line(ADMISSION_VERDICT_LOG, record)
     try:
         trim_service_log(

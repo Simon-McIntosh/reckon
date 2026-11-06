@@ -107,3 +107,34 @@ def test_pointer_removed_while_recording_attempt_is_skipped(
 
     assert "error" not in landing, landing
     assert landing["skipped"] == [{"run_id": RUN, "status": "landed-elsewhere"}]
+
+
+def test_skipped_only_landing_writes_a_pass_verdict(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    empty = {"verdicts": [], "landing": {}}
+    skipped = {
+        "verdicts": [],
+        "landing": {"skipped": [{"run_id": RUN, "status": "landed-elsewhere"}]},
+    }
+    verdict_log = runs.crew_home() / queue_admission.ADMISSION_VERDICT_LOG
+
+    assert queue_admission._record_pass_verdicts(empty, lane="", code_stamp="") is None
+    assert not verdict_log.exists()
+    assert (
+        queue_admission._pass_verdict_record(
+            {"verdicts": [], "landing": {"landed": [RUN]}}, lane="", code_stamp=""
+        )
+        is not None
+    )
+
+    record = queue_admission._pass_verdict_record(skipped, lane="", code_stamp="")
+    assert record is not None
+    assert record["landing"] == skipped["landing"]
+    written = queue_admission._record_pass_verdicts(skipped, lane="", code_stamp="")
+    assert written is not None
+    assert written["landing"] == skipped["landing"]
+    assert [json.loads(line) for line in verdict_log.read_text().splitlines()] == [
+        written
+    ]
