@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:1306 (_landing_remedy inside land_once \u2014 the only caller of _gate_check_remedy)",
+    "reckon/crew/obligations.py:1166 (_review_duty_item appending admission_landing.remedy to the landing-refused reason)"
+  ],
+  "completed_at": "2026-11-06T09:35:27.686Z",
+  "dispatched_at": "2026-11-06T09:24:07Z",
+  "findings": [
+    {
+      "file": "tests/test_a_landing_refusal_names_its_remedy.py",
+      "line": "186",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion compares refused[\"guard\"] against the guard string this test itself computed and handed to the monkeypatched _land, so it holds whatever land_once does and survives a regression in the remedy the case exists to guard; deriving the string from promotion_checks._require_gate_check_precondition changed its source, not that shape."
+    },
+    {
+      "file": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-landing-refusal-names-its-remedy.html",
+      "line": "9",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment claims the first case's guard \"cannot pass by the test agreeing with itself\", which is not true of the assertion at tests/test_a_landing_refusal_names_its_remedy.py:186, so the evidence states a stronger property than the test holds."
+    },
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "line": "374",
+      "severity": "non-blocking",
+      "text": "non-blocking: the branch returns \"promotion reads a manifest\" when the file is present and fresh, but promotion_checks._fresh_manifest also returns None for a manifest that will not parse, so an unparseable manifest still yields a log-oriented remedy while promotion reads no evidence from it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit from aab4155481 to e6176bf791 \u2014 9f514882da adds _manifest_evidence_remedy, rewires _gate_log_cited_by_manifest onto promotion_records._default_gate_evidence_from_manifest and adds the stale-manifest case, e6176bf791 updates the evidence fragment, 115 insertions and 30 deletions across three files.",
+    "done_when": "plan \u00a727's done_when names tests/test_a_landing_refusal_names_its_remedy.py, which now holds three cases, and the recorded gate log logs/after-node-gate.log ends \"3 passed in 4.77s\" / EXIT=0.",
+    "goal": "the commits this review covers (aab4155481..e6176bf791) repair the remedy a landing refusal carries, and reckon/crew/queue_landing.py:361 _manifest_evidence_remedy now asks whether promotion reads the manifest at all before it names a log record.",
+    "manifest": "read; it records 3 passed, two negative controls each 1 failed/2 passed with EXIT=1, and population arms 5 failed/490 passed at the change against 5 failed/487 passed at the base.",
+    "write_paths": "the run's declared paths are queue_landing.py, obligations.py, the new test, the evidence fragment and a figures directory; the delta touches three of them and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_landing_refusal_names_its_remedy.py:239-241 reddens when the freshness branch is deleted, while the assertion at line 186 still compares the guard the test handed _land, so it cannot fail on a remedy regression.",
+    "evidence": "logs/after-node-gate.log ends 3 passed / EXIT=0 and each negative control fails exactly its own case, so the recorded result measures the done_when rather than asserting it.",
+    "fit": "queue_landing.py:391 follows the module's docstring-and-local-import idiom and ruff check plus ruff format --check report nothing on both staged Python paths.",
+    "goal_fidelity": "queue_landing.py:373 judges the manifest with runs._manifest_freshness, the same function promotion_checks._fresh_manifest reads, so a stale manifest now yields the rewrite the coordinator owes instead of a log the promotion never opens.",
+    "reuse": "queue_landing.py:403 now takes the log selection from promotion_records._default_gate_evidence_from_manifest rather than restating it, and line 373 calls the existing freshness owner instead of a second copy of the rule.",
+    "scope_discipline": "the delta changes only queue_landing.py, the test and the evidence fragment, all inside the declared write paths, and adds no refactor of the surrounding landing pass."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the commits this review covers (aab4155481..e6176bf791) repair the remedy a landing refusal carries, and reckon/crew/queue_landing.py:361 _manifest_evidence_remedy now asks whether promotion reads the manifest at all before it names a log record.\nVERDICT done_when: plan \u00a727's done_when names tests/test_a_landing_refusal_names_its_remedy.py, which now holds three cases, and the recorded gate log logs/after-node-gate.log ends \"3 passed in 4.77s\" / EXIT=0.\nVERDICT write_paths: the run's declared paths are queue_landing.py, obligations.py, the new test, the evidence fragment and a figures directory; the delta touches three of them and nothing outside them.\nVERDICT manifest: read; it records 3 passed, two negative controls each 1 failed/2 passed with EXIT=1, and population arms 5 failed/490 passed at the change against 5 failed/487 passed at the base.\nVERDICT diff: read commit by commit from aab4155481 to e6176bf791 \u2014 9f514882da adds _manifest_evidence_remedy, rewires _gate_log_cited_by_manifest onto promotion_records._default_gate_evidence_from_manifest and adds the stale-manifest case, e6176bf791 updates the evidence fragment, 115 insertions and 30 deletions across three files.\nCALL_SITES: reckon/crew/queue_landing.py:1306 (_landing_remedy inside land_once \u2014 the only caller of _gate_check_remedy), reckon/crew/obligations.py:1166 (_review_duty_item appending admission_landing.remedy to the landing-refused reason)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: queue_landing.py:373 judges the manifest with runs._manifest_freshness, the same function promotion_checks._fresh_manifest reads, so a stale manifest now yields the rewrite the coordinator owes instead of a log the promotion never opens.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/after-node-gate.log ends 3 passed / EXIT=0 and each negative control fails exactly its own case, so the recorded result measures the done_when rather than asserting it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the delta changes only queue_landing.py, the test and the evidence fragment, all inside the declared write paths, and adds no refactor of the surrounding landing pass.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_landing_refusal_names_its_remedy.py:239-241 reddens when the freshness branch is deleted, while the assertion at line 186 still compares the guard the test handed _land, so it cannot fail on a remedy regression.\nSCORE fit: 19\nJUSTIFICATION fit: queue_landing.py:391 follows the module's docstring-and-local-import idiom and ruff check plus ruff format --check report nothing on both staged Python paths.\nSCORE reuse: 19\nJUSTIFICATION reuse: queue_landing.py:403 now takes the log selection from promotion_records._default_gate_evidence_from_manifest rather than restating it, and line 373 calls the existing freshness owner instead of a second copy of the rule.\nFINDING tests/test_a_landing_refusal_names_its_remedy.py:186 non-blocking: the assertion compares refused[\"guard\"] against the guard string this test itself computed and handed to the monkeypatched _land, so it holds whatever land_once does and survives a regression in the remedy the case exists to guard; deriving the string from promotion_checks._require_gate_check_precondition changed its source, not that shape.\nFINDING docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-landing-refusal-names-its-remedy.html:9 non-blocking: the fragment claims the first case's guard \"cannot pass by the test agreeing with itself\", which is not true of the assertion at tests/test_a_landing_refusal_names_its_remedy.py:186, so the evidence states a stronger property than the test holds.\nFINDING reckon/crew/queue_landing.py:374 non-blocking: the branch returns \"promotion reads a manifest\" when the file is present and fresh, but promotion_checks._fresh_manifest also returns None for a manifest that will not parse, so an unparseable manifest still yields a log-oriented remedy while promotion reads no evidence from it.",
+  "review_run_id": "r-20261106T091608764432-review-of-a-landing-refusal-names-its-remedy-e6176bf791fb",
+  "reviewed_base_sha": "aab415548102ea5c0782011f06ba1c3726c81a87",
+  "reviewed_head_sha": "e6176bf791fb3038a0e7299a46a8629871ef9950",
+  "reviewed_run_id": "r-20261105T105635159157-a-landing-refusal-names-its-remedy",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T09:40:00+00:00",
+  "total": 112
+}
