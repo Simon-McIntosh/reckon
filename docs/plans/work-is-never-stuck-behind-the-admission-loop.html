@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="302">
+<meta name="plan-version" content="303">
 <meta name="plan-modified" content="2026-11-06">
 </head>
 <body>
@@ -527,6 +527,9 @@
 <div class="r-comment" data-section="s22" data-id="c-run-r-20261106T162505021196-review-of-a-launch-that-succeeds-is-recorded-whatever-a-refused-b0e72030bf1a" data-who="reckon-build" data-when="2026-11-06T16:35:19Z">
     <div class="r-comment-body"><p>Parsed independent review of 5e655fa1585bda633923fac1afa1285f3568b619..b0e72030bf1a3b349f99e8935d76933edb287e1d records six scores and one blocking finding: the importer pair has one added follower-readiness failure.</p></div>
 </div>
+<div class="r-comment" data-section="s22" data-id="c-run-r-20261105T092431693986-a-launch-that-succeeds-is-recorded-whatever-a-refused" data-who="reckon-build" data-when="2026-11-06T16:16:53Z">
+    <div class="r-comment-body"><p>Shared dispatch now publishes the full launch record atomically and preserves late refusals in history; 12 node cases pass and three mutation controls fail. Broad importer delta has one outside-scope failure, so the measure remains unmet. [Evidence](/reckon/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-launch-that-succeeds-is-recorded-whatever-a-refused.html#a-launch-that-succeeds-is-recorded-whatever-a-refused-measure).</p></div>
+</div>
 <div class="r-comment" data-section="s23" data-id="c-run-r-20261103T085129232474-replay-the-two-oversizednode-routing-refusals" data-who="reckon-build" data-when="2026-11-03T09:58:52.393Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/replay-the-two-oversizednode-routing-refusals.html</p></div>
 </div>
@@ -617,6 +620,9 @@
 <div class="r-comment" data-section="s34" data-id="c-run-r-20261105T110511704085-classifying-the-live-set-reads-it-once" data-who="reckon-build" data-when="2026-11-05T13:14:24Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/classifying-the-live-set-reads-it-once.html#classifying-the-live-set-reads-it-once-measure — 50 classifications match the base reading with at most one live-set read; the per-pointer control makes 710 reads and fails.</p></div>
 </div>
+<div class="r-comment" data-section="s36" data-id="c-run-r-20261106T171536810712-review-of-the-lander-skips-a-run-landed-elsewhere-61b9147844e5" data-who="reckon-build" data-when="2026-11-06T17:25:05Z">
+    <div class="r-comment-body"><p>Parsed independent review of ad4269927f577138e8e4e1adebc10637383333ee..61b9147844e5815a780f79ae233c7b56ae1c32b0 stored at both granted paths with six scores, zero added failure ids, and two blocking findings; both records pass crew check --review.</p></div>
+</div>
 <div class="r-comment" data-section="s37" data-id="c-run-r-20261105T165246922164-review-of-a-launch-rereads-the-run-it-starts-a1deb2b4fc7a" data-who="reckon-build" data-when="2026-11-05T17:07:49.350Z">
     <div class="r-comment-body"><p>§37 reviewed at head a1deb2b4fc — `queue_admission._launch_reread_refusal` re-reads the live pointer and the run's `attempt-*-exit.json` records under `runs._pointer_lock` immediately before the launch (queue_admission.py:4339) and records a `refused-before-launch` verdict; the gate (3 passed EXIT=0) and two negative controls (each 1 failed/2 passed EXIT=1, reddening a different case) are recorded, and the consumer arm is head 54 passed vs base 1 failed 53 passed with the single base-only `test_the_log_is_trimmed_within_its_size_bound`; scores goal_fidelity 18, evidence 14, scope_discipline 19, durability 17, fit 16, reuse 19, total 103; three non-blocking findings: the attempt-resulted case writes its record before the pass so it does not test the mid-pass window, the fragment overstates that window coverage, and the done-when's importer-population clause is measured on six of 57 files because the wider sweep was truncated at 54 percent.</p></div>
 </div>
@@ -694,9 +700,6 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261029T145111134871-review-of-a-delivered-run-reaches-a-landing-verdict-c12609ed2938" data-who="reckon-build" data-when="2026-10-29T15:00:19.489Z">
     <div class="r-comment-body"><p>§8 reviewed at c12609ed29 against base c97238c9: goal met, evidence reproducible, 0 added failures, two non-blocking findings (a tautological ledger assertion at the new test's line 260, and a surviving raw commit-entry reader at promotion_scope.py:1253).</p></div>
-</div>
-<div class="r-comment" data-section="s36" data-id="c-run-r-20261106T171536810712-review-of-the-lander-skips-a-run-landed-elsewhere-61b9147844e5" data-who="reckon-build" data-when="2026-11-06T17:25:05Z">
-    <div class="r-comment-body"><p>Parsed independent review of ad4269927f577138e8e4e1adebc10637383333ee..61b9147844e5815a780f79ae233c7b56ae1c32b0 stored at both granted paths with six scores, zero added failure ids, and two blocking findings; both records pass crew check --review.</p></div>
 </div>
 </section>
 </main>
