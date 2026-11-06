@@ -3288,11 +3288,18 @@ def section_readiness_rows(
     comes from the same :func:`section_readiness_verdict` the whole-project
     build uses. A plan absent from ``inventory`` carries no row, which is the
     same answer a whole-project build gives a plan it does not find.
+
+    A readiness and a section verdict depend on neither who coordinates a plan
+    nor who answers an idle link, so the build runs with critical-link
+    coordinator resolution off. Entering the scope here rather than leaving it
+    to each caller covers admission and dispatch alike, and keeps a bounded read
+    from reading every run's ledger for an answer its rows never carry.
     """
 
-    return section_verdicts_by_plan(
-        build_roadmap(project, list(inventory), [], docs_dir=docs_dir)
-    )
+    with roadmap_build_scope(resolve_coordinators=False):
+        return section_verdicts_by_plan(
+            build_roadmap(project, list(inventory), [], docs_dir=docs_dir)
+        )
 
 
 #: The primary state a critical-path link reports, in the precedence that
