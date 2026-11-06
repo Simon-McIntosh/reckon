@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T20:14:01.144Z",
+  "dispatched_at": "2026-11-06T20:07:04Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-refusal-comes-before-the-work.html:43",
+      "id": "reasoning-1",
+      "reason": "as written the node repairs one of four contract refusals while its title claims the contract, so two of the three reported classes of late refusal remains in force and the done-when's single `;` case cannot show it.",
+      "text": "\u00a72 asserts that judging each batch entry by \"the same `validate_node` call\" gives it \"the node contract\", but `validate_node` is only the first of four refusals a single dispatch makes: `plan_dispatch` (reckon/crew/dispatch_plan.py:557, call at :843) then appends `negative_control_finding(node)` (:851), `gate_population_finding(node, repository=...)` (:863), and its own execution-fit refusal (:869), each able to refuse a node `validate_node` passes. \u00a72's write paths exclude `dispatch_plan.py`, so an implementer follows the literal deliverable and imports `validate_node` from `reckon.crew.node`, leaving a batch entry that writes a test with no declared negative control, or names a gate file the repository does not hold, still queued and still refused only at launch \u2014 the exact deferral \u00a72 exists to remove.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-refusal-comes-before-the-work.html:44",
+      "id": "done_when-1",
+      "reason": "the case needs its goal spelled as a conjunction of two action clauses (`read the config; reload the lane`) so the gate fails for the reason it claims to.",
+      "text": "\u00a72's first done-when case specifies \"an entry whose goal contains `;` is refused in the batch result\", but `_deliverable_conjunction` (reckon/crew/node.py:252) refuses a separator only when the clause after it opens with a listed action verb; its docstring states explicitly that \"a semicolon between two objects\" is one deliverable and passes. A test written to the literal wording \u2014 a goal such as `review the config; it is fine` \u2014 passes the contract and fails the case, which reads to the implementer as a broken `validate_node` rather than a mis-stated case, and the obvious repair (assert only that no pointer was stored) measures nothing.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-refusal-comes-before-the-work.html:39",
+      "id": "anchors_resolve-1",
+      "reason": "the item is still held by a live section of the cited plan, so nothing reported goes unbuilt; correcting the pointer to \u00a75 is a one-line edit that changes no node.",
+      "text": "\u00a71 says the dry-run write-path fence \"is `a-dry-run-must-resolve-what-the-real-call-resolves` \u00a72, so it is not repeated here\", but that section enumerates the resolutions it covers (\"the repository, the roster member, the base ref, the plan file ... the peer scope claims, the backend and the budget\") and names no write path, and the string `~/.cache` appears nowhere in that plan. The item is in fact plausibly owned by that plan's \u00a75 done-when (\"every read-only resolution the real call performs\"), so it is not orphaned \u2014 but the cross-reference names the section that does not carry it.",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "ccc236bcdf3a42b6c3e85890ed2dc2556cded01f",
+  "plan_fingerprint": "b358ba9deaa1254003541a4b6d79e581b96c404c3fe17315ed627d9c2539b049",
+  "plan_slug": "a-refusal-comes-before-the-work",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T200526909924-plan-review-of-a-refusal-comes-before-the-work",
+  "reviewed_blob_sha": "5b967bdf95960be96ed5ec896d7314709922f174",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a71 defers its fourth reported item to `a-dry-run-must-resolve-what-the-real-call-resolves` \u00a72, whose enumerated resolutions do not include write paths (plan.html:39).",
+    "done_when": "a finding \u2014 \u00a72's negative case is \"an entry whose goal contains `;`\", which is not a refusal the contract makes (plan.html:44).",
+    "evidence_paths": "pass \u2014 \u00a72 names the run directory for every log, and \u00a73/\u00a74 inherit the same repository test paths, so no gate writes to a scratchpad or a node-local temp path.",
+    "naming": "pass \u2014 the new test filenames name the behaviour (`test_a_batch_entry_meets_the_node_contract.py`, `test_a_brief_run_names_its_plan_at_dispatch.py`, `test_an_edit_refusal_names_every_field.py`); no plan labels, ticket numbers or version tags reach a symbol.",
+    "reasoning": "a finding \u2014 \u00a72 names `validate_node` as the shared call, but the contract a single dispatch enforces is `validate_node` plus three further refusals computed in `plan_dispatch` (plan.html:43).",
+    "single_goal": "pass \u2014 \u00a72 (batch enforces the node contract), \u00a73 (brief run names its plan at dispatch) and \u00a74 (one refusal names every field) each carry one deliverable with one gate.",
+    "wiring": "pass \u2014 `plan-after: a-dry-run-must-resolve-what-the-real-call-resolves` and `plan-section-depends-on {\"s3\": [\"a-refusal-comes-before-the-work#s2\"]}` both resolve, match the house convention used by sibling plans (e.g. `a-landing-never-reverts-the-checkout`), and correctly serialise \u00a73 behind \u00a72 on the shared `reckon/crew/dispatch.py`."
+  },
+  "section_digests": {
+    "_document": "5490c3ce3496b82bc182a0e51ae5a1c0aabf34b5fc4f4a402ea712c52d3aceac",
+    "s1": "8a8738ffd515031a7449c281f0a0f19f6956731d30a704bbc37e43ee6e2f579f",
+    "s2": "88a3dc77b57d7a28489d1a13cd7034e031cd1887676a7142e2c8bb22e435805e",
+    "s3": "b5b62335762566059c1bbb98372fed78bff07b643d64c9fa675596aa8bd81a3a",
+    "s4": "07a4ee8576d20a6230358f2290732b9c4debaa456380d9c2a8e8fd3651cc5e95"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T20:22:55.481381+00:00",
+  "total": null
+}
