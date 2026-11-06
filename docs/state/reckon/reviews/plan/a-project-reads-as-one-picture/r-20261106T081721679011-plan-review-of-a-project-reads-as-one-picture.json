@@ -1,0 +1,71 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T08:35:18.640Z",
+  "dispatched_at": "2026-11-06T08:22:09Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-project-reads-as-one-picture.html:25",
+      "id": "wiring-1",
+      "reason": "without the declared edge the queue treats \u00a78 as ready now, and the dispatch that runs it spends a full measure to rediscover a stall the plan already knows and has a section for, which is the same defect the earlier review answered for s15.",
+      "text": "`plan-section-depends-on` declares `s8: [s2, s3, s4, s5, s7, s15]` and no `s16` entry, yet followup f-aprop-003 is titled \"Implement \u00a716, then re-measure \u00a78\" (line 182), its body says \u00a716 makes one call decode the index once \"and \u00a78's measure is then taken again\" (line 183), and the s8 comment c-land-s8-measure says \"the why view never answers; \u00a716 owns that\" (line 342) \u2014 so a scheduler can admit and launch \u00a78 before \u00a716 lands, and its \"what blocks a named section\" question then fails for exactly the reason \u00a716 repairs; the ordering is stated in prose in three places and declared in none",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-project-reads-as-one-picture.html:165",
+      "id": "done_when-1",
+      "reason": "a node told to run \"one CLI why call\" either takes on a second deliverable (a new CLI verb) that no section of this plan costs, or records the arm against a surface the done-when did not name; naming `read_plan(view=\"why\")` as the call, which is the surface \u00a78's measure already used, removes the ambiguity for one line of change.",
+      "text": "\u00a716's third arm reads \"One CLI why call on the power_convertor mount answers within the 30 s read deadline\", but the why view has no CLI verb at this revision: `reckon/cli.py` imports its verbs explicitly and registers no `why`, the only consumers of `reckon/why_view.py` are `reckon/mcp.py` and `reckon/mcp_views.py`, the docstring of `why_view.py` states the surface as `read_plan(view=\"why\", ...)`, and the `roadmap` verb takes `(project, sprint, checkout_path, max_paths, json_output, brief, since)` with no view option \u2014 so the arm can only be satisfied by adding a CLI surface \u00a716 never scopes, or by quietly meaning the MCP call",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-project-reads-as-one-picture.html:243",
+      "id": "done_when-2",
+      "reason": "the falsifying measurement exists in the section's own landing comment, so the record carries the control even though one of its two statements of it is vacuous; the section is landed and nothing a node does turns on which sentence a reader believes.",
+      "text": "\u00a715's negative control is recorded twice with different results in the unit under review: the s15 landing comment says `tests/test_read_plan_answers_a_followup_wait.py` \"reads 25 passed at head 6ca488dea against 20 failed/5 passed at base 116da9e9f\" (line 240), while the closing record for the same section says the \"Coordinator armed pair at ac18a69a7: base runs no tests (the file is new), head 25 passed\" (line 243) \u2014 the second reading is of a base arm that collects nothing, so on its own it cannot show the guard fires, and a later reader cannot tell which of the two describes the control",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "2dc76e6463c3d911b2421b5a97af066eaafd06b9",
+  "plan_fingerprint": "14872ec54d98796cc17708ee7562d8c818ee76a6fc1b3633ad5043a8c041a37f",
+  "plan_slug": "a-project-reads-as-one-picture",
+  "plan_version": 68,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T081721679011-plan-review-of-a-project-reads-as-one-picture",
+  "reviewed_blob_sha": "5444e8dcd2908e7d4c9f80eb1d83e75702a19c2e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_waited_on_by` (reckon/why_view.py:363, called from the view builder at :118), `_section_edges` (why_view.py:180), `roadmap._section_scoped_edges`, `_plan_authored_state` (reckon/roadmap.py:171), `resources.resolve_resource` (reckon/resources.py:881) and `metadata_index._read_persisted_memo` (reckon/metadata_index.py:1986) all resolve, and the `#s8-measure` anchor exists in docs/evidence/archive/a-project-reads-as-one-picture-landed.html.",
+    "done_when": "a finding \u2014 \u00a716's third done-when arm names \"one CLI why call\", and no CLI verb reaches the why view at this revision, so the arm names a command the implementation node cannot run.",
+    "evidence_paths": "pass \u2014 the section's evidence pointer is the cumulative landed archive at a repository path, and the run's command, elapsed seconds and answer go into that fragment rather than a scratchpad.",
+    "naming": "pass \u2014 \u00a716 names no plan label, stage name, ticket number or version tag in a symbol or a comment, and its prose states the mechanism rather than a changelog.",
+    "reasoning": "pass \u2014 the root cause matches the evidence.",
+    "single_goal": "pass \u2014 \u00a716 carries one deliverable (one decode of the persisted index per call), and its two candidate mechanisms are a delegated implementation choice under a stated constraint, not two goals.",
+    "wiring": "a finding \u2014 `plan-section-depends-on` gives \u00a78 the dependencies s2, s3, s4, s5, s7 and s15 but not s16, though \u00a78's re-measure cannot answer until \u00a716 lands."
+  },
+  "section_digests": {
+    "_document": "3d9071856290ec7a6c7982a166b8cb31ae9efdeb83c9742d8ad9a3089a1b2735",
+    "s1": "1956dcaef74ad7d3216608fe69c2e7baa2a9e32d702ef86431dc746f15c3878a",
+    "s10": "e102e1c4c48bcc4635b2e41c4a84e2b36433f78cee863762cad68b3deae2cf75",
+    "s11": "ff19dc90f42b226ca45a5aaaf02a9894b54846500c87597775cb2806fc9b6156",
+    "s12": "039fc9469fcdd80b1d5482629a5dcefc71359e7124fbbad20e0227170c2760dc",
+    "s13": "95e233ad4cbbcd9c2cf975b7cb717f3f0eec9093cbeade0f4f268890aaff8d73",
+    "s14": "e215eae311c545fa0320f94622e0e806b548177eb68b4ee0c1ca4cb1b202d283",
+    "s15": "ae3d696d3e3b1a44be381a9c1aac5613b8c19982be174e639200aba9532b81b9",
+    "s16": "8ca24cf5942e88af92b0dcae6a91534e7891a83bf6416754b164793a0ccab562",
+    "s2": "d5da4569d38701f7f8c91790b979f6e3de48d9e5d4969c4f115a74a7e8317e8c",
+    "s3": "749a131ab7a4c04f7278425172c74a2f6ebd29c0014fbb7befc6a0c8f48f08b4",
+    "s4": "389898eb9ae606e5b51a4f3a7bfafd20cdd843ae6612eb3884809786e45217a6",
+    "s5": "e13040e31816bf168d9b0b3f3a1245e7fa9b90c30cdf82db44726a02a764b6d9",
+    "s6": "d0f702b85752e3605cfbc815d2de3035b6d1e8e89fb584b661e8571aba7aa175",
+    "s7": "c96146ddd026103e827c96ed2e8629450a1f2f8d361d4419b4fe76456edf5ef4",
+    "s8": "1f13b98a4d7476b083792c060d8da48918e0ca44b3b27c910d2cfb7ae1aa69d3",
+    "s9": "a65c8523c1a05e7389c35e43a8737757ab2c60d08633460c1648c40a88138892"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T09:12:19.462761+00:00"
+}
