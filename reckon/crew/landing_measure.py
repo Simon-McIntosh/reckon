@@ -61,7 +61,7 @@ POPULATION_WORKERS = 8
 #: Wall-clock bound for one measurement subprocess, in seconds. A flight config
 #: may retune it under ``landing.measure_timeout_seconds``; this is the floor a
 #: project with no measurement history is bounded by, and it is deliberately
-#: modest because the landing pass runs inside the admission loop.
+#: modest so an unreadable arm releases the landing worker promptly.
 DEFAULT_MEASURE_TIMEOUT_SECONDS = 600.0
 
 #: How many times a population's own measured seconds per file an arm's bound
@@ -546,6 +546,7 @@ def measure_run(
     timeout: float = DEFAULT_MEASURE_TIMEOUT_SECONDS,
     stored: Iterable[Mapping[str, Any]] = (),
     project: str = "",
+    changed: Iterable[str] | None = None,
 ) -> Measurement:
     """Run the three readings for one delivered run and return the verdict.
 
@@ -555,7 +556,10 @@ def measure_run(
     the project's stored measurements, whose arms size each bound above that
     floor from how long this project's populations actually take. ``run`` is
     the command runner, ``subprocess.run``-shaped, so a caller can drive the
-    measurement without executing a real suite.
+    measurement without executing a real suite. ``changed`` optionally names
+    the run's own changed modules independently of the compared revisions;
+    the landing caller compares current primary with a merge candidate while
+    selecting importers of the delivered change.
     """
     runner = run or _RUN
     node_tests = [str(path).strip() for path in test_files if str(path).strip()]
@@ -607,7 +611,9 @@ def measure_run(
         environment,
         file_count=len(node_tests),
     )
-    files = importer_population(changed_paths(tree, base_sha, head_sha), tree)
+    files = importer_population(
+        changed_paths(tree, base_sha, head_sha) if changed is None else changed, tree
+    )
     _carry_missing_tests(base_tree, tree, files)
     population_command = [*argv, *files, "-n", str(POPULATION_WORKERS)]
     population_bound = bound(len(files))

@@ -635,9 +635,9 @@ def _stored_measurement(
 ) -> landing_measure.Measurement | None:
     """The measurement already recorded for this head, or ``None``.
 
-    A pass never re-measures a head it has already measured: the record is kept
-    under the run's directory and is valid only for the head and the command it
-    names, so a moved head or a changed command measures again.
+    A record is reusable for its delivered head, command and primary revision.
+    A primary change rebuilds the candidate and measures again. A head already
+    on primary needs no merge, so its delivery record can finish bookkeeping.
 
     A record the measurement could not be taken for is not one: it states the
     bound the arm exceeded or the failure to build the base tree, and reusing
@@ -752,13 +752,18 @@ def _measure_delivery(
     tree: str,
     stored: Sequence[Mapping[str, Any]] = (),
 ) -> Any:
-    """Run the three suite readings for one delivered run.
+    """Measure current primary against the merge of one delivered run.
 
     A run that armed no command has nothing to measure; the landing path keeps
     its earlier behaviour for such a run rather than inventing a command. A
     measurement that cannot be taken — no base revision, or a base checkout
     that cannot be built — yields an unreadable measurement so the caller
     refuses the landing instead of inferring a verdict from nothing.
+
+    The importer set follows the modules the run changed since dispatch, read
+    in the candidate tree so it includes callers added on primary meanwhile.
+    An already incorporated head is its own candidate; its base arm still runs
+    at current primary, never at the dispatch revision.
 
     ``stored`` is the project's measurement history, read by the pass once for
     all its runs; a caller that names none measures with the floor as its only
@@ -781,6 +786,7 @@ def _measure_delivery(
         )
     timeout = _measure_timeout(pointer)
     logs = runs.run_dir(run_id) / "landing-measure"
+    changed = landing_measure.changed_paths(repo, base_sha, head)
     primary = _primary_revision(pointer)
     if not primary:
         measured = landing_measure.Measurement(
@@ -802,15 +808,14 @@ def _measure_delivery(
                 measured_head, measured_tree = stack.enter_context(
                     landing_measure.candidate_checkout(repo, primary, head, timeout)
                 )
-                base_sha = primary
             base_tree = stack.enter_context(
-                landing_measure.base_checkout(repo, base_sha, timeout)
+                landing_measure.base_checkout(repo, primary, timeout)
             )
             try:
                 measured = landing_measure.measure_run(
                     command=command,
                     tree=measured_tree,
-                    base_sha=base_sha,
+                    base_sha=primary,
                     head_sha=measured_head,
                     base_tree=base_tree,
                     logs_dir=logs,
@@ -818,6 +823,7 @@ def _measure_delivery(
                     timeout=timeout,
                     stored=stored,
                     project=project,
+                    changed=changed,
                 )
                 measured = replace(
                     measured,
@@ -1091,9 +1097,10 @@ def land_once() -> dict[str, Any]:
 
     At most one delivered run is measured per pass. A measurement runs the
     suite at two revisions plus up to six isolated re-runs, so measuring every
-    waiting run in one pass would hold admission for as long as the slowest
-    suites take. The rest wait for later passes in delivery order, and a head
-    already measured is reused rather than measured again.
+    waiting run in one pass would delay the next landing for the sum of their
+    suite times. Admission runs independently. The rest wait for later passes
+    in delivery order, and a measurement is reused while its primary, delivered
+    head and command stay unchanged.
 
     A head refused on an earlier pass is judged again as soon as the rule that
     refused it or the review it read has changed, so a run held by a rule since
@@ -1277,7 +1284,9 @@ def land_once() -> dict[str, Any]:
             )
             continue
         command = str(pointer.get("suite_command") or "").strip()
-        measured = _stored_measurement(run_id, head, command, primary)
+        measured = (
+            _stored_measurement(run_id, head, command, primary) if primary else None
+        )
         if measured is not None:
             # The stored head is this head: reuse it, and re-apply it to the
             # pointer so a promoted pass still records what it measured on.

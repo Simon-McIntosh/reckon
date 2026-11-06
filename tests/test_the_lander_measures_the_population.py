@@ -189,3 +189,63 @@ def test_skipping_the_population_lands_the_reproducing_failure(delivery, monkeyp
     result = queue_landing.land_once()
     assert result["landed"] == [RUN]
     assert not any(c["population"] for c in delivery["calls"])
+
+
+def test_a_measurement_for_another_primary_is_not_reused(delivery, monkeypatch):
+    _runner(delivery, monkeypatch, clean=True)
+    queue_landing.land_once()
+    before = _record()
+    _commit(delivery["repo"], "reference.txt", "primary advanced\n")
+    runs._mutate_pointer(
+        RUN, lambda p: {k: v for k, v in p.items() if k != "admission_landing"}
+    )
+    _runner(delivery, monkeypatch)
+
+    result = queue_landing.land_once()
+
+    assert not result["landed"]
+    assert FAILURE in result["obligations"][0]["guard"]
+    assert _record()["population"]["main_sha"] != before["population"]["main_sha"]
+
+
+def test_a_primary_change_rejudges_a_population_refusal(delivery, monkeypatch):
+    _runner(delivery, monkeypatch)
+    assert not queue_landing.land_once()["landed"]
+    _commit(delivery["repo"], "reference.txt", "primary repaired\n")
+    _runner(delivery, monkeypatch, clean=True)
+
+    assert queue_landing.land_once()["landed"] == [RUN]
+
+
+def test_a_population_runner_error_is_not_a_clean_measurement(delivery, monkeypatch):
+    _runner(delivery, monkeypatch, clean=True)
+    runner = landing_measure._RUN
+
+    def broken(argv, **kwargs):
+        if "tests/test_consumer.py" in argv:
+            return subprocess.CompletedProcess(argv, 2, "collection interrupted\n", "")
+        return runner(argv, **kwargs)
+
+    monkeypatch.setattr(landing_measure, "_RUN", broken)
+    result = queue_landing.land_once()
+    assert not result["landed"]
+    assert "unreadable" in result["obligations"][0]["guard"]
+
+
+def test_a_primary_moving_during_measurement_defers_landing(delivery, monkeypatch):
+    _runner(delivery, monkeypatch, clean=True)
+    runner = landing_measure._RUN
+    moved = []
+
+    def move(argv, **kwargs):
+        answer = runner(argv, **kwargs)
+        if "tests/test_consumer.py" in argv and not moved:
+            moved.append(
+                _commit(delivery["repo"], "reference.txt", "primary advanced\n")
+            )
+        return answer
+
+    monkeypatch.setattr(landing_measure, "_RUN", move)
+    result = queue_landing.land_once()
+    assert result["landed"] == []
+    assert result["deferred"] == [RUN]
