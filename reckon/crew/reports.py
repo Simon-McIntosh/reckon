@@ -346,7 +346,7 @@ def parse_manifest(
     formatting.
     """
     if text.lstrip().startswith(("{", "[")):
-        fields = _read_json_manifest(text, path=path)
+        fields = _read_json_manifest(text, path=path, shape_findings=shape_findings)
     else:
         fields = _parse_text_manifest(text, path=path, shape_findings=shape_findings)
         if not fields and text.strip():
@@ -722,7 +722,12 @@ def _read_inline_value(
     return stripped
 
 
-def _read_json_manifest(text: str, *, path: str | None) -> dict[str, Any]:
+def _read_json_manifest(
+    text: str,
+    *,
+    path: str | None,
+    shape_findings: list[str] | None = None,
+) -> dict[str, Any]:
     """Read a JSON manifest body, refusing anything that is not an object."""
     try:
         raw = json.loads(text)
@@ -730,6 +735,22 @@ def _read_json_manifest(text: str, *, path: str | None) -> dict[str, Any]:
         raise ManifestParseError(_unreadable_manifest_message(path)) from exc
     if not isinstance(raw, dict):
         raise ManifestParseError(_unreadable_manifest_message(path))
+    for name, value in raw.items():
+        allowed = _MANIFEST_SCHEMA.get(name)
+        if not allowed:
+            # A key the schema does not declare has no declared shape to judge.
+            continue
+        shape = _shape_of(value)
+        if shape in allowed:
+            continue
+        if shape == "list":
+            # The same rule the text reader applies: the value is carried
+            # forward as written, and the manifest check names the field rather
+            # than leaving a record whose entries the worker wrote inseparable.
+            if shape_findings is not None:
+                shape_findings.append(_schema_shape_message(path, name, shape, allowed))
+            continue
+        raise ManifestParseError(_schema_shape_message(path, name, shape, allowed))
     return raw
 
 
