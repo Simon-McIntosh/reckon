@@ -3478,10 +3478,12 @@ def dispatch(
                     _stamp_failure,
                 )
 
+                failure = f"{type(exc).__name__}: {exc}"
+
                 def restore(pointer: dict[str, Any]) -> dict[str, Any]:
                     refused = _stamp_failure(
                         dict(request_pointer),
-                        f"{type(exc).__name__}: {exc}",
+                        failure,
                         moment=datetime.now(UTC),
                         guard=None,
                     )
