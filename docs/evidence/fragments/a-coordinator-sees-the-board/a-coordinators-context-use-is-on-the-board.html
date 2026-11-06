@@ -69,6 +69,16 @@ tree, the resolved working directory and the module path imported.</p>
 declared mutation. <code>test_a_missing_transcript_reads_unmeasured_never_zero</code>
 failed and the rest passed — 1 failed, 4 passed, EXIT=1 — which is the second
 case of the section's done-when doing its work.</p>
+<p>Repair round on <code>a12116c0df</code>: the review's reuse finding was that
+the transcript scan restated the dispatch accounting's. After the repair the
+gate is <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+tests/test_a_coordinators_context_use_is_on_the_board.py</code> — at
+<code>a12116c0df</code> 5 passed, at <code>e9d6656e16</code> 6 passed, both
+EXIT=0, both from <code>git archive</code> extractions. Its negative control
+returns the first charged request from the forward fallback instead of the last,
+the divergence two implementations invite;
+<code>test_a_request_deeper_than_the_tail_is_read_forward</code> failed — 1
+failed, 5 passed, EXIT=1.</p>
 </main>
 </body>
 </html>
