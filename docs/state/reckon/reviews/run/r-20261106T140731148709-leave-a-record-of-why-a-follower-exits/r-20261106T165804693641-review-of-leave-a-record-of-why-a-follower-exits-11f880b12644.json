@@ -1,0 +1,85 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:3324 the producer path enters runs_module.follower_registration(...) as a context manager, whose finally at reckon/crew/follower_registration.py:510 releases with the reason",
+    "reckon/crew_follow_commands.py:3318 the station path's finally calls _StationRegistration.release(), which delegates to _FollowerRegistration.release at reckon/crew_follow_commands.py:184",
+    "reckon/crew/follower_registration.py:428 follower_claim wraps follower_registration, so any caller of follower_claim also leaves the record"
+  ],
+  "completed_at": "2026-11-06T17:07:42.163Z",
+  "dispatched_at": "2026-11-06T17:00:25Z",
+  "findings": [
+    {
+      "file": "reckon/crew/follower_registration.py",
+      "line": "508",
+      "severity": "non-blocking",
+      "text": "non-blocking: the restore loop calls signal.signal(signum, previous) with no suppression, but signal.signal returns None when the displaced handler was not installed from Python and signal.signal(sig, None) then raises TypeError; that raise lands inside the context manager's finally and skips registration.release(reason) at :510, so the exit record this node exists to write is lost. The sibling helper serve.py:4249-4255 suppresses (ValueError, TypeError) for exactly this case."
+    },
+    {
+      "file": "reckon/crew/follower_registration.py",
+      "line": "448",
+      "severity": "non-blocking",
+      "text": "non-blocking: the exit-record write runs before the flock release and is not guarded, so a write failure (a read-only or full crew home) propagates out of release(); release() is called from a finally on both delivery branches, so that failure replaces the follower's original exit and reports a settle to the session host as a crash."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/leave-a-record-of-why-a-follower-exits.html",
+      "line": "48",
+      "severity": "non-blocking",
+      "text": "non-blocking: the landed fragment states the base importer population as '142 passed and 2 failed, both reexec probes in a non-git tree'; the manifest's evidence_inputs.base_arm_correction records that cause as superseded (the failures were the node's own git-archive extraction racing the run) and logs/baseline-population.log shows 144 passed EXIT=0 on an undisturbed base tree. The conclusion (adds no failure) stands, but the fragment carries a cause the node has already retracted."
+    },
+    {
+      "file": "reckon/crew/follower_registration.py",
+      "line": "497",
+      "severity": "non-blocking",
+      "text": "non-blocking: the SIGTERM install/restore here duplicates the capability already owned by _install_termination_unwind/_remove_termination_unwind in reckon/serve.py:4234-4255 rather than extending it; parameterising the exception the handler raises would leave one implementation, and the copy has already lost the owner's TypeError suppression (see the finding at :508)."
+    },
+    {
+      "file": "tests/test_a_follower_exit_leaves_a_record.py",
+      "line": "47",
+      "severity": "non-blocking",
+      "text": "non-blocking: every case drives the registration context manager from a synthetic driver rather than the crew follow command, so a regression in the production follower's own exit path (crew_follow_commands.py:3299 and :3318) would not redden this file; the four cases guard the registration's release, not the command that reaches it."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T140731148709-leave-a-record-of-why-a-follower-exits/logs/after-arm.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T140731148709-leave-a-record-of-why-a-follower-exits/logs/base-suite.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call sites; both delivery branches (producer context manager and station registration) reach the new release, and follower_claim wraps the same manager",
+    "diff": "Read both commits against base e4cc1092: 5306423907 adds follower_exit_path, FollowerSignalled, exit_reason and _write_exit_record in reckon/crew/follower_registration.py, delegates the reason through _StationRegistration.release in reckon/crew_follow_commands.py, and adds tests/test_a_follower_exit_leaves_a_record.py; 11f880b1 adds the evidence fragment and nothing else.",
+    "done_when": "The done_when names four cases in tests/test_a_follower_exit_leaves_a_record.py; after-arm.log at head 11f880b1 records 4 passed EXIT=0, base-suite.log records the same four ids failed EXIT=1 at base, and the three negative-control logs fail exactly the named cases (A 4 failed, B only the station case, C only the signal case).",
+    "goal": "The node goal is that a follower's exit leaves a record of why; reckon/crew/follower_registration.py:430-470 now writes reason, exited_at, pid, project, session and host beside the registration, named for the follower's own pid, for whichever path held the claim.",
+    "manifest": "Read the reviewed run's manifest; it records both commits, the head/base arms with log paths, the three negative controls, the importer population (148 head against 144 base), and a base_arm_correction retracting the two-failure base figure. Its artifacts line still quotes the superseded 142/2 figure while evidence_inputs corrects it.",
+    "write_paths": "The source section declares reckon/crew/follower_registration.py, reckon/crew_follow_commands.py, tests/test_a_follower_exit_leaves_a_record.py and the evidence fragment; the two commits change exactly those four paths and nothing else."
+  },
+  "justifications": {
+    "durability": "The four cases assert literal reasons (settled, SIGTERM, RuntimeError, settled) and the child's own pid against the record, each independent of the implementation, and negative-control logs show removing the write reddens all four; the driver nevertheless exercises the registration rather than the crew follow exit path at reckon/crew_follow_commands.py:3299.",
+    "evidence": "after-arm.log at 11f880b1 ends 4 passed EXIT=0 and base-suite.log fails the same four ids EXIT=1, with the three control logs each reddening only their named case, but the manifest's artifacts line keeps the retracted 142/2 base figure beside its own correction.",
+    "fit": "reckon/crew/follower_registration.py:454-470 writes through the module's existing write_json_atomically and hangs the record beside the registration file, matching the surrounding record idioms; only the unsuppressed handler restore at :509 departs from the sibling helper's care.",
+    "goal_fidelity": "reckon/crew/follower_registration.py:445-452 writes the record only when this follower held the claim, and follower_exit_path at :56 names it for the exiting pid, so two followers over one project-and-session pair cannot overwrite each other's end.",
+    "reuse": "The capability search found write_json_atomically in reckon/_store.py:620, which the addition reuses, and no existing follower exit record; but _install_termination_unwind/_remove_termination_unwind in reckon/serve.py:4234-4255 already own SIGTERM-unwind install/restore, and this addition re-implements it rather than extending it.",
+    "scope_discipline": "git diff e4cc1092..11f880b1 changes only the four declared paths, and the evidence fragment added by 11f880b1 is one of them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that a follower's exit leaves a record of why; reckon/crew/follower_registration.py:430-470 now writes reason, exited_at, pid, project, session and host beside the registration, named for the follower's own pid, for whichever path held the claim.\nVERDICT done_when: The done_when names four cases in tests/test_a_follower_exit_leaves_a_record.py; after-arm.log at head 11f880b1 records 4 passed EXIT=0, base-suite.log records the same four ids failed EXIT=1 at base, and the three negative-control logs fail exactly the named cases (A 4 failed, B only the station case, C only the signal case).\nVERDICT write_paths: The source section declares reckon/crew/follower_registration.py, reckon/crew_follow_commands.py, tests/test_a_follower_exit_leaves_a_record.py and the evidence fragment; the two commits change exactly those four paths and nothing else.\nVERDICT manifest: Read the reviewed run's manifest; it records both commits, the head/base arms with log paths, the three negative controls, the importer population (148 head against 144 base), and a base_arm_correction retracting the two-failure base figure. Its artifacts line still quotes the superseded 142/2 figure while evidence_inputs corrects it.\nVERDICT diff: Read both commits against base e4cc1092: 5306423907 adds follower_exit_path, FollowerSignalled, exit_reason and _write_exit_record in reckon/crew/follower_registration.py, delegates the reason through _StationRegistration.release in reckon/crew_follow_commands.py, and adds tests/test_a_follower_exit_leaves_a_record.py; 11f880b1 adds the evidence fragment and nothing else.\nCALL_SITES: reckon/crew_follow_commands.py:3324 the producer path enters runs_module.follower_registration(...) as a context manager, whose finally at reckon/crew/follower_registration.py:510 releases with the reason, reckon/crew_follow_commands.py:3318 the station path's finally calls _StationRegistration.release() which delegates to _FollowerRegistration.release at reckon/crew_follow_commands.py:184, reckon/crew/follower_registration.py:428 follower_claim wraps follower_registration so any caller of follower_claim also leaves the record\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/follower_registration.py:445-452 writes the record only when this follower held the claim, and follower_exit_path at :56 names it for the exiting pid, so two followers over one project-and-session pair cannot overwrite each other's end.\nSCORE evidence: 17\nJUSTIFICATION evidence: after-arm.log at 11f880b1 ends 4 passed EXIT=0 and base-suite.log fails the same four ids EXIT=1, with the three control logs each reddening only their named case, but the manifest's artifacts line keeps the retracted 142/2 base figure beside its own correction.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff e4cc1092..11f880b1 changes only the four declared paths, and the evidence fragment added by 11f880b1 is one of them.\nSCORE durability: 15\nJUSTIFICATION durability: The four cases assert literal reasons (settled, SIGTERM, RuntimeError, settled) and the child's own pid against the record, each independent of the implementation, and negative-control logs show removing the write reddens all four; the driver nevertheless exercises the registration rather than the crew follow exit path at reckon/crew_follow_commands.py:3299.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/follower_registration.py:454-470 writes through the module's existing write_json_atomically and hangs the record beside the registration file, matching the surrounding record idioms; only the unsuppressed handler restore at :509 departs from the sibling helper's care.\nSCORE reuse: 14\nJUSTIFICATION reuse: The capability search found write_json_atomically in reckon/_store.py:620, which the addition reuses, and no existing follower exit record; but _install_termination_unwind/_remove_termination_unwind in reckon/serve.py:4234-4255 already own SIGTERM-unwind install/restore, and this addition re-implements it rather than extending it.\nFINDING reckon/crew/follower_registration.py:508 non-blocking: the restore loop calls signal.signal(signum, previous) with no suppression, but signal.signal returns None when the displaced handler was not installed from Python and signal.signal(sig, None) then raises TypeError; that raise lands inside the context manager's finally and skips registration.release(reason) at :510, so the exit record this node exists to write is lost. The sibling helper serve.py:4249-4255 suppresses (ValueError, TypeError) for exactly this case.\nFINDING reckon/crew/follower_registration.py:448 non-blocking: the exit-record write runs before the flock release and is not guarded, so a write failure (a read-only or full crew home) propagates out of release(); release() is called from a finally on both delivery branches, so that failure replaces the follower's original exit and reports a settle to the session host as a crash.\nFINDING docs/evidence/fragments/the-monitor-shows-the-work-it-watches/leave-a-record-of-why-a-follower-exits.html:48 non-blocking: the landed fragment states the base importer population as '142 passed and 2 failed, both reexec probes in a non-git tree'; the manifest's evidence_inputs.base_arm_correction records that cause as superseded (the failures were the node's own git-archive extraction racing the run) and logs/baseline-population.log shows 144 passed EXIT=0 on an undisturbed base tree. The conclusion (adds no failure) stands, but the fragment carries a cause the node has already retracted.\nFINDING reckon/crew/follower_registration.py:497 non-blocking: the SIGTERM install/restore here duplicates the capability already owned by _install_termination_unwind/_remove_termination_unwind in reckon/serve.py:4234-4255 rather than extending it; parameterising the exception the handler raises would leave one implementation, and the copy has already lost the owner's TypeError suppression (see the finding at :508).\nFINDING tests/test_a_follower_exit_leaves_a_record.py:47 non-blocking: every case drives the registration context manager from a synthetic driver rather than the crew follow command, so a regression in the production follower's own exit path (crew_follow_commands.py:3299 and :3318) would not redden this file; the four cases guard the registration's release, not the command that reaches it.\n",
+  "review_run_id": "r-20261106T165804693641-review-of-leave-a-record-of-why-a-follower-exits-11f880b12644",
+  "reviewed_base_sha": "e4cc109235c4e22aecf34b9f6d209875bde2864f",
+  "reviewed_head_sha": "11f880b1264463f9977b0ad9dbcba86a4e2cae9e",
+  "reviewed_run_id": "r-20261106T140731148709-leave-a-record-of-why-a-follower-exits",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T17:05:00+00:00",
+  "total": 100
+}
