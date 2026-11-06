@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_a_queued_request_arranges_its_follower.py::test_one_admission_pass_launches_without_follower_refusal"
+  ],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/dispatch.py:2740",
+    "reckon/crew/dispatch.py:3398",
+    "reckon/crew/dispatch.py:3475",
+    "reckon/crew/queue_admission.py:1552",
+    "reckon/crew/queue_admission.py:1573",
+    "reckon/crew/queue_admission.py:4794",
+    "reckon/crew/routing.py:2237"
+  ],
+  "completed_at": "2026-11-06T16:35:19Z",
+  "dispatched_at": "2026-11-06T16:26:38Z",
+  "findings": [
+    {
+      "file": "tests/test_a_queued_request_arranges_its_follower.py",
+      "line": "96",
+      "severity": "blocking",
+      "text": "blocking: the reviewed head's importer gate fails follower readiness where the base arm passed, leaving the done_when requirement of zero added failures unmet; coordinator disposition or a separate scoped repair is required."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read commits 7b5bfac5e7df9b52e8a173dc0992a89fdadda63c, 1c2f83743f15e6362e57aac25cd45d13347dbb75 and b0e72030bf1a3b349f99e8935d76933edb287e1d against base 5e655fa1585bda633923fac1afa1285f3568b619; five declared paths changed.",
+    "done_when": "source prompt.txt:122 requires zero new importer failures, but importers-head.log records the follower-readiness case absent from importers-base.log.",
+    "goal": "source prompt.txt:38 asks that a successful launch survive a refused attempt, and the reviewed dispatch.py:3398 publishes its fields under the pointer lock.",
+    "manifest": "source manifest.md reports 12 focused cases passing, three negative controls failing, and the one head-only importer failure as outside scope.",
+    "write_paths": "source manifest.md:3 declares six granted paths including dispatch.py, and all five changed paths in the base-to-head diff fall within them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_successful_launch_is_recorded.py:118 fails when the holder check counts its own run, and lines 83 and 241 fail when refusal or publication drops the launch identity, as the recorded negative controls demonstrate.",
+    "evidence": "source importers-head.log and importers-base.log show one added follower-readiness failure, although source node-committed.log records 12 passing focused cases.",
+    "fit": "reckon/crew/queue_admission.py:4747 extends the existing admission history mechanism and dispatch.py:3408 uses the established pointer mutation lock.",
+    "goal_fidelity": "reckon/crew/dispatch.py:3398 republishes argv, worktree and base_sha after spawn while queue_admission.py:4765 retains a successful pointer across a later refusal.",
+    "reuse": "capability search found existing owners in queue_admission.py:_admission_history_entry, runs.py:_mutate_pointer and routing.py:_live_pointer_worktrees; the additions extend those owners.",
+    "scope_discipline": "the five paths in the diff are among the six grants listed in source manifest.md:3 and each supports code, tests or evidence for the launch change."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: source prompt.txt:38 asks that a successful launch survive a refused attempt, and the reviewed dispatch.py:3398 publishes its fields under the pointer lock.\nVERDICT done_when: source prompt.txt:122 requires zero new importer failures, but importers-head.log records the follower-readiness case absent from importers-base.log.\nVERDICT write_paths: source manifest.md:3 declares six granted paths including dispatch.py, and all five changed paths in the base-to-head diff fall within them.\nVERDICT manifest: source manifest.md reports 12 focused cases passing, three negative controls failing, and the one head-only importer failure as outside scope.\nVERDICT diff: read commits 7b5bfac5e7df9b52e8a173dc0992a89fdadda63c, 1c2f83743f15e6362e57aac25cd45d13347dbb75 and b0e72030bf1a3b349f99e8935d76933edb287e1d against base 5e655fa1585bda633923fac1afa1285f3568b619; five declared paths changed.\nCALL_SITES: reckon/crew/dispatch.py:2740, reckon/crew/dispatch.py:3398, reckon/crew/dispatch.py:3475, reckon/crew/queue_admission.py:1552, reckon/crew/queue_admission.py:1573, reckon/crew/queue_admission.py:4794, reckon/crew/routing.py:2237\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:3398 republishes argv, worktree and base_sha after spawn while queue_admission.py:4765 retains a successful pointer across a later refusal.\nSCORE evidence: 13\nJUSTIFICATION evidence: source importers-head.log and importers-base.log show one added follower-readiness failure, although source node-committed.log records 12 passing focused cases.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the five paths in the diff are among the six grants listed in source manifest.md:3 and each supports code, tests or evidence for the launch change.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_successful_launch_is_recorded.py:118 fails when the holder check counts its own run, and lines 83 and 241 fail when refusal or publication drops the launch identity, as the recorded negative controls demonstrate.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/queue_admission.py:4747 extends the existing admission history mechanism and dispatch.py:3408 uses the established pointer mutation lock.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability search found existing owners in queue_admission.py:_admission_history_entry, runs.py:_mutate_pointer and routing.py:_live_pointer_worktrees; the additions extend those owners.\nFINDING tests/test_a_queued_request_arranges_its_follower.py:96 blocking: the reviewed head's importer gate fails follower readiness where the base arm passed, leaving the done_when requirement of zero added failures unmet; coordinator disposition or a separate scoped repair is required.\n",
+  "review_run_id": "r-20261106T162505021196-review-of-a-launch-that-succeeds-is-recorded-whatever-a-refused-b0e72030bf1a",
+  "reviewed_base_sha": "5e655fa1585bda633923fac1afa1285f3568b619",
+  "reviewed_head_sha": "b0e72030bf1a3b349f99e8935d76933edb287e1d",
+  "reviewed_run_id": "r-20261105T092431693986-a-launch-that-succeeds-is-recorded-whatever-a-refused",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T16:39:12.640401+00:00",
+  "total": 106
+}
