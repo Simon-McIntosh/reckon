@@ -1,0 +1,71 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T22:02:30.573Z",
+  "dispatched_at": "2026-11-06T21:55:35Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-promotion-reads-the-evidence-it-is-given.html:68",
+      "id": "reasoning-1",
+      "reason": "the section would otherwise add a guard that refuses the exact class of honest evidence the plan exists to stop refusing, and none of the four done-when cases exercises a log with an error line, so the defect would survive implementation.",
+      "text": "the deliverable compares the `after_suite` arm's `failure_count` against \"the cited log's last pytest summary\", but `ledger.py:509\u2013522` requires `failure_count == len(failure_ids)` and `review.py:2053\u20132075` builds `failure_ids` from both the `_GATE_FAILURE_RE` `FAILED` and `ERROR` lines, while a pytest summary prints \"N failed, M error\" as two separate figures; an honest armed receipt for a suite that collected one error records `failure_count` 2 against a summary whose failed figure is 1 and is refused",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-promotion-reads-the-evidence-it-is-given.html:68",
+      "id": "done_when-1",
+      "reason": "an implementer must choose between skipping and refusing for a case the plan does not settle, and choosing \"refuse\" turns the new guard into a blocker for every ctest-gated armed run.",
+      "text": "the deliverable says only that \"a manifest with no `after_suite` arm, or an arm recording neither field, is judged on exit status alone\", and states no rule for the other unmeasured direction: `gate_log_failure_ids` returns `None` when the last run carries no marker of either recognised format (`review.py:2120\u20132148`), and even a recognised `ctest` log has no pytest summary to read the count from, so an armed run gated on a ctest or other non-pytest command has no declared behaviour and `_require_gate_log_agrees` today skips rather than refuses an unreadable log (promotion_evidence.py:1105\u20131108); no done-when case and no negative control covers it",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-promotion-reads-the-evidence-it-is-given.html:68",
+      "id": "anchors_resolve-1",
+      "reason": "the same sentence names both fields and their comparison sources explicitly, so a builder implements the stated comparison regardless; the mistaken pointer costs one lookup and produces no wrong mechanism.",
+      "text": "the deliverable says the arm is \"read as `_zero_added_against_a_red_base` reads it\", but that function (`promotion_evidence.py:1174\u20131225`) reads the `after_suite` arm only for `completed is True`, never for `failure_count` or `failure_ids`, and its own docstring (lines 1187\u20131191) states the head ids are read from the cited gate log \"never from the manifest's `after_suite` list\"",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-promotion-reads-the-evidence-it-is-given.html:68",
+      "id": "anchors_resolve-2",
+      "reason": "\u00a77 waits on \u00a74 and \u00a74 waits on \u00a72, so the predicate exists before \u00a77 runs and the citation is dereferenceable in the order the plan dispatches; correcting the section number changes no step a builder takes.",
+      "text": "\"the matching rule \u00a75 makes shared\" attributes the predicate to \u00a75, which only rewires three call sites, while `failure_ids_covered` is added by \u00a72 (`reckon/crew/review.py` beside `canonical_node_id`); \u00a77 names no wait on \u00a72",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "a0660f5e61c295680610ccf81b0969a13d6bee58",
+  "plan_fingerprint": "e3ec073313ce6d2779f62f9ddd1ecda33155049949d623a50f2f4bb927094ad9",
+  "plan_slug": "a-promotion-reads-the-evidence-it-is-given",
+  "plan_version": 10,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T215422616731-plan-review-of-a-promotion-reads-the-evidence-it-is-given",
+  "reviewed_blob_sha": "96be120d81a74f5e0a7ec4c00144da0eb6a43898",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 `_require_gate_log_agrees` (promotion_evidence.py:1062), `_recorded_exit_status` (:1044), `_zero_added_against_a_red_base` (:1174), `gate_log_failure_ids` (review.py:2106) and `_require_independently` (promotion.py:573) all resolve, and promotion.py:573 does hold `record` in scope; but the sentence \"read as `_zero_added_against_a_red_base` reads it\" points at a function that never reads the two fields the comparison turns on.",
+    "done_when": "a finding \u2014 the done-when states what happens when the `after_suite` arm is absent but never what happens when the cited log's last run carries no pytest summary, so an armed run gated on a ctest or non-pytest command has no declared behaviour.",
+    "evidence_paths": "pass \u2014 s7's cases run over \"temporary logs\" inside a temp tree, and its own gate logs are placed under the run directory by the dispatch contract \u00a76 states explicitly; no session scratchpad or node-local path is named.",
+    "naming": "pass \u2014 the new reader, the arm fields and the test file are named by what they do; no plan labels, stage names, ticket numbers or version tags reach a symbol, and the power_convertor provenance sits in the plan's Why rather than in code.",
+    "reasoning": "a finding \u2014 the mechanism compares `failure_count` against \"the log's last pytest summary\" while a valid arm's count is `len(failure_ids)` and those ids include `ERROR` entries, so an honest receipt for a suite with a collection error is refused.",
+    "single_goal": "pass \u2014 s7 names one deliverable: `_require_gate_log_agrees` gains the failure-count and failure-id comparison, with the run record it needs.",
+    "wiring": "pass \u2014 s7 declares `s7 \u2192 s4` in `plan-section-depends-on` (plan line 28), which is correct because \u00a74 writes `reckon/crew/promotion_evidence.py`; \u00a77's use of `failure_ids_covered` reaches \u00a72 transitively through \u00a74's own `s4 \u2192 s2`, and `reckon/crew/promotion.py` is now a declared write path, which is where the new caller parameter lands."
+  },
+  "section_digests": {
+    "_document": "16b7e0ac064041177a182b808ca05352e7de20cac229dccd88501dc6a3e40354",
+    "s1": "5eac0eb57fbf9fccaeee6fb2da59c42ca24c4433f0cffcb4b7de1b6b04324b6c",
+    "s2": "fe74e7e01c9a6ccef1719f555e5352545a20da84a1770862fc2751cdb6598747",
+    "s3": "479c8ebc617467c2744513e850433e87af52a3d22110620dcfdfb48f9975d081",
+    "s4": "80e452e08578901bf28b21ac56f7ff38a65532179befbebd65581a10820c5bd9",
+    "s5": "bb42325f383db769e04822e4d230cc887e0c6fd955d89dc50dd006b4d3715684",
+    "s6": "2e81c0cbe61ef60fc16acb159e81912b5b6263e9d12b8059efbd9482d722976c",
+    "s7": "3af9f7958fda54dd7b041bb4c2a2151c4f410b7edb6aa651399339c1e095ab88"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T22:18:25.968824+00:00",
+  "total": null
+}
