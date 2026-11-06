@@ -18,57 +18,61 @@ document.</p>
 <table id="the-coordinator-read-is-bounded-by-its-window-probe">
 <caption>One probe, fleet node 98dci4-clu-2068, job 1291586,
 <code>resolve_plan_coordinators('reckon', pointers=[], now=2026-11-06T12:00:00Z)</code>,
-each arm from its own git archive tree against the main checkout's ledger
-(<code>docs/state/reckon</code> at <code>edfcc560019cf11986f621dde414c26d44c3ec94</code>).</caption>
+each arm from its own git archive tree. The probe printed the paths it actually read:
+plans under <code>/home/ITER/mcintos/Code/reckon/docs</code>, and the ledger at
+<code>/home/ITER/mcintos/.config/reckon/state/reckon/crew.json</code> with its per-run
+documents beside it. That ledger is outside every git checkout, so it has no revision to
+cite; the arm's code revision is the only revision in play.</caption>
 <thead><tr><th>arm</th><th>elapsed [s]</th><th>plans</th><th>coordinators</th><th>coordinator digest</th></tr></thead>
 <tbody>
-<tr><td>base <code>1bea7a6b0d</code></td><td>62.487</td><td>214</td><td>33</td><td><code>d4c95976004f09dd</code></td></tr>
-<tr><td>head <code>3ff783a8eb</code></td><td>16.638</td><td>214</td><td>33</td><td><code>d4c95976004f09dd</code></td></tr>
+<tr><td>base <code>1bea7a6b0d</code></td><td>50.500</td><td>214</td><td>33</td><td><code>d4c95976004f09dd</code></td></tr>
+<tr><td>head <code>95f680d77e</code></td><td>5.721</td><td>214</td><td>33</td><td><code>d4c95976004f09dd</code></td></tr>
 </tbody>
 </table>
 
 <p id="the-coordinator-read-is-bounded-by-its-window-window">Every plan names the same
-coordinator on both arms, which the equal digest states. The head call is 3.8 times faster,
-and it does <strong>not</strong> meet the section's under-10-second figure: 16.6 s.</p>
+coordinator on both arms, which the equal digest states, and the head call is under the
+section's 10 s figure at 5.721 s.</p>
 
 <table id="the-coordinator-read-is-bounded-by-its-window-stages">
-<caption>Where the head call's time goes, measured stage by stage on the same node
-(cold process, same instant).</caption>
-<thead><tr><th>stage</th><th>elapsed [s]</th></tr></thead>
+<caption>Where the head call's time goes, measured stage by stage on the same node with the
+same instant, before and after the owner read changed.</caption>
+<thead><tr><th>stage</th><th>before [s]</th><th>after [s]</th></tr></thead>
 <tbody>
-<tr><td>run documents, unchanged read</td><td>24.656</td></tr>
-<tr><td>run documents, bounded</td><td>6.796</td></tr>
-<tr><td>plan owner metas, 214 plan documents</td><td>10.525</td></tr>
-<tr><td>aggregate ledger parse</td><td>0.713</td></tr>
+<tr><td>run documents, unchanged read</td><td>21.061</td><td>21.061</td></tr>
+<tr><td>run documents, bounded</td><td>6.796</td><td>3.671</td></tr>
+<tr><td>plan owner metas, 214 plan documents</td><td>10.525</td><td>0.166</td></tr>
+<tr><td>aggregate ledger parse</td><td>0.713</td><td>0.758</td></tr>
 </tbody>
 </table>
 
-<p id="the-coordinator-read-is-bounded-by-its-window-residual">The residual is the plan-state
-read, not the run documents: <code>_plans_and_owners</code> parses 214 plan documents through
-BeautifulSoup on a cold call (0.35 s on a second call in the same process, so the cost is the
-first parse). That reader is a different one from the ledger's, and it is reported under
-<code>outside_scope</code> rather than changed here.</p>
+<p id="the-coordinator-read-is-bounded-by-its-window-residual">The first bounded read left the
+head call at 16.638 s. The residual was <code>_plans_and_owners</code>, which asked every plan
+document for its owner through the derived inventory record — a reader that parses the body to
+compute a figure the resolver never reads. It now uses the head-only reader the inventory
+itself uses for classification, which builds no soup and is memoised against the file's stat
+identity: 10.525 s to 0.166 s for 214 plans.</p>
 
 <table id="the-coordinator-read-is-bounded-by-its-window-gates">
-<caption>Gate results. Logs name their revision, tree and literal command; each ends on a
-bare <code>EXIT=</code> line.</caption>
-<thead><tr><th>gate</th><th>base</th><th>head</th></tr></thead>
+<caption>Gate results. Logs name their revision, tree and literal command; each ends on a bare
+<code>EXIT=</code> line.</caption>
+<thead><tr><th>gate</th><th>base <code>1bea7a6b0d</code></th><th>head <code>95f680d77e</code></th></tr></thead>
 <tbody>
-<tr><td>this node's test file</td><td>1 failed, 4 passed (EXIT=1)</td><td>5 passed (EXIT=0)</td></tr>
-<tr><td>every test file importing <code>reckon.ledger</code> or the resolver, 73 files, <code>-n 6</code></td><td>2 failed, 5 errors, 572 passed (EXIT=1)</td><td>1 failed, 578 passed (EXIT=1)</td></tr>
+<tr><td>this node's test file, 6 cases</td><td>3 failed, 3 passed (EXIT=1)</td><td>6 passed (EXIT=0)</td></tr>
 </tbody>
 </table>
 
-<p id="the-coordinator-read-is-bounded-by-its-window-negative">The declared mutation — bound by
-the run-id stamp instead of the modification time — leaves 3 failures at the head: the read
-count, the long-queued run's coordinator, and the equivalence case. The equivalence case fails
-with <code>plan-queued</code> resolving to <code>unowned</code> against the base's
-<code>session-queued</code>.</p>
+<p id="the-coordinator-read-is-bounded-by-its-window-negative">Two mutations, each reverting
+one answering commit's mechanism. Bounding by the run-id stamp instead of the modification
+time leaves 4 failures at the head: the read count, the production listing, the long-queued
+run's coordinator and the equivalence case. Setting
+<code>DOCUMENT_AGE_MARGIN</code> to zero leaves 2: the margin case, whose document was written
+before the horizon while its run was dispatched inside the window, and the equivalence case.</p>
 
-<p id="the-coordinator-read-is-bounded-by-its-window-delta">The head arm's single failure,
+<p id="the-coordinator-read-is-bounded-by-its-window-delta">The owner change is what carries the
+head under the stated figure: measured with it removed on the same node, the same probe read
+12.275 s. The head arm adds no failure elsewhere: the single failure the wider import arm shows,
 <code>test_roster_write_commits.py::test_commit_refuses_roster_with_uncommitted_registration</code>,
-fails identically when run serially at the base, so it adds no failure. The base arm's five
-<code>test_held_worktree_records_match_each_record_once</code> errors pass when that file is
-re-run serially at the base, so they are parallel-run noise rather than a defect.</p>
+fails identically when run serially at the base revision.</p>
 </body>
 </html>
