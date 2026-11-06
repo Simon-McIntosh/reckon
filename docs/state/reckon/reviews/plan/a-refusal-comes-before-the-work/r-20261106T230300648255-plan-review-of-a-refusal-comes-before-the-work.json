@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T23:10:53.653Z",
+  "dispatched_at": "2026-11-06T23:04:27Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-refusal-comes-before-the-work.html:43",
+      "id": "reasoning-1",
+      "reason": "a shared refusal resolved against a different lane either refuses an entry that will launch on an execution-capable lane or admits one that launches on a non-executing lane, and \u00a72's sixth case would pass only on a config where the two resolutions happen to coincide; the worker needs the lane expression `queue_requests` itself uses, then that lane's settings.",
+      "text": "\u00a72 says execution fit \"is judged against the lane the request is queued for\" and names `resolve_role` (`reckon/crew/routing.py:200`) as resolving that lane's settings, but a batch entry is queued by `queue_requests` (`reckon/crew/dispatch.py:293`) on `entry.get(\"backend\") or config[\"local_backend\"] or config[\"default_backend\"]` (`dispatch.py:313`, fed the entry's `backend` by `dispatch_batch.py:568`), and `resolve_role` takes a role rather than a lane and returns whatever a role/level/capability-class overlay names \u2014 so an entry that names a backend, or a project whose config sets `local_backend`, is judged against a lane other than the one its pointer records and the admission pass drains",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-refusal-comes-before-the-work.html:43",
+      "id": "reasoning-2",
+      "reason": "the fifth done-when case fails unless the repository is passed, so the plan's own measure forces the missing input; naming it would only save the worker a round trip.",
+      "text": "the shared function's inputs are named as \"the same locked decisions and budget ceiling\", but `gate_population_finding` (called at `reckon/crew/dispatch_plan.py:862`) also needs the repository path and `plan_dispatch` skips the check entirely when `repo is None`, so a function built from the sentence's input list alone would never produce the fifth case's refusal",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "b7565196c2860daeb8280b7ab38c4259cd225e8b",
+  "plan_fingerprint": "5f0a982f336551a7de1f4e8f5d85920f37913256f76054ef9ffb2b6bdc8af44a",
+  "plan_slug": "a-refusal-comes-before-the-work",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T230300648255-plan-review-of-a-refusal-comes-before-the-work",
+  "reviewed_blob_sha": "274ef70c73c85db216bc5c70e7e4622f185722f0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 each cited anchor resolves in the worktree at b7565196c2: `validate_node` at `reckon/crew/dispatch_plan.py:843`, `negative_control_finding` at :851, `gate_population_finding` at :862, the execution-fit refusal at :869, `_DELIVERABLE_ACTIONS` at `reckon/crew/node.py:79` (contains `run`), `_deliverable_conjunction` at node.py:252, `gate_population_patterns` at node.py:1099, `queue_batch` at `reckon/crew/dispatch_batch.py:478`, `queue_requests` at `reckon/crew/dispatch.py:293`, `resolve_role` at `reckon/crew/routing.py:200`.",
+    "done_when": "pass \u2014 \u00a72's six cases each name an observable batch-result outcome, the third pins equality with the single path's `--dry-run` detail, and the five negative controls each name a mutation that stores or fails a specific case.",
+    "evidence_paths": "pass \u2014 the done-when puts every log under the run directory, which is durable under `~/.config/reckon/crew/runs/`, and names no scratchpad or node-local path.",
+    "naming": "pass \u2014 the new test file and the described function carry the mechanism, with no plan-stage labels, ticket numbers or changelog prose.",
+    "reasoning": "a finding \u2014 \u00a72 identifies the lane a batch entry is queued for as `resolve_role`'s resolution, but the batch path queues through `queue_requests`, which takes the entry's own backend or the config's `local_backend`/`default_backend` and never calls `resolve_role`.",
+    "single_goal": "pass \u2014 one deliverable: the batch path reaches the same four contract refusals the single path runs, through one shared function.",
+    "wiring": "pass \u2014 \u00a72's dependents are declared (meta `plan-section-depends-on` names `a-refusal-comes-before-the-work#s2` for s3 and s5), s2 exists at `implementable`, and the `plan-after` target `docs/plans/a-dry-run-must-resolve-what-the-real-call-resolves.html` exists with its \u00a75 marked done as \u00a71 states."
+  },
+  "section_digests": {
+    "_document": "fe86ddc53d6df02ed8681809f4399744a8daf0946c333b28fc3a6b583769f545",
+    "s1": "75df880739e89570186a1c16cae47d54a4d457a4a6e99c09b2d62c21368dc424",
+    "s2": "8e3837dfb86e4cffd58cf0d90a0f08bb43ad6de69b74eadc16f6f2875de77e25",
+    "s3": "b5b62335762566059c1bbb98372fed78bff07b643d64c9fa675596aa8bd81a3a",
+    "s4": "07a4ee8576d20a6230358f2290732b9c4debaa456380d9c2a8e8fd3651cc5e95",
+    "s5": "971aeb8e3a089f473d197e621d3f0c26ead6b1816778ac46d4796b8906360253"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T23:17:04.969443+00:00",
+  "total": null
+}
