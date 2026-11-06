@@ -175,6 +175,10 @@ class _Child:
     # Set when the child left by settling rather than by failing. A settled
     # child is not restarted; the pair is re-armed by its next request.
     settled: bool = False
+    # When that settle happened. A settled child keeps its place in the census
+    # with no pid, so a reader of the board can name a session that holds no
+    # work and say how long it has held none.
+    settled_at: float | None = None
     # Set when a request for this pair arrived while its child was still
     # running -- a dispatch that published work the pane has not yet shown. A
     # child that settles with this set is re-armed at once, so the run the
@@ -222,6 +226,42 @@ def owner_alive(owner: Mapping[str, Any]) -> bool:
     if process_alive(pid) is not True:
         return False
     return bool(start) and process_start_time(pid) == start
+
+
+def live_census(environ: Mapping[str, str] | None = None) -> list[dict[str, Any]]:
+    """Every live host's census record, as each host wrote it.
+
+    A record is the only place a session with nothing in flight is named: its
+    follower has settled and its runs are all terminal, so no run pointer
+    mentions it. The reader keeps a record only while the owner process it
+    names still lives, and drops a host that has stopped -- a host that ended
+    took its sessions with it, and its final census describes a fleet that is
+    no longer there.
+
+    A host describes itself from its own process table, so a record written by
+    a host on this machine is read here as this machine's session. The record
+    carries no host identity of its own, and one written elsewhere is filtered
+    by the owner's pid and kernel start time rather than by a host name.
+    """
+    records: list[dict[str, Any]] = []
+    try:
+        paths = sorted(_state_dir(environ).glob(f"*{RECORD_SUFFIX}"))
+    except OSError:
+        return records
+    for path in paths:
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(payload, Mapping):
+            continue
+        if payload.get("stopped_at") is not None:
+            continue
+        owner = payload.get("owner")
+        if not isinstance(owner, Mapping) or not owner_alive(owner):
+            continue
+        records.append(dict(payload))
+    return records
 
 
 def default_owner() -> dict[str, Any]:
@@ -326,7 +366,13 @@ class SessionHost:
     # -- record -------------------------------------------------------------
 
     def record(self) -> dict[str, Any]:
-        """The census payload naming this host and every child it runs."""
+        """The census payload naming this host and every child it runs.
+
+        A settled child is named too, with a null pid and the time it settled.
+        It runs no follower, so it holds nothing, but it is the only record
+        that its session is still attended: a host that dropped it would leave
+        an idle coordinator invisible to every reader of the fleet.
+        """
         payload: dict[str, Any] = {
             "pid": os.getpid(),
             "owner": dict(self._owner),
@@ -335,9 +381,10 @@ class SessionHost:
                     "project": child.project,
                     "session": child.session,
                     "pid": child.pid,
+                    "settled_at": child.settled_at,
                 }
                 for child in sorted(self._children.values(), key=lambda c: c.key)
-                if child.pid is not None
+                if child.pid is not None or child.settled
             ],
             "updated_at": self._now(),
         }
@@ -478,6 +525,7 @@ class SessionHost:
                         child.started_at = None
                         child.next_attempt = None
                         child.settled = True
+                        child.settled_at = now
                         if child.wanted:
                             # A dispatch asked for this pair while the settling
                             # child still ran, so the run it published is work
@@ -514,6 +562,7 @@ class SessionHost:
                 child.pid = pid
                 child.wanted = False
                 child.started_at = now
+                child.settled_at = None
         self._write_record()
 
     def _poll_exit(self, child: _Child) -> int | None:
