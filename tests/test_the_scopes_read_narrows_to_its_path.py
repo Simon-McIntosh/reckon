@@ -41,6 +41,12 @@ PER_HOLDER = 2
 DIRECTORY = "src/package"
 HELD_DIRECTORY = "docs/notes"
 
+#: One path held by enough runs that its owners alone fill the view's row,
+#: which is the case that must still advance the cursor rather than answer an
+#: empty page at the offset it was asked for.
+DENSE_PATH = f"{DIRECTORY}/hot.py"
+DENSE_HOLDERS = 80
+
 
 def _held_paths(holder: int) -> list[str]:
     return [
@@ -151,6 +157,19 @@ def claims(home: Path, repo: Path) -> list[dict[str, Any]]:
                 "binding": True,
             }
             for path in paths
+        )
+    # One path is held by many runs, so its owners alone fill the view's row.
+    for holder in range(DENSE_HOLDERS):
+        run_id = f"r-dense-{holder:03d}"
+        _write_pointer(run_id, repo=repo, paths=[DENSE_PATH])
+        declared.append(
+            {
+                "path": DENSE_PATH,
+                "run_id": run_id,
+                "node": f"node-{run_id}",
+                "declared_path": DENSE_PATH,
+                "binding": True,
+            }
         )
     # One holder declares a path outside the checkout, which a review record
     # does: it is listed by its absolute spelling, so a suggestion drawn from
@@ -265,7 +284,7 @@ def test_a_read_naming_a_directory_answers_the_files_beneath_it(
     result = _scopes(repo, path=DIRECTORY)
 
     expected = _expected(claims, DIRECTORY)
-    assert len(expected) == HOLDERS * PER_HOLDER
+    assert len(expected) == HOLDERS * PER_HOLDER + 1  # the dense path too
     assert _owners(result["claim_map"]) == expected
 
 
@@ -274,11 +293,18 @@ def test_a_read_naming_an_absolute_path_answers_the_same_claims(
 ) -> None:
     """The same file reached by either spelling answers the same claims."""
 
-    relative = _scopes(repo, path=_held_paths(3)[0])
-    absolute = _scopes(repo, path=str((repo / _held_paths(3)[0]).resolve()))
+    held = _held_paths(3)[0]
+    expected = _expected(claims, held)
 
-    assert absolute["claim_map"] == relative["claim_map"]
-    assert absolute["path"] == relative["path"]
+    relative = _scopes(repo, path=held)
+    absolute = _scopes(repo, path=str((repo / held).resolve()))
+
+    # Each spelling is compared against the claim set computed from the
+    # fixture, so two readings that agree with each other and with neither the
+    # fixture nor the rule fail here.
+    assert _owners(relative["claim_map"]) == expected
+    assert _owners(absolute["claim_map"]) == expected
+    assert absolute["path"] == relative["path"] == held
 
 
 def test_a_path_outside_the_checkout_is_refused_naming_the_reason(
@@ -336,3 +362,59 @@ def test_the_default_read_pages_to_every_path(
             break
     assert cursor is None
     assert seen == {claim["path"] for claim in claims}
+
+
+def test_a_path_whose_owners_fill_the_row_still_advances_the_cursor(
+    claims: list[dict[str, Any]], repo: Path
+) -> None:
+    """A page never answers the cursor it was given, and the walk ends.
+
+    One path here is held by enough runs that its owners alone exceed the row.
+    A page that dropped entries until the answer fitted would come back empty
+    at that offset and hand the caller the same cursor back, reading the same
+    empty page forever; the walk must cover every path, naming the one it could
+    not return whole.
+    """
+
+    every_path = {claim["path"] for claim in claims}
+    exact = _scopes(repo, path=DENSE_PATH)
+    assert len(exact["claim_map"][DENSE_PATH]) == DENSE_HOLDERS
+    assert (
+        serialised_characters(
+            {"claim_map": exact["claim_map"], "claims": exact["claims"]}
+        )
+        > BUDGET
+    ), "the fixture must hold one path whose owners alone fill the row"
+    seen: set[str] = set()
+    shortened_entry: dict[str, Any] | None = None
+    shortened_owners: list[dict[str, Any]] = []
+    walked: set[str | None] = {None}
+    cursor: str | None = None
+    for _page in range(len(every_path) + 2):
+        result = _scopes(repo, cursor=cursor)
+        assert serialised_characters(result) <= BUDGET
+        next_cursor = result["pagination"]["next_cursor"]
+        if next_cursor is not None:
+            assert next_cursor != cursor, "a page returned the cursor it was given"
+            assert next_cursor not in walked, "the cursor did not advance"
+            walked.add(next_cursor)
+        seen.update(result["claim_map"])
+        for entry in result.get("over_budget_paths") or []:
+            if entry["path"] == DENSE_PATH:
+                shortened_entry = entry
+                shortened_owners = result["claim_map"][DENSE_PATH]
+        cursor = next_cursor
+        if cursor is None:
+            break
+    assert cursor is None, "the walk did not end"
+    assert seen == every_path
+    # The dense path was answered, and answered in its summary form, because
+    # its full record does not fit the row.
+    assert shortened_entry is not None
+    assert shortened_entry["owners"] == DENSE_HOLDERS
+    assert shortened_entry["owners_returned"] == len(shortened_owners)
+    assert shortened_owners
+    assert all("disposition_reason" not in owner for owner in shortened_owners)
+    assert {owner["run_id"] for owner in shortened_owners} <= {
+        claim["run_id"] for claim in claims if claim["path"] == DENSE_PATH
+    }

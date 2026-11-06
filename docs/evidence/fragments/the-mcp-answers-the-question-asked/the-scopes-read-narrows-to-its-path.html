@@ -39,8 +39,12 @@
     <code>candidates</code>. The page is measured with the budget module's own
     <code>serialised_characters</code> against
     <code>VIEW_BUDGETS[("crew", "scopes")]</code> and shortened until it fits,
-    because a kept path carries an unbounded number of owners. The transport
-    ceiling's <code>narrow_with</code> for this view now names
+    because a kept path carries an unbounded number of owners. Every page that
+    returns a cursor moves past at least one path: a path whose owners alone
+    fill the row is answered in its owners' summary form and named in
+    <code>over_budget_paths</code> with its omitted count, rather than dropped,
+    so a caller following the cursor always advances and the walk terminates.
+    The transport ceiling's <code>narrow_with</code> for this view now names
     <code>path</code> first as well.
   </p>
 
@@ -102,7 +106,7 @@
 
   <p id="the-scopes-read-narrows-to-its-path-caveat">
     <strong>The row holds with little to spare.</strong> The served default read
-    lands at 23,606 characters against 24,000, because the page shortens itself
+    lands at 23,026 characters against 24,000, because the page shortens itself
     until it fits rather than to a fixed page size; a project whose owners carry
     longer disposition prose therefore returns fewer paths per page rather than
     a larger answer, which is the contract working, but it means the page size

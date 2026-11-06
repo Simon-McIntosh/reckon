@@ -4210,6 +4210,15 @@ def _fit_scopes(
     reach the rest. The page is measured against the view's own row and
     shortened until it fits, because a kept path carries an unbounded number of
     owners.
+
+    EVERY PAGE THAT RETURNS A CURSOR MOVES PAST AT LEAST ONE PATH. It is not
+    enough to drop entries until the answer fits: a single path whose owners
+    alone fill the row would leave the page empty at the offset it was asked
+    for, and a caller following the cursor would read that same empty page
+    forever. The first path of a page is therefore always returned — whole when
+    it fits, and otherwise shortened to its owners' summary fields with the
+    omitted count named in ``over_budget_paths`` — so each step advances the
+    cursor by at least one path and the walk terminates.
     """
 
     from reckon import mcp_budget as mcp_budget_module
@@ -4219,8 +4228,7 @@ def _fit_scopes(
     claims = answer["claims"]
     paths = sorted(claim_map)
     page, _pagination = paginate(paths, cursor=cursor, limit=limit)
-    offset = paths.index(page[0]) if page else 0
-    kept = list(page)
+    offset = paths.index(page[0]) if page else len(paths)
 
     narrow_with: list[dict[str, Any]] = []
     if paths:
@@ -4234,13 +4242,27 @@ def _fit_scopes(
         narrow_with.append({"argument": "path", "value": example})
     narrow_with.append({"argument": "candidates", "value": "<fewer candidate nodes>"})
 
-    def render(page_paths: list[str]) -> dict[str, Any]:
-        page_set = set(page_paths)
-        page_claims = [claim for claim in claims if claim["path"] in page_set]
+    #: The owner fields a shortened entry keeps: who holds the path and whether
+    #: the claim binds. The prose reason is what makes a row large, and a reader
+    #: who needs it asks for that path directly.
+    summary_fields = ("run_id", "node", "declared_path", "binding")
+
+    def render(
+        page_paths: list[str], shortened: Mapping[str, list[dict[str, Any]]]
+    ) -> dict[str, Any]:
+        page_claims: list[dict[str, Any]] = []
+        for path in page_paths:
+            if path in shortened:
+                page_claims.extend({**owner, "path": path} for owner in shortened[path])
+            else:
+                page_claims.extend(claim for claim in claims if claim["path"] == path)
         reached = offset + len(page_paths)
-        return {
+        payload: dict[str, Any] = {
             **answer,
-            "claim_map": {path: claim_map[path] for path in page_paths},
+            "claim_map": {
+                path: (shortened[path] if path in shortened else claim_map[path])
+                for path in page_paths
+            },
             "claims": page_claims,
             "summary": {
                 "claims": len(claims),
@@ -4260,12 +4282,44 @@ def _fit_scopes(
                 "next_cursor": _cursor(reached) if reached < len(paths) else None,
             },
         }
+        if shortened:
+            payload["over_budget_paths"] = [
+                {
+                    "path": path,
+                    "owners": len(claim_map[path]),
+                    "owners_returned": len(shortened[path]),
+                    "owners_omitted": len(claim_map[path]) - len(shortened[path]),
+                }
+                for path in page_paths
+                if path in shortened
+            ]
+            payload["summary"]["shortened_paths"] = len(shortened)
+        return payload
 
-    fitted = render(kept)
-    while kept and mcp_budget_module.serialised_characters(fitted) > budget:
-        kept.pop()
-        fitted = render(kept)
-    return fitted
+    def fits(payload: Mapping[str, Any]) -> bool:
+        return mcp_budget_module.serialised_characters(payload) <= budget
+
+    kept: list[str] = []
+    shortened: dict[str, list[dict[str, Any]]] = {}
+    for path in page:
+        trial = render([*kept, path], shortened)
+        if fits(trial):
+            kept.append(path)
+            continue
+        if kept:
+            break
+        # This page's first path does not fit whole. Return it shortened rather
+        # than empty, so the cursor the caller is handed moves past it.
+        owners = [
+            {field: owner[field] for field in summary_fields if field in owner}
+            for owner in claim_map[path]
+        ]
+        while owners and not fits(render([path], {path: owners})):
+            owners.pop()
+        shortened[path] = owners
+        kept.append(path)
+        break
+    return render(kept, shortened)
 
 
 def serve_crew_view(
