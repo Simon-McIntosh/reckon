@@ -1025,6 +1025,41 @@ def _shadow_control_marks(
     return marks
 
 
+def _budget_overrun_facts(
+    record: Mapping[str, Any], *, finished: str | None = None
+) -> dict[str, Any]:
+    """The overrun pair a committed row carries, measured as the watch measures it.
+
+    Promotion deletes the live pointer that holds the only other copy of this
+    verdict, so a row that does not read it here leaves an overrun recorded
+    nowhere durable. The measurement is taken with the same reader the watch
+    uses, over the same record, elapsing to the run's own completion — so the
+    figure on the row and the figure in the message the worker read are one
+    fact rather than two clocks. A run with no declared allowance carries the
+    keys with zero overrun rather than omitting them, because an absent field
+    and a measured zero read the same to a census.
+    """
+    from reckon.crew import recovery_stream
+
+    moment = None
+    if finished:
+        parsed = parse_utc(finished)
+        if parsed is not None:
+            moment = parsed.timestamp()
+    try:
+        timing = recovery_stream._budget_timing(record, now_seconds=moment)
+    except (CrewError, TypeError, ValueError):
+        timing = {}
+    overrun_seconds = int(timing.get("budget_overrun_seconds") or 0)
+    overrun_tokens = int(timing.get("budget_overrun_tokens") or 0)
+    return {
+        "budget_overrun": bool(timing.get("budget_overrun")) or overrun_seconds > 0,
+        "budget_overrun_seconds": overrun_seconds,
+        "budget_overrun_tokens": overrun_tokens,
+        "budget_overrun_notice": str(record.get("budget_notice_path") or "") or None,
+    }
+
+
 def _complete_locked(
     run_id: str,
     *,
@@ -1276,6 +1311,12 @@ def _complete_locked(
         None,
     )
     measured_budget = ledger.per_run_budget(stream.budget, previous)
+    # The overrun the worker was messaged about rides the committed row, so the
+    # live pointer's verdict is not the only place a run's overrun exists. The
+    # pair is measured here with the same reader the watch uses, against the
+    # same record, so the row's figure and the message's figure are one fact
+    # read twice rather than two clocks.
+    measured_budget.update(_budget_overrun_facts(record, finished=finished))
     wall_seconds = _elapsed_seconds(record.get("created_at"), finished)
     stalled = _wall_exceeded_budget(wall_seconds, node.get("time_budget"))
     worker_seconds = stream.worker_seconds

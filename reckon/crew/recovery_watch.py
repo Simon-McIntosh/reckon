@@ -9,7 +9,7 @@ import os
 import socket
 import subprocess
 import time
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence
@@ -18,6 +18,7 @@ from reckon._timestamps import parse_utc
 from reckon.crew import metering, obligation_snapshot, quota_weight, runs
 from reckon.crew.host_lease import LEASE_RENEW_SECONDS
 from reckon.crew.node import (
+    _TERMINAL_RUN_PHASES,
     DEFAULT_WATCH_STALL_WINDOW,
     INTERRUPTED_RUN_PHASE,
     CrewError,
@@ -1570,6 +1571,171 @@ def _watch_snapshot(
     if run_id and key is not None:
         _remember_snapshot(run_id, key, refreshed, cache=store)
     return refreshed
+
+
+#: How far past its declared allowance a still-running worker is before it is
+#: told. The runaway threshold is twice the budget, which sits at the p95 of the
+#: agent-time population and is late enough that most runs have finished or died
+#: by then; the soft limit is the message a worker can still act on.
+SOFT_BUDGET_MULTIPLE = 1.5
+
+#: The message a run over its soft limit finds in its own directory. It lives
+#: beside the run's prompt and manifest because that directory is the one
+#: durable place a worker and a coordinator both resolve; a headless worker is
+#: never interrupted, so the message is delivered at its next checkpoint rather
+#: than pushed into a process that cannot receive one.
+BUDGET_NOTICE_NAME = "budget-notice.md"
+
+
+def budget_notice_path(run_id: str) -> Path:
+    """The path a run's budget message is written to, whether or not it exists."""
+    return runs.run_dir(run_id) / BUDGET_NOTICE_NAME
+
+
+def _soft_budget_overrun(
+    record: Mapping[str, Any], *, now_seconds: float | None = None
+) -> dict[str, Any] | None:
+    """Measure a run against its soft limit, or return None while it is inside it.
+
+    The verdict is denominated the way the run's allowance is: a run carrying a
+    token budget is charged for the work it generated, so a slow lane inside its
+    token allowance is not an overrun however long it took. The wall-clock
+    ceiling is read only when the run declares no token budget, where it is the
+    one verdict there is.
+    """
+    from reckon.crew import recovery_stream
+
+    timing = recovery_stream._budget_timing(record, now_seconds=now_seconds)
+    budget = timing.get("budget_seconds")
+    elapsed = timing.get("elapsed_seconds")
+    if not isinstance(budget, (int, float)) or isinstance(budget, bool) or budget <= 0:
+        return None
+    if not isinstance(elapsed, (int, float)) or isinstance(elapsed, bool):
+        return None
+    token_budget = timing.get("budget_tokens")
+    if token_budget is not None:
+        if not timing.get("budget_overrun"):
+            return None
+        overrun_tokens = int(timing.get("budget_overrun_tokens") or 0)
+        generated = timing.get("generated_tokens")
+        return {
+            "budget_kind": "tokens",
+            "budget_tokens": int(token_budget),
+            "generated_tokens": generated,
+            "budget_overrun_tokens": overrun_tokens,
+            "budget_seconds": int(budget),
+            "elapsed_seconds": int(elapsed),
+        }
+    if elapsed <= budget * SOFT_BUDGET_MULTIPLE:
+        return None
+    return {
+        "budget_kind": "seconds",
+        "budget_seconds": int(budget),
+        "elapsed_seconds": int(elapsed),
+        "budget_overrun_seconds": int(elapsed - budget),
+        "soft_limit_seconds": int(budget * SOFT_BUDGET_MULTIPLE),
+    }
+
+
+def _budget_notice_text(
+    record: Mapping[str, Any], overrun_note: Mapping[str, Any]
+) -> str:
+    """The message a worker reads at its next checkpoint."""
+    node = record.get("node") or {}
+    node_id = str(node.get("id") or record.get("run_id") or "this run")
+    if overrun_note.get("budget_kind") == "tokens":
+        allowance = (
+            f"a token budget of {overrun_note['budget_tokens']} generated tokens "
+            f"and a {overrun_note['budget_seconds']}s hang ceiling"
+        )
+        measured = (
+            f"{overrun_note.get('generated_tokens')} generated tokens — "
+            f"{overrun_note['budget_overrun_tokens']} past the allowance — "
+            f"after {overrun_note['elapsed_seconds']}s"
+        )
+    else:
+        allowance = f"a time budget of {overrun_note['budget_seconds']}s"
+        measured = (
+            f"{overrun_note['elapsed_seconds']}s elapsed, "
+            f"{overrun_note['budget_overrun_seconds']}s past the {allowance}"
+        )
+    lines = [
+        f"# Budget overrun — {node_id}",
+        "",
+        f"This run was dispatched with {allowance} and has {measured}.",
+        "",
+        "Write the manifest you already hold now, rather than the one you wanted:",
+        "set its status, checkpoint and remaining work to what is true at this",
+        "moment, so a coordinator can act on it. The run is not being stopped —",
+        "its process, session and worktree stay — so land what is complete and",
+        "record what is not.",
+    ]
+    cause = overrun_note.get("budget_overrun_cause")
+    if cause:
+        rate = overrun_note.get("budget_overrun_rate")
+        reference = overrun_note.get("budget_overrun_reference_rate")
+        detail = (
+            f": {rate} vs {reference} tokens/s on recent same-model runs"
+            if rate is not None and reference is not None
+            else ""
+        )
+        lines += ["", f"Measured cause: {cause}{detail}."]
+    return "\n".join(lines) + "\n"
+
+
+def notify_budget_overrun(
+    pointer: Mapping[str, Any], *, now_seconds: float | None = None
+) -> Path | None:
+    """Message one live run that has passed its soft budget.
+
+    Returns the path written, or None when the run is not running, is inside
+    its allowance, or was already messaged. The message is written exactly
+    once per run: an exclusive create is what makes a second producer pass, a
+    re-armed seat and a concurrent reader all agree that the run was told.
+    Nothing here signals a process — the soft limit exists to inform a worker
+    that can still land what it holds, and terminating it is the outcome the
+    directive forbids.
+    """
+    run_id = str(pointer.get("run_id") or "")
+    if not run_id:
+        return None
+    if pointer.get("process_alive") is not True:
+        return None
+    if str(pointer.get("phase") or "") in _TERMINAL_RUN_PHASES:
+        return None
+    overrun = _soft_budget_overrun(pointer, now_seconds=now_seconds)
+    if overrun is None:
+        return None
+    # The cause is best-effort: an unreadable reference population leaves the
+    # message unnamed in that one respect, and must never stop the message.
+    with suppress(Exception):
+        from reckon.crew import recovery_stream
+
+        timing = recovery_stream._budget_timing(pointer, now_seconds=now_seconds)
+        cause = recovery_stream._budget_overrun_cause(
+            pointer, timing, now_seconds=now_seconds
+        )
+        overrun.update(cause)
+    path = budget_notice_path(run_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    text = _budget_notice_text(pointer, overrun)
+    try:
+        descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+    except FileExistsError:
+        return None
+    with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+        handle.write(text)
+    stamped = {
+        "budget_notice_path": str(path),
+        "budget_notice_at": runs._utc_now(),
+        **overrun,
+    }
+
+    def _stamp(record: dict[str, Any]) -> dict[str, Any]:
+        return {**record, **stamped}
+
+    _mutate_pointer(run_id, _stamp)
+    return path
 
 
 # The ordinary three buckets remain unchanged when no external wait exists. A
@@ -3189,6 +3355,16 @@ def watch_ticker(
                     moment=moment,
                     stall_seconds=stall_seconds,
                 )
+            # An overrun becomes due on the clock, not on a document moving, so
+            # it is checked every pass rather than behind the change gate. The
+            # write happens at most once per run — the message's own exclusive
+            # create is what makes that true — so a quiet fleet costs one
+            # existence test per live pointer.
+            for pointer in pointers:
+                try:
+                    notify_budget_overrun(pointer, now_seconds=moment)
+                except Exception as exc:  # noqa: BLE001 - one bad pass ends nothing
+                    print(f"budget-notice-failure: {project}: {exc}", flush=True)
             if current:
                 # A wake that sees a live run ends any back-off: the producer's
                 # interval is its base again from this pass.
