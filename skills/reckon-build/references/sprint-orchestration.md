@@ -772,6 +772,32 @@ each node its own exclusive write scope. A node waiting on an unlanded section
 parks `awaiting-upstream`; admission releases it when that section lands, with
 no new coordinator dispatch. The queue orders only declared waits.
 
+**Read the set from the views, never from a report you join by hand.** Three
+views answer the whole beat, each in one bounded read:
+
+- **The ready-idle set is a filter on the ready-set projection, and
+  `crew(view="directory", project=<project>)` is the call that serves it.** The
+  projection computes the ready rows with their `live_run`, `coordinator`,
+  `plan_owner` and `critical_path` fields, its `ready_idle` filter drops the
+  rows with a live run, and it names the `closable` plans with their
+  `closure_blockers`. It has no view name of its own — no crew or roadmap view
+  serves it, and the HTTP discovery payload carries it whole as `ready_set` —
+  so a coordinator reads the filtered set per owner from the directory view,
+  whose coordinator rows carry `ready_idle_sections` beside `held_paths` and
+  `queued_runs`. That is the one call that says which sections are idle, who
+  owns each, and which paths that coordinator already holds.
+- **The critical path is `roadmap(view="summary").critical_path`.** Its `links`
+  rows are in path order with the head first; each reads a `primary_state` — in
+  flight with its `run_id`, ready-idle with its `coordinator`, gated with its
+  `gate`, or waiting with its `wait` — and carries `holds` for every open gate,
+  unmet wait and open decision on that section. `head` and `head_note` name and
+  explain the first link, so an idle head is visible without opening the rows.
+- **The lane's slots are the lanes view.**
+  `crew(view="lanes", session=<session>)` carries `session_share` with
+  `worker_slots`, `live_runs` and the document's `observed_at`, `age_seconds`
+  and `stale`. A full lane is read here, not inferred from your own run count,
+  and a stale document is not sized from.
+
 Read `crew view live` for progress and use the build skill's queue edit,
 reprioritise and drop verbs to steer requests before launch. A plan whose
 `dependency_readiness` reads `closable` still needs its owner to close it or

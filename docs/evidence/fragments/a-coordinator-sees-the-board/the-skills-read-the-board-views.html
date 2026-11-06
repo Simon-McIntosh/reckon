@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="evidence-project" content="reckon">
+<meta name="plan" content="a-coordinator-sees-the-board">
+<meta name="plan-node" content="the-skills-read-the-board-views">
+<title>the-skills-read-the-board-views — landed</title>
+</head>
+<body>
+<main class="plan-doc">
+<h2 id="the-skills-read-the-board-views-what">What landed</h2>
+
+<p>Both coordinator skills now name the four existing reads that answer the
+coordination question, and neither hands a coordinator a report to join by
+hand.</p>
+
+<ul>
+  <li><strong>The ready-idle set and its owners</strong> come from one call.
+  The rows are a filter (<code>ready_idle</code>) on the ready-set projection,
+  which carries each row's <code>live_run</code>, <code>coordinator</code>,
+  <code>plan_owner</code> and <code>critical_path</code> flag, and names the
+  <code>closable</code> plans with their <code>closure_blockers</code>; that
+  projection has no view name of its own, so a coordinator reads the filtered set
+  per owner from <code>crew(view="directory", project=&lt;project&gt;)</code>,
+  whose coordinator rows carry <code>ready_idle_sections</code> beside
+  <code>held_paths</code> and <code>queued_runs</code>.</li>
+  <li><strong>The critical path</strong> is
+  <code>roadmap(view="summary").critical_path</code>: a <code>links</code> row per
+  section in path order, each with its <code>primary_state</code> — in flight with
+  <code>run_id</code>, ready-idle with <code>coordinator</code>, gated with
+  <code>gate</code>, waiting with <code>wait</code> — and its <code>holds</code>,
+  with <code>head</code> and <code>head_note</code> naming and explaining the
+  first link.</li>
+  <li><strong>The lane's slots</strong> are
+  <code>crew(view="lanes", session=&lt;session&gt;).session_share</code>, carrying
+  <code>worker_slots</code>, <code>live_runs</code> and the document's
+  <code>observed_at</code>, <code>age_seconds</code> and <code>stale</code>.</li>
+</ul>
+
+<p>Where they sit: the build skill's section 12 <em>Queue the chosen work after
+the review round</em> gains the three views as the way to read the beat's set,
+and the roadmap skill's <em>Ready-idle sections, owners and the critical
+path</em> section replaces the recipe with them. The roadmap skill's field table
+also stops describing the ready-idle set as an intersection a reader computes:
+<code>critical_path</code> now names <code>links</code>, <code>head</code> and
+<code>head_note</code>, and the ready-set row names the filter that produces the
+set.</p>
+
+<h3 id="the-skills-read-the-board-views-defect">The defect, measured before and after</h3>
+
+<p>The plan records that both skills carry a lossless-report recipe as a stopgap.
+That is true of one of them today. The build skill's copy was already retired on
+2026-10-26 by <code>690bebf45f</code>, which removed the <em>An idle lane with
+ready work is a defect</em> heading and the <code>reckon roadmap --json-output |
+python3 -c</code> block under it and left <em>Queue the chosen work after the
+review round</em> in its place; the remaining gap there was that the section
+named no view. The roadmap skill still carried the recipe verbatim, at
+<code>skills/reckon-roadmap/SKILL.md:110-120</code> as this node found it.</p>
+
+<p>At the head, <code>grep -n "json-output\|python3 -c"</code> over both skills
+returns nothing, and each skill carries every view token the contract test
+asserts: <code>ready_idle</code>, <code>primary_state</code>,
+<code>head_note</code>, <code>crew(view="directory"</code>,
+<code>crew(view="lanes"</code> and <code>session_share</code>.</p>
+
+<h3 id="the-skills-read-the-board-views-arms">The arms, as run</h3>
+
+<p>Both arms run the armed template,
+<code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+tests/test_the_skills_read_the_board_views.py</code>, resolved over each arm's
+own tree. The head arm collects and passes all four cases. The base arm, run
+from a <code>git archive</code> extraction of
+<code>fe67c2ee8525395c74b0749337181ef2028efbc0</code> on node-local disk with
+the main checkout's <code>.env</code> linked, resolves the template to no test
+file — the file is new in this node — and exits 4 having collected nothing.
+That is the arm's honest answer, and it is why the negative control below
+carries the red measurement rather than the base arm.</p>
+
+<h3 id="the-skills-read-the-board-views-controls">The negative control, executed</h3>
+
+<p>The declared mutation is <em>restore the recipe line; the contract test
+fails</em>. Restoring the recipe block into the roadmap skill and re-running the
+gate gives <code>1 failed, 3 passed, EXIT=1</code>:
+<code>test_neither_skill_carries_the_lossless_report_recipe</code> fails on the
+restored <code>--json-output</code> match, an id the head arm does not fail. The
+mutation was then removed and the head arm re-run green at
+<code>4 passed, EXIT=0</code>. The log is
+<code>negative_control.log</code> in the run directory.</p>
+
+<h3 id="the-skills-read-the-board-views-scope">Scope</h3>
+
+<p>Two skills and one new test file. No production module changes, so no
+importer arm is owed: the modules the test imports are
+<code>tests.test_skill_contracts</code>' <code>normalized</code> helper and
+<code>reckon.mcp_views</code>, which this node reads and does not change.</p>
+
+<h2 id="the-skills-read-the-board-views-repair">Repair round</h2>
+
+<p>Three findings, all answered.</p>
+
+<h3 id="the-skills-read-the-board-views-repair-call">The set named no call a coordinator could make</h3>
+
+<p>Both skills said the ready-idle set was "the ready-set view filtered to rows
+with no live run". No such view exists. <code>CREW_VIEWS</code> carries no
+ready-set name, the roadmap serves only <code>summary</code>,
+<code>detail</code> and <code>raw</code>, and
+<code>ready_set_view</code> is reached unfiltered only by
+<code>reckon/serve.py:1878</code>'s discovery payload and filtered only by
+<code>reckon/crew/directory.py:282</code>. Both skills now say what is true and
+what is callable: the rows are a filter on the projection, and
+<code>crew(view="directory", project=&lt;project&gt;)</code> is the served call
+that carries them per owner as <code>ready_idle_sections</code>.</p>
+
+<h3 id="the-skills-read-the-board-views-repair-count">The inventory miscounted itself</h3>
+
+<p>The roadmap section said three views answered it and listed four. Two of the
+four were the same call, so the list is now three items and the sentence's
+count is right. A test reads the stated number word and the numbered items in
+that section and requires them to agree; under the pre-repair text it reads
+<code>assert 4 == 3</code>.</p>
+
+<h3 id="the-skills-read-the-board-views-repair-test">The test locked wording</h3>
+
+<p>The removed case asserted two literal prose substrings. The replacement
+asserts the contract: every <code>crew(view=…)</code> a skill names is one the
+crew surface serves; the projection's <code>ready_idle</code> filter is a
+parameter of <code>ready_set_view</code> and <code>serve_crew_view</code> asks
+the directory for those rows; and a statement of the ready-idle set carries
+either a call that serves it or the field that call returns. The domain term
+"ready-idle set" stays required, because it is the name the plan and the
+<code>ready_idle</code> field share; every word around it is free.</p>
+
+<h3 id="the-skills-read-the-board-views-repair-arms">The repair's arms and controls</h3>
+
+<p>Both arms run
+<code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+tests/test_the_skills_read_the_board_views.py</code>. The base arm, from a
+<code>git archive</code> extraction of
+<code>5da16be129a2be6b126a9e5bfc6acadc715a0c95</code>, is 4 passed, exit 0. The
+head arm is 7 passed, exit 0.</p>
+
+<ul>
+  <li><strong>Reverting the skill half of the repair</strong> leaves the
+  pre-repair text beside the repaired tests, and two cases go red:
+  <code>test_a_skills_ready_idle_set_names_a_call_that_serves_it</code> and
+  <code>test_the_roadmap_inventory_matches_its_own_count</code>
+  (<code>assert 4 == 3</code>), exit 1.</li>
+  <li><strong>A correct rewording</strong> of both skills passes all seven,
+  while the pre-repair contract test — kept verbatim from
+  <code>5da16be129</code> — fails on the same text. That is the finding
+  reproduced and then retired.</li>
+  <li><strong>A skill naming <code>crew(view="ready-set")</code></strong> fails
+  <code>test_every_crew_view_a_skill_names_is_served</code>, exit 1, so the
+  registry check is load-bearing rather than decorative.</li>
+</ul>
+
+<p>Logs: <code>negative-control-revert-skills.log</code>,
+<code>negative-control-rewording.log</code>,
+<code>gate-baseline-repair.log</code> and <code>gate-head.log</code> in the run
+directory.</p>
+
+<h2 id="the-skills-read-the-board-views-round3">Second repair round</h2>
+
+<p>Two findings, both about the cases this node added rather than about the
+skills, and both answered in <code>7f1c885b72</code>. Each was still a
+narrower form of the wording lock the first repair set out to retire.</p>
+
+<h3 id="the-skills-read-the-board-views-round3-count">The count case fixed one phrasing of the count</h3>
+
+<p><code>test_the_roadmap_inventory_matches_its_own_count</code> matched the
+stated number only through <code>(two|three|four|five) … views? answer</code>,
+so a correct rewording — "the answer takes three views" — made the case report
+that the section states no count at all while the section was right. The
+pattern now binds the number word and the noun it counts, allowing up to two
+words between them, so the sentence around the pair is free. It still catches
+the defect it exists for: against the pre-repair four-item list it reads
+<code>assert 4 == 3</code>.</p>
+
+<h3 id="the-skills-read-the-board-views-round3-source">The serving case read the source, not the call</h3>
+
+<p><code>test_the_ready_idle_rows_reach_a_served_view</code> asserted on
+<code>inspect.getsource(serve_crew_view)</code>, so moving the
+<code>crew_directory(…, ready_idle=True)</code> call into a helper kept the
+contract true and reddened the test. It is now
+<code>test_the_directory_view_asks_the_directory_for_ready_idle_rows</code>,
+which calls <code>serve_crew_view(view="directory")</code> against a stand-in
+directory and asserts that the view asks for <code>ready_idle=True</code>. Where
+the call is written no longer matters; whether the call is made does.</p>
+
+<h3 id="the-skills-read-the-board-views-round3-controls">Both controls, executed</h3>
+
+<p>Each control runs in its own <code>git archive</code> extraction of the base,
+so the mutation never touches this node's tree, and each pair uses the same
+mutated tree for the old and the new case.</p>
+
+<ul>
+  <li><strong>A correct rewording of the roadmap section.</strong> The old count
+  case fails with "the section does not state how many views answer it"
+  (<code>1 failed, 6 passed</code>, exit 1); the new case passes all seven on
+  that same text (exit 0).</li>
+  <li><strong>The pre-repair four-item list.</strong> The new count case still
+  fails with <code>the section says three views and lists 4</code>, exit 1, so
+  the looser pattern did not become a rubber stamp.</li>
+  <li><strong>The directory call moved into a helper.</strong> The old case
+  fails with "no served crew view asks the directory for the ready-idle rows"
+  (exit 1); the new case passes on the same refactored tree (exit 0).</li>
+  <li><strong>The contract actually broken</strong> — the helper's
+  <code>ready_idle=True</code> changed to <code>False</code>. The new case fails
+  with "the directory view does not ask the directory for the ready-idle rows",
+  exit 1, so it is load-bearing rather than merely permissive.</li>
+</ul>
+
+<p>Logs: <code>negative-control-round3-count-old.log</code>,
+<code>negative-control-round3-count-new.log</code>,
+<code>negative-control-round3-count-mismatch.log</code>,
+<code>negative-control-round3-helper-old.log</code>,
+<code>negative-control-round3-helper-new.log</code> and
+<code>negative-control-round3-helper-broken.log</code> in the run directory.</p>
+
+<h3 id="the-skills-read-the-board-views-round3-gate">The gate, and one failure that is not this node's</h3>
+
+<p>The gate runs the two files together and exits 1 on a single case,
+<code>test_every_registered_crew_verb_is_documented_or_exempt</code>: the
+registered <code>reckon crew queue hold</code> verb is named nowhere in
+<code>skills/reckon-build/SKILL.md</code> and carries no exemption. That file is
+not in this node's write scope, and the case fails identically at the base,
+where this node's test file is the only difference between the two runs — so
+the delta is zero and the failure is pre-existing drift between the crew CLI and
+the build skill. Both runs are logged
+(<code>gate-round2.log</code> and <code>gate-baseline-round3-both.log</code>).</p>
+</main>
+</body>
+</html>
