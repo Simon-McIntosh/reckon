@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T14:27:17.150Z",
+  "dispatched_at": "2026-11-06T14:22:26Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-project-reads-as-one-picture.html:165",
+      "id": "done_when-1",
+      "reason": "the node would add `nova` to the timing arm (or narrow the section's claim to the mounts it measures), and without that clause the section can land green while the mount its evidence names as broken is never put to the test.",
+      "text": "the section is titled \"The why view answers on every mount within its deadline\" and its own \u00a78 record says the why view answered on no mount, yet the done-when requires only `reckon:a-project-reads-as-one-picture#s8` to answer within 30 s; `nova` is neither re-measured in the correction nor required by any arm, so \u00a716 can close with a mount its own evidence says fails still failing",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-project-reads-as-one-picture.html:165",
+      "id": "done_when-2",
+      "reason": "a writable-head against a fenced-base pair can satisfy the 30 s arm because the cache became writable rather than because the cost was removed, so the plan must re-take the base under the same writable `RECKON_HOME` (or state that it already was) before the pair can show the fix.",
+      "text": "the head arm requires the served why read \"with a writable RECKON_HOME\", but the base figure (110 s, no answer) records no cache-writability condition anywhere, and the landed record's \u00a78 entry states \"The run's write fence makes the cache read-only, so the cold timings include rebuilding the index on every call\" \u2014 so the head and the base were not shown to be measured alike",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "1359559104b85f0bd3710c5d56a6f6aad971296b",
+  "plan_fingerprint": "be2af9ccfd7fe90e6709f922b9ae388eaf46a5e7e7c4c658d32a94968f35a7d4",
+  "plan_slug": "a-project-reads-as-one-picture",
+  "plan_version": 72,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T142033248434-plan-review-of-a-project-reads-as-one-picture",
+  "reviewed_blob_sha": "d7859cd14b750b12cd5d8583a2328894ca2c6d96",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `#s8-measure` resolves in the landed record, and `READ_DEADLINE_SECONDS = 30.0` (`reckon/mcp_deadlines.py:47`), `_read_plan` (`reckon/mcp.py:849`), `discovery_file_scope` (`reckon/metadata_index.py:106`), `resource_scan_scope` (`reckon/resources.py:520`) and `RECKON_HOME` (`reckon/_store.py:134`) all exist.",
+    "done_when": "a finding \u2014 \u00a716's done-when requires only the `reckon` mount to answer while its own \u00a78 evidence records the why view answering on no mount, so `nova` is never required to answer, and the head-versus-base timing pair is not controlled for the cache writability that \u00a78's own record says inflated the base.",
+    "evidence_paths": "pass \u2014 the base measurement and the head call are recorded in `docs/evidence/archive/a-project-reads-as-one-picture-landed.html`, and the timing gate runs on the fleet allocation rather than a session scratchpad.",
+    "naming": "pass \u2014 \u00a716 names only mechanism symbols, environment variables and a timeout flag; no plan, stage, version or ticket identifiers and no changelog prose.",
+    "reasoning": "pass \u2014 the withdrawn cause is explicitly withdrawn and the withdrawal is verifiable (a direct `_read_plan` call skips the scopes that `_deadline_tool(request_scope=True)`, `reckon/mcp.py:3783` \u2192 `reckon/mcp_deadlines.py:374`, enters), so the mechanism is stated honestly and runs on the served path; the timing comparison's confound is filed under done_when.",
+    "single_goal": "pass \u2014 one deliverable, the served why read answers within its read deadline; finding the cost first is a step inside that goal, not a second one.",
+    "wiring": "pass \u2014 `plan-section-depends-on` gives s8 a wait on s16, so the three-mount re-measure is held until the why view answers, and s16 needs no dependency of its own because it reads \u00a78's measure as evidence rather than consuming its code."
+  },
+  "section_digests": {
+    "_document": "3d9071856290ec7a6c7982a166b8cb31ae9efdeb83c9742d8ad9a3089a1b2735",
+    "s1": "1956dcaef74ad7d3216608fe69c2e7baa2a9e32d702ef86431dc746f15c3878a",
+    "s10": "e102e1c4c48bcc4635b2e41c4a84e2b36433f78cee863762cad68b3deae2cf75",
+    "s11": "ff19dc90f42b226ca45a5aaaf02a9894b54846500c87597775cb2806fc9b6156",
+    "s12": "039fc9469fcdd80b1d5482629a5dcefc71359e7124fbbad20e0227170c2760dc",
+    "s13": "95e233ad4cbbcd9c2cf975b7cb717f3f0eec9093cbeade0f4f268890aaff8d73",
+    "s14": "e215eae311c545fa0320f94622e0e806b548177eb68b4ee0c1ca4cb1b202d283",
+    "s15": "ae3d696d3e3b1a44be381a9c1aac5613b8c19982be174e639200aba9532b81b9",
+    "s16": "8897896d19228b1c2ea3616cc20c351aba7d395dc47d19aa773b8926cef67191",
+    "s2": "d5da4569d38701f7f8c91790b979f6e3de48d9e5d4969c4f115a74a7e8317e8c",
+    "s3": "749a131ab7a4c04f7278425172c74a2f6ebd29c0014fbb7befc6a0c8f48f08b4",
+    "s4": "389898eb9ae606e5b51a4f3a7bfafd20cdd843ae6612eb3884809786e45217a6",
+    "s5": "e13040e31816bf168d9b0b3f3a1245e7fa9b90c30cdf82db44726a02a764b6d9",
+    "s6": "d0f702b85752e3605cfbc815d2de3035b6d1e8e89fb584b661e8571aba7aa175",
+    "s7": "c96146ddd026103e827c96ed2e8629450a1f2f8d361d4419b4fe76456edf5ef4",
+    "s8": "1f13b98a4d7476b083792c060d8da48918e0ca44b3b27c910d2cfb7ae1aa69d3",
+    "s9": "a65c8523c1a05e7389c35e43a8737757ab2c60d08633460c1648c40a88138892"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T14:36:00.554356+00:00"
+}
