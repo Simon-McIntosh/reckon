@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="294">
+<meta name="plan-version" content="295">
 <meta name="plan-modified" content="2026-11-06">
 </head>
 <body>
@@ -401,6 +401,9 @@
 <div class="r-comment" data-section="_top" data-id="c-close-s27" data-who="" data-when="">
     <div class="r-comment-body"><p>Landed 6 November as <code>5cb869148e</code> from run <code>r-20261105T105635159157</code>. A refused landing names the repair the coordinator owes, including rewriting a stale manifest, and reads the first test log through promotion's own selection. The node's test failed 2 of 3 at base and passed 3 of 3 at head; reviewed twice, three non-blocking findings exempted.</p></div>
 </div>
+<div class="r-comment" data-section="_top" data-id="c-s45-discarded" data-who="" data-when="">
+    <div class="r-comment-body"><p>6 November: run <code>r-20261106T111612752232</code> was discarded unlanded; its diff is kept at <code>~/.cache/reckon-recover/r-20261106T111612752232-the-ledger-reads-behind-a-pass-are-incremental.diff</code>. Two premises of this section did not hold. The runs directory's stat identity does not move on every record change: a run document rewritten in place does not move it, and <code>tests/test_the_held_worktree_read_is_bounded.py</code> requires the held-worktree screen to see such a rewrite (2 of 6 failed at head with the directory shortcut). A per-document stamp from the ledger index (the option the worker was asked to take) is written only by the ledger's own refresh, so it misses the same out-of-band rewrite. The section-attempts half needs <code>reckon/ledger.py</code>, held by reckon-a1's §11. This section is re-planned after §11 lands: either every run-document writer goes through <code>_store.write_atomically</code>, so a directory or stamp signal becomes sound, or the per-file stat stays and only the decode is reused.</p></div>
+</div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261029T155223893067-review-of-a-landing-measure-is-bounded-by-what-it-measures-35f4d6af36d0" data-who="reckon-build" data-when="2026-10-29T16:00:54.656Z">
     <div class="r-comment-body"><p>Independent review of r-20261028T230039168008-a-landing-measure-is-bounded-by-what-it-measures at 35f4d6af36 against base 1ed6b58d0e: parsed, total 95/120 (goal_fidelity 19, evidence 17, scope_discipline 20, durability 16, fit 18, reuse 5), added_failure_count 0, four non-blocking findings — two self-referential assertions in the new test and two reuse/cost notes on queue_landing — and no blocking finding.</p></div>
 </div>
@@ -584,6 +587,9 @@
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261105T110043797131-a-held-request-holds-nothing-behind-it" data-who="reckon-build" data-when="2026-11-06T07:48:18Z">
     <div class="r-comment-body"><p>§30 now skips every request the pass held on a claim, a gate, a retry back-off or a plan review when judging an overlapping later request, so a held request fences nothing behind it, and applies a priority override over the lane's whole order so a reprioritised request ranks first across sessions and projects; the reuse repair removes the second reader of priority_override, so the hoist now follows the queue ordering's own reader, with seven cases passing at head and six at the repair's base.</p></div>
 </div>
+<div class="r-comment" data-section="s31" data-id="c-run-r-20261105T110153099417-a-promoted-run-never-reenters-the-queue" data-who="reckon-build" data-when="2026-11-06T13:36:31Z">
+    <div class="r-comment-body"><p>Admission refuses promoted or removed requests under the per-run pointer lock before failure annotation, restoration or requeue; 5 regression cases pass, removing the promotion check fails 3 cases, and 59 importer files add 0 failures (408 passed and the same 3 baseline failures at both revisions).</p></div>
+</div>
 <div class="r-comment" data-section="s33" data-id="c-run-r-20261105T152146447294-review-of-a-claim-hold-reads-its-holder-again-78d0cdc27324" data-who="reckon-build" data-when="2026-11-05T15:33:47.392Z">
     <div class="r-comment-body"><p>Independent review of r-20261105T110404174692-a-claim-hold-reads-its-holder-again at b1f77637dd48a7ff4766ffffac8dd74a830b7969..78d0cdc273243abc3a81628f72f85058998ea53e: status parsed, six scores (total 110), zero added failure ids, two non-blocking findings.</p></div>
 </div>
@@ -670,9 +676,6 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261029T145111134871-review-of-a-delivered-run-reaches-a-landing-verdict-c12609ed2938" data-who="reckon-build" data-when="2026-10-29T15:00:19.489Z">
     <div class="r-comment-body"><p>§8 reviewed at c12609ed29 against base c97238c9: goal met, evidence reproducible, 0 added failures, two non-blocking findings (a tautological ledger assertion at the new test's line 260, and a surviving raw commit-entry reader at promotion_scope.py:1253).</p></div>
-</div>
-<div class="r-comment" data-section="s31" data-id="c-run-r-20261105T110153099417-a-promoted-run-never-reenters-the-queue" data-who="reckon-build" data-when="2026-11-06T13:36:31Z">
-    <div class="r-comment-body"><p>Admission refuses promoted or removed requests under the per-run pointer lock before failure annotation, restoration or requeue; 5 regression cases pass, removing the promotion check fails 3 cases, and 59 importer files add 0 failures (408 passed and the same 3 baseline failures at both revisions).</p></div>
 </div>
 </section>
 </main>
