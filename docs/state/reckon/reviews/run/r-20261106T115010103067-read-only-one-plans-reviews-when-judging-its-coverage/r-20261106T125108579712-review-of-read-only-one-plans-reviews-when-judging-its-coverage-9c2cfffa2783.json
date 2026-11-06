@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/mcp_edit_plan.py:2195",
+    "reckon/crew/routing.py:2684",
+    "reckon/crew/queue_admission.py:3741",
+    "reckon/mcp_deadlines.py:740",
+    "reckon/crew_run_commands.py:124",
+    "reckon/mcp_views.py:4283",
+    "reckon/crew/recovery_review_subject.py:833",
+    "reckon/crew_dispatch_commands.py:2727"
+  ],
+  "completed_at": "2026-11-06T13:07:30.398Z",
+  "dispatched_at": "2026-11-06T12:56:19Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "1460",
+      "severity": "non-blocking",
+      "text": "non-blocking: the scoped walk re-implements _candidate_paths' per-plan enumeration rather than extending it, and the staging glob literal plan-{slug}.v*.json now appears twice in the module (line 785 and line 1473), so a later change to the store layout can update one copy and leave the other silently reading the wrong tree."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "1419",
+      "severity": "non-blocking",
+      "text": "non-blocking: the pass cache key gained the plan slug but no test enters review_read_pass(), so reinstating the slug-less key leaves all three node cases green while an admission pass (reckon/crew/queue_admission.py:4161) that asks coverage for two plans would answer the second from the first plan's listing."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "1008",
+      "severity": "non-blocking",
+      "text": "non-blocking: dropping the record-level plan_slug comparison moves the filter from each record's own field to its directory and filename, so a committed record filed under plan/<slug>/ whose content names a different plan now contributes to that plan's coverage where the old predicate excluded it, and nothing asserts the path and the record agree."
+    },
+    {
+      "file": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/read-only-one-plans-reviews-when-judging-its-coverage.html",
+      "line": "57",
+      "severity": "non-blocking",
+      "text": "non-blocking: the recorded live arm is a post-write read of 27.2 s against the base tree's 26.6 s while live-read-measure.log shows the unscoped listing costs only 3.0-5.0 s of it, so the section's measured outcome does not show the edit latency it exists to reduce improving, and the coordinator needs that before reading the section as a fix."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "read commit by commit against b04ed13ddd78cfd59e076479a665128bf0d515b4; b5686abdce changes reckon/crew/plan_review.py by 47 lines, adds the 217-line test and the evidence fragment, and 9c2cfffa27 only replaces the fragment's \"see the gate log\" cell with the head arm's counts.",
+    "done_when": "the done_when names tests/test_review_coverage_reads_one_plan.py with three cases over a 200-record/20-plan store, three negative controls, a no-added-failure wide gate and a live measure; the file holds exactly those three cases, each control log shows 2 failed with EXIT=1, and the wide gate adds no failure (4 head against 8 base, all four present in the base arm), but the live arm is a post-write proxy read rather than the timed text-mode edit_plan the done_when asks for.",
+    "goal": "the node's goal is that a plan's review listing reads only that plan's reviews; reckon/crew/plan_review.py:1381-1478 gives list_plan_reviews an optional plan_slug that walks plan/<slug>/ and the staging plan-<slug>.v*.json glob, and the five in-module callers that narrowed one plan now pass it.",
+    "manifest": "the manifest records status complete, commits b5686abdce and 9c2cfffa27, the gate command with its 3-passed EXIT=0 log, the three control logs, both wide-gate arms with their failure ids, and one retry failure named honestly.",
+    "write_paths": "the node's declared write paths are reckon/crew/plan_review.py, tests/test_review_coverage_reads_one_plan.py, the evidence fragment under docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ and its figures directory; all three changed paths in the diff lie inside that list."
+  },
+  "justifications": {
+    "durability": "each of the three cases reddens under a stated mutation in negative-control-drops-slug.log, negative-control-skips-staging.log and negative-control-prefix-glob.log, but no case enters review_read_pass, so the cache-key change at plan_review.py:1419 has no test that fails if the slug is dropped from the key.",
+    "evidence": "suite-after-node-tests.log ends 3 passed EXIT=0 and the fragment's table at line 40-52 carries every arm, but the live arm yields 27.18 s against the base tree's 26.61 s, so the done_when's under-60 s measure is met by both arms and distinguishes nothing.",
+    "fit": "plan_review.py:1395-1403 documents the slug's staging-glob boundary in the module's own voice and the parameter joins the existing optional-argument style at plan_review.py:1381, and no filename, symbol or comment carries a plan or ticket label.",
+    "goal_fidelity": "reckon/crew/plan_review.py:1460-1476 restricts the committed walk to plan/<project-specified slug>/ and the staging glob to plan-{slug}.v*.json, which is the deliverable's stated read.",
+    "reuse": "the per-plan path rule the diff inlines at plan_review.py:1460-1476 is already owned by _candidate_paths at plan_review.py:761-796, which globs the same plan-{slug}.v*.json staging files and the same committed plan/<slug>/ directory for a caller holding a slug.",
+    "scope_discipline": "the diff touches only reckon/crew/plan_review.py:413-1480, the new test and the fragment, all inside the declared write paths, and the one remaining project-wide listing (_burst_records at plan_review.py:2805) is reported under outside_scope rather than changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a plan's review listing reads only that plan's reviews; reckon/crew/plan_review.py:1381-1478 gives list_plan_reviews an optional plan_slug that walks plan/<slug>/ and the staging plan-<slug>.v*.json glob, and the five in-module callers that narrowed one plan now pass it.\nVERDICT done_when: the done_when names tests/test_review_coverage_reads_one_plan.py with three cases over a 200-record/20-plan store, three negative controls, a no-added-failure wide gate and a live measure; the file holds exactly those three cases, each control log shows 2 failed with EXIT=1, and the wide gate adds no failure (4 head against 8 base, all four present in the base arm), but the live arm is a post-write proxy read rather than the timed text-mode edit_plan the done_when asks for.\nVERDICT write_paths: the node's declared write paths are reckon/crew/plan_review.py, tests/test_review_coverage_reads_one_plan.py, the evidence fragment under docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ and its figures directory; all three changed paths in the diff lie inside that list.\nVERDICT manifest: the manifest records status complete, commits b5686abdce and 9c2cfffa27, the gate command with its 3-passed EXIT=0 log, the three control logs, both wide-gate arms with their failure ids, and one retry failure named honestly.\nVERDICT diff: read commit by commit against b04ed13ddd78cfd59e076479a665128bf0d515b4; b5686abdce changes reckon/crew/plan_review.py by 47 lines, adds the 217-line test and the evidence fragment, and 9c2cfffa27 only replaces the fragment's \"see the gate log\" cell with the head arm's counts.\nCALL_SITES: reckon/mcp_edit_plan.py:2195, reckon/crew/routing.py:2684, reckon/crew/queue_admission.py:3741, reckon/mcp_deadlines.py:740, reckon/crew_run_commands.py:124, reckon/mcp_views.py:4283, reckon/crew/recovery_review_subject.py:833, reckon/crew_dispatch_commands.py:2727\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:1460-1476 restricts the committed walk to plan/<project-specified slug>/ and the staging glob to plan-{slug}.v*.json, which is the deliverable's stated read.\nSCORE evidence: 13\nJUSTIFICATION evidence: suite-after-node-tests.log ends 3 passed EXIT=0 and the fragment's table at line 40-52 carries every arm, but the live arm yields 27.18 s against the base tree's 26.61 s, so the done_when's under-60 s measure is met by both arms and distinguishes nothing.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/plan_review.py:413-1480, the new test and the fragment, all inside the declared write paths, and the one remaining project-wide listing (_burst_records at plan_review.py:2805) is reported under outside_scope rather than changed.\nSCORE durability: 15\nJUSTIFICATION durability: each of the three cases reddens under a stated mutation in negative-control-drops-slug.log, negative-control-skips-staging.log and negative-control-prefix-glob.log, but no case enters review_read_pass, so the cache-key change at plan_review.py:1419 has no test that fails if the slug is dropped from the key.\nSCORE fit: 16\nJUSTIFICATION fit: plan_review.py:1395-1403 documents the slug's staging-glob boundary in the module's own voice and the parameter joins the existing optional-argument style at plan_review.py:1381, and no filename, symbol or comment carries a plan or ticket label.\nSCORE reuse: 12\nJUSTIFICATION reuse: the per-plan path rule the diff inlines at plan_review.py:1460-1476 is already owned by _candidate_paths at plan_review.py:761-796, which globs the same plan-{slug}.v*.json staging files and the same committed plan/<slug>/ directory for a caller holding a slug.\nFINDING reckon/crew/plan_review.py:1460 non-blocking: the scoped walk re-implements _candidate_paths' per-plan enumeration rather than extending it, and the staging glob literal plan-{slug}.v*.json now appears twice in the module (line 785 and line 1473), so a later change to the store layout can update one copy and leave the other silently reading the wrong tree.\nFINDING reckon/crew/plan_review.py:1419 non-blocking: the pass cache key gained the plan slug but no test enters review_read_pass(), so reinstating the slug-less key leaves all three node cases green while an admission pass (reckon/crew/queue_admission.py:4161) that asks coverage for two plans would answer the second from the first plan's listing.\nFINDING reckon/crew/plan_review.py:1008 non-blocking: dropping the record-level plan_slug comparison moves the filter from each record's own field to its directory and filename, so a committed record filed under plan/<slug>/ whose content names a different plan now contributes to that plan's coverage where the old predicate excluded it, and nothing asserts the path and the record agree.\nFINDING docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/read-only-one-plans-reviews-when-judging-its-coverage.html:57 non-blocking: the recorded live arm is a post-write read of 27.2 s against the base tree's 26.6 s while live-read-measure.log shows the unscoped listing costs only 3.0-5.0 s of it, so the section's measured outcome does not show the edit latency it exists to reduce improving, and the coordinator needs that before reading the section as a fix.\nreviewed_base: b04ed13ddd78cfd59e076479a665128bf0d515b4\nreviewed_head_sha: 9c2cfffa2783dbc962a73bedbc1d741d705f90b7",
+  "review_run_id": "r-20261106T125108579712-review-of-read-only-one-plans-reviews-when-judging-its-coverage-9c2cfffa2783",
+  "reviewed_base_sha": "b04ed13ddd78cfd59e076479a665128bf0d515b4",
+  "reviewed_head_sha": "9c2cfffa2783dbc962a73bedbc1d741d705f90b7",
+  "reviewed_run_id": "r-20261106T115010103067-read-only-one-plans-reviews-when-judging-its-coverage",
+  "scores": {
+    "durability": 15,
+    "evidence": 13,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 12,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T13:21:33.260493+00:00",
+  "total": 93
+}
