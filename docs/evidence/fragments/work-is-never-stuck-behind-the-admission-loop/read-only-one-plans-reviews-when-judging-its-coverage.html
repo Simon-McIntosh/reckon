@@ -40,13 +40,19 @@ committed and half staged. The read is counted through a patch on
     <tr><td>negative control: prefix glob</td><td>worktree + mutation</td>
       <td>2 failed, <code>EXIT=1</code> &mdash; <code>a</code> opens
       <code>a-b</code>'s records</td></tr>
-    <tr><td>wide gate, head (test files importing the module)</td>
+    <tr><td>wide gate, head (97 test files importing the module)</td>
       <td>worktree</td>
-      <td>see the gate log</td></tr>
-    <tr><td>wide gate, base</td><td><code>b04ed13ddd</code>, extraction</td>
+      <td>4 failed, 829 passed, <code>EXIT=1</code></td></tr>
+    <tr><td>wide gate, base (96 files)</td><td><code>b04ed13ddd</code>, extraction</td>
       <td>8 failed, 822 passed, <code>EXIT=1</code></td></tr>
   </tbody>
 </table>
+
+<p>The four ids that fail in both arms are the two skill-contract cases and two
+run-verb grammar cases, red on the base revision before this change. The four
+ids the base arm alone adds are extraction-tree artifacts: the extracted copy
+is not the project checkout, so those cases judge the tree rather than the
+code, and they pass in the worktree.</p>
 
 <p><strong>Live read on the operator's store.</strong> Reading coverage for
 <code>work-is-never-stuck-behind-the-admission-loop</code> opens 101 records
