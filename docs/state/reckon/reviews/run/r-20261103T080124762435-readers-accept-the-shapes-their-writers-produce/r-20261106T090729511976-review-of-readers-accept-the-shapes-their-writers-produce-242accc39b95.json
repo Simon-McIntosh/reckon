@@ -1,0 +1,63 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:1188",
+    "reckon/crew/promotion_checks.py:463",
+    "reckon/crew/promotion_evidence.py:229",
+    "reckon/crew/dispatch_launch.py:3107",
+    "reckon/crew/dispatch_sessions.py:331",
+    "reckon/hooks/worker_stop.py:307"
+  ],
+  "completed_at": "2026-11-06T09:25:56.088Z",
+  "dispatched_at": "2026-11-06T09:15:32Z",
+  "findings": [
+    {
+      "file": "reckon/crew/reports.py",
+      "id": "f7597a4a58d",
+      "line": "747",
+      "severity": "non-blocking",
+      "text": "non-blocking: the JSON reader checks only a list where the schema declares text or a mapping, so a JSON manifest carrying a mapping under a field whose schema declares text alone (status, node, measurement_cwd) is read silently and named by nothing, while the text reader raises ManifestParseError for the same content at reckon/crew/reports.py:671; the two readers still disagree on one shape."
+    },
+    {
+      "file": "tests/test_readers_normalise_shapes.py",
+      "id": "f91cd89b46e",
+      "line": "35",
+      "severity": "non-blocking",
+      "text": "non-blocking: this assertion compares two calls of normalised_findings against each other rather than against an independent value, so a normaliser returning the same wrong value for both shapes (an empty list, say) keeps it green; the literal assertions at lines 21 and 28 are what pin the shape, so the durability score does not rest on this line."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from a9689ecde201 to 242accc39b95: bf71e489 passes shape_findings into _read_json_manifest and adds the test file, 6cc30add narrows the check to a list under a text or mapping field, and 242accc corrects the fragment's test and arm figures.",
+    "done_when": "the done_when's string/object findings case, YAML test_logs case and named shaped field are all carried by tests/test_readers_normalise_shapes.py, and gate_head4.log/gate_base2.log record the head arm at 1 failed 2194 passed against base 8 failed 2187 passed.",
+    "goal": "the node goal is that readers accept the shapes their writers produce; the gained commits make reckon/crew/reports.py:738 judge a JSON manifest's fields and land tests/test_readers_normalise_shapes.py as the repository test.",
+    "manifest": "the source manifest reads status complete and records the head and base arm figures, the negative control and every log path it cites; its baseline_suite and after_suite fields are empty because the dispatch left the suite unarmed.",
+    "write_paths": "the dispatch fence named reckon/crew/reports.py, reckon/crew/review.py and the fragment, and resume-1-advice.txt adds tests/test_readers_normalise_shapes.py; every path in the gained diff is inside that set."
+  },
+  "justifications": {
+    "durability": "tests/test_readers_normalise_shapes.py:86-95 reddens when shape_findings is dropped from _read_json_manifest, which gate_base2.log shows failing at the base revision, and the string-findings cases redden in negative_control.log; only the equality assertion at line 35 has no independent side.",
+    "evidence": "gate_head4.log at 6cc30add records 1 failed 2194 passed and gate_base2.log at 922001b305 records 8 failed 2187 passed, the seven measure cases are among the base failures, negative_control.log reddens three with the lift removed, and every log opens with its revision and literal command and closes with EXIT=.",
+    "fit": "reckon/crew/reports.py:744-756 follows the comment and naming idiom of the existing text reader beside it, and the fragment carries the node-prefixed ids the landing contract requires.",
+    "goal_fidelity": "reckon/crew/reports.py:738-756 now judges a JSON manifest's declared fields by the same rule the text reader applies, so a JSON list under tests is named where the previous review found it silently read, and tests/test_readers_normalise_shapes.py lands the measure in the tree.",
+    "reuse": "reckon/crew/reports.py:747 reuses _MANIFEST_SCHEMA, _shape_of and _schema_shape_message rather than adding a shape vocabulary, though the list-under-text rule now appears in three places in the same module (lines 681, 721, 755).",
+    "scope_discipline": "the gained diff touches only reckon/crew/reports.py, tests/test_readers_normalise_shapes.py and docs/evidence/fragments/the-crew-does-its-own-bookkeeping/readers-accept-the-shapes-their-writers-produce.html, and resume-1-advice.txt puts tests/ in the grant."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that readers accept the shapes their writers produce; the gained commits make the JSON manifest reader judge its declared fields at reckon/crew/reports.py:738 and land the measure as tests/test_readers_normalise_shapes.py.\nVERDICT done_when: the done_when asks for a string/object findings case, a YAML test_logs list and the check naming a shaped field in two arms; gate_head4.log at 6cc30add records 1 failed 2194 passed and gate_base2.log at 922001b305 records 8 failed 2187 passed with the seven measure cases among them, both run at -n 4 as resume-2-advice.txt directs rather than the done_when's -n 8.\nVERDICT write_paths: the dispatch fence declared reckon/crew/reports.py, reckon/crew/review.py and the landing fragment, and resume-1-advice.txt adds tests/test_readers_normalise_shapes.py to the grant; every path in the gained diff is inside that set.\nVERDICT manifest: the source manifest reads status complete and records the head arm at 1 failed 2194 passed against base 8 failed 2187 passed, the negative control and every log path it cites, with baseline_suite and after_suite empty because the dispatch left the suite unarmed.\nVERDICT diff: read commit by commit from a9689ecde201 to 242accc39b95; bf71e489 passes shape_findings into _read_json_manifest and adds the test file, 6cc30add narrows the check to a list under a text or mapping field, and 242accc corrects the fragment's figures \u2014 three files, all inside the grant.\nCALL_SITES: reckon/crew_run_commands.py:1188, reckon/crew/promotion_checks.py:463, reckon/crew/promotion_evidence.py:229, reckon/crew/dispatch_launch.py:3107, reckon/crew/dispatch_sessions.py:331, reckon/hooks/worker_stop.py:307\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:738-756 judges a JSON manifest's declared fields and names a JSON list under tests, closing the gap the previous review recorded, though a mapping under a text field is still unnamed.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate_head4.log and gate_base2.log each open with their revision and literal command and close with EXIT=, showing 1 failed 2194 passed at the head against 8 failed 2187 passed at the base, and negative_control.log ends EXIT=1 with three measure cases red.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained diff touches only reckon/crew/reports.py, tests/test_readers_normalise_shapes.py and the landing fragment, and resume-1-advice.txt puts tests/ in the grant.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_readers_normalise_shapes.py:86-95 fails at the base revision as gate_base2.log shows, so reinstating the missing shape_findings argument reddens it; the equality assertion at line 35 alone would not.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/reports.py:744-756 follows the comment and naming idiom of the text reader beside it and the fragment keeps node-prefixed ids, though the same shape rule now appears at lines 681, 721 and 755.\nFINDING reckon/crew/reports.py:747 non-blocking: a JSON manifest carrying a mapping under a field whose schema declares text alone is read silently and named by nothing, while the text reader raises ManifestParseError at reckon/crew/reports.py:671 for the same content.\nFINDING tests/test_readers_normalise_shapes.py:35 non-blocking: the equality assertion compares two calls of normalised_findings rather than an independent value, so it stays green for a normaliser that returns the same wrong value for both shapes; the literal assertions at lines 21 and 28 carry the guard.\n",
+  "review_run_id": "r-20261106T090729511976-review-of-readers-accept-the-shapes-their-writers-produce-242accc39b95",
+  "reviewed_base_sha": "a9689ecde20116a32e452a13d280c7d7b4df42fb",
+  "reviewed_head_sha": "242accc39b95c060d1467b0fe8345bba1d388375",
+  "reviewed_run_id": "r-20261103T080124762435-readers-accept-the-shapes-their-writers-produce",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T09:35:55.024984+00:00",
+  "total": 105
+}
