@@ -27,4 +27,17 @@
   this change added zero failures. The base-only failure is an observed
   difference, not evidence that this change repaired that test. The run
   manifest names the complete logs and their commands.</p>
+  <p><strong>Review repair.</strong> A stored scope-conflict refusal now remains
+  unchanged only when the next admission pass finds the same binding claim.
+  A holder that remains live but no longer claims the path no longer appears
+  as the request's current holder, and the finished-holder duty disappears.
+  A new case raises <code>UnreconciledRuns</code> for two live runs and requires
+  both ids in the stored refusal, so dropping that branch is visible.</p>
+  <p>The exact focused command passed 12 tests at repair base
+  <code>95808ee971</code> and 14 at repair head <code>2b29cfdd1a</code>.
+  With the head tests held fixed, reverting the source to the repair base
+  failed the two scope-conflict cases. Disabling the named-runs branch at the
+  repair head failed the new refusal case. Both controls exited 1 and name
+  their failing ids in the run logs. Ruff check and format check passed on
+  the repaired source and test files.</p>
 </section>
