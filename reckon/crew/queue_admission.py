@@ -1545,7 +1545,13 @@ def _restore_queued(
         "admitted_at",
     ):
         restored.pop(key, None)
-    _writeback_pointer(str(snapshot["run_id"]), restored)
+    run_id = str(snapshot["run_id"])
+    with runs._pointer_lock(run_id):
+        _require_live_writeback(snapshot)
+        current = runs.read_pointer(run_id)
+        if _retain_launched_record(current, restored):
+            restored = current
+        _write_pointer(run_id, restored)
 
 
 def _record_queued_failure(
@@ -1561,6 +1567,11 @@ def _record_queued_failure(
 
     def annotate(current: dict[str, Any]) -> dict[str, Any]:
         _require_live_writeback(snapshot)
+        refused = _stamp_failure(
+            copy.deepcopy(dict(snapshot)), failure, moment=failed_at, guard=guard
+        )
+        if _retain_launched_record(current, refused):
+            return current
         return _stamp_failure(current, failure, moment=failed_at, guard=guard)
 
     try:
@@ -4733,6 +4744,35 @@ def _admission_history_entry(
     return entry
 
 
+def _archive_queued_life(
+    pointer: dict[str, Any], request: Mapping[str, Any], *, admitted_at: str
+) -> None:
+    """Keep a refusal once, away from the launched record's current state."""
+    entry = _admission_history_entry(request, admitted_at=admitted_at)
+    if entry is not None:
+        history = list(pointer.get(ADMISSION_HISTORY_KEY) or ())
+        facts = {key: value for key, value in entry.items() if key != "admitted_at"}
+        if not any(
+            all(item.get(key) == value for key, value in facts.items())
+            for item in history
+        ):
+            history.append(entry)
+        pointer[ADMISSION_HISTORY_KEY] = history
+    for key in QUEUED_LIFE_KEYS:
+        pointer.pop(key, None)
+
+
+def _retain_launched_record(
+    pointer: dict[str, Any], refused: Mapping[str, Any]
+) -> bool:
+    """A refusal arriving after a successful spawn changes only its history."""
+    launched_at = pointer.get("launch_recorded_at") or pointer.get("launched_at")
+    if not launched_at or pointer.get("phase") == LAUNCH_FAILED_PHASE:
+        return False
+    _archive_queued_life(pointer, refused, admitted_at=str(launched_at))
+    return True
+
+
 def _stamp_admission(
     run_id: str, request: Mapping[str, Any], *, admitted_at: str
 ) -> None:
@@ -4751,13 +4791,7 @@ def _stamp_admission(
     def mutation(pointer: dict[str, Any]) -> dict[str, Any]:
         pointer["admitted_at"] = admitted_at
         pointer["admit_request"] = copy.deepcopy(dict(request))
-        entry = _admission_history_entry(request, admitted_at=admitted_at)
-        if entry is not None:
-            history = list(pointer.get(ADMISSION_HISTORY_KEY) or ())
-            history.append(entry)
-            pointer[ADMISSION_HISTORY_KEY] = history
-        for key in QUEUED_LIFE_KEYS:
-            pointer.pop(key, None)
+        _archive_queued_life(pointer, request, admitted_at=admitted_at)
         return pointer
 
     runs._mutate_pointer(run_id, mutation)

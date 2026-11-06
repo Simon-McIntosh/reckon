@@ -2735,7 +2735,13 @@ def dispatch(
             output = directory / f"image-{index}.png"
             pending_pngs.append((output, png))
             rendered_images.append(str(output))
-        worktree = _create_worktree(repo_root, worktree_identity, node.id, base)
+        from reckon.crew import routing
+
+        launch_token = routing.LAUNCH_RUN_ID.set(run_id)
+        try:
+            worktree = _create_worktree(repo_root, worktree_identity, node.id, base)
+        finally:
+            routing.LAUNCH_RUN_ID.reset(launch_token)
         directory.mkdir(parents=True, exist_ok=True)
         for output, png in pending_pngs:
             output.write_bytes(png)
@@ -3385,17 +3391,25 @@ def dispatch(
             record["pid"] = spawned_pid
             record["pid_start_time"] = spawned_start_time
 
-            # The supervisor may already have advanced this pointer's phase.
-            # Merge the launch identity under the same lock as that advance so
-            # neither writer replaces the other's newer fields with its copy.
+            # Publish every launch field after the spawn, under the pointer lock.
+            # A competing refusal may have replaced the pre-spawn record; the
+            # supervisor's newer observations still belong to this attempt.
             def attach_launch_identity(pointer: dict[str, Any]) -> dict[str, Any]:
-                pointer["pid"] = spawned_pid
-                pointer["pid_start_time"] = spawned_start_time
-                if "repository_tree_snapshot" in record:
-                    pointer["repository_tree_snapshot"] = record[
-                        "repository_tree_snapshot"
-                    ]
-                return pointer
+                from reckon.crew.queue_admission import _archive_queued_life
+
+                published = {**pointer, **record}
+                for key in ("phase", "session_id", "session_id_absent", "task"):
+                    if (
+                        pointer.get(key) is not None
+                        and pointer.get("phase") != "queued"
+                    ):
+                        published[key] = pointer[key]
+                published["launch_recorded_at"] = _utc_now()
+                for request in (request_pointer or {}, pointer):
+                    _archive_queued_life(
+                        published, request, admitted_at=published["launch_recorded_at"]
+                    )
+                return published
 
             # The pointer now names the running worker, so a discard arriving
             # after this merge is refused by discard's own liveness test — the
@@ -3459,7 +3473,23 @@ def dispatch(
                 and not discard_recorded(run_id)
             )
             if restore_request:
-                _write_json(pointer_path(run_id), request_pointer)
+                from reckon.crew.queue_admission import (
+                    _retain_launched_record,
+                    _stamp_failure,
+                )
+
+                def restore(pointer: dict[str, Any]) -> dict[str, Any]:
+                    refused = _stamp_failure(
+                        dict(request_pointer),
+                        f"{type(exc).__name__}: {exc}",
+                        moment=datetime.now(UTC),
+                        guard=None,
+                    )
+                    if _retain_launched_record(pointer, refused):
+                        return pointer
+                    return request_pointer
+
+                _mutate_pointer(run_id, restore)
             else:
                 _release_launch_claim(run_id)
             # A refusal can land before the worktree exists — the creation

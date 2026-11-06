@@ -1070,6 +1070,11 @@ def _pin_archived_commits(repo: Path, ref: str, head: str) -> None:
     _git(repo, "update-ref", ref, head, zeros)
 
 
+# A launch holds its node claim while preparing its tree. Only that launch's
+# own pointer may be ignored; every peer still protects the tree it names.
+LAUNCH_RUN_ID: ContextVar[str] = ContextVar("launch_run_id", default="")
+
+
 def _live_pointer_worktrees() -> dict[Path, list[str]]:
     """Every worktree a live pointer names, whatever state that pointer is in.
 
@@ -1079,10 +1084,13 @@ def _live_pointer_worktrees() -> dict[Path, list[str]]:
     the window from dispatch to first commit, which is exactly where a
     measure-first node parks on a long job. A tree stays a run's until
     promotion or discard removes the pointer, so every removal path reads this
-    wider claim rather than the phase it happens to carry.
+    wider claim rather than the phase it happens to carry. While a dispatch
+    holds its node claim and prepares the tree, its own pointer is excluded.
     """
     claims: dict[Path, list[str]] = {}
     for record in list_live():
+        if LAUNCH_RUN_ID.get() and record.get("run_id") == LAUNCH_RUN_ID.get():
+            continue
         worktree = record.get("worktree")
         if not worktree:
             continue
