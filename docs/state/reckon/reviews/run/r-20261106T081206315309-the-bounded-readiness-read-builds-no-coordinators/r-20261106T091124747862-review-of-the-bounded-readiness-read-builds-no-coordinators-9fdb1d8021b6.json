@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/plan_review.py:5415",
+    "reckon/crew/queue_admission.py:2408",
+    "reckon/crew/plan_review.py:5286"
+  ],
+  "completed_at": "2026-11-06T09:30:20.122Z",
+  "dispatched_at": "2026-11-06T09:16:50Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T081206315309-the-bounded-readiness-read-builds-no-coordinators/manifest.md",
+      "line": "23",
+      "severity": "non-blocking",
+      "text": "non-blocking: the importer-suite measure covers 13 of the 125 test files that import reckon.roadmap or reckon.crew.plan_review, while the done_when names the importer population; the broader arms were started and stopped without an EXIT line, so the recorded zero-added-failure claim rests on a narrower population than the measure states."
+    },
+    {
+      "file": "tests/test_the_bounded_readiness_read_builds_no_coordinators.py",
+      "line": "122",
+      "severity": "non-blocking",
+      "text": "non-blocking: `assert calls == []` is an absence claim whose only positive control is the run's base-arm log; if plan_review.section_readiness_rows stopped delegating to roadmap.section_readiness_rows the assertion would pass vacuously, so the unscoped derivation arm should also assert that coordinator resolution is reached."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against 5816b1619a; the change is a context manager around one return in reckon/roadmap.py, a 159-line test file and a 9-line evidence fragment.",
+    "done_when": "the done_when names tests/test_the_bounded_readiness_read_builds_no_coordinators.py with three cases and a removing-the-scope negative control; the manifest records 3 passed EXIT=0 at head (logs/after-arm.log) and 1 failed, 2 passed EXIT=1 at base (logs/base-arm.log).",
+    "goal": "the goal is that roadmap.section_readiness_rows builds with coordinator resolution off by entering the scope itself, and reckon/roadmap.py:3300-3302 now wraps its build_roadmap call in roadmap_build_scope(resolve_coordinators=False).",
+    "manifest": "read; it records the head arm, the base arm, the negative control, the focused importer pair and ruff, and states in evidence_inputs that the full importer set was started twice and stopped on the run clock.",
+    "write_paths": "the manifest declares reckon/roadmap.py, the new test and the evidence fragment, and the single commit 9fdb1d8021 touches exactly those three paths and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_the_bounded_readiness_read_builds_no_coordinators.py:122 reddens when the scope entry is removed, shown by logs/negative-control.log, though nothing in that file fails if the read stops reaching roadmap.section_readiness_rows at all.",
+    "evidence": "the node arm and its negative control are recorded in logs/after-arm.log and logs/negative-control.log, but the importer measure covers 13 of the 125 test files importing reckon.roadmap or reckon.crew.plan_review and the two broader arms in logs/ never reached an EXIT line.",
+    "fit": "the test uses the repository's own idioms \u2014 fixtures.chain_repo.__wrapped__ as at tests/test_queue_dag_waits.py:23 \u2014 and adds no name the naming rules forbid.",
+    "goal_fidelity": "reckon/roadmap.py:3300 enters roadmap_build_scope(resolve_coordinators=False) around the bounded build, which is precisely the section's deliverable.",
+    "reuse": "roadmap_build_scope at reckon/roadmap.py:3234 is the owner of this capability and the change extends it, as reckon/crew/plan_review.py:5286 and reckon/crew/queue_order.py:54 already do.",
+    "scope_discipline": "the diff at 9fdb1d8021 touches only the three paths declared on manifest.md:3, with no incidental edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that roadmap.section_readiness_rows builds with coordinator resolution off by entering the scope itself, and reckon/roadmap.py:3300-3302 now wraps its build_roadmap call in roadmap_build_scope(resolve_coordinators=False).\nVERDICT done_when: the done_when names tests/test_the_bounded_readiness_read_builds_no_coordinators.py with three cases and a removing-the-scope negative control; the manifest records 3 passed EXIT=0 at head (logs/after-arm.log) and 1 failed, 2 passed EXIT=1 at base (logs/base-arm.log).\nVERDICT write_paths: the manifest declares reckon/roadmap.py, the new test and the evidence fragment, and the single commit 9fdb1d8021 touches exactly those three paths and nothing else.\nVERDICT manifest: read; it records the head arm, the base arm, the negative control, the focused importer pair and ruff, and states in evidence_inputs that the full importer set was started twice and stopped on the run clock.\nVERDICT diff: read commit by commit against 5816b1619a; the change is a context manager around one return in reckon/roadmap.py, a 159-line test file and a 9-line evidence fragment.\nCALL_SITES: reckon/crew/plan_review.py:5415, reckon/crew/queue_admission.py:2408, reckon/crew/plan_review.py:5286\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/roadmap.py:3300 enters roadmap_build_scope(resolve_coordinators=False) around the bounded build, which is precisely the section's deliverable.\nSCORE evidence: 15\nJUSTIFICATION evidence: the node arm and its negative control are recorded in logs/after-arm.log and logs/negative-control.log, but the importer measure covers 13 of the 125 test files importing reckon.roadmap or reckon.crew.plan_review and the two broader arms in logs/ never reached an EXIT line.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff at 9fdb1d8021 touches only the three paths declared on manifest.md:3, with no incidental edit.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_the_bounded_readiness_read_builds_no_coordinators.py:122 reddens when the scope entry is removed, shown by logs/negative-control.log, though nothing in that file fails if the read stops reaching roadmap.section_readiness_rows at all.\nSCORE fit: 20\nJUSTIFICATION fit: the test uses the repository's own idioms \u2014 fixtures.chain_repo.__wrapped__ as at tests/test_queue_dag_waits.py:23 \u2014 and adds no name the naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: roadmap_build_scope at reckon/roadmap.py:3234 is the owner of this capability and the change extends it, as reckon/crew/plan_review.py:5286 and reckon/crew/queue_order.py:54 already do.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T081206315309-the-bounded-readiness-read-builds-no-coordinators/manifest.md:23 non-blocking: the importer-suite measure covers 13 of the 125 test files that import reckon.roadmap or reckon.crew.plan_review, while the done_when names the importer population; the broader arms were started and stopped without an EXIT line, so the recorded zero-added-failure claim rests on a narrower population than the measure states.\nFINDING tests/test_the_bounded_readiness_read_builds_no_coordinators.py:122 non-blocking: `assert calls == []` is an absence claim whose only positive control is the run's base-arm log; if plan_review.section_readiness_rows stopped delegating to roadmap.section_readiness_rows the assertion would pass vacuously, so the unscoped derivation arm should also assert that coordinator resolution is reached.",
+  "review_run_id": "r-20261106T091124747862-review-of-the-bounded-readiness-read-builds-no-coordinators-9fdb1d8021b6",
+  "reviewed_base_sha": "5816b1619a5a941d04a74211052f8e827532d921",
+  "reviewed_head_sha": "9fdb1d8021b6cafc75b2fe351eb94dc3d49b5109",
+  "reviewed_run_id": "r-20261106T081206315309-the-bounded-readiness-read-builds-no-coordinators",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T09:39:17.910717+00:00",
+  "total": 112
+}
