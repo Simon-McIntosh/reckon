@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T22:38:27.551Z",
+  "dispatched_at": "2026-11-06T22:32:34Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/an-evidence-record-counts-only-what-it-read.html:51",
+      "id": "done_when-1",
+      "reason": "the case is unpassable against the stated fixture until the plan says the fixture's plan declares `s9` (or that `s9` is otherwise in the producible set), and a node would otherwise either write a red gate or special-case the id.",
+      "text": "the third case says an unmarked `s9` \"that this synthesis no longer produces is not carried forward\" and the second control depends on the same drop, but the deliverable's discriminator is membership of the producible set (the plan's section ids, `outcome`, and this run's rendered ids); the fixture is described only as \"a record written by an earlier synthesis ... over a two-run ledger\" with no statement that its plan declares a section `s9`, so a node building the described fixture has `s9` neither rendered nor a plan section id, the legacy rule classifies it as appended, carries it forward, and both the third case and its negative control fail however correct the implementation is",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-evidence-record-counts-only-what-it-read.html:50",
+      "id": "reasoning-1",
+      "reason": "the deliverable as written produces duplicate ids on a reachable record, so the node would implement a rule its own stated invariant forbids; the fix is to apply the rendered-id exclusion to every section, marked or not, and add a case and control for a marked section whose id is rendered.",
+      "text": "the rule \"the synthesis carries forward only marked sections\" omits the rendered-id exclusion the plan states only inside the legacy paragraph (\"So an id this run renders is never also carried forward\"), so a marked section whose id this run renders is forwarded and rendered; that state is reachable because `append_evidence`'s anchor may be any id matching `[A-Za-z0-9][A-Za-z0-9._-]*` (reckon/_store.py:1292-1299) and `_append_evidence_to_text` refuses only an id already present in the record (reckon/_store.py:1216-1220), so an append anchored `s4` succeeds on a record whose plan section s4 has no comments or runs yet, and the next synthesis that renders `s4` publishes the id twice \u2014 the opposite of the anchor-survival the section exists to guarantee \u2014 and the done-when's \"appears exactly once\" case uses only a non-colliding `x-appended`, so no case or control would catch it",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "8fb9c1a816326afd0649e47deac16b0355f1cbae",
+  "plan_fingerprint": "23a1448f8f9f56540667b42eab0b26d375a9671cc5f30671130435d0b93d443f",
+  "plan_slug": "an-evidence-record-counts-only-what-it-read",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T223045796627-plan-review-of-an-evidence-record-counts-only-what-it-read",
+  "reviewed_blob_sha": "75c91ca4b813ad36eadd357df6d14594a670a87d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every citation resolves at the revision read: `_render_document` taking comment keys and ledger `section` keys at reckon/evidence.py:338-351 (cited \"near lines 340\u2013354\"), `synthesize_landed_record` at evidence.py:636, `_evidence_section_html` at reckon/_store.py:1197, and the folding defect at evidence.py:673-681, which renders the plan and ledger and writes over `destination` without reading it.",
+    "done_when": "a finding \u2014 \u00a74's third case requires an unmarked section `s9` to classify as synthesis-generated, but nothing in the section makes `s9` an id a synthesis can produce, so under the deliverable's own rule the fixture would carry it forward and the case and its control cannot pass.",
+    "evidence_paths": "pass \u2014 \u00a74 names no scratchpad or node-local path; its gate runs in a temporary repository under `$TMPDIR` and the plan states it, and \u00a72 (plan.html:40) already fixes the log convention for the plan's gates under the run directory.",
+    "naming": "pass \u2014 the new marker `data-evidence-origin=\"append\"` names what the value is, and the test ids `x-appended`, `s9` and `legacy-anchor` are fixture data, not plan labels.",
+    "reasoning": "a finding \u2014 the carry-forward rule excludes rendered ids only for unmarked legacy sections, so a marked section whose id this run also renders is published twice, which is reachable because `append_evidence`'s anchor may itself be a plan section id.",
+    "single_goal": "pass \u2014 \u00a74 delivers one thing, anchors written by an append surviving a re-synthesis; the `data-evidence-origin` mark in `_store.py` is the mechanism for that goal, not a second deliverable.",
+    "wiring": "pass \u2014 `plan-section-depends-on` (plan.html:23) gives s4 waits on s2 and s3, which are exactly the nodes sharing its two write paths (`reckon/evidence.py` with s2, `reckon/_store.py` with s2 and s3), and the followup at plan.html:55-59 orders \u00a72, \u00a73, \u00a74 to match."
+  },
+  "section_digests": {
+    "_document": "6d35efce52466005f8ee56997c8dc7bcca998d7c41fcd252d254bc7264596281",
+    "s1": "7c52117565966edec5de56bc0448d4a141edbcb73ac18ede5f2cb0c34f424f0a",
+    "s2": "143dc532dde638505b6cf743e1b2af8b2d754fbd94debf4fdb0b351e623a2a39",
+    "s3": "1e19a712fd2dad1c38a11f7b6164b1fcc01c996e78f3297edb135a1d5fd7c0cf",
+    "s4": "7d7043ec1fdf48a0e31c445bf747dbaddbdf3b9ef27330fee3143a4df6e07ce9"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T22:44:21.683171+00:00",
+  "total": null
+}
