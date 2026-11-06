@@ -1,0 +1,45 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T21:59:46.863Z",
+  "dispatched_at": "2026-11-06T21:52:53Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-refusal-comes-before-the-work.html:44",
+      "id": "done_when-1",
+      "reason": "a worker implementing the section verbatim would write a literal missing test path and watch the fifth case store, then either report the section blocked or weaken the shared function to manufacture the refusal, both of which change what gets built.",
+      "text": "the fifth case (\"an entry whose gate names a test file the repository does not hold is refused in the batch result\") cannot be satisfied as written: `gate_population_patterns` (reckon/crew/node.py:1099-1111) keeps a token only when `_GATE_POPULATION_IS_A_SET` matches `[?*\\[]`, so a literal `pytest tests/no_such_test.py` yields no pattern and `gate_population_finding` returns None; verified by direct call \u2014 `gate_population_patterns(\"pytest tests/test_missing.py\")` \u2192 `[]`, `gate_population_finding` on a node whose gate is `pytest tests/does_not_exist_abc.py` \u2192 `None`, while the glob spelling `tests/does_not_exist_abc*.py` \u2192 `'gate-population'`. The fifth case therefore fails in the head arm, and its negative control (\"omitting `gate_population_finding` from the shared function stores the fifth case's entry\") has no red-to-green pair to demonstrate. The mechanism itself is fine; only the case's spelling is wrong, so the fix is to name a glob population (e.g. `pytest tests/test_missing_*.py`) or to state that the gate must name one \u2014 and to keep that path out of the entry's write paths, since `_population_covers_a_declared_write_path` exempts a declared write path.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "a0660f5e61c295680610ccf81b0969a13d6bee58",
+  "plan_fingerprint": "96b86ec7337635b7697eeec8c643e3430ac2449553ff4a32a4c0f42e2abac3fb",
+  "plan_slug": "a-refusal-comes-before-the-work",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T215150611636-plan-review-of-a-refusal-comes-before-the-work",
+  "reviewed_blob_sha": "3c747841914c9e098b616aadc1441b3263088c3c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/node.py` line 79 is `_DELIVERABLE_ACTIONS`; `dispatch_plan.py` 843/851/862/869 are `validate_node`, `negative_control_finding`, `gate_population_finding` and `if not execution_fit.allowed`; `dispatch_batch.py` 478 is `queue_batch`; `dispatch.py` 293 is `queue_requests`; the new test path is free.",
+    "done_when": "a finding \u2014 \u00a72's fifth case requires `gate_population_finding` to refuse \"an entry whose gate names a test file the repository does not hold\", but that function collects only glob-shaped tokens, so a literal missing test path is never refused.",
+    "evidence_paths": "pass \u2014 \"Every log is under the run directory\", which is the durable crew run directory (`~/.config/reckon/crew/runs/<run>/`), not a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach a symbol, filename or comment; the case labels \"fourth\"/\"fifth\" are prose inside the done-when, not code.",
+    "reasoning": "pass \u2014 the stated root cause reproduces: `queue_requests` (reckon/crew/dispatch.py:322-331) runs only `admission_domain_findings` for each node, and `_queue_batch` reaches it at `dispatch_batch.py:577`, so the shared function has a real production caller and every node-local refusal it must carry (`validate_node`, `negative_control_finding`, `gate_population_finding`) is callable there; the exclusion of execution fit is also coherent because admission rebinds a queued request's backend (`queue_admission.py:657`).",
+    "single_goal": "pass \u2014 the deliverable is one thing: move the three node-local refusals into one function in `reckon/crew/dispatch_plan.py` and have the batch path call it before storing.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `s3` and `s5` wait on `a-refusal-comes-before-the-work#s2`, which is correct: both share a file with \u00a72 (`dispatch.py` for \u00a73, `dispatch_plan.py` for \u00a75), `s4` touches `_store.py` alone and is correctly independent, and followup `f-arcbtw-001` carries the same order and invocation."
+  },
+  "section_digests": {
+    "_document": "fe86ddc53d6df02ed8681809f4399744a8daf0946c333b28fc3a6b583769f545",
+    "s1": "75df880739e89570186a1c16cae47d54a4d457a4a6e99c09b2d62c21368dc424",
+    "s2": "a27dc8a67f302c16c31861cdf592ad9af2c096deea6d10c62ce366a737df50a7",
+    "s3": "b5b62335762566059c1bbb98372fed78bff07b643d64c9fa675596aa8bd81a3a",
+    "s4": "07a4ee8576d20a6230358f2290732b9c4debaa456380d9c2a8e8fd3651cc5e95",
+    "s5": "971aeb8e3a089f473d197e621d3f0c26ead6b1816778ac46d4796b8906360253"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-06T22:14:06.820095+00:00",
+  "total": null
+}
