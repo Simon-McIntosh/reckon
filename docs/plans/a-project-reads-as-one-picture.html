@@ -27,7 +27,7 @@
   <title>A Project Reads as One Picture | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="79">
+<meta name="plan-version" content="80">
 <meta name="plan-modified" content="2026-11-06">
 </head>
 <body>
@@ -124,14 +124,16 @@
       within its read deadline. Every disagreement with a coordinator is listed with its cause, as
       either a wiring fault in the plans or a defect in the derivation, and each derivation defect
       becomes a section of this plan or a new plan. Two controls make the measure able to fail. Both run on a
-      constructed snapshot rather than a live mount, because the re-measure of 2026-11-06 found that
-      no mount's critical path crosses a plan and that the base no longer disagrees with the
-      coordinators on today's snapshots. The snapshot is a temporary project, copied to node-local
-      <code>/tmp</code>, whose critical path runs through a declared cross-plan section wait. The four
-      questions put to it through the base commit, the revision before §2 derived section edges, must
-      disagree with the head on the critical path. And removing that cross-plan edge from a copy must
-      move the head's critical path, and must raise <code>undeclared-wait</code> where a blocker still
-      names the removed edge.
+      constructed snapshot rather than a live mount. On the snapshots of 2026-11-06 no mount's critical
+      path crossed a plan, and the base no longer disagreed with the coordinators. On power_convertor
+      the plan set had moved on since §2's landing, which recorded a three-plan critical path there.
+      The snapshot is built by a committed builder under <code>tests/</code>, so a later reader can
+      rebuild it and re-run both controls. It is a project whose critical path runs through a declared
+      cross-plan section wait, and whose waiting plan carries an open followup whose prompt names that
+      edge's target section. The four questions put to it through the base commit, the revision before
+      §2 derived section edges, must disagree with the head on the critical path. And removing that
+      cross-plan edge from a copy must move the head's critical path, and must raise
+      <code>undeclared-wait</code> for the followup that still names the removed edge.
     </p>
 
 
