@@ -1490,9 +1490,30 @@ def _resume(
         )
         _record_resume_supersedes_head(run_id)
         _withdraw_review_superseded_by_resume(run_id)
+        # A resume launches a worker without sending a dispatch request, and a
+        # host settles a child that reached the end of its session's work. So
+        # without this the pane of a session whose last action was a resume
+        # stops showing anything once that child settles: the worker runs, and
+        # no follower is there to deliver its rows. The request is the one a
+        # dispatch writes, and it is sent after the launch so the work it
+        # publishes exists when the follower attaches. It is reported rather
+        # than raised, because the worker is already running, and a host that
+        # did not re-arm changes nothing a resume has to fail over.
+        from reckon.crew.dispatch_watch import _rearm_session_follower
+
+        follower_rearmed, follower_note = _rearm_session_follower(
+            resume_project, str(record.get("session") or "")
+        )
     finally:
         _LAUNCHES_IN_THIS_PROCESS.discard(run_id)
-    return {"pid": pid, "turn": turn, "log_path": str(log_path), "plan": plan}
+    return {
+        "pid": pid,
+        "turn": turn,
+        "log_path": str(log_path),
+        "plan": plan,
+        "follower_rearmed": follower_rearmed,
+        "follower_note": follower_note,
+    }
 
 
 def _run_condition_probe(
