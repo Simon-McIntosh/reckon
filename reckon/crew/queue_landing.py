@@ -16,7 +16,7 @@ from typing import Any
 
 from reckon import checkout_trust, ledger
 from reckon.crew import landing_measure, recovery, runs
-from reckon.crew.node import CrewError
+from reckon.crew.node import CrewError, is_test_path
 from reckon.crew.promotion_records import _node_test_files
 from reckon.crew.recovery_review_acceptance import (
     _review_accepts_promotion,
@@ -889,6 +889,27 @@ def _moved_primary_keeps_the_measurement(
     return current_package is not None and current_package == measured_tree[0]
 
 
+def _landing_test_files(
+    pointer: Mapping[str, Any], changed: Sequence[str], tree: Path
+) -> list[str]:
+    """The test files the landing's suite pair runs.
+
+    The node's own fenced test paths come first, as the armed command was
+    resolved from them. A node whose write scope names no test file, which a
+    batch entry taking its scope from section prose often is, still delivered
+    the tests its done-when asked for, so the test files the delivery changed
+    are measured instead of refusing the landing as having nothing to run. Only
+    files present in the measured tree are named, so a deleted test is not
+    passed to the runner.
+    """
+    named = _node_test_files(pointer)
+    if named:
+        return named
+    return sorted(
+        path for path in changed if is_test_path(path) and (Path(tree) / path).is_file()
+    )
+
+
 def _measure_delivery(
     pointer: Mapping[str, Any],
     run_id: str,
@@ -981,7 +1002,7 @@ def _measure_delivery(
                     head_sha=measured_head,
                     base_tree=base_tree,
                     logs_dir=logs,
-                    test_files=_node_test_files(pointer),
+                    test_files=_landing_test_files(pointer, changed, measured_tree),
                     timeout=timeout,
                     stored=stored,
                     project=project,
