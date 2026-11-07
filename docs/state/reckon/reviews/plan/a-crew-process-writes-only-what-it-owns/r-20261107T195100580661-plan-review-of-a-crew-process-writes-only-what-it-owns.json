@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T20:05:12.260Z",
+  "dispatched_at": "2026-11-07T19:54:03Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:47",
+      "id": "done_when-1",
+      "reason": "the section's own change to the answer predicate would ship unmeasured, and the retry symptom \u00a71 records, an ask answered from the wrong fact, returns as its mirror image, an ask that never answers True.",
+      "text": "\u00a73's five cases measure the guard's refusals and the two request writes, but no case asserts `_ask_session_host_for_follower` returns True when the calling host's census names a live child; case 2 asserts only that a request is written, so a predicate returning False unconditionally satisfies all five cases while the function reports False on every dispatch ask",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:46",
+      "id": "reasoning-1",
+      "reason": "a worker reading \"a re-arm\" inside \u00a73's write scope, which contains `_rearm_session_follower`, cannot tell that the dispatch path is the one affected, and no case measures that path.",
+      "text": "the sentence attributing the census read to \"a re-arm\" points at the wrong caller: `_rearm_session_follower` already asks its host's census (dispatch_watch.py:810-812) and needs no change, while the production effect of the change sits in `_arrange_dispatch_follower` (dispatch.py:398), which sets `session_delivery = \"host\"` from that return and is not named",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "1c33571cb8afc155513b3e4684df5c33f9a009b3",
+  "plan_fingerprint": "da1a300c52e78c35e70df9ad933f8beeaccb2c9fe4c2c43b2560c6ae6d8067b2",
+  "plan_slug": "a-crew-process-writes-only-what-it-owns",
+  "plan_version": 11,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T195100580661-plan-review-of-a-crew-process-writes-only-what-it-owns",
+  "reviewed_blob_sha": "5dff590bc350307508709cb5e4a8c4a568b65a58",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol \u00a73 cites resolves in the named file at or within a few lines of the stated line, including `_hand_off_from_follower` (stated near 625, at 628) and `_session_host_child_pid` (near 695, at 695).",
+    "done_when": "a finding \u2014 none of \u00a73's five cases asserts that `_ask_session_host_for_follower` ever returns True, so a predicate that always returns False passes the whole gate.",
+    "evidence_paths": "pass \u2014 every gate log in \u00a73 is written under the run directory, a durable path, with its revision, literal command and `EXIT=` sentinel.",
+    "naming": "pass \u2014 `owner_checked` and `tests/test_a_host_follows_only_its_own_session.py` describe the mechanism and carry no plan labels, stage names or ticket numbers.",
+    "reasoning": "a finding \u2014 \u00a73 says the census predicate makes \"a re-arm report True only when its own host runs the child\", but `_rearm_session_follower` already tests the census (dispatch_watch.py:810-812) and the predicate's only production caller is `_arrange_dispatch_follower` (dispatch.py:398), which the section never names.",
+    "single_goal": "pass \u2014 \u00a73 carries one deliverable, the ownership guard and the census read in dispatch_watch.py, with one test file.",
+    "wiring": "pass \u2014 s5's declared section wait on s3 resolves to a section that exists and writes the `owner_checked` mark s5 reads, the followup invokes \u00a72 to \u00a75, and \u00a72/\u00a73/\u00a74/\u00a75 write disjoint files (ledger.py; dispatch_watch.py; coordinator_obligations.py; session_host.py with crew_follow_commands.py and the plugin)."
+  },
+  "section_digests": {
+    "_document": "7848c4a22debbc4310e02052a09e0978b08f6e538ba797332694c84678155ff8",
+    "s1": "38e026f18d1b42b1d79978e1ed1cf6179e085908a249e5762f39a683dcc8123f",
+    "s2": "f11be171c26248fbc871d99510f0013c9dfc0a181d247f07861e86dc0d156f40",
+    "s3": "ad9267bdbab368f70972f19822f9a255157eca220d155ab51bd4928b7e835e42",
+    "s4": "e88fcf79ec58d8305f36e37d69846c8e0a1a10f1b73fc6c167c25b700165e123",
+    "s5": "d2137141581052e01b8d36787a07250708e3526629746a86490cc802627b465b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T20:22:56.010400+00:00",
+  "total": null
+}
