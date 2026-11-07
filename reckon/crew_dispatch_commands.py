@@ -2564,6 +2564,16 @@ def _review_options(callback):
         click.option(
             "--declined", default=None, help="Decline a finding with this reason."
         ),
+        click.option(
+            "--accept-edits",
+            "accept_edits",
+            default="",
+            help=(
+                "Record that the plan's edits since its newest review answer that "
+                "review's findings, with this reason; the units those edits "
+                "changed stay covered until a later edit changes them."
+            ),
+        ),
     ):
         callback = decorator(callback)
     return callback
@@ -2589,6 +2599,7 @@ def crew_review(
     declined,
     review_run="",
     note="",
+    accept_edits="",
 ):
     """Review one plan's content, a code neighbourhood or a portfolio, or answer a finding.
 
@@ -2599,7 +2610,9 @@ def crew_review(
     project's non-shipped plans, ``--sprint <id>`` for one sprint's, or
     ``--plan <slug> --rubric currency`` for a single plan — composes one
     disposition per plan in scope. An answer is written to the newest stored
-    review that raised the finding, acted on or declined with a reason.
+    review that raised the finding, acted on or declined with a reason. An
+    accepted edit is recorded on the newest stored review, which covers the
+    units the plan's edits changed until a later edit changes them again.
     """
     _run_review(
         project,
@@ -2618,6 +2631,7 @@ def crew_review(
         sprint_id=sprint_id,
         portfolio=portfolio,
         note=note,
+        accept_edits=accept_edits,
     )
 
 
@@ -2639,6 +2653,7 @@ def _run_review(
     sprint_id="",
     portfolio=False,
     note="",
+    accept_edits="",
 ):
     """Compose and dispatch one review, or answer a plan finding.
 
@@ -2667,8 +2682,23 @@ def _run_review(
     if sprint_id:
         named.append("sprint")
     detail = ""
+    accept_reason = str(accept_edits or "").strip()
     if review_run and not answer:
         detail = "--review-run applies only to --answer FINDING_ID"
+    elif accept_reason and answer:
+        detail = (
+            "--accept-edits records an answer to a whole review, not to one "
+            "finding; give one or the other"
+        )
+    elif accept_reason and (acted or declined is not None):
+        detail = "--accept-edits carries its reason as its own argument"
+    elif accept_reason and not plan_slug:
+        detail = "--accept-edits requires --plan PLAN"
+    elif accept_reason and (code_subject or portfolio_subject):
+        detail = (
+            "--accept-edits applies to a plan's content review, not a code or "
+            "portfolio subject"
+        )
     elif len(named) > 1:
         detail = (
             "name one subject: --plan, --around/--path, --portfolio and --sprint "
@@ -2717,6 +2747,55 @@ def _run_review(
         _emit({"error": "crew_error", "detail": detail}, pretty)
         raise click.exceptions.Exit(1)
     try:
+        if accept_reason:
+            from reckon._store import _resolve_html_file
+
+            plan_review.store_delivered_reviews(project, plan_slug)
+            plan_path = _resolve_html_file(project, plan_slug, artifact_type="plan")
+            if plan_path is None:
+                _emit(
+                    {
+                        "error": "crew_error",
+                        "detail": f"no plan document for {project}:{plan_slug}",
+                    },
+                    pretty,
+                )
+                raise click.exceptions.Exit(1)
+            # The acceptance lands on the newest stored review, which is the one
+            # the coordinator has been answering. An incomplete record covers
+            # nothing, so it is not a review an acceptance can attach to.
+            records = [
+                stored
+                for stored in plan_review.list_plan_reviews(project, plan_slug)
+                if not plan_review._review_is_incomplete(stored)
+            ]
+            newest = plan_review._newest_by_plan_commit(records, project)
+            if newest is None:
+                _emit(
+                    {
+                        "error": "crew_error",
+                        "detail": f"no stored review for {project}:{plan_slug}",
+                    },
+                    pretty,
+                )
+                raise click.exceptions.Exit(1)
+            path = plan_review.accept_edits(
+                newest,
+                plan=plan_path,
+                reason=accept_reason,
+                by=session,
+            )
+            updated = json.loads(path.read_text(encoding="utf-8"))
+            accepted = updated.get(plan_review.ACCEPTED_EDITS_KEY) or []
+            _emit(
+                {
+                    "record": updated,
+                    "accepted_edits": accepted[-1] if accepted else None,
+                    "unanswered": plan_review.unanswered_findings(updated),
+                },
+                pretty,
+            )
+            return
         if answer:
             from reckon._store import _resolve_html_file
 

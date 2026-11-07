@@ -311,6 +311,13 @@ PLAN_COMMIT_AT_ANSWER = "plan commit at answer time"
 # event it was. The record body itself is never rewritten.
 RESPONSE_EVENTS_KEY = "response_events"
 
+# The append-only list of accepted edits: a coordinator's record that the plan's
+# edits since this review answer the findings it raised, so the units those
+# edits changed stay covered until a later edit changes them again. Each entry
+# carries the session that accepted them and its reason, and the digest of
+# every unit it covers at acceptance, which is what a later edit moves.
+ACCEPTED_EDITS_KEY = "accepted_edits"
+
 # A finding type declined across this many distinct plans surfaces to the lead.
 RECURRENCE_THRESHOLD = 3
 
@@ -1128,7 +1135,11 @@ def review_coverage(
     neither applies to it. A unit absent from the review is never covered, a
     section the review's snapshot did not declare implementable counts as new,
     and the document unit, whose digest carries decisions, gates and the
-    summary, is covered only by an exact match. A stored review marked
+    summary, is covered only by an exact match. A unit an acceptance recorded
+    on a review names is covered by that review while its digest still matches
+    the one the acceptance recorded, so an edit that only answers a review owes
+    no review of its own until a later edit changes the unit again. A stored
+    review marked
     :data:`INCOMPLETE_STATUS` covers nothing at all, so every unit it would
     have covered is left uncovered and the coordinator composes the review the
     plan is actually owed rather than building on a partial one.
@@ -1241,6 +1252,13 @@ def review_coverage(
             }
         )
         matched = False
+        # An acceptance recorded on this review stands in for an edit that only
+        # answers it. Each entry names the units it covers and the digest each
+        # held when it was accepted, so a unit whose content has moved since is
+        # not covered by it and the review is owed again for that unit alone.
+        for identity in _accepted_edit_units(record, digests) & outstanding:
+            covered.add(identity)
+            matched = True
         # Resolved on the first unit of this review that lands under the
         # threshold: reading a finding's unit resolves its anchor against the
         # reviewed text, which is a git lookup, so a review with nothing near
@@ -2072,6 +2090,23 @@ def review_scope(
                 f"- {finding.get('id')} [{finding.get('anchor') or 'plan'}] "
                 f"{text} -> {response.get('action')}{': ' + account if account else ''}"
             )
+        # An accepted edit stands beside the findings it answered, so a reader of
+        # the brief learns that these units were settled by an acceptance rather
+        # than by a later review. A unit whose edit was accepted is not asked
+        # about again until its content moves.
+        for entry in record.get(ACCEPTED_EDITS_KEY) or ():
+            if not isinstance(entry, Mapping):
+                continue
+            named = entry.get("units")
+            accepted_units = ", ".join(
+                str(unit) for unit in (named if isinstance(named, list) else ())
+            )
+            account = " ".join(str(entry.get("reason") or "").split())
+            answered.append(
+                f"- accepted-edits [{accepted_units}] -> accepted by "
+                f"{entry.get('by') or 'unknown'}"
+                f"{': ' + account if account else ''}"
+            )
     lines = [
         (
             f"Scope: an earlier {rubric} review of this plan read it before these "
@@ -2310,6 +2345,118 @@ def record_response(
             committed, updated, indent=2, sort_keys=True, fsync=False, mode=None
         )
         _commit_record_write(str(updated.get("project") or ""), committed)
+        return committed
+    return store_plan_review(updated, base_dir=base_dir)
+
+
+def _accepted_edit_units(
+    record: Mapping[str, Any], digests: Mapping[str, str]
+) -> set[str]:
+    """The units an acceptance on this review still covers at the present content.
+
+    An entry covers a unit only while the digest it recorded is that unit's
+    present digest: the edit it accepted is unchanged. A unit the entry does not
+    name, and a unit whose content has moved since, are not covered by it.
+    """
+    covered: set[str] = set()
+    entries = record.get(ACCEPTED_EDITS_KEY)
+    if not isinstance(entries, list):
+        return covered
+    for entry in entries:
+        if not isinstance(entry, Mapping):
+            continue
+        recorded = entry.get("digests")
+        if not isinstance(recorded, Mapping):
+            continue
+        named = entry.get("units")
+        for unit in named if isinstance(named, list) else ():
+            identity = str(unit)
+            if identity in digests and recorded.get(identity) == digests[identity]:
+                covered.add(identity)
+    return covered
+
+
+def _review_read_units(
+    project: str, plan_slug: str, record: Mapping[str, Any]
+) -> set[str]:
+    """The units a stored review read, from its snapshot or its stored digests."""
+    evidence = _snapshot_evidence(project, plan_slug, record)
+    if evidence is not None:
+        return set(evidence[1])
+    stored = record.get("section_digests")
+    return set(stored) if isinstance(stored, Mapping) else set()
+
+
+def accept_edits(
+    record: Mapping[str, Any],
+    *,
+    plan: Mapping[str, Any] | str | Path,
+    reason: str,
+    by: str = "",
+    when: str | None = None,
+    base_dir: str | Path | None = None,
+) -> Path:
+    """Record that the plan's edits since this review answer its findings.
+
+    The units those edits changed are the ones the coverage predicate reports
+    uncovered and this review read; each is recorded with the digest it held at
+    acceptance, which is what a later edit moves. Coverage treats those units as
+    this review's until that happens, so an edit that does no more than answer
+    what the review asked for owes no review of its own. The entry carries the
+    session that accepted it and its reason, so an accepted edit is never
+    silent.
+
+    It applies only when every finding the review raised is answered: an
+    acceptance over a review still owed a decision would cover content nobody
+    has ruled on. A review marked :data:`INCOMPLETE_STATUS` covers nothing, so
+    accepting its edits would record a verdict that can never take effect; that
+    is refused rather than stored.
+    """
+    reason_value = " ".join(str(reason or "").split())
+    if not reason_value:
+        raise ValueError("an accepted edit needs a one-line reason")
+    if _review_is_incomplete(record):
+        raise ValueError(
+            "a review marked incomplete covers nothing; compose the review the "
+            "plan is owed instead of accepting edits against it"
+        )
+    outstanding = unanswered_findings(record)
+    if outstanding:
+        raise ValueError(
+            "every finding this review raised must be answered before its edits "
+            f"are accepted; still unanswered: {', '.join(outstanding)}"
+        )
+    project = str(record.get("project") or "").strip()
+    plan_slug = str(record.get("plan_slug") or "").strip()
+    if not project or not plan_slug:
+        raise ValueError("an accepted edit needs the review's project and plan")
+    _records, uncovered, _changes = review_coverage(
+        project, plan_slug, plan=plan, base_dir=base_dir
+    )
+    present = _section_digests(plan)
+    read = _review_read_units(project, plan_slug, record)
+    units = sorted(unit for unit in uncovered if unit in read and unit in present)
+    if not units:
+        raise ValueError(
+            "nothing this review read has changed since it; there is no edit to accept"
+        )
+    entry = {
+        "by": str(by or ""),
+        "when": when or datetime.now(UTC).isoformat(),
+        "reason": reason_value,
+        "units": units,
+        "digests": {unit: present[unit] for unit in units},
+    }
+    updated = dict(record)
+    accepted = list(updated.get(ACCEPTED_EDITS_KEY) or [])
+    accepted.append(entry)
+    updated[ACCEPTED_EDITS_KEY] = accepted
+    committed = _committed_copy_of(updated)
+    if committed is not None:
+        write_json_atomically(
+            committed, updated, indent=2, sort_keys=True, fsync=False, mode=None
+        )
+        _commit_record_write(project, committed)
         return committed
     return store_plan_review(updated, base_dir=base_dir)
 
