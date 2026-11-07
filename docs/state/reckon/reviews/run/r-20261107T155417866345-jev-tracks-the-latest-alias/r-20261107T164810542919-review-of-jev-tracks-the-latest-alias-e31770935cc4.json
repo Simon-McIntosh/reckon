@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/picker/client.py:60",
+    "reckon/crew/picker/__init__.py:573",
+    "reckon/crew/review_need.py:121",
+    "reckon/crew/dispatch_picker.py:196"
+  ],
+  "completed_at": "2026-11-07T17:10:16.999Z",
+  "dispatched_at": "2026-11-07T16:51:10Z",
+  "findings": [
+    {
+      "file": "tests/test_picker.py",
+      "line": "377",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion is not independent of the value it guards \u2014 reckon/crew/picker/client.py:60 builds the request body from JEV_MODEL and the test compares that body against client.JEV_MODEL \u2014 so reverting the constant to \"typesafe/jev-1.13\" leaves it green, and the recorded negative control mutates ask to send a literal (a different regression) instead of reinstating the one the change exists to prevent; folding means one test refusing a pinned release id under reckon/."
+    },
+    {
+      "file": "scripts/jev_probe.py",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "non-blocking: the probe script pins JEV_MODEL = \"typesafe/jev-1.13\" independently of reckon/crew/picker/client.py:9, so after this change the picker tracks the latest alias while the probe keeps measuring an old release; it is outside the node's granted write paths and needs its own node to import the constant or drop its copy."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit \u2014 80ed036c45 changes the JEV_MODEL literal at reckon/crew/picker/client.py:9, and e31770935c replaces a hardcoded request-body literal with client.JEV_MODEL at tests/test_picker.py:377; nothing else is touched.",
+    "done_when": "all four clauses are measurable and measured \u2014 live-call-gate.log records HTTP 200 served model typesafe/jev-1.14-20261014 and the 400 for the tilde-less id, tests-base.log and tests-head.log each read `59 passed ... EXIT=0`, ruff.log reads `All checks passed` and `2 files already formatted`; only the \"grep of reckon/ finds no other jev-1.1 model id\" clause is claimed in the manifest's artifacts with no grep log on disk, and I reproduced it in the tree myself.",
+    "goal": "the node goal is \"JEV_MODEL in reckon/crew/picker/client.py becomes the latest-tracking alias\"; reckon/crew/picker/client.py:9 reads JEV_MODEL = \"~typesafe/jev-latest\" and a grep for jev-1.1 over reckon/ returns nothing, so the deliverable is met in the file the goal names.",
+    "manifest": "read at status complete; it names commits 80ed036c45 and e31770935c, the head/base revision pair, two attributed retry_failures, and corrects the brief's claim that tests/test_picker.py:377 was an answering-model fixture when it is the expected request body.",
+    "write_paths": "the manifest declares reckon/crew/picker/client.py and tests/test_picker.py; `git diff --stat` over e9805b3a4c..e31770935c shows exactly those two files with 2 insertions and 2 deletions and no other path."
+  },
+  "justifications": {
+    "durability": "tests/test_picker.py:377 asserts the posted body against client.JEV_MODEL, the same constant reckon/crew/picker/client.py:60 builds the body from, so restoring the pinned id leaves the assertion green and no test in the repository mentions jev-1 or jev-latest at all.",
+    "evidence": "live-call-gate.log and the two suite logs carry revision, tree and command headers and a trailing EXIT= line, but the done_when's grep clause has no gate log and is supported only by the manifest's artifacts line.",
+    "fit": "the new assertion at tests/test_picker.py:377 follows the module constant while its neighbours in the same test hardcode wire literals such as the URL and the 10-second timeout, so the changed line reads unlike the assertions beside it.",
+    "goal_fidelity": "reckon/crew/picker/client.py:9 carries \"~typesafe/jev-latest\" and no jev-1.1 id remains under reckon/, but scripts/jev_probe.py:19 still pins the old release id so the repository as a whole still holds a Jev version in two places.",
+    "reuse": "no new definition is added, but the capability \"one place names the Jev model\" already has a fork at scripts/jev_probe.py:19 which this change leaves stale rather than routing to reckon/crew/picker/client.py:9.",
+    "scope_discipline": "git diff e9805b3a4c..e31770935c touches only reckon/crew/picker/client.py:9 and tests/test_picker.py:377, the two granted paths, one line each."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"JEV_MODEL in reckon/crew/picker/client.py becomes the latest-tracking alias\"; reckon/crew/picker/client.py:9 reads JEV_MODEL = \"~typesafe/jev-latest\" and a grep for jev-1.1 over reckon/ returns nothing, so the deliverable is met in the file the goal names.\nVERDICT done_when: all four clauses are measurable and measured \u2014 live-call-gate.log records HTTP 200 served model typesafe/jev-1.14-20261014 and the 400 for the tilde-less id, tests-base.log and tests-head.log each read `59 passed ... EXIT=0`, ruff.log reads `All checks passed` and `2 files already formatted`; only the \"grep of reckon/ finds no other jev-1.1 model id\" clause is claimed in the manifest's artifacts with no grep log on disk, and I reproduced it in the tree myself.\nVERDICT write_paths: the manifest declares reckon/crew/picker/client.py and tests/test_picker.py; `git diff --stat` over e9805b3a4c..e31770935c shows exactly those two files with 2 insertions and 2 deletions and no other path.\nVERDICT manifest: read at status complete; it names commits 80ed036c45 and e31770935c, the head/base revision pair, two attributed retry_failures, and corrects the brief's claim that tests/test_picker.py:377 was an answering-model fixture when it is the expected request body.\nVERDICT diff: read commit by commit \u2014 80ed036c45 changes the JEV_MODEL literal at reckon/crew/picker/client.py:9, and e31770935c replaces a hardcoded request-body literal with client.JEV_MODEL at tests/test_picker.py:377; nothing else is touched.\nCALL_SITES: reckon/crew/picker/client.py:60, reckon/crew/picker/__init__.py:573, reckon/crew/review_need.py:121, reckon/crew/dispatch_picker.py:196\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/picker/client.py:9 carries \"~typesafe/jev-latest\" and no jev-1.1 id remains under reckon/, but scripts/jev_probe.py:19 still pins the old release id so the repository as a whole still holds a Jev version in two places.\nSCORE evidence: 18\nJUSTIFICATION evidence: live-call-gate.log and the two suite logs carry revision, tree and command headers and a trailing EXIT= line, but the done_when's grep clause has no gate log and is supported only by the manifest's artifacts line.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff e9805b3a4c..e31770935c touches only reckon/crew/picker/client.py:9 and tests/test_picker.py:377, the two granted paths, one line each.\nSCORE durability: 10\nJUSTIFICATION durability: tests/test_picker.py:377 asserts the posted body against client.JEV_MODEL, the same constant reckon/crew/picker/client.py:60 builds the body from, so restoring the pinned id leaves the assertion green and no test in the repository mentions jev-1 or jev-latest at all.\nSCORE fit: 16\nJUSTIFICATION fit: the new assertion at tests/test_picker.py:377 follows the module constant while its neighbours in the same test hardcode wire literals such as the URL and the 10-second timeout, so the changed line reads unlike the assertions beside it.\nSCORE reuse: 15\nJUSTIFICATION reuse: no new definition is added, but the capability \"one place names the Jev model\" already has a fork at scripts/jev_probe.py:19 which this change leaves stale rather than routing to reckon/crew/picker/client.py:9.\nFINDING tests/test_picker.py:377 non-blocking: the assertion is not independent of the value it guards \u2014 reckon/crew/picker/client.py:60 builds the request body from JEV_MODEL and the test compares that body against client.JEV_MODEL \u2014 so reverting the constant to \"typesafe/jev-1.13\" leaves it green, and the recorded negative control mutates ask to send a literal (a different regression) instead of reinstating the one the change exists to prevent; folding means one test refusing a pinned release id under reckon/.\nFINDING scripts/jev_probe.py:19 non-blocking: the probe script pins JEV_MODEL = \"typesafe/jev-1.13\" independently of reckon/crew/picker/client.py:9, so after this change the picker tracks the latest alias while the probe keeps measuring an old release; it is outside the node's granted write paths and needs its own node to import the constant or drop its copy.",
+  "review_run_id": "r-20261107T164810542919-review-of-jev-tracks-the-latest-alias-e31770935cc4",
+  "reviewed_base_sha": "e9805b3a4cb362516dc5bc3f14e880c9f70eaec1",
+  "reviewed_head_sha": "e31770935cc4c9e778db0df364fdc74b7b71765f",
+  "reviewed_run_id": "r-20261107T155417866345-jev-tracks-the-latest-alias",
+  "scores": {
+    "durability": 10,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T17:28:14.630032+00:00",
+  "total": 98
+}
