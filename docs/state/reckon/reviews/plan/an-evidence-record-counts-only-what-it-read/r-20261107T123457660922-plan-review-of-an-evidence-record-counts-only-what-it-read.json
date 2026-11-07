@@ -1,0 +1,44 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T12:47:57.479Z",
+  "dispatched_at": "2026-11-07T12:39:01Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:47",
+      "id": "done_when-1",
+      "reason": "the worker grading the gate maps each control to the case it must turn red, so a mis-numbered control sends it to test a case its mutation leaves green, and the gate then reads as unproven or as passing for the wrong reason; the fix is to re-number the three references (third\u2192fourth, fifth\u2192sixth, sixth\u2192seventh) and state the followup sites' write order explicitly.",
+      "text": "the five negative controls are numbered against a case list that does not match the seven cases just enumerated: \"leave the followup op sites unchecked \u2026 the third case's first two writes\" names case 3 (edit_plan append and section-move reason), whose writes are not followup sites and which has two writes, not three; \"matching a bare `\u00a7N` reports the fifth case\" names case 5 (`sections.<id>.body` must be refused), which a broader pattern cannot falsify because it already expects a refusal \u2014 the case that measures over-matching is case 6 (`landed in \u00a74` must not be reported); and \"dropping the `<code>` exemption reports the sixth case\" names case 6 where case 7 (`<code>` must not be reported) is the one it falsifies. Read literally, two of the five controls exercise the wrong case and one exercises a case that cannot fail under its mutation.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "817f57545ca483d1c1df0bf8a9b2324d5731a885",
+  "plan_fingerprint": "1bd9e7fe6661e2e2f95fcc530b5f2932a931b6cd130915f836cd7286458ee6e8",
+  "plan_slug": "an-evidence-record-counts-only-what-it-read",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T123457660922-plan-review-of-an-evidence-record-counts-only-what-it-read",
+  "reviewed_blob_sha": "9421f8f151b67038ccd5c7b82849077e270edbd6",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 s3's code anchors all resolve at the cited content: `doccheck.py:419` (`_DEFERRED_WORK_TERM`), `doccheck.py:434-442` (`deferred_work_terms` returning `re.findall`), `_store.py:993` (`_prose_deferred_work_term`), `_store.py:3060-3077` (`_carry_section_moves` composing `Moved to <code>\u2026</code>: <reason>`), `_store.py:3760-3777` (followups append), `_store.py:3798-3807` (comments append), `_store.py:3482-3486` (followups.<id>.<field> set dispatch), `_store.py:3849-3851` (`_apply_resolve` outcome), `_store_section_ops.py:153` (`_require_authored_value`), `mcp_edit_plan.py:253` (followup-add reaching `append_to_list`), `crew/promotion_scope.py:1462-1472` (direct `write_plan` comment write); the three power_convertor citations resolve at the quoted text (`docs/briefs/prose-follow-on-audit.md:11`, `docs/plans/filter-recommendation-for-coil-health.html:226`, `docs/plans/quench-detection-converter-pickup.html:84`).",
+    "done_when": "a finding \u2014 the five negative controls reference case numbers that do not match the seven cases the same done-when enumerates, so two controls name a case they cannot falsify.",
+    "evidence_paths": "pass \u2014 every log is required under the run directory, headed by revision and literal command and terminated by `EXIT=`, including the census command's output and finding count.",
+    "naming": "pass \u2014 s3 introduces no symbol and its prose carries no plan labels, ticket numbers or version tags.",
+    "reasoning": "pass \u2014 \u00a71's evidence (only `\\bfollow-ons?\\b` is matched today) supports the stated root cause; the widened pattern plus the five named refusal sites can produce each of the seven cases; and each site is on a production path (`_apply_append` for both appends, `_write_state_locked` \u2192 `_carry_section_moves` at `_store.py:1593`, `append_to_list` reached from `mcp_edit_plan.py:253`, `apply_followup_field_set` for the field set, `_require_authored_value` for `sections.<id>.body`), so the mechanism runs rather than only existing.",
+    "single_goal": "pass \u2014 one goal: widen `_DEFERRED_WORK_TERM` to every spelling and add the one reader's refusal at each site that writes a comment or followup body.",
+    "wiring": "pass \u2014 s3 declares its wait on s2 in `plan-section-depends-on` and again in its own body, for the shared `reckon/_store.py` write, and s4 declares its wait on both; the followup orders \u00a72, \u00a73, \u00a74 consistently."
+  },
+  "section_digests": {
+    "_document": "6d35efce52466005f8ee56997c8dc7bcca998d7c41fcd252d254bc7264596281",
+    "s1": "49581a4c899ba79b704cec124eaa4b18560c0c76dfd26327155915e9f48ca5a2",
+    "s2": "0b8bed0f03d053457f9c7efd06dd0ff61e4d509f00a6f7518b6e3c911a96a555",
+    "s3": "f3c7c8f3a0f9f87582c0e4adfb97ab69328d073013fd4a0d6c619b82aa7ba9f2",
+    "s4": "2a4595f5aefc320f23756d7c834443e983a185161f61e8078d9bd7a31df7e991"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T12:57:02.687682+00:00",
+  "total": null
+}
