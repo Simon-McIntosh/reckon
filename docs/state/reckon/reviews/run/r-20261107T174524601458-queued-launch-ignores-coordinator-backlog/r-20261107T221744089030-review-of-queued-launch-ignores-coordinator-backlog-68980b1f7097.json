@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:429",
+    "reckon/crew/dispatch.py:1854",
+    "reckon/crew_dispatch_commands.py:2171",
+    "reckon/crew/recovery_review_dispatch.py:2977"
+  ],
+  "call_sites_emission": "sites",
+  "completed_at": "2026-11-07T22:48:01.301Z",
+  "dispatched_at": "2026-11-07T22:26:44Z",
+  "findings": [
+    {
+      "file": "tests/test_a_review_is_not_refused_for_its_run.py",
+      "line": "129",
+      "severity": "non-blocking",
+      "text": "non-blocking: this pre-existing control test is outside the node's declared write paths and its assertion was inverted from a queued-launch refusal to a direct-dispatch refusal, so the node edits a test it was not fenced to write and needs the coordinator to confirm the extension."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T174524601458-queued-launch-ignores-coordinator-backlog/gate-base-four.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base arm ran 21 tests in a four-file set where the head arm ran 461 in 67 files and the log header names no command, so the done-when's add-no-failure-against-base clause is evidenced only by the three head failure ids recurring at base rather than by a same-population base run."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T174524601458-queued-launch-ignores-coordinator-backlog/manifest.md",
+      "line": "24",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done-when's ruff clause is named in no test_logs or artifacts entry, so the \"All checks passed! 4 files already formatted\" result that exists only in the run stream cannot be replayed from the receipt."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 2960ad4da8; 1bd720c73e changes two product lines plus the new test and the control test, and 68980b1f70 adds the 57-line evidence fragment, with nothing else touched.",
+    "done_when": "the done-when names tests/test_a_queued_launch_ignores_the_coordinator_backlog.py with three cases plus a negative control and a ruff clause; the three cases are at :193, :214 and :234, gate-head-arm.log ends \"3 failed, 458 passed\" EXIT=1 with each failing id present in gate-base-four.log, and negative-control.log ends \"1 failed, 2 deselected\" EXIT=1, but the ruff clause carries no log of its own.",
+    "goal": "the node goal is that a queued request launches without being refused on its coordinator's unreconciled backlog, and reckon/crew/queue_admission.py:412 now passes unreconciled_override=True at the admission launch while reckon/crew/dispatch.py:1859-1866 records the exception as an admission waiver naming its source and the waived runs.",
+    "manifest": "read at status complete with commits 1bd720c73e and 68980b1f70; it quotes the base reproduction, the waiver shape on the launched pointer, the head and base gate figures and the negative control, and declares the out-of-scope control test under outside_scope.",
+    "write_paths": "the node declared reckon/crew/queue_admission.py, reckon/crew/dispatch.py, its evidence fragment and its figures directory; git diff --stat 2960ad4da8..68980b1f70 shows five changed files, of which tests/test_a_queued_launch_ignores_the_coordinator_backlog.py and tests/test_a_review_is_not_refused_for_its_run.py are outside that declaration."
+  },
+  "justifications": {
+    "durability": "tests/test_a_queued_launch_ignores_the_coordinator_backlog.py:193-211 fails with an empty launched list when reckon/crew/queue_admission.py:412 is restored to the stored flag, as negative-control.log records, and :234-242 fails if the \"and unreconciled\" guard at reckon/crew/dispatch.py:1866 is dropped.",
+    "evidence": "gate-head-arm.log and gate-base-four.log each end in EXIT= and yield an added-failure count of 0 through reckon/crew/review.py:added_failures_from_gate_logs, but the base arm covers only 21 tests against the head arm's 461 and the done-when's ruff clause is recorded only in the run's stream.",
+    "fit": "the two product edits follow the surrounding comment-before-field idiom of reckon/crew/dispatch.py:1848-1865 and no symbol, path or comment carries a plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:412 removes the launch-time refusal and reckon/crew/dispatch.py:1859 records source \"admission-launch\" with the waived runs, while reckon/crew/dispatch.py:1863-1866 still raises for a dispatch that carries no override.",
+    "reuse": "no definition is added; the change extends the existing waiver record at reckon/crew/dispatch.py:1854 and reuses the existing admission_launch parameter at reckon/crew/dispatch.py:1497, and a search of reckon/crew for another unreconciled-waiver owner found none.",
+    "scope_discipline": "tests/test_a_review_is_not_refused_for_its_run.py:129 was rewritten although it is absent from the declared write paths in the run's committed node record."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a queued request launches without being refused on its coordinator's unreconciled backlog, and reckon/crew/queue_admission.py:412 now passes unreconciled_override=True at the admission launch while reckon/crew/dispatch.py:1859-1866 records the exception as an admission waiver naming its source and the waived runs.\nVERDICT done_when: the done-when names tests/test_a_queued_launch_ignores_the_coordinator_backlog.py with three cases plus a negative control and a ruff clause; the three cases are at :193, :214 and :234, gate-head-arm.log ends \"3 failed, 458 passed\" EXIT=1 with each failing id present in gate-base-four.log, and negative-control.log ends \"1 failed, 2 deselected\" EXIT=1, but the ruff clause carries no log of its own.\nVERDICT write_paths: the node declared reckon/crew/queue_admission.py, reckon/crew/dispatch.py, its evidence fragment and its figures directory; git diff --stat 2960ad4da8..68980b1f70 shows five changed files, of which tests/test_a_queued_launch_ignores_the_coordinator_backlog.py and tests/test_a_review_is_not_refused_for_its_run.py are outside that declaration.\nVERDICT manifest: read at status complete with commits 1bd720c73e and 68980b1f70; it quotes the base reproduction, the waiver shape on the launched pointer, the head and base gate figures and the negative control, and declares the out-of-scope control test under outside_scope.\nVERDICT diff: read commit by commit against 2960ad4da8; 1bd720c73e changes two product lines plus the new test and the control test, and 68980b1f70 adds the 57-line evidence fragment, with nothing else touched.\nCALL_SITES: reckon/crew/queue_admission.py:429 _launch_queued calls dispatch with admission_launch=True and :412 the unconditional override; reckon/crew/dispatch.py:1854 builds the waiver record; reckon/crew_dispatch_commands.py:2171 the CLI direct-dispatch path that keeps unreconciled_override from the flag; reckon/crew/recovery_review_dispatch.py:2977 a second direct dispatch path.\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:412 removes the launch-time refusal and reckon/crew/dispatch.py:1859 records source \"admission-launch\" with the waived runs, while reckon/crew/dispatch.py:1863-1866 still raises for a dispatch that carries no override.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-head-arm.log and gate-base-four.log each end in EXIT= and yield an added-failure count of 0 through reckon/crew/review.py:added_failures_from_gate_logs, but the base arm covers only 21 tests against the head arm's 461 and the done-when's ruff clause is recorded only in the run's stream.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: tests/test_a_review_is_not_refused_for_its_run.py:129 was rewritten although it is absent from the declared write paths in the run's committed node record.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_queued_launch_ignores_the_coordinator_backlog.py:193-211 fails with an empty launched list when reckon/crew/queue_admission.py:412 is restored to the stored flag, as negative-control.log records, and :234-242 fails if the \"and unreconciled\" guard at reckon/crew/dispatch.py:1866 is dropped.\nSCORE fit: 18\nJUSTIFICATION fit: the two product edits follow the surrounding comment-before-field idiom of reckon/crew/dispatch.py:1848-1865 and no symbol, path or comment carries a plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added; the change extends the existing waiver record at reckon/crew/dispatch.py:1854 and reuses the existing admission_launch parameter at reckon/crew/dispatch.py:1497, and a search of reckon/crew for another unreconciled-waiver owner found none.\nFINDING tests/test_a_review_is_not_refused_for_its_run.py:129 non-blocking: this pre-existing control test is outside the node's declared write paths and its assertion was inverted from a queued-launch refusal to a direct-dispatch refusal, so the node edits a test it was not fenced to write and needs the coordinator to confirm the extension.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T174524601458-queued-launch-ignores-coordinator-backlog/gate-base-four.log:1 non-blocking: the base arm ran 21 tests in a four-file set where the head arm ran 461 in 67 files and the log header names no command, so the done-when's add-no-failure-against-base clause is evidenced only by the three head failure ids recurring at base rather than by a same-population base run.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T174524601458-queued-launch-ignores-coordinator-backlog/manifest.md:24 non-blocking: the done-when's ruff clause is named in no test_logs or artifacts entry, so the \"All checks passed! 4 files already formatted\" result that exists only in the run stream cannot be replayed from the receipt.\n",
+  "review_run_id": "r-20261107T221744089030-review-of-queued-launch-ignores-coordinator-backlog-68980b1f7097",
+  "reviewed_base": "2960ad4",
+  "reviewed_base_sha": "2960ad4da8b01b5338a7bade1cac18f58c4bc871",
+  "reviewed_head": "68980b1f",
+  "reviewed_head_sha": "68980b1f7097c82f234f8cd4471c0041f982437d",
+  "reviewed_run_id": "r-20261107T174524601458-queued-launch-ignores-coordinator-backlog",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T23:52:00+00:00",
+  "total": 105
+}
