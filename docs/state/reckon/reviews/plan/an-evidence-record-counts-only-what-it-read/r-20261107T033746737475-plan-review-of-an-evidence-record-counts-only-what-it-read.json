@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T03:45:16.827Z",
+  "dispatched_at": "2026-11-07T03:38:54Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:50",
+      "id": "reasoning-1",
+      "reason": "a worker following the deliverable literally adds one flat list, then cannot assert case 8's replaced-vs-dropped distinction and must guess at the field's shape, which is exactly what the case and the operator-facing output key on.",
+      "text": "the deliverable says the synthesis result \"lists every such replaced unmarked id beside the dropped anchors\" and \"also lists every unmarked id the legacy rule drops without rendering\", but then declares `EvidenceSynthesisResult` gains one field \"listing dropped anchors\"; the eighth case then requires the result to list a section \"as a replaced unmarked id\", which a flat id list cannot express, and the CLI output printing that field would give an operator the ids without saying which loss happened",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:50",
+      "id": "reasoning-2",
+      "reason": "no reachable state exposes the gap, because an unmarked `outcome` section is already excluded by the explicitly-listed producible set and a marked `outcome` append is refused by the new anchor refusal, so only the plan's wording is inexact.",
+      "text": "the rendered-id exclusion set is described as \"every id this synthesis renders, which `_render_document` takes from the plan's comment keys and the ledger runs' `section` keys\", but `_render_document` remaps the plan-level key `_top` to the rendered id `outcome` (reckon/evidence.py:372) and `_section_key(\"_top\")` yields `top`, so the set as described omits `outcome`",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "cfca4d4ee39c03d19faf263ce1c53c3aaba7e8ff",
+  "plan_fingerprint": "b8e9f76e800a724763d007e4df24e9d5a8053437d7e137e57abd3281968406f5",
+  "plan_slug": "an-evidence-record-counts-only-what-it-read",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T033746737475-plan-review-of-an-evidence-record-counts-only-what-it-read",
+  "reviewed_blob_sha": "9a70a0f920df2befbe93e5ca7b6d2e80412f2102",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited target resolves at the base revision: `_apply_evidence_appends` at `reckon/_store.py:1230` (has the docs dir), `_apply_append_evidence` at 1278 with the anchor-shape guard at 1292-1299, `_evidence_section_html` at 1197, `_render_document`'s available set at 338-354, the rendered id at 372, `EvidenceSynthesisResult` at `evidence.py:24`, `synthesize_evidence` at `project_maintenance_commands.py:1473`, and `_section_key(\"s5.1\")` really is `s5-1` (`_plan_html.section_record_id`, line 102).",
+    "done_when": "pass \u2014 the measure is ten enumerable cases with twelve negative controls, a base-revision arm, ruff on staged paths, and every log bounded under the run directory with a terminal `EXIT=`; each of the ten cases is covered by at least one control, and case 7's CLI arm is reachable through `synthesize_evidence`'s `--checkout-path` (reckon/cli_entry.py:445-453), so no case depends on an installed mount.",
+    "evidence_paths": "pass \u2014 logs are required under the run directory with revision, literal command and a closing `EXIT=`, and no gate writes to a scratchpad or node-local path.",
+    "naming": "pass \u2014 the new test name, `data-evidence-origin`, and the added symbols describe behaviour; no plan labels, ticket numbers or changelog prose reach source.",
+    "reasoning": "a finding \u2014 the deliverable names three distinct result categories (dropped anchors, replaced unmarked ids, unmarked ids dropped without rendering) but declares a single field \"listing dropped anchors\", while the eighth case requires the result to distinguish a replaced unmarked id from a dropped one.",
+    "single_goal": "pass \u2014 every clause (carry forward, mark, refuse colliding anchors, report losses) serves the one goal that a published append anchor keeps resolving.",
+    "wiring": "pass \u2014 \u00a74's declared waits match its write paths: it shares `reckon/_store.py` and `reckon/evidence.py` with \u00a72 and `reckon/_store.py` with \u00a73, both declared in `plan-section-depends-on` (s4: [s2, s3]), and `reckon/project_maintenance_commands.py` conflicts with no other section."
+  },
+  "section_digests": {
+    "_document": "6d35efce52466005f8ee56997c8dc7bcca998d7c41fcd252d254bc7264596281",
+    "s1": "7c52117565966edec5de56bc0448d4a141edbcb73ac18ede5f2cb0c34f424f0a",
+    "s2": "143dc532dde638505b6cf743e1b2af8b2d754fbd94debf4fdb0b351e623a2a39",
+    "s3": "1e19a712fd2dad1c38a11f7b6164b1fcc01c996e78f3297edb135a1d5fd7c0cf",
+    "s4": "0fd03a64c59fcd2384700c35cf24bd5a9cbb562f92b0b504eb40490bd0b22a1b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T03:55:52.373543+00:00",
+  "total": null
+}
