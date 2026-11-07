@@ -25,7 +25,7 @@
   <title>A Read Costs What Changed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="34">
+<meta name="plan-version" content="35">
 <meta name="plan-modified" content="2026-11-07">
 </head>
 <body>
@@ -140,14 +140,17 @@
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261103T022604894618-a-one-plan-read-composes-one-plan" data-who="reckon-build" data-when="2026-11-05T10:24:23.983Z">
     <div class="r-comment-body"><p>project_state.read_project_manifest reads the project's declaring record in one mode branch and _store._declared_north_stars takes north stars from it instead of compose_project_state, so a plan read or write composes the project zero times on a legacy store and zero times on the plan's own read in a distributed one (base: 1 per read and per edit in both), with the north-star diagnostic unchanged in both layouts</p></div>
 </div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261107T095252178521-review-of-a-stored-plan-review-snapshot-is-parsed-once-across-5be11339a0e7" data-who="reckon-build" data-when="2026-11-07T10:06:11.527Z">
+    <div class="r-comment-body"><p>Reviewed r-20261107T092428175121-a-stored-plan-review-snapshot-is-parsed-once-across at base b8197d40a168 → head 5be11339a0e7: scores goal_fidelity 19, evidence 15, scope_discipline 20, durability 18, fit 18, reuse 20; two non-blocking findings (the done-when's ruff arm is recorded nowhere though both commands are clean; the per-snapshot persisted memo is never evicted) and no blocking defect, so the change does what it claims — a second process parses 0 of 10 stored snapshots against the base's 20.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261107T092428175121-a-stored-plan-review-snapshot-is-parsed-once-across" data-who="reckon-build" data-when="2026-11-07T09:49:32.214Z">
+    <div class="r-comment-body"><p>Plan review snapshot evidence is computed once and persisted under the snapshot&#x27;s content digest, guarded by the review and plan-HTML parser source digests: a second process parses 0 of 10 stored snapshots (base: 20 read_state and 20 span-reader calls), and tests/test_a_review_snapshot_is_parsed_once.py passes with the fragment at docs/evidence/fragments/a-read-costs-what-changed/a-stored-plan-review-snapshot-is-parsed-once-across.html recording the measure.</p></div>
+</div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261105T061644194563-review-of-a-persisted-answer-still-reuses-rows-10a19d771e5f" data-who="reckon-build" data-when="2026-11-05T06:35:24.654Z">
     <div class="r-comment-body"><p>Reviewed r-20261103T103857095482-a-persisted-answer-still-reuses-rows at base 86b3c34d and head 10a19d771e: parsed record scoring goal_fidelity 19, evidence 14, scope_discipline 20, durability 18, fit 18, reuse 5 (total 94), with four non-blocking findings — a second stat-keyed digest cache beside file_memo's, the head importer log naming the pre-fix revision, the digest/identity pair taken in two separate stats, and no ruff receipt in the manifest — and added_failure_count 0 because the head importer failure set is a strict subset of the base arm's.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261103T103857095482-a-persisted-answer-still-reuses-rows" data-who="reckon-build" data-when="2026-11-04T09:22:03.388Z">
     <div class="r-comment-body"><p>Revalidating a persisted value no longer hashes the source file of each module that produced it: the envelope records each producer's source stat identity beside its digest and reuses the recorded digest when that identity has not moved, so a cold build reuses every covered row by stat identity again; both stat-identity tests and the code-version test pass 8/8 in each of three serial head passes, and reverting the fix turns exactly the two declared tests red.</p></div>
-</div>
-<div class="r-comment" data-section="s6" data-id="c-run-r-20261107T095252178521-review-of-a-stored-plan-review-snapshot-is-parsed-once-across-5be11339a0e7" data-who="reckon-build" data-when="2026-11-07T10:06:11.527Z">
-    <div class="r-comment-body"><p>Reviewed r-20261107T092428175121-a-stored-plan-review-snapshot-is-parsed-once-across at base b8197d40a168 → head 5be11339a0e7: scores goal_fidelity 19, evidence 15, scope_discipline 20, durability 18, fit 18, reuse 20; two non-blocking findings (the done-when&#x27;s ruff arm is recorded nowhere though both commands are clean; the per-snapshot persisted memo is never evicted) and no blocking defect, so the change does what it claims — a second process parses 0 of 10 stored snapshots against the base&#x27;s 20.</p></div>
 </div>
 </section>
 </main>
