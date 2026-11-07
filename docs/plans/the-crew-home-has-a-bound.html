@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="Storage bounds for the crew home and caches; no live plan waits on them and they wait on none. The pick-input index belongs to one-typesafe-model-picker&#x27;s code and is fixed here because its growth is independent of the picker&#x27;s open sections.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="98">
+<meta name="plan-version" content="100">
 <meta name="plan-modified" content="2026-11-07">
 </head>
 <body>
@@ -176,7 +176,7 @@
 
     <h2 id="s13">§13 — The persisted memo store has a bound</h2>
 <section data-reckon="section" data-id="s13" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-<p><strong>Why.</strong> The review of <code>a-read-costs-what-changed</code> §6's snapshot node (run <code>r-20261107T092428175121</code>, score 110) found that <code>plan_review._snapshot_evidence</code> now persists one file per distinct snapshot content digest through the persisted-memo helper, each holding that snapshot's whole prose, and that nothing removes them: <code>reckon/crew/gc.py</code> sweeps the pick-input and ledger caches but not reckon's persisted-memo directory. Every plan edit that is reviewed adds a snapshot, so the store grows without limit.</p><p><strong>Deliverable.</strong> <code>crew gc</code> sweeps the persisted-memo directory with the same age and size rule it applies to the pick-input cache, removing entries untouched for longer than that window, and prints each removal. An entry read since the cutoff is kept. No new retention setting is added unless the existing cache rule cannot apply.</p><p><strong>Done when</strong> a new <code>tests/test_the_persisted_memo_store_has_a_bound.py</code> shows, with a temporary memo directory, that a gc pass removes entries older than the window and keeps one read inside it, and that it prints what it removed. Negative control: skipping the memo directory in the sweep leaves the old entries in place. The test files importing <code>reckon.crew.gc</code> add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>. Ruff check and ruff format --check add no findings on the staged paths. Write paths: <code>reckon/crew/gc.py</code> and the new test.</p>
+<p><strong>Why.</strong> The review of <code>a-read-costs-what-changed</code> §6's snapshot node (run <code>r-20261107T092428175121</code>, score 110) found that <code>plan_review._snapshot_evidence</code> now persists one file per distinct snapshot content digest through the persisted-memo helper, each holding that snapshot's whole prose, and that nothing removes them: <code>reckon/crew/gc.py</code> sweeps the pick-input and ledger caches but not reckon's persisted-memo directory. Every plan edit that is reviewed adds a snapshot, so the store grows without limit.</p><p><strong>Deliverable.</strong> <code>crew gc</code> sweeps the persisted-memo directory, removing entries whose last write (their mtime, which <code>_write_persisted_memo</code> in <code>reckon/metadata_index.py</code> sets) is older than one named age threshold declared beside <code>LEDGER_INDEX_UNRECORDED_MAX_AGE_DAYS</code> (<code>reckon/crew/gc.py</code> near line 213), and prints each removal. A read does not refresh an entry; an entry still in use is simply rewritten on its next miss.</p><p><strong>Done when</strong> a new <code>tests/test_the_persisted_memo_store_has_a_bound.py</code> shows, with a temporary memo directory, that a gc pass removes entries whose mtime is older than the threshold, keeps one written inside it, and prints what it removed. Negative control: skipping the memo directory in the sweep leaves the old entries in place. The test files importing <code>reckon.crew.gc</code> add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>. Ruff check and ruff format --check add no findings on the staged paths. Write paths: <code>reckon/crew/gc.py</code> and the new test.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -230,6 +230,11 @@
     <h4 class="r-fu-title">Build §12: a damaged run record stops only its own run</h4>
     <div class="r-fu-body"><p>The invocation grammar takes one section, so §12 needs its own followup.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-crew-home-has-a-bound §12</pre>
+    </article>
+<article class="r-fu" data-id="f-tchhab-013" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="coordinator" data-written-at="2026-11-07" data-recommends-skill="/reckon-build the-crew-home-has-a-bound §13" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §13</h4>
+    <div class="r-fu-body"><p>Bound the persisted memo store in <code>crew gc</code>; writes only <code>gc.py</code> and a new test.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-crew-home-has-a-bound §13</pre>
     </article>
 </section>
   
