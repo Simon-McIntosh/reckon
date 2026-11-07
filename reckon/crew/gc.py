@@ -1,3 +1,5 @@
+import bisect
+import json
 import os
 import re
 import shlex
@@ -1458,10 +1460,78 @@ RETENTION_INTERVAL = "1h"
 RETENTION_LOG_NAME = "retention-sweep.log"
 RETENTION_LOG_MAX_BYTES = 2 * 1024 * 1024
 
+#: The file a pass persists its position in, under the crew home: the name of
+#: the last sorted directory it examined. The next pass resumes just after it
+#: and wraps to the head once it reaches the end, so a long run of permanently
+#: withheld directories (a review still owed, a derived figure still missing)
+#: is passed over once per cycle instead of consuming every pass's budget. An
+#: empty cursor is a fresh cycle.
+RETENTION_CURSOR_NAME = "retention-cursor.json"
+
+#: How many directories a pass examines between progress lines on stderr.
+RETENTION_PROGRESS_EVERY = 10
+
+#: The phases a pass times. Each prints one line to stderr as it completes, so a
+#: pass killed under its timeout still leaves a record of how far it got.
+RETENTION_PHASES = ("ledger", "judge", "scratch", "log")
+
 
 def retention_log_path() -> Path:
     """The file a sweep appends its removals to, under the crew home."""
     return runs_dir().parent / "logs" / RETENTION_LOG_NAME
+
+
+def retention_cursor_path() -> Path:
+    """The file a pass persists its position in, under the crew home.
+
+    ``RECKON_RETENTION_CURSOR`` names the file directly. A pass run against the
+    production store from a fenced or read-only home uses it to keep the cursor
+    somewhere writable rather than declining to advance its position.
+    """
+    override = os.environ.get("RECKON_RETENTION_CURSOR")
+    if override:
+        return Path(override)
+    return runs_dir().parent / RETENTION_CURSOR_NAME
+
+
+def _read_retention_cursor() -> str:
+    """The last directory a previous pass examined, or empty for a fresh cycle.
+
+    A missing, unreadable or malformed cursor reads as a fresh cycle: the pass
+    starts at the head of the sorted list rather than declining to judge.
+    """
+    try:
+        payload = json.loads(retention_cursor_path().read_text())
+    except (OSError, ValueError):
+        return ""
+    if isinstance(payload, Mapping):
+        return str(payload.get("after") or "")
+    return ""
+
+
+def _write_retention_cursor(after: str) -> None:
+    """Persist the last directory a pass examined, or clear it at cycle end."""
+    path = retention_cursor_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    staged = path.with_name(path.name + ".tmp")
+    staged.write_text(json.dumps({"after": after}) + "\n")
+    os.replace(staged, path)
+
+
+def _emit_phase(phase: str, started: float, seconds: dict[str, float]) -> None:
+    """Print one phase's wall seconds to stderr and record it in the report."""
+    elapsed = time.perf_counter() - started
+    seconds[phase] = elapsed
+    sys.stderr.write(f"retention phase {phase} {elapsed:.3f}s\n")
+    sys.stderr.flush()
+
+
+def _emit_progress(examined: int, judged: int, offered: int) -> None:
+    """Print a progress line to stderr, unbuffered, while the pass is judging."""
+    sys.stderr.write(
+        f"retention progress examined={examined} judged={judged} offered={offered}\n"
+    )
+    sys.stderr.flush()
 
 
 def _retention_ledger_records(
@@ -1510,64 +1580,99 @@ def retention_sweep(
 
     This is the run-directory retention alone, not the rest of gc: it starts no
     git process and inspects no worktree, because gc's worktree checks are where
-    a pass over the whole home spent its time. It removes at most ``limit``
+    a pass over the whole home spent its time. It examines at most ``limit``
     directories, so one pass stays short on shared storage; the rest wait for
     the next hour. A removal is written to one log under the crew home, and a
     pass that removed nothing writes nothing.
+
+    The pass resumes from the cursor the previous pass persisted, so a long run
+    of permanently withheld directories at the head of the sorted list is walked
+    over once per cycle rather than re-judged on every pass. Each project's
+    grace window is resolved once rather than once per directory, and progress
+    and per-phase timings go to stderr while stdout keeps the one JSON report,
+    so a pass killed under its timeout still leaves a record of how far it got.
     """
     from reckon import flight
 
     moment = now or datetime.now(tz=timezone.utc)
     if limit < 1:
         raise CrewError("retention sweep limit must be at least one directory")
+    phase_seconds: dict[str, float] = {}
+
+    started = time.perf_counter()
     mounted = flight.mounted_project_docs()
     projects = [project] if project else sorted(mounted)
     runs_root, records, owner_of, roots = _retention_ledger_records(projects, mounted)
     live_ids = {str(record.get("run_id") or "") for record in list_live()}
     live_review_targets = _live_review_targets()
     unreachable = [name for name in projects if name not in roots]
+    # One resolve per project: every directory that project dispatched is judged
+    # against the same window, and the config read is the cost this hoists out
+    # of the per-directory path.
+    grace_seconds = {
+        name: _run_directory_grace_seconds(name, root) for name, root in roots.items()
+    }
+    _emit_phase("ledger", started, phase_seconds)
 
     offered: list[dict[str, Any]] = []
     withheld: list[dict[str, Any]] = []
+    judged = 0
+    examined = 0
+    started = time.perf_counter()
     if runs_root.is_dir():
-        for directory in sorted(path for path in runs_root.iterdir() if path.is_dir()):
-            run_id = directory.name
-            record = records.get(run_id)
+        names = sorted(path.name for path in runs_root.iterdir() if path.is_dir())
+        cursor = _read_retention_cursor()
+        start = bisect.bisect_right(names, cursor) if cursor else 0
+        for name in names[start:]:
+            if examined >= limit:
+                break
+            examined += 1
+            directory = runs_root / name
+            record = records.get(name)
             # A directory no mounted project's ledger records is not this pass's
             # to judge: gc's own unledgered-directory pass owns it.
-            if record is None:
-                continue
-            # A live pointer or a queued entry is a run still in flight or
-            # waiting to launch, so its directory is needed outright.
-            if run_id in live_ids:
-                continue
-            seat = owner_of[run_id]
-            root = roots[seat]
-            cutoff = moment - timedelta(
-                seconds=_run_directory_grace_seconds(seat, root)
-            )
-            row = _run_directory_retention_report(
-                directory,
-                record,
-                project=str(record.get("project") or seat),
-                repo_root=root,
-                cutoff=cutoff,
-                live_review_targets=live_review_targets,
-            )
-            if row is None:
-                continue
-            if row["action"] != "prune":
-                withheld.append(row)
-                continue
-            if len(offered) >= limit:
-                break
-            if apply:
-                print(f"removing run directory {directory} ({row['bytes']} bytes)")
-                shutil.rmtree(directory)
-                row["removed"] = True
-            offered.append(row)
+            if record is not None and name not in live_ids:
+                seat = owner_of[name]
+                root = roots[seat]
+                cutoff = moment - timedelta(seconds=grace_seconds[seat])
+                row = _run_directory_retention_report(
+                    directory,
+                    record,
+                    project=str(record.get("project") or seat),
+                    repo_root=root,
+                    cutoff=cutoff,
+                    live_review_targets=live_review_targets,
+                )
+                if row is not None:
+                    judged += 1
+                    if row["action"] != "prune":
+                        withheld.append(row)
+                    else:
+                        if apply:
+                            sys.stderr.write(
+                                f"removing run directory {directory} "
+                                f"({row['bytes']} bytes)\n"
+                            )
+                            sys.stderr.flush()
+                            shutil.rmtree(directory)
+                            row["removed"] = True
+                        offered.append(row)
+            if examined % RETENTION_PROGRESS_EVERY == 0:
+                _emit_progress(examined, judged, len(offered))
+        # Only an applied pass persists its position. A diagnostic dry run reads
+        # the cursor and leaves it alone, so it cannot carry the hourly pass past
+        # candidates it judged and did not remove. A pass that reached the end of
+        # the sorted list starts the next one at the head; one that stopped at its
+        # limit resumes after the last directory it examined.
+        if apply:
+            at_end = start + examined >= len(names)
+            _write_retention_cursor("" if at_end else names[start + examined - 1])
+    elif apply:
+        _write_retention_cursor("")
+    _emit_phase("judge", started, phase_seconds)
 
     removed = [row for row in offered if row["removed"]]
+    started = time.perf_counter()
     # The pass settles this host's scratch copies too. A run's scratch leaves
     # with the run on every host that holds one, and the hourly timer is the one
     # caller that runs whether or not this host launches a worker. It reads the crew
@@ -1575,6 +1680,9 @@ def retention_sweep(
     # process.
     settled = settle_run_scratch(apply=apply, now=moment.timestamp())
     settled_removed = list(settled["removed"])
+    _emit_phase("scratch", started, phase_seconds)
+
+    started = time.perf_counter()
     written = ""
     if removed or settled_removed:
         from reckon.crew.watch_unit import _WatchLogStream
@@ -1589,12 +1697,15 @@ def retention_sweep(
         finally:
             stream.close()
         written = str(target)
+    _emit_phase("log", started, phase_seconds)
 
     return {
         "dry_run": not apply,
         "projects": projects,
         "unreachable_projects": unreachable,
         "limit": limit,
+        "examined": examined,
+        "judged": judged,
         "offered": offered,
         "withheld": withheld,
         "removed": [row["run_id"] for row in removed],
@@ -1602,6 +1713,7 @@ def retention_sweep(
         "scratch": settled,
         "scratch_removed": settled_removed,
         "log": written,
+        "phase_seconds": phase_seconds,
     }
 
 
@@ -1683,8 +1795,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     without removing anything, because asking what the command does must not be
     the same act as running it.
     """
-    import json
-
     args = list(sys.argv[1:] if argv is None else argv)
     apply = False
     install = False
