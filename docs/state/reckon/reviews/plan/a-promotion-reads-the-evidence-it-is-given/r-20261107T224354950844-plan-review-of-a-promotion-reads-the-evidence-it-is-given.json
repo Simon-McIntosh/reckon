@@ -1,0 +1,49 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T22:59:44.932Z",
+  "dispatched_at": "2026-11-07T22:47:06Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:99",
+      "id": "reasoning-1",
+      "reason": "the record source has to be named correctly (registered worktrees matched to ledger run records by node id, as `_held_worktree_records` does), or the section sends an implementer to a pointer store that is empty in exactly the case the section exists to fix.",
+      "text": "s9 says the merge \"releases every live pointer whose worktree HEAD is that head\", but promotion unlinks the live pointer (`reckon/crew/promotion_records.py:190-191`, and the docstring of `_land_a_promoted_run` at `reckon/crew_run_commands.py:3285` states the pointer is deleted at promotion), so after the `crew complete` promotion of the section's own cited run no live pointer exists to enumerate; the retained record is the ledger row, which carries no `worktree` field (`reckon/ledger.py:150-200`) and from which a held tree is derived only by intersecting git's worktree registry with ledger namings (`reckon/crew/obligations.py:1862-1968`). A node implementing the deliverable as written releases nothing and its first case cannot pass",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "2ca8d2a3f2e39620c40f64827ac0337467d7c703",
+  "plan_fingerprint": "f20009d0dfbda4f485eb3b55c72e98b43fa7d02e0d01f7fdcd4654e0276f173c",
+  "plan_slug": "a-promotion-reads-the-evidence-it-is-given",
+  "plan_version": 27,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T224354950844-plan-review-of-a-promotion-reads-the-evidence-it-is-given",
+  "reviewed_blob_sha": "6845af13cb1183e00e60e50a6e5f6936f92596d7",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_retires_id` (reckon/crew/review.py:2304), `added_failures_from_gate_logs` (reckon/crew/review.py:2663), the retry-overlap `&` (reckon/crew/reports.py:2657), the control admission (reckon/crew/promotion_checks.py:2144), `_record_release_on_ledger` (reckon/crew/promotion_release.py:633) and `_release_after_promotion` (reckon/crew/promotion_release.py:476) all resolve; the ledger sites cited at 547/591 resolve as near-line references to reckon/ledger.py:571 and :615.",
+    "done_when": "pass \u2014 s5 and s9 each declare measurable cases with named negative controls (s9's third control, for the one-commit-beyond case, is the one the earlier review asked for), so each guard is shown able to fail.",
+    "evidence_paths": "pass \u2014 neither unit puts evidence in a scratchpad; the new test files sit in `tests/` and the release result is reported through the command's own output.",
+    "naming": "pass \u2014 the new test filenames and the `failure_ids_match` sibling are named by mechanism; \"power-convertor-1f\" is a reporting-run name in the Why prose, not a symbol or a comment in code.",
+    "reasoning": "a finding \u2014 s5's mechanism, root cause and callers hold, but s9's deliverable names the live pointer as the record it releases from, and that record does not exist by the time `crew merge` runs.",
+    "single_goal": "pass \u2014 s5 is one shared matching rule across six call sites; s9 is one release path for `crew merge` with no second deliverable.",
+    "wiring": "pass \u2014 `plan-section-depends-on` gives s5 \u2192 s2 and s9 \u2192 s6, both sections exist, and the build followup names \u00a79 after \u00a76 as the s9 wait requires."
+  },
+  "section_digests": {
+    "_document": "4f61487cc740fac079e6b7da0473ac0e44146d947181b9ee93ce80cc7e5cb9d6",
+    "s1": "5eac0eb57fbf9fccaeee6fb2da59c42ca24c4433f0cffcb4b7de1b6b04324b6c",
+    "s2": "259d093654ecf00609d51d02f39bb21a9feda5af8b5626a64e881f7e85d5abe4",
+    "s3": "479c8ebc617467c2744513e850433e87af52a3d22110620dcfdfb48f9975d081",
+    "s4": "bc5eebc33cf8175dd508f65245c7126745fc3e87a3e75e6229c55004ae265f62",
+    "s5": "f597850868c537fd163cabb422a3322df0e81659a7ceda007a561f633c75c9bf",
+    "s6": "2e81c0cbe61ef60fc16acb159e81912b5b6263e9d12b8059efbd9482d722976c",
+    "s7": "a015e1ea2396b50fe1763afc13f7b9ab2e452b85287b48a63a06e3503c3f2674",
+    "s8": "f0d1ed6febbf8f9ad2c9d36e204cfd29684121da43f557cf62b470c78f3de6b4",
+    "s9": "0debd7f5b512b96e0f50017f0a4f6db46f586d6af87dbed16f8641708a190ae5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T23:10:21.100182+00:00",
+  "total": null
+}
