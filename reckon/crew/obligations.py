@@ -19,6 +19,7 @@ reports what is still owed.
 from __future__ import annotations
 
 import json
+import re
 import shlex
 import threading
 from collections.abc import Iterable, Mapping, Sequence
@@ -185,6 +186,33 @@ DEFAULT_SWEEP_SECONDS_FALLBACK = 120
 # for it travels as the duty's ``next_command``, so the two surfaces name the
 # one action.
 QUEUED_AWAITING_SESSION_DUTY_KIND = "queued-awaiting-session"
+
+# A queued request the admission pass refused on its node contract. The
+# refusal is a fact about the request and the plan section it was queued from,
+# so no lane slot and no wait clears it; the session repairs the named property
+# and requeues. It carries its own kind because the waiting reading it replaces
+# sends a coordinator to wait for a request that would never launch, which is
+# how one project's sections sat dead for the better part of an hour.
+QUEUED_CONTRACT_REFUSED_DUTY_KIND = "queued-contract-refused"
+
+# The node-contract properties ``reckon crew queue edit`` can repair, with the
+# field the edit names for each. A refusal naming only these is cleared by an
+# edit that keeps the request's place in the queue; any other property belongs
+# to the plan section the request was queued from, so the request has to be
+# dropped, the section repaired and dispatched again.
+_EDITABLE_CONTRACT_PROPERTIES: Mapping[str, str] = {
+    "single-goal": "steering",
+    "fully-specified": "steering",
+    "demonstrable": "done-when",
+    "scoped": "write-paths",
+    "bounded": "time-budget",
+}
+
+# Each node-contract finding is rendered as ``<property>: <detail>``, the first
+# after the refusal's opening words and the rest after ``; ``. The detail may
+# itself contain a colon or a semicolon, so the property is read by position
+# rather than by splitting the text into pairs.
+_CONTRACT_PROPERTY = re.compile(r"(?:(?<=; )|(?<=— ))([a-z][a-z_-]*): ")
 
 # A request waiting its turn on the lane: nothing is owed for it, but it is not
 # missing either, so it is listed as waiting for as long as its pointer exists.
@@ -827,8 +855,82 @@ def _live_review_runs(project: str, session: str) -> set[str]:
 
 
 def _classified_rows(project: str) -> list[dict[str, Any]]:
-    """Classify current project pointers without observing or launching work."""
-    return [recovery.classify_pointer(pointer) for pointer in _live_pointers(project)]
+    """Classify current project pointers without observing or launching work.
+
+    A queued request whose refusal the classifier does not read as a session
+    duty carries the refusal's remedy here, on the row, because both producers
+    of a session's duty list build a queued row through this one helper: the
+    derivation and the slice a sweep publishes. Attaching it in one place is
+    what keeps the two surfaces from disagreeing about a refused request.
+    """
+    rows: list[dict[str, Any]] = []
+    for pointer in _live_pointers(project):
+        row = recovery.classify_pointer(pointer)
+        refusal = _queued_contract_refusal(pointer, row)
+        if refusal is not None:
+            row["contract_refusal"] = refusal
+        rows.append(row)
+    return rows
+
+
+def _queued_contract_refusal(
+    pointer: Mapping[str, Any], row: Mapping[str, Any]
+) -> dict[str, str] | None:
+    """The remedy for a queued request admission refused on its node contract.
+
+    A lane hold, a queue-full refusal and a scope conflict all clear by
+    themselves, and the classifier already leaves them on the waiting reading.
+    A contract refusal does not: the request fails a property a dispatch checks
+    before any worker exists, so the admission pass re-tests it on every pass
+    and refuses it every time until the property is repaired. Leaving it on the
+    waiting reading is what let a project's sections sit unlaunched while the
+    obligation surface said they were merely waiting their turn.
+
+    The property names are the refusal's own, so the row's reason tells a
+    coordinator what to repair. The remedy follows from which properties
+    failed: an editable one is cleared in place, keeping the request's place in
+    the queue, while a plan-owned one leaves nothing to edit and the request is
+    dropped after the section is repaired.
+    """
+    if str(pointer.get("phase") or "") != queue_admission.QUEUED_PHASE:
+        return None
+    if row.get("session_refusal"):
+        # The classifier has already read this refusal as a condition of the
+        # session and published its own remedy; it outranks this reading.
+        return None
+    failure = pointer.get("failure")
+    if not failure:
+        return None
+    text = queue_admission._failure_text(failure)
+    if queue_admission._NODE_CONTRACT_REFUSAL not in text:
+        return None
+    if queue_admission._CAPACITY_REFUSAL_REMEDY in text:
+        # A full lane names the same condition in its opening words, but an
+        # occupying run finishing clears it: that one is a wait, not a repair.
+        return None
+    run_id = str(pointer.get("run_id") or "")
+    properties = _CONTRACT_PROPERTY.findall(text)
+    editable = bool(properties) and all(
+        name in _EDITABLE_CONTRACT_PROPERTIES for name in properties
+    )
+    if editable:
+        fields = sorted({_EDITABLE_CONTRACT_PROPERTIES[name] for name in properties})
+        detail = (
+            "the last admission attempt refused this queued request on its node "
+            f"contract, which no lane slot clears; the queue edit sets the "
+            f"field behind each named property ({', '.join(fields)}): {text}"
+        )
+        return {
+            "detail": detail,
+            "next_command": f"reckon crew queue edit --run {run_id}",
+        }
+    detail = (
+        "the last admission attempt refused this queued request on its node "
+        "contract, which no lane slot clears; the named properties belong to the "
+        "plan section the request was queued from, so repair the section and "
+        f"dispatch it again: {text}"
+    )
+    return {"detail": detail, "next_command": f"reckon crew queue drop --run {run_id}"}
 
 
 def _acknowledgements_in_force(
@@ -1041,6 +1143,14 @@ def _queued_item(
     left behind by a verdict written before the move.
     """
     run_id = str(row.get("run_id") or "")
+    refusal = row.get("contract_refusal")
+    if isinstance(refusal, Mapping):
+        # The refusal outranks the queue place: a request the admission pass
+        # refused on its contract has no launch to wait its turn for.
+        item = _live_item(row, kind=QUEUED_CONTRACT_REFUSED_DUTY_KIND, now=now)
+        item["reason"] = str(refusal.get("detail") or "")
+        item["next_command"] = str(refusal.get("next_command") or "")
+        return item
     stall = (verdicts or {}).get(run_id)
     if (
         isinstance(stall, Mapping)
