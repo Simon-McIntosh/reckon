@@ -1,0 +1,50 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-07T19:42:02.753Z",
+  "dispatched_at": "2026-11-07T19:25:28Z",
+  "findings": [
+    {
+      "file": "tests/test_a_batch_request_can_be_edited.py",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The new test lies outside the node's FENCE - SCOPE list (prompt.txt:77-81), which names only dispatch_batch.py paths, the evidence fragment and the figures directory, so crew check --manifest refuses the reviewed record for changed paths outside the write scope. The plan's done-when and the EVIDENCE fence (prompt.txt:132) both require the file; the fix is to add that one path to the node's recorded scope rather than treat it as overreach."
+    },
+    {
+      "file": "reckon/crew/dispatch_batch.py",
+      "line": 571,
+      "severity": "non-blocking",
+      "text": "The durable default manifest path is now computed a third time, inline, beside the same expression at reckon/crew/dispatch_plan.py:820-823 and the launch-time fallback at reckon/crew/dispatch_sessions.py:1016-1022. Extracting one helper would keep the doors from drifting on which directory a worker's manifest resolves; all three currently agree."
+    },
+    {
+      "file": "reckon/crew/dispatch_batch.py",
+      "line": 570,
+      "severity": "non-blocking",
+      "text": "The fix only fills the path for entries queued after it lands, so the already-stored requests named in the plan's Why remain refused by crew queue edit until dropped and requeued, losing their queue position. A fallback in the contract check to run_dir(run_id)/manifest.md, as dispatch_sessions.py:1016 already does, would repair them in place."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T174751033780-batch-request-editable-in-queue/logs/negative-control.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The header names revision 25dd5d75d1a3 (the base) while the run was the head worktree with the assignment removed, so the negative control's provenance cannot be told apart from logs/prefix-red.log by its own header. The body and the distinct pytest basetemps (1142 vs 1143) show two separate executions, so the red result still stands."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'Let a batch-made request be edited in the queue' (prompt.txt:38) and reckon/crew/dispatch_batch.py:570-573 gives each queued entry the durable manifest path that crew queue edit's contract check at reckon/crew/node.py:1364-1368 requires.\nVERDICT done_when: the done-when names tests/test_a_batch_request_can_be_edited.py; its three tests assert the stored path, a stored --time-budget 90m edit, and the independently-verifiable refusal, and logs/gate.log records 3 passed EXIT=0.\nVERDICT write_paths: read FENCE - SCOPE (prompt.txt:77-81: reckon/crew/dispatch_batch.py, a bare dispatch_batch.py, the evidence fragment and the figures directory); the diff also writes tests/test_a_batch_request_can_be_edited.py, which the EVIDENCE fence at prompt.txt:132 names as 'the new test' but the scope list omits.\nVERDICT manifest: read the source manifest; it records the gate (3 passed), the negative control (2 failed, 1 passed, EXIT=1), base and head arms of tests/test_a_batch_queues_the_chosen_sections.py (2 passed each), and reports the scope mismatch itself under blockers and outside_scope.\nVERDICT diff: read f83af26ed25b against base 25dd5d75d1a3; one commit, three files, 214 insertions and 1 deletion - an 8-line assignment in _queue_batch, a 188-line new test, and a 17-line evidence fragment.\nCALL_SITES: reckon/crew_dispatch_commands.py:1131 (the dispatch --batch caller of queue_batch), reckon/crew/queue_admission.py:185 (reads the stored node manifest_path at admission), reckon/crew/dispatch_sessions.py:989 (_recorded_manifest_path: the launch-time fallback the stored path now pre-empts)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_batch.py:570-573 stores run_dir(run_id)/manifest.md so the edit at reckon/crew/node.py:1364 accepts a newly queued batch request, though requests already stored without the path stay uneditable.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/gate.log:1-4 records the head revision and the literal command and ends EXIT=0 with 3 passed, and logs/negative-control.log records 2 failed with EXIT=1 naming independently-verifiable.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: the source and the evidence fragment sit inside FENCE - SCOPE but tests/test_a_batch_request_can_be_edited.py:1 does not, though prompt.txt:132 names the new test as the deliverable.\nSCORE durability: 17\nJUSTIFICATION durability: dropping the assignment at reckon/crew/dispatch_batch.py:570-573 reddens tests/test_a_batch_request_can_be_edited.py:148 and :164, as the red logs/negative-control.log shows.\nSCORE fit: 17\nJUSTIFICATION fit: the assignment reuses runs.run_dir and follows the inline-comment idiom of reckon/crew/dispatch_batch.py:558-573, with a conventional subject and body and no plan or ticket label.\nSCORE reuse: 14\nJUSTIFICATION reuse: reckon/crew/dispatch_batch.py:571-573 reproduces the durable-manifest-path expression owned at reckon/crew/dispatch_plan.py:820-823 and repeated at reckon/crew/dispatch_sessions.py:1016-1022 rather than calling one shared helper.\nFINDING tests/test_a_batch_request_can_be_edited.py:1 non-blocking: the new test lies outside the node's FENCE - SCOPE list (prompt.txt:77-81), which names only dispatch_batch.py paths, the evidence fragment and the figures directory, so crew check --manifest refuses the reviewed record for changed paths outside the write scope; the plan's done-when and the EVIDENCE fence both require the file, so the coordinator should add that one path to the node's recorded scope rather than treat it as overreach.\nFINDING reckon/crew/dispatch_batch.py:571 non-blocking: the durable default manifest path is now computed a third time, inline, beside the same expression at reckon/crew/dispatch_plan.py:820-823 and the launch-time fallback at reckon/crew/dispatch_sessions.py:1016-1022; extracting one helper would keep the two doors from drifting on which directory a worker's manifest resolves, though all three currently agree.\nFINDING reckon/crew/dispatch_batch.py:570 non-blocking: the fix only fills the path for entries queued after it lands, so the already-stored requests the plan's Why names (r-20261106T224355745135-vs3-rate-placement and r-20261106T231853484901-thyristor-line-arm) remain refused by crew queue edit until dropped and requeued, losing their queue position; a fallback in the contract check to run_dir(run_id)/manifest.md, as dispatch_sessions.py:1016 already does, would have repaired them in place.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T174751033780-batch-request-editable-in-queue/logs/negative-control.log:1 non-blocking: the header names revision 25dd5d75d1a3 (the base) while the run was the head worktree with the assignment removed, so the negative control's provenance cannot be told apart from logs/prefix-red.log by its own header; the body and the distinct pytest basetemps (1142 vs 1143) show two separate executions, so the red result still stands.\n",
+  "review_run_id": "r-20261107T192115481089-review-of-batch-request-editable-in-queue-f83af26ed25b",
+  "reviewed_base_sha": "25dd5d75d1a3439739b8127e5043281e6420c42a",
+  "reviewed_head_sha": "f83af26ed25ba75d4eda10bf6c201715cce69937",
+  "reviewed_run_id": "r-20261107T174751033780-batch-request-editable-in-queue",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 14,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T20:45:00.000000+00:00",
+  "total": 97
+}
