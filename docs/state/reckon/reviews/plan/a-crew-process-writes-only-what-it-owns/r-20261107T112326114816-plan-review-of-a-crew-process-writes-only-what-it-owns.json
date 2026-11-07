@@ -1,0 +1,69 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T11:38:37.965Z",
+  "dispatched_at": "2026-11-07T11:25:52Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-crew-process-writes-only-what-it-owns.html:55",
+      "id": "reasoning-1",
+      "reason": "naming the surface and its liveness filter decides whether \u00a75's write paths are sufficient, and an unnamed query is exactly what lets a worker reach outside them.",
+      "text": "\u00a75 says the script \"asks reckon which projects have live runs owned by its owner's session\", but no `reckon` command answers that question: `crew view live` refuses without `--project` (`{\"error\": \"missing_project\"}`) and `crew follow` requires `--project`, while the live pointer directory is not a live-run set (a pointer sampled there carried `phase: \"complete\"`). \u00a75's write paths are the plugin script and its test only, so the worker must either pick an unnamed scan whose liveness filter the plan never states, or add Python query surface outside its scope \u2014 and the done-when stubs `reckon`, so the test cannot tell which it did",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-crew-process-writes-only-what-it-owns.html:55",
+      "id": "reasoning-2",
+      "reason": "the further writes must be sequenced before the exec, so a node implementing the sentence literally builds a script that follows one project where two are live and fails the case the section declares.",
+      "text": "\u00a75 orders the mechanism \"execs the host at once with that project's request as the first request; each further project is written to the FIFO\", but `exec` replaces the shell (script lines 63\u201367) so nothing after it runs in that process; the second project is never written and \u00a75's own second case cannot be satisfied as written",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-crew-process-writes-only-what-it-owns.html:45",
+      "id": "done_when-1",
+      "reason": "a worker following the text applies the control to the wrong assertion and can record the third case's control as satisfied without ever falsifying the census substitution in the fourth.",
+      "text": "\u00a73's third negative control reads \"testing the session-wide attachment returns True in the third case\", but the third case is now the hand-off, which touches no attachment reading; the control belongs to the fourth case, \"an ask for the calling session while another host's follower is attached, and the calling host's census has no child\", which is the only case that distinguishes `watch_state(...)[\"session_attached\"]` from `_session_host_child_pid`",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-crew-process-writes-only-what-it-owns.html:23",
+      "id": "wiring-1",
+      "reason": "the edge delays \u00a75 behind \u00a73 without misdirecting any work, so it costs wall clock but sends no node down a wrong path.",
+      "text": "`plan-section-depends-on` makes \u00a75 wait on \u00a73, and \u00a75 repeats \"It reads \u00a73's ownership rule, so it waits for \u00a73\", but \u00a75 changes only `plugins/crew-host/bin/crew-host`, which writes to the FIFO of the owner's own Claude process and never calls `_request_host_follower` or any other symbol \u00a73 changes; \u00a75's requests are owner-scoped by construction",
+      "type": "wiring",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "42f0d5a501c89cd6ed0e6d5d22964337cc5214b7",
+  "plan_fingerprint": "5daccffd38cdf04ce8feb6d508468104c8c1fe08698f79a7ab5a3b1f96b3f6d1",
+  "plan_slug": "a-crew-process-writes-only-what-it-owns",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T112326114816-plan-review-of-a-crew-process-writes-only-what-it-owns",
+  "reviewed_blob_sha": "f6f86a19b5be941a24f286ae8c323392118e0944",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_request_host_follower` (818), `_ask_session_host` (746), `_ask_session_host_for_follower` (770), `_session_host_child_pid` (695), `_rearm_session_follower` (785), `_hand_off_to_waiting_host` (870) and `_hand_off_from_follower` (628) all resolve within the stated \"near line\"; `plugins/crew-host/bin/crew-host` lines 47\u201367 are the FIFO create, the read loop and the `exec`; the `plan-after` target `docs/plans/the-monitor-shows-the-work-it-watches.html` resolves.",
+    "done_when": "a finding \u2014 \u00a73's negative controls are renumbered against the case list it now carries, and the session-wide-attachment control names the third case while its mechanism belongs to the fourth.",
+    "evidence_paths": "pass \u2014 \u00a72, \u00a73, \u00a74 and \u00a75 all require their logs \"under the run directory\", which is the run's own durable directory, and every section requires a header naming the revision and the command and a closing `EXIT=` line.",
+    "naming": "pass \u2014 both new test filenames name the mechanism under test and no plan label, stage name, ticket number or version tag reaches a symbol, path or comment in any section.",
+    "reasoning": "two findings \u2014 \u00a75's mechanism names no query that can answer it, and \u00a75 sequences its `exec` before the writes its own second case requires.",
+    "single_goal": "pass \u2014 \u00a73 now carries only the `dispatch_watch.py` change and \u00a75 only the host entry point, the split the earlier finding asked for, with a matching write-path line per section.",
+    "wiring": "a finding \u2014 \u00a75's declared `depends-on` names \u00a73, but \u00a75 writes no file \u00a73 touches and calls no symbol \u00a73 changes, so the edge is a scheduling delay rather than a dependency."
+  },
+  "section_digests": {
+    "_document": "7848c4a22debbc4310e02052a09e0978b08f6e538ba797332694c84678155ff8",
+    "s1": "38e026f18d1b42b1d79978e1ed1cf6179e085908a249e5762f39a683dcc8123f",
+    "s2": "f11be171c26248fbc871d99510f0013c9dfc0a181d247f07861e86dc0d156f40",
+    "s3": "ca13c8c4b258be31aa44927328afe17757df2dabf25acef8866007fd078d15d1",
+    "s4": "e88fcf79ec58d8305f36e37d69846c8e0a1a10f1b73fc6c167c25b700165e123",
+    "s5": "738f6a72e9b572a5697bb988e6ae14e00effd8a2c3def53d419fc6135cdf1d81"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T11:52:10.765063+00:00",
+  "total": null
+}
