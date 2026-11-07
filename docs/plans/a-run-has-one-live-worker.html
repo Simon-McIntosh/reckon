@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.67">
-<meta name="plan-version" content="27">
+<meta name="plan-version" content="28">
 <meta name="plan-modified" content="2026-11-07">
 <meta name="plan-commits" content="a88e6f09">
 </head>
@@ -115,7 +115,7 @@
 <li>for a resume, whether it is a repair round the review reflex opened (the pointer&#x27;s record of opened rounds in <code>reckon/crew/recovery_review_dispatch.py</code>), and if so that the round delivers by itself and advice can be sent after it does;</li>
 <li>the age of the newest record in that attempt&#x27;s stream.</li>
 </ul>
-<p>A detail the records do not hold is left out, never guessed. The composer takes the liveness reading its caller made. The site near line 1112 is <code>_stream_in_motion_refusal</code>, which fires when no process was found but the newest stream is still moving. There the message names the attempt whose stream is moving and the age of its newest record, and says its process was not found. It never calls that attempt live.</p>
+<p>A detail the records do not hold is left out, never guessed. The composer takes the liveness reading its caller made. The site near line 1112 is <code>_stream_reading_refusal</code> (<code>reckon/crew/resumption.py</code> near line 1079), reached from <code>_observed_end_refusal</code>. It fires only when <code>_process_reading</code> (<code>reckon/crew/recovery_liveness.py</code> near line 437) reads <code>liveness unknown</code>: no pid could be checked on this host and no exit record exists. A proven death returns before it. There the message names the attempt whose stream is moving and the age of its newest record, and says that attempt&#x27;s liveness could not be read on this host. It never calls the attempt live, and never says its process was found gone.</p>
 <p>Write paths: <code>reckon/crew/resumption.py</code>, <code>reckon/crew/dispatch_sessions.py</code> and the new test <code>tests/test_a_refused_resume_names_the_live_attempt.py</code>.</p>
 <p><strong>Done when.</strong> The defect is reproduced first: a temporary crew home holding a run with a live attempt-2 worker record whose advice opens with the repair-round token gives the bare sentence today, and that result is recorded in the gate log. The new test then shows five cases through <code>resume_plan</code>, the launcher and the resume sweep:</p>
 <ul>
@@ -123,7 +123,7 @@
 <li>a coordinator&#x27;s resume attempt is named without that wording;</li>
 <li>a run whose live process is found only by the session walk is refused with the bare sentence and no invented attempt;</li>
 <li><code>resume_plan</code> and the launcher give the same message for each case;</li>
-<li>a run whose recorded pids are dead and whose newest stream was written seconds ago, driven through the sweep&#x27;s refusal near line 1112, is refused through the shared composer, naming the moving attempt and saying its process was not found.</li>
+<li>a run whose worker was launched from another host, with no exit record, so its liveness reads unknown, and whose newest stream carries an assistant turn written seconds ago, is refused at <code>_stream_reading_refusal</code> through the shared composer, naming the moving attempt and saying its liveness could not be read on this host.</li>
 </ul>
 <p>Negative controls: composing the message at one site only fails the parity case; dropping the repair-round lookup fails the first case; leaving the in-motion site on its own sentence fails the fifth case. The armed suite command passes at the head, judged by delta against the dispatch base with the new test copied into the base tree, including every test file that matches the present sentence.</p>
 
