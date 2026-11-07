@@ -21,13 +21,13 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="a-crew-process-ends-with-its-owner">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
   <title>A Run Has One Live Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.67">
-<meta name="plan-version" content="22">
-<meta name="plan-modified" content="2026-11-05">
+<meta name="plan-version" content="23">
+<meta name="plan-modified" content="2026-11-07">
 <meta name="plan-commits" content="a88e6f09">
 </head>
 <body>
@@ -94,6 +94,10 @@
       negative control is executed and logged: with the session read removed, the first case is admitted and the test fails. The
       write paths are <code>reckon/crew/runs.py</code> and <code>tests/test_a_live_session_refuses_a_second_worker.py</code>.</p>
 
+    <h2 id="s5">§5 — A queued run is launched once while its first worker lives</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> nova-4a reported this on 7 November. Run <code>r-20261106T212311176377-icm-strip-error-sweep</code> was launched twice into one worktree. <code>attempt-1-worker.json</code> records pid 1966827 at 21:30:35Z. The dispatch claim (<code>claim.json</code>) was written again at 21:31:10Z, <code>attempt.json</code> records a dispatch attempt starting at 21:31:51Z, and <code>attempt-2-worker.json</code> records pid 1975439 at 21:32:07Z, while attempt 1 ran on until 22:04:47Z (<code>attempt-1-exit.json</code>, exit 0, ended during <code>working</code>). Attempt 1 found the worktree mounted read-only, staged its deliverables in <code>/tmp/reckon-crew-scratch</code> and wrote <code>status: blocked</code>. Attempt 2 had a writable tree and completed. The two wrote the same <code>manifest.md</code> in turn, and the obligations hook reported the run blocked from attempt 1&#x27;s manifest while attempt 2 was still working. The evidence is the run directory and attempt 1&#x27;s staged files, copied to <code>/work/projects/imas_gpu/sophelio/evidence/iron-core-magnetisation/strip-sweep-attempt-1/</code>. §4 refuses a resume beside a live worker; this second launch came from a dispatch or admission path, not a resume.</p><p><strong>Deliverable.</strong> The worker first reproduces, in a temporary crew home, which path launched the second worker: admission relaunching a request it had already launched, a dispatch re-taking the node claim, or another. It also records why attempt 1&#x27;s worktree was read-only, in the run directory. Then that path refuses to launch a worker for a run whose recorded worker pid is alive, with the same live-session check §4 adds to <code>resume_plan</code>, and names the live pid.</p><p><strong>Done when</strong> a new <code>tests/test_a_queued_run_launches_once.py</code> shows two things through the reproduced path with a temporary crew home: a launch of a run whose first worker is alive is refused naming that pid; and a launch after that worker has exited proceeds. One negative control: removing the check launches the second worker in the first case. The test files importing the module the reproduction names add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>. Ruff adds no findings on the staged paths. Every log is under the run directory, starts with its revision and the literal command, and ends in <code>EXIT=</code>. Write paths: the module the reproduction names and <code>tests/test_a_queued_run_launches_once.py</code>.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-arolw-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-08" data-recommends-skill="/reckon-build a-run-has-one-live-worker §2" data-resolved-at="2026-10-08T06:06:11+00:00" data-resolved-by="reckon-build">
@@ -146,7 +150,7 @@
     <div class="r-comment-body"><p>Independent review of run r-20261103T081723238648 stored as a parsed 6-dimension record over base e32a099c44 head a4ef5f35b1 (17/17/20/15/16/13 = 98 of 120, three non-blocking findings, no blocking ones).</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261103T081723238648-refuse-resume-beside-a-live-worker-identified-by-session-id" data-who="reckon-build" data-when="2026-11-05T13:50:07.138Z">
-    <div class="r-comment-body"><p>Refuse resume beside a worker whose supervisor wrote no record: `record_process_alive` now reads a live process of this user whose whole argv element is the run&#x27;s session id when every recorded pid is dead, so `resume_plan` and `_launcher_refusal` both refuse a second worker (head 5 passed, EXIT=0; base arm 2 failed, EXIT=1).</p></div>
+    <div class="r-comment-body"><p>Refuse resume beside a worker whose supervisor wrote no record: `record_process_alive` now reads a live process of this user whose whole argv element is the run's session id when every recorded pid is dead, so `resume_plan` and `_launcher_refusal` both refuse a second worker (head 5 passed, EXIT=0; base arm 2 failed, EXIT=1).</p></div>
 </div>
 </section>
 </main>

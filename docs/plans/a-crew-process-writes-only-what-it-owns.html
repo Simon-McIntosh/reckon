@@ -7,10 +7,10 @@
   <meta name="reckon-type" content="plan">
   <meta name="plan-slug" content="a-crew-process-writes-only-what-it-owns">
   <meta name="plan-title" content="A Crew Process Writes Only What It Owns">
-  <meta name="plan-summary" content="A hold transition commits every run file it rewrote, and a session host follows, and its hooks report, only the session its own Claude process owns.">
+  <meta name="plan-summary" content="A hold commits the run files it rewrote; a session host follows, and its hooks report, only its own session, and a re-armed host follows live runs at once.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
-  <meta name="plan-effort-hours" content="2.75">
+  <meta name="plan-effort-hours" content="3.5">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-reasoning" content="standard">
@@ -20,7 +20,8 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-monitor-shows-the-work-it-watches">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s5&quot;: [&quot;a-crew-process-writes-only-what-it-owns#s3&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
   <title>A Crew Process Writes Only What It Owns | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -48,11 +49,17 @@
     <p><strong>Deliverable.</strong> <code>_session_from_followers</code> (<code>reckon/hooks/coordinator_obligations.py</code>, defined near line 439 and called from <code>locate_session</code> near line 865) already returns a registration whose session equals the hook payload&#x27;s harness session. But it walks <code>read_followers</code> in name order and returns the first registration whose follower descends from the caller&#x27;s Claude process, before reaching the harness session&#x27;s own. So another session&#x27;s follower held by the caller&#x27;s host is adopted as the caller&#x27;s session. It instead scans every registration for the exact harness-session match first, and falls back to descent only when the harness session has none.</p>
     <p><strong>Done when</strong> a new <code>tests/test_the_obligations_hook_reads_its_own_session.py</code> shows three things with a temporary crew home holding registrations for sessions A and B, both followed by children of the caller&#x27;s host, B sorting first:</p><ul><li>With harness session A, <code>_session_from_followers</code> returns A, where the base revision returns B.</li><li>The Stop hook in A does not block on an obligation only B owes.</li><li>With no harness session, the descent fallback still returns a descending registration as today.</li></ul><p>One negative control: returning the first descending registration before the exact scan makes the first case return B. The test files importing <code>reckon.hooks.coordinator_obligations</code> add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>. Ruff adds no findings on the staged paths. Every log is under the run directory, starts with its revision and the literal command, and ends in <code>EXIT=</code>. Write paths: <code>reckon/hooks/coordinator_obligations.py</code> and <code>tests/test_the_obligations_hook_reads_its_own_session.py</code>.</p>
 
+    <h2 id="s5">§5 — A re-armed host follows its session's live runs at once</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> nova-4a reported this on 7 November, with the lead&#x27;s go-ahead. When the Monitor running <code>plugins/crew-host/bin/crew-host</code> expires after 30 minutes and is re-armed, the new script waits silently on its FIFO for a first request before it execs <code>reckon crew host --first-request</code> (near lines 47&ndash;67). A follow request arrives only with a dispatch, so a session with live runs and no new dispatch shows an empty pane indefinitely. The lead saw this for about an hour, and several re-armed windows delivered no events while runs changed state. nova-4a&#x27;s workaround was to write <code>{&quot;project&quot;:&quot;nova&quot;,&quot;session&quot;:&quot;&lt;id&gt;&quot;}</code> to the FIFO by hand on every re-arm.</p>
+    <p><strong>Deliverable.</strong> On start, the script asks reckon which projects have live runs owned by its owner&#x27;s session. If there is one, it execs the host at once with that project&#x27;s request as the first request; each further project is written to the FIFO, so the host follows all of them. With none, it prints one line saying it is waiting for a dispatch, then waits as today. The session it asks about is its owner&#x27;s own, the session §3 makes the only one a host may follow.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_a_rearmed_host_follows_live_runs.py</code> shows three things, running the script with a stubbed <code>reckon</code> and a temporary state directory: with one live run owned by the session, the host is started at once with that project&#x27;s request; with live runs in two projects, the second is written to the FIFO; and with none, the script prints its waiting line and starts no host. Two negative controls: waiting on the FIFO before the live-run check leaves the first case with no host; and dropping the waiting line fails the third case. The test files covering <code>plugins/crew-host</code> add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>. Ruff adds no findings on the staged paths. Every log is under the run directory, starts with its revision and the literal command, and ends in <code>EXIT=</code>. Write paths: <code>plugins/crew-host/bin/crew-host</code> and <code>tests/test_a_rearmed_host_follows_live_runs.py</code>. It reads §3&#x27;s ownership rule, so it waits for §3.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-acpwowio-001" data-status="open" data-written-by="coordinator" data-written-at="2026-11-07" data-recommends-skill="/reckon-build a-crew-process-writes-only-what-it-owns" data-resolved-at="" data-resolved-by="">
-<h4 class="r-fu-title">Build §2, §3 and §4</h4>
-<div class="r-fu-body"><p>The three sections write disjoint files and can run together.</p></div>
+<h4 class="r-fu-title">Build §2, §3 and §4, then §5</h4>
+<div class="r-fu-body"><p>§2, §3 and §4 write disjoint files and can run together; §5 waits for §3.</p></div>
 <pre class="r-fu-prompt">/reckon-build a-crew-process-writes-only-what-it-owns</pre>
 </article>
     </section>
