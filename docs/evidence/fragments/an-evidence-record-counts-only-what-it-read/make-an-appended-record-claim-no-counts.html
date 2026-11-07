@@ -1,0 +1,43 @@
+<article class="landed-report" data-run-id="r-20261107T175659515760-make-an-appended-record-claim-no-counts" data-node="make-an-appended-record-claim-no-counts">
+  <h3 id="make-an-appended-record-claim-no-counts-summary">make-an-appended-record-claim-no-counts — a record an append creates states no counts and no verdict</h3>
+  <p id="make-an-appended-record-claim-no-counts-change">
+    <code>_render_document</code> in <code>reckon/evidence.py</code> gains a
+    <code>created_by_append</code> parameter. When it is set, the head and body
+    summary read <code>Landing record for &lt;plan title&gt;: evidence appended by
+    section.</code> and the <code>plan-verdict</code> meta is omitted; every
+    other meta the renderer writes is unchanged, including <code>reckon-type</code>
+    <code>evidence</code> and <code>plan-evidence-for</code>. The one caller that
+    needs it, <code>_landed_record_shell</code> in <code>reckon/_store.py</code>,
+    passes it. That shell is the empty frame <code>append_evidence</code> creates
+    when no record exists, and it has read no ledger and no plan comments, so it
+    can no longer publish &ldquo;0 committed run(s), 0 section-anchored
+    comment(s), and 0 landed commit(s)&rdquo; over sections that later land in it.
+    A synthesis, which reads both, still writes the count sentence and the verdict
+    exactly as before.
+  </p>
+  <p id="make-an-appended-record-claim-no-counts-measure">
+    <strong>Measure.</strong> New gate
+    <code>tests/test_an_appended_record_claims_no_counts.py</code>, run one arm at
+    a time with the armed command
+    <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_appended_record_claims_no_counts.py</code>.
+    Base arm at revision <code>27a3f335a701c3d4e03f0a525f13db819f66aefe</code> in a
+    scratch tree of that revision with this test file copied in: 4 passed, 2
+    failed, EXIT=1 — the first case and its meta control fail, the first quoting
+    <code>Closure synthesis for Demo plan: 0 committed run(s), 0
+    section-anchored comment(s), and 0 landed commit(s).</code> as the plan-summary
+    an append created. Head arm (this change applied): 6 passed, EXIT=0. Logs
+    <code>baseline-arm.log</code> and <code>after-arm.log</code> under the run
+    directory, each opening with its revision, tree and literal command and ending
+    in an <code>EXIT=</code> line. Ruff adds no findings on the staged paths: the
+    base versions of the two product files carry 13 findings and the head tree
+    carries the same 13, none in the new test.
+  </p>
+  <p id="make-an-appended-record-claim-no-counts-negative-control">
+    <strong>Negative control.</strong> Restoring the count sentence in the appended
+    shell — dropping <code>created_by_append=True</code> from
+    <code>_landed_record_shell</code>'s call — reddens
+    <code>test_an_appended_record_states_no_counts_and_no_verdict</code> (and its
+    meta control) while the head arm passes both: 2 failed, 4 passed, EXIT=1. Log
+    <code>negative-control.log</code> under the run directory.
+  </p>
+</article>

@@ -1186,12 +1186,16 @@ def _landed_record_shell(project: str, plan_slug: str, plan_title: str) -> str:
 
     Delegates to the synthesis renderer with no runs or comments attached, so an
     op-created record and a synthesized one are the same document with the same
-    metas — the anchored sections are what the two writers add afterwards.
+    frame — the anchored sections are what the two writers add afterwards. The
+    shell has read nothing, so it asks the renderer to state no counts and no
+    verdict.
     """
     from reckon import evidence
 
     plan = {"slug": plan_slug, "title": plan_title, "comments": {}}
-    return evidence._render_document(project, plan, "", [], Path("."))
+    return evidence._render_document(
+        project, plan, "", [], Path("."), created_by_append=True
+    )
 
 
 def _evidence_section_html(request: dict[str, str]) -> str:
