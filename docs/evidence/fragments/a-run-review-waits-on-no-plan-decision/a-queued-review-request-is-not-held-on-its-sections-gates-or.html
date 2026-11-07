@@ -1,0 +1,75 @@
+<section id="a-queued-review-request-is-not-held-on-its-sections-gates-or-landing">
+  <h2>A review of a gated section is queued without its own section's verdict</h2>
+
+  <p><strong>What changed.</strong> <code>_needs_own_section_verdict</code> in
+  <code>reckon/crew/queue_admission.py</code> now answers false for a node whose
+  role is <code>review</code> &mdash; the <code>REVIEW_ROLE</code> constant from
+  <code>reckon/crew/recovery_vocabulary.py</code>, no new literal &mdash; and
+  <code>_validated_batch_waits</code> now reads a node's own section verdict only
+  when <code>read_own_verdict</code> and that owner both hold. The batch
+  admission path in <code>reckon/crew/dispatch.py</code> passes no
+  <code>read_own_verdict</code>, so it asks the same owner and needed no edit.
+  A gate or an open decision holds new work on a section; a review judges code a
+  run has already written, so it never gains a <code>readiness:</code> ref.
+  Every other wait a review carries is untouched: its explicit
+  <code>--after</code> runs, its section's authored waits from
+  <code>section_wait_refs</code>, and its plan's <code>depends_on</code>.</p>
+
+  <h3 id="a-queued-review-request-is-not-held-on-its-sections-gates-or-measured">Measured</h3>
+
+  <p>The reproduction is the new review assertion run against the unmodified
+  source: the review node on the gated section received
+  <code>readiness:proj:plan-a#s2</code>, and the test failed on exactly that
+  ref. Two cases were added to
+  <code>tests/test_a_queued_request_waits_on_its_dependencies.py</code> on its
+  existing <code>_gate_section</code> fixture: a review node reads no
+  <code>readiness:</code> ref through <code>dispatch_waits</code> or through
+  <code>_validated_batch_waits</code> called as the batch path calls it, and an
+  <code>implement</code> node on the same section still reads
+  <code>readiness:proj:plan-a#s2</code> from both.</p>
+
+  <table id="a-queued-review-request-is-not-held-on-its-sections-gates-or-arms">
+    <caption>Each arm is a log whose first line names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td><code>e3a9f381a2</code>, extracted tree</td>
+        <td>19 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>after</td><td><code>e3a9f381a2</code> + this change</td>
+        <td>21 passed, <code>EXIT=0</code> &mdash; the two added cases pass</td></tr>
+      <tr><td>reproduction, before the change</td>
+        <td><code>e3a9f381a2</code> + the new cases</td>
+        <td>1 failed, 2 passed, <code>EXIT=1</code> &mdash; the review node was
+        handed <code>readiness:proj:plan-a#s2</code></td></tr>
+      <tr><td>negative control: remove the role condition</td>
+        <td><code>e3a9f381a2</code> + this change, mutated</td>
+        <td>1 failed, 20 passed, <code>EXIT=1</code> &mdash;
+        <code>test_a_review_of_a_gated_section_reads_no_readiness_wait</code></td></tr>
+      <tr><td>wider arm: the 64 files importing
+        <code>reckon.crew.queue_admission</code>, <code>-n 4</code></td>
+        <td><code>e3a9f381a2</code> + this change</td>
+        <td>6 failed, 444 passed &mdash; 3 of the 6 also fail at base
+        (two timing flakes in <code>test_overlapping_queued_requests_launch_in_turn.py</code>,
+        whose sibling fails at base too, plus the queued-pointer view and the
+        decline-only round), and 3 were a 300 s <code>pytest-timeout</code> on
+        the shared discovery lock under <code>-n 4</code>; those files pass
+        serially at head</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>The preflight keeps its economy.</strong> A dispatch preflight read
+  the section verdict eagerly only when the plan authored a gate or a decision
+  that could apply; that answer now sits inside <code>dispatch_waits</code>,
+  which reads the plan's own holds before asking the section's verdict. So a
+  dispatch whose plan authors no hold still scans no roadmap, while the batch
+  admission path, which reads the roadmap for the section, is untouched for
+  every non-review role. Without that split the preflight began scanning the
+  roadmap for a node with no authored hold, and
+  <code>test_section_preflight_does_not_scan_scope_claims</code> refused it.</p>
+
+  <p><strong>Not done here.</strong> The obligation rows that read &ldquo;waiting
+  for a lane slot&rdquo; while a pass says <code>held-by-gate</code> belong to
+  <code>work-is-never-stuck-behind-the-admission-loop</code>, and this change
+  does not touch them. Roles other than the review keep the readiness wait
+  exactly as they had it, and no new helper or parameter was added.</p>
+</section>

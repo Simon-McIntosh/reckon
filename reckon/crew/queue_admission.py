@@ -48,6 +48,7 @@ from reckon.crew.node import (
     TaskNode,
     UnreconciledRuns,
 )
+from reckon.crew.recovery_vocabulary import REVIEW_ROLE
 from reckon.crew.refusals import DISPATCH_REFUSAL_REMEDIES
 from reckon.crew.routing import plan_review_units as plan_review_units  # noqa: PLC0414
 from reckon.ledger import normalize_section
@@ -2464,7 +2465,7 @@ def _validated_batch_waits(
                 wait_projects[ref[len(REQUEST_REF_PREFIX) :]] = upstream_project
             elif not ref.startswith((GATE_REF_PREFIX, "readiness:")):
                 section_edges(child)
-        if read_own_verdict and node.plan and node.section:
+        if read_own_verdict and _needs_own_section_verdict(node):
             rows, _ = _readiness_rows(project, current_docs, cache, node.plan, refs)
             verdicts = (rows.get(node.plan) or {}).get("sections", {})
             own = next(
@@ -3063,14 +3064,17 @@ def _dispatch_nonrun_wait_state(ref: str, *, project: str, docs_dir: Path) -> st
     return ABANDONED if status in TERMINAL_STATUSES else PENDING
 
 
-def _needs_own_section_verdict(node: TaskNode, *, repo_root: str | Path) -> bool:
-    """Ask the roadmap about the node's section when authored holds can apply."""
-    if not node.plan or not node.section:
-        return False
-    from reckon import _plan_html as plan_html_reader
+def _needs_own_section_verdict(node: TaskNode) -> bool:
+    """Say whether the roadmap's verdict on the node's own section is read.
 
-    state = plan_html_reader.read_state(_plan_html(repo_root, node.plan))
-    return bool(state.get("gates") or state.get("decisions"))
+    A gate or an open decision holds new work on the section, so the section's
+    verdict is read for every role except a review's: a review judges code a
+    run has already written, and nothing it does depends on how the hold is
+    settled. A node carrying no section has no verdict to read.
+    """
+    if str(node.role or "").strip() == REVIEW_ROLE:
+        return False
+    return bool(node.plan and node.section)
 
 
 def dispatch_waits(
@@ -3087,8 +3091,16 @@ def dispatch_waits(
     The caller uses the same run identity for validation and storage. No queued
     pointer exists when this raises for a missing target or a graph cycle.
     """
-    own_verdict = _needs_own_section_verdict(node, repo_root=repo_root)
-    if not derive_wait_refs(node, repo_root=repo_root) and not own_verdict:
+    own_verdict = _needs_own_section_verdict(node)
+    refs = derive_wait_refs(node, repo_root=repo_root)
+    if own_verdict:
+        # A preflight reads the section's verdict eagerly only when the plan
+        # authors a hold that can apply; otherwise the roadmap is left unread.
+        from reckon import _plan_html as plan_html_reader
+
+        state = plan_html_reader.read_state(_plan_html(repo_root, node.plan))
+        own_verdict = bool(state.get("gates") or state.get("decisions"))
+    if not refs and not own_verdict:
         return [], {}, []
     docs_dir = Path(str(repo_root)) / "docs"
     owner_project = project or _project_of_docs_dir(docs_dir)
