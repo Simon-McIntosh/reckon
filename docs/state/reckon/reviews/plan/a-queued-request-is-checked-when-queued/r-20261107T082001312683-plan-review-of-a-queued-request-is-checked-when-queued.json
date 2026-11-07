@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T08:40:15.319Z",
+  "dispatched_at": "2026-11-07T08:33:30Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/dispatch_plan.py:846",
+      "id": "duplicate_owner-1",
+      "reason": "without it the plan's central claim (\"reuses the existing validator\") is unimplementable as written and the node will either fork the composition or bolt plan routing into a queue write.",
+      "text": "the \"node is not dispatchable\" verdict is not a function: it is composed inline in `plan_dispatch` from four separate checks, `validate_node` (reckon/crew/node.py:1182), `negative_control_finding` (reckon/crew/node.py:1054), `gate_population_finding` (reckon/crew/node.py:1145) and `capability.assess_execution_fit` (reckon/crew/dispatch_plan.py:834, folded in at 875), and \u00a72's \"reuses the existing validator\" therefore names nothing that exists \u2014 a batch-path call would be the second composition of those four checks, and the next refusal a single dispatch learns (a fifth check) would not reach the queue path. The owner to extend is the `plan_dispatch` composition itself; extract it as one function taking `(node, repo, execution_capable, locked_decisions, budget_ceiling)` and have both `plan_dispatch` and `queue_requests` (reckon/crew/dispatch.py:305) call it. Note dispatch.py already re-exports all three of these checks at lines 98, 100 and 109, which is the evidence that the parts are reachable and only the composition is missing",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch.py:305",
+      "id": "deep_module-1",
+      "reason": "the plan's write path and its \"adds no second list of properties\" promise both depend on the composition being callable, which is a design decision the section currently leaves to the worker.",
+      "text": "\u00a72 puts the change in `queue_requests`, which already spans the queue write, wait resolution and record construction, and would make it the second site that knows the four-check contract; the depth that keeps the contract in one place belongs in a single node-contract function (natural home: reckon/crew/node.py beside `validate_node`, or reckon/crew/dispatch_admission.py beside the admission findings the batch already runs at dispatch.py:322\u2013331), so that a caller asks one question and the checks, their order and their property names are hidden behind it",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queued-request-is-checked-when-queued.html#s3",
+      "id": "reuse_search-1",
+      "reason": "the section can drop a question the code answers and become a targeted repair against routing.py rather than a 1.0 h re-derivation.",
+      "text": "\u00a73 spends 1.0 h asking \"whether either resolves the worktree by node path rather than by run id or checks for a live pointer holding the path\", and the code answers it now: the wide claim `_live_pointer_worktrees` (reckon/crew/routing.py:1078) is consulted at every release entry \u2014 `_save_and_release_worktree` (routing.py:1419), the residue release (routing.py:2175), `_remove_worktree` (routing.py:2278), `gc` on both the census and the apply pass (reckon/crew/gc.py:510 and 556), and the promotion release (reckon/crew/promotion_release.py:393) \u2014 but not inside `_release_worktree_whole` (routing.py:1351) itself, whose only withhold test is `_release_withhold_reason` (routing.py:1318, registration and location only). The census is the finding: the guard exists at the call sites, is absent from the function, and the callers that reach it directly are gc.py:639, gc.py:647, gc.py:661 and routing.py:1568. What the code does not settle, and what the section should investigate instead, is path identity: a worktree path is derived from session and node id (routing.py:2134 `_launch_worktree_path`, routing.py:1206 `_run_worktree_path`), so a dropped request and its successor claim the *same* path, and a guard keyed on the live pointer's path protects the successor's pointer while the successor's bwrap bind still points at the moved inode \u2014 the incident's own evidence (\"a different inode was restored at the same path\") fits that shape and not the shape \u00a73 asks about",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queued-request-is-checked-when-queued.html#s4",
+      "id": "reuse_search-2",
+      "reason": "naming the key collapses most of \u00a74's search and forces the repair section to extend the owner (plan_review.py:1267) rather than add a parallel chooser.",
+      "text": "\u00a74's hypothesis list (\"file modification time, rubric precedence, coverage of uncovered units, or something else\") omits the mechanism that is actually in the code: `_read_record` selects by `max(covering, key=lambda record: int(record.get(\"plan_version\") or 0))` when a plan is passed (reckon/crew/plan_review.py:1267), and by `st_mtime_ns` only when it is not (plan_review.py:1299), while the answer/`--review-run` refusal is raised in reckon/crew_dispatch_commands.py:2784 naming the covering reviews. Selection therefore keys on the plan's version integer, which is not a commit order \u2014 four reviews at successive plan commits can carry equal or non-monotonic versions, which is exactly how a newer review loses to an older one. The repair must extend `_read_record` and the covering-review predicate rather than introduce a second selector",
+      "type": "reuse_search",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "e1bddca238fc5f52a7ee2d148d3efcaa40678eb0",
+  "plan_fingerprint": "124bb3cbbecfbb77f9a7c473b2e983275332e39b3795caaaba5d80a8af4d4fbf",
+  "plan_slug": "a-queued-request-is-checked-when-queued",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T082001312683-plan-review-of-a-queued-request-is-checked-when-queued",
+  "reviewed_blob_sha": "51393914084484572828a485a356454431087f94",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a72 would add a fifth inline composition of the node-contract checks into a 4,049-line `dispatch.py`, instead of one function that hides the four-check composition behind one call.",
+    "duplicate_owner": "a finding \u2014 the composed \"node is not dispatchable\" verdict is owned by `plan_dispatch`, and \u00a72's plan to \"reuse the existing validator\" names no owner to extend, so the batch path would fork a four-check composition that exists in exactly one place.",
+    "interface_budget": "pass \u2014 public_definitions 2360, cli_options 465, mcp_views 15, refusal_families 23; \u00a72 adds no CLI option, MCP view or refusal family (it reuses the existing \"node is not dispatchable\" refusal) and says it adds no second property list, and \u00a73/\u00a74 edit no product source, so no section adds to a family.",
+    "reuse_search": "a finding \u2014 \u00a72 names no validator, and \u00a73 and \u00a74 send workers to discover mechanisms this codebase already shows (the release live-pointer guard, and the review-selection key), so the plan did not complete the search it rewards.",
+    "thin_wrapper": "pass \u2014 \u00a72 extends the existing queue writer rather than layering a parallel path, and \u00a73/\u00a74 add no code of their own."
+  },
+  "section_digests": {
+    "_document": "bcf7f43d654faed3260657791cc12095f526ae368d2ca84d5d9493a0361797be",
+    "s1": "b7af832c4e07048d297870ea5b081003fe0879e7a28b1f993a9bacf98ec2bc83",
+    "s2": "acdf5a148a86b6a4b9dcb3bf358aa8c89e0e15c71f328310021615222385144a",
+    "s3": "802823b5f64e6835b612109800ed7b3c5f9f1b642da11e3ede102f15eb92cc58",
+    "s4": "c0926973d1ba1f0ca5b01d93089060f23224d679ebcc7cfcd1aeacdf836012db"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T08:57:02.616725+00:00",
+  "total": null
+}
