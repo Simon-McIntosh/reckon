@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T05:12:28.722Z",
+  "dispatched_at": "2026-11-07T05:07:35Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:50",
+      "id": "reasoning-1",
+      "reason": "the plan would need to name two sets \u2014 the ids the synthesis renders, used by carry-forward and the `replaced`/`carried` split, and the reserved ids the refusal adds plan section ids to \u2014 otherwise the node implements a real content loss under a misleading tag.",
+      "text": "\u00a74 defines \"the set of ids a synthesis can render\" as the plan's section ids, `outcome`, its comment keys and the function's ledger run section keys, but `_render_document` emits a section only for `available = set(comments_by_section) | set(runs_by_section)` (reckon/evidence.py:353): a declared plan section with no comments and no runs is never rendered. The carry-forward rule then says an unmarked section is carried only \"when its id is outside the renderable set\", so on a legacy record an unmarked section anchored on such a plan section id is dropped and reported tagged `replaced` \u2014 which the plan defines as \"an unmarked section a rendered one took the place of\", when nothing rendered it; and the `carried`/`replaced` split no longer describes the loss it names. A worker implementing the rule as written produces that drop and a false tag; the refusal's reserved set may legitimately be wider than the render set, but the two must not be the same value.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:45",
+      "id": "done_when-1",
+      "reason": "either the done-when gains a case through the followup-add path, or `append_to_list` comes out of the deliverable; as written the plan asserts coverage it does not measure.",
+      "text": "\u00a73's deliverable names four sites that must gain the refusal, including `append_to_list` (reckon/_store.py:2366), which is a live production path reached by the followup-add MCP operation (`append_to_list(project, slug, \"followups\", \u2026)` at reckon/mcp_edit_plan.py:256), but the done-when's third case exercises only the `followups` append op and the `followups.<id>.body` set, and no negative control names the `append_to_list` path. A node can leave that site unguarded, pass all five cases and both controls, and still store deferred-work prose through the untouched path \u2014 which is precisely the hole the section exists to close.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:45",
+      "id": "evidence_paths-1",
+      "reason": "adding the one sentence \u00a72 and \u00a74 already carry makes \u00a73's gate receipts readable after the run; without it the node may satisfy its done-when with no durable log to open.",
+      "text": "\u00a73 requires only that \"the command's output and finding count over power_convertor's `docs/plans/` are recorded in the run directory\"; unlike \u00a72 (line 40) and \u00a74 (line 53) it does not require that every log \u2014 the new test, the base-revision arm and ruff \u2014 sits under the run directory, starts with its revision and literal command, and ends in `EXIT=`. The base arm and the ruff arm are the two measurements a coordinator reads to judge the node, and unnamed they can be left in a scratch path or unrecoverable.",
+      "type": "evidence_paths",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "8c1e6b49431a86769ae9287f89f255d4e04f2cea",
+  "plan_fingerprint": "22fc05204a516141f49920b19cafbaecb2d5a47530846e58eed16509acce9160",
+  "plan_slug": "an-evidence-record-counts-only-what-it-read",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T050618983033-plan-review-of-an-evidence-record-counts-only-what-it-read",
+  "reviewed_blob_sha": "796cfce41e6949085e4e53f48399021094a13f45",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol resolves (`_DEFERRED_WORK_TERM` doccheck.py:419, `_prose_deferred_work_term` _store.py:993, the four comment/followup write sites at _store.py:3757, 3798\u20133807, 2366, 3483, `_landed_record_shell` _store.py:1184, `_render_document` evidence.py:329 with the count summary at 403\u2013408 and `plan-verdict` at 417, `_evidence_record_path` _store.py:1172, `_apply_evidence_appends` _store.py:1230, `EvidenceSynthesisResult` evidence.py:24, `synthesize_evidence` project_maintenance_commands.py:1473, and the `evidence-for-missing` rule at doccheck.py:1690); the two line figures that drifted (`_section_key` \"near lines 70\" is at evidence.py:50, `synthesize_landed_record` \"near line 674\" is at evidence.py:636) still name the symbol and resolve by search.",
+    "done_when": "a finding \u2014 \u00a73's done-when leaves the `append_to_list` followup path declared but unmeasured, so a node can pass all five cases without guarding it.",
+    "evidence_paths": "a finding \u2014 \u00a73's done-when names the run directory for the audit output only, and omits the \"every log starts with its revision and ends in `EXIT=`\" clause that \u00a72 and \u00a74 both carry, so \u00a73's gate and base-arm logs have no declared durable path.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or changelog prose reach the new symbols; `lost_anchors`, `data-evidence-origin`, and the `dropped`/`replaced`/`carried` tags name the mechanism.",
+    "reasoning": "a finding \u2014 \u00a74 conflates two different sets under one name: the ids the synthesis actually renders (comment keys \u222a ledger run section keys, `reckon/evidence.py:353`) and the wider set it also refuses appends on, and the carry-forward rule and the `replaced` tag are then defined against the wrong one.",
+    "single_goal": "pass \u2014 \u00a72 (a shell carries no unread counts or verdict), \u00a73 (one rule reads every spelling on every body), and \u00a74 (keep appended anchors and name every loss) each close on one verdict.",
+    "wiring": "pass \u2014 `plan-section-depends-on` is `s3\u2192s2` and `s4\u2192s2,s3`, which matches the write paths: \u00a72 and \u00a73 both take `reckon/_store.py`, and \u00a74 takes `reckon/_store.py`, `reckon/evidence.py` and `reckon/project_maintenance_commands.py`; the followup orders \u00a72, \u00a73, \u00a74 consistently."
+  },
+  "section_digests": {
+    "_document": "6d35efce52466005f8ee56997c8dc7bcca998d7c41fcd252d254bc7264596281",
+    "s1": "7c52117565966edec5de56bc0448d4a141edbcb73ac18ede5f2cb0c34f424f0a",
+    "s2": "e0c21336531cccf486121dbb25184c349eda1428113664a6ba29a293eb13d226",
+    "s3": "22f5ad4407cf33cf572a916c4c183feddde73ed149f92bb28eea4c3994774c1e",
+    "s4": "8464c31ea78af74590c3881d1c1c134d44e9faebc886c286471a6fa7c778ef84"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T05:24:45.147324+00:00",
+  "total": null
+}
