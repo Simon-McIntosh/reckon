@@ -1,0 +1,86 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T19:56:59.786Z",
+  "dispatched_at": "2026-11-07T19:50:34Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/review.py:2700",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a75 exists solely to make one matching rule the single owner; leaving review.py:2700 on its own set difference means the plan's headline defect survives in the path that produces the stored figure every downstream check reads, and the section's own claim is false as written.",
+      "text": "\u00a75 claims \"every failure comparison shares one matching rule\" but its census of three sites omits the most load-bearing one: `added_failures_from_gate_logs` computes `added = sorted((head_ids or set()) - (base_ids or set()))` on ids that `canonical_node_id` has already reduced, so a bare base id and a qualified head id for the same test are read as an added failure \u2014 the exact defect \u00a71 records, in the code that writes `added_failure_ids` into every stored review record and that `annotate_added_failures` (review.py:2734) feeds from. Two further instances of the same type are missed: `reckon/crew/reports.py:2653` computes `overlap = set(retry_failures) & after_ids` to decide whether retry ids contradict `after_suite`, so a bare retry id and a qualified arm id fail to register as an overlap; and `reckon/crew/review.py:2332` (`_retires_id`) compares whole canonical tokens, so a bare test name in a done-when never retires a qualified added id. With those, \u00a75's census is five sites, not three.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/reports.py:85",
+      "id": "duplicate_owner-2",
+      "reason": "adding the key to `_MANIFEST_LIST_KEYS` is a one-line change that makes the coercion loop and dispatch_launch agree by construction; the planned parallel call guarantees the divergence this review exists to catch.",
+      "text": "\u00a78 adds a fifth hand-patch for `orientation_write_paths` (\"it is not in `_MANIFEST_LIST_KEYS` (near line 85), so the coercion loop near line 870 does not reach it, and the split needs its own call there\") instead of adding the key to the set that owns which manifest fields are coerced as lists. A hand-patch of that omission already exists at `reckon/crew/dispatch_launch.py:3289`, which builds `frozenset((*_MANIFEST_LIST_KEYS, \"orientation_write_paths\"))` for its own reading \u2014 so the plan's change makes a third spelling of one field list, and a reader adding a sixth list field must now find three places.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/reports.py:2102",
+      "id": "duplicate_owner-3",
+      "reason": "extending the two existing predicates keeps the \"is this log complete\" question with its owner; a fourth reading of the same terminal line is how the fleet ends up with three notions of a finished log.",
+      "text": "\u00a77 adds \"a passing gate whose cited log has no `EXIT=` line is refused\" as new behaviour in `_require_gate_log_agrees`, but reckon already owns that refusal twice: `reports.py:2102` refuses a log \"its last non-blank line is not a bare EXIT=<code> line\" through `_terminal_exit_status`, and `reckon/crew/queue_landing.py:442` exposes a dedicated predicate for whether a gate log ends in a terminal `EXIT=` record. The plan cites neither and does not say why `_recorded_exit_status` returning `None` should mean \"skip\" in one place and \"refuse\" in another.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/review.py:2106",
+      "id": "thin_wrapper-1",
+      "reason": "a `start_line`/`last_run` parameter on `gate_log_failure_ids` puts the last-run rule beside the parser it constrains, and the plan should state that choice or say why the two must live apart.",
+      "text": "\u00a77 adds a splitter in `promotion_evidence.py` that cuts the log at its second-to-last `EXIT=` line so `review_module.gate_log_failure_ids` reads only the last run. That function already owns \"read the failure ids out of this log text\" (`review.py:2106`, and it is what every other site calls); the plan says it \"reads every `FAILED` line in the whole text, so the section adds a reader\" \u2014 which explains why the current signature cannot express the last run, but not why the function cannot take the offset, or be given a sibling in the same module that returns (last_run_text, start). As written the slicing rule (second-to-last `EXIT=`, and what counts when there is only one) lives in a different module from the reader that depends on it.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/review.py:2002",
+      "id": "deep_module-1",
+      "reason": "the predicate should carry the direction it is asked for (a `direction` or a second named predicate in the same module) so \u00a77's refusal is a call, not a reimplementation; as written \u00a77 adds matching logic in a module that does not own matching.",
+      "text": "\u00a77 requires `failure_ids_covered(receipt_ids, log_ids)` \"forward\" and then a hand-rolled reverse test (\"each receipt id must cover at least one last-run log id under the same predicate\") at the call site in `promotion_evidence.py`. The asymmetric rule \u2014 a bare name covers a qualified id but not the reverse, so equality must be verified in both directions \u2014 is the whole content of the matching rule \u00a72 adds, and \u00a77 splits it across two modules with two different call shapes (`set` subtraction one way, an existential scan the other). A receipt that lists only one of two parametrisations the log failed, or lists an id no line names, is refused by logic no test of the predicate can see.",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "a-promotion-reads-the-evidence-is-given#s7",
+      "id": "interface_budget-1",
+      "reason": "the zero-growth rule is answerable in one sentence per section \u2014 for \u00a77, that the three \"log disagrees with receipt\" families replace the separate readers at reports.py:2102 and queue_landing.py:442 rather than joining them; for \u00a78, that the parse refusal folds into the existing `ManifestParseError` family. Without it the section reads as surface added on top.",
+      "text": "\u00a77 adds three refusal clauses to a passing gate (count disagrees, ids disagree, no `EXIT=` line) plus a fourth (a pytest command reaching no summary), and \u00a78 adds a `ManifestParseError` family for glued arm keys, against a budget of refusal_families 23 / public_definitions 2363 / cli_options 465 / mcp_views 15. \u00a77 names a retirement only outside reckon (power_convertor deletes its `_receipt_mismatches` copy); \u00a78 names none. Neither section says what it retires or merges inside reckon's own families, or states why nothing can be.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "8cc3363d7340d4136ae87079d87c02124d96faea",
+  "plan_fingerprint": "c45a20922dc5b1d39f9da3d33fb20127437e0ca9a7f014aaf2a41717f0fa398b",
+  "plan_slug": "a-promotion-reads-the-evidence-it-is-given",
+  "plan_version": 22,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T194635996994-plan-review-of-a-promotion-reads-the-evidence-it-is-given",
+  "reviewed_blob_sha": "af0590837e71df4c4cc09cd3db7edd0606bbff7d",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a72's `failure_ids_covered(base_ids, head_ids)` is a genuine deep module (one predicate carrying the whole coverage rule), but \u00a77 requires a second, reverse direction (\"each receipt id must cover at least one log id\") composed by hand at the call site, so the matching rule is split across the predicate and its caller.",
+    "duplicate_owner": "a finding \u2014 \u00a75 states \"every failure comparison shares one matching rule\" and names three sites, but the census is incomplete: the primary added-failure computation in the review path, `reckon/crew/review.py:2700`, and the retry-vs-after overlap test at `reckon/crew/reports.py:2653` keep their own exact set arithmetic.",
+    "interface_budget": "a finding \u2014 public_definitions 2363, cli_options 465, mcp_views 15, refusal_families 23; \u00a77 adds two refusal families and \u00a78 adds a parse refusal, and neither section names what it retires or merges within reckon, nor states why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan searched broadly and cites its prior art for \u00a72/\u00a74/\u00a75/\u00a78, but \u00a77's new \"cited log with no `EXIT=` line\" refusal re-adds a check the tree already owns twice, at `reckon/crew/reports.py:2102` and `reckon/crew/queue_landing.py:442`, and neither is cited.",
+    "thin_wrapper": "a finding \u2014 \u00a77's \"reader that cuts the log after its second-to-last `EXIT=` line and passes only that last run to `gate_log_failure_ids`\" is a thin wrapper beside the function that already owns reading failure ids from a log, and the plan justifies why it cannot be used as-is but not why it cannot be extended."
+  },
+  "section_digests": {
+    "_document": "2f84869cfe4855fe07ab334075df36e6e60ef8400b742b43814dc8124768b7f0",
+    "s1": "5eac0eb57fbf9fccaeee6fb2da59c42ca24c4433f0cffcb4b7de1b6b04324b6c",
+    "s2": "259d093654ecf00609d51d02f39bb21a9feda5af8b5626a64e881f7e85d5abe4",
+    "s3": "479c8ebc617467c2744513e850433e87af52a3d22110620dcfdfb48f9975d081",
+    "s4": "bc5eebc33cf8175dd508f65245c7126745fc3e87a3e75e6229c55004ae265f62",
+    "s5": "5454a3b2f3bbdc9fe34ced889604aa90092b4d22e83912038c83a1392ab1631d",
+    "s6": "2e81c0cbe61ef60fc16acb159e81912b5b6263e9d12b8059efbd9482d722976c",
+    "s7": "1d7652463a13d9925f53c3bae1f6801e173af020bd09d5e7444d0511c37e788b",
+    "s8": "c26003afb73c20bd1155658fb8f68855c238b8aef14c4ca0f09573542e4c65a0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T20:08:00.324447+00:00",
+  "total": null
+}
