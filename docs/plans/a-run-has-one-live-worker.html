@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.67">
-<meta name="plan-version" content="31">
+<meta name="plan-version" content="32">
 <meta name="plan-modified" content="2026-11-07">
 <meta name="plan-commits" content="a88e6f09">
 </head>
@@ -222,6 +222,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-s5-bank-warm-stall" data-who="coordinator" data-when="2026-11-07">
     <div class="r-comment-body"><p>A third instance, in nova. <code>r-20261107T133413665344-bank-warm-stall</code> was queued and admitted as two attempts: attempt 1 launched at 13:52:24Z (pid 183824) and attempt 2 at 13:54:05Z (pid 195147), and both ran until about 14:17Z (<code>attempt-1-exit.json</code>, <code>attempt-2-exit.json</code>). Attempt 1 hit EROFS under a read-write bind (<code>stream.jsonl</code> lines 3911 and 3961), the replaced-tree shape reckon-0f traced.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261107T180312831873-review-of-refuse-a-second-launch-beside-a-live-worker-a0933cf939c6" data-who="reckon-build" data-when="2026-11-07T18:32:36.139Z">
+    <div class="r-comment-body"><p>review of r-20261107T170819813156-refuse-a-second-launch-beside-a-live-worker at a0933cf939 scored 17/12/19/14/16/5 (goal_fidelity/evidence/scope_discipline/durability/fit/reuse, total 83) with one blocking finding (the done-when&#x27;s importer arm has no completed log) and three non-blocking findings (a duplicated liveness read beside recovery_liveness.live_worker_pid, two vacuous in-test control asserts, and the refusal firing after the incumbent&#x27;s records were retired).</p></div>
 </div>
 </section>
 </main>

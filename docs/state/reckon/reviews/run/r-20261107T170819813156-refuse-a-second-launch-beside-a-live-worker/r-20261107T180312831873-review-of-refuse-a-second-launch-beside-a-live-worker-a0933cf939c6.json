@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:3920 _run_supervisor calls _supervisor_spawn_worker",
+    "reckon/crew/dispatch.py:3366 the dispatch launch calls _start_supervisor",
+    "reckon/crew/dispatch_launch.py:2437 supervised_launch calls _start_supervisor, reached from reckon/crew/resumption.py:1246"
+  ],
+  "completed_at": "2026-11-07T18:32:36.139Z",
+  "dispatched_at": "2026-11-07T18:13:16Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T170819813156-refuse-a-second-launch-beside-a-live-worker/logs/importers_head.log",
+      "line": "5",
+      "severity": "blocking",
+      "text": "blocking: the done_when's importer arm has no completed log -- importers_head.log stops at 25 per cent with no summary and no EXIT=, no base importer arm exists -- so 'the test files importing reckon.crew.dispatch_launch add no failure against the base revision' is unmeasured while the manifest reports complete."
+    },
+    {
+      "file": "reckon/crew/recovery_liveness.py",
+      "line": "1275",
+      "severity": "non-blocking",
+      "text": "non-blocking: duplicates -- _live_worker_beside_the_launch at reckon/crew/dispatch_launch.py:2783 is a second composition of this owner's capability, the pid of the run's live worker, which dispatch_launch.py:1944 already uses for the same refusal and whose docstring records that a second copy answered None for the reparented worker it was written to protect; it extends nothing and instead re-reads the retired attempt receipts this owner cannot see, so the two reads can disagree about one run."
+    },
+    {
+      "file": "tests/test_a_queued_run_launches_once.py",
+      "line": "184",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert pid > 0 under a monkeypatch that removes the guard, and the same assert at :204 under a pid-only liveness stub, pass whatever the code does -- with the liveness read deleted from _supervisor_spawn_worker both cases still receive a pid -- so neither control is a regression guard; only :137/:140 and :154 redden on that regression, which logs/negative_control.log confirms with exactly those two ids."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "2851",
+      "severity": "non-blocking",
+      "text": "non-blocking: the refusal fires after _prepare_attempt_records (dispatch.py:3338) has already retired the incumbent's canonical worker.json into an attempt receipt and written this attempt's marker, and _run_supervisor's handler at :3918 then writes an exit record that is canonical while this attempt is current, so the refused launch still leaves the run's records naming an attempt that started no worker."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T170819813156-refuse-a-second-launch-beside-a-live-worker/logs/head_arm.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T170819813156-refuse-a-second-launch-beside-a-live-worker/logs/base_arm.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Read both commits against base 296e8e7b3d: 66fbd8ade1 adds _prior_worker_record, _live_worker_beside_the_launch and the refusal in _supervisor_spawn_worker (78 lines in reckon/crew/dispatch_launch.py), and a0933cf939 adds the 21-line evidence fragment; tests/test_a_queued_run_launches_once.py is new with five cases.",
+    "done_when": "The done_when names three behaviours through tests/test_a_queued_run_launches_once.py plus two in-test negative controls, and those are recorded: logs/head_arm.log ends '5 passed in 6.21s' EXIT=0, logs/base_arm.log ends '2 failed, 1 passed, 2 skipped' EXIT=1 with the two refusal ids, and logs/negative_control.log ends '2 failed, 3 passed' EXIT=1; its fourth clause -- the test files importing reckon.crew.dispatch_launch add no failure against the base revision -- is not recorded: logs/importers_head.log stops at 25 per cent with no summary and no EXIT=, and no base importer arm exists.",
+    "goal": "The plan's section asks the supervisor's spawn seam to refuse a launch whose run already has a live worker and to name its pid; reckon/crew/dispatch_launch.py:2851-2857 reads the run's prior worker receipts and the pointer's session id before it spawns and raises the refusal naming the holder, so a second worker is never started on a fresh dispatch, admission or resume.",
+    "manifest": "Read r-20261107T170819813156-refuse-a-second-launch-beside-a-live-worker/manifest.md in the reviewed run's directory: it names commits 66fbd8ade1 and a0933cf939, the five-case gate at EXIT=0, the base arm at EXIT=1 with two failure ids, the negative control at EXIT=1, and its ruff counts; its checkpoint still reads 'running the wider done-when arm now' beside status: complete, which the importers log does not support.",
+    "write_paths": "The node declared reckon/crew/dispatch_launch.py, tests/test_a_queued_run_launches_once.py and its evidence fragment with its figures directory; git diff 296e8e7b3d..a0933cf939 changes exactly three files, all of them inside those paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_queued_run_launches_once.py:137 and :154 fail with DID NOT RAISE CrewError when the refusal is removed, as logs/negative_control.log and logs/base_arm.log record, but the controls at :184 and :204 assert pid > 0 under a monkeypatch that removes the read and so hold whatever the code does.",
+    "evidence": "logs/head_arm.log, logs/base_arm.log and logs/negative_control.log each end in EXIT= with a summary line, but logs/importers_head.log stops after 25 per cent with neither, so the importers arm the done_when requires is unmeasured.",
+    "fit": "reckon/crew/dispatch_launch.py:2760-2808 follows the module's private-helper and docstring idiom and adds no public name, though its refusal text at :2853 near-duplicates the one already at :1946.",
+    "goal_fidelity": "reckon/crew/dispatch_launch.py:2851-2857 raises the refusal naming the holder before the read of the pointer that the spawn then uses, so a launch beside a live worker never reaches subprocess.Popen at :2884.",
+    "reuse": "reckon/crew/recovery_liveness.py:1275 live_worker_pid already answers which pid holds a run and is used for the same refusal at reckon/crew/dispatch_launch.py:1944, and the added _live_worker_beside_the_launch at :2783 is a second composition of it that neither calls nor extends it.",
+    "scope_discipline": "git diff 296e8e7b3d..a0933cf939 touches only reckon/crew/dispatch_launch.py, tests/test_a_queued_run_launches_once.py and the declared evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The plan's section asks the supervisor's spawn seam to refuse a launch whose run already has a live worker and to name its pid; reckon/crew/dispatch_launch.py:2851-2857 reads the run's prior worker receipts and the pointer's session id before it spawns and raises the refusal naming the holder, so a second worker is never started on a fresh dispatch, admission or resume.\nVERDICT done_when: The done_when names three behaviours through tests/test_a_queued_run_launches_once.py plus two in-test negative controls, and those are recorded: logs/head_arm.log ends '5 passed in 6.21s' EXIT=0, logs/base_arm.log ends '2 failed, 1 passed, 2 skipped' EXIT=1 with the two refusal ids, and logs/negative_control.log ends '2 failed, 3 passed' EXIT=1; its fourth clause -- the test files importing reckon.crew.dispatch_launch add no failure against the base revision -- is not recorded: logs/importers_head.log stops at 25 per cent with no summary and no EXIT=, and no base importer arm exists.\nVERDICT write_paths: The node declared reckon/crew/dispatch_launch.py, tests/test_a_queued_run_launches_once.py and its evidence fragment with its figures directory; git diff 296e8e7b3d..a0933cf939 changes exactly three files, all of them inside those paths.\nVERDICT manifest: Read r-20261107T170819813156-refuse-a-second-launch-beside-a-live-worker/manifest.md in the reviewed run's directory: it names commits 66fbd8ade1 and a0933cf939, the five-case gate at EXIT=0, the base arm at EXIT=1 with two failure ids, the negative control at EXIT=1, and its ruff counts; its checkpoint still reads 'running the wider done-when arm now' beside status: complete, which the importers log does not support.\nVERDICT diff: Read both commits against base 296e8e7b3d: 66fbd8ade1 adds _prior_worker_record, _live_worker_beside_the_launch and the refusal in _supervisor_spawn_worker (78 lines in reckon/crew/dispatch_launch.py), and a0933cf939 adds the 21-line evidence fragment; tests/test_a_queued_run_launches_once.py is new with five cases.\nCALL_SITES: reckon/crew/dispatch_launch.py:3920 _run_supervisor calls _supervisor_spawn_worker, reckon/crew/dispatch.py:3366 the dispatch launch calls _start_supervisor, reckon/crew/dispatch_launch.py:2437 supervised_launch calls _start_supervisor, reached from reckon/crew/resumption.py:1246\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:2851-2857 raises the refusal naming the holder before the read of the pointer that the spawn then uses, so a launch beside a live worker never reaches subprocess.Popen at :2884.\nSCORE evidence: 12\nJUSTIFICATION evidence: logs/head_arm.log, logs/base_arm.log and logs/negative_control.log each end in EXIT= with a summary line, but logs/importers_head.log stops after 25 per cent with neither, so the importers arm the done_when requires is unmeasured.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 296e8e7b3d..a0933cf939 touches only reckon/crew/dispatch_launch.py, tests/test_a_queued_run_launches_once.py and the declared evidence fragment.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_queued_run_launches_once.py:137 and :154 fail with DID NOT RAISE CrewError when the refusal is removed, as logs/negative_control.log and logs/base_arm.log record, but the controls at :184 and :204 assert pid > 0 under a monkeypatch that removes the read and so hold whatever the code does.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/dispatch_launch.py:2760-2808 follows the module's private-helper and docstring idiom and adds no public name, though its refusal text at :2853 near-duplicates the one already at :1946.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/recovery_liveness.py:1275 live_worker_pid already answers which pid holds a run and is used for the same refusal at reckon/crew/dispatch_launch.py:1944, and the added _live_worker_beside_the_launch at :2783 is a second composition of it that neither calls nor extends it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T170819813156-refuse-a-second-launch-beside-a-live-worker/logs/importers_head.log:5 blocking: the done_when's importer arm has no completed log -- importers_head.log stops at 25 per cent with no summary and no EXIT=, no base importer arm exists -- so 'the test files importing reckon.crew.dispatch_launch add no failure against the base revision' is unmeasured while the manifest reports complete.\nFINDING reckon/crew/recovery_liveness.py:1275 non-blocking: duplicates -- _live_worker_beside_the_launch at reckon/crew/dispatch_launch.py:2783 is a second composition of this owner's capability, the pid of the run's live worker, which dispatch_launch.py:1944 already uses for the same refusal and whose docstring records that a second copy answered None for the reparented worker it was written to protect; it extends nothing and instead re-reads the retired attempt receipts this owner cannot see, so the two reads can disagree about one run.\nFINDING tests/test_a_queued_run_launches_once.py:184 non-blocking: assert pid > 0 under a monkeypatch that removes the guard, and the same assert at :204 under a pid-only liveness stub, pass whatever the code does -- with the liveness read deleted from _supervisor_spawn_worker both cases still receive a pid -- so neither control is a regression guard; only :137/:140 and :154 redden on that regression, which logs/negative_control.log confirms with exactly those two ids.\nFINDING reckon/crew/dispatch_launch.py:2851 non-blocking: the refusal fires after _prepare_attempt_records (dispatch.py:3338) has already retired the incumbent's canonical worker.json into an attempt receipt and written this attempt's marker, and _run_supervisor's handler at :3918 then writes an exit record that is canonical while this attempt is current, so the refused launch still leaves the run's records naming an attempt that started no worker.\n",
+  "review_run_id": "r-20261107T180312831873-review-of-refuse-a-second-launch-beside-a-live-worker-a0933cf939c6",
+  "reviewed_base_sha": "296e8e7b3dc397ea52ea93ff83a3f4bdc78895cf",
+  "reviewed_head_sha": "a0933cf939c656f0e10e2c9757545463c29a7fb6",
+  "reviewed_run_id": "r-20261107T170819813156-refuse-a-second-launch-beside-a-live-worker",
+  "scores": {
+    "durability": 14,
+    "evidence": 12,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T18:38:00.500474+00:00",
+  "total": 83
+}
