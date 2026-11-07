@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-gate-halts-only-on-substance">
+  <meta name="plan-title" content="A Gate Halts Only On Substance">
+  <meta name="plan-summary" content="A gate refuses work for what it shows, not how it was written down, and every hard limit has a recorded way through when the work needs one.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="4.75">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S27">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-informs" content="test-time-is-not-the-nodes-time,an-orchestrator-can-discharge-a-refusal">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <title>A Gate Halts Only On Substance | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-11-07">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: reviewed, measured work halted on form</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>The lead's direction on 7 November: the crew must stop halting on checks that protect nothing, and must accept that a recorded way through is sometimes necessary. That day showed four such halts.</p>
+    <ul>
+      <li><strong>A negative control refused for its log's shape.</strong> Runs <code>r-20261107T092649116030</code> (review 97, importer arms no added failure) and <code>r-20261107T111357058603</code> (review 110) were refused at promotion because their control logs carried no terminal <code>EXIT=&lt;n&gt;</code> record or no failing test id, although the reviewer had checked each declared mutation. Both landed only with <code>--waive-negative-control</code> on the lead's instruction. The dispatch brief never states the control-log contract the promotion reader enforces (<code>reckon/crew/promotion_evidence.py</code> near lines 1021&ndash;1092).</li>
+      <li><strong>A budget fence with no way through.</strong> nova session <code>35a66cc6</code> could not dispatch nodes whose gate is a 2&ndash;5 h H200 or Sirius job: 240 m, 120 m and 90 m were each refused with &ldquo;budget exceeds the resolved fence 60m&rdquo; (<code>reckon/crew/node.py</code> near line 1363).</li>
+      <li><strong>A resume that cannot change its budget.</strong> <code>crew resume</code> reuses the stored <code>time_budget</code>, so a run blocked on budget can only be discarded and dispatched again, losing its session and colliding with its own leftover worktree.</li>
+      <li><strong>A picker budget below the work's own compute.</strong> The picker gave six brief-based nova nodes 8 minutes each; three needed H200 or Sirius jobs, wrote a checkpoint at the deadline and blocked with their measure unmet.</li>
+      <li><strong>Plan reviews re-owed for answering a review.</strong> Coordinators spent three to seven content-review rounds per plan, because an edit that does exactly what a stored finding asked still uncovers the section and owes a new review, which finds the next detail.</li>
+    </ul>
+    <p>Gate time not counting against the budget is owned by <code>test-time-is-not-the-nodes-time</code>; a keyed waiver for every refusal is owned by <code>an-orchestrator-can-discharge-a-refusal</code> §4. This plan makes the specific halts above judge substance and gives each a recorded way through.</p>
+
+    <h2 id="s2">§2 — A negative control is admitted on the runner's own record</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> The control-evidence reader in <code>reckon/crew/promotion_evidence.py</code> admits a declared mutation's log when the test runner's own output in it shows the run failed and names at least one failing test id the head arm passes, whether or not a terminal <code>EXIT=&lt;n&gt;</code> line was appended. A log with no runner output, or one where every failing id also fails at head, is still refused. The dispatch prompt's done-when text for any node with a negative control gains one sentence stating that contract, so a worker writes it the first time.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_a_negative_control_is_read_from_the_runner.py</code> shows: a control log holding pytest's <code>FAILED &lt;id&gt;</code> lines and a <code>N failed</code> summary but no <code>EXIT=</code> line is admitted; a log with an <code>EXIT=1</code> line but no runner output is refused; a log whose only failing id also fails at head is refused; and a composed implement prompt with a negative control names the contract. Negative control: requiring the <code>EXIT=</code> line again makes the first case refuse. The test files importing <code>reckon.crew.promotion_evidence</code> add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>. Ruff check and ruff format --check add no findings on the staged paths. Write paths: <code>reckon/crew/promotion_evidence.py</code>, the prompt module that composes the done-when (named in the manifest) and the new test; it runs after <code>a-promotion-reads-the-evidence-it-is-given</code> §8, which also writes <code>promotion_evidence.py</code>.</p>
+
+    <h2 id="s3">§3 — A brief can raise the budget fence with a recorded reason</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>crew dispatch</code> accepts a time budget above the resolved fence when the caller states why with a new <code>--over-fence REASON</code> option, recorded on the node and the run's ledger row; without the reason the present refusal stands and names the option. The bounded check near <code>reckon/crew/node.py</code> line 1363 reads the recorded reason rather than a second limit.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_a_budget_may_exceed_its_fence_with_a_reason.py</code> shows a 240 m node with <code>--over-fence "H200 gate measured at 3 h in run X"</code> passes the bounded check and records the reason on the node; the same node without the option is refused naming <code>--over-fence</code>; and a node within the fence is unaffected. Negative control: ignoring the recorded reason makes the first case refuse. The test files importing <code>reckon.crew.node</code> add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>. Ruff check and ruff format --check add no findings on the staged paths. Write paths: <code>reckon/crew/node.py</code>, the dispatch CLI module that declares the option (named in the manifest) and the new test.</p>
+
+    <h2 id="s4">§4 — A resume can change the run's budget</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>crew resume</code> (<code>crew_resume</code>, <code>reckon/crew_run_commands.py</code> near line 2175) accepts <code>--time-budget</code>, applying the same bounded check and <code>--over-fence</code> rule as dispatch, and composes the resumed turn's fence from the new budget, so a run blocked on budget continues its own session instead of being discarded.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_a_resume_can_change_its_budget.py</code> resumes a stubbed run with <code>--time-budget 45m</code> and shows the resumed turn's deadline is computed from 45 m and the run's stored budget is updated; a budget above the fence without <code>--over-fence</code> is refused. Negative control: ignoring the option makes the resumed deadline use the stored budget. The test files importing <code>reckon.crew_run_commands</code> add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>. Ruff check and ruff format --check add no findings on the staged paths. Write paths: <code>reckon/crew_run_commands.py</code>, the session module that composes the resumed fence (named in the manifest) and the new test; it runs after §3.</p>
+
+    <h2 id="s5">§5 — The picker never budgets below the compute a brief names</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> When a node's goal, done-when or brief names a SLURM partition, a GPU node or a cluster job for its gate, the budget the picker assigns (<code>reckon/crew/picker/lane_context.py</code> and the size class it reads near lines 173 and 388) is at least the resolved fence, never a small-node size such as 8 m. The worker first reproduces the 8 m assignment for a brief naming an H200 gate.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_a_heavy_gate_gets_a_full_budget.py</code> shows a stubbed brief-based node whose brief names an H200 job and no time budget receives the resolved fence, while a node naming no compute keeps its sized budget. Negative control: removing the floor gives the H200 node the small size again. The test files importing <code>reckon.crew.picker.lane_context</code> add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>. Ruff check and ruff format --check add no findings on the staged paths. Write paths: <code>reckon/crew/picker/lane_context.py</code> and the new test.</p>
+
+    <h2 id="s6">§6 — An edit that only answers a review needs no new review</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>crew review --plan &lt;slug&gt; --accept-edits "&lt;reason&gt;"</code> records, against the newest stored review, that the plan's edits since it answer that review's findings; <code>review_coverage</code> (<code>reckon/crew/plan_review.py</code> near line 1109) then treats the units those edits changed as covered by that review, until a later edit changes them again. The record names the coordinator's session, the reason and the units, and is listed with the review's answers, so an accepted edit is never silent. It applies only when every finding of that review is answered.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_an_edit_that_answers_a_review_is_covered.py</code> shows with a temporary plan and stored review: after every finding is answered and the section edited, the section is uncovered; after <code>--accept-edits</code> it is covered and the record names the units; a further edit uncovers it again; and <code>--accept-edits</code> with an unanswered finding is refused. Negative control: ignoring the acceptance record leaves the section uncovered. The test files importing <code>reckon.crew.plan_review</code> add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>. Ruff check and ruff format --check add no findings on the staged paths. Write paths: <code>reckon/crew/plan_review.py</code>, the review CLI module that declares the option (named in the manifest) and the new test.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-aghoos-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="coordinator" data-written-at="2026-11-07" data-recommends-skill="/reckon-build a-gate-halts-only-on-substance" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §2 to §6</h4>
+    <div class="r-fu-body"><p>§2 waits on the promotion-evidence plan's §8; §4 waits on §3; the rest are independent.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-gate-halts-only-on-substance</pre>
+    </article>
+</section>
+
+</main>
+</body>
+</html>
