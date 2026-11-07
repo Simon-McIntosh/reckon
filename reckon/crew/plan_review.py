@@ -2387,6 +2387,75 @@ def _review_read_units(
     return set(stored) if isinstance(stored, Mapping) else set()
 
 
+def _acceptance_refusal(record: Mapping[str, Any]) -> str | None:
+    """Why this review cannot carry an acceptance, or ``None`` when it can.
+
+    One reader serves both the command that writes an acceptance and the dry
+    run that reports one, so a dry run refuses for exactly the reasons the
+    write refuses and cannot report an acceptance the write would reject.
+    """
+    if _review_is_incomplete(record):
+        return (
+            "a review marked incomplete covers nothing; compose the review the "
+            "plan is owed instead of accepting edits against it"
+        )
+    outstanding = unanswered_findings(record)
+    if outstanding:
+        return (
+            "every finding this review raised must be answered before its edits "
+            f"are accepted; still unanswered: {', '.join(outstanding)}"
+        )
+    return None
+
+
+def _acceptance_units(
+    record: Mapping[str, Any],
+    plan: Mapping[str, Any] | str | Path,
+    *,
+    base_dir: str | Path | None = None,
+) -> tuple[list[str], dict[str, str]]:
+    """The units an acceptance would cover, and every unit's present digest.
+
+    The units are the ones the coverage predicate reports uncovered and this
+    review read; a unit whose edit never reached this review, or whose content
+    the predicate already covers, is not one an acceptance may claim.
+    """
+    project = str(record.get("project") or "").strip()
+    plan_slug = str(record.get("plan_slug") or "").strip()
+    if not project or not plan_slug:
+        raise ValueError("an accepted edit needs the review's project and plan")
+    _records, uncovered, _changes = review_coverage(
+        project, plan_slug, plan=plan, base_dir=base_dir
+    )
+    present = _section_digests(plan)
+    read = _review_read_units(project, plan_slug, record)
+    units = sorted(unit for unit in uncovered if unit in read and unit in present)
+    if not units:
+        raise ValueError(
+            "nothing this review read has changed since it; there is no edit to accept"
+        )
+    return units, present
+
+
+def acceptable_edit_units(
+    record: Mapping[str, Any],
+    *,
+    plan: Mapping[str, Any] | str | Path,
+    base_dir: str | Path | None = None,
+) -> list[str]:
+    """The units an acceptance would cover, without recording one.
+
+    This is what a dry run reports. It raises exactly what
+    :func:`accept_edits` raises, so a preview never promises an acceptance the
+    write would refuse, and it writes nothing.
+    """
+    refusal = _acceptance_refusal(record)
+    if refusal:
+        raise ValueError(refusal)
+    units, _present = _acceptance_units(record, plan, base_dir=base_dir)
+    return units
+
+
 def accept_edits(
     record: Mapping[str, Any],
     *,
@@ -2415,31 +2484,11 @@ def accept_edits(
     reason_value = " ".join(str(reason or "").split())
     if not reason_value:
         raise ValueError("an accepted edit needs a one-line reason")
-    if _review_is_incomplete(record):
-        raise ValueError(
-            "a review marked incomplete covers nothing; compose the review the "
-            "plan is owed instead of accepting edits against it"
-        )
-    outstanding = unanswered_findings(record)
-    if outstanding:
-        raise ValueError(
-            "every finding this review raised must be answered before its edits "
-            f"are accepted; still unanswered: {', '.join(outstanding)}"
-        )
+    refusal = _acceptance_refusal(record)
+    if refusal:
+        raise ValueError(refusal)
     project = str(record.get("project") or "").strip()
-    plan_slug = str(record.get("plan_slug") or "").strip()
-    if not project or not plan_slug:
-        raise ValueError("an accepted edit needs the review's project and plan")
-    _records, uncovered, _changes = review_coverage(
-        project, plan_slug, plan=plan, base_dir=base_dir
-    )
-    present = _section_digests(plan)
-    read = _review_read_units(project, plan_slug, record)
-    units = sorted(unit for unit in uncovered if unit in read and unit in present)
-    if not units:
-        raise ValueError(
-            "nothing this review read has changed since it; there is no edit to accept"
-        )
+    units, present = _acceptance_units(record, plan, base_dir=base_dir)
     entry = {
         "by": str(by or ""),
         "when": when or datetime.now(UTC).isoformat(),

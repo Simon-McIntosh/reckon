@@ -2699,6 +2699,13 @@ def _run_review(
             "--accept-edits applies to a plan's content review, not a code or "
             "portfolio subject"
         )
+    elif accept_reason and local:
+        # --local selects a launch lane, and recording an acceptance launches
+        # nothing; accepting the flag would report a routing decision no run makes.
+        detail = (
+            "--local names a launch lane, and --accept-edits launches nothing; "
+            "drop --local to record the acceptance"
+        )
     elif len(named) > 1:
         detail = (
             "name one subject: --plan, --around/--path, --portfolio and --sprint "
@@ -2750,7 +2757,6 @@ def _run_review(
         if accept_reason:
             from reckon._store import _resolve_html_file
 
-            plan_review.store_delivered_reviews(project, plan_slug)
             plan_path = _resolve_html_file(project, plan_slug, artifact_type="plan")
             if plan_path is None:
                 _emit(
@@ -2761,6 +2767,10 @@ def _run_review(
                     pretty,
                 )
                 raise click.exceptions.Exit(1)
+            # Storing a delivery is a write, so a dry run reads the store as it
+            # stands and reports what it finds there rather than storing first.
+            if not dry_run:
+                plan_review.store_delivered_reviews(project, plan_slug)
             # The acceptance lands on the newest stored review, which is the one
             # the coordinator has been answering. An incomplete record covers
             # nothing, so it is not a review an acceptance can attach to.
@@ -2779,6 +2789,25 @@ def _run_review(
                     pretty,
                 )
                 raise click.exceptions.Exit(1)
+            if dry_run:
+                try:
+                    units = plan_review.acceptable_edit_units(newest, plan=plan_path)
+                except ValueError as exc:
+                    _emit({"error": "crew_error", "detail": str(exc)}, pretty)
+                    raise click.exceptions.Exit(1) from exc
+                _emit(
+                    {
+                        "dry_run": True,
+                        "would_accept": {
+                            "by": session,
+                            "reason": accept_reason,
+                            "units": units,
+                        },
+                        "unanswered": plan_review.unanswered_findings(newest),
+                    },
+                    pretty,
+                )
+                return
             path = plan_review.accept_edits(
                 newest,
                 plan=plan_path,

@@ -220,7 +220,7 @@ def _last_acceptance(path):
     return record[plan_review.ACCEPTED_EDITS_KEY][-1]
 
 
-def _accept_through_the_verb():
+def _accept_through_the_verb(*extra):
     return CliRunner().invoke(
         cli.main,
         [
@@ -234,6 +234,7 @@ def _accept_through_the_verb():
             SESSION,
             "--accept-edits",
             REASON,
+            *extra,
         ],
     )
 
@@ -349,3 +350,46 @@ def test_the_review_verb_refuses_an_unanswered_finding(sectioned, monkeypatch):
     assert "must be answered" in result.stdout
     stored = _stored_review()
     assert plan_review.ACCEPTED_EDITS_KEY not in stored
+
+
+def test_a_dry_run_reports_the_acceptance_and_writes_nothing(sectioned, monkeypatch):
+    """A dry run names the units it would accept and leaves the record alone."""
+    _, repo, path = sectioned
+    _requires_a_review(monkeypatch)
+    _edited(repo, path)
+
+    result = _accept_through_the_verb("--dry-run")
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.stdout)
+    assert payload["dry_run"] is True
+    assert payload["would_accept"]["units"] == ["s5"]
+    assert plan_review.ACCEPTED_EDITS_KEY not in _stored_review(), (
+        "a dry run writes no acceptance"
+    )
+    assert "s5" in plan_review.review_coverage("sample", "fixture", plan=path)[1], (
+        "the section the dry run would have covered still owes its review"
+    )
+
+    # The control: the same command without --dry-run writes. A guard that
+    # silently dropped every acceptance would pass the assertions above, so the
+    # write is shown to happen without the flag.
+    written = _accept_through_the_verb()
+    assert written.exit_code == 0, written.output
+    assert plan_review.ACCEPTED_EDITS_KEY in _stored_review(), (
+        "the verb writes without --dry-run, so the dry-run case measures the guard"
+    )
+    assert plan_review.review_coverage("sample", "fixture", plan=path)[1] == set()
+
+
+def test_the_review_verb_refuses_local_with_accept_edits(sectioned, monkeypatch):
+    """--local names a launch lane, and an acceptance launches nothing."""
+    _, repo, path = sectioned
+    _requires_a_review(monkeypatch)
+    _edited(repo, path)
+
+    result = _accept_through_the_verb("--local")
+
+    assert result.exit_code != 0
+    assert "--local" in result.stdout
+    assert plan_review.ACCEPTED_EDITS_KEY not in _stored_review()
