@@ -802,14 +802,20 @@ def _refused_delivered_review(pointer: Mapping[str, Any]) -> dict[str, str] | No
     if not reviewer:
         return None
     directory = review_module.run_review_record_directory(runs.run_dir(reviewed_run_id))
-    try:
-        directory_signature = file_memo.file_signature(directory)
-    except OSError:
-        directory_signature = None
     declared = tuple((reviewer.get("node") or {}).get("write_paths") or ())
+    record_signatures = []
+    for name in declared:
+        path = Path(str(name))
+        if path.parent != directory:
+            continue
+        try:
+            signature = file_memo.file_signature(path)
+        except OSError:
+            signature = None
+        record_signatures.append((str(path), signature))
     return file_memo.memoized_key(
         "obligation_delivered_review",
-        (reviewed_run_id, review_run_id, declared, directory_signature),
+        (reviewed_run_id, review_run_id, declared, tuple(record_signatures)),
         lambda: _refused_delivered_review_read(reviewed_run_id, directory, declared),
     )
 
