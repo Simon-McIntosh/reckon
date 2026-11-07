@@ -1,0 +1,82 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T16:16:03.753Z",
+  "dispatched_at": "2026-11-07T15:57:43Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:101",
+      "id": "wiring-1",
+      "reason": "a coordinator routing from the plan's open followups would dispatch a section the plan has closed, and the roadmap can name neither what \u00a79 waits on nor what clears it.",
+      "text": "followup f-arcwc-002 still reads `/reckon-build a-read-costs-what-changed \u00a79` while \u00a79 is now declared `deferred` (line 24, line 87), and no decision or gate names `s9`, which is the only place `_deferred_section_is_held` (`reckon/_store.py:4312-4346`) reads a held deferral from",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:118",
+      "id": "wiring-2",
+      "reason": "the deferral declares a gate no node in the plan can satisfy, so \u00a79 has no path back and the plan's own instrument for where a read spends its time is not pointed at the read \u00a79 waits on.",
+      "text": "the new deferral comment makes \u00a79's resume condition a timed distributed `read_plan(view=\"summary\")` showing `compose_project_state` is a material share of the read, but nothing in the plan produces that measurement: \u00a710 profiles only `read_plan(view=\"version\")` and a no-op `edit_plan`, and neither `plan-section-depends-on` nor a followup ties \u00a710 to \u00a79",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:92",
+      "id": "done_when-1",
+      "reason": "this control is the only thing that can falsify the section's headline (roughly ten times the parse spent elsewhere); without a stated expected shape and a stated refuting result the done-when cannot go red.",
+      "text": "\u00a710's declared negative control, \"the same profile of a 29 KB plan shows how the cost scales with the plan\", asserts no expected outcome, so a small-plan profile showing an unrelated dominant cost passes it exactly as a confirming one does",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:92",
+      "id": "evidence_paths-1",
+      "reason": "the coordinator is meant to author a new section from this note, and an untracked config-tree file is neither reviewable in the plan record nor inside the report path a dispatched node is normally granted.",
+      "text": "\u00a710's deliverable is a note at `~/.config/reckon/crew/reports/reckon/where-a-plan-read-spends-its-time.md` with \"Write paths: the note only\", so nothing lands in the repository and the result sits outside the plan's composed evidence (`docs/evidence/archive/a-read-costs-what-changed-landed.html` and `docs/evidence/fragments/a-read-costs-what-changed/`)",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:92",
+      "id": "anchors_resolve-1",
+      "reason": "the worker profiles the served server, whose revision decides whether these figures reproduce at all, and \u00a73 and \u00a75 changed the read path before the day they were taken; without the revision the \"ten times\" premise cannot be re-established or attributed.",
+      "text": "the Why's figures (15.7 s and 20.9 s CPU at a 30 s deadline, 60 s and 31 to 39 s of edit CPU, 1.8 s and 1.2 s cold parses) name no revision, run or log, where \u00a71, \u00a76 and \u00a79 each pin the revision their numbers came from",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "",
+  "plan_fingerprint": "30907da2ea00214f5261be942ec307dfb99c0cae5e3fd8ecdf2a8634db9b821e",
+  "plan_slug": "a-read-costs-what-changed",
+  "plan_version": 40,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T154326067368-plan-review-of-a-read-costs-what-changed",
+  "reviewed_blob_sha": "e5eea037399e9e22d78516a83a5711e0f5660306",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a710's Why numbers carry no revision or log anchor. The plan it cites (`the-monitor-shows-the-work-it-watches`, 739204 bytes, 118 sections), the `version` view (`reckon/mcp.py:886-887`, `reckon/mcp_views.py:59`) and `storage-slow` / `cause: computing` (`reckon/_mcp_tools.py:179-186`, `reckon/mcp_deadlines.py:193`) all resolve.",
+    "done_when": "a finding \u2014 \u00a710's declared negative control states no expected outcome, so it cannot fail.",
+    "evidence_paths": "a finding \u2014 \u00a710's only artifact is an untracked note under `~/.config/reckon/crew/reports/reckon/`, declared as its sole write path, while the plan's landed evidence lives under `docs/evidence/fragments/a-read-costs-what-changed/`.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags enter \u00a710's text or the new comment ids; the run identifiers quoted in the comments are data, not symbols.",
+    "reasoning": "pass \u2014 the section names no root cause its evidence would have to support (it explicitly names candidates instead), its profiling mechanism is capable of producing the note's requested profile, and its one code-path claim holds: a `view=\"version\"` read does pay the full parse, because `_read_plan_view` reaches `_read_plan` unchanged (`reckon/mcp.py:1750-1754`).",
+    "single_goal": "pass \u2014 \u00a710 carries one deliverable (one investigation note) and its gate measures that one artifact.",
+    "wiring": "a finding \u2014 \u00a710 is declared implementable but no open followup orders it and `plan-section-depends-on` says nothing about it, while followup f-arcwc-002 still orders \u00a79 although \u00a79 is now declared deferred with no decision or gate naming it."
+  },
+  "section_digests": {
+    "_document": "b65c46e4a878015d4d818bc804f3edcd3e33fce9b9c52a5e50bb150973adad82",
+    "s1": "f8fb0fbbfbbc79977a59ec9d78c0d66f47803aa96db83e4d628a1dfb6b40e6c3",
+    "s10": "68fc6d75acf0741225ab448369611e4eda9f862b50d7907857c1abb24b4138e4",
+    "s2": "7de6c2e256fca5545163c6149c674fea249ddd1a72361b49c89ef5beaa22263d",
+    "s3": "d11cdceab942c4935f32d292e26f2111b011ca4571980a6c54ef6ae23894aadb",
+    "s4": "d14b5fa9a6b6ef26da6f95b50c43aa782fdbe679ca28020a3095af71cd579417",
+    "s5": "ba22eff9814ea16ac19404864f9a2d1ec8da449b3011fba623d0d1856b2c6ecf",
+    "s6": "b0053663cc25e5e7e15595ae342d21c4c467abe74f06c8c4db86982b276898cc",
+    "s7": "2c7c6fb207a002d2bb1e223ebf1f770570f6b06942edf9ac6647253b410a67b7",
+    "s8": "9a012c065cbd8db9e5e69070d20531b84a584582cc0bf8f45fff060b7f31f464",
+    "s9": "1404fbf63401ab3bd4204175d16adb89094eaa1f1b25160e73fd2bb9c625d0b1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T19:37:58.285379+00:00",
+  "total": null
+}
