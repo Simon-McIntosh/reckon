@@ -1024,6 +1024,13 @@ def _commit_is_ancestor(repo: Path, ancestor: str, descendant: str) -> bool | No
         return None
     if ancestor == descendant:
         return True
+    # An ancestry answer never changes, and an admission pass judges the review
+    # gate for every request it considers over the same store, so the answer is
+    # held for the length of the pass rather than re-walked per request.
+    cache = _REVIEW_READ_PASS.get()
+    key = ("ancestry", str(repo), ancestor, descendant)
+    if cache is not None and key in cache:
+        return cache[key]
     try:
         result = subprocess.run(
             [
@@ -1042,10 +1049,14 @@ def _commit_is_ancestor(repo: Path, ancestor: str, descendant: str) -> bool | No
     except (OSError, subprocess.SubprocessError):
         return None
     if result.returncode == 0:
-        return True
-    if result.returncode == 1:
-        return False
-    return None
+        answer: bool | None = True
+    elif result.returncode == 1:
+        answer = False
+    else:
+        answer = None
+    if cache is not None:
+        cache[key] = answer
+    return answer
 
 
 def _record_is_newer(
@@ -1067,10 +1078,10 @@ def _record_is_newer(
         and left_commit != right_commit
     ):
         left_is_older = _commit_is_ancestor(repo, left_commit, right_commit)
-        right_is_older = _commit_is_ancestor(repo, right_commit, left_commit)
-        if left_is_older is True and right_is_older is False:
+        if left_is_older is True:
             return False
-        if right_is_older is True and left_is_older is False:
+        right_is_older = _commit_is_ancestor(repo, right_commit, left_commit)
+        if right_is_older is True:
             return True
     return str(left.get("timestamp") or "") > str(right.get("timestamp") or "")
 
