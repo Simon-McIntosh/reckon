@@ -1,0 +1,44 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T17:46:30.541Z",
+  "dispatched_at": "2026-11-07T17:34:13Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/an-evidence-record-counts-only-what-it-read.html:46",
+      "id": "reasoning-1",
+      "reason": "the exclusion and its justification are stated explicitly in the same section and the write-path list omits `reckon/mcp_edit_plan.py`, so the correct action is already unambiguous; only the lead sentence is loose, and tightening it to \"every site the product reaches\" changes no work.",
+      "text": "the sentence \"It is added at every site that writes a comment or followup body:\" is falsified by the paragraph three lines later, which leaves `_append_comment` (reckon/mcp_edit_plan.py:137) uninstrumented because nothing in the product calls it; a builder reading the lead sentence alone would instrument it and change a file outside the declared write paths",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "ae6f048b4d9daeeba116a3ab09e3894a95c8d6dc",
+  "plan_fingerprint": "0e479fa76c1e7a09aab8dc5a0c200bc33d7b70b1eabc96ce34e28b01d0a8e3cb",
+  "plan_slug": "an-evidence-record-counts-only-what-it-read",
+  "plan_version": 6,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T172852438066-plan-review-of-an-evidence-record-counts-only-what-it-read",
+  "reviewed_blob_sha": "f3523846d7a6ab74e36d5e64609d007a652b0870",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 I opened each code anchor at HEAD: `_DEFERRED_WORK_TERM` (reckon/doccheck.py:419), `deferred_work_term` returning `terms[0]` (doccheck.py:430), `deferred_work_terms` returning `re.findall` (doccheck.py:442), `_prose_deferred_work_term` (_store.py:993), `append_to_list` (_store.py:2379), `_carry_section_moves` (_store.py:3025, reason written at 3077), the `followups.<id>.<field>` delegation (_store.py:3498 into _store_section_ops.py:362), the comments branch of `_apply_append` (_store.py:3811), `_require_authored_value` (_store_section_ops.py:153), `_append_comment` (mcp_edit_plan.py:137) and the followup-add call to `append_to_list` (mcp_edit_plan.py:253); all three quoted power_convertor phrases resolve at the cited files and lines.",
+    "done_when": "pass \u2014 \u00a73's seven cases each assert a behaviour a missing guard would break, and the six controls cover all seven cases (the first control covers cases one, three and five through the widened regex, the rest map one-to-one), so the gate can go red for the right reason.",
+    "evidence_paths": "pass \u2014 the audit output, finding count and every gate log go to the run directory, a durable path a later reader can open; no node-local temporary path is named.",
+    "naming": "pass \u2014 the new test file is named by what it measures, and the section carries no plan labels, stage names, ticket numbers or changelog prose into code.",
+    "reasoning": "a finding \u2014 the mechanism, the root cause and the callers all hold, but the deliverable's opening sentence says the refusal is added at \"every site that writes a comment or followup body\" and the same paragraph then excludes `_append_comment`, which does write one.",
+    "single_goal": "pass \u2014 \u00a73 has one deliverable: the deferred-work rule reads every spelling and refuses the body-writing sites that carry one; the regex widening and the refusal calls are two halves of that one measure and are gated together.",
+    "wiring": "pass \u2014 \u00a73 declares its wait on \u00a72 (both write `reckon/_store.py`), it is expressed in `plan-section-depends-on` and repeated in the followup that orders \u00a72, \u00a73, \u00a74, and \u00a74 in turn declares its wait on \u00a73."
+  },
+  "section_digests": {
+    "_document": "6d35efce52466005f8ee56997c8dc7bcca998d7c41fcd252d254bc7264596281",
+    "s1": "49581a4c899ba79b704cec124eaa4b18560c0c76dfd26327155915e9f48ca5a2",
+    "s2": "0b8bed0f03d053457f9c7efd06dd0ff61e4d509f00a6f7518b6e3c911a96a555",
+    "s3": "54a7ebc001c91bc0067d8a101bb1f542366d2a83c055da568f7b778f7172b85f",
+    "s4": "2a4595f5aefc320f23756d7c834443e983a185161f61e8078d9bd7a31df7e991"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T17:52:19.892605+00:00",
+  "total": null
+}
