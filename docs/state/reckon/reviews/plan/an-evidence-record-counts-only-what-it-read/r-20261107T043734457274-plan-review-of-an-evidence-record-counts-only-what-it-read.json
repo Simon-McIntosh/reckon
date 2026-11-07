@@ -1,0 +1,74 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T04:44:21.718Z",
+  "dispatched_at": "2026-11-07T04:38:50Z",
+  "findings": [
+    {
+      "anchor": "reckon/_store.py:3769",
+      "id": "reuse_search-1",
+      "reason": "\u00a73's write paths and done-when gain the three followup-body sites, or the section states why a followup body is exempt where a comment body is not.",
+      "text": "the widened term is refused only where `_refuse_forged_body_structure` already runs (`insert_section` at reckon/_store.py:1074, `append_evidence` at reckon/_store.py:1202) plus the comments branch \u00a73 adds at reckon/_store.py:3798, so every followup-body write still accepts the term: `append_to_list` at reckon/_store.py:2381-2389, the `followups` append op at reckon/_store.py:3760-3777, and the `followups.<id>.<field>` set at reckon/_store.py:3482-3486; \u00a71 measured the phrases in \"followup bodies and close comments\", so \u00a73 would close half the population it cites \u2014 the audit already warns at reckon/doccheck.py:1728, so only the write-time refusal is missing there",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/evidence.py:636",
+      "id": "deep_module-1",
+      "reason": "the plan must name the one function in reckon/evidence.py that derives the renderable-id set and have both callers use it, which changes the module boundary and the refusal's write path.",
+      "text": "\u00a74 defines \"every id this synthesis renders\" (plan section ids, `outcome`, the plan's comment keys, the current ledger runs' `section` keys, all normalised through `_section_key`) twice: once for the carry-forward and rendered-id exclusion in `synthesize_landed_record`, and again for the new anchor refusal in `_apply_evidence_appends` at reckon/_store.py:1230, which the plan itself says \"gains the comment-key and ledger reads the refusal needs\"; two independent computations of one set, in two modules, whose agreement is the entire correctness condition the section rests on",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_store.py:1184",
+      "id": "thin_wrapper-1",
+      "reason": "a `summary: str | None` (or equivalent) parameter on `_render_document` yields the same shell from one owner, and the plan's write path and four negative controls are written against the second renderer instead.",
+      "text": "`_landed_record_shell` currently delegates to `evidence._render_document` (reckon/evidence.py:329) and the record head it emits \u2014 doctype, `docs-project`, `reckon-type`, `plan-slug` at reckon/evidence.py:413, `plan-title`, `plan-evidence-for` at reckon/evidence.py:416, `<h1>`, stylesheets, `<main>` at reckon/evidence.py:428-446 \u2014 is owned by that renderer; \u00a72 removes the delegation (its negative control is \"restoring the shell's delegation\") and so re-emits that head beside its owner, differing only by the count sentence at reckon/evidence.py:406-408 and the verdict meta at reckon/evidence.py:417, with no statement of why `_render_document` cannot take those two as parameters",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/evidence.py:674",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a74 should have `synthesize_landed_record` call `_evidence_record_path` (or move the accessor to evidence.py) in the same commit, and the section's write paths should say so.",
+      "text": "the landed-record path is derived inline as `docs_dir / \"evidence\" / \"archive\" / f\"{plan_slug}-landed.html\"` while its owner `_evidence_record_path` (reckon/_store.py:1172-1174) computes the same path for the append writer at reckon/_store.py:1249, and a third copy is spelled inside the refusal at reckon/_store.py:4577; \u00a72 and \u00a74 edit both writers and \u00a74's new refusal makes the two paths interact (an append written through one path is compared against ids rendered through the other), so a placement change in the owner silently writes or refuses in the wrong file",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/evidence.py:24",
+      "id": "interface_budget-1",
+      "reason": "the section must either account for the added surface or collapse the two lists into one, which changes the dataclass, the printer and the done-when cases seven, eight and eleven.",
+      "text": "public_definitions 2360, cli_options 465, mcp_views 15, refusal_families 23; \u00a74 adds two public fields to `EvidenceSynthesisResult` (`dropped_anchors`, `unmarked_losses`) and a new refusal family at reckon/_store.py:1230, and its text names nothing it retires, merges or explains as unretirable \u2014 `dropped_anchors` also overlaps the `dropped` tag already carried by `unmarked_losses`, so a single tagged list would serve both",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "33a1bdbd76d682f3d92b009b94649d49d05ea28c",
+  "plan_fingerprint": "6b145eb7d825f3d40afd19c80cc28633dc61597a6d7707a5e857e3e91e028444",
+  "plan_slug": "an-evidence-record-counts-only-what-it-read",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T043734457274-plan-review-of-an-evidence-record-counts-only-what-it-read",
+  "reviewed_blob_sha": "da6dd9d57210f13f912ec2965c156cb80952b3e0",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a74 needs \"the ids a synthesis can render\" in two modules (the carry-forward in `reckon/evidence.py`, the anchor refusal in `reckon/_store.py`) and names no single function that derives it.",
+    "duplicate_owner": "a finding \u2014 the plan edits both writers of the landed-record path but leaves the path itself duplicated, with `reckon/_store.py:1172` owning it and `reckon/evidence.py:674` re-deriving it inline.",
+    "interface_budget": "a finding \u2014 public_definitions 2360, cli_options 465, mcp_views 15, refusal_families 23; \u00a74 grows `EvidenceSynthesisResult` by two fields and adds an anchor refusal without naming what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan cites the machinery it searched accurately (`doccheck._DEFERRED_WORK_TERM`, `_store._prose_deferred_work_term`, `evidence._render_document`, `_overall_verdict`), but its census of the store's deferred-work refusal stops at one call site and leaves the three followup-body writers unwired, which is the other population its own \u00a71 evidence names.",
+    "thin_wrapper": "a finding \u2014 \u00a72's `_landed_record_shell` becomes a second rendering of the record head that differs from `evidence._render_document` only by dropping one sentence and one meta, and the plan never says why that renderer cannot take the omission as a parameter."
+  },
+  "section_digests": {
+    "_document": "6d35efce52466005f8ee56997c8dc7bcca998d7c41fcd252d254bc7264596281",
+    "s1": "7c52117565966edec5de56bc0448d4a141edbcb73ac18ede5f2cb0c34f424f0a",
+    "s2": "143dc532dde638505b6cf743e1b2af8b2d754fbd94debf4fdb0b351e623a2a39",
+    "s3": "1e19a712fd2dad1c38a11f7b6164b1fcc01c996e78f3297edb135a1d5fd7c0cf",
+    "s4": "9e7a549a01d9efa8ae8ba1c0bcfcf1d4a80510b873ac68328f69fed2b1464460"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T04:58:16.164861+00:00",
+  "total": null
+}
