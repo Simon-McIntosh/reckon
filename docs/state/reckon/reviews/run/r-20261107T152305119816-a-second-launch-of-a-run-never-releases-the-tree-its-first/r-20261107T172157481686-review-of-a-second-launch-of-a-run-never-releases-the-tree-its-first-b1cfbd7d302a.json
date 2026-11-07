@@ -1,0 +1,78 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_a_successful_launch_is_recorded.py::test_a_queued_request_does_not_hold_its_own_launch_path"
+  ],
+  "call_sites": [
+    "reckon/crew/dispatch.py:2742 _create_worktree under LAUNCH_RUN_ID",
+    "reckon/crew/routing.py:2237 _stale_launch_tree_refusal",
+    "reckon/crew/routing.py:2240 _remove_worktree call",
+    "reckon/crew/routing.py:2175 _launch_tree_verdict claim read",
+    "reckon/crew/routing.py:2278 _remove_worktree claim guard"
+  ],
+  "completed_at": "2026-11-07T17:47:13.289Z",
+  "dispatched_at": "2026-11-07T17:24:16Z",
+  "findings": [
+    {
+      "file": "tests/test_a_successful_launch_is_recorded.py",
+      "line": 108,
+      "severity": "blocking",
+      "text": "The landed change turns this pre-existing test red at head (logs/head_single_checks.log: admission returns launched [] and failed ['r-own-path']), because its monkeypatched create sets worktree on the pointer while the pointer is still phase starting, and the new predicate reads a starting pointer naming a tree as a live claim. The product behaviour is correct, since dispatch_claims.py:906 publishes the claim with no worktree before the tree is cut, so a real launch never names its own tree; but the test's premise now contradicts plan section 5, and landing this commit leaves the routing-importing arm with one added failure. The repair is one line in that helper, leaving the phase queued or not naming the tree before the create, in a file outside this node's write scope."
+    },
+    {
+      "file": "manifest.md",
+      "line": 17,
+      "severity": "non-blocking",
+      "text": "orientation_base_sha (line 2) and baseline_suite.revision (line 17) both record e9805b3a4cb362516dc5bc3f14e880c7f70eaec1, one character off the reviewed head's actual parent e9805b3a4cb362516dc5bc3f14e880c9f70eaec1 (git log -1 --format=%P, and tree-snapshot.json in the same run directory agree on the latter); the cited value resolves to no object, so the base arm's revision cannot be checked from the record even though its scratch tree's routing.py verifies identical to the true base."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": 1134,
+      "severity": "non-blocking",
+      "text": "_launch_pointer_worktrees copies the loop body of _live_pointer_worktrees at :1091, differing only in the skip predicate, instead of extending the owner with that predicate as a parameter; the repository already carries a second variant of the same claim scan at recovery_watch.py:172, and this makes a third."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "The changed reads are reached only through dispatch: reckon/crew/dispatch.py:2742 cuts the tree under LAUNCH_RUN_ID, routing.py:2237 reaches _stale_launch_tree_refusal, and routing.py:2240 reaches _remove_worktree, whose guard at :2278 raises on a live claim.",
+    "diff": "One commit, b1cfbd7d302a, three files, 265 insertions and 6 deletions against e9805b3a4c9f: routing.py gains _own_pointer_yields_its_tree and _launch_pointer_worktrees and switches the two launch-decision reads, the new test adds four cases, and the fragment records the arms.",
+    "done_when": "The four cases and the negative control are present and green (logs/after_committed.log 4 passed, logs/negative-control.log 2 failed EXIT=1), but the done_when's third clause, that the routing-importing test files add no failure against the base revision, is unmet: logs/head_routing.log lists 4 failures where logs/base_failing_files.log lists 3, the extra being tests/test_a_successful_launch_is_recorded.py::test_a_queued_request_does_not_hold_its_own_launch_path.",
+    "goal": "The node's goal is that a second launch of one run never releases the tree its first launch holds; reckon/crew/routing.py:1121, :2175 and :2278 land it, and the first launch's pointer now reads as a claim once it names its tree, which is the destruction the plan's Why describes.",
+    "manifest": "Read in full; it records the four gate arms with their logs, the five pytest-timeout errors and their re-run, the added failure under outside_scope, and the negative control, but its orientation_base_sha and baseline_suite.revision carry e9805b3a4cb362516dc5bc3f14e880c7f70eaec1, which resolves to no object.",
+    "write_paths": "The manifest declares reckon/crew/routing.py, the new test, the evidence fragment and a figures directory; the diff touches the first three and nothing else, and the fragment path matches the declaration exactly."
+  },
+  "justifications": {
+    "durability": "tests/test_a_second_launch_keeps_a_live_worktree.py:93-103 asserts the refusal names the run, keeps the tree's inode and leaves _trash empty, all read from the filesystem rather than round-tripped from the inputs, and logs/negative-control.log shows the working and starting cases red with the predicate mutated; the queued and dead-worker cases are the reverse direction and are only exercised green.",
+    "evidence": "The gate was run and recorded, but the plan's own measure is unmet: logs/head_routing.log reports 4 failures against logs/base_failing_files.log's same 3 ids plus tests/test_a_successful_launch_is_recorded.py::test_a_queued_request_does_not_hold_its_own_launch_path only at head, and the recorded after_suite covers the new file alone rather than the population baseline_suite ran.",
+    "fit": "reckon/crew/routing.py:1103-1150 follows the module's private-helper idiom with a mechanism docstring and no plan, sprint or ticket identifier in a name or comment, and the local import of local_liveness matches the module's existing lazy-import usage.",
+    "goal_fidelity": "reckon/crew/routing.py:1121 adds the launch-side claim view and :2175 and :2278 are the only two reads switched to it, with gc, _save_and_release_worktree and promotion release still on _live_pointer_worktrees at :1419 and in those modules, exactly as plan section 5 asks.",
+    "reuse": "reckon/crew/routing.py:1134 re-implements the scan body of _live_pointer_worktrees at :1091 rather than extending it with the skip predicate, so the repository now carries a third copy of the claim scan beside recovery_watch.py:172.",
+    "scope_discipline": "git show --stat b1cfbd7d302a changes exactly reckon/crew/routing.py, tests/test_a_second_launch_keeps_a_live_worktree.py and docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-second-launch-of-a-run-never-releases-the-tree-its-first.html, and all three are inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a second launch of one run never releases the tree its first launch holds; reckon/crew/routing.py:1121 adds the launch-side claim view and :2175 and :2278 are the only two reads switched to it.\nVERDICT done_when: the four cases and the negative control are green (logs/after_committed.log 4 passed; logs/negative-control.log 2 failed EXIT=1), but the done_when's clause that the routing-importing files add no failure against base is unmet: logs/head_routing.log has 4 failures where logs/base_failing_files.log has 3, the extra being tests/test_a_successful_launch_is_recorded.py::test_a_queued_request_does_not_hold_its_own_launch_path.\nVERDICT write_paths: the manifest declares routing.py, the new test, the evidence fragment and a figures directory; the diff touches exactly the first three and the fragment path matches the declaration exactly.\nVERDICT manifest: read in full; it records the four gate arms with logs, the five pytest-timeout errors and their re-run, the added failure under outside_scope and the negative control, but its base revision sha resolves to no object.\nVERDICT diff: one commit b1cfbd7d302a against e9805b3a4c9f, three files, 265 insertions and 6 deletions: two new helpers and two switched reads in routing.py, four cases in the new test, and the fragment.\nCALL_SITES: reckon/crew/dispatch.py:2742 _create_worktree under LAUNCH_RUN_ID, reckon/crew/routing.py:2237 _stale_launch_tree_refusal, reckon/crew/routing.py:2240 _remove_worktree call, reckon/crew/routing.py:2175 _launch_tree_verdict claim read, reckon/crew/routing.py:2278 _remove_worktree claim guard\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:1121 adds the launch-side view and :2175 and :2278 are its only readers, with gc and promotion release still on _live_pointer_worktrees at :1419 as plan section 5 requires.\nSCORE evidence: 12\nJUSTIFICATION evidence: logs/head_routing.log reports 4 failures against logs/base_failing_files.log's same 3 plus one id present only at head, so the plan's no-added-failure measure is measured and missed, and the recorded after_suite covers only the new file.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat b1cfbd7d302a changes routing.py, the new test and the evidence fragment, all inside the declared write paths, and no out-of-scope file was edited even though one test needed it.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_second_launch_keeps_a_live_worktree.py:93-103 asserts the run name in the refusal, the preserved inode and an empty _trash from filesystem reads, and logs/negative-control.log reddens the working and starting cases when the predicate is mutated.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/routing.py:1103-1150 follows the module's private-helper and docstring idiom with no plan or ticket identifier, and the lazy local_liveness import matches the module's existing usage.\nSCORE reuse: 10\nJUSTIFICATION reuse: reckon/crew/routing.py:1134 copies the scan body of _live_pointer_worktrees at :1091 rather than extending it, leaving a third claim-scan variant beside recovery_watch.py:172.\nFINDING tests/test_a_successful_launch_is_recorded.py:108 blocking: the monkeypatched create gives the pointer a worktree while its phase is still starting, so the new predicate refuses and admission reports launched [] / failed ['r-own-path']; the product change is correct but landing it leaves one added failure in the routing-importing arm, and the one-line repair (keep the phase queued) is outside this node's write scope.\nFINDING manifest.md:17 non-blocking: orientation_base_sha and baseline_suite.revision record e9805b3a4cb362516dc5bc3f14e880c7f70eaec1, one character off the true parent e9805b3a4cb362516dc5bc3f14e880c9f70eaec1, so the cited base revision resolves to no object.\nFINDING reckon/crew/routing.py:1134 non-blocking: _launch_pointer_worktrees duplicates the live-pointer scan at :1091 instead of extending it with the skip predicate, leaving a third copy of the claim scan beside recovery_watch.py:172.",
+  "review_run_id": "r-20261107T172157481686-review-of-a-second-launch-of-a-run-never-releases-the-tree-its-first-b1cfbd7d302a",
+  "review_text": "See raw_text field",
+  "reviewed_base_sha": "e9805b3a4cb362516dc5bc3f14e880c9f70eaec1",
+  "reviewed_head_sha": "b1cfbd7d302a0eec8390275f8a1e7c7c62afa9c0",
+  "reviewed_run_id": "r-20261107T152305119816-a-second-launch-of-a-run-never-releases-the-tree-its-first",
+  "scores": {
+    "durability": 18,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 10,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T17:56:48.014696+00:00",
+  "total": 97,
+  "verdicts": {
+    "call_sites": "The changed reads are reached only through dispatch: reckon/crew/dispatch.py:2742 cuts the tree under LAUNCH_RUN_ID, routing.py:2237 reaches _stale_launch_tree_refusal, and routing.py:2240 reaches _remove_worktree, whose guard at :2278 raises on a live claim.",
+    "diff": "One commit, b1cfbd7d302a, three files, 265 insertions and 6 deletions against e9805b3a4c9f: routing.py gains _own_pointer_yields_its_tree and _launch_pointer_worktrees and switches the two launch-decision reads, the new test adds four cases, and the fragment records the arms.",
+    "done_when": "The four cases and the negative control are present and green (logs/after_committed.log 4 passed, logs/negative-control.log 2 failed EXIT=1), but the done_when's third clause, that the routing-importing test files add no failure against the base revision, is unmet: logs/head_routing.log lists 4 failures where logs/base_failing_files.log lists 3, the extra being tests/test_a_successful_launch_is_recorded.py::test_a_queued_request_does_not_hold_its_own_launch_path.",
+    "goal": "The node's goal is that a second launch of one run never releases the tree its first launch holds; reckon/crew/routing.py:1121, :2175 and :2278 land it, and the first launch's pointer now reads as a claim once it names its tree, which is the destruction the plan's Why describes.",
+    "manifest": "Read in full; it records the four gate arms with their logs, the five pytest-timeout errors and their re-run, the added failure under outside_scope and the negative control, but its base revision sha resolves to no object.",
+    "write_paths": "The manifest declares reckon/crew/routing.py, the new test, the evidence fragment and a figures directory; the diff touches the first three and nothing else, and the fragment path matches the declaration exactly."
+  }
+}
