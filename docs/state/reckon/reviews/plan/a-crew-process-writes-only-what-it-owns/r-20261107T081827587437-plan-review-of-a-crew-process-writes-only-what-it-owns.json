@@ -1,0 +1,84 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T08:28:10.296Z",
+  "dispatched_at": "2026-11-07T08:20:46Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:49",
+      "id": "done_when-1",
+      "reason": "",
+      "text": "\u2014 \u00a74's two-assertion test cannot fail against the base revision:",
+      "type": "done_when",
+      "would_change": null
+    },
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:48",
+      "id": "reasoning-1",
+      "reason": "the deliverable names a behaviour the code already has and omits the branch that caused the incident, so an implementer has nothing to change in `_session_from_followers` and will report the section implemented on unchanged logic.",
+      "text": "\u00a74 states the mechanism as \"resolves the session it reports from the hook payload's own harness session \u2026 It never takes a follower child the host holds for another session as its own\", which is a description of what `_session_from_followers` (reckon/hooks/coordinator_obligations.py) already does; the live defect is the second branch it falls to: `read_followers` returns every session's registration sorted by name, and on the first row that is not an exact match the function returns `record` whenever `_descends_from(follower.parent_pid, claude_pid)` holds, so another session's follower whose host descends from the caller's Claude process is adopted before the caller's own registration is ever scanned",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:39",
+      "id": "reasoning-2",
+      "reason": "either the node amends its write scope mid-flight to reach promotion_gate.py, or it lands a return-shape change that writes a tuple into a persisted record field, and the plan as written permits both.",
+      "text": "\u00a72's mechanism (\"`write` \u2026 reports the per-run files it changed beside its new version\") changes `write`'s return to a pair while the same paragraph says \"Every other caller of `write` is unchanged\"; `reckon/crew/promotion_gate.py:1051` does `new_version = ledger.write(...)` and stores that value at line 1075 as `\"ledger_version\": new_version`, so a pair lands in the gate report's ledger version field, and `reckon/crew_run_commands.py:1469` and `reckon/crew/routing.py:3124` are outside the section's declared write paths (`reckon/ledger.py` and the new test)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:44",
+      "id": "single_goal-1",
+      "reason": "one gate spanning both closes neither, so a node that gets the ask-ownership right and the settle policy wrong is closed on a verdict that proves neither change.",
+      "text": "\u00a73 holds two deliverables with different failure modes and different files: the ask-ownership and census-reading changes in `reckon/crew/dispatch_watch.py`, and a change to the host's restart policy in `reckon/crew/session_host.py` (\"settles that child\" for a pair another live host already serves). The second is the duplicate-follower defect, not the misrouted-ask defect the section title names",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:53",
+      "id": "wiring-1",
+      "reason": "the followup is the plan's next-action record, and as written it under-dispatches two thirds of the remaining work.",
+      "text": "the plan's only open followup names \u00a72 alone in both `data-recommends-skill` and its command block, while its body says \"\u00a72, \u00a73 and \u00a74 \u2026 can run together\"; a coordinator following the invocation dispatches one of the three implementable sections and \u00a73 and \u00a74 reach the outcome zero times",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:48",
+      "id": "anchors_resolve-1",
+      "reason": "the file resolves and the call site is a legitimate pointer, so a reader reaches the right module; correcting the line costs nothing but changes no work.",
+      "text": "\u00a74 cites `_session_from_followers` \"(near line 865)\", which is the call inside `locate_session`; the definition is at `reckon/hooks/coordinator_obligations.py:439`, 426 lines away, and the `session_id` parenthetical at 867 is accurate",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "033452558298aa023634c4ca47b1f2f269dff239",
+  "plan_fingerprint": "a4ed9f383714abaf6c99eeb7b64bd15437ad6dfeed366e1f7e1d04ee74eb5d41",
+  "plan_slug": "a-crew-process-writes-only-what-it-owns",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T081827587437-plan-review-of-a-crew-process-writes-only-what-it-owns",
+  "reviewed_blob_sha": "6c0674b9fdb0b700b2e641320db7a023e8026c65",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the `_session_from_followers` anchor in \u00a74 names line 865, which is the call site in `locate_session`, not the function definition at line 439.",
+    "done_when": "a finding \u2014 \u00a74's done-when passes on the unmodified code, because the hook already resolves the harness session through `_session_from_followers` before any follower-child fallback.",
+    "evidence_paths": "pass \u2014 every gate log under the three sections is written under the run directory and must start with its revision and literal command and end in `EXIT=`, which is a durable path.",
+    "naming": "pass \u2014 the three new test filenames and section titles name the mechanism, and no ticket, plan label or version tag reaches a symbol or path.",
+    "reasoning": "a finding \u2014 \u00a72 says every other caller of `write` is unchanged, but reporting the changed files beside the version changes `write`'s return shape and `reckon/crew/promotion_gate.py:1051` stores that return as `ledger_version`.",
+    "single_goal": "a finding \u2014 \u00a73 carries the host's restart policy (a change in `reckon/crew/session_host.py`) as a second deliverable beside the ask-ownership fix in `dispatch_watch.py`.",
+    "wiring": "a finding \u2014 followup f-acpwowio-001 declares only \u00a72 in both `data-recommends-skill` and its prompt block while its body says \u00a72, \u00a73 and \u00a74 run together."
+  },
+  "section_digests": {
+    "_document": "76494d097e556fab05b3d2f83ab4254568f5447e227a49e94e7581a3cbcb7d99",
+    "s1": "2651bf4298a4407ecc3db64cfd2b505bc2ebb153a5c21564bc75e7c5f46b3ef1",
+    "s2": "aade0ea0fbaf855a400dc5e0b42f0c1d32c1d9d6baa0eff68fd8894336aa14ed",
+    "s3": "6761056e22bcd3211c1076c8d2b03282385652275192ea52cf9ed292595f8743",
+    "s4": "aa249749e40d3bf0341f71cf6bf78b5104f272507daf8f8b32c2378c1ba68fc0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T08:35:51.347090+00:00",
+  "total": null
+}
