@@ -1,0 +1,72 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T14:46:52.538Z",
+  "dispatched_at": "2026-11-07T14:22:04Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queued-request-is-checked-when-queued/r-20261107T141449153426-plan-review-of-a-queued-request-is-checked-when-queued/plan.html:67",
+      "id": "done_when-1",
+      "reason": "the second arm must be restated as `run-queued`, otherwise the gate contradicts the behaviour it is meant to preserve.",
+      "text": "\u00a78's done-when requires a queued request with no failure to yield the present `queued-awaiting-session` row, but that kind is built at reckon/crew/obligations.py:2075-2077 only when `row[\"session_refusal\"]` is set, and a failure-free queued request is built by `_queued_item` as `QUEUED_RUN_DUTY_KIND` = `run-queued` (obligations.py:191, :944), so the arm asserts a row the tree never builds and an implementer would either write a test that cannot pass on correct code or change the plain queued row's kind, which is the confusion \u00a78 exists to remove",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queued-request-is-checked-when-queued/r-20261107T141449153426-plan-review-of-a-queued-request-is-checked-when-queued/plan.html:67",
+      "id": "reasoning-1",
+      "reason": "the write paths must include reckon/crew/obligation_snapshot.py, or the branch must move into one helper both producers call, and the done-when must assert both producers.",
+      "text": "\u00a78's write paths are reckon/crew/obligations.py and the new test only, but the queued branch is built twice: the derivation at obligations.py:2075 and the published slice at reckon/crew/obligation_snapshot.py:1457-1467, which builds the same `queued-awaiting-session` row through `module._live_item` for the payload a reader is handed; a new kind added only to the derivation leaves the slice on the old kind, and the done-when's obligations-only test passes while the two producers disagree",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queued-request-is-checked-when-queued/r-20261107T141449153426-plan-review-of-a-queued-request-is-checked-when-queued/plan.html:66",
+      "id": "reasoning-2",
+      "reason": "one sentence naming the node-contract refusal as the only family that moves keeps the follower row's kind and its test intact.",
+      "text": "\u00a78's deliverable gives a row of its own kind to every queued request whose pointer carries an admission refusal, which is broader than the node-contract refusal the section evidences: the same `queued-awaiting-session` kind is today produced for a follower or other session-subject refusal (reckon/crew/recovery_classification.py:286-304) and for a refusal quoting the command that clears it (:309-311), and tests/test_a_session_side_refusal_reaches_the_session.py:150 pins that kind for a session-side refusal \u2014 the plan does not say which refusal family moves, so an implementer may move all of them and break a pinned behaviour the section was not about",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queued-request-is-checked-when-queued/r-20261107T141449153426-plan-review-of-a-queued-request-is-checked-when-queued/plan.html:63",
+      "id": "reasoning-3",
+      "reason": "either \u00a72's shared signature must carry the resolved lane or backend settings, or \u00a77's write paths must gain dispatch.py and dispatch_plan.py; without one of those the queue-time check has no production caller, which is the only reason the section exists.",
+      "text": "\u00a77 says the shared function \u00a72 extracts also runs the context-fit estimate against the request's resolved lane, but the estimate reads the window from a resolved backend (_context_fit_verdict and resolution.backend_settings, reckon/crew/routing.py:3560-3600) while \u00a72 fixes the function's arguments as the node, repository, execution capability, locked decisions and budget ceiling with no lane or backend settings; the call sites that hold the resolved lane are queue_requests (reckon/crew/dispatch.py:293, which resolves the lane from backend_name or config) and plan_dispatch (reckon/crew/dispatch_plan.py:834), and neither file is in \u00a77's write paths (dispatch_admission.py, dispatch_batch.py, the new test), so the signature change reaches callers outside the node's exclusive scope",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "2c432c68a584138ae5d5a987298f1aa864dd952e",
+  "plan_fingerprint": "e0eb11f3b53840f2eb1129563cb23ca09a97ade123801e5062e398414e40639b",
+  "plan_slug": "a-queued-request-is-checked-when-queued",
+  "plan_version": 22,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T141449153426-plan-review-of-a-queued-request-is-checked-when-queued",
+  "reviewed_blob_sha": "293b9ea1430097a8ff1e5c13094bf01e2cd53577",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_context_file_inputs` is at reckon/crew/routing.py:3262, and reckon/crew/obligations.py:2077 and `QUEUED_AWAITING_SESSION_DUTY_KIND` at :181 all resolve.",
+    "done_when": "a finding \u2014 \u00a78's done-when asserts that a queued request with no failure yields the present `queued-awaiting-session` row, but that kind is emitted only when a session refusal is present; a failure-free request is built as `run-queued`.",
+    "evidence_paths": "pass \u2014 both sections measure a test file inside the repository and their gate logs follow the run-directory convention; neither names a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 the new test names describe the property measured (test_a_batch_entry_fits_its_window_when_queued.py, test_a_refused_request_names_its_refusal.py) with no plan labels, stage names or tracker numbers.",
+    "reasoning": "a finding \u2014 \u00a78 changes the kind of an obligation row in one of the two producers that build it, so the published slice keeps the old kind; and \u00a77's context-fit check needs a resolved lane that \u00a72's shared signature does not carry, with the supplying call sites outside \u00a77's write paths.",
+    "single_goal": "pass \u2014 \u00a77 carries one check (context fit at queue time) and \u00a78 one obligation kind; each has one measurable test.",
+    "wiring": "pass \u2014 \u00a77's \"it runs after \u00a72 and \u00a76\" is stated in prose and is enforceable as a run wait through the multiple `--after` option (reckon/crew_dispatch_commands.py:1171), the mechanism the plan's earlier \u00a76 answer recorded; \u00a78 takes no dependency and writes one module."
+  },
+  "section_digests": {
+    "_document": "94a77d629dcc1e242e9a1a89c7cd458221655e9e0f8ba0c22b77a536ea2ae139",
+    "s1": "196da1e620e2e482d27bdd207b57d91dc82c799811a9f88189e2350ff4eeb51a",
+    "s2": "f0bb78f495e184d08f264ee0c8670552bf2417dc09e1fccec557d64974b999ef",
+    "s3": "f288d709dea574f288a4293a730c4c2c68204ee12bcbcc8ecb597365aea1936f",
+    "s4": "214c26ee307b26a9189e695057c758aa5f11833093fa7379f62bdba78c540705",
+    "s5": "14904131688ef295e846a5981db7f3012be401c872b746a8e4d5525277b7f620",
+    "s6": "9fd7213f2d6f0bab3f756ca0963129a03ad23ecf38500889a8fd09f89dec519f",
+    "s7": "9cdc0ebe3f5b4c4e29eacad9d848fe245df8e9c203d99007e35b473f5e076eab",
+    "s8": "0ae33ba25630ebb0909eb1a884f0b117344496b64ed6bd0a7efa1604e189fd80"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T15:16:07.769106+00:00",
+  "total": null
+}
