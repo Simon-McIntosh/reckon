@@ -1,0 +1,51 @@
+<section id="index-review-findings-by-repository-path-so-a-dispatch-reads-landing">
+  <h2>A findings read indexes the store instead of reading it</h2>
+
+  <p><strong>What changed.</strong>
+  <code>reckon/crew/findings.py</code> keeps an index of finding rows per
+  repository path, keyed on the review store's stat identity through
+  <code>reckon/file_memo.py</code>. Each review directory's record identities
+  are memoised on the directory's own signature, so an unchanged directory
+  costs one stat and no record read; a record whose own stat identity moved is
+  re-read and only that record is; a record that vanished leaves with its
+  directory's rescan. Directory stats are taken concurrently, because a serial
+  pass over two thousand directories is latency-bound on the shared filesystem.
+  The rows, grouping, recurrence and artefact handling are unchanged.</p>
+
+  <h3 id="index-review-findings-by-repository-path-so-a-dispatch-reads-measured">Measured</h3>
+
+  <p>The same timer on the live store — 5,309 committed records across 2,483
+  review directories — through
+  <code>plan_review._open_findings_for</code> for one dispatch's write paths
+  (<code>reckon/crew/findings.py</code>), called twice in one process. Base is
+  the same tree at its parent revision.</p>
+
+  <table id="index-review-findings-by-repository-path-so-a-dispatch-reads-timings">
+    <caption>Wall time of <code>_open_findings</code> on the live store. The
+    warm call is the second call in the same process.</caption>
+    <thead><tr><th>arm</th><th>first call</th><th>second call</th><th>rows</th></tr></thead>
+    <tbody>
+      <tr><td>base <code>45e23304</code></td><td>101.8 s</td><td>133.6 s</td><td>7</td></tr>
+      <tr><td>head <code>e073cf89</code></td><td>66.3 s</td><td>1.33 s</td><td>7</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>The first call is unchanged in kind.</strong> A process that has
+  never read the store still reads every record once; what the index removes is
+  the repeat. Within one long-lived process — the MCP server, or a dispatch
+  that asks once per node — the second and later reads cost a stat sweep and
+  open no record.</p>
+
+  <h3 id="index-review-findings-by-repository-path-so-a-dispatch-reads-check">The check</h3>
+
+  <p><code>tests/test_findings_are_indexed_by_path.py</code> holds three facts
+  against a temporary store, counting record opens through the store's own
+  reader: a second call after no change opens no record; after one record is
+  rewritten, that record is the only one opened and its new rows are returned;
+  a deleted record's rows are gone. Its negative control drops the memo, and
+  all three cases then open records — the unchanged-store case opens every one.</p>
+
+  <p>The finding population the change touches is green on both arms: 51 passed
+  at the base revision, 54 at the head (the three new cases included), no added
+  failure.</p>
+</section>
