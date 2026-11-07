@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T01:13:27.376Z",
+  "dispatched_at": "2026-11-07T01:02:46Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:50",
+      "id": "reasoning-1",
+      "reason": "the rule must say the plan's section ids are compared through `_section_key`/`section_record_id`, with a dotted-id case, or the guard tests green and misses a section spelling the codebase explicitly supports (`reckon/_plan_html.py` section_id_candidates docstring, \"the dotted one an author may have used (``s5.1``)\").",
+      "text": "the producible-id set and the append refusal both take \"the plan's section ids\" as authored, but `_render_document` writes `_section_key(raw_id)` (reckon/evidence.py:70,349,372), so a plan section authored `id=\"s5.1\"` renders as `id=\"s5-1\"` (`_section_key(\"s5.1\")` returns `\"s5-1\"`, verified in the repo's venv); for such a plan an unmarked `s5-1` section left by an earlier synthesis is classified as appended and carried, and an append anchored `s5-1` is not refused, which is exactly the case-3 stale-section and case-6 collision the plan exists to stop \u2014 the third and sixth cases cannot show it because `s9` and `s4` are identities where the authored and rendered spellings coincide",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:50",
+      "id": "reasoning-2",
+      "reason": "a worker taking the clause as a description of existing behaviour looks for a ledger read to extend, finds none, and can most cheaply drop that arm of the guard rather than add it.",
+      "text": "the refusal is placed in `_apply_evidence_appends` because it is \"the half of the op that has the docs directory and reads the ledger\", but that function (reckon/_store.py:1230\u20131275) reads no ledger and does not import `reckon.ledger`; `_store.py` imports it lazily only at line 4573, and the only plan read nearby is `_evidence_plan_title` (1177), reached only when the record file is missing \u2014 so both inputs the refusal needs (the plan's section ids and comment keys, the current ledger run sections) must be added, not extended",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:51",
+      "id": "done_when-1",
+      "reason": "the ledger arm is the part that stops a future `section` key colliding with an anchor already published, and without a case or control the gate cannot show it fires, so the narrower guard ships as a pass.",
+      "text": "the deliverable requires the refusal to cover \"every id `_section_key` makes of ... the current ledger runs' `section` keys\", but the sixth case anchors `s4`, a plan section id, and no case anchors an id that only a ledger run renders; a refusal that checks plan sections and comment keys alone passes all eight cases and all eight controls",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "0bd57df0ea95464fa01256b2b27d1328b9a28321",
+  "plan_fingerprint": "e7231825274b5ac60f52ab84bbc13d9ba6b023017be4f355d570003414af67dd",
+  "plan_slug": "an-evidence-record-counts-only-what-it-read",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T005930313381-plan-review-of-an-evidence-record-counts-only-what-it-read",
+  "reviewed_blob_sha": "cb1525be5dd540b5d2eeaa241a67d896a9aed1fa",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/evidence.py` near line 24 (`EvidenceSynthesisResult` at 23\u201330), near lines 340\u2013354 (`comments_by_section`/`runs_by_section`/`available` at 338\u2013354), `reckon/_store.py` near line 1230 (`def _apply_evidence_appends` at 1230) and near lines 1292\u20131299 (the anchor-shape `re.fullmatch` guard), and `reckon/project_maintenance_commands.py` near line 1473 (`def synthesize_evidence`) all resolve as cited.",
+    "done_when": "a finding \u2014 the deliverable makes the `append_evidence` refusal cover ids the current ledger runs render, but every one of the eight cases exercises a plan section id or a free anchor, so the ledger arm of the guard is never shown to fire.",
+    "evidence_paths": "pass \u2014 every log is required under the run directory, starting with its revision and the literal command and ending in `EXIT=`, which is a durable path a later reader can open.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach the symbols or attributes \u00a74 names (`data-evidence-origin`, the dropped-anchor field), and the new symbols would be named by what they hold.",
+    "reasoning": "a finding \u2014 two claims in the deliverable do not hold against the code it cites: \"the plan's section ids\" is used unnormalised where the renderer normalises through `_section_key`, and `_apply_evidence_appends` is described as reading the ledger when it reads neither the plan nor the ledger today.",
+    "single_goal": "pass \u2014 \u00a74 has one goal, that a re-synthesis keeps every anchor an append wrote; the new refusal is a second mechanism toward the same anchor-preservation goal, not a separate deliverable.",
+    "wiring": "pass \u2014 \u00a74 declares waits on \u00a72 (shared `reckon/evidence.py`, `reckon/_store.py`) and \u00a73 (shared `reckon/_store.py`) in `plan-section-depends-on`, and the open followup orders \u00a72, \u00a73, \u00a74 in the same order."
+  },
+  "section_digests": {
+    "_document": "6d35efce52466005f8ee56997c8dc7bcca998d7c41fcd252d254bc7264596281",
+    "s1": "7c52117565966edec5de56bc0448d4a141edbcb73ac18ede5f2cb0c34f424f0a",
+    "s2": "143dc532dde638505b6cf743e1b2af8b2d754fbd94debf4fdb0b351e623a2a39",
+    "s3": "1e19a712fd2dad1c38a11f7b6164b1fcc01c996e78f3297edb135a1d5fd7c0cf",
+    "s4": "57a83cc9fd0056b3ce2a67fb81394f3815f8d951cbf0f5b4b67ca00249737117"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T01:26:11.729943+00:00",
+  "total": null
+}
