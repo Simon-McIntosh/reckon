@@ -1,10 +1,10 @@
 """An admission pass, a landing pass and a dispatch each observe the tree once.
 
-The synthetic project below is the one §6 of ``a-read-costs-what-changed``
-describes: 40 plans, and 30 awaiting-upstream requests naming 70 refs across 12
-of those plans. Each pass reads plan state through the shared memo, so the
-project's readiness is derived once however many requests and refs ask for it,
-and the passes bound how many paths they observe rather than one per lookup.
+The synthetic project below holds 40 plans, and 30 awaiting-upstream requests
+naming 70 refs across 12 of those plans. Each pass reads plan state through the
+shared memo, so the project's readiness is derived once however many requests
+and refs ask for it, and the passes bound how many paths they observe rather
+than one per lookup.
 """
 
 from __future__ import annotations
