@@ -1,0 +1,32 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-07T08:36:22.845Z",
+  "dispatched_at": "2026-11-07T08:23:07Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-dry-run-must-resolve-what-the-real-call-resolves/document-the-dryrun-discriminator-beside-its-cli-option.html",
+      "line": 39,
+      "severity": "non-blocking",
+      "text": "The evidence fragment's head-arm row names revision 4e6caecda while after-suite.log's own header records the same run at c06531bbef4b00736c51ca72130ea412232e152a, so the one artefact whose job is to record the measurement cites a revision its cited log was not run at."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to document the dry-run discriminator beside its CLI option, and reckon/crew_dispatch_commands.py:1444 puts the question inside the --dry-run option's own help string, immediately after the skip promise.\nVERDICT done_when: the node's done-when requires tests/test_dry_run_discriminator_documented.py to read the CLI help beside --dry-run and find the question about a green preview that would still be wrong; _dry_run_block at tests/test_dry_run_discriminator_documented.py:43 isolates the option's own wrapped block from the rendered help and the three tests at lines 60, 69 and 76 assert the question, the green-preview clause and the retained skip promise, and the run's after arm records 3 passed EXIT=0.\nVERDICT write_paths: the manifest declares reckon/crew_dispatch_commands.py, tests/test_dry_run_discriminator_documented.py, docs/evidence/fragments/a-dry-run-must-resolve-what-the-real-call-resolves/document-the-dryrun-discriminator-beside-its-cli-option.html and an unused figure directory; git diff c845c2bb5..c06531bbef touches exactly the first three and nothing else.\nVERDICT manifest: read; it records the base arm c845c2bb5 as 2 failed/1 passed EXIT=1 in baseline-suite.log, the head arm as 3 passed EXIT=0 in after-suite.log, and a mutation arm at EXIT=1 in negative-control.log, and those three logs on disk carry the EXIT lines and failing ids the manifest claims.\nVERDICT diff: two commits (4e6caecda5, c06531bbef) change three files - a six-line help-string replacement at reckon/crew_dispatch_commands.py:1444, a ninety-line new test module at tests/test_dry_run_discriminator_documented.py, and a fifty-line evidence fragment - and carry nothing the goal does not imply.\nCALL_SITES: reckon/crew_dispatch_commands.py:1141 (@crew.command(name=\"dispatch\"), the click command whose --dry-run option help the change alters), reckon/cli.py:203 and reckon/cli.py:209 (the re-exports that place that group on the reckon command line)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew_dispatch_commands.py:1444 puts the discriminator question in the --dry-run option's help, which is the dispatch surface's own documentation beside the option the plan's done-when names.\nSCORE evidence: 19\nJUSTIFICATION evidence: after-suite.log records the named gate at the reviewed head as 3 passed EXIT=0 (reproduced independently at c06531bbef), and baseline-suite.log records 2 failed/1 passed EXIT=1 at c845c2bb5, so the gate measures the done-when rather than claiming it; one recorded artefact, the fragment row at line 39, cites a revision its own log was not run at.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff c845c2bb5..c06531bbef touches only reckon/crew_dispatch_commands.py, tests/test_dry_run_discriminator_documented.py and the evidence fragment, all inside the manifest's declared write paths, with no plan, index or figure edit.\nSCORE durability: 19\nJUSTIFICATION durability: restoring the base blob of reckon/crew_dispatch_commands.py in a scratch extraction of the reviewed head turned tests/test_dry_run_discriminator_documented.py red at 2 failed/1 passed EXIT=1 with the same two ids the run's negative-control.log names, so the guard fires on the regression it was added for; the assertion pins literal prose, so a meaning-preserving rewording also reddens it.\nSCORE fit: 20\nJUSTIFICATION fit: the help string follows the surrounding click option idiom at reckon/crew_dispatch_commands.py:1444 and the test module follows the repository's help-reading idiom (tests/test_crew_help_names_its_state.py:96, and the __main__ mutation-recipe block used by 33 files under tests/), with no plan, sprint or ticket identifier in any added name.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search of tests/helpers, tests/test_cited_commands_exist.py:226 and the other help-reading test modules found no owned per-option help-block extractor, so _dry_run_block at tests/test_dry_run_discriminator_documented.py:43 is the first owner of that capability and duplicates nothing.\nFINDING docs/evidence/fragments/a-dry-run-must-resolve-what-the-real-call-resolves/document-the-dryrun-discriminator-beside-its-cli-option.html:39 non-blocking: the head-arm row names 4e6caecda while after-suite.log's header records the run at c06531bbef, so the evidence table understates the revision its own cited log measured.",
+  "review_run_id": "r-20261106T161252641125-review-of-document-the-dryrun-discriminator-beside-its-cli-option-c06531bbef4b",
+  "reviewed_base_sha": "c845c2bb5f3d212a769934c76666b268f4818cf6",
+  "reviewed_head_sha": "c06531bbef4b00736c51ca72130ea412232e152a",
+  "reviewed_run_id": "r-20261103T080731600837-document-the-dryrun-discriminator-beside-its-cli-option",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T08:42:39.570671+00:00",
+  "total": 118
+}
