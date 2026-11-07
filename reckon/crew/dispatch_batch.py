@@ -516,7 +516,7 @@ def _queue_batch(
     """
     from reckon.crew import queue_admission
     from reckon.crew.dispatch import queue_requests as queue_one
-    from reckon.crew.runs import new_run_id, read_pointer
+    from reckon.crew.runs import new_run_id, read_pointer, run_dir
 
     root = Path(repo_root).expanduser().resolve()
     plans = _Plans(root)
@@ -567,6 +567,14 @@ def _queue_batch(
             config = config_for(project)
             backend = str(entry.get("backend") or "")
             run_id = new_run_id(node.id)
+            # A queued request names the manifest path its worker delivers to,
+            # exactly as a single dispatch stores it, so a coordinator can edit
+            # the request while it waits: the queue edit judges every request on
+            # that contract, and holds its own run directory as the durable
+            # place for it.
+            node.manifest_path = node.manifest_path or str(
+                run_dir(run_id) / "manifest.md"
+            )
             # The batch stays inside the per-section readiness read: queuing
             # each entry through the project-wide view would build every plan
             # in the project once per entry, which is what the batch exists to
