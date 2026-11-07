@@ -1,0 +1,77 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T10:36:58.595Z",
+  "dispatched_at": "2026-11-07T10:29:09Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:178",
+      "id": "wiring-1",
+      "reason": "every other implementable section carries a followup, and without one the section that answers the eviction finding is unreachable and the memo store keeps growing.",
+      "text": "\u00a713 is added as `implementable` but no followup names it: the last open followups are `f-tchhab-008` (\u00a78), `f-tchhab-011` (\u00a711) and `f-tchhab-012` (\u00a712), so the roadmap has no invocation that reaches \u00a713",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:179",
+      "id": "reasoning-1",
+      "reason": "the node would have to invent the directory and kind name the sweep must target, and \u00a713 has no declared wait to hold it until \u00a76 lands.",
+      "text": "\u00a713's Why says \"`plan_review._snapshot_evidence` now persists one file per distinct snapshot content digest through the persisted-memo helper\", but no such code is in the tree: `reckon/crew/plan_review.py` calls neither `persisted_memo` nor any store helper (`grep -rn persisted_memo reckon/crew/plan_review.py` \u2192 none; `_snapshot_evidence` at line 877 only reads an existing snapshot), and the section that adds it, `a-read-costs-what-changed` \u00a76, is declared `implementable` at its reviewed head `5be11339a0e6`; the plan's own `plan-standalone` (line 23) says it \"waits on none\". A node dispatched on \u00a713 today finds no memo directory and no cache kind to name",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:179",
+      "id": "done_when-1",
+      "reason": "the case is unsatisfiable as written, so the node either fails its own done-when or satisfies it by writing the file in the test, which proves nothing about a read.",
+      "text": "\u00a713's done-when requires the gc pass to keep \"one read inside it\", but the rule it borrows keys on mtime: `_orphan_ledger_indexes` reads `index.stat().st_mtime` (`reckon/crew/gc.py:429`) and `_write_persisted_memo` only writes (`reckon/metadata_index.py:1963,1974`), so reading a memo file never moves its mtime and an entry read a minute ago is swept on age alone; nothing in the declared write paths (`reckon/crew/gc.py` and the new test) can make a read visible, because a read-touch would have to live in `metadata_index.py`",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-home-has-a-bound.html:179",
+      "id": "reasoning-2",
+      "reason": "a node reading \"size rule\" literally would add a byte cap that deletes entries inside the age window, contradicting the next sentence's promise that a recently read entry is kept.",
+      "text": "\"the same age and size rule it applies to the pick-input cache\" names a size rule that does not exist: `_orphan_ledger_indexes` (`reckon/crew/gc.py:395-441`) applies one threshold, `LEDGER_INDEX_UNRECORDED_MAX_AGE_DAYS = 7` (`gc.py:213`), and only to an index recording no ledger path; sizes are reported per row and never thresholded, and `RUN_DIRECTORY_SIZE_LIMIT` (`gc.py:221`) bounds a measurement walk rather than retention",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "013ba733f8f61bf403a2cb35a4a763e2bc26eb79",
+  "plan_fingerprint": "86ce25ba490d6d1f8e477022d492fde19709a030398d20dbc324a9c829314ae1",
+  "plan_slug": "the-crew-home-has-a-bound",
+  "plan_version": 98,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T102813607711-plan-review-of-the-crew-home-has-a-bound",
+  "reviewed_blob_sha": "c97e5b947b99d1a6d64e8e8fa09aca10e21f59b0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_snapshot_evidence` resolves at `reckon/crew/plan_review.py:877`, `reckon/crew/gc.py` exists, and the cited review run `r-20261107T092428175121` with score 110 resolves in `a-read-costs-what-changed` (lines 144, 146).",
+    "done_when": "a finding \u2014 \u00a713's \"keeps one read inside it\" case cannot be satisfied by the mtime rule it borrows, and nothing in its declared write paths can make a read visible to that rule.",
+    "evidence_paths": "pass \u2014 no gate output is placed in a scratchpad or node-local path; the run directory and repository test paths are the only destinations named.",
+    "naming": "pass \u2014 the new test filename and the section's prose name a mechanism, with no plan labels, stage names or ticket numbers.",
+    "reasoning": "a finding \u2014 \u00a713 states as present fact a persisted memo store that no code in the tree produces, and it attributes a size rule to the pick-input cache sweep that does not exist.",
+    "single_goal": "pass \u2014 \u00a713 names one deliverable, one sweep in `garbage_collect`, with one measure.",
+    "wiring": "a finding \u2014 \u00a713 is declared `implementable` with no followup naming it, and it silently makes this plan wait on `a-read-costs-what-changed` \u00a76 while `plan-standalone` states it \"waits on none\"."
+  },
+  "section_digests": {
+    "_document": "8dbf3931cf51d4f9e385eee50ffeaf942f75c992211bd29b064ea8615ef7a5d7",
+    "s1": "32d74b1202f967c9688afa80dbd94719f49d78f6a5afcc8d56d9c46602e1c0a5",
+    "s10": "56c18da5f95c1af6bc07050b4374f565f11fa8750f575894cd4e1cc2b5ea773a",
+    "s11": "80acd3bb5f292230c27316d662ee39353a2f9d2571e4aa608f5e765924e25480",
+    "s12": "45922de00c241b79de39fff9312c389ca9030f6fa16a304a9d0c35e383ad77be",
+    "s13": "53744e574e417aac88f2c241b4373b4f84b8ed6fef0fae4027aeb44668aee8d6",
+    "s2": "9328c20a14a28cadebc0cf3424b9fa61772f8c3bea7e4f7b1e097571697c0369",
+    "s3": "42466bfb93ed68c3dcdb669550dae38d00ebbdea5e24407a7579076255209fbf",
+    "s4": "ea437bee063bb05e8f8ddb6f7a30f7f066d66dff1770c1488e31b86a6f5c7ba8",
+    "s5": "75a8a336e2ee62426e5a8c3ed3310e0cf614b82a8cf7ae6a5985fcb99f2b1648",
+    "s6": "3f82b3311550663b1d18b1428203c2b44805aff91f1c998049de11dd82bfe201",
+    "s7": "d966e9dc54000fcf7d43d9d39567b2a791c2670b0224b881649472a126a8f106",
+    "s8": "07d9242815cd2c19cf76c9484aa28c908834190af477f204091de9d695b3e8a5",
+    "s9": "5e8a5c96b9e0b65736bdee8a24254ce6fe4a12c73dcb34c44b3a5a72b6e6d9c8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T10:57:26.819219+00:00",
+  "total": null
+}
