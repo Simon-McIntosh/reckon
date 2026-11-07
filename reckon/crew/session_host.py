@@ -20,12 +20,21 @@ silence that follows one. The host never exits on its own -- Claude Code would
 not restart it -- and ends only when its owner is gone or when it is signalled,
 in both of which it stops every child first.
 
+A child that exits with the settle status is one that found its session's work
+drained and printed its idle line. It is not restarted on the backoff, but it
+is re-armed as soon as its session owns work again -- a run published by an
+admission, a resume, or a delivery whose review is still owed -- because that
+run needs no request to the host to appear and nothing else would restart the
+pane over it.
+
 Where the record lives and where the session host resolves its owner are
 overridable so a harness can drive this reader against a temporary tree:
 ``RECKON_SESSION_HOST_STATE_DIR`` for the record directory,
 ``RECKON_SESSION_HOST_LOG_DIR`` for the child-stderr directory, and
 ``RECKON_SESSION_HOST_POLL_SECONDS`` / ``RECKON_SESSION_HOST_BACKOFF`` for the
-owner-check cadence and the first restart delay.
+owner-check cadence and the first restart delay. The live-work view a settled
+child is judged by is a constructor argument, so a test drives the host against
+a stated fleet rather than a real one.
 """
 
 from __future__ import annotations
@@ -184,6 +193,11 @@ class _Child:
     # child that settles with this set is re-armed at once, so the run the
     # request named is never left unwatched.
     wanted: bool = False
+    # The run whose arrival re-armed this pair after it had settled. It is the
+    # census's account of why a pane came back: a run published with no request
+    # to the host -- an admission, a resume, a delivery still owing its review
+    # -- is otherwise indistinguishable from a restart of a failed child.
+    rearmed_for: str | None = None
 
     @property
     def key(self) -> tuple[str, str]:
@@ -295,6 +309,59 @@ def _fifo_path(owner: Mapping[str, Any]) -> Path | None:
     return _session_host_fifo_path((pid, start))
 
 
+def live_work_run(project: str, session: str) -> str | None:
+    """The run that keeps this session's pane owed, or None when it owes none.
+
+    This is the same judgement the follower settles by, asked of the same live
+    pointers: ``population_has_live_work`` is the one statement of which runs
+    owe a pane -- anything that has not reached a terminal phase, and a
+    delivered run whose review is not yet stored -- so the host cannot re-arm
+    over work the pane would not show, nor stay idle over work it would.
+
+    Naming the run is local to this module: the census records which run
+    brought a pair back. An unreadable fleet is read as no work rather than as
+    work, so a child stays settled and is asked again next tick; raising here
+    would end the host and every child it runs.
+    """
+    from reckon.crew import runs as runs_module
+    from reckon.crew import station_subscriber
+
+    try:
+        pointers = runs_module._list_live_records(project=project)
+    except OSError:
+        return None
+    if not station_subscriber.population_has_live_work(pointers, session):
+        return None
+    return _naming_run(pointers, session)
+
+
+def _naming_run(pointers: Sequence[Mapping[str, Any]], session: str) -> str | None:
+    """One run from the population that keeps the session owed.
+
+    A run still in flight is named before a delivered one, because that is the
+    work a reader expects to see brought back; a delivered run is named only
+    when nothing is in flight, which is enough to say why the pane returned.
+    A pointer owned by another session is not this session's work, and one that
+    names no run is nothing to record.
+    """
+    from reckon.crew.node import _TERMINAL_RUN_PHASES
+
+    delivered: list[str] = []
+    for pointer in pointers:
+        if not isinstance(pointer, Mapping):
+            continue
+        owner = str(pointer.get("session") or "")
+        if owner and owner != session:
+            continue
+        run_id = str(pointer.get("run_id") or "")
+        if not run_id:
+            continue
+        if str(pointer.get("phase") or "") not in _TERMINAL_RUN_PHASES:
+            return run_id
+        delivered.append(run_id)
+    return delivered[-1] if delivered else None
+
+
 def _set_parent_death_signal(expected_parent: int) -> None:
     """Runs between fork and exec: arm the kernel parent-death signal.
 
@@ -330,8 +397,13 @@ class SessionHost:
         environ: Mapping[str, str] | None = None,
         clock: Callable[[], float] = time.monotonic,
         now: Callable[[], float] = time.time,
+        live_view: Callable[[str, str], str | None] | None = None,
     ) -> None:
         self._environ = dict(os.environ if environ is None else environ)
+        # The work a settled pair is re-armed over: given the project and
+        # session, the run that keeps it owed, or None. A harness states the
+        # fleet this way rather than by writing live pointers.
+        self._live_view = live_work_run if live_view is None else live_view
         resolved = owner if owner is not None else default_owner()
         self._owner = {
             "pid": int(resolved.get("pid") or 0),
@@ -382,6 +454,7 @@ class SessionHost:
                     "session": child.session,
                     "pid": child.pid,
                     "settled_at": child.settled_at,
+                    "rearmed_for": child.rearmed_for,
                 }
                 for child in sorted(self._children.values(), key=lambda c: c.key)
                 if child.pid is not None or child.settled
@@ -510,7 +583,7 @@ class SessionHost:
     # -- supervision --------------------------------------------------------
 
     def tick(self) -> None:
-        """Re-check every child once: restart the exited, leave the hand-armed."""
+        """Re-check every child once: restart the exited, re-arm the idle."""
         now = self._clock()
         for child in list(self._children.values()):
             if child.pid is not None:
@@ -518,14 +591,14 @@ class SessionHost:
                 if status is not None:
                     if _settled_status(status):
                         # The child reached the end of its session's work: it
-                        # printed its idle line and left. It is not restarted,
-                        # so the pane does not repeat that line, and the pair is
-                        # re-armed by its next request.
+                        # printed its idle line and left. It is not restarted on
+                        # the backoff, so the pane does not repeat that line.
                         child.pid = None
                         child.started_at = None
                         child.next_attempt = None
                         child.settled = True
                         child.settled_at = now
+                        child.rearmed_for = None
                         if child.wanted:
                             # A dispatch asked for this pair while the settling
                             # child still ran, so the run it published is work
@@ -534,18 +607,32 @@ class SessionHost:
                             child.settled = False
                             child.wanted = False
                             child.next_attempt = now
-                        else:
-                            continue
-                    ran = (
-                        now - child.started_at if child.started_at is not None else 0.0
-                    )
-                    delay, following = fleet_supervisor.next_backoff(child.delay, ran)
-                    child.delay = following
-                    child.pid = None
-                    child.started_at = None
-                    child.next_attempt = now + delay
+                    else:
+                        ran = (
+                            now - child.started_at
+                            if child.started_at is not None
+                            else 0.0
+                        )
+                        delay, following = fleet_supervisor.next_backoff(
+                            child.delay, ran
+                        )
+                        child.delay = following
+                        child.pid = None
+                        child.started_at = None
+                        child.next_attempt = now + delay
             if child.settled:
-                continue
+                # A settled pair is re-checked every tick, not only on the tick
+                # it settled: a run published with no request to the host -- an
+                # admission, a resume, a delivery still owing its review --
+                # would otherwise leave the session unwatched until something
+                # happened to ask again. A pair that owns nothing stays settled.
+                run_id = self._live_view(child.project, child.session)
+                if run_id is None:
+                    continue
+                child.settled = False
+                child.settled_at = None
+                child.next_attempt = now
+                child.rearmed_for = run_id
             if child.pid is None and child.next_attempt is not None:
                 if now < child.next_attempt:
                     continue

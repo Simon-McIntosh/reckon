@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s118">
+  <meta name="plan-recorded-at" content="2026-11-07">
+  <meta name="plan-verdict" content="passed">
+  <title>A settled follower re-arms while its session owns work | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="settled-follower-rearms-landing" data-node="settled-follower-rearms" data-reckon="landed" data-when="2026-11-07">
+  <h2>A settled child is re-checked every tick and re-armed when its session owns work</h2>
+
+  <p>A follower that finds its session drained prints one idle line and exits with the settle
+  status, and <code>SessionHost.tick</code> left it settled for its next request. A run can appear
+  with no request to the host at all — an admitted queued request, a resume, a delivery whose review
+  is still owed — so the pane that shows it was gone: a delivery at 20:43Z went unseen for eighty
+  minutes, and each resume on 7 November left its session unwatched until a dispatch happened to
+  re-request the pair.</p>
+
+  <p><strong>Change.</strong> <code>reckon/crew/session_host.py</code>. Each tick now asks a live
+  view for the settled pair; a run the view names re-arms the child in that tick, and a pair owning
+  nothing stays settled. The default view is <code>live_work_run</code>, which asks the fleet's own
+  judgement — <code>station_subscriber.population_has_live_work</code>, the one statement of which
+  runs owe a pane (anything not yet terminal, and a delivered run whose review is not stored) — of
+  the same live-pointer directory a follower settles by, scoped to the child's own session. Naming
+  the run is local to the module, and the census carries it as <code>rearmed_for</code> on the child,
+  so a reader can tell a re-arm from a restart of a failed child. The view is a constructor argument,
+  so a harness states the fleet rather than writing pointer files. A view that fails to read is read
+  as no work, leaving the child settled for the next tick rather than ending the host.</p>
+
+  <p><strong>Gate.</strong>
+  <code>tests/test_a_settled_follower_rearms_while_its_session_owns_work.py</code> drives
+  <code>tick</code> with a stubbed spawn and a stated live view: a child settling over a working run
+  is spawned again (2 spawns) and the census names <code>r-owns-a-working-run</code>; one settling
+  over a queued request is spawned again; one settling with nothing owed is not, and stays settled
+  across two further ticks. A fourth case drives the default view against a temporary crew home: a
+  working pointer of another session is present and does not count, and one of this session's own
+  re-arms the pair. 4 passed. The same file against the base revision (a <code>git archive</code>
+  tree at <code>320f12e483</code>) fails all 4, <code>EXIT=1</code>.</p>
+
+  <p><strong>Population.</strong> The 20 test files importing <code>reckon.crew.session_host</code>,
+  one arm at a time, <code>-n 4</code>: base tree 2 failed / 196 passed, head worktree 2 failed /
+  196 passed, <strong>0 added failures</strong>. Both arms fail only
+  <code>test_skill_contracts.py::test_no_routing_identifier_leaks_into_skills_or_source</code> and
+  <code>::test_every_registered_crew_verb_is_documented_or_exempt</code>, which an adjacent node
+  holding <code>skills/</code> owns. Logs: <code>baseline-arm.log</code>,
+  <code>head-arm.log</code>, <code>gate-new.log</code>, <code>new-test-on-base.log</code>.</p>
+
+  <p><strong>Negative control.</strong> Leaving settled children to their next request — every host
+  built with a view that owes nothing — makes the working and queued cases spawn nothing:
+  3 failed, 1 passed, <code>EXIT=1</code>, the two required cases first. Log under the run
+  directory: <code>negative-control.log</code>. <code>ruff check</code> and
+  <code>ruff format --check</code> add no findings on the staged paths.</p>
+</article>
+</body>
+</html>
