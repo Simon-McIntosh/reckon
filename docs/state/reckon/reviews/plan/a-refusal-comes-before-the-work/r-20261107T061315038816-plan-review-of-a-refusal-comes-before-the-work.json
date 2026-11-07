@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T06:19:11.728Z",
+  "dispatched_at": "2026-11-07T06:14:23Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-refusal-comes-before-the-work.html:49",
+      "id": "done_when-1",
+      "reason": "a worker sent to implement this would add a refusal branch no call can reach and a test case that cannot be satisfied, and would return blocked or write a vacuous test.",
+      "text": "done-when case 5 is unsatisfiable: every batch entry must name a `plan` (`_entry_node`, reckon/crew/dispatch_batch.py:372\u2013375 raises \"must name its project, plan and section\"), and `_require_brief_owner` (reckon/crew/promotion_checks.py:1787\u20131789) returns before the refusal whenever the node names a plan, calling it \"briefed plan work\"; so no batch entry can be a \"brief run with no plan\", the batch-entry refusal in the deliverable can never fire, and case 5 can neither pass nor fail. The same unreachability applies to the batch half of the recording deliverable: a batch run's plan is always present, so its landing discharge never asks for a link either.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-refusal-comes-before-the-work.html:49",
+      "id": "done_when-2",
+      "reason": "the node would be blocked by its write fence as soon as it reached the CLI change, or would have to stop and request a scope extension before any test could run.",
+      "text": "the write paths omit `reckon/crew_dispatch_commands.py`, which is where `crew dispatch` is defined (`crew_dispatch`, reckon/crew_dispatch_commands.py:1451, with `--brief` at 1159 and `--plan` at 1157) and where the dispatch options are assembled (`dispatch_options` at :1861 and :2179); the deliverable's `--plan-link` and `--unplanned-reason` dispatch flags cannot be added, nor threaded into the pointer, without editing that file, while `reckon/crew_run_commands.py` (listed) holds only the landing flags at :2899 and :2910.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "3564d43c3d1ee17669b4a11a1d39f4f4ac003945",
+  "plan_fingerprint": "ad1df604802ed4ac416ebf8b088c0918f63f02d198cdb2337b19a38407302662",
+  "plan_slug": "a-refusal-comes-before-the-work",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T061315038816-plan-review-of-a-refusal-comes-before-the-work",
+  "reviewed_blob_sha": "6f6cc9360f9a0e49b6dec87c3ba34e1321b3ca30",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/dispatch.py:354` is the `dispatch_options` literal inside `queue_requests`, `BATCH_ENTRY_FIELDS` exists at `reckon/crew/dispatch_batch.py:30`, `reckon/crew/promotion_checks.py:1770` resolves to `_require_brief_owner` at 1769, and `_queue_batch` exists at `dispatch_batch.py:502` (the \"near line 573\" citation lands inside that function, on its `queue_one(...)` call).",
+    "done_when": "a finding \u2014 \u00a73's done-when case 5 (a batch brief entry refused for giving neither field) cannot be constructed, and the declared write paths omit the file where `crew dispatch`'s own flags are defined.",
+    "evidence_paths": "pass \u2014 the new test sits under `tests/` in the repository, and \u00a73 names no session scratchpad or node-local path for any evidence.",
+    "naming": "pass \u2014 `plan_link`, `unplanned_reason` and `dispatch_options` are domain names already used by the code, and the test filename states the mechanism; no plan labels, ticket numbers or version tags reach a symbol.",
+    "reasoning": "pass \u2014 the single-path mechanism names its callers (`plan_dispatch` and `queue_requests`) and produces cases 1\u20134; the batch half's mechanism cannot reach its measure, recorded under done_when.",
+    "single_goal": "pass \u2014 \u00a73 names one deliverable: the brief run's plan owner recorded at dispatch, with the dispatch-time refusal that enforces it.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares s3\u2192s2, and \u00a73 names the file it shares with \u00a72 (`reckon/crew/dispatch.py`); no dependency is missing and no relationship points at the wrong section."
+  },
+  "section_digests": {
+    "_document": "fe86ddc53d6df02ed8681809f4399744a8daf0946c333b28fc3a6b583769f545",
+    "s1": "75df880739e89570186a1c16cae47d54a4d457a4a6e99c09b2d62c21368dc424",
+    "s2": "82627aab8394f0209c300c78167c8eb9a00cc5acf2e8b3a32be25df3b62c3f92",
+    "s3": "6e2004c72df48df0e27cd8a05d32aa43a64d650a32746d6f064bebc5e5da950e",
+    "s4": "2a97d35fa0e69a6331d78f727d1ded35d267ff23bba3ff069f80e200825410f0",
+    "s5": "95b6f7534336d8938a033677b232892e649b24794872574f8706be13d8f17bd3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T06:25:11.443018+00:00",
+  "total": null
+}
