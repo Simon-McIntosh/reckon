@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:_run_review (answer verb)",
+    "reckon/mcp_views.py:4504",
+    "reckon/mcp_deadlines.py:673",
+    "reckon/mcp_edit_plan.py:2195",
+    "reckon/crew/queue_admission.py:3979",
+    "reckon/crew/routing.py:2717",
+    "reckon/mcp_deadlines.py:740"
+  ],
+  "completed_at": "2026-11-07T12:21:52.528Z",
+  "dispatched_at": "2026-11-07T12:10:49Z",
+  "findings": [
+    {
+      "file": "reckon/crew_dispatch_commands.py",
+      "line": 2763,
+      "severity": "non-blocking",
+      "summary": "when nothing covers the plan and the review named by --review-run exists but does not raise the finding, the refusal reports 'no stored review for <project>:<slug>' rather than naming the condition the plan says it tests, so a caller is told to compose a review instead of being told the id is not on the review it named."
+    },
+    {
+      "file": "docs/evidence/fragments/a-queued-request-is-checked-when-queued/an-answer-lands-on-the-stored-plan-review-whose-finding-it.html",
+      "line": 26,
+      "severity": "non-blocking",
+      "summary": "the fragment says the gate ran 'at the node's final revision' but after3.txt's header records 46bf57624f and ruff.txt's header records 45d644e2fe, so the log headers do not name the revision the sentence implies."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T100007553668-an-answer-lands-on-the-stored-plan-review-whose-finding-it/manifest.md",
+      "line": 25,
+      "severity": "non-blocking",
+      "summary": "rubric.durability reports change subjects and bodies rather than the test that fails if this regresses, so the dimension it claims to have answered is answered about a different property."
+    }
+  ],
+  "plan": "reckon:a-queued-request-is-checked-when-queued",
+  "plan_slug": "a-queued-request-is-checked-when-queued",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that an answer lands on the stored plan review whose finding it names, chosen by plan order; the increment at reckon/crew_dispatch_commands.py:2749-2757 hoists the --review-run search above the no-covering-review refusal, so the goal now holds on a plan nothing covers.\nVERDICT done_when: the source done_when names tests/test_an_answer_lands_on_its_review.py with three required behaviours plus a negative control; the worker's gate logs record base 3 failed / head 4 passed / mutation red, and I re-ran the single named file at a744a9eb39 myself: 4 passed, EXIT=0.\nVERDICT write_paths: the source node was fenced to reckon/crew/plan_review.py, reckon/crew_dispatch_commands.py, tests/test_an_answer_lands_on_its_review.py, the evidence fragment and its figures dir; the three increment commits touch only the first, third and fragment.\nVERDICT manifest: read; it records the head gate as \"4 passed\" over after3.txt, the negative control as 2 failed / EXIT=1, and an outside_scope note that velocity._is_ancestor widens the git timeout from 20 s to 180 s and collapses an unresolvable object to False.\nVERDICT diff: read change by change against 45d644e2fe; 46bf57624f changes the ancestry probe, two selector signatures and the answer branch (102 insertions), 297aa79137 and a744a9eb39 change only the evidence fragment's prose and its log filename.\nCALL_SITES: reckon/crew_dispatch_commands.py:_run_review (answer verb), reckon/mcp_views.py:4504, reckon/mcp_deadlines.py:673, reckon/mcp_edit_plan.py:2195, reckon/crew/queue_admission.py:3979, reckon/crew/routing.py:2717, reckon/mcp_deadlines.py:740\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew_dispatch_commands.py:2749-2757 searches every stored review for the named run before the refusal at line 2763, which is the gap the goal names.\nSCORE evidence: 17\nJUSTIFICATION evidence: the logs directory carries after3.txt (\"4 passed\", EXIT=0), probe-no-hoist.txt (\"1 failed\", EXIT=1) and negative-control.txt (\"2 failed, 2 passed\", EXIT=1), each headed by the revision and command it ran; I reproduced 4 passed at a744a9eb39.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git log --stat over 45d644e2fe..a744a9eb39 lists only reckon/crew/plan_review.py, reckon/crew_dispatch_commands.py, tests/test_an_answer_lands_on_its_review.py and the in-scope evidence fragment.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_an_answer_lands_on_its_review.py:294 asserts exit_code == 0 and :318 asserts the finding lands in the named review's responses, and probe-no-hoist.txt shows that assertion reddening against the pre-change dispatch file.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/plan_review.py:1037 imports the private _is_ancestor lazily from reckon.velocity, the same cross-module private-import idiom already used at reckon/crew/queue_admission.py:2872.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/plan_review.py:1016 now delegates the ancestry question to reckon/velocity.py:706 instead of keeping its own git call, and the answer branch reuses list_plan_reviews, finding_ids and _record_run_id rather than adding a reader.\nFINDING reckon/crew_dispatch_commands.py:2763 non-blocking: when nothing covers the plan and the review named by --review-run exists but does not raise the finding, the hoisted search finds nothing and the refusal reports \"no stored review for <project>:<slug>\", which is false \u2014 a stored review exists \u2014 and it does not state the condition the plan says the refusal tests, so a caller is sent to compose a review instead of being told the id is not on the review it named.\nFINDING docs/evidence/fragments/a-queued-request-is-checked-when-queued/an-answer-lands-on-the-stored-plan-review-whose-finding-it.html:26 non-blocking: the fragment says the gate ran \"at the node's final revision\", but after3.txt's header records revision 46bf57624f (the code change; a744a9eb39 only edits this fragment) and ruff.txt's header records 45d644e2fe while it checked worktree content that change had not yet taken, so the log headers do not name the revision a reader would infer from the sentence.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T100007553668-an-answer-lands-on-the-stored-plan-review-whose-finding-it/manifest.md:25 non-blocking: the rubric.durability line reports commit subjects and bodies rather than the test that fails if this change regresses, so the one dimension it claims to have answered is answered about a different property.\n",
+  "review_run_id": "r-20261107T120829727551-review-of-an-answer-lands-on-the-stored-plan-review-whose-finding-it-a744a9eb392d",
+  "reviewed_base_sha": "45d644e2fe44071bdeda2745b704dd4c2f94f911",
+  "reviewed_head_sha": "a744a9eb392d0760251f1e874ac2577278e25b74",
+  "reviewed_run_id": "r-20261107T100007553668-an-answer-lands-on-the-stored-plan-review-whose-finding-it",
+  "reviewed_run_node": "an-answer-lands-on-the-stored-plan-review-whose-finding-it",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "section": "4",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T12:36:05.636546+00:00",
+  "total": 109
+}
