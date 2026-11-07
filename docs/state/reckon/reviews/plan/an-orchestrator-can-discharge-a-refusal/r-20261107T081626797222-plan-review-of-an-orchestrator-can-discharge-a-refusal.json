@@ -1,0 +1,99 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T08:36:39.408Z",
+  "dispatched_at": "2026-11-07T08:31:15Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/an-orchestrator-can-discharge-a-refusal.html#s5",
+      "id": "reasoning-1",
+      "reason": "the plan's only dispatchable section would send a node to build a guard that exists, and \u00a79's premise that \u00a75 \"is the only section that can start today\" is false until \u00a75 is rewritten as verification or as the next defect above it.",
+      "text": "\u00a75 asserts \"941fc6d4 added the guard and no repair commit exists anywhere in history\" and specifies the fix as requiring the pytest summary line as positive evidence; commit `6e4d93d290 fix(crew): require a positive record before trusting a quoted diagnostic` has since landed exactly that repair, and `reckon/crew/promotion_evidence.py:1134` now reads `if not_found is not None and not _log_shows_the_command_ran(log_text, recorded)`, which promotes a log carrying a summary line and refuses one without \u2014 \u00a75's own done-when, already satisfied on `main`.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-orchestrator-can-discharge-a-refusal.html#s5",
+      "id": "reasoning-2",
+      "reason": "listed for completeness alongside the finding below; the actionable correction is the same one, so it does not add a separate change.",
+      "text": "the same section specifies a discriminator that a recorded comment on the plan itself (lines 547\u2013551) says \"must not ship as specified\": `tests/test_crew_gate_log_agrees.py` writes three pytest-summary-shaped lines into its fixtures, so a substring search for a summary passes; the same recorded review states the correction is to move the discriminator into a declared field (base failure count and added count) rather than swap a negative signature for a positive one. The landed `_RUNNER_SUMMARY = re.compile(r\"\\b\\d+\\s+(?:passed|failed|errors?|skipped|...)\\b\")` over the whole log is precisely the spoofable substring form.",
+      "type": "reasoning",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/an-orchestrator-can-discharge-a-refusal.html#s5",
+      "id": "anchors_resolve-1",
+      "reason": "a node dispatched to \u00a75 would find no guard at the path it is told to edit and in the file \u00a79 says is claimed by another session, so the write scope and the claim the section waits on both point at the wrong module.",
+      "text": "\u00a75 places the guard at `reckon/crew/promotion.py:464` with its source quoted, but that line is now `waived = _require_resume_waiver(` and no occurrence of `command not found` remains in `promotion.py` at all; the guard moved to `reckon/crew/promotion_evidence.py` (commit `4c5d6b8b96 refactor(crew): split promotion responsibilities`). \u00a76b's `reckon/crew/node.py:469` and `:492` anchors likewise name lines that now belong to an unrelated refusal message.",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-orchestrator-can-discharge-a-refusal.html#s5",
+      "id": "anchors_resolve-2",
+      "reason": "\u00a79 and \u00a75 both justify their ordering on a specimen that must promote; with the log gone the specimen cannot be replayed, so the done-when needs a live specimen or a written reproduction before a node is sent at it.",
+      "text": "\u00a75 names `~/.config/reckon/crew/runs/r-20260915T093545453615-the-guard-holds-at-the-merged-head/after.log` as its end-to-end proof, and that run directory no longer exists on disk.",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-orchestrator-can-discharge-a-refusal.html#s9",
+      "id": "done_when-1",
+      "reason": "a done-when whose negative half cannot be produced on the branch measures nothing about the guard, and a worker would report the positive half alone as a pass.",
+      "text": "\u00a79's done-when requires the specimen row to \"promote with the repair and still refuse without it\", but \"without it\" is unreachable on a tree that already carries the repair without a revert, and the only recorded failing state (the red log, or a reverted tree) is not named.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-orchestrator-can-discharge-a-refusal.html#s8",
+      "id": "done_when-2",
+      "reason": "the section's measure has a known negative result; leaving it implementable invites a node to re-run a census whose answer is recorded and to close it against a target it cannot reach.",
+      "text": "\u00a78 is declared implementable with the done-when \"the transcript census reads zero and is recorded\", while the plan's own recorded outcome for that census reads 18.8 vs 18.5 uses per hundred corrective runs and 51.0 vs 52.5 per hundred review runs, i.e. the zero target is already measured and not met.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-orchestrator-can-discharge-a-refusal.html#s4",
+      "id": "reasoning-3",
+      "reason": "the falsifier's shape is sound and the enumeration rule is a design detail rather than a defect in the plan's reasoning; noting it so the implementing node is not left to guess.",
+      "text": "\u00a74's enumeration test is described as iterating \"the refusal sites\" and asserting each carries a discharge, but the plan gives no rule for what counts as a site in source (a `raise CrewError` call, a formatted refusal, a helper), and \u00a76b notes refusals are raised through a shared `format_refusal` helper, so an AST-level enumeration keyed on `raise` would miss them and keyed on message text would read prose.",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "1d25cd0d91cfabdf08cda62a2602ff8ef06829f5",
+  "plan_fingerprint": "7a4a5748a21df0da8f7dea5879582e65eb7f3da47453b8bca9d4ce7496653e8e",
+  "plan_slug": "an-orchestrator-can-discharge-a-refusal",
+  "plan_version": 13,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T081626797222-plan-review-of-an-orchestrator-can-discharge-a-refusal",
+  "reviewed_blob_sha": "9353ba893c8367c09ad98f2bc3a045a68554b97c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a75 cites the defective guard at `reckon/crew/promotion.py:464`, which no longer holds that guard, and the run directory \u00a75 names as its end-to-end specimen has been deleted.",
+    "done_when": "a finding \u2014 \u00a79's done-when (\"the specimen row promotes with the repair and still refuses without it\") can no longer be produced: the repair is already in the tree, so the \"without it\" arm has nothing to measure.",
+    "evidence_paths": "pass \u2014 gate evidence and the \u00a78 census sit on durable paths (`docs/research/refusal-escape-census.html` resolves), and the one non-durable citation is reported under anchors_resolve.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach the code paths the plan writes; \u00a75\u2013\u00a710 identifiers appear only as section headings in the plan document itself.",
+    "reasoning": "a finding \u2014 the plan's \u00a75 mechanism is the repair the plan's own recorded review comment rejects, and the landed code already implements the shape \u00a75 specifies, so a node dispatched to \u00a75 would re-implement a guard that exists.",
+    "single_goal": "pass \u2014 \u00a75 carries the gate-log guard, \u00a76 the claim join, \u00a76b the scope-extension record, \u00a710 the session-id capture; each names one deliverable.",
+    "wiring": "pass \u2014 the declared relationship (`plan-blocks: a-live-worker-can-be-reached`) names the plan whose followup recorded this defect, and no section consumes an undeclared upstream."
+  },
+  "section_digests": {
+    "_document": "d61945283c1bde9d4af1c2d3a35f7ccb51c0e5c91e829fc96c73284192e56ddf",
+    "s1": "09fbd4d9e54abd33b285d0e91e8af9ecb80cba113a6d013aef2eb244e4057672",
+    "s10": "04e9985b9c4bc2b505e33d76a5a3a3c54ce861b7d6d2f36725a245ba30224981",
+    "s2": "1f1483c1df9e7749ef1d8fd6467eaca224474cbc2b59826466478be58f1ebc22",
+    "s3": "f81e1f134a45bec7f2c28301bc52bdac92338d05cba5241c4d9b7ccb48fb4857",
+    "s4": "c9f9382356904b580df57243b493fa0b41764638284ca89354b78dbb39f33d7e",
+    "s5": "35e0f0dc5c6d890b4c37b16e6e1703b31dd9fda0e1f3ca066fdb42bf69914fb5",
+    "s6": "34967bf1f3f5ec12bf055eddbfadf161488e726c3b5bb2d53d52981a2d0a28b3",
+    "s6b": "e15b2a77b45dd7c4dc785e9b5115503870802872968bbed92582351d14bd1643",
+    "s7": "d686fc7945c5be295d2cbedab07c990a339ff0cfe5ac00a14624a7cc0d09b609",
+    "s8": "720da6fc22ecff4fd3c5d71a57b5cd113f5c7e17e40c41b3ab2bdd69d608e5e2",
+    "s9": "b8d4c52eba997e188d965cfe9058970951e209432302e06fe11c58139aefd88d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T08:47:49.376228+00:00",
+  "total": null
+}
