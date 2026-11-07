@@ -1,0 +1,95 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T20:31:20.747Z",
+  "dispatched_at": "2026-11-07T20:22:52Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:457",
+      "id": "reasoning-1",
+      "reason": "the bullet is unreachable by the stated fix, so a worker either fails its gate or silently loosens a designed refusal, and the plan must say which.",
+      "text": "\u00a714's second done-when bullet requires that \"a promoted run whose review carries a blocking finding has its repair round opened within one beat\", but `reckon/crew/recovery_repair_dispatch.py:1051` states the opposite rule as a deliberate guard: \"A promoted run, or one whose live pointer has gone, is refused rather than dispatched: the reviewed run is settled, so there is no tree left to cut a repair against\". No mechanism in the Deliverable changes that guard, so a node implementing \u00a714 as written reaches a bullet it cannot satisfy without reversing a documented refusal it was never told to touch \u2014 and the section would then have to say what a repair of an already-landed tree means and against which head it is cut.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:439",
+      "id": "reasoning-2",
+      "reason": "if the review was never requested or the sweep failed, separating the duty pass from a walk that does not exist fixes nothing, and the repair is aimed at the wrong mechanism.",
+      "text": "\u00a714 names the cause as `SweepBeat.request` returning early while a session's previous sweep is in flight, and supports \"can run for hours\" only by quoting the class's own docstring (`reckon/crew/station.py:229`). The cited evidence \u2014 a review not dispatched for 50 minutes while a follower streamed rows, and a direct dispatch that worked at once \u2014 is equally consistent with the sweep never being requested for that session (`Station` calls `self.sweeps.request` per session at `reckon/crew/station.py:537`, gated by `_sessions_to_sweep`) or with the sweep raising before the review pass. `resumption.sweep` (`reckon/crew/resumption.py:1848`) contains no walk of registered worktrees at all; its body lists live pointers, builds resume plans and dispatches. Nothing in the record shows a sweep in flight for the 50 minutes, so the section aims at a mechanism its evidence does not select.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:446",
+      "id": "single_goal-1",
+      "reason": "one gate proves neither deliverable, and the obligation half needs the station to publish a sweep start time that no section currently promises to record.",
+      "text": "\u00a714 states two deliverables under one node: move review composition and repair dispatch off the sweep's slow path (`reckon/crew/station.py`), and make the obligation state the sweep's in-flight age instead of \"within about 120 s\" (`reckon/crew/obligations.py:690`, whose `_reflex_review_window_seconds` reads `DEFAULT_SWEEP_SECONDS` with no access to any sweep state). They are separate files, separate mechanisms and separate failure modes, and one verdict cannot close both.",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:459",
+      "id": "done_when-1",
+      "reason": "the measure has no control and no named input, so it can pass on a hardcoded string and no reader could tell.",
+      "text": "\u00a714's third bullet measures that the obligation \"names the sweep's age rather than 'within about 120 s'\", but no negative control is declared for it (the control at :462 covers only the review-not-dispatched bullet), and the plan never says which record carries a sweep's start time, so the test cannot be written without inventing that surface.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:475",
+      "id": "reasoning-3",
+      "reason": "the plan records a defect it does not repair, so the evidence reads as covered when the node will not touch it; the author should either add a bullet or drop the instance.",
+      "text": "\u00a715's Why cites a third instance, \"a stale handover answered 'already admitted' for a discarded review request\", but neither the Deliverable nor the done-when names any behaviour that would fix it: the three bullets cover the blocking-finding row, the advice hold, and the admission-held row's own run id, and none of them touches a handover answering for a discarded request.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:491",
+      "id": "done_when-2",
+      "reason": "the bullet is a cheap guard that cannot make the node's work wrong, and the first bullet's control already carries the section's falsification.",
+      "text": "\u00a715's third bullet (\"a row for an admission-held run names only its own run id in its command\") carries no base control, and if that behaviour is already correct at base the case is a regression guard rather than a repair \u2014 which is fine, but then it proves nothing about the defect the section exists for and the section should say so.",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "14b3efd4c07efdc51bbb06602fff17cea4eb16bd",
+  "plan_fingerprint": "d8cf9726abd9e2de5ee833e2d41a57be8d94f6abef2803d1cb7bc604438f0940",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 94,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T201606776752-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "b807ada23ec9df056f89976fdc3f1d46531850b7",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/station.py:264` carries the quoted `if not due or key in self._in_flight: return False` verbatim, `SweepBeat`'s docstring carries the quoted \"walks registered worktrees and can run for hours\" at `reckon/crew/station.py:229`, `recovery_review_dispatch.dispatch_review_for_run`, `recovery_repair_dispatch.dispatch_repair_for_run`, `DEFAULT_SWEEP_SECONDS_FALLBACK = 120` (`reckon/crew/obligations.py:180`) and the `promotable-stale` reading (`reckon/crew/obligations.py:1532`) all resolve.",
+    "done_when": "a finding \u2014 \u00a714's third bullet asks the obligation to print the sweep's age, but no node, table or field is named that would carry that age, and no negative control covers it.",
+    "evidence_paths": "pass \u2014 both sections gate on repository tests with base arms, whose logs the crew manifest records on durable paths; neither places evidence in scratch, and neither build produces a scratch-tree measurement.",
+    "naming": "pass \u2014 both new test filenames name the behaviour they measure, and neither section carries a ticket number or a stage label into a symbol.",
+    "reasoning": "a finding \u2014 \u00a714's done-when requires a repair round for a *promoted* run, which `dispatch_repair_for_run` refuses by design, so the section's stated mechanism cannot produce its own measure; and \u00a714's root cause is asserted from a class docstring that the sweep entry point does not bear out.",
+    "single_goal": "a finding \u2014 \u00a714 carries two deliverables in two modules: the station's duty path (`reckon/crew/station.py`) and the obligation's printed window (`reckon/crew/obligations.py`).",
+    "wiring": "pass \u2014 neither new section declares a relationship in `plan-section-depends-on`, and neither needs one: \u00a714 repairs code \u00a710 landed, and \u00a715's defect (the obligations derivation in `reckon/crew/obligations.py`) is independent of \u00a714's scheduling fix despite the evidence narrative in s15's Why."
+  },
+  "section_digests": {
+    "_document": "cc5a37a4e5aabdb870bf1071512e6afa03b0a4c02c7d4a1b9936b9ddbfda15d1",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "3b11fe0cd53015121e6d566c554c6c77b13236b3700a90279e77a6bc755ea0a3",
+    "s14": "10e9c0a3cde6b1e223383be9ed9468a7ec857341f80a625dc4b175c719272a83",
+    "s15": "5c8efd5bf91260f06366b0fbafc8b780d9e6f76c125048e9f343b7e1d68619dd",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T20:43:43.706495+00:00",
+  "total": null
+}
