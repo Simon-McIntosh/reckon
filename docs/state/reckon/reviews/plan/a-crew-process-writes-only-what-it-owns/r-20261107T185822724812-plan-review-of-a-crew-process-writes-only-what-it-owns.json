@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T19:12:18.135Z",
+  "dispatched_at": "2026-11-07T19:00:20Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-crew-process-writes-only-what-it-owns/r-20261107T185822724812-plan-review-of-a-crew-process-writes-only-what-it-owns/plan.html:47",
+      "id": "done_when-1",
+      "reason": "a worker cannot satisfy the control as written (it asserts an outcome about a case the mutation does not touch), so it either renumbers the plan itself or drops the one control that proves the ask stops trusting the session-wide attachment.",
+      "text": "s3's fifth negative control says \"testing the session-wide attachment returns True in the fourth case\", but the fourth case is now \"a hand-off naming the calling session, made from a follower process writes one request\", and the session-wide attachment belongs to the fifth case (\"an ask for the calling session while another host's follower is attached, and the calling host's census has no child, returns False\"); the new hand-off case was inserted at position four without renumbering the controls below it",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-crew-process-writes-only-what-it-owns/r-20261107T185822724812-plan-review-of-a-crew-process-writes-only-what-it-owns/plan.html:58",
+      "id": "done_when-2",
+      "reason": "two of the eight controls the section counts as its proof point at a case the mutation cannot turn red, and the FIFO control points at the previous-children case, so the worker either implements a control that cannot be demonstrated or silently renumbers and the count of eight no longer matches what the section asserts.",
+      "text": "after s5 rewrote \u00a75 each case was renumbered around the new \"request line carrying owner_checked: true\" case, which is now the fifth, but three controls kept their old numbering: \"admitting unmarked previous children ... in the fifth case\" and \"matching only the current session ... in the fifth case\" both describe the sixth case (the earlier-session/previous-children case), and \"dropping the `_remove_fifo` call from `SessionHost.stop` fails the sixth case\" describes the seventh (the FIFO-removal case)",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "2960ad4da8b01b5338a7bade1cac18f58c4bc871",
+  "plan_fingerprint": "eef1f1748d9c64126b0fe01d0373471e4a02da5edff49b8afb1a6b3b8d3aec37",
+  "plan_slug": "a-crew-process-writes-only-what-it-owns",
+  "plan_version": 10,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T185822724812-plan-review-of-a-crew-process-writes-only-what-it-owns",
+  "reviewed_blob_sha": "a00e87506287c6ecae1ae34bf603798ca0188583",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves at or within a few lines of the stated place: `_request_host_follower` (`reckon/crew/dispatch_watch.py:818`), `_ask_session_host` (`:746`), `_ask_session_host_for_follower` (`:770`), `_session_host_child_pid` (`:695`), `_rearm_session_follower` (`:785`), `_hand_off_to_waiting_host` (`:870`), `_hand_off_from_follower` (`reckon/crew_follow_commands.py:628`), `crew_host` (`:2774`), `parse_request` (`reckon/crew/session_host.py:193`), `record` (`:368`), `_remove_fifo` (`:615`), `supervise` (`:648`), `run` (`:710`), `list_live` (`reckon/crew/runs.py:1015`), `_TERMINAL_RUN_PHASES` (`reckon/crew/node.py:33`), and `runs.py:2275` does read `launch-failed` into the `failed` bucket.",
+    "done_when": "a finding \u2014 s3's negative control for the session-wide attachment is numbered against the wrong case, and s5's three numbered controls are each one case behind after a case was inserted into the list.",
+    "evidence_paths": "pass \u2014 both units send every gate log under the run directory, and s5's FIFO-removal assertions move to a test that runs the real host rather than the bash stub.",
+    "naming": "pass \u2014 both units name the mechanism (`owner_checked`, `waiting_for_dispatch`, \"the ownership guard\") rather than a stage, ticket or plan identifier, and no changelog prose enters a symbol or comment.",
+    "reasoning": "pass \u2014 s3's stated cause matches its evidence (the host is chosen from the caller's `CLAUDE_PID` at `_session_host_owner`, `:583`, while the request names a session), both request writers do reach `_request_host_follower` (`_ask_session_host` at `:760`, `_hand_off_to_waiting_host` at `:884`), and the production callers are named; s5's mechanism is reached from `crew_host` (`:2774`) through `session_host.run` (`:710`), and `supervise`'s first act is `self._write_record(force=True)` (`:667`), so the `waiting_for_dispatch` field is the only change there as claimed.",
+    "single_goal": "pass \u2014 s3 carries one deliverable (guard the request writer at its single spelling) and s5 one (a re-armed host adopts its owner's live runs at start); s5's `parse_request`/`record()` mark-carrying change exists only to make its own adoption rule work.",
+    "wiring": "pass \u2014 s5 declares its wait on s3 in `plan-section-depends-on` and reads the `owner_checked` mark s3's guard writes; s3's write paths (`reckon/crew/dispatch_watch.py`) and s5's (`reckon/crew/session_host.py`, `reckon/crew_follow_commands.py`, `plugins/crew-host/bin/crew-host`) do not overlap, and the followup's claim that \u00a72\u2013\u00a74 run together holds on file scope."
+  },
+  "section_digests": {
+    "_document": "7848c4a22debbc4310e02052a09e0978b08f6e538ba797332694c84678155ff8",
+    "s1": "38e026f18d1b42b1d79978e1ed1cf6179e085908a249e5762f39a683dcc8123f",
+    "s2": "f11be171c26248fbc871d99510f0013c9dfc0a181d247f07861e86dc0d156f40",
+    "s3": "ae84bc6c63b1e6da8691b3c3f65852506365e19e5c1061244bc36ee377ca494d",
+    "s4": "e88fcf79ec58d8305f36e37d69846c8e0a1a10f1b73fc6c167c25b700165e123",
+    "s5": "e91d17efffe4d0e3d7c08f1f539f8d9c22798f829c7074584407caee3c216070"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T19:29:13.062833+00:00",
+  "total": null
+}
