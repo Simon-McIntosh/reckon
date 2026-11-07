@@ -1,0 +1,17 @@
+<section class="evidence-record" id="batch-request-editable-in-queue-record">
+  <h2 id="batch-request-editable-in-queue-title">A batch-made request can be edited in the queue</h2>
+  <p id="batch-request-editable-in-queue-outcome">A request queued by <code>--batch</code> now stores the manifest path its worker delivers to, so <code>crew queue edit</code> judges it on the same contract as a single dispatch. Before the change the edit was refused with the exact message the report quoted: <code>the edited request fails its contract checks and was not stored — independently-verifiable: no manifest path is named, so completion could only be judged by reading the implementation</code>.</p>
+  <table id="batch-request-editable-in-queue-changes">
+    <thead>
+      <tr><th>Path</th><th>Change</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>reckon/crew/dispatch_batch.py</code></td><td><code>_queue_batch</code> assigns each queued entry <code>run_dir(run_id)/manifest.md</code> when the entry names none, the same durable path <code>plan_dispatch</code> stores for a single dispatch.</td></tr>
+      <tr><td><code>tests/test_a_batch_request_can_be_edited.py</code></td><td>Queues one batch entry in a synthesised repository and shows the stored path, the stored <code>--time-budget 90m</code> edit, and the refusal a request stored without a path receives.</td></tr>
+    </tbody>
+  </table>
+  <h3 id="batch-request-editable-in-queue-gate">Gate</h3>
+  <p id="batch-request-editable-in-queue-gate-result"><code>pytest -q tests/test_a_batch_request_can_be_edited.py</code> → <strong>3 passed</strong> (EXIT=0). The base arm of the other file importing <code>reckon.crew.dispatch_batch</code> (<code>tests/test_a_batch_queues_the_chosen_sections.py</code>) ran 2 passed at the base revision and 2 passed at this head: no added failures.</p>
+  <h3 id="batch-request-editable-in-queue-negative-control">Negative control</h3>
+  <p id="batch-request-editable-in-queue-negative-control-result">Dropping the manifest-path assignment from the batch entry turns the gate red: <strong>2 failed, 1 passed</strong> (EXIT=1), the edit arm failing with <code>independently-verifiable: no manifest path is named</code>.</p>
+</section>
