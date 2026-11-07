@@ -1,0 +1,50 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:1162 (prompt path)",
+    "reckon/hooks/coordinator_obligations.py:1214 (inject path)",
+    "reckon/hooks/coordinator_obligations.py:1643 (_blocking_items stop path)",
+    "reckon/hooks/coordinator_obligations.py:1656 (_blocking_items resolved stop path)",
+    "reckon/crew/obligations.py:_review_duty_item (duty derivation)"
+  ],
+  "completed_at": "2026-11-07T13:01:27.482Z",
+  "dispatched_at": "2026-11-07T12:51:03Z",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 568,
+      "severity": "non-blocking",
+      "summary": "the head-matching arm of _refusal_speaks_for_revision is beyond the plan's stated rule and no fixture exercises it: every refusal the gate constructs carries head None, so the branch comparing a stated head against the run's current head is untested and would go wrong unnoticed if a refusal ever recorded a head."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 636,
+      "severity": "non-blocking",
+      "summary": "next_command wraps both dispose commands in prose and tests/test_the_hook_lists_only_actionable_rows.py:297-298 asserts substring containment, while the done_when asks it to equal the finding's command from _finding_dispose_commands; the assertion still reddens when the refusal branch is removed, but not when the helper's own rendering changes."
+    }
+  ],
+  "plan": "reckon:the-monitor-shows-the-work-it-watches",
+  "plan_slug": "the-monitor-shows-the-work-it-watches",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source goal is that the obligations hook prints in full only the rows the coordinator can act on and collapses the rest into one summary line; the diff adds _row_is_actionable at reckon/hooks/coordinator_obligations.py:767 and _collapsed_line at :785, and routes printing and the stop verdict through them.\nVERDICT done_when: the done_when names tests/test_the_hook_lists_only_actionable_rows.py with five behaviours and five negative controls; the manifest records 6 passed at the head, 6 failed in the base extraction, and 5 of 5 mutations caught; I re-ran that file at 543af59134 myself and got 6 passed, EXIT=0.\nVERDICT write_paths: the node was fenced to reckon/hooks/coordinator_obligations.py, reckon/crew/obligations.py, tests/test_the_hook_lists_only_actionable_rows.py, the evidence fragment and a figures directory; the diff also changes tests/test_stop_hook_honours_late_state.py and tests/test_stop_hook_reads_the_snapshot.py, which resume-1-advice.txt records as a coordinator grant extension naming both files.\nVERDICT manifest: read; status complete, committing five shas at head 543af59134, recording the head gate, the base arm, the two-stop-hook-file run (9 passed) and the importer population at both revisions (base 2 failed/284 passed, head 2 failed/290 passed, same two ids), with outside_scope empty.\nVERDICT diff: read commit by commit over c17685e155..543af59134; five commits and six files, 579 insertions and 28 deletions, the two implementation files carrying the actionability predicate, the one-line collapse, the refusal owner and the reflex_window_seconds field, and the evidence fragment being new.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:1162, reckon/hooks/coordinator_obligations.py:1214, reckon/hooks/coordinator_obligations.py:1643, reckon/hooks/coordinator_obligations.py:1656, reckon/crew/obligations.py:_review_duty_item\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/hooks/coordinator_obligations.py:881 prints only _row_is_actionable items in full and :889 collapses the rest into _collapsed_line, and :1554 gives the stop verdict the same predicate, so the goal holds end to end.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate file the done_when names is recorded at gate-head.log as 6 passed at ad605b0492 and at gate-base.log as 6 failed over c17685e1, negative-control.log catches 5 of 5 mutations with EXIT=1, and I re-ran the file at the reviewed head for 6 passed.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every changed path is inside the grant, with the two stop-hook test files covered by the extension quoted in resume-1-advice.txt, and the diff carries no plan or index edit.\nSCORE durability: 17\nJUSTIFICATION durability: the six cases in tests/test_the_hook_lists_only_actionable_rows.py each name a regression that reddens them, and the five declared mutations demonstrate it, but the head-matching arm at reckon/crew/obligations.py:568 is never exercised and the dispose assertion at :297 is containment rather than equality.\nSCORE fit: 19\nJUSTIFICATION fit: the added helpers follow the surrounding private-underscore, docstringed style of reckon/hooks/coordinator_obligations.py:764 and reckon/crew/obligations.py:541, and no plan label or ticket reference appears in any added name or comment.\nSCORE reuse: 18\nJUSTIFICATION reuse: _row_delivery_instant wraps the existing _row_age at reckon/crew/obligations.py:479 and _refusal_speaks_for_revision borrows recovery.same_revision at :569; the only element that could have been shared is the ticker's _actionable_recovery at reckon/crew/ticker.py:2669, which reads a recovery classification vocabulary over ticker events rather than duty rows and is a different capability.\nFINDING reckon/crew/obligations.py:568 non-blocking: the head-matching arm of _refusal_speaks_for_revision is beyond the plan's stated rule and no fixture exercises it - every refusal the gate constructs carries head None, so the branch comparing a stated head against the run's current head is untested and would go wrong unnoticed if a refusal ever recorded a head.\nFINDING reckon/crew/obligations.py:636 non-blocking: next_command wraps both dispose commands in prose and tests/test_the_hook_lists_only_actionable_rows.py:297-298 asserts substring containment, while the done_when asks it to equal the finding's command from _finding_dispose_commands; the assertion still reddens when the refusal branch is removed, but not when the helper's own rendering changes.",
+  "review_run_id": "r-20261107T124848419599-review-of-the-obligations-hook-prints-in-full-only-the-rows-the-543af5913483",
+  "reviewed_base_sha": "c17685e155fdee45a58ffb4c539e46d79f1523dd",
+  "reviewed_head_sha": "543af5913483b6f04462fce8006a829cd3ed9d94",
+  "reviewed_run_id": "r-20261107T111357058603-the-obligations-hook-prints-in-full-only-the-rows-the",
+  "reviewed_run_node": "the-obligations-hook-prints-in-full-only-the-rows-the",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "section": "s114",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T13:17:04.112789+00:00",
+  "total": 110
+}
