@@ -136,7 +136,12 @@ def fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
         )
         review_module.store_review(record)
     monkeypatch.setattr(obligations_module, "_utc_now", lambda: OBSERVED_AT)
-    return {"home": config_home, "repo": root, "ledger": ledger_dir, "worktrees": worktrees}
+    return {
+        "home": config_home,
+        "repo": root,
+        "ledger": ledger_dir,
+        "worktrees": worktrees,
+    }
 
 
 class _CallCounter:
@@ -260,8 +265,7 @@ def test_a_steady_tick_recomputes_nothing(
         f"the second tick read plan state {plans.calls} times with nothing moved"
     )
     assert ledger_reads.calls == 0, (
-        f"the second tick read the ledger {ledger_reads.calls} times with"
-        " nothing moved"
+        f"the second tick read the ledger {ledger_reads.calls} times with nothing moved"
     )
     assert git_calls.calls == 0, (
         f"the second tick ran {git_calls.calls} git subprocesses with nothing moved"

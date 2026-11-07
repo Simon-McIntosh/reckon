@@ -1296,7 +1296,11 @@ def _plan_state_signature(record: Mapping[str, Any]) -> tuple[Any, ...] | None:
 
 
 def _review_tier_key(
-    row: Mapping[str, Any], pointer: Mapping[str, Any]
+    row: Mapping[str, Any],
+    pointer: Mapping[str, Any],
+    *,
+    head: str,
+    tree: Path | None,
 ) -> tuple[Any, ...] | None:
     """The inputs one run's review tier is decided from, as a cache key.
 
@@ -1310,10 +1314,6 @@ def _review_tier_key(
     """
     run_id = str(row.get("run_id") or "")
     if not run_id:
-        return None
-    try:
-        head, tree = recovery._review_head_and_tree(pointer)
-    except Exception:  # noqa: BLE001 - no key without a head to key on
         return None
     plan_signature = _plan_state_signature(pointer)
     if plan_signature is None:
@@ -1346,7 +1346,13 @@ def _clear_cached_obligation_inputs() -> None:
         _HELD_RECORDS_CACHE.clear()
 
 
-def _review_tier_for_duty(row: Mapping[str, Any], pointer: Mapping[str, Any]) -> str:
+def _review_tier_for_duty(
+    row: Mapping[str, Any],
+    pointer: Mapping[str, Any],
+    *,
+    head: str,
+    tree: Path | None,
+) -> str:
     """The run's review tier, read through the resolver the sweep itself uses.
 
     The tier rule belongs to promotion, so it is read through
@@ -1363,17 +1369,13 @@ def _review_tier_for_duty(row: Mapping[str, Any], pointer: Mapping[str, Any]) ->
     plan moves. The resolver runs git and reads the plan, and both are what a
     tick was spending most of its time on.
     """
-    key = _review_tier_key(row, pointer)
+    key = _review_tier_key(row, pointer, head=head, tree=tree)
     if key is None:
         return _resolve_review_tier(row, pointer)
-    return _cached(
-        _REVIEW_TIER_CACHE, key, lambda: _resolve_review_tier(row, pointer)
-    )
+    return _cached(_REVIEW_TIER_CACHE, key, lambda: _resolve_review_tier(row, pointer))
 
 
-def _resolve_review_tier(
-    row: Mapping[str, Any], pointer: Mapping[str, Any]
-) -> str:
+def _resolve_review_tier(row: Mapping[str, Any], pointer: Mapping[str, Any]) -> str:
     """Read one run's review tier from its own change, uncached."""
     try:
         return str(
@@ -1489,7 +1491,10 @@ def _review_duty_item(
             item["reason"] += f"; remedy: {remedy}"
         return item
 
-    if _review_tier_for_duty(row, pointer) == review_tiers.NONE:
+    if (
+        _review_tier_for_duty(row, pointer, head=resumed_head, tree=_tree)
+        == review_tiers.NONE
+    ):
         item = _live_item(
             row,
             kind="promotable-stale" if age > grace else "review-ready",
@@ -1804,9 +1809,7 @@ def _held_records_read_uncached(
         return _held_worktree_records_read(project, repository)
 
 
-def _held_records_signature(
-    project: str, repository: Path
-) -> tuple[Any, ...] | None:
+def _held_records_signature(project: str, repository: Path) -> tuple[Any, ...] | None:
     """The files a held-worktree derivation reads, as one change token.
 
     The records come from the merged ledger, the registered worktrees and the
