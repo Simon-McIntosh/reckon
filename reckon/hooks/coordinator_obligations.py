@@ -764,6 +764,48 @@ def limit_reset_line(event: Mapping[str, Any]) -> str:
     )
 
 
+def _row_is_actionable(item: Mapping[str, Any]) -> bool:
+    """Whether the coordinator can do anything about this duty right now.
+
+    The decision is read from the duty's own fields, never from its text: a
+    kind no coordinator shortens is never actionable, and a review the reflex
+    owns is actionable only once it has stood past the window that reflex
+    promises, because until then acting on it duplicates a dispatch already
+    under way. A reflex-owned row carrying no window says nothing about how
+    long the wait lasts, so it is printed rather than hidden.
+    """
+    kind = str(item.get("kind") or "")
+    if kind in _NON_BLOCKING_KINDS:
+        return False
+    if str(item.get("review_owner") or "") != "reflex":
+        return True
+    window = item.get("reflex_window_seconds")
+    if not isinstance(window, (int, float)) or isinstance(window, bool):
+        return True
+    age = item.get("age_seconds")
+    if not isinstance(age, (int, float)) or isinstance(age, bool):
+        age = 0
+    return age >= window
+
+
+def _collapsed_line(items: Sequence[Mapping[str, Any]]) -> str:
+    """One line summarising the duties no coordinator action can shorten.
+
+    The rows are counted by kind with the oldest age in each, which is what
+    tells a reader whether a wait is normal or has stopped moving, without
+    reprinting commands that nobody at this session can run.
+    """
+    groups: dict[str, list[Mapping[str, Any]]] = {}
+    for item in items:
+        groups.setdefault(str(item.get("kind") or "?"), []).append(item)
+    parts = [
+        f"{kind} {len(members)} "
+        f"(oldest {_format_age(max(int(m.get('age_seconds') or 0) for m in members))})"
+        for kind, members in sorted(groups.items())
+    ]
+    return f"- [{len(items)} waiting, no action shortens them] " + ", ".join(parts)
+
+
 def _work_lines(items: Sequence[Mapping[str, Any]]) -> list[str]:
     """One counted line per shared remedy, and one line per run for the rest.
 
@@ -821,7 +863,7 @@ def format_checklist(
     to continue rather than to clear anything. ``limit_resets`` is the caller's
     own read of them; a caller that passes none has the store read here.
     """
-    items = payload.get("obligations") or ()
+    items = list(payload.get("obligations") or ())
     summary = payload.get("summary") or {}
     project = str(payload.get("project") or "")
     session = str(payload.get("session") or "")
@@ -836,8 +878,16 @@ def format_checklist(
     # a figure no duty supports.
     if items:
         header += f", oldest {_format_age(int(summary.get('oldest_age_seconds') or 0))}"
+    actionable = [item for item in items if _row_is_actionable(item)]
+    waiting = [item for item in items if not _row_is_actionable(item)]
     lines = [header]
-    lines.extend(_work_lines(items))
+    lines.extend(_work_lines(actionable))
+    if waiting:
+        # The waits a coordinator cannot shorten are the bulk of a fleet's
+        # list and the same rows turn after turn, so they are counted rather
+        # than reprinted: what a reader needs from them is the kind and how
+        # long each has stood, not the command none of them can run.
+        lines.append(_collapsed_line(waiting))
     pending = pending_model_notices()
     if pending:
         lines.append(model_notice_line(pending))
@@ -1504,15 +1554,17 @@ def reapply_acknowledgements(
 def _blocking_items(items: Sequence[Any]) -> list[Any]:
     """The duties a stop is held open for, in list order.
 
-    Kinds a reflex already owns are listed like any other duty and never hold
-    a turn open, because the coordinator could not shorten the wait by acting.
+    Only the rows a coordinator can act on hold the turn open, which is the
+    same predicate that decides what the checklist prints in full: a queue, a
+    stalled request and a review the reflex still owes inside its window are
+    all waits no action at this session shortens, so a stop that refused on
+    them would ask for work the coordinator cannot do.
     """
-    blocking: list[Any] = []
-    for item in items:
-        kind = str(item.get("kind") or "") if isinstance(item, Mapping) else ""
-        if kind not in _NON_BLOCKING_KINDS:
-            blocking.append(item)
-    return blocking
+    return [
+        item
+        for item in items
+        if not isinstance(item, Mapping) or _row_is_actionable(item)
+    ]
 
 
 def _stop(payload: dict[str, Any]) -> int:

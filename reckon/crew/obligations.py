@@ -22,7 +22,7 @@ import json
 import shlex
 from collections.abc import Iterable, Mapping, Sequence
 from contextvars import ContextVar
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -33,6 +33,7 @@ from reckon.crew import (
     queue_admission,
     recovery,
     recovery_classification,
+    recovery_review_dispatch,
     review_dispositions,
     review_lifecycle,
     runs,
@@ -124,8 +125,12 @@ DUTY_ROW_FIELDS = (
     "head",
     "reviewed_head",
     "review_tier",
-    # Set when an armed follower, rather than the coordinator, will dispatch it.
+    # Set when an armed follower, rather than the coordinator, will dispatch it,
+    # carrying the window that follower's sweep cadence promises, so a reader
+    # deciding whether to act on the row reads the same figure the row's own
+    # text quotes.
     "review_owner",
+    "reflex_window_seconds",
     "refused_at",
     "queued_at",
     "worker_slots",
@@ -531,6 +536,107 @@ def _reflex_review_in_flight(pointer: Mapping[str, Any]) -> bool:
     return recovery._recorded_review_is_live(
         pointer.get(recovery.REVIEW_DISPATCH_FIELD)
     )
+
+
+def _row_delivery_instant(row: Mapping[str, Any], *, now: datetime) -> datetime:
+    """The instant a row's age counts from: the run's last delivery.
+
+    ``_row_age`` measures how long a run has stood in the state the row reports,
+    so that state began that many seconds before ``now``. The instant is the
+    anchor an undated refusal is judged against: a refusal recorded before the
+    run delivered speaks about a revision the run has since left behind.
+    """
+    return now - timedelta(seconds=_row_age(row, now=now))
+
+
+def _refusal_speaks_for_revision(
+    recorded: Mapping[str, Any],
+    *,
+    row: Mapping[str, Any],
+    head: str,
+    now: datetime,
+) -> bool:
+    """Whether a recorded review dispatch speaks for the revision now owed one.
+
+    A record that names a head is counted while that head is the run's current
+    one. A record that names none is counted from its instant, which is the
+    only fact it carries that can be ordered against the run's own delivery:
+    the refusal writer records a head only for an attempt it composed against
+    one, so a refusal has to be anchored on when it was made instead.
+    """
+    stated = str(recorded.get("head") or "").strip()
+    if stated:
+        return bool(head) and recovery.same_revision(stated, head)
+    at = parse_utc(recorded.get("at"))
+    if at is None:
+        return False
+    return at >= _row_delivery_instant(row, now=now)
+
+
+def _review_dispatch_refusal(
+    project: str,
+    pointer: Mapping[str, Any],
+    *,
+    row: Mapping[str, Any],
+    head: str,
+    now: datetime,
+) -> dict[str, str] | None:
+    """The refusal that makes a missing review the coordinator's to unblock.
+
+    The reflex records every attempt it makes on a run's pointer, and a refused
+    attempt is its own account of why the review did not start. While that
+    refusal speaks for the revision the run owes a review of, the duty is not
+    the reflex's: the reflex will keep refusing until the finding it named is
+    answered, so the duty names the answer rather than a window that will pass
+    without the run moving. The command is built from the same two helpers the
+    refusal itself renders, so the row and the refusal cannot name different
+    commands for one finding.
+
+    None means no refusal speaks for the current revision, or that every stored
+    review of it has had its blocking findings answered — in both cases the
+    reflex's own next sweep is the only actor left to name.
+    """
+    recorded = pointer.get(recovery.REVIEW_DISPATCH_FIELD)
+    if not isinstance(recorded, Mapping):
+        return None
+    if str(recorded.get("status") or "") != "refused":
+        return None
+    if not _refusal_speaks_for_revision(recorded, row=row, head=head, now=now):
+        return None
+    run_id = str(pointer.get("run_id") or "")
+    if not run_id:
+        return None
+    try:
+        stored = [
+            record
+            for _path, record in review_module.stored_records_for_run(project, run_id)
+        ]
+    except (OSError, ValueError):
+        return None
+    closed = run_id in ledger.run_ids(project)
+    for record in stored:
+        if (
+            review_lifecycle.lifecycle(
+                record, run_closed=closed, later_records=tuple(stored)
+            )
+            != review_lifecycle.OPEN
+        ):
+            continue
+        undisposed = recovery_review_dispatch._undisposed_blocking_findings(record)
+        if not undisposed:
+            continue
+        index, _finding = undisposed[0]
+        fold, exempt = recovery_review_dispatch._finding_dispose_commands(
+            project, run_id, index
+        )
+        return {
+            "reason": str(recorded.get("reason") or "")
+            or "the review reflex refused this review's dispatch",
+            "next_command": (
+                f"dispose the blocking finding with `{fold}` or `{exempt}`"
+            ),
+        }
+    return None
 
 
 def _reflex_owns_review(project: str, pointer: Mapping[str, Any]) -> bool:
@@ -1321,16 +1427,25 @@ def _review_duty_item(
             item.update(queued)
         elif superseded:
             item["kind"] = "review-missing"
-    if (
-        item["kind"] == "review-missing"
-        and classification == "scoring"
-        and _reflex_owns_review(project, pointer)
-    ):
-        # One actor owns review dispatch. While an armed follower will compose
-        # this review, the duty names that reflex and its window instead of
-        # printing a command whose run collides with the reflex's own claim.
-        item["next_command"] = _reflex_review_command(project, pointer)
-        item["review_owner"] = "reflex"
+    if item["kind"] == "review-missing" and classification == "scoring":
+        refusal = _review_dispatch_refusal(
+            project, pointer, row=row, head=head, now=now
+        )
+        if refusal is not None:
+            # The reflex has already tried and been refused, so naming it as
+            # the owner would promise a dispatch its own record says it cannot
+            # make. The duty carries the refusal's own account and the answer
+            # that lifts it, so the coordinator acts instead of waiting.
+            item["reason"] = refusal["reason"]
+            item["next_command"] = refusal["next_command"]
+        elif _reflex_owns_review(project, pointer):
+            # One actor owns review dispatch. While an armed follower will
+            # compose this review, the duty names that reflex and the window
+            # its cadence promises, as a field beside the words so a reader
+            # deciding whether to act reads the same figure the text quotes.
+            item["next_command"] = _reflex_review_command(project, pointer)
+            item["review_owner"] = "reflex"
+            item["reflex_window_seconds"] = _reflex_review_window_seconds()
     return item
 
 
