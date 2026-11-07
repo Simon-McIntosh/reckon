@@ -24,8 +24,8 @@
   <title>A Re-exec Never Orphans A Dispatch | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="23">
-<meta name="plan-modified" content="2026-11-06">
+<meta name="plan-version" content="24">
+<meta name="plan-modified" content="2026-11-07">
 </head>
 <body>
   <main class="plan-doc">
@@ -86,6 +86,15 @@
 </section>
     
 <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="_top" data-id="c-close-s2" data-who="" data-when="">
+    <div class="r-comment-body"><p>Landed: run <code>r-20261106T180357375578</code>, promoted with the gate passed after review. Each node dispatch claim carries a per-exec identity published at import, so a claim written before a re-exec no longer reads as held by the new process.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-close-s4" data-who="" data-when="">
+    <div class="r-comment-body"><p>Landed at <code>5f3fc9df8a</code>: run <code>r-20261106T180357392086</code>. <code>RECOVERY_CLASSIFICATION_DUTY_KINDS</code> gains <code>launch-failed</code>, so a run stuck before launch is listed as an obligation with its next command. The importer arms of <code>reckon.crew.obligations</code> were red on the base (2 failures, 1 pass) and green on the merge candidate (3 passes).</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-s5-duplicate-launches" data-who="" data-when="">
+    <div class="r-comment-body"><p>Launch-path evidence for this section, twice in 14 hours. (1) power_convertor run <code>r-20261106T224214853358-edge-window-settle</code>: a second launch of the same request, from a reckon process running a reload image, reached <code>_create_worktree</code> at 22:50:26Z and released the first launch's live tree (trace in <code>~/.config/reckon/crew/reports/reckon/what-trashed-the-live-worktree.md</code>). (2) reckon run <code>r-20261107T092649116030</code>: attempt 1 launched at 11:04:40Z at the end of a 455 s admit pass and attempt 2 at 11:08:19Z from the next pass while attempt 1 was alive until 11:12:36Z; the replaced tree left attempt 2's bind read-only and the run blocked. <code>a-queued-request-is-checked-when-queued</code> §5 makes such a launch refuse instead of trashing a tree; this section is where the duplicate admission itself is prevented.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261106T183817945372-review-of-record-a-perexec-identity-on-each-node-dispatch-claim-48d871cf2230" data-who="reckon-build" data-when="2026-11-06T18:48:32Z">
     <div class="r-comment-body"><p>Parsed review record stored for base 3316c0812de42e7ee6b9e8aa0a6198266e122d23 and head 48d871cf2230aff1d95db3772c0f33d1f70cae01; six scores, zero added failures, one non-blocking finding.</p></div>
 </div>
@@ -97,12 +106,6 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261106T180357392086-list-a-run-stuck-before-launch-as-a-launchfailure-duty" data-who="reckon-build" data-when="2026-11-06T18:41:46.277Z">
     <div class="r-comment-body"><p>obligations.py maps the launch-failed recovery word to a duty kind, so a run whose launch was cut off before it spawned a worker reaches its coordinator with the classifier's own next command; head gate 3 passed, base arm 2 failed reproduces the absence, each control fails only its own case</p></div>
-</div>
-<div class="r-comment" data-section="_top" data-id="c-close-s2" data-who="" data-when="">
-    <div class="r-comment-body"><p>Landed: run <code>r-20261106T180357375578</code>, promoted with the gate passed after review. Each node dispatch claim carries a per-exec identity published at import, so a claim written before a re-exec no longer reads as held by the new process.</p></div>
-</div>
-<div class="r-comment" data-section="_top" data-id="c-close-s4" data-who="" data-when="">
-    <div class="r-comment-body"><p>Landed at <code>5f3fc9df8a</code>: run <code>r-20261106T180357392086</code>. <code>RECOVERY_CLASSIFICATION_DUTY_KINDS</code> gains <code>launch-failed</code>, so a run stuck before launch is listed as an obligation with its next command. The importer arms of <code>reckon.crew.obligations</code> were red on the base (2 failures, 1 pass) and green on the merge candidate (3 passes).</p></div>
 </div>
 </section>
 </main>
