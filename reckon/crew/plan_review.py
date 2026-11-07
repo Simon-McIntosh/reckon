@@ -1008,6 +1008,104 @@ def _review_is_incomplete(record: Mapping[str, Any]) -> bool:
     return str(record.get("status") or "").strip().lower() == INCOMPLETE_STATUS
 
 
+def _record_plan_commit(record: Mapping[str, Any]) -> str:
+    """The plan commit a stored review recorded reading, or ``""``."""
+    return str(record.get("plan_commit") or "").strip()
+
+
+def _commit_is_ancestor(repo: Path, ancestor: str, descendant: str) -> bool | None:
+    """Whether ``ancestor`` is reachable from ``descendant``, or ``None``.
+
+    The probe is the velocity module's ancestry reader rather than a second copy
+    of the git call. ``None`` means the walk itself could not run — a git that
+    will not start, a checkout that is gone — so a caller falls back to another
+    key rather than trusting nothing. The reader reports an object the checkout
+    cannot resolve as "no", which the caller treats exactly as ``None``: it
+    falls through to the same fallback.
+    """
+    if not ancestor or not descendant:
+        return None
+    if ancestor == descendant:
+        return True
+    # An ancestry answer never changes, and an admission pass judges the review
+    # gate for every request it considers over the same store, so the answer is
+    # held for the length of the pass rather than re-walked per request.
+    cache = _REVIEW_READ_PASS.get()
+    key = ("ancestry", str(repo), ancestor, descendant)
+    if cache is not None and key in cache:
+        return cache[key]
+    from reckon.velocity import _is_ancestor
+
+    try:
+        answer: bool | None = _is_ancestor(repo, ancestor, descendant)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if cache is not None:
+        cache[key] = answer
+    return answer
+
+
+def _record_is_newer(
+    left: Mapping[str, Any], right: Mapping[str, Any], repo: Path | None
+) -> bool:
+    """Whether ``left`` read a later plan commit than ``right``.
+
+    Reviews at successive plan commits can carry equal or non-monotonic version
+    integers, so the commits are compared by ancestry rather than by version.
+    Where either commit is unreachable or the two have diverged, the review's
+    own timestamp decides, so a store with no checkout to walk still answers.
+    """
+    left_commit = _record_plan_commit(left)
+    right_commit = _record_plan_commit(right)
+    if (
+        repo is not None
+        and left_commit
+        and right_commit
+        and left_commit != right_commit
+    ):
+        left_is_older = _commit_is_ancestor(repo, left_commit, right_commit)
+        if left_is_older is True:
+            return False
+        right_is_older = _commit_is_ancestor(repo, right_commit, left_commit)
+        if right_is_older is True:
+            return True
+    return str(left.get("timestamp") or "") > str(right.get("timestamp") or "")
+
+
+def _newest_by_plan_commit(
+    records: Iterable[Mapping[str, Any]], project: str
+) -> Mapping[str, Any] | None:
+    """The review that read the newest plan commit, or ``None``.
+
+    This is the selector a covering set is reduced by: which review a reader
+    serves and which one an answer lands on follows the plan's commit order,
+    not the version integer the review happened to record.
+    """
+    repo = _project_repo_root(project)
+    newest: Mapping[str, Any] | None = None
+    for record in records:
+        if newest is None or _record_is_newer(record, newest, repo):
+            newest = record
+    return newest
+
+
+def _records_oldest_first(
+    records: Iterable[Mapping[str, Any]], project: str
+) -> list[Mapping[str, Any]]:
+    """The reviews ordered oldest first by the plan commit each read."""
+    repo = _project_repo_root(project)
+    pool = list(records)
+    newest_first: list[Mapping[str, Any]] = []
+    while pool:
+        best = 0
+        for index in range(1, len(pool)):
+            if _record_is_newer(pool[index], pool[best], repo):
+                best = index
+        newest_first.append(pool.pop(best))
+    newest_first.reverse()
+    return newest_first
+
+
 def review_coverage(
     project: str,
     plan_slug: str,
@@ -1066,7 +1164,9 @@ def review_coverage(
         # except a section that became implementable since the review: a
         # declaration is normalised out of the fingerprint, so a change of
         # declaration alone reaches here and must still be caught.
-        newest = max(whole, key=lambda record: int(record.get("plan_version") or 0))
+        newest = _newest_by_plan_commit(whole, project)
+        if newest is None:
+            return [], set(), {}
         evidence = _snapshot_evidence(project, plan_slug, newest)
         snapshot_declarations = None if evidence is None else evidence[2]
         if snapshot_declarations is None:
@@ -1119,7 +1219,7 @@ def review_coverage(
             )
         return reviewed_texts[key]
 
-    for record in sorted(records, key=lambda item: int(item.get("plan_version") or 0)):
+    for record in _records_oldest_first(records, project):
         evidence = _snapshot_evidence(project, plan_slug, record)
         if evidence is None:
             snapshot_digests, snapshot_prose, snapshot_declarations = None, None, None
@@ -1285,7 +1385,9 @@ def read_plan_review(
     the fingerprint, not the version integer, is the key that survives an impl
     bump. A ``reviewed_blob_sha`` filter selects a named content revision.
     Among the records that pass the filters the newest by file mtime is
-    returned; ``None`` means no stored review matches.
+    returned; ``None`` means no stored review matches. A covering set is
+    reduced instead by the plan commits the reviews read, because reviews at
+    successive commits can carry equal or non-monotonic version integers.
     ``plan`` accepts a path, document or state and selects the review of the
     content being asked about by the coverage predicate rather than by the whole
     document, so a plan covered section by section reads as reviewed here as the
@@ -1311,7 +1413,7 @@ def read_plan_review(
         ]
         if not covering:
             return None
-        return max(covering, key=lambda record: int(record.get("plan_version") or 0))
+        return _newest_by_plan_commit(covering, project)
     records: list[tuple[Path, dict[str, Any]]] = []
     wanted = _wanted_fingerprints(plan_fingerprint)
     for path in _candidate_paths(project, plan_slug, plan_version, base_dir):
