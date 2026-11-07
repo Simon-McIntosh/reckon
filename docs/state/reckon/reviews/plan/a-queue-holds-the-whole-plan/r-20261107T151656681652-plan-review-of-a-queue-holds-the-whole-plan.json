@@ -1,0 +1,154 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T15:53:46.075Z",
+  "dispatched_at": "2026-11-07T15:41:29Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html:212",
+      "id": "wiring-1",
+      "reason": "a coordinator that follows the open followup re-dispatches landed work instead of queuing \u00a729/\u00a730/\u00a731/\u00a713, which are the actual implementable sections.",
+      "text": "the open followup `f-aqhwp-005` recommends `/reckon-build a-queue-holds-the-whole-plan \u00a726`, and every step its body names (\u00a719, \u00a722, \u00a726, \u00a727, \u00a728) is declared done, so the plan names no live next node",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html:80",
+      "id": "reasoning-1",
+      "reason": "a later node touching `queue_admission.py` (s29, s30 and s31 all do) reads \u00a78 as authority and could restore the exact defect the plan already recorded as fixed, parking waiters behind a resumable run.",
+      "text": "\u00a78 says \"A manifest reading `blocked` or `failed`, the other members of `TERMINAL_MANIFEST_STATUSES` \u2026 is a closure that moves the waiter to `blocked-upstream`, as \u00a72 requires\", but \u00a72 names only \"abandoned or failed\", the code sets `RUN_FAILED_STATUSES = (\"failed\", \"abandoned\")` (reckon/crew/queue_admission.py:2106), and the plan's own comment `c-s11-blocked-is-not-abandoned` records that a blocked run is resumable and must not abandon its waiter",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html:172",
+      "id": "done_when-1",
+      "reason": "the four bullets are unambiguous about what to build and the mechanism they test is sound; only the count word is wrong.",
+      "text": "\u00a731's done-when says its test \"shows three things\" and then lists four separate behaviours (the flag releases on its own ref and no later pass re-adds the section's waits; a sibling's `--after` is never inherited; the same dispatch without the flag waits on all four; the flag without `--after` is refused)",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "054d732afddaf7cc1bc5752a124dc14f8ec84764",
+  "plan_fingerprint": "fef667d0a82bb78daf68385573582302d027ca0af942abe77a2834e8f3b1b30c",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 284,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "the open followup orders no dispatch: queued requests carry their own sections (\u00a713, \u00a714, \u00a729-\u00a731 are queued or implementable) and the followup is resolved at the next landing beat",
+      "when": "2026-11-07T16:07:17.608057+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "\u00a78 is landed and declared done; its prose is a record of what shipped, and the code's RUN_FAILED_STATUSES is the authority a future change reads",
+      "when": "2026-11-07T16:08:07.218556+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "each of the four behaviours is listed explicitly in \u00a731's done-when, so the count word does not change what the worker builds or measures",
+      "when": "2026-11-07T16:08:42.060627+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "the open followup orders no dispatch: queued requests carry their own sections, and the followup is resolved at the next landing beat",
+      "when": "2026-11-07T16:10:16.919639+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "\u00a78 is landed and declared done; its prose records what shipped, and the code's RUN_FAILED_STATUSES is the authority a later change reads",
+      "when": "2026-11-07T16:10:50.078357+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "each of the four behaviours is listed explicitly in \u00a731's done-when, so the count word does not change what the worker builds or measures",
+      "when": "2026-11-07T16:11:19.577871+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "each of the four behaviours is listed explicitly in \u00a731's done-when, so the count word does not change what the worker builds or measures",
+      "when": "2026-11-07T16:11:19.577871+00:00"
+    },
+    "reasoning-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a78 is landed and declared done; its prose records what shipped, and the code's RUN_FAILED_STATUSES is the authority a later change reads",
+      "when": "2026-11-07T16:10:50.078357+00:00"
+    },
+    "wiring-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "the open followup orders no dispatch: queued requests carry their own sections, and the followup is resolved at the next landing beat",
+      "when": "2026-11-07T16:10:16.919639+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-queue-holds-the-whole-plan.v284.json",
+  "review_run_id": "r-20261107T151656681652-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "3653179346827383012494a83de3224d696b618d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited plans resolve (`a-held-dispatch-waits-its-fair-turn`,",
+    "done_when": "a finding \u2014 \u00a731's done-when says its test \"shows three",
+    "evidence_paths": "pass \u2014 s14's landing record is",
+    "naming": "pass \u2014 the new test files the remaining sections name are named",
+    "reasoning": "a finding \u2014 \u00a78 states that a `blocked` manifest closes a wait",
+    "single_goal": "pass \u2014 every remaining node names one deliverable; where a",
+    "wiring": "a finding \u2014 the only open followup, `f-aqhwp-005`, still carries"
+  },
+  "section_digests": {
+    "_document": "c27292fcb85258fb74e918c83588c1bf34f3c5ea2b625bceada6933dfdcdcf83",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "5cf5ffce08aa5567c1bacc4682131c122ab49241a6b6867d3f8a859b9aeb336e",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "b2f3a4dc4441527ebac138fcd2583e79959e677a2bb235937905ef5260c68abe",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s16": "3baae65f9838c420131b091c23c8e0495b371ceb323b379111c27677117bfa36",
+    "s17": "e8d19190fe8ad7ac0ada9570da1e1403020d996fade35345888d232283a712f3",
+    "s18": "c41a5f40b44fad7c9170e75afe458887ecf383dfbdfbd87f44b1aba18db385ce",
+    "s19": "3bd989d1975e3410388984d6b187e73537eb6741a9325640197d88ec68579fac",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s20": "1650ed742b05d1b8454fbb0792d83df930c357b4929ce75b0b82b8574b007375",
+    "s21": "92ae2c978f0293fbe8f09066288ab258d7d810c4bedc3ce5fe964f064ca7310e",
+    "s22": "47e2cfd2937f003b333a5627f777e7bc72cb16eaf677da44f2683b7c2cbe138b",
+    "s23": "8b0cff55659bab7a4f30061f3adc4d4e822c8679c7c659a592a131c825a356a8",
+    "s24": "e41f5feee9ab0bd1cb7371a93fa8f654ccd277325b302e34421d3b0ea907d869",
+    "s25": "d156187078ac0ab4d87d1398fe13f74eee443a0f2e48ed45f963ef238d8737d9",
+    "s26": "abf23ffa47584798ae7c0303cda18d5e3ded7f690e2e692a13f35b2c021f2813",
+    "s27": "272f482e0766b56080b610bdbf7ac48bc9ddfa2ed1cfb8c8a85cd9ecd5b32d93",
+    "s28": "cd767c148ee02023bec11cd941361b5cc37e14d542a4c6a132a48261b3b2497b",
+    "s29": "e7851807f93e49d39fd9789aa3dd5638ecc35016f60f53bc0c4fe3413a6bcf20",
+    "s3": "afea9aff41cb2215f28079810dcc13a5df1c6eb744cbd74c37b09ed3114da92a",
+    "s30": "b3148b61a2b1805ec38f8705fedffdb786ccee3a47f4a8bebcd794ce6b0983cf",
+    "s31": "23ef7a8f162555218fc698e3569bcef26b43435845dbb6c5af88193a0e76166e",
+    "s32": "04cecab62796d354c65abbea09c54c3d37a9155ab0d83b7da53e5c481a8cf8c6",
+    "s33": "9db5479d0d5cb815819bdb4c45cebe9064b8b2b85c07514b9bd6689e07590ac3",
+    "s34": "28ec67c9ff9af2e77a8ceca28cfe58dda22acf33e78752ecdc0c93437ec47ddd",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "a00c22d22d70c8a2ed3e7b08d58ef99957f2613d76b12181c91bcbb2a3517ade",
+    "s6": "a81480c94db3372e03fb8862f58fcb5017c6a0d5c4471ceecbf3c71a6850ce93",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "0baa02deb68c4c0f5702a20bc5b40684841e6b87295760a1f835f27d114094ef",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T15:57:52.426208+00:00",
+  "total": null
+}
