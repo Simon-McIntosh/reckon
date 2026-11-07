@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="717">
+<meta name="plan-version" content="718">
 <meta name="plan-modified" content="2026-11-07">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1402,6 +1402,12 @@ Both cases run under the file's existing temporary crew home.</li>
 <div class="r-comment" data-section="s115" data-id="c-run-r-20261107T140627034163-review-of-the-session-pane-prints-one-row-when-a-run-the-session-owns-e294112a8232" data-who="reckon-build" data-when="2026-11-07T14:29:07.855Z">
     <div class="r-comment-body"><p>§115 review at base a35f01e5 to head e294112a: parsed review record with scores goal_fidelity 19, evidence 14, scope_discipline 19, durability 15, fit 19, reuse 20 (total 106), added_failure_count 0 with no added failure ids, and three non-blocking findings — the base-arm log is truncated short of its summary while the manifest declares it complete, the new baseline short-circuit in RowPolicy._is_own_start is untested, and two assertions restate the to_state the test itself supplied.</p></div>
 </div>
+<div class="r-comment" data-section="s118" data-id="c-run-r-20261107T175829436786-settled-follower-rearms" data-who="reckon-build" data-when="2026-11-07T19:05:18.558Z">
+    <div class="r-comment-body"><p>A settled follower is re-checked every tick and re-armed when its session owns work: `SessionHost.tick` asks a live view backed by `station_subscriber.population_has_live_work` over the session's live pointers, names the run in the census as `rearmed_for`, and leaves a pair owning nothing settled; gate 4 passed, base revision 4 failed, negative control 3 failed, 0 added failures across the 20 session_host-importing test files.</p></div>
+</div>
+<div class="r-comment" data-section="s118" data-id="c-run-r-20261107T192612776705-review-of-settled-follower-rearms-b3e53de3b3c5" data-who="reckon-build" data-when="2026-11-07T19:46:43.439Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261107T175829436786-settled-follower-rearms at b3e53de3b3 scores goal_fidelity 19, evidence 17, scope_discipline 13, durability 16, fit 18, reuse 19, with 0 added failures across the reviewed arms (baseline-arm.log 2 failed / 196 passed; head-arm.log 2 failed / 196 passed) and four non-blocking findings; no blocking finding.</p></div>
+</div>
 <div class="r-comment" data-section="s12" data-id="c-s12-deferred-on-scheduling-surface" data-who="reckon-build" data-when="2026-10-17T05:30:00Z">
     <div class="r-comment-body"><p>Deferred. The plan review of 2026-10-17 found §12 declared implementable while its own text says the coverage figure belongs to work-scheduling-surface §3, which is unbuilt. Its done-when asks for a value from the roadmap's own derivation, and that derivation does not exist yet. §12 becomes implementable when work-scheduling-surface §3 lands.</p></div>
 </div>
@@ -2415,9 +2421,6 @@ Both cases run under the file's existing temporary crew home.</li>
 </div>
 <div class="r-comment" data-section="s99" data-id="c-run-r-20261105T131501961323-reland-the-reviewed-change-that-keeps-a-neverlaunched" data-who="reckon-build" data-when="2026-11-05T14:36:18.629Z">
     <div class="r-comment-body"><p>Re-landed the reviewed parked-request budget fix unchanged on base cd5edbd573 (patch byte-identical to git diff 98d07499d1 918894481d); elapsed now charges from launch, a never-launched pointer reports no elapsed/overrun and carries waiting_seconds (declared in LIVE_CLASSIFICATION_FIELDS); gate 23 passed at head effb92dc47 against 16 passed at base, importers 86 passed both sides, declared negative control EXIT=1 with the awaiting-upstream case failing on the overrun assertion.</p></div>
-</div>
-<div class="r-comment" data-section="s118" data-id="c-run-r-20261107T175829436786-settled-follower-rearms" data-who="reckon-build" data-when="2026-11-07T19:05:18.558Z">
-    <div class="r-comment-body"><p>A settled follower is re-checked every tick and re-armed when its session owns work: `SessionHost.tick` asks a live view backed by `station_subscriber.population_has_live_work` over the session&#x27;s live pointers, names the run in the census as `rearmed_for`, and leaves a pair owning nothing settled; gate 4 passed, base revision 4 failed, negative control 3 failed, 0 added failures across the 20 session_host-importing test files.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">

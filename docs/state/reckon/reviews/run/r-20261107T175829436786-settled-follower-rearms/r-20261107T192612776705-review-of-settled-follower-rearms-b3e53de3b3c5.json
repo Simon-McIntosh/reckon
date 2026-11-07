@@ -1,0 +1,50 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-07T19:46:43.439Z",
+  "dispatched_at": "2026-11-07T19:31:23Z",
+  "findings": [
+    {
+      "file": "tests/test_a_settled_follower_rearms_while_its_session_owns_work.py",
+      "line": 151,
+      "severity": "non-blocking",
+      "text": "assert child.rearmed_for == WORKING_RUN compares the census field against the run id this case itself handed to the stub live view, so the two sides move together: it pins only that the host echoes the view's return value, not that the name is the run that caused the re-arm. The same shape recurs at lines 171 and 234. The substantive spawn-count assertions beside them are independent and do carry the guard."
+    },
+    {
+      "file": "tests/test_a_settled_follower_rearms_while_its_session_owns_work.py",
+      "line": 174,
+      "severity": "non-blocking",
+      "text": "No case drives a delivered run whose review is unreconciled, which the plan's deliverable names as a re-arm trigger; that branch is inherited from station_subscriber.population_has_live_work and is left untested by this file, so a change to that rule would not redden this node's gate."
+    },
+    {
+      "file": "reckon/crew/session_host.py",
+      "line": 610,
+      "severity": "non-blocking",
+      "text": "The non-settled exit branch does not clear child.rearmed_for (it is cleared only on settle, line 601), so a child that is re-armed and then crashes carries the earlier run id into the census written after its backoff restart, attributing that restart to a run that did not cause it."
+    },
+    {
+      "file": "tests/test_a_settled_follower_rearms_while_its_session_owns_work.py",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The file is committed outside the run's declared write paths (reckon/crew/session_host.py, the landing fragment, the figures directory) even though the done-when names it as a write path; the fence list omitted it, so the record is inside its measure and outside its fence, and the coordinator has to add the path rather than the node drop the test."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a settled follower re-arms while its session owns work; reckon/crew/session_host.py:623-635 now asks a live view every tick for a settled child and re-arms on a named run, and the census at reckon/crew/session_host.py:454 carries rearmed_for.\nVERDICT done_when: the done-when names tests/test_a_settled_follower_rearms_while_its_session_owns_work.py with a stubbed spawn and live view over three cases plus a default-view control; the file exists at that path with four cases and its gate run is recorded in gate-new.log (4 passed, EXIT=0 at b3e53de3b3).\nVERDICT write_paths: the declared paths were reckon/crew/session_host.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/settled-follower-rearms.html and the figures directory; the diff changes session_host.py and the fragment inside them, and adds tests/test_a_settled_follower_rearms_while_its_session_owns_work.py which the done-when names but the fence list omits.\nVERDICT manifest: read; it records status complete, the single commit b3e53de3b3, gate-new.log 4 passed / new-test-on-base.log 4 failed / baseline-arm.log 2 failed 196 passed / head-arm.log 2 failed 196 passed, and names the negative control log.\nVERDICT diff: read commit by commit against 320f12e483; one commit changes three files (+401/-16), the source change is confined to the settled branch of tick plus live_work_run and _naming_run, and nothing outside session_host.py reaches production code.\nCALL_SITES: reckon/crew_follow_commands.py:2806 (session_host.run builds the host that supervises and ticks), reckon/crew/session_host.py:774 (supervise calls tick each poll), reckon/crew/directory.py:535 (live_census reads the child rows that now carry rearmed_for)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/session_host.py:629 asks the fleet's own rule through live_work_run for each settled child every tick, and leaves a pair owning nothing settled.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-new.log records 4 passed at b3e53de3b3 and negative-control.log records 3 failed / 1 passed with the two required cases red, though head-arm.log's revision header names the base sha while measuring the head worktree.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: the diff adds tests/test_a_settled_follower_rearms_while_its_session_owns_work.py, which is outside the declared write paths listed in the manifest's orientation_write_paths even though the done-when names it.\nSCORE durability: 16\nJUSTIFICATION durability: the spawn-count assertions at tests/test_a_settled_follower_rearms_while_its_session_owns_work.py:146 and :180 fail if tick reverts to leaving a settled child alone or re-arms one that owes nothing, but the rearmed_for assertions at :151, :171 and :234 compare against the value the case fed the stub view.\nSCORE fit: 18\nJUSTIFICATION fit: live_work_run and _naming_run in reckon/crew/session_host.py:312-362 follow the module's local-import and docstring idiom, and no name they introduce carries a plan, ticket or version label.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/session_host.py:333 delegates the liveness judgement to station_subscriber.population_has_live_work, the repository's owner of that rule; no existing owner names the run that keeps a session owed, which is all _naming_run adds.\nFINDING tests/test_a_settled_follower_rearms_while_its_session_owns_work.py:151 non-blocking: assert child.rearmed_for == WORKING_RUN compares the census field against the run id the case itself handed to the stub live view, so the two sides move together and the assertion pins only that the host echoes the view's return; the same shape recurs at :171 and :234.\nFINDING tests/test_a_settled_follower_rearms_while_its_session_owns_work.py:174 non-blocking: no case drives a delivered run whose review is unreconciled, a trigger the plan names, so that branch of population_has_live_work is inherited untested by this file.\nFINDING reckon/crew/session_host.py:610 non-blocking: the non-settled exit branch does not clear child.rearmed_for, so a re-armed child that later crashes carries the earlier run id into the census written after its backoff restart.\nFINDING tests/test_a_settled_follower_rearms_while_its_session_owns_work.py:1 non-blocking: the file is committed outside the run's declared write paths even though the done-when names it; the fence list omitted it and the coordinator has to add the path.",
+  "review_run_id": "r-20261107T192612776705-review-of-settled-follower-rearms-b3e53de3b3c5",
+  "reviewed_base_sha": "320f12e4837309e47f035ddab005d77fda986466",
+  "reviewed_head_sha": "b3e53de3b3c57369ca4762594214a94ee4b0fe9a",
+  "reviewed_run_id": "r-20261107T175829436786-settled-follower-rearms",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T22:31:03.262496+00:00",
+  "total": 102
+}
