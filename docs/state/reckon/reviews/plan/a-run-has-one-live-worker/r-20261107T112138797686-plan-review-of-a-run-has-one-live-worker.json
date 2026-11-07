@@ -1,0 +1,85 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T11:34:32.198Z",
+  "dispatched_at": "2026-11-07T11:23:14Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:101",
+      "id": "wiring-1",
+      "reason": "the plan owns its own driving chain, so with no followup naming \u00a75 the section is not dispatchable from the plan's record and the chain closes at \u00a75 with no invocation, which is exactly the state the plan-state contract forbids.",
+      "text": "\u00a75 is declared `implementable` in `plan-section-declarations` but the followups block carries no followup that recommends or drives it: the only open one, `f-arolw-004`, reads `/reckon-build a-run-has-one-live-worker \u00a74`, and `f-arolw-003`'s prompt is also \u00a73",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html#s5:98",
+      "id": "wiring-2",
+      "reason": "the queue orders only what the plan declares, so a dispatch admitted now launches \u00a75 ahead of the \u00a74 code it is written against, and the node either duplicates \u00a74's session walk or measures a check that does not exist.",
+      "text": "s5's `data-links=\"\"` declares no `plan-section-depends-on`, yet its deliverable says the refusing check is \"the same live-session check \u00a74 adds to `resume_plan`\", and \u00a74 is still `implementable`",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html#s5:99",
+      "id": "done_when-1",
+      "reason": "an undeclared write path means the node's exclusive scope is unknowable at dispatch, so its gate measures an editable surface nobody bounded and a coordinator cannot tell an in-scope edit from a stray one.",
+      "text": "the write paths are \"the module the reproduction names and `tests/test_a_queued_run_launches_once.py`\", and the first is not a path a coordinator can fence, audit or scope a gate to until the node has already run",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html#s5:99",
+      "id": "single_goal-1",
+      "reason": "the second deliverable has no measure in the done-when at all, so it can be neither reviewed nor closed, and bundling it means the section's single gate proves neither job.",
+      "text": "\u00a75 carries two unrelated deliverables: \"records why attempt 1's worktree was read-only\" and \"that path refuses to launch a worker for a run whose recorded worker pid is alive\"; the read-only question is a worktree-fence/mount defect, not a launch-constraint one",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html#s5:99",
+      "id": "reasoning-1",
+      "reason": "a worker implementing to the done-when can pass while never calling the \u00a74 session walk, so a worker implementing to the done-when can pass while never taking the session walk \u00a74 adds, and the section would then be reviewed as landed while the guard it exists for was never reached.",
+      "text": "the deliverable specifies the session check \u00a74 adds to `resume_plan`, while the done-when measures only \"a launch of a run whose first worker is alive is refused naming that pid\" \u2014 the existing `record_process_alive` pid read, which is not the check \u00a74 adds",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html#s5:99",
+      "id": "reasoning-2",
+      "reason": "the node would spend its investigation re-deriving a settled fact that is unrelated to launching twice, when it should carry that as a cited input; if the mount behaviour is itself to be repaired, it needs its own section, not this one's deliverable.",
+      "text": "the deliverable asks the worker to \"record why attempt 1's worktree was read-only\", but attempt 1's own manifest at `/work/projects/imas_gpu/sophelio/evidence/iron-core-magnetisation/strip-sweep-attempt-1/manifest-attempt-1.md` already records it: the tree is mounted read-only \"for this run\" on `/home/ITER/mcintos/Code/.reckon-worktrees` (`type gpfs ro`, granted write paths included)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "42f0d5a501c89cd6ed0e6d5d22964337cc5214b7",
+  "plan_fingerprint": "c24ab623bd9c48670548dd4a147cb53dc95c75ad478135c4de75836d0b472e1f",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 23,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T112138797686-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "dff7ab40cc0308774fbb289692e7258d3d17f649",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 I opened every anchor the changed units name: the run directory and all five of its attempt/claim records resolve with the pids (1966827, 1975439) and timestamps (21:30:34Z, 21:32:06Z in the worker records; 21:30:34Z, 22:04:47Z in the exit records) the plan quotes, the attempt-1 manifest confirms `status: blocked` and the `/tmp/reckon-crew-scratch` staging, and both landed-summary hrefs resolve to `id=\"s2-second-launcher\"` and `id=\"s3-a-hold-lifts-once\"` in `docs/evidence/archive/a-run-has-one-live-worker-landed.html`.",
+    "done_when": "a finding \u2014 \u00a75's write paths read \"the module the reproduction names\", which is not a path, so the node has no fence and its gate cannot be scoped.",
+    "evidence_paths": "pass \u2014 \u00a75 puts every log under the run directory (`~/.config/reckon/crew/runs/<run>/`), which survives the run and a later reader can open; the incident evidence it cites resolves at `/work/projects/imas_gpu/sophelio/evidence/iron-core-magnetisation/strip-sweep-attempt-1/`.",
+    "naming": "pass \u2014 the added content carries no plan labels, stage names, ticket numbers or version tags into code, and no changelog prose; s5 names its test and its test's name is a mechanism (`test_a_queued_run_launches_once.py`).",
+    "reasoning": "a finding \u2014 \u00a75 states one mechanism in its deliverable and measures a different, already-existing check in its done-when, and asks the worker to re-derive a fact attempt 1's own manifest already records.",
+    "single_goal": "a finding \u2014 \u00a75 carries the read-only-worktree investigation as a finding, a second deliverable unrelated to launching once and with no measure in its done-when.",
+    "wiring": "a finding \u2014 \u00a75 (s5) is declared implementable but no followup recommends or drives it, and s5 declares no plan-section-depends-on to the \u00a74 check its own deliverable requires."
+  },
+  "section_digests": {
+    "_document": "9c093124e56b09842d144b3bd203b65df88f4383e9c24aeb3639ad684e23623a",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "c8fe2a5a6c5765bc70ba45627cc9f5778b225a5e1deff2cc1bb1e0e08214362a",
+    "s5": "a8e69d3d0bc96e7526d14f4d3f8f30cc91e29b739518ccc6b12c264662534325"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T11:41:47.255978+00:00",
+  "total": null
+}
