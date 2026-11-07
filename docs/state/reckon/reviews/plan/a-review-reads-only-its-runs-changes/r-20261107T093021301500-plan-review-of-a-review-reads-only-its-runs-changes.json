@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T09:37:47.016Z",
+  "dispatched_at": "2026-11-07T09:31:22Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/recovery_review_subject.py:1013",
+      "id": "reuse_search-1",
+      "reason": "\u00a72's search must begin from the delta path, because the cheapest repair may be to route the first review through the same delta machinery rather than to teach a new helper three-dot ranges.",
+      "text": "an incremental run review already exists and covers exactly the commits a run gained since the head its last review read (`goal` naming `delta[\"paths\"]`, `scope`, `delta_base`, `review_tier = LIGHT` at :1055-:1058), fed by `review_head_move` and the two-dot `_changed_paths_between` at `reckon/crew/recovery_review_dispatch.py:937`, with `git merge-base` already on both read allowlists (`reckon/worker_git_shim.py:120`, `reckon/shadow_reads.py:42`); the plan cites none of it and so proposes a second notion of \"a run's changes\" beside an existing one",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/node.py:612",
+      "id": "reuse_search-2",
+      "reason": "\u00a72's premise that the review was \"sized on\" the base..head range is unverified by the named code, and a repair that only narrows the range may leave the 670392-token estimate untouched; \u00a72 must name routing.py as the estimate's owner and record which input term produced the figure before any range change is proposed.",
+      "text": "the plan names this line as where \"the context-fit estimate whose refusal text is built\", but it only renders routing's detail (`_rendered_context_detail`, :584); the estimate is built in `reckon/crew/routing.py:3262` (`_context_file_inputs`) and summed at :3580-:3595, and it reads no git range at all \u2014 its terms are the standing instruction chain (`:3159`), the node's declared write paths, and paths declared as inputs or merely mentioned in the node's `goal`/`done_when` prose",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/clones.py:629",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a72's done-when says it \"names every place that takes the range from the record's base_sha to the head\", so the census must be larger than the three files the plan cites, and the repair must extend `clones.changed_paths` (with the merge base taken once, and `review.py`'s carried pair kept as the review's identity) rather than add a thirteenth range reader.",
+      "text": "twelve sites already compute a range from the record's `base_sha` to a head or tip, and the plan names no owner to extend for the one it proposes: `reckon/clones.py:629` (`changed_paths(tree, base_sha, tip)`, the two-dot helper), `reckon/crew/recovery_review_subject.py:658` (shadow brief, `git -C {worktree} diff {base}`), `reckon/crew/recovery_review_dispatch.py:937` `_changed_paths_between` with callers at :971, :1039, :1091, `reckon/crew/review.py:402` (`REVIEWED_BASE_KEY`) read at :2585 and :3008, `reckon/crew/promotion_evidence.py:271`, :523, :550, :619, :976, `reckon/crew/promotion_checks.py:596`, `reckon/crew/promotion_scope.py:980`, `reckon/crew/landing_measure.py:534` and :610, `reckon/crew/routing.py:1514`, `reckon/crew/recovery_classification.py:2501`, and the one site that already excludes the integration branch, `reckon/crew/node.py:1537` (`git rev-list HEAD ^integration_ref ^base_sha`)",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "d294add92a967e6bc155086f2e1c49d0170019b9",
+  "plan_fingerprint": "8c5e6b88233a973c8e4756012d64b0a59f7c2ed956a93ccbcc9d51058fbbc786",
+  "plan_slug": "a-review-reads-only-its-runs-changes",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T093021301500-plan-review-of-a-review-reads-only-its-runs-changes",
+  "reviewed_blob_sha": "daeba44a6fbf8cbf29676a4859d33c5e0a00df20",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the plan adds no module; its single implementable section is an investigation, so no new interface is proposed for a depth claim, and the repair section it must write is where that claim will be judged.",
+    "duplicate_owner": "a finding \u2014 twelve modules already take a range from the record's `base_sha` to the head, owned by `reckon/clones.py:629` (`changed_paths`) and `reckon/crew/review.py:402` (`REVIEWED_BASE_KEY`), and the plan names neither owner.",
+    "interface_budget": "pass \u2014 public_definitions 2361, cli_options 465, mcp_views 15, refusal_families 23; the plan's two sections add nothing to any of these families, and the context refusal it is about reuses the existing `D08` family rather than declaring a new one.",
+    "reuse_search": "a finding \u2014 the plan proposes a merge-base range for a review without citing the incremental review already in the tree (`_review_dispatch_fields(delta=\u2026)` and `review_head_move`), nor `clones.changed_paths`, nor the one existing range that already excludes the integration branch (`node.py:1537`).",
+    "thin_wrapper": "pass \u2014 the plan adds no layer over existing machinery; the extension-not-fork requirement therefore lands on the repair section \u00a72 must write, and is carried below as the duplicate-owner finding's ask."
+  },
+  "section_digests": {
+    "_document": "0af1d00b32938d873bd915295342a4613cff1539f736606eeda3c49d770048ad",
+    "s1": "586fab75d6d773e7b9c244a094239cf2608322f5edb894eae41d683b194e16cf",
+    "s2": "3b279cd838da4fd22ea8c4f0092563fd69ce9d57f8eb4bbf7aa211015b9999c9"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T09:45:43.691326+00:00",
+  "total": null
+}
