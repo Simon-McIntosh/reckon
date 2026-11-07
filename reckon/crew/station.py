@@ -226,11 +226,10 @@ class LeaseBeat:
 class SweepBeat:
     """Run each session's sweep for the station, off its tick path.
 
-    A sweep walks registered worktrees and can run for hours, so the station
-    hands it to its own thread rather than paying for it between two ticks: a
-    heartbeat stalled behind a sweep is a station an off-node reader calls
-    stopped. A session already walking is not started again, and a session
-    with nothing due is not started at all.
+    A sweep reads live runs and composes their reviews and project plan reviews.
+    It may outlast a tick, so the station hands it to its own thread. A session
+    already sweeping keeps one pending request when its inputs change; otherwise
+    a delivery during that sweep can be missed until some later tick.
     """
 
     def __init__(
@@ -245,6 +244,7 @@ class SweepBeat:
         self._start = _start_thread if start is None else start
         self._last: dict[tuple[str, str], float] = {}
         self._in_flight: set[tuple[str, str]] = set()
+        self._pending: dict[tuple[str, str], datetime] = {}
         self._lock = threading.Lock()
 
     def request(
@@ -261,7 +261,12 @@ class SweepBeat:
         with self._lock:
             last = self._last.get(key)
             due = changed or last is None or (stamp - last) >= self.beat_seconds
-            if not due or key in self._in_flight:
+            if not due:
+                return False
+            if key in self._in_flight:
+                # The current pass may have read this session before the
+                # change arrived. Keep one follow-up pass for the newest tick.
+                self._pending[key] = moment
                 return False
             self._last[key] = stamp
             self._in_flight.add(key)
@@ -271,19 +276,26 @@ class SweepBeat:
     def _run(
         self, project: str, session: str, key: tuple[str, str], moment: datetime
     ) -> None:
-        try:
-            self.sweep(project, session=session, now=moment, writer=dict(SWEEP_WRITER))
-        except Exception:  # noqa: BLE001 - one session's sweep costs one pass
-            print(
-                f"station-sweep-failure: {project}/{session}: "
-                "the sweep could not complete",
-                file=sys.stderr,
-                flush=True,
-            )
-            traceback.print_exc(file=sys.stderr)
-        finally:
+        while True:
+            try:
+                self.sweep(
+                    project, session=session, now=moment, writer=dict(SWEEP_WRITER)
+                )
+            except Exception:  # noqa: BLE001 - one session's sweep costs one pass
+                print(
+                    f"station-sweep-failure: {project}/{session}: "
+                    "the sweep could not complete",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                traceback.print_exc(file=sys.stderr)
             with self._lock:
-                self._in_flight.discard(key)
+                pending = self._pending.pop(key, None)
+                if pending is None:
+                    self._in_flight.discard(key)
+                    return
+                moment = pending
+                self._last[key] = moment.timestamp()
 
 
 def _sessions_to_sweep(pointers: list[Mapping[str, Any]]) -> list[str]:
