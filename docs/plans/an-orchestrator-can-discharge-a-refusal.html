@@ -23,7 +23,7 @@
   <title>An Orchestrator Can Discharge A Refusal | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-modified" content="2026-11-07">
 <meta name="plan-impl" content="0.5">
 <meta name="plan-section-declarations" content="{&quot;s10&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
@@ -525,6 +525,9 @@ if claims:
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261103T082606754290-count-uses-of-the-retired-refusal-escapes" data-who="reckon-build" data-when="2026-11-06T16:26:58.500Z">
     <div class="r-comment-body"><p>Measured one week of coordinator transcripts (2026-10-05T00:00Z to 2026-10-12T00:00Z) for operator uses of --no-impl-change on corrective runs and --outcome on review runs, against the coordinator-overhead census's frozen corpus read with the same instrument: 18.8 vs 18.5 uses per hundred corrective runs and 51.0 vs 52.5 per hundred review runs, and 113 of 327 corrective promotions the new exemption covers still carried the flag, so the zero target is not met. Record at docs/research/refusal-escape-census.html.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261103T082706369314-preserve-ordinary-resume-after-a-lane-change" data-who="reckon-build" data-when="2026-11-06T16:19:47.141Z">
+    <div class="r-comment-body"><p>Added the end-to-end regression the section asks for: a cross-harness lane change from a claude-family lane onto a codex lane, followed by a plain `crew resume --advice`, which composes the destination lane&#x27;s command carrying that lane&#x27;s own `thread.started` id (2 passed after, EXIT=0); the declared mutation restores the old first-harness lookup and reddens it with `1 failed, EXIT=1`. No product source changed, because the harness-aware read path and the pointer capture on the first observed turn already behave correctly and the contract is to verify that and add the missing test.</p></div>
 </div>
 </section>
 </main>
