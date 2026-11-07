@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s114">
+  <meta name="plan-recorded-at" content="2026-11-07">
+  <meta name="plan-verdict" content="passed">
+  <title>The obligations hook lists only the duties a coordinator can act on | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="the-obligations-hook-prints-in-full-only-the-rows-the-landing" data-node="the-obligations-hook-prints-in-full-only-the-rows-the" data-reckon="landed" data-when="2026-11-07">
+  <h2>The hook prints the actionable duties and counts the rest</h2>
+  <p>The obligations hook reprinted the session's whole list on every turn, so queued requests, stalled requests and reviews an armed reflex had already taken pushed the few rows that needed action off the checklist, and a reflex-owned <code>review-missing</code> held the stop open for a wait nothing at the session could shorten. <code>_row_is_actionable</code> in <code>reckon/hooks/coordinator_obligations.py</code> now reads the decision from a row's own fields: a kind in <code>_NON_BLOCKING_KINDS</code> is never actionable, and a reflex-owned review is actionable only once its <code>age_seconds</code> reaches its <code>reflex_window_seconds</code>. Actionable rows still print in full through <code>_work_lines</code>; the rest collapse into one line counting each kind with its oldest age. <code>_blocking_items</code> reads the same predicate, so the stop verdict holds only on the actionable set.</p>
+  <p><strong>The refusal is not a wait.</strong> In <code>reckon/crew/obligations.py</code>, <code>_review_dispatch_refusal</code> reads the run's own refusal record. A refusal naming a head counts while that head is the run's current one; a refusal naming none counts from its instant against the run's last delivery, the instant <code>_row_age</code> counts from, because a refusal older than the delivery speaks for a revision the run has left behind. While a refusal counts and a stored review of the run is open with an undisposed blocking finding, the duty carries no <code>review_owner</code>, its <code>reason</code> is the refusal's own, and its <code>next_command</code> renders the fold and exempt commands from <code>_undisposed_blocking_findings</code> and <code>_finding_dispose_commands</code> — the same two helpers the refusal itself uses. A reflex-owned row now also carries <code>reflex_window_seconds</code>, from the same <code>_reflex_review_window_seconds()</code> that writes its text, and that name joined <code>DUTY_ROW_FIELDS</code>, so the published snapshot projects it.</p>
+  <p><strong>Gate.</strong> <code>tests/test_the_hook_lists_only_actionable_rows.py</code>: a run-queued, a review-queued and a reflex-owned review-missing row under its window print exactly one summary line naming the three kinds and leave the stop verdict empty; one promotable row prints in full and holds the stop; a reflex row whose age equals its window prints and blocks while the same row one second younger collapses. Through the derivation: a refusal recorded at the run's delivery yields a row with no <code>review_owner</code>, the refusal's <code>reason</code> and a <code>next_command</code> naming both dispose commands; the same refusal an hour earlier leaves the row reflex-owned; and with no refusal the row carries <code>review_owner=reflex</code> with <code>reflex_window_seconds</code> equal to <code>_reflex_review_window_seconds()</code>, both surviving <code>project_run_rows(..., fields=DUTY_ROW_FIELDS)</code>. 6 passed. <code>ruff check</code> and <code>ruff format --check</code> add no findings on the three changed files (the two <code>S105</code> hits in the hook are present at the base revision).</p>
+  <p><strong>Negative control.</strong> Each declared mutation was applied to the tree and the gate ran against it: printing every row, treating every row as non-blocking, comparing the window with <code>&gt;</code> rather than <code>&gt;=</code>, returning no refusal, and removing <code>reflex_window_seconds</code> from <code>DUTY_ROW_FIELDS</code>. 5 of 5 were caught, each by the case declared for it, <code>EXIT=1</code>. Log under the run directory: <code>negative-control.log</code>.</p>
+  <p><strong>Population.</strong> The test files importing <code>reckon.hooks.coordinator_obligations</code> or <code>reckon.crew.obligations</code> were run at <code>-n 4</code> in one arm against this tree; the base arm for the node's own gate ran the new test file over an extraction of the base revision, where all 6 cases fail.</p>
+</article>
+</body>
+</html>
