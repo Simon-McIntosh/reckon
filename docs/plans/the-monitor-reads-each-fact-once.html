@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-blocks" content="crew-state-stays-bounded">
   <meta name="plan-section-depends-on" content="{&quot;s6&quot;:[&quot;the-monitor-reads-each-fact-once#s5&quot;],&quot;s7&quot;:[&quot;the-monitor-reads-each-fact-once#s6&quot;],&quot;s8&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s9&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s10&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;,&quot;the-monitor-reads-each-fact-once#s8&quot;],&quot;s12&quot;:[&quot;the-monitor-reads-each-fact-once#s8&quot;,&quot;the-monitor-reads-each-fact-once#s9&quot;,&quot;the-monitor-reads-each-fact-once#s10&quot;,&quot;the-monitor-reads-each-fact-once#s11&quot;,&quot;the-monitor-reads-each-fact-once#s13&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="93">
+<meta name="plan-version" content="94">
 <meta name="plan-modified" content="2026-11-07">
 </head>
 <body>
@@ -421,6 +421,80 @@ one core, with the census and the before and after figures recorded in the RCA; 
 importing the changed modules show no added failure against base in matched arms; and ruff check and
 ruff format --check on the staged paths add no finding.</p>
 
+    <h2 id="s14">§14 — A session&#x27;s duties run while its sweep is slow</h2>
+<section data-reckon="section" data-id="s14" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> reckon-e0 reported this on 7 November, and reckon-0f confirmed it
+in their own session. Follower pid 3427403 had been alive in state R for 6 h 43 m and was
+still streaming rows, yet:</p>
+<ul>
+<li><code>r-20261107T175659515760-make-an-appended-record-claim-no-counts</code> sat 50 minutes
+with <code>review_dispatch</code> null, while its obligation said the reflex would compose the
+review "within about 120 s";</li>
+<li>the review of <code>r-20261107T170819813156-refuse-a-second-launch-beside-a-live-worker</code>
+carried a blocking finding and was promoted at 18:38Z, but no repair round opened;</li>
+<li>reckon-0f saw five runs in the same state for 20 to 50 minutes.</li>
+</ul>
+<p>A direct <code>recovery_review_dispatch.dispatch_review_for_run</code> or
+<code>recovery_repair_dispatch.dispatch_repair_for_run</code> dispatched each of them at once.</p>
+<p>The cause is in <code>reckon/crew/station.py</code>. Each tick, the station calls
+<code>SweepBeat.request</code> for each session, and that call returns without starting a
+sweep while the session's previous sweep is still in flight
+(<code>if not due or key in self._in_flight: return False</code>). The class's own docstring
+says a sweep "walks registered worktrees and can run for hours". Review composition and
+repair-round dispatch run inside that same <code>resumption.sweep</code>, so they wait behind
+the worktree walk, and nothing reports the wait.</p>
+<p><strong>Deliverable.</strong> Review composition and repair-round dispatch for delivered
+and promoted runs run on a path that a slow worktree walk cannot hold. Either separate the
+duty pass from the walk so it runs every beat, or bound the walk within one sweep. In addition,
+an obligation that says the reflex owns a duty states how long that session's current sweep
+has been in flight, once that exceeds the promised cadence, instead of promising 120 s.</p>
+<p><strong>Done when</strong> a new
+<code>tests/test_a_sessions_duties_run_while_its_sweep_is_slow.py</code> shows three things,
+with a stubbed worktree walk that blocks until released:</p>
+<ul>
+<li>a delivered run that owes a review has its review dispatched within one beat while the
+walk is still blocked;</li>
+<li>a promoted run whose review carries a blocking finding has its repair round opened within
+one beat;</li>
+<li>the obligation for a review owed while the sweep has been in flight past the cadence
+names the sweep's age rather than "within about 120 s".</li>
+</ul>
+<p>Negative control: the same test at the base revision shows the review not dispatched
+while the walk blocks. The test files importing the changed modules add no failure against
+base in matched arms, and ruff check and ruff format --check add no finding on the staged
+paths.</p>
+
+    <h2 id="s15">§15 — An obligation never offers a promotion past an open blocking finding</h2>
+<section data-reckon="section" data-id="s15" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> reckon-e0 reported this on 7 November. While §14's starvation held,
+the obligations row for <code>r-20261107T170819813156-refuse-a-second-launch-beside-a-live-worker</code>
+read <code>promotable-stale</code>. It offered
+<code>reckon crew complete --run … --gate &lt;verdict&gt; --commit …</code>, although the run's
+newest review carried an open blocking finding (reuse 5, below the floor) and its repair round
+was held for coordinator advice. Following that row promotes work past a blocking finding, and
+the row hid the real state, which was a repair waiting on advice. Two smaller instances of a
+row naming the wrong cause were reported in the same session: an admission-held run's row named
+another run's review-dispatch or complete command, and a stale handover answered "already
+admitted" for a discarded review request.</p>
+<p><strong>Deliverable.</strong> The obligations derivation classifies a delivered run whose
+newest review carries an open blocking finding as owing a repair, never as promotable. The row
+names the repair's state: not opened, held for advice, or in flight. Every row's command names
+the row's own run.</p>
+<p><strong>Done when</strong> a new
+<code>tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py</code>
+shows three things, on a synthetic crew home:</p>
+<ul>
+<li>a delivered run whose newest review carries an open blocking finding yields a row that is
+not <code>promotable-stale</code> and whose command is not <code>crew complete</code>;</li>
+<li>with that run's repair held for advice, the row names the advice hold and the resume
+command for that run;</li>
+<li>a row for an admission-held run names only its own run id in its command.</li>
+</ul>
+<p>Negative control: the same test at the base revision yields <code>promotable-stale</code>
+with a <code>crew complete</code> command for the first case. The test files importing the
+changed modules add no failure against base in matched arms, and ruff check and ruff format
+--check add no finding on the staged paths.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-tmref-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-22" data-recommends-skill="/reckon-build the-monitor-reads-each-fact-once §4" data-resolved-at="2026-10-23T13:20:10+00:00" data-resolved-by="reckon-build">
@@ -467,7 +541,7 @@ ruff format --check on the staged paths add no finding.</p>
     <div class="r-comment-body"><p>Reviewed r-20261107T155222105164-obligations-recompute-only-what-changed at base e9805b3a4cb362516dc5bc3f14e880c9f70eaec1 and head 902372b946250b719af5df8a9f0a146625130397: the three memoisations landed and the base arm genuinely fails their zero-count assertions, but the done_when's live under-2-s bullet is unmet at 75.761 s and four non-blocking findings are recorded (stale held-record signature, a live timing log that ends in a NameError stamped EXIT=0, an after-arm recorded one revision behind head, and a hand-rolled memo beside file_memo).</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261107T155222105164-obligations-recompute-only-what-changed" data-who="reckon-build" data-when="2026-11-07T16:52:13.686Z">
-    <div class="r-comment-body"><p>Memoised the per-run review tier, held-worktree records and classification-memo write; a second tick over six review-owing runs makes zero plan reads, zero ledger reads, zero git subprocesses and zero memo writes, and moving one head recomputes only that run&#x27;s tier. The live second payload pass measured 75.761 s against the 2 s target, so the live-cost half is unmet and the remaining cost is the per-duty review-store read.</p></div>
+    <div class="r-comment-body"><p>Memoised the per-run review tier, held-worktree records and classification-memo write; a second tick over six review-owing runs makes zero plan reads, zero ledger reads, zero git subprocesses and zero memo writes, and moving one head recomputes only that run's tier. The live second payload pass measured 75.761 s against the 2 s target, so the live-cost half is unmet and the remaining cost is the per-duty review-store read.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-23T13:20:00Z">
     <div class="r-comment-body"><p>§4 landed: merge <code>57e274889</code>; one population failure was added and then repaired in <code>99e614314</code>, and it passes at main. A follower read 0.10 MB of pointers in 15 s, against the 1 MB bound (34.4 MB before). <a href="/reckon/evidence/archive/the-monitor-reads-each-fact-once-landed.html#s4">evidence</a></p></div>
