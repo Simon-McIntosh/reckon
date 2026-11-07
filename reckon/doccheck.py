@@ -422,7 +422,7 @@ DEFERRED_WORK_RULE = (
 #: aiming at a qualifying noun (``follow-up``, ``later``, ``next``,
 #: ``separate``) followed by the bucket it names. Up to two words may sit
 #: between a phrase's parts, so ``go to a follow-up figure node`` reads as one
-#: statement. A sentence that only cites a landed section — ``landed in §4`` —
+#: statement. A sentence that only cites a landed section — ``landed in §N`` —
 #: carries no onward verb and is not matched. Every group is non-capturing:
 #: :func:`deferred_work_terms` reads this pattern with ``re.findall``, and a
 #: capture group would put a tuple where the refusal quotes text.
