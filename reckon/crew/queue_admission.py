@@ -404,7 +404,12 @@ def _launch_queued(
             launcher=launcher,
             execution_override=bool(options.get("allow_execution_mismatch")),
             orchestrator_lane_reason=options.get("orchestrator_lane_reason") or None,
-            unreconciled_override=bool(options.get("allow_unreconciled_runs")),
+            # The queue exists so that work runs when a lane frees, whether or
+            # not its coordinator is awake: an admission launch is the request
+            # continuing, so it never re-applies its session's terminal backlog
+            # at launch. Dispatch records the waiver on the run, naming the runs
+            # it covers and the admission launch as its source.
+            unreconciled_override=True,
             unreviewed_plan_override=bool(options.get("allow_unreviewed_plan")),
             watch_required=True,
             watch_override=bool(options.get("no_watch")),
