@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T09:22:27.518Z",
+  "dispatched_at": "2026-11-07T09:14:04Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-refusal-comes-before-the-work.html:51",
+      "id": "done_when-1",
+      "reason": "one added case (`--dry-run`, neither flag, refused naming both) is the only measurement that makes the dry-run half of the deliverable falsifiable; without it that half can be omitted silently, and the suite still reads green.",
+      "text": "the sixth case shows only that a `--dry-run` brief dispatch given `--plan-link` is not refused; no case shows that a `--dry-run` brief dispatch given neither flag IS refused, so an implementation that refuses on the live path alone passes all six cases and all five controls while contradicting the deliverable's claim that the refusal \"covers both the live call and its `--dry-run` branch (near line 1917)\"",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-refusal-comes-before-the-work.html:50",
+      "id": "reasoning-1",
+      "reason": "one sentence fixing the placement (\"above the pair split\", or pair dispatch scoped out with its reason) decides whether that path is refused at dispatch; it changes no write path and no test file.",
+      "text": "the coverage sentence names only the live call and the `--dry-run` branch, but `crew dispatch` splits earlier at `if pair_backend:` (`reckon/crew_dispatch_commands.py:1821`) and returns after `dispatch_pair`, whose two arms each call `plan_dispatch` directly with the same brief-bearing node (`reckon/crew/dispatch.py:1177` and `:1233`, neither gated on a plan link); the only placement that covers both described paths \u2014 before the `if dry_run:` split at `:1898`, which is after the pair branch \u2014 leaves an implement-role brief pair dispatch unrefused, so it is still first asked at landing, which is the defect s3 exists to remove",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "a8e52b5089788e69f0d94fbc0cecc52aef2a6b7a",
+  "plan_fingerprint": "5655f6d7bc470f73e17495b81919c934e9f6e73f0c3db6d1a3695091333b1712",
+  "plan_slug": "a-refusal-comes-before-the-work",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T091048489268-plan-review-of-a-refusal-comes-before-the-work",
+  "reviewed_blob_sha": "a261cc908692cbe3ae3146a7c79badbbf698e23f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves: `crew_dispatch` at `reckon/crew_dispatch_commands.py:1451`, `--plan`/`--brief` at 1158\u20131162, `EXECUTABLE_SECTION_ROLES` at `reckon/evidence.py:277` (implement and test), `_require_brief_owner` at `reckon/crew/promotion_checks.py:1769`, `dispatch_options` at `crew_dispatch_commands.py:1861` and `:2179`, the dry-run `plan_dispatch` at `:1917`, and all eight named `plan_dispatch` callers (`reckon/crew/dispatch.py:687,1047,1177,1233,1670,2009`, `reckon/crew/dispatch_sessions.py:1713`, `reckon/crew/recovery_review_dispatch.py:2924`).",
+    "done_when": "a finding \u2014 no case shows the `--dry-run` branch refusing an unlinked brief dispatch, although the deliverable says the refusal covers it.",
+    "evidence_paths": "pass \u2014 every log is stated to sit under the run directory, which outlives the run.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach the symbols or comments described.",
+    "reasoning": "a finding \u2014 the coverage sentence covers the live call and the dry-run branch but not the paired-dispatch branch, a third path through the same entry that launches two fresh brief-bearing arms.",
+    "single_goal": "pass \u2014 s3 carries one deliverable: the plan link is asked for and recorded when the run is dispatched, with the landing read that consumes the recorded value.",
+    "wiring": "pass \u2014 s3 declares its wait on \u00a72 (`plan-section-depends-on` s3: [#s2]) and \u00a75 declares its wait on both s2 and s3, matching the files each section writes (`reckon/crew/node.py` for \u00a72 and \u00a73, `reckon/crew_dispatch_commands.py` for \u00a73 and \u00a75)."
+  },
+  "section_digests": {
+    "_document": "fe86ddc53d6df02ed8681809f4399744a8daf0946c333b28fc3a6b583769f545",
+    "s1": "75df880739e89570186a1c16cae47d54a4d457a4a6e99c09b2d62c21368dc424",
+    "s2": "82627aab8394f0209c300c78167c8eb9a00cc5acf2e8b3a32be25df3b62c3f92",
+    "s3": "dbb31c0318bf823846eb23396c71d86f0f0e11d25acca906cf5173759d756916",
+    "s4": "2a97d35fa0e69a6331d78f727d1ded35d267ff23bba3ff069f80e200825410f0",
+    "s5": "c6bcd8dc06779761ce142ed5ed5f70c6da3c790175716e80a8adde0bd2936039"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T09:31:35.529819+00:00",
+  "total": null
+}
