@@ -1,0 +1,45 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T18:01:19.309Z",
+  "dispatched_at": "2026-11-07T17:50:42Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-crew-process-writes-only-what-it-owns.html:57",
+      "id": "wiring-1",
+      "reason": "a worker either stops on an out-of-scope edit or races \u00a73 on a shared file, and the plan's claim that the four sections are disjoint is false as written; \u00a75 needs `reckon/crew/dispatch_watch.py` added to its write paths (or the marking moved to a \u00a73 deliverable) and the followup corrected.",
+      "text": "\u00a75 states that `_request_host_follower` sets `owner_checked: true` on the request line, but that function lives in `reckon/crew/dispatch_watch.py:818`, which is \u00a73's write path and absent from \u00a75's five declared write paths, so a \u00a75 worker cannot make the change it is told to make, and a \u00a73 worker running concurrently (as the followup's \"disjoint files \u2026 can run together\" invites) would land `_request_host_follower` without the field \u00a75 then depends on",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "c6b79405a87787007ac964b577ea5cd224260c77",
+  "plan_fingerprint": "dd0c7f426544687b738f8793feeeb4fc3adbb8288c6bf216d348e778fc5814ed",
+  "plan_slug": "a-crew-process-writes-only-what-it-owns",
+  "plan_version": 6,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T174241522473-plan-review-of-a-crew-process-writes-only-what-it-owns",
+  "reviewed_blob_sha": "434ab9835ae1cbe05719efc384ed5c163b69c4a1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 at base ea60b2749f every \u00a75 anchor resolves: `crew-host` wait loop and exec at lines 47\u201367, `crew_host` at `reckon/crew_follow_commands.py:2774`, `run` at `reckon/crew/session_host.py:710`, `record()` at `:368`, `_remove_fifo` at `:615`, `supervise` record write at `:667`, `_TERMINAL_RUN_PHASES` at `reckon/crew/node.py:33`, `LAUNCH_FAILED_PHASE` at `reckon/crew/dispatch_launch.py:101`, the launch-failed-as-failed read at `reckon/crew/runs.py:2275`, `_pointer_session` at `reckon/crew/resumption.py:753`, `_hand_off_to_waiting_host` at `reckon/crew/dispatch_watch.py:870`; and \u00a75's reference to the nova-8a session `35a66cc6` on nova-39's host resolves in \u00a71.",
+    "done_when": "pass \u2014 each of \u00a75's six cases is a measurable assertion, and the sixth (FIFO removal, which passes at base by design) carries its own negative control, so no case is unfalsifiable.",
+    "evidence_paths": "pass \u2014 \u00a75 places every log under the run directory, a durable crew path, not a scratchpad or node-local temporary tree.",
+    "naming": "pass \u2014 `owner_checked` and `waiting_for_dispatch` name what they carry; no plan labels, stage names, ticket numbers or changelog prose enter the code they describe.",
+    "reasoning": "pass \u2014 \u00a75's root cause is the script's own pre-exec wait, which the cited lines 47\u201367 show; the scan, the accept set and the record field are each capable of producing the six cases as written; and the mechanism runs on the real path, naming the plugin script exec into `crew_host` and then `session_host.run`.",
+    "single_goal": "pass \u2014 \u00a75 delivers one outcome (a re-armed host adopts its owner's live runs and records that it is waiting when there are none); the script, the scan and the record field are all necessary to it.",
+    "wiring": "a finding \u2014 \u00a75's new `owner_checked` marking is set inside `_request_host_follower` (`reckon/crew/dispatch_watch.py:818`), a file \u00a73 owns and \u00a75's write paths do not list, while the plan's only open followup says the four sections \"write disjoint files and can run together\"."
+  },
+  "section_digests": {
+    "_document": "7848c4a22debbc4310e02052a09e0978b08f6e538ba797332694c84678155ff8",
+    "s1": "38e026f18d1b42b1d79978e1ed1cf6179e085908a249e5762f39a683dcc8123f",
+    "s2": "f11be171c26248fbc871d99510f0013c9dfc0a181d247f07861e86dc0d156f40",
+    "s3": "76aeda9a3a70ef68e2d3ed18800f22774d4c2ec3fa6d0c7b85e9433c1b24b7d9",
+    "s4": "e88fcf79ec58d8305f36e37d69846c8e0a1a10f1b73fc6c167c25b700165e123",
+    "s5": "c7586010206bb0d9b7266369bfca6c03d396667e7398ffc1caab227c67251d5e"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T18:18:48.205697+00:00",
+  "total": null
+}
