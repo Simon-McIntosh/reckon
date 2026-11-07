@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T06:40:46.774Z",
+  "dispatched_at": "2026-11-07T06:33:27Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/an-evidence-record-counts-only-what-it-read.html#s2",
+      "id": "done_when-1",
+      "reason": "two implementations with different user-visible surfaces both satisfy the stated measure, so the section must name the replacement summary text and assert it.",
+      "text": "\u00a72 omits the count sentence for the shell path but never says what the `plan-summary` meta then carries, and its done-when only requires the three count phrases to be absent from that meta, so a node may drop it entirely and still pass while `docs/ui/plan.jsx:1274` renders `PG.summary` \u2014 every append-created record would then show a blank summary",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-evidence-record-counts-only-what-it-read.html#s3",
+      "id": "reasoning-1",
+      "reason": "an unstated refusal surface is a behaviour change the node meets mid-build with no instruction on whether to keep, carve out or test it.",
+      "text": "\u00a73 states the store refusal \"runs today only for `insert_section` and `append_evidence`\", but a third site already refuses the term: a `sections.<id>.body` set reaches `_refuse_forged_body_structure` through `_require_authored_value` (`reckon/_store_section_ops.py:141`, `reckon/_store.py:1074`), so widening `_DEFERRED_WORK_TERM` also widens a refusal \u00a73 does not account for, and a legacy section body carrying \"goes to \u00a74\" can no longer be re-set except in text mode",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-evidence-record-counts-only-what-it-read.html#s1",
+      "id": "anchors_resolve-1",
+      "reason": "the commit is named and the quoted state resolves there, so the root-cause argument stands unchanged for a reader who checks it.",
+      "text": "\u00a71 says the record \"says '0 committed run(s)\u2026'\" in the present tense, but that path now reads \"14 committed run(s), 64 section-anchored comment(s), and 47 landed commit(s)\" after the rebuild at `c058d9c74`, and the zero sentence exists only at the cited close commit `f7f7d2d6d`",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "fef68963db893ce84dcb909cc35711af0bd7a49d",
+  "plan_fingerprint": "1a80bf98af72a265b377c5cfa3bb0c602a99e11a418b5fd7ed408e192ccafc0b",
+  "plan_slug": "an-evidence-record-counts-only-what-it-read",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T063136881795-plan-review-of-an-evidence-record-counts-only-what-it-read",
+  "reviewed_blob_sha": "28e8779277856ab6f139c79d2eea330ce3b5bd84",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a71's zero-count quotation resolves at the cited close commit but not in the file on disk today; every other named symbol, line anchor and plan reference resolves.",
+    "done_when": "a finding \u2014 \u00a72's measure cannot tell a record with no `plan-summary` meta from one carrying a count-free summary, and the SPA renders that meta.",
+    "evidence_paths": "pass \u2014 every gate log is required under the run directory, which is durable and outside any node-local temporary path.",
+    "naming": "pass \u2014 the new test filenames, `data-evidence-origin`, `lost_anchors` and `_DEFERRED_WORK_TERM` name mechanisms, and no plan label, stage name or ticket number reaches them.",
+    "reasoning": "a finding \u2014 \u00a73 under-states where the deferred-work refusal already runs; the root cause in \u00a71 matches its cited evidence and each section's mechanism does produce its own done-when, with `_landed_record_shell` and `_apply_evidence_appends` named as the callers.",
+    "single_goal": "pass \u2014 each section names one deliverable; \u00a74's mark, carry-forward, refusal and loss list are one mechanism measured by one done-when block.",
+    "wiring": "pass \u2014 `plan-after: a-finished-plan-closes` resolves to `docs/plans/a-finished-plan-closes.html`, the project's unwired-plan check reports nothing against the plan, and `plan-section-depends-on` wires s3\u2192s2 and s4\u2192{s2,s3}, which matches the `reckon/_store.py` write sharing the sections declare."
+  },
+  "section_digests": {
+    "_document": "6d35efce52466005f8ee56997c8dc7bcca998d7c41fcd252d254bc7264596281",
+    "s1": "7c52117565966edec5de56bc0448d4a141edbcb73ac18ede5f2cb0c34f424f0a",
+    "s2": "e0c21336531cccf486121dbb25184c349eda1428113664a6ba29a293eb13d226",
+    "s3": "95321ee3e9da75b25b1c9cc2f50f8ec2549ee8971f21d75db090d74e967c3677",
+    "s4": "8bc85303e2974b9aaad5c930875da392c800a9d548ad0c0b9390bd43b381a09d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T06:45:57.357302+00:00",
+  "total": null
+}
