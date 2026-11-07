@@ -21,7 +21,7 @@
   </tbody>
 </table>
 
-<p id="an-admission-pass-a-landing-pass-and-a-crew-dispatch-each-gate">The gate is <code>tests/test_an_admission_pass_reads_each_project_once.py</code>: 5 passed at the head arm against 3 failed and 2 passed at the base arm, on the same file. Each of the three declared negative controls turns exactly its own case red: restoring plan and refs in the pass key fails the first case, removing the scope entry from the dispatch preview fails the fourth, and removing it from <code>land_once</code> fails the fifth.</p>
+<p id="an-admission-pass-a-landing-pass-and-a-crew-dispatch-each-gate">The gate is <code>tests/test_an_admission_pass_reads_each_project_once.py</code>: 5 passed at the head arm against 3 failed and 2 passed at the base arm, on the same file. Each of the three declared negative controls turns exactly its own case red: restoring plan and refs in the pass key fails the first case, removing the scope entry from the dispatch preview fails the fourth, and removing it from <code>land_once</code> fails the fifth. The second case's expectation is the base revision's own read — each plan's text parsed directly, with the pass scopes and the memoised pair bypassed — so a memoised reader that answers wrongly disagrees with it rather than moving both sides together; making the shared reader report every section done turns that case, and only that case, red.</p>
 </main>
 </body>
 </html>

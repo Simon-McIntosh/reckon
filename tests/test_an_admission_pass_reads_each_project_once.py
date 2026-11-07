@@ -197,14 +197,51 @@ def test_one_pass_reads_the_project_once(
     assert counts.read_state <= READ_STATE_BUDGET, counts.read_state
 
 
-def test_phases_match_the_per_ref_read(
+def _base_per_ref_read(
+    docs_dir: str | Path, slug: str, project: str = ""
+) -> tuple[dict, str]:
+    """The base revision's read: parse the file's own text, with no memo.
+
+    This is the oracle case two compares against. It shares no code with the
+    memoised reader and the scopes, so a defect in either moves the head's
+    phases without moving these.
+    """
+
+    path = Path(docs_dir) / "plans" / f"{slug}.html"
+    text = path.read_text(encoding="utf-8")
+    return _plan_html.read_state(text), text
+
+
+def _phases_under_base_read(
+    monkeypatch: pytest.MonkeyPatch, requests: list[dict]
+) -> list[str]:
+    """Each request's phase as the unmemoised, unscoped per-ref read decides."""
+
+    @contextmanager
+    def no_scope():
+        yield
+
+    with monkeypatch.context() as patch:
+        patch.setattr(queue_admission, "plan_read_scopes", no_scope)
+        patch.setattr(queue_admission, "_plan_state_and_text", _base_per_ref_read)
+        queue_admission.advance_waiting_requests(requests)
+    return [runs.read_pointer(request["run_id"])["phase"] for request in requests]
+
+
+def test_phases_match_the_base_per_ref_read(
     project: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Case two: the shared read answers each request's phase alike."""
+    """Case two: the shared read answers each request's phase alike.
 
+    The expectation comes from the base revision's own read — the plan text
+    parsed directly, with the pass scopes and the memoised pair bypassed — so a
+    memoised reader that returns a wrong phase disagrees with it instead of
+    moving both sides together.
+    """
+
+    expected = _phases_under_base_read(monkeypatch, _requests(project))
     shared = _pass(monkeypatch, _requests(project))
-    per_ref = _pass(monkeypatch, _requests(project), shared=False)
-    assert shared == per_ref
+    assert shared == expected
 
 
 def test_a_plan_edited_between_passes_is_seen(

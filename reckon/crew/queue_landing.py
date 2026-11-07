@@ -1245,21 +1245,19 @@ def land_once() -> dict[str, Any]:
     on its code review alone.
 
     The pass observes the docs tree once for every run it judges, through the
-    same boundary an MCP read enters, and closes that observation before it
-    lands anything, so the merge it makes is seen by the next reader rather
-    than masked by a scan taken before it.
+    same boundary an MCP read enters, and holds that observation for the whole
+    pass so no run is judged from a different view than its neighbours. The
+    pass reads no document the landing itself changes — it reads git, run
+    records and stored reviews — so holding the boundary across a landing
+    masks nothing.
     """
     from reckon.crew.queue_admission import plan_read_scopes
 
-    scopes = ExitStack()
-    try:
-        scopes.enter_context(plan_read_scopes())
-        return _land_deliveries(scopes)
-    finally:
-        scopes.close()
+    with plan_read_scopes():
+        return _land_deliveries()
 
 
-def _land_deliveries(scopes: ExitStack) -> dict[str, Any]:
+def _land_deliveries() -> dict[str, Any]:
     landed: list[str] = []
     skipped: list[dict[str, str]] = []
     obligations: list[dict[str, str]] = []
@@ -1498,10 +1496,6 @@ def _land_deliveries(scopes: ExitStack) -> dict[str, Any]:
                 skipped.append({"run_id": run_id, "status": "landed-elsewhere"})
                 continue
             raise
-        # The landing merges into the tree this pass observed, so the
-        # observation closes before it rather than answering the runs judged
-        # after it from the tree as it was.
-        scopes.close()
         try:
             accepted, guard = _land(run_id)
         except CrewError:

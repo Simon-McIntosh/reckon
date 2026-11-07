@@ -2653,7 +2653,6 @@ def _readiness_rows(
     rows: dict[str, Mapping[str, Any] | Any] = {}
     inventory: dict[str, Mapping[str, Any] | Any] = {}
     try:
-        from reckon import _plan_html as plan_html_reader
         from reckon.crew.plan_review import project_section_readiness
         from reckon.mcp_discovery import _discover_project, _inventory_row
 
@@ -2662,16 +2661,11 @@ def _readiness_rows(
             return cache[key]
         discovered = _discover_project(project, None)
         items = [_inventory_row(item) for item in discovered.get("inventory", [])]
-        persisted = _persisted_plan_states(project, Path(docs_dir))
         for item in items:
             if item.get("type") != "plan" or not item.get("slug"):
                 continue
-            html_file = Path(docs_dir) / "plans" / f"{item['slug']}.html"
-            stored = persisted.get(f"plans/{item['slug']}.html")
-            if isinstance(stored, Mapping) and stored.get("state") is not None:
-                plan_html_reader.reuse_parsed_state(html_file, stored["state"])
-            item["section_declarations"] = plan_html_reader.read_state_and_text_file(
-                html_file
+            item["section_declarations"] = _plan_state_and_text(
+                docs_dir, str(item["slug"]), project
             )[0].get("section_declarations", {})
         inventory = {str(item.get("slug") or ""): item for item in items}
         rows = project_section_readiness(project, Path(docs_dir))
