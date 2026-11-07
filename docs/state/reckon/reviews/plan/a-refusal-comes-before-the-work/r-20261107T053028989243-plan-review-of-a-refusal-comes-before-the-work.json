@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T05:40:32.702Z",
+  "dispatched_at": "2026-11-07T05:31:40Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-refusal-comes-before-the-work.html:58",
+      "id": "anchors_resolve-1",
+      "reason": "a worker repairs the guard condition at the caller, which is in the write paths; the mislabel costs navigation, not scope.",
+      "text": "\u00a75 calls `_require_write_paths_in_authority` \"the fence (`reckon/crew/dispatch_plan.py` near line 911)\", but line 911 is the call site inside `plan_dispatch`; the fence itself is defined in `reckon/crew/dispatch_admission.py:1983`, and \u00a71 of the same plan names that file correctly, so the section contradicts its own sibling",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-refusal-comes-before-the-work.html:58",
+      "id": "reasoning-1",
+      "reason": "the section's repair premise points at a guard both paths already run, so a worker reaching the fallback delivers only a regression test and \u00a71's fourth case is left unexplained; the section must name the real divergence (the dry run stops at `plan_dispatch` while the launch continues into `dispatch`'s own checks) or be re-scoped to the regression guard.",
+      "text": "\u00a75 says \"the worker first reproduces \u00a71's fourth case: a `--dry-run` whose write path resolves under `~/.cache` answers ok while the same dispatch without `--dry-run` is refused\", and offers the causes as \"`repo` unresolved, `verdict.ok` false, or another\"; but the dry-run branch calls `plan_dispatch(..., repo=repo, ...)` (`reckon/crew_dispatch_commands.py` near line 1923) and the fence at `reckon/crew/dispatch_plan.py:911` sits inside `if verdict.ok and repo is not None`, so `repo` is not None on the dry-run path and a dry run that answers ok had `verdict.ok` true \u2014 both named conditions are ruled out by the section's own citation, and the case cannot reproduce at the fence it blames",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-refusal-comes-before-the-work.html:48",
+      "id": "reasoning-2",
+      "reason": "the done-when's fifth case asserts the value is \"stored with it in `dispatch_options`\", and a worker must invent the parameter (or smuggle a dynamic attribute onto `TaskNode`, which the section forbids by name) before the case can pass; naming the channel in the deliverable removes that decision from the worker.",
+      "text": "\u00a73 says \"A batch entry gains `plan_link` and `unplanned_reason` fields (`BATCH_ENTRY_FIELDS`), which `queue_requests` records in the same `dispatch_options`\" while requiring \"no new `TaskNode` field\"; but `queue_requests` (`reckon/crew/dispatch.py:293`) takes only `TaskNode` objects and builds `dispatch_options` from its own parameters and constants (`dispatch.py` near line 354, hardcoded to `project`, `session`, `no_watch`), and `_queue_batch` passes nothing but `[node]` plus lane/config (`reckon/crew/dispatch_batch.py` near line 573), so no described channel carries the entry's value to the entry's pointer",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "2c79e34857935927933fb1677458c5c0b697e069",
+  "plan_fingerprint": "6ab6f26569480611c794b6833d28dd313204d06a84fa45ba023aa7d018461cb1",
+  "plan_slug": "a-refusal-comes-before-the-work",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T053028989243-plan-review-of-a-refusal-comes-before-the-work",
+  "reviewed_blob_sha": "d87bc926992a53e03ecc73ca83a9c752d68f08aa",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a75 attributes `_require_write_paths_in_authority` to `reckon/crew/dispatch_plan.py` near line 911, which is its call site; the function is defined in `reckon/crew/dispatch_admission.py:1983`. Every other anchor the three units name resolves.",
+    "done_when": "pass \u2014 \u00a72 declares five negative controls, one per shared refusal; \u00a73 three; \u00a75 one, with a stated substitute control when its reproduction does not fire. Every case names a concrete test file and a base-revision failure delta.",
+    "evidence_paths": "pass \u2014 every gate log is placed \"under the run directory\", a durable path outside any session scratchpad, and each is required to open with its revision and literal command and close with `EXIT=`.",
+    "naming": "pass \u2014 the new test filenames describe behaviour (`test_every_path_meets_the_node_contract.py`, `test_a_brief_run_names_its_plan_at_dispatch.py`, `test_a_dry_run_fences_write_paths.py`), and no plan label, ticket number or version tag appears in them or in the symbols the units cite.",
+    "reasoning": "findings \u2014 \u00a75's premise is refuted by the code it cites (the dry run passes `repo` and reaches the fence), and \u00a73 states that `queue_requests` records a batch entry's plan link while forbidding the only field that could carry it to that function.",
+    "single_goal": "pass \u2014 \u00a72 carries one whole-node judge on every path, \u00a73 one plan-link record kept at dispatch, \u00a75 one fence applied by the dry run; no node carries two deliverables.",
+    "wiring": "pass \u2014 the plan declares `plan-after` `a-dry-run-must-resolve-what-the-real-call-resolves` (whose \u00a75 the snapshot records as `done`), and `plan-section-depends-on` wires `s3` and `s5` to `a-refusal-comes-before-the-work#s2`, which matches the file-sharing the followup names."
+  },
+  "section_digests": {
+    "_document": "fe86ddc53d6df02ed8681809f4399744a8daf0946c333b28fc3a6b583769f545",
+    "s1": "75df880739e89570186a1c16cae47d54a4d457a4a6e99c09b2d62c21368dc424",
+    "s2": "fc18bfe8543c38908c01240bb0f945bd67bf2d845d09d8f397f4b7896796aa5b",
+    "s3": "484a031069a14565afce95693e646fd47185f342ae18b46feb6af2177e9d8437",
+    "s4": "2a97d35fa0e69a6331d78f727d1ded35d267ff23bba3ff069f80e200825410f0",
+    "s5": "bdfef5669334d3c242074a340668e57d3dc6d9e9b1f0d03e2d634c4f79c8e167"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T05:48:58.025412+00:00",
+  "total": null
+}
