@@ -15,13 +15,14 @@ selector that quietly fell back to them would serve the oldest review.
 
 from __future__ import annotations
 
+import json
 import subprocess
 from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
 
-from reckon import cli, mcp
+from reckon import cli
 from reckon.crew import plan_review
 from tests.test_review_plan_command import project as project  # noqa: PLC0414
 
@@ -167,7 +168,20 @@ def _answer(*options: str):
 
 
 def test_the_view_serves_the_review_at_the_newest_commit(three_reviews) -> None:
-    payload = mcp._crew(project=PROJECT, plan=PLAN_SLUG, view="plan-review")
+    result = CliRunner().invoke(
+        cli.main,
+        [
+            "crew",
+            "view",
+            "plan-review",
+            "--project",
+            PROJECT,
+            "--plan",
+            PLAN_SLUG,
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.stdout)
 
     record = payload["record"]
     assert record is not None
