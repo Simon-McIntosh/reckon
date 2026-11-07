@@ -50,6 +50,11 @@
     <p>Run <code>r-20261027T093350429603-reload-images-live-on-node-local-storage</code> landed at merge <code>2f3a90803</code>. Reload images now live under the node-local runtime root, resolved through station_store.runtime_root_source and refused when the station's own proof finds the root on shared storage; the cross-node lease records in checkout_trust are deleted with the tests that asserted them. Coordinator importer measure, stacked with the census, worker-MCP and reload-image nodes on main ab0ababb1 over 144 test files: main 1695 passed, stack 1708 passed, the same one failure and one error at both, so none added. Review 113 of 120.</p>
   </section>
 
+  <section id="s10">
+    <h2>§10 — a retention pass finishes inside its slot</h2>
+    <p>§10 landed at <code>5bc89fc029</code> (reviewed head <code>6cc3130cd2</code>, run <code>r-20261107T145629802776-a-retention-pass-finishes-inside-its-slot</code>). A pass examines at most its <code>--limit</code>, resumes from a cursor that only an applied pass moves, resolves each project's grace once, and prints per-phase timings and progress to stderr. On a synthetic 2,000-directory home a <code>--limit 100</code> pass reaches a prune candidate behind a 300-directory withheld head by the fourth pass. On the real 20,975-directory store a <code>--limit 500</code> dry run finished in 223.93 s (ledger 49.5 s, judge 166.6 s). The full-store <code>--limit 100000</code> dry run did not finish: the first attempt exceeded 1,900 s in the judge phase; the second was stopped by the coordinator at 936 s (8,310 directories, about 8.9 per second) to cut GPFS load. Per-prune <code>tree_size_bytes</code> walks dominate the judge phase and are outside this section. Tests: 6 cases, three negative controls each failing one case. Review at <code>6cc3130cd2</code>: three non-blocking findings, all exempted with reasons.</p>
+  </section>
+
 </main>
 </body>
 </html>
