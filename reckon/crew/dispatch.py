@@ -1854,13 +1854,16 @@ def dispatch(
     waiver = (
         {
             "requested": True,
+            # Which kind of command asked for the exception: a coordinator's own
+            # dispatch or a queue admission continuing a request it admitted.
+            "source": "admission-launch" if admission_launch else "coordinator",
             # The waived backlog is copied as a field rather than referenced, so
             # the record states exactly which runs the exception covered rather
             # than pointing at the ledger's state in a later moment.
             "grace": unreconciled_grace,
             "waived_runs": unreconciled,
         }
-        if unreconciled_override
+        if unreconciled_override and unreconciled
         else None
     )
     # A waived plan review is narrower than the unreconciled waiver: it excuses

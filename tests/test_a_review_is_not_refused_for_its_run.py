@@ -43,6 +43,8 @@ from tests.test_a_queued_run_is_admitted import (  # noqa: F401 - fixture
     admit_repo,
 )
 
+dispatch_module = importlib.import_module("reckon.crew.dispatch")
+
 GRACE = "1s"
 DELIVERED_RUN = "r-delivered-awaiting-review"
 
@@ -127,21 +129,40 @@ def test_a_queued_reflex_review_carries_the_waiver_and_launches(
 def test_an_implementation_dispatch_in_the_same_state_is_still_refused(
     admit_repo: Path, tmp_path: Path
 ) -> None:
-    """The control: without the waiver, the same fence refuses the relaunch."""
+    """The control: without the waiver, a direct dispatch is still refused.
+
+    A launch admitted from the queue does not re-apply its session's backlog,
+    so the fence's armed case is the coordinator's own dispatch.
+    """
+    from reckon.crew.node import TaskNode
+
     _delivered_scoring_run(admit_repo)
     config = _config(tmp_path, worker_slots=1)
-    from tests.test_a_queued_run_is_admitted import _queue
 
-    runs.queue_dispatch(_queue(admit_repo, node_id="impl-node", run_id="r-impl"))
+    with pytest.raises(dispatch_module.UnreconciledRuns) as excinfo:
+        dispatch_module.dispatch(
+            node=TaskNode(
+                id="impl-node",
+                goal="dispatch this node directly",
+                plan="plan-a",
+                section="dispatch",
+                done_when=(
+                    "pytest tests/test_a_review_is_not_refused_for_its_run.py passes"
+                ),
+                write_paths=["impl-node.txt"],
+                time_budget="20m",
+                spec_level="exact",
+            ),
+            project=PROJECT,
+            repo=admit_repo,
+            config=config,
+            session=SESSION,
+            launcher=lambda *args, **kwargs: pytest.fail(
+                "a direct dispatch must be refused"
+            ),
+        )
 
-    admitted = queue_admission.admit_once(
-        config_for=_resolve(config), launcher=_launcher([])
-    )
-
-    assert not admitted["launched"], admitted
-    assert admitted["failed"], admitted
-    detail = " ".join(str(value) for value in admitted["failure_detail"].values())
-    assert "unreconciled run(s) older than" in detail, detail
+    assert [row["run_id"] for row in excinfo.value.runs] == [DELIVERED_RUN]
 
 
 def test_a_composed_review_dispatch_records_the_waiver(
