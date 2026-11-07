@@ -636,12 +636,30 @@ def _local_fallback(
     *,
     config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
 ) -> dict[str, Any] | None:
-    """Rebind a picker route to local when its metered lane stops serving."""
+    """Rebind a chosen route to local when its metered lane stops serving.
+
+    Two kinds of route are rebindable, and they are not the same claim. A
+    picker's ``route`` decision names a lane the router chose for this request,
+    so a lane that will not serve before its reset is a reason to move it. A
+    reflex-composed review's route is the lane the review reflex followed the
+    reviewed run onto: a preference, not a judgement about this request, and it
+    carries no picked selection at all. Either yields to a hold.
+
+    A route a caller named stays authoritative whatever the hold says: a
+    coordinator who typed ``--backend`` or ``--local`` meant that lane, and the
+    answer for it is a queued request that waits, not a silent move onto another
+    lane. ``set_by`` is what separates the two, and only the reflex's own
+    spelling is rebindable.
+    """
+    from reckon.crew.dispatch import REVIEW_FOLLOWS_RUN_ORIGIN
+
     selection = pointer.get("picker_selection")
-    if (
-        pointer.get("named_route")
-        or not isinstance(selection, Mapping)
-        or selection.get("action") != "route"
+    named = pointer.get("named_route")
+    origin = str(named.get("set_by") or "") if isinstance(named, Mapping) else ""
+    if named and origin != REVIEW_FOLLOWS_RUN_ORIGIN:
+        return None
+    if not origin and (
+        not isinstance(selection, Mapping) or selection.get("action") != "route"
     ):
         return None
     config = (

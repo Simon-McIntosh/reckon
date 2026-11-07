@@ -2962,6 +2962,18 @@ def _dispatch_composed_review(
             backend_override=backend
             if record.get("subject") == "plan" or not on_local_lane
             else None,
+            # A run review's lane is the one the reflex followed the reviewed
+            # run onto, so the route it hands dispatch is recorded as such: the
+            # admission pass may rebind it onto the local lane when that lane is
+            # held. A plan review's lane comes from the project's review
+            # configuration rather than from a run, and a lane a coordinator
+            # named is recorded by dispatch's own default.
+            lane_origin=dispatch_module.REVIEW_FOLLOWS_RUN_ORIGIN
+            if record.get("subject") != "plan"
+            # A review whose only eligible lane was local already is local, and
+            # nothing is rebinding it.
+            and not on_local_lane
+            else "",
             unreconciled_override=allow_unreconciled_runs,
             route="deterministic",
             picker_selection=review_lane_selection,

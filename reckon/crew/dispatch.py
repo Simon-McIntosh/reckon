@@ -1401,6 +1401,12 @@ def _resolved_suite_gate(
 #: stands for: a worker handed the bare token cannot run it as a command.
 _SUITE_TEMPLATE_SPELLING = "<node tests>"
 
+#: The ``set_by`` a named route carries when the review reflex chose its lane by
+#: following the run under review rather than a caller naming one. The reflex's
+#: choice is a preference, so admission may rebind it when that lane is under a
+#: hold; a caller's ``--backend`` or ``--local`` is authoritative and stays put.
+REVIEW_FOLLOWS_RUN_ORIGIN = "review-follows-run"
+
 
 def _suite_gate_prompt_body(declared: str | None, resolved: str) -> str:
     """The FENCE — SUITE body for a run's prompt: template, rule, resolution.
@@ -1479,6 +1485,7 @@ def dispatch(
     worktree_session: str | None = None,
     local: bool = False,
     backend_override: str | None = None,
+    lane_origin: str = "",
     default_backend_override: str | None = None,
     repairs: str = "",
     accept_directory_claim: bool = False,
@@ -1545,6 +1552,12 @@ def dispatch(
     ``readiness_cache`` is an admission pass's readiness cache, which the pass
     hands to every launch it makes so one project's roadmap is derived once for
     the pass. A direct dispatch supplies none and builds its own.
+
+    ``lane_origin`` is recorded as the ``set_by`` of the ``named_route`` a
+    caller-named backend leaves on the pointer. A review the reflex composes
+    names its lane itself, following the run under review, which admission may
+    rebind when that lane is held; a coordinator's own naming records the
+    default and stays authoritative.
     """
     repo_root = resolve_project_repository(project, repo)
     worktree_identity = str(worktree_session or session)
@@ -1770,7 +1783,7 @@ def dispatch(
         if caller_named_route:
             dispatch_options["named_route"] = {
                 "backend": resolution.backend,
-                "set_by": "dispatch",
+                "set_by": lane_origin or "dispatch",
             }
 
     _workspace_roots(repo_root)
