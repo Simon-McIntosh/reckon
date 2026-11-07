@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.67">
-<meta name="plan-version" content="29">
+<meta name="plan-version" content="30">
 <meta name="plan-modified" content="2026-11-07">
 <meta name="plan-commits" content="a88e6f09">
 </head>
@@ -108,7 +108,7 @@
 <li><code>r-20261106T224214853358-edge-window-settle</code> had two attempts running at once, the duplicate launch of §5. The blocked manifest was written at 23:18:35Z (<code>blocker-note.md</code>), and the other attempt was still alive when the coordinator tried to resume.</li>
 </ul>
 <p>The refusal names no attempt, so a coordinator reads it as a stale process and stops whatever is running. A repair round that would have delivered on its own is then cut short mid-turn.</p>
-<p><strong>Deliverable.</strong> One function composes the live-process refusal, and all three sites call it: <code>reckon/crew/resumption.py</code> near lines 1001 and 1112, and <code>reckon/crew/dispatch_sessions.py</code> near line 1223. The present sentence stays as the message&#x27;s opening, so the tests that match it keep passing. After it, the message names the live attempt from the run&#x27;s own records:</p>
+<p><strong>Deliverable.</strong> One function composes the live-process refusal, and all three sites call it: <code>reckon/crew/resumption.py</code> near lines 1001 and 1112, and <code>reckon/crew/dispatch_sessions.py</code> near line 1223. At the two sites where a pid was read alive, the present sentence stays as the message&#x27;s opening, so the tests that match it keep passing: <code>tests/test_resume_refuses_a_live_worker.py</code> near lines 302 and 350, and <code>tests/test_resume_sweep_needs_an_observed_death.py</code> near line 276. The in-motion site does not use that sentence, because no process was read alive there. It opens with its own sentence, which keeps the words <code>liveness unknown</code> that its existing test matches and never says <code>live process</code>. After the opening, the message names the attempt from the run&#x27;s own records:</p>
 <ul>
 <li>its number, pid and launch time, from <code>attempt-&lt;n&gt;-worker.json</code>;</li>
 <li>its kind, from the attempt record&#x27;s <code>attempt_kind</code>;</li>
