@@ -101,8 +101,17 @@ class Arm:
 
     @property
     def readable(self) -> bool:
+        """Whether the arm ran far enough to say which ids failed.
+
+        Pytest exits 1 when tests fail and 2 when collection itself errored;
+        both name what failed (``FAILED`` or ``ERROR`` lines). An exit of 2
+        with named ids is the expected base reading of a node whose new test
+        imports a symbol the node adds: the test cannot be collected before
+        the change exists, so the base reports it failing. Exit 2 with no id
+        named, or any other status, says nothing about which ids failed.
+        """
         return self.exit_status == 0 or (
-            self.exit_status == 1 and bool(self.failure_ids)
+            self.exit_status in (1, 2) and bool(self.failure_ids)
         )
 
     def as_dict(self) -> dict[str, Any]:
