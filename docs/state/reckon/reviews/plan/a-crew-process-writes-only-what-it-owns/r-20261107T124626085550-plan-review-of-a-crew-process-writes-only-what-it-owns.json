@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T13:01:57.589Z",
+  "dispatched_at": "2026-11-07T12:49:09Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:57",
+      "id": "done_when-1",
+      "reason": "the section must add `tests/test_session_host_plugin.py` to its write paths and say what becomes of those four tests, or its gate cannot be run to a verdict.",
+      "text": "\u00a75 rewrites `plugins/crew-host/bin/crew-host` so it execs `reckon crew host` at once with no `--first-request`, but four tests in `tests/test_session_host_plugin.py` assert exactly the removed behaviour (`test_waits_silently_on_a_fifo_named_for_its_owner` asserts `proc.poll() is None` while waiting; `test_first_request_line_becomes_the_host_command` reads `_value(args, \"--first-request\")`; `test_a_signal_removes_its_fifo` and `test_removes_its_fifo_when_its_owner_exits` assert the entry point's own wait loop removes the FIFO), and that file is outside \u00a75's four declared write paths, so the worker either leaves the section's own gate red or stops with a scope blocker. Measured on a scratch copy of the entry point carrying only the \u00a75 change, with the tests unchanged: base arm 7 passed `EXIT=0`, head arm 4 failed / 3 passed `EXIT=1` (`gate_existing_plugin_tests_base_arm.log`, `gate_existing_plugin_tests_head_arm.log` in this directory)",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:56",
+      "id": "reasoning-1",
+      "reason": "naming the key `session` in that step is a one-word change that prevents a silent no-op, and the failure it prevents is exactly the empty pane the section exists to remove.",
+      "text": "\u00a75's start-up scan filters live pointers \"whose session is its owner's\" but never names the pointer key, and the live pointer carries two candidate fields: `session` (populated on 43 of 43 pointers in this crew home, holding the Claude session UUID that `_calling_session()` returns) and `session_id` (empty on all 43), while the resolver already in the tree reads the empty one (`resumption._pointer_session`, `reckon/crew/resumption.py:753`, returns `record.get(\"session_id\")`), so a worker following the sentence literally can filter on `session_id`, match nothing, and still write fixtures that pass.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "4f069d50bb5d0cab4e10b56948a738bb12530ee0",
+  "plan_fingerprint": "d6aeb56bc47721aa84825839a9f47edbd1246660ce36eee4b771d665b5f15169",
+  "plan_slug": "a-crew-process-writes-only-what-it-owns",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T124626085550-plan-review-of-a-crew-process-writes-only-what-it-owns",
+  "reviewed_blob_sha": "7acb106d3be6cae87e6438da211a6484ef46eb0c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves: `_TERMINAL_RUN_PHASES` at `reckon/crew/node.py:33` with exactly the four phases quoted, `LAUNCH_FAILED_PHASE` at `reckon/crew/dispatch_launch.py:101` and bucketed as failed at `reckon/crew/runs.py:2275`, `crew_host` at `reckon/crew_follow_commands.py:2774`, `run` at `reckon/crew/session_host.py:710`, `_state_dir` at `:117`, and the entry point's wait loop at lines 47\u201367 of `plugins/crew-host/bin/crew-host`; the one imprecision is that `_state_dir` names the record's directory rather than the record file, which a worker reaches through `_record_path`.",
+    "done_when": "a finding \u2014 \u00a75's gate line (\"the test files \u2026 covering `plugins/crew-host` add no failure against the base revision\") cannot pass: four existing tests in `tests/test_session_host_plugin.py` assert the wait-for-first-request behaviour the section removes, and that file is not in \u00a75's write paths.",
+    "evidence_paths": "pass \u2014 every log is required under the gate's run directory, and no gate or fixture path names a session scratchpad or a node-local temporary directory.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches a symbol or comment, and `tests/test_a_rearmed_host_follows_live_runs.py` names the behaviour it checks.",
+    "reasoning": "a finding \u2014 the start-up scan says it follows pointers \"whose session is its owner's\" without naming the pointer key, and the pointer carries two differently-populated session fields, so the natural reading of the resolver already in the tree (`session_id`) matches nothing in production.",
+    "single_goal": "pass \u2014 both halves (the entry point execs at once; the host scans at start-up) serve one outcome that neither half produces alone, so one verdict covers the section.",
+    "wiring": "pass \u2014 `plan-after` resolves to `docs/plans/the-monitor-shows-the-work-it-watches.html`, \u00a75 declares no `depends-on`, and its write paths (`plugins/crew-host/bin/crew-host`, `reckon/crew/session_host.py`, `reckon/crew_follow_commands.py`, its new test) share no file with \u00a72 (`reckon/ledger.py`), \u00a73 (`reckon/crew/dispatch_watch.py`) or \u00a74 (`reckon/hooks/coordinator_obligations.py`), so the followup's \"the four sections write disjoint files\" holds."
+  },
+  "section_digests": {
+    "_document": "7848c4a22debbc4310e02052a09e0978b08f6e538ba797332694c84678155ff8",
+    "s1": "38e026f18d1b42b1d79978e1ed1cf6179e085908a249e5762f39a683dcc8123f",
+    "s2": "f11be171c26248fbc871d99510f0013c9dfc0a181d247f07861e86dc0d156f40",
+    "s3": "76aeda9a3a70ef68e2d3ed18800f22774d4c2ec3fa6d0c7b85e9433c1b24b7d9",
+    "s4": "e88fcf79ec58d8305f36e37d69846c8e0a1a10f1b73fc6c167c25b700165e123",
+    "s5": "cd81b601605e73b9f1b86f8b4ac86bf274579116fa20b0555fc176ef4da759de"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T13:12:41.220354+00:00",
+  "total": null
+}
