@@ -933,6 +933,7 @@ def _signal_process_group(
     reason: str = "",
     run_dir: str | Path | None = None,
     project: str | None = None,
+    sig: int = signal.SIGTERM,
 ) -> list[int]:
     """Signal a worker only while its pid still names the spawned process.
 
@@ -964,6 +965,10 @@ def _signal_process_group(
 
     It returns the pids the signal was delivered to, which is what a caller
     recording an ended run needs; the empty list means nothing was signalled.
+
+    ``sig`` is the signal delivered, SIGTERM by default. The stop path passes
+    SIGKILL through these same guards, so an escalation cannot reach a pid the
+    graceful signal was forbidden to touch.
     """
     own_pid = os.getpid()
     if pid == own_pid or os.getpgid(pid) == os.getpgid(own_pid):
@@ -976,7 +981,7 @@ def _signal_process_group(
             run_dir,
             target_pid=pid,
             reason=reason,
-            sig=signal.SIGTERM,
+            sig=sig,
             outcome="refused",
             detail=detail,
             project=project,
@@ -992,19 +997,19 @@ def _signal_process_group(
             run_dir,
             target_pid=pid,
             reason=reason,
-            sig=signal.SIGTERM,
+            sig=sig,
             outcome="refused",
             detail=detail,
             project=project,
         )
         raise CrewError(detail)
     if run_dir is None:
-        delivered = signal_worker(pid, signal.SIGTERM, reason=reason, project=project)
+        delivered = signal_worker(pid, sig, reason=reason, project=project)
         return [int(pid)] if delivered else []
     run_id = Path(run_dir).name
     ended = signal_worker(
         pid,
-        signal.SIGTERM,
+        sig,
         reason=reason,
         run_dir=run_dir,
         project=project,
