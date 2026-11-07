@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-review-reads-only-its-runs-changes">
+  <meta name="plan-title" content="A Review Reads Only Its Run's Changes">
+  <meta name="plan-summary" content="A run that merged main mid-flight is reviewed and sized on its own changes, not on every commit main gained since its dispatch base.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="1.25">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S27">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-after" content="work-is-never-stuck-behind-the-admission-loop">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
+  <title>A Review Reads Only Its Run's Changes | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-11-07">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: a review sized at 670k tokens for a few hundred lines of change</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>Run <code>r-20261106T134041653278-stop-only-its-own-run-when-a-run-record-is-damaged</code> (<code>the-crew-home-has-a-bound</code> §12) was resumed on 6 November with advice to merge <code>origin/main</code> into its worktree so it could reproduce a regression on the merge candidate; it did (<code>fc7f245289 merge: incorporate current main</code>) and then committed its fix. Its dispatch base is <code>fc5a7fb2b2</code>, and <code>git diff fc5a7fb2b2..HEAD</code> now spans 160 files, 122,334 inserted lines and 4.8 MB, nearly all of it main's own work. The review reflex refused to compose its review eight times, the last at 09:13:20Z on 7 November: &ldquo;context-window-exceeded: estimated 670392 usable input tokens against a 230144 token window&rdquo;, while the files the refusal names sum to under 50k tokens. The obligation row meanwhile read &ldquo;the review reflex owns this dispatch&rdquo; for 48 minutes (that misreport is <code>the-monitor-shows-the-work-it-watches</code> §114). Re-exec §3, queued behind this run, waits with it.</p>
+    <p>A run's changes are the commits it authored, not everything reachable from its head that its base lacks. After a mid-run merge the right range is the three-dot diff against the integration branch, <code>git diff &lt;base&gt;...HEAD</code> taken from the merge base with main, or equivalently the diff of the run's own non-merge commits. The run's armed baseline keeps naming the dispatch base, which is correct for the suite measure; only what the review reads and is sized on is wrong.</p>
+
+    <h2 id="s2">§2 — Find where a review's change range is taken, and write the repair</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> An investigation, not a repair. The worker traces how a composed run review obtains the change it reads and how its context estimate is sized: the review composer in <code>reckon/crew/recovery_review_dispatch.py</code> and <code>reckon/crew/recovery_review_subject.py</code>, and the context-fit estimate whose refusal text is built in <code>reckon/crew/node.py</code> (near line 612). It names every place that takes the range from the record's <code>base_sha</code> to the head, and states for each whether it should use the merge base with the integration branch instead, and whether the suite baseline must keep the dispatch base. It records, for the run above, the estimate's terms with the current range and with the three-dot range. It writes the repair as a new implementable section of this plan with write paths, a test and a negative control, and edits no product source.</p>
+    <p><strong>Done when</strong> an evidence note at <code>docs/evidence/fragments/a-review-reads-only-its-runs-changes/where-a-review-takes-its-range.html</code> lists each range site with file and line anchors, gives the run's estimate under both ranges, and states the cause in one sentence those figures support; as a negative control, the same measurement on a run that never merged main gives the same estimate under both ranges. The plan carries a new implementable section for the repair. Every command is logged under the run directory, starting with its revision and the literal command and ending in <code>EXIT=</code>. Write paths: the evidence note and this plan.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-arroirc-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="coordinator" data-written-at="2026-11-07" data-recommends-skill="/reckon-build a-review-reads-only-its-runs-changes §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Investigate §2</h4>
+    <div class="r-fu-body"><p>Trace the review's change range and context estimate, then write the repair section.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-review-reads-only-its-runs-changes §2</pre>
+    </article>
+</section>
+
+</main>
+</body>
+</html>
