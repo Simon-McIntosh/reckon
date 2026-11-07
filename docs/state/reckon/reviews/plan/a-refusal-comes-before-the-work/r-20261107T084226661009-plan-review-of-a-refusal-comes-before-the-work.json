@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T08:50:41.884Z",
+  "dispatched_at": "2026-11-07T08:44:43Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-refusal-comes-before-the-work.html:50",
+      "id": "reasoning-1",
+      "reason": "the refusal must read the recorded `dispatch_options` value (or be applied at the CLI boundary) rather than only CLI-threaded parameters, or every queued, resumed and re-resolved brief run is refused at plan time.",
+      "text": "\u00a73 says `plan_dispatch` is called by only two callers, `dispatch()` for the launch and the dry-run branch, and that threading the two values through them covers the refusal; but `plan_dispatch` has eight production callers (`reckon/crew/dispatch.py:687`, `:1047`, `:1177`, `:1233`, `:1670`, `:2009`, `reckon/crew/dispatch_sessions.py:1713`, `reckon/crew/recovery_review_dispatch.py:2924`), and the admission launch of a queued request is `dispatch()` called from `reckon/crew/queue_admission.py:418` with `dispatch_options=options` and no plan-link parameter, while the lane-change path at `dispatch_sessions.py:1713` and the re-resolve paths at `dispatch.py:2009` and `:687` rebuild the node from the record with no value at all. A brief executable run dispatched after this change is stored with the link in `dispatch_options`, then refused when the admit service launches it, when it is lane-changed, and when its budget fallback re-resolves; a brief run dispatched before this change (which \u00a73 keeps landing for, explicitly) is refused on any of those paths too, and none of the six done-when cases exercises a launch from the queue or a re-resolved node.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-refusal-comes-before-the-work.html:23",
+      "id": "wiring-1",
+      "reason": "adding an ordering edge between \u00a73 and \u00a75 prevents two workers from writing the same files, which the parallel-safety rule forbids.",
+      "text": "`plan-section-depends-on` declares `s3: [a-refusal-comes-before-the-work#s2]` and `s5: [a-refusal-comes-before-the-work#s2]` only, while \u00a73's and \u00a75's write paths both include `reckon/crew_dispatch_commands.py` and `reckon/crew/dispatch_plan.py`, so once \u00a72 lands the coordinator can dispatch \u00a73 and \u00a75 concurrently onto the same two files.",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "6d47102380956510b7a867336325cda12a0726a8",
+  "plan_fingerprint": "3cbe98b063aa0d20128f65a44109541c24948dc0068aa6dd2a099de982ce2920",
+  "plan_slug": "a-refusal-comes-before-the-work",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T084226661009-plan-review-of-a-refusal-comes-before-the-work",
+  "reviewed_blob_sha": "ec711a9d1bf27a45dd4b54b00d8d87444dafc069",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited file and line resolves: `crew_dispatch_commands.py:1451`/`:1157`/`:1159`/`:1861`/`:2179`, `evidence.py:277`, `promotion_checks.py:1769` (`_require_brief_owner`), `dispatch.py:1670`, the dry-run `plan_dispatch` call at `crew_dispatch_commands.py:1917`, and `dispatch_batch.py:362-375`.",
+    "done_when": "pass \u2014 all six cases are observable assertions and each of the five controls names the mutation that makes the corresponding case red.",
+    "evidence_paths": "pass \u2014 logs are written under the run directory, a durable path that survives the run.",
+    "naming": "pass \u2014 the new test and every named symbol are mechanism-named; no plan labels, stage names or ticket numbers are introduced.",
+    "reasoning": "a finding \u2014 \u00a73 says the values are threaded from the CLI through \"both of its callers\", but `plan_dispatch` has eight production call sites and the four that re-resolve a node (a queued request's admission launch, a lane change, a budget fallback and an oversized-context reroute) pass neither value, so the new refusal fires on brief runs the plan says must keep working.",
+    "single_goal": "pass \u2014 \u00a73 carries one deliverable: record the plan link or unplanned reason at dispatch and read it at landing.",
+    "wiring": "a finding \u2014 \u00a73 and \u00a75 both declare `reckon/crew_dispatch_commands.py` and `reckon/crew/dispatch_plan.py` as write paths, but `plan-section-depends-on` orders each only after \u00a72, so nothing sequences \u00a73 against \u00a75."
+  },
+  "section_digests": {
+    "_document": "fe86ddc53d6df02ed8681809f4399744a8daf0946c333b28fc3a6b583769f545",
+    "s1": "75df880739e89570186a1c16cae47d54a4d457a4a6e99c09b2d62c21368dc424",
+    "s2": "82627aab8394f0209c300c78167c8eb9a00cc5acf2e8b3a32be25df3b62c3f92",
+    "s3": "962ee26a985dd65a770d3c1a44fce432b3991e2e32ec83e63945f30295e670fa",
+    "s4": "2a97d35fa0e69a6331d78f727d1ded35d267ff23bba3ff069f80e200825410f0",
+    "s5": "95b6f7534336d8938a033677b232892e649b24794872574f8706be13d8f17bd3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T09:00:51.659172+00:00",
+  "total": null
+}
