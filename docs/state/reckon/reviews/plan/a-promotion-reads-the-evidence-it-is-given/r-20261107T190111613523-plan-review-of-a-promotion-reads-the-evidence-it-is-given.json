@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T19:21:19.006Z",
+  "dispatched_at": "2026-11-07T19:03:51Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:78",
+      "id": "done_when-1",
+      "reason": "the trigger sentence itself names both arms, so a worker writes the arm into the message and the case is satisfiable as written; adding the words would tighten the text but changes no mechanism.",
+      "text": "the second deliverable requires only that the error \"names the field the observation sits in and says to write the observation on its own line\", while the sixth case requires the refusal to name both `blockers` and `baseline_suite`; a worker implementing exactly the deliverable's sentence names the field but not the arm and turns its own gate red on a shape the plan never asked for",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "8cc3363d7340d4136ae87079d87c02124d96faea",
+  "plan_fingerprint": "c45a20922dc5b1d39f9da3d33fb20127437e0ca9a7f014aaf2a41717f0fa398b",
+  "plan_slug": "a-promotion-reads-the-evidence-it-is-given",
+  "plan_version": 22,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T190111613523-plan-review-of-a-promotion-reads-the-evidence-it-is-given",
+  "reviewed_blob_sha": "af0590837e71df4c4cc09cd3db7edd0606bbff7d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_GUARDED_LIST_KEYS` (reports.py:115), `_MANIFEST_LIST_KEYS` (reports.py:85), the coercion loop (reports.py:872), `_refuse_joined_list_separator` (reports.py:959), `_looks_like_a_list_entry_token` (reports.py:923), the cited-log audit (reports.py:1471) and `_cited_log_paths` (reports.py:2949), the gate fill's `logs[0]` (promotion_records.py:362), `_require_commits_beyond_base` dropping an unresolvable entry (promotion_evidence.py:276), `suite_observation_missing_fields` (ledger.py:490), `_require_recognised_manifest_status` (promotion_checks.py:548) all resolve; the defect manifest reads as quoted (line 33 glues `baseline_suite:` onto `here`), `r-20261016T084145210091-equilibrium-hygiene` line 11 carries four space-separated shas, and the newly cited honest manifest `r-20261107T142430888015` exists and its `evidence_inputs` line quotes the arm after a space with no glued occurrence anywhere in the file.",
+    "done_when": "a finding \u2014 \u00a78's done-when is measurable (ten cases, six controls, a two-arm census with a stated denominator and base), but the deliverable's error text is narrower than the case that tests it.",
+    "evidence_paths": "pass \u2014 the reproduction results are recorded in the gate log and the census output in the run's artifacts under the run directory; the only temporary path is the copied fixture run directory, which is test data.",
+    "naming": "pass \u2014 the new test file and the symbols named are mechanism-named (`test_a_manifest_is_read_in_the_shapes_workers_write.py`, `_looks_like_a_list_entry_token`), with no plan labels, stage names or ticket numbers.",
+    "reasoning": "pass \u2014 both cited defects reproduce as described: `_refuse_joined_list_separator` matches only `;`, so line 12 of `manifest.md.before-arms` stays one entry for the gate fill's `logs[0]`; line 33 of `manifest.md.attempt-2.asdelivered` matches the narrowed trigger exactly once (regex `[A-Za-z0-9](baseline_suite|after_suite)[[:space:]]*:[[:space:]]*\\{`), that manifest has no `baseline_suite:` line of its own, and the honest manifest has zero matches \u2014 so the narrowed rule catches the defect and spares the honest evidence. Each mechanism reaches the done-when it claims (the split at the coercion loop and the separate `orientation_write_paths` call, the glue refusal at parse re-raised by `_require_recognised_manifest_status`, the no-arms message at `_require_verdict_matches_exit_status`), and the census's two-arm design with its 174-of-14,221 base matches the reading the earlier review measured.",
+    "single_goal": "pass \u2014 \u00a78's three deliverables are one goal (read a manifest's gate evidence in the shapes workers write it), with one test file and one done-when; the section's title names that single goal.",
+    "wiring": "pass \u2014 `plan-section-depends-on` carries `s8` \u2192 `s7`, the section that also writes `reckon/crew/promotion_evidence.py`; `reports.py` is written by no other open section, no section depends on \u00a78, and the build followup orders \u00a78 after \u00a77, matching the section's closing sentence."
+  },
+  "section_digests": {
+    "_document": "2f84869cfe4855fe07ab334075df36e6e60ef8400b742b43814dc8124768b7f0",
+    "s1": "5eac0eb57fbf9fccaeee6fb2da59c42ca24c4433f0cffcb4b7de1b6b04324b6c",
+    "s2": "259d093654ecf00609d51d02f39bb21a9feda5af8b5626a64e881f7e85d5abe4",
+    "s3": "479c8ebc617467c2744513e850433e87af52a3d22110620dcfdfb48f9975d081",
+    "s4": "bc5eebc33cf8175dd508f65245c7126745fc3e87a3e75e6229c55004ae265f62",
+    "s5": "5454a3b2f3bbdc9fe34ced889604aa90092b4d22e83912038c83a1392ab1631d",
+    "s6": "2e81c0cbe61ef60fc16acb159e81912b5b6263e9d12b8059efbd9482d722976c",
+    "s7": "1d7652463a13d9925f53c3bae1f6801e173af020bd09d5e7444d0511c37e788b",
+    "s8": "c26003afb73c20bd1155658fb8f68855c238b8aef14c4ca0f09573542e4c65a0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T19:38:37.794526+00:00",
+  "total": null
+}
