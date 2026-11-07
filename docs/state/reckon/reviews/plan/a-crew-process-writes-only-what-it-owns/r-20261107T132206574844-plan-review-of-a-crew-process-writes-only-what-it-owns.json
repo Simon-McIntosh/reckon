@@ -1,0 +1,45 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T13:39:32.654Z",
+  "dispatched_at": "2026-11-07T13:23:50Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:57",
+      "id": "done_when-1",
+      "reason": "without it a worker either reports a red gate or quietly drops the two assertions, and the FIFO-leak guard the section keeps (the one that stops a re-armed session inheriting a stale FIFO) then ships unmeasured.",
+      "text": "\u00a75 moves FIFO removal to the host and says the two removal tests in `tests/test_session_host_plugin.py` will assert it, but that file's harness makes the assertion impossible: `_checkout()` (`tests/test_session_host_plugin.py:80`) installs a bash `STUB` (lines 36\u201351, \"printf \u2026 exit 0\") as `.venv/bin/reckon`, and the script's `exec` targets exactly that path (`plugins/crew-host/bin/crew-host:61-63` resolves `${checkout}/.venv/bin/reckon`), so after the exec there is no `SessionHost` and no `_remove_fifo` in the process. Measured in that harness: after a request drove the real script's exec, `stub recorded: yes` and `fifo after the exec target exited: present`, so `assert not fifo.exists()` at 279 and 283 fails \u2014 the section's own gate cannot go green as written",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "f149cc26e38c83735efa100efbd46b065ed6190a",
+  "plan_fingerprint": "5dd525b2315e4f9216e21dfefdfaa3f2bd387d7f07e2c44b2c820fe3e392c357",
+  "plan_slug": "a-crew-process-writes-only-what-it-owns",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T132206574844-plan-review-of-a-crew-process-writes-only-what-it-owns",
+  "reviewed_blob_sha": "81b824560b549550e9edf0335f1b6b0c9cca47c6",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor \u00a75 cites resolves in the repository: `crew-host` lines 47\u201367 (`[ -p \"$fifo\" ] || mkfifo`, the `while owner_alive` read loop and the `exec` at 63\u201367), `crew_host` at `reckon/crew_follow_commands.py:2774`, `run` at `reckon/crew/session_host.py:710`, `_state_dir` at 117, `_remove_fifo` at 615, `_TERMINAL_RUN_PHASES` at `reckon/crew/node.py:34`, `LAUNCH_FAILED_PHASE` at `reckon/crew/dispatch_launch.py:101` with `runs.py:2279` reading `launch-failed` as failed, `resumption._pointer_session` at `reckon/crew/resumption.py:753` (it reads `session_id`), and all four named tests exist in `tests/test_session_host_plugin.py` (lines 159, 178, 235, 258).",
+    "done_when": "a finding \u2014 \u00a75 says `test_a_signal_removes_its_fifo` and `test_removes_its_fifo_when_its_owner_exits` will \"assert that the host removes its FIFO \u2026 through `SessionHost._remove_fifo`\", but those tests run the plugin script against a recording stub, not the host, so after the exec neither assertion can be satisfied.",
+    "evidence_paths": "pass \u2014 \"Every log is under the run directory, starts with its revision and the literal command, and ends in `EXIT=`\", so the gate log and both arms land on a durable path, not a scratchpad.",
+    "naming": "pass \u2014 \u00a75 names no plan label, stage name, ticket number or version tag in a symbol, file or comment; `session` and `session_id` are named by the data they hold.",
+    "reasoning": "pass \u2014 the stated cause matches the evidence (\u00a75's cited script lines 47\u201367 do wait on the FIFO before the `execs`), the mechanism reaches the real code path through `crew_host` \u2192 `session_host.run`, and the pointer key it filters on is precedented: `_rearm_session_follower` (`reckon/crew/dispatch_watch.py:801`) already compares `_calling_session()` to the run's `session`, and all 49 live pointers under the crew home carry a UUID in `session` while `session_id` is empty or absent on every one, exactly as \u00a75 says.",
+    "single_goal": "pass \u2014 \u00a75 states one deliverable, the re-armed entry point starts the host at once and the host adopts its owner's live pairs from its own start-up scan; the test changes belong to that one change.",
+    "wiring": "pass \u2014 \u00a75 now declares no wait, and it earns that: its write paths (`plugins/crew-host/bin/crew-host`, `reckon/crew/session_host.py`, `reckon/crew_follow_commands.py`, the two test files) are disjoint from \u00a72's (`reckon/ledger.py`), \u00a73's (`reckon/crew/dispatch_watch.py`) and \u00a74's (`reckon/hooks/coordinator_obligations.py`), so the followup's \"the four sections write disjoint files and can run together\" is true as it stands."
+  },
+  "section_digests": {
+    "_document": "7848c4a22debbc4310e02052a09e0978b08f6e538ba797332694c84678155ff8",
+    "s1": "38e026f18d1b42b1d79978e1ed1cf6179e085908a249e5762f39a683dcc8123f",
+    "s2": "f11be171c26248fbc871d99510f0013c9dfc0a181d247f07861e86dc0d156f40",
+    "s3": "76aeda9a3a70ef68e2d3ed18800f22774d4c2ec3fa6d0c7b85e9433c1b24b7d9",
+    "s4": "e88fcf79ec58d8305f36e37d69846c8e0a1a10f1b73fc6c167c25b700165e123",
+    "s5": "c984ee5dcbfd985f71c41c305ea03356cf04e995f390bf9d3ea2412a565f3b46"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T14:14:24.654043+00:00",
+  "total": null
+}
