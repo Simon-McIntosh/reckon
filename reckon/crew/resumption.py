@@ -45,6 +45,7 @@ from __future__ import annotations
 import fcntl
 import json
 import os
+import re
 import subprocess
 import time
 from collections.abc import Callable, Mapping
@@ -55,6 +56,7 @@ from typing import Any
 
 from reckon import _backends, ledger
 from reckon import budget as budget_module
+from reckon._backends import _human_age
 from reckon._store import write_atomically, write_json_atomically
 from reckon._timestamps import parse_utc
 from reckon.crew import plan_review
@@ -74,6 +76,7 @@ from reckon.crew.node import CrewError
 from reckon.crew.process_liveness import _process_start_time as process_start_time
 from reckon.crew.recovery import (
     LAUNCH_WINDOW_SECONDS,
+    WORKER_RECORD_NAME,
     _newest_stream_shows_work,
     _process_reading,
     _run_exit_record,
@@ -87,7 +90,10 @@ from reckon.crew.recovery import (
     stream_paths_newest_first,
 )
 from reckon.crew.recovery_classification import WAIT_PRODUCER_GONE_SECONDS
-from reckon.crew.recovery_liveness import _newest_stream_in_motion
+from reckon.crew.recovery_liveness import (
+    _newest_stream_in_motion,
+    _record_is_known_foreign,
+)
 from reckon.crew.runs import (
     AS_DELIVERED_SUFFIX,
     _manifest_for_repair,
@@ -970,6 +976,295 @@ def _readonly_budget_verdict(
     return budget_module.decide(state, budget_module.policy(judged), purpose="resume")
 
 
+# The run directory's immutable record of each attempt's worker, named for the
+# attempt it describes. The pointer names only the attempt that launched last,
+# while the process a refusal finds may belong to any of them, so naming the
+# attempt is a read of these files rather than of the pointer alone.
+_ATTEMPT_WORKER_PATTERN = re.compile(r"^attempt-(\d+)-worker\.json$")
+
+# The lane-change stream a lane change writes, named for its attempt; a run's
+# first attempt writes ``stream.jsonl`` and later same-lane turns write
+# ``resume-<turn>.jsonl``, which the pointer dates through its own log path.
+_LANE_CHANGE_STREAM_PATTERN = re.compile(r"^lane-change-(\d+)\.jsonl$")
+
+# How each attempt kind reads in a sentence. A kind the vocabulary does not
+# name is left out rather than echoed as a bare token.
+_ATTEMPT_KIND_PHRASES = {
+    "dispatch": "a dispatch",
+    "resume": "a resume",
+    "lane-change": "a lane change",
+}
+
+
+def _attempt_worker_records(
+    record: Mapping[str, Any],
+) -> dict[int, Mapping[str, Any]]:
+    """Every attempt's worker record the run directory holds, by attempt number.
+
+    Both shapes are read: the immutable ``attempt-<n>-worker.json`` receipt and
+    the canonical ``worker.json`` the classifier reads for the attempt running
+    now, which carries its own attempt number. A receipt wins for a number both
+    hold — they describe the same process, and the receipt is the one written
+    when that attempt started. An unreadable file is no record: the refusal
+    leaves the detail out rather than guessing it.
+    """
+    directory = run_dir(str(record.get("run_id") or ""))
+    found: dict[int, Mapping[str, Any]] = {}
+    try:
+        entries = list(directory.glob("attempt-*-worker.json"))
+    except OSError:
+        entries = []
+    for path in entries:
+        number = _attempt_worker_number(path.name)
+        payload = _read_record(path)
+        if number is None or payload is None:
+            continue
+        found[number] = payload
+    canonical = _read_record(directory / WORKER_RECORD_NAME)
+    if canonical is not None:
+        number = canonical.get("attempt")
+        if isinstance(number, int) and number not in found:
+            found[number] = canonical
+    return found
+
+
+def _attempt_worker_number(name: str) -> int | None:
+    """The attempt an immutable worker receipt's file name gives it, or None."""
+    match = _ATTEMPT_WORKER_PATTERN.match(name)
+    return int(match.group(1)) if match is not None else None
+
+
+def _read_record(path: Path) -> Mapping[str, Any] | None:
+    """A JSON record on disk, or None when it is absent or unreadable."""
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return payload if isinstance(payload, Mapping) else None
+
+
+def _recorded_attempt_number(record: Mapping[str, Any]) -> int | None:
+    """The attempt number the run's own records give it, or None."""
+    number = record.get("attempt")
+    if isinstance(number, int):
+        return number
+    artifact = _read_record(run_dir(str(record.get("run_id") or "")) / "attempt.json")
+    if artifact is None:
+        return None
+    recorded = artifact.get("attempt")
+    return recorded if isinstance(recorded, int) else None
+
+
+def _live_attempt_number(record: Mapping[str, Any]) -> int | None:
+    """The attempt whose recorded worker this host still finds running.
+
+    A pid is meaningful only on the machine that issued it, so a run launched
+    elsewhere names no attempt here: the refusal falls back to naming nothing
+    rather than pointing a coordinator at a process this host cannot see. The
+    newest living attempt answers, which is the one a second worker would
+    collide with when more than one receipt still reads alive.
+    """
+    if _record_is_known_foreign(record):
+        return None
+    living = [
+        number
+        for number, payload in _attempt_worker_records(record).items()
+        if record_process_alive(payload, process_alive) is True
+    ]
+    return max(living) if living else None
+
+
+def _stream_attempt_number(record: Mapping[str, Any]) -> int | None:
+    """The attempt whose stream the run is writing now, when a name says so.
+
+    A lane-change stream is named for its attempt and a first attempt's is the
+    run's original stream. A resume stream is named for the turn it reached
+    rather than for the attempt, so it answers only where the pointer's own log
+    path is that file — and a stream whose file no record ties to an attempt
+    leaves the attempt unnamed rather than guessed.
+    """
+    directory = run_dir(str(record.get("run_id") or ""))
+    log_path = str(record.get("log_path") or "")
+    paths = stream_paths_newest_first(directory, include=(log_path,))
+    if not paths:
+        return None
+    name = paths[0].name
+    lane_change = _LANE_CHANGE_STREAM_PATTERN.match(name)
+    if lane_change is not None:
+        return int(lane_change.group(1))
+    if name == "stream.jsonl":
+        return 1
+    if log_path and Path(log_path).name == name:
+        return _recorded_attempt_number(record)
+    return None
+
+
+def _attempt_kind(record: Mapping[str, Any], attempt: int | None) -> str:
+    """One attempt's kind, from the record that names that attempt, or empty.
+
+    The run directory's attempt record is written when the attempt begins and
+    the pointer carries the kind its launch recorded; either answers only for
+    the attempt it names, so a kind is never carried over from a neighbour.
+    """
+    if attempt is None:
+        return ""
+    artifact = _read_record(run_dir(str(record.get("run_id") or "")) / "attempt.json")
+    if artifact is not None and artifact.get("attempt") == attempt:
+        kind = str(artifact.get("attempt_kind") or "").strip()
+        if kind:
+            return kind
+    if _recorded_attempt_number(record) == attempt:
+        return str(record.get("attempt_kind") or "").strip()
+    return ""
+
+
+def _attempt_stream_age(record: Mapping[str, Any], attempt: int | None) -> int | None:
+    """How long ago one attempt's stream was last written, or None when unread.
+
+    The candidate streams are tried in order; the first one written to answers.
+    An attempt's stream is its own: the pointer's log path where the pointer
+    names that attempt, the run's original stream for a first attempt, and a
+    lane-change stream for the attempt it is named for. A resume stream carries
+    the turn rather than the attempt, so it answers only through the shared
+    newest-stream reader, which is also what a run whose naming says nothing
+    falls back to.
+    """
+    run_id = str(record.get("run_id") or "")
+    directory = run_dir(run_id)
+    log_path = str(record.get("log_path") or "")
+    candidates: list[Path] = []
+    if log_path and _recorded_attempt_number(record) == attempt:
+        candidates.append(Path(log_path))
+    if attempt == 1:
+        candidates.append(directory / "stream.jsonl")
+    if attempt is not None:
+        candidates.append(directory / f"lane-change-{attempt}.jsonl")
+    newest = stream_paths_newest_first(directory, include=(log_path,))
+    candidates.extend(newest[:1])
+    moment = time.time()
+    for path in candidates:
+        try:
+            written = path.stat().st_mtime
+            if path.stat().st_size <= 0:
+                continue
+        except OSError:
+            continue
+        return max(0, int(moment - written))
+    return None
+
+
+def _repair_round_opened(record: Mapping[str, Any]) -> bool:
+    """Whether the review reflex opened a repair round for this run."""
+    from reckon.crew.recovery_review_dispatch import REPAIR_ROUNDS_FIELD
+
+    opened = record.get(REPAIR_ROUNDS_FIELD)
+    return isinstance(opened, Mapping) and bool(str(opened.get("round_id") or ""))
+
+
+def _attempt_detail(
+    record: Mapping[str, Any],
+    attempt: int | None,
+    *,
+    in_motion: bool,
+    stream_age: int | None,
+) -> str:
+    """What the run's records hold about the attempt a refusal found, as a clause.
+
+    Every part is optional and a part the records do not carry is left out. The
+    clause is empty when no attempt could be named, so a refusal whose live
+    process the records do not attribute keeps the sentence it has always given.
+    """
+    facts: list[str] = []
+    worker = (
+        _attempt_worker_records(record).get(attempt) if attempt is not None else None
+    )
+    if isinstance(worker, Mapping):
+        pid = worker.get("pid")
+        if isinstance(pid, int):
+            facts.append(f"pid {pid}")
+        launched = str(worker.get("launched_at") or "").strip()
+        if launched:
+            facts.append(f"launched {launched}")
+    kind = _attempt_kind(record, attempt)
+    parts: list[str] = []
+    if attempt is not None:
+        head = f"attempt {attempt}"
+        if facts:
+            head += " (" + ", ".join(facts) + ")"
+        if kind in _ATTEMPT_KIND_PHRASES:
+            head += ", " + _ATTEMPT_KIND_PHRASES[kind]
+        parts.append(
+            f"{head[:1].upper()}{head[1:]}, wrote that stream"
+            if in_motion
+            else f"That process is {head}"
+        )
+    if kind == "resume" and _repair_round_opened(record):
+        parts.append(
+            "the review reflex opened it as a repair round, which delivers by "
+            "itself: advice sent after it does will reach it"
+        )
+    if stream_age is not None:
+        parts.append(f"its newest stream record is {_human_age(stream_age)} old")
+    if not parts:
+        return ""
+    return ". " + "; ".join(parts) + "."
+
+
+def live_process_refusal(record: Mapping[str, Any], *, reading: str) -> CrewError:
+    """The one message that refuses a second worker over a run that still has one.
+
+    A refusal that names no attempt reads as a stale process, and a coordinator
+    who stops what the refusal did not name ends a repair round that would have
+    delivered by itself. So every door that refuses a second worker composes its
+    message here, naming the attempt the run's own records hold: its number, pid
+    and launch time from the attempt's worker receipt, its kind from the attempt
+    record, whether a resume is a repair round the review reflex opened, and the
+    age of the attempt's newest stream record. A detail the records do not hold
+    is left out rather than guessed, and an attempt no record attributes keeps
+    the sentence alone.
+
+    The caller supplies the liveness reading it took, because the two readings
+    say different things and must not be confused. ``alive`` is a pid this host
+    checked and found running: the message is the live-process refusal, and
+    every door that read that pid gives the same words. Anything else is the
+    unknown a worker on another machine leaves: no pid could be read here and no
+    exit was recorded, so the message says so — it never calls that attempt
+    live, and never claims its process was found gone.
+    """
+    run_id = str(record.get("run_id") or "")
+    in_motion = reading != "alive"
+    if in_motion:
+        attempt = _stream_attempt_number(record)
+        opening = (
+            f"run {run_id!r} is refused: liveness unknown — no pid of its worker "
+            "could be read on this host and no exit was recorded, and its newest "
+            "stream is still being written"
+        )
+        age = _attempt_stream_age(record, attempt)
+        detail = _attempt_detail(record, attempt, in_motion=True, stream_age=age)
+        if detail:
+            return CrewError(
+                opening + detail + " Its liveness could not be read on this host."
+            )
+        aged = (
+            f". Its newest record is {_human_age(age)} old" if age is not None else ""
+        )
+        return CrewError(
+            opening + aged + ". Its liveness could not be read on this host."
+        )
+    attempt = _live_attempt_number(record)
+    opening = (
+        f"run {run_id!r} still has a live process; observe or stop it before resuming"
+    )
+    detail = _attempt_detail(
+        record,
+        attempt,
+        in_motion=False,
+        stream_age=_attempt_stream_age(record, attempt),
+    )
+    return CrewError(opening + detail)
+
+
 def _launcher_refusal(
     record: Mapping[str, Any],
     *,
@@ -994,12 +1289,9 @@ def _launcher_refusal(
         return CrewError(f"run {run_id!r} is not a spawned run; resume it in-harness")
     if record_process_alive(record, process_alive) is True:
         # This guard's message is the launcher's own, held word for word by the
-        # prediction-parity test beside it, so it is not restated here. The pid
-        # naming lives on the observed-end gate below, whose reading is this
-        # module's and which is where the run's own worker record answers.
-        return CrewError(
-            f"run {run_id!r} still has a live process; observe or stop it before resuming"
-        )
+        # prediction-parity test beside it, so it is not restated here: both
+        # doors compose it through the one refusal below.
+        return live_process_refusal(record, reading="alive")
     # The prediction must meet the in-flight guard too, or a preview would offer
     # a resume the real launcher refuses while a launch of this run is in
     # flight. It is composed by the same helper the launcher uses, so the two
@@ -1086,10 +1378,11 @@ def _stream_reading_refusal(
     decides instead — exactly as the stalled-row reader decides it. An
     assistant turn written inside the stall window is a worker producing
     output right now, and no second worker may be started over it: the lift
-    would collide with the one the stream shows writing. Its wording is the
-    live-process refusal's, because it is that situation read from a stream
-    rather than from a pid, and a coordinator who reads it can check the run's
-    stream where this host can offer no process to check.
+    would collide with the one the stream shows writing. The message comes
+    from the shared refusal composer, which names the attempt the stream shows
+    writing and the age of its newest record, and says that attempt's liveness
+    could not be read on this host — the reading this door holds is an unknown,
+    not a proven life, so it never calls the attempt live.
 
     Only a run whose liveness this host cannot settle is decided this way. A
     proven death has already ended the work and a proven life is refused on
@@ -1107,10 +1400,7 @@ def _stream_reading_refusal(
         record, from_stream_alone=True
     ):
         return None
-    run_id = str(record.get("run_id") or "")
-    return CrewError(
-        f"run {run_id!r} still has a live process; observe or stop it before resuming"
-    )
+    return live_process_refusal(record, reading=reading)
 
 
 def _observed_end_refusal(record: Mapping[str, Any]) -> CrewError | None:
