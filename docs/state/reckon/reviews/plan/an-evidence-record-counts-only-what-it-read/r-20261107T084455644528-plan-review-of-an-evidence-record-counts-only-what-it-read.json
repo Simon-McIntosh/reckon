@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T08:52:50.294Z",
+  "dispatched_at": "2026-11-07T08:46:16Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/an-evidence-record-counts-only-what-it-read/r-20261107T084455644528-plan-review-of-an-evidence-record-counts-only-what-it-read/plan.html:44",
+      "id": "reasoning-1",
+      "reason": "the deliverable's universal claim is false over its own list, so the node would land the section believing no live path is left unguarded; the repair is one more listed site (in an already-declared write path) or a named exclusion like the promotion writer's.",
+      "text": "the site list claims the refusal is added at \"every site that writes a comment or followup body\", but `_carry_section_moves` (reckon/_store.py:3060\u20133077, reached from the plan write at reckon/_store.py:1593) composes a new comment body from a caller-supplied move `reason` and writes it into `comments[anchor]` with no refusal; a descope reason carrying a widened spelling (\"the rest goes to a follow-up node\") is therefore still written unchecked, and the audit merely reports it afterwards \u2014 the exact write-then-audit gap \u00a73 exists to close",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/an-evidence-record-counts-only-what-it-read/r-20261107T084455644528-plan-review-of-an-evidence-record-counts-only-what-it-read/plan.html:44",
+      "id": "reasoning-2",
+      "reason": "adding the guard there is two lines inside a declared write path and cannot send the node down a wrong path; the plan would only gain a one-line reason for keeping the assertion, not a restructure.",
+      "text": "`_append_comment` is listed as a site \"which writes a comment body straight to the plan\" and the done-when asserts its refusal, but it has no production caller: the only in-repo reference outside its definition is the re-export `_append_comment as _append_comment` (reckon/mcp.py:221), and the registered MCP tools go through `_edit_plan_tool`/`edit_plan`, whose comment append runs `_apply_append`; the function is reached only by tests, so the case asserts a mechanism no production path runs",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "6d47102380956510b7a867336325cda12a0726a8",
+  "plan_fingerprint": "6e23a337d3084ebdc82fcd4efc197946bf8b91e23ff3a628ff2956485ccae219",
+  "plan_slug": "an-evidence-record-counts-only-what-it-read",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T084455644528-plan-review-of-an-evidence-record-counts-only-what-it-read",
+  "reviewed_blob_sha": "4864a81712cfa363bf6391adc4c57ba20d1f94ea",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_DEFERRED_WORK_TERM` resolves at reckon/doccheck.py:419; `_prose_deferred_work_term` at reckon/_store.py:993; `_require_authored_value` at reckon/_store_section_ops.py:153 (the cited ~141 lands in the same refusal helper that calls it); the comments branch at _store.py:3798\u20133808; `_append_comment` at reckon/mcp_edit_plan.py:137\u2013186; the followups append op at _store.py:3757\u20133776; `append_to_list` at _store.py:2381; the followups field-set dispatch at _store.py:3482\u20133486; the followup-add call at reckon/mcp_edit_plan.py:253; the landing-comment writer at reckon/crew/promotion_scope.py:1458\u20131471.",
+    "done_when": "pass \u2014 six cases, five named negative controls, and every case is falsifiable against the unfixed tree (today the regex matches only `follow-on(s)`, so cases 1\u20134 fail and the controls falsify 5\u20136); logs are required to start with revision and command and end in `EXIT=`.",
+    "evidence_paths": "pass \u2014 every log is under the run directory (plan.html:45), not a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or changelog prose enter symbols or comments; `\u00a71`/`\u00a74` appear only as plan prose.",
+    "reasoning": "two findings \u2014 the root cause (only `follow-on(s)` matched) matches the phrases \u00a71 quotes, and the widened reader does flow to the audit through `deferred_work_term` and to the store through `_prose_deferred_work_term`; but the claim that the refusal is added at *every* comment/followup write site omits a live comment writer, and one listed site has no production caller.",
+    "single_goal": "pass \u2014 one deliverable: widen the one reader and add the store refusals that read it; the audit sweep, base arm and ruff arm are verification of that goal, not a second deliverable.",
+    "wiring": "pass \u2014 s3 declares depends-on s2 (plan.html:23) and the text states the shared `reckon/_store.py`; s4 declares s3 as a wait, so the order \u00a72\u2192\u00a73\u2192\u00a74 is held by the declarations rather than by the followup prose alone."
+  },
+  "section_digests": {
+    "_document": "6d35efce52466005f8ee56997c8dc7bcca998d7c41fcd252d254bc7264596281",
+    "s1": "bf811a5d7f572845450c32733084679b1cf3759ba9fa90f902857640fab3056f",
+    "s2": "0b8bed0f03d053457f9c7efd06dd0ff61e4d509f00a6f7518b6e3c911a96a555",
+    "s3": "52a4181bc297daf8d5f16f2157968713e02d798f5f702fb7d15b03ecdcf4dc0b",
+    "s4": "8bc85303e2974b9aaad5c930875da392c800a9d548ad0c0b9390bd43b381a09d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T09:04:41.955022+00:00",
+  "total": null
+}
