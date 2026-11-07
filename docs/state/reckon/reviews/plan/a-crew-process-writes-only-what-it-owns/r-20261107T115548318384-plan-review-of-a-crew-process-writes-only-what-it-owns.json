@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T12:05:51.770Z",
+  "dispatched_at": "2026-11-07T11:59:43Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:54",
+      "id": "reasoning-1",
+      "reason": "an implementer following the enumeration verbatim ships a filter that omits a terminal phase the repo already names, and the fix is a one-line substitution to reuse `_TERMINAL_RUN_PHASES` rather than that literal.",
+      "text": "\u00a75 tells the implementer to filter live pointers on the inline set `complete, failed, stopped, promoted`, which is not the repository's phase vocabulary: `interrupted` is missing from it while `promoted` is not a pointer phase at all, and `launch-failed` \u2014 written to pointers by `dispatch_launch.LAUNCH_FAILED_PHASE` and treated as `failed` by `reckon/crew/runs.py:2275` \u2014 is missing too, so a host re-armed with a pointer at `launch-failed` starts a follower for a run that will never change state, the exact empty-pane defect \u00a75 exists to remove, in reverse",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:54",
+      "id": "reasoning-2",
+      "reason": "a worker must either break the pane contract to pass its own case or write the line to stderr and deviate from the plan as written.",
+      "text": "\u00a75 requires the host, when it finds no live run, to \"print one line saying it is waiting for a dispatch\", and its fourth done-when case asserts that print, but `crew_host`'s own docstring (`reckon/crew_follow_commands.py:2781`) states \"Its stdout is the pane, so it writes nothing there and lets its children speak\", so the instruction and the asserted case contradict an invariant the host is built on",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "d89e3abcd158a28dfa6f79792726be1446c37434",
+  "plan_fingerprint": "23d3a7c8a9c295d237fad44cc2a63b15d6e38a07eece5fbb1cf2c4134665aac7",
+  "plan_slug": "a-crew-process-writes-only-what-it-owns",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T115548318384-plan-review-of-a-crew-process-writes-only-what-it-owns",
+  "reviewed_blob_sha": "c98935796b486f3bd75a6029c7c7cd22079c505e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every \u00a73 and \u00a75 citation resolves in the assigned tree: `_session_host_child_pid` dispatch_watch.py:695, `_ask_session_host` :746, `_ask_session_host_for_follower` :770, `_rearm_session_follower` :785, `_request_host_follower` :818, `_hand_off_to_waiting_host` :870, `_hand_off_from_follower` crew_follow_commands.py:628, `crew_host` :2774, `run` session_host.py:710, `list_live` runs.py:1015, and the FIFO wait-then-exec block in `plugins/crew-host/bin/crew-host` at the cited lines.",
+    "done_when": "pass \u2014 \u00a73's four cases each have a negative control that makes the guard speak (dropping the ownership check writes the first request, placing it in the ask alone writes the hand-off's, the session-wide attachment returns True in the fourth), and \u00a75's three controls likewise falsify its scan, phase filter and session filter.",
+    "evidence_paths": "pass \u2014 both sections write every gate log under the durable run directory with a revision header, a literal command and a trailing `EXIT=` line, not a session or node-local scratch path.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches a symbol, filename or comment the sections create.",
+    "reasoning": "a finding \u2014 \u00a75 states the terminal-phase filter as the closed set `complete, failed, stopped, promoted`, but the repository's own terminal vocabulary is `_TERMINAL_RUN_PHASES` (`reckon/crew/node.py:33`, `complete, failed, stopped, interrupted`) and `launch-failed` is a live-pointer phase (`LAUNCH_FAILED_PHASE`, `reckon/crew/dispatch_launch.py:101`) that `reckon/crew/runs.py:2275` itself buckets as `failed`; the enumerated set therefore admits a dead pointer and starts a follower for it.",
+    "single_goal": "pass \u2014 \u00a73 carries one deliverable (request-line ownership) in one module plus a test, and \u00a75 carries one (start-up scan) across the script and host.",
+    "wiring": "pass \u2014 \u00a73 now writes only `reckon/crew/dispatch_watch.py` and its own test, and \u00a75 changes the plugin script plus the host modules without calling anything \u00a73 modifies, so no cross-section dependency is left undeclared or declared to the wrong node."
+  },
+  "section_digests": {
+    "_document": "7848c4a22debbc4310e02052a09e0978b08f6e538ba797332694c84678155ff8",
+    "s1": "38e026f18d1b42b1d79978e1ed1cf6179e085908a249e5762f39a683dcc8123f",
+    "s2": "f11be171c26248fbc871d99510f0013c9dfc0a181d247f07861e86dc0d156f40",
+    "s3": "76aeda9a3a70ef68e2d3ed18800f22774d4c2ec3fa6d0c7b85e9433c1b24b7d9",
+    "s4": "e88fcf79ec58d8305f36e37d69846c8e0a1a10f1b73fc6c167c25b700165e123",
+    "s5": "a059f7928297074e7d3c22b41924044f4b37d38d0e8e65ce9db6d36d441a9baa"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T12:36:24.304443+00:00",
+  "total": null
+}
