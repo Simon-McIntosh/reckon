@@ -1,0 +1,50 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-07T19:27:58.647Z",
+  "dispatched_at": "2026-11-07T19:13:13Z",
+  "findings": [
+    {
+      "file": "tests/test_a_resume_can_change_its_budget.py",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The new test file lies outside the reviewed node's declared write paths: FENCE \u2014 SCOPE lists only reckon/crew_run_commands.py, the evidence fragment and the figures directory, while the plan's \u00a74 done-when itself names 'the new test'. The worker recorded the discrepancy in its manifest rather than weakening the test to satisfy the audit; the coordinator should widen the node's recorded scope rather than treat the file as an overreach."
+    },
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": 2131,
+      "severity": "non-blocking",
+      "text": "_refuse_a_budget_above_the_resume_fence re-implements the bounded check that reckon/crew/node.py:1352-1367 owns inside validate_node \u2014 the same parse_duration, the same resolved_time_ceiling comparison and a near-identical refusal \u2014 rather than calling that owner as reckon/crew/queue_edit.py:175-182 does. \u00a74 asks the resume door to apply 'the same bounded check and --over-fence rule as dispatch'; this is a parallel copy of the rule. It bites once \u00a73 lands: the resume stores its reason only inside budget_changes on the run, never on node, so a node-level reader of the recorded reason will not see it and the two doors will disagree about the same fence. Fold into the \u00a73 node that owns the bounded check."
+    },
+    {
+      "file": "tests/test_a_resume_can_change_its_budget.py",
+      "line": 177,
+      "severity": "non-blocking",
+      "text": "assert change['from'] and change['to'] == RAISED_BUDGET checks only that the replaced figure is non-empty; asserting change['from'] == STORED_BUDGET would make the line fail if the change were recorded against a figure the run never held. The neighbouring deadline and reason assertions are independent of the input, so the guard does not rest on this line."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T173532496808-resume-changes-run-budget/manifest.md",
+      "line": 19,
+      "severity": "non-blocking",
+      "text": "The done-when requires ruff check and ruff format --check to add no findings on the staged paths, and manifest.md:19 asserts both are clean without naming any log; no lint log exists under logs/, so that clause is claimed rather than recorded."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"Let a resume change the run's budget\" (prompt.txt:38) and reckon/crew_run_commands.py:2316-2328 records --time-budget on the run's node before the launch, while reckon/crew/dispatch_sessions.py:1638-1640 composes the resumed fence from that stored figure.\nVERDICT done_when: the done-when names tests/test_a_resume_can_change_its_budget.py; the three cases at :126-201 assert a 45m resume fences deadline 2031-01-01T01:45:00Z from the pinned launch and stores 45m, a 90m resume above a 60m fence stores its reason, and the same 90m without --over-fence is refused launching nothing; its declared negative control is recorded red at logs/negative-control.log (2 failed, 1 passed, EXIT=1).\nVERDICT write_paths: read the declared fence (prompt.txt:77-80, three paths); the diff touches reckon/crew_run_commands.py and the evidence fragment inside it, plus tests/test_a_resume_can_change_its_budget.py, which the plan's \u00a74 names but the fence does not, and the declared figures directory is unused.\nVERDICT manifest: read the source manifest; it records head-arm.log (377 passed, EXIT=0) and base-arm.log (374 passed, EXIT=0) with the literal commands and absolute paths, the negative control with its mutation, the outside_scope entries for reckon/crew/dispatch_sessions.py and the unlanded \u00a73, and a ruff claim with no log behind it.\nVERDICT diff: read 7c16b4b7a0 and 5b91ec02be against base 5a444bc33b; three files changed, 347 insertions and 1 deletion \u2014 two private helpers and the CLI options in crew_run_commands.py, the new 212-line test, and the 28-line evidence fragment.\nCALL_SITES: reckon/crew_run_commands.py:2264 (crew_resume, the only caller of both added helpers), reckon/cli.py:403-430 (registers crew_resume on the crew group), reckon/crew/dispatch_sessions.py:1622 (_restate_time_fence, the production reader of node.time_budget the change feeds)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:2316-2328 stores the new allowance on the pointer's node and re-reads the pointer, so dispatch_sessions.py:1638 hands the resumed attempt the new clock.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/head-arm.log records 377 passed EXIT=0 and logs/base-arm.log 374 passed EXIT=0 with the literal commands, and logs/negative-control.log records 2 failed EXIT=1, but the ruff clause is asserted only.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: the diff is confined to the touched feature, but tests/test_a_resume_can_change_its_budget.py lies outside the three paths FENCE \u2014 SCOPE declares even though the plan's \u00a74 done-when names it.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_resume_can_change_its_budget.py:143-144 reddens when the fence is composed from the stored 25m \u2014 shown by logs/negative-control.log \u2014 but :177 asserts only truthiness of the replaced figure.\nSCORE fit: 18\nJUSTIFICATION fit: the helpers follow the module's own private-refusal idiom (reckon/crew_run_commands.py:2675 _refuse_a_flag_as_a_reason) and record through runs._mutate_pointer as queue_admission.py:514 does, with mechanism names and no plan label.\nSCORE reuse: 12\nJUSTIFICATION reuse: reckon/crew_run_commands.py:2131 duplicates the ceiling refusal owned by reckon/crew/node.py:1352-1367 rather than extending it, though it does reuse the routing.resolved_time_ceiling owner and the runs._mutate_pointer idiom.\n",
+  "review_run_id": "r-20261107T190958448100-review-of-resume-changes-run-budget-5b91ec02be3c",
+  "reviewed_base_sha": "5a444bc33b51e2910b11cc198b199ff245956ce9",
+  "reviewed_head_sha": "5b91ec02be3c73ec08680b28728e94b9252e83ac",
+  "reviewed_run_id": "r-20261107T173532496808-resume-changes-run-budget",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 12,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T20:30:00.000000+00:00",
+  "total": 97
+}
