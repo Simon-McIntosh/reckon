@@ -1,0 +1,42 @@
+<section id="a-sessions-duties-run-while-its-follower-is-alive-landing">
+  <h2>A changed session keeps its next sweep</h2>
+
+  <p>The defect remains reproducible with the base scheduler after the incremental
+  events read landed. A sweep that has already read a session can remain in
+  flight while its next station tick sees a delivered run. <code>SweepBeat</code>
+  discarded that due request, so the review and repair pass had no reason to
+  revisit the new state. It now remembers one pending request per session and
+  runs it as soon as the active sweep finishes. A later changed tick replaces
+  the pending moment, so repeated ticks do not create concurrent sweeps.</p>
+
+  <p>The recorded session <code>a337e0e6-c34c-4497-878a-bc42ce1b7cf6</code>
+  had a follower registered on the compute node, pid <code>3427403</code>.
+  Its run completed at 18:16:14Z. The station first published that completion
+  at 18:24:16Z. A sweep report finished at 18:24:06Z with two reviews dispatched
+  for other runs of the same session and zero repairs; it did not include the
+  newly completed run. Its review brief was first written at 19:00:00Z. The
+  report records a finish time but no request or start time, and its writer
+  slot is shared by all sessions, so those instants cannot be recovered exactly
+  from the retained record. The station transition at 18:02:58Z and a review
+  run it opened at 18:03:12Z bound the sweep's start to before that dispatch.</p>
+
+  <table>
+    <thead><tr><th>Controlled sweep</th><th>Review</th><th>Repair</th></tr></thead>
+    <tbody>
+      <tr><td>Base scheduler, with the prior pass held after its review scan</td>
+        <td>Not dispatched</td><td>Not opened</td></tr>
+      <tr><td>Pending request replayed after that pass finishes</td>
+        <td>One dispatch</td><td>One round opened</td></tr>
+    </tbody>
+  </table>
+
+  <p>The synthetic crew home drives two station ticks while the first sweep is
+  held in later work. The second tick delivers one review-owed run and one run
+  with an open blocking finding. The real <code>resumption.sweep</code> calls the
+  test's controlled review pass, and its durable recovery report records both
+  outcomes. The test passes at the changed head (<code>1 passed</code>,
+  <code>EXIT=0</code>) and fails when the base <code>SweepBeat</code> class is
+  loaded unchanged (<code>1 failed</code>, <code>EXIT=1</code>). The existing
+  station reflex file adds zero failures: 12 passed in each matched arm.
+  Ruff check and format check report zero findings on the changed paths.</p>
+</section>
