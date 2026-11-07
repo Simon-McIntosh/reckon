@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T14:45:28.900Z",
+  "dispatched_at": "2026-11-07T14:30:01Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html#s5",
+      "id": "reasoning-1",
+      "reason": "the mechanism is session-id-only and cannot see a run carried across a /clear, so the plan should either state that boundary or choose a key that survives it.",
+      "text": "\u00a75 matches live pointers on `session` equalling the host owner's session id, and the file it cites for the FIFO's owner naming (`plugins/crew-host/bin/crew-host:2-8`) states the pair \"survives /clear where the session id does not\"; a run dispatched before a `/clear` keeps the old session id on its pointer (`live/*.json` carry no owner-pid field \u2014 checked on the newest live pointer, keys are backend, created_at, dispatch_options, due, hold, launch, launcher_host, local, named_route, node, phase, plan, project, queued_at, reason, repo, review_contract, run_id, section, session, urgency), so after a re-arm the host finds no live run and the pane stays empty in exactly the symptom this section exists to fix",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:57",
+      "id": "done_when-1",
+      "reason": "the case cannot fail, so this one of \u00a75's five done-when items gates nothing and lets \u00a75 pass with its FIFO-removal coverage silently wrong.",
+      "text": "the fifth case (\"The real host, signalled, removes its FIFO; and the real host whose owner exits removes its FIFO\") measures behaviour that already exists at the base revision: `SessionHost.stop` calls `_remove_fifo` (`reckon/crew/session_host.py:607`\u2192`:615`) from both a signal (`run` installs SIGTERM/SIGHUP handlers at :737) and owner exit, and \u00a75 changes neither; the four declared negative controls cover only the first four cases, so no mutation of \u00a75's own change can turn this case red",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:56",
+      "id": "done_when-2",
+      "reason": "a done-when whose assertion target does not exist and is not named leaves the worker to guess, which is precisely where a plausible-but-wrong implementation passes its own test.",
+      "text": "\u00a75 says the host \"records in its `session-hosts` record ... that it is waiting for a dispatch\" and the fourth case asserts \"its `session-hosts` record says it is waiting for a dispatch\", but `SessionHost.record()` (`reckon/crew/session_host.py:368`) carries only `pid`, `owner`, `children`, `updated_at` (plus `stopped_at`/`stop_reason` on stop) and is written only on a child change; no field expresses \"waiting for a dispatch\" and none is named, so the assertion is unmeasurable until the worker invents both the key and its value",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "173022639152c89ed58a1e0e49ba1d90629e1379",
+  "plan_fingerprint": "8d4f3cb7fa814eb3d73b9cdcaced5a31ba113742e38c779c41ec8d9a0f159269",
+  "plan_slug": "a-crew-process-writes-only-what-it-owns",
+  "plan_version": 4,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T142723733058-plan-review-of-a-crew-process-writes-only-what-it-owns",
+  "reviewed_blob_sha": "ea820a67ec62c94a29ea155c9eb61b04d6a82945",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `crew_host` (`reckon/crew_follow_commands.py:2774`), `session_host.run` (:710), `SessionHost._remove_fifo` (:615, called by `stop` at :607), `_state_dir` (:117), `_TERMINAL_RUN_PHASES` (`reckon/crew/node.py:33` = complete/failed/stopped/interrupted), `LAUNCH_FAILED_PHASE` (`reckon/crew/dispatch_launch.py:101`), `runs.py:2275` (`elif phase in {\"failed\", \"launch-failed\"}`), `resumption._pointer_session` (`reckon/crew/resumption.py:753`, reads `session_id`) and the four named tests in `tests/test_session_host_plugin.py` (:159, :178, :235, :258) all resolve; the extensionless-href convention does not arise here.",
+    "done_when": "a finding \u2014 \u00a75's fifth case (the real host removes its FIFO) has no declared negative control and passes unchanged on the base revision, so it cannot fail.",
+    "evidence_paths": "pass \u2014 every log is \"under the run directory\", a durable path, and the new test file is a tracked path in the repository.",
+    "naming": "pass \u2014 \u00a75 names mechanisms and symbols only, with no plan labels, ticket numbers or changelog prose in the file paths or symbol names it introduces.",
+    "reasoning": "a finding \u2014 the start-up scan keys the owner to the Claude session id, which the plan's own cited script header says does not survive `/clear`, so a run left live across a `/clear` is still never followed.",
+    "single_goal": "pass \u2014 \u00a75 carries one deliverable, the re-armed host following its own live runs, with its plumbing in one write-path set.",
+    "wiring": "pass \u2014 \u00a75 needs no new dependency edge: its write paths (`plugins/crew-host/bin/crew-host`, `session_host.py`, `crew_follow_commands.py`, `tests/test_session_host_plugin.py`) are disjoint from \u00a72\u2013\u00a74's, and the open followup now invokes the whole plan rather than \u00a72 alone."
+  },
+  "section_digests": {
+    "_document": "7848c4a22debbc4310e02052a09e0978b08f6e538ba797332694c84678155ff8",
+    "s1": "38e026f18d1b42b1d79978e1ed1cf6179e085908a249e5762f39a683dcc8123f",
+    "s2": "f11be171c26248fbc871d99510f0013c9dfc0a181d247f07861e86dc0d156f40",
+    "s3": "76aeda9a3a70ef68e2d3ed18800f22774d4c2ec3fa6d0c7b85e9433c1b24b7d9",
+    "s4": "e88fcf79ec58d8305f36e37d69846c8e0a1a10f1b73fc6c167c25b700165e123",
+    "s5": "2945846ec8ac738a4ea020c4d43d12d555da80225e774c144192529dc32b51bf"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T14:56:17.875165+00:00",
+  "total": null
+}
