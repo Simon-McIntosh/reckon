@@ -65,6 +65,7 @@ from reckon.crew.runs import (
     pointer_path,
     process_alive,
     read_pointer,
+    record_process_alive,
     run_dir,
     scheduler_job_reason,
     scheduler_job_state,
@@ -2756,6 +2757,63 @@ def _worker_record_writer(
     return record
 
 
+def _prior_worker_record(run_directory: Path, attempt: int) -> Mapping[str, Any] | None:
+    """The newest worker record a launch before this attempt left, or None.
+
+    The canonical worker record names the attempt running now, so a launch
+    that has not yet spawned its worker finds nothing there. Every attempt
+    that ended leaves an immutable receipt beside it, and the newest of those
+    is the worker a second launch would run beside.
+    """
+    candidates = [run_directory / WORKER_RECORD_NAME]
+    candidates.extend(
+        _attempt_artifact_path(run_directory, WORKER_RECORD_NAME, number)
+        for number in range(max(1, attempt) - 1, 0, -1)
+    )
+    for path in candidates:
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if isinstance(data, Mapping):
+            return data
+    return None
+
+
+def _live_worker_beside_the_launch(
+    run_directory: Path, attempt: int, pointer: Mapping[str, Any]
+) -> int | None:
+    """The pid of a worker this run's earlier attempt still has running.
+
+    A second supervisor must not start its worker beside the incumbent's: two
+    workers drive one run's session in one worktree and each rewrites the
+    manifest from its own partial view, so one drops commits the other
+    recorded. The reading is :func:`record_process_alive` over the run's own
+    records rather than a private probe: it answers for the pid an earlier
+    attempt recorded, and when every recorded pid is dead it walks for a live
+    process of this user whose command line carries the run's session id, which
+    is where a worker reparented away from its supervisor still answers.
+    """
+    prior = _prior_worker_record(run_directory, attempt)
+    if prior is not None:
+        try:
+            pid = int(prior.get("pid"))
+        except (TypeError, ValueError):
+            pid = None
+        if pid is not None and record_process_alive(
+            {"pid": pid, "pid_start_time": prior.get("pid_start_time")}
+        ):
+            return pid
+    session_id = str(pointer.get("session_id") or "").strip()
+    if session_id and record_process_alive({"launch": "cli", "session_id": session_id}):
+        from reckon.crew.process_liveness import _session_process_pids
+
+        found = _session_process_pids(session_id)
+        if found:
+            return found[0]
+    return None
+
+
 def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
     """Spawn the worker inside the supervisor's own process group.
 
@@ -2777,6 +2835,26 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
         # is the one place a missing pointer becomes a launch failure, and the
         # record's recovery detail has to name the absence, not the PATH.
         raise _PointerMissingError(run_id, pointer_path(run_id), exc) from exc
+    run_directory = (
+        Path(str(spec["run_directory"]))
+        if spec.get("run_directory")
+        else run_dir(run_id)
+    )
+    try:
+        attempt_number = int(spec.get("attempt") or 1)
+    except (TypeError, ValueError):
+        attempt_number = 1
+    # Read before this launch writes its own worker record, so the only worker
+    # the records can name is one an earlier attempt started. A second worker
+    # beside a live one drives the same session in the same worktree, and the
+    # two then rewrite the manifest from their own partial views.
+    holder = _live_worker_beside_the_launch(run_directory, attempt_number, record)
+    if holder is not None:
+        raise CrewError(
+            f"run {run_id!r} still has a live worker (pid {holder}): a launch "
+            "that started now would run a second worker beside it; observe or "
+            "stop it before launching again"
+        )
     environment = _worker_runtime_environment(
         plan.get("environment") or {},
         run_id=str(spec["run_id"]),
