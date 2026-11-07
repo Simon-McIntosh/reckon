@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+    <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s84">
+  <title>A stop ends the run's whole tree, so the discard succeeds</title>
+</head>
+<body>
+<article id="end-a-stopped-runs-whole-process-tree-so-its-discard-landing" data-node="end-a-stopped-runs-whole-process-tree-so-its-discard" data-reckon="landed"></article>
+
+<section id="end-a-stopped-runs-whole-process-tree-so-its-discard-record">
+  <h3 id="end-a-stopped-runs-whole-process-tree-so-its-discard-record-title">What changed</h3>
+  <p><code>terminate</code> in <code>reckon/crew/dispatch_sessions.py</code>
+  resolves the run's whole process tree to pids before it signals anything,
+  records that list in the stop record (<code>target_pids</code>) and names it
+  in the printed <code>detail</code>, then — after the existing bounded settle —
+  escalates to SIGKILL for whatever is still alive and waits again. The
+  escalation re-walks the run's own tree instead of signalling the survivor
+  list by pid, so the reach stays bounded to the run and a pid the kernel has
+  since reused can never be signalled; the survivors it could not end are
+  reported in <code>alive_after</code>. <code>_signal_process_group</code> and
+  <code>signal_worker</code> in <code>reckon/crew/process_signal.py</code> take
+  the signal to deliver, so the escalation passes the same identity and
+  self-group guards as the graceful signal.</p>
+
+  <h3 id="end-a-stopped-runs-whole-process-tree-so-its-discard-reproduction">The defect, reproduced before repair, and gone after</h3>
+  <p>A probe built a run tree of a parent and a child that both ignore SIGTERM,
+  wrote it into a live pointer and ran the stop against the base revision:</p>
+  <pre>detail: SIGTERM sent to 2 process(es) of run r-probe-stop-tree; 2 still alive afterwards: [379, 380]
+DISCARD_REFUSED CrewError cannot discard live run 'r-probe-stop-tree': recorded pid 379 is alive</pre>
+  <p>The same shapes now end both processes and leave the discard to succeed —
+  that is what the gate below asserts behaviourally, before it reads the
+  record.</p>
+
+  <h3 id="end-a-stopped-runs-whole-process-tree-so-its-discard-measure">Measure</h3>
+  <p><code>tests/test_stop_reaps_run_tree.py</code> passes at head
+  (<code>2 passed</code>). Its first case asserts the parent and the child are
+  dead, that both pids are printed in the record, that
+  <code>promotion.discard</code> then succeeds, and that a bystander in its own
+  session is still running.</p>
+  <p>The escalation is unconditional in product code: no environment switch
+  can turn it off in a deployment. The test's own control replaces
+  <code>_escalate_run_stop</code> with a no-op, which is the stop as it stood
+  before the fix, and asserts the wrapper survives and the discard is refused.
+  The declared mutation — removing the escalation call from
+  <code>terminate</code> — makes the first case fail with
+  <code>1 failed, 1 passed</code>, <code>EXIT=1</code>
+  (<code>negative-control-escalation-dropped.log</code>); the file was restored
+  afterwards and its digest re-checked.</p>
+  <p>Both arms ran one at a time at <code>-n 4</code> over the 49 test files
+  that import the changed modules, plus the new test in the head arm: base
+  <code>1 failed, 742 passed, 2 skipped</code>, head
+  <code>1 failed, 744 passed, 2 skipped</code> — the same single failure
+  <code>tests/test_crew_obligations.py::test_obligations_reads_scoring_without_observing_or_dispatching</code>
+  in both, so the change adds none. <code>ruff check</code> reports no findings
+  on the staged paths; <code>ruff format --check</code> reports the same one
+  pre-existing unformatted file at base and at head.</p>
+</section>
+</body>
+</html>

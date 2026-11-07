@@ -2069,6 +2069,13 @@ def change_lane(
 def terminate(run_id: str) -> dict[str, Any]:
     """End a run's whole process tree, and record what was ended.
 
+    A process that ignores SIGTERM is still the run's process, and a discard
+    refuses while a recorded pid is alive, so the graceful signal is followed by
+    a bounded escalation to SIGKILL and a second bounded wait. The escalation
+    re-walks the run's own tree rather than signalling the survivors by pid: the
+    walk is what bounds the reach to the run, so a pid from a stale survivor
+    list can never be signalled after the kernel has reused it.
+
     The recorded pid names the supervisor for a supervised launch, and a
     supervisor that has already exited leaves its worker running — reparented
     to init, outside any process group this command can signal. So the signal
@@ -2083,6 +2090,18 @@ def terminate(run_id: str) -> dict[str, Any]:
         run_directory = run_dir(run_id)
         recorded_pid = record.get("pid")
         project = str(record.get("project") or "") or None
+        start_time = record.get("pid_start_time")
+        # Resolve the run's whole tree before signalling, so the set this
+        # command ends is the set it reports. A process the kernel reparented
+        # away from its supervisor is reached by the run's environment mark
+        # rather than by descent, which is why the resolution is the run's own
+        # rather than the recorded pid's.
+        target_pids = _run_process_pids(
+            int(recorded_pid) if recorded_pid else None,
+            run_id=run_id,
+            run_dir=run_directory,
+            expected_start_time=start_time,
+        )
         # A recorded pid that still names a process goes through the
         # identity-checked signal: it refuses a pid the kernel has since
         # recycled rather than signalling an unrelated process. A recorded
@@ -2117,21 +2136,48 @@ def terminate(run_id: str) -> dict[str, Any]:
             int(recorded_pid) if recorded_pid else None,
             run_id=run_id,
             run_dir=run_directory,
-            expected_start_time=record.get("pid_start_time"),
+            expected_start_time=start_time,
         )
+        killed: list[int] = []
+        if alive_after:
+            killed = _escalate_run_stop(
+                recorded_pid,
+                start_time,
+                run_id=run_id,
+                run_directory=run_directory,
+                project=project,
+            )
+            alive_after = _await_run_processes_gone(
+                int(recorded_pid) if recorded_pid else None,
+                run_id=run_id,
+                run_dir=run_directory,
+                expected_start_time=start_time,
+            )
         worktree = str(record.get("worktree") or "")
         holders = _processes_holding(Path(worktree)) if worktree else []
+        record["target_pids"] = target_pids
         record["ended_pids"] = ended
+        record["killed_pids"] = killed
         record["alive_after"] = alive_after
         record["held_by"] = holders
         if alive_after:
             record["detail"] = (
-                f"SIGTERM sent to {len(ended)} process(es) of run {run_id}; "
+                f"run {run_id}: SIGTERM sent to {len(ended)} of "
+                f"{len(target_pids)} process(es) {target_pids}; SIGKILL sent to "
+                f"{len(killed)} after the {_STOP_SETTLE_SECONDS:g}s grace; "
                 f"{len(alive_after)} still alive afterwards: {alive_after}"
+            )
+        elif killed:
+            record["detail"] = (
+                f"run {run_id} ended: SIGTERM sent to {len(ended)} of "
+                f"{len(target_pids)} process(es) {target_pids}; SIGKILL sent to "
+                f"{len(killed)} that ignored the {_STOP_SETTLE_SECONDS:g}s grace "
+                f"({killed})"
             )
         else:
             record["detail"] = (
-                f"run {run_id} ended: SIGTERM sent to {len(ended)} process(es)"
+                f"run {run_id} ended: SIGTERM sent to {len(ended)} process(es) "
+                f"{target_pids}"
             )
         if holders:
             record["detail"] += (
@@ -2182,6 +2228,44 @@ def _await_run_processes_gone(
         if not remaining or _time.monotonic() >= deadline:
             return remaining
         _time.sleep(_STOP_SETTLE_POLL_SECONDS)
+
+
+def _escalate_run_stop(
+    recorded_pid: Any,
+    expected_start_time: Any,
+    *,
+    run_id: str,
+    run_directory: Any,
+    project: str | None,
+) -> list[int]:
+    """SIGKILL whatever of the run survived the graceful signal.
+
+    The escalation walks the run's own tree again rather than signalling a
+    survivor list by pid. The walk is what bounds the reach to the run, so a pid
+    carried in a stale list can never be signalled after the kernel has reused
+    it for unrelated work. The recorded pid goes through the identity-checked
+    path only while it still names its own process, which is the guard the
+    graceful signal already uses.
+    """
+    if recorded_pid and process_alive(int(recorded_pid)) is True:
+        return _signal_process_group(
+            int(recorded_pid),
+            expected_start_time,
+            reason="run-stop-escalation",
+            run_dir=run_directory,
+            project=project,
+            sig=signal.SIGKILL,
+        )
+    delivered = signal_worker(
+        0,
+        signal.SIGKILL,
+        reason="run-stop-escalation",
+        run_dir=run_directory,
+        project=project,
+        run_id=run_id,
+        reach_run=True,
+    )
+    return list(delivered) if isinstance(delivered, list) else []
 
 
 def record_resumption(
