@@ -24,7 +24,7 @@
   <title>A Queued Request Is Checked When Queued | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="10">
 <meta name="plan-modified" content="2026-11-07">
 </head>
 <body>
@@ -63,6 +63,11 @@
     </article>
 </section>
 
+<section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261107T100310177452-name-the-caller-that-moved-a-live-successors-worktree-to-the" data-who="reckon-build" data-when="2026-11-07T10:39:58.697Z">
+    <div class="r-comment-body"><p>Established that the live worktree of run r-20261106T224214853358-edge-window-settle was moved to `_trash/edge-window-settle-20261106T225026473243Z` at 22:50:26Z by `_remove_worktree` (reckon/crew/routing.py:2284) called from `_create_worktree` (reckon/crew/routing.py:2240) during a second launch of the same run id, because `_live_pointer_worktrees` skips the pointer whose run id equals `LAUNCH_RUN_ID` (reckon/crew/routing.py:1092), and that the same call&#x27;s fleet `create` then made a new inode at the same path; the predecessor never held a worktree and there was no 23:50Z restore — 23:50 local time is 22:50:26Z. The report is /home/ITER/mcintos/.config/reckon/crew/reports/reckon/what-trashed-the-live-worktree.md.</p></div>
+</div>
+</section>
 </main>
 </body>
 </html>
