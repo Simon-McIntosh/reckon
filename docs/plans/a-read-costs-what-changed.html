@@ -25,7 +25,7 @@
   <title>A Read Costs What Changed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="44">
+<meta name="plan-version" content="45">
 <meta name="plan-modified" content="2026-11-07">
 </head>
 <body>
@@ -128,6 +128,12 @@
 <div class="r-comment" data-section="_top" data-id="c-s27-declared-s5" data-who="" data-when="">
     <div class="r-comment-body"><p>Declared done on 7 November after the S27 portfolio review (reckon-be, report portfolio-review/518160af5c11) found §5 landed on main but never declared: a resumed run records <code>impl_move</code> exempt and never moves its declaration. Runs awaiting these sections were held on work already on main.</p></div>
 </div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261107T161917748363-index-review-findings-by-repository-path-so-a-dispatch-reads" data-who="reckon-build" data-when="2026-11-07T17:10:45.247Z">
+    <div class="r-comment-body"><p>§11 findings_by_path answers from an index keyed on the review store's stat identity; on the live store `_open_findings` for one dispatch's write paths falls from 133.6 s to 1.33 s on the second call in a process (first call unchanged at 66.3 s), with the three index facts and their negative control held by tests/test_findings_are_indexed_by_path.py.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261107T172734757925-review-of-index-review-findings-by-repository-path-so-a-dispatch-reads-1ba5fc91221e" data-who="reckon-build" data-when="2026-11-07T17:46:19.854Z">
+    <div class="r-comment-body"><p>review of run r-20261107T161917748363-index-review-findings-by-repository-path-so-a-dispatch-reads at 45e2330415..1ba5fc9122 scores goal_fidelity 18, evidence 17, scope_discipline 20, durability 18, fit 14, reuse 5, with three non-blocking findings and added_failure_count 0; the record is stored under the reviewed run&#x27;s review-records/ and parses.</p></div>
+</div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261107T172437559972-review-of-scope-the-stored-planreview-runid-read-in-deliveredreports-d02dd9ffd64f" data-who="reckon-build" data-when="2026-11-07T17:43:29.094Z">
     <div class="r-comment-body"><p>Reviewed d02dd9ffd64f against base 45e233041537 as a six-dimension second opinion scoring 20/12/19/19/19/20 (goal_fidelity, evidence, scope_discipline, durability, fit, reuse; total 109) with 0 added failures, and recorded three non-blocking findings: the live-store timer misses the plan's under-2-s bar at 3.485 s while the fragment claims a pass verdict, the 101-file importer arm is head-only and stopped at 93% with four unattributed failures, and the before/after comparison carries no figure.</p></div>
 </div>
@@ -178,9 +184,6 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261103T103857095482-a-persisted-answer-still-reuses-rows" data-who="reckon-build" data-when="2026-11-04T09:22:03.388Z">
     <div class="r-comment-body"><p>Revalidating a persisted value no longer hashes the source file of each module that produced it: the envelope records each producer's source stat identity beside its digest and reuses the recorded digest when that identity has not moved, so a cold build reuses every covered row by stat identity again; both stat-identity tests and the code-version test pass 8/8 in each of three serial head passes, and reverting the fix turns exactly the two declared tests red.</p></div>
-</div>
-<div class="r-comment" data-section="s11" data-id="c-run-r-20261107T161917748363-index-review-findings-by-repository-path-so-a-dispatch-reads" data-who="reckon-build" data-when="2026-11-07T17:10:45.247Z">
-    <div class="r-comment-body"><p>§11 findings_by_path answers from an index keyed on the review store&#x27;s stat identity; on the live store `_open_findings` for one dispatch&#x27;s write paths falls from 133.6 s to 1.33 s on the second call in a process (first call unchanged at 66.3 s), with the three index facts and their negative control held by tests/test_findings_are_indexed_by_path.py.</p></div>
 </div>
 </section>
 </main>

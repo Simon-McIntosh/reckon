@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/plan_review.py:4922 (_open_findings_for)",
+    "reckon/crew/dispatch_admission.py:_block via _open_findings",
+    "reckon/mcp_views.py:4462 (crew view findings)"
+  ],
+  "completed_at": "2026-11-07T17:46:19.854Z",
+  "dispatched_at": "2026-11-07T17:30:13Z",
+  "findings": [
+    {
+      "category": "reuse",
+      "file": "reckon/crew/findings.py",
+      "line": 309,
+      "severity": "non-blocking",
+      "text": "The directory scan and record cache at reckon/crew/findings.py:309-481 duplicate the review-store index refresh mechanism owned by reckon/crew/review_records.py: _stat_identity (1049), _build_store_entries (1135) and _update_store_entries (1168, which already embodies keep-if-unchanged / re-read-if-identity-moved / drop-if-vanished) own this capability, and _store_indexes (1318) persists it. The addition duplicates the owner rather than extending it, so a second index over the same store must now be kept correct independently."
+    },
+    {
+      "category": "documentation",
+      "file": "reckon/crew/findings.py",
+      "line": 418,
+      "severity": "non-blocking",
+      "text": "The _code_review_rows docstring at line 418 claims the rows are memoised against the record's own file so a code review is read once and re-read only when its file moves, but the function holds no memo: _stored_code_reviews -> plan_review.list_code_reviews already reads each code-*.json, and line 427 reads the same file a second time through _committed_record_at (reckon/crew/review_records.py:98) on every call. The claim is false and every code review is parsed twice per findings_by_path call."
+    },
+    {
+      "category": "correctness",
+      "file": "reckon/crew/findings.py",
+      "line": 474,
+      "severity": "non-blocking",
+      "text": "The index stores row dicts and hands them out by reference: line 474 does rows.extend(cached[1]), and findings_by_path at lines 519 and 532 places the same objects into artefacts, rows and group rows. reckon/file_memo.py:1-10 states the repository rule that callers receive a copy so mutating a returned value never poisons a shared entry; a caller that annotates a returned row here corrupts the index for every later read until that record's file moves. No current caller mutates the rows, so the defect is latent rather than live."
+    }
+  ],
+  "justifications": {
+    "durability": "Reinstating a whole-store read reddens the empty-instrument assertion at tests/test_findings_are_indexed_by_path.py:108 and the exactly-one-record assertion at :126, and serving a deleted record's cached rows reddens :151-152; the recorded negative control shows all three failing together.",
+    "evidence": "tests/test_findings_are_indexed_by_path.py:95-152 holds the three done-when facts and logs/negative-control.log records all three failing with EXIT=1 when the memo is dropped, while timer-after.log records warm=1.329s against the 2 s target.",
+    "fit": "The neighbouring readers of the same store in reckon/crew/findings.py follow its existing stat-and-read shape, but the new _code_review_rows docstring at line 418 claims a memo the code does not have.",
+    "goal_fidelity": "reckon/crew/findings.py:466-474 keeps each unchanged record's rows and re-reads only where its identity moved, so a second findings_by_path call opens no record while grouping, recurrence and artefacts stay unchanged.",
+    "reuse": "reckon/crew/review_records.py:1168 _update_store_entries already owns refreshing a review-store index by stat identity, and reckon/crew/findings.py:462-474 re-implements that rule for finding rows instead of extending the owner.",
+    "scope_discipline": "git diff --stat 45e23304..1ba5fc91 lists only reckon/crew/findings.py, tests/test_findings_are_indexed_by_path.py and the landing fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to index review findings by repository path so a dispatch reads only the records that moved; reckon/crew/findings.py:445-481 answers from a per-path row index refreshed by each record's stat identity.\nVERDICT done_when: the done_when names tests/test_findings_are_indexed_by_path.py with three temporary-store facts and a live timer under 2 s warm; the manifest records a 3-test green run and timer-after.log records warm=1.329s EXIT=0, with base 51 passed and head 54 passed.\nVERDICT write_paths: the diff touches only reckon/crew/findings.py, tests/test_findings_are_indexed_by_path.py and the landing fragment, all inside the declared scope.\nVERDICT manifest: read; it records the commits, the gate command, the gate logs and a zero-failure baseline/after pair.\nVERDICT diff: read commit by commit; e073cf891a replaces per-call whole-store reads with a stat-identity index and adds the test, and 1ba5fc9122 adds the landing fragment.\nCALL_SITES: reckon/crew/plan_review.py:4922 (_open_findings_for), reckon/crew/dispatch_admission.py:_block via _open_findings, reckon/mcp_views.py:4462 (crew view findings)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/findings.py:466-474 keeps unchanged records' rows and re-reads only where identity moved, leaving grouping and recurrence unchanged.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_findings_are_indexed_by_path.py holds the three facts and timer-after.log records warm=1.329s, under the 2 s target.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff at 45e23304..1ba5fc91 is inside the manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating a whole-store read reddens the empty-record_reads assertion at tests/test_findings_are_indexed_by_path.py:108, and the recorded negative control shows all three cases failing.\nSCORE fit: 14\nJUSTIFICATION fit: the new _code_review_rows docstring at reckon/crew/findings.py:418 claims a memo the code does not implement.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/review_records.py:1168 _update_store_entries already owns refresh-by-stat-identity over this store, and reckon/crew/findings.py:462-474 duplicates it.\nFINDING reckon/crew/findings.py:309 non-blocking: the directory scan and record cache duplicate review_records._update_store_entries and _store_indexes instead of extending that owner.\nFINDING reckon/crew/findings.py:418 non-blocking: _code_review_rows claims a memo it does not have, and each code review is read twice per call.\nFINDING reckon/crew/findings.py:474 non-blocking: cached row dicts are handed out by reference, against the copy-on-handout rule stated in reckon/file_memo.py.",
+  "review_run_id": "r-20261107T172734757925-review-of-index-review-findings-by-repository-path-so-a-dispatch-reads-1ba5fc91221e",
+  "reviewed_base_sha": "45e233041537ee5b2707e9ab7a00aae617a3b719",
+  "reviewed_head_sha": "1ba5fc91221e46f2b7b6976d9ac5921dbcdb6bd4",
+  "reviewed_run_id": "r-20261107T161917748363-index-review-findings-by-repository-path-so-a-dispatch-reads",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 14,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T19:02:48.796984+00:00",
+  "total": 92,
+  "verdicts": {
+    "diff": "Read commit by commit against 45e23304. e073cf891a replaces the per-call whole-store record enumeration in reckon/crew/findings.py with a stat-identity index and adds tests/test_findings_are_indexed_by_path.py; 1ba5fc9122 adds the landing fragment. Nothing lies outside the declared scope.",
+    "done_when": "The done_when names tests/test_findings_are_indexed_by_path.py with three temporary-store facts plus a live timer under 2 s warm; the manifest records a 3-test green run, timer-after.log records warm=1.329s EXIT=0, and the base/after arms record 51 and 54 passed, both EXIT=0.",
+    "goal": "The node goal is to index review findings by repository path so a dispatch reads only the records that moved; reckon/crew/findings.py:445-481 (_indexed_rows) answers from a per-path row index refreshed by each record's stat identity.",
+    "manifest": "Read; it records status complete, commits e073cf891a and 1ba5fc9122, the test command and gate log paths, a negative_control_log path, and baseline/after suite JSON with 0 failures on both arms.",
+    "write_paths": "The declared paths are reckon/crew/findings.py, tests/test_findings_are_indexed_by_path.py, the landing fragment and its figures directory; the diff at 45e23304..1ba5fc91 touches exactly the first three and creates no figure."
+  }
+}
