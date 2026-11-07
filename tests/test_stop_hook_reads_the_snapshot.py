@@ -408,9 +408,12 @@ def test_a_lane_refused_review_reads_queued_and_returns_after_the_bound(
     _publish(derived)
     prompting = _drive("prompt", _stop_payload(repository))
     checklist = json.loads(prompting.stdout)["hookSpecificOutput"]["additionalContext"]
-    assert f"- [{REVIEW_QUEUED_DUTY_KIND}] {SCORING_RUN_ID}" in checklist
-    assert refused_at.isoformat() in checklist, checklist
-    assert f"session worker slots: {SESSION_WORKER_SLOTS}" in checklist, checklist
+    summary = [
+        line for line in checklist.splitlines() if "no action shortens them" in line
+    ]
+    assert len(summary) == 1, checklist
+    assert f"{REVIEW_QUEUED_DUTY_KIND} 1" in summary[0], checklist
+    assert f"- [{REVIEW_QUEUED_DUTY_KIND}] {SCORING_RUN_ID}" not in checklist
 
     stopping = _drive("stop", _stop_payload(repository))
 

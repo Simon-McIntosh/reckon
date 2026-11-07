@@ -249,8 +249,9 @@ def test_an_unreadable_record_prompts_without_holding_the_stop(
     reader renders it into the duty list under its own kind. It is a reading of
     a file caught mid-write rather than work a coordinator can act on, so it
     reaches the checklist while the turn may still end. The prompt drive is
-    asserted to name the path first, so the silent stop below is a kind that
-    does not hold a turn open rather than a row that never reached the list.
+    asserted to count its kind on the summary line first, so the silent stop
+    below is a kind that does not hold a turn open rather than a row that never
+    reached the list.
     """
     half_written = tmp_path / "reviews" / "review-of-a-run.json"
     half_written.parent.mkdir(parents=True, exist_ok=True)
@@ -267,7 +268,12 @@ def test_an_unreadable_record_prompts_without_holding_the_stop(
 
     prompting = _drive("prompt", _stop_payload(repository))
     checklist = json.loads(prompting.stdout)["hookSpecificOutput"]["additionalContext"]
-    assert f"[{UNREADABLE_KIND}] {half_written}" in checklist, checklist
+    summary = [
+        line for line in checklist.splitlines() if "no action shortens them" in line
+    ]
+    assert len(summary) == 1, checklist
+    assert f"{UNREADABLE_KIND} 1" in summary[0], checklist
+    assert str(half_written) not in checklist, checklist
 
     stopping = _drive("stop", _stop_payload(repository))
     assert stopping.returncode == 0
