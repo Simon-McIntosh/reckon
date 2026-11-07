@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import resumption, station, station_store
+from reckon.crew import resumption, runs, station, station_store
 
 PROJECT = "session-duties-fixture"
 SESSION = "coordinator-session"
@@ -111,17 +111,18 @@ def test_changed_session_runs_its_review_and_repair_on_the_next_requested_sweep(
     store = station_store.StationStore(tmp_path / "station")
     beat = station.SweepBeat(sweep=sweep, start=start)
     node = station.Station(store, home=home, projects=dict, sweeps=beat)
-    node.tick(now=MOMENT)
-    assert entered.wait(timeout=10), "the station never requested the first sweep"
+    with runs.follower_claim(PROJECT, SESSION, delivery="stream"):
+        node.tick(now=MOMENT)
+        assert entered.wait(timeout=10), "the station never requested the first sweep"
 
-    try:
-        _deliver(review_run)
-        _deliver(repair_run, blocking_review=True)
-        node.tick(now=MOMENT + timedelta(seconds=station.SWEEP_BEAT_SECONDS + 1))
-    finally:
-        release.set()
-        for thread in threads:
-            thread.join(timeout=10)
+        try:
+            _deliver(review_run)
+            _deliver(repair_run, blocking_review=True)
+            node.tick(now=MOMENT + timedelta(seconds=station.SWEEP_BEAT_SECONDS + 1))
+        finally:
+            release.set()
+            for thread in threads:
+                thread.join(timeout=10)
     assert all(not thread.is_alive() for thread in threads)
     assert calls == [(PROJECT, SESSION), (PROJECT, SESSION)]
     assert ("review-dispatched", "r-needs-review") in observed
