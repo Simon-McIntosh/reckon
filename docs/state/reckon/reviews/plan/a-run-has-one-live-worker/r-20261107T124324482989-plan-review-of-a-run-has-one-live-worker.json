@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T12:51:58.909Z",
+  "dispatched_at": "2026-11-07T12:46:03Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:177",
+      "id": "wiring-1",
+      "reason": "without a prompt naming `\u00a76` that section is implementable in the declarations and unreachable from the followups block, so the plan's own queue never builds the node that closes the naming half of the defect.",
+      "text": "`_document` declares `s6` implementable, but the only open followup `f-arolw-006` carries `data-recommends-skill=\"/reckon-build a-run-has-one-live-worker \u00a75\"` and the prompt `\u00a75` alone, so a coordinator dispatching from the followup builds `\u00a75` and leaves `\u00a76` unscheduled, exactly as the earlier review found for `\u00a75` before `f-arolw-005` was written; the body's \"\u00a75 and \u00a76 share no write path and can run together\" says two nodes are wanted while the machine-readable field names one",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:120",
+      "id": "done_when-1",
+      "reason": "the deliverable's third call site is untested, so the node could be closed on a gate that proves two of the three unifications it was asked for.",
+      "text": "`s6`'s deliverable says \"One function composes the live-process refusal, and all three sites call it\", but the done-when's four cases drive only `resume_plan` and the launcher; the sweep's second refusal at `reckon/crew/resumption.py:1112` is never exercised, so the \"all three sites\" half of the deliverable has no test that can fail and a worker can leave that site composing its own sentence and still pass",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:111",
+      "id": "reasoning-1",
+      "reason": "a worker handed \"name the live attempt at all three sites\" will either invent an attempt at a site whose condition is that none is known live, or silently leave the site out, and the plan does not say which it wants.",
+      "text": "`s6` lists `reckon/crew/resumption.py` near line 1112 among the \"three sites\" of the live-process refusal and asks the composed message to name \"the live attempt\", but that site is `_stream_in_motion_refusal`, which refuses only when `reading != \"liveness unknown\"` fails and the newest stream is still in motion \u2014 the reading that fires there says no process is known live, so an attempt named from `attempt-<n>-worker.json` would be the stale attempt the run just failed to observe ending; the plan's own rule (\"A detail the records do not hold is left out, never guessed\") is the only thing stopping the node from contradicting the refusal it is composing",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "ca843dca40465e1b058415e37e670e69e4e0ccec",
+  "plan_fingerprint": "32566e8068b834f2a155e23fc1e6b6dcdca11596acbd967a0a98d044dda841d6",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 25,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T124324482989-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "9ca5fb19f2b778781f796e707dd7d171b372c6f0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_supervisor_spawn_worker` (dispatch_launch.py:2759), `_start_supervisor` (2439), `_spawn_detached_worker` (1734), `record_process_alive` (process_liveness.py:300, session walk at 377-379, re-exported by runs.py:4341), `_live_pointer_worktrees` (routing.py:1078, own-pointer exclusion at 1089-1090), `terminate` (dispatch_sessions.py:2069), the three refusal sites (resumption.py:1001, 1112; dispatch_sessions.py:1223), `REPAIR_ROUNDS_FIELD` (recovery_review_dispatch.py:280), and the cited evidence paths, report and companion plan all resolve.",
+    "done_when": "a finding \u2014 `s6`'s done-when exercises only `resume_plan` and the launcher, so the third composed site at `reckon/crew/resumption.py:1112` can stop calling the shared composer without any test failing.",
+    "evidence_paths": "pass \u2014 `s5` writes its log under the run directory, `s6` its breach into the gate log, and `s7`'s `stopped-attempt-<n>.diff` lands in the run directory; no node is sent to a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 `test_a_queued_run_launches_once.py`, `test_a_refused_resume_names_the_live_attempt.py` and `test_a_stop_keeps_the_attempts_uncommitted_work.py` name the mechanism, and no section, stage, ticket or version label reaches a symbol, filename or comment.",
+    "reasoning": "a finding \u2014 `s6` calls `reckon/crew/resumption.py:1112` a \"live-process refusal\", but that site refuses when liveness reads *unknown* and the stream is still moving, so there is no live attempt there to name.",
+    "single_goal": "pass \u2014 `s5` (refuse a second launch), `s6` (name the live attempt in the refusal) and `s7` (save a stopped attempt's uncommitted work) each carry one deliverable with its own gate.",
+    "wiring": "a finding \u2014 the only open followup `f-arolw-006` recommends `/reckon-build a-run-has-one-live-worker \u00a75`, while `_document` declares `s6` implementable and no followup drives or recommends it."
+  },
+  "section_digests": {
+    "_document": "5498229a1a343acbed84d063c42d12ea1e871b218002fcd75010244770a3d7cb",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "c8fe2a5a6c5765bc70ba45627cc9f5778b225a5e1deff2cc1bb1e0e08214362a",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "051690372673e49bc098b59e3ce80f1c93c968bc79c26fac0a7e6f0cce902a8e",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T13:06:59.473251+00:00",
+  "total": null
+}
