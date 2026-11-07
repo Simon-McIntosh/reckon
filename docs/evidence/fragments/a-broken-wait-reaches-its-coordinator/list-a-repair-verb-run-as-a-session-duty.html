@@ -1,0 +1,36 @@
+<article class="r-evidence" data-node="list-a-repair-verb-run-as-a-session-duty" id="list-a-repair-verb-run-as-a-session-duty">
+<h3>A run whose remedy is a repair is a duty of its session</h3>
+<p>Two recovery readings carry the <code>repair</code> verb: <code>unreadable</code>, the
+declaration the probe reader refused, and <code>exited-unfinished</code>, a worker that exited
+with commits beyond its base while the manifest still carried a non-terminal verdict. Neither
+reached the obligations view, because the map from a recovery reading to a duty kind listed
+only <code>needs-help</code> and <code>launch-failed</code>. So a run whose wait was refused
+left its session idle with the coordinator told nothing — the case reported against
+<code>r-20261106T084812488886-polygon-near-band-quadrature</code>, where
+<code>crew view obligations</code> returned count 0 with <code>unreconciled_runs</code> 1 while
+the awaited scheduler job went to TIMEOUT unseen.</p>
+<p>The two readings are now entries in <code>RECOVERY_CLASSIFICATION_DUTY_KINDS</code>, keyed by
+the row's own <code>recovery_classification</code> rather than by its verb, and the projection
+carries the classifier's <code>detail</code> into the item's existing <code>reason</code> for
+both. The obligation therefore says what to repair — the reader's refusal sentence, or the
+verdict the manifest is stuck on — instead of only naming the run.</p>
+<p>Measure: the new gate passes 3 of 3. A refused <code>python3 -c</code> probe classifies
+<code>unreadable</code> with the recovery verb <code>repair</code> and appears as a duty of its
+session whose <code>reason</code> is the classifier's own detail, naming
+<code>python3</code> and the incomplete declaration; a run with a valid probe stays
+<code>waiting</code> and owes no duty; an <code>exited-unfinished</code> run appears with the
+verdict text and the repair command. Four negative controls, each applied to the committed
+source and reverted with the file's digest checked either side: dropping the
+<code>unreadable</code> entry leaves the refused-wait run absent; keying the entries by the
+<code>repair</code> verb leaves the refused-wait and exited-unfinished cases absent; adding a
+<code>waiting</code> entry makes the valid-probe case appear; and leaving the projection
+unchanged drops the refusal text from the refused-wait case. Each red log records
+<code>EXIT=1</code> and one or two failing test ids the head arm does not fail.
+The base arm over the obligations-importing test files gave 431 passed, 5 failed; the head
+arm over the same files plus the new one gave 434 passed, 5 failed — the three added cases and
+the same five failure ids, so no added failure. Those five are environment-bound and fail
+identically at the base revision. The armed scoped command, run as the gate of record, passes
+3 of 3 at the head and fails the refused-wait and exited-unfinished cases at the base
+revision, where it is run in a scratch extraction with the committed test copied in so the new
+case meets unchanged source rather than collecting nothing.</p>
+</article>
