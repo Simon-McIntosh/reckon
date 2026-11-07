@@ -1,0 +1,35 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T04:23:24.391Z",
+  "dispatched_at": "2026-11-07T04:18:37Z",
+  "findings": [],
+  "plan_commit": "33a1bdbd76d682f3d92b009b94649d49d05ea28c",
+  "plan_fingerprint": "6b145eb7d825f3d40afd19c80cc28633dc61597a6d7707a5e857e3e91e028444",
+  "plan_slug": "an-evidence-record-counts-only-what-it-read",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T041723246781-plan-review-of-an-evidence-record-counts-only-what-it-read",
+  "reviewed_blob_sha": "da6dd9d57210f13f912ec2965c156cb80952b3e0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 I opened each cited target: `_section_key` (reckon/evidence.py:50, used at 70), the rendered-id derivation from comment keys and ledger run `section`-keys (reckon/evidence.py:338\u2013350) and the `_top`\u2192`outcome` render (reckon/evidence.py:371\u2013372); `_apply_evidence_appends` (reckon/_store.py:1230), `_evidence_plan_title` (1177), the anchor-shape guard in the pure `_apply_append_evidence` (1292\u20131297) and `_landed_record_shell`'s delegation to `_render_document` with empty runs (1184\u20131195); `EvidenceSynthesisResult` (reckon/evidence.py:23\u201331); `synthesize_evidence` as the sole production caller (reckon/project_maintenance_commands.py:1473\u20131485). All resolve.",
+    "done_when": "pass \u2014 \u00a74's done-when names eleven cases and thirteen negative controls, one control per distortion, including the four that pin the two normalisation steps (`s5-1` vs `s5.1`), and \u00a72/\u00a73's controls were already repaired by earlier rounds.",
+    "evidence_paths": "pass \u2014 \u00a74 requires every log under the run directory, opened with its revision and the literal command and closed with `EXIT=`, and no gate is placed in a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 \u00a74 introduces `dropped_anchors`, `unmarked_losses`, the `replaced`/`dropped`/`carried` tags and `data-evidence-origin=\"append\"`, all named by what they do; no plan label, stage name, ticket number or version tag, and the test filename states the behaviour.",
+    "reasoning": "pass \u2014 all three checks hold. Root cause matches the evidence: I reproduced the reported loss on the record \u00a71 quotes \u2014 at `f7f7d2d6d` the file carried `id=\"frch-presentation-figures\"` and `id=\"frch-assemble-pages\"` and no `s4`/`s6` sections; at the rebuild `c058d9c74` those two ids are gone and `s4`/`s6` are present, and the record's own summary sentence reads exactly \"14 committed run(s), 64 section-anchored comment(s), and 47 landed commit(s)\", matching \u00a74's \"14 runs, 64 comments and 47 commits\". The mechanism can produce the done-when: `synthesize_landed_record` (reckon/evidence.py:636\u2013696) writes the record from `_render_document` alone and never reads the existing destination, which is precisely the step that drops the appends, and reading the destination before the atomic write is the fix it names. The mechanism runs on the real path with its caller named: `reckon evidence synthesize` \u2192 `synthesize_evidence` (reckon/project_maintenance_commands.py:1473) is the only caller of `synthesize_landed_record`, so the two new result lists do reach a printer once that command echoes the `dropped_anchors` and `unmarked_losses` labels it is told to add; and the refusal sits in `_apply_evidence_appends` (reckon/_store.py:1230, reached from `apply_ops` at 1591), the write half that already holds `docs_dir`, `project` and `root` and already calls `read_plan` through `_evidence_plan_title`, not in the pure `_apply_append_evidence`.",
+    "single_goal": "pass \u2014 \u00a74 carries one deliverable (an appended anchor survives a re-synthesis), with the anchor refusal, the origin mark and the two result lists all serving that one property rather than a second capability.",
+    "wiring": "pass \u2014 \u00a74's declared waits (s2, s3) match its write paths: it shares reckon/evidence.py and reckon/_store.py with \u00a72 and reckon/_store.py with \u00a73, and `plan-section-depends-on` carries exactly `{\"s4\": [\"\u2026#s2\", \"\u2026#s3\"]}`; the followup orders \u00a72, \u00a73, \u00a74 the same way."
+  },
+  "section_digests": {
+    "_document": "6d35efce52466005f8ee56997c8dc7bcca998d7c41fcd252d254bc7264596281",
+    "s1": "7c52117565966edec5de56bc0448d4a141edbcb73ac18ede5f2cb0c34f424f0a",
+    "s2": "143dc532dde638505b6cf743e1b2af8b2d754fbd94debf4fdb0b351e623a2a39",
+    "s3": "1e19a712fd2dad1c38a11f7b6164b1fcc01c996e78f3297edb135a1d5fd7c0cf",
+    "s4": "9e7a549a01d9efa8ae8ba1c0bcfcf1d4a80510b873ac68328f69fed2b1464460"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T04:33:38.481439+00:00",
+  "total": null
+}
