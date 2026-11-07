@@ -1,0 +1,68 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T09:19:22.757Z",
+  "dispatched_at": "2026-11-07T09:12:15Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:38",
+      "id": "reasoning-1",
+      "reason": "moving the fix inside `write` (hand `snapshots`' paths plus the aggregate to `_commit_state_write`) closes five call sites with no signature change and no re-derived list, where s2's placement leaves the same silent-uncommitted-write defect in production on four paths it explicitly excludes.",
+      "text": "s2 adds a caller-supplied `changed_paths` out-parameter to `write` and has `record_hold_checks` pass it, but `write` already computes exactly those paths as `snapshots` from `_keep_run_files_identical` (`reckon/ledger.py:1899`, called at `2174`), and `write(commit=True)` passes only the aggregate `path` to `_commit_state_write` (`reckon/ledger.py:2192-2200`), so the identical defect is live on four further callers (`reckon/crew_run_commands.py:3561`, `reckon/crew/promotion_records.py:1082`, `reckon/crew/routing.py:3003` and `:3130`) which s2 states are left untouched",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:43",
+      "id": "reasoning-2",
+      "reason": "a worker must either invent a reason channel through a two-caller boolean function or drop an assertion its gate names, so the node cannot reach one verdict as written.",
+      "text": "s3 says `_ask_session_host` \"returns False with the same reason `_rearm_session_follower` (near line 785) gives today\", but `_ask_session_host` returns `bool` (`reckon/crew/dispatch_watch.py:746`) and carries no reason string, while the ownership reason exists only in `_rearm_session_follower`'s own pre-check; the s3 done-when then asserts an ask \"returns False with the ownership reason\", which a boolean cannot carry",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:38",
+      "id": "anchors_resolve-1",
+      "reason": "the pointer lands inside the right function and nothing is deleted, so a worker reading the function finds the comment and corrects the right sentence.",
+      "text": "s2 says \"The `record_hold_checks` docstring's claim that run rows stay byte-identical is corrected\", but that claim is an inline comment inside the function body (`reckon/ledger.py`, the aggregate-load comment preceding the loop), not in the docstring, whose text says it \"commits the aggregate it rewrote at once\" and says nothing about run rows",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:38",
+      "id": "reasoning-3",
+      "reason": "`record_hold_checks` is the public function the done-when calls directly and its one live caller verifies the path runs, so naming it sharpens the evidence without altering the mechanism.",
+      "text": "s2 names `record_hold_checks` as the actor driving `write` but never names its caller, `reckon/budget.py:1911`, which is the single production entry point through which a hold transition reaches the rewritten run record",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "8ad337c63ab6b947aceece9ae69ba818ca6073a5",
+  "plan_fingerprint": "ccb1298c3d935796093eccd4c962bd4b3bb2bb7b6ccbdc31e00ae382bbfd22e7",
+  "plan_slug": "a-crew-process-writes-only-what-it-owns",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T090811033964-plan-review-of-a-crew-process-writes-only-what-it-owns",
+  "reviewed_blob_sha": "1c39d8d792a0390211557f1b8ab32043a31d9d74",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass with one imprecision \u2014 `record_hold_checks` (3437), `write` (2007), `_commit_state_write` (2438), `normalize_outside_scope_paths` (run_record.py:36), `_ask_session_host` (746), `_ask_session_host_for_follower` (770), `_rearm_session_follower` (785), `_session_host_child_pid` (695), `_session_host_owner` (583), `_foreign_live_follower` (session_host.py:460), `tick` (512), `_session_from_followers` (439), `locate_session` (852) and `promotion_gate.py:1051` all resolve; `ca3029c385` and `916bd85724` resolve in reckon, while `a03fe0706` and `274e2b00c` resolve in no reckon object and are explicitly attributed to nova's checkout in the prose, which is correct.",
+    "done_when": "pass \u2014 every section names at least one negative control that can fail (s2: aggregate-only path to `_commit_state_write` leaves the run record modified; s3: three controls including dropping the ownership check; s4: returning the first descending registration makes case one return B), each against a stated base revision with per-arm `-n 4` and ruff-clean staging.",
+    "evidence_paths": "pass \u2014 every log is stated to sit under the run directory (`~/.config/reckon/crew/runs/<run>/`), which survives the run, and s2's test is built on a temporary git repository rather than a session scratchpad.",
+    "naming": "pass \u2014 the three proposed test filenames (`test_a_hold_commits_what_it_rewrote.py`, `test_a_host_follows_only_its_own_session.py`, `test_the_obligations_hook_reads_its_own_session.py`) and the one new keyword (`changed_paths`) name the mechanism, carry no plan label, stage name or ticket number, and no proposed comment is changelog prose.",
+    "reasoning": "a finding \u2014 s2's mechanism is placed one layer above the function that already holds the fact it needs, and it repairs one of five call sites of the same defect.",
+    "single_goal": "pass \u2014 s2 (hold commits what it rewrote), s3 (host follows only its own session) and s4 (hook reads only its own session) each carry one closeable verdict; s3's two mechanisms sit in the same two functions of one file with one test file, so splitting them would duplicate the scaffolding without sharpening the gate.",
+    "wiring": "pass \u2014 the single declared relationship, `plan-after: the-monitor-shows-the-work-it-watches`, names a plan that exists in `docs/plans/`, and the three build sections write disjoint files (`reckon/ledger.py`, `reckon/crew/dispatch_watch.py`, `reckon/hooks/coordinator_obligations.py`) so no undeclared section-level dependency is needed between them."
+  },
+  "section_digests": {
+    "_document": "76494d097e556fab05b3d2f83ab4254568f5447e227a49e94e7581a3cbcb7d99",
+    "s1": "38e026f18d1b42b1d79978e1ed1cf6179e085908a249e5762f39a683dcc8123f",
+    "s2": "483be3d2a782222b6c0760abf47889434d7552b6f0b7f56edad2f26cf2d9d397",
+    "s3": "c2ed3308fbf682d961321976e90da0d1a3dfbf85d4bb4c8a085d8b464bc55060",
+    "s4": "e88fcf79ec58d8305f36e37d69846c8e0a1a10f1b73fc6c167c25b700165e123"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T09:25:48.862943+00:00",
+  "total": null
+}
