@@ -14,7 +14,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
-from reckon import ledger
+from reckon import checkout_trust, ledger
 from reckon.crew import landing_measure, recovery, runs
 from reckon.crew.node import CrewError
 from reckon.crew.promotion_records import _node_test_files
@@ -670,13 +670,20 @@ def _measurement_path(run_id: str) -> Path:
 
 
 def _stored_measurement(
-    run_id: str, head: str, command: str, primary: str = ""
+    run_id: str,
+    head: str,
+    command: str,
+    primary: str = "",
+    pointer: Mapping[str, Any] | None = None,
 ) -> landing_measure.Measurement | None:
     """The measurement already recorded for this head, or ``None``.
 
     A record is reusable for its delivered head, command and primary revision.
-    A primary change rebuilds the candidate and measures again. The candidate
-    identity is required so the merge can consume exactly what was measured.
+    A primary that has moved since is reusable when every commit between the
+    two leaves the measured inputs unchanged, because such a move cannot change
+    what the pair measured; any other move rebuilds the candidate and measures
+    again. The candidate identity is required so the merge can consume exactly
+    what was measured.
 
     A record the measurement could not be taken for is not one: it states the
     bound the arm exceeded or the failure to build the base tree, and reusing
@@ -699,13 +706,26 @@ def _stored_measurement(
         return None
     if primary:
         population = record.get("population")
-        if (
-            not isinstance(population, Mapping)
-            or population.get("main_sha") != primary
-            or not population.get("candidate_sha")
+        if not isinstance(population, Mapping) or not population.get("candidate_sha"):
+            return None
+        measured_main = str(population.get("main_sha") or "")
+        if measured_main != primary and not _moved_primary_keeps_the_measurement(
+            _pointer_or_read(run_id, pointer), measured_main, primary
         ):
             return None
     return landing_measure.Measurement.from_dict(record)
+
+
+def _pointer_or_read(
+    run_id: str, pointer: Mapping[str, Any] | None
+) -> Mapping[str, Any]:
+    """The pointer a caller supplied, or the run's own when it supplied none."""
+    if pointer is not None:
+        return pointer
+    try:
+        return runs.read_pointer(run_id)
+    except (OSError, ValueError, CrewError):
+        return {}
 
 
 def _measurement_record(run_id: str) -> dict[str, Any] | None:
@@ -786,6 +806,87 @@ def _primary_revision(pointer: Mapping[str, Any]) -> str:
         return merge._rev_parse(Path(str(pointer.get("repo") or "")), "HEAD")
     except (OSError, merge.MergeError):
         return ""
+
+
+#: The committed paths a measurement reads. A commit that leaves every one of
+#: them unchanged cannot change what a delivered run was measured against, so
+#: the measurement still stands and is re-applied to the primary it was taken
+#: on rather than repeated. The catalogue is named separately from the package
+#: because it lives under ``docs/`` yet is read by the running product, and the
+#: dependency pins and the tests are named because a suite pair runs the
+#: product's own tests against the product's own pins.
+_MEASURED_INPUT_PATHS = (
+    "reckon",
+    "tests",
+    "pyproject.toml",
+    "uv.lock",
+    checkout_trust.CATALOGUE_RELATIVE_PATH,
+)
+
+
+def _measured_product_tree(repo: Path, revision: str) -> tuple[str, ...] | None:
+    """Git's own names for the measured inputs at ``revision``, or ``None``.
+
+    One ``ls-tree`` answers for every path whether or not it exists, so a
+    checkout that legitimately carries no catalogue reads as absent at both
+    revisions rather than as a failure. A non-zero exit is git declining to
+    answer, and ``None`` says so: an identity that cannot be read must not be
+    mistaken for an unchanged one.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(repo), "ls-tree", revision, "--", *_MEASURED_INPUT_PATHS],
+            capture_output=True,
+            text=True,
+            timeout=checkout_trust.IMPORT_PROBE_TIMEOUT,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if result.returncode != 0:
+        return None
+    named: dict[str, str] = {}
+    for line in result.stdout.splitlines():
+        metadata, _, path = line.partition("\t")
+        fields = metadata.split()
+        if len(fields) >= 3:
+            named[path] = fields[2]
+    return tuple(named.get(path, "") for path in _MEASURED_INPUT_PATHS)
+
+
+def _moved_primary_keeps_the_measurement(
+    pointer: Mapping[str, Any], measured_main: str, primary: str
+) -> bool:
+    """Whether main moved only by commits that cannot change the measurement.
+
+    A landing measures a delivery against the primary revision it merges onto,
+    and every later commit used to discard that measurement, so a main moving
+    with plan edits and review records defered every reviewed run indefinitely.
+    A commit touching only files outside the measured inputs leaves the
+    population, its tests and its pins exactly as measured, and the merged
+    product the measurement judged is the one the landing will still produce.
+
+    The package side is read through :func:`checkout_trust.committed_reckon_tree`,
+    which names the content of ``reckon/`` at ``HEAD`` -- the primary being
+    landed onto -- so a package commit is judged by the same content identity
+    the fleet's reload readers use. Anything this cannot read is not judged
+    unchanged: a measurement is reused only on a positive answer.
+    """
+    if not _REVISION.fullmatch(measured_main or "") or not _REVISION.fullmatch(
+        primary or ""
+    ):
+        return False
+    if measured_main == primary:
+        return True
+    repo = Path(str(pointer.get("repo") or ""))
+    if not repo.is_dir():
+        return False
+    measured_tree = _measured_product_tree(repo, measured_main)
+    primary_tree = _measured_product_tree(repo, primary)
+    if measured_tree is None or primary_tree is None or measured_tree != primary_tree:
+        return False
+    current_package = checkout_trust.committed_reckon_tree(repo)
+    return current_package is not None and current_package == measured_tree[0]
 
 
 def _measure_delivery(
@@ -1126,17 +1227,37 @@ def _verified_measurement(
     head, _tree = recovery._review_head_and_tree(pointer)
     if not recovery.same_revision(head, measured.head):
         raise CrewError("the measured delivery head changed before landing")
-    if _primary_revision(pointer) != measured.population["main_sha"]:
+    measured_main = str(measured.population["main_sha"])
+    primary = _primary_revision(pointer)
+    moved = primary != measured_main
+    if moved and not _moved_primary_keeps_the_measurement(
+        pointer, measured_main, primary
+    ):
         raise CrewError("the measured primary changed before completion")
     if (
         candidate
         and merge._rev_parse(repo, candidate) != measured.population["candidate_sha"]
     ):
         raise CrewError("the supplied candidate differs from the measured candidate")
-    markers = merge.change_markers(repo, measured.population["main_sha"], head)
-    dropped = merge.surviving_change_refusals(
-        repo, measured.population["candidate_sha"], markers
-    )
+    # The measured candidate is the merge of the measured primary and this
+    # head. When the primary moved under a measurement that still stands, the
+    # merge the landing will produce is built onto the current primary instead,
+    # and that is the merge the change markers are judged against: what a
+    # docs-only move cannot do is change the product, and that claim is only
+    # worth making if the merge onto the new primary is read.
+    if moved:
+        merged_tree, conflicts = merge._merge_tree(repo, primary, head)
+        if merge.refusing_conflicts(conflicts):
+            raise CrewError(
+                "the head no longer merges cleanly onto the primary: "
+                + ", ".join(merge.refusing_conflicts(conflicts))
+            )
+        judged_base, judged_revision = primary, merged_tree
+    else:
+        judged_base = measured_main
+        judged_revision = str(measured.population["candidate_sha"])
+    markers = merge.change_markers(repo, judged_base, head)
+    dropped = merge.surviving_change_refusals(repo, judged_revision, markers)
     if dropped:
         raise CrewError(
             "the measured merge dropped the reviewed change: " + "; ".join(dropped)
@@ -1262,6 +1383,7 @@ def _land_deliveries() -> dict[str, Any]:
     skipped: list[dict[str, str]] = []
     obligations: list[dict[str, str]] = []
     deferred: list[str] = []
+    deferred_reasons: dict[str, str] = {}
     measured_this_pass = False
     live = sorted(runs.list_live(), key=_delivery_order)
     # One history read per project for the whole pass, not one per run: the
@@ -1428,7 +1550,9 @@ def _land_deliveries() -> dict[str, Any]:
             continue
         command = str(pointer.get("suite_command") or "").strip()
         measured = (
-            _stored_measurement(run_id, head, command, primary) if primary else None
+            _stored_measurement(run_id, head, command, primary, pointer)
+            if primary
+            else None
         )
         if measured is not None:
             # The stored head is this head: reuse it, and re-apply it to the
@@ -1436,6 +1560,10 @@ def _land_deliveries() -> dict[str, Any]:
             _record_suite_evidence(run_id, measured)
         elif command and measured_this_pass:
             deferred.append(run_id)
+            deferred_reasons[run_id] = (
+                "another delivery was already measured in this pass, so its "
+                "suite pair was not run a second time"
+            )
             continue
         else:
             if project not in history:
@@ -1470,8 +1598,20 @@ def _land_deliveries() -> dict[str, Any]:
                 }
             )
             continue
-        if measured is not None and primary and _primary_revision(pointer) != primary:
+        if (
+            measured is not None
+            and primary
+            and _primary_revision(pointer) != primary
+            and not _moved_primary_keeps_the_measurement(
+                pointer, primary, _primary_revision(pointer)
+            )
+        ):
             deferred.append(run_id)
+            deferred_reasons[run_id] = (
+                "the primary moved during the measurement by a commit that "
+                "changes the measured inputs, so the pair was taken against a "
+                "product the landing will no longer produce"
+            )
             continue
         if _landed_elsewhere(pointer, run_id):
             skipped.append({"run_id": run_id, "status": "landed-elsewhere"})
@@ -1563,6 +1703,8 @@ def _land_deliveries() -> dict[str, Any]:
                 refused["remedy"] = remedy
             obligations.append(refused)
     result = {"landed": landed, "obligations": obligations, "deferred": deferred}
+    if deferred_reasons:
+        result["deferred_reasons"] = deferred_reasons
     if skipped:
         result["skipped"] = skipped
     return result

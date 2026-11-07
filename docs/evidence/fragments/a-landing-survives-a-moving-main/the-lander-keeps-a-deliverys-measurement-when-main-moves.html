@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-landing-survives-a-moving-main">
+  <meta name="plan-title" content="A Landing Survives A Moving Main"></meta>
+  <meta name="plan-summary" content="The landing pass keeps a delivery's measurement when the primary moves only by commits that leave the measured inputs unchanged, and records why each deferred run was not landed.">
+  <meta name="plan-evidence-for" content="a-landing-survives-a-moving-main">
+  <meta name="plan-recorded-at" content="2026-11-07">
+  <meta name="plan-verdict" content="passed">
+  <title>A landing keeps a delivery's measurement | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A landing keeps a delivery's measurement</h1>
+
+    <section id="the-lander-keeps-a-deliverys-measurement-when-main-moves-what-changed">
+      <h2>What changed</h2>
+      <p><code>reckon/crew/queue_landing.py</code> now decides whether a moved
+        primary can change what a delivery was measured against. The measured
+        inputs are the committed <code>reckon/</code> tree — read through the same
+        content identity the fleet's reload readers use — the catalogue at
+        <code>docs/state/reckon/model-catalogue.yaml</code>, <code>tests/</code>,
+        <code>pyproject.toml</code> and <code>uv.lock</code>. A move that leaves
+        all five unchanged reuses the stored measurement; any other move, or an
+        identity git cannot answer.</p>
+      <p>Verification follows the same decision. When the primary moved under a
+        measurement that still stands, the pass builds the merge onto the primary
+        as it now stands, refuses a head that no longer merges cleanly, and judges
+        the change markers against that merge rather than against the merge the
+        measurement recorded. The pass result also carries
+        <code>deferred_reasons</code>, a sibling of the unchanged
+        <code>deferred</code> id list, so each deferred run names its reason.</p>
+
+      <h2>Evidence</h2>
+      <p>Gate at the committed head, <code>6e257846c5</code>:
+        <code>tests/test_a_landing_survives_a_moving_main.py</code> plus the
+        existing tests that import <code>reckon.crew.queue_landing</code> —
+        106 passed, 0 failed, EXIT=0.</p>
+      <p>Base arm at <code>976bf02dcc</code>, over the same existing tests (the new
+        test file does not exist at that revision): 100 passed, 0 failed,
+        EXIT=0.</p>
+      <p>Negative control — treating every moved primary as invalidating again —
+        4 failed, EXIT=1: the two docs-only reuse cases, the conflict case and the
+        move-during-measurement case all fail, and the two cases that expect a
+        fresh measurement still pass.</p>
+      <p>The six gate tests show a delivery measured before a docs-only commit
+        landing on the next pass without its suite pair being run again, the
+        verification accepting that stored measurement, a commit under
+        <code>reckon/</code> forcing a fresh measurement, a delivery whose plan
+        edit conflicts with the primary not landing, a docs-only move during the
+        measurement no longer deferring the run, and a reason beside each deferred
+        id.</p>
+    </section>
+  </main>
+</body>
+</html>
