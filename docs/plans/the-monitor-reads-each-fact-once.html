@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-blocks" content="crew-state-stays-bounded">
   <meta name="plan-section-depends-on" content="{&quot;s6&quot;:[&quot;the-monitor-reads-each-fact-once#s5&quot;],&quot;s7&quot;:[&quot;the-monitor-reads-each-fact-once#s6&quot;],&quot;s8&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s9&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s10&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;,&quot;the-monitor-reads-each-fact-once#s8&quot;],&quot;s12&quot;:[&quot;the-monitor-reads-each-fact-once#s8&quot;,&quot;the-monitor-reads-each-fact-once#s9&quot;,&quot;the-monitor-reads-each-fact-once#s10&quot;,&quot;the-monitor-reads-each-fact-once#s11&quot;,&quot;the-monitor-reads-each-fact-once#s13&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;}">
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="97">
+<meta name="plan-version" content="99">
 <meta name="plan-modified" content="2026-11-07">
 </head>
 <body>
@@ -492,7 +492,8 @@ review-duty row kept promising "expected within about 120 s (the follower's swee
 <p><strong>Deliverable.</strong> The obligations derivation classifies a delivered run whose
 newest review carries an open blocking finding as owing a repair, never as promotable. The row
 names the repair's state: not opened, held for advice, or in flight. Every row's command names
-the row's own run. A review duty the reflex owns that has been owed for longer than the sweep
+the row's own run. A review-duty row for a run whose review is already in flight names that
+review run and its phase instead of reading review-missing. A review duty the reflex owns that has been owed for longer than the sweep
 cadence is worded as overdue, with its age and a statement that the reflex has not dispatched it,
 instead of promising the cadence. It carries no dispatch command of its own, so the reflex
 stays the single dispatcher of a run's review.</p>
@@ -506,6 +507,10 @@ not <code>promotable-stale</code> and whose command is not <code>crew complete</
 command for that run;</li>
 <li>a review duty owed for longer than the cadence is worded as overdue with its age, carries no dispatch
 command, and carries no "within about 120 s";</li>
+<li>a delivered run whose review run is already in phase working yields a row naming that
+review run, not review-missing (reported by nova-4a on 7 November: <code>r-20261107T205044504786-icm-sheet-tidy</code>
+read review-missing at 22:14Z while <code>r-20261107T220731416832-review-of-icm-sheet-tidy-4c6e1f3d6531</code>
+was working, and the lead nearly dispatched a duplicate review by hand);</li>
 <li>a row for an admission-held run names only its own run id in its command. This case is a
 regression guard: it may already hold at base, and the first case's control is the section's
 falsification.</li>
@@ -516,6 +521,18 @@ wording for the overdue duty. The test files importing the changed modules add n
 against base in matched arms, and ruff check and ruff format --check add no finding on the
 staged paths.</p>
 
+
+    <h2 id="s16">§16 — A review the reflex launches appears as working</h2>
+<section data-reckon="section" data-id="s16" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> nova-4a reported on 7 November, relayed by reckon-e0, that when the review reflex dispatches a review, the follower emits no <code>new → working</code> row for it. The session pane shows nothing until the review delivers, so a coordinator reads a running review as a stuck reflex.</p>
+<p><strong>Deliverable.</strong> A review the reflex dispatches produces the same <code>new → working</code> transition row on its session's follower as a review the coordinator dispatches by hand.</p>
+<p><strong>Done when</strong> a new <code>tests/test_a_reflex_review_appears_as_working.py</code> shows, on a synthetic crew home with the station's publish path, that a review dispatched through <code>recovery_review_dispatch.dispatch_review_for_run</code> by a sweep yields a <code>working</code> transition row on the owning session's stream within one publish. Negative control: the same test at the base revision shows no such row. The test files importing the changed modules add no failure against base in matched arms, and ruff check and ruff format --check add no finding on the staged paths.</p>
+
+    <h2 id="s17">§17 — A live worker is never noted as ended</h2>
+<section data-reckon="section" data-id="s17" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> nova-4a reported on 7 November, relayed by reckon-e0, a "process ended / not reported dead" note on freshly launched implement runs whose workers were alive and writing. A note that calls a live worker ended sends a coordinator to resume or redispatch a run that is working.</p>
+<p><strong>Deliverable.</strong> The process-ended note is raised only when the run's recorded worker process is gone. A launch whose worker process is alive, including one whose process record is still being written, never carries it.</p>
+<p><strong>Done when</strong> a new <code>tests/test_a_live_worker_is_never_noted_ended.py</code> shows, on a synthetic crew home, that a freshly launched run whose worker process is alive carries no process-ended note, and that a run whose recorded worker process has exited does carry it. Negative control: the same test at the base revision raises the note for the live launch. The test files importing the changed modules add no failure against base in matched arms, and ruff check and ruff format --check add no finding on the staged paths.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
