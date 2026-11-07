@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T11:23:33.484Z",
+  "dispatched_at": "2026-11-07T11:16:08Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queued-request-is-checked-when-queued.html:55",
+      "id": "reasoning-1",
+      "reason": "the section's promise is that a second launch never releases a tree its first launch holds, and this predicate still releases it whenever the pointer names the tree before the phase leaves `starting`; the predicate must carry the worktree/pid qualifier dispatch_claims.py:559 uses, and the done-when needs an arm for that shape.",
+      "text": "\u00a75 says the launch-side view keeps a same-run pointer as a claim \"unless its phase is still pre-worker (a waiting phase in `WAITING_REQUEST_PHASES` ... or an unlaunched claim phase in `_UNLAUNCHED_CLAIM_PHASES`)\", but the full launch pointer is written with `\"worktree\": worktree[\"path\"]` (`reckon/crew/routing.py`'s caller, `reckon/crew/dispatch.py:2946`) and `\"phase\": \"starting\"` (`reckon/crew/dispatch.py:2991`) before the phase moves to `working`, so a same-run pointer naming the tree is classed pre-worker and disregarded; the repository's own claim predicate already refines this (`reckon/crew/dispatch_claims.py:559`: a phase in `_UNLAUNCHED_CLAIM_PHASES` is unlaunched only when the pointer carries neither a worktree nor a pid), and \u00a75 neither mirrors that qualifier nor gives the done-when an arm for a `starting` pointer that names the tree",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queued-request-is-checked-when-queued.html:54",
+      "id": "wiring-1",
+      "reason": "a dispatch pass reads declared relationships, not prose, so without one the two sections can be dispatched into the same functions and each would have to be re-reviewed against the other; a declared link (or a `plan-after`/`data-links` entry) is what prevents that.",
+      "text": "\u00a75 hands duplicate-admission prevention to `a-reexec-never-orphans-a-dispatch` in prose only, and that plan's launch-path comment 96 names \u00a75 in return, yet this plan declares no relationship to it and both sections would edit the same launch functions (`_create_*`/`_remove_*` in `reckon/crew/routing.py`) if dispatched together",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "b947abfbe2544863a47bef19943ffae4f69a463b",
+  "plan_fingerprint": "fdbe5fc6c8e1a6183177ace64b4e7d3c031b9bc482090b1e65f6be9097ea611d",
+  "plan_slug": "a-queued-request-is-checked-when-queued",
+  "plan_version": 14,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T111022489389-plan-review-of-a-queued-request-is-checked-when-queued",
+  "reviewed_blob_sha": "108723877183b3da4aa5e8f0dbc4acc4d08ffefc",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `WAITING_REQUEST_PHASES` (node.py:1569), `_UNLAUNCHED_CLAIM_PHASES` (dispatch_claims.py:120), `local_liveness` (recovery_liveness.py:1204), `_live_pointer_worktrees` (routing.py:1078, skip at 1092), `_launch_tree_verdict` (routing.py:2173) and the guard in `_remove_worktree` (routing.py:2278) all resolve, and the note at `~/.config/reckon/crew/reports/reckon/what-trashed-the-live-worktree.md` exists.",
+    "done_when": "pass \u2014 \u00a75's done-when is measurable (same inode, no `_trash` entry, a raise naming the live run), declares a negative control, and now covers the `working`, `queued` and `working`-with-dead-worker arms.",
+    "evidence_paths": "pass \u2014 the section's evidence note and the cited investigation report resolve on durable paths; the gate log path is the run directory, not a scratchpad.",
+    "naming": "pass \u2014 the new test file and the described symbols carry no plan labels, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 \u00a75's pre-worker exclusion treats any `_UNLAUNCHED_CLAIM_PHASES` phase as holding no claim, but the live pointer written immediately after tree creation names the worktree while its phase is still `starting`, so the predicate disregards the one pointer holding the tree in exactly the window the section promises to protect.",
+    "single_goal": "pass \u2014 \u00a75 delivers one claim-view change and its test; the duplicate-admission prevention is explicitly left to another plan.",
+    "wiring": "a finding \u2014 \u00a75's prose names `a-reexec-never-orphans-a-dispatch` as owning duplicate-admission prevention, but neither the document nor s5 carries a declared relationship, and both write the launch path in `reckon/crew/routing.py`."
+  },
+  "section_digests": {
+    "_document": "d57c78a259a669b149eeb2f9a41738ed8edf1f394fffad46e2d655b2812fd3dd",
+    "s1": "196da1e620e2e482d27bdd207b57d91dc82c799811a9f88189e2350ff4eeb51a",
+    "s2": "f0bb78f495e184d08f264ee0c8670552bf2417dc09e1fccec557d64974b999ef",
+    "s3": "f288d709dea574f288a4293a730c4c2c68204ee12bcbcc8ecb597365aea1936f",
+    "s4": "214c26ee307b26a9189e695057c758aa5f11833093fa7379f62bdba78c540705",
+    "s5": "c89d3e71d7a158e38fb7ef5774b0f918f9429466b4993a8b633b92f635bd7d53"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T11:37:20.299692+00:00",
+  "total": null
+}
