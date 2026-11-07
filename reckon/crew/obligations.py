@@ -42,6 +42,7 @@ from reckon.crew.node import INTERRUPTED_RUN_PHASE, CrewError, parse_duration
 from reckon.crew.query import project_run_rows, run_section_index
 from reckon.crew.recovery_classification import PRODUCER_GONE_STATUS
 from reckon.crew.recovery_review_dispatch import supersedes_head
+from reckon.crew.reports import TERMINAL_MANIFEST_STATUSES
 from reckon.crew.routing import (
     WorktreeRecordIndex,
     _registered_worktrees,
@@ -122,6 +123,13 @@ DUTY_ROW_FIELDS = (
     "exempt_alternative",
     # How many requests one plan's review hold keeps waiting.
     "held_count",
+    # The run a finished-run hold names, with its session, phase and the path
+    # it fences, so a coordinator can find it without opening the waiting
+    # request's pointer.
+    "holder_run_id",
+    "holder_session",
+    "holder_phase",
+    "held_path",
     # A producer-gone duty's own evidence: the probe, the value it is stuck on,
     # the terminal states it is waiting for and how long the value has stood
     # still, so a coordinator sees why nothing will lift the wait.
@@ -207,6 +215,48 @@ def _utc_now() -> datetime:
     """Return the observation instant through a patchable clock boundary."""
     return datetime.now(tz=UTC)
 
+
+def _holder_idle_seconds(
+    project: str,
+    holder_session: str,
+    pointers: Sequence[Mapping[str, Any]],
+    *,
+    now: datetime,
+) -> float | None:
+    """How long the holding session has been unattended, or ``None`` if undated.
+
+    Read through the watcher's own rule (:func:`reckon.crew.runs._unattended_seconds`),
+    which takes the smaller of the follower's last renewal and the session's own
+    newest stream or pointer activity, so a dispatch, a landing or a follow all
+    count as attendance and this reading cannot disagree with the sweep that
+    resumes unattended sessions. ``None`` means nothing dates the session, and an
+    undated session is not evidence of idleness.
+    """
+    try:
+        return runs._unattended_seconds(
+            project,
+            holder_session,
+            now_seconds=now.timestamp(),
+            pointers=pointers,
+        )
+    except (OSError, ValueError):
+        return None
+
+
+#: A queued request a finished run's claim is holding. The holder has ended —
+#: its manifest records ``complete``, ``blocked`` or ``failed`` — while its
+#: worktree still fences the paths, so no pass will ever launch the waiting
+#: request and no timer will ever lift the wait. The duty belongs to the
+#: holder's session, which is the one that can settle it; a session that has
+#: been unattended past :data:`HOLDER_IDLE_SECONDS` is no longer going to, so
+#: the waiting request's own session is told as well and can settle the holder
+#: or ask the lead.
+HELD_BY_FINISHED_RUN_DUTY_KIND = "request-held-by-finished-run"
+
+#: How long a holding session may be unattended before the session whose
+#: request it holds is told about the hold too. Six hours is the point at which
+#: a session is plainly not going to come back on its own within a working day.
+HOLDER_IDLE_SECONDS = 6 * 3600
 
 #: The coordinator write verbs the crew MCP tool carries as actions, and the
 #: tool parameter name each verb's own option maps onto. A duty's printed
@@ -1905,7 +1955,82 @@ def _obligations_view(
                     ),
                 }
             )
-    for row in _classified_rows(project):
+    # A request the most recent admission pass found held by a finished run:
+    # the holder's own session is the one that can settle it, so the duty is
+    # raised there rather than left to read as an ordinary wait. A session
+    # unattended past the idle bound is not coming back on its own, so the
+    # waiting request's session is told as well and can settle the holder or
+    # ask the lead. Every reader takes the hold from the pointer, which the
+    # pass wrote, rather than re-deriving the claim.
+    classified = _classified_rows(project)
+    classified_by_run = {str(row.get("run_id") or ""): row for row in classified}
+    for pointer in live_pointers:
+        if str(pointer.get("phase") or "") != queue_admission.QUEUED_PHASE:
+            continue
+        hold = queue_admission.recorded_pass_hold(pointer)
+        holder = hold.get("holder")
+        if not isinstance(holder, Mapping):
+            continue
+        holder_run = str(holder.get("run_id") or "")
+        holder_pointer = pointers.get(holder_run)
+        if not holder_run or holder_pointer is None:
+            continue
+        holder_row = classified_by_run.get(holder_run) or {}
+        status = str(holder_row.get("manifest_status") or "").strip().lower()
+        if status not in TERMINAL_MANIFEST_STATUSES:
+            continue
+        waiting_session = str(pointer.get("session") or "")
+        holder_session = str(
+            holder.get("session") or holder_pointer.get("session") or ""
+        )
+        if session == holder_session:
+            pass
+        elif session == waiting_session and holder_session:
+            idle = _holder_idle_seconds(
+                project,
+                holder_session,
+                [
+                    candidate
+                    for candidate in live_pointers
+                    if str(candidate.get("session") or "") == holder_session
+                ],
+                now=now,
+            )
+            if idle is None or idle < HOLDER_IDLE_SECONDS:
+                continue
+        else:
+            continue
+        queued_at = parse_utc(pointer.get("queued_at"))
+        age = int((now - queued_at).total_seconds()) if queued_at else 0
+        waiting_run = str(pointer.get("run_id") or "")
+        node = pointer.get("node") or {}
+        holder_phase = str(holder.get("phase") or holder_pointer.get("phase") or "")
+        item: dict[str, Any] = {
+            "kind": HELD_BY_FINISHED_RUN_DUTY_KIND,
+            "run_id": waiting_run,
+            "node": str(node.get("id") or waiting_run),
+            "plan": str(pointer.get("plan") or node.get("plan") or ""),
+            "age_seconds": age,
+            "holder_run_id": holder_run,
+            "holder_session": holder_session,
+            "holder_phase": holder_phase,
+            "reason": (
+                f"run {holder_run!r} (session {holder_session!r}, phase "
+                f"{holder_phase!r}) has ended with the manifest status {status!r} "
+                f"and its claim still fences a write path this request names, so "
+                "nothing will launch it until that run is settled"
+            ),
+            "next_command": recovery_classification._promotion_command(
+                holder_run,
+                holder_pointer,
+                list(holder_row.get("manifest_commits") or []),
+            ),
+        }
+        held_path = str(holder.get("path") or "")
+        if held_path:
+            item["held_path"] = held_path
+        items.append(item)
+    for row in classified:
         if str(row.get("session") or "") != session:
             continue
         if (
@@ -1914,7 +2039,7 @@ def _obligations_view(
         ):
             continue
         classification = str(row.get("classification") or "")
-        recovery_classification = str(row.get("recovery_classification") or "")
+        recovery_reading = str(row.get("recovery_classification") or "")
         if classification == "queued":
             # A queued request is the lane's to launch, but it is not missing:
             # for as long as its pointer exists it is listed as waiting, beside
@@ -1965,8 +2090,8 @@ def _obligations_view(
             if item is not None:
                 items.append(item)
             continue
-        if recovery_classification in RECOVERY_CLASSIFICATION_DUTY_KINDS:
-            kind = RECOVERY_CLASSIFICATION_DUTY_KINDS[recovery_classification]
+        if recovery_reading in RECOVERY_CLASSIFICATION_DUTY_KINDS:
+            kind = RECOVERY_CLASSIFICATION_DUTY_KINDS[recovery_reading]
         else:
             kind = CLASSIFICATION_DUTY_KINDS.get(classification, "")
         if kind:

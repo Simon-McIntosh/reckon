@@ -44,7 +44,9 @@ from reckon.crew.node import (
     CompetenceLimit,
     CrewError,
     PlanReviewMissingError,
+    ScopeConflict,
     TaskNode,
+    UnreconciledRuns,
 )
 from reckon.crew.refusals import DISPATCH_REFUSAL_REMEDIES
 from reckon.crew.routing import plan_review_units as plan_review_units  # noqa: PLC0414
@@ -125,6 +127,8 @@ HOLD_VERDICTS = frozenset(
 #: The phases in which a request is not admissible at all, because the work it
 #: waits on has not been released. A wait here is the queue working as designed.
 NOT_ADMISSIBLE_PHASES = frozenset({"awaiting-upstream", "blocked-upstream"})
+RECORDED_HOLD_FIELD = "pass_hold"
+_RETRY_HOLD_VERDICTS = frozenset({"held-on-retry-backoff", "held-until-changed"})
 
 
 def _now() -> datetime:
@@ -1068,7 +1072,7 @@ def _refreshed_claim(
     repo: str,
     shared_files: frozenset[str],
     dispositions: dict[str, Any],
-) -> tuple[Any, str] | None:
+) -> tuple[Any, str, Mapping[str, Any]] | None:
     """Re-read the one pointer that holds a claim, and judge it as of now.
 
     The live set is read once per pass, and the stage that judges requests
@@ -1092,22 +1096,24 @@ def _refreshed_claim(
     except CrewError:
         return None
     if fresh == dict(holder):
-        return _claim_collision(
+        collision = _claim_collision(
             fresh,
             ours,
             repo=repo,
             shared_files=shared_files,
             disposition=lambda written: _claim_disposition_of(written, dispositions),
         )
+        return (*collision, fresh) if collision is not None else None
     from reckon.crew.node import claim_disposition
 
-    return _claim_collision(
+    collision = _claim_collision(
         fresh,
         ours,
         repo=repo,
         shared_files=shared_files,
         disposition=claim_disposition,
     )
+    return (*collision, fresh) if collision is not None else None
 
 
 def _live_claim_hold(
@@ -1117,6 +1123,19 @@ def _live_claim_hold(
     dispositions: dict[str, Any],
     shared_files: frozenset[str],
 ) -> str | None:
+    detail = _live_claim_detail(
+        pointer, live, dispositions=dispositions, shared_files=shared_files
+    )
+    return None if detail is None else str(detail["reason"])
+
+
+def _live_claim_detail(
+    pointer: Mapping[str, Any],
+    live: Sequence[Mapping[str, Any]],
+    *,
+    dispositions: dict[str, Any],
+    shared_files: frozenset[str],
+) -> dict[str, Any] | None:
     """Name a live run whose claim fences one of this request's write paths.
 
     A launch refused against another run's claim is not cured by waiting: the
@@ -1164,12 +1183,132 @@ def _live_claim_hold(
         )
         if fresh is None:
             continue
-        disposition, collision = fresh
-        return (
-            f"run {str(other.get('run_id') or 'unknown')!r} holds "
-            f"{collision!r}: {disposition.reason}"
-        )
+        disposition, collision, holder = fresh
+        holder_run = str(other.get("run_id") or "unknown")
+        return {
+            "reason": f"run {holder_run!r} holds {collision!r}: {disposition.reason}",
+            "holder": {
+                "run_id": holder_run,
+                "node": str((holder.get("node") or {}).get("id") or ""),
+                "session": str(holder.get("session") or ""),
+                "phase": str(holder.get("phase") or ""),
+                "path": collision,
+            },
+        }
     return None
+
+
+def recorded_pass_hold(pointer: Mapping[str, Any]) -> dict[str, Any]:
+    """Return the last admission hold stored on a queued request."""
+    record = pointer.get(RECORDED_HOLD_FIELD)
+    return dict(record) if isinstance(record, Mapping) else {}
+
+
+def _named_runs(record: Mapping[str, Any]) -> list[str]:
+    """Return the live runs named by a recorded refusal."""
+    holder = record.get("holder")
+    named = (
+        [str(holder["run_id"])]
+        if isinstance(holder, Mapping) and holder.get("run_id")
+        else []
+    )
+    for run_id in record.get("runs") or ():
+        if str(run_id) and str(run_id) not in named:
+            named.append(str(run_id))
+    return named
+
+
+def _refusal_hold(
+    caught: Exception, live: Sequence[Mapping[str, Any]], *, moment: datetime
+) -> dict[str, Any] | None:
+    """Describe a launch refusal that names the run holding the request."""
+    holders = {str(pointer.get("run_id") or ""): pointer for pointer in live}
+    if isinstance(caught, ScopeConflict):
+        holder_run = str(caught.run_id or "")
+        holder = holders.get(holder_run) or {}
+        holder_record = {
+            "run_id": holder_run,
+            "node": str(caught.node_id or ""),
+            "session": str(holder.get("session") or ""),
+            "phase": str(holder.get("phase") or ""),
+            "path": str(caught.claimed_path or ""),
+        }
+        return {
+            "verdict": "refused-scope-conflict",
+            "reason": (
+                f"the launch was refused on a scope conflict: run {holder_run!r} "
+                f"(session {holder_record['session']!r}, phase "
+                f"{holder_record['phase']!r}) holds the write path "
+                f"{holder_record['path']!r}"
+            ),
+            "holder": holder_record,
+            "recorded_at": moment.isoformat(),
+        }
+    if isinstance(caught, UnreconciledRuns):
+        named = [str(row.get("run_id") or "") for row in caught.runs]
+        return {
+            "verdict": "refused-unreconciled-runs",
+            "reason": (
+                f"the launch was refused with {len(named)} unreconciled run(s) "
+                f"older than the {caught.grace} grace: {', '.join(named)}"
+            ),
+            "runs": named,
+            "recorded_at": moment.isoformat(),
+        }
+    return None
+
+
+def _record_pass_hold(
+    pointer: Mapping[str, Any],
+    record: Mapping[str, Any] | None,
+    *,
+    live: Sequence[Mapping[str, Any]],
+    moment: datetime,
+) -> None:
+    """Store a changed holding reason without renewing an unchanged record."""
+    if record is None:
+        return
+    previous = recorded_pass_hold(pointer)
+    chosen = dict(record)
+    live_ids = {str(candidate.get("run_id") or "") for candidate in live}
+    named = _named_runs(previous)
+    if (
+        chosen.get("verdict") == "held-on-claim"
+        and previous.get("verdict") == "refused-scope-conflict"
+        and chosen.get("holder") == previous.get("holder")
+    ):
+        # The current pass found the same binding claim that refused the
+        # launch. Keep its first recorded reason and instant.
+        chosen = previous
+    elif (
+        str(chosen.get("verdict") or "") in _RETRY_HOLD_VERDICTS
+        and previous.get("verdict") == "refused-unreconciled-runs"
+        and named
+        and all(run_id in live_ids for run_id in named)
+    ):
+        # A retry timer cannot settle the named runs. A scope conflict takes
+        # this path only after the claim check found no binding collision.
+        chosen = previous
+
+    def without_time(row: Mapping[str, Any]) -> dict[str, Any]:
+        return {key: value for key, value in row.items() if key != "recorded_at"}
+
+    if without_time(chosen) == without_time(previous):
+        return
+    chosen["recorded_at"] = moment.isoformat()
+    run_id = str(pointer.get("run_id") or "")
+    if not run_id:
+        return
+
+    def stamp(current: dict[str, Any]) -> dict[str, Any]:
+        current[RECORDED_HOLD_FIELD] = chosen
+        current["reason"] = str(chosen.get("reason") or "")
+        return current
+
+    try:
+        runs._mutate_pointer(run_id, stamp)
+    except CrewError:
+        return
 
 
 #: The remedy carried by a refusal a full lane gives. That refusal is cured by
@@ -4332,6 +4471,15 @@ def admit_once(
         verdicts: list[dict[str, Any]] = result["verdicts"]
         for pointer in unplaceable:
             allowance, source = _session_allowance_read(pointer, config_for=config_for)
+            _record_pass_hold(
+                pointer,
+                {
+                    "verdict": "unplaced",
+                    "reason": "the request carries no readable queued_at, so the lane cannot place it",
+                },
+                live=live,
+                moment=moment,
+            )
             verdicts.append(
                 _verdict_row(
                     pointer,
@@ -4360,6 +4508,17 @@ def admit_once(
         result["admissible_age_seconds"] = _admissible_age_seconds(
             order, moment=moment, gated=local_gated, config_for=config_for
         )
+
+        def record_hold(
+            pointer: Mapping[str, Any], verdict: str, reason: str, **extra: Any
+        ) -> None:
+            _record_pass_hold(
+                pointer,
+                {"verdict": verdict, "reason": reason, **extra},
+                live=live,
+                moment=moment,
+            )
+
         for index, pointer in enumerate(order):
             session = str(pointer["session"])
             allowance_key = (str(pointer.get("backend") or ""), session)
@@ -4371,6 +4530,12 @@ def admit_once(
             allowance_source = allowance_sources[allowance_key]
             if allowance is not None and allowance <= 0:
                 result["held"].append(str(pointer["run_id"]))
+                record_hold(
+                    pointer,
+                    "held-for-allowance",
+                    f"the lane's router grants session {session!r} no extra "
+                    f"worker slot ({allowance_source})",
+                )
                 verdicts.append(
                     _verdict_row(
                         pointer,
@@ -4388,6 +4553,7 @@ def admit_once(
                 # session-allowance hold above is the same question's other half.
                 result["held"].append(str(pointer["run_id"]))
                 result.setdefault("hold_detail", {})[str(pointer["run_id"])] = gate_hold
+                record_hold(pointer, "held-by-gate", str(gate_hold))
                 verdicts.append(
                     _verdict_row(
                         pointer,
@@ -4408,13 +4574,14 @@ def admit_once(
                     if all(shared_key)
                     else frozenset()
                 )
-            claim_hold = _live_claim_hold(
+            claim_detail = _live_claim_detail(
                 pointer,
                 live,
                 dispositions=claim_dispositions,
                 shared_files=shared_files[shared_key],
             )
-            if claim_hold is not None:
+            if claim_detail is not None:
+                claim_hold = str(claim_detail["reason"])
                 # A live run's claim on a path this request writes is not cured
                 # by waiting out a back-off: the attempt could only be refused
                 # again, at the cost of a whole dispatch. The request keeps its
@@ -4422,6 +4589,12 @@ def admit_once(
                 result["held"].append(str(pointer["run_id"]))
                 result.setdefault("hold_detail", {})[str(pointer["run_id"])] = (
                     claim_hold
+                )
+                record_hold(
+                    pointer,
+                    "held-on-claim",
+                    claim_hold,
+                    holder=claim_detail["holder"],
                 )
                 verdicts.append(
                     _verdict_row(
@@ -4439,6 +4612,7 @@ def admit_once(
                 result.setdefault("hold_detail", {})[str(pointer["run_id"])] = (
                     until_changed
                 )
+                record_hold(pointer, "held-until-changed", str(until_changed))
                 verdicts.append(
                     _verdict_row(
                         pointer,
@@ -4460,6 +4634,7 @@ def admit_once(
                 result.setdefault("hold_detail", {})[str(pointer["run_id"])] = (
                     backoff_hold
                 )
+                record_hold(pointer, "held-on-retry-backoff", str(backoff_hold))
                 verdicts.append(
                     _verdict_row(
                         pointer,
@@ -4492,6 +4667,13 @@ def admit_once(
                     f"held behind earlier queued request "
                     f"{str(overlap.get('run_id') or 'unknown')!r} over a shared path"
                 )
+                record_hold(
+                    pointer,
+                    "held-behind-earlier-request",
+                    f"an earlier ranked request "
+                    f"{str(overlap.get('run_id') or 'unknown')!r} names a write "
+                    "path this request also names, so it goes first",
+                )
                 verdicts.append(
                     _verdict_row(
                         pointer,
@@ -4513,6 +4695,7 @@ def admit_once(
                 result.setdefault("hold_detail", {})[str(pointer["run_id"])] = (
                     review_owed
                 )
+                record_hold(pointer, "held-on-plan-review", str(review_owed))
                 verdicts.append(
                     _verdict_row(
                         pointer,
@@ -4689,6 +4872,15 @@ def admit_once(
                 result.setdefault(detail_key, {})[reported_id] = (
                     str(caught) if caught is not None else failure
                 )
+                if caught is not None and not isinstance(
+                    caught, (BudgetHold, LaneHeld, LanePaused)
+                ):
+                    _record_pass_hold(
+                        pointer,
+                        _refusal_hold(caught, live, moment=moment),
+                        live=live,
+                        moment=moment,
+                    )
                 if restore_error is not None:
                     result.setdefault("restore_failure_detail", {})[reported_id] = (
                         restore_error

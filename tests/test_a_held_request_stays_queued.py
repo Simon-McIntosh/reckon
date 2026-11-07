@@ -96,11 +96,12 @@ def test_a_request_the_lane_gate_holds_is_left_untouched(
     config, resolve = _config_for()
     config["backends"]["clive"]["gate_document"] = str(_paused_gate(tmp_path))
     runs.queue_dispatch(_queue(admit_repo, node_id="held", run_id="r-held"))
+    first = queue_admission.admit_once(config_for=resolve)
     before = runs.pointer_path("r-held").read_bytes()
     fleet_before = _fleet(PROJECT)
-
     result = queue_admission.admit_once(config_for=resolve)
 
+    assert "r-held" in first["held"]
     assert result["launched"] == []
     assert "r-held" in result["held"]
     assert runs.pointer_path("r-held").read_bytes() == before
@@ -116,15 +117,49 @@ def test_a_request_the_lane_allowance_holds_is_left_untouched(
         _lane_document(tmp_path, worker_slots=0)
     )
     runs.queue_dispatch(_queue(admit_repo, node_id="held", run_id="r-held"))
+    first = queue_admission.admit_once(config_for=resolve)
     before = runs.pointer_path("r-held").read_bytes()
     fleet_before = _fleet(PROJECT)
-
     result = queue_admission.admit_once(config_for=resolve)
 
+    assert "r-held" in first["held"]
     assert result["launched"] == []
     assert "r-held" in result["held"]
     assert runs.pointer_path("r-held").read_bytes() == before
     assert _stream_rows(fleet_before, _fleet(PROJECT)) == []
+
+
+def test_a_changed_gate_reason_is_written_once(
+    admit_repo: Path, tmp_path: Path, monkeypatch
+) -> None:
+    """A changed hold updates the pointer once, then stands byte-identically."""
+    config, resolve = _config_for()
+    gate = _paused_gate(tmp_path)
+    config["backends"]["clive"]["gate_document"] = str(gate)
+    runs.queue_dispatch(_queue(admit_repo, node_id="held", run_id="r-held"))
+
+    queue_admission.admit_once(config_for=resolve)
+    original = runs.pointer_path("r-held").read_bytes()
+    calls: list[str] = []
+    mutate = runs._mutate_pointer
+
+    def counted(run_id, mutation):
+        calls.append(run_id)
+        return mutate(run_id, mutation)
+
+    monkeypatch.setattr(runs, "_mutate_pointer", counted)
+    gate.write_text(
+        json.dumps({"paused": True, "reason": "maintenance"}), encoding="utf-8"
+    )
+    queue_admission.admit_once(config_for=resolve)
+    changed = runs.pointer_path("r-held").read_bytes()
+    assert changed != original
+    assert "maintenance" in runs.read_pointer("r-held")["reason"]
+    assert calls == ["r-held"]
+
+    queue_admission.admit_once(config_for=resolve)
+    assert runs.pointer_path("r-held").read_bytes() == changed
+    assert calls == ["r-held"]
 
 
 def test_the_same_request_launches_once_the_lane_opens(
@@ -186,7 +221,10 @@ def test_a_request_that_cannot_launch_is_not_retried_every_pass(
     reports = _stream_file_rows(PROJECT, "r-no-brief")
     assert len(reports) == 1, "the session is told about the failure once"
 
-    for before, after, result, rows in observed[1:]:
+    assert observed[1][1] != observed[1][0], (
+        "the first back-off pass must record the reason that now holds it"
+    )
+    for before, after, result, rows in observed[2:]:
         assert after == before, "a backed-off request must be left unchanged"
         assert "r-no-brief" in result["held"]
         assert rows == [], "a backed-off request must append no transition"
@@ -215,11 +253,13 @@ def test_a_lane_document_change_does_not_retry_a_request_that_cannot_launch(
 
     first = queue_admission.admit_once(config_for=resolve, launcher=_launcher([]))
     assert "r-no-brief" in first["failed"]
+    second = queue_admission.admit_once(config_for=resolve, launcher=_launcher([]))
+    assert "r-no-brief" in second["held"]
     settled = runs.pointer_path("r-no-brief").read_bytes()
 
     lane.write_text(json.dumps({"worker_slots": 2, "rev": 2}), encoding="utf-8")
-    second = queue_admission.admit_once(config_for=resolve, launcher=_launcher([]))
-    assert "r-no-brief" in second["held"], "a lane-document change must not retry"
+    third = queue_admission.admit_once(config_for=resolve, launcher=_launcher([]))
+    assert "r-no-brief" in third["held"], "a lane-document change must not retry"
     assert runs.pointer_path("r-no-brief").read_bytes() == settled
 
 
