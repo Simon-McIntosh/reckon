@@ -1,0 +1,180 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T17:07:11.989Z",
+  "dispatched_at": "2026-11-07T16:53:01Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-gate-halts-only-on-substance.html:47",
+      "id": "wiring-1",
+      "reason": "the queue orders only declared waits, so \u00a72 could launch before \u00a78 lands in the same file and \u00a74 before \u00a73, producing exactly the cross-worktree collision the wait exists to prevent.",
+      "text": "\u00a72 declares \"it runs after `a-promotion-reads-the-evidence-it-is-given` \u00a78, which also writes `promotion_evidence.py`\", and \u00a74 declares \"it runs after \u00a73\" (l. 57), yet the plan carries no `plan-depends-on` meta and no `plan-section-depends-on` meta (its only relationship is `plan-informs`, l. 22)",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-gate-halts-only-on-substance.html:36",
+      "id": "anchors_resolve-1",
+      "reason": "a node dispatched on the stated write path cannot make the change, and \u00a72's done-when even names the wrong module for its base arm (\"test files importing `reckon.crew.promotion_evidence`\"), so the node would either stop on a scope blocker or edit a module the reader never runs.",
+      "text": "\u00a71 cites the control-log contract to `reckon/crew/promotion_evidence.py` near lines 1021\u20131092 and \u00a72 (l. 46\u201347) names that same file as the control-evidence reader and as a write path, but that module imports no control logic and the reader that raises the cited refusal is `_require_declared_negative_control` in `reckon/crew/promotion_checks.py` (near lines 2029\u20132210)",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-gate-halts-only-on-substance.html:51",
+      "id": "reasoning-1",
+      "reason": "the floor yields 60 m for the very 3 h H200 job \u00a71 says needs 240 m, so \u00a75's title (\"never budgets below the compute a brief names\") is not produced by its mechanism and the fire the plan was written to put out still burns one fence-width lower.",
+      "text": "\u00a73 and \u00a74 record a 60 m resolved fence while \u00a71 (l. 37) records 240 m, 120 m and 90 m work refused for exceeding it, yet \u00a75 (l. 61) has the picker floor a heavy gate's budget at \"the resolved fence\"",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-gate-halts-only-on-substance.html:61",
+      "id": "reasoning-2",
+      "reason": "the mechanism would be written where no budget is assigned and no caller reaches it, so the 8 m default survives and the node's gate passes on a change that never runs on the production path.",
+      "text": "the budget \u00a75 says the picker assigns is not assigned in `reckon/crew/picker/lane_context.py`; that module only reads a node's declared budget to classify its size (`_size_of`, l. 173/388), while the assignment is `node.time_budget = node.time_budget or resolved_time_budget(config, backend)` in `reckon/crew/dispatch_plan.py:800` resolving through `reckon/crew/routing.py:505`",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-gate-halts-only-on-substance.html:66",
+      "id": "reasoning-3",
+      "reason": "the plan cites no run, plan or review record reproducing the \u00a76 halt, and a node that does not first reproduce against the existing judge will build a second coverage route beside `review_need` and `_acted_finding_units`; unlike \u00a72, \u00a75 and \u00a77, \u00a76 names no reproduce-first step for the defect it claims.",
+      "text": "\u00a76 asserts \"an edit that does exactly what a stored finding asked still uncovers the section and owes a new review\" and its done-when asserts that pre-state, but `review_coverage` already covers such edits: `_acted_finding_units` (`reckon/crew/plan_review.py:2707`) covers a unit whose findings were answered `acted` when the edit stays under the word-share threshold, and the pending remainder is judged by `review_need.judge` (called at l. 1302) which covers a change judged not to need a review",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "1e6aa2fac821796454c0f63f76182abf52f95e3b",
+  "plan_fingerprint": "0bede131a9e1ee181022ef2b0ac6c119e3c9bf9225baefda495fe6176afcb1fb",
+  "plan_slug": "a-gate-halts-only-on-substance",
+  "plan_version": 2,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "carried",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "",
+      "section": "s1",
+      "sections": [
+        "s1"
+      ],
+      "when": "2026-11-07T17:16:34.598456+00:00"
+    },
+    {
+      "action": "carried",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "section": "s3",
+      "sections": [
+        "s3"
+      ],
+      "when": "2026-11-07T17:17:09.877341+00:00"
+    },
+    {
+      "action": "carried",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "section": "s5",
+      "sections": [
+        "s5"
+      ],
+      "when": "2026-11-07T17:17:52.548119+00:00"
+    },
+    {
+      "action": "carried",
+      "by": "",
+      "finding": "reasoning-3",
+      "reason": "",
+      "section": "s6",
+      "sections": [
+        "s6"
+      ],
+      "when": "2026-11-07T17:18:35.707014+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "the shared files are serialised by write-path claims: dispatch refuses a node whose write paths a live run holds, naming the owner, so the order needs no plan wait",
+      "when": "2026-11-07T17:19:08.698764+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "carried",
+      "by": "",
+      "reason": "",
+      "section": "s1",
+      "sections": [
+        "s1"
+      ],
+      "when": "2026-11-07T17:16:34.598456+00:00"
+    },
+    "reasoning-1": {
+      "action": "carried",
+      "by": "",
+      "reason": "",
+      "section": "s3",
+      "sections": [
+        "s3"
+      ],
+      "when": "2026-11-07T17:17:09.877341+00:00"
+    },
+    "reasoning-2": {
+      "action": "carried",
+      "by": "",
+      "reason": "",
+      "section": "s5",
+      "sections": [
+        "s5"
+      ],
+      "when": "2026-11-07T17:17:52.548119+00:00"
+    },
+    "reasoning-3": {
+      "action": "carried",
+      "by": "",
+      "reason": "",
+      "section": "s6",
+      "sections": [
+        "s6"
+      ],
+      "when": "2026-11-07T17:18:35.707014+00:00"
+    },
+    "wiring-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "the shared files are serialised by write-path claims: dispatch refuses a node whose write paths a live run holds, naming the owner, so the order needs no plan wait",
+      "when": "2026-11-07T17:19:08.698764+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-gate-halts-only-on-substance.v2.json",
+  "review_run_id": "r-20261107T164503340109-plan-review-of-a-gate-halts-only-on-substance",
+  "reviewed_blob_sha": "5b2b88146f4acbb05d09a8f7cb2680cf37a4d6da",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the control-evidence reader \u00a71 and \u00a72 cite is not in `reckon/crew/promotion_evidence.py`; that file contains no control reader at all (`grep -cni negative reckon/crew/promotion_evidence.py` = 0) and its cited lines 1021\u20131092 are the gate-log readers `_log_shows_the_command_ran` and `_require_gate_log_agrees`.",
+    "done_when": "pass \u2014 every section names a specific mutation whose removal makes a named case refuse (\u00a72 re-requiring `EXIT=`, \u00a73 ignoring the recorded reason, \u00a74 ignoring the option, \u00a75 removing the floor, \u00a76 ignoring the acceptance record, \u00a77 passing the stored flag again), so each gate can show its guard fires.",
+    "evidence_paths": "pass \u2014 no gate log or evidence artifact is placed on a scratchpad or node-local path; every section's measure is an in-repository test file and the mutation log stays on the worker's manifest-recorded path.",
+    "naming": "pass \u2014 the proposed symbols and test filenames are mechanism-named (`test_a_negative_control_is_read_from_the_runner.py`, `--over-fence`, `--accept-edits`); the only identifiers in the prose are run ids and plan slugs, which are evidence, not code.",
+    "reasoning": "three findings \u2014 \u00a72's mechanism names a module that does not hold the reader, \u00a75's floor cannot satisfy \u00a75's own title and \u00a71's own evidence, and \u00a76's premise is contradicted by an existing mechanism the plan does not cite.",
+    "single_goal": "pass \u2014 each section names one deliverable; \u00a72's added prompt sentence (l. 46) is a recurrence guard for the same contract rather than an independent deliverable, and one test file asserts both.",
+    "wiring": "a finding \u2014 \u00a72 states it runs after `a-promotion-reads-the-evidence-it-is-given` \u00a78 and \u00a74 states it runs after \u00a73, but the plan declares neither `plan-depends-on` nor `plan-section-depends-on`."
+  },
+  "section_digests": {
+    "_document": "d7d6753bdea9c257b0334030c7d90a6f693e01ac3c95f206b4a36836db538143",
+    "s1": "da96e9775c5ac3c922e7c9262b6c95659f8a63dd7ecaefbf9c9ea72c3d506b61",
+    "s2": "34659f8a9f7d766af00602047920116071d6c4a45beb59504f09c79856fe4449",
+    "s3": "7d5900898dccbca711f2ba5f009a9d77a8106e6c95850afa29ea353bee133ea1",
+    "s4": "0e123dd962d8cd12c2e71ad44abb85e97ccaf736d952b19140641c3426beab23",
+    "s5": "8693ffa47dece4b7d7becaed1cc17e2eae2192270529686416237848fcfe3d7d",
+    "s6": "c1a4e9a4b81527a7a273e421018eb3a5b58b491f8eb6afe57798b77df653c903",
+    "s7": "02f674f3ab07d57d2a9a4a13805c075967cd59e063bf39eb470a940c1e9e9897"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T17:08:28.560323+00:00",
+  "total": null
+}
