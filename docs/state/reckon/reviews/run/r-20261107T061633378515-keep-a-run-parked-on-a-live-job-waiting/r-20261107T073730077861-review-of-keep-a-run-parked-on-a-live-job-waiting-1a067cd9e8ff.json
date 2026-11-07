@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:500",
+    "reckon/crew/forgotten_runs.py:94",
+    "reckon/crew/directory.py:294",
+    "reckon/crew/station_subscriber.py:139",
+    "reckon/crew/resumption.py:1992",
+    "reckon/flight.py:2899",
+    "reckon/mcp_views.py:2043",
+    "reckon/serve.py:899",
+    "reckon/roadmap.py:3108"
+  ],
+  "completed_at": "2026-11-07T07:47:30.197Z",
+  "dispatched_at": "2026-11-07T07:41:01Z",
+  "findings": [
+    {
+      "claim": "the node fixture writes the plan-section slug \"a-broken-wait-reaches-its-coordinator\" into source as the record's section, so the test data cannot be read without the plan; 391 existing test files carry the same fixture idiom, but matching a precedent is not an exemption under the naming rule, and a capability-descriptive placeholder would carry the same test value.",
+      "file": "tests/test_a_run_parked_on_a_live_job_keeps_waiting.py",
+      "id": "f2c1a4d7e10",
+      "line": 153,
+      "severity": "non-blocking",
+      "text": "the node fixture writes the plan-section slug \"a-broken-wait-reaches-its-coordinator\" into source as the record's section, so the test data cannot be read without the plan; 391 existing test files carry the same fixture idiom, but matching a precedent is not an exemption under the naming rule, and a capability-descriptive placeholder would carry the same test value."
+    },
+    {
+      "claim": "the manifest's declared baseline_suite runs the node's own new test file at base revision 6d47102380, where the file does not exist: pytest exits 4 with \"file or directory not found\" and no tests collected, yet the field records completed:true and failure_count:0, so the declared suite pair compares a suite that did not run against one that did and carries no delta; the substantive delta lives only in the separately named gate-base-arm.log and gate-head-arm.log over the 77 classifier test files.",
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T061633378515-keep-a-run-parked-on-a-live-job-waiting/suite-baseline-arm.log",
+      "id": "f7b39e5a2c4",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the manifest's declared baseline_suite runs the node's own new test file at base revision 6d47102380, where the file does not exist: pytest exits 4 with \"file or directory not found\" and no tests collected, yet the field records completed:true and failure_count:0, so the declared suite pair compares a suite that did not run against one that did and carries no delta; the substantive delta lives only in the separately named gate-base-arm.log and gate-head-arm.log over the 77 classifier test files."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read f6e2f0ef49..1a067cd9e8 commit by commit; f1008d2e23 deletes _wait_probe_job_id from recovery_classification.py, imports it from recovery_wait, and adds 282 lines of tests, and 1a067cd9e8 adds the 34-line evidence fragment, with no other source touched.",
+    "done_when": "The done_when names three cases in tests/test_a_run_parked_on_a_live_job_keeps_waiting.py plus the absence of a local _wait_probe_job_id and two negative controls; the gate log gate-new-test.log records 4 passed / EXIT=0 at f1008d2e23 and I re-ran the same file at the reviewed head for 4 passed, and both controls are recorded red.",
+    "goal": "The goal is to keep a waiting run whose probe names a live scheduler job from being drawn producer-gone; reckon/crew/recovery_classification.py:501 now derives the job id through the shared reader imported at line 2590, so both the sacct vector and the interpreter code string reach the scheduler query at line 504.",
+    "manifest": "Read the delivered manifest; it records commits f6e2f0ef49/f1008d2e23/1a067cd9e8, 4 passed on the new gate, head arm 667 passed/1 failed, base arm 663 passed/1 failed with the same failure id, two negative-control logs, and status complete.",
+    "write_paths": "The node's declared write paths are reckon/crew/recovery_classification.py, tests/test_a_run_parked_on_a_live_job_keeps_waiting.py, the a-broken-wait-reaches-its-coordinator evidence fragment and its figures directory; every file in the two node commits is inside that set, and the merge commit f6e2f0ef49 adds only the already-landed upstream dependency."
+  },
+  "justifications": {
+    "durability": "tests/test_a_run_parked_on_a_live_job_keeps_waiting.py:211 asserts the job id the stubbed scheduler query actually carried, which fails both when the reader returns nothing and when it returns the wrong id, and negative-control-1-squeue-only-reader.log shows those assertions red on the pre-change reader.",
+    "evidence": "gate-new-test.log records 4 passed / EXIT=0 and gate-head-arm.log/gate-base-arm.log record 667 passed/1 failed and 663 passed/1 failed with the identical failure id, but the manifest's declared baseline_suite (suite-baseline-arm.log:1) exits 4 with no tests collected, so the declared pair carries no delta.",
+    "fit": "The change follows the surrounding late-import idiom at reckon/crew/recovery_classification.py:2587-2590 and matches the module's docstring voice, but tests/test_a_run_parked_on_a_live_job_keeps_waiting.py:153 embeds a plan-section slug in a node fixture.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:501-517 now resolves the job id from the shared reader for every probe shape, so a sacct probe and an interpreter probe both reach the squeue query the defect skipped.",
+    "reuse": "The node deletes its duplicate and calls the repository's single probe reader at reckon/crew/recovery_wait.py:857; no other def-shaped job-id reader for a probe vector exists under reckon/ (only placement and fleet helpers that parse a job id out of a scheduler reply, a different capability).",
+    "scope_discipline": "Every path in the diff (reckon/crew/recovery_classification.py, tests/test_a_run_parked_on_a_live_job_keeps_waiting.py, docs/evidence/fragments/a-broken-wait-reaches-its-coordinator/keep-a-run-parked-on-a-live-job-waiting.html) is inside the four write paths the node record declares, and no figure or other file was added."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to keep a waiting run whose probe names a live scheduler job from being drawn producer-gone, and reckon/crew/recovery_classification.py:501 now takes the job id from the shared reader imported at line 2590, so both probe shapes reach the scheduler query at line 504.\nVERDICT done_when: the done_when names three stubbed-scheduler cases in tests/test_a_run_parked_on_a_live_job_keeps_waiting.py plus the absence of a local reader and two negative controls; gate-new-test.log records 4 passed / EXIT=0 and my re-run at the reviewed head also gave 4 passed.\nVERDICT write_paths: the node record declares the classifier, the new test file, the evidence fragment and its figures directory; every file in the two node commits is inside that set, and f6e2f0ef49 is a merge of the already-landed upstream dependency rather than new work.\nVERDICT manifest: read; it records the three commits, 4 passed on the new gate, head arm 667 passed / 1 failed, base arm 663 passed / 1 failed with the same failure id, both negative-control logs, and status complete.\nVERDICT diff: read f6e2f0ef49..1a067cd9e8 commit by commit; f1008d2e23 removes _wait_probe_job_id from recovery_classification.py, imports it from recovery_wait and adds 282 lines of tests, and 1a067cd9e8 adds the 34-line evidence fragment, with nothing else touched.\nCALL_SITES: reckon/crew/recovery_watch.py:500, reckon/crew/forgotten_runs.py:94, reckon/crew/directory.py:294, reckon/crew/station_subscriber.py:139, reckon/crew/resumption.py:1992, reckon/flight.py:2899, reckon/mcp_views.py:2043, reckon/serve.py:899, reckon/roadmap.py:3108\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:501-517 resolves the job id through the shared reader for every probe shape, so a sacct probe and an interpreter probe both reach the squeue query the defect skipped.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate-new-test.log records 4 passed / EXIT=0 and the two arms share one failure id (667 passed / 1 failed against 663 passed / 1 failed), but the manifest's declared baseline_suite exits 4 collecting nothing.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is inside the four write paths the node record declares, and the only non-node commit is the recorded merge of the landed upstream dependency.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_run_parked_on_a_live_job_keeps_waiting.py:211 asserts the job id the stubbed scheduler query actually carried, and negative-control-1-squeue-only-reader.log shows it red on the pre-change reader.\nSCORE fit: 15\nJUSTIFICATION fit: the source change follows the module's late-import idiom at reckon/crew/recovery_classification.py:2587-2590, but tests/test_a_run_parked_on_a_live_job_keeps_waiting.py:153 embeds a plan-section slug in source.\nSCORE reuse: 20\nJUSTIFICATION reuse: the node deletes its duplicate reader and calls the single owner at reckon/crew/recovery_wait.py:857, and a search over reckon/ found no other probe-vector job-id reader.\nFINDING tests/test_a_run_parked_on_a_live_job_keeps_waiting.py:153 non-blocking: the node fixture writes the plan-section slug \"a-broken-wait-reaches-its-coordinator\" into source as the record's section, so the test data cannot be read without the plan; 391 existing test files carry the same idiom, but a precedent is not an exemption and a capability-descriptive placeholder carries the same test value.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T061633378515-keep-a-run-parked-on-a-live-job-waiting/suite-baseline-arm.log:1 non-blocking: the manifest's declared baseline_suite runs the node's own new test file at the base revision, where it does not exist, so pytest exits 4 having collected nothing while the field records completed:true and failure_count:0, and the declared pair carries no delta; the real delta is in gate-base-arm.log and gate-head-arm.log over the 77 classifier test files.",
+  "review_run_id": "r-20261107T073730077861-review-of-keep-a-run-parked-on-a-live-job-waiting-1a067cd9e8ff",
+  "reviewed_base_sha": "6d47102380956510b7a867336325cda12a0726a8",
+  "reviewed_head_sha": "1a067cd9e8fffc2ce1b5ec1ce6483206c3b60ff0",
+  "reviewed_run_id": "r-20261107T061633378515-keep-a-run-parked-on-a-live-job-waiting",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 15,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T08:05:00Z",
+  "total": 106
+}
