@@ -1,0 +1,47 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-06T23:53:08.025Z",
+  "dispatched_at": "2026-11-06T23:43:43Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-promotion-reads-the-evidence-it-is-given.html:68",
+      "id": "done_when-1",
+      "reason": "the two references are swapped, so a worker building these controls against the numbered cases would write one that can never fail and would have to stop or guess.",
+      "text": "the seventh and eighth controls name \"the sixth case\" and \"the seventh case\", but the sixths listed case is the arm whose `log_path` names a different log and the seventh is the ctest log: requiring a pytest summary cannot refuse the different-log case (the identity condition skips it before any summary is read), and removing the identity condition refuses the different-log case, not the ctest one",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "91b8fa2e163480ecafccd2105511ca010730a7f3",
+  "plan_fingerprint": "f042c9230026b15c86d12b32b84fa2817f3a97b9cae31fe90b5e7a460519d6b7",
+  "plan_slug": "a-promotion-reads-the-evidence-it-is-given",
+  "plan_version": 10,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261106T234224519168-plan-review-of-a-promotion-reads-the-evidence-it-is-given",
+  "reviewed_blob_sha": "607204afd18c6dee6b54ceb9469e29315f75e4a7",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_recorded_exit_status` (`reckon/crew/promotion_evidence.py:1044`), `_require_gate_log_agrees` (`:1062`), `_zero_added_against_a_red_base` (`:1174`), the lambda at `reckon/crew/promotion.py:573`, `_require_independently` at `reckon/crew/promotion_checks.py:1355`, `gate_log_failure_ids` at `reckon/crew/review.py:2106`, and the external `tests/test_plant_owner.py:326` all resolve; the `failure_count`/`failure_ids`/`exit_status` arm keys match `reckon/ledger.py:490\u2013530`.",
+    "done_when": "a finding \u2014 the last two of \u00a77's eight negative controls cite case numbers that do not match the seven cases it lists, so one control names a case it cannot make fail.",
+    "evidence_paths": "pass \u2014 the node produces source changes and one new test file under `tests/`; nothing in its done-when directs a gate log or an artifact to a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 `test_a_receipt_agrees_with_its_log.py` and the described helper names state the mechanism, with no plan, sprint or ticket labels and no changelog prose.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited code: `_require_gate_log_agrees` (promotion_evidence.py:1118\u20131135) compares only a recorded exit status, while `_zero_added_against_a_red_base` reads `baseline_suite.failure_ids` and `after_suite.completed` and never the after arm's `failure_count` or `failure_ids`, so a stale arm passes today; the mechanism (count against failed+error, ids against the last run in both directions, gated on the arm describing the cited log) produces every one of the seven cases, and the caller is named and real: the lambda at `reckon/crew/promotion.py:573` sits in the list passed to `_require_independently`, and `record` is already in that scope.",
+    "single_goal": "pass \u2014 \u00a77 carries one deliverable, the receipt-versus-log figure comparison inside `_require_gate_log_agrees`, plus the reader that isolates a log's last run, which that one check needs.",
+    "wiring": "pass \u2014 \u00a77 declares its wait on \u00a74, the section whose write paths include `reckon/crew/promotion_evidence.py`, and `plan-section-depends-on` carries `s7:[\u2026/s4]`; \u00a72's predicate reaches \u00a77 transitively through \u00a74, and \u00a77's second write path, `reckon/crew/promotion.py`, is unclaimed by any other section."
+  },
+  "section_digests": {
+    "_document": "16b7e0ac064041177a182b808ca05352e7de20cac229dccd88501dc6a3e40354",
+    "s1": "5eac0eb57fbf9fccaeee6fb2da59c42ca24c4433f0cffcb4b7de1b6b04324b6c",
+    "s2": "fe74e7e01c9a6ccef1719f555e5352545a20da84a1770862fc2751cdb6598747",
+    "s3": "479c8ebc617467c2744513e850433e87af52a3d22110620dcfdfb48f9975d081",
+    "s4": "80e452e08578901bf28b21ac56f7ff38a65532179befbebd65581a10820c5bd9",
+    "s5": "bb42325f383db769e04822e4d230cc887e0c6fd955d89dc50dd006b4d3715684",
+    "s6": "2e81c0cbe61ef60fc16acb159e81912b5b6263e9d12b8059efbd9482d722976c",
+    "s7": "85f6040d82572a557694deb48e8fdfd3523a9ee38e37c395c366697ceb2b293f"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T00:01:19.693935+00:00",
+  "total": null
+}
