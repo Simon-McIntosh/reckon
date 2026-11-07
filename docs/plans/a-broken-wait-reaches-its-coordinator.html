@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-broken-wait-reaches-its-coordinator">
   <meta name="plan-title" content="A Broken Wait Reaches Its Coordinator">
   <meta name="plan-summary" content="A refused wait is owed to its session, a job id in an interpreter -c string is read, and a run parked on a live job is never drawn producer-gone.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="3.25">
   <meta name="plan-capability-version" content="1.0">
@@ -25,7 +25,7 @@
   <title>A Broken Wait Reaches Its Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="10">
 <meta name="plan-modified" content="2026-11-07">
 </head>
 <body>
@@ -56,10 +56,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-abwrc-001" data-status="open" data-written-by="coordinator" data-written-at="2026-11-06" data-recommends-skill="/reckon-build a-broken-wait-reaches-its-coordinator §2" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-abwrc-001" data-status="resolved" data-written-by="coordinator" data-written-at="2026-11-06" data-recommends-skill="/reckon-build a-broken-wait-reaches-its-coordinator §2" data-resolved-at="2026-11-07T10:40:38+00:00" data-resolved-by="coordinator">
     <h4 class="r-fu-title">Build §2 and §3, then §4</h4>
     <div class="r-fu-body"><p>§2 is independent, and §4 reads the job-id reader §2 adds. §3 is independent now that a-reexec-never-orphans-a-dispatch §4 has landed.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-broken-wait-reaches-its-coordinator §2</pre>
+    <p class="r-fu-outcome">done — no followup. All three build sections landed on main on 7 November: s2 (merge ba971903cc) reads a wait probe for the program it actually runs, so a job id inside an interpreter -c string is read; s4 (merge 64e97e0af8) reads job ids through that reader, deletes _wait_probe_job_id, and keeps a run parked on a live scheduler job waiting; s3 (merge de50b9e857) lists unreadable and exited-unfinished runs among their session's obligations with the refusal text in the reason. Both wait-probe defects nova-8a reported are fixed.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -73,7 +74,7 @@
     <div class="r-comment-body"><p>§3 — independent review of r-20261107T072016210646-list-a-repair-verb-run-as-a-session-duty at head 6eb2b50773ae084f6cb0d03113eb25dd78c31ce9 against base e3a9f381a22cf5344e7db60bce74d5da69b7a7e3 records status parsed, six scores in 0..20 (goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 18, reuse 19), added_failure_count 0 with an empty id list, and one non-blocking finding</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261107T072016210646-list-a-repair-verb-run-as-a-session-duty" data-who="reckon-build" data-when="2026-11-07T10:24:29Z">
-    <div class="r-comment-body"><p>§3 — RECOVERY_CLASSIFICATION_DUTY_KINDS gains unreadable and exited-unfinished, keyed by the row&#x27;s recovery_classification, and _live_item carries the classifier&#x27;s detail into the item&#x27;s reason for both, so a refused wait is listed as a duty of its session carrying the refusal text; gate 3 of 3 passed, base arm 431 passed/5 failed against head 434 passed/5 failed with the same five failure ids</p></div>
+    <div class="r-comment-body"><p>§3 — RECOVERY_CLASSIFICATION_DUTY_KINDS gains unreadable and exited-unfinished, keyed by the row's recovery_classification, and _live_item carries the classifier's detail into the item's reason for both, so a refused wait is listed as a duty of its session carrying the refusal text; gate 3 of 3 passed, base arm 431 passed/5 failed against head 434 passed/5 failed with the same five failure ids</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261107T073730077861-review-of-keep-a-run-parked-on-a-live-job-waiting-1a067cd9e8ff" data-who="reckon-build" data-when="2026-11-07T07:47:30.197Z">
     <div class="r-comment-body"><p>reviewed run r-20261107T061633378515 at 1a067cd9e8 over base 6d47102380 for plan reckon:a-broken-wait-reaches-its-coordinator §4; record status parsed, scores goal_fidelity 19, evidence 15, scope_discipline 19, durability 18, fit 15, reuse 20; added_failure_count 0 against the reviewed run's own baseline/after gate logs and the two classifier arms; two non-blocking findings.</p></div>

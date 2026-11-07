@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-broken-wait-reaches-its-coordinator-landed">
+  <meta name="plan-title" content="A Broken Wait Reaches Its Coordinator — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Broken Wait Reaches Its Coordinator: 3 committed run(s), 6 section-anchored comment(s), and 7 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-broken-wait-reaches-its-coordinator">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-recorded-at" content="2026-11-07T10:24:29Z">
+  <meta name="plan-commits" content="403f05a233d55c674bd52e4b158ad657fc118e9c,072f7924bc43a51273ad12d3213d11a8012a52c1,f6e2f0ef4923f4e24229b8d729f671bb02fbc766,f1008d2e239b4b0842189311a0de64774c70f682,1a067cd9e8fffc2ce1b5ec1ce6483206c3b60ff0,6eb2b50773ae084f6cb0d03113eb25dd78c31ce9,41c7071fcfbaf16db22fa3b0487118c16361782c">
+  <title>A Broken Wait Reaches Its Coordinator — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Broken Wait Reaches Its Coordinator — landed record</h1>
+  <p>Closure synthesis for A Broken Wait Reaches Its Coordinator: 3 committed run(s), 6 section-anchored comment(s), and 7 landed commit(s).</p>
+
+  <section id="s2">
+    <h2>§2 — A probe is read for the program it actually runs</h2>
+    <article class="landed-comment" data-comment-id="c-run-r-20261107T064422940872-review-of-read-a-probe-for-the-program-it-runs-072f7924bc43">
+      <p><small>reckon-build · 2026-11-07T06:53:56.129Z</small></p>
+      <div class="r-comment-body"><p>Review of r-20261107T061430858140-read-a-probe-for-the-program-it-runs at base 3942e0a8 head 072f7924: parsed record with 6 scores in 0..20 (goal_fidelity 18, evidence 16, scope_discipline 12, durability 18, fit 17, reuse 5), 0 added failures derived from the reviewed run's own arms, 1 blocking finding (the new test file lies outside the reviewed node's declared write paths, so the claim must be widened before promotion) and 2 non-blocking findings (duplicated job-id reader; a negative-control log header naming the base revision for a head-tree run)</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20261107T061430858140-read-a-probe-for-the-program-it-runs">
+      <p><small>reckon-build · 2026-11-07T07:14:56Z</small></p>
+      <div class="r-comment-body"><p>Probe reading is now resolved through the program a probe actually runs — the §1 python3 -c probe is accepted as naming job 1306915, an interpreter probe naming no reference is refused with a sentence naming python3, sacct --json inside a code string is refused as structured output, glued -j&lt;id&gt; is accepted, and the shell reading is unchanged; gate 6 passed, base arm 298 passed/1 skipped/0 failed against head 304 passed/1 skipped/0 failed with no added failure id; record at docs/evidence/fragments/a-broken-wait-reaches-its-coordinator/read-a-probe-for-the-program-it-runs.html</p></div>
+    </article>
+    <table>
+      <thead>
+        <tr><th>Run</th><th>Node</th><th>Commits</th><th>Gate</th><th>Tests added</th><th>Worker time</th><th>Changed lines</th><th>Scope</th></tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>r-20261107T061430858140-read-a-probe-for-the-program-it-runs</code></td>
+        <td>read-a-probe-for-the-program-it-runs</td>
+        <td><code>403f05a233d55c674bd52e4b158ad657fc118e9c</code><br><code>072f7924bc43a51273ad12d3213d11a8012a52c1</code></td>
+        <td><strong>passed</strong></td>
+        <td>—</td>
+        <td>18m 22s</td>
+        <td><code>{&quot;added&quot;:371,&quot;files&quot;:4,&quot;removed&quot;:31}</code></td>
+        <td>unchanged</td>
+      </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="s3">
+    <h2>§3 — A run whose recovery is repair is a duty of its session</h2>
+    <article class="landed-comment" data-comment-id="c-run-r-20261107T095450410473-review-of-list-a-repair-verb-run-as-a-session-duty-6eb2b50773ae">
+      <p><small>reckon-build · 2026-11-07T10:05:25.244Z</small></p>
+      <div class="r-comment-body"><p>§3 — independent review of r-20261107T072016210646-list-a-repair-verb-run-as-a-session-duty at head 6eb2b50773ae084f6cb0d03113eb25dd78c31ce9 against base e3a9f381a22cf5344e7db60bce74d5da69b7a7e3 records status parsed, six scores in 0..20 (goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 18, reuse 19), added_failure_count 0 with an empty id list, and one non-blocking finding</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20261107T072016210646-list-a-repair-verb-run-as-a-session-duty">
+      <p><small>reckon-build · 2026-11-07T10:24:29Z</small></p>
+      <div class="r-comment-body"><p>§3 — RECOVERY_CLASSIFICATION_DUTY_KINDS gains unreadable and exited-unfinished, keyed by the row's recovery_classification, and _live_item carries the classifier's detail into the item's reason for both, so a refused wait is listed as a duty of its session carrying the refusal text; gate 3 of 3 passed, base arm 431 passed/5 failed against head 434 passed/5 failed with the same five failure ids</p></div>
+    </article>
+    <table>
+      <thead>
+        <tr><th>Run</th><th>Node</th><th>Commits</th><th>Gate</th><th>Tests added</th><th>Worker time</th><th>Changed lines</th><th>Scope</th></tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>r-20261107T072016210646-list-a-repair-verb-run-as-a-session-duty</code></td>
+        <td>list-a-repair-verb-run-as-a-session-duty</td>
+        <td><code>6eb2b50773ae084f6cb0d03113eb25dd78c31ce9</code><br><code>41c7071fcfbaf16db22fa3b0487118c16361782c</code></td>
+        <td><strong>passed</strong></td>
+        <td>—</td>
+        <td>43m 2s</td>
+        <td><code>{&quot;added&quot;:320,&quot;files&quot;:3,&quot;removed&quot;:2}</code></td>
+        <td>unchanged</td>
+      </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="s4">
+    <h2>§4 — A run parked on a live scheduler job is never drawn producer-gone</h2>
+    <article class="landed-comment" data-comment-id="c-run-r-20261107T073730077861-review-of-keep-a-run-parked-on-a-live-job-waiting-1a067cd9e8ff">
+      <p><small>reckon-build · 2026-11-07T07:47:30.197Z</small></p>
+      <div class="r-comment-body"><p>reviewed run r-20261107T061633378515 at 1a067cd9e8 over base 6d47102380 for plan reckon:a-broken-wait-reaches-its-coordinator §4; record status parsed, scores goal_fidelity 19, evidence 15, scope_discipline 19, durability 18, fit 15, reuse 20; added_failure_count 0 against the reviewed run's own baseline/after gate logs and the two classifier arms; two non-blocking findings.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20261107T061633378515-keep-a-run-parked-on-a-live-job-waiting">
+      <p><small>reckon-build · 2026-11-07T07:46:30Z</small></p>
+      <div class="r-comment-body"><p>reckon/crew/recovery_classification.py deletes its own job-id reader and both call sites read the job id from the shared probe reader, so a sacct or interpreter probe names its job and a job the scheduler still lists keeps the run waiting; the new gate passes 4 of 4 and the classifier test files add no failure against the base arm (663 passed / 1 failed at base, 667 passed / 1 failed at head, same failure id).</p></div>
+    </article>
+    <table>
+      <thead>
+        <tr><th>Run</th><th>Node</th><th>Commits</th><th>Gate</th><th>Tests added</th><th>Worker time</th><th>Changed lines</th><th>Scope</th></tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>r-20261107T061633378515-keep-a-run-parked-on-a-live-job-waiting</code></td>
+        <td>keep-a-run-parked-on-a-live-job-waiting</td>
+        <td><code>f6e2f0ef4923f4e24229b8d729f671bb02fbc766</code><br><code>f1008d2e239b4b0842189311a0de64774c70f682</code><br><code>1a067cd9e8fffc2ce1b5ec1ce6483206c3b60ff0</code></td>
+        <td><strong>passed</strong></td>
+        <td>—</td>
+        <td>23m 21s</td>
+        <td><code>{&quot;added&quot;:328,&quot;files&quot;:3,&quot;removed&quot;:25}</code></td>
+        <td>unchanged</td>
+      </tr>
+      </tbody>
+    </table>
+  </section>
+ </main>
+</body>
+</html>
