@@ -1,0 +1,38 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T01:48:33.656Z",
+  "dispatched_at": "2026-11-07T01:41:18Z",
+  "findings": [],
+  "plan_commit": "7c23620f0cf702dde2be0d771bbcacdb89963134",
+  "plan_fingerprint": "de6e5d7e366f4b5fa3e3d704c4060f3ce5dd42a2559076312d02714a684eb773",
+  "plan_slug": "a-promotion-reads-the-evidence-it-is-given",
+  "plan_version": 11,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T013912371654-plan-review-of-a-promotion-reads-the-evidence-it-is-given",
+  "reviewed_blob_sha": "db34066322009e18302865fa16330633fe150b31",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_require_gate_evidence` at `reckon/crew/promotion_evidence.py:759` with `resolving_presented < resolving_declared` at exactly line 908; `_revision_is_ancestor` used at line 294 inside `_require_commits_beyond_base`; `_record_with_manifest` at `tests/test_a_short_commit_list_is_reported.py:80` with its `base_sha` taken from `rev-parse HEAD` at line 88; both named silence cases exist (`test_presenting_all_declared_commits_is_silent` at line 131, `test_presenting_a_superset_is_silent` at line 157); `promotion.py` holds the one production call at line 561 and carries the record at lines 670/678 and 1605.",
+    "done_when": "pass \u2014 all four cases are measurable against `_require_gate_evidence`, and the single declared negative control (\"requires each commit by sha, as now\") falsifies the first case: with the covered set collapsed to the presented commits, the five-commit declaration is a strict subset shortfall, so the case that expects silence fails.",
+    "evidence_paths": "pass \u2014 \u00a74 names no scratchpad or node-local path, and its base and head runs are recorded through the manifest's own `test_logs`/`baseline_suite`/`after_suite` keys, which sit on the run directory the dispatch contract and \u00a76 both require.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches a symbol, file name or comment; \"the 16-of-17 shortfall\" is a measured count, not a tracker reference, and the new test file name states the behaviour.",
+    "reasoning": "pass \u2014 the root cause matches \u00a71's third refusal (the cited evidence is `--commit <head>` with the 16 named commits as its ancestors, and line 908 is exactly the strict-subset test that produced it); the mechanism produces each of the four cases (covered = presented \u222a ancestors-in-`base..` of each presented leaves the fifth-and-its-four silent, names an unrelated branch commit, names a commit at or below the base, and covers both branches in the two-presented case); and the mechanism runs on the real path \u2014 `_require_gate_evidence` is in the checker list handed to `_require_independently` at `reckon/crew/promotion.py:561`, and its returned record is carried onto the result and the run record at `promotion.py:670/678` and `promotion.py:1605`.",
+    "single_goal": "pass \u2014 one deliverable, the composition of the covered set in the subset test at `reckon/crew/promotion_evidence.py:908`; the four cases are that one rule's cases rather than a second deliverable.",
+    "wiring": "pass \u2014 \u00a74's declared wait on \u00a72 is the honest one (both write `reckon/crew/promotion_evidence.py`), \u00a77 declares its wait on \u00a74 and not on \u00a75, and \u00a74 declares no wait on \u00a75 or \u00a76, which touch no file it writes."
+  },
+  "section_digests": {
+    "_document": "16b7e0ac064041177a182b808ca05352e7de20cac229dccd88501dc6a3e40354",
+    "s1": "5eac0eb57fbf9fccaeee6fb2da59c42ca24c4433f0cffcb4b7de1b6b04324b6c",
+    "s2": "259d093654ecf00609d51d02f39bb21a9feda5af8b5626a64e881f7e85d5abe4",
+    "s3": "479c8ebc617467c2744513e850433e87af52a3d22110620dcfdfb48f9975d081",
+    "s4": "bc5eebc33cf8175dd508f65245c7126745fc3e87a3e75e6229c55004ae265f62",
+    "s5": "5454a3b2f3bbdc9fe34ced889604aa90092b4d22e83912038c83a1392ab1631d",
+    "s6": "2e81c0cbe61ef60fc16acb159e81912b5b6263e9d12b8059efbd9482d722976c",
+    "s7": "7bced8cc628225bd263c097f2892aa25704394bac1a081e43fce860c4e475e07"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T03:33:56.518561+00:00",
+  "total": null
+}
