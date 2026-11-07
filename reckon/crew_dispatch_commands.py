@@ -1312,6 +1312,17 @@ def _queue_dispatch_batch(
 )
 @click.option("--time-budget", default="", help="Wall-clock allowance, e.g. 25m.")
 @click.option(
+    "--over-fence",
+    "over_fence_reason",
+    default="",
+    metavar="REASON",
+    help=(
+        "Why this node's time budget needs more wall clock than the resolved "
+        "fence allows, e.g. a measured gate the fence predates. Recorded on "
+        "the node and its run record; without it an over-fence budget is refused."
+    ),
+)
+@click.option(
     "--estimated-hours",
     type=click.FloatRange(min=0.0, min_open=True),
     default=None,
@@ -1483,6 +1494,7 @@ def crew_dispatch(
     required_decisions,
     locked_decisions,
     time_budget,
+    over_fence_reason,
     estimated_hours,
     manifest,
     member,
@@ -1646,6 +1658,7 @@ def crew_dispatch(
         regenerate_paths=list(regenerate_paths),
         anchor_paths=list(anchor_paths),
         time_budget=time_budget,
+        over_fence_reason=over_fence_reason,
         estimated_hours=estimated_hours,
         manifest_path=manifest,
         requires_decisions=list(required_decisions),

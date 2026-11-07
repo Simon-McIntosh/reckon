@@ -774,6 +774,13 @@ class TaskNode:
     regenerate_paths: list[str] = field(default_factory=list)
     anchor_paths: list[str] = field(default_factory=list)
     time_budget: str = ""
+    # Why this node's budget needs more wall clock than the resolved fence
+    # allows. A stated reason is what admits an over-fence budget: the fence is
+    # a default rather than a hard stop, and a worker stopped mid-delivery is
+    # worse than a longer run the fence was told about. The reason rides the
+    # node, so the run record and the ledger row carry it beside the budget it
+    # explains.
+    over_fence_reason: str = ""
     manifest_path: str = ""
     negative_control: str = ""
     estimated_hours: float | None = None
@@ -815,6 +822,7 @@ class TaskNode:
             "images": list(self.images),
             "inputs": list(self.inputs),
             "manifest_path": self.manifest_path,
+            "over_fence_reason": self.over_fence_reason,
             "estimated_hours": self.estimated_hours,
             "negative_control": self.negative_control,
             "plan": self.plan,
@@ -1357,11 +1365,13 @@ def validate_node(
         else:
             if budget_ceiling:
                 ceiling = parse_duration(budget_ceiling)
-                if seconds > ceiling:
+                if seconds > ceiling and not node.over_fence_reason.strip():
                     fail(
                         "bounded",
                         f"budget {node.time_budget} exceeds the resolved fence "
-                        f"{budget_ceiling}; split the work rather than overrun it",
+                        f"{budget_ceiling}; pass --over-fence REASON to record why "
+                        "this work needs more wall clock, or split the work rather "
+                        "than overrun it",
                     )
 
     if not node.manifest_path:
