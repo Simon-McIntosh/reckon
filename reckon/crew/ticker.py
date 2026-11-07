@@ -835,6 +835,24 @@ def _elapsed(seconds: float) -> str:
     return f"{hours}h{rest:02d}m"
 
 
+def _stream_age(seconds: Any) -> str:
+    """A stream's silence, at the precision that separates live from quiet.
+
+    A working run's stream is written seconds apart, so minutes would round the
+    reading a reader needs most to ``0m``; hours would erase it entirely. The
+    unit therefore grows with the span, and a run with no measured stream prints
+    the absence marker rather than a zero that would claim a fresh one.
+    """
+    if not isinstance(seconds, Real):
+        return DIM_MARKER
+    whole = max(0, round(float(seconds)))
+    if whole < 60:
+        return f"{whole}s"
+    if whole < 3600:
+        return f"{whole // 60}m"
+    return _elapsed(float(whole))
+
+
 def _bucket_of(state: Any, classification: Any) -> str | None:
     """Which counter bucket a run's state belongs to, or None off the fleet.
 
@@ -2804,6 +2822,163 @@ def _job_name(node: str, role: Any) -> str:
                 rest = REVIEWED_HEAD.sub("", rest)
             return f"{replacement}{rest}" if rest else node
     return node
+
+
+# ── The standing in-flight line ──────────────────────────────────────────────
+#
+# A row reports a transition, and a run that is simply working emits none: once
+# its start has scrolled out of the pane, a session with hours of work in flight
+# reads as an idle pane. So the pane also carries a standing line, redrawn on a
+# cadence while the session's own work is running, naming each run with its
+# phase, age and stream age. It reads the live view ``crew view live`` serves,
+# so the pane and that view cannot disagree about which runs are live.
+IN_FLIGHT_CADENCE_SECONDS = 60.0
+IN_FLIGHT_STAGE = "in flight"
+# The states that mean the work is running. ``dispatched`` is left out: the
+# arrival row already prints a launch, and a run that has not begun working has
+# nothing for the line to report. A run the fleet counters call blocked or
+# waiting is not here either, because its stop is a transition the pane draws.
+IN_FLIGHT_PHASES = frozenset({"starting", "working", "running"})
+
+
+def _in_flight_word(row: Mapping[str, Any]) -> str:
+    """The fleet's state word for a live row, or an empty string off the fleet.
+
+    The classification is the compatibility word the counters partition on; the
+    observed phase is what the run's own evidence supports where no
+    classification was carried. Reading the classification first is what keeps
+    a stalled run — whose pointer phase is still ``working`` — out of a line
+    that claims work is happening.
+    """
+    return str(row.get("classification") or row.get("phase") or "")
+
+
+class InFlightLine:
+    """The pane's standing line for its session's runs that are working.
+
+    The line is emitted on a fixed cadence and whenever the set of working runs
+    changes, so a pane that has gone quiet shows the work still running rather
+    than the last transition it saw. Within a cadence nothing is emitted; when
+    the cadence elapses and nothing has moved, the identical text is not
+    repeated — the line is refreshed with current figures or not at all. A
+    session with no runs working emits nothing, and the next run to start is
+    news, so the cadence resets rather than holding the new line back.
+
+    Identity and grid come from the pane's :class:`Ticker`, so a run named on
+    this line carries the same hue and the same width its transition rows do.
+    """
+
+    def __init__(
+        self,
+        ticker: Ticker,
+        *,
+        cadence: float = IN_FLIGHT_CADENCE_SECONDS,
+    ) -> None:
+        self._ticker = ticker
+        self.cadence = float(cadence)
+        self._last_emit: float | None = None
+        self._last_set: tuple[tuple[str, str], ...] | None = None
+        self._last_text: str | None = None
+
+    def working(
+        self, rows: Iterable[Mapping[str, Any]], *, session: str | None
+    ) -> list[Mapping[str, Any]]:
+        """The session's own runs that are working, in a stable order.
+
+        Ordered by run id rather than by the view's order, so the same fleet
+        composes the same text whatever order the pointers were read in, and a
+        reordering alone never redraws the line.
+        """
+        if not session:
+            return []
+        found = [
+            row
+            for row in rows
+            if str(row.get("session") or "") == session
+            and _in_flight_word(row) in IN_FLIGHT_PHASES
+        ]
+        found.sort(key=lambda row: str(row.get("run_id") or ""))
+        return found
+
+    def emit(
+        self,
+        rows: Iterable[Mapping[str, Any]],
+        *,
+        session: str | None,
+        now: float,
+    ) -> str | None:
+        """The line to print now, or None when the pane owes nothing.
+
+        ``rows`` is the live view's own rows at this moment, so their ages are
+        as fresh as the read. ``now`` is the pane's clock, used only for the
+        cadence: the figures themselves are the view's, never recomputed here,
+        because the pane must show the age the live view serves.
+        """
+        working = self.working(rows, session=session)
+        if not working:
+            self._last_emit = None
+            self._last_set = None
+            self._last_text = None
+            return None
+        current = tuple(
+            (str(row.get("run_id") or ""), _in_flight_word(row)) for row in working
+        )
+        if current == self._last_set and (
+            self._last_emit is not None and now - self._last_emit < self.cadence
+        ):
+            return None
+        text = self._compose(working)
+        self._last_emit = now
+        self._last_set = current
+        if text == self._last_text:
+            return None
+        self._last_text = text
+        return text
+
+    def _segment(self, row: Mapping[str, Any]) -> list[tuple[str, Any]]:
+        """One run's figures: its node, phase, age and stream age."""
+        ticker = self._ticker
+        node = str(row.get("node") or row.get("run_id") or "unknown")
+        phase = _in_flight_word(row) or "unknown"
+        age = row.get("elapsed_seconds")
+        span = _elapsed(float(age)) if isinstance(age, Real) else DIM_MARKER
+        return [
+            (elide(node, NODE, keep_end=True), ticker.hue(node)),
+            (" ", None),
+            (f"{phase:<{STATE_WORD}}", _state_hue(ticker.theme, phase)),
+            (f"{span:>{WALL}}", None),
+            (" stream ", "dim"),
+            (_stream_age(row.get("log_age_seconds")), None),
+        ]
+
+    def _compose(self, working: list[Mapping[str, Any]]) -> str:
+        """The head and as many runs as fit, with the remainder counted.
+
+        The line never wraps, for the same reason a row never does: a wrapped
+        line costs history. A run that does not fit is counted after the last
+        one that does, so a reader knows the line is not the whole set.
+        """
+        ticker = self._ticker
+        width = ticker._grid_width()
+        head = f"{IN_FLIGHT_STAGE:<{ROLE}}"
+        cells: list[tuple[str, Any]] = [(head, "dim")]
+        used = len(head)
+        shown = 0
+        for index, row in enumerate(working):
+            separator = [(" · ", "dim")] if index else []
+            segment = self._segment(row)
+            span = sum(len(text) for text, _ in separator + segment)
+            omitted = len(working) - index
+            reserve = len(f" +{omitted}")
+            if used + span + reserve > width:
+                break
+            cells.extend(separator)
+            cells.extend(segment)
+            used += span
+            shown += 1
+        if shown < len(working):
+            cells.append((f" +{len(working) - shown}", "dim"))
+        return "".join(ticker._paint(text, style) for text, style in cells)
 
 
 class Ticker:

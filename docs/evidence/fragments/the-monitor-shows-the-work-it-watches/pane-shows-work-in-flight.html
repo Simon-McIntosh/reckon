@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s117">
+  <meta name="plan-recorded-at" content="2026-11-07">
+  <title>A pane shows its work in flight | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="pane-shows-work-in-flight-landing" data-node="pane-shows-work-in-flight" data-reckon="landed" data-when="2026-11-07">
+  <h2>The pane carries a standing line for the session's working runs</h2>
+  <p><code>reckon/crew/ticker.py</code> gains <code>InFlightLine</code>, which composes one standing line from the rows the live view serves: the head <code>in flight</code> followed by each of the session's working runs as <em>node, phase, age, stream age</em>, in run-id order. It emits on a fixed cadence, at once when the set of working runs changes, and never repeats identical text, so a line that would say nothing new is not reprinted. A peer session's run is never named, a run the fleet classifies as stopped (a stalled run whose pointer phase is still <code>working</code>) is not in flight, and a session with nothing working emits nothing — its cadence resets, so the next run to start prints immediately. The line is cut to the pane width with a counted remainder, so it never wraps. Identity hue and grid come from the pane's own <code>Ticker</code>, so a run keeps the colour its transition rows carry.</p>
+  <p><code>tests/test_the_pane_shows_its_work_in_flight.py</code> drives it with a stubbed clock and a live view in the view's own row shape, six cases passing: two working runs on one line with phase, age and stream age; a refresh after the cadence carrying the new figures; a changed set drawn at once; a peer session's run absent; a stopped run absent; and no line when nothing works. The negative control disables the standing line and 5 of the 6 cases fail (EXIT=1). The ticker-importer test population at head reports <strong>487 passed</strong> and at the base revision <strong>481 passed</strong>, so the change adds no failing id. Ruff check and <code>ruff format --check</code> are clean on both staged Python paths.</p>
+  <p>The printing caller is not in this node's write scope: the follower's wait pass in <code>reckon/crew_follow_commands.py</code> is where <code>InFlightLine.emit</code> would be given the live view rows and write a non-None line to the pane, and that wiring is recorded as outside scope for the coordinator to place — the ticker's own render of the live view is what this node delivers.</p>
+</article>
+</body>
+</html>
