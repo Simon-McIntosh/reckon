@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import shlex
+import threading
 from collections.abc import Iterable, Mapping, Sequence
 from contextvars import ContextVar
 from datetime import UTC, datetime, timedelta
@@ -1232,6 +1233,119 @@ def _queued_review_run_fields(
     return fields
 
 
+#: Per-run derivations a steady-state publish would otherwise rebuild on every
+#: tick. Each entry is keyed on the inputs its computation actually reads, so a
+#: run whose pointer, head, manifest, plan or ledger moves recomputes while
+#: every other run is served the answer it reached last time.
+_CACHE_LOCK = threading.Lock()
+_CACHE_LIMIT = 8192
+_REVIEW_TIER_CACHE: dict[tuple[Any, str], str] = {}
+_HELD_RECORDS_CACHE: dict[tuple[Any, ...], dict[Path, Mapping[str, Any]]] = {}
+
+
+def _cached(cache: dict[Any, Any], key: Any, compute: Any) -> Any:
+    """Return ``cache[key]``, computing and storing it on the plan a steady tick.
+
+    The computation runs outside the lock: it may read a plan or a git object,
+    and holding the lock across that would serialise every session's slice
+    behind the slowest reader. Two ticks racing on one key may therefore both
+    compute it, which costs a duplicate read and never a wrong answer.
+    """
+    with _CACHE_LOCK:
+        if key in cache:
+            return cache[key]
+    value = compute()
+    with _CACHE_LOCK:
+        if len(cache) >= _CACHE_LIMIT:
+            cache.clear()
+        cache[key] = value
+    return value
+
+
+def _plan_state_signature(record: Mapping[str, Any]) -> tuple[Any, ...] | None:
+    """A cheap change token for the plan the run's review tier reads.
+
+    The tier's capability risk is declared on the plan or its section, so a
+    plan write can move the tier without any run input moving. The token is the
+    plan document's stat identity — the same resolution a store read makes, one
+    ``stat`` rather than a parse — falling back to the project's published
+    write generation when no document is named. ``None`` means no token could
+    be built, so the caller computes the tier rather than trusting a cache it
+    cannot invalidate.
+    """
+    project = str(record.get("project") or "")
+    plan = str((record.get("node") or {}).get("plan") or "")
+    if not project or not plan:
+        return None
+    root: str | Path | None = str(record.get("repo") or "") or None
+    authority = record.get("authority")
+    if isinstance(authority, Mapping):
+        plan_authority = authority.get("plan")
+        if isinstance(plan_authority, Mapping) and plan_authority.get("repository"):
+            root = str(plan_authority["repository"])
+    try:
+        path = _store._resolve_html_file(project, plan, root, "plan")
+        if path is not None:
+            return ("file", file_memo.file_signature(path))
+    except OSError:
+        pass
+    try:
+        return ("generation", _store.read_write_generation(project))
+    except OSError:
+        return None
+
+
+def _review_tier_key(
+    row: Mapping[str, Any], pointer: Mapping[str, Any]
+) -> tuple[Any, ...] | None:
+    """The inputs one run's review tier is decided from, as a cache key.
+
+    The tier reads the run's changed paths and lines at its head (git objects
+    beneath the tree), its declared spec level and section, the manifest it
+    cites when it cites no commit, and the plan's declared risk. So the key
+    carries the resolved head and tree, the cited commits, the manifest's stat
+    identity and the plan's change token. A run whose head, manifest or plan
+    moves gets a new key and its tier is recomputed; every other run's key is
+    the one the previous tick stored.
+    """
+    run_id = str(row.get("run_id") or "")
+    if not run_id:
+        return None
+    try:
+        head, tree = recovery._review_head_and_tree(pointer)
+    except Exception:  # noqa: BLE001 - no key without a head to key on
+        return None
+    plan_signature = _plan_state_signature(pointer)
+    if plan_signature is None:
+        return None
+    node = pointer.get("node")
+    node = node if isinstance(node, Mapping) else {}
+    manifest_path = str(pointer.get("manifest_path") or "")
+    manifest_signature: tuple[int, ...] | None = None
+    if manifest_path:
+        try:
+            manifest_signature = file_memo.file_signature(manifest_path)
+        except OSError:
+            manifest_signature = None
+    return (
+        run_id,
+        head,
+        str(tree or ""),
+        tuple(str(commit) for commit in (row.get("manifest_commits") or [])),
+        manifest_signature,
+        str(node.get("spec_level") or ""),
+        str(node.get("section") or ""),
+        plan_signature,
+    )
+
+
+def _clear_cached_obligation_inputs() -> None:
+    """Drop every memoised per-run derivation, so the next read recomputes."""
+    with _CACHE_LOCK:
+        _REVIEW_TIER_CACHE.clear()
+        _HELD_RECORDS_CACHE.clear()
+
+
 def _review_tier_for_duty(row: Mapping[str, Any], pointer: Mapping[str, Any]) -> str:
     """The run's review tier, read through the resolver the sweep itself uses.
 
@@ -1243,7 +1357,24 @@ def _review_tier_for_duty(row: Mapping[str, Any], pointer: Mapping[str, Any]) ->
     a review, so they are never re-derived. A scope the resolver cannot measure
     already reads there as the fuller tier, so a run whose change is unreadable
     still owes its review.
+
+    The answer is memoised on those same inputs, so a steady-state publish
+    reads one run's tier once and reuses it until that run's head, manifest or
+    plan moves. The resolver runs git and reads the plan, and both are what a
+    tick was spending most of its time on.
     """
+    key = _review_tier_key(row, pointer)
+    if key is None:
+        return _resolve_review_tier(row, pointer)
+    return _cached(
+        _REVIEW_TIER_CACHE, key, lambda: _resolve_review_tier(row, pointer)
+    )
+
+
+def _resolve_review_tier(
+    row: Mapping[str, Any], pointer: Mapping[str, Any]
+) -> str:
+    """Read one run's review tier from its own change, uncached."""
     try:
         return str(
             recovery._sweep_review_tier(
@@ -1654,8 +1785,62 @@ def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
     if docs_dir is None:
         return {}
     repository = docs_dir.parent.resolve()
+    key = (project, str(repository), _held_records_signature(project, repository))
+    if key[2] is None:
+        with file_memo.read_only_region():
+            return _held_worktree_records_read(project, repository)
+    return _cached(
+        _HELD_RECORDS_CACHE,
+        key,
+        lambda: _held_records_read_uncached(project, repository),
+    )
+
+
+def _held_records_read_uncached(
+    project: str, repository: Path
+) -> dict[Path, Mapping[str, Any]]:
+    """Read the held-tree records once, inside the region a fresh read opens."""
     with file_memo.read_only_region():
         return _held_worktree_records_read(project, repository)
+
+
+def _held_records_signature(
+    project: str, repository: Path
+) -> tuple[Any, ...] | None:
+    """The files a held-worktree derivation reads, as one change token.
+
+    The records come from the merged ledger, the registered worktrees and the
+    live pointer directory, so all three carry a signature: the ledger file's
+    stat identity, git's worktree registry, and the live directory. A tick
+    whose three are unchanged would read the same records, so it is served the
+    ones the previous tick read instead of walking the ledger and running git
+    again. ``None`` means one of them could not be stat'ed, so the caller reads
+    fresh rather than risk a stale answer.
+    """
+    root = _ledger_read_root(project, repository)
+    try:
+        ledger_signature = file_memo.file_signature(ledger.ledger_path(project, root))
+    except OSError:
+        return None
+    registry_signature = _worktree_registry_signature(repository)
+    try:
+        live_signature = file_memo.file_signature(runs.live_dir())
+    except OSError:
+        return None
+    return (ledger_signature, registry_signature, live_signature)
+
+
+def _worktree_registry_signature(repository: Path) -> tuple[int, ...] | None:
+    """Git's worktree registry, as a stat identity, wherever the git dir lives."""
+    for candidate in (
+        repository / ".git" / "worktrees",
+        repository / ".git",
+    ):
+        try:
+            return file_memo.file_signature(candidate)
+        except OSError:
+            continue
+    return None
 
 
 def _held_worktree_records_read(

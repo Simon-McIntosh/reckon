@@ -194,12 +194,21 @@ def _write_classification_memo(
         return
     payload = dict(memo)
     payload["version"] = CLASSIFICATION_MEMO_VERSION
+    serialised = json.dumps(payload, sort_keys=True)
+    try:
+        if path.read_text(encoding="utf-8") == serialised:
+            # A steady tick classifies each live run to the same memo it wrote
+            # last time; rewriting it would open a temporary file and rename it
+            # every tick for bytes already on disk.
+            return
+    except OSError:
+        pass
     from reckon._store import write_atomically
 
     try:
         write_atomically(
             path,
-            lambda handle: json.dump(payload, handle, sort_keys=True),
+            lambda handle: handle.write(serialised),
             fsync=False,
             mode=0o600,
         )
