@@ -214,6 +214,17 @@ def _tick() -> tuple[Any, dict[str, Any]]:
     return state, obligation_snapshot.payload_for(state, SESSION)
 
 
+def _clear_memos() -> None:
+    """Drop the memos when the module carries them.
+
+    The base revision has no memo store, so the same test can run against it and
+    fail on the second tick's counts rather than on a missing attribute.
+    """
+    clear = getattr(obligations_module, "_clear_cached_obligation_inputs", None)
+    if clear is not None:
+        clear()
+
+
 def _assert_fixture_reaches_the_tier() -> None:
     """Guard the instrument: this fixture must owe reviews and resolve tiers.
 
@@ -233,7 +244,7 @@ def test_a_steady_tick_recomputes_nothing(
 ) -> None:
     """A second tick with every input unmoved reads none of them again."""
     _assert_fixture_reaches_the_tier()
-    obligations_module._clear_cached_obligation_inputs()
+    _clear_memos()
     # The first tick warms every memo and writes each stale classification memo.
     _tick()
 
@@ -266,7 +277,7 @@ def test_moving_one_head_recomputes_only_that_run(
 ) -> None:
     """One run's head moving recomputes that run's tier and nobody else's."""
     _assert_fixture_reaches_the_tier()
-    obligations_module._clear_cached_obligation_inputs()
+    _clear_memos()
     _tick()
 
     moved = "run-02"
@@ -315,10 +326,10 @@ def _without_age(payload: dict[str, Any]) -> dict[str, Any]:
 def test_a_cleared_memo_yields_the_same_payload(fleet: dict[str, Any]) -> None:
     """Every payload equals the one the same state produces with memos cleared."""
     _assert_fixture_reaches_the_tier()
-    obligations_module._clear_cached_obligation_inputs()
+    _clear_memos()
     _tick()
     cached_state, cached = _tick()
-    obligations_module._clear_cached_obligation_inputs()
+    _clear_memos()
     fresh_state, fresh = _tick()
     assert _without_age(cached) == _without_age(fresh), (
         "the memoised payload differs from the recomputed one"
