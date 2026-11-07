@@ -341,6 +341,36 @@
     continuously, so the whole-stream read is paid every tick for every run that is doing anything. The fix that would meet
     the bound is in that pass: classify from the folded state the store already keeps, so a moved pointer reads only the
     bytes its stream appended.</p>
+    <h3 id="recompute-only-what-changed">Before and after: a tick that recomputes only what moved</h3>
+    <p>A 60 s <code>py-spy record --rate 20 --nonblocking --idle</code> of one station on clu-2068 at
+    16:30Z on 2026-11-07 (load 58, 69 live pointers, stations serving five projects) put 98.2 % of the
+    main thread's 1,079 samples in <code>tick → publish</code>, which rebuilt every session's obligations on
+    every tick. The chains beneath <code>publish</code> were:</p>
+    <table>
+      <thead><tr><th>share</th><th>chain</th></tr></thead>
+      <tbody>
+        <tr><td>23.8 %</td><td><code>station_obligations.refresh:189 → obligation_snapshot.payload_for:1437 → obligations._review_duty_item:1361 → _review_tier_for_duty:1250 → recovery_repair_dispatch._sweep_review_tier:1688 → promotion_checks._run_review_tier:1090 → _run_capability_risk:968 → _plan_state_for_run:1709</code></td></tr>
+        <tr><td>15.9 %</td><td><code>refresh:185 → obligation_snapshot.fleet_state:1285 → _derive_fleet_state:1324 → obligations._held_worktrees_by_session:1739 → _held_worktree_records:1658 → _run_namings:1526 → ledger.runs:3034</code></td></tr>
+        <tr><td>10.1 %</td><td>the same review-tier chain through <code>promotion_checks._review_changed_scope</code>, which runs git subprocesses</td></tr>
+        <tr><td>5.9 %</td><td><code>_derive_fleet_state:1325 → runs.drain_unreconciled_by_session → _drain_row → classify_pointer → recovery_memo._write_classification_memo:200 → _store.write_atomically</code></td></tr>
+        <tr><td>3.2 %</td><td><code>_current_review_in_flight → _live_pointers → runs.list_live → _pointer_text</code></td></tr>
+      </tbody>
+    </table>
+    <p>Leaf frames were <code>stat</code> 22 %, <code>realpath</code> 11 %, <code>replace</code> 6 %,
+    <code>open</code> 6 % and json decode 6 %, and 15 % of samples sat in <em>subprocess</em>. Each of
+    those computations returns the same answer from one tick to the next unless the run it describes
+    changed, so each is now memoised on the inputs it reads: the review tier on the run's head, tree,
+    cited commits, manifest and plan signatures; the held-worktree records on the ledger, git registry
+    and live-directory signatures; and the classification memo is skipped when the bytes on disk are
+    the ones it would write.</p>
+    <p>Against the live crew home on 98dci4-clu-2068 at 16:52Z on 2026-11-07, four live reckon sessions
+    and 23 duties, two consecutive <code>payload_for</code> passes over every session on one derived
+    fleet state took <strong>118.745 s</strong> for the first and <strong>75.761 s</strong> for the
+    second, with the derivation itself costing a further 55.988 s. <strong>The second pass does not meet
+    the target of under 2 s.</strong> The three memoised computations are gone from it, and what remains
+    is the review-store reads each duty makes (<code>select_review_for_head</code> and the delivered-review
+    lookup), which this change does not cover. The node measured the target and missed it; the remaining
+    cost is the next section's work.</p>
     <p>The before figures cannot be plotted beside these. §10 counted file syscalls per second rather than bytes, so the
     producers’ 6,312, 3,323 and 875 calls per second and the fourteen followers’ 310 each are a reading of a different
     quantity. What the two readings do share is the shape: in both, the cost is paid per run per tick, and the redesign has
