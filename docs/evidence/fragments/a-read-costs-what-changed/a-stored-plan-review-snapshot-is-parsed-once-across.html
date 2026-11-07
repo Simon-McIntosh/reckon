@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-costs-what-changed">
+  <meta name="plan-title" content="A stored plan review snapshot is parsed once across processes">
+  <meta name="plan-evidence-for" content="reckon:a-read-costs-what-changed">
+  <meta name="plan-verifies" content="reckon:a-read-costs-what-changed#s6">
+  <meta name="plan-recorded-at" content="2026-11-07">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="plan-review,snapshot,persisted-memo,parse-cost">
+  <title>A stored review snapshot is parsed once across processes — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-stored-plan-review-snapshot-is-parsed-once-across" data-reckon="landed" data-when="2026-11-07">
+  <h2>A stored review snapshot is parsed once across processes</h2>
+  <p id="a-stored-plan-review-snapshot-is-parsed-once-across-summary">A stored plan review's snapshot was parsed four times on every read, twice through <code>_plan_html.read_state</code> and twice through the structural span reader, and nothing was kept between calls or between processes. The three parts of the evidence — unit digests, prose texts and section declarations — are now computed and persisted together through <code>metadata_index.persisted_memo</code>, keyed by the snapshot's content digest and guarded by the source digests of the review and plan-HTML parsers, so an entry recorded by another revision of either parser reads as absent. A restarted process answers from the stored evidence instead of parsing the snapshot again.</p>
+  <table id="a-stored-plan-review-snapshot-is-parsed-once-across-measure">
+    <caption>Parses of ten stored snapshots by one call each, counted through patches on both parsers.</caption>
+    <thead><tr><th>arm</th><th>read_state calls</th><th>span-reader calls</th></tr></thead>
+    <tbody>
+      <tr><td>first process</td><td>20</td><td>20</td></tr>
+      <tr><td>second process, base revision</td><td>20</td><td>20</td></tr>
+      <tr><td>second process, this change</td><td>0</td><td>0</td></tr>
+    </tbody>
+  </table>
+  <p id="a-stored-plan-review-snapshot-is-parsed-once-across-control">The negative control removes the persisted memo from <code>_snapshot_evidence</code>; the second process then re-parses all ten snapshots and the case fails, which shows the zero above is the memo and not an instrument that never fired.</p>
+</article>
+</body>
+</html>
