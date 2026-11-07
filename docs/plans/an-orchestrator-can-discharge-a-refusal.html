@@ -23,8 +23,8 @@
   <title>An Orchestrator Can Discharge A Refusal | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="12">
-<meta name="plan-modified" content="2026-11-06">
+<meta name="plan-version" content="13">
+<meta name="plan-modified" content="2026-11-07">
 <meta name="plan-impl" content="0.5">
 <meta name="plan-section-declarations" content="{&quot;s10&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 </head>
@@ -413,7 +413,7 @@ Retry with --accept-path PATH REASON for each deliberate companion path</code></
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="discharge-surface-shape" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="discharge-surface-shape" data-choice="keyed-waiver-with-opt-out" data-by="Simon McIntosh" data-when="2026-11-07T08:13:14+00:00">
     <p class="r-dec-q">Does each refusal get its own named waiver flag, or is
         there one keyed waiver that takes a refusal identity and a reason?</p>
     <p class="r-dec-ctx">A flag per refusal is how the current five arose, and
@@ -427,11 +427,11 @@ Retry with --accept-path PATH REASON for each deliberate companion path</code></
     <p class="r-dec-opts">
       <button class="r-opt" data-value="flag-per-refusal">a named flag per refusal</button>
       <button class="r-opt" data-value="one-keyed-waiver">one keyed waiver taking a refusal id and reason</button>
-      <button class="r-opt" data-value="keyed-waiver-with-opt-out">one keyed waiver, with refusals able to declare themselves unwaivable</button>
+      <button class="r-opt chosen" data-value="keyed-waiver-with-opt-out">one keyed waiver, with refusals able to declare themselves unwaivable</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">One keyed waiver, --waive &lt;refusal-id&gt; &quot;&lt;reason&gt;&quot; recorded on the row, so the discharge surface grows with the refusal surface by construction; a guard whose value is that it cannot be argued with declares itself unwaivable.</p>
     </div>
-<div class="r-dec" data-key="undischargeable-row-disposition" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="undischargeable-row-disposition" data-choice="blocked-on-repair-disposition" data-by="Simon McIntosh" data-when="2026-11-07T08:13:14+00:00">
     <p class="r-dec-q">What becomes of a row whose refusal is correct and whose
         repair is owned by someone else?</p>
     <p class="r-dec-ctx">Today it stays unreconciled, and once past the grace
@@ -444,11 +444,11 @@ Retry with --accept-path PATH REASON for each deliberate companion path</code></
         and produced no repair, because the coordinator who could feel the pressure
         was not the one who could act on it.</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="blocked-on-repair-disposition">a recorded blocked-on-repair disposition naming the owner</button>
+      <button class="r-opt chosen" data-value="blocked-on-repair-disposition">a recorded blocked-on-repair disposition naming the owner</button>
       <button class="r-opt" data-value="stays-unreconciled">stays unreconciled and keeps the pressure on</button>
       <button class="r-opt" data-value="disposition-with-expiry">a recorded disposition that expires and re-raises</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">A correct refusal whose repair another session owns gets a recorded blocked-on-repair disposition naming that owner, which stops the clock without promoting; the measured row applied pressure for three days to a coordinator who could not act on it.</p>
     </div>
 </section>
 
@@ -524,7 +524,7 @@ if claims:
     <div class="r-comment-body"><p>census of crew decisions made by matching worker- or subprocess-produced text: 70 pattern-matching hits located and all 70 classified - 45 core, 20 secondary over orchestrator-authored text, 5 excluded as surface-constructed strings. ONE defect, promotion.py:464, whose reproduction is the very tests that quote it. The correct form is two lines above it at promotion.py:377, a fullmatch on the last non-blank line, where position rather than content is the discriminator. The report records that several long writes were corrupted during composition and were rewritten in short verified chunks, and its own Counts section predates the recount and is superseded by the Status section</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261103T082606754290-count-uses-of-the-retired-refusal-escapes" data-who="reckon-build" data-when="2026-11-06T16:26:58.500Z">
-    <div class="r-comment-body"><p>Measured one week of coordinator transcripts (2026-10-05T00:00Z to 2026-10-12T00:00Z) for operator uses of --no-impl-change on corrective runs and --outcome on review runs, against the coordinator-overhead census&#x27;s frozen corpus read with the same instrument: 18.8 vs 18.5 uses per hundred corrective runs and 51.0 vs 52.5 per hundred review runs, and 113 of 327 corrective promotions the new exemption covers still carried the flag, so the zero target is not met. Record at docs/research/refusal-escape-census.html.</p></div>
+    <div class="r-comment-body"><p>Measured one week of coordinator transcripts (2026-10-05T00:00Z to 2026-10-12T00:00Z) for operator uses of --no-impl-change on corrective runs and --outcome on review runs, against the coordinator-overhead census's frozen corpus read with the same instrument: 18.8 vs 18.5 uses per hundred corrective runs and 51.0 vs 52.5 per hundred review runs, and 113 of 327 corrective promotions the new exemption covers still carried the flag, so the zero target is not met. Record at docs/research/refusal-escape-census.html.</p></div>
 </div>
 </section>
 </main>
