@@ -316,6 +316,53 @@ def test_a_gate_ref_holds_and_releases_as_the_gate_verdict_moves(
     )
 
 
+def _batch_refs(repository: Path, node: TaskNode, run_id: str) -> list[str]:
+    """Read one node's refs through the batch path, which names no own-verdict."""
+    refs_by_run, _ = queue_admission._validated_batch_waits(
+        [node], {node.id: run_id}, project=PROJECT, repo_root=repository, live=[]
+    )
+    return refs_by_run[run_id]
+
+
+def test_a_review_of_a_gated_section_reads_no_readiness_wait(chain_repo: Path) -> None:
+    """A gate governs new work; a review judges work already delivered."""
+    _gate_section(chain_repo, gate_id="g1", section="s2", verdict="")
+    review = _node("n-review", "s2", role=recovery_vocabulary.REVIEW_ROLE)
+
+    refs, _, unmet = queue_admission.dispatch_waits(
+        review, repo_root=chain_repo, project=PROJECT
+    )
+    assert not [ref for ref in refs if ref.startswith("readiness:")]
+    assert refs == [f"{PLAN}#s1"], "the review keeps its section's authored wait"
+    assert unmet == [f"{PLAN}#s1"]
+
+    assert not [
+        ref
+        for ref in _batch_refs(chain_repo, review, "r-review")
+        if ref.startswith("readiness:")
+    ]
+
+
+def test_an_implement_of_a_gated_section_keeps_its_readiness_wait(
+    chain_repo: Path,
+) -> None:
+    """The discriminator: the same section, gated, held for new work."""
+    _gate_section(chain_repo, gate_id="g1", section="s2", verdict="")
+    implement = _node("n-implement", "s2")
+    readiness = f"readiness:{PROJECT}:{PLAN}#s2"
+
+    refs, _, unmet = queue_admission.dispatch_waits(
+        implement, repo_root=chain_repo, project=PROJECT
+    )
+    assert refs == [f"{PLAN}#s1", readiness]
+    assert unmet == [f"{PLAN}#s1", readiness]
+
+    assert _batch_refs(chain_repo, implement, "r-implement") == [
+        f"{PLAN}#s1",
+        readiness,
+    ]
+
+
 def test_a_wait_on_another_request_reads_that_requests_own_record(
     chain_repo: Path,
 ) -> None:

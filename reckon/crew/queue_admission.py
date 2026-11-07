@@ -48,6 +48,7 @@ from reckon.crew.node import (
     TaskNode,
     UnreconciledRuns,
 )
+from reckon.crew.recovery_vocabulary import REVIEW_ROLE
 from reckon.crew.refusals import DISPATCH_REFUSAL_REMEDIES
 from reckon.crew.routing import plan_review_units as plan_review_units  # noqa: PLC0414
 from reckon.ledger import normalize_section
@@ -2464,7 +2465,7 @@ def _validated_batch_waits(
                 wait_projects[ref[len(REQUEST_REF_PREFIX) :]] = upstream_project
             elif not ref.startswith((GATE_REF_PREFIX, "readiness:")):
                 section_edges(child)
-        if read_own_verdict and node.plan and node.section:
+        if read_own_verdict and _needs_own_section_verdict(node, repo_root=repo_root):
             rows, _ = _readiness_rows(project, current_docs, cache, node.plan, refs)
             verdicts = (rows.get(node.plan) or {}).get("sections", {})
             own = next(
@@ -3064,7 +3065,14 @@ def _dispatch_nonrun_wait_state(ref: str, *, project: str, docs_dir: Path) -> st
 
 
 def _needs_own_section_verdict(node: TaskNode, *, repo_root: str | Path) -> bool:
-    """Ask the roadmap about the node's section when authored holds can apply."""
+    """Ask the roadmap about the node's section when authored holds can apply.
+
+    A gate or an open decision holds new work on the section. A review judges
+    code a run has already written, and nothing it does depends on how the
+    hold is settled, so its own section's verdict is never read.
+    """
+    if str(node.role or "").strip() == REVIEW_ROLE:
+        return False
     if not node.plan or not node.section:
         return False
     from reckon import _plan_html as plan_html_reader
