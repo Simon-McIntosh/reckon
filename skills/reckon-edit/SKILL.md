@@ -209,6 +209,18 @@ real continuation.
    `uncovered_by_write`: a **null** there means the plan's coverage before the
    write could not be read, and `uncovered_by_write_error` names why, so treat
    it as unknown rather than as a write that uncovered nothing.
+11. **An edit to a queued section holds only that section's queue request, and
+   the edit's review releases it.** A section that already has a request in the
+   queue reads its plan when the request launches, so an edit landed before
+   that launch is the text it runs. An admission pass compares each waiting
+   request against the plan text it was queued against and writes a
+   `plan-review-owed` hold on the request whose own section — or the document
+   text it reads as its contract — moved and has no stored review covering the
+   new text. Every other request of the plan keeps its phase, so an edit
+   elsewhere holds nothing that did not read it. Answer the review as rule 9
+   requires; the pass releases the hold as soon as the review is stored, so do
+   not drop and re-dispatch the held request, and do not hold the plan's other
+   requests by hand.
 
 ## Authoring for faithful display (the SPA render contract)
 
