@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T06:55:25.756Z",
+  "dispatched_at": "2026-11-07T06:49:40Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:44",
+      "id": "reasoning-1",
+      "reason": "the correct routing is stated two sentences later, so the implementation action (widen the regex, the existing route does the rest) is unaffected.",
+      "text": "the deliverable says `_prose_deferred_work_term` \"runs today only for `insert_section` and `append_evidence`\", but `_refuse_forged_body_structure` is also called from `_refuse_forged_structure` (reckon/_store_section_ops.py:141-146), which is every `sections.<id>.body` set \u2014 the very route the next sentence relies on; the paragraph contradicts itself and a reader taking the first sentence would think the section-body route must be added",
+      "type": "reasoning",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:44",
+      "id": "reasoning-2",
+      "reason": "\u00a73's own contract is \"every site\", so the node's write paths must gain `reckon/mcp_edit_plan.py` and its done-when a case for that append, or the claim is false on delivery.",
+      "text": "the claim that the refusal \"is added at every site that writes a comment or followup body\" omits `_append_comment` (reckon/mcp_edit_plan.py:137-183), which builds a `body`, appends it to `comments[section_id]` and writes the plan with no `_prose_deferred_work_term` call; it is exported through `reckon.mcp` on the same line-pair as `_append_followup` (reckon/mcp.py:221-222), which \u00a73 does treat as a live write site, so a comment added through it would carry the widened term unflagged and `reckon/mcp_edit_plan.py` is absent from \u00a73's write paths",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "",
+  "plan_fingerprint": "b4eda8bd7d072942fa44c0c4fe2890bca1e10fd3c4ddc1b8ec3cf8de2169a67e",
+  "plan_slug": "an-evidence-record-counts-only-what-it-read",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T064820842702-plan-review-of-an-evidence-record-counts-only-what-it-read",
+  "reviewed_blob_sha": "8c4cd4d81d87dc85ddec72de5c0adcf7f1d9f80f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited location resolves: evidence.py:329 (`_render_document`), 405\u2013408 (the summary), 417 (`plan-verdict`), _store.py:1184 (`_landed_record_shell`), 993 (`_prose_deferred_work_term`), 3798\u20133807 (comments branch, `_refuse_duplicate_id` only), 3760\u20133777 (followups append), 2381\u20132389 (`append_to_list`), 3482\u20133486 (`followups.<id>.<field>`), _store_section_ops.py:141 (import of `_refuse_forged_body_structure`), doccheck.py:419 (`_DEFERRED_WORK_TERM`), mcp_edit_plan.py:253 (`append_to_list` call).",
+    "done_when": "pass \u2014 each of \u00a72's three cases and \u00a73's six cases is a measurable assertion in a temporary repository, and every case but \u00a73's section-body case is tied to a named negative control; the section-body case is falsified by the regex-restore control because that path is pre-existing routing widened by the regex.",
+    "evidence_paths": "pass \u2014 both sections require every log under the run directory, headed by revision and literal command and ending in `EXIT=`, and \u00a73 also records the audit output under it; neither names a scratchpad or node-local temp path.",
+    "naming": "pass \u2014 the two new test filenames and every symbol named (`lost_anchors` aside, which is \u00a74) describe the mechanism, and no plan label, stage name or ticket number reaches them.",
+    "reasoning": "a finding \u2014 \u00a73's claim that the refusal \"runs today only for `insert_section` and `append_evidence`\" is contradicted by the next sentence and by a third live route, and \u00a73's \"every site that writes a comment or followup body\" omits `_append_comment`, which writes a comment body with no prose check at all.",
+    "single_goal": "pass \u2014 \u00a72 delivers one property (an op-created record claims nothing it did not read, counts and verdict together) and \u00a73 delivers one (the deferred-work rule reads every spelling at every comment and followup write site).",
+    "wiring": "pass \u2014 the snapshot's plan-section-depends-on declares s3 on s2 and s4 on s2 and s3, and s3's shared-write statement (`reckon/_store.py`) matches the file both \u00a72 and \u00a73 name in their write paths."
+  },
+  "section_digests": {
+    "_document": "6d35efce52466005f8ee56997c8dc7bcca998d7c41fcd252d254bc7264596281",
+    "s1": "bf811a5d7f572845450c32733084679b1cf3759ba9fa90f902857640fab3056f",
+    "s2": "0b8bed0f03d053457f9c7efd06dd0ff61e4d509f00a6f7518b6e3c911a96a555",
+    "s3": "9c0a179c3e6296abb42ec179e265c22b70557b2ebf298eb3d233e3604ffa092c",
+    "s4": "8bc85303e2974b9aaad5c930875da392c800a9d548ad0c0b9390bd43b381a09d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T07:04:06.572920+00:00",
+  "total": null
+}
