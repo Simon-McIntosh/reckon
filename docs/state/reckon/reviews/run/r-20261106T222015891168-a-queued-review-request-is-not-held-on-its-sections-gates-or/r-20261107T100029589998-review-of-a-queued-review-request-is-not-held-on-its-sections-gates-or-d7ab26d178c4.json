@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:333",
+    "reckon/crew/dispatch.py:1916",
+    "reckon/crew/dispatch.py:2158",
+    "reckon/crew/queue_admission.py:3113",
+    "reckon/crew/queue_admission.py:3170"
+  ],
+  "completed_at": "2026-11-07T10:12:24.882Z",
+  "dispatched_at": "2026-11-07T10:02:15Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "3075",
+      "severity": "non-blocking",
+      "text": "non-blocking: the inline str(node.role or \"\").strip() == REVIEW_ROLE re-implements the repository's TaskNode-shaped owner of that question at reckon/crew/reports.py:1831 _node_is_a_reviewer, so a later change to how a review node is identified (a minted node id as well as a role, which reckon/crew/recovery_review_delivery.py:45 already reads) has to be found and applied here by hand."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against e3a9f381a2; ddcaa50b2e adds the role test and the batch-path gate, 7b93068c7d restores the plan-authored-hold read inside dispatch_waits so a preflight with no authored hold still scans no roadmap, and d7ab26d178 records the evidence fragment with its arm table.",
+    "done_when": "the done_when asks for three behaviours through dispatch_waits and _validated_batch_waits, a named negative control, and a ruff obligation; tests/test_a_queued_request_waits_on_its_dependencies.py:327-364 asserts the first three (no readiness ref for the review node from either entry point, a readiness ref for the implement node from both, and the batch call made with no read_own_verdict), the manifest records the negative control, and the ruff half is unrecorded there but I ran both ruff commands on the two staged paths at d7ab26d178 and both are clean.",
+    "goal": "the source node's goal is that a queued review of a delivered run is not held on its section's gates or decisions; reckon/crew/queue_admission.py:3075 returns False for a REVIEW_ROLE node and :2468 gates the batch path's own-verdict read on that same owner, so a review on a gated section gains no readiness: ref.",
+    "manifest": "read; it reports status complete at d7ab26d178 over commits ddcaa50b2e, 7b93068c7d and d7ab26d178, a base arm of 19 passed and a head arm of 21 passed both EXIT=0, and a wider importer arm attributed failure by failure; every claim I could check against a log or the diff held.",
+    "write_paths": "the source run's fence (prompt.txt:77-81) grants reckon/crew/queue_admission.py, tests/test_a_queued_request_waits_on_its_dependencies.py and the evidence fragment directory; git diff --stat e3a9f381a2..d7ab26d178 shows exactly those three paths and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_queued_request_waits_on_its_dependencies.py:335 reddens to ['readiness:proj:plan-a#s2'] when the role condition is removed, which negative-control.log shows, and :346-364 guards the opposite regression for an implement node.",
+    "evidence": "the recorded arms are real and reconcile with the logs, negative-control.log showing one failing id at EXIT=1 and after-suite.log 21 passed at EXIT=0, but the manifest records no run of the ruff obligation its done_when names.",
+    "fit": "reckon/crew/queue_admission.py:51 imports REVIEW_ROLE from the vocabulary module in sorted position and :3067-3076 follows the module's docstring idiom, with no plan, sprint or ticket identifier added anywhere in the diff.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:2468 and :3075 make the review node read no readiness ref while :2468 still reads it for every other role, which is the goal exactly.",
+    "reuse": "_needs_own_section_verdict extends its own owner, but the added predicate at reckon/crew/queue_admission.py:3075 duplicates reckon/crew/reports.py:1831 _node_is_a_reviewer rather than calling it.",
+    "scope_discipline": "every path in the diff (reckon/crew/queue_admission.py, the test file, the evidence fragment) is inside the fence at prompt.txt:77-81."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that a queued review of a delivered run is not held on its section's gates or decisions; reckon/crew/queue_admission.py:3075 returns False for a REVIEW_ROLE node and :2468 gates the batch path's own-verdict read on that same owner, so a review on a gated section gains no readiness: ref.\nVERDICT done_when: the done_when asks for three behaviours through dispatch_waits and _validated_batch_waits, a named negative control, and a ruff obligation; tests/test_a_queued_request_waits_on_its_dependencies.py:327-364 asserts the first three (no readiness ref for the review node from either entry point, a readiness ref for the implement node from both, and the batch call made with no read_own_verdict), the manifest records the negative control, and the ruff half is unrecorded there but I ran both ruff commands on the two staged paths at d7ab26d178 and both are clean.\nVERDICT write_paths: the source run's fence (prompt.txt:77-81) grants reckon/crew/queue_admission.py, tests/test_a_queued_request_waits_on_its_dependencies.py and the evidence fragment directory; git diff --stat e3a9f381a2..d7ab26d178 shows exactly those three paths and nothing else.\nVERDICT manifest: read; it reports status complete at d7ab26d178 over commits ddcaa50b2e, 7b93068c7d and d7ab26d178, a base arm of 19 passed and a head arm of 21 passed both EXIT=0, and a wider importer arm attributed failure by failure; every claim I could check against a log or the diff held.\nVERDICT diff: read commit by commit against e3a9f381a2; ddcaa50b2e adds the role test and the batch-path gate, 7b93068c7d restores the plan-authored-hold read inside dispatch_waits so a preflight with no authored hold still scans no roadmap, and d7ab26d178 records the evidence fragment with its arm table.\nCALL_SITES: reckon/crew/dispatch.py:333, reckon/crew/dispatch.py:1916, reckon/crew/dispatch.py:2158, reckon/crew/queue_admission.py:3113, reckon/crew/queue_admission.py:3170\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:2468 and :3075 make the review node read no readiness ref while :2468 still reads it for every other role, which is the goal exactly.\nSCORE evidence: 17\nJUSTIFICATION evidence: the recorded arms are real and reconcile with the logs, negative-control.log showing one failing id at EXIT=1 and after-suite.log 21 passed at EXIT=0, but the manifest records no run of the ruff obligation its done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/queue_admission.py, the test file, the evidence fragment) is inside the fence at prompt.txt:77-81.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_queued_request_waits_on_its_dependencies.py:335 reddens to ['readiness:proj:plan-a#s2'] when the role condition is removed, which negative-control.log shows, and :346-364 guards the opposite regression for an implement node.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/queue_admission.py:51 imports REVIEW_ROLE from the vocabulary module in sorted position and :3067-3076 follows the module's docstring idiom, with no plan, sprint or ticket identifier added anywhere in the diff.\nSCORE reuse: 16\nJUSTIFICATION reuse: _needs_own_section_verdict extends its own owner, but the added predicate at reckon/crew/queue_admission.py:3075 duplicates reckon/crew/reports.py:1831 _node_is_a_reviewer rather than calling it.\nFINDING reckon/crew/queue_admission.py:3075 non-blocking: the inline str(node.role or \"\").strip() == REVIEW_ROLE re-implements the repository's TaskNode-shaped owner of that question at reckon/crew/reports.py:1831 _node_is_a_reviewer, so a later change to how a review node is identified (a minted node id as well as a role, which reckon/crew/recovery_review_delivery.py:45 already reads) has to be found and applied here by hand.\n",
+  "review_run_id": "r-20261107T100029589998-review-of-a-queued-review-request-is-not-held-on-its-sections-gates-or-d7ab26d178c4",
+  "reviewed_base_sha": "e3a9f381a22cf5344e7db60bce74d5da69b7a7e3",
+  "reviewed_head": "d7ab26d178c42fe118a26dd7e652dab973afec55",
+  "reviewed_head_sha": "d7ab26d178c42fe118a26dd7e652dab973afec55",
+  "reviewed_run_id": "r-20261106T222015891168-a-queued-review-request-is-not-held-on-its-sections-gates-or",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T10:20:16.865087+00:00",
+  "total": 109
+}
