@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery_liveness.py:_manifest_wait",
+    "reckon/hooks/worker_stop.py:302",
+    "reckon/crew/reports.py:2277",
+    "reckon/crew/recovery.py:367"
+  ],
+  "completed_at": "2026-11-07T06:53:56.129Z",
+  "dispatched_at": "2026-11-07T06:47:55Z",
+  "findings": [
+    {
+      "file": "tests/test_a_probe_is_read_for_the_program_it_runs.py",
+      "id": "fd958ad17c2",
+      "line": 1,
+      "severity": "blocking",
+      "text": "the new test file is outside the node's declared write paths (the fence grants only reckon/crew/recovery_wait.py, reckon/crew/recovery_liveness.py, the landing fragment and the figures directory), so the promotion-time write-scope audit refuses the run although its gate cannot run without the file; the coordinator must widen the claim to include tests/test_a_probe_is_read_for_the_program_it_runs.py before promotion, as the run's own blockers entry states."
+    },
+    {
+      "file": "reckon/crew/recovery_wait.py",
+      "id": "ff89ef8b97d",
+      "line": 857,
+      "severity": "non-blocking",
+      "text": "_wait_probe_job_id duplicates the capability the repository already owns at reckon/crew/recovery_classification.py:487 (same name, same documented purpose) instead of replacing or wrapping it, and the owner's production consumers at recovery_classification.py:517 and :566 keep the old squeue-only reading, so an interpreter probe's live job never reaches _scheduler_job_alive and the new function is unreachable in production."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T061430858140-read-a-probe-for-the-program-it-runs/logs/negative-control.log",
+      "id": "f0149a5337d",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the header records revision 3942e0a8 (the base) while the tree and the baseline readings are the head worktree carrying the change (section1_kind \"job\"), so the log names a revision the tree it measured does not contain and a later reader comparing it against the arms is misled about which code produced the readings."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read both commits against 3942e0a8; recovery_wait.py gains the shared reader, the interpreter set and the flagged/glued job-id helpers, recovery_liveness.py routes structured output through it and names the interpreter in the refusal, the test adds six cases and the fragment records the measurement.",
+    "done_when": "the done-when names five behaviours and five negative controls in tests/test_a_probe_is_read_for_the_program_it_runs.py; the gate log records 6 passed and negative-control.log records a discriminating reading for each of the five controls.",
+    "goal": "the goal is to make one probe reader see through shell and interpreter code strings for the reference and structured-output checks; reckon/crew/recovery_wait.py:811 supplies it and both checks consume it.",
+    "manifest": "read; it records commits 403f05a2 and 072f7924, 6 passed on the new gate, base arm 298 passed/1 skipped and head arm 304 passed/1 skipped with 0 added failures, and its own blocker entry for the unwidened test path.",
+    "write_paths": "the declared scope is the two source files, the landing fragment and the figures directory; the diff also changes tests/test_a_probe_is_read_for_the_program_it_runs.py, which is outside that list, and the run records it under blockers."
+  },
+  "justifications": {
+    "durability": "each added assertion names a mutation that reddens it \u2014 negative-control-red.log shows test_the_incident_probe_is_read_and_names_job_1306915 and test_a_*_structured_query_inside_a_code_string_is_refused failing at 2 failed, 4 passed, EXIT=1 \u2014 and no assertion compares against the value the test itself supplied.",
+    "evidence": "the new gate's log (new-test.log, 6 passed, EXIT=0) and the five controls in negative-control.log each record a reading that differs from the committed baseline, but the done-when's ruff clause is asserted in the manifest with no log path listed and negative-control.log:1 names the base revision while running in the head tree.",
+    "fit": "the helpers follow the module's frozenset-and-docstring idiom, but reckoning/crew/recovery_wait.py:857 now carries the same private name as reckon/crew/recovery_classification.py:487, so a reader of either module cannot tell which job-id reader is the one in use.",
+    "goal_fidelity": "reckon/crew/recovery_wait.py:811 defines the one reader and both checks call it \u2014 reckon/crew/recovery_wait.py:721 for the reference kind and reckon/crew/recovery_liveness.py:863 for structured output \u2014 which is exactly the goal's 'one probe reader'.",
+    "reuse": "reckon/crew/recovery_wait.py:857 re-implements the job-id reader the repository already owns at reckon/crew/recovery_classification.py:487 without extending it, and the owner's consumers at :517 and :566 keep the old squeue-only reading.",
+    "scope_discipline": "the diff touches tests/test_a_probe_is_read_for_the_program_it_runs.py, which the FENCE \u2014 SCOPE list (reckon/crew/recovery_wait.py, reckon/crew/recovery_liveness.py, the fragment and figures dir) does not grant, and adds reckon/crew/recovery_wait.py:857 outside what the goal implies."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is one probe reader that sees through shell and interpreter code strings for the reference and structured-output checks; reckon/crew/recovery_wait.py:811 defines it and both checks call it.\nVERDICT done_when: the done-when names five behaviours and five negative controls in tests/test_a_probe_is_read_for_the_program_it_runs.py; the gate log records 6 passed and negative-control.log records a differing reading for each of the five controls.\nVERDICT write_paths: the declared scope is reckon/crew/recovery_wait.py, reckon/crew/recovery_liveness.py, the landing fragment and the figures directory; the diff also changes tests/test_a_probe_is_read_for_the_program_it_runs.py, outside that list.\nVERDICT manifest: read; it records commits 403f05a2 and 072f7924, 6 passed on the new gate, base arm 298 passed/1 skipped and head arm 304 passed/1 skipped with 0 added failures, plus a blocker entry for the unwidened test path.\nVERDICT diff: read both commits against 3942e0a8; recovery_wait.py gains the shared reader and the flagged/glued job-id helpers, recovery_liveness.py routes structured output through it and names the interpreter in the refusal, the test adds six cases, the fragment records the measurement.\nCALL_SITES: reckon/crew/recovery_liveness.py:_manifest_wait, reckon/hooks/worker_stop.py:302, reckon/crew/reports.py:2277, reckon/crew/recovery.py:367\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_wait.py:811 defines the one reader and both reckon/crew/recovery_wait.py:721 and reckon/crew/recovery_liveness.py:863 consume it, which is the goal's deliverable.\nSCORE evidence: 16\nJUSTIFICATION evidence: new-test.log records 6 passed with EXIT=0 and negative-control.log records a differing reading per control, but the done-when's ruff clause has no recorded log and negative-control.log:1 names the base revision while measuring the head tree.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: tests/test_a_probe_is_read_for_the_program_it_runs.py lies outside the FENCE \u2014 SCOPE list, and reckon/crew/recovery_wait.py:857 adds an unwired helper the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control-red.log shows 2 failed, 4 passed, EXIT=1 with test_the_incident_probe_is_read_and_names_job_1306915 and the structured-query case red under the reinstated regression, and no assertion compares against its own input.\nSCORE fit: 17\nJUSTIFICATION fit: the helpers match the module's frozenset-and-docstring idiom, but reckon/crew/recovery_wait.py:857 and reckon/crew/recovery_classification.py:487 now share one private name for two implementations.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/recovery_wait.py:857 duplicates the job-id reader owned at reckon/crew/recovery_classification.py:487 without extending it, and the owner's callers at :517 and :566 keep the old reading.\nFINDING tests/test_a_probe_is_read_for_the_program_it_runs.py:1 blocking: the new test file is outside the node's declared write paths, so the promotion-time scope audit refuses the run although its gate needs the file; the claim must be widened before promotion.\nFINDING reckon/crew/recovery_wait.py:857 non-blocking: _wait_probe_job_id duplicates the owner at reckon/crew/recovery_classification.py:487 and its production consumers keep the old squeue-only reader, so the new capability is unreachable at runtime.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T061430858140-read-a-probe-for-the-program-it-runs/logs/negative-control.log:1 non-blocking: the header names the base revision while the tree and readings are the head worktree, so the log misattributes which code produced them.",
+  "review_run_id": "r-20261107T064422940872-review-of-read-a-probe-for-the-program-it-runs-072f7924bc43",
+  "reviewed_base_sha": "3942e0a83f3c092f1377bd81fd40813fa156f261",
+  "reviewed_head_sha": "072f7924bc43a51273ad12d3213d11a8012a52c1",
+  "reviewed_run_id": "r-20261107T061430858140-read-a-probe-for-the-program-it-runs",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T06:55:01.942171+00:00",
+  "total": 86
+}
