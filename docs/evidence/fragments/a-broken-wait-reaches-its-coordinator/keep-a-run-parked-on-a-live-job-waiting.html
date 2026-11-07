@@ -1,0 +1,34 @@
+<article class="r-evidence" data-node="keep-a-run-parked-on-a-live-job-waiting" id="keep-a-run-parked-on-a-live-job-waiting">
+<h3 id="keep-a-run-parked-on-a-live-job-waiting-title">A run parked on a live scheduler job keeps waiting</h3>
+<p id="keep-a-run-parked-on-a-live-job-waiting-defect">A wait over a long scheduler job
+answers the same state on every sweep: the run re-parked with
+<code>["sacct","-n","-X","-P","-j","1307334","-o","State"]</code> reported
+<code>RUNNING</code>, which is exactly what a healthy wait looks like. The stillness bound
+therefore cannot separate a working wait from a dead producer on its own, and the scheduler
+is the only witness that can. But the classifier asked the scheduler only when the probe's
+own head was <code>squeue</code>, through a job-id reader of its own. Reproduced at the base
+revision, with the scheduler reporting the job present: both the <code>sacct</code> vector
+and the incident <code>python3 -c</code> code string resolved no job id, the scheduler was never
+asked, and both runs read <code>producer-gone</code> with the probe stuck at
+<code>RUNNING</code>.</p>
+<p id="keep-a-run-parked-on-a-live-job-waiting-change">The classifier's own reader is deleted
+and both call sites take the job id from the shared probe reader, which already sees through
+a <code>sacct</code> vector and through an interpreter's code string. Every shape a wait is
+written in now names its job, so a named job the scheduler still lists keeps the run waiting
+however long its value stands still, and a wait naming no job asks the scheduler nothing.
+The scheduler query itself is unchanged: it is <code>squeue -h -j &lt;id&gt;</code>, and an
+answer that cannot be read still leaves the job's liveness unknown rather than absent.</p>
+<p id="keep-a-run-parked-on-a-live-job-waiting-measure">Measure: the new gate passes 4 of 4.
+The base arm over the 77 test files importing <code>reckon.crew.recovery_classification</code>
+gave 663 passed, 1 failed; the head arm gave 667 passed, 1 failed. The four added passing
+cases are this node's, and the single failure id is the same in both arms —
+<code>test_crew_obligations.py::test_obligations_reads_scoring_without_observing_or_dispatching</code>,
+which reports two <code>git-object-answers.json</code> memo files in a directory a pure read
+is asserted not to touch — so no added failure id against the base revision.</p>
+<p id="keep-a-run-parked-on-a-live-job-waiting-controls">Two negative controls, each applied
+to the committed source and reverted, the worktree verified identical to the commit
+afterwards. Restoring an <code>squeue</code>-only job-id reader at both call sites makes the
+first and third cases <code>producer-gone</code>: 2 failed, 2 passed,
+<code>EXIT=1</code>. Skipping the scheduler query, reading a named job as alive, makes the
+second case keep waiting: 3 failed, 1 passed, <code>EXIT=1</code>.</p>
+</article>
