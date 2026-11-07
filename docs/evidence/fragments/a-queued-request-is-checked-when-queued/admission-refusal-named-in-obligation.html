@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-queued-request-is-checked-when-queued">
+  <meta name="plan-title" content="A refused request names its refusal in its obligation">
+  <meta name="plan-summary" content="A queued request admission refused on its node contract is listed under its own duty kind, carrying the refusal's own property names and the edit or drop that clears it, instead of reading as a request merely waiting its turn.">
+  <meta name="plan-evidence-for" content="reckon:a-queued-request-is-checked-when-queued">
+  <meta name="plan-verifies" content="reckon:a-queued-request-is-checked-when-queued#s8">
+  <meta name="plan-recorded-at" content="2026-11-07">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,reckon-tooling,obligations">
+  <title>A refused request names its refusal in its obligation — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="admission-refusal-named-in-obligation-note" class="r-note" data-node="admission-refusal-named-in-obligation" data-reckon="landed" data-when="2026-11-07">
+  <h2 id="admission-refusal-named-in-obligation-head">A refused request names its refusal in its obligation</h2>
+  <p id="admission-refusal-named-in-obligation-rule">Admission re-tests a queued request on every pass, and a request refused on its node contract fails the same check every time: a lane slot never clears it. The classifier reads a refusal only when a session-subject class or a quoted remedy says whose condition the refusal is, so a plain node-contract refusal left the request on the waiting reading — <code>run-queued</code>, "waiting for a lane slot, position 1" — with the refusal sitting unread in the pointer's <code>failure</code>. One project's sections sat unlaunched for the better part of an hour behind that reading.</p>
+  <p id="admission-refusal-named-in-obligation-mechanism">The row now carries its own kind, <code>queued-contract-refused</code>. <code>_classified_rows</code> attaches the refusal's remedy to the classified row, which is the one place both producers of a session's duty list read: the derivation and the snapshot slice a sweep publishes, which calls the same helper. <code>_queued_contract_refusal</code> reads the failure's stamped text, leaves a lane hold, a full queue, a scope conflict and a capacity refusal on the waiting reading, and takes the failing property names from the refusal's own rendering. A refusal naming only fields <code>reckon crew queue edit</code> can set (<code>single-goal</code>, <code>fully-specified</code>, <code>demonstrable</code>, <code>scoped</code>, <code>bounded</code>) publishes <code>reckon crew queue edit --run &lt;id&gt;</code>, which keeps the request's place. Any plan-owned property (<code>spec-level</code>, <code>negative_control</code>, <code>independently-verifies</code>) leaves nothing an edit can set, so the row publishes <code>reckon crew queue drop --run &lt;id&gt;</code> and its reason says to repair the section and dispatch it again.</p>
+  <p id="admission-refusal-named-in-obligation-reproduction">Reproduced before the repair: on the base revision with the new test alone, all three cases failed, <code>EXIT=1</code>, the refused pointer reading <code>assert 'run-queued' == 'queued-contract-refused'</code>. After the change: 3 passed, <code>EXIT=0</code>.</p>
+  <p id="admission-refusal-named-in-obligation-population">Population, one arm at a time at <code>-n 4</code> over the 55 test files that import <code>reckon.crew.obligations</code>: head 2 failed / 314 passed, base 2 failed / 311 passed, the failure sets identical (<code>test_obligations_reads_scoring_without_observing_or_dispatching</code> and <code>test_the_prompt_path_loads_no_derivation_module</code>), so the change adds no failure. The 3-test difference is this node's own new test.</p>
+  <p id="admission-refusal-named-in-obligation-control">Negative control, the declared mutation — <code>failure</code> ignored inside <code>_queued_contract_refusal</code> so the pointer's failure is never read: 1 failed, 2 passed, <code>EXIT=1</code>, the refused request collapsing to <code>run-queued</code>. <code>ruff check</code> and <code>ruff format --check</code> report no finding on the staged paths.</p>
+  <p id="admission-refusal-named-in-obligation-logs">Logs in the run directory: <code>base-arm.log</code>, <code>head-arm.log</code>, <code>base-suite.log</code>, <code>head-suite.log</code>, <code>negative-control.log</code>.</p>
+</article>
+</body>
+</html>
