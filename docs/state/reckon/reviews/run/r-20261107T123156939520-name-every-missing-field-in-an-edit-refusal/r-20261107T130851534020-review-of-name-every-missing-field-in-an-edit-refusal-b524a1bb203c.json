@@ -1,0 +1,77 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own arms: baseline_suite declares 3 failure ids at 708748fd78 (the three multi-field tests) and after_suite declares 0 at 94fbb3cd48, so the node adds no failing id beyond its base.",
+  "assertion_analysis": [
+    "tests/test_an_edit_refusal_names_every_field.py:105 asserts detail.count(\"append_evidence op requires\") == 4, which fails if the guard raises on only the first missing field, as the base arm shows; its expected count derives from the four fields the plan names, not from a value the test passed in.",
+    "tests/test_an_edit_refusal_names_every_field.py:122-124 asserts both malformed field names and a clause count of 2, reddening on the base revision exactly as logs/base.log records.",
+    "tests/test_an_edit_refusal_names_every_field.py:130-133 asserts the three close problems by field name and requires detail.count(\"close\") >= 3; a revert to the first-field raise yields one clause, count 1, so it reddens.",
+    "tests/test_an_edit_refusal_names_every_field.py:137-180 compares the emitted refusal detail against literal expected messages, an independent source, so rewording a single-problem message fails rather than following the code.",
+    "No added assertion compares a value against the same variable the test supplied; every expectation is a literal message or a count of clauses in the emitted detail."
+  ],
+  "base_log_revision": "708748fd78ed913a2eef8eed3fc2ebc9e87042b2",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp_edit_plan.py:1887",
+    "reckon/_store.py:4194",
+    "reckon/mcp_edit_plan.py:2203"
+  ],
+  "completed_at": "2026-11-07T13:37:03.632Z",
+  "dispatched_at": "2026-11-07T13:15:33Z",
+  "findings": [
+    {
+      "file": "tests/test_an_edit_refusal_names_every_field.py",
+      "line": "127",
+      "severity": "non-blocking",
+      "text": "non-blocking: the declared negative control mutates only _apply_append_evidence and logs/negative-control.log shows the two append_evidence tests red, so the close multi-field guard at reckon/_store.py:4152-4165 has no observed red arm; its reddening is reasoned from the count at :133."
+    },
+    {
+      "file": "docs/evidence/fragments/a-refusal-comes-before-the-work/name-every-missing-field-in-an-edit-refusal.html",
+      "line": "23",
+      "severity": "non-blocking",
+      "text": "non-blocking: this sentence says the three op guards now collect their problems into one list, but _apply_append at reckon/_store.py:3665 was not changed; the next paragraph at line 29 states the correction, so the opening sentence overstates the landed change."
+    }
+  ],
+  "head_log_revision": "94fbb3cd48f6b44f086218f6cd5000efe26fa436",
+  "item_verdicts": {
+    "call_sites": "apply_ops is reached from reckon/mcp_edit_plan.py:1887, routes through _OP_DISPATCH at reckon/_store.py:4194 to _apply_append_evidence and _apply_close, and the tool boundary that renders detail is _edit_plan_tool at reckon/mcp_edit_plan.py:2203.",
+    "diff": "Read commit by commit against 708748fd78: a681966d00 collects problems in _apply_append_evidence and _apply_close and adds the three-line _missing_fields_refusal joiner, 94fbb3cd48 adds one trailing newline to the new test, and b524a1bb20 adds the 70-line evidence fragment.",
+    "done_when": "The done_when names tests/test_an_edit_refusal_names_every_field.py with four cases; the manifest records the head arm at 94fbb3cd48 as 4 passed EXIT=0 (logs/after.log) and the base arm at 708748fd78 as 3 failed, 1 passed EXIT=1 (logs/base.log), the one passing case being the single-problem message.",
+    "goal": "The node goal is that an edit refusal names every missing field at once; reckon/_store.py:1278 adds _missing_fields_refusal and both multi-field guards at :1292-1318 and :4152-4165 now collect before raising, while _apply_append at :3665 is left unchanged because target is its only required field and the new test pins its existing message.",
+    "manifest": "Read manifest.md; it records status complete, the three commits, the gate command with four log paths, and a checkpoint whose negative-control claim logs/negative-control.log confirms at 2 failed EXIT=1.",
+    "write_paths": "The node declares reckon/_store.py, tests/test_an_edit_refusal_names_every_field.py, docs/evidence/fragments/a-refusal-comes-before-the-work/name-every-missing-field-in-an-edit-refusal.html and a figures directory; git diff --stat 708748fd78..b524a1bb203 changes exactly those three files and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_an_edit_refusal_names_every_field.py:105 and :124 count distinct problem clauses and :103, :122-123 and :130-132 assert each field name, reddening on the first-field raise as logs/negative-control.log shows at 2 failed, though the close guard's red arm is reasoned rather than observed.",
+    "evidence": "logs/base.log was run at 708748fd78 in a git-archive extraction whose module.__file__ line resolves to that tree and ends EXIT=1 with the three multi-field ids, while logs/after.log at 94fbb3cd48 ends EXIT=0 with 4 passed.",
+    "fit": "reckon/_store.py:1278 reuses the '; '.join refusal form already used at :4175 and its docstring states the mechanism only, with no plan, ticket or version reference.",
+    "goal_fidelity": "reckon/_store.py:1306-1318 raises one OpError carrying the plan, anchor, title and body problems together, and :4152-4165 does the same for status, outcome and by, with _missing_fields_refusal at :1278 returning the bare problem when exactly one is found.",
+    "reuse": "_missing_fields_refusal is the shared formatter used by both changed guards; a search of reckon/ found no other required-field collector, and validate_landing_patch(report_all=True) at :4169 serves a different layer.",
+    "scope_discipline": "git diff --stat 708748fd78..b524a1bb203 names three paths, all inside the declared write paths, and the only deletions are the six replaced raise statements in the two guards."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that an edit refusal names every missing field at once; reckon/_store.py:1278 adds _missing_fields_refusal and both multi-field guards at :1292-1318 and :4152-4165 now collect before raising, while _apply_append at :3665 is unchanged because target is its only required field.\nVERDICT done_when: the done_when names tests/test_an_edit_refusal_names_every_field.py with four cases; the manifest records the head arm at 94fbb3cd48 as 4 passed EXIT=0 and the base arm at 708748fd78 as 3 failed, 1 passed EXIT=1.\nVERDICT write_paths: the node declares reckon/_store.py, the new test, the evidence fragment and a figures directory; git diff --stat 708748fd78..b524a1bb203 changes exactly those three files.\nVERDICT manifest: read; status complete, three commits and four logs recorded, and its negative control confirmed by logs/negative-control.log at 2 failed EXIT=1.\nVERDICT diff: read commit by commit against 708748fd78; a681966d00 changes the two guards, 94fbb3cd48 adds a newline to the test, b524a1bb20 adds the evidence fragment.\nCALL_SITES: reckon/mcp_edit_plan.py:1887, reckon/_store.py:4194, reckon/mcp_edit_plan.py:2203\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_store.py:1306-1318 and :4152-4165 raise one OpError naming every problem, and :1278 keeps the single-problem message byte-identical.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/base.log at 708748fd78 ends EXIT=1 with the three multi-field ids and logs/after.log at 94fbb3cd48 ends EXIT=0 with 4 passed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff for 708748fd78..b524a1bb203 names three paths, all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_an_edit_refusal_names_every_field.py:105 and :124 redden on the first-field raise as logs/negative-control.log shows, but the close guard at :127 has no observed red arm.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/_store.py:1278 reuses the '; '.join refusal form already at :4175 and its docstring states the mechanism only.\nSCORE reuse: 19\nJUSTIFICATION reuse: _missing_fields_refusal is the shared formatter for both changed guards, and a search of reckon/ found no other required-field collector.\nFINDING tests/test_an_edit_refusal_names_every_field.py:127 non-blocking: the declared negative control mutates only _apply_append_evidence, so the close multi-field guard has no observed red arm.\nFINDING docs/evidence/fragments/a-refusal-comes-before-the-work/name-every-missing-field-in-an-edit-refusal.html:23 non-blocking: the sentence says three op guards now collect their problems while _apply_append at reckon/_store.py:3665 was not changed.\n",
+  "review_run_id": "r-20261107T130851534020-review-of-name-every-missing-field-in-an-edit-refusal-b524a1bb203c",
+  "review_scope": "all three commits gained since base 708748fd78ed913a2eef8eed3fc2ebc9e87042b2, the whole node",
+  "reviewed_base_sha": "708748fd78ed913a2eef8eed3fc2ebc9e87042b2",
+  "reviewed_commits": [
+    "a681966d00e5a5483ee14eca4993598e9872bb20",
+    "94fbb3cd48f6b44f086218f6cd5000efe26fa436",
+    "b524a1bb203c15ae7935bdbac6390ac896b81a6a"
+  ],
+  "reviewed_head_sha": "b524a1bb203c15ae7935bdbac6390ac896b81a6a",
+  "reviewed_run_id": "r-20261107T123156939520-name-every-missing-field-in-an-edit-refusal",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T13:10:00Z",
+  "total": 114
+}
