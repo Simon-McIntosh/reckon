@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T05:12:27.217Z",
+  "dispatched_at": "2026-11-07T05:06:08Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-refusal-comes-before-the-work.html:43",
+      "id": "reasoning-1",
+      "reason": "as written the node removes a deliberate escape hatch and an audit field, and would land a regression the suite cannot see; the plan must have validate_node carry the override (or keep plan_dispatch's fit call for the override and the audit record).",
+      "text": "\u00a72 says plan_dispatch \"passes `execution_capable` and the repository, and deletes its own copies of those refusals (near lines 837, 851, 862 and 869\u2013879)\", but line 837 is `capability.assess_execution_fit(..., override=execution_override)` and `validate_node` (reckon/crew/node.py:1182-1188) has no override parameter: `ExecutionFit.conflict` (reckon/capability.py:62-64) ignores override entirely, so a node dispatched with `--allow-execution-mismatch` (reckon/crew_dispatch_commands.py:1925, reckoned again on admission at reckon/crew/queue_admission.py:400) would be refused after the change. Line 837 also produces the `execution_fit` object the resolution persists as its audit label (dispatch_plan.py:141 and :1106), so deleting it as a \"copy of a refusal\" removes a reported field as well",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-refusal-comes-before-the-work.html:49",
+      "id": "reasoning-2",
+      "reason": "without saying which paths the refusal covers, and how a batch brief entry names its plan (or that batch brief runs are out of scope), the node fixes one path and leaves the same failure on another that s2 has just made a contract path.",
+      "text": "\u00a73 refuses an implement-role brief dispatch that names neither flag and records the given one in `dispatch_options`, but a batch entry already carries a brief (reckon/crew/dispatch_batch.py:48 and :410) and reaches the queue through `queue_requests`, whose `dispatch_options` are hardcoded to project, session and no_watch (reckon/crew/dispatch.py:354), with no flag to supply a plan link: a refused-now batch brief entry would still be dispatched and refused only at landing, which is exactly the defect \u00a73 exists to remove. The single-path refusal does not reach that path, and \u00a73's done-when tests only the single dispatch",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-refusal-comes-before-the-work.html:58",
+      "id": "done_when-1",
+      "reason": "the node can return blocked on a done-when it could have met, and the negative control is undefined on exactly the branch the plan specifies; the section should state what the control is (and that the test is still delivered) when the reproduction does not occur.",
+      "text": "\u00a75's done-when requires a new test showing a dry run naming an outside path is refused, with the negative control \"restoring the condition the reproduction named makes the first case answer ok\"; but its deliverable also says that if the case does not reproduce the worker records the attempt and reports blocked. Where the dry run already refuses, the test's first case passes without any repair, the negative control has no named condition to restore, and the node is told to stop although its stated measure is satisfiable",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "8c1e6b49431a86769ae9287f89f255d4e04f2cea",
+  "plan_fingerprint": "f614d84a38d7285b02a791f29c6710e85f5f060876a3d3594f9a79adc7ead6cb",
+  "plan_slug": "a-refusal-comes-before-the-work",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T050453709471-plan-review-of-a-refusal-comes-before-the-work",
+  "reviewed_blob_sha": "c81d4685da2be286084e86fe2dfd2e791fca9323",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited anchors resolve: validate_node (reckon/crew/node.py:1182) with its execution-fit branch at node.py:1255-1262, negative_control_finding at node.py:1054, gate_population_finding at node.py:1145, _DELIVERABLE_ACTIONS at node.py:79, plan_dispatch's validate_node call at reckon/crew/dispatch_plan.py:843 and its execution_fit/negative-control/population blocks at :837/:851/:862/:869-879, queue_edit._contract_findings at reckon/crew/queue_edit.py:164, dispatch_options at reckon/crew/dispatch.py:354, _require_brief_owner at reckon/crew/promotion_checks.py:1770, the three _store ops at reckon/_store.py:1283/4140/3668, and the dry run's plan_dispatch call at reckon/crew_dispatch_commands.py:1915.",
+    "done_when": "a finding \u2014 \u00a75's own blocked branch contradicts its done-when, because the test its done-when demands can be written and pass even where the reproduction does not occur, yet the node is told to stop.",
+    "evidence_paths": "pass \u2014 gate logs and \u00a75's reproduction record are written under the run directory, which is the durable crew run path, not a scratchpad.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags enter a symbol or comment, and the sections carry mechanism prose rather than changelog prose.",
+    "reasoning": "a finding \u2014 \u00a72's instruction to delegate execution fit to validate_node and delete plan_dispatch's own copy drops the `override` argument and the persisted execution-fit audit record that only that call produces; and \u00a73's dispatch-time refusal covers only the single CLI path while a batch entry can already carry a brief and is queued through queue_requests.",
+    "single_goal": "pass \u2014 \u00a72 is one change (the contract moves into validate_node and every path calls it), \u00a73 one (a brief run names its plan at dispatch), \u00a74 one (an edit refusal names every field), \u00a75 one (the dry run applies the real call's fence).",
+    "wiring": "pass \u2014 the section waits are declared in plan-section-depends-on (s3 and s5 both name a-refusal-comes-before-the-work#s2) and match the shared write paths: s3 and s2 both write reckon/crew/dispatch.py, s5 and s2 both write reckon/crew/dispatch_plan.py, and s4 writes only reckon/_store.py so it is correctly independent."
+  },
+  "section_digests": {
+    "_document": "fe86ddc53d6df02ed8681809f4399744a8daf0946c333b28fc3a6b583769f545",
+    "s1": "75df880739e89570186a1c16cae47d54a4d457a4a6e99c09b2d62c21368dc424",
+    "s2": "35d8fc4c5a1ddc055c0c09995383efe4366ab0d42dcbb43c184d4ce79e213360",
+    "s3": "7b3d820c766df9bfe8874d247f3c16a9be6e8a8cb99b773ee51ef29e2ed4efc9",
+    "s4": "2a97d35fa0e69a6331d78f727d1ded35d267ff23bba3ff069f80e200825410f0",
+    "s5": "7162004a8a6c37869dcf5814af2d512807302afa747e5873e056ac01f5183441"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T05:21:36.755054+00:00",
+  "total": null
+}
