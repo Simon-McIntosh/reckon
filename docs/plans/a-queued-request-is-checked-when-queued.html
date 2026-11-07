@@ -24,7 +24,7 @@
   <title>A Queued Request Is Checked When Queued | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="15">
 <meta name="plan-modified" content="2026-11-07">
 </head>
 <body>
@@ -66,6 +66,9 @@
 <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261107T100310177452-name-the-caller-that-moved-a-live-successors-worktree-to-the" data-who="reckon-build" data-when="2026-11-07T10:39:58.697Z">
     <div class="r-comment-body"><p>Established that the live worktree of run r-20261106T224214853358-edge-window-settle was moved to `_trash/edge-window-settle-20261106T225026473243Z` at 22:50:26Z by `_remove_worktree` (reckon/crew/routing.py:2284) called from `_create_worktree` (reckon/crew/routing.py:2240) during a second launch of the same run id, because `_live_pointer_worktrees` skips the pointer whose run id equals `LAUNCH_RUN_ID` (reckon/crew/routing.py:1092), and that the same call's fleet `create` then made a new inode at the same path; the predecessor never held a worktree and there was no 23:50Z restore — 23:50 local time is 22:50:26Z. The report is /home/ITER/mcintos/.config/reckon/crew/reports/reckon/what-trashed-the-live-worktree.md.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261107T110221621354-review-of-an-answer-lands-on-the-stored-plan-review-whose-finding-it-45d644e2fe44" data-who="reckon-build" data-when="2026-11-07T11:25:04.509Z">
+    <div class="r-comment-body"><p>Reviewed run r-20261107T100007553668-an-answer-lands-on-the-stored-plan-review-whose-finding-it at head 45d644e2fe44071bdeda2745b704dd4c2f94f911 against base 6bde189128f94c26a95836eca1c994799549613f: the commit-order covering selector and the widened --review-run candidate search do what plan section 4 asks (goal_fidelity 18, evidence 16, scope_discipline 19, durability 18, fit 15, reuse 6), with three non-blocking findings — the fifth private copy of the git ancestry probe at plan_review.py:1016, two dead plan_slug parameters at plan_review.py:1089, and the --review-run search being unreachable when no covering review exists at crew_dispatch_commands.py:2745.</p></div>
 </div>
 </section>
 </main>

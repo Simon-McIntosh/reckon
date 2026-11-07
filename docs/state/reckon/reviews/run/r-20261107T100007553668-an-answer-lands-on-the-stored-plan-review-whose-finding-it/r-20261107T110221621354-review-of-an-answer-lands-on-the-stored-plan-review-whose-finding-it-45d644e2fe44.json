@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:2729",
+    "reckon/mcp_views.py:4504",
+    "reckon/crew/queue_admission.py:3979",
+    "reckon/crew/routing.py:2729",
+    "reckon/mcp_deadlines.py:673",
+    "reckon/mcp_edit_plan.py:2195"
+  ],
+  "completed_at": "2026-11-07T11:25:04.509Z",
+  "dispatched_at": "2026-11-07T11:14:00Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": 1016,
+      "severity": "non-blocking",
+      "summary": "_commit_is_ancestor repeats the git merge-base --is-ancestor probe already implemented at reckon/velocity.py:706, reckon/crew/merge.py:610, reckon/crew/promotion_scope.py:2563 and reckon/crew/recovery_review_acceptance.py:209; the tri-state fault policy and the read-pass cache belong on one owner rather than in a further copy."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": 1089,
+      "severity": "non-blocking",
+      "summary": "_newest_by_plan_commit and _records_oldest_first (line 1116) both declare a plan_slug argument that neither body reads, so the signature claims a selection the body does not make."
+    },
+    {
+      "file": "reckon/crew_dispatch_commands.py",
+      "line": 2745,
+      "severity": "non-blocking",
+      "summary": "the --review-run search at line 2786 is unreachable when read_plan_review returns no covering review, because the pre-existing 'no stored review' refusal fires first, so the plan's 'any stored review of the plan' promise holds only while some covering review exists."
+    }
+  ],
+  "plan": "reckon:a-queued-request-is-checked-when-queued",
+  "plan_slug": "a-queued-request-is-checked-when-queued",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that an answer lands on the stored plan review whose finding it names, chosen by plan commit order; `reckon/crew/plan_review.py:1089` `_newest_by_plan_commit` replaces both `plan_version` reductions and `reckon/crew_dispatch_commands.py:2786` widens the `--review-run` search to every stored review of the plan, so both clauses of the section are landed.\nVERDICT done_when: The done_when names `tests/test_an_answer_lands_on_its_review.py` with the view case, the unnamed-answer case, the named-middle-review case and a `plan_version` negative control; the manifest records 3 failed at base 6bde1891, 3 passed at head 8ee31492 and 2 failed / 1 passed under the declared mutation, and each figure matches the summary line the cited log ends on.\nVERDICT write_paths: The declared scope is `reckon/crew/plan_review.py`, `reckon/crew_dispatch_commands.py`, `tests/test_an_answer_lands_on_its_review.py` and the evidence fragment under `docs/evidence/fragments/a-queued-request-is-checked-when-queued/; every path in the diff is inside it and no other file changed.\nVERDICT manifest: Read; it records the literal gate command, logs ending in bare `EXIT=` lines, the negative control at 2 failed EXIT=1, and two population arms at 8 failed / 733 passed whose failure-id sets are identical file for file; it records no ruff log even though the done_when carries a ruff clause, so I ran `ruff check` and `ruff format --check` on the three staged source paths myself and both are clean (EXIT=0).\nVERDICT diff: Read commit by commit from 6bde189128f94c26a95836eca1c994799549613f to 45d644e2fe44: `reckon/crew/plan_review.py` adds the selector helpers and swaps both version reductions for commit-order selection, `reckon/crew_dispatch_commands.py` expands the named-review candidates, and the test and the evidence fragment are new files.\nCALL_SITES: reckon/crew_dispatch_commands.py:2729, reckon/mcp_views.py:4504, reckon/crew/queue_admission.py:3979, reckon/crew/routing.py:2720, reckon/mcp_deadlines.py:673, reckon/mcp_edit_plan.py:2195\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: `reckon/crew/plan_review.py:1427` reduces the covering set through `_newest_by_plan_commit` and `reckon/crew_dispatch_commands.py:2786` searches every stored review for the named finding, though the search sits behind the pre-existing `if record is None` refusal at `reckon/crew_dispatch_commands.py:2745`.\nSCORE evidence: 16\nJUSTIFICATION evidence: `tests/test_an_answer_lands_on_its_review.py:170` is the measured case and its base/head/negative-control/population logs are all on disk ending in a bare EXIT line, but the done_when's ruff clause has no recorded log in the run's `logs/` directory.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: The four-commit diff touches only `reckon/crew/plan_review.py`, `reckon/crew_dispatch_commands.py`, `tests/test_an_answer_lands_on_its_review.py` and the one permitted evidence fragment.\nSCORE durability: 18\nJUSTIFICATION durability: `tests/test_an_answer_lands_on_its_review.py:188` asserts `record[\"review_run_id\"] == NEWEST_RUN` against a module constant the code under test is never handed, and the declared mutation reinstating the `plan_version` reduction reddens it as `negative-control.txt` shows (2 failed, EXIT=1).\nSCORE fit: 15\nJUSTIFICATION fit: The helpers at `reckon/crew/plan_review.py:1011`-`1130` follow the module's private-helper style and carry no plan labels, but `_newest_by_plan_commit` and `_records_oldest_first` declare a `plan_slug` parameter neither body reads.\nSCORE reuse: 6\nJUSTIFICATION reuse: `reckon/crew/plan_review.py:1016` `_commit_is_ancestor` is another private copy of the git ancestry probe the repository already owns at `reckon/velocity.py:706` and duplicates at `reckon/crew/merge.py:610`, `reckon/crew/promotion_scope.py:2563` and `reckon/crew/recovery_review_acceptance.py:209`, rather than extending one owner.\nFINDING reckon/crew/plan_review.py:1016 non-blocking: `_commit_is_ancestor` repeats the `git merge-base --is-ancestor` probe already implemented at `reckon/velocity.py:706`, `reckon/crew/merge.py:610`, `reckon/crew/promotion_scope.py:2563` and `reckon/crew/recovery_review_acceptance.py:209`; the tri-state fault policy and the read-pass cache are real differences but they belong on one owner, and every further copy is another place a policy change must be repeated.\nFINDING reckon/crew/plan_review.py:1089 non-blocking: `_newest_by_plan_commit` and `_records_oldest_first` (line 1116) both take a `plan_slug` argument that neither body reads, so the signature claims the slug selects a policy when it does not.\nFINDING reckon/crew_dispatch_commands.py:2745 non-blocking: the `--review-run` search at `reckon/crew_dispatch_commands.py:2786` is unreachable when `read_plan_review` returns no covering review, because `if record is None` refuses before the candidate expansion, so the plan's promise that `--review-run` naming any stored review of the plan writes to it holds only while some covering review exists.\n",
+  "review_run_id": "r-20261107T110221621354-review-of-an-answer-lands-on-the-stored-plan-review-whose-finding-it-45d644e2fe44",
+  "reviewed_base_sha": "6bde189128f94c26a95836eca1c994799549613f",
+  "reviewed_head_sha": "45d644e2fe44071bdeda2745b704dd4c2f94f911",
+  "reviewed_run_id": "r-20261107T100007553668-an-answer-lands-on-the-stored-plan-review-whose-finding-it",
+  "reviewed_run_node": "an-answer-lands-on-the-stored-plan-review-whose-finding-it",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 6,
+    "scope_discipline": 19
+  },
+  "section": "4",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T11:31:00.616227+00:00",
+  "total": 92
+}
