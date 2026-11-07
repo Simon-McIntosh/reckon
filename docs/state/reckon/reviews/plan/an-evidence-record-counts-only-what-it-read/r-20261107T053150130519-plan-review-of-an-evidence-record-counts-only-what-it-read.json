@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T05:40:23.107Z",
+  "dispatched_at": "2026-11-07T05:33:06Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/an-evidence-record-counts-only-what-it-read.html:44",
+      "id": "reasoning-1",
+      "reason": "a node implementing s3 as written leaves at least two prose surfaces (`gates.<id>.measure`/`required_evidence`, `sections.<id>.title`) where the audit warns and the write is accepted, so the section's stated invariant is false at the moment it ships and the \"every body\" scope is not what gets built.",
+      "text": "s3 says the rule lands \"on every body a plan stores\" and that keeping the one reader makes \"the audit warning and the store refusal widen together\", but the audit reads the whole rendered document (`doccheck.deferred_work_term(soup)` at doccheck.py:1738 over `_prose_text`, which excludes only `<pre>`/`<code>`) while the verbatim check is applied at the listed comment/followup sites only; a gate's `measure` (rendered `<h4 class=\"r-gate-measure\">`, _plan_html.py:1780) and `required_evidence` (`<p class=\"r-gate-required-evidence\">`, line 1781), and a section title, are prose the audit scans and the store accepts unrefused. Reproduced with the widened pattern: `deferred_work_term` on a rendered gate block returns `'carry to \u00a76'`, `_store_section_ops.apply_gate_field_set({'gates':[{'id':'g1','measure':'old'}]}, ['gates','g1','measure'], 'carry to \u00a76', [])` returns normally and leaves `measure == 'carry to \u00a76'`, while `_store._refuse_forged_body_structure('carry to \u00a76', ...)` raises `OpError`; the same pattern inside an `<h2>` is likewise reported by the audit and accepted by the `sections.<id>.title` setter",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-evidence-record-counts-only-what-it-read.html:50",
+      "id": "reasoning-2",
+      "reason": "a node taking the gloss as a mapping reserves `outcome` and not `top`, so an append anchored `top` passes the refusal, and the next synthesis, which writes `top`, folds that anchor into the rendered section \u2014 exactly the loss \u00a74 exists to prevent; s4's ninth case (both sides read one set off the plan's comment keys) stays green under that mapping because both sides move together on the wrong id.",
+      "text": "s4 states the rendered set contains `outcome` for the plan-level key (\"with the plan-level key `_top` rendered as `outcome` (near lines 70, 340\u2013354 and 372)\"), but `_render_document` normalises comment keys through `_section_key` first (`comments_by_section` at evidence.py:340\u2013343), and `_section_key(\"_top\")` returns `\"top\"`, so the `key == \"_top\"` branches at evidence.py:371\u2013372 are unreachable and a plan-level comment section is written as `<section id=\"top\">`. Verified by rendering a plan whose comments are keyed `_top`: the emitted section is `<section id=\"top\">`, and `_section_key('_top')` prints `'top'`",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-evidence-record-counts-only-what-it-read.html:45",
+      "id": "done_when-1",
+      "reason": "the `<pre>`/`<code>` exclusion is existing behaviour s3 states it preserves rather than builds, and the node still declares four working controls, so adding a fifth changes the evidence record without changing what the node builds.",
+      "text": "s3's fifth case (\"a spelling inside `<code>` is neither reported nor refused\") has no negative control among the four declared; the controls cover cases one and two (one-spelling regex), case three (followup op sites and `append_to_list`) and case four (bare `\u00a7N`), so the exemption is the single assertion in the done-when whose mutation is never demonstrated, even though the exemption lives in `_prose_text` (doccheck.py:385\u2013404) which the widened reader shares",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "2c79e34857935927933fb1677458c5c0b697e069",
+  "plan_fingerprint": "d84d04df3b564f73c0e11f7f2bc3a66da2888972a9e6c08b9008e78a46dfda4f",
+  "plan_slug": "an-evidence-record-counts-only-what-it-read",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T053150130519-plan-review-of-an-evidence-record-counts-only-what-it-read",
+  "reviewed_blob_sha": "867cf1db70aa57c03306323c18557ae51122bc61",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_DEFERRED_WORK_TERM` (doccheck.py:419), `_prose_deferred_work_term` (_store.py:993), the comment branch of `_apply_append` (_store.py:3798), the followups append op (_store.py:3757\u20133776), `append_to_list` (_store.py:2381), the `followups.<id>.<field>` set (_store.py:3482), `mcp_edit_plan.py:253`, `_section_key`/`available` (evidence.py:50, 353), `_evidence_record_path` (_store.py:1172), `_apply_evidence_appends` (_store.py:1230), `_evidence_section_html` (_store.py:1197), `EvidenceSynthesisResult` (evidence.py:24) and `synthesize_evidence` (project_maintenance_commands.py:1473) all resolve, each within a few lines of the cited number.",
+    "done_when": "a finding \u2014 every measure in s4 names a control that covers it, but s3's fifth case (the `<code>`/`<pre>` exemption) is the one assertion among its five that no listed negative control falsifies.",
+    "evidence_paths": "pass \u2014 both sections require every log under the run directory, opening with its revision and the literal command and closing on `EXIT=`, which is a durable path a later reader can open.",
+    "naming": "pass \u2014 `lost_anchors`, `data-evidence-origin`, the `dropped`/`replaced`/`retired`/`carried` tags and both test module names describe the mechanism; no plan label, stage name, ticket number or changelog prose reaches them.",
+    "reasoning": "two findings \u2014 s3's claim that the warning and the refusal widen together does not hold for the other prose surfaces the audit reads, and s4 names a rendered id (`outcome`) that `_render_document` does not write.",
+    "single_goal": "pass \u2014 s3 is one deliverable (widen the term and enforce it at the body-writing sites) and s4 is one (carry appended anchors and name each loss), with every case hanging off a set derived by one function.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares s3 waiting on s2 and s4 on s2 and s3, which matches the shared `reckon/_store.py` write each section names, and the open followup orders the same three sections."
+  },
+  "section_digests": {
+    "_document": "6d35efce52466005f8ee56997c8dc7bcca998d7c41fcd252d254bc7264596281",
+    "s1": "7c52117565966edec5de56bc0448d4a141edbcb73ac18ede5f2cb0c34f424f0a",
+    "s2": "e0c21336531cccf486121dbb25184c349eda1428113664a6ba29a293eb13d226",
+    "s3": "19803ce5de4fd849bfcd7c9d64474c734634ca765c32421e910b1bb779906d06",
+    "s4": "e7009b9439969778d937b77ab64b03c2000c3a8ecd987975b56e441438ac5f02"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T05:51:54.738378+00:00",
+  "total": null
+}
