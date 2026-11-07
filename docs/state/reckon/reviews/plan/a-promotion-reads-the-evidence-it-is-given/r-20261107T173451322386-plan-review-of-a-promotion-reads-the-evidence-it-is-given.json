@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T17:59:09.876Z",
+  "dispatched_at": "2026-11-07T17:45:26Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:94",
+      "id": "done_when-1",
+      "reason": "the bound should be raised to cover the population the plan names (it fits comfortably in the stated timeout) or the plan should state a sampling rule and require the fraction, because as written the census can return a wrong answer about a small, biased tail of the manifests it claims to survey.",
+      "text": "the census caps at \"at most 3,000 manifests\" over `r-202610*/` and `r-202611*/`, but that population holds 14,204 `manifest.md` files today (a full read of all of them took 52 s, against the plan's own `timeout 600`), so the bound \u2014 not the timeout \u2014 stops the census at ~21% of the population, and nothing says which 3,000 are taken (glob order would take the oldest October runs). The plan's purpose is to learn how many real manifests change reading before the rule lands; a fifth of them, chosen by no stated rule, cannot answer that, and a partial result reads as a complete one unless the coordinator notices the denominator.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:94",
+      "id": "reasoning-1",
+      "reason": "the item should name the test it means (the entry-shape test `_looks_like_a_list_entry_token` / the commit-identifier pattern, which needs no tree) or name the tree to resolve against, otherwise the measurement reported to the coordinator is of the wrong population.",
+      "text": "the third census item counts \"`commits` lines still keep a single entry that git cannot resolve\", but resolving a revision needs a tree. `_commit_canonical_id` returns None whenever its root is not a readable directory (promotion_evidence.py:366\u2013378: \"a git invocation whose working directory has been removed raises rather than reporting\"), and the census names no repository at all. Most of the 14,204 runs are landed and their worktrees released, so nearly every `commits` line \u2014 well-formed multi-sha ones included \u2014 would read as unresolvable, and the number would measure worktree survival, not the sha-plus-subject shape the clause exists to size.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "190c545bb769ade67a48583b480f517ae3244eb5",
+  "plan_fingerprint": "632f9cc5b409d43ec05e85231e49a4e4b4418d53619c6ffdf49dba9dbebbf200",
+  "plan_slug": "a-promotion-reads-the-evidence-it-is-given",
+  "plan_version": 19,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T173451322386-plan-review-of-a-promotion-reads-the-evidence-it-is-given",
+  "reviewed_blob_sha": "a9fe17568ab6dfa6d4a6d997aa2cb0d1ecadbf5e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited symbols resolve at the stated places: `_MANIFEST_LIST_KEYS` reports.py:85, `_GUARDED_LIST_KEYS` :115, the coercion loop :870\u2013872, `_coerce_list_field` :893, `_looks_like_a_list_entry_token` :923, `_refuse_joined_list_separator` :957, `_cited_log_paths` :2949, `logs[0]` promotion_records.py:362, `_require_commits_beyond_base` promotion_evidence.py:244, `_commit_canonical_id` :366, `suite_observation_missing_fields` ledger.py:490.",
+    "done_when": "a finding \u2014 the census bound at line 94 covers at most 3,000 of the 14,204 manifests the named population holds, with no selection rule and no recorded sampling fraction.",
+    "evidence_paths": "pass \u2014 the census reads the crew home under `~/.config/reckon/crew/runs/` and the done-when records its results and the reproduction in the gate log (line 82), which is durable and openable by a later reader.",
+    "naming": "pass \u2014 the section and its new test name a behaviour (`test_a_manifest_is_read_in_the_shapes_workers_write.py`), and no plan label, stage name or ticket number reaches a symbol or a comment.",
+    "reasoning": "a finding \u2014 the third census item asks how many `commits` lines \"still keep a single entry that git cannot resolve\", but no repository or tree is named, and `_commit_canonical_id` returns None for a root that is not a readable directory (promotion_evidence.py:366\u2013378), so the count would measure released worktrees rather than line 94's sha-plus-subject shape.",
+    "single_goal": "pass \u2014 the three deliverables are one goal (reading a manifest's gate evidence in the shapes workers write it): they share `reckon/crew/reports.py` and `reckon/crew/promotion_evidence.py` and are exercised by one new test file, so a single verdict covers them.",
+    "wiring": "pass \u2014 \u00a78 declares \"waits on \u00a77, which also writes `promotion_evidence.py`\" (plan line 81), \u00a77's write paths include `reckon/crew/promotion_evidence.py` (line 68), and followup f-aprteiig-001 orders the build \"then \u00a77, then \u00a78\" (line 100), so the declared wait and the build order agree."
+  },
+  "section_digests": {
+    "_document": "2f84869cfe4855fe07ab334075df36e6e60ef8400b742b43814dc8124768b7f0",
+    "s1": "5eac0eb57fbf9fccaeee6fb2da59c42ca24c4433f0cffcb4b7de1b6b04324b6c",
+    "s2": "259d093654ecf00609d51d02f39bb21a9feda5af8b5626a64e881f7e85d5abe4",
+    "s3": "479c8ebc617467c2744513e850433e87af52a3d22110620dcfdfb48f9975d081",
+    "s4": "bc5eebc33cf8175dd508f65245c7126745fc3e87a3e75e6229c55004ae265f62",
+    "s5": "5454a3b2f3bbdc9fe34ced889604aa90092b4d22e83912038c83a1392ab1631d",
+    "s6": "2e81c0cbe61ef60fc16acb159e81912b5b6263e9d12b8059efbd9482d722976c",
+    "s7": "1d7652463a13d9925f53c3bae1f6801e173af020bd09d5e7444d0511c37e788b",
+    "s8": "8647ad69850ff8572aa5a05fe6bb5885b33c40bb8eb8c8ff29892dbeb99d5db6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T18:09:21.922526+00:00",
+  "total": null
+}
