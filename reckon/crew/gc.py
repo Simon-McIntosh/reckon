@@ -1659,12 +1659,15 @@ def retention_sweep(
                         offered.append(row)
             if examined % RETENTION_PROGRESS_EVERY == 0:
                 _emit_progress(examined, judged, len(offered))
-        # A pass that reached the end of the sorted list starts the next one at
-        # the head; one that stopped at its limit resumes after the last
-        # directory it examined.
-        at_end = start + examined >= len(names)
-        _write_retention_cursor("" if at_end else names[start + examined - 1])
-    else:
+        # Only an applied pass persists its position. A diagnostic dry run reads
+        # the cursor and leaves it alone, so it cannot carry the hourly pass past
+        # candidates it judged and did not remove. A pass that reached the end of
+        # the sorted list starts the next one at the head; one that stopped at its
+        # limit resumes after the last directory it examined.
+        if apply:
+            at_end = start + examined >= len(names)
+            _write_retention_cursor("" if at_end else names[start + examined - 1])
+    elif apply:
         _write_retention_cursor("")
     _emit_phase("judge", started, phase_seconds)
 

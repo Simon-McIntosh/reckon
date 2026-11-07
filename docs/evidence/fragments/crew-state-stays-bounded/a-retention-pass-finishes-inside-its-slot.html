@@ -9,19 +9,22 @@
     consume a pass's whole budget without advancing. It resumes from a cursor persisted under the
     crew home (<code>RECKON_RETENTION_CURSOR</code> may name it), so that withheld head is walked once
     per cycle instead of re-judged every hour, and it resolves each project's grace window once rather
-    than once per judged directory as <code>_run_directory_grace_seconds</code> did. Progress lines and
+    than once per judged directory as <code>_run_directory_grace_seconds</code> did. Only an applied
+    pass persists the cursor: a dry run reads it and leaves the file as it was, so a diagnostic run
+    cannot carry the hourly pass past candidates it judged and did not remove. Progress lines and
     one timing line per phase go to stderr as the pass runs, so a pass killed under its timeout still
     leaves a record; stdout keeps the single JSON report <code>main()</code> and
     <code>crew retention-sweep</code> emit.
   </p>
 
   <p id="a-retention-pass-finishes-inside-its-slot-gate">
-    <code>tests/test_a_retention_pass_is_bounded.py</code> (5 cases, synthetic crew home of 2,000 run
-    directories) passes at the head: <code>5 passed</code>. The base arm, the test files importing
+    <code>tests/test_a_retention_pass_is_bounded.py</code> (6 cases, synthetic crew home of 2,000 run
+    directories) passes at the head: <code>6 passed</code>. The base arm, the test files importing
     <code>reckon.crew.gc</code> that exercise the changed function, run at
-    <code>976bf02dcc</code> in a scratch extraction: <code>33 passed</code>. Both negative controls
-    produce a red log: counting only offered rows again fails the limit case, and resetting the cursor
-    at the start of every pass fails the withheld-head case.
+    <code>976bf02dcc</code> in a scratch extraction: <code>33 passed</code>. Three negative controls
+    produce a red log: counting only offered rows again fails the limit case, resetting the cursor at
+    the start of every pass fails the withheld-head case, and writing the cursor on a dry run fails
+    the case that a dry run leaves it byte-identical.
   </p>
 
   <table id="a-retention-pass-finishes-inside-its-slot-controls">
@@ -33,6 +36,9 @@
           <td><code>EXIT=1</code>, one failed</td></tr>
       <tr><td>reset the cursor at the start of every pass</td>
           <td><code>test_consecutive_passes_reach_a_prune_candidate_behind_a_withheld_head</code></td>
+          <td><code>EXIT=1</code>, one failed</td></tr>
+      <tr><td>write the cursor on a dry run</td>
+          <td><code>test_a_dry_run_leaves_the_cursor_where_it_was</code></td>
           <td><code>EXIT=1</code>, one failed</td></tr>
     </tbody>
   </table>
@@ -71,10 +77,12 @@
     ledger phase in <strong>25.696 s</strong> and reached the judge phase, where per-prune
     <code>tree_size_bytes</code> walks on GPFS dominate: at <strong>936.25 s</strong> it was
     still judging, having examined <strong>8,310</strong> directories (7,976 judged, 4,602 offered),
-    and the run ended <code>EXIT=143</code> rather than completing the store. That is the full-store
-    pass, which the plan does not require to finish in one run — the acceptance is that a pass of
-    500 finishes under five minutes, and the bounded cursor retires the full store across successive
-    hourly passes rather than in one unbounded run. The run's own phase, progress and exit lines are
-    in <code>host-measure-100000.stderr</code>.
+    and the run ended <code>EXIT=143</code> rather than completing the store. At about
+    <strong>8.9 directories/s</strong>, the 20,975-directory store needs about
+    <strong>2,360 s</strong>, so the judge phase does not finish within a 1,900 s bound. That is the
+    full-store pass, which the plan does not require to finish in one run — the acceptance is that a
+    pass of 500 finishes under five minutes, and the bounded cursor retires the full store across
+    successive hourly passes rather than in one unbounded run. The run's own phase, progress and exit
+    lines are in <code>host-measure-100000.stderr</code>.
   </p>
 </section>

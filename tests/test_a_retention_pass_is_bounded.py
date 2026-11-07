@@ -146,13 +146,42 @@ def test_consecutive_passes_reach_a_prune_candidate_behind_a_withheld_head(
     write_mounts(tmp_path / "config", root)
     plant_many(tmp_path / "config", root, DIRECTORY_COUNT, now=now, figures_from=300)
 
-    offered_by_pass: list[int] = []
+    removed_by_pass: list[int] = []
     for _ in range(4):
-        report = gc_module.retention_sweep(now=now, limit=100)
-        offered_by_pass.append(len(report["offered"]))
+        report = gc_module.retention_sweep(now=now, limit=100, apply=True)
+        removed_by_pass.append(report["removed_count"])
 
-    assert offered_by_pass[:3] == [0, 0, 0], offered_by_pass
-    assert offered_by_pass[3] > 0, offered_by_pass
+    assert removed_by_pass[:3] == [0, 0, 0], removed_by_pass
+    assert removed_by_pass[3] > 0, removed_by_pass
+
+
+def test_a_dry_run_leaves_the_cursor_where_it_was(tmp_path: Path, monkeypatch) -> None:
+    """A diagnostic dry run does not move the cursor past what it did not remove.
+
+    A dry run offers candidates for removal. If it advanced the cursor, the next
+    applied pass would skip them and they would wait a whole cycle, so the dry
+    run must leave the cursor byte-identical and the applied pass that follows
+    removes the very candidates the dry run offered.
+    """
+    now = setup_home(tmp_path, monkeypatch)
+    root = checkout(tmp_path)
+    write_mounts(tmp_path / "config", root)
+    plant_many(tmp_path / "config", root, 200, now=now, figures_from=0)
+
+    # An applied pass seeds a cursor file; the dry run that follows must not
+    # change it.
+    first = gc_module.retention_sweep(now=now, limit=50, apply=True)
+    assert first["removed_count"] == 50, first
+    cursor = gc_module.retention_cursor_path()
+    before = cursor.read_bytes()
+
+    dry = gc_module.retention_sweep(now=now, limit=100, apply=False)
+    assert len(dry["offered"]) == 100, dry
+    assert cursor.read_bytes() == before
+
+    offered_ids = [row["run_id"] for row in dry["offered"]]
+    applied = gc_module.retention_sweep(now=now, limit=100, apply=True)
+    assert applied["removed"] == offered_ids, applied["removed"][:3]
 
 
 def test_an_interrupted_pass_has_already_printed_its_progress(
