@@ -33,13 +33,20 @@ PLAN_PATH = "docs/plans/fixture.html"
 OLDEST_FINDING = "alpha"
 MIDDLE_FINDING = "beta"
 NEWEST_FINDING = "gamma"
+ORPHAN_FINDING = "delta"
 OLDEST_RUN = "run-oldest"
 MIDDLE_RUN = "run-middle"
 NEWEST_RUN = "run-newest"
+ORPHAN_RUN = "run-orphan"
+DEFAULT_PROSE = "Extend the existing mechanism."
 
 
-def _plan(version: int) -> str:
-    """The fixture plan, whose only change between commits is its version."""
+def _plan(version: int, prose: str = DEFAULT_PROSE) -> str:
+    """The fixture plan, whose only change between commits is its version.
+
+    ``prose`` is the authored body the fingerprint digests, so a review stored
+    against one prose stops covering the plan once that prose changes.
+    """
     return (
         "<!doctype html><html><head>"
         '<meta name="docs-project" content="sample">'
@@ -49,13 +56,15 @@ def _plan(version: int) -> str:
         '<meta name="plan-status" content="active">'
         f'<meta name="plan-version" content="{version}">'
         '</head><body><h2 id="delivery">Delivery</h2>'
-        "<p>Extend the existing mechanism.</p></body></html>"
+        f"<p>{prose}</p></body></html>"
     )
 
 
-def _commit_version(repo: Path, path: Path, version: int, message: str) -> tuple:
+def _commit_version(
+    repo: Path, path: Path, version: int, message: str, prose: str = DEFAULT_PROSE
+) -> tuple:
     """Write the plan at ``version``, commit it, and return its commit and blob."""
-    path.write_text(_plan(version), encoding="utf-8")
+    path.write_text(_plan(version, prose), encoding="utf-8")
     for args in (["add", PLAN_PATH], ["commit", "-q", "-m", message]):
         subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True)
     commit = subprocess.run(
@@ -80,6 +89,7 @@ def _store(
     run_id: str,
     finding: str,
     timestamp: str,
+    fingerprint: str | None = None,
 ) -> None:
     """Store one content review of the plan as it stood at ``commit``."""
     plan_review.store_plan_review(
@@ -89,7 +99,11 @@ def _store(
             "plan_version": version,
             "reviewed_blob_sha": blob,
             "plan_commit": commit,
-            "plan_fingerprint": plan_review.plan_fingerprint(path),
+            "plan_fingerprint": (
+                fingerprint
+                if fingerprint is not None
+                else plan_review.plan_fingerprint(path)
+            ),
             "rubric": "content",
             "review_run_id": run_id,
             "findings": [
@@ -233,3 +247,53 @@ def test_review_run_naming_the_middle_review_answers_its_finding(
     )
     assert not stored[OLDEST_RUN]["responses"]
     assert not stored[NEWEST_RUN]["responses"]
+
+
+def test_review_run_reaches_a_review_that_no_longer_covers_the_plan(project) -> None:
+    """A named review answers even when no stored review covers the plan.
+
+    The plan's prose changes after the review read it, so nothing covers the
+    plan any more and the command has no newest review to fall back on. The
+    finding is still owed by the review that raised it, and naming that review
+    is how a caller reaches it.
+    """
+    _, repo, path = project
+    commit, blob = _commit_version(repo, path, 2, "chore: record the plan as reviewed")
+    reviewed = plan_review.plan_fingerprint(path)
+    _commit_version(
+        repo,
+        path,
+        4,
+        "chore: settle the plan after that review",
+        prose="Replace the existing mechanism.",
+    )
+    _store(
+        path,
+        version=2,
+        commit=commit,
+        blob=blob,
+        run_id=ORPHAN_RUN,
+        finding=ORPHAN_FINDING,
+        timestamp="2026-11-07T04:00:00+00:00",
+        fingerprint=reviewed,
+    )
+    assert plan_review.read_plan_review(PROJECT, PLAN_SLUG, plan=path) is None, (
+        "the premise: the stored review does not cover the plan as it stands, "
+        "so the unnamed answer has nothing to land on"
+    )
+
+    result = _answer(
+        "--answer",
+        ORPHAN_FINDING,
+        "--review-run",
+        ORPHAN_RUN,
+        "--acted",
+        "--note",
+        "The named review's finding is answered by this edit.",
+    )
+    assert result.exit_code == 0, result.output
+
+    stored = _stored_by_run()
+    assert ORPHAN_FINDING in stored[ORPHAN_RUN]["responses"], (
+        "the named review takes the answer though it no longer covers the plan"
+    )

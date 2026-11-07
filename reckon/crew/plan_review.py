@@ -1016,9 +1016,12 @@ def _record_plan_commit(record: Mapping[str, Any]) -> str:
 def _commit_is_ancestor(repo: Path, ancestor: str, descendant: str) -> bool | None:
     """Whether ``ancestor`` is reachable from ``descendant``, or ``None``.
 
-    ``None`` means git could not answer — an object the checkout does not hold,
-    a checkout that is gone, a git that refuses — so a caller falls back rather
-    than reading a failed lookup as "not an ancestor".
+    The probe is the velocity module's ancestry reader rather than a second copy
+    of the git call. ``None`` means the walk itself could not run — a git that
+    will not start, a checkout that is gone — so a caller falls back to another
+    key rather than trusting nothing. The reader reports an object the checkout
+    cannot resolve as "no", which the caller treats exactly as ``None``: it
+    falls through to the same fallback.
     """
     if not ancestor or not descendant:
         return None
@@ -1031,29 +1034,12 @@ def _commit_is_ancestor(repo: Path, ancestor: str, descendant: str) -> bool | No
     key = ("ancestry", str(repo), ancestor, descendant)
     if cache is not None and key in cache:
         return cache[key]
+    from reckon.velocity import _is_ancestor
+
     try:
-        result = subprocess.run(
-            [
-                "git",
-                "-C",
-                str(repo),
-                "merge-base",
-                "--is-ancestor",
-                ancestor,
-                descendant,
-            ],
-            capture_output=True,
-            check=False,
-            timeout=20,
-        )
+        answer: bool | None = _is_ancestor(repo, ancestor, descendant)
     except (OSError, subprocess.SubprocessError):
         return None
-    if result.returncode == 0:
-        answer: bool | None = True
-    elif result.returncode == 1:
-        answer = False
-    else:
-        answer = None
     if cache is not None:
         cache[key] = answer
     return answer
@@ -1087,7 +1073,7 @@ def _record_is_newer(
 
 
 def _newest_by_plan_commit(
-    records: Iterable[Mapping[str, Any]], project: str, plan_slug: str
+    records: Iterable[Mapping[str, Any]], project: str
 ) -> Mapping[str, Any] | None:
     """The review that read the newest plan commit, or ``None``.
 
@@ -1104,7 +1090,7 @@ def _newest_by_plan_commit(
 
 
 def _records_oldest_first(
-    records: Iterable[Mapping[str, Any]], project: str, plan_slug: str
+    records: Iterable[Mapping[str, Any]], project: str
 ) -> list[Mapping[str, Any]]:
     """The reviews ordered oldest first by the plan commit each read."""
     repo = _project_repo_root(project)
@@ -1178,7 +1164,7 @@ def review_coverage(
         # except a section that became implementable since the review: a
         # declaration is normalised out of the fingerprint, so a change of
         # declaration alone reaches here and must still be caught.
-        newest = _newest_by_plan_commit(whole, project, plan_slug)
+        newest = _newest_by_plan_commit(whole, project)
         if newest is None:
             return [], set(), {}
         evidence = _snapshot_evidence(project, plan_slug, newest)
@@ -1233,7 +1219,7 @@ def review_coverage(
             )
         return reviewed_texts[key]
 
-    for record in _records_oldest_first(records, project, plan_slug):
+    for record in _records_oldest_first(records, project):
         evidence = _snapshot_evidence(project, plan_slug, record)
         if evidence is None:
             snapshot_digests, snapshot_prose, snapshot_declarations = None, None, None
@@ -1427,7 +1413,7 @@ def read_plan_review(
         ]
         if not covering:
             return None
-        return _newest_by_plan_commit(covering, project, plan_slug)
+        return _newest_by_plan_commit(covering, project)
     records: list[tuple[Path, dict[str, Any]]] = []
     wanted = _wanted_fingerprints(plan_fingerprint)
     for path in _candidate_paths(project, plan_slug, plan_version, base_dir):
