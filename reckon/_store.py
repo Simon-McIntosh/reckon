@@ -1275,6 +1275,16 @@ def _apply_evidence_appends(
     return written
 
 
+def _missing_fields_refusal(problems: list[str]) -> str:
+    """One refusal naming every field a call is missing, not only the first.
+
+    A single problem reads exactly as it did when each field raised on its own,
+    so a caller that got one message still gets that message; a call with
+    several learns all of them in one round trip.
+    """
+    return problems[0] if len(problems) == 1 else "; ".join(problems)
+
+
 def _apply_append_evidence(
     working: dict, op: dict, is_index: bool, warnings: list[str]
 ) -> None:
@@ -1282,27 +1292,30 @@ def _apply_append_evidence(
     if is_index or str(working.get("type", "plan") or "plan") != "plan":
         raise OpError("append_evidence op is plan-only")
     plan = op.get("plan")
+    anchor = op.get("anchor")
+    title = op.get("title")
+    body = op.get("body")
+    problems: list[str] = []
     if not isinstance(plan, str) or not re.fullmatch(
         r"[A-Za-z0-9][A-Za-z0-9._-]*", plan
     ):
-        raise OpError(
+        problems.append(
             "append_evidence op requires a 'plan' slug matching "
             "[A-Za-z0-9][A-Za-z0-9._-]*"
         )
-    anchor = op.get("anchor")
     if not isinstance(anchor, str) or not re.fullmatch(
         r"[A-Za-z0-9][A-Za-z0-9._-]*", anchor
     ):
-        raise OpError(
+        problems.append(
             "append_evidence op requires an 'anchor' id matching "
             "[A-Za-z0-9][A-Za-z0-9._-]*"
         )
-    title = op.get("title")
     if not isinstance(title, str) or not title.strip():
-        raise OpError("append_evidence op requires a non-empty string 'title'")
-    body = op.get("body")
+        problems.append("append_evidence op requires a non-empty string 'title'")
     if not isinstance(body, str):
-        raise OpError("append_evidence op requires a string 'body'")
+        problems.append("append_evidence op requires a string 'body'")
+    if problems:
+        raise OpError(_missing_fields_refusal(problems))
     request = {
         "plan": plan,
         "anchor": anchor,
@@ -4136,17 +4149,20 @@ def _apply_close(working: dict, op: dict, is_index: bool, warnings: list[str]) -
     if is_index:
         raise OpError("close op is plan-only")
     status = str(op.get("status") or "").strip().lower()
+    outcome = str(op.get("outcome") or "").strip()
+    by = str(op.get("by") or "").strip()
+    problems: list[str] = []
     if status not in TERMINAL_STATUSES:
-        raise OpError(
+        problems.append(
             "close requires a terminal status (one of "
             f"{', '.join(sorted(TERMINAL_STATUSES))}); got {op.get('status')!r}"
         )
-    outcome = str(op.get("outcome") or "").strip()
     if not outcome:
-        raise OpError("close op requires a non-empty 'outcome'")
-    by = str(op.get("by") or "").strip()
+        problems.append("close op requires a non-empty 'outcome'")
     if not by:
-        raise OpError("close op requires a 'by'")
+        problems.append("close op requires a 'by'")
+    if problems:
+        raise OpError(_missing_fields_refusal(problems))
     previous_status = str(working.get("status") or "").strip().lower()
 
     working["status"] = status
