@@ -1243,7 +1243,21 @@ def land_once() -> dict[str, Any]:
     on the record rather than a run the pass never mentions. Every tier the run
     owes is read at its head, so a run that owes a figure review is not landed
     on its code review alone.
+
+    The pass observes the docs tree once for every run it judges, through the
+    same boundary an MCP read enters, and holds that observation for the whole
+    pass so no run is judged from a different view than its neighbours. The
+    pass reads no document the landing itself changes — it reads git, run
+    records and stored reviews — so holding the boundary across a landing
+    masks nothing.
     """
+    from reckon.crew.queue_admission import plan_read_scopes
+
+    with plan_read_scopes():
+        return _land_deliveries()
+
+
+def _land_deliveries() -> dict[str, Any]:
     landed: list[str] = []
     skipped: list[dict[str, str]] = []
     obligations: list[dict[str, str]] = []

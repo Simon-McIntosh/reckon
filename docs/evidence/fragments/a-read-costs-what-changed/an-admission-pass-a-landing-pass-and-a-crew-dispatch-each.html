@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="evidence">
+<title>An admission pass, a landing pass and a dispatch each read plan state once</title>
+</head>
+<body>
+<main class="plan-doc">
+<h2 id="an-admission-pass-a-landing-pass-and-a-crew-dispatch-each-record">An admission pass, a landing pass and a dispatch each read plan state once</h2>
+
+<p id="an-admission-pass-a-landing-pass-and-a-crew-dispatch-each-what">One admission pass now enters <code>metadata_index.discovery_file_scope</code> and <code>resources.resource_scan_scope</code> once, and derives a project's readiness once however many requests and refs name it. Plan state is read through the memoised <code>read_state_and_text_file</code> pair seeded from <code>metadata_index.discovery_state</code>, so a ref no longer re-parses the plan text it names. <code>land_once</code> and <code>plan_dispatch</code> — the path <code>crew dispatch --dry-run</code> resolves through — enter the same boundary, and the landing pass closes it before it merges.</p>
+
+<table id="an-admission-pass-a-landing-pass-and-a-crew-dispatch-each-measure">
+  <thead><tr><th>Case</th><th>Head</th><th>Base</th></tr></thead>
+  <tbody>
+    <tr><td><code>_plan_html.read_state</code> parses in one pass, 30 requests / 70 refs / 40 plans</td><td>at most 40</td><td>110</td></tr>
+    <tr><td>One <code>crew dispatch</code> preview: distinct paths statted</td><td>inside one observation, under 300</td><td>outside any boundary</td></tr>
+    <tr><td>One <code>land_once</code> with nothing to land</td><td>inside one observation, under 300</td><td>outside any boundary</td></tr>
+  </tbody>
+</table>
+
+<p id="an-admission-pass-a-landing-pass-and-a-crew-dispatch-each-gate">The gate is <code>tests/test_an_admission_pass_reads_each_project_once.py</code>: 5 passed at the head arm against 3 failed and 2 passed at the base arm, on the same file. Each of the three declared negative controls turns exactly its own case red: restoring plan and refs in the pass key fails the first case, removing the scope entry from the dispatch preview fails the fourth, and removing it from <code>land_once</code> fails the fifth. The second case's expectation is the base revision's own read — each plan's text parsed directly, with the pass scopes and the memoised pair bypassed — so a memoised reader that answers wrongly disagrees with it rather than moving both sides together; making the shared reader report every section done turns that case, and only that case, red.</p>
+</main>
+</body>
+</html>
