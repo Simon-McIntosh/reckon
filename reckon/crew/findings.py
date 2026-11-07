@@ -28,11 +28,13 @@ against it.
 
 from __future__ import annotations
 
-from collections.abc import Iterator, Mapping
+import threading
+from collections.abc import Iterable, Mapping
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
-from reckon import _store
+from reckon import _store, file_memo
 from reckon.crew import repair as _repair
 from reckon.crew import review as _review
 from reckon.crew import runs as _runs
@@ -284,23 +286,114 @@ def _record_rows(record: Mapping[str, Any], root: Path | None) -> list[dict[str,
     return rows
 
 
-def _committed_record_paths(project: str, root: Path | None) -> list[Path]:
-    """Every committed review file the project holds, run and plan alike.
+# The findings index, one entry per (project, committed tree, checkout). A
+# whole-store read is the cost a dispatch preflight cannot pay per call: the
+# committed tree holds thousands of records across thousands of directories,
+# and reading them all took minutes. The index keeps every record's rows from
+# the call that read it, and finds the records that moved by comparing each
+# review directory's stat identity — the one stat whose move a record's
+# creation, deletion or atomic rewrite is guaranteed to cause.
+_INDEX_LOCK = threading.Lock()
+_INDEXES: dict[tuple[str, str, str], dict[str, Any]] = {}
+_MAX_INDEXES = 4
 
-    The project's committed reviews tree is walked directly rather than through
-    the staging store, because a promoted review is a committed file and the
-    staging root does not name it. A project with no resolvable committed tree
-    has no records and yields an empty list rather than an invented path.
+# Directory stats are latency-bound on a shared filesystem — a serial pass over
+# two thousand directories costs seconds — so they are asked for concurrently.
+# The figure is a count of outstanding stats, not of cores used.
+_STAT_WORKERS = 16
+_PARALLEL_STAT_FLOOR = 8
+
+_RecordEntries = tuple[tuple[str, tuple[int, ...], int], ...]
+
+
+def _scan_directory(directory: Path) -> _RecordEntries:
+    """The records one review directory holds, each with its stat identity.
+
+    Only the identity is taken here: the record's rows are read by the caller
+    for the records whose identity moved, so a directory re-scan does not
+    re-read records that did not change. A partial write the store keeps
+    outside current-review selection is skipped, as before.
     """
-    committed = _review.committed_review_root(project, root=root)
-    if committed is None or not committed.is_dir():
-        return []
-    return [
-        path
-        for dirname in (_RUN_DIRNAME, _PLAN_DIRNAME)
-        for path in sorted((committed / dirname).glob("*/*.json"))
-        if path.is_file() and _review._INCOMPLETE_RECORD_MARK not in path.name
-    ]
+    entries: list[tuple[str, tuple[int, ...], int]] = []
+    try:
+        paths = sorted(directory.glob("*.json"))
+    except OSError:
+        return ()
+    for path in paths:
+        if _review._INCOMPLETE_RECORD_MARK in path.name:
+            continue
+        try:
+            info = path.stat()
+        except OSError:
+            continue
+        entries.append(
+            (str(path), file_memo.signature_from_stat(info), info.st_mtime_ns)
+        )
+    return tuple(entries)
+
+
+def _directory_records(directory: Path) -> _RecordEntries:
+    """The records of one review directory, rescanned only when it moves.
+
+    Keyed on the directory's own stat identity through
+    :mod:`reckon.file_memo`: a directory whose entries changed — a record
+    written, removed or atomically replaced — is rescanned, and one that did
+    not costs a single stat.
+    """
+    return file_memo.memoized(
+        "findings_directory_records", directory, lambda: _scan_directory(directory)
+    )
+
+
+def _review_directories(committed: Path) -> list[Path]:
+    """The directories the committed tree files. One per reviewed run or plan.
+
+    The listing of each top-level directory is memoised on its own identity, so
+    a call re-lists the run or plan directories only when one of them appeared
+    or vanished rather than on every read.
+    """
+    directories: list[Path] = []
+    for dirname in (_RUN_DIRNAME, _PLAN_DIRNAME):
+        parent = committed / dirname
+
+        def list_children(target: Path = parent) -> tuple[Path, ...]:
+            try:
+                return tuple(
+                    sorted(child for child in target.iterdir() if child.is_dir())
+                )
+            except OSError:
+                return ()
+
+        if not parent.is_dir():
+            continue
+        directories.extend(
+            file_memo.memoized("findings_review_directories", parent, list_children)
+        )
+    return directories
+
+
+def _scan_directories(directories: Iterable[Path]) -> list[_RecordEntries]:
+    """Scan several review directories, concurrently once there are enough.
+
+    A handful of directories is cheaper to scan in the calling thread than to
+    hand to a pool; a store of thousands is latency-bound and gains the pool.
+    """
+    ordered = list(directories)
+    if len(ordered) < _PARALLEL_STAT_FLOOR:
+        return [_directory_records(directory) for directory in ordered]
+    workers = min(_STAT_WORKERS, len(ordered))
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        return list(pool.map(_directory_records, ordered))
+
+
+def _read_record_rows(
+    record_path: Path, root_path: Path | None
+) -> tuple[dict[str, Any], ...]:
+    """Read one committed record and build its finding rows."""
+    record = _review._committed_record_at(record_path)
+    if record is None:
+        return ()
+    return tuple(_record_rows(record, root_path))
 
 
 def _stored_code_reviews(project: str) -> list[dict[str, Any]]:
@@ -317,19 +410,74 @@ def _stored_code_reviews(project: str) -> list[dict[str, Any]]:
     return plan_review.list_code_reviews(project=project)
 
 
-def _project_records(project: str, root: Path | None) -> Iterator[dict[str, Any]]:
-    """Every stored review finding source of a project, committed and home alike.
+def _code_review_rows(
+    project: str, root_path: Path | None
+) -> tuple[list[dict[str, Any]], int]:
+    """The finding rows of the project's stored code reviews, and their count.
 
-    The committed run and plan reviews are walked from the project's own tree;
-    the code reviews live only in the crew home store, so they are appended from
-    the reader that owns them. Yielding records rather than paths lets one row
-    builder read both populations.
+    The rows are memoised against the record's own file, so a code review is
+    read once and re-read only when its file moves. A record carrying no
+    ``review_path`` cannot be keyed that way and is read here.
     """
-    for record_path in _committed_record_paths(project, root):
-        record = _review._committed_record_at(record_path)
-        if record is not None:
-            yield record
-    yield from _stored_code_reviews(project)
+    rows: list[dict[str, Any]] = []
+    records = _stored_code_reviews(project)
+    for record in records:
+        path = str(record.get("review_path") or "").strip()
+        if path:
+            rows.extend(_read_record_rows(Path(path), root_path))
+        else:
+            rows.extend(tuple(_record_rows(record, root_path)))
+    return rows, len(records)
+
+
+def _index_for(key: tuple[str, str, str]) -> dict[str, Any]:
+    """The live index entry for one store and checkout, created on first use."""
+    index = _INDEXES.get(key)
+    if index is None:
+        index = {"records": {}}
+        with _INDEX_LOCK:
+            _INDEXES[key] = index
+            while len(_INDEXES) > _MAX_INDEXES:
+                _INDEXES.pop(next(iter(_INDEXES)))
+    return index
+
+
+def _indexed_rows(
+    project: str, root_path: Path | None
+) -> tuple[list[dict[str, Any]], int]:
+    """Every stored finding row of a project, refreshed by stat identity.
+
+    The committed tree is indexed rather than re-read: a record whose stat
+    identity is unchanged contributes the rows the index already holds, and a
+    record that appeared or moved is read then. A record that vanished from its
+    directory leaves the index with the directory it was read from.
+    """
+    committed = _review.committed_review_root(project, root=root_path)
+    committed_key = str(committed) if committed is not None else ""
+    index = _index_for((project, committed_key, str(root_path)))
+    records: dict[str, tuple[tuple[int, ...], tuple[dict[str, Any], ...]]] = index[
+        "records"
+    ]
+
+    rows: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    count = 0
+    if committed is not None and committed.is_dir():
+        for entries in _scan_directories(_review_directories(committed)):
+            for path_text, signature, _mtime_ns in entries:
+                seen.add(path_text)
+                count += 1
+                cached = records.get(path_text)
+                if cached is None or cached[0] != signature:
+                    cached = (signature, _read_record_rows(Path(path_text), root_path))
+                    records[path_text] = cached
+                rows.extend(cached[1])
+    for vanished in [name for name in records if name not in seen]:
+        del records[vanished]
+
+    code_rows, code_count = _code_review_rows(project, root_path)
+    rows.extend(code_rows)
+    return rows, count + code_count
 
 
 def findings_by_path(
@@ -364,28 +512,26 @@ def findings_by_path(
     groups: dict[str, dict[str, Any]] = {}
     artefacts: list[dict[str, Any]] = []
     all_rows: list[dict[str, Any]] = []
-    records_read = 0
-    for record in _project_records(project, root_path):
-        records_read += 1
-        for row in _record_rows(record, root_path):
-            if prefix and not row["path"].startswith(prefix):
-                continue
-            all_rows.append(row)
-            if row["scope"] == SCOPE_ARTEFACT:
-                artefacts.append(row)
-                continue
-            group = groups.get(row["path"])
-            if group is None:
-                group = {
-                    "path": row["path"],
-                    "scope": SCOPE_REPOSITORY,
-                    "rows": [],
-                    "reviews": set(),
-                }
-                groups[row["path"]] = group
-            group["rows"].append(row)
-            if row["review_run_id"]:
-                group["reviews"].add(row["review_run_id"])
+    stored_rows, records_read = _indexed_rows(project, root_path)
+    for row in stored_rows:
+        if prefix and not row["path"].startswith(prefix):
+            continue
+        all_rows.append(row)
+        if row["scope"] == SCOPE_ARTEFACT:
+            artefacts.append(row)
+            continue
+        group = groups.get(row["path"])
+        if group is None:
+            group = {
+                "path": row["path"],
+                "scope": SCOPE_REPOSITORY,
+                "rows": [],
+                "reviews": set(),
+            }
+            groups[row["path"]] = group
+        group["rows"].append(row)
+        if row["review_run_id"]:
+            group["reviews"].add(row["review_run_id"])
 
     grouped: list[dict[str, Any]] = [
         {
