@@ -1,0 +1,44 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T06:24:05.320Z",
+  "dispatched_at": "2026-11-07T06:15:44Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/an-evidence-record-counts-only-what-it-read.html:53",
+      "id": "done_when-1",
+      "reason": "a worker implementing the control verbatim writes a control that passes trivially and proves nothing about the refusal's use of the ledger-run half of the rendered set, which is the one input that separates case 8 from case 7.",
+      "text": "\u00a74's sixth negative control reads \"checking only plan sections and comment keys accepts the seventh case's anchor\", but the seventh case's anchors are `s4` and `s5.1`, which normalise to plan section ids and are already refused by a set built only from plan sections \u2014 so the control as written cannot fail, and the case it describes belongs to the eighth case (an anchor only a ledger run's `section` key renders), which is left with no control at all",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "3564d43c3d1ee17669b4a11a1d39f4f4ac003945",
+  "plan_fingerprint": "83a52a318b4e291eda87e37a3a88160886a963306c59ffea50bf813473009938",
+  "plan_slug": "an-evidence-record-counts-only-what-it-read",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T061435576680-plan-review-of-an-evidence-record-counts-only-what-it-read",
+  "reviewed_blob_sha": "56f8a09067c5a112083c460050d32197d9715bb0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol resolves at the line named: `_render_document` 329, summary 406\u2013409, `plan-verdict` 417, `available` 349, `_evidence_record_path` 1172, `_landed_record_shell` 1184, `_evidence_section_html` 1197, `_apply_evidence_appends` 1230, `_prose_deferred_work_term` 993, `_DEFERRED_WORK_TERM` 419, `DEFERRED_WORK_TERM_IN_PROSE` 412, `append_to_list` 2366, the `followups` and `comments` branches of `_apply_append`, `synthesize_landed_record` 636 with its destination at 675, `EvidenceSynthesisResult` 24, `synthesize_evidence` 1473, `mcp_edit_plan.py` 255, and commit `f7f7d2d6d` in power_convertor.",
+    "done_when": "a finding \u2014 \u00a74's sixth negative control is aimed at the seventh case while describing the eighth case's failure mode, leaving the ledger-run-key refusal with no control.",
+    "evidence_paths": "pass \u2014 every gate log is placed under the crew run directory, which survives the run, and the power_convertor audit output is written there rather than to a scratchpad.",
+    "naming": "pass \u2014 the three new test filenames and every proposed symbol (`lost_anchors`, `data-evidence-origin`, the widened `_DEFERRED_WORK_TERM`) are named by what they do; no plan label, sprint tag or ticket number reaches a symbol, and no changelog prose is proposed.",
+    "reasoning": "pass \u2014 the \u00a71 root cause is exactly what the cited evidence shows, checked against the real record: `git show f7f7d2d6d:docs/evidence/archive/filter-recommendation-for-coil-health-landed.html` in power_convertor carries `plan-summary` \"\u2026: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).\", `plan-verdict` \"qualified\", and the two sections `frch-presentation-figures` and `frch-assemble-pages`, while the re-synthesized head `c058d9c74` reads 14/64/47 \u2014 so both the zero-count claim and \u00a74's re-synthesis claim hold; each mechanism reaches a production caller, named here: `_apply_evidence_appends` is invoked at `reckon/_store.py:1591` before the plan text is written at `:1603`, `deferred_work_term` at `reckon/doccheck.py:1728`, and `synthesize_evidence` at `reckon/project_maintenance_commands.py:1479`.",
+    "single_goal": "pass \u2014 s2 (a shell claims no counts), s3 (the deferred-work rule reads every spelling at every write site) and s4 (a re-synthesis keeps appends and names every loss) each carry one deliverable with its own done-when.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares s3\u2192s2 and s4\u2192{s2,s3}, every ref resolving to an existing section of this plan, and `plan-after` names `a-finished-plan-closes`, which exists at `docs/plans/a-finished-plan-closes.html`."
+  },
+  "section_digests": {
+    "_document": "6d35efce52466005f8ee56997c8dc7bcca998d7c41fcd252d254bc7264596281",
+    "s1": "7c52117565966edec5de56bc0448d4a141edbcb73ac18ede5f2cb0c34f424f0a",
+    "s2": "e0c21336531cccf486121dbb25184c349eda1428113664a6ba29a293eb13d226",
+    "s3": "95321ee3e9da75b25b1c9cc2f50f8ec2549ee8971f21d75db090d74e967c3677",
+    "s4": "60ff41ad158b223b29c6b6db68a17e54bfa69e9a0398444706359188a5884df1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T06:29:46.884620+00:00",
+  "total": null
+}
