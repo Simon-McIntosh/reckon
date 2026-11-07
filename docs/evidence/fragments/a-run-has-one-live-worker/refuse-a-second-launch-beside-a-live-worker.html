@@ -1,0 +1,38 @@
+<section class="evidence-fragment" id="refuse-a-second-launch-beside-a-live-worker">
+  <h3 id="refuse-a-second-launch-beside-a-live-worker-heading">A worker spawn refuses a run that already has a live worker</h3>
+  <p id="refuse-a-second-launch-beside-a-live-worker-what">The supervisor's spawn seam,
+    <code>_supervisor_spawn_worker</code> in <code>reckon/crew/dispatch_launch.py</code>, asks
+    <code>live_worker_pid</code> — the same read the launcher's own refusal uses — before it starts a worker and before it
+    writes this attempt's worker record. One read therefore answers for the run: the pid an earlier attempt recorded, and,
+    when every recorded pid is dead, a walk for a live process of this user whose command line carries the run's session
+    id. A live worker refuses the launch and the refusal names its pid
+    (<code>still has a live worker (pid N)</code>); the refusal is raised before anything in the run directory is
+    rewritten, so a refused launch leaves the incumbent's records exactly as it found them. A run with nothing live spawns
+    as before.</p>
+  <p id="refuse-a-second-launch-beside-a-live-worker-supervisor">The pointer names the attempt that was just started, so by
+    the time the supervisor runs its pid may already be this process. The seam drops the pointer's own pid when it equals
+    the caller's and answers from the run's worker record and session instead; without that exclusion every launch refuses
+    itself, which is what the dispatch-race control below measures.</p>
+  <p id="refuse-a-second-launch-beside-a-live-worker-measure">The gate is
+    <code>tests/test_a_queued_run_launches_once.py</code>. At the head revision it reports <strong>3 passed, EXIT=0</strong> on
+    the declared command. At the base revision with the test copied in it reports <strong>2 failed, 1 passed, EXIT=1</strong>,
+    both failures reading <code>DID NOT RAISE CrewError</code>: the second launch proceeded beside the live worker, which is
+    the defect reproduced. Both refusal cases also assert the run's attempt records are unchanged after the refusal, so each
+    reddens when the liveness read is removed; with the refusal made unreachable the arm reports <strong>2 failed, 1 passed,
+    EXIT=1</strong>, failing exactly those two ids.</p>
+  <p id="refuse-a-second-launch-beside-a-live-worker-importers">The done-when's importer arm ran to completion. All 45 test
+    files importing <code>reckon.crew.dispatch_launch</code> ran at each revision (one arm at a time, <code>-n 4</code>): at the
+    base revision <strong>3 failed, 558 passed, 1 skipped, EXIT=1</strong>, and at head <strong>1 failed, 560 passed, 1 skipped,
+    EXIT=1</strong>. The two failures the base carries that head does not are this node's own reproduction ids; the single
+    failure head carries, <code>tests/test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated</code>, fails
+    identically at the base revision, so the change adds no failure to any importing test file.</p>
+  <ul id="refuse-a-second-launch-beside-a-live-worker-evidence">
+    <li>head arm: <code>logs/head_arm.log</code> (revision ccd89391d3, 3 passed, EXIT=0)</li>
+    <li>base arm: <code>logs/base_arm.log</code> (revision 296e8e7b3d, 2 failed, EXIT=1, defect reproduced)</li>
+    <li>importer arm, head: <code>logs/importers_head.log</code> (revision ccd89391d3, 1 failed, EXIT=1)</li>
+    <li>importer arm, base: <code>logs/importers_base.log</code> (revision 296e8e7b3d, 3 failed, EXIT=1)</li>
+    <li>negative control, refusal removed: <code>logs/negative_control.log</code> (2 failed, EXIT=1)</li>
+    <li>negative control, supervisor exclusion reversed: <code>logs/negative_control_revert_fix.log</code> (1 failed, EXIT=1)
+      — <code>test_dispatch_returns_once_its_supervisor_runs</code>, every launch refusing itself</li>
+  </ul>
+</section>
