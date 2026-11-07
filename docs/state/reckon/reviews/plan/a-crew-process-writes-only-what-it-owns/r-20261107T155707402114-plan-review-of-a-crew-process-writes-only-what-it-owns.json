@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T16:17:40.691Z",
+  "dispatched_at": "2026-11-07T16:03:19Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html#s5",
+      "id": "reasoning-1",
+      "reason": "the scan needs a stated rule for a `children` entry that is not attributable to the owner (or an explicit, recorded acceptance that a pre-fix record may re-adopt), otherwise the node implements a recovery path that revives the incident it was written to close. The previous-record source is safe for sessions the owner itself dispatched and unsafe for sessions another session dispatched and this owner's earlier host wrongly kept.",
+      "text": "the start-up scan admits any session named in the previous `children` list, but that list is exactly what a host records for every pair it ran, including the foreign pair \u00a71 records (nova-39's host holding nova-8a's session `35a66cc6`); \u00a73's guard sits in `_request_host_follower` and is not on this path, because the host calls `handle()` directly rather than composing a request, so a re-armed host can re-adopt the foreign session and take its single-follower lock \u2014 the outcome \u00a71 exists to stop \u2014 from a record written before the fix.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html#s5",
+      "id": "reasoning-2",
+      "reason": "the sentence is one clause the worker either codes or skips with no effect on the test \u2014 the fourth case fails without the field and passes with it, and a second force write at start is harmless because `_write_record` compares everything but `updated_at`.",
+      "text": "\"It records in its `session-hosts` record that it is waiting for a dispatch, then serves its FIFO as today\" is stated as a new write, but `supervise` already calls `self._write_record(force=True)` as its first act (`reckon/crew/session_host.py:667`), so the only change is the new field; read as written a worker may add a second start-up write or treat the requirement as already met.",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "976bf02dccae14be7d82bd52c13c0f787a49ed85",
+  "plan_fingerprint": "c5de9b3cb50df0f35f5bc03ccc28359c749ad09bd99cff7001d6d8519d13fb34",
+  "plan_slug": "a-crew-process-writes-only-what-it-owns",
+  "plan_version": 5,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T155707402114-plan-review-of-a-crew-process-writes-only-what-it-owns",
+  "reviewed_blob_sha": "1504351f6a39f104bfed250b63b59ae000a6d7e0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `crew_host` resolves at `reckon/crew_follow_commands.py:2774`, `run` at `:707`, `_remove_fifo` at `:607`, `SessionHost.record` at `:367`, `resumption._pointer_session` at `:753`, `_TERMINAL_RUN_PHASES` at `reckon/crew/node.py:33`, `LAUNCH_FAILED_PHASE` at `reckon/crew/dispatch_launch.py:101`, the `launch-failed`\u2192failed bucket at `reckon/crew/runs.py:2273`, `list_live` at `reckon/crew/runs.py:1015`, and the script's wait loop at `plugins/crew-host/bin/crew-host:55-70`.",
+    "done_when": "a finding \u2014 case 5 adopts a session from the previous record's `children`, and that record is the one a pre-fix host wrote while it held another session's follower.",
+    "evidence_paths": "pass \u2014 every log is \"under the run directory\", which is the durable per-run crew directory, not a scratchpad or a node-local temp path.",
+    "naming": "pass \u2014 `waiting_for_dispatch` names the state it records; no plan labels, ticket numbers or version tags reach a symbol or a comment in \u00a75.",
+    "reasoning": "a finding \u2014 the start-up scan's second source, the previous `session-hosts` record's `children`, is populated by the very host behaviour \u00a71 records as the defect, so the mechanism can re-adopt a foreign pairing that \u00a73 is written to prevent.",
+    "single_goal": "pass \u2014 \u00a75's deliverable is one thing (a re-armed host follows its owner's live runs immediately); the FIFO-removal move is the consequence of deleting the script's wait loop, not a second goal.",
+    "wiring": "pass \u2014 \u00a75 declares no `depends-on`/`informs`/`gates` links and needs none: its write paths (`plugins/crew-host/bin/crew-host`, `reckon/crew/session_host.py`, `reckon/crew_follow_commands.py`, its two test files) are disjoint from \u00a72, \u00a73 and \u00a74, and the open followup now invokes the whole plan."
+  },
+  "section_digests": {
+    "_document": "7848c4a22debbc4310e02052a09e0978b08f6e538ba797332694c84678155ff8",
+    "s1": "38e026f18d1b42b1d79978e1ed1cf6179e085908a249e5762f39a683dcc8123f",
+    "s2": "f11be171c26248fbc871d99510f0013c9dfc0a181d247f07861e86dc0d156f40",
+    "s3": "76aeda9a3a70ef68e2d3ed18800f22774d4c2ec3fa6d0c7b85e9433c1b24b7d9",
+    "s4": "e88fcf79ec58d8305f36e37d69846c8e0a1a10f1b73fc6c167c25b700165e123",
+    "s5": "f0dfac67c08d351b79624736695c8ae882b56b1bb00e744bbc7b54bd22f85fc1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T16:37:19.078751+00:00",
+  "total": null
+}
