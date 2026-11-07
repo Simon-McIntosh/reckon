@@ -24,7 +24,7 @@
   <title>A Run Review Waits On No Plan Decision | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="8">
 <meta name="plan-modified" content="2026-11-07">
 </head>
 <body>
@@ -55,6 +55,9 @@
 <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261107T100029589998-review-of-a-queued-review-request-is-not-held-on-its-sections-gates-or-d7ab26d178c4" data-who="reckon-build" data-when="2026-11-07T10:12:24.882Z">
     <div class="r-comment-body"><p>review of r-20261106T222015891168-a-queued-review-request-is-not-held-on-its-sections-gates-or at base e3a9f381a2 / head d7ab26d178 scores goal_fidelity 19, evidence 17, scope_discipline 20, durability 19, fit 18, reuse 16 with one non-blocking finding (the review-role predicate at queue_admission.py:3075 duplicates reports.py:1831 _node_is_a_reviewer); status parsed, added_failure_count 0.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261106T222015891168-a-queued-review-request-is-not-held-on-its-sections-gates-or" data-who="reckon-build" data-when="2026-11-07T09:59:22.772Z">
+    <div class="r-comment-body"><p>fix(crew) — _needs_own_section_verdict now answers false for a review-role node and is the one owner the batch path asks, so a queued review of a gated section gets no readiness ref (reproduction: readiness:proj:plan-a#s2 before the change); dispatch_waits keeps its eager read behind the plan&#x27;s authored holds; node gate 21 passed after / 19 passed base and the declared negative control is red.</p></div>
 </div>
 </section>
 </main>
