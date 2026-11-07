@@ -42,10 +42,14 @@ DISCARD_REFUSED CrewError cannot discard live run 'r-probe-stop-tree': recorded 
   dead, that both pids are printed in the record, that
   <code>promotion.discard</code> then succeeds, and that a bystander in its own
   session is still running.</p>
-  <p>The declared negative control — dropping the SIGTERM-to-SIGKILL escalation
-  from <code>terminate</code> — makes the first case fail with
+  <p>The escalation is unconditional in product code: no environment switch
+  can turn it off in a deployment. The test's own control replaces
+  <code>_escalate_run_stop</code> with a no-op, which is the stop as it stood
+  before the fix, and asserts the wrapper survives and the discard is refused.
+  The declared mutation — removing the escalation call from
+  <code>terminate</code> — makes the first case fail with
   <code>1 failed, 1 passed</code>, <code>EXIT=1</code>
-  (<code>negative-control-escalation-dropped.log</code>). The file was restored
+  (<code>negative-control-escalation-dropped.log</code>); the file was restored
   afterwards and its digest re-checked.</p>
   <p>Both arms ran one at a time at <code>-n 4</code> over the 49 test files
   that import the changed modules, plus the new test in the head arm: base
