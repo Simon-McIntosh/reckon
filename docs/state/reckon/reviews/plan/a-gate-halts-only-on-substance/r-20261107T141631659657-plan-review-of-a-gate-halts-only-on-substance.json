@@ -1,0 +1,108 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T14:46:21.768Z",
+  "dispatched_at": "2026-11-07T14:32:19Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/promotion_checks.py:2029",
+      "id": "duplicate_owner-1",
+      "reason": "the section's entire write path is the gate-log helper, so implemented as written it relaxes nothing and its own done-when cannot pass.",
+      "text": "\u00a72 names the reader as being in `reckon/crew/promotion_evidence.py` near lines 1021\u20131092 and takes that file as its write path, but that region is the gate-log check (`_log_shows_the_command_ran` at promotion_evidence.py:1017, `_recorded_exit_status` at promotion_evidence.py:1044); the reader that refuses a control log with no `EXIT=` is `_require_declared_negative_control` at promotion_checks.py:2029 (refusal at promotion_checks.py:2159), and it has a second write-time twin, `_control_log_findings` at reports.py:2031 (refusal \"records no exit status\" at reports.py:2101), which the section never names \u2014 a worker writing a runner-only control log is therefore still refused by `crew check --manifest` after the planned edit and the halt moves earlier rather than away",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/reports.py:1293",
+      "id": "duplicate_owner-2",
+      "reason": "the section must name the one parser it changes and reconcile the other call sites, or the same halt reappears through a path the plan did not touch.",
+      "text": "a census of the terminal-`EXIT=` parser: two independent implementations of one reading exist, `reports.py:1293 _terminal_exit_status` and `promotion_checks.py`'s imported copy `promotion_evidence.py:1044 _recorded_exit_status`, and the first is consulted by a second refusal at reports.py:1495 as well as the control check at reports.py:2098 \u2014 \u00a72 relaxes one owner without naming the census, so \"is a terminal EXIT required\" gets three different answers",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch_plan.py:796",
+      "id": "duplicate_owner-3",
+      "reason": "putting the floor in `lane_context` places a policy decision inside a classifier and leaves the assignment path untouched, so the 8-minute node keeps its 8 minutes and the section's reproduction would not be repaired.",
+      "text": "\u00a75 names `reckon/crew/picker/lane_context.py` (its lines 173 and 388) as where the budget is assigned, but `lane_context._size_of` (lane_context.py:163) only classifies a budget the node already declares, for profile lookup, and it delegates to `run_time_profile._size_class` (run_time_profile.py:179), documented there as the one owner of the budget-versus-token thresholds; the budget a brief-based node actually receives is assigned at dispatch_plan.py:796-800 (`default_budget = resolved_time_budget(config, backend)`; `node.time_budget = node.time_budget or default_budget)`, with the fence it must clear read at dispatch_plan.py:885 (`resolved_time_ceiling`)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/promotion_checks.py:1937",
+      "id": "reuse_search-1",
+      "reason": "the section reads as a new reader when it is a one-condition relaxation of an existing one, and saying so shrinks the node and prevents a third failure-id parser beside `gate_log_failure_ids`.",
+      "text": "\u00a72's deliverable asks the reader to admit a log whose \"test runner's own output in it shows the run failed and names at least one failing test id the head arm passes\", but `_control_failure_ids` (promotion_checks.py:1937) already reads exactly that through `review.gate_log_failure_ids` (review.py:2106, with pytest and ctest arms at review.py:2053 and review.py:2078), and `_head_suite_failure_ids`/`_baseline_suite_failure_ids` (promotion_checks.py:1995/1955) already perform the head-then-baseline comparison; the only new behaviour is dropping the `EXIT=` requirement",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:2687",
+      "id": "reuse_search-2",
+      "reason": "the plan adds a third answer to \"does this edit need a review\" without naming the two that exist, so the three will disagree on the same edit and the coordinator cannot tell which governs.",
+      "text": "\u00a76 proposes that `--accept-edits` make `review_coverage` treat edited units as covered, but `review_coverage` already carries that rule: an answered-as-`acted` finding covers the edit that followed it (`_acted_finding_units`, called at plan_review.py:1291, defined around plan_review.py:2687), and `review_need.judge` (review_need.py:167) already decides whether a change needs a new review at all \u2014 neither is cited in \u00a76",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:1109",
+      "id": "thin_wrapper-1",
+      "reason": "a second cover channel inside one function is exactly the surface this item refuses; the section must extend the acted-finding owner or say what it cannot express.",
+      "text": "\u00a76 layers an acceptance record as a parallel cover path beside `--acted` dispositions, and states no reason why `_acted_finding_units` cannot be extended (for example by recording the coordinator's reason and session on the disposition it already stores)",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-gate-halts-only-on-substance.html#s3",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the added option and the added refusal family in its own text, as the item requires.",
+      "text": "\u00a73 adds `crew dispatch --over-fence REASON` and a new refusal wording in `node.py:1362`, against cli_options 465 and refusal_families 23, with no statement of what it retires or merges",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-gate-halts-only-on-substance.html#s4",
+      "id": "interface_budget-2",
+      "reason": "the option and how it shares validation with `queue edit` is the section's substance and belongs in its text.",
+      "text": "\u00a74 adds `crew resume --time-budget`, confirmed absent from `crew_resume` (crew_run_commands.py:2175-2189), and the `--over-fence` companion rule, with no accounting; the nearest existing surface is `crew queue edit --time-budget` (crew_run_commands.py:2429), and the section does not say why resume cannot share its parsing and fence check",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-gate-halts-only-on-substance.html#s6",
+      "id": "interface_budget-3",
+      "reason": "the section must place the option relative to the existing answer dispositions (`RESPONSE_ACTIONS`, plan_review.py:282) rather than add a fourth way to say \"answered\".",
+      "text": "\u00a76 adds `crew review --plan --accept-edits \"REASON\"`, a new CLI option and a new stored record shape, against cli_options 465, with no statement of what it retires or merges",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "ef029c6faabcc9360c1baf52ea953c3b26aa3db4",
+  "plan_fingerprint": "e3d11ce0a49cafc4e2cc3138994744bad21dfe9237bd05a0d592a2349eb5b350",
+  "plan_slug": "a-gate-halts-only-on-substance",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T141631659657-plan-review-of-a-gate-halts-only-on-substance",
+  "reviewed_blob_sha": "1d90a80a726ff91cc62f9716bee221aeaf3db6b3",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 every section adds one predicate to a module that already owns that decision (`review_coverage`, `node.validate_node`, `_require_declared_negative_control)`, so no new module's interface exceeds the behaviour it hides.",
+    "duplicate_owner": "a finding \u2014 \u00a72 names the wrong owner (`promotion_evidence.py`, which holds the gate-log reader) and \u00a75 names a classifier that owns no budget assignment; the real owners are `promotion_checks.py:2029` with `reports.py:2031`, and `dispatch_plan.py:796`.",
+    "interface_budget": "a finding \u2014 public_definitions 2362, cli_options 465, mcp_views 15, refusal_families 23; \u00a73, \u00a74 and \u00a76 each add a CLI option (`--over-fence`, `--time-budget` on resume, `--accept-edits`) and none names what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a76 adds `--accept-edits` as a new coverage channel while `_acted_finding_units` and `review_need.judge` already own \"the edit that answers a finding is covered\", and \u00a72 proposes to teach a reader to read a runner's `FAILED` ids when `_control_failure_ids` already does exactly that.",
+    "thin_wrapper": "a finding \u2014 \u00a76's acceptance record is a second cover path laid beside `_acted_finding_units` with no statement of why that owner cannot be extended."
+  },
+  "section_digests": {
+    "_document": "0554e9fed0c79443e2638ade05a4da75ec7c9b1f9e87faee6d354e34224ca62f",
+    "s1": "da96e9775c5ac3c922e7c9262b6c95659f8a63dd7ecaefbf9c9ea72c3d506b61",
+    "s2": "34659f8a9f7d766af00602047920116071d6c4a45beb59504f09c79856fe4449",
+    "s3": "7d5900898dccbca711f2ba5f009a9d77a8106e6c95850afa29ea353bee133ea1",
+    "s4": "0e123dd962d8cd12c2e71ad44abb85e97ccaf736d952b19140641c3426beab23",
+    "s5": "8693ffa47dece4b7d7becaed1cc17e2eae2192270529686416237848fcfe3d7d",
+    "s6": "c1a4e9a4b81527a7a273e421018eb3a5b58b491f8eb6afe57798b77df653c903"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T16:13:10.360525+00:00",
+  "total": null
+}
