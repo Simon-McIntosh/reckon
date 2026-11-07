@@ -2756,6 +2756,22 @@ def _worker_record_writer(
     return record
 
 
+def _without_this_supervisor(record: Mapping[str, Any]) -> Mapping[str, Any]:
+    """The pointer record with this supervisor's own pid removed.
+
+    The launcher publishes the pid of the supervisor it just started, so a
+    read taken inside that supervisor can find its own pid alive and refuse
+    the launch it was started to make. The pid the refusal is about belongs to
+    a worker, and this process is not one.
+    """
+    if record.get("pid") != os.getpid():
+        return record
+    cleared = dict(record)
+    cleared.pop("pid", None)
+    cleared.pop("pid_start_time", None)
+    return cleared
+
+
 def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
     """Spawn the worker inside the supervisor's own process group.
 
@@ -2785,7 +2801,12 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
     # for the run.
     from reckon.crew.recovery_liveness import live_worker_pid
 
-    holder = live_worker_pid(record)
+    # The pointer names the attempt that was just started, so by the time the
+    # supervisor runs its pid may already be this process: the launcher writes
+    # it straight after the spawn. Asking about that pid would refuse every
+    # launch, so the pointer's own pid is dropped and the read answers from the
+    # run's worker record and its session instead.
+    holder = live_worker_pid(_without_this_supervisor(record))
     if holder is not None:
         raise CrewError(
             f"run {run_id!r} still has a live worker (pid {holder}): a launch "
