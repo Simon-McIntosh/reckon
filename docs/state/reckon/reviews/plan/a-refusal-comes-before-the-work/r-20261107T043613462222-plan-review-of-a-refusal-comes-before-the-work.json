@@ -1,0 +1,91 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T04:44:04.918Z",
+  "dispatched_at": "2026-11-07T04:37:25Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/dispatch_admission.py:1939",
+      "id": "duplicate_owner-1",
+      "reason": "it changes which file gets the change, removes a fourth call site instead of adding one, and makes the wrapper in \u00a72 unnecessary.",
+      "text": "`admission_domain_findings` is the existing shared admission-finding composer and it already runs on BOTH paths the plan calls \"the single path\" and \"the batch path\": `reckon/crew/dispatch_plan.py:911` \u2192 `reckon/crew/dispatch_admission.py:2019` (inside `_require_write_paths_in_authority`; the single path separately splits its sandbox findings through the same helper at `reckon/crew/dispatch_plan.py:977`) and `reckon/crew/dispatch.py:323` (`admission_domain_findings(node, project=\u2026, repository=repo_root)` inside `queue_requests`, which `queue_batch` reaches at `reckon/crew/dispatch_batch.py:575`). \u00a72 instead proposes a new function \"in `reckon/crew/dispatch_plan.py`\" \u2014 i.e. a fifth composer in a fourth module \u2014 over a channel that is already shared, already returns `dict[str, str]` findings, and is already split into refusals and warnings by `admission_refusals_and_warnings` at `reckon/crew/dispatch_admission.py:1961`. Extend that owner (it takes `node`, `project`, `repository`, and can take `locked_decisions`/`budget_ceiling`) rather than forking it",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/queue_edit.py:164",
+      "id": "duplicate_owner-2",
+      "reason": "a shared function that does not subsume `queue_edit._contract_findings` leaves a third copy that can drift, which is the exact defect \u00a72 exists to remove.",
+      "text": "a third site already carries out \u00a72's stated goal of judging a stored node under the same locked decisions and budget ceiling the launch will use: `_contract_findings` (lines 164-184) calls `validate_node(node, locked_decisions=tuple(options.get(\"locked_decisions\") or ()), budget_ceiling=resolved_time_ceiling(_resolve_lane_config(record)))` against a queued request record. \u00a72 describes \"the same locked decisions, budget ceiling and repository path\" as a new requirement and never mentions this existing implementation, so the census of sites that enforce the node contract is short by one (`repeat: dispatch_plan.py:843`, `queue_edit.py:179`, and the batch's `dispatch.py:323`)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/node.py:1255",
+      "id": "reuse_search-1",
+      "reason": "\u00a72's deliverable would build a third path for a refusal that is one argument away from being centralised in `validate_node`.",
+      "text": "\u00a72 says \"The fourth refusal, execution fit (`dispatch_plan.py` near line 869), is shared as well\", but `validate_node` already accepts `execution_capable` and performs exactly that refusal at `reckon/crew/node.py:1255-1262` (`capability.assess_execution_fit(...); if fit.conflict: fail(\"fully-specified\", fit.refusal_detail())`), projecting the same `refusal_detail()` into the same `property: fully-specified` shape `dispatch_plan.py:869-879` builds by hand. `dispatch_plan.py:843` calls `validate_node` WITHOUT passing `execution_capable`, so the parameter is dead on the only path that would use it (`reckon/crew/picker/snapshot.py:746` calls `assess_execution_fit` a third time). The honest change is one line \u2014 pass `execution_capable=backend.get(\"execution_capable\")` at `dispatch_plan.py:843` and delete the duplicate block at 837/869-879 \u2014 not new machinery to \"share\" a check that has two homes already",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_store.py:4148",
+      "id": "reuse_search-2",
+      "reason": "the section's done-when must enumerate every required field of each op, or it ships a half-fix that the plan's own rationale says is the problem.",
+      "text": "\u00a71 and \u00a74 both give `close` as raising on `status` then `by`, but `_apply_close` checks three required fields in sequence: `status` (4142-4147), `outcome` (4148-4151) and `by` (4152-4154). \u00a74's done-when is \"`close` with neither `status` nor `by` is refused naming both\", which passes while still revealing `outcome` alone on the next round trip \u2014 the defect the section removes for two fields and leaves standing for a third. Same census gap for `append_evidence`: the six required fields at `_store.py:1283-1306` are `plan`, `anchor`, `title`, `body` plus two format constraints on `plan` and `anchor` that a collector must decide whether to merge into one message",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch_plan.py:843",
+      "id": "thin_wrapper-1",
+      "reason": "extending `validate_node` (or `admission_domain_findings`) removes the duplicated `NodeValidation(ok=False, findings=[*verdict.findings, \u2026])` composition repeated three times at `dispatch_plan.py:851-879`, which a wrapper leaves in place.",
+      "text": "the function \u00a72 proposes is a wrapper: it forwards to `validate_node` (node.py:1182), `negative_control_finding` (node.py:1054), `gate_population_finding` (node.py:1145) and `assess_execution_fit` (capability.py:106) and adds no behaviour of its own; \u00a72 gives no reason the existing shared owner (`admission_domain_findings`) or `validate_node` itself cannot be extended with the two extra findings (`negative_control_finding` and `gate_population_finding` both take a `TaskNode` and return the same `dict[str, str]` shape). `validate_node` is already the documented \"judge a node against all eight properties, reporting every failure\" entry point and already reports findings cumulatively",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "<plan>#s3",
+      "id": "interface_budget-1",
+      "reason": "the section must either name what it retires (a flag now redundant with the recorded value) or state why all four flag positions must exist.",
+      "text": "\u00a73 adds `--plan-link` and `--unplanned-reason` to `crew dispatch` (two more of the 465 CLI options) plus a new `TaskNode` field, and its text names nothing it retires, merges or replaces; the same two flags already exist on `crew complete` and `crew merge` (`reckon/crew_run_commands.py:237-238`, `2899-2916`) and are already mapped flag\u2192record in `reckon/crew/obligations.py:246-247`, and the pointer's `dispatch_options` dict (`reckon/crew/dispatch.py:354`) is already the carrier a dispatch-time value would ride to landing, so one of the two options could be retired in favour of reading the stored value",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch_plan.py:911",
+      "id": "reuse_search-3",
+      "reason": "if the fence already runs on the shared `plan_dispatch`, the true defect is in authority resolution and \u00a75's deliverable as written would add a second call site instead of fixing the first.",
+      "text": "\u00a75 proposes making `--dry-run` \"run that check\", but the dry run already reaches it: `crew_dispatch_commands.py:1915` calls `crew_module.plan_dispatch(... repo=repo ...)`, the same function the real launch calls, and `_require_write_paths_in_authority` sits at `reckon/crew/dispatch_plan.py:911` inside `if verdict.ok and repo is not None`. The fence is also already exercised through `plan_dispatch` in `tests/test_crew.py:1461-1470` (`test_non_repository_delivery_directories_are_valid_exclusive_scopes`), alongside the `crew.dispatch` refusal test at 1433-1454. So \"`--dry-run` runs that check\" may describe a state that already holds, and the reproduction \u00a75 demands is the right first step \u2014 but the section pre-commits the repair location before that reproduction, and must name the escaping condition (`verdict.ok` false? a `repo` that resolves elsewhere? an `authority` argument the CLI omits at 1915 that `dispatch()` passes at 692?)",
+      "type": "reuse_search",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "0bd57df0ea95464fa01256b2b27d1328b9a28321",
+  "plan_fingerprint": "a76e34c40c55d5713f4b5599feb2431b7bcc91b088758992e7c04cef394d7575",
+  "plan_slug": "a-refusal-comes-before-the-work",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T043613462222-plan-review-of-a-refusal-comes-before-the-work",
+  "reviewed_blob_sha": "605660cdccd34eb3bd1a63064d4ed5a176442da2",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 no new module is proposed; \u00a74 extends `reckon/_store.py` in place, \u00a75 extends `reckon/crew/dispatch_plan.py` in place, and \u00a72's consolidation, if placed on the existing owner, removes call sites rather than adding a subsystem. The shallowness of \u00a72's proposed function is carried by the `thin_wrapper` and `duplicate_owner` findings below rather than restated here.",
+    "duplicate_owner": "a finding \u2014 the plan re-implements the shared contract-composition mechanism rather than extending its owner `reckon/crew/dispatch_admission.py:1939`, and proposes a \"shared as well\" home for the execution-fit refusal that `reckon/crew/node.py:1255-1262` already implements inside `validate_node`.",
+    "interface_budget": "a finding \u2014 public_definitions 2360, cli_options 465, mcp_views 15, refusal_families 23; \u00a73 adds two CLI options (`--plan-link`, `--unplanned-reason` on `crew dispatch`) and a new node field without naming anything it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan cites no search of `reckon/crew/` before proposing a new shared contract function, and it misses the owner that is already shared by both paths (`reckon/crew/dispatch_admission.py:1939` `admission_domain_findings`, called from `reckon/crew/dispatch.py:323` and, on the single path, from `reckon/crew/dispatch_admission.py:2019` under `dispatch_plan.py:911`) and the third existing enforcement site (`reckon/crew/queue_edit.py:164` `_contract_findings`); it also surveys `_store.py` incompletely, missing one of the three required fields `close` checks.",
+    "thin_wrapper": "a finding \u2014 \u00a72's \"one function in `reckon/crew/dispatch_plan.py` that both paths call\" adds a fourth composer over four findings composers that already exist and are already callable from both paths, and justifies nothing about why the shared owner cannot be extended."
+  },
+  "section_digests": {
+    "_document": "fe86ddc53d6df02ed8681809f4399744a8daf0946c333b28fc3a6b583769f545",
+    "s1": "75df880739e89570186a1c16cae47d54a4d457a4a6e99c09b2d62c21368dc424",
+    "s2": "897c32dc1d4fec46a5d4876db92bacb49cfe75b475f1d33ec587117aa94ffe6a",
+    "s3": "b5b62335762566059c1bbb98372fed78bff07b643d64c9fa675596aa8bd81a3a",
+    "s4": "07a4ee8576d20a6230358f2290732b9c4debaa456380d9c2a8e8fd3651cc5e95",
+    "s5": "971aeb8e3a089f473d197e621d3f0c26ead6b1816778ac46d4796b8906360253"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T04:55:15.763654+00:00",
+  "total": null
+}
