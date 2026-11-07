@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-queued-request-is-checked-when-queued">
+  <meta name="plan-evidence-for" content="a-queued-request-is-checked-when-queued">
+  <title>A second launch of a run never releases the tree its first launch holds | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A second launch of a run never releases the tree its first launch holds</h1>
+      <p class="lead">A worktree path is named for its session and node, not for its run, so a duplicate launch of one run reaches the tree the first launch is using. The wide live-claim view drops the launching run's own pointer, so the duplicate read that tree as a disposable leftover and released it into <code>_trash</code> under a running worker. A launch-side view keeps a same-run pointer as a claim unless its phase still waits (<code>WAITING_REQUEST_PHASES</code>) or its worker is provably gone on this host, and it is read only where a launch decides a tree's fate.</p>
+    </header>
+
+    <section id="a-second-launch-of-a-run-never-releases-the-tree-its-first-what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/crew/routing.py</code>: new <code>_launch_pointer_worktrees</code> beside <code>_live_pointer_worktrees</code>. It reads every live pointer as that view does, except a pointer whose run is <code>LAUNCH_RUN_ID</code>: that pointer is skipped only when <code>_own_pointer_yields_its_tree</code> says a launch may replace its tree &mdash; the phase is in <code>WAITING_REQUEST_PHASES</code>, or <code>local_liveness</code> proves a dead worker on this host. An unpoven verdict (a pointer launched elsewhere on a shared crew home) stays a claim.</li>
+        <li>The two sites that decide a launch's fate read the new view: the claims passed to <code>_inspect_workspace</code> by <code>_launch_tree_verdict</code>, and the guard in <code>_remove_worktree</code>. <code>gc</code>, <code>_save_and_release_worktree</code> and promotion release keep <code>_live_pointer_worktrees</code>, and no path naming changed.</li>
+        <li><code>tests/test_a_second_launch_keeps_a_live_worktree.py</code> (new): in a synthesised repository and crew home it cuts a tree with <code>_create_worktree</code>, publishes a live pointer for run X naming it, and relaunches at the same session and node under <code>LAUNCH_RUN_ID = X</code>. Four cases: <code>working</code> refuses naming the run and leaves the same inode with an empty <code>_trash</code>; <code>starting</code> refuses the same way; <code>queued</code> lets the launch proceed to a new tree; <code>working</code> with a dead local pid lets the retry replace the tree.</li>
+      </ul>
+    </section>
+
+    <section id="a-second-launch-of-a-run-never-releases-the-tree-its-first-the-gate">
+      <h2>The gate</h2>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>Node gate, head</td><td>4 passed, <code>EXIT=0</code></td><td><code>logs/after.log</code></td></tr>
+          <tr><td>Base <code>e9805b3a4c</code>, scratch extraction &mdash; the three files failing at head plus the errored file</td><td>3 failed, 26 passed, <code>EXIT=1</code></td><td><code>logs/base_failing_files.log</code></td></tr>
+          <tr><td>Head, 97 test files importing <code>reckon.crew.routing</code>, <code>-n 4</code></td><td>4 failed, 862 passed, 5 errors, <code>EXIT=1</code> (21:20)</td><td><code>logs/head_routing.log</code></td></tr>
+          <tr><td>Head, the errored file and the added-failure file re-run alone</td><td>1 failed, 16 passed, <code>EXIT=1</code></td><td><code>logs/head_single_checks.log</code></td></tr>
+          <tr><td>Negative control, head + declared mutation</td><td>2 failed, 2 passed, <code>EXIT=1</code></td><td><code>logs/negative-control.log</code></td></tr>
+          <tr><td>Repair: launch-path file at repair head</td><td>12 passed, <code>EXIT=0</code></td><td><code>logs/repair_check_launch_path.log</code></td></tr>
+          <tr><td>Repair negative control: the repair reverted</td><td>1 failed, 11 passed, <code>EXIT=1</code></td><td><code>logs/repair-negative-control.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>Logs live under the run directory <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T152305119816-a-second-launch-of-a-run-never-releases-the-tree-its-first/logs/</code>. The base arm ran from a <code>git archive</code> extraction of <code>e9805b3a4c</code> under <code>$TMPDIR</code>, with the module resolving to that extraction; it carries no <code>.git</code>. The five errors in the wide head arm are <code>pytest-timeout</code> setup timeouts (300 s) in <code>test_held_worktree_records_match_each_record_once.py</code>, which passes when the file runs without a concurrent arm &mdash; contention, not the change. Three failing ids fail identically at the base revision (<code>test_every_module_fits_a_worker_window::test_every_module_fits_a_worker_window</code>, and two in <code>test_orchestrator_assessment_reaches_jev.py</code>).</p>
+      <p>One pre-existing test was turned red by this change and is repaired in the second commit: <code>tests/test_a_successful_launch_is_recorded.py::test_a_queued_request_does_not_hold_its_own_launch_path</code> simulated a launch that names its worktree before cutting the tree, which no real launch does &mdash; <code>_publish_launch_claim</code> publishes the starting claim with no worktree. Its mutation now leaves the pointer in the <code>queued</code> phase it was admitted from, so the case still shows a waiting request does not hold its own launch path. The file passes 12 tests at head; with the repair reverted the case fails again (<code>logs/repair-negative-control.log</code>).</p>
+      <p>Ruff: <code>reckon/crew/routing.py</code> reports 10 findings at base and 10 at head; the new test file is clean under <code>ruff check</code> and <code>ruff format --check</code>. No formatter ran over an unedited file.</p>
+    </section>
+
+    <section id="a-second-launch-of-a-run-never-releases-the-tree-its-first-negative-control">
+      <h2>Declared negative control</h2>
+      <p>Declared mutation: <em>making the new predicate treat a same-run working pointer as not live makes the first case move the tree into <code>_trash</code></em>. Applied by making <code>_own_pointer_yields_its_tree</code> return <code>True</code> unconditionally, the node's own test file reports 2 failed (<code>test_a_working_pointer_s_second_launch_keeps_the_tree</code> and <code>test_a_starting_pointer_s_second_launch_keeps_the_tree</code>) with <code>EXIT=1</code>; the head arm fails neither id, and neither does the base arm, which the new test is absent from.</p>
+    </section>
+
+    <section id="a-second-launch-of-a-run-never-releases-the-tree-its-first-commits">
+      <h2>Commits</h2>
+      <p>The commit carrying this fragment &mdash; fix(crew): keep a live launch's tree when the same run launches again &mdash; changes <code>reckon/crew/routing.py</code>, <code>tests/test_a_second_launch_keeps_a_live_worktree.py</code> and this fragment.</p>
+    </section>
+  </main>
+</body>
+</html>

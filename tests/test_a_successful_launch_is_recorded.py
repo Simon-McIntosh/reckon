@@ -102,7 +102,12 @@ def test_a_queued_request_does_not_hold_its_own_launch_path(
 
     def create(repo, session, worker, base):
         def name_path(pointer):
+            # This request is still waiting: dispatch publishes its starting
+            # claim without a worktree and names the tree only after cutting
+            # it, so a pointer that names this path while it waits is the
+            # queued request's own and must not hold its own launch.
             pointer["worktree"] = str(tree)
+            pointer["phase"] = "queued"
             return pointer
 
         runs._mutate_pointer(request["run_id"], name_path)
