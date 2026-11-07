@@ -1,0 +1,74 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T04:41:40.516Z",
+  "dispatched_at": "2026-11-07T04:36:04Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/recovery_wait.py:705",
+      "id": "deep_module-1",
+      "reason": "\u00a72 widens what the reader accepts without extending the guard that shares its blind spot, and the plan should expose \"the words this probe runs\" once and have all five sites read it.",
+      "text": "the plan also leaves four other sites resolving \"the program a probe runs\" from `probe[0]` alone, so the interpreter case \u00a72 teaches the reference reader to see through is still invisible to them \u2014 the no-op and printer head tests (recovery_wait.py:796-799), `_wait_probe_is_a_no_op` (recovery_wait.py:814), `_wait_probe_prints_structured_output` (recovery_liveness.py:856), `_wait_probe_job_id` (recovery_classification.py:495); the load-bearing one is the structured-output guard: `[\"python3\",\"-c\",\"...run(['sacct','--json','-j','1306915'],...).stdout...\"]` is refused today only because the reference reader names nothing (\u00a71 records exactly that refusal), and \u00a72 makes it an accepted declaration while `_wait_probe_prints_structured_output` cannot see the `--json` inside the string \u2014 so the 2026-10-13 shape (last line `}`, no terminal state ever matched) is no longer refused where a one-line repair is possible and surfaces only later as a `_wait_observation_defect` reading on a parked run",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery_classification.py:517",
+      "id": "thin_wrapper-1",
+      "reason": "\u00a74 must either delete the wrapper and fold both forms into the owner, or say which shapes it keeps and why; as written the collapse is lossy and the plan's done-when does not cover it.",
+      "text": "\u00a74 says `_wait_probe_job_id` \"reads job ids through the reader \u00a72 exposes\", which makes it a one-line delegator at recovery_classification.py:517 and 566, but the function it would delegate to does not parse two forms it parses today \u2014 the glued `-j1306915` (recovery_classification.py:502-503) and the bare-digit fallback (504-506) \u2014 so either the function survives as a second reader that can drift from the owner, or `squeue -j1306915` silently stops naming its job",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery_wait.py:744",
+      "id": "duplicate_owner-1",
+      "reason": "extend `_wait_probe_shell_words` (parameterised or widened, with its docstring saying why the interpreter set is the wider one) rather than adding a parallel splitter, so the two callers cannot disagree about how one string is worded.",
+      "text": "\u00a72 splits an interpreter's code string \"on whitespace and on `, [ ] ( ) ;`, then strips quotes from each word's edges\", which is `_wait_probe_shell_words` with a wider separator set and a wider strip set; written as a new function it puts a second splitter in the same file over the same kind of string, and the shell case survives the wider set unchanged because `,`, `[` and `]` are not characters a shell reference word needs",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-broken-wait-reaches-its-coordinator.html#s2",
+      "id": "interface_budget-1",
+      "reason": "against public_definitions 2360, cli_options 465, mcp_views 15 and refusal_families 23 the section must account for the surface it adds, and here it can account for it by retiring one definition and one duplicated refusal string rather than by growing either family.",
+      "text": "\u00a72 adds a new module-level definition (the job-id reader) and rewrites a refusal message, and \u00a73 adds two new entries to a public map (`RECOVERY_CLASSIFICATION_DUTY_KINDS`), while no section of \u00a72, \u00a73 or \u00a74 names anything retired or merged or states why nothing can be; the nearest candidates are visible in the tree \u2014 the new reader can retire `_wait_probe_job_id` outright (recovery_classification.py:487) and the rewritten refusal can reuse `_WAIT_ACCEPTED_SHAPES` and `_SACCT_STATE_FORM` instead of spelling the accepted shapes a second time",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery_liveness.py:841",
+      "id": "reuse_search-1",
+      "reason": "naming the two constants turns a new string into a reference, which is a sentence of plan text and removes a drift the tree has already paid for once.",
+      "text": "\u00a72 asks the refusal to name \"the argument-vector shape (`[\"squeue\",\"-h\",\"-j\",\"<id>\"]` or a `sacct` vector)\", which already exists twice in the tree \u2014 `_SACCT_STATE_FORM = \"sacct -n -X -o State -j\"` (recovery_liveness.py:841) and `_WAIT_ACCEPTED_SHAPES` (recovery_wait.py:215) \u2014 and the refusal \u00a72 edits already appends `_WAIT_ACCEPTED_SHAPES` at recovery_liveness.py:1010; the plan cites neither, so a worker writing \u00a72 will most likely hand-type a third spelling of the same advice",
+      "type": "reuse_search",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "b7565196c2860daeb8280b7ab38c4259cd225e8b",
+  "plan_fingerprint": "7de8989d03e42a21492e10587836873e32d1d295f6c9f6299b7a8386afc0999b",
+  "plan_slug": "a-broken-wait-reaches-its-coordinator",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T043449973090-plan-review-of-a-broken-wait-reaches-its-coordinator",
+  "reviewed_blob_sha": "e477779bc96d1002bb4c34835a511c340b79817d",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the plan exposes a job-id reader but not the reading underneath it, \"which program this probe actually runs\", so the interpreter blindness \u00a72 removes stays in place at every other site that takes `probe[0]` at face value.",
+    "duplicate_owner": "a finding \u2014 \u00a72 adds a second code-string splitter beside `_wait_probe_shell_words` (recovery_wait.py:744) instead of widening the one that exists.",
+    "interface_budget": "a finding \u2014 public_definitions 2360, cli_options 465, mcp_views 15, refusal_families 23; \u00a72 adds one new module-level definition and a rewritten refusal, and no section states what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan cites the code it extends section by section, but it omits the sibling probe reader that already owns the sacct shape it proposes to recommend: `recovery_liveness._wait_probe_prints_structured_output` / `_SACCT_STATE_FORM` (recovery_liveness.py:841-855) and the shared refusal vocabulary `_WAIT_ACCEPTED_SHAPES` (recovery_wait.py:215), which the refusal \u00a72 rewrites already appends at recovery_liveness.py:1010.",
+    "thin_wrapper": "a finding \u2014 \u00a74 turns `_wait_probe_job_id` into a delegator over the new reader while leaving behind probe shapes only that function parses, and the plan does not say whether the function is deleted or keeps them."
+  },
+  "section_digests": {
+    "_document": "d03f5f33ba4e3c3040d3555977705f88d6fe07b3409e73c3c07db45f1032f907",
+    "s1": "261438fe26041f770a527d758f1d74089637c1787c8d78d49957c57b9c122a42",
+    "s2": "7f638147397793c27168d9f3abf7057cba00c63109ec7df9ec06dc38a784bda7",
+    "s3": "6cef4e4166979301849917a3d7f964e2d68eaf336d3724c41fb5482ae86de817",
+    "s4": "56f29b4064cc7a3d087cf2380bd8311ded02ce5526e7295d449d9b7fdebc5930"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T04:48:04.045403+00:00",
+  "total": null
+}
