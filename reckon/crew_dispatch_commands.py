@@ -2775,15 +2775,31 @@ def _run_review(
                 covering.append(candidate)
             if review_run:
                 wanted_review = str(review_run).strip()
+                # A named review need not be the newest covering one: the
+                # caller names the review because it raised this finding and
+                # the newest review did not, so every stored review of the plan
+                # that raises the finding is a candidate.
+                candidates = list(covering)
+                seen_candidates = {
+                    _covering_review_identity(candidate) for candidate in candidates
+                }
+                for stored in plan_review.list_plan_reviews(project, plan_slug):
+                    if answer not in plan_review.finding_ids(stored):
+                        continue
+                    identity = _covering_review_identity(stored)
+                    if identity in seen_candidates:
+                        continue
+                    seen_candidates.add(identity)
+                    candidates.append(stored)
                 matched = [
                     candidate
-                    for candidate in covering
+                    for candidate in candidates
                     if plan_review._record_run_id(candidate) == wanted_review
                 ]
                 if not matched:
                     named_ids = ", ".join(
                         repr(plan_review._record_run_id(candidate) or "unattributed")
-                        for candidate in covering
+                        for candidate in candidates
                     )
                     detail = (
                         f"--review-run {review_run!r} does not raise finding "
