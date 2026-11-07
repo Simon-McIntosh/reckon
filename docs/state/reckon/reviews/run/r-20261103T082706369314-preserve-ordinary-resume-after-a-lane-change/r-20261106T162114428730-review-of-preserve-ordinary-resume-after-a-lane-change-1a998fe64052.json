@@ -1,0 +1,51 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-07T08:38:20.591Z",
+  "dispatched_at": "2026-11-07T08:26:20Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the base arm cannot collect a test file this change creates; the coordinator measures the importer population at base and merge candidate before landing",
+      "recorded_at": "2026-11-07T08:30:32.670082+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_lane_change_keeps_resume_identity.py",
+      "line": 244,
+      "severity": "non-blocking",
+      "text": "ruff format --check reports 'unformatted: File would be reformatted' at line 244 (no blank line before the second test def) and a trailing blank line at the end of the file, so the commit lands a formatting finding although ruff check passes; this repository states a clean 'ruff format --check .' as its target and asks each commit to add no findings of its own."
+    },
+    {
+      "file": "tests/test_lane_change_keeps_resume_identity.py",
+      "line": 68,
+      "severity": "non-blocking",
+      "text": "_codex_stream (and _clive_stream at line 50) hand-build the per-backend event streams the repository already recorded at tests/fixtures/backends/codex-turn.jsonl and claude-turn.jsonl; the codex helper even hardcodes the fixture's own thread id 019ff509-8a60-7723-94fd-65942a6d8faa, so the case does not redden when a harness changes its event vocabulary, which is the purpose tests/fixtures/backends/README.md states for those fixtures."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T082706369314-preserve-ordinary-resume-after-a-lane-change/manifest.md",
+      "line": 15,
+      "severity": "non-blocking",
+      "text": "the baseline arm exited 4 having collected no test (baseline-arm.log records 'file or directory not found' and 'no tests ran'), because the regression file is created by this change and is absent at the base revision, yet baseline_suite records completed: true with failure_count 0, which reads as a measured clean baseline when nothing was measured; the head arm's green and the red mutation carry the evidence, so this does not hold the node."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the plan section is docs/plans/an-orchestrator-can-discharge-a-refusal.html:410 (\u00a710 'A lane change does not strand the ordinary resume') and the node goal is 'Preserve ordinary resume after a lane change'; the landed change adds tests/test_lane_change_keeps_resume_identity.py, which performs a cross-harness lane change onto a codex lane and asserts a plain resume composes that lane's command with the destination thread id.\nVERDICT done_when: the evidence fence names tests/test_lane_change_keeps_resume_identity.py as the measure; the manifest records that exact gate command and after-arm.log carries '2 passed in 2.98s' with EXIT=0, while baseline-arm.log exits 4 having collected no test.\nVERDICT write_paths: the node declared five paths; git diff --stat 8e3971a96f..1a998fe640 touches only tests/test_lane_change_keeps_resume_identity.py and docs/evidence/fragments/an-orchestrator-can-discharge-a-refusal/preserve-ordinary-resume-after-a-lane-change.html, both inside that set.\nVERDICT manifest: read; it states status complete, names the gate command, both arm logs and the negative-control log path, and records the base arm honestly as exit 4 with zero collected tests.\nVERDICT diff: read both commits against base 8e3971a96f \u2014 65c75b9e01 adds the 288-line regression file, 1a998fe640 adds the 60-line evidence fragment \u2014 and no product source is modified; reckon/crew/dispatch_sessions.py:823 already carries the harness-aware lookup at the base, so the node's claim that no product change was needed holds.\nCALL_SITES: reckon/crew_run_commands.py:2290 (change_lane), reckon/crew_run_commands.py:2302 (resume_plan behind 'crew resume --advice'), reckon/crew/resumption.py:1436 (resume_plan in the recovery sweep), reckon/crew/dispatch_sessions.py:230 (observe), reckon/crew/dispatch_sessions.py:823 (_current_harness_session), reckon/crew/dispatch_sessions.py:1249 (resume_plan's call into it)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_lane_change_keeps_resume_identity.py:263 requires argv[argv.index('resume') + 1] == CODEX_THREAD after a real change_lane, and :281 requires observe to record that id beside its harness, which is the write-at-the-first-turn remedy the section names.\nSCORE evidence: 15\nJUSTIFICATION evidence: after-arm.log carries '2 passed in 2.98s' and EXIT=0 for the gate the done_when names, and negative-control-red.log carries '1 failed, 1 passed in 3.68s' with EXIT=1, but baseline-arm.log measured nothing while the manifest records it as completed with a zero failure count.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 8e3971a96f..1a998fe640 shows the two files named in the manifest and nothing else, both inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control-red.log shows tests/test_lane_change_keeps_resume_identity.py:263 failing with CLIVE_SESSION in argv once the old first-harness lookup is restored, and every added assertion compares a literal the test supplies only as stream data against the argv or pointer the code composes, not against a value it echoes back.\nSCORE fit: 14\nJUSTIFICATION fit: the module follows the idiom of tests/test_resume_finds_unrecorded_live_session.py (declared-mutation constant, inline config, tmp_path fixture with a real-crew-home guard), but tests/test_lane_change_keeps_resume_identity.py:244 fails 'ruff format --check'.\nSCORE reuse: 5\nJUSTIFICATION reuse: the added helpers at tests/test_lane_change_keeps_resume_identity.py:50 and :68 rebuild the recorded backend streams owned by tests/fixtures/backends/codex-turn.jsonl and claude-turn.jsonl without extending them, hardcoding that fixture's own thread id.\nFINDING tests/test_lane_change_keeps_resume_identity.py:244 non-blocking: ruff format --check reports the new file would be reformatted (no blank line before the second test def, trailing blank line at the end), so the commit adds a formatting finding in a repository that states a clean 'ruff format --check .' as its target.\nFINDING tests/test_lane_change_keeps_resume_identity.py:68 non-blocking: _codex_stream and _clive_stream hand-build streams that tests/fixtures/backends/codex-turn.jsonl and claude-turn.jsonl already record, so a harness event-vocabulary change would not redden this case, which tests/fixtures/backends/README.md names as the reason those fixtures exist.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T082706369314-preserve-ordinary-resume-after-a-lane-change/manifest.md:15 non-blocking: the baseline arm exited 4 having collected no test, yet baseline_suite records completed: true with failure_count 0, reading as a measured clean baseline when nothing was measured.\n",
+  "review_run_id": "r-20261106T162114428730-review-of-preserve-ordinary-resume-after-a-lane-change-1a998fe64052",
+  "reviewed_base_sha": "8e3971a96fb7c55d9aedab947dd483a23571629b",
+  "reviewed_head_sha": "1a998fe640520c79e4f3f9f1962d913ee9ebf6f6",
+  "reviewed_run_id": "r-20261103T082706369314-preserve-ordinary-resume-after-a-lane-change",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 14,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T08:48:13.473181+00:00",
+  "total": 90
+}
