@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-landing-survives-a-moving-main">
+  <meta name="plan-title" content="A Landing Survives A Moving Main">
+  <meta name="plan-summary" content="The lander keeps a delivery's measurement when main moves only by commits that cannot change the measured population, so a busy main no longer livelocks landing.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="1.75">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S27">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-after" content="work-is-never-stuck-behind-the-admission-loop">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
+  <title>A Landing Survives A Moving Main | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-11-07">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: two reviewed runs deferred on every pass for 40 minutes</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>On 7 November, runs <code>r-20261107T111357058603</code> (monitor §114) and <code>r-20261107T092649116030</code> (<code>a-read-costs-what-changed</code> §6) had clean reviews with every finding disposed, yet the admit pass recorded both as <code>deferred</code> on each of four consecutive passes from 13:18 to 13:28Z, with no reason. The lander defers in two places in <code>reckon/crew/queue_landing.py</code>: near line 1424, when another delivery was already measured in the same pass; and near line 1460, when a run's measurement was taken against a primary revision that main has since moved past (<code>_primary_revision(pointer) != primary</code>). The stored measurement is keyed on main's revision (<code>_stored_measurement(run_id, head, command, primary)</code>), so any commit to main discards it.</p>
+    <p>A lander measurement took 342 to 413 s per pass that day, while main moved every few minutes from plan edits, review-answer commits and promotion and release records, none of which touch product code. Each pass therefore measured, found main moved, deferred, and measured again: a livelock that leaves reviewed work unlanded for as long as main stays busy. Coordinators landed by hand, serially, at 20 to 40 minutes each.</p>
+
+    <h2 id="s2">§2 — A measurement survives commits that cannot change what it measured</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> When main has moved since a delivery was measured, the lander keeps the measurement if every commit between the measured primary and the current one touches only paths outside the measured population's inputs, and the delivery still merges cleanly onto the current primary. The worker first reproduces the livelock: a stubbed pass in which a docs-only commit lands on main during measurement, showing the run deferred again on the next pass. It then decides, and states in its manifest, which paths cannot change the measurement. Product source under <code>reckon/</code>, <code>tests/</code>, <code>pyproject.toml</code> and <code>uv.lock</code> always invalidate it; <code>docs/</code> plans, state, evidence and figures do not. It applies that test at the deferral near line 1460 and at the stored-measurement lookup, so the measurement is reused rather than repeated.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_a_landing_survives_a_moving_main.py</code> shows four things with a temporary repository and a stubbed measure: a delivery measured before a commit touching only <code>docs/plans/</code> lands on the next pass without being measured again; a delivery measured before a commit touching <code>reckon/</code> is measured again; a delivery that no longer merges cleanly after a docs-only commit is not landed on the stale measurement; and the pass record names a deferred run's reason. Negative control: treating every moved primary as invalidating again makes the first case defer. The test files importing <code>reckon.crew.queue_landing</code> add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>. Ruff check and ruff format --check add no findings on the staged paths. Write paths: <code>reckon/crew/queue_landing.py</code> and the new test.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-alsamm-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="coordinator" data-written-at="2026-11-07" data-recommends-skill="/reckon-build a-landing-survives-a-moving-main §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §2</h4>
+    <div class="r-fu-body"><p>Reproduce the deferral livelock, then keep measurements across commits outside the measured inputs.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-landing-survives-a-moving-main §2</pre>
+    </article>
+</section>
+
+</main>
+</body>
+</html>
