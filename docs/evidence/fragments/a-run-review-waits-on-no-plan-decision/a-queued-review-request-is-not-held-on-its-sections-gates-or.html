@@ -45,8 +45,27 @@
         <td><code>e3a9f381a2</code> + this change, mutated</td>
         <td>1 failed, 20 passed, <code>EXIT=1</code> &mdash;
         <code>test_a_review_of_a_gated_section_reads_no_readiness_wait</code></td></tr>
+      <tr><td>wider arm: the 64 files importing
+        <code>reckon.crew.queue_admission</code>, <code>-n 4</code></td>
+        <td><code>e3a9f381a2</code> + this change</td>
+        <td>6 failed, 444 passed &mdash; 3 of the 6 also fail at base
+        (two timing flakes in <code>test_overlapping_queued_requests_launch_in_turn.py</code>,
+        whose sibling fails at base too, plus the queued-pointer view and the
+        decline-only round), and 3 were a 300 s <code>pytest-timeout</code> on
+        the shared discovery lock under <code>-n 4</code>; those files pass
+        serially at head</td></tr>
     </tbody>
   </table>
+
+  <p><strong>The preflight keeps its economy.</strong> A dispatch preflight read
+  the section verdict eagerly only when the plan authored a gate or a decision
+  that could apply; that answer now sits inside <code>dispatch_waits</code>,
+  which reads the plan's own holds before asking the section's verdict. So a
+  dispatch whose plan authors no hold still scans no roadmap, while the batch
+  admission path, which reads the roadmap for the section, is untouched for
+  every non-review role. Without that split the preflight began scanning the
+  roadmap for a node with no authored hold, and
+  <code>test_section_preflight_does_not_scan_scope_claims</code> refused it.</p>
 
   <p><strong>Not done here.</strong> The obligation rows that read &ldquo;waiting
   for a lane slot&rdquo; while a pass says <code>held-by-gate</code> belong to
