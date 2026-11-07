@@ -1,0 +1,36 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T01:08:14.065Z",
+  "dispatched_at": "2026-11-07T00:59:13Z",
+  "findings": [],
+  "plan_commit": "0bd57df0ea95464fa01256b2b27d1328b9a28321",
+  "plan_fingerprint": "a76e34c40c55d5713f4b5599feb2431b7bcc91b088758992e7c04cef394d7575",
+  "plan_slug": "a-refusal-comes-before-the-work",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T005643755234-plan-review-of-a-refusal-comes-before-the-work",
+  "reviewed_blob_sha": "605660cdccd34eb3bd1a63064d4ed5a176442da2",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 I opened each cited anchor in the worktree and every one resolves at or within a line of the stated range: `validate_node` call at `reckon/crew/dispatch_plan.py:843`, `negative_control_finding` at :851, `gate_population_finding` at :863, execution fit at :869, `_effective_backend` at `reckon/crew/routing.py:159`, the lane expression at `reckon/crew/dispatch.py:313` verbatim, `execution_capable` validation at `reckon/flight.py:1679-1694`, `_EXECUTION_MEASURE_PATTERNS` at `reckon/capability.py:39-49`, `_DELIVERABLE_ACTIONS` at `reckon/crew/node.py:79`, and `gate_population_patterns` at `reckon/crew/node.py:1099`.",
+    "done_when": "pass \u2014 six cases each name an observable outcome (a refusal in the batch result, a stored entry, no queued pointer, an equal refusal detail) and five negative controls each name the mutation that makes a case pass; the controls map one per refusal plus a drift control, so omitting any single refusal from the shared function is caught by a case.",
+    "evidence_paths": "pass \u2014 the done-when puts every log \"under the run directory\", which is the durable crew run directory, and the new test lives in `tests/`, so nothing lands in a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 the new test file name and every symbol named are mechanism descriptions (`test_a_batch_entry_meets_the_node_contract.py`), with no plan, stage or ticket identifier and no changelog prose.",
+    "reasoning": "pass \u2014 all three checks hold on the content as written. Root cause matches the evidence: \u00a71's claim that the batch path runs only `admission_domain_findings` is true of `queue_requests` (`reckon/crew/dispatch.py:322-335`), and I confirmed that function checks only declared inputs and the comparison, so a missing negative control, a gate glob matching nothing and an execution-fit conflict all pass the batch today. Mechanism produces the measure: the shared function's inputs are sufficient \u2014 the repository path reaches `gate_population_finding`, and each of the six cases reaches its refusal through a real field of a batch entry (`write_paths` and `negative_control` from `entry`, `done_when` from the entry, `role` from the entry, confirmed at `reckon/crew/dispatch_batch.py:386-415`). Real code path: the caller is named and exists \u2014 `_queue_batch` passes `backend = str(entry.get(\"backend\") or \"\")` into `queue_requests` (`dispatch_batch.py:577`, matching `dispatch.py:313` verbatim), so the lane the shared function judges is the lane the pointer records. The load-bearing sentence \"`execution_capable` \u2026 no lane block declares it\" also holds: the field appears once in the schema, on `RoleConfig` (`reckon/_flight_schema.py:569`), and `_effective_backend` copies every role-overlay key except the four routing keys, so the role overlay is the only source and the verdict is genuinely independent of the lane admission later binds.",
+    "single_goal": "pass \u2014 \u00a72 has one deliverable: batch entries judged by the same contract function the single dispatch path calls. The six cases are arms of that one measure, not separate deliverables.",
+    "wiring": "pass \u2014 \u00a72 depends on no other section and declares no relationship it does not need; `plan-section-depends-on` makes \u00a73 and \u00a75 wait on \u00a72, which is correct because both share a file \u00a72 rewrites (`reckon/crew/dispatch.py` and `reckon/crew/dispatch_plan.py`), and \u00a74 shares no path with any of them."
+  },
+  "section_digests": {
+    "_document": "fe86ddc53d6df02ed8681809f4399744a8daf0946c333b28fc3a6b583769f545",
+    "s1": "75df880739e89570186a1c16cae47d54a4d457a4a6e99c09b2d62c21368dc424",
+    "s2": "897c32dc1d4fec46a5d4876db92bacb49cfe75b475f1d33ec587117aa94ffe6a",
+    "s3": "b5b62335762566059c1bbb98372fed78bff07b643d64c9fa675596aa8bd81a3a",
+    "s4": "07a4ee8576d20a6230358f2290732b9c4debaa456380d9c2a8e8fd3651cc5e95",
+    "s5": "971aeb8e3a089f473d197e621d3f0c26ead6b1816778ac46d4796b8906360253"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T01:18:36.081770+00:00",
+  "total": null
+}
