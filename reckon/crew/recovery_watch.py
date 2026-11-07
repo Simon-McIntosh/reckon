@@ -2618,7 +2618,62 @@ def _running_code_stamp() -> str:
     return obligation_snapshot.source_code_stamp()
 
 
+#: Per events file: the byte size last read and the newest partition-carrying
+#: transition found up to that size. A file grows by appends, so a later read
+#: only has to look at the bytes added since, rather than walking back from the
+#: tail through a history that may hold no partition-carrying record at all.
+_NEWEST_SESSION_EVENT_CACHE: dict[str, tuple[int, int, Mapping[str, Any] | None]] = {}
+
+
 def _newest_session_event(path: Path) -> Mapping[str, Any] | None:
+    """The newest partition-carrying transition in one events file, read once.
+
+    The first read of a file walks it from the tail through
+    ``_newest_session_event_walk``. Later reads of the same file read only the bytes appended since
+    the last one, forwards, and keep the cached record when none of the new
+    lines carries the partition. A file that shrank or was replaced (a new
+    inode) is walked again from the tail. Every pane row consults every other
+    project's events file, so without this the row cost grew with each file's
+    history and starved the follower's review reflex of its sweep.
+    """
+    key = str(path)
+    try:
+        status = path.stat()
+    except OSError:
+        _NEWEST_SESSION_EVENT_CACHE.pop(key, None)
+        return None
+    cached = _NEWEST_SESSION_EVENT_CACHE.get(key)
+    if cached is not None and cached[0] == status.st_ino:
+        size, event = cached[1], cached[2]
+        if status.st_size == size:
+            return event
+        if status.st_size > size:
+            newest = event
+            try:
+                with path.open("rb") as handle:
+                    handle.seek(size)
+                    appended = handle.read(status.st_size - size)
+            except OSError:
+                return event
+            complete = appended[: appended.rfind(b"\n") + 1]
+            for raw in complete.splitlines():
+                parsed = runs.parse_stream_line(raw.decode("utf-8", "replace"))
+                if parsed is not None and isinstance(
+                    parsed.get("session_counts"), Mapping
+                ):
+                    newest = parsed
+            _NEWEST_SESSION_EVENT_CACHE[key] = (
+                status.st_ino,
+                size + len(complete),
+                newest,
+            )
+            return newest
+    event = _newest_session_event_walk(path)
+    _NEWEST_SESSION_EVENT_CACHE[key] = (status.st_ino, status.st_size, event)
+    return event
+
+
+def _newest_session_event_walk(path: Path) -> Mapping[str, Any] | None:
     """The newest transition in one events file that carries the partition.
 
     The file is walked from its tail by the owner of that read,
