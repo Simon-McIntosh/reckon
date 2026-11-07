@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T09:46:12.775Z",
+  "dispatched_at": "2026-11-07T09:36:30Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-queued-request-is-checked-when-queued.html:47",
+      "id": "anchors_resolve-1",
+      "reason": "the investigation's central decision is path identity versus a live-claim check, and a worker told that the run-id resolver also names by session and node will scope the rename to `_launch_worktree_path` alone and leave gc's per-run sweep resolving a path that no longer exists.",
+      "text": "\u00a73 says \"A worktree path is derived from the session and node id (`_launch_worktree_path` near line 2134, `_run_worktree_path` near line 1206), not the run id\", but `_run_worktree_path` derives nothing from ids: it iterates `list_live()` and the project's ledger rows matching `run_id` and returns the `worktree` value they carry (routing.py:1217\u20131234), and it is the resolver gc.py:481 uses to confine a run's sweep \u2014 so it is the one consumer that already resolves a tree by run identity, and the repair's \"path identity\" option must keep it coherent.",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queued-request-is-checked-when-queued.html:43",
+      "id": "reasoning-1",
+      "reason": "extracting lines 837\u2013879 alone reproduces the class of divergence the section is written to remove, and the fix belongs in the plan as a stated preparation step the extracted function owes or the queue path must perform.",
+      "text": "\u00a72 states the extracted function returns \"the node-contract verdict a single dispatch reaches\", but two of the checks read fields that plan_dispatch fills in immediately before them and the queue path does not: `assess_execution_fit` and `gate_population_finding` judge `node.done_when` as extended by `with_carried_findings` (dispatch_plan.py:809\u2013819, the only call site in the tree), and `negative_control_finding` judges `node.write_paths` after the run-directory default is applied (dispatch_plan.py:830\u2013833) \u2014 so a batch entry can pass at queue time and be refused at launch, which is the defect the node exists to close.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "4be01e88dc410eb0d9b68158ac81c16d9358c4e9",
+  "plan_fingerprint": "94a857cbe5f3cf40bc47b38f5961ae1b06187dfa85176e4ca2c047b914735608",
+  "plan_slug": "a-queued-request-is-checked-when-queued",
+  "plan_version": 8,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T093510136695-plan-review-of-a-queued-request-is-checked-when-queued",
+  "reviewed_blob_sha": "96154fa7bd2ed96aec3982fae231e7fb8438f3dc",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a73 cites `_run_worktree_path` (routing.py:1206) as a path that derives from session and node id and not the run id; that function derives nothing from ids and resolves a tree by looking up the run id.",
+    "done_when": "pass \u2014 \u00a72's gate names three assertions plus a mutation restored as its negative control, and \u00a73's names an evidence note, a two-population reproduction control, and the note's required form.",
+    "evidence_paths": "pass \u2014 \u00a72's gate writes a repository test, and \u00a73's note lands at docs/evidence/fragments/a-queued-request-is-checked-when-queued/what-trashed-the-live-worktree.html inside the repository's evidence tree, with its commands logged under the run directory.",
+    "naming": "pass \u2014 the new test names the behaviour it asserts, and no plan label, stage name or ticket number reaches a symbol or a path.",
+    "reasoning": "a finding \u2014 \u00a72 promises \"the node-contract verdict a single dispatch reaches\", but plan_dispatch prepares the node (carried findings appended to done_when at dispatch_plan.py:809\u2013819, default write paths at 830\u2013833) before the four checks read it, and the queue path has no such preparation.",
+    "single_goal": "pass \u2014 \u00a72 extracts one contract verdict and calls it from both paths; \u00a73 delivers one evidence note, with the repair statement now inside that note rather than as a second deliverable.",
+    "wiring": "pass \u2014 \u00a72 and \u00a73 declare no relationship they should have; both are independent of each other and of \u00a74, and no dependency they consume is missing."
+  },
+  "section_digests": {
+    "_document": "bcf7f43d654faed3260657791cc12095f526ae368d2ca84d5d9493a0361797be",
+    "s1": "b7af832c4e07048d297870ea5b081003fe0879e7a28b1f993a9bacf98ec2bc83",
+    "s2": "f0bb78f495e184d08f264ee0c8670552bf2417dc09e1fccec557d64974b999ef",
+    "s3": "ef3a67038c242a48f942b4d5a6f60587332d982f3e17d40695a54adb9b0b31ec",
+    "s4": "214c26ee307b26a9189e695057c758aa5f11833093fa7379f62bdba78c540705"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T09:51:59.480944+00:00",
+  "total": null
+}
