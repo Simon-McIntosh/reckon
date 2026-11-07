@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:1096",
+    "reckon/crew/station_subscriber.py:391"
+  ],
+  "call_sites_emission": "sites",
+  "completed_at": "2026-11-07T14:29:07.855Z",
+  "dispatched_at": "2026-11-07T14:10:03Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": 21,
+      "severity": "non-blocking",
+      "text": "baseline_suite declares completed true, exit_status 0, failure_count 0 and the artifacts quote 481 passed, but logs/base_arm_ticker_tests.log is 8 lines and stops at the pytest progress dots with no summary line and no EXIT= line, and 481 appears in no log under logs/; the base leg is claimed rather than recorded, so added_failure_count for this review rests on the manifest's JSON alone."
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": 1687,
+      "severity": "non-blocking",
+      "text": "the baseline short-circuit added to RowPolicy._is_own_start is untested: no test feeds a baseline-event row with to_state working for the pane's own session, so deleting the two lines reddens nothing, and _is_own_launch already rejects a baseline at ticker.py:1705 so the guard changes remembered bookkeeping rather than the row printed; the docstring and landing fragment claim it is load-bearing."
+    },
+    {
+      "file": "tests/test_the_pane_shows_a_run_starting.py",
+      "line": 50,
+      "severity": "non-blocking",
+      "text": "assert ticker._pane_word(rows[0]) == \"working\" compares the released row against the to_state the test itself passed to _row, so it moves with the input and holds for any row that echoes it; the independent guard is the adjacent len(rows) == 1; the same shape repeats at line 65, and the render assertion at line 66 also restates the supplied word."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified reckon/crew_follow_commands.py:1096 and reckon/crew/station_subscriber.py:391, both of which construct ticker.PaneRowPath with own_session and so reach RowPolicy.feed through the changed START_KINDS.",
+    "diff": "Read commit by commit against base a35f01e5: 889ada3a extends START_KINDS and adds the baseline short-circuit in RowPolicy._is_own_start with a new 77-line test, and e294112a adds the 25-line landing fragment; nothing outside the declared scope.",
+    "done_when": "The plan's done_when names tests/test_the_pane_shows_a_run_starting.py feeding a queued->working event and a first row already in working for the session's own run and a peer's; the test does exactly that, the gate log records 3 passed, and the negative control restores the exclusions and returns the two failures.",
+    "goal": "The node's goal is that a run the pane's session owns prints one row when it starts working; reckon/crew/ticker.py:1297 admits queued->working and None->working and RowPolicy gates both on the pane's own session, which the re-run gate shows printing one row each.",
+    "manifest": "The manifest reports status complete, names the gate command and its head and base arms, and cites logs/gate_node_test.log, logs/head_arm_ticker_tests.log and logs/negative_control.log; the base arm's log is truncated short of its summary though the manifest declares it complete.",
+    "write_paths": "The plan declares reckon/crew/ticker.py and the new test as write paths; the diff adds only those two plus the landing evidence fragment, which appears in the node's own orientation_write_paths, and touches nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_the_pane_shows_a_run_starting.py:49 and :64 fail if the two start pairs are removed (shown by the negative control), but the added baseline short-circuit at reckon/crew/ticker.py:1687 has no test that reddens when it is removed.",
+    "evidence": "logs/gate_node_test.log records 3 passed and EXIT=0 and logs/negative_control.log records 2 failed, 1 passed and EXIT=1, but logs/base_arm_ticker_tests.log ends at 8 lines with no summary and no EXIT= line while manifest.md:21 declares baseline_suite completed true with the uncorroborated figure 481 passed.",
+    "fit": "the change extends the existing START_KINDS set and reuses is_baseline (reckon/crew/ticker.py:1143) in the surrounding comment and docstring idiom, and introduces no plan, stage or ticket label.",
+    "goal_fidelity": "reckon/crew/ticker.py:1297 START_KINDS now holds (\"queued\",\"working\") and (None,\"working\"), and the gate re-run at the reviewed head prints one row for each through PaneRowPath.feed, which reaches stream_carries.",
+    "reuse": "no definition is added; the diff extends the owner of the start-pair capability, START_KINDS and RowPolicy._is_own_start in reckon/crew/ticker.py, after searching reckon/ for existing start, launch and baseline mechanisms (_is_own_launch, _launch_row, stream_carries, settled_at_attach, hidden_at_attach) and finding all in this same owner.",
+    "scope_discipline": "git diff a35f01e5..e294112a touches only reckon/crew/ticker.py, tests/test_the_pane_shows_a_run_starting.py and the landing evidence fragment named in the node's granted write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a run the pane's session owns prints one row when it starts working; reckon/crew/ticker.py:1297 admits queued->working and None->working and RowPolicy gates both on the pane's own session.\nVERDICT done_when: the plan's done_when names tests/test_the_pane_shows_a_run_starting.py; the test feeds both pairs plus a peer case, the gate log records 3 passed, and the negative control restores the exclusions and returns the two failures.\nVERDICT write_paths: the plan declares reckon/crew/ticker.py and the new test; the diff adds only those plus the landing fragment named in the node's orientation_write_paths.\nVERDICT manifest: read; it reports complete, names the gate command, head and base arms, and cites three logs, but the base arm log is truncated before its summary.\nVERDICT diff: read commit by commit against base a35f01e5; START_KINDS and RowPolicy._is_own_start change in commit 889ada3a with the new test, and e294112a adds the landing fragment.\nCALL_SITES: reckon/crew_follow_commands.py:1096, reckon/crew/station_subscriber.py:391\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:1297 START_KINDS now holds the two new pairs, and the gate re-run at the reviewed head prints one row for each through PaneRowPath.feed into stream_carries.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/gate_node_test.log records 3 passed and EXIT=0, but logs/base_arm_ticker_tests.log has no summary or EXIT= line while manifest.md:21 declares it complete.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/ticker.py, the new test and the granted landing fragment.\nSCORE durability: 15\nJUSTIFICATION durability: the two positive cases are negative-controlled, but the baseline short-circuit at reckon/crew/ticker.py:1687 has no test that fails when it is removed.\nSCORE fit: 19\nJUSTIFICATION fit: the change extends the existing START_KINDS set and reuses is_baseline at reckon/crew/ticker.py:1143 in the surrounding idiom, with no plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added; the diff extends the owner of the start-pair capability in reckon/crew/ticker.py, and the search over reckon/ found no separate owner to duplicate.",
+  "review_run_id": "r-20261107T140627034163-review-of-the-session-pane-prints-one-row-when-a-run-the-session-owns-e294112a8232",
+  "reviewed_base_sha": "a35f01e53f6ef4c50ce97d0fdc9fb38484821f07",
+  "reviewed_head_sha": "e294112a8232dd8cd5e0f30f1c0549f72eaf6256",
+  "reviewed_run_id": "r-20261107T132158964491-the-session-pane-prints-one-row-when-a-run-the-session-owns",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T14:43:48.520561+00:00",
+  "total": 106
+}
