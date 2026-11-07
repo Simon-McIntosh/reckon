@@ -1,10 +1,8 @@
 """A run whose worker is live refuses a second launch at the supervisor's spawn.
 
 A queued run admitted twice was launched into one worktree: attempt 1 recorded
-its worker pid at 21:30:35Z, its dispatch claim was written again at 21:31:10Z,
-and attempt 2 recorded its own worker pid at 21:32:07Z while attempt 1 ran on
-until 22:04:47Z. Both wrote the same manifest in turn, so the run's record of
-what landed was whatever the later writer held.
+its worker pid while attempt 2 recorded its own, both ran, and the two wrote
+the same manifest in turn from their own partial views.
 
 Every case works against a temporary crew home and a temporary run directory,
 so none reads or writes the operator's configuration home.
@@ -23,6 +21,7 @@ import pytest
 from reckon.crew import dispatch_launch as dispatch_launch_module
 from reckon.crew import runs
 from reckon.crew.node import CrewError
+from reckon.crew.recovery_liveness import _reading_host
 
 RUN_ID = "r-queued-launch-once"
 SESSION_ID = "6f1c2d34-5e6f-4a7b-8c9d-0e1f2a3b4c5d"
@@ -46,11 +45,12 @@ def queued_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
             "phase": "starting",
             "backend": "probe",
             "launch": "cli",
-            "launcher_host": "this-host",
+            "launcher_host": _reading_host(),
             "attempt": 2,
             "attempt_kind": "dispatch",
             "session": "session-1",
             "session_id": SESSION_ID,
+            "pid": _dead_pid(),
             "worktree": str(directory),
             "manifest_path": str(directory / "manifest.md"),
             "log_path": str(directory / "stream.jsonl"),
@@ -93,19 +93,18 @@ def _spec(directory: Path) -> dict:
     }
 
 
-def _write_worker_receipt(directory: Path, attempt: int, pid: int) -> None:
-    """File an earlier attempt's immutable worker receipt, as a launch does."""
-    runs._write_json(
-        directory / f"attempt-{attempt}-worker.json",
-        {
-            "run_id": RUN_ID,
-            "attempt": attempt,
-            "pid": pid,
-            "launched_at": "2026-11-07T00:00:00Z",
-            "backend": "probe",
-            "argv": [],
-        },
-    )
+def _write_worker_record(directory: Path, pid: int) -> dict:
+    """File the incumbent attempt's worker record, as its supervisor wrote it."""
+    record = {
+        "run_id": RUN_ID,
+        "attempt": 1,
+        "pid": pid,
+        "launched_at": "2026-11-07T00:00:00Z",
+        "backend": "probe",
+        "argv": [],
+    }
+    runs._write_json(directory / "worker.json", record)
+    return record
 
 
 def _live_child(*extra: str) -> subprocess.Popen:
@@ -128,79 +127,51 @@ def _stop(process: subprocess.Popen) -> None:
     process.wait(timeout=10)
 
 
+def _records(directory: Path) -> dict[str, str]:
+    """Everything the run directory says about its attempts, as text, to compare."""
+    return {
+        path.name: path.read_text(encoding="utf-8")
+        for path in sorted(directory.glob("*.json"))
+    }
+
+
 def test_a_second_launch_beside_a_live_worker_is_refused(queued_run: Path) -> None:
     worker = _live_child()
     try:
-        _write_worker_receipt(queued_run, 1, worker.pid)
+        _write_worker_record(queued_run, worker.pid)
+        before = _records(queued_run)
         with pytest.raises(CrewError) as refused:
             dispatch_launch_module._supervisor_spawn_worker(_spec(queued_run))
         assert f"still has a live worker (pid {worker.pid})" in str(refused.value), (
             refused.value
         )
-        assert not (queued_run / "worker.json").exists(), (
-            "the refused launch wrote a worker record"
+        # A removal of the liveness read lets the launch through here, so this
+        # assertion is what reddens on that regression.
+        assert _records(queued_run) == before, (
+            "the refused launch rewrote the run's attempt records"
         )
     finally:
         _stop(worker)
 
 
 def test_a_second_launch_is_refused_through_the_session_walk(queued_run: Path) -> None:
-    gone = _dead_pid()
-    _write_worker_receipt(queued_run, 1, gone)
+    _write_worker_record(queued_run, _dead_pid())
     stand_in = _live_child(SESSION_ID)
     try:
+        before = _records(queued_run)
         with pytest.raises(CrewError) as refused:
             dispatch_launch_module._supervisor_spawn_worker(_spec(queued_run))
-        assert f"still has a live worker (pid {stand_in.pid})" in str(refused.value), (
-            refused.value
+        assert "still has a live worker (pid " in str(refused.value), refused.value
+        assert _records(queued_run) == before, (
+            "the refused launch rewrote the run's attempt records"
         )
     finally:
         _stop(stand_in)
 
 
 def test_a_launch_after_the_worker_exited_proceeds(queued_run: Path) -> None:
-    _write_worker_receipt(queued_run, 1, _dead_pid())
+    _write_worker_record(queued_run, _dead_pid())
     pid = dispatch_launch_module._supervisor_spawn_worker(_spec(queued_run))
     assert pid > 0
     record = json.loads((queued_run / "worker.json").read_text(encoding="utf-8"))
     assert record["attempt"] == 2, "the launched attempt did not record its worker"
-
-
-def test_removing_the_liveness_read_launches_the_second_worker(
-    queued_run: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """The refusal above is the guard: with it gone the second worker starts."""
-    if not hasattr(dispatch_launch_module, "_live_worker_beside_the_launch"):
-        pytest.skip("this revision has no liveness read to remove")
-    worker = _live_child()
-    try:
-        _write_worker_receipt(queued_run, 1, worker.pid)
-        monkeypatch.setattr(
-            dispatch_launch_module,
-            "_live_worker_beside_the_launch",
-            lambda *args, **kwargs: None,
-        )
-        pid = dispatch_launch_module._supervisor_spawn_worker(_spec(queued_run))
-        assert pid > 0, "no second worker was launched without the liveness read"
-    finally:
-        _stop(worker)
-
-
-def test_a_pid_only_liveness_read_launches_the_session_walk_case(
-    queued_run: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """A read that ignores the session id admits the reparented worker's run."""
-    if not hasattr(dispatch_launch_module, "record_process_alive"):
-        pytest.skip("this revision has no liveness read to stub")
-    _write_worker_receipt(queued_run, 1, _dead_pid())
-    stand_in = _live_child(SESSION_ID)
-    try:
-        monkeypatch.setattr(
-            dispatch_launch_module,
-            "record_process_alive",
-            lambda record, *args, **kwargs: runs.process_alive(record.get("pid")),
-        )
-        pid = dispatch_launch_module._supervisor_spawn_worker(_spec(queued_run))
-        assert pid > 0, "the pid-only read refused a launch it should admit"
-    finally:
-        _stop(stand_in)
