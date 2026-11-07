@@ -10,6 +10,13 @@
   "call_sites_note": "Three production readers reach the landed change, and I read each. reckon/mcp_views.py:4573 calls obligations_module.obligations(project, session, fields=fields), so every MCP obligations read now carries the reason for a refused wait; the fields argument is forwarded unchanged and reason was already in DUTY_ROW_FIELDS (reckon/crew/obligations.py:116), so no projection vocabulary had to change. reckon/hooks/coordinator_obligations.py:195 returns module.obligations as _obligations_view, so the prompt and stop hooks that read the derived view carry the same rows. reckon/crew/station_obligations.py:110 trims 'obligations' and 'acknowledged' rows only to drop age fields for payload_identity, so the new reason participates in the identity digest, which is what a changed refusal text should do. No production caller indexes the row tuple positionally or asserts an exact key set, so the added key breaks none of them.",
   "completed_at": "2026-11-07T10:05:25.244Z",
   "dispatched_at": "2026-11-07T09:57:11Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "The two sets name the repair-verb duty kinds that carry a reason; keeping them in step is a one-line edit beside the map, and a later kind added without its reason is visible in that kind's own obligation test.",
+      "recorded_at": "2026-11-07T10:15:05.653646+00:00"
+    }
+  },
   "findings": [
     "FINDING reckon/crew/obligations.py:92 non-blocking: CLASSIFIER_DETAIL_DUTY_KINDS repeats the two members of RECOVERY_CLASSIFICATION_DUTY_KINDS that need a reason, so a future repair-verb kind added to the map alone silently loses the classifier's text with no test asserting the two sets agree."
   ],
