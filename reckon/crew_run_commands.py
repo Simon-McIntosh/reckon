@@ -2128,6 +2128,72 @@ def crew_gc(
     _emit_crew_result(report, pretty)
 
 
+def _refuse_a_budget_above_the_resume_fence(
+    time_budget: str, *, over_fence: str, config: Mapping[str, Any] | None
+) -> None:
+    """Refuse a resumed allowance above the fence unless a reason is recorded.
+
+    The fence bounds a run's own clock, so a resume that states a longer one is
+    the door through it rather than a bypass around it: the caller states why
+    with ``--over-fence``, and that reason is recorded on the run beside the
+    allowance. Without one the refusal stands and names the option, exactly as
+    a dispatch above the fence is refused.
+    """
+    from reckon.crew.node import CrewError, parse_duration
+    from reckon.crew.routing import resolved_time_ceiling
+
+    try:
+        seconds = parse_duration(time_budget)
+        ceiling = resolved_time_ceiling(config or {})
+        ceiling_seconds = parse_duration(ceiling) if ceiling else None
+    except CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+    if ceiling_seconds is not None and seconds > ceiling_seconds and not over_fence:
+        raise click.ClickException(
+            f"budget {time_budget} exceeds the resolved fence {ceiling}; "
+            "split the work, or pass --over-fence REASON to resume above it"
+        )
+
+
+def _record_resumed_time_budget(
+    run_id: str, *, time_budget: str, over_fence: str
+) -> None:
+    """Store a resume's allowance on the run, with the reason it was raised.
+
+    The pointer's node is what the resumed attempt's fence is composed from, so
+    the new allowance is written there rather than carried only by the launch.
+    Each change is kept on the run so a later reader can see the clock the
+    attempt before it was judged against.
+    """
+    from reckon.crew import runs as runs_module
+
+    def apply(record: dict[str, Any]) -> dict[str, Any]:
+        node = dict(record.get("node") or {})
+        if not node:
+            raise runs_module.CrewError(
+                f"run {run_id!r} records no node, so no allowance can be changed"
+            )
+        previous = str(node.get("time_budget") or "")
+        if previous == time_budget:
+            return record
+        node["time_budget"] = time_budget
+        change: dict[str, Any] = {
+            "from": previous,
+            "to": time_budget,
+            "at": datetime.now(UTC).isoformat(),
+        }
+        if over_fence:
+            change["reason"] = over_fence
+        record["node"] = node
+        record["budget_changes"] = [
+            *(dict(item) for item in record.get("budget_changes") or ()),
+            change,
+        ]
+        return record
+
+    runs_module._mutate_pointer(run_id, apply)
+
+
 @crew.command(name="resume")
 @click.option("--run", "run_id", help="Run id to answer or reopen.")
 @click.option("--project", help="Project whose ready runs to sweep.")
@@ -2162,6 +2228,18 @@ def crew_gc(
     help="Neutral worker-hours for a backend move.",
 )
 @click.option(
+    "--time-budget",
+    "time_budget",
+    default="",
+    help="Wall-clock allowance for the resumed attempt, e.g. 45m.",
+)
+@click.option(
+    "--over-fence",
+    "over_fence",
+    default="",
+    help="Why the resumed allowance exceeds the fence; without it it is refused.",
+)
+@click.option(
     "--dry-run",
     is_flag=True,
     help="Report a ready-run sweep without resuming anything.",
@@ -2183,6 +2261,8 @@ def crew_resume(
     model,
     reason,
     estimated_hours,
+    time_budget,
+    over_fence,
     dry_run,
     print_only,
     pretty,
@@ -2191,7 +2271,11 @@ def crew_resume(
 
     The ready sweep answers provider holds and declared external waits.
     Reopening grants paths and repairs a completed delivery before its session
-    continues; a backend move may choose the lane's declared model.
+    continues; a backend move may choose the lane's declared model. A resume
+    may state a new allowance with ``--time-budget``, recorded on the run so
+    the attempt it launches is judged against that clock rather than the one
+    the run was dispatched under; an allowance above the fence needs
+    ``--over-fence`` and the reason it carries.
     """
     _accept_a_matching_project(run_id, project)
     if ready:
@@ -2216,6 +2300,17 @@ def crew_resume(
         raise click.UsageError("--reason requires --backend or --reopen")
     if write_paths and not reopen:
         raise click.UsageError("--write-path requires --reopen")
+    if over_fence and not time_budget:
+        raise click.UsageError("--over-fence requires --time-budget")
+    if time_budget and (ready or dry_run):
+        raise click.UsageError("--time-budget applies to one resume, not a sweep")
+    if time_budget and print_only:
+        # The new allowance is recorded on the run, and a preview writes
+        # nothing, so a preview would show a fence the launch would not use.
+        raise click.UsageError(
+            "--time-budget is recorded on the run; it cannot be previewed with "
+            "--print-only"
+        )
     if reopen and (not write_paths or backend or print_only):
         raise click.UsageError(
             "--reopen needs --write-path and cannot combine with --backend or --print-only"
@@ -2268,6 +2363,17 @@ def crew_resume(
             if project
             else None
         )
+        if time_budget:
+            _refuse_a_budget_above_the_resume_fence(
+                time_budget, over_fence=over_fence, config=config
+            )
+            _record_resumed_time_budget(
+                run_id, time_budget=time_budget, over_fence=over_fence
+            )
+            # The resumed attempt composes its fence from the budget stored on
+            # the run, so the pointer is re-read here: the record held above
+            # predates the new allowance and would launch the old clock.
+            record = crew_module.read_pointer(run_id)
         if backend:
             from reckon import ledger
             from reckon.crew.dispatch import change_lane
