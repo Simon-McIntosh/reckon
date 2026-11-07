@@ -1,0 +1,63 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "backend": "local",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2010",
+    "reckon/crew/gc.py:1837"
+  ],
+  "completed_at": "2026-11-07T17:00:24.773Z",
+  "dispatched_at": "2026-11-07T16:47:38Z",
+  "findings": [
+    {
+      "file": "reckon/crew/gc.py",
+      "id": "f15d9491c2c",
+      "line": "1512",
+      "severity": "non-blocking",
+      "text": "non-blocking: _write_retention_cursor performs mkdir, write and os.replace with no OSError handling, so a read-only or full crew home aborts the whole pass after it has already removed directories and before the retention log or the JSON report is written; the node's own first host measure hit exactly this OSError on retention-cursor.json.tmp (manifest retry_failures), which is why the RECKON_RETENTION_CURSOR override exists, and the analogous cursor write at reckon/crew/plan_review.py:3503 catches OSError for that reason."
+    },
+    {
+      "file": "docs/evidence/fragments/crew-state-stays-bounded/a-retention-pass-finishes-inside-its-slot.html",
+      "id": "ff0dbaa650d",
+      "line": "70",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment quotes a listing-and-is_dir probe of 169.86 s over 20,975 entries, but no log for that probe is in the run directory (the logs/ listing holds only the two host measures, the gate arms and the three negative controls) and 169.86 s exceeds the 166.630 s judge phase, which contains that same listing and 500 judgments, so the number cannot have been taken under the conditions the paragraph presents it as corroborating."
+    },
+    {
+      "file": "docs/evidence/fragments/crew-state-stays-bounded/a-retention-pass-finishes-inside-its-slot.html",
+      "id": "f63197a041a",
+      "line": "76",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when asks the --limit 100000 dry run to record each phase's seconds, and the run ended EXIT=143 with only the ledger phase's 25.696 s completed; the judge phase has an elapsed figure but no completion, and scratch and log have none, so the large-run arm records one phase rather than four (the fragment states the EXIT=143 outcome honestly rather than claiming otherwise, and the completed --limit 500 arm records all four)."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified two production callers reach retention_sweep: the crew retention-sweep verb at reckon/crew_run_commands.py:2010 and the installed hourly timer's module entry at reckon/crew/gc.py:1837.",
+    "diff": "read all four commits against 976bf02dc; 21dbac67 bounds examined directories and adds the cursor, the grace hoist and the progress/timing lines, 2e2f28c9 and 5c5ae8ae add the evidence fragment, and 6cc3130c stops a dry run writing the cursor.",
+    "done_when": "the done_when names tests/test_a_retention_pass_is_bounded.py with six cases plus two host measures; logs/gate-after.log records 6 passed EXIT=0 at 6cc3130c and host-measure-limit-500.stderr records WALL=223.93 s EXIT=0, while the --limit 100000 arm ended EXIT=143 with only its ledger phase timed.",
+    "goal": "the node's goal is to bound a retention pass so it finishes inside its hourly slot; reckon/crew/gc.py:1571 stops the pass after `limit` examined directories and resumes from a persisted cursor, and the timed --limit 500 dry run on the real 20,975-directory store finished in 223.93 s in logs/host-measure-limit-500.stderr.",
+    "manifest": "read; it records 6 passed EXIT=0 on the new test, 33 passed EXIT=0 on the four gc-importing files at base and at 5c5ae8ae plus the cursor fix, three red negative-control logs, and both host measures.",
+    "write_paths": "the manifest declares reckon/crew/gc.py, tests/test_a_retention_pass_is_bounded.py and the evidence fragment, and `git diff --stat 976bf02dc..6cc3130cd` touches exactly those three paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to bound a retention pass so it finishes inside its hourly slot; reckon/crew/gc.py:1571 stops the pass after `limit` examined directories and resumes from a persisted cursor, and the timed --limit 500 dry run on the real 20,975-directory store finished in 223.93 s in logs/host-measure-limit-500.stderr.\nVERDICT done_when: the done_when names tests/test_a_retention_pass_is_bounded.py with six cases plus two host measures; logs/gate-after.log records 6 passed EXIT=0 at 6cc3130c and host-measure-limit-500.stderr records WALL=223.93 s EXIT=0, while the --limit 100000 arm ended EXIT=143 with only its ledger phase timed.\nVERDICT write_paths: the manifest declares reckon/crew/gc.py, tests/test_a_retention_pass_is_bounded.py and the evidence fragment, and `git diff --stat 976bf02dc..6cc3130cd` touches exactly those three paths.\nVERDICT manifest: read; it records 6 passed EXIT=0 on the new test, 33 passed EXIT=0 on the four gc-importing files at base and at 5c5ae8ae plus the cursor fix, three red negative-control logs, and both host measures.\nVERDICT diff: read all four commits against 976bf02dc; 21dbac67 bounds examined directories and adds the cursor, the grace hoist and the progress/timing lines, 2e2f28c9 and 5c5ae8ae add the evidence fragment, and 6cc3130c stops a dry run writing the cursor.\nCALL_SITES: reckon/crew_run_commands.py:2010, reckon/crew/gc.py:1837\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/gc.py:1627 stops the loop once `examined` reaches `limit` and reckon/crew/gc.py:1669 persists a cursor, and logs/host-measure-limit-500.stderr records WALL=223.93 s EXIT=0 on a 20,975-directory store, inside the five-minute bound.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/gate-after.log records the six-case gate as 6 passed EXIT=0 at 6cc3130c and the three negative-control logs are red as claimed, but the --limit 100000 arm at docs/evidence/fragments/crew-state-stays-bounded/a-retention-pass-finishes-inside-its-slot.html:76 records one completed phase of four, and the 169.86 s probe at :70 has no log and contradicts the 166.630 s judge phase containing the same listing.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff --stat 976bf02dc..6cc3130cd changes exactly the three declared paths, though reckon/crew/gc.py:1484 adds the RECKON_RETENTION_CURSOR environment override, which the goal and done_when do not imply.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_retention_pass_is_bounded.py:128 fails if the limit counts offered rows again and :154-155 fails if consecutive passes reset the cursor, both confirmed red by logs/negative-control-offered-limit.log and logs/negative-control-cursor-reset.log, and :180 and :184 fail if a dry run writes the cursor (logs/negative-control-dry-run-cursor.log), though :231's phase_seconds >= 0.0 can never be false.\nSCORE fit: 19\nJUSTIFICATION fit: the module-level constants and small helpers at reckon/crew/gc.py:1469-1535 follow the file's existing idiom and docstring style, the names describe the mechanism, and the four commit subjects and bodies carry no plan label and no attribution trailer.\nSCORE reuse: 16\nJUSTIFICATION reuse: a search over reckon for a persisted rotation cursor found reckon/crew/plan_review.py:3457-3520, which owns the same resume-past-a-name pattern but is private to the plan-review reflex state file and exposes no reusable owner, so reckon/crew/gc.py:1484-1519 implements the pattern again for run directories rather than extending it (it does not copy its OSError guard).\nFINDING reckon/crew/gc.py:1512 non-blocking: _write_retention_cursor performs mkdir, write and os.replace with no OSError handling, so a read-only or full crew home aborts the whole pass after it has already removed directories and before the retention log or the JSON report is written; the node's own first host measure hit exactly this OSError on retention-cursor.json.tmp (manifest retry_failures), which is why the RECKON_RETENTION_CURSOR override exists, and the analogous cursor write at reckon/crew/plan_review.py:3503 catches OSError for that reason.\nFINDING docs/evidence/fragments/crew-state-stays-bounded/a-retention-pass-finishes-inside-its-slot.html:70 non-blocking: the fragment quotes a listing-and-is_dir probe of 169.86 s over 20,975 entries, but no log for that probe is in the run directory (the logs/ listing holds only the two host measures, the gate arms and the three negative controls) and 169.86 s exceeds the 166.630 s judge phase, which contains that same listing and 500 judgments, so the number cannot have been taken under the conditions the paragraph presents it as corroborating.\nFINDING docs/evidence/fragments/crew-state-stays-bounded/a-retention-pass-finishes-inside-its-slot.html:76 non-blocking: the done_when asks the --limit 100000 dry run to record each phase's seconds, and the run ended EXIT=143 with only the ledger phase's 25.696 s completed; the judge phase has an elapsed figure but no completion, and scratch and log have none, so the large-run arm records one phase rather than four (the fragment states the EXIT=143 outcome honestly rather than claiming otherwise, and the completed --limit 500 arm records all four).\n",
+  "review_run_id": "r-20261107T164302244043-review-of-a-retention-pass-finishes-inside-its-slot-6cc3130cd220",
+  "reviewed_base_sha": "976bf02dccae14be7d82bd52c13c0f787a49ed85",
+  "reviewed_head_sha": "6cc3130cd220a69f804bc0ef4f8900f006043f21",
+  "reviewed_run_id": "r-20261107T145629802776-a-retention-pass-finishes-inside-its-slot",
+  "reviewer": "review-of-a-retention-pass-finishes-inside-its-slot-6cc3130cd220",
+  "reviewer_run_id": "r-20261107T164302244043-review-of-a-retention-pass-finishes-inside-its-slot-6cc3130cd220",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T16:59:16+00:00",
+  "total": 106
+}
