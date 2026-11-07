@@ -23,7 +23,7 @@
   <title>A Promotion Reads the Evidence It Is Given | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="19">
 <meta name="plan-modified" content="2026-11-07">
 <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;a-promotion-reads-the-evidence-it-is-given#s2&quot;],&quot;s5&quot;:[&quot;a-promotion-reads-the-evidence-it-is-given#s2&quot;],&quot;s7&quot;:[&quot;a-promotion-reads-the-evidence-it-is-given#s4&quot;],&quot;s8&quot;:[&quot;a-promotion-reads-the-evidence-it-is-given#s7&quot;]}">
 </head>
@@ -91,7 +91,7 @@
 <li>a passing promotion beside exit 1 with no suite arms is refused with text naming both arms and every field <code>suite_observation_missing_fields</code> checks;</li>
 <li>with a field added to <code>suite_observation_missing_fields</code> under <code>monkeypatch</code>, that refusal names the added field too.</li>
 </ul>
-<p>Negative controls: reading <code>test_logs</code> as one entry fails the first case; refusing any mention of <code>baseline_suite</code> fails the seventh; restating the field list as literals in the refusal fails the ninth case; splitting <code>test_logs</code> alone fails the second case; leaving <code>commits</code> unsplit fails the third. The armed suite command passes at the head, judged by delta against the dispatch base with the new test copied into the base tree. Before landing, the worker runs the new <code>reports.py</code> reader over every <code>manifest.md</code> directly under <code>~/.config/reckon/crew/runs/*/</code> and records how many manifests change reading and how many are newly refused, with their run ids. The worker selects runs by name and never walks the crew home recursively.</p>
+<p>Negative controls: reading <code>test_logs</code> as one entry fails the first case; refusing any mention of <code>baseline_suite</code> fails the seventh; restating the field list as literals in the refusal fails the ninth case; splitting <code>test_logs</code> alone fails the second case; leaving <code>commits</code> unsplit fails the third. The armed suite command passes at the head, judged by delta against the dispatch base with the new test copied into the base tree. Before landing, the worker runs the new <code>reports.py</code> reader over a bounded population. That is the <code>manifest.md</code> directly under the run directories <code>~/.config/reckon/crew/runs/r-202610*/</code> and <code>r-202611*/</code>, selected by name, never by walking the crew home recursively. The run reads at most 3,000 manifests, under <code>timeout 600</code>. It records:</p><ul><li>the number read, as the denominator, and whether the bound or the timeout stopped it;</li><li>how many manifests change reading, and how many are newly refused, with their run ids;</li><li>how many <code>commits</code> lines still keep a single entry that git cannot resolve, so a sha-plus-subject line is measured before the rule is widened to it.</li></ul>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
