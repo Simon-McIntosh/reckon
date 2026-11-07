@@ -1,0 +1,79 @@
+<!-- Evidence anchor: a-retention-pass-finishes-inside-its-slot -->
+
+<section id="a-retention-pass-finishes-inside-its-slot-evidence">
+  <h2>A retention pass finishes inside its slot</h2>
+
+  <p id="a-retention-pass-finishes-inside-its-slot-change">
+    <code>retention_sweep</code> now stops after it has <em>examined</em> its limit rather than after
+    it has offered that many directories for removal, so a head of permanently withheld rows cannot
+    consume a pass's whole budget without advancing. It resumes from a cursor persisted under the
+    crew home (<code>RECKON_RETENTION_CURSOR</code> may name it), so that withheld head is walked once
+    per cycle instead of re-judged every hour, and it resolves each project's grace window once rather
+    than once per judged directory as <code>_run_directory_grace_seconds</code> did. Progress lines and
+    one timing line per phase go to stderr as the pass runs, so a pass killed under its timeout still
+    leaves a record; stdout keeps the single JSON report <code>main()</code> and
+    <code>crew retention-sweep</code> emit.
+  </p>
+
+  <p id="a-retention-pass-finishes-inside-its-slot-gate">
+    <code>tests/test_a_retention_pass_is_bounded.py</code> (5 cases, synthetic crew home of 2,000 run
+    directories) passes at the head: <code>5 passed</code>. The base arm, the test files importing
+    <code>reckon.crew.gc</code> that exercise the changed function, run at
+    <code>976bf02dcc</code> in a scratch extraction: <code>33 passed</code>. Both negative controls
+    produce a red log: counting only offered rows again fails the limit case, and resetting the cursor
+    at the start of every pass fails the withheld-head case.
+  </p>
+
+  <table id="a-retention-pass-finishes-inside-its-slot-controls">
+    <caption>Declared mutations and the case each breaks</caption>
+    <thead><tr><th>mutation</th><th>case</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>count only offered rows against the limit</td>
+          <td><code>test_a_pass_examines_at_most_its_limit_however_many_are_withheld</code></td>
+          <td><code>EXIT=1</code>, one failed</td></tr>
+      <tr><td>reset the cursor at the start of every pass</td>
+          <td><code>test_consecutive_passes_reach_a_prune_candidate_behind_a_withheld_head</code></td>
+          <td><code>EXIT=1</code>, one failed</td></tr>
+    </tbody>
+  </table>
+
+  <p id="a-retention-pass-finishes-inside-its-slot-measure">
+    Host measure on <code>clu-2068</code> (job 1291586), a dry run in place on the fleet allocation,
+    against the real store of <strong>20,975</strong> run directories. The completed pass with
+    <code>--limit 500</code> finished in <strong>223.93 s</strong>, under the five-minute bound, and
+    its printed per-phase timings are below; the slowest phase is <strong>judge</strong>.
+  </p>
+
+  <table id="a-retention-pass-finishes-inside-its-slot-phases">
+    <caption>Per-phase wall seconds, dry run <code>--limit 500</code>, 20,975-directory store</caption>
+    <thead><tr><th>phase</th><th>seconds</th></tr></thead>
+    <tbody>
+      <tr><td>ledger</td><td>49.484</td></tr>
+      <tr><td>judge</td><td>166.630</td></tr>
+      <tr><td>scratch</td><td>1.961</td></tr>
+      <tr><td>log</td><td>0.000</td></tr>
+      <tr><td>wall</td><td>223.93</td></tr>
+    </tbody>
+  </table>
+
+  <p id="a-retention-pass-finishes-inside-its-slot-pre">
+    The first 500 examined directories offered nothing for removal: 486 were withheld with a
+    missing derived figure and 14 were skipped as unledgered or live. That is the defect this node
+    bounds — without a cursor, every hourly pass spends its budget on the same withheld head.
+    A direct probe of the same store measures the judge phase's fixed cost: listing and
+    <code>is_dir()</code> over 20,975 entries takes <strong>169.86 s</strong>, and 500 subsequent
+    <code>stat()</code> calls take <strong>3.87 s</strong>, so the listing is paid once per pass and
+    the per-directory judgment is cheap.
+  </p>
+
+  <p id="a-retention-pass-finishes-inside-its-slot-large">
+    A dry run with <code>--limit 100000</code> was timed on the same quiet window. It completed the
+    ledger phase in <strong>25.696 s</strong> and reached the judge phase, where per-prune
+    <code>tree_size_bytes</code> walks on GPFS dominate: it did <em>not</em> finish within its
+    1,900 s bound, and was still in the judge phase when the bound was reached. That is the
+    full-store pass, which the plan does not require to finish — the acceptance is that a pass of
+    500 finishes under five minutes, and the bounded cursor means the full store is retired across
+    successive hourly passes rather than in one unbounded run. The run's own progress and phase
+    lines are in <code>host-measure-100000.stderr</code>.
+  </p>
+</section>
