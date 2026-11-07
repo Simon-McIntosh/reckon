@@ -154,9 +154,8 @@ def dispatch_detail_path(run_id: str) -> Path:
     return run_dir(run_id) / DISPATCH_DETAIL_NAME
 
 
-def _read_dispatch_detail_file(run_id: str) -> dict[str, Any]:
+def _read_dispatch_detail_file(path: Path) -> dict[str, Any]:
     """The stored dispatch-time detail for one run, or an empty mapping."""
-    path = dispatch_detail_path(run_id)
     try:
         data = json.loads(path.read_text())
     except (OSError, ValueError):
@@ -178,7 +177,7 @@ def _split_dispatch_detail(path: Path, payload: Mapping[str, Any]) -> Mapping[st
         return payload
     run_id = path.stem
     detail_path = dispatch_detail_path(run_id)
-    detail = _read_dispatch_detail_file(run_id)
+    detail = _read_dispatch_detail_file(detail_path)
     detail.update(moved)
     write_json_atomically(
         detail_path,
@@ -205,8 +204,8 @@ def read_dispatch_detail(record: Mapping[str, Any]) -> dict[str, Any]:
     and one written after it names the file; the accessor answers for both,
     with an inline value winning where a record holds both.
     """
-    run_id = str(record.get("run_id") or "")
-    detail = _read_dispatch_detail_file(run_id) if run_id else {}
+    detail_path = str(record.get("dispatch_detail") or "")
+    detail = _read_dispatch_detail_file(Path(detail_path)) if detail_path else {}
     for name in DISPATCH_DETAIL_FIELDS:
         if name in record:
             detail[name] = record[name]

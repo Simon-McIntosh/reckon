@@ -241,8 +241,16 @@ def test_the_accessor_answers_for_both_pointer_shapes(
     stored = json.loads(
         runs_module.dispatch_detail_path(run_id).read_text(encoding="utf-8")
     )
-    for field in DETAIL_FIELDS:
-        assert runs_module.dispatch_field(new_pointer, field) == stored[field], field
+    with monkeypatch.context() as patch:
+        patch.setattr(
+            runs_module,
+            "dispatch_detail_path",
+            lambda _run_id: tmp_path / "not-the-stored-detail.json",
+        )
+        for field in DETAIL_FIELDS:
+            assert runs_module.dispatch_field(new_pointer, field) == stored[field], (
+                field
+            )
 
     # The old shape: the same values are carried inline, with no detail file.
     # This is the case an accessor without the fallback cannot answer for.
