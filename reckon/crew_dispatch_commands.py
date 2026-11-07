@@ -1444,7 +1444,12 @@ def _queue_dispatch_batch(
 @click.option(
     "--dry-run",
     is_flag=True,
-    help="Validate and resolve only: no worktree, no process, no record.",
+    help=(
+        "Validate and resolve only: no worktree, no process, no record. A green "
+        "preview is a true statement standing in for the one the caller is "
+        "asking, so ask of any check added here: what would make this field "
+        "wrong while it still printed the same value?"
+    ),
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 @_holds_stdout_for_one_document
