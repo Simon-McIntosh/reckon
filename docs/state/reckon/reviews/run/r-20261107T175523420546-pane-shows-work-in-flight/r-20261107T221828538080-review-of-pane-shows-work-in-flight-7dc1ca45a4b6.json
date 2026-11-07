@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-07T23:29:28.805Z",
+  "dispatched_at": "2026-11-07T22:58:43Z",
+  "findings": [
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "2889",
+      "severity": "non-blocking",
+      "text": "non-blocking: InFlightLine.emit has no production caller \u2014 git grep at 7dc1ca45a4 finds it referenced only from the new test \u2014 so the goal's \"on the pane\" half is unbuilt; the folded work is the follower's wait pass in reckon/crew_follow_commands.py, which the reviewed manifest already records under outside_scope."
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "2827",
+      "severity": "non-blocking",
+      "text": "non-blocking: IN_FLIGHT_PHASES restates the working-state set the module already imports as FLEET_WORKING_STATES (reckon/crew/recovery_watch.py:1745) at ticker.py:865, so a state added to that owner will not reach the in-flight line without this literal being edited too."
+    },
+    {
+      "file": "tests/test_the_pane_shows_its_work_in_flight.py",
+      "line": "36",
+      "severity": "non-blocking",
+      "text": "non-blocking: _live_row hand-writes the live view's row keys instead of reading the view's declared field list (reckon/crew/query.py:100), so a key renamed there \u2014 \"session\" or \"log_age_seconds\", say \u2014 would leave the tests green while the line printed nothing or lost a column."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against base 8cc3363d73; one commit, three files, additions only \u2014 reckon/crew/ticker.py (+175), tests/test_the_pane_shows_its_work_in_flight.py (+155) and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/pane-shows-work-in-flight.html (+24).",
+    "done_when": "the done-when names tests/test_the_pane_shows_its_work_in_flight.py driving a stubbed clock and live view; the file carries six cases covering every named behaviour, and I re-ran it at 7dc1ca45a4 in a scratch tree (6 passed).",
+    "goal": "the node's goal is to show the session's work in flight on the pane; reckon/crew/ticker.py:2842 adds InFlightLine, which composes exactly that line from the live view's rows, but no production caller exists, so nothing reaches a pane.",
+    "manifest": "read at the reviewed run directory; status complete, commits 7dc1ca45a4, and it records the head gate (487 passed, EXIT=0), the base gate (481 passed, EXIT=0) and the negative control (5 failed, EXIT=1), all three present under gate/ and each ending in a bare EXIT= line.",
+    "write_paths": "the run's recorded node.write_paths are reckon/crew/ticker.py, ticker.py, the landing fragment and the figures directory; the diff touches ticker.py, tests/test_the_pane_shows_its_work_in_flight.py and the fragment, so the test file lies outside the recorded list although the section's done-when names it as a write path, which the node's own manifest records under blockers."
+  },
+  "justifications": {
+    "durability": "each assertion in tests/test_the_pane_shows_its_work_in_flight.py compares a literal the test did not hand in, so reverting _stream_age to _elapsed, dropping the cadence branch at reckon/crew/ticker.py:2912 or dropping the classification read at ticker.py:2840 reddens a named case, as the negative control's five failures show.",
+    "evidence": "gate/head_ticker_importers.log (487 passed, EXIT=0) and gate/base_ticker_importers.log (481 passed, EXIT=0) measure the done-when's importer population, I reproduced the new test at 7dc1ca45a4 independently (6 passed), and ruff check and ruff format --check are clean on both staged Python files.",
+    "fit": "the class follows the module's own idiom at reckon/crew/ticker.py:2813 and takes identity and width from Ticker at ticker.py:3020, though it reaches into the private _grid_width and _paint across a class boundary.",
+    "goal_fidelity": "reckon/crew/ticker.py:2889 emits the line the section asks for, but nothing outside the new test calls InFlightLine.emit, so the pane the goal names shows nothing.",
+    "reuse": "reckon/crew/ticker.py:2827 restates the working-state vocabulary that the same module already reads from FLEET_WORKING_STATES at ticker.py:865.",
+    "scope_discipline": "the diff's three paths are all additions and the fragment carries only the landing record, but tests/test_the_pane_shows_its_work_in_flight.py is outside the run's recorded node.write_paths even though the section's done-when names it."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to show the session's work in flight on the pane; reckon/crew/ticker.py:2842 adds InFlightLine, which composes exactly that line from the live view's rows, but no production caller exists, so nothing reaches a pane.\nVERDICT done_when: the done-when names tests/test_the_pane_shows_its_work_in_flight.py driving a stubbed clock and live view; the file carries six cases covering every named behaviour, and I re-ran it at 7dc1ca45a4 in a scratch tree (6 passed).\nVERDICT write_paths: the run's recorded node.write_paths are reckon/crew/ticker.py, ticker.py, the landing fragment and the figures directory; the diff touches ticker.py, tests/test_the_pane_shows_its_work_in_flight.py and the fragment, so the test file lies outside the recorded list although the section's done-when names it as a write path, which the node's own manifest records under blockers.\nVERDICT manifest: read at the reviewed run directory; status complete, commits 7dc1ca45a4, and it records the head gate (487 passed, EXIT=0), the base gate (481 passed, EXIT=0) and the negative control (5 failed, EXIT=1), all three present under gate/ and each ending in a bare EXIT= line.\nVERDICT diff: read commit by commit against base 8cc3363d73; one commit, three files, additions only \u2014 reckon/crew/ticker.py (+175), tests/test_the_pane_shows_its_work_in_flight.py (+155) and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/pane-shows-work-in-flight.html (+24).\nCALL_SITES: none\nSCORE goal_fidelity: 11\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:2889 emits the line the section asks for, but nothing outside the new test calls InFlightLine.emit, so the pane the goal names shows nothing.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate/head_ticker_importers.log (487 passed, EXIT=0) and gate/base_ticker_importers.log (481 passed, EXIT=0) measure the done-when's importer population, I reproduced the new test at 7dc1ca45a4 independently (6 passed), and ruff check and ruff format --check are clean on both staged Python files.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: the diff's three paths are all additions and the fragment carries only the landing record, but tests/test_the_pane_shows_its_work_in_flight.py is outside the run's recorded node.write_paths even though the section's done-when names it.\nSCORE durability: 18\nJUSTIFICATION durability: each assertion in tests/test_the_pane_shows_its_work_in_flight.py compares a literal the test did not hand in, so reverting _stream_age to _elapsed, dropping the cadence branch at reckon/crew/ticker.py:2912 or dropping the classification read at ticker.py:2840 reddens a named case, as the negative control's five failures show.\nSCORE fit: 17\nJUSTIFICATION fit: the class follows the module's own idiom at reckon/crew/ticker.py:2813 and takes identity and width from Ticker at ticker.py:3020, though it reaches into the private _grid_width and _paint across a class boundary.\nSCORE reuse: 14\nJUSTIFICATION reuse: reckon/crew/ticker.py:2827 restates the working-state vocabulary that the same module already reads from FLEET_WORKING_STATES at ticker.py:865.\nFINDING reckon/crew/ticker.py:2889 non-blocking: InFlightLine.emit has no production caller \u2014 git grep at 7dc1ca45a4 finds it referenced only from the new test \u2014 so the goal's \"on the pane\" half is unbuilt; the folded work is the follower's wait pass in reckon/crew_follow_commands.py, which the reviewed manifest already records under outside_scope.\nFINDING reckon/crew/ticker.py:2827 non-blocking: IN_FLIGHT_PHASES restates the working-state set the module already imports as FLEET_WORKING_STATES (reckon/crew/recovery_watch.py:1745) at ticker.py:865, so a state added to that owner will not reach the in-flight line without this literal being edited too.\nFINDING tests/test_the_pane_shows_its_work_in_flight.py:36 non-blocking: _live_row hand-writes the live view's row keys instead of reading the view's declared field list (reckon/crew/query.py:100), so a key renamed there \u2014 \"session\" or \"log_age_seconds\", say \u2014 would leave the tests green while the line printed nothing or lost a column.",
+  "review_run_id": "r-20261107T221828538080-review-of-pane-shows-work-in-flight-7dc1ca45a4b6",
+  "reviewed_base_sha": "8cc3363d7340d4136ae87079d87c02124d96faea",
+  "reviewed_head_sha": "7dc1ca45a4b6f202f9ab765a1012959a1c911479",
+  "reviewed_run_id": "r-20261107T175523420546-pane-shows-work-in-flight",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 11,
+    "reuse": 14,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T23:21:18.424341+00:00",
+  "total": 93
+}

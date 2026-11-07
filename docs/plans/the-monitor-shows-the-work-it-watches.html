@@ -26,8 +26,8 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="718">
-<meta name="plan-modified" content="2026-11-07">
+<meta name="plan-version" content="720">
+<meta name="plan-modified" content="2026-11-08">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
 <body>
@@ -1401,6 +1401,12 @@ Both cases run under the file's existing temporary crew home.</li>
 </div>
 <div class="r-comment" data-section="s115" data-id="c-run-r-20261107T140627034163-review-of-the-session-pane-prints-one-row-when-a-run-the-session-owns-e294112a8232" data-who="reckon-build" data-when="2026-11-07T14:29:07.855Z">
     <div class="r-comment-body"><p>§115 review at base a35f01e5 to head e294112a: parsed review record with scores goal_fidelity 19, evidence 14, scope_discipline 19, durability 15, fit 19, reuse 20 (total 106), added_failure_count 0 with no added failure ids, and three non-blocking findings — the base-arm log is truncated short of its summary while the manifest declares it complete, the new baseline short-circuit in RowPolicy._is_own_start is untested, and two assertions restate the to_state the test itself supplied.</p></div>
+</div>
+<div class="r-comment" data-section="s117" data-id="c-run-r-20261107T221828538080-review-of-pane-shows-work-in-flight-7dc1ca45a4b6" data-who="reckon-build" data-when="2026-11-07T23:29:28.805Z">
+    <div class="r-comment-body"><p>Reviewed r-20261107T175523420546-pane-shows-work-in-flight at head 7dc1ca45a4b6f202f9ab765a1012959a1c911479 against base 8cc3363d7340d4136ae87079d87c02124d96faea: scores goal_fidelity 11, evidence 17, scope_discipline 16, durability 18, fit 17, reuse 14 (total 93); 0 added failures over the reviewed run's own gate pair (head 487 passed EXIT=0, base 481 passed EXIT=0); three non-blocking findings — InFlightLine.emit has no production caller so nothing reaches the pane yet, IN_FLIGHT_PHASES restates FLEET_WORKING_STATES, and the test hand-writes the live view's row keys.</p></div>
+</div>
+<div class="r-comment" data-section="s117" data-id="c-run-r-20261107T175523420546-pane-shows-work-in-flight" data-who="reckon-build" data-when="2026-11-07T19:35:47.295Z">
+    <div class="r-comment-body"><p>ticker.py gains InFlightLine: one standing line naming each of the session&#x27;s working runs (node, phase, age, stream age), drawn on a 60 s cadence and on any change to the working set, never repeating identical text, silent for a peer session or an empty working set; tests/test_the_pane_shows_its_work_in_flight.py drives it with a stubbed clock and live view (6 passed), the ticker-importer population is 487 passed at head against 481 at base (zero added failures), and the negative control fails 5 of 6 with EXIT=1</p></div>
 </div>
 <div class="r-comment" data-section="s118" data-id="c-run-r-20261107T175829436786-settled-follower-rearms" data-who="reckon-build" data-when="2026-11-07T19:05:18.558Z">
     <div class="r-comment-body"><p>A settled follower is re-checked every tick and re-armed when its session owns work: `SessionHost.tick` asks a live view backed by `station_subscriber.population_has_live_work` over the session's live pointers, names the run in the census as `rearmed_for`, and leaves a pair owning nothing settled; gate 4 passed, base revision 4 failed, negative control 3 failed, 0 added failures across the 20 session_host-importing test files.</p></div>
