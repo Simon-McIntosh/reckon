@@ -659,13 +659,28 @@ _WAIT_PROBE_NO_OP_COMMANDS = frozenset({"true", ":", "exit"})
 # is exactly this shape: there the operand is the path being waited for, so it
 # need not exist yet.
 _WAIT_FILE_TEST_COMMANDS = frozenset({"test", "["})
-_WAIT_PROBE_JOB_FLAGS = frozenset({"-j", "--job", "--jobid", "--job-id"})
+_WAIT_PROBE_JOB_FLAGS = frozenset({"-j", "--job", "--jobs", "--jobid", "--job-id"})
+# The commands whose bare digit operand is a job id rather than a pid or a port.
+_WAIT_PROBE_SCHEDULER_COMMANDS = frozenset({"squeue", "sacct"})
 _WAIT_PROBE_PID_FLAGS = frozenset({"--pid"})
 _WAIT_PROBE_PORT_FLAGS = frozenset({"--port", "--local-port"})
 # ``-p`` names a pid or a port depending on the command it belongs to.
 _WAIT_PROBE_SHORT_FLAG = "-p"
 _WAIT_PROBE_PROCESS_COMMANDS = frozenset({"kill", "ps", "pgrep", "pkill"})
 _WAIT_PROBE_SHELL_COMMANDS = frozenset({"bash", "sh", "zsh", "dash", "ksh"})
+
+# An interpreter keeps the program it reaches in a code string rather than in a
+# token of the vector, so that string is read as the words it is, exactly as a
+# shell's is. Its argument list spells its own separators too: a Python list of
+# arguments is comma-joined and bracketed, as in
+# ``subprocess.run(['squeue','-h','-j','1306915'])``, so the interpreter set
+# adds ``, [ ]`` to the shell's whitespace and control operators. Without them
+# the whole list stays one word and the job flag inside it names no kind.
+_WAIT_PROBE_INTERPRETER_COMMANDS = frozenset({"python", "perl", "ruby", "node"})
+_WAIT_PROBE_INTERPRETER_CODE_FLAGS = frozenset({"-c", "-e"})
+_WAIT_PROBE_SHELL_SEPARATORS = r"[\s;|&()]+"
+_WAIT_PROBE_INTERPRETER_SEPARATORS = r"[\s;|&(),\[\]]+"
+_WAIT_PROBE_VERSIONED_PYTHON = re.compile(r"python(?:3(?:\.\d+)?)?")
 _WAIT_PROBE_PORT_COMMANDS = frozenset(
     {"nc", "netcat", "ncat", "ss", "netstat", "curl", "lsof", "telnet", "ssh"}
 )
@@ -693,19 +708,17 @@ def _wait_probe_reference_kind(probe: Sequence[str]) -> str | None:
     ``git rev-parse HEAD2`` resolves to no kind, and that is the difference
     between a reference and a character.
 
-    Two shapes are read through rather than taken at face value. A shell
-    keeps its string argument in one token, so a probe spelled
-    ``bash -lc 'q=$(squeue -h -j 1274028); …'`` reaches the job flag only
-    after the string is read as the shell vector it is. And the path kind is
-    resolved against the filesystem, so a token counts only while it exists —
-    except the operand of a file-test command, which is the path being waited
-    *for*: ``test -f DONE`` is satisfied by DONE appearing, so that operand
-    need not exist yet.
+    Two shapes are read through rather than taken at face value. A shell or an
+    interpreter keeps the program it reaches in one token, so a probe spelled
+    ``bash -lc 'q=$(squeue -h -j 1274028); …'`` or
+    ``python3 -c "subprocess.run(['squeue','-h','-j','1306915'])"`` reaches the
+    job flag only after the string is read as the vector it is. And the path
+    kind is resolved against the filesystem, so a token counts only while it
+    exists — except the operand of a file-test command, which is the path being
+    waited *for*: ``test -f DONE`` is satisfied by DONE appearing, so that
+    operand need not exist yet.
     """
-    command = Path(str(probe[0])).name
-    words = [str(item) for item in probe[1:]]
-    if command in _WAIT_PROBE_SHELL_COMMANDS:
-        words = [word for item in words for word in _wait_probe_shell_words(item)]
+    command, words = _wait_probe_program_words(probe)
     takes_pids = command in _WAIT_PROBE_PROCESS_COMMANDS
     takes_ports = command in _WAIT_PROBE_PORT_COMMANDS
     tokens = [command, *words]
@@ -717,6 +730,8 @@ def _wait_probe_reference_kind(probe: Sequence[str]) -> str | None:
             else (tokens[index + 1] if index + 1 < len(tokens) else "")
         )
         if name in _WAIT_PROBE_JOB_FLAGS and _wait_probe_names_a_count(value):
+            return "job"
+        if _wait_probe_glued_job_value(token):
             return "job"
         if name in _WAIT_PROBE_PID_FLAGS and _wait_probe_names_a_count(value):
             return "pid"
@@ -741,21 +756,131 @@ def _wait_probe_reference_kind(probe: Sequence[str]) -> str | None:
     return None
 
 
-def _wait_probe_shell_words(text: str) -> list[str]:
-    """The words a shell argument is spelled with, stripped of its punctuation.
+def _wait_probe_shell_words(
+    text: str, separators: str = _WAIT_PROBE_SHELL_SEPARATORS
+) -> list[str]:
+    """The words a shell or interpreter argument is spelled with.
 
-    A shell reaches its reference through a string rather than through a token
-    of the vector, so the string is read as the words it is: separators and
-    control punctuation split it, and quoting and expansion characters are
+    A shell or an interpreter reaches its reference through a string rather
+    than through a token of the vector, so the string is read as the words it
+    is: the separator set splits it, and quoting and expansion characters are
     dropped from each word's edges. A job id written ``1274028);`` therefore
     reads as the number it is, and the flag before it still names the kind.
+
+    The separator set is a parameter because the two readers spell an argument
+    list differently. A shell separates on whitespace and control operators; an
+    interpreter's code string also comma-joins and brackets a list of arguments,
+    so ``subprocess.run(['squeue','-h','-j','1306915'])`` yields the four words
+    the shell form would, and a second splitter is not needed to see them.
     """
     words: list[str] = []
-    for word in re.split(r"[\s;|&()]+", text):
+    for word in re.split(separators, text):
         cleaned = word.strip("'\"`${}<>")
         if cleaned:
             words.append(cleaned)
     return words
+
+
+def _wait_probe_is_interpreter(command: str) -> bool:
+    """True when a program is an interpreter that takes a code string."""
+    return bool(_WAIT_PROBE_VERSIONED_PYTHON.fullmatch(command)) or (
+        command in _WAIT_PROBE_INTERPRETER_COMMANDS
+    )
+
+
+def _wait_probe_interpreter_code(probe: Sequence[str]) -> tuple[str, str] | None:
+    """The interpreter a probe runs and the code string it was given, or None.
+
+    Only the shapes whose code string carries the program are read: an
+    interpreter named on the vector, with ``-c`` (Python, Perl, Ruby) or ``-e``
+    (Node) followed by the code. Anything else resolves to None, which is what
+    keeps the head tests agreeing with :func:`_wait_probe_is_a_no_op`.
+    """
+    if not probe:
+        return None
+    program = Path(str(probe[0])).name
+    if not _wait_probe_is_interpreter(program):
+        return None
+    items = [str(item) for item in probe[1:]]
+    for index, item in enumerate(items):
+        if item in _WAIT_PROBE_INTERPRETER_CODE_FLAGS and index + 1 < len(items):
+            return program, items[index + 1]
+    return None
+
+
+def _wait_probe_program_words(probe: Sequence[str]) -> tuple[str, tuple[str, ...]]:
+    """The program a probe actually runs, and the words it is run with.
+
+    This is the one reader the reference and structured-output checks share.
+    A vector whose first element is a shell is read through its string argument
+    as it is today; one whose first element is an interpreter is read through
+    its code string with :data:`_WAIT_PROBE_INTERPRETER_SEPARATORS`, so the
+    program the code names — ``squeue``, ``sacct`` — appears among the words as
+    it would in a shell-free vector. Every other probe is returned as it stands.
+
+    The first element is still the vector's own program, not the inner one: the
+    head tests in :func:`_wait_probe_cannot_fail` and
+    :func:`_wait_probe_is_a_no_op` read it directly, and a ``python3 -c "true"``
+    must stay a visible cannot-fail refusal rather than becoming a silent drop.
+    """
+    if not probe:
+        return "", ()
+    command = Path(str(probe[0])).name
+    items = tuple(str(item) for item in probe[1:])
+    if command in _WAIT_PROBE_SHELL_COMMANDS:
+        separators = _WAIT_PROBE_SHELL_SEPARATORS
+    elif _wait_probe_is_interpreter(command):
+        separators = _WAIT_PROBE_INTERPRETER_SEPARATORS
+    else:
+        return command, items
+    words = tuple(
+        word for item in items for word in _wait_probe_shell_words(item, separators)
+    )
+    return command, words
+
+
+def _wait_probe_glued_job_value(token: str) -> str:
+    """The job id a token spells with its flag glued on, or "".
+
+    ``squeue -j1306915`` names the same job as ``squeue -j 1306915``, and the
+    glued spelling is common enough to be refused as a probe that cannot fail
+    when the flag rule reads only the separated form.
+    """
+    for flag in _WAIT_PROBE_JOB_FLAGS:
+        if token.startswith(flag) and len(token) > len(flag):
+            value = token[len(flag) :]
+            if _wait_probe_names_a_count(value):
+                return value.strip()
+    return ""
+
+
+def _wait_probe_job_id(probe: Sequence[str]) -> str | None:
+    """The scheduler job a probe names, or None when it names none.
+
+    The job id is read out of the words the probe actually runs, so a ``sacct``
+    probe and an interpreter probe name their job as an ``squeue`` probe does:
+    through the job flag, in its separated, ``=``-joined or glued spelling. A
+    bare digit is read as a job only when the probe runs a scheduler command,
+    because a port and a pid are bare digits too and a wait on one of those is
+    not a wait on a scheduler job.
+    """
+    command, words = _wait_probe_program_words(probe)
+    tokens = [command, *words]
+    for index, token in enumerate(tokens):
+        name, separator, inline = token.partition("=")
+        if name in _WAIT_PROBE_JOB_FLAGS:
+            if separator and _wait_probe_names_a_count(inline):
+                return inline.strip()
+            if index + 1 < len(tokens) and _wait_probe_names_a_count(tokens[index + 1]):
+                return tokens[index + 1].strip()
+        glued = _wait_probe_glued_job_value(token)
+        if glued:
+            return glued
+    if any(Path(token).name in _WAIT_PROBE_SCHEDULER_COMMANDS for token in tokens):
+        for token in tokens[1:]:
+            if _wait_probe_names_a_count(token):
+                return token.strip()
+    return None
 
 
 def _wait_probe_names_an_operand(item: str) -> bool:

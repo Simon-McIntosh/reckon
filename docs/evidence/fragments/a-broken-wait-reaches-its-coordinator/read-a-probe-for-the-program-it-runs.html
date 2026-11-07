@@ -1,0 +1,35 @@
+<article class="r-evidence" data-node="read-a-probe-for-the-program-it-runs" id="read-a-probe-for-the-program-it-runs">
+<h3>A wait probe is read for the program it actually runs</h3>
+<p>The reported probe was a <code>python3 -c</code> string running
+<code>squeue -h -j 1306915</code>. The reference check split a string only when the vector's
+first element was a shell, so the code string was one opaque token and the declaration was
+refused as a probe that cannot fail, naming no job id, pid, port or path, while the job it
+described was live. Measured at the base revision
+<code>3942e0a83f3c092f1377bd81fd40813fa156f261</code>: the incident probe resolved no kind and
+was refused; an interpreter probe running <code>sacct --json</code> was not read as structured
+output; <code>["squeue","-h","-j1306915"]</code> was refused as a probe that cannot fail; and
+the interpreter refusal carried no interpreter sentence.</p>
+<p>One reader now answers which program a probe runs and with what words. The shell word
+splitter takes a separator set rather than gaining a second splitter beside it, and the
+interpreter set adds comma and brackets to the shell's whitespace and control operators,
+because a code string spells its argument list as <code>subprocess.run(['squeue','-h','-j','1306915'])</code>.
+The reference check and the structured-output check both read through it; the no-op and
+printer head tests stay on the vector's own program, so <code>python3 -c true</code> remains a
+visible cannot-fail refusal rather than a silent absence of a declaration. The flag rule reads
+the glued <code>-j&lt;id&gt;</code> form, and the reader returns the job id a probe names,
+including the bare-digit fallback for a scheduler command, so a <code>sacct</code> probe, an
+<code>squeue</code> probe and an interpreter probe all name their job.</p>
+<p>Measure: the new gate passes 6 of 6. The base arm over the test files importing
+<code>recovery_wait</code> or <code>recovery_liveness</code> gave 298 passed, 1 skipped, 0
+failed; the head arm gave 304 passed, 1 skipped, 0 failed, the six added passing cases and no
+added failure id. A first head arm at <code>-n 4</code> failed
+<code>test_a_process_table_is_read_once_per_beat.py::test_a_reparented_worker_is_found_by_the_liveness_read_and_the_stop_path</code>;
+that file passes alone (8 passed, 1 skipped) and the arm was green on rerun (304 passed), so
+the case is order-sensitive under parallel workers and not this change. Negative controls,
+each applied and reverted against the committed source: reading interpreter strings as one
+token, and splitting an interpreter's words on the shell's separators alone, each refuse the
+incident probe; leaving the structured-output check on the vector's first element accepts the
+interpreter <code>sacct --json</code> probe; dropping the glued form refuses the glued probe;
+and the base revision's refusal text does not contain the interpreter sentence. The red log
+for the first control records 2 failed, 4 passed and <code>EXIT=1</code>.</p>
+</article>
