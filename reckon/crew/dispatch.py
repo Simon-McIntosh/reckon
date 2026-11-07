@@ -3902,7 +3902,19 @@ def plan_dispatch(**kwargs: Any) -> DispatchPlan:
     whether the request can actually be placed, including a picker fallback
     whose resolved lane cannot hold the request. Ordinary resolution callers
     keep the side-effect-free plan verdict.
+
+    A preview reads plan and resource identities for the node's project, its
+    sections and its refs, so it enters the same observation boundary an MCP
+    read does: one covered-tree observation and one resource scan answer every
+    lookup the preview makes, rather than one per resolution it asks.
     """
+    from reckon.crew.queue_admission import plan_read_scopes
+
+    with plan_read_scopes():
+        return _plan_dispatch_reads(**kwargs)
+
+
+def _plan_dispatch_reads(**kwargs: Any) -> DispatchPlan:
     node = kwargs["node"]
     caller_time_budget = node.time_budget
     caller_write_paths = list(node.write_paths)

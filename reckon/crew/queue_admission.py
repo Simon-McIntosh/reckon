@@ -2333,11 +2333,9 @@ def _section_status(row: Mapping[str, Any], section: str) -> str:
 
 def derive_wait_refs(node: TaskNode, *, repo_root: str | Path) -> list[str]:
     """Read section, plan and explicit request waits from the authored node."""
-    from reckon import _plan_html as plan_html_reader
-
     refs = section_wait_refs(_plan_html(repo_root, node.plan), node.section)
     if node.plan:
-        state = plan_html_reader.read_state(_plan_html(repo_root, node.plan))
+        state = _plan_state_and_text(Path(str(repo_root)) / "docs", node.plan)[0]
         refs.extend(str(ref) for ref in state.get("depends_on") or ())
     refs.extend(f"{REQUEST_REF_PREFIX}{run_id}" for run_id in node.after)
     return list(dict.fromkeys(refs))
@@ -2411,7 +2409,7 @@ def _validated_batch_waits(
         html = _plan_html(docs.parent, parsed.slug)
         if not html:
             raise CrewError(f"wait names missing plan {target_project}:{parsed.slug}")
-        row = plan_html_reader.read_state(html)
+        row = _plan_state_and_text(docs, parsed.slug, target_project)[0]
         if parsed.stage:
             authored = {
                 normalize_section(identity)
@@ -2449,7 +2447,7 @@ def _validated_batch_waits(
             edges[key].add(child)
             if not child.startswith("run:"):
                 section_edges(child)
-        state = plan_html_reader.read_state(html)
+        state = _plan_state_and_text(docs, parsed.slug, parsed.project or project)[0]
         for ref in state.get("depends_on") or ():
             child, _ = target(str(ref), parsed.project or project)
             edges[key].add(child)
@@ -2664,13 +2662,17 @@ def _readiness_rows(
             return cache[key]
         discovered = _discover_project(project, None)
         items = [_inventory_row(item) for item in discovered.get("inventory", [])]
+        persisted = _persisted_plan_states(project, Path(docs_dir))
         for item in items:
             if item.get("type") != "plan" or not item.get("slug"):
                 continue
-            html = _plan_html(Path(docs_dir).parent, str(item["slug"]))
-            item["section_declarations"] = plan_html_reader.read_state(html).get(
-                "section_declarations", {}
-            )
+            html_file = Path(docs_dir) / "plans" / f"{item['slug']}.html"
+            stored = persisted.get(f"plans/{item['slug']}.html")
+            if isinstance(stored, Mapping) and stored.get("state") is not None:
+                plan_html_reader.reuse_parsed_state(html_file, stored["state"])
+            item["section_declarations"] = plan_html_reader.read_state_and_text_file(
+                html_file
+            )[0].get("section_declarations", {})
         inventory = {str(item.get("slug") or ""): item for item in items}
         rows = project_section_readiness(project, Path(docs_dir))
     except Exception:  # noqa: BLE001 - an unbuildable roadmap holds every wait
@@ -2679,11 +2681,90 @@ def _readiness_rows(
     return rows, inventory
 
 
+def _persisted_plan_states(project: str, docs_dir: Path) -> Mapping[str, Any]:
+    """Each plan's persisted parse, keyed by its docs-relative path.
+
+    An admission pass reads every plan in the project to take its section
+    declarations, and each read seeds the shared parse from the state the file
+    already recorded in the metadata index. A fresh process then answers that
+    read from the store rather than parsing the soup again, and a file whose
+    bytes moved is the only one parsed. A store that cannot answer seeds
+    nothing, so the read pays a parse rather than a whole-tree build.
+    """
+
+    from reckon import metadata_index
+
+    held = _PASS_PLAN_STATES.get()
+    key = (str(docs_dir), project)
+    if held is not None and key in held:
+        return held[key]
+    try:
+        states = metadata_index.discovery_state(docs_dir, project, build=False) or {}
+    except Exception:  # noqa: BLE001 - an unreadable store parses as before
+        states = {}
+    if held is not None:
+        held[key] = states
+    return states
+
+
 #: Whether the caller is inside an admission pass, which builds one roadmap per
 #: project and shares it across the pass's requests.
 _READINESS_PASS_ACTIVE: ContextVar[bool] = ContextVar(
     "readiness_pass_active", default=False
 )
+
+
+@contextmanager
+def plan_read_scopes() -> Iterator[None]:
+    """Observe the docs tree once for the length of one read-only pass.
+
+    An admission pass, a landing pass and a dispatch each resolve plan and
+    resource identities for many requests, and each lookup outside a scope
+    revalidates the covered tree and rescans the resources. Entering both scopes
+    once per pass makes the pass pay for one observation, as an MCP request
+    does through the same boundary. A nested entry joins the region already
+    open, and the outermost exit closes it, so a tree change after the pass is
+    seen by the next reader.
+
+    The scope must not span a write to the tree it observed, so a caller that
+    writes closes the scopes first.
+    """
+
+    from reckon.metadata_index import discovery_file_scope
+    from reckon.resources import resource_scan_scope
+
+    tokens = _PASS_PLAN_STATES.set({})
+    try:
+        with discovery_file_scope(), resource_scan_scope():
+            yield
+    finally:
+        _PASS_PLAN_STATES.reset(tokens)
+
+
+#: Each docs tree's persisted plan parses, read once for the length of a pass.
+_PASS_PLAN_STATES: ContextVar[dict[tuple[str, str], Mapping[str, Any]] | None] = (
+    ContextVar("pass_plan_states", default=None)
+)
+
+
+def _plan_state_and_text(
+    docs_dir: str | Path, slug: str, project: str = ""
+) -> tuple[dict, str]:
+    """One plan's semantic state and text, parsed once per file per process.
+
+    The read goes through the memoised pair rather than re-parsing the file's
+    text on every ref a pass resolves, and seeds the shared parse with the state
+    the metadata index already recorded for the file, so a fresh process answers
+    without building the soup. A store that cannot answer seeds nothing.
+    """
+
+    from reckon import _plan_html as plan_html_reader
+
+    html_file = Path(docs_dir) / "plans" / f"{slug}.html"
+    stored = _persisted_plan_states(project, Path(docs_dir)).get(f"plans/{slug}.html")
+    if isinstance(stored, Mapping) and stored.get("state") is not None:
+        plan_html_reader.reuse_parsed_state(html_file, stored["state"])
+    return plan_html_reader.read_state_and_text_file(html_file)
 
 
 @contextmanager
@@ -3602,7 +3683,17 @@ def advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
     pointers are listed in. A queued request is read by the same pass, because
     a plan edit that widens its waits moves it back to ``awaiting-upstream``
     and one that narrows them can release it.
+
+    The whole pass reads the docs tree once: one covered-file observation and
+    one resource scan serve every request it judges, rather than each request's
+    readiness read walking the tree again. Both close before the pass returns,
+    so a landing that merges while the pass runs is seen by the next one.
     """
+    with plan_read_scopes():
+        return _advance_waiting_requests(live)
+
+
+def _advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
     candidates = [
         pointer
         for pointer in live
