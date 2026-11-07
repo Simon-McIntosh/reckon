@@ -1,0 +1,60 @@
+<section id="preserve-ordinary-resume-after-a-lane-change">
+  <h2>An ordinary resume finds the session a lane change started</h2>
+  <p>
+    A run moved onto a lane whose harness differs from its own starts a fresh
+    conversation, because a session id belongs to the harness that minted it.
+    The section's defect was that the destination harness's id was never written
+    anywhere a resume reads, so the next plain <code>crew resume --advice</code>
+    found no id in the live pointer, the run's stream or the ledger and refused;
+    the only continuation left was another lane change, and there are finitely
+    many backend names.
+  </p>
+  <p>
+    The read path was repaired before this node ran: the harness-aware
+    resolution in <code>_current_harness_session</code> withholds a session that
+    belongs to another harness and reads the destination harness's own stream
+    instead. This node supplies the regression the section asked for &mdash;
+    <em>assert it by performing a lane change and then a plain resume</em> &mdash;
+    and verifies it end to end rather than stubbing the capture.
+  </p>
+  <h3>What the cases do</h3>
+  <p>
+    A run on a claude-family lane is moved to a codex lane by
+    <code>change_lane</code>; the launcher writes the stream that lane really
+    emits, whose id arrives on <code>thread.started</code>. The first case then
+    asks for an ordinary resume and requires the composed argv to name the
+    destination lane's command and to carry the destination thread id, and never
+    the source session. The second requires the first observed turn to record
+    that id beside its harness on the live pointer.
+  </p>
+  <table>
+    <thead>
+      <tr><th>Case</th><th>Asserts</th><th>Head <code>65c75b9e01</code></th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>ordinary resume after the move</td>
+        <td>argv names the codex lane and <code>resume &lt;thread-id&gt;</code>; the source session never appears</td>
+        <td>passes</td>
+      </tr>
+      <tr>
+        <td>first observed turn</td>
+        <td>the pointer records the codex id and its harness, replacing the source harness</td>
+        <td>passes</td>
+      </tr>
+      <tr>
+        <td>declared mutation</td>
+        <td>restoring the old first-harness lookup makes the ordinary resume refuse</td>
+        <td>1 failed, <code>EXIT=1</code></td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    Under the declared mutation the resume composes the source harness's session
+    onto the destination lane &mdash; the stranding the section records &mdash;
+    so the case fails on the id it requires, not on wording. The node changes no
+    product source: the behaviour is already correct, and the contract for such
+    a node is to verify it and add the missing test rather than reimplement a
+    working guard.
+  </p>
+</section>
