@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-07T19:31:46.536Z",
+  "dispatched_at": "2026-11-07T19:19:59Z",
+  "findings": [
+    {
+      "file": "tests/test_a_heavy_gate_gets_a_full_budget.py",
+      "line": 76,
+      "severity": "non-blocking",
+      "text": "the assertion compares node_budget against FENCE, the same constant the test passes into config, so any implementation that echoes the configured fence satisfies it; the independent guard is the over_60m bucket assertion at line 85."
+    },
+    {
+      "file": "reckon/crew/picker/lane_context.py",
+      "line": 175,
+      "severity": "non-blocking",
+      "text": "the regex hardcodes betelgeuse and all_debug, duplicating reckon/nested_launch.py:76 PARTITION_EXAMPLES, so a partition added to that owner never reaches the picker floor."
+    },
+    {
+      "file": "reckon/crew/picker/lane_context.py",
+      "line": 174,
+      "severity": "non-blocking",
+      "text": "partition and gpu match ordinary prose such as partitioning a table, so a non-compute node can be reported at the full fence; the floor is a lower bound so the cost is an overstated size, not a shortened budget."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to keep the picker from budgeting below the compute a brief names; reckon/crew/picker/lane_context.py:190 node_budget applies the resolved fence as a floor and both size readers (return_times, build) call it.\nVERDICT done_when: the done_when names tests/test_a_heavy_gate_gets_a_full_budget.py and the four arms its gate ran are recorded (base 2 failed/180 passed, head 2 failed/185 passed, base-newtest 5 failed, negative control 2 failed/3 passed).\nVERDICT write_paths: the declared paths were reckon/crew/picker/lane_context.py, the new test and the fragment directory; the diff touches exactly lane_context.py, tests/test_a_heavy_gate_gets_a_full_budget.py and the fragment, and the test file is outside the dispatch FENCE-SCOPE list but named by the EVIDENCE fence and the plan's done_when.\nVERDICT manifest: read; it records status complete, the five new tests, the base/head arm counts with named logs, the negative control, and discloses the fence mismatch and two pre-existing failures.\nVERDICT diff: read commit 1d6855ed against parent 5a444bc33b; it adds node_budget, _names_gate_compute and _GATE_COMPUTE_RE, rewires the two _size_of calls, adds the five-case test and the evidence fragment.\nCALL_SITES: reckon/crew/picker/prompts.py:609 _render_state -> lane_context.build, reckon/crew/picker/lane_context.py:994 build -> return_times, reckon/crew/dispatch_picker.py:1486 shadow-picker config carrying fences\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/picker/lane_context.py:190-212 returns the resolved fence whenever a heavy-compute node declares less, and both size readers at lines 388 and 977 consume it.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_a_heavy_gate_gets_a_full_budget.py:79-85 asserts the over_60m bucket for an 8m node against the 6h fence, with the four arms recorded in the run's gate logs.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: tests/test_a_heavy_gate_gets_a_full_budget.py is outside the dispatch FENCE-SCOPE list although the plan's done_when and EVIDENCE fence require it, and the manifest discloses that under outside_scope.\nSCORE durability: 18\nJUSTIFICATION durability: the negative control at tests/test_a_heavy_gate_gets_a_full_budget.py:76,79 reddens exactly the two fence cases when the floor is removed, as negative-control.log records.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/picker/lane_context.py:167-187 follows the module's private module-level constant plus helper idiom, and no name carries a plan or ticket identifier.\nSCORE reuse: 15\nJUSTIFICATION reuse: reckon/crew/picker/lane_context.py:175 reuses resolved_time_ceiling and _budget_minutes but restates the partition names owned by reckon/nested_launch.py:76 PARTITION_EXAMPLES.\nFINDING tests/test_a_heavy_gate_gets_a_full_budget.py:76 non-blocking: the assertion compares node_budget against FENCE, the same constant the test passes into config, so any implementation that echoes the configured fence satisfies it; the independent guard is the over_60m bucket assertion at line 85.\nFINDING reckon/crew/picker/lane_context.py:175 non-blocking: the regex hardcodes betelgeuse and all_debug, duplicating reckon/nested_launch.py:76 PARTITION_EXAMPLES, so a partition added to that owner never reaches the picker floor.\nFINDING reckon/crew/picker/lane_context.py:174 non-blocking: partition and gpu match ordinary prose such as partitioning a table, so a non-compute node can be reported at the full fence; the floor is a lower bound so the cost is an overstated size, not a shortened budget.\n",
+  "review_run_id": "r-20261107T191342033961-review-of-picker-budget-floor-from-brief-1d6855ed0ee7",
+  "reviewed_base_sha": "5a444bc33b51e2910b11cc198b199ff245956ce9",
+  "reviewed_head_sha": "1d6855ed0ee76acdb8230ae4a230810c729eb0ce",
+  "reviewed_run_id": "r-20261107T173836158667-picker-budget-floor-from-brief",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T21:35:51.067173+00:00",
+  "total": 101
+}
