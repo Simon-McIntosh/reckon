@@ -23,6 +23,7 @@ from click.testing import CliRunner
 
 from reckon import _backends, crew, flight
 from reckon import cli as cli_module
+from reckon.crew.runs import dispatch_field
 
 CONFIG = {
     "version": 1,
@@ -197,9 +198,10 @@ def test_a_layer_removing_a_default_leaves_it_writable_and_records_it(
     recorded = pointer["fence_unprotected_paths"]
     assert str(operator_home / ".codex") in recorded
 
-    sealed = _pair_windows(pointer["argv"], str(operator_home / ".codex"))
+    argv = dispatch_field(pointer, "argv")
+    sealed = _pair_windows(argv, str(operator_home / ".codex"))
     assert sealed is None
-    kept = _pair_windows(pointer["argv"], str(operator_home / ".claude"))
+    kept = _pair_windows(argv, str(operator_home / ".claude"))
     assert kept == [
         "--ro-bind",
         str(operator_home / ".claude"),

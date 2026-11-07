@@ -160,7 +160,7 @@ def test_a_steer_keeps_the_requests_launched_fields(
     assert payload["queued"] is True
     assert payload["run_id"] == "r-queued"
     pointer = _read("r-queued")
-    assert pointer["argv"] == LAUNCHED_ARGV
+    assert runs.dispatch_field(pointer, "argv") == LAUNCHED_ARGV
     assert pointer["base_sha"] == LAUNCHED_BASE_SHA
     assert pointer["session_id"] == OBSERVED_SESSION_ID
     assert pointer["node"]["manifest_path"] == EXISTING_MANIFEST

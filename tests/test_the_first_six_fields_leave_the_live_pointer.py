@@ -30,7 +30,8 @@ DISPATCH_CONFIG = {
     "default_backend": "native",
     "backends": {
         "native": {
-            "launch": "in-harness",
+            "launch": "cli",
+            "command": "codex",
             "model": "embedded-model",
             "effort": "high",
             "sandbox": "worktree-full",
@@ -173,7 +174,14 @@ def test_a_dispatch_keeps_its_detail_in_the_run_directory(
     )
 
     text = pointer_path(run_id).read_text(encoding="utf-8")
+    pointer_bytes = len(text.encode("utf-8"))
+    print(f"test_dispatch_pointer_bytes={pointer_bytes}")
     pointer = json.loads(text)
+    assert pointer_bytes < 12 * 1024, sorted(
+        ((name, len(json.dumps(value))) for name, value in pointer.items()),
+        key=lambda item: item[1],
+        reverse=True,
+    )[:8]
     detail_path = Path(pointer["dispatch_detail"])
     assert detail_path == runs_module.dispatch_detail_path(run_id)
     assert detail_path.parent == runs_module.run_dir(run_id)
@@ -185,30 +193,35 @@ def test_a_dispatch_keeps_its_detail_in_the_run_directory(
 
 
 def test_live_pointer_readers_use_the_detail_accessor() -> None:
-    """The known live pointer readers must resolve moved fields through the accessor."""
-    source_root = Path(__file__).parents[1] / "reckon" / "crew"
-    readers = (
-        "queue_admission.py",
-        "recovery_watch.py",
-        "dispatch_peer.py",
-        "dispatch_plan.py",
-        "dispatch_picker.py",
-    )
+    """Live pointer reads across source and tests resolve moved fields."""
+    project_root = Path(__file__).parents[1]
     direct_reads = []
-    for name in readers:
-        path = source_root / name
-        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
-            if not isinstance(node, ast.Call) or not isinstance(
-                node.func, ast.Attribute
-            ):
-                continue
-            if node.func.attr != "get" or not isinstance(node.func.value, ast.Name):
-                continue
-            if node.func.value.id != "pointer" or not node.args:
-                continue
-            key = node.args[0]
-            if isinstance(key, ast.Constant) and key.value in DETAIL_FIELDS:
-                direct_reads.append(f"{name}:{node.lineno}:{key.value}")
+    for source_dir in (project_root / "reckon", project_root / "tests"):
+        for path in source_dir.rglob("*.py"):
+            for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+                key = None
+                if (
+                    isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Attribute)
+                    and node.func.attr in {"get", "pop", "setdefault"}
+                    and isinstance(node.func.value, ast.Name)
+                    and node.func.value.id == "pointer"
+                    and node.args
+                    and isinstance(node.args[0], ast.Constant)
+                ):
+                    key = node.args[0].value
+                elif (
+                    isinstance(node, ast.Subscript)
+                    and isinstance(node.ctx, ast.Load)
+                    and isinstance(node.value, ast.Name)
+                    and node.value.id == "pointer"
+                    and isinstance(node.slice, ast.Constant)
+                ):
+                    key = node.slice.value
+                if key in DETAIL_FIELDS:
+                    direct_reads.append(
+                        f"{path.relative_to(project_root)}:{node.lineno}:{key}"
+                    )
     assert not direct_reads, direct_reads
 
 
@@ -288,7 +301,7 @@ def test_other_live_readers_resolve_the_detail_file(
 ) -> None:
     """A slim pointer still supplies the picker and launched command to readers."""
     from reckon import _backends, run_record, serve
-    from reckon.crew import dispatch_launch, recovery_stream
+    from reckon.crew import dispatch_launch, dispatch_sessions, recovery_stream
 
     run_id = "r-20261027T120000000000-reader-detail"
     log = tmp_path / "stream.jsonl"
@@ -326,6 +339,11 @@ def test_other_live_readers_resolve_the_detail_file(
     assert dispatch_launch._empty_stream_launch_failure(pointer, {"exit_status": 2})[
         "argv"
     ] == ["recorded-harness", "-p"]
+    settings = dispatch_sessions._backend_settings(
+        pointer,
+        {"backends": {"native": {"launch": "cli", "command": "other-harness"}}},
+    )
+    assert settings["command"] == "recorded-harness"
 
     class CommandObservedError(Exception):
         pass

@@ -14,7 +14,7 @@ import pytest
 
 from reckon import ledger
 from reckon.crew.node import TaskNode
-from reckon.crew.runs import read_pointer
+from reckon.crew.runs import dispatch_field, read_pointer
 
 dispatch = importlib.import_module("reckon.crew.dispatch")
 
@@ -147,7 +147,7 @@ def test_explicit_lane_returns_before_slow_shadow_and_records_it(
         worker.join(timeout=5)
         assert not worker.is_alive()
     pointer = read_pointer(record["run_id"])
-    assert pointer["picker_selection"]["backend"] == "local"
+    assert dispatch_field(pointer, "picker_selection")["backend"] == "local"
     row = ledger.build_record(run_id=record["run_id"], plan="example", gate="not-run")
     assert row["picker_selection"]["backend"] == "local"
 
@@ -194,15 +194,16 @@ def test_detached_picker_process_publishes_to_pointer(
     deadline = time.monotonic() + 10
     while time.monotonic() < deadline:
         pointer = read_pointer(record["run_id"])
-        if pointer.get("picker_selection") is not None:
+        if dispatch_field(pointer, "picker_selection") is not None:
             break
         time.sleep(0.05)
-    assert pointer["picker_selection"]["action"] in {
+    selection = dispatch_field(pointer, "picker_selection")
+    assert selection["action"] in {
         "route",
         "refuse",
         "fallback",
         "hold",
     }
-    assert "latency_ms" in pointer["picker_selection"]
+    assert "latency_ms" in selection
     row = ledger.build_record(run_id=record["run_id"], plan="example", gate="not-run")
-    assert row["picker_selection"] == pointer["picker_selection"]
+    assert row["picker_selection"] == selection
