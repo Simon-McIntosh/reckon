@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T22:28:01.748Z",
+  "dispatched_at": "2026-11-07T22:11:33Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:105",
+      "id": "wiring-1",
+      "reason": "the followup is the plan's sole build order, so an omission there is an unbuilt section, exactly the defect its own earlier review fixed for \u00a78.",
+      "text": "the build followup sequences \u00a72, then \u00a74 and \u00a75, then \u00a76 and \u00a77, then \u00a78, and never names \u00a79, while `_document` now declares s9 implementable with a wait on \u00a76; a coordinator following the plan's only build instruction would land \u00a76 and stop, leaving \u00a79 unbuilt",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:99",
+      "id": "done_when-1",
+      "reason": "case 2 guards the destructive direction (releasing a worktree still holding unlanded commits) and without a control a mis-implementation that releases on ancestry alone would pass the node's whole gate.",
+      "text": "\u00a79's second case asserts that a worktree holding one commit beyond the merged head is withheld, but that is the behaviour of the code as it stands (merge.py has no release step at all), and neither of the two declared controls touches it: removing the merge-side release fails case 1 and releasing before the push fails case 3, so case 2 passes on the unfixed tree and measures nothing",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:60",
+      "id": "reasoning-1",
+      "reason": "a worker implementing the deliverable literally would silently regress retirement of ids printed from a scratch tree, and the plan needs either the directory reduction named as retained or a case added for it.",
+      "text": "\u00a75 says five of the six sites \"ask which head ids are not covered, through review.failure_ids_covered\", but `_retires_id` (reckon/crew/review.py:2304) compares one prose token against one counted id and additionally matches `canonical_node_id(token, directory)` for every working directory the arm records; \u00a72's predicate takes only two id lists and applies no directory reduction, so an implementation that follows \"each of the six sites compares through \u00a72's matching rule\" drops the scratch-tree spelling that retirement currently handles, and no case in \u00a75's done-when covers it",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "f5817bcc78c323408f1ad241be9a65cab8ed9fb9",
+  "plan_fingerprint": "13a18a33250b8101dc5e0097397a468e96fb9ff6f0c8c06ac511a3887f6fb238",
+  "plan_slug": "a-promotion-reads-the-evidence-it-is-given",
+  "plan_version": 25,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T213302051141-plan-review-of-a-promotion-reads-the-evidence-it-is-given",
+  "reviewed_blob_sha": "c7ec133b3704278fbd2649010c4a9fe0f2fbd2d7",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 reckon/crew/merge.py and reckon/crew/promotion_release.py exist, merge.py carries no release call, the run directory r-20261107T153510432206-scsm-plant-alias-removal exists, and the cited merge commit 57c24275b resolves on power_convertor's main (\"refactor(iter): load the switched-pulse plant from its owner\"); the symbols \u00a75 attributes to \u00a72 (`review.failure_ids_covered`) and \u00a77 (`review.failure_ids_match`) are declared in the snapshot's \u00a72 and \u00a75 respectively.",
+    "done_when": "a finding \u2014 \u00a79's second case (\"a worktree holding one commit beyond the merged head is withheld\") passes on the unfixed code, where merge.py has no release step and every worktree is withheld, and the two declared controls cover the first and third cases only.",
+    "evidence_paths": "pass \u2014 \u00a79's test runs in a temporary repository built under the run's scratch root, and the plan's other gate logs sit under the run directory; no artifact is placed in a session scratchpad or a path that dies with the run.",
+    "naming": "pass \u2014 `failure_ids_covered` and `failure_ids_match` name the mechanism rather than a plan stage, and \u00a79 introduces no plan label, ticket number or version tag into code.",
+    "reasoning": "a finding \u2014 \u00a75's deliverable puts `_retires_id` among the five \"covering\" sites reached through `review.failure_ids_covered`, but that site also reduces each token against the arm's recorded working directory (`canonical_node_id(token, directory)`, reckon/crew/review.py:2334-2335), a parameter the new predicate does not take.",
+    "single_goal": "pass \u2014 \u00a75 carries one deliverable (every failure comparison goes through one matching rule, with the retry-overlap sibling named) and \u00a79 carries one (the merge-side worktree release).",
+    "wiring": "a finding \u2014 the build followup at docs/plans/a-promotion-reads-the-evidence-it-is-given.html:105 orders \u00a72, \u00a74, \u00a75, \u00a76, \u00a77 and \u00a78 but never \u00a79, although `_document` declares s9 implementable and \u00a79 waits on \u00a76."
+  },
+  "section_digests": {
+    "_document": "4f61487cc740fac079e6b7da0473ac0e44146d947181b9ee93ce80cc7e5cb9d6",
+    "s1": "5eac0eb57fbf9fccaeee6fb2da59c42ca24c4433f0cffcb4b7de1b6b04324b6c",
+    "s2": "259d093654ecf00609d51d02f39bb21a9feda5af8b5626a64e881f7e85d5abe4",
+    "s3": "479c8ebc617467c2744513e850433e87af52a3d22110620dcfdfb48f9975d081",
+    "s4": "bc5eebc33cf8175dd508f65245c7126745fc3e87a3e75e6229c55004ae265f62",
+    "s5": "398c79db4ac3b8f5401de25e3c1ba65f26abb831b0ab915c4caed7fab541ccbf",
+    "s6": "2e81c0cbe61ef60fc16acb159e81912b5b6263e9d12b8059efbd9482d722976c",
+    "s7": "a015e1ea2396b50fe1763afc13f7b9ab2e452b85287b48a63a06e3503c3f2674",
+    "s8": "f0d1ed6febbf8f9ad2c9d36e204cfd29684121da43f557cf62b470c78f3de6b4",
+    "s9": "65ae399f2851c238c68e77a2382454723e5c50ee7b068784d994af3ec1c3c013"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T22:39:19.001015+00:00",
+  "total": null
+}
