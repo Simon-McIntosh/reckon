@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-07T17:43:29.094Z",
+  "dispatched_at": "2026-11-07T17:26:20Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-read-costs-what-changed/scope-the-stored-planreview-runid-read-in-deliveredreports.html",
+      "line": "26",
+      "severity": "non-blocking",
+      "text": "the fragment carries plan-verdict pass while its own timer paragraph shows head delivered_reports at 1.995-3.485 s and the scoped stored-id read at 1.537-2.127 s against a done-when of under 2 s."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T161917748331-scope-the-stored-planreview-runid-read-in-deliveredreports/suite-head.log",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "the importer population arm shows four failures at 76-85% of a head-only run stopped at 93% with no summary line and no failure ids, so the plan's add-no-failure-against-base clause is unverified."
+    },
+    {
+      "file": "docs/evidence/fragments/a-read-costs-what-changed/scope-the-stored-planreview-runid-read-in-deliveredreports.html",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "the 20 s to 2 s comparison is prose only although a figures directory was declared."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to scope the stored plan-review run-id read in delivered_reports to the plan being promoted; reckon/crew/plan_review.py:4308 now passes plan_slug to list_plan_reviews and reckon/crew/plan_review.py:4395 passes the plan it was given, so the read is plan-scoped and the whole-project walk survives only for a caller naming no plan.\nVERDICT done_when: The done_when names tests/test_a_plan_review_promotion_reads_one_plan.py, a negative control, a live-store timer under 2 s and the importer population arm at -n 4; suite-after-node.log ends 2 passed EXIT=0 while suite-base-node.log and negative-control.log record the scoping case red EXIT=1, but live-timer-after.log records head delivered_reports at 1.995-3.485 s and the scoped read up to 2.127 s, and suite-head.log stops at 93% with four unattributed failures and no base arm.\nVERDICT write_paths: The node was fenced to reckon/crew/plan_review.py, tests/test_a_plan_review_promotion_reads_one_plan.py, docs/evidence/fragments/a-read-costs-what-changed/scope-the-stored-planreview-runid-read-in-deliveredreports.html and a figures directory; git diff 45e233041537..d02dd9ffd64f changes exactly the first three and leaves the figures path unused.\nVERDICT manifest: The manifest reads status complete, names the landed revision d02dd9ffd64f5a32c3d69a1566de6556d49920cc, the three changed paths, the green head arm and the red base and negative-control arms, and states under rubric. This is the worker's own report; the logs beside it support it.\nVERDICT diff: Read the single landed commit against base 45e233041537ee5b2707e9ab7a00aae617a3b719; it changes three files (+156/-4) - a 14-line optional plan_slug parameter and call-site scope in reckon/crew/plan_review.py, a 116-line two-case test, and a 30-line evidence fragment - and ruff check plus ruff format --check both pass on the two Python paths when re-run here.\nCALL_SITES: reckon/mcp_views.py:4517, reckon/crew/promotion_checks.py:1520, reckon/crew/promotion_checks.py:2666, reckon/crew/plan_review.py:4591\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:4308 passes plan_slug into list_plan_reviews and :4395 passes the plan delivered_reports was given, which is the scoping the goal names, and the None default at :4299 preserves the whole-project read.\nSCORE evidence: 12\nJUSTIFICATION evidence: suite-after-node.log and negative-control.log prove the new case green then red, but live-timer-after.log shows the plan's under-2-s bar missed at 3.485 s and suite-head.log leaves the importer clause unverified with four unattributed failures and no base arm.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 45e23304..d02dd9ff changes only the three declared paths and every line of reckon/crew/plan_review.py:4299-4395 serves the plan-scoped read the goal names.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_plan_review_promotion_reads_one_plan.py:97 fails when the regression is put back, as negative-control.log and suite-base-node.log both show by opening plan-plan-scope-other.v1.json and failing that exact assertion with EXIT=1.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/plan_review.py:4299 mirrors the (project, plan_slug, *) signature list_plan_reviews already carries at :1528, and the test module name describes the behaviour with no plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the plan-scoped walk already has an owner in list_plan_reviews at reckon/crew/plan_review.py:1545-1553, and the change extends that owner by passing plan_slug rather than adding a second filtering path.\nFINDING docs/evidence/fragments/a-read-costs-what-changed/scope-the-stored-planreview-runid-read-in-deliveredreports.html:26 non-blocking: the fragment carries plan-verdict pass while its own timer paragraph shows head delivered_reports at 1.995-3.485 s and the scoped stored-id read at 1.537-2.127 s against a done-when of under 2 s, so the verdict outruns the numbers it cites; record the miss or cite the median of the changed component.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T161917748331-scope-the-stored-planreview-runid-read-in-deliveredreports/suite-head.log:17 non-blocking: the importer population arm shows four failures at 76-85% of a head-only run stopped at 93% with no summary line and no failure ids, so the plan's add-no-failure-against-base clause is unmeasured and the four failures are unattributed; the merged-result test node should settle it before the population is read as clean.\nFINDING docs/evidence/fragments/a-read-costs-what-changed/scope-the-stored-planreview-runid-read-in-deliveredreports.html:20 non-blocking: the 20 s to 2 s comparison is prose only although the dispatch declared a figures directory, so a two-bar before/after plot of the recorded runs would let a reader see the change rather than re-read ten numbers.\n",
+  "review_run_id": "r-20261107T172437559972-review-of-scope-the-stored-planreview-runid-read-in-deliveredreports-d02dd9ffd64f",
+  "reviewed_base_sha": "45e233041537ee5b2707e9ab7a00aae617a3b719",
+  "reviewed_head_sha": "d02dd9ffd64f5a32c3d69a1566de6556d49920cc",
+  "reviewed_run_id": "r-20261107T161917748331-scope-the-stored-planreview-runid-read-in-deliveredreports",
+  "scores": {
+    "durability": 19,
+    "evidence": 12,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T18:16:42.150462+00:00",
+  "total": 109
+}
