@@ -162,9 +162,11 @@ def test_each_review_is_read_once_until_its_entries_move(
     refreshed: list[Path] = []
     selected: list[str] = []
     stats: list[Path] = []
+    reads: list[Path] = []
     real_refresh = review_records._refresh_store_entries
     real_select = recovery_module.select_review_for_head
     real_stat = Path.stat
+    real_read_text = Path.read_text
 
     def refresh(path: Path) -> Any:
         refreshed.append(path)
@@ -179,18 +181,28 @@ def test_each_review_is_read_once_until_its_entries_move(
             stats.append(path)
         return real_stat(path, *args, **kwargs)
 
+    def read_text(path: Path, *args: Any, **kwargs: Any) -> str:
+        if path.suffix == ".json" and path.parent == directory:
+            reads.append(path)
+        return real_read_text(path, *args, **kwargs)
+
     # A known record proves that the stat instrument can see its target.
     known = next(directory.glob("*.json"))
     monkeypatch.setattr(Path, "stat", stat)
+    monkeypatch.setattr(Path, "read_text", read_text)
     known.stat()
+    known.read_text(encoding="utf-8")
     assert stats == [known]
+    assert reads == [known]
     stats.clear()
+    reads.clear()
     monkeypatch.setattr(review_records, "_refresh_store_entries", refresh)
     monkeypatch.setattr(recovery_module, "select_review_for_head", select)
 
     assert _payload(state) == first
     assert refreshed == []
     assert stats == []
+    assert reads == []
     assert selected == [], selected
 
     run_id = "run-02"
@@ -213,12 +225,15 @@ def test_each_review_is_read_once_until_its_entries_move(
     review_module.store_review(record)
     selected.clear()
     stats.clear()
+    reads.clear()
     refreshed.clear()
     changed = _payload(state)
     assert selected == [run_id], selected
     assert changed != first
     assert refreshed == []
     assert stats, "the new review was examined by the existing index"
+    assert reads, "the new review was read"
+    assert all(path.name.startswith(f"{run_id}.") for path in reads), reads
 
     obligations_module._clear_cached_obligation_inputs()
     assert _payload(state) == changed
@@ -268,3 +283,39 @@ def test_a_removed_tree_drops_its_held_record_after_pointer_churn(
 
     held_tree.rmdir()
     assert held_tree not in obligations_module._held_worktree_records(PROJECT)
+
+
+def test_a_delivered_review_is_validated_once_until_its_record_moves(
+    fleet: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The delivered-record refusal shares the same bounded memo policy."""
+    run_id = "run-02"
+    directory = review_module.run_review_record_directory(runs.run_dir(run_id))
+    directory.mkdir(parents=True)
+    path = directory / "review.json"
+    review_module._write_record(path, {"bad": True})
+    monkeypatch.setattr(
+        obligations_module, "_in_flight_review", lambda *_args: "review-run"
+    )
+    monkeypatch.setattr(obligations_module, "_live_pointers", lambda _project: [])
+    monkeypatch.setattr(
+        runs, "read_pointer", lambda _run_id: {"node": {"write_paths": [str(path)]}}
+    )
+    calls = 0
+
+    def refusals(record: Any) -> list[str]:
+        nonlocal calls
+        calls += 1
+        return ["missing project"] if record.get("bad") else []
+
+    monkeypatch.setattr(review_module, "store_review_refusals", refusals)
+    pointer = {"run_id": run_id, "project": PROJECT}
+    obligations_module._clear_cached_obligation_inputs()
+    first = obligations_module._refused_delivered_review(pointer)
+    assert first is not None and "missing project" in first["reason"]
+    assert obligations_module._refused_delivered_review(pointer) == first
+    assert calls == 1
+
+    review_module._write_record(path, {"bad": False})
+    assert obligations_module._refused_delivered_review(pointer) is None
+    assert calls == 2
