@@ -1,0 +1,80 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T20:42:15.884Z",
+  "dispatched_at": "2026-11-07T20:35:20Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:145",
+      "id": "anchors_resolve-1",
+      "reason": "a worker sent to dispatch_launch.py:2809 finds no such symbol, and `reckon/crew/recovery_liveness.py` is absent from \u00a78's write paths, so the one file where the named composition lives is outside the fence.",
+      "text": "\u00a78 cites `live_worker_pid (reckon/crew/dispatch_launch.py near line 2809)`; `live_worker_pid` is defined at `reckon/crew/recovery_liveness.py:1275` and dispatch_launch.py only imports it (`dispatch_launch.py:1937`), with line 2809 sitting inside `_supervisor_spawn_worker`'s `subprocess.Popen` block; the pid-returning line the plan describes is `recovery_liveness.py:1293` (`if pointer_pid is not None and runs.record_process_alive(record) is True: return pointer_pid`), so the defect is real but the anchor names the wrong file at the wrong line",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:145",
+      "id": "single_goal-1",
+      "reason": "one node carrying two deliverables cannot be closed on one verdict, and the plan would record \u00a75 as done while \u00a78 is the section that actually fixes it.",
+      "text": "the added paragraph makes \u00a78 repair \u00a75's launch refusal (dispatch_launch.py, plus \u00a75's test), alongside its own deliverable of the widen result's `takes_effect` field (crew_run_commands.py, claims.py); these are two deliverables in two subsystems with two unrelated gates, and \u00a75 is simultaneously declared `data-status=\"done\"` while its refusal is being repaired here",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:145",
+      "id": "anchors_resolve-2",
+      "reason": "the node is told to tighten an existing test that does not exist, so either it creates a second home for the same coverage or reports the anchor unresolved, and \u00a75's claimed `done` state is contradicted by the tree.",
+      "text": "\u00a78 asserts \"\u00a75's session-walk test asserts that exact text again\" and lists `tests/test_a_queued_run_launches_once.py` among its write paths, but no such file exists at the review base (the launch refusal's tests live in `tests/test_resume_refuses_a_live_worker.py`, e.g. `:484` and `:567`);",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:145",
+      "id": "done_when-1",
+      "reason": "a worker applying the stated mutation would watch case seven pass and either weaken the assertion or report the control unmet, and case six's assertion is left with no declared control at all.",
+      "text": "the negative controls read \"naming the session-walk arm's pid as the worker's fails the third and the seventh\"; the seventh case is the fence's `write_paths` guard (`widen_claim` already writing `node[\"write_paths\"]`, `claims.py:134`, read at `dispatch_sessions.py:1351`) and is untouched by pid naming, whereas the sixth case is the one that asserts the session, not the dead pid, is named",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:145",
+      "id": "reasoning-1",
+      "reason": "the mechanism is right but its call site is misdescribed, so a worker implementing \"the refusal\" would edit the wrong function or duplicate the check, and the `unknown` message is claimed for a route list that omits the unreadable-pid probe.",
+      "text": "\u00a78's arm list and its `unknown` route are now internally consistent with `record_process_alive` (`process_liveness.py:354-380`: no record, placed job, pid probe, session walk) except that `None` is also reachable from the pid probe itself (`:361` returning an unreadable probe), and the paragraph's claim that the reading \"fixes \u00a75's refusal\" assumes a refusal at \u00a75's stated seam: `_supervisor_spawn_worker` (`dispatch_launch.py:2759`) contains no liveness refusal at the review base, and the only one is in `_prepare_attempt_records` (`dispatch_launch.py:1943`), called from `:2411`;",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "8c6479c608779232297d3c5d8d503d39e7084725",
+  "plan_fingerprint": "c2f220a3eb9d24a175af68dd1fef9343963bf8f0b47eb2ad634257e6bc7468b4",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 39,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T203147871384-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "ec436e63b7214adee53f0b73ecbdb85f00e0f576",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a78 has \"\u00a75's session-walk test\" asserting text \"again\" in `tests/test_a_queued_run_launches_once.py`, which exists nowhere in the tree at the review base.",
+    "done_when": "a finding \u2014 the negative controls at the end of \u00a78 cite \"the third and the seventh\", but the seventh case is the fence's own `write_paths` guard and cannot be failed by naming a pid, while the case that actually tests pid naming in the launch refusal (the sixth) is given no control.",
+    "evidence_paths": "pass \u2014 both reproduction outputs are recorded in the node's gate log under the run's evidence directory, and the scratch crew home is explicitly temporary rather than a durable path.",
+    "naming": "pass \u2014 the new surface names its mechanism (`takes_effect`, arm names), and no plan label, stage name or ticket number reaches a symbol, file or comment.",
+    "reasoning": "a finding \u2014 \u00a78 says the same reading \"fixes \u00a75's refusal\", but the refusal in the tree is not \u00a75's seam and rests on a pid composition in a file \u00a78 does not grant.",
+    "single_goal": "a finding \u2014 \u00a78 now carries two deliverables: the widen result's `takes_effect` field and a repair of \u00a75's launch refusal, in two different modules with two different gates.",
+    "wiring": "pass \u2014 \u00a78's `data-links` is empty and its only upstream (\u00a75's launch refusal) is declared `done`, so no depends-on is missing; \u00a78's edit to \u00a75's test file is a shared-file overlap rather than an unlanded dependency."
+  },
+  "section_digests": {
+    "_document": "a84f6acdfa5bde1ab873fc2f587979b77f777a0513526a030168c36c7dbcbbf5",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "c8fe2a5a6c5765bc70ba45627cc9f5778b225a5e1deff2cc1bb1e0e08214362a",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "63bd79fcdd7baf06c8cc0bbc04ef21beec3605a6fdb13eed90b3ad410f8516e7",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b",
+    "s8": "24b7d74bf3c135977f3278779d33f9cafed70ea67e46ab80b781b3437b113fa1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T21:09:17.847317+00:00",
+  "total": null
+}
