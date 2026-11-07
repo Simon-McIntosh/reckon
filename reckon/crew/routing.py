@@ -38,6 +38,7 @@ from reckon.capability import (
 from reckon.crew.node import (
     _TERMINAL_RUN_PHASES,
     DEFAULT_MEMBER_IDLE_WINDOW,
+    WAITING_REQUEST_PHASES,
     CrewError,
     PlanReviewMissingError,
     PlanVisibilityError,
@@ -1090,6 +1091,54 @@ def _live_pointer_worktrees() -> dict[Path, list[str]]:
     claims: dict[Path, list[str]] = {}
     for record in list_live():
         if LAUNCH_RUN_ID.get() and record.get("run_id") == LAUNCH_RUN_ID.get():
+            continue
+        worktree = record.get("worktree")
+        if not worktree:
+            continue
+        path = Path(str(worktree)).resolve()
+        claims.setdefault(path, []).append(str(record.get("run_id") or "unknown"))
+    return claims
+
+
+def _own_pointer_yields_its_tree(record: Mapping[str, Any]) -> bool:
+    """Whether a launch may treat its own run's pointer as naming no tree.
+
+    A pointer that has not reached a working phase never put a worker into its
+    tree, so a retry of that run may replace the tree. Once a worker has
+    started, the tree is only replaceable when this host can show the worker is
+    gone: ``local_liveness`` reports proof only for a pid this host issued, so
+    an unpoven verdict — a run launched elsewhere on a shared crew home — keeps
+    the claim rather than turning its absence into a death certificate.
+    """
+    if str(record.get("phase") or "") in WAITING_REQUEST_PHASES:
+        return True
+    from reckon.crew.recovery_liveness import local_liveness
+
+    alive, proven = local_liveness(record)
+    return proven and alive is False
+
+
+def _launch_pointer_worktrees() -> dict[Path, list[str]]:
+    """Every worktree a pointer claims, read from a launch's own side.
+
+    ``_live_pointer_worktrees`` drops the launching run's own pointer so a
+    launch can replace the tree an earlier failed attempt left at the same
+    path. That exclusion also drops a *live* launch's pointer when a second
+    launch of the same run reaches the shared path: the second launch then
+    reads the first launch's tree as a disposable leftover and releases it
+    from under the running worker. This view keeps a same-run pointer as a
+    claim unless the pointer is one a launch may legitimately replace — see
+    ``_own_pointer_yields_its_tree`` — and keeps every other pointer exactly as
+    the wide view reads it.
+    """
+    claims: dict[Path, list[str]] = {}
+    launch = LAUNCH_RUN_ID.get()
+    for record in list_live():
+        if (
+            launch
+            and record.get("run_id") == launch
+            and _own_pointer_yields_its_tree(record)
+        ):
             continue
         worktree = record.get("worktree")
         if not worktree:
@@ -2172,7 +2221,7 @@ def _launch_tree_verdict(
     record = _launch_attempt_record(repo, path)
     attempt = str(record.get("run_id") or "") if record else ""
     label = f"run {attempt}" if attempt else "an earlier attempt"
-    claims = _live_pointer_worktrees().get(path.resolve(), [])
+    claims = _launch_pointer_worktrees().get(path.resolve(), [])
     verdict = _inspect_workspace(repo, path, base, claims, raise_on_unavailable=False)
     return verdict, label
 
@@ -2270,12 +2319,14 @@ def _create_worktree(
 def _remove_worktree(repo: Path, path: str) -> None:
     """Undo a worktree created for a dispatch that then failed.
 
-    Liveness is read through the wide claim, so a run parked between turns —
-    its pointer carrying a terminal-looking phase while its worker is gone —
-    keeps its tree: the phase-gated claim would read that pointer as finished
-    and this force-removal would take the tree of a live run.
+    Liveness is read through the launch's own claim view, so a run parked
+    between turns — its pointer carrying a terminal-looking phase while its
+    worker is gone — keeps its tree, and so does the first launch's tree when a
+    second launch of the same run reaches this path. The phase-gated claim
+    would read either as finished and this force-removal would take the tree of
+    a live run.
     """
-    claims = _live_pointer_worktrees().get(Path(path).resolve(), [])
+    claims = _launch_pointer_worktrees().get(Path(path).resolve(), [])
     if claims:
         raise CrewError(
             f"refusing to remove worktree {path}: claimed by live runs "
