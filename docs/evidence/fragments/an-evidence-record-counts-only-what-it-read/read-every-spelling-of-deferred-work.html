@@ -1,0 +1,83 @@
+<article class="landed-report" data-run-id="r-20261107T195152026021-read-every-spelling-of-deferred-work" data-node="read-every-spelling-of-deferred-work">
+  <h3 id="read-every-spelling-of-deferred-work-summary">read-every-spelling-of-deferred-work — the deferred-work rule reads the whole census and is refused at every body write</h3>
+  <p id="read-every-spelling-of-deferred-work-change">
+    <code>_DEFERRED_WORK_TERM</code> in <code>reckon/doccheck.py</code> now
+    matches every spelling the census found, in forms that name their object so
+    ordinary prose is not caught: <code>carry</code>, <code>carries</code> or
+    <code>carried</code> followed by a section number; <code>go</code> or
+    <code>goes</code> followed by a section number; the run-together
+    <code>followon</code> and the spaced <code>follow on</code> beside the
+    hyphenated forms; and an onward phrase (<code>left for</code>,
+    <code>deferred to</code>, <code>sent to</code>, <code>going to</code>,
+    <code>go to</code>, <code>goes to</code>) aiming at a
+    <code>follow-up</code>, <code>later</code>, <code>next</code> or
+    <code>separate</code> node, section, plan or figure, with up to two words
+    between the parts so <code>go to a follow-up figure node</code> reads as one
+    statement. Every group stays non-capturing, because
+    <code>deferred_work_terms</code> reads the pattern with
+    <code>re.findall</code> and a capture group would put a tuple where the
+    refusal quotes text. The <code>&lt;pre&gt;</code> and <code>&lt;code&gt;</code>
+    exemption and the non-match on a landed-section citation such as
+    <code>landed in §4</code> are unchanged.
+  </p>
+  <p id="read-every-spelling-of-deferred-work-refusal">
+    The store refuses the same term at every site that writes a comment or
+    followup body: the comments branch of <code>_apply_append</code>, its
+    followups branch, <code>_carry_section_moves</code> (a section move's
+    reason is written into a comment), <code>append_to_list</code> for
+    followups — the route the followup-add operation takes.
+    <code>followups.&lt;id&gt;.body</code> is refused in
+    <code>apply_followup_field_set</code>, where the field is assigned. All of
+    them call one new predicate, <code>_refuse_deferred_work_term</code>, built
+    on the one prose reader, so the audit warning and the store refusal widen
+    together. A <code>sections.&lt;id&gt;.body</code> set already reached the
+    same reader through <code>_require_authored_value</code>, so it widened
+    without a change.
+  </p>
+  <p id="read-every-spelling-of-deferred-work-measure">
+    <strong>Measure.</strong> New gate
+    <code>tests/test_every_spelling_of_deferred_work_is_read.py</code>, 30
+    cases, run with the armed command
+    <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_every_spelling_of_deferred_work_is_read.py</code>.
+    Base arm at revision <code>14b3efd4c07efdc51bbb06602fff17cea4eb16bd</code>
+    in a scratch tree of that revision with this test file copied in: 22
+    failed, 8 passed, EXIT=1. Head arm (this change applied, revision
+    <code>3fa3b7b8e9d837bf7d7547da3ce75258d3b38e98</code>): 30 passed, EXIT=0.
+    Logs <code>base-arm.log</code> and <code>head-arm.log</code> under the run
+    directory, each opening with its revision, tree and literal command and
+    ending in an <code>EXIT=</code> line; the base log also names the module
+    under test as imported and the resolved working directory.
+  </p>
+  <p id="read-every-spelling-of-deferred-work-census">
+    <strong>The census over live plans.</strong>
+    <code>.venv/bin/reckon audit-doc</code> over
+    <code>power_convertor/docs/plans/</code> (32 plan files) reports 20
+    deferred-work findings, one per document: 18 for the legacy
+    <code>follow-on(s)</code> spelling and 2 for spellings the old pattern did
+    not read at all — <code>go to a follow-up figure node</code> and
+    <code>go to a separate plan</code>. Output and count in
+    <code>power-convertor-audit.log</code> under the run directory. An earlier
+    attempt at this count read zero, and that zero was an instrument defect
+    rather than an absence: <code>python -m reckon.cli</code> imports the module
+    without running its CLI, so it printed nothing and exited 0. The same file
+    with <code>follow-on</code> injected into its prose reports the finding
+    through <code>.venv/bin/reckon</code>, which is the control the zero needed.
+  </p>
+  <p id="read-every-spelling-of-deferred-work-negative-control">
+    <strong>Negative control.</strong> Restoring the one-spelling regex
+    (<code>re.compile(r"\bfollow-ons?\b", re.IGNORECASE)</code>) leaves the
+    first, third and fifth cases unflagged as declared: 22 failed, 8 passed,
+    EXIT=1, including
+    <code>test_a_comment_append_naming_a_new_spelling_is_refused</code>,
+    <code>test_a_section_move_reason_naming_a_new_spelling_is_refused</code> and
+    <code>test_a_section_body_set_naming_a_new_spelling_is_refused</code>, while
+    the head arm passes all 30. Log <code>negative-control.log</code> under the
+    run directory; the worktree was restored and reads clean afterwards.
+  </p>
+  <p id="read-every-spelling-of-deferred-work-ruff">
+    <strong>Ruff.</strong> <code>ruff check</code> and
+    <code>ruff format --check</code> add no finding on the staged paths: the
+    base versions of the three product files carry the same finding set as the
+    head versions, and the new test file is clean.
+  </p>
+</article>
