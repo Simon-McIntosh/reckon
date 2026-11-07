@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-run-review-waits-on-no-plan-decision">
   <meta name="plan-title" content="A Run Review Waits On No Plan Decision">
   <meta name="plan-summary" content="A queued review of a delivered run is admitted without waiting on its section&#x27;s open decisions or gates, which govern new work, not the review of work done.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="1.25">
   <meta name="plan-capability-version" content="1.0">
@@ -24,7 +24,7 @@
   <title>A Run Review Waits On No Plan Decision | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="11">
 <meta name="plan-modified" content="2026-11-07">
 </head>
 <body>
@@ -45,22 +45,23 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-arrwonpd-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="coordinator" data-written-at="2026-11-06" data-recommends-skill="/reckon-build a-run-review-waits-on-no-plan-decision §2" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-arrwonpd-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="coordinator" data-written-at="2026-11-06" data-recommends-skill="/reckon-build a-run-review-waits-on-no-plan-decision §2" data-resolved-at="2026-11-07T11:55:16+00:00" data-resolved-by="coordinator">
     <h4 class="r-fu-title">Build §2</h4>
     <div class="r-fu-body"><p>One condition in <code>_validated_batch_waits</code>; queue behind the run holding <code>reckon/crew/queue_admission.py</code>.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-run-review-waits-on-no-plan-decision §2</pre>
+    <p class="r-fu-outcome">Built and landed §2; done — no followup.</p>
     </article>
 </section>
 
 <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="_top" data-id="c-close-s2" data-who="" data-when="">
+    <div class="r-comment-body"><p>Landed: run <code>r-20261106T222015891168</code> (head <code>d7ab26d178</code>, review 109, no added failure in the <code>reckon.crew.queue_admission</code> importer arms). <code>_needs_own_section_verdict</code> returns false for <code>REVIEW_ROLE</code> and <code>_validated_batch_waits</code> consults it, so the batch path asks the same owner. A queued review of delivered work no longer waits on its section's open decisions or gates.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261107T100029589998-review-of-a-queued-review-request-is-not-held-on-its-sections-gates-or-d7ab26d178c4" data-who="reckon-build" data-when="2026-11-07T10:12:24.882Z">
     <div class="r-comment-body"><p>review of r-20261106T222015891168-a-queued-review-request-is-not-held-on-its-sections-gates-or at base e3a9f381a2 / head d7ab26d178 scores goal_fidelity 19, evidence 17, scope_discipline 20, durability 19, fit 18, reuse 16 with one non-blocking finding (the review-role predicate at queue_admission.py:3075 duplicates reports.py:1831 _node_is_a_reviewer); status parsed, added_failure_count 0.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261106T222015891168-a-queued-review-request-is-not-held-on-its-sections-gates-or" data-who="reckon-build" data-when="2026-11-07T09:59:22.772Z">
     <div class="r-comment-body"><p>fix(crew) — _needs_own_section_verdict now answers false for a review-role node and is the one owner the batch path asks, so a queued review of a gated section gets no readiness ref (reproduction: readiness:proj:plan-a#s2 before the change); dispatch_waits keeps its eager read behind the plan's authored holds; node gate 21 passed after / 19 passed base and the declared negative control is red.</p></div>
-</div>
-<div class="r-comment" data-section="_top" data-id="c-close-s2" data-who="" data-when="">
-    <div class="r-comment-body"><p>Landed: run <code>r-20261106T222015891168</code> (head <code>d7ab26d178</code>, review 109, no added failure in the <code>reckon.crew.queue_admission</code> importer arms). <code>_needs_own_section_verdict</code> returns false for <code>REVIEW_ROLE</code> and <code>_validated_batch_waits</code> consults it, so the batch path asks the same owner. A queued review of delivered work no longer waits on its section's open decisions or gates.</p></div>
 </div>
 </section>
 </main>
