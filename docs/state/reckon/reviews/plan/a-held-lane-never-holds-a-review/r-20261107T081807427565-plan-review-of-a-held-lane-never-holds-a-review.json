@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T08:38:53.999Z",
+  "dispatched_at": "2026-11-07T08:32:18Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/queue_admission.py:628",
+      "id": "reuse_search-1",
+      "reason": "\u00a72 would be re-scoped to trace, and choose between, `_local_fallback`'s `named_route` guard and `_review_lane_plan`'s skip, instead of hiring a worker to find a place that already exists and to build a fourth.",
+      "text": "\u00a71's premise, \"nothing in the system would have\" moved the held review, is false, and \u00a72's brief is scoped by that premise. The mechanism exists and refused on a one-line guard: `_local_fallback` (`reckon/crew/queue_admission.py:628`) rebinds a picker route to local when its metered lane stops serving, and returns `None` early at `reckon/crew/queue_admission.py:637` when `pointer.get(\"named_route\")` is set, which is exactly what the review carried (`{\"backend\": \"codex\", \"set_by\": \"dispatch\"}`, written at `reckon/crew/dispatch.py:1770`). The census of every existing \"a held lane yields to the local lane\" implementation, none named in \u00a72 \u2014 (1) `reckon/crew/queue_admission.py:628` `_local_fallback`, admission-time, guarded by `named_route`; (2) `reckon/crew/queue_admission.py:368`, the `replay_pick` condition inside `_launch_queued` (`:317`), a second `named_route` gate on the same launch path \u2014 it refuses the picker replay when `named_route` is set, so a repair that relaxes `_local_fallback` and not this one rebinds the lane and then refuses to re-pick on it; (3) `reckon/crew/dispatch_plan.py:267` `continue_hold_on_its_offered_local_lane` with `_offered_local_backend` at `reckon/crew/dispatch_plan.py:243`, which already implements \"a hold whose offered candidates include the local lane continues the request there\", for picker holds; (4) `reckon/crew/recovery_review_dispatch.py:1768` `_review_lane_plan` (via `_review_lane_candidates` at `:1813`), which already skips a lane and takes the next eligible candidate, on the lane's own published occupancy reading (`_current_lane_reading` at `:1718`, `_lane_over_ceiling` at `:1747`); (5) `reckon/crew/recovery_review_dispatch.py:1438` `_failed_review_backend`, the dropped-lane demotion \u00a71 cites as \"as a lane that drops a review already does\". Existing tests already pin these: `tests/test_route_before_queue.py:423` (named_route set_by dispatch) and `tests/test_a_review_waits_for_a_saturated_lane.py:184` (a saturated metered lane is passed over) \u2014 a repair that does not extend these files is a parallel mechanism",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery_review_dispatch.py:1552",
+      "id": "duplicate_owner-1",
+      "reason": "the finding names the file to extend and the third existing consumer (`budget_group.py:172`, `picker/snapshot.py:1621`) that reads the same review-lane rule, so a single-point repair lands where all three consumers see it rather than in a new review-only path.",
+      "text": "the brief's anchors route the worker to the wrong owner for the lane rule and name no owner at all for the hold. `_review_excluded_backends` (`reckon/crew/recovery_review_dispatch.py:1552`) and `_ordered_review_lanes` (`:1633`) are defined there; `reckon/crew/recovery.py:230` and `:242` are re-export shims, so \u00a72's phrase \"the review lane ordering in `reckon/crew/recovery.py`\" names a pass-through. The budget-hold predicate's owner is likewise unnamed and has three pieces a new reader would fork: the hold verdict and its reason come from the pace policy in `reckon/budget.py` (burn and `resets_at` around `reckon/budget.py:1505` and `:1642`), the operator-facing wording is built by `_actionable_budget_hold` (`reckon/crew/dispatch_admission.py:77`), and the group/lift join a review ordering would need already exists inside the ordering itself \u2014 `_lifted_backends` at `reckon/crew/recovery_review_dispatch.py:1512` already calls `budget_group.declared_groups` and `budget_lift.published_readings`, which is the same wallet-to-lane map a hold check needs. So the honest owner to extend is `_ordered_review_lanes` / `_review_lane_plan`, reusing the existing lift join and the existing hold verdict, and the file the plan names is not it",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "dc8a247a9b5762471ee0ab655766a6f3b54a2607",
+  "plan_fingerprint": "8ee68120ecf5cd318ec60adf407d83c728bc38d36e5e3ce05427717568d86fae",
+  "plan_slug": "a-held-lane-never-holds-a-review",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T081807427565-plan-review-of-a-held-lane-never-holds-a-review",
+  "reviewed_blob_sha": "6b2105526e85bbeedcd4e752574065cfd18b625c",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a72 adds no module and defers the repair's placement to its evidence note; the depth question lands on the repair section it will spawn, and the duplicate_owner finding below states what that section must deepen rather than add beside.",
+    "duplicate_owner": "a finding \u2014 the plan attributes the review lane ordering to `reckon/crew/recovery.py`, which only re-exports it, and leaves the budget-hold reader unnamed; both defects point a worker away from the owner it must extend.",
+    "interface_budget": "pass \u2014 public_definitions 2360, cli_options 465, mcp_views 15, refusal_families 23; \u00a72 adds no CLI option, public definition, MCP view or refusal family (it explicitly edits no product source and reuses the existing `awaiting-lane` / `held-by-gate` verdicts), so there is nothing for the section to retire or merge.",
+    "reuse_search": "a finding \u2014 \u00a72's brief names `_ordered_review_lanes`, `_review_excluded_backends`, `caller_named_route` and \"the admission budget hold\", but omits the three mechanisms in this tree that already make a held lane yield (`_local_fallback`, `continue_hold_on_its_offered_local_lane`, `_review_lane_plan`), so the investigation is briefed to discover a place that already exists three times over.",
+    "thin_wrapper": "pass \u2014 the plan proposes no wrapper, and it does carry the anti-duplication requirement in its own text: the repair must read \"the same budget check the admit pass uses\" rather than re-deriving the hold."
+  },
+  "section_digests": {
+    "_document": "53422e159c6c3bb5222bc30d95bb52f02b072bd0c70f6e64ce7ea665403bfb63",
+    "s1": "56a882b51cdce4c1fc173519bd92c44cf033cbc2bc968c7b4ebf56406d4ef52d",
+    "s2": "ff2c0369455fd082d929f5fb78219d2f906f81d6c6d6cb972f7be49acfdb72b0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T08:52:34.008074+00:00",
+  "total": null
+}
