@@ -1,0 +1,45 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T09:47:36.776Z",
+  "dispatched_at": "2026-11-07T09:36:24Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-refusal-comes-before-the-work.html:50",
+      "id": "reasoning-1",
+      "reason": "without `reckon/crew/dispatch.py` in \u00a73's write paths and the two values carried onto the launched pointer (or onto the node record), the dispatch-time recording reaches no landing, so the section's remedy cannot be met and the fenced worker is blocked at its fourth case.",
+      "text": "\u00a73 says the value given \"is recorded in the pointer's `dispatch_options`\" and that `_require_brief_owner` \"reads it when `crew complete` or `crew merge` is given neither flag\", but the pointer \u00a73 writes is the queued request's, and the launched pointer is composed afresh in `reckon/crew/dispatch.py` (the record literal at `dispatch.py:2873\u20133094`, which copies only `route_fallback` out of `dispatch_options` at `:3020`). Measured on the live crew home at `803b7fcd1d`: all 9 not-yet-launched pointers cite `dispatch_options`, while all 27 launched pointers (`working`, `complete`, `blocked`) have no `dispatch_options` key, and none carries a `plan_link` and none carries an `unplanned_reason` key. Promotion reads `read_pointer(run_id)` (`promotion.py:1125`, `:2016`), so at landing the recorded link is absent and \u00a73's case 4 \u2014 \"its landing discharge passes with no landing flag\" \u2014 cannot pass as delivered; the worker is fenced out of `reckon/crew/dispatch.py`, where the carrier would have to be added",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "803b7fcd1df2717bb0984c59056445bb211d74af",
+  "plan_fingerprint": "678de5897f3ff50887a299716d316728853ecc0d58beff37a3a1e97239a1e553",
+  "plan_slug": "a-refusal-comes-before-the-work",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T093510214908-plan-review-of-a-refusal-comes-before-the-work",
+  "reviewed_blob_sha": "5d1fd5a04e98266af503f35e44227a5cb3b03f81",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited location resolves against `803b7fcd1d`: `crew_dispatch` at `reckon/crew_dispatch_commands.py:1456` with `--plan` at 1157 and `--brief` at 1159, the pair split `if pair_backend:` at 1826, the dry-run `plan_dispatch` call at 1922, `dispatch_options` assembly at 1866 and 2184, `EXECUTABLE_SECTION_ROLES` at `reckon/evidence.py:277`, `_require_brief_owner` at `reckon/crew/promotion_checks.py:1769`, and every listed `plan_dispatch` caller (`reckon/crew/dispatch.py:687, 1047, 1177, 1233, 1670, 2009`, `reckon/crew/dispatch_sessions.py:1713`, `reckon/crew/recovery_review_dispatch.py:2924`).",
+    "done_when": "pass \u2014 the eight cases each make the refusal, the recording or the landing read happen, and the six negative controls name the mutation that fails a named case (dropping the refusal, refusing one role, not reading the record, treating absence as a discharge, refusing the flagged dry run, placing the check below the pair split); case 4 is the case that would fail against today's carrier, which is why it is a finding below rather than a hole here.",
+    "evidence_paths": "pass \u2014 gate logs are placed under the run directory (durable, not a scratchpad), each starting with its revision and literal command and ending in `EXIT=`.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach a symbol; the new test is named for what it measures, and the section states its mechanism rather than its motivating incident.",
+    "reasoning": "a finding \u2014 a launched run's pointer carries no `dispatch_options`, so the value \u00a73 records at dispatch is not present on the record `_require_brief_owner` reads at landing, and the record's composition site (`reckon/crew/dispatch.py`) is not among \u00a73's write paths.",
+    "single_goal": "pass \u2014 \u00a73 carries one deliverable, that the plan link is asked for at dispatch and read at landing.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `s3: [a-refusal-comes-before-the-work#s2]` and `s5: [#s2, #s3]`, which matches the files \u00a73 shares (`reckon/crew/node.py` with \u00a72) and hands on (`reckon/crew_dispatch_commands.py` to \u00a75); no missing or misdirected relationship."
+  },
+  "section_digests": {
+    "_document": "fe86ddc53d6df02ed8681809f4399744a8daf0946c333b28fc3a6b583769f545",
+    "s1": "75df880739e89570186a1c16cae47d54a4d457a4a6e99c09b2d62c21368dc424",
+    "s2": "82627aab8394f0209c300c78167c8eb9a00cc5acf2e8b3a32be25df3b62c3f92",
+    "s3": "d431bdec86919b80311076eb03cb71694f926b2698a45e225ae5b30fb35f6fbb",
+    "s4": "2a97d35fa0e69a6331d78f727d1ded35d267ff23bba3ff069f80e200825410f0",
+    "s5": "c6bcd8dc06779761ce142ed5ed5f70c6da3c790175716e80a8adde0bd2936039"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T09:56:11.835546+00:00",
+  "total": null
+}
