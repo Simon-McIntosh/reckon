@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-held-lane-never-holds-a-review">
+  <meta name="plan-title" content="A Held Lane Never Holds A Review">
+  <meta name="plan-summary" content="A review that follows its run onto a lane under a budget hold moves to the local lane instead of waiting days for that lane's reset.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="1.25">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S27">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-after" content="work-is-never-stuck-behind-the-admission-loop">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
+  <title>A Held Lane Never Holds A Review | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-11-07">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: a review queued behind a five-day budget reset held three other runs</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>The review of run <code>r-20261106T200824843523</code> (<code>work-is-never-stuck-behind-the-admission-loop</code> §29) was queued at 23:39Z on 6 November as <code>r-20261106T233900205800</code>, with <code>named_route</code> <code>{"backend": "codex", "set_by": "dispatch"}</code>. Reckon's project flight (<code>docs/state/reckon/flight.yaml</code> near line 73) deliberately leaves <code>codex</code> out of <code>review_excluded_backends</code>, so a review of work built on codex may follow it there. At 08:09Z on 7 November every admit pass still recorded it <code>held-by-gate</code>: &ldquo;wave held on budget for backend 'codex' &mdash; utilisation 100% with burn multiple 2.4x &hellip; the stated reset at 2026-11-11T09:00:01Z lifts this hold&rdquo;, while the local lane ran two workers against a published allowance of 35. Because the reviewed run still held <code>reckon/crew/queue_admission.py</code> and <code>reckon/crew/obligations.py</code>, three other queued runs sat <code>held-on-claim</code> behind it. The coordinator moved it with <code>crew queue edit --backend clive</code>; nothing in the system would have.</p>
+    <p>The picker's own selection for that dispatch was a <code>fallback</code> on &ldquo;timeout in pick:capability&rdquo; (stage reads of 7.5 to 13.2 s against a 5 s pick), so the lane came from the review's follow-the-run rule rather than from a routing judgement. Following the run is a preference; a budget hold is a fact about whether the lane will serve before its reset. A preferred lane that cannot serve should fall through to the next candidate, as a lane that drops a review already does.</p>
+
+    <h2 id="s2">§2 — Find where a review's followed lane should yield to a hold, and write the repair</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> An investigation, not a repair. The worker traces how a reflex-composed review acquires its lane and its <code>named_route</code>: the review lane ordering in <code>reckon/crew/recovery.py</code> (<code>_ordered_review_lanes</code> and <code>_review_excluded_backends</code>), the <code>caller_named_route</code> branch in <code>reckon/crew/dispatch.py</code> (near lines 1579 and 1769&ndash;1774), and the admission budget hold that records <code>held-by-gate</code> for a queued request. It names the one place where a lane under a budget hold, read from the same budget check the admit pass uses, should be skipped for a review so the next candidate (the local lane) is taken, and states whether that place is consulted at compose time, at admission, or both. It records, for the queued request above, every input that decision reads. It writes the repair as a new implementable section of this plan with its write paths, a test and a negative control, and edits no product source.</p>
+    <p><strong>Done when</strong> an evidence note at <code>docs/evidence/fragments/a-held-lane-never-holds-a-review/where-a-held-lane-yields.html</code> gives the traced path with file and line anchors, the inputs recorded for <code>r-20261106T233900205800</code>, and the named place for the repair in one sentence the trace supports; and the plan carries a new implementable section for the repair. As a negative control, the note shows the same path for a review whose followed lane is not held selecting that lane. Every command is logged under the run directory, starting with its revision and the literal command and ending in <code>EXIT=</code>. Write paths: the evidence note and this plan.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-ahlnhar-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="coordinator" data-written-at="2026-11-07" data-recommends-skill="/reckon-build a-held-lane-never-holds-a-review §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Investigate §2</h4>
+    <div class="r-fu-body"><p>Trace the review lane choice against a budget hold and write the repair section.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-held-lane-never-holds-a-review §2</pre>
+    </article>
+</section>
+
+</main>
+</body>
+</html>
