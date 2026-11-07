@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-07T15:56:57.148Z",
+  "dispatched_at": "2026-11-07T15:42:37Z",
+  "findings": [
+    {
+      "file": "tests/test_a_held_lane_never_holds_a_review.py",
+      "line": 79,
+      "severity": "non-blocking",
+      "text": "tests/test_a_held_lane_never_holds_a_review.py:79 asserts that named_route.set_by equals REVIEW_FOLLOWS_RUN, the same variable the test passed into _dispatch(lane_origin=...) two lines earlier at :76, so the two sides move together; it does fail if dispatch stops echoing lane_origin, but it cannot independently establish the recorded value and is not the guard the rebind rests on (that is :85-:90, shown red by the negative control)."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T100007560977-a-queued-review-whose-lane-the-review-reflex-followed-from/manifest.md",
+      "line": 15,
+      "severity": "non-blocking",
+      "text": "The source node's done_when asks that test files importing reckon.crew.queue_admission or reckon.crew.recovery_review_dispatch add no failure against the base, but the recorded gate ran one such neighbour (tests/test_route_before_queue.py) plus the new file; 98 test files import the two touched modules and no arm over that population is recorded in manifest.md or gates/. Regression breadth across the touched modules is therefore claimed rather than measured."
+    },
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": 2971,
+      "severity": "non-blocking",
+      "text": "reckon/crew/recovery_review_dispatch.py:2971 gates the new origin on record.get('subject') != 'plan' so a plan review's configured lane stays authoritative, but no added test exercises the plan-review side; removing that condition would silently make plan reviews' configured lanes rebindable and the suite would stay green."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal at the reviewed prompt ('A queued review whose lane the review reflex followed from its run is rebound to the local lane when that lane is under a budget hold'); reckon/crew/queue_admission.py:656-663 rebinds exactly that origin to the local backend and reckon/crew/dispatch.py:1408 names the constant.\nVERDICT done_when: the done_when's three cases are all asserted by tests/test_a_held_lane_never_holds_a_review.py:74-90, :93-106 and :114-137; its regression clause over the test files importing the two touched modules is not run (98 files, one neighbour measured) and its ruff clause is recorded in manifest.md:24.\nVERDICT write_paths: the seven declared paths are reckon/crew/queue_admission.py, reckon/crew/recovery_review_subject.py, reckon/crew/recovery_review_dispatch.py, reckon/crew/dispatch.py, tests/test_a_held_lane_never_holds_a_review.py and the evidence fragment plus figures directory; every path in the diff is among them and recovery_review_subject.py and the figures directory are untouched.\nVERDICT manifest: read manifest.md at the source run; it records both arms (12 passed at base, 15 passed at head) with log paths and EXIT lines, the negative control at gates/negative_control.log with EXIT=1, and one outside_scope entry for the printed review command.\nVERDICT diff: read the single commit 140f189d625d against its parent 858c886920c3e; five files changed \u2014 three production modules and a new test plus an evidence fragment \u2014 209 insertions and 6 deletions, all inside the declared scope.\nCALL_SITES: reckon/crew/queue_admission.py:4843 (_launch_queued calls _local_fallback on a BudgetHold), reckon/crew/recovery_review_dispatch.py:2953 (_dispatch_composed_review calls dispatch), reckon/crew/dispatch.py:1783 (writes named_route.set_by)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:657-663 returns None only for a named route whose set_by is not REVIEW_FOLLOWS_RUN_ORIGIN, so the reflex's followed lane rebinds on a hold and a caller-named lane does not.\nSCORE evidence: 14\nJUSTIFICATION evidence: gates/after.log records 15 passed / EXIT=0 at 140f189d and gates/negative_control.log records 1 failed / EXIT=1, but the done_when's clause over the 98 test files importing reckon/crew/queue_admission.py or reckon/crew/recovery_review_dispatch.py is measured over one neighbour file only.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every one of the five paths in the commit is inside the seven declared write paths, and no plan file or shared state is touched.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_held_lane_never_holds_a_review.py:85 re-implements the removed guard by reddening when _local_fallback returns None (shown as EXIT=1 under the negative control), but :79 echoes the input it passed in and the plan-review exclusion at recovery_review_dispatch.py:2971 is untested.\nSCORE fit: 19\nJUSTIFICATION fit: dispatch.py:1404-1408 documents the constant the way its neighbouring _SUITE_TEMPLATE_SPELLING is documented, and the new test's module docstring and fixture reuse follow the idiom of tests/test_route_before_queue.py.\nSCORE reuse: 20\nJUSTIFICATION reuse: named_route.set_by is an existing provenance owner (dispatch.py:1783, queue_edit.py:420 already carries a distinct value) and this change extends it with one documented origin rather than adding a parallel mechanism; _reroute_held_review at recovery_review_dispatch.py:1963 answers a different refusal (zero slots) and is not duplicated.\n",
+  "review_run_id": "r-20261107T153837139965-review-of-a-queued-review-whose-lane-the-review-reflex-followed-from-140f189d625d",
+  "reviewed_base_sha": "858c886920c3e79efc32185e532d26e9fa3d0682",
+  "reviewed_head_sha": "140f189d625dfc28e1728f6a256199185f010a67",
+  "reviewed_run_id": "r-20261107T100007560977-a-queued-review-whose-lane-the-review-reflex-followed-from",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T16:40:50.571584+00:00",
+  "total": 108
+}
