@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    "The increment adds no test assertion, so no new assertion has an independence question; durability rests on the run-directory check_importer_receipt.py, which is not committed.",
+    "check_importer_receipt.py:20-21 asserts the receipt marker and the data-log filename and would redden if the paragraph were removed, as importer_receipt_negative.log records (AssertionError, EXIT=1).",
+    "check_importer_receipt.py never parses data-revision or the prose counts, so restoring the pre-repair figures would leave it green."
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/serve.py:2703 compose_landed_record",
+    "reckon/mcp.py:1339 compose_landed_record",
+    "reckon/doccheck.py:1887 compose_landed_record",
+    "reckon/crew/reports.py:2436 _fragment_plan_of"
+  ],
+  "completed_at": "2026-11-07T08:37:26.947Z",
+  "dispatched_at": "2026-11-07T08:28:28Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-queue-holds-the-whole-plan/record-what-holds-a-queued-request-only-when-the-holding.html",
+      "line": "45",
+      "severity": "non-blocking",
+      "text": "non-blocking: the receipt declares data-log=\"importers_delivered_source.log\" and took data-revision 7694bf20cd, while the recorded positive control importer_receipt_positive.log ran check_importer_receipt.py against importers_final_head.log at 71ba230c63; the script asserts only the marker and the data-log string, never the data-revision attribute or the quoted \"6 failed and 735 passed\" prose, so the machine-readable claim is unguarded and the figures rest on a reader, not on the recorded guard."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read 71ba230c637dfeac8b6ff959bd15881e8e3603bc against 7694bf20cdc1908ed2c8f3404acf811b44c4a924: the single commit 71ba230c adds 11 lines to docs/evidence/fragments/a-queue-holds-the-whole-plan/record-what-holds-a-queued-request-only-when-the-holding.html and deletes none, so the cumulative record is appended rather than rewritten, and git rev-parse of reckon/crew/queue_admission.py at both revisions returns the same blob 65643c9329fb41dded1162c4219073c86e916539.",
+    "done_when": "docs/plans/a-queue-holds-the-whole-plan.html \u00a729 requires the test files importing queue_admission or obligations to add no failures against the base; the source manifest records baseline_suite at 7694bf20cd (14 passed, EXIT=0) and after_suite at 71ba230c63 (14 passed, EXIT=0), and importers_delivered_source.log:1 declares revision 7694bf20cd with its summary line reading 6 failed and 735 passed.",
+    "goal": "The source node's goal (prompt.txt:38) is to record only what currently holds a queued request; the increment at 71ba230c637dfeac8b6ff959bd15881e8e3603bc appends the delivered-source importer receipt at docs/evidence/fragments/a-queue-holds-the-whole-plan/record-what-holds-a-queued-request-only-when-the-holding.html:43-53, answering the preceding review's blocking finding that the repaired source had no importer-wide head receipt, and it changes no runtime code.",
+    "manifest": "Read the source manifest.md at status complete; it names six commits, the focused gate's base and after arms with revisions and log paths, the negative-control logs, the delivered-source and final-head importer receipts, the outside-scope failure ids, and it states all six rubric dimensions answered.",
+    "write_paths": "The source manifest orientation_write_paths declares reckon/crew/obligations.py, reckon/crew/queue_admission.py, the two held-request test files, the evidence fragment and the figure topic; git diff --name-only 7694bf20..71ba230c lists only docs/evidence/fragments/a-queue-holds-the-whole-plan/record-what-holds-a-queued-request-only-when-the-holding.html."
+  },
+  "justifications": {
+    "durability": "the increment adds no committed assertion and no committed test parses docs/evidence/fragments/a-queue-holds-the-whole-plan/record-what-holds-a-queued-request-only-when-the-holding.html's data-revision or data-log attributes (grep over tests/ and reckon/ finds no reader), so editing the receipt's figures would leave every committed gate green.",
+    "evidence": "importers_delivered_source.log:1 declares revision 7694bf20cdc1908ed2c8f3404acf811b44c4a924 and ends 6 failed, 735 passed, EXIT=1, its six FAILED ids are identical to importers_head.log::9623b11c and a subset of importers_base.log::8e08dbda's seven, and the cited blob matches git hash-object of the module at both revisions.",
+    "fit": "docs/evidence/fragments/a-queue-holds-the-whole-plan/record-what-holds-a-queued-request-only-when-the-holding.html:43-53 follows the section-and-paragraph idiom of the fragment's earlier paragraphs, but its data-revision and data-log attributes are a new convention no other file under docs/evidence/fragments/ carries.",
+    "goal_fidelity": "docs/evidence/fragments/a-queue-holds-the-whole-plan/record-what-holds-a-queued-request-only-when-the-holding.html:43-53 states the 84 importer files, the 6 failed / 735 passed counts and the source blob, which is the receipt the prior review's blocking finding named as missing.",
+    "reuse": "the increment defines no function, class or module; a capability search over reckon/ for evidence-fragment composition found the existing owners reckon/evidence.py:560 compose_landed_record and reckon/crew/reports.py:2436 _fragment_plan_of, which this change feeds rather than duplicates.",
+    "scope_discipline": "git diff --name-only 7694bf20..71ba230c returns exactly docs/evidence/fragments/a-queue-holds-the-whole-plan/record-what-holds-a-queued-request-only-when-the-holding.html, inside the manifest's declared write paths, with zero deletions against the cumulative record."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node's goal (prompt.txt:38) is to record only what currently holds a queued request; the increment at 71ba230c637dfeac8b6ff959bd15881e8e3603bc appends the delivered-source importer receipt at docs/evidence/fragments/a-queue-holds-the-whole-plan/record-what-holds-a-queued-request-only-when-the-holding.html:43-53, answering the preceding review's blocking finding that the repaired source had no importer-wide head receipt, and it changes no runtime code.\nVERDICT done_when: docs/plans/a-queue-holds-the-whole-plan.html \u00a729 requires the test files importing queue_admission or obligations to add no failures against the base; the source manifest records baseline_suite at 7694bf20cd (14 passed, EXIT=0) and after_suite at 71ba230c63 (14 passed, EXIT=0), and importers_delivered_source.log:1 declares revision 7694bf20cd with its summary line reading 6 failed and 735 passed.\nVERDICT write_paths: The source manifest orientation_write_paths declares reckon/crew/obligations.py, reckon/crew/queue_admission.py, the two held-request test files, the evidence fragment and the figure topic; git diff --name-only 7694bf20..71ba230c lists only docs/evidence/fragments/a-queue-holds-the-whole-plan/record-what-holds-a-queued-request-only-when-the-holding.html.\nVERDICT manifest: Read the source manifest.md at status complete; it names six commits, the focused gate's base and after arms with revisions and log paths, the negative-control logs, the delivered-source and final-head importer receipts, the outside-scope failure ids, and it states all six rubric dimensions answered.\nVERDICT diff: Read 71ba230c637dfeac8b6ff959bd15881e8e3603bc against 7694bf20cdc1908ed2c8f3404acf811b44c4a924: the single commit 71ba230c adds 11 lines to docs/evidence/fragments/a-queue-holds-the-whole-plan/record-what-holds-a-queued-request-only-when-the-holding.html and deletes none, so the cumulative record is appended rather than rewritten, and git rev-parse of reckon/crew/queue_admission.py at both revisions returns the same blob 65643c9329fb41dded1162c4219073c86e916539.\nCALL_SITES: reckon/serve.py:2703 compose_landed_record, reckon/mcp.py:1339 compose_landed_record, reckon/doccheck.py:1887 compose_landed_record, reckon/crew/reports.py:2436 _fragment_plan_of\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/a-queue-holds-the-whole-plan/record-what-holds-a-queued-request-only-when-the-holding.html:43-53 states the 84 importer files, the 6 failed / 735 passed counts and the source blob, which is the receipt the prior review's blocking finding named as missing.\nSCORE evidence: 17\nJUSTIFICATION evidence: importers_delivered_source.log:1 declares revision 7694bf20cdc1908ed2c8f3404acf811b44c4a924 and ends 6 failed, 735 passed, EXIT=1, its six FAILED ids are identical to importers_head.log::9623b11c and a subset of importers_base.log::8e08dbda's seven, and the cited blob matches git hash-object of the module at both revisions.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 7694bf20..71ba230c returns exactly docs/evidence/fragments/a-queue-holds-the-whole-plan/record-what-holds-a-queued-request-only-when-the-holding.html, inside the manifest's declared write paths, with zero deletions against the cumulative record.\nSCORE durability: 14\nJUSTIFICATION durability: the increment adds no committed assertion and no committed test parses docs/evidence/fragments/a-queue-holds-the-whole-plan/record-what-holds-a-queued-request-only-when-the-holding.html's data-revision or data-log attributes (grep over tests/ and reckon/ finds no reader), so editing the receipt's figures would leave every committed gate green.\nSCORE fit: 18\nJUSTIFICATION fit: docs/evidence/fragments/a-queue-holds-the-whole-plan/record-what-holds-a-queued-request-only-when-the-holding.html:43-53 follows the section-and-paragraph idiom of the fragment's earlier paragraphs, but its data-revision and data-log attributes are a new convention no other file under docs/evidence/fragments/ carries.\nSCORE reuse: 20\nJUSTIFICATION reuse: the increment defines no function, class or module; a capability search over reckon/ for evidence-fragment composition found the existing owners reckon/evidence.py:560 compose_landed_record and reckon/crew/reports.py:2436 _fragment_plan_of, which this change feeds rather than duplicates.\nFINDING docs/evidence/fragments/a-queue-holds-the-whole-plan/record-what-holds-a-queued-request-only-when-the-holding.html:45 non-blocking: the receipt declares data-log=\"importers_delivered_source.log\" and took data-revision 7694bf20cd, while the recorded positive control importer_receipt_positive.log ran check_importer_receipt.py against importers_final_head.log at 71ba230c63; the script asserts only the marker and the data-log string, never the data-revision attribute or the quoted \"6 failed and 735 passed\" prose, so the machine-readable claim is unguarded and the figures rest on a reader, not on the recorded guard.",
+  "review_run_id": "r-20261106T233900205800-review-of-record-what-holds-a-queued-request-only-when-the-holding-71ba230c637d",
+  "reviewed_base_sha": "7694bf20cdc1908ed2c8f3404acf811b44c4a924",
+  "reviewed_head_sha": "71ba230c637dfeac8b6ff959bd15881e8e3603bc",
+  "reviewed_run_id": "r-20261106T200824843523-record-what-holds-a-queued-request-only-when-the-holding",
+  "scores": {
+    "durability": 14,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T08:42:22.165599+00:00",
+  "total": 108
+}
