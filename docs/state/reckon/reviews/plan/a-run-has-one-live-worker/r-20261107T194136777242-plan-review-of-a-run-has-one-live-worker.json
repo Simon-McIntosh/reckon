@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T19:54:02.246Z",
+  "dispatched_at": "2026-11-07T19:46:22Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:145",
+      "id": "done_when-1",
+      "reason": "the single-decision requirement is the whole substance of the arm-carrying reading, and an unmeasured requirement is the one a worker leaves duplicated, which is the duplicated-liveness-read defect already raised against run r-20261107T170819813156 at a0933cf939.",
+      "text": "the deliverable requires one liveness decision (\"process_liveness.py exposes one reading that carries it ... and record_process_alive keeps its boolean by reading that same function\"), but none of the five cases asserts that record_process_alive still answers from that function, so a node can add a second decision used only by the widen message and pass all five",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:145",
+      "id": "reasoning-1",
+      "reason": "the deliverable is the spec for the new arm-carrying function, and as written it under-specifies it by one arm and misnames the cause of another, which is the one way the \"decided once\" invariant breaks.",
+      "text": "the arm list \"(recorded pid alive, session walk, placed run, or unknown)\" omits the proven-dead arm that the same paragraph's next sentence and case 2 both measure, and \"the scheduler could not be queried\" is not a route to None: placement_job_alive returns None for it (reckon/crew/process_liveness.py:246-247) and record_process_alive then falls through to the pid probe (:356-358), so the boolean and the new reading would answer differently in exactly that state",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "31f1161b385a8fa1075d6c06ffb176995f100365",
+  "plan_fingerprint": "c18624a6915aefef7f9023a10631d921e07cd3c6d9f5b233bc37298b7fc7abb3",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 35,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T194136777242-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "dfecfc89cfcb12ff4f5ec4b15c8bb2f16ad5d24a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every \u00a78 anchor resolves as written: crew_widen at reckon/crew_run_commands.py:1658, the session walk at reckon/crew/process_liveness.py:376-379, the scheduler-client pid note at :325, the claims.py refusal at :106 and the node[\"write_paths\"] write at :134, and the fence read at reckon/crew/dispatch_sessions.py:1351 exactly.",
+    "done_when": "a finding \u2014 the deliverable's new \"one reading, one decision\" requirement has no case in the five, so a duplicated liveness read passes every one of them.",
+    "evidence_paths": "pass \u2014 the gate log is the run-directory log \u00a75 and \u00a77 already establish, and the manifest carries its path, not a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 `takes_effect` names the mechanism; no plan label, stage name or ticket number reaches a symbol, and no changelog prose is introduced.",
+    "reasoning": "a finding \u2014 the reading the deliverable specifies cannot carry the arms it lists: the list omits the proven-dead arm its own case 2 measures, and the stated unknown cause (\"the scheduler could not be queried\") does not yield unknown in the cited code.",
+    "single_goal": "pass \u2014 \u00a78 carries one deliverable (the widen result says when its paths take effect); process_liveness.py is in its write paths only to support that one field.",
+    "wiring": "pass \u2014 \u00a78 declares no section wait and needs none: its three source paths (reckon/crew_run_commands.py, reckon/crew/claims.py, reckon/crew/process_liveness.py) are written by no other open section (\u00a74, the only section touching process_liveness.py, is done), and open followup f-arolw-008 drives it."
+  },
+  "section_digests": {
+    "_document": "a84f6acdfa5bde1ab873fc2f587979b77f777a0513526a030168c36c7dbcbbf5",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "c8fe2a5a6c5765bc70ba45627cc9f5778b225a5e1deff2cc1bb1e0e08214362a",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "63bd79fcdd7baf06c8cc0bbc04ef21beec3605a6fdb13eed90b3ad410f8516e7",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b",
+    "s8": "0ca2b43219d2979c95d26a4896f41f0bdd491ff5f17e365035420bed26e2ba41"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T20:02:20.995793+00:00",
+  "total": null
+}
