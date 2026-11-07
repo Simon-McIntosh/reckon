@@ -1,0 +1,84 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T09:10:40.680Z",
+  "dispatched_at": "2026-11-07T09:04:30Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-queued-request-is-checked-when-queued.html:51",
+      "id": "anchors_resolve-1",
+      "reason": "a node sent to extend `_read_record` edits a file loader and leaves the served review untouched, so the section's own done-when cannot pass against the function it names.",
+      "text": "\u00a74 says \"`_read_record` (`reckon/crew/plan_review.py` near line 1267) chooses among the reviews covering a plan by the largest `plan_version` integer\", but `_read_record` (plan_review.py:1214) is a bare JSON file reader returning one record and performs no selection; the largest-`plan_version` choice is `read_plan_review` (plan_review.py:1229, `max(covering, key=lambda record: int(record.get(\"plan_version\") or 0))` at 1262) over `review_coverage`, and both the view (`mcp_views.py:4504`) and `--answer` (`crew_dispatch_commands.py:2724`) reach it there",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queued-request-is-checked-when-queued.html:47",
+      "id": "reasoning-1",
+      "reason": "the section's whole question is which caller moved the tree, so an enumeration presented as complete that omits two candidates (one of them the promotion release path, which consults the live claim at `promotion_release.py:393` before calling) sends the investigation past the discriminator it needs.",
+      "text": "\u00a73 states \"four callers reach it directly (`reckon/crew/gc.py` near lines 639, 647 and 661, and `routing.py` near line 1568)\", but the tree holds six direct calls to `_release_worktree_whole`: `gc.py:639`, `gc.py:647`, `gc.py:661`, `routing.py:1568`, `routing.py:2284` and `promotion_release.py:404`",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queued-request-is-checked-when-queued.html:47",
+      "id": "single_goal-1",
+      "reason": "the two deliverables close on different evidence and a plan write is coordinator-owned state under the dispatch contract, so the node should either hand back the drafted section or be split.",
+      "text": "\u00a73 declares \"An investigation, not a repair\" and \"It edits no product source\", yet the same done-when requires \"The plan carries a new implementable section for the repair\" and the write paths are \"the evidence note and this plan\", so one node must produce an evidence verdict and author plan state",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queued-request-is-checked-when-queued.html:57",
+      "id": "wiring-1",
+      "reason": "a coordinator sizing concurrent write scopes from the followup would under-count \u00a72's files and plan \u00a74 as harmless to run beside it, which is the collision the followup exists to prevent.",
+      "text": "the followup body reads \"\u00a72 writes only `dispatch.py`; \u00a73 and \u00a74 are read-only investigations and can run beside it\", while \u00a72's write paths (line 43) are `dispatch_admission.py`, `dispatch_plan.py`, `dispatch.py` and a new test, \u00a74 rewrites `plan_review.py` and `crew_dispatch_commands.py` plus a new test (line 51), and \u00a73 writes the plan and an evidence note (line 47)",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queued-request-is-checked-when-queued.html:43",
+      "id": "reasoning-2",
+      "reason": "as written a worker may rework `queue_requests`' return contract to add a refusals field, when the per-entry behaviour the done-when asserts already exists one layer up and only the check needs adding.",
+      "text": "\u00a72 says `queue_requests` refuses a failing batch entry \"in the result it already returns\", but `queue_requests` (dispatch.py:293) takes one node list and raises `CrewError` on the first refused node (dispatch.py:325\u2013331); the per-entry refusal rows and the `refused` count come from `_queue_batch` (dispatch_batch.py:518\u2013552), which calls `queue_requests` once per entry",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queued-request-is-checked-when-queued.html:43",
+      "id": "anchors_resolve-2",
+      "reason": "the first line resolves to the right call and the other three checks are cited correctly, so the stray second number costs a reader a glance rather than a wrong edit.",
+      "text": "\u00a72 cites `capability.assess_execution_fit` at \"`reckon/crew/dispatch_plan.py` near lines 834 and 875\"; line 834 is the `assess_execution_fit(...)` call, but line 875 is `open_endedness_score(node)`, which is not among the four checks being extracted",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "b1875f22a83e484eaeb8931c23066ad07ef0be2a",
+  "plan_fingerprint": "6c2a8754bab12e795b3322d0e7c81b345453ae5c73ee26e26a2680d374c661d6",
+  "plan_slug": "a-queued-request-is-checked-when-queued",
+  "plan_version": 5,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T090316792012-plan-review-of-a-queued-request-is-checked-when-queued",
+  "reviewed_blob_sha": "ef3230ebacda54a4e11ce5f5fb0507f67778b40c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "findings \u2014 s4's named selector `_read_record` resolves to a plain file reader, not the selector; s2's second `dispatch_plan.py` line reference resolves to a different call.",
+    "done_when": "pass \u2014 each section names a measurable test file with its assertions and declares a negative control as a stated mutation (`plan_dispatch`-only wiring for s2, no-successor-queued for s3, plan_version selection for s4).",
+    "evidence_paths": "pass \u2014 the s3 evidence note sits at `docs/evidence/fragments/a-queued-request-is-checked-when-queued/what-trashed-the-live-worktree.html` and every command log is named to the run directory, both durable.",
+    "naming": "pass \u2014 the test filenames and the evidence directory are named for the mechanism and carry no plan labels, stage names or ticket ids; no changelog prose.",
+    "reasoning": "findings \u2014 s3's caller enumeration is incomplete against the code; s2 misdescribes which function performs the per-entry refusal; s4's root cause and both named callers resolve correctly.",
+    "single_goal": "a finding \u2014 s3 carries an investigation and a plan edit, so its verdict cannot close on one result.",
+    "wiring": "a finding \u2014 followup `f-aqricwq-001` states write scopes that contradict the sections it describes; the `plan-after` target `work-is-never-stuck-behind-the-admission-loop.html` resolves and the three sections are otherwise independent."
+  },
+  "section_digests": {
+    "_document": "bcf7f43d654faed3260657791cc12095f526ae368d2ca84d5d9493a0361797be",
+    "s1": "b7af832c4e07048d297870ea5b081003fe0879e7a28b1f993a9bacf98ec2bc83",
+    "s2": "b8e0057fbc91c7bbe0e7157dbb7549bba80f715cea705d31db84f5b30c5fc43a",
+    "s3": "59aa833cccf00ff98030ee46cce18955b40b05ddcfa325f05105d9e91f6009bb",
+    "s4": "2275d92cc680e26f379cb24f1544a551fc63c919126eec94e44df1ed1bef93c4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T09:16:43.774217+00:00",
+  "total": null
+}
