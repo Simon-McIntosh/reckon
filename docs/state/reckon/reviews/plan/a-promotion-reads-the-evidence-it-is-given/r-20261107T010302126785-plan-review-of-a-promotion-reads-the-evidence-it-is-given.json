@@ -1,0 +1,71 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T01:14:48.177Z",
+  "dispatched_at": "2026-11-07T01:06:11Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:46",
+      "id": "reasoning-1",
+      "reason": "implemented literally it converts the red-base admission from fail-closed to fail-open for exactly the unmeasured evidence it exists to refuse, and the node's own gate would go red against a plan that reads as settled.",
+      "text": "\u00a72 says `_red_base_uncovered_ids` returns `None` when no comparison could be made, and that `_zero_added_against_a_red_base` \"returns `not uncovered`\"; `not None` is `True`, so a manifest with a missing arm, an arm without `completed: true`, a green baseline or an unreadable head log \u2014 every case that returns `False` today and is refused \u2014 would now be admitted, and `_require_verdict_matches_exit_status` returns early at its `if _zero_added_against_a_red_base(...): return` (promotion_evidence.py:1288) before it can reach the arm-completion clause \u00a72 promises; \u00a72's own sixth done-when case (\"a run whose head arm lacks `completed: true` is refused with today's arm-completion clause\") therefore fails under the stated mechanism",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:68",
+      "id": "reasoning-2",
+      "reason": "the predicate's argument order is the whole mechanism, and an implementer reading \"every receipt id must match some log id\" against an asymmetric predicate will refuse honest receipts in the direction the plan says it accepts.",
+      "text": "\u00a77 requires, in the reverse direction, \"every receipt id must match some last-run log id, a bare receipt id matching a qualified log id\", but \u00a72's `failure_ids_covered(base_ids, head_ids)` is asymmetric \u2014 a bare name covers qualified ids, while a qualified id covers only the identical qualified id \u2014 so with the receipt on the head side and the log on the base side a bare receipt id against a qualified `FAILED` line is not covered and is refused; the sentence needs to state that the reverse comparison also passes the receipt as the base, or the plan ships a refusal of the honest evidence \u00a77's own third case exists to admit",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:54",
+      "id": "done_when-1",
+      "reason": "all four cases are enumerated unambiguously and a node implements all four; only the count word is wrong, so no node's path changes.",
+      "text": "\u00a74 says its new test \"shows three things\" and then lists four bullets (a fifth commit covering four ancestors, a commit outside `base..head`, a commit at or below the base, and two presented commits on separate branches)",
+      "type": "done_when",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:60",
+      "id": "anchors_resolve-1",
+      "reason": "the same sentence names the exact expression and all three reader symbols (`_control_failure_ids`, `_head_suite_failure_ids`, `_baseline_suite_failure_ids`), so a node greps to the right block; the line anchor is stale, not the claim.",
+      "text": "\u00a75 cites the negative-control admission as \"near lines 2071\u20132097\", which in the current tree is the negative-control *declaration* reader, while `added = control_ids - reference_ids` sits at `promotion_checks.py:2142` in the block beginning at 2130",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "91ac57ac6f61764717c6eb3ea974b7eef49167c3",
+  "plan_fingerprint": "435b91c26ab0d46d360e86cd147a1606934360e92c06d9c9d57a088246f90d9e",
+  "plan_slug": "a-promotion-reads-the-evidence-it-is-given",
+  "plan_version": 10,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T010302126785-plan-review-of-a-promotion-reads-the-evidence-it-is-given",
+  "reviewed_blob_sha": "85d1beaee10e9529072663e34266ac0d1655d2d2",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a75's line anchor lands on the wrong block, though every symbol it names resolves; all other anchors resolve, including the extensionless plan and skill hrefs and the two test files \u00a72 leans on.",
+    "done_when": "a finding \u2014 \u00a74 announces \"three things\" and then enumerates four measurable cases; every other node's negative control is named and is one that fires.",
+    "evidence_paths": "pass \u2014 \u00a76 pins logs to the run directory with revision, literal command and a terminal `EXIT=` line; the other nodes' arms are the manifest's `baseline_suite`/`after_suite` and `test_logs`, which are the durable fields the promotion contract already reads.",
+    "naming": "pass \u2014 the new symbols (`failure_ids_covered`, `_red_base_uncovered_ids`) and the five new test filenames describe the mechanism, with no plan labels, stage names, ticket numbers or version tags.",
+    "reasoning": "two findings \u2014 \u00a72's return law inverts the admission for an unmeasured delta, and \u00a77 states a comparison direction its own shared predicate cannot satisfy.",
+    "single_goal": "pass \u2014 each live node (\u00a72, \u00a74, \u00a75, \u00a76, \u00a77) states one deliverable and one gate (\u00a76's two mechanisms both serve the single outcome \"a landed head releases its worktree\", which its done-when measures as one result).",
+    "wiring": "pass \u2014 section waits `s4\u2192s2`, `s5\u2192s2`, `s7\u2192s4` (plan line 28) cover every same-file collision (`promotion_evidence.py` is written by \u00a72, \u00a74 and \u00a77, and \u00a77's wait reaches \u00a72 transitively through \u00a74); \u00a76 touches disjoint files and correctly declares nothing; `plan-standalone` states the plan gates nothing and nothing gates it."
+  },
+  "section_digests": {
+    "_document": "16b7e0ac064041177a182b808ca05352e7de20cac229dccd88501dc6a3e40354",
+    "s1": "5eac0eb57fbf9fccaeee6fb2da59c42ca24c4433f0cffcb4b7de1b6b04324b6c",
+    "s2": "fe74e7e01c9a6ccef1719f555e5352545a20da84a1770862fc2751cdb6598747",
+    "s3": "479c8ebc617467c2744513e850433e87af52a3d22110620dcfdfb48f9975d081",
+    "s4": "80e452e08578901bf28b21ac56f7ff38a65532179befbebd65581a10820c5bd9",
+    "s5": "bb42325f383db769e04822e4d230cc887e0c6fd955d89dc50dd006b4d3715684",
+    "s6": "2e81c0cbe61ef60fc16acb159e81912b5b6263e9d12b8059efbd9482d722976c",
+    "s7": "f732f1ba2ad1c74b5433f39e3eb879b42f7899c1f6894b376d3445b31e7e05fb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T01:31:33.420668+00:00",
+  "total": null
+}
