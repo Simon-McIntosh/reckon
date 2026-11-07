@@ -637,6 +637,7 @@ def _record_release_on_ledger(
     run_id: str,
     release: Mapping[str, Any],
     checkout: Path | None,
+    after_merge: bool = False,
 ) -> tuple[dict[str, Any], dict[str, Any] | None]:
     """Persist the release decision beside the promoted run.
 
@@ -650,6 +651,13 @@ def _record_release_on_ledger(
     A run whose record already carries a release keeps it: the earlier pass saw
     the tree and the scratch copy that its own receipt names, so a second pass
     could only replace a true reading with one reporting them already gone.
+
+    The one exception is ``after_merge``: a landing promotes and records its
+    release before it merges, so that release saw the reviewed head off the
+    branch and withheld the tree as unintegrated. The release run after the
+    merge sees the head on the branch and frees the tree. When the recorded
+    release kept the tree and this one released it, this one is the true
+    reading and replaces it; any other recorded release still stands.
     """
     path = ledger.run_path(project, run_id, root)
     per_run = path.is_file()
@@ -659,7 +667,27 @@ def _record_release_on_ledger(
         path, project=project, root=root, run_id=run_id, per_run=per_run
     )
     if already is not None:
-        return already
+        if not (
+            after_merge
+            and not already[0].get("worktree_released")
+            and release.get("worktree_released")
+        ):
+            return already
+        # Only the worktree outcome changed: the earlier release's scratch and
+        # process readings are what that pass actually removed or found, and a
+        # second reading could only report them already gone.
+        release = {
+            **{
+                key: value
+                for key, value in already[0].items()
+                if not key.startswith("worktree")
+            },
+            **{
+                key: value
+                for key, value in release.items()
+                if key.startswith("worktree")
+            },
+        }
     # The receipt is written beside the run's own record before the ledger
     # write, because the ledger write is not durable on its own: a landing
     # commit that cannot stage restores the row it wrote to HEAD, and the
