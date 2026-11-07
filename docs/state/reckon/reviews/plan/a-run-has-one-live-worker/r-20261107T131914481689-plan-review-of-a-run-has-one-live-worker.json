@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T13:31:37.330Z",
+  "dispatched_at": "2026-11-07T13:21:48Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:126",
+      "id": "done_when-1",
+      "reason": "the implementer cannot write the fifth case from this fixture without re-deriving the reachability condition, so the section's own gate would fail or be quietly redefined.",
+      "text": "the fifth done-when case seeds \"a run whose recorded pids are dead and whose newest stream was written seconds ago\" and expects the refusal near line 1112; but `_process_reading` claims death only where a pid was checked on this host or an exit record exists (`reckon/crew/recovery_liveness.py:443-459`), so that record reads `process gone`, and `_observed_end_refusal` returns `None` on its `if reading == \"process gone\": return None` branch (`reckon/crew/resumption.py:1141-1142`) before ever calling `_stream_reading_refusal` \u2014 the case as seeded exercises no refusal at all",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:118",
+      "id": "anchors_resolve-1",
+      "reason": "a worker following the deliverable would grep for a function that resolves to nothing and must invent the seam, which is exactly the kind of pointer the plan is being reviewed to make resolvable.",
+      "text": "\u00a76 names the third site `_stream_in_motion_refusal`; no such symbol exists in `reckon/crew/`, the function holding the refusal at line 1112 is `_stream_reading_refusal` (`reckon/crew/resumption.py:1079`)",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:118",
+      "id": "reasoning-1",
+      "reason": "the stated precondition drives the whole fifth case and the \"says its process was not found\" wording; built as written, the case never fires and the wording describes a proven death the site is forbidden to claim.",
+      "text": "\u00a76 states the line-1112 site \"fires when no process was found but the newest stream is still moving\"; the code fires it only when the reading is `liveness unknown` (no verdict), never after a pid read proved the process gone, because the proven-death branch returns first (`reckon/crew/resumption.py:1141-1144`; `reckon/crew/recovery_liveness.py:455-459`)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "c2fa9100e795ac77385b3c6440a71b2cf9a8e00e",
+  "plan_fingerprint": "a353437ff9cc0baf2a31ec3b3cd6739d8a60d49fc12060c8870630e1cb8c047a",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 27,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T131914481689-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "f83d449620ab071304b24982d2f46746b25b6cfc",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a76 names the site near `resumption.py:1112` as `_stream_in_motion_refusal`, which does not exist; the function containing that line is `_stream_reading_refusal` at `reckon/crew/resumption.py:1079`.",
+    "done_when": "a finding \u2014 \u00a76's fifth done-when case cannot reach the refusal it names: a run whose recorded pids are found dead reads `process gone`, and `_observed_end_refusal` returns `None` before consulting the stream refusal.",
+    "evidence_paths": "pass \u2014 \u00a76's evidence is the gate log under the run directory plus a new tracked test file; no session scratchpad or node-local temporary path is named as evidence.",
+    "naming": "pass \u2014 \u00a76 introduces no plan label, stage name, ticket number or version tag into a symbol, filename or comment.",
+    "reasoning": "a finding \u2014 the trigger condition \u00a76 states for the line-1112 site (\"no process was found\") does not match the code: `_stream_reading_refusal` fires only when the reading is `liveness unknown`, which a died pid read cannot produce.",
+    "single_goal": "pass \u2014 \u00a76 has one deliverable: one composing function that all three refusal sites call, with the message naming the live attempt.",
+    "wiring": "pass \u2014 \u00a76 declares no section wait, `plan-section-depends-on` carries only `s7 -> s6`, and the open followup `f-arolw-007` carries `/reckon-build a-run-has-one-live-worker \u00a76`, so an implementable \u00a76 is scheduled."
+  },
+  "section_digests": {
+    "_document": "5498229a1a343acbed84d063c42d12ea1e871b218002fcd75010244770a3d7cb",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "c8fe2a5a6c5765bc70ba45627cc9f5778b225a5e1deff2cc1bb1e0e08214362a",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "e9ddd939aaed8e9754a7b547a25ab8351888b681414518c71a1993e667b5c235",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T13:34:36.979085+00:00",
+  "total": null
+}
