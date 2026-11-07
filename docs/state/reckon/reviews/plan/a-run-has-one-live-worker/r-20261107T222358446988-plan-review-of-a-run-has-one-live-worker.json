@@ -1,0 +1,49 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T23:21:04.210Z",
+  "dispatched_at": "2026-11-07T22:58:56Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:149",
+      "id": "reasoning-1",
+      "reason": "the sentence is a scope claim about the code section 9 edits, and a worker satisfying it literally would widen the refusal onto records this host did not launch, changing section 5's landed behaviour beyond the five cases and past the guard `live_worker_pid`'s own docstring gives for refusing to name a foreign pid.",
+      "text": "section 9 states \"The refusal still fires in every arm that reads alive; only its wording changes\", but `live_worker_pid` returns `None` before it reads any arm when `_launched_on_this_host(record)` is false (`reckon/crew/recovery_liveness.py:1290`, helper at `:1151`), and `_env_scan_run_pid` refuses the foreign read as well (`:1329`), so a record whose `launcher_host` is another machine or is unset reads alive yet is refused a launch nowhere; two of the five cases are seeded from the fixture's own `launcher_host: _reading_host()` (`tests/test_a_queued_run_launches_once.py:40`), so none can expose it",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "51d53c06ac2c7db73707ba00e872c648697d4a5d",
+  "plan_fingerprint": "6a6bb3b3383fa7cf0b5345769f336d49b68069dc26fb83e328efa712724a3571",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 47,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T222358446988-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "14a7e23ffbccfeeb12bc2163609cf692620e96e8",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited location resolves at HEAD 50e8f8c525: `live_worker_pid` at `reckon/crew/recovery_liveness.py:1275`, its `record_process_alive` branch at `:1293`, `_prepare_attempt_records`'s refusal at `reckon/crew/dispatch_launch.py:1943`, `_supervisor_spawn_worker`'s at `:2809`, the lift consumer at `reckon/crew/resumption.py:1451`, `assert pid > 0` at `tests/test_a_queued_run_launches_once.py:175`, the prefix-only session-walk assertion at `:164`, and the two pid-worded guards at `tests/test_resume_refuses_a_live_worker.py:517` and `:602`; review commit `e8c4677a43` exists and is an ancestor of HEAD.",
+    "done_when": "pass \u2014 section 9 reproduces the dead-pid refusal first in a temporary crew home, then names five cases with their whole refusal text and three logged negative controls keyed to cases 1, 2 and 5.",
+    "evidence_paths": "pass \u2014 the reproduction output and the armed suite command are recorded in the run's gate log, and no scratchpad or node-local temporary path is named as the evidence store.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach a symbol, filename or comment; the section names mechanisms, the path the earlier reviews scrubbed.",
+    "reasoning": "a finding \u2014 section 9's claim that \"the refusal still fires in every arm that reads alive\" is contradicted by the host gate in the code it cites.",
+    "single_goal": "pass \u2014 one deliverable (the launch refusal's wording at the two launch sites), one gate, three write paths in one subsystem.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `s9` waiting on `a-run-has-one-live-worker#s8`, section 8 exists and carries the arm-carrying reading section 9 consumes, and followup `f-arolw-009` invokes section 9 alone."
+  },
+  "section_digests": {
+    "_document": "732de762fcd8d53728c32da77fbf561c4d0ef6166a9d5e6eb13aad60e9177eca",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "c8fe2a5a6c5765bc70ba45627cc9f5778b225a5e1deff2cc1bb1e0e08214362a",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "63bd79fcdd7baf06c8cc0bbc04ef21beec3605a6fdb13eed90b3ad410f8516e7",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b",
+    "s8": "1615d40635864933b3396d3d4ae7b0f94361ec3a105caa540ba761ad95bd24fe",
+    "s9": "4cdcccdf87bcbdca8cb7d0bf3a6d7b3a68177549a3a53a6104de6ce4575adb7c"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T23:32:25.901717+00:00",
+  "total": null
+}
