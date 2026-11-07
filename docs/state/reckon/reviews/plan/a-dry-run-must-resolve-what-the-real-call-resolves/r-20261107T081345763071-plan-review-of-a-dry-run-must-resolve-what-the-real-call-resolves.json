@@ -1,0 +1,87 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T08:27:22.336Z",
+  "dispatched_at": "2026-11-07T08:21:44Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-dry-run-must-resolve-what-the-real-call-resolves.html:88",
+      "id": "reasoning-1",
+      "reason": "a node dispatched on this premise rebuilds resolutions that already run, and its gate cannot fail on the unfixed code.",
+      "text": "\u00a72 asserts \"every one of them is skipped today\", but the dry-run branch already calls `crew_module.plan_dispatch(...)` (`reckon/crew_dispatch_commands.py:1917`) and `plan_dispatch` resolves the plan section, base ref, peer scope, budget, backend and roster member (`reckon/crew/dispatch_plan.py:557`, member block at :688-745), with `tests/test_dry_run_reaches_admission.py` (programme: \"the historical early stop is replaced\") and `tests/test_dry_run_predicts_the_launcher.py` as the plan's own evidence that it does",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-dry-run-must-resolve-what-the-real-call-resolves.html:154",
+      "id": "reasoning-2",
+      "reason": "the remaining gap is exactly one resolution (the project mount when `--repo` is omitted, the case the 2026-10-05 comment records), so \u00a72 should be narrowed to that gap rather than restated as \"nothing is resolved\".",
+      "text": "\u00a75 is declared `done` on the done-when \"a dry run performs every read-only resolution the real call performs\", yet one resolution is still skipped: `reckon/crew/dispatch_plan.py:617` guards the mount resolution with `if repo is not None`, keeping the caller's `None`, while the real call resolves the mount unconditionally at `reckon/crew/dispatch.py:1549`",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-dry-run-must-resolve-what-the-real-call-resolves.html:92",
+      "id": "reasoning-3",
+      "reason": "a node fenced to `dispatch.py` (a thin `plan_dispatch` forwarder at :3898) cannot change the behaviour it is asked to fix and will report a scope blocker instead.",
+      "text": "\u00a72 names `reckon/crew/dispatch.py` as its write path and \u00a73 does the same at :114, but neither guard lives there: the dry-run emission branch is `reckon/crew_dispatch_commands.py:1899-2140`, the mount-resolution guard is `reckon/crew/dispatch_plan.py:617",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-dry-run-must-resolve-what-the-real-call-resolves.html:107",
+      "id": "reasoning-4",
+      "reason": "a node reading \u00a73 alone can implement the behaviour the plan has already decided against, and the section text contradicts its own decisions block.",
+      "text": "\u00a73's body still asks \"Decide which is right \u2026 a member is resolvable from the project alone, or it requires a repository\", while the Decisions block already locked `member-repository-requirement: project-alone` at 2026-11-07T08:12:50, and the done-when's \"whichever behaviour is chosen\" still permits the opposite",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-dry-run-must-resolve-what-the-real-call-resolves.html:95",
+      "id": "done_when-1",
+      "reason": "an assertion that passes on the unfixed code measures nothing, and without a declared control the node cannot demonstrate its change is what produces the refusal.",
+      "text": "\u00a72's first two measures (\"a sprint id as `--plan` is refused\", \"an uncommitted plan file is refused\") already hold at HEAD because section and ref resolution already run, and neither \u00a72 nor \u00a73 declares a negative control, so nothing in the section shows the guard firing",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-dry-run-must-resolve-what-the-real-call-resolves.html:195",
+      "id": "anchors_resolve-1",
+      "reason": "the file exists and the covering tests exist in it, so the claim resolves one hop away; only the line number is off.",
+      "text": "the s5 reconcile comment cites `tests/test_dry_run_reaches_admission.py:137`, which is inside the `_arguments` helper; the tests that actually cover admission resolution are `test_dry_run_reports_the_released_follower_proceeding_with_the_rearm_warning` (:165) and `test_dry_run_refuses_a_never_registered_follower_as_watcher_required` (:190)",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "335e652a49f52d3e03d9cddf47d20e6e9c88a07e",
+  "plan_fingerprint": "cb09635506d5edc40def9dada6acfc4f2c22ae51f2f603a2bf610bb6f7c4807d",
+  "plan_slug": "a-dry-run-must-resolve-what-the-real-call-resolves",
+  "plan_version": 17,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T081345763071-plan-review-of-a-dry-run-must-resolve-what-the-real-call-resolves",
+  "reviewed_blob_sha": "dc7353e862fe3f214cf17798b164c1223b9897ba",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the \u00a75 reconcile comment's anchor `tests/test_dry_run_reaches_admission.py:137` points at a helper, not a test.",
+    "done_when": "a finding \u2014 \u00a72's measures already pass at HEAD and no negative control is declared for \u00a72 or \u00a73.",
+    "evidence_paths": "pass \u2014 no node names a scratch or node-local path; the cited evidence fragment (`docs/evidence/fragments/a-dry-run-must-resolve-what-the-real-call-resolves/merged-dry-run-override-gate.html`) is durable, though \u00a72/\u00a73 name no gate-log path at all.",
+    "naming": "pass \u2014 write paths and mechanism words are behaviour-named (`test_dry_run_resolves_the_real_call.py`, `test_member_resolution_is_single_valued.py`), with no plan labels or ticket numbers reaching code.",
+    "reasoning": "three findings \u2014 \u00a72's stated premise contradicts the code at HEAD, \u00a75 is declared done on a done-when the code does not yet meet, and both \u00a72 and \u00a73 name a write path that does not contain the guard.",
+    "single_goal": "pass \u2014 each of \u00a72, \u00a73 and \u00a74 names one deliverable, with \u00a72's several assertions all serving that one verdict.",
+    "wiring": "pass \u2014 `plan-informs: background-agent-fitness-and-dispatch-scope` resolves to `docs/plans/background-agent-fitness-and-dispatch-scope.html`, and the plan declares no depends-on/gates edge it does not need."
+  },
+  "section_digests": {
+    "_document": "2f146a4f623a76aac2594c60c0cc3c1d62140b9acf8a85309a4cd3625bddca08",
+    "s1": "f8e0d544e14ed7e1f06a5fc1a47bf206fe4002813926b04e5f55365295b56fec",
+    "s2": "1331f1989eb7b5e9f24f9b5626790373d91b1b0d940e0da9e075028e41fc0dee",
+    "s3": "f17c9114b4fdad02b9796f97a8f2691b0b8f6e969a7156062828096d45fb4578",
+    "s4": "468bdcc6f249ffaa6641ea0e6d705ef6fc631b1e39dc1535cb487d67bf577b0f",
+    "s5": "c3414dcbec9bcc6188f8a581bc36fe2d2faa001f3e852ce65706d734330e0742",
+    "s6": "31609d2f58d169716df47f9a7e8e95d72bf8ceb1e7218b96337d184e9bf7e612",
+    "s7": "9879bc53396e245bd9f6b50b495fa933bc5e12a34b0899ccc2840a0c363c9d5b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T08:33:59.424715+00:00",
+  "total": null
+}
