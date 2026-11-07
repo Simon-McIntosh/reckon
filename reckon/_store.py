@@ -1035,6 +1035,19 @@ def _refuse_forged_body_structure(
     raise OpError(message)
 
 
+def _refuse_deferred_work_term(body: str, *, subject: str) -> None:
+    """Refuse a comment or followup body that authors the deferred-work term.
+
+    A comment and a followup body are authored prose with no heading and no
+    structured state, so the term is the only fragment they can forge. Every
+    site that writes one calls this, which is the same predicate the section
+    bodies use, so the routes cannot disagree about what the rule covers.
+    """
+    term = _prose_deferred_work_term(body)
+    if term is not None:
+        raise OpError(f"{subject} must not contain {_deferred_work_term_reason(term)}")
+
+
 def _deferred_work_term_a_text_edit_adds(old_html: str, new_html: str) -> str | None:
     """The deferred-work term a text replacement authors, or ``None``.
 
@@ -2398,6 +2411,9 @@ def append_to_list(
     if field == "followups":
         if not isinstance(item, dict):
             raise OpError("followup must be an object")
+        _refuse_deferred_work_term(
+            str(item.get("body") or ""), subject="followups body"
+        )
         item = {
             **item,
             "prompt": _validate_new_followup_prompt(item.get("prompt", "")),
@@ -3050,6 +3066,11 @@ def _carry_section_moves(
     """
     payloads: list[dict[str, Any]] = []
     for request, target_project, target_slug, target_section, successor_ref in resolved:
+        # The reason is written into a comment on this write, so it is authored
+        # comment prose and the term is refused here, before anything lands.
+        _refuse_deferred_work_term(
+            str(request.get("reason") or ""), subject="a section move's reason"
+        )
         moved_section = str(request.get("section") or "")
         moved_record = _section_record(state, moved_section)
         if moved_record is None:
@@ -3776,6 +3797,7 @@ def _apply_append(working: dict, op: dict, is_index: bool, warnings: list[str]) 
             raise OpError("append followups requires an item object")
         required = {"id", "written_by", "written_at", "title", "body", "prompt"}
         fu = dict(item)
+        _refuse_deferred_work_term(str(fu.get("body") or ""), subject="followups body")
         if fu.get("tier") and not fu.get("capability"):
             raise OpError("new followups must use capability instead of legacy tier")
         if not fu.get("id"):
@@ -3817,6 +3839,7 @@ def _apply_append(working: dict, op: dict, is_index: bool, warnings: list[str]) 
             raise OpError("append comments requires an item object")
         section = op.get("section") or "_top"
         c = dict(item)
+        _refuse_deferred_work_term(str(c.get("body") or ""), subject="comments body")
         if not c.get("id"):
             c["id"] = _gen_id("c")
         comments = working.setdefault("comments", {})
