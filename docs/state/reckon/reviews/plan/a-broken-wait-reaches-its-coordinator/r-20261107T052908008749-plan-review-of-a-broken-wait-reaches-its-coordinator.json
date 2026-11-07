@@ -1,0 +1,44 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T05:38:35.949Z",
+  "dispatched_at": "2026-11-07T05:30:18Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-broken-wait-reaches-its-coordinator.html:41",
+      "id": "reasoning-1",
+      "reason": "the node should drop `_wait_probe_is_a_no_op` from the site list (or state it deliberately keeps reading the outer program), otherwise it either edits a site that needs no edit or ships a silent declaration drop that none of \u00a72's five cases and five controls would catch.",
+      "text": "\u00a72 lists `_wait_probe_is_a_no_op` (reckon/crew/recovery_wait.py:803, read at reckon/crew/recovery_liveness.py:965) among the sites that must \"read through\" the new reader, but that function returns None from `_manifest_wait` \u2014 the manifest reads as declaring no wait at all \u2014 and today `_wait_probe_is_a_no_op` is False while `_wait_probe_cannot_fail` is True for both `[\"bash\",\"-c\",\"true\"]` and `[\"python3\",\"-c\",\"true\"]` (measured at HEAD 2c79e34857), so a visible \"cannot fail\" refusal would become a silent drop, the failure the module's own comment at recovery_wait.py:213-218 calls the defect; the two tests inside `_wait_probe_cannot_fail` listed beside it likewise need no change because they already refuse through `_wait_probe_reference_kind`",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "2c79e34857935927933fb1677458c5c0b697e069",
+  "plan_fingerprint": "9dc93de31f2d1f23410a85099947d4342acbbd9156722243d6b1000302919b0f",
+  "plan_slug": "a-broken-wait-reaches-its-coordinator",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T052908008749-plan-review-of-a-broken-wait-reaches-its-coordinator",
+  "reviewed_blob_sha": "9986821f34b116e237b08860a344eb87d1415607",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every \u00a72 anchor resolves at HEAD: `_wait_probe_reference_kind` recovery_wait.py:683, the `_WAIT_PROBE_JOB_FLAGS` rule at :719, `_wait_probe_shell_words` :744, the no-op/printer tests :796-799, `_wait_probe_is_a_no_op` :814, `_WAIT_ACCEPTED_SHAPES` :215, `_wait_probe_prints_structured_output` recovery_liveness.py:844, `_SACCT_STATE_FORM` :841.",
+    "done_when": "pass \u2014 the five cases and five negative controls in `tests/test_a_probe_is_read_for_the_program_it_runs.py` are each falsifiable: at HEAD `_wait_probe_reference_kind` returns None for the \u00a71 probe and for `[\"squeue\",\"-h\",\"-j1306915\"]`, `_wait_probe_prints_structured_output` returns '' for the interpreter `sacct --json` probe while returning '--json' for the plain one, and the current refusal text names no interpreter.",
+    "evidence_paths": "pass \u2014 \u00a72 puts every gate log under the run directory, header-stamped with the revision and the literal command and closed by a bare `EXIT=` line, which is a durable path.",
+    "naming": "pass \u2014 the new test file is named for the behaviour, and no plan label, stage name or ticket number is proposed for a symbol, comment or path.",
+    "reasoning": "a finding \u2014 \u00a72's site list includes `_wait_probe_is_a_no_op`, which does not refuse a probe but discards its declaration, so \"reading through\" it silently drops the wait instead of reporting it.",
+    "single_goal": "pass \u2014 one deliverable (the reader that resolves a probe's program and words) with the refusal sentence and the structured-output site as its consequences, not separate goals.",
+    "wiring": "pass \u2014 s4 declares its dependence on s2 in `plan-section-depends-on` and says it reads the job-id reader \u00a72 adds, the followup orders \u00a72+\u00a73 before \u00a74, and the only external wait (`a-reexec-never-orphans-a-dispatch` \u00a74) has landed."
+  },
+  "section_digests": {
+    "_document": "d03f5f33ba4e3c3040d3555977705f88d6fe07b3409e73c3c07db45f1032f907",
+    "s1": "261438fe26041f770a527d758f1d74089637c1787c8d78d49957c57b9c122a42",
+    "s2": "e3eb0e1ffd19521d60b39198a16d14afe52ea3cd03fcd3eeb3f0f7149a3ff33c",
+    "s3": "6cef4e4166979301849917a3d7f964e2d68eaf336d3724c41fb5482ae86de817",
+    "s4": "27a400841a6080e6979c6a5587892e40135a49a212f665dff5ba055c5ea2c942"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T05:43:07.864319+00:00",
+  "total": null
+}
