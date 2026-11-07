@@ -131,6 +131,97 @@ def pointer_path(run_id: str) -> Path:
     return live_dir() / f"{run_id}.json"
 
 
+#: Dispatch-time detail no live reader consults. Every follower on the node
+#: re-reads the live pointers on its own pass, so detail carried inline costs
+#: each of them on each pass for a value none of them reads. It is written once
+#: at dispatch to a file in the run's own directory, and the pointer keeps only
+#: that file's path.
+DISPATCH_DETAIL_FIELDS = (
+    "picker_selection",
+    "admit_request",
+    "argv",
+    "competence",
+    "peer_scopes",
+    "unreconciled_override",
+)
+
+#: The file in a run's directory holding its dispatch-time detail.
+DISPATCH_DETAIL_NAME = "dispatch-detail.json"
+
+
+def dispatch_detail_path(run_id: str) -> Path:
+    """Path of one run's dispatch-time detail file."""
+    return run_dir(run_id) / DISPATCH_DETAIL_NAME
+
+
+def _read_dispatch_detail_file(run_id: str) -> dict[str, Any]:
+    """The stored dispatch-time detail for one run, or an empty mapping."""
+    path = dispatch_detail_path(run_id)
+    try:
+        data = json.loads(path.read_text())
+    except (OSError, ValueError):
+        return {}
+    return dict(data) if isinstance(data, Mapping) else {}
+
+
+def _split_dispatch_detail(path: Path, payload: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Move a live pointer's dispatch-time detail into the run's own file.
+
+    A write that carries none of the fields is left whole, so an ordinary
+    pointer mutation does not touch the detail file. A write that carries any
+    of them merges those values into the stored detail and replaces them on the
+    pointer with the detail file's path. Merging rather than replacing keeps a
+    later write that carries only one field from erasing the rest.
+    """
+    moved = {key: payload[key] for key in DISPATCH_DETAIL_FIELDS if key in payload}
+    if not moved:
+        return payload
+    run_id = path.stem
+    detail_path = dispatch_detail_path(run_id)
+    detail = _read_dispatch_detail_file(run_id)
+    detail.update(moved)
+    write_json_atomically(
+        detail_path,
+        detail,
+        indent=2,
+        sort_keys=True,
+        mode=0o600,
+        ensure_ascii=True,
+    )
+    slim = {
+        key: value
+        for key, value in payload.items()
+        if key not in DISPATCH_DETAIL_FIELDS
+    }
+    slim["dispatch_detail"] = str(detail_path)
+    return slim
+
+
+def read_dispatch_detail(record: Mapping[str, Any]) -> dict[str, Any]:
+    """One run's dispatch-time detail, read through its single accessor.
+
+    Detail moved out of the pointer at dispatch is read from the run's own
+    file. A pointer written before the move still carries the fields inline,
+    and one written after it names the file; the accessor answers for both,
+    with an inline value winning where a record holds both.
+    """
+    run_id = str(record.get("run_id") or "")
+    detail = _read_dispatch_detail_file(run_id) if run_id else {}
+    for name in DISPATCH_DETAIL_FIELDS:
+        if name in record:
+            detail[name] = record[name]
+    return detail
+
+
+def dispatch_field(record: Mapping[str, Any], field: str, default: Any = None) -> Any:
+    """One dispatch-time detail value for a run, whatever shape its pointer has."""
+    if field not in DISPATCH_DETAIL_FIELDS:
+        raise CrewError(f"{field!r} is not dispatch-time detail")
+    if field in record:
+        return record[field]
+    return read_dispatch_detail(record).get(field, default)
+
+
 def capture_run_session(record: dict[str, Any]) -> dict[str, Any] | None:
     """Bind a captured session to this run's harness without writing a roster.
 
@@ -345,6 +436,8 @@ def _stamp_pointer_launch_host(
 def _write_json(path: Path, payload: Mapping[str, Any]) -> None:
     """Write JSON atomically, so a reader never sees a half-written record."""
     payload = _stamp_pointer_launch_host(path, payload)
+    if path.parent == live_dir() and path.suffix == ".json":
+        payload = _split_dispatch_detail(path, payload)
     write_json_atomically(
         path,
         payload,

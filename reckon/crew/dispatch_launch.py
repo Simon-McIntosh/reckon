@@ -60,6 +60,7 @@ from reckon.crew.runs import (
     _utc_now,
     _write_json,
     crew_home,
+    dispatch_field,
     find_handover,
     placement_job_alive,
     pointer_path,
@@ -263,7 +264,7 @@ def _empty_stream_launch_failure(
         "recorded_at": _utc_now(),
         "kind": LAUNCH_FAILED_PHASE,
         "backend": str(record.get("backend") or ""),
-        "argv": list(record.get("argv") or ()),
+        "argv": list(dispatch_field(record, "argv") or ()),
         "stderr_tail": tail,
         "stream_path": str(stream),
     }

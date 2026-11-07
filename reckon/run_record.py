@@ -184,7 +184,7 @@ def promoted_picker_selection(run_id: str) -> dict[str, Any] | None:
         pointer = runs.read_pointer(run_id)
     except runs.CrewError:
         return None
-    selection = pointer.get("picker_selection")
+    selection = runs.dispatch_field(pointer, "picker_selection")
     return dict(selection) if isinstance(selection, Mapping) else None
 
 

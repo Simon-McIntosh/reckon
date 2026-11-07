@@ -1,0 +1,5 @@
+<section id="the-first-six-fields-leave-the-live-pointer-evidence">
+  <h2>Six dispatch fields moved to run detail, pending reader migration</h2>
+  <p id="the-first-six-fields-leave-the-live-pointer-reproduction">Before the repair, a test dispatch raised <code>KeyError: 'dispatch_detail'</code>; an AST check found four direct reads in source. The new node tests pass (5 passed), including old pointer compatibility and promotion of the picker and override fields.</p>
+  <p id="the-first-six-fields-leave-the-live-pointer-blocker">Six existing tests still read moved fields directly from live pointers in four test files outside this node's write scope. They fail with <code>KeyError</code> under the new pointer shape. Those readers need scope ownership before this change can land. The pointer size remains unmeasured for this partial result.</p>
+</section>

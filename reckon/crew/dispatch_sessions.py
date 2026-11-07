@@ -53,6 +53,7 @@ from reckon.crew.runs import (
     _process_start_time,
     _utc_now,
     capture_run_session,
+    dispatch_field,
     process_alive,
     read_pointer,
     record_process_alive,
@@ -930,7 +931,7 @@ def _backend_settings(
     """
     backends = (config or {}).get("backends") or {}
     configured = backends.get(record.get("backend"))
-    argv = record.get("argv")
+    argv = dispatch_field(record, "argv")
     # The harness is read from the record's own explicit field rather than from
     # argv[0]. A placed launch prefixes the scheduler onto the argv, so the
     # first word of a placed run's argv names the scheduler, and a reader

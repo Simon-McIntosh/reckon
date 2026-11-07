@@ -369,7 +369,7 @@ def _launch_queued(
         config_for(pointer) if config_for is not None else _resolve_lane_config(pointer)
     )
     destination = str(backend_override).strip()
-    selection = pointer.get("picker_selection")
+    selection = runs.dispatch_field(pointer, "picker_selection")
     replay_pick = (
         isinstance(selection, Mapping)
         and selection.get("action") == "route"
@@ -658,7 +658,7 @@ def _local_fallback(
     """
     from reckon.crew.dispatch import REVIEW_FOLLOWS_RUN_ORIGIN
 
-    selection = pointer.get("picker_selection")
+    selection = runs.dispatch_field(pointer, "picker_selection")
     named = pointer.get("named_route")
     origin = str(named.get("set_by") or "") if isinstance(named, Mapping) else ""
     if named and origin != REVIEW_FOLLOWS_RUN_ORIGIN:
@@ -1588,7 +1588,7 @@ def _requeue_admitted_failures(
     for pointer in live:
         if str(pointer.get("phase") or "") != LAUNCH_FAILED_PHASE:
             continue
-        request = pointer.get("admit_request")
+        request = runs.dispatch_field(pointer, "admit_request")
         if not isinstance(request, Mapping):
             continue
         failures = list(pointer.get("launch_failures") or ())

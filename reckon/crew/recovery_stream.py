@@ -22,8 +22,8 @@ from reckon.crew.reports import (
 from reckon.crew.routing import _signal_process_group, resolved_grace_multiple
 from reckon.crew.runs import (
     _utc_now,
+    dispatch_field,
 )
-
 
 
 SELF_LIFTING_RECOVERY_CLASSIFICATIONS = frozenset({"waiting", "paused"})
@@ -531,7 +531,7 @@ def _observed_stream(
     log = Path(str(record.get("log_path") or ""))
     if not log.is_file():
         return None
-    command = _harness_command(record, record.get("argv"))
+    command = _harness_command(record, dispatch_field(record, "argv"))
     if not command:
         return None
     from reckon import _backends
@@ -543,9 +543,8 @@ def _observed_stream(
         # An offset only means the same thing in the file it was reached in: a
         # stream replaced at this path since means nothing here, so a changed
         # inode re-reads from the first record while a grown one resumes.
-        if (
-            isinstance(state, Mapping)
-            and str(stored.get("inode") or "") == _file_inode(log)
+        if isinstance(state, Mapping) and str(stored.get("inode") or "") == _file_inode(
+            log
         ):
             resume = {
                 "offset": int(stored.get("offset") or 0),
