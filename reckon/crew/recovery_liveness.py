@@ -853,16 +853,23 @@ def _wait_probe_prints_structured_output(probe: Sequence[str]) -> str:
     ``sacct`` program is read here: the flags are shared with other tools whose
     output a caller may legitimately match, and a scheduler query is what a
     wait declaration carries far more often than anything else.
+
+    The program is taken from the words the probe actually runs, so the same
+    query reached through a shell or an interpreter's code string is read as
+    the plain vector is.
     """
     if not probe:
         return ""
-    program = str(probe[0]).rsplit("/", 1)[-1]
-    if program != "sacct":
+    command, words = _wait_probe_program_words(probe)
+    tokens = [command, *words]
+    for index, token in enumerate(tokens):
+        if Path(token).name != "sacct":
+            continue
+        for item in tokens[index + 1 :]:
+            flag = str(item).split("=", 1)[0]
+            if flag in _SACCT_STRUCTURED_OUTPUT_FLAGS:
+                return flag
         return ""
-    for item in probe[1:]:
-        flag = str(item).split("=", 1)[0]
-        if flag in _SACCT_STRUCTURED_OUTPUT_FLAGS:
-            return flag
     return ""
 
 
@@ -1001,12 +1008,23 @@ def _manifest_wait(
         # a wait resting on it reads the same however the awaited work is
         # doing. The refusal names the probe and the references the reader
         # accepts, because the repair is a one-line edit to the declaration.
-        missing.append(
-            f"wait_probe {[str(item) for item in declared_probe]!r} cannot "
-            "fail: it names nothing outside the worker — no job id, pid, port "
-            "or path — so its result cannot differ between sweeps and it tests "
-            f"nothing; {_WAIT_ACCEPTED_SHAPES}"
-        )
+        interpreter = _wait_probe_interpreter_code(declared_probe)
+        if interpreter:
+            program, _ = interpreter
+            missing.append(
+                f"wait_probe {[str(item) for item in declared_probe]!r} cannot "
+                f"fail: the probe runs the interpreter {program} whose code "
+                "string names no reference the reader recognises — no job id, "
+                f"pid, port or path; {_WAIT_ACCEPTED_SHAPES}; a scheduler query "
+                f"prints one state with {_SACCT_STATE_FORM} <id>"
+            )
+        else:
+            missing.append(
+                f"wait_probe {[str(item) for item in declared_probe]!r} cannot "
+                "fail: it names nothing outside the worker — no job id, pid, port "
+                "or path — so its result cannot differ between sweeps and it tests "
+                f"nothing; {_WAIT_ACCEPTED_SHAPES}"
+            )
     if files and declared_terminal:
         missing.append(
             "wait_terminal alongside wait_file, where the condition ends when "
@@ -1625,7 +1643,9 @@ from .recovery_wait import (  # noqa: E402
     _wait_file_shape_refusal,
     _wait_probe,
     _wait_probe_cannot_fail,
+    _wait_probe_interpreter_code,
     _wait_probe_is_a_no_op,
+    _wait_probe_program_words,
     _wait_probe_shape_refusal,
     _wait_terminal_names_a_live_state,
     _wait_terminal_names_no_probe_state,
