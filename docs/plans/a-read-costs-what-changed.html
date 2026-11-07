@@ -21,11 +21,11 @@
   <meta name="plan-informs" content="work-is-never-stuck-behind-the-admission-loop">
   <meta name="plan-blocks" content="work-is-never-stuck-behind-the-admission-loop">
   <meta name="plan-section-depends-on" content="{&quot;s7&quot;:[&quot;a-read-costs-what-changed#s2&quot;,&quot;a-read-costs-what-changed#s3&quot;,&quot;a-read-costs-what-changed#s5&quot;,&quot;a-read-costs-what-changed#s6&quot;],&quot;s4&quot;:[&quot;a-read-costs-what-changed#s2&quot;],&quot;s3&quot;:[&quot;a-read-costs-what-changed#s2&quot;],&quot;s6&quot;:[&quot;a-read-costs-what-changed#s2&quot;,&quot;a-read-costs-what-changed#s3&quot;,&quot;work-is-never-stuck-behind-the-admission-loop#s19&quot;],&quot;s5&quot;:[&quot;a-read-costs-what-changed#s3&quot;],&quot;s9&quot;:[&quot;a-read-costs-what-changed#s5&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;descoped&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;deferred&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;descoped&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;deferred&quot;}">
   <title>A Read Costs What Changed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="37">
+<meta name="plan-version" content="38">
 <meta name="plan-modified" content="2026-11-07">
 </head>
 <body>
@@ -152,6 +152,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261107T114318826717-review-of-an-admission-pass-a-landing-pass-and-a-crew-dispatch-each-bacfd8256704" data-who="reckon-build" data-when="2026-11-07T12:01:25.999Z">
     <div class="r-comment-body"><p>none — this node stores a review record and has no plan section to land.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261107T092649116030-an-admission-pass-a-landing-pass-and-a-crew-dispatch-each" data-who="reckon-build" data-when="2026-11-07T12:48:18Z">
+    <div class="r-comment-body"><p>An admission pass now reads plan state through the memoised read_state_and_text_file pair seeded from the persisted discovery parse, cutting _plan_html.read_state parses from 110 at the base to at most 40 on a 40-plan store with 30 requests naming 70 refs, and the admission, landing and dispatch passes each enter the discovery and resource scopes once with the landing pass closing them before it merges.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261105T061644194563-review-of-a-persisted-answer-still-reuses-rows-10a19d771e5f" data-who="reckon-build" data-when="2026-11-05T06:35:24.654Z">
     <div class="r-comment-body"><p>Reviewed r-20261103T103857095482-a-persisted-answer-still-reuses-rows at base 86b3c34d and head 10a19d771e: parsed record scoring goal_fidelity 19, evidence 14, scope_discipline 20, durability 18, fit 18, reuse 5 (total 94), with four non-blocking findings — a second stat-keyed digest cache beside file_memo's, the head importer log naming the pre-fix revision, the digest/identity pair taken in two separate stats, and no ruff receipt in the manifest — and added_failure_count 0 because the head importer failure set is a strict subset of the base arm's.</p></div>
