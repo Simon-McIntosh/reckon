@@ -1,0 +1,44 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T06:03:06.128Z",
+  "dispatched_at": "2026-11-07T05:57:44Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/an-evidence-record-counts-only-what-it-read.html:44",
+      "id": "reasoning-1",
+      "reason": "it adds `reckon/crew/promotion_scope.py` (and the outcome-write sites) to the declared write paths, adds a case and a control for a comment written through the promotion writer, and forces the plan to settle whether that writer refuses the comment or the landing, so leaving it out sends the node down a path that measures the wrong callers.",
+      "text": "s3 asserts the store refusal is added \"at every site that writes a comment or followup body\" and lists four; the crew promotion writer (`reckon/crew/promotion_scope.py:1458-1471`) builds `{\"id\",\"who\",\"when\",\"body\"}` and calls `_store.write_plan(..., {**state, \"comments\": comments}, ...)` directly, bypassing `apply_ops` and therefore the `comments` branch of `_apply_append` \u2014 and that is the producer of the very comments \u00a71 cites: the phrases \"Three follow-ons carry to \u00a74\", \"Two follow-ons go to \u00a76\" and \"its test-pin follow-ons go to \u00a714\" sit in `<div class=\"r-comment-body\">` on `docs/plans/shared-coil-supply-model.html` (ids `c-close-s2`, `c-run-\u2026`) written with `who=\"reckon-build\"` by that path, so a node implementing s3 as written closes four sites while the one that wrote the evidence stays open, and the plan would not prevent its own motivating case recurring \u2014 additionally the `outcome` prose written by the `resolve` op (`_store.py:3849-3851`) and by `close` onto every open followup (`_store.py:4155-4160`) is authored followup prose outside the four sites and outside the audit's only guarded type",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "c429c2a184c6950357cff0c88f79e3e1e2e6cae0",
+  "plan_fingerprint": "c6a7401ce6745de0f77064d29fcb1aa9936c9ecce993ac08802c77f7aba70c4f",
+  "plan_slug": "an-evidence-record-counts-only-what-it-read",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T055638221413-plan-review-of-an-evidence-record-counts-only-what-it-read",
+  "reviewed_blob_sha": "39037f4ff0124ee9b6d19128ff011599195d0385",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_DEFERRED_WORK_TERM` is at `reckon/doccheck.py:419`, `_prose_deferred_work_term` at `reckon/_store.py:993`, the `_apply_append` comments branch at 3798\u20133807, the followups append op at 3757\u20133777, `append_to_list` at 2366\u20132389, the `followups.<id>.<field>` branch at 3482\u20133486, and the followup-add reaching `append_to_list` at `reckon/mcp_edit_plan.py:230\u2013263`.",
+    "done_when": "pass \u2014 the five cases are measurable against real functions, and each of the five negative controls is a mutation that makes an asserted case fail (one-spelling regex, unchecked op sites, unchecked `append_to_list`, bare `\u00a7N`, dropped `<code>` exemption).",
+    "evidence_paths": "pass \u2014 every log is required under the run directory, starting with its revision and literal command and ending in `EXIT=`.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or version tags reach the symbols, and the refusal reads as a mechanism.",
+    "reasoning": "a finding \u2014 the deliverable claims the refusal is added \"at every site that writes a comment or followup body\", but the writer that produced \u00a71's own cited comments appends them through `_store.write_plan` and never passes the ops layer s3 guards.",
+    "single_goal": "pass \u2014 one goal: the deferred-work rule reads every spelling at every comment and followup body write site.",
+    "wiring": "pass \u2014 s3 declares its wait on s2 for the shared `reckon/_store.py`, the plan's `plan-section-depends-on` carries `s3: [s2]`, and the followup orders \u00a72, \u00a73, \u00a74 in that sequence."
+  },
+  "section_digests": {
+    "_document": "6d35efce52466005f8ee56997c8dc7bcca998d7c41fcd252d254bc7264596281",
+    "s1": "7c52117565966edec5de56bc0448d4a141edbcb73ac18ede5f2cb0c34f424f0a",
+    "s2": "e0c21336531cccf486121dbb25184c349eda1428113664a6ba29a293eb13d226",
+    "s3": "b3cba28f64bab663d35230bc5b6a5ce0a834bdd7881345fc40009c076a054af5",
+    "s4": "60ff41ad158b223b29c6b6db68a17e54bfa69e9a0398444706359188a5884df1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T06:10:39.171306+00:00",
+  "total": null
+}
