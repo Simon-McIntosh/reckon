@@ -484,31 +484,15 @@ def _wait_value_still_seconds(
     return max(0.0, now_seconds - reference)
 
 
-def _wait_probe_job_id(probe: Sequence[Any]) -> str | None:
-    """The scheduler job a probe vector names, or None when it names none.
-
-    A wait on ``squeue`` legitimately has no process while its job runs, so the
-    job the probe asks about is what says the work is still being done. Only a
-    probe whose own command is a scheduler query names one.
-    """
-    parts = [str(item) for item in probe]
-    if not parts or Path(parts[0]).name != "squeue":
-        return None
-    for index, token in enumerate(parts[1:], start=1):
-        if token in {"-j", "--job", "--jobs"} and index + 1 < len(parts):
-            return parts[index + 1]
-        if token.startswith("--job="):
-            return token.split("=", 1)[1] or None
-        if token.startswith("-j") and len(token) > 2:
-            return token[2:]
-    for token in parts[1:]:
-        if token.isdigit():
-            return token
-    return None
-
-
 def _scheduler_job_alive(probe: Sequence[Any]) -> bool | None:
     """Whether the scheduler still lists the job a wait's probe names.
+
+    The job id comes from the shared probe reader, so every shape a wait is
+    written in names its job: an ``squeue`` vector, a ``sacct`` vector, and an
+    interpreter's code string reaching either. Reading the id from the probe's
+    own head instead would ask the scheduler nothing about the two shapes whose
+    command is not ``squeue``, and their silence is indistinguishable from a
+    job that has ended.
 
     None means the wait names no scheduler job, or the scheduler could not be
     asked: an unreadable answer is not evidence the job is gone, so it never
@@ -548,8 +532,10 @@ def _producer_gone_verdict(
     run launched elsewhere is not death and keeps the run waiting. The probe's
     value has not changed for ``WAIT_PRODUCER_GONE_SECONDS``, so nothing is
     still producing the thing the wait watches. And the wait names no scheduler
-    job the queue still lists, because a run with no process is normal while
-    the job it started is running.
+    job the scheduler still lists, because a run with no process is normal
+    while the job it started is running — and a long job answers the same state
+    for hours, so the value's stillness is exactly what a healthy wait looks
+    like.
 
     None means any of those is unmet, unproven, or unreadable: a scheduler that
     could not be asked and a stillness the history does not establish both keep
@@ -2601,6 +2587,7 @@ from .recovery_wait import (  # noqa: E402
     _run_directory,
     _run_wait_condition_probe,
     _wait_condition_observation,
+    _wait_probe_job_id,
 )
 from .recovery_watch import (  # noqa: E402
     FLEET_SETTLED_STATES,
