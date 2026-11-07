@@ -1,0 +1,93 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T11:01:00.274Z",
+  "dispatched_at": "2026-11-07T10:55:48Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queued-request-is-checked-when-queued.html:55",
+      "id": "reasoning-1",
+      "reason": "an implementer following the text adds a dead `request` arm while the real pre-worker phases (`held`, `awaiting-upstream`, `blocked-upstream`) are unlisted, so the exclusion set the whole mechanism turns on is wrong.",
+      "text": "\u00a75 says the launch-side view keeps a same-run pointer \"unless its phase is still pre-worker (`queued` or `request`)\", but no pointer phase `request` exists: the phase vocabulary is `queued`/`held`/`awaiting-upstream`/`blocked-upstream` (WAITING_REQUEST_PHASES, reckon/crew/node.py:1569) and `starting`/`launching`/`launcher`/`dispatching` (_UNLAUNCHED_CLAIM_PHASES, reckon/crew/dispatch_claims.py:120); \"request\" is a wait-ref kind (`wait_ref_kind`, reckon/crew/queue_admission.py:2764), not a phase, and a literal reading writes a branch that can never fire",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queued-request-is-checked-when-queued.html:55",
+      "id": "done_when-1",
+      "reason": "the unexercised arm is the one that prevents the repair from turning into a permanent launch refusal, and no stated case would fail if it were wrong.",
+      "text": "the done-when has one case with a `working` pointer (must refuse) and one with a `queued` pointer (must proceed), but no case where a same-run pointer names the tree with a dead worker, which is the arm that keeps a legitimate retry of a failed launch working; an implementation that treats every same-run pointer as a claim passes both stated cases and blocks every relaunch of a node",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queued-request-is-checked-when-queued.html:10",
+      "id": "reasoning-2",
+      "reason": "the summary is the plan's headline statement of what it fixes and now asserts, as its second promise, a cause the plan itself disproves.",
+      "text": "the plan summary still reads \"a drop never trashes a live worktree\", the premise \u00a75 explicitly corrects (the drop was not involved; the successor's own second launch moved its tree), and it names none of \u00a75's promise",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queued-request-is-checked-when-queued.html:37",
+      "id": "reasoning-3",
+      "reason": "the plan now carries two incompatible accounts of the same incident, and a reader entering at \u00a71 would investigate a restore and a predecessor drop that do not exist.",
+      "text": "\u00a71's second bullet still states that \"a dropped request's cleanup trashed a live successor's worktree\" and that \"at 23:50Z a different inode was restored at the same path\", both of which \u00a75 and the cited investigation refute (no restore; 23:50 was local time for 22:50:26Z; the mover was the successor's own second launch)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queued-request-is-checked-when-queued.html:13",
+      "id": "reasoning-4",
+      "reason": "the plan figure weights the fleet progress rollup and the roadmap's remaining-hours estimate, and adding a one-hour section without moving it silently drops an hour of estimated work.",
+      "text": "`plan-effort-hours` remains 3.0 while the section hours now sum to 4.0 (0.25 + 0.75 + 1.0 + 1.0 + the new \u00a75 at 1.0), so the plan understates its own cost",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queued-request-is-checked-when-queued.html:47",
+      "id": "anchors_resolve-1",
+      "reason": "\u00a73 is declared `done` on a done-when whose named artifact resolves nowhere, so the plan's own evidence trail cannot be followed from the section that owns it.",
+      "text": "\u00a73's done-when names `docs/evidence/fragments/a-queued-request-is-checked-when-queued/what-trashed-the-live-worktree.html`, which does not exist (`docs/evidence/fragments/a-queued-request-is-checked-when-queued/` is absent from the tree); the investigation note was actually written to `~/.config/reckon/crew/reports/reckon/what-trashed-the-live-worktree.md`, which is what \u00a75 cites",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queued-request-is-checked-when-queued.html:55",
+      "id": "reasoning-5",
+      "reason": "the incident's caller is settled by the independent fact that gc empties a path and never creates one, so the overstated discriminator does not move the repair.",
+      "text": "\u00a75 says the trash directory carried the tree name \"which only that path produces\", but the investigation's own caller table shows the three gc call sites pass no `run_id` either, so their trash names would also carry the tree name",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "dba25bb5dbcb3670f0dd5ed93c46c3d631800b6f",
+  "plan_fingerprint": "d808781e65b76a17778573b95841c5dd08e49298946654918b87bad1f8427d53",
+  "plan_slug": "a-queued-request-is-checked-when-queued",
+  "plan_version": 10,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T105458171772-plan-review-of-a-queued-request-is-checked-when-queued",
+  "reviewed_blob_sha": "fdb20b3e6cf8ab303c264ebf01658da03d669ead",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 every anchor in \u00a75 resolves (`_live_pointer_worktrees` routing.py:1078 and the LAUNCH_RUN_ID skip at 1092, the claims read at 2175, the guard at 2278, `local_liveness` recovery_liveness.py:1204), but \u00a73's done-when names an evidence note that does not exist.",
+    "done_when": "a finding \u2014 \u00a75's done-when exercises the pre-worker arm and the live arm of the new predicate but never the \"worker provably gone\" arm that lets a legitimate retry proceed.",
+    "evidence_paths": "pass \u2014 \u00a75 writes no evidence artifact itself; its gate is the named test and ruff checks, whose logs the node manifest carries on the run directory. \u00a73's own declared artifact path is raised under anchors_resolve.",
+    "naming": "pass \u2014 the new test file and the predicate are named by mechanism, and no plan label, stage or ticket number reaches them.",
+    "reasoning": "a finding \u2014 the root cause matches the cited investigation, and the mechanism runs on the named production path (`_create_worktree` \u2192 `_launch_tree_verdict` \u2192 `_remove_worktree`), but the mechanism names a pointer phase that does not exist and the plan's own \u00a71 and summary still carry the account \u00a75 disproves.",
+    "single_goal": "pass \u2014 \u00a75 carries one deliverable: one launch-side claim view plus its two call sites, closed by one test and one negative control.",
+    "wiring": "pass \u2014 \u00a75 is a new terminal section with no downstream node; its only upstream (\u00a73's investigation) is `done` and its output note exists, so no undeclared wait is outstanding."
+  },
+  "section_digests": {
+    "_document": "0f797f44f4e7f397457cda51a0760ae42e6833dc0d3cb5618b3a71cc9730c1b9",
+    "s1": "b7af832c4e07048d297870ea5b081003fe0879e7a28b1f993a9bacf98ec2bc83",
+    "s2": "f0bb78f495e184d08f264ee0c8670552bf2417dc09e1fccec557d64974b999ef",
+    "s3": "ef3a67038c242a48f942b4d5a6f60587332d982f3e17d40695a54adb9b0b31ec",
+    "s4": "214c26ee307b26a9189e695057c758aa5f11833093fa7379f62bdba78c540705",
+    "s5": "dc4d0347991eec833233cbd10c5cbde67e0ca411524f3b116a7800910a87aa29"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T11:04:59.384083+00:00",
+  "total": null
+}
