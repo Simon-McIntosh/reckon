@@ -24,7 +24,7 @@
   <title>A Gate Halts Only On Substance | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 <meta name="plan-modified" content="2026-11-07">
 </head>
 <body>
@@ -80,6 +80,9 @@
 </section>
 
 <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261107T173401077731-brief-raises-budget-fence" data-who="reckon-build" data-when="2026-11-07T19:35:57.388Z">
+    <div class="r-comment-body"><p>an over-fence time budget now passes the bounded check when `crew dispatch --over-fence REASON` records why, the reason stored on the node as over_fence_reason and carried by TaskNode.as_dict() onto the run record and ledger row; without it the refusal names --over-fence, and a budget inside the fence is unchanged — gate 7 passed, head arm 456 passed, base arm 449 passed, negative control 2 failed 1 passed</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261107T173532496808-resume-changes-run-budget" data-who="reckon-build" data-when="2026-11-07T18:48:07.600Z">
     <div class="r-comment-body"><p>crew resume takes --time-budget (recorded on the run's node, each change kept in budget_changes naming the figure it replaced and the reason where one was given) and --over-fence REASON — a 25m run resumed at 45m composes its resumed fence as deadline 2031-01-01T01:45:00Z from the pinned launch and stores 45m, a 90m resume above the 60m fence is refused naming --over-fence without --over-fence and accepted with a reason the run then keeps; the importer gate ran 377 tests at head and 374 at base, 0 failures either arm.</p></div>
 </div>
@@ -89,8 +92,8 @@
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261107T191342033961-review-of-picker-budget-floor-from-brief-1d6855ed0ee7" data-who="reckon-build" data-when="2026-11-07T19:31:46.536Z">
     <div class="r-comment-body"><p>reviewed picker-budget-floor-from-brief at base 5a444bc33b → head 1d6855ed0e; the landed diff does what the goal states (lane_context.py:190 node_budget floors the picker size at the resolved fence and both size readers call it), the gate asserts it (2 failed/180 passed at base vs 2 failed/185 passed at head, same two pre-existing ids, added_failure_count 0), the negative control reddens exactly the two fence cases; three non-blocking findings recorded (weak same-value assertion at test:76, partition-name duplication at lane_context.py:76/175, broad `partition|gpu` prose match at :174), no blocking findings.</p></div>
 </div>
-<div class="r-comment" data-section="s3" data-id="c-run-r-20261107T173401077731-brief-raises-budget-fence" data-who="reckon-build" data-when="2026-11-07T19:35:57.388Z">
-    <div class="r-comment-body"><p>an over-fence time budget now passes the bounded check when `crew dispatch --over-fence REASON` records why, the reason stored on the node as over_fence_reason and carried by TaskNode.as_dict() onto the run record and ledger row; without it the refusal names --over-fence, and a budget inside the fence is unchanged — gate 7 passed, head arm 456 passed, base arm 449 passed, negative control 2 failed 1 passed</p></div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261107T173836158667-picker-budget-floor-from-brief" data-who="reckon-build" data-when="2026-11-07T18:53:03.455Z">
+    <div class="r-comment-body"><p>picker §5 — the picker now sizes a node by `node_budget`: a node whose goal, done-when or brief names a SLURM scheduler verb, GPU model/host, partition or cluster job takes the larger of its declared budget and the resolved fence (a brief naming an H200 job with no budget receives 6h in the fixture, bucket over_60m, against up_to_30m at base), while a node naming no compute keeps its declared budget (8m, up_to_30m); 5 new tests, base arm 2 failed/180 passed, head arm 2 failed/185 passed (same two pre-existing ids), negative control 2 failed/3 passed with the floor removed.</p></div>
 </div>
 </section>
 </main>
