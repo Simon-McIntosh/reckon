@@ -12,9 +12,9 @@ both ignore SIGTERM, plus a bystander in its own session that carries no
 ownership mark. The stop must end the parent and the child, name their pids, and
 leave the bystander alone, after which the discard must succeed.
 
-The negative control sets ``RECKON_STOP_ESCALATION=off``, which drops the
-escalation. The parent then survives the graceful signal, and the discard is
-refused exactly as it was before the fix.
+The negative control replaces the escalation with a no-op, which is the stop as
+it stood before the fix. The parent then survives the graceful signal, and the
+discard is refused exactly as it was before.
 """
 
 from __future__ import annotations
@@ -170,11 +170,13 @@ def test_a_stop_ends_the_whole_tree_and_the_discard_then_succeeds(
         _cleanup(fixture)
 
 
-def test_the_escalation_off_leaves_the_wrapper_alive_and_the_discard_refuses(
+def test_without_the_escalation_the_wrapper_survives_and_the_discard_refuses(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The declared negative control: without the escalation the defect returns."""
-    monkeypatch.setenv(dispatch_sessions.STOP_ESCALATION_ENV, "off")
+    monkeypatch.setattr(
+        dispatch_sessions, "_escalate_run_stop", lambda *args, **kwargs: []
+    )
     fixture = _fixture(tmp_path, monkeypatch)
     try:
         record = dispatch_sessions.terminate(RUN_ID)

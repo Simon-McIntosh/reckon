@@ -1,7 +1,6 @@
 # ruff: noqa: I001, UP035
 from __future__ import annotations
 import json
-import os
 import signal
 import subprocess
 from pathlib import (
@@ -2231,21 +2230,6 @@ def _await_run_processes_gone(
         _time.sleep(_STOP_SETTLE_POLL_SECONDS)
 
 
-# The stop's escalation to SIGKILL, disable-able only so the guard that answers
-# an ignored SIGTERM can be shown to fire: with the escalator off, a run whose
-# processes ignore the graceful signal keeps a live recorded pid and a discard
-# then refuses. Nothing in production sets this.
-STOP_ESCALATION_ENV = "RECKON_STOP_ESCALATION"
-STOP_ESCALATION_DISABLED = "off"
-
-
-def _stop_escalation_enabled() -> bool:
-    """Whether a stop escalates to SIGKILL once the graceful settle expires."""
-    return os.environ.get(STOP_ESCALATION_ENV, "").strip().lower() != (
-        STOP_ESCALATION_DISABLED
-    )
-
-
 def _escalate_run_stop(
     recorded_pid: Any,
     expected_start_time: Any,
@@ -2263,8 +2247,6 @@ def _escalate_run_stop(
     path only while it still names its own process, which is the guard the
     graceful signal already uses.
     """
-    if not _stop_escalation_enabled():
-        return []
     if recorded_pid and process_alive(int(recorded_pid)) is True:
         return _signal_process_group(
             int(recorded_pid),
