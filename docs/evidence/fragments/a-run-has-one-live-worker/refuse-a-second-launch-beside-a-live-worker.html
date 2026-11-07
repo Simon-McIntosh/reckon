@@ -1,0 +1,21 @@
+<section class="evidence-fragment" id="refuse-a-second-launch-beside-a-live-worker">
+  <h3 id="refuse-a-second-launch-beside-a-live-worker-heading">A worker spawn refuses a run that already has a live worker</h3>
+  <p id="refuse-a-second-launch-beside-a-live-worker-what">The supervisor's spawn seam,
+    <code>_supervisor_spawn_worker</code> in <code>reckon/crew/dispatch_launch.py</code>, now reads the run's own records
+    through <code>record_process_alive</code> before it starts a worker and before it writes this attempt's worker
+    record. The read answers for the pid an earlier attempt recorded, and when every recorded pid is dead it walks for a
+    live process of this user whose command line carries the run's session id — the reach a worker reparented away from
+    its supervisor still answers on. A live worker refuses the launch and the refusal names its pid
+    (<code>still has a live worker (pid N)</code>); a run with nothing live spawns as before.</p>
+  <p id="refuse-a-second-launch-beside-a-live-worker-measure">The gate is
+    <code>tests/test_a_queued_run_launches_once.py</code>. At the head revision it reports <strong>5 passed, EXIT=0</strong>.
+    At the base revision with the test copied in it reports <strong>2 failed, 1 passed, 2 skipped, EXIT=1</strong>, both
+    failures reading <code>DID NOT RAISE CrewError</code>: the second launch proceeded beside the live worker, which is
+    the defect reproduced. The negative control (the liveness refusal removed) reports <strong>2 failed, 3 passed,
+    EXIT=1</strong>, failing the same two case ids the head arm passes.</p>
+  <ul id="refuse-a-second-launch-beside-a-live-worker-evidence">
+    <li>head arm: <code>logs/head_arm.log</code> (revision 66fbd8ade1, EXIT=0)</li>
+    <li>base arm: <code>logs/base_arm.log</code> (revision 296e8e7b3d, EXIT=1, defect reproduced)</li>
+    <li>negative control: <code>logs/negative_control.log</code> (EXIT=1)</li>
+  </ul>
+</section>
