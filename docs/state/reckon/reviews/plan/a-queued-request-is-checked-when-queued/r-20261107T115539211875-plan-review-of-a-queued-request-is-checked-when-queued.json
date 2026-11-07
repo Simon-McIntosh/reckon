@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T12:16:43.179Z",
+  "dispatched_at": "2026-11-07T12:07:04Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queued-request-is-checked-when-queued/r-20261107T115539211875-plan-review-of-a-queued-request-is-checked-when-queued/plan.html:59",
+      "id": "wiring-1",
+      "reason": "prose ordering is not what the queue reads, so the very collision the sentence warns about is left possible.",
+      "text": "\u00a76 says it \"runs after \u00a72, which also writes dispatch_batch.py\", but the plan declares no `plan-section-depends-on` (the house convention used by e.g. docs/plans/a-finished-plan-closes.html) and every section's `data-links` is empty, so the dispatch queue sees no ordering and two nodes can hold a write scope over `reckon/crew/dispatch_batch.py` at once",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queued-request-is-checked-when-queued/r-20261107T115539211875-plan-review-of-a-queued-request-is-checked-when-queued/plan.html:59",
+      "id": "done_when-1",
+      "reason": "the node's measure fails on the correct implementation, so a worker either weakens or drops the only check that the batch path matches the single-dispatch contract, and the plan should name the run id both sides use (or compare against the stored request's own run directory).",
+      "text": "\u00a76's done-when requires the stored manifest path to equal the one \"a single queued dispatch of the same node names\", but that path is `runs_dir()/<run_id>/manifest.md` (dispatch_plan.py:823), so a batch entry and a single dispatch of the same node carry different run ids and can never name equal paths",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queued-request-is-checked-when-queued/r-20261107T115539211875-plan-review-of-a-queued-request-is-checked-when-queued/plan.html:55",
+      "id": "reasoning-1",
+      "reason": "the operative condition (provably gone by `local_liveness`, unprovable counted as a claim) survives the duplication and the surrounding done-when cases pin the behaviour, so an implementer reaches the same mechanism; it is a copy defect that should be fixed in place.",
+      "text": "\u00a75's deliverable reads \"starting and the other unlaunched claim phases count as a claim unless the worker is provably gone or its worker is provably gone by `local_liveness`\", stating the escape twice with and without the predicate that proves it",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "063ef27aec0b751526f03f6e4a6c9705cec90acc",
+  "plan_fingerprint": "31d1216f28ecc834ec5e7e554b5a9753b6cc933f2d33ce345ea38e3e7133d4cc",
+  "plan_slug": "a-queued-request-is-checked-when-queued",
+  "plan_version": 17,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T115539211875-plan-review-of-a-queued-request-is-checked-when-queued",
+  "reviewed_blob_sha": "5e5a4e449e90d50b1fcf621255459120d4ba8794",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `WAITING_REQUEST_PHASES` (node.py:1569), `_UNLAUNCHED_CLAIM_PHASES` (dispatch_claims.py:120), `_live_pointer_worktrees` and its same-run skip (routing.py:1078/1092), `_launch_tree_verdict` (2173), `_remove_worktree` (2278), the launch pointer write (`\"worktree\"` at dispatch.py:2946, `\"phase\": \"starting\"` at 2991), `local_liveness` (recovery_liveness.py:1204), `_queue_batch` (dispatch_batch.py:502) and `plan-after`'s target all resolve.",
+    "done_when": "a finding \u2014 \u00a76's equality measure (\"a manifest path equal to the one a single queued dispatch of the same node names\") cannot hold as written, because the default manifest is run-scoped.",
+    "evidence_paths": "pass \u2014 every gate writes a test under `tests/` and \u00a75's evidence note sits under the reports directory; no section names a scratchpad or node-local path.",
+    "naming": "pass \u2014 \u00a76's deliverable and test name describe the capability; no plan label, stage name, ticket number or version tag reaches a symbol, filename or comment.",
+    "reasoning": "a finding \u2014 \u00a75's deliverable sentence carries a duplicated condition, so the escape it states is written twice in two forms and the sentence no longer parses.",
+    "single_goal": "pass \u2014 each of the three reviewed units carries one deliverable; \u00a72/\u00a76's shared file is an ordering fact, not a second deliverable, and \u00a76 hands the `1h30m` budget refusal explicitly to \u00a72.",
+    "wiring": "a finding \u2014 \u00a76 depends on \u00a72 landing first because both write `reckon/crew/dispatch_batch.py`, yet the plan declares no `plan-section-depends-on` and the ordering appears only as prose at the end of \u00a76."
+  },
+  "section_digests": {
+    "_document": "ed27a7303222f8350e46233951fe59de80aa01ec9add1c79c607622c712a734b",
+    "s1": "196da1e620e2e482d27bdd207b57d91dc82c799811a9f88189e2350ff4eeb51a",
+    "s2": "f0bb78f495e184d08f264ee0c8670552bf2417dc09e1fccec557d64974b999ef",
+    "s3": "f288d709dea574f288a4293a730c4c2c68204ee12bcbcc8ecb597365aea1936f",
+    "s4": "214c26ee307b26a9189e695057c758aa5f11833093fa7379f62bdba78c540705",
+    "s5": "0c7400d891e28c5e80b16a467e41d5a8b0106f6d12041dd2f2081ce019fe4afd",
+    "s6": "465206af8b9a06f4964f35fdf569a2254201364ae81d70aa879c1799ff082f3a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T12:30:53.896477+00:00",
+  "total": null
+}
