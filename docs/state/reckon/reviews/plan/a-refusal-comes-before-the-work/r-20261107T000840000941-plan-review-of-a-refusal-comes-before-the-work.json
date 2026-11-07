@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T00:19:26.274Z",
+  "dispatched_at": "2026-11-07T00:10:24Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-refusal-comes-before-the-work.html:44",
+      "id": "done_when-1",
+      "reason": "the case must name a measure the matcher reads (\"run the test suite\", \"pytest tests/\u2026\"), or the node writes a positive assertion that cannot hold as worded.",
+      "text": "the sixth case requires a refusal for \"an entry whose role the flight config declares execution_capable: false \u2026 and whose done-when needs execution\", but `assess_execution_fit` (reckon/capability.py:102) refuses only when `_EXECUTION_MEASURE_PATTERNS` (capability.py:39\u201349) match, and those match only \"run/runs/running \u2026 test(s)/test suite/suite\" or \"pytest \u2026\". A done-when that plainly \"needs execution\" \u2014 \"run the lane\", \"execute the script\", \"the interpolator runs\" \u2014 matches neither pattern, so the case stores instead of refusing and the control \"omitting execution fit \u2026 stores the sixth case's entry\" passes for the wrong reason.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-refusal-comes-before-the-work.html:43",
+      "id": "reasoning-1",
+      "reason": "the refusal reads `execution_capable`, which `_effective_backend` takes from the role overlay rather than the lane (routing.py:180\u2013190 applies the role overlay first, and no lane block declares the key), so a rebound lane cannot change the verdict; only the sentence justifying the choice is imprecise, and no test or symbol changes.",
+      "text": "\u00a72 justifies fixing execution fit at queue time by calling the lane `queue_requests` records \"the lane the admission pass launches it on\", but admission does move a queued request's backend: `_local_fallback` (reckon/crew/queue_admission.py near line 647) rewrites the pointer's `backend` to `local_backend` on a hold, and `_record_queued_on` (near line 1242) stamps a different lane when a route is moved. The written guarantee is therefore not one the code gives.",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "e2cd451342c24927a5ae7855f98e04fb369eee79",
+  "plan_fingerprint": "543d183c00a2a91c9d89483cd37511954ab6483bcfc7b9be9209ca689aa38541",
+  "plan_slug": "a-refusal-comes-before-the-work",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T000840000941-plan-review-of-a-refusal-comes-before-the-work",
+  "reviewed_blob_sha": "fb56deb5ec983cbd4ceb4392ee9664f5306d6179",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited symbols resolve: `_DELIVERABLE_ACTIONS` (reckon/crew/node.py:79), `gate_population_patterns` (node.py:1099), `validate_node` (node.py:1182), `negative_control_finding` (node.py:1054), `gate_population_finding` (node.py:1145), `_effective_backend` (reckon/crew/routing.py:159), `execution_capable` as a `roles.<role>` key (reckon/flight.py:1679\u20131694), and `queue_requests`' lane fallback (reckon/crew/dispatch.py:313). The execution-fit refusal is at dispatch_plan.py:839, not \"near line 869\", but the symbol it names (`assess_execution_fit`) resolves and the drift is not load-bearing.",
+    "done_when": "a finding \u2014 \u00a72's sixth case says only \"whose done-when needs execution\", a phrase `assess_execution_fit` does not match.",
+    "evidence_paths": "pass \u2014 \u00a72 puts every gate log under the run directory, a durable path that survives the run.",
+    "naming": "pass \u2014 the new test module and the cited helpers carry no plan labels, stage names, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 \u00a72's justification for judging execution fit at queue time (\"the lane the admission pass launches it on\") overstates what admission guarantees, though the check is lane-invariant in the repository.",
+    "single_goal": "pass \u2014 \u00a72 names one deliverable (one shared contract function, called by the batch path before storage).",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `s3` and `s5` waiting on `a-refusal-comes-before-the-work#s2`, matching \u00a73's and \u00a75's prose about shared files, and no dependency either section needs is missing."
+  },
+  "section_digests": {
+    "_document": "fe86ddc53d6df02ed8681809f4399744a8daf0946c333b28fc3a6b583769f545",
+    "s1": "75df880739e89570186a1c16cae47d54a4d457a4a6e99c09b2d62c21368dc424",
+    "s2": "1e3332521857c20034be395421a6c27805d58591732aabe30165d15e3c8c12ee",
+    "s3": "b5b62335762566059c1bbb98372fed78bff07b643d64c9fa675596aa8bd81a3a",
+    "s4": "07a4ee8576d20a6230358f2290732b9c4debaa456380d9c2a8e8fd3651cc5e95",
+    "s5": "971aeb8e3a089f473d197e621d3f0c26ead6b1816778ac46d4796b8906360253"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T00:25:28.885461+00:00",
+  "total": null
+}
