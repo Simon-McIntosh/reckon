@@ -404,6 +404,13 @@ class StationSubscriber:
         self._generation = store.event_generation()
         self._data_version = store.data_version()
         self._first_poll = True
+        # Where this subscriber has read to. It starts at the stored place and
+        # always advances in memory; the stored place is written only while the
+        # pane holds the session's registration. A pane that does not hold it
+        # still has to move past what it already drew, or every poll would read
+        # from the stored place again and redraw the same rows.
+        self._read_id: int | None = None
+        self._read_day: str | None = None
         # Whether this pane may write the session's row. The row holds one
         # session's place, and a second pane reading the same rows would move
         # the first pane's cursor and checkpoint out from under it, so only the
@@ -573,9 +580,11 @@ class StationSubscriber:
         self._first_poll = False
 
         oldest = self.store.oldest_day()
-        cursor_day = _utc_day(self.cursor_day)
+        if self._read_id is None:
+            self._read_id, self._read_day = self.cursor, self.cursor_day
+        cursor_day = _utc_day(self._read_day)
         skipped_days = 0
-        after_id = self.cursor
+        after_id = self._read_id
         from_day = cursor_day
         if oldest is not None and (cursor_day is None or cursor_day < oldest):
             if cursor_day is not None:
@@ -614,6 +623,7 @@ class StationSubscriber:
             if day is not None:
                 last_day = day.isoformat()
             delivered.extend(self.path.feed(event, now=moment))
+        self._read_id, self._read_day = last_id, last_day
         if self.persist and (last_id != self.cursor or last_day != self.cursor_day):
             self.store.write_cursor(
                 self.project,
