@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T18:32:47.622Z",
+  "dispatched_at": "2026-11-07T18:23:31Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:145",
+      "id": "reasoning-1",
+      "reason": "without a stated fallback the deliverable is unbuildable for the arm \u00a74 just added, and the replacement would be a confident lie where today there is only silence.",
+      "text": "the deliverable says that when a worker is alive \"the field names that worker's attempt and pid\", but `record_process_alive` (`reckon/crew/process_liveness.py:355-377`) answers `True` with no live worker pid in two arms it deliberately supports: the session walk (a dead recorded pid while some process carries the run's session id in its argv, the walk \u00a74 added, per `f-arolw-004`) and a placed run (where `process_liveness.py:325-330` says the recorded pid \"names the scheduler client rather than the worker\"). A node implementing \u00a78 literally therefore has no pid to name in the session-walk arm and would name a scheduler client as the worker in the placed arm, so the new sentence can assert a live pid that is the wrong process \u2014 the same misreading as the original defect, now with a pid attached",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:144",
+      "id": "done_when-1",
+      "reason": "the plan asserts a control a worker cannot apply, so the gate log either reports a control that was not run or reports an edit outside the section's mechanism; stating it as a regression guard makes the record true.",
+      "text": "the third case's negative control is \"leaving the fence's source field unwidened fails the third\", but `widen_claim` already writes `node[\"write_paths\"] = declared` (`reckon/crew/claims.py:134`) and the fence is already built from that field (`declared_write_paths=(record.get(\"node\") or {}).get(\"write_paths\")`, `reckon/crew/dispatch_sessions.py:1351`), so the mutation requires breaking pre-existing behaviour rather than anything \u00a78 adds; a node cannot perform the control without editing code the section does not change, and the plan's own base-arm instruction copies the test into the dispatch base where case 3 passes",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "92870bfd09cf2a474d168ea3b9c10326970f9e21",
+  "plan_fingerprint": "9929eb39f3ca4efaac13c925c2336c3785c5c4e7796e71b2520fb1f820ef0dbb",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 31,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T182058899040-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "4faec7286507ea511d7ae85751c841aeafb49a02",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `crew_widen` is at `reckon/crew_run_commands.py:1658`; the live-worker refusal `widen_claim` applies is at `reckon/crew/claims.py:106`; `record_process_alive` is at `reckon/crew/process_liveness.py:300`; `takes_effect` exists nowhere in `reckon/` today, so the reproduce-first arm has a real thing to reproduce.",
+    "done_when": "a finding \u2014 the third case's stated negative control cannot be applied, because the field the fence is read from is already carrying the widened paths before this section changes anything.",
+    "evidence_paths": "pass \u2014 the reproduction and the test run are recorded in the gate log, and the manifest contract places logs under the run directory rather than a session scratchpad.",
+    "naming": "pass \u2014 `takes_effect` names the mechanism it reports; the run id and the reporting coordinator in the Why paragraph are evidence provenance in a plan document, not labels carried into code.",
+    "reasoning": "a finding \u2014 the deliverable requires the field to name \"that worker's attempt and pid\", but the reader it adopts, `record_process_alive`, answers `True` in two arms where the record's pid is not that worker, and \u00a74 landed one of those arms in this very function.",
+    "single_goal": "pass \u2014 one deliverable (the `takes_effect` field on the widen result), with a stated ordering (reproduce the defect before repairing it) rather than a second deliverable.",
+    "wiring": "pass \u2014 \u00a78 declares no section wait and needs none: its write paths (`reckon/crew_run_commands.py`, `reckon/crew/claims.py`) are written by no other section of the plan, and the open followup `f-arolw-008` drives `/reckon-build a-run-has-one-live-worker \u00a78`."
+  },
+  "section_digests": {
+    "_document": "a84f6acdfa5bde1ab873fc2f587979b77f777a0513526a030168c36c7dbcbbf5",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "c8fe2a5a6c5765bc70ba45627cc9f5778b225a5e1deff2cc1bb1e0e08214362a",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "63bd79fcdd7baf06c8cc0bbc04ef21beec3605a6fdb13eed90b3ad410f8516e7",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b",
+    "s8": "e1c1198465ed1636d2caca28648692520fb36bea4c8b97c5231ef19a8094a99b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T18:43:06.237140+00:00",
+  "total": null
+}
