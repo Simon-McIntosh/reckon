@@ -1,0 +1,88 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-07T19:44:30.519Z",
+  "dispatched_at": "2026-11-07T19:31:56Z",
+  "findings": [
+    {
+      "file": "tests/test_a_refused_request_names_its_refusal.py",
+      "id": "f0117947b8d",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the file is outside the node's declared write_paths (the dispatch fence named only reckon/crew/obligations.py, the evidence fragment and the figures directory), while plan section 8's done-when names it as a write path; the worker disclosed this under outside_scope and the work is required by the plan, so the repair is on the node record rather than in the tree"
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "id": "fb99db8f3dd",
+      "line": "203",
+      "severity": "non-blocking",
+      "text": "non-blocking: the editable arm of the change is unguarded \u2014 no assertion reaches _EDITABLE_CONTRACT_PROPERTIES, the property extraction at line 215, or the 'reckon crew queue edit' next_command, so a regression that maps a property to the wrong queue-edit field, or flips the branch from edit to drop, leaves all three tests green; the only refusal the tests exercise is the plan-owned one that publishes the drop"
+    },
+    {
+      "file": "tests/test_a_refused_request_names_its_refusal.py",
+      "id": "f76fa21672e",
+      "line": "107",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion `\"wait for a local lane slot\" not in next_command` cannot fail on the regression it reads as guarding \u2014 the plain queued row's text is 'waiting for a lane slot: position N of the queued requests', which does not contain that phrase, so the assertion holds both before and after the change and the sensitivity comes entirely from line 108"
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "id": "ff2f71b5a2b",
+      "line": "876",
+      "severity": "non-blocking",
+      "text": "non-blocking: the node-contract predicate (`_NODE_CONTRACT_REFUSAL in text` and `_CAPACITY_REFUSAL_REMEDY not in text`, lines 899-905) re-spells the test already written inline inside queue_admission._is_until_changed_failure (reckon/crew/queue_admission.py:1352-1357); the owning module should expose that predicate rather than two copies that can drift"
+    },
+    {
+      "file": "docs/evidence/fragments/a-queued-request-is-checked-when-queued/admission-refusal-named-in-obligation.html",
+      "id": "f50d63d41e2",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment records 'on the base revision with the new test alone, all three cases failed, EXIT=1', but base-arm.log records '2 failed, 1 passed in 2.80s' \u2014 the waiting-request case passes at the base revision, as it must, because it asserts the pre-existing row"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T175329716070-admission-refusal-named-in-obligation/head-suite.log",
+      "id": "fa5e365a285",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head arm's log header names revision aaa66d3f98300d7797d163ea16902ff69d83c6ab (the base) while its tree is the head worktree at 77129c667f5f, and its recorded command carries an unsubstituted '<56 files>' placeholder, so the after_suite revision and command are not readable from the log that is meant to carry them"
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_refused_request_names_its_refusal.py:102 fails if the row collapses to run-queued, and the negative-control mutation reproduces exactly that, but no assertion reaches the editable arm or the property extraction at reckon/crew/obligations.py:203-217.",
+    "evidence": "the gate measures the done_when and is recorded (3 passed EXIT=0 at head, 2 failed / 1 passed at base), but the reviewed manifest carries no baseline_suite/after_suite blocks and head-suite.log:1 misnames the revision it ran at.",
+    "fit": "reckon/crew/obligations.py:876 follows the module's own idiom (Mapping-typed helpers, module-level kind constant beside QUEUED_AWAITING_SESSION_DUTY_KIND at :188) and introduces no plan, sprint or ticket name.",
+    "goal_fidelity": "reckon/crew/obligations.py:1147 gives a refused queued request its own actionable row, and obligations.py:909-928 leaves a plan-owned property publishing the drop while the editable map at :203 publishes the queue edit.",
+    "reuse": "reckon/crew/obligations.py:869 attaches the refusal on the one row every producer already builds, but :899-905 re-spells the node-contract predicate queue_admission.py:1352-1357 already owns.",
+    "scope_discipline": "every path in the diff but tests/test_a_refused_request_names_its_refusal.py lies inside the declared write paths; that file is required by the plan's done-when but absent from the node's fence."
+  },
+  "node": "admission-refusal-named-in-obligation",
+  "plan": "a-queued-request-is-checked-when-queued",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to name an admission refusal in the queued request's obligation; reckon/crew/obligations.py:876-930 derives that remedy and obligations.py:1147-1155 builds a queued-contract-refused row carrying the refusal's own property names and the edit or drop that clears it\nVERDICT done_when: the done_when names tests/test_a_refused_request_names_its_refusal.py:97-141; the manifest records 3 passed EXIT=0 at the head and 2 failed / 1 passed EXIT=1 at the base, both logs read\nVERDICT write_paths: the dispatch fence named reckon/crew/obligations.py, the evidence fragment and the figures directory; the diff adds tests/test_a_refused_request_names_its_refusal.py outside that set, disclosed under outside_scope in the manifest\nVERDICT manifest: read; status complete, gate 3 passed EXIT=0, base arm 2 failed / 1 passed EXIT=1, but it carries no baseline_suite or after_suite block and nonetheless records the population arms in artifacts\nVERDICT diff: read commit by commit against base aaa66d3f98: three files, obligations.py +112/-2, the new test +141, the evidence fragment +31, all in one commit 77129c667f5f\nCALL_SITES: reckon/crew/obligations.py:2400, reckon/crew/obligation_snapshot.py:1319, reckon/crew/obligation_snapshot.py:1371, reckon/crew/obligation_snapshot.py:1470\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:1147 gives a refused queued request its own actionable row, and obligations.py:909-928 leaves a plan-owned property publishing the drop while the editable map at :203 publishes the queue edit.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate measures the done_when and is recorded (3 passed EXIT=0 at head, 2 failed / 1 passed at base), but the reviewed manifest carries no baseline_suite/after_suite blocks and head-suite.log:1 misnames the revision it ran at.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: every path in the diff but tests/test_a_refused_request_names_its_refusal.py lies inside the declared write paths; that file is required by the plan's done-when but absent from the node's fence.\nSCORE durability: 12\nJUSTIFICATION durability: tests/test_a_refused_request_names_its_refusal.py:102 fails if the row collapses to run-queued, and the negative-control mutation reproduces exactly that, but no assertion reaches the editable arm or the property extraction at reckon/crew/obligations.py:203-217.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/obligations.py:876 follows the module's own idiom (Mapping-typed helpers, module-level kind constant beside QUEUED_AWAITING_SESSION_DUTY_KIND at :188) and introduces no plan, sprint or ticket name.\nSCORE reuse: 16\nJUSTIFICATION reuse: reckon/crew/obligations.py:869 attaches the refusal on the one row every producer already builds, but :899-905 re-spells the node-contract predicate queue_admission.py:1352-1357 already owns.\nFINDING tests/test_a_refused_request_names_its_refusal.py:1 non-blocking: the file is outside the node's declared write_paths, while plan section 8's done-when names it as a write path.\nFINDING reckon/crew/obligations.py:203 non-blocking: the editable arm of the change is unguarded \u2014 no assertion reaches _EDITABLE_CONTRACT_PROPERTIES, the property extraction at line 215, or the 'reckon crew queue edit' next_command.\nFINDING tests/test_a_refused_request_names_its_refusal.py:107 non-blocking: the assertion `\"wait for a local lane slot\" not in next_command` cannot fail on the regression it reads as guarding, because the plain queued row says 'waiting for a lane slot: position N'.\nFINDING reckon/crew/obligations.py:876 non-blocking: the node-contract predicate at lines 899-905 re-spells the test already written inline inside queue_admission._is_until_changed_failure (reckon/crew/queue_admission.py:1352-1357).\nFINDING docs/evidence/fragments/a-queued-request-is-checked-when-queued/admission-refusal-named-in-obligation.html:25 non-blocking: the fragment records all three base-arm cases failing, but base-arm.log records 2 failed, 1 passed.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T175329716070-admission-refusal-named-in-obligation/head-suite.log:1 non-blocking: the head arm's header names the base revision and an unsubstituted '<56 files>' placeholder, so the after_suite revision and command are unreadable.\n",
+  "review_run_id": "r-20261107T192649977167-review-of-admission-refusal-named-in-obligation-77129c667f5f",
+  "reviewed_base_sha": "aaa66d3f98300d7797d163ea16902ff69d83c6ab",
+  "reviewed_head_sha": "77129c667f5f118d1abed9761c97678c1f18f5c4",
+  "reviewed_run_id": "r-20261107T175329716070-admission-refusal-named-in-obligation",
+  "reviewer_run_id": "r-20261107T192649977167-review-of-admission-refusal-named-in-obligation-77129c667f5f",
+  "scores": {
+    "durability": 12,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 14
+  },
+  "section": "\u00a78",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T19:44:34.102942+00:00",
+  "total": 93,
+  "verdicts": {
+    "call_sites": "reckon/crew/obligations.py:2400 (obligations view), reckon/crew/obligation_snapshot.py:1319 and :1371 (published snapshot slice), :1470",
+    "diff": "read commit by commit against base aaa66d3f98: three files, obligations.py +112/-2, the new test +141, the evidence fragment +31, all in one commit 77129c667f5f",
+    "done_when": "the done_when names tests/test_a_refused_request_names_its_refusal.py:97-141; the manifest records 3 passed EXIT=0 at the head and 2 failed / 1 passed EXIT=1 at the base, both logs read",
+    "goal": "the node's goal is to name an admission refusal in the queued request's obligation; reckon/crew/obligations.py:876-930 derives that remedy and obligations.py:1147-1155 builds a queued-contract-refused row carrying the refusal's own property names and the edit or drop that clears it",
+    "manifest": "read; status complete, gate 3 passed EXIT=0, base arm 2 failed / 1 passed EXIT=1, but it carries no baseline_suite or after_suite block and its head arm nonetheless records the population arms in artifacts",
+    "write_paths": "the dispatch fence named reckon/crew/obligations.py, the evidence fragment and the figures directory; the diff adds tests/test_a_refused_request_names_its_refusal.py outside that set, disclosed under outside_scope in the manifest"
+  }
+}
