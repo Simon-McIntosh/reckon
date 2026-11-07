@@ -24,7 +24,7 @@
   <title>A Queued Request Is Checked When Queued | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="24">
+<meta name="plan-version" content="25">
 <meta name="plan-modified" content="2026-11-07">
 </head>
 <body>
@@ -93,6 +93,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261107T152305119816-a-second-launch-of-a-run-never-releases-the-tree-its-first" data-who="reckon-build" data-when="2026-11-07T18:19:30Z">
     <div class="r-comment-body"><p>Launch-side claim view `_launch_pointer_worktrees` in reckon/crew/routing.py keeps a same-run pointer as a claim unless its phase waits (WAITING_REQUEST_PHASES) or local_liveness proves its worker dead on this host, read only by `_launch_tree_verdict` and `_remove_worktree`; the new four-case test passes at the committed head (4 passed, EXIT=0) and the declared mutation makes 2 of its cases fail (EXIT=1).</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261107T175329716070-admission-refusal-named-in-obligation" data-who="reckon-build" data-when="2026-11-07T19:19:30.185Z">
+    <div class="r-comment-body"><p>A queued request admission refused on its node contract now yields a `queued-contract-refused` duty whose reason carries the refusal&#x27;s own property names and whose next_command is `reckon crew queue edit --run &lt;id&gt;` for an editable property or `reckon crew queue drop --run &lt;id&gt;` for a plan-owned one; the refused pointer read `run-queued` / &quot;waiting for a lane slot&quot; before, and `tests/test_a_refused_request_names_its_refusal.py` shows 3 passed EXIT=0 at the head against 2 failed 1 passed EXIT=1 at the base.</p></div>
 </div>
 </section>
 </main>
