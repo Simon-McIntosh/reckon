@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch_sessions.py:1222 resume_plan",
+    "reckon/crew/dispatch_sessions.py:1306 resume_plan (via _observed_end_refusal)",
+    "reckon/crew/dispatch_sessions.py:1918 change_lane (via _observed_end_refusal)",
+    "reckon/crew/resumption.py:2363 sweep (via _launcher_refusal)",
+    "reckon/crew/resumption.py:2280 sweep (via _observed_end_refusal)"
+  ],
+  "completed_at": "2026-11-07T19:32:09.108Z",
+  "dispatched_at": "2026-11-07T19:13:05Z",
+  "evidence_read": "Read: prompt.txt goal and write paths, the reviewed manifest.md, git diff 5bc89fc029..2c1996aa for all three commits, the reviewed head's resumption.py and dispatch_sessions.py call sites, logs/after-suite.log, logs/baseline-suite.log, logs/negative-control.log, logs/neighbouring-doors-head.log, tests/test_a_resume_never_launches_beside_another_node.py:276-295, reckon/crew/recovery_repair_dispatch.py:871. Independently re-ran the named test file at 2c1996aa (5 passed) and at 5bc89fc029 with the test copied in (3 failed); ruff check clean on the three staged paths, ruff format clean on the two the node formatted and pre-existing dirty on dispatch_sessions.py at both base and head.",
+  "findings": [
+    {
+      "file": "tests/test_a_resume_never_launches_beside_another_node.py",
+      "line": 293,
+      "severity": "blocking",
+      "text": "the assertion requires 'still has a live process' from the in-motion door, which the section requires to say 'liveness unknown' and never 'live process', so the landed change turns this test red (logs/neighbouring-doors-head.log: 1 failed, 17 passed, against 18 passed at base); the file is outside this node's write paths, so the one-line repair must land in a follow-up node before the merged head is green."
+    },
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": 1156,
+      "severity": "non-blocking",
+      "text": "_repair_round_opened re-implements the capability the repository already owns at reckon/crew/recovery_repair_dispatch.py:871 (_opened_repair_rounds, re-exported by reckon/crew/recovery.py:169), which the module could import as it already imports other names from reckon.crew.recovery; the duplicate also drops the owner's fresh pointer read."
+    },
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": 1121,
+      "severity": "non-blocking",
+      "text": "_attempt_stream_age falls back to the run's newest stream when the named attempt's own stream cannot be identified, and the message then calls that age 'its newest stream record', attributing another attempt's age to the attempt it names; the section requires a detail the records do not hold to be left out rather than guessed."
+    },
+    {
+      "file": "logs/after-suite.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the head arm's log header names revision 5bc89fc029 (the base) while its own tree line and module.__file__ name the delivered worktree at c91556d0, so the record a later reader reconciles against the manifest's after_suite.revision (c91556d0) disagrees on the one field that says which revision was measured."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "Read commit by commit against 5bc89fc029: c91556d0 adds the composer and its three call sites plus the 388-line test, 258782b6 adds the landing fragment, and 2c1996aa corrects the fragment's measured delta; the source change is 320 added lines in resumption.py and a 3-line substitution in dispatch_sessions.py.",
+    "done_when": "The section's done-when names tests/test_a_refused_resume_names_the_live_attempt.py with five cases and a first-reproduced defect; the manifest records and I reproduced 3 failed at base 5bc89fc029 and 5 passed at head 2c1996aa, but of the three negative controls the section names only the one-site mutation is applied.",
+    "goal": "The goal is to make the live-process refusal name the attempt it found through one composer at all three sites; reckon/crew/resumption.py:1213 live_process_refusal is that composer and resumption.py:1294, resumption.py:1403 and reckon/crew/dispatch_sessions.py:1222 are the three callers.",
+    "manifest": "The manifest reads complete and names its commits (c91556d0, 258782b6, 2c1996aa), both arms, eight logs and an outside_scope defect; its after_suite revision line (c91556d0) disagrees with the head log's own first line (5bc89fc029).",
+    "write_paths": "The manifest declares resumption.py, dispatch_sessions.py, the new test file and the landing fragment; git diff 5bc89fc029..2c1996aa touches exactly those four paths and nothing outside them."
+  },
+  "justifications": {
+    "durability": "the added assertions in tests/test_a_refused_resume_names_the_live_attempt.py redden against the base arm, which I reproduced (3 failed, 2 passed), but only the one-site mutation control is recorded and the session-walk case writes no attempt receipts, so an implementation naming the newest dead receipt would survive it.",
+    "evidence": "logs/after-suite.log records 5 passed EXIT=0 at the delivered head and logs/baseline-suite.log 3 failed EXIT=1 at the base arm; I re-ran both arms myself at 2c1996aa in scratch trees and reproduced 5 passed / 3 failed, though the head arm's log header names the base revision 5bc89fc029 rather than the head it ran.",
+    "fit": "reckon/crew/resumption.py:1156 follows the module's private-helper and docstring idiom, though it introduces the repository's only cross-module import of a private symbol from reckon/_backends.py (_human_age) and a fourth local copy of _read_record (also at reckon/crew/placement.py:200, reckon/crew/plan_review.py:1359, reckon/hooks/coordinator_obligations.py:1399).",
+    "goal_fidelity": "reckon/crew/resumption.py:1213 is the one composer, called from the launcher door at resumption.py:1294, the stream-reading door at resumption.py:1403 and resume_plan at reckon/crew/dispatch_sessions.py:1222, and it names the attempt's number, pid, launch time, kind, repair-round status and stream age.",
+    "reuse": "reckon/crew/resumption.py:1156 duplicates the repair-round lookup the repository already owns at reckon/crew/recovery_repair_dispatch.py:871 (_opened_repair_rounds, re-exported at reckon/crew/recovery.py:169) instead of extending it; the rest of the addition reuses existing owners (_human_age, record_process_alive, stream_paths_newest_first, _record_is_known_foreign, WORKER_RECORD_NAME).",
+    "scope_discipline": "every path in the diff (reckon/crew/resumption.py, reckon/crew/dispatch_sessions.py, tests/test_a_refused_resume_names_the_live_attempt.py, the landing fragment) is inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make the live-process refusal name the attempt it found through one composer at all three sites; reckon/crew/resumption.py:1213 live_process_refusal is that composer, called from resumption.py:1294, resumption.py:1403 and reckon/crew/dispatch_sessions.py:1222.\nVERDICT done_when: the section's done-when names tests/test_a_refused_resume_names_the_live_attempt.py; I re-ran the base arm (3 failed, 2 passed, EXIT=1) and the head arm (5 passed, EXIT=0) at 5bc89fc029 and 2c1996aa in scratch trees and reproduced both recorded results.\nVERDICT write_paths: the manifest declares resumption.py, dispatch_sessions.py, the new test and the landing fragment; git diff 5bc89fc029..2c1996aa touches exactly those and nothing else.\nVERDICT manifest: read complete; it names its commits, both arms, eight logs and the out-of-scope red test, but its after_suite revision disagrees with the head log's own first line.\nVERDICT diff: read commit by commit against 2c1996aa's base 5bc89fc029; c91556d0 carries the composer and three call sites plus the test, 258782b6 the landing fragment, 2c1996aa a measured-delta correction.\nCALL_SITES: reckon/crew/dispatch_sessions.py:1222 resume_plan, reckon/crew/dispatch_sessions.py:1306 resume_plan, reckon/crew/dispatch_sessions.py:1918 change_lane, reckon/crew/resumption.py:2363 sweep, reckon/crew/resumption.py:2280 sweep\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/resumption.py:1213 is the one composer and resumption.py:1294, resumption.py:1403 and reckon/crew/dispatch_sessions.py:1222 are its three callers, naming the attempt's number, pid, launch time, kind, repair-round status and stream age.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/after-suite.log records 5 passed EXIT=0 and logs/baseline-suite.log 3 failed EXIT=1, both re-run and reproduced at 2c1996aa, though the head arm's header names the base revision 5bc89fc029.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff 5bc89fc029..2c1996aa is inside the declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: the assertions in tests/test_a_refused_resume_names_the_live_attempt.py redden at the base arm I reproduced, but only one of the section's three negative controls is applied and the session-walk case writes no receipts to invent an attempt from.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/resumption.py:1156 follows the module's idiom but imports the private _human_age across modules and adds a fourth local _read_record copy.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/resumption.py:1156 duplicates _opened_repair_rounds at reckon/crew/recovery_repair_dispatch.py:871 rather than importing it from reckon/crew/recovery.py:169.\nFINDING tests/test_a_resume_never_launches_beside_another_node.py:293 blocking: the assertion requires 'still has a live process' at the in-motion door, which the section forbids, so the merged head is red until a follow-up node asserts 'liveness unknown'.\nFINDING reckon/crew/resumption.py:1156 non-blocking: _repair_round_opened re-implements the owner at reckon/crew/recovery_repair_dispatch.py:871 and drops its fresh pointer read.\nFINDING reckon/crew/resumption.py:1121 non-blocking: _attempt_stream_age falls back to the run's newest stream and calls that age the named attempt's, which the section says must be left out rather than guessed.\nFINDING logs/after-suite.log:1 non-blocking: the head arm's header names the base revision 5bc89fc029 while its own tree line and module.__file__ name the delivered worktree at c91556d0.\n",
+  "review_run_id": "r-20261107T190627866488-review-of-name-the-attempt-a-resume-is-refused-beside-2c1996aa2ec5",
+  "reviewed_base_sha": "5bc89fc029eda40c9d213fd40a40ed81a195b230",
+  "reviewed_head_sha": "2c1996aa2ec57a6c5eab117770e30392095d4e71",
+  "reviewed_run_id": "r-20261107T172237782964-name-the-attempt-a-resume-is-refused-beside",
+  "rubric": "landed-node",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T19:41:17.537855+00:00",
+  "total": 91
+}
