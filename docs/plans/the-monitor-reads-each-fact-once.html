@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-blocks" content="crew-state-stays-bounded">
   <meta name="plan-section-depends-on" content="{&quot;s6&quot;:[&quot;the-monitor-reads-each-fact-once#s5&quot;],&quot;s7&quot;:[&quot;the-monitor-reads-each-fact-once#s6&quot;],&quot;s8&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s9&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s10&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;,&quot;the-monitor-reads-each-fact-once#s8&quot;],&quot;s12&quot;:[&quot;the-monitor-reads-each-fact-once#s8&quot;,&quot;the-monitor-reads-each-fact-once#s9&quot;,&quot;the-monitor-reads-each-fact-once#s10&quot;,&quot;the-monitor-reads-each-fact-once#s11&quot;,&quot;the-monitor-reads-each-fact-once#s13&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="91">
-<meta name="plan-modified" content="2026-11-05">
+<meta name="plan-version" content="92">
+<meta name="plan-modified" content="2026-11-07">
 </head>
 <body>
   <main class="plan-doc">
@@ -543,6 +543,9 @@ ruff format --check on the staged paths add no finding.</p>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
     <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261107T171647831487-review-of-obligations-recompute-only-what-changed-902372b94625" data-who="reckon-build" data-when="2026-11-07T17:35:01.610Z">
+    <div class="r-comment-body"><p>Reviewed r-20261107T155222105164-obligations-recompute-only-what-changed at base e9805b3a4cb362516dc5bc3f14e880c9f70eaec1 and head 902372b946250b719af5df8a9f0a146625130397: the three memoisations landed and the base arm genuinely fails their zero-count assertions, but the done_when&#x27;s live under-2-s bullet is unmet at 75.761 s and four non-blocking findings are recorded (stale held-record signature, a live timing log that ends in a NameError stamped EXIT=0, an after-arm recorded one revision behind head, and a hand-rolled memo beside file_memo).</p></div>
 </div>
 </section>
 </main>

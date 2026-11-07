@@ -1,0 +1,85 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "test_a_follower_stays_while_a_review_is_owed.py::test_a_delivered_pointer_costs_one_head_resolution"
+  ],
+  "call_sites": [
+    "reckon/crew/obligations.py:_review_duty_item",
+    "reckon/crew/obligations.py:_held_worktrees_by_session",
+    "reckon/crew/obligation_snapshot.py:1386 payload_for",
+    "reckon/crew/station_obligations.py:189",
+    "reckon/crew/station_obligations.py:270",
+    "reckon/crew/recovery_classification.py:2477"
+  ],
+  "completed_at": "2026-11-07T17:35:01.610Z",
+  "dispatched_at": "2026-11-07T17:22:24Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 1812,
+      "severity": "non-blocking",
+      "text": "_held_records_signature signs the merged ledger, git's worktree registry and the live directory, but the derivation it guards (obligations.py:1849) also tests path.is_dir() on every registered worktree, and no signed input moves when a tree directory is removed without a registry update, so a held record can be served stale for the cache's whole life because the cache carries no expiry."
+    },
+    {
+      "file": "docs/research/monitor-storage-load-rca.html",
+      "line": 368,
+      "severity": "non-blocking",
+      "text": "The 118.745 s and 75.761 s figures are quoted as the measured live cost, but the log behind them (logs/live-payload-timing.log) ends with NameError: name '_trim' is not defined before it reaches its payload-equality check, stamps EXIT=0 anyway, and was taken at d966cc8d2c rather than at the landed head 902372b946."
+    },
+    {
+      "file": "manifest.md",
+      "line": 15,
+      "severity": "non-blocking",
+      "text": "The after_suite arm is recorded at revision 258296b3c9 and carries an added failure (test_a_delivered_pointer_costs_one_head_resolution) that the worker repaired in 39e28645b0 with no arm re-recorded at head; an independent run of that test plus this node's three tests at 902372b946 passes (4 passed, logs/head-single-test.log), so the promoted evidence overstates the failure and does not itself show it gone."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 1246,
+      "severity": "non-blocking",
+      "text": "_cached is a second thread-safe bounded memo (_CACHE_LOCK, _CACHE_LIMIT, clear-on-full) beside the one reckon/file_memo.py:358 already owns; that owner keys on a single file's stat identity and cannot express this composite key, so the addition duplicates only file_memo's plumbing, but a key-carrying variant of memoized would have kept one memo policy in the repository."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Five production sites verified: obligations.py:_review_duty_item, obligations.py:_held_worktrees_by_session, obligation_snapshot.py:1386, station_obligations.py:189 and :270, and recovery_classification.py:2477.",
+    "diff": "Read commit by commit against e9805b3a: 258296b3c9 adds the memo store and the three call-site changes, d966cc8d2c adds the test, 39e28645b0 removes a duplicate head resolution the key introduced, and 902372b946 records the timings.",
+    "done_when": "The done_when names tests/test_the_station_reads_only_what_changed.py; the test asserts the zero-count, single-run-invalidation and payload-equality measures and the manifest records 3 passed, but the live under-2-s bullet is unmet at 75.761 s and is recorded as a blocker rather than a pass.",
+    "goal": "The node's goal is to memoise three per-run computations so a steady publish recomputes only what moved; reckon/crew/obligations.py:1361, :1752 and recovery_memo.py:197 land exactly those three, and the residual cost is the per-duty review-store read outside this node.",
+    "manifest": "Read in full; it records the live measure unmet, names its four commits and six test logs, and carries the base arm (5 failures) and after arm (6 failures) as raw JSON.",
+    "write_paths": "The manifest declares eight write paths; git diff --stat e9805b3a..902372b946 changes five files and every one of them is inside that set."
+  },
+  "justifications": {
+    "durability": "tests/test_the_station_reads_only_what_changed.py:249 asserts the counters are zero and the base revision fails it (logs/negative-control-base.log), so reverting the memo reddens it; the payload-equality assertion at :330 compares two memo states rather than an independent source.",
+    "evidence": "tests/test_the_station_reads_only_what_changed.py asserts zero plan/ledger/git/memo-write on a second tick and the base arm at logs/negative-control-base.log fails those same assertions, but the live arm's log ends in a NameError recorded as EXIT=0 and the after_suite arm is one revision behind head.",
+    "fit": "reckon/crew/obligations.py:1235-1345 follows the module's existing private-helper and docstring idiom, and no symbol or comment carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew/obligations.py:1361 memoises the review tier and :1752 the held-worktree records, and recovery_memo.py:197 skips a byte-identical write, but the live payload pass the goal is for still took 75.761 s at docs/research/monitor-storage-load-rca.html:368.",
+    "reuse": "reckon/file_memo.py:file_signature is reused for every change token as the brief asked, but obligations.py:1246 hand-rolls a bounded locked memo beside file_memo.memoized rather than extending its owner.",
+    "scope_discipline": "every path in the diff (reckon/crew/obligations.py, reckon/crew/recovery_memo.py, the new test, and the two docs files) is inside the eight declared write paths, and reckon/crew/promotion_checks.py is untouched as the brief required."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to memoise three per-run computations so a steady publish recomputes only what moved; reckon/crew/obligations.py:1361, :1752 and recovery_memo.py:197 land exactly those three, and the residual cost is the per-duty review-store read outside this node.\nVERDICT done_when: the done_when names tests/test_the_station_reads_only_what_changed.py; the test asserts the zero-count, single-invalidation and payload-equality measures and the manifest records 3 passed, but the live under-2-s bullet is unmet at 75.761 s and is recorded as a blocker.\nVERDICT write_paths: the manifest declares eight write paths; the diff changes five files, every one inside that set.\nVERDICT manifest: read in full; it records the live measure unmet, four commits, six test logs and both suite arms as raw JSON.\nVERDICT diff: read commit by commit against e9805b3a; four commits, five files, 606 insertions, and the intermediate regression in the memo key is repaired in 39e28645b0.\nCALL_SITES: reckon/crew/obligations.py:_review_duty_item, reckon/crew/obligations.py:_held_worktrees_by_session, reckon/crew/obligation_snapshot.py:1386 payload_for, reckon/crew/station_obligations.py:189, reckon/crew/station_obligations.py:270, reckon/crew/recovery_classification.py:2477\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:1361 memoises the review tier and :1752 the held records, but the live pass the goal is for still took 75.761 s at docs/research/monitor-storage-load-rca.html:368.\nSCORE evidence: 11\nJUSTIFICATION evidence: the base arm at logs/negative-control-base.log fails the zero-count assertions as required, but the live arm's log ends in a NameError recorded as EXIT=0 and the after_suite arm is one revision behind head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is inside the eight declared write paths and reckon/crew/promotion_checks.py is untouched.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_the_station_reads_only_what_changed.py:249 fails at the base revision (logs/negative-control-base.log), so reverting the memo reddens it.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/obligations.py:1246-1345 follows the module's private-helper and docstring idiom with no plan or ticket identifier in a name or comment.\nSCORE reuse: 14\nJUSTIFICATION reuse: reckon/file_memo.py:file_signature is reused for every change token, but obligations.py:1246 hand-rolls a bounded locked memo beside file_memo.memoized rather than extending it.\nFINDING reckon/crew/obligations.py:1812 non-blocking: the held-records signature omits the path.is_dir() check its derivation reads, so a tree removed without a registry update serves a stale held record for the cache's whole life.\nFINDING docs/research/monitor-storage-load-rca.html:368 non-blocking: the quoted live figures come from a helper that crashed with NameError before its equality check, stamped EXIT=0, at d966cc8d2c rather than the landed head.\nFINDING manifest.md:15 non-blocking: the after_suite arm is at 258296b3c9 and carries an added failure repaired in 39e28645b0 with no head arm re-recorded; an independent head run passes.\nFINDING reckon/crew/obligations.py:1246 non-blocking: _cached duplicates file_memo's lock-and-bound memo plumbing because memoized cannot take a composite key.",
+  "review_run_id": "r-20261107T171647831487-review-of-obligations-recompute-only-what-changed-902372b94625",
+  "review_text": "See raw_text field",
+  "reviewed_base_sha": "e9805b3a4cb362516dc5bc3f14e880c9f70eaec1",
+  "reviewed_head_sha": "902372b946250b719af5df8a9f0a146625130397",
+  "reviewed_run_id": "r-20261107T155222105164-obligations-recompute-only-what-changed",
+  "scores": {
+    "durability": 17,
+    "evidence": 11,
+    "fit": 17,
+    "goal_fidelity": 15,
+    "reuse": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T17:55:53.897312+00:00",
+  "total": 93,
+  "verdicts": {
+    "call_sites": "Five production sites verified: obligations.py:_review_duty_item, obligations.py:_held_worktrees_by_session, obligation_snapshot.py:1386 payload_for, station_obligations.py:189 and :270, recovery_classification.py:2477.",
+    "diff": "Read commit by commit against e9805b3a: 258296b3c9 adds the memo store and the three call-site changes, d966cc8d2c adds the test, 39e28645b0 removes a duplicate head resolution the memo key introduced, and 902372b946 records the timings; five files, 606 insertions.",
+    "done_when": "The done_when names tests/test_the_station_reads_only_what_changed.py; the test asserts the zero-count, single-run-invalidation and payload-equality measures and the manifest records 3 passed, but the done_when's live under-2-s bullet is unmet at 75.761 s and is recorded as a blocker rather than a pass.",
+    "goal": "The node's goal is to memoise three per-run computations so a steady publish recomputes only what moved; reckon/crew/obligations.py:1361, :1752 and recovery_memo.py:197 land exactly those three, and the residual cost is the per-duty review-store read the brief put outside this node.",
+    "manifest": "Read in full; it states the live measure unmet, names its four commits and six test logs, and records the base arm (5 failures) and after arm (6 failures) as raw JSON.",
+    "write_paths": "The manifest declares eight write paths; git diff --stat e9805b3a..902372b946 changes five files and every one of them is inside that set."
+  }
+}
