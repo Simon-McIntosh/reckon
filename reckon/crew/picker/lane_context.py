@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import contextvars
 import os
+import re
 import time
 from collections.abc import Mapping, Sequence
 from contextlib import contextmanager
@@ -40,7 +41,9 @@ from reckon import _store, budget, capabilities, ledger
 from reckon._timestamps import parse_utc
 from reckon.crew import lane_document
 from reckon.crew.dispatch import _dispatch_lane_gate
+from reckon.crew.routing import resolved_time_ceiling
 from reckon.crew.run_time_profile import (
+    _budget_minutes,
     _group_rows,
     _number,
     _size_class,
@@ -161,8 +164,56 @@ _NULL_RETURN_TIME: dict[str, Any] = {
 }
 
 
+#: Words a node's own text uses to name the compute its gate runs on: a
+#: scheduler and its job verbs, a GPU model or a GPU host, and a partition or
+#: cluster job. A gate that names one of these waits in a queue and runs on
+#: hardware a small-node default cannot cover, so the node is sized at the
+#: resolved fence rather than at that default. A bare "job" is deliberately
+#: absent: it names a task as often as it names a cluster job.
+_GATE_COMPUTE_RE = re.compile(
+    r"\b(?:slurm|sbatch|srun|salloc|partition|"
+    r"betelgeuse|all_debug|gpu|h100|h200|h800|a100|v100|v200|gb200|b200|"
+    r"cluster (?:job|node|run))\b",
+    re.IGNORECASE,
+)
+
+
+def _names_gate_compute(node: Any) -> bool:
+    """Whether a node's goal, done-when or brief names the compute of its gate."""
+
+    for attribute in ("goal", "done_when", "brief"):
+        if _GATE_COMPUTE_RE.search(str(getattr(node, attribute, "") or "")):
+            return True
+    return False
+
+
+def node_budget(node: Any, *, config: Mapping[str, Any] | None = None) -> str:
+    """The time budget the picker sizes a node by.
+
+    A node's own declared budget is the figure, except where the node's goal,
+    done-when or brief names the compute its gate runs on and that budget is
+    below the resolved fence: the fence is then the figure. A brief that names
+    an H200 job and no budget otherwise takes the small implement default, and
+    a size no run of a queued graphics job has ever returned under tells the
+    picker only that the work is small -- which is exactly the figure this must
+    not offer. A node naming no such compute keeps the budget it declares.
+    """
+
+    declared = str(getattr(node, "time_budget", "") or "").strip()
+    if not _names_gate_compute(node):
+        return declared
+    fence = resolved_time_ceiling(config or {})
+    declared_minutes = _budget_minutes(declared)
+    fence_minutes = _budget_minutes(fence)
+    if fence_minutes is None:
+        return declared
+    if declared_minutes is not None and declared_minutes >= fence_minutes:
+        return declared
+    return fence
+
+
 def _size_of(budget_value: object) -> tuple[str | None, str | None]:
-    """Classify a node's own size from its declared time budget.
+    """Classify a node's size from the time budget it is sized by.
 
     Delegates to :func:`reckon.crew.run_time_profile._size_class`, the one owner
     of the budget-versus-token thresholds, by handing it a one-field row: the
@@ -385,7 +436,7 @@ def return_times(
     # document-backed stale flag here matches the candidate's rather than falling
     # back to the flight's shorter cadence.
     document_shelf_life_seconds = _document_shelf_life_seconds(budget_snapshot)
-    size_key, size_bucket = _size_of(getattr(node, "time_budget", "") or "")
+    size_key, size_bucket = _size_of(node_budget(node, config=config))
     blocks: dict[str, dict[str, Any]] = {}
     for candidate in candidates:
         backend = getattr(candidate, "backend", None)
@@ -974,7 +1025,7 @@ def build(
     moment = now if now is not None else datetime.now(UTC)
     profile: Mapping[str, Any] = {}
     if records is not None:
-        size = _size_of(getattr(node, "time_budget", ""))
+        size = _size_of(node_budget(node, config=config))
         selected = []
         for row in records:
             stamp = parse_utc(
