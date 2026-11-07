@@ -25,8 +25,8 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="99">
-<meta name="plan-modified" content="2026-11-07">
+<meta name="plan-version" content="100">
+<meta name="plan-modified" content="2026-11-08">
 </head>
 <body>
   <main class="plan-doc">
@@ -511,6 +511,11 @@ command, and carries no "within about 120 s";</li>
 review run, not review-missing (reported by nova-4a on 7 November: <code>r-20261107T205044504786-icm-sheet-tidy</code>
 read review-missing at 22:14Z while <code>r-20261107T220731416832-review-of-icm-sheet-tidy-4c6e1f3d6531</code>
 was working, and the lead nearly dispatched a duplicate review by hand);</li>
+<li>a queued run whose pointer <code>failure</code> records an admission refusal that has since been
+resolved (the finding it names is answered) yields a row stating the run's current hold, not
+the refusal's command (reported by reckon-e0 on 7 November: <code>r-20261107T174547094075-save-a-stopped-attempts-uncommitted-work</code>
+showed <code>queued-awaiting-session … --answer wiring-1 --acted</code> for 40 minutes after wiring-1 was
+answered, while admission held it for allowance and never retried to overwrite the failure);</li>
 <li>a row for an admission-held run names only its own run id in its command. This case is a
 regression guard: it may already hold at base, and the first case's control is the section's
 falsification.</li>
