@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T09:49:08.394Z",
+  "dispatched_at": "2026-11-07T09:34:58Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:39",
+      "id": "done_when-1",
+      "reason": "the worker reaches a refusal on the third case with no stated way out and must either invent an unstated member drop or stop, so the fixture needs to say the write retires a roster member (register one, then retire it) before `commit=True` can reach the branch.",
+      "text": "\u00a72's third case cannot run as written: `write(commit=True)` names a roster retirement, and `reckon/ledger.py:2135-2139` raises `LedgerError(\"nothing to commit for \u2026: commit=True names the roster rows a write dropped, and this write dropped none\")` before any per-run file is touched, while the fixture the section describes holds \"a ledger and one per-run record\" with no member to drop, so the case asserts a commit that is never made and its negative control (\"doing so in `write`'s commit branch leaves it modified in the third\") has no write to leave modified",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:43",
+      "id": "reasoning-1",
+      "reason": "the guard belongs where the request line is composed, in `_request_host_follower`, which both writers share; as written the worker may ship a check the reproduced path never reaches and \u00a71's misplacement survives it.",
+      "text": "\u00a73 puts the ownership guard in `_ask_session_host_for_follower` (`reckon/crew/dispatch_watch.py:770`), but that is not the only writer of a follow request: `_hand_off_from_follower` (`reckon/crew_follow_commands.py:625`) reaches `_hand_off_to_waiting_host` (`reckon/crew/dispatch_watch.py:870`), which calls `_request_host_follower` directly, so a hand-armed follower of another session's run that hands its pair to a waiting host writes the misdirected request without passing the new check \u2014 and the section names no production caller of either path, so nothing in it shows which path the reproduced misdirection takes",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "8206152ab0a2cc7e2b0baf200463fd456eb7db07",
+  "plan_fingerprint": "7313ff614a7a2bee5f9bfc9a7fb978cea1b9199446364b7d5db7d433f05b19f1",
+  "plan_slug": "a-crew-process-writes-only-what-it-owns",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T093358669161-plan-review-of-a-crew-process-writes-only-what-it-owns",
+  "reviewed_blob_sha": "0ddcf192cfe3d63addd9248b55d9315784ec8e99",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 in `reckon/ledger.py`, `write` (line 2007), `_keep_run_files_identical` (1899, called at 2174), the `commit=True` branch (2192\u20132202), `_commit_state_write` (2438) and `record_hold_checks` (3437, \"near line 3440\") all resolve, as do `reckon/budget.py:1911`, the four `commit=True` callers (`reckon/crew_run_commands.py:3561`, `reckon/crew/promotion_records.py:1082`, `reckon/crew/routing.py:3003` and `:3124\u20133130`), and in `reckon/crew/dispatch_watch.py`, `_ask_session_host_for_follower` (770), `_ask_session_host` (746), `_session_host_child_pid` (695) and `_rearm_session_follower` (785).",
+    "done_when": "a finding \u2014 \u00a72's third case calls `write(commit=True)` on a fixture holding a ledger and one per-run record, and `write` refuses that call before touching anything because the write drops no roster member.",
+    "evidence_paths": "pass \u2014 both sections write their logs under the run directory, a durable path, with the revision and the literal command on the first line and a bare `EXIT=` last.",
+    "naming": "pass \u2014 neither section carries a plan label, stage name, ticket number or version tag into a symbol, file name or comment; the prose states the mechanism.",
+    "reasoning": "a finding \u2014 \u00a73 places its ownership check on one of the two production writers of the follow request line, so the misplaced follow \u00a71 documents remains reachable by the other.",
+    "single_goal": "pass \u2014 \u00a73 now carries the ownership check and the census reading in `reckon/crew/dispatch_watch.py` with one test file, and \u00a72's two edits are one rule inside the one function, closed by one test with its own negative controls.",
+    "wiring": "pass \u2014 the plan declares no depends-on, informs or gates and needs none; `plan-after` resolves to `docs/plans/the-monitor-shows-the-work-it-watches.html`, and the one open followup now names \u00a72, \u00a73 and \u00a74, which are exactly the three implementable sections in `plan-section-declarations`."
+  },
+  "section_digests": {
+    "_document": "76494d097e556fab05b3d2f83ab4254568f5447e227a49e94e7581a3cbcb7d99",
+    "s1": "38e026f18d1b42b1d79978e1ed1cf6179e085908a249e5762f39a683dcc8123f",
+    "s2": "5324fe07e780ace678e8ca8c79687f1beab14ff8e5e5f4b77e2170bd30df6df4",
+    "s3": "9d842ad577c8536a847bd0c44b3ac948f4e498fc68cba4af01c85a182a019b5a",
+    "s4": "e88fcf79ec58d8305f36e37d69846c8e0a1a10f1b73fc6c167c25b700165e123"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T10:02:18.862433+00:00",
+  "total": null
+}
