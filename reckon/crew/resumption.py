@@ -78,6 +78,7 @@ from reckon.crew.recovery import (
     LAUNCH_WINDOW_SECONDS,
     WORKER_RECORD_NAME,
     _newest_stream_shows_work,
+    _opened_repair_rounds,
     _process_reading,
     _run_exit_record,
     _stream_refusal_block,
@@ -1121,26 +1122,24 @@ def _attempt_kind(record: Mapping[str, Any], attempt: int | None) -> str:
 def _attempt_stream_age(record: Mapping[str, Any], attempt: int | None) -> int | None:
     """How long ago one attempt's stream was last written, or None when unread.
 
-    The candidate streams are tried in order; the first one written to answers.
-    An attempt's stream is its own: the pointer's log path where the pointer
-    names that attempt, the run's original stream for a first attempt, and a
-    lane-change stream for the attempt it is named for. A resume stream carries
-    the turn rather than the attempt, so it answers only through the shared
-    newest-stream reader, which is also what a run whose naming says nothing
-    falls back to.
+    Only streams that belong to the named attempt are candidates: the pointer's
+    log path where the pointer names that attempt, the run's original stream for
+    a first attempt, and a lane-change stream for the attempt it is named for. A
+    run's newest stream is deliberately not a fallback — it may be another
+    attempt's, and the message would then date the attempt it names by a
+    neighbour's record. An attempt whose own stream cannot be identified answers
+    nothing, and the message leaves the age out rather than guessing it.
     """
-    run_id = str(record.get("run_id") or "")
-    directory = run_dir(run_id)
+    if attempt is None:
+        return None
+    directory = run_dir(str(record.get("run_id") or ""))
     log_path = str(record.get("log_path") or "")
     candidates: list[Path] = []
     if log_path and _recorded_attempt_number(record) == attempt:
         candidates.append(Path(log_path))
     if attempt == 1:
         candidates.append(directory / "stream.jsonl")
-    if attempt is not None:
-        candidates.append(directory / f"lane-change-{attempt}.jsonl")
-    newest = stream_paths_newest_first(directory, include=(log_path,))
-    candidates.extend(newest[:1])
+    candidates.append(directory / f"lane-change-{attempt}.jsonl")
     moment = time.time()
     for path in candidates:
         try:
@@ -1154,11 +1153,15 @@ def _attempt_stream_age(record: Mapping[str, Any], attempt: int | None) -> int |
 
 
 def _repair_round_opened(record: Mapping[str, Any]) -> bool:
-    """Whether the review reflex opened a repair round for this run."""
-    from reckon.crew.recovery_review_dispatch import REPAIR_ROUNDS_FIELD
+    """Whether the review reflex opened a repair round for this run.
 
-    opened = record.get(REPAIR_ROUNDS_FIELD)
-    return isinstance(opened, Mapping) and bool(str(opened.get("round_id") or ""))
+    The record is the repair dispatcher's own lookup, which reads the live
+    pointer afresh rather than the mapping its caller was handed: a round opened
+    after a sweep read its pointer must still be visible here. A pointer that is
+    gone answers empty, which reads as no round opened.
+    """
+    opened = _opened_repair_rounds(record)
+    return bool(str(opened.get("round_id") or ""))
 
 
 def _attempt_detail(
@@ -1246,12 +1249,7 @@ def live_process_refusal(record: Mapping[str, Any], *, reading: str) -> CrewErro
             return CrewError(
                 opening + detail + " Its liveness could not be read on this host."
             )
-        aged = (
-            f". Its newest record is {_human_age(age)} old" if age is not None else ""
-        )
-        return CrewError(
-            opening + aged + ". Its liveness could not be read on this host."
-        )
+        return CrewError(opening + ". Its liveness could not be read on this host.")
     attempt = _live_attempt_number(record)
     opening = (
         f"run {run_id!r} still has a live process; observe or stop it before resuming"

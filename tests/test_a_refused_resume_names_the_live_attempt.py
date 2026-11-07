@@ -68,6 +68,8 @@ _RUN_IDS = (
     "r-refused-coordinator-resume",
     "r-refused-session-walk",
     "r-refused-on-another-host",
+    "r-refused-late-round",
+    "r-refused-borrowed-stream",
 )
 
 
@@ -386,3 +388,55 @@ def test_an_unknown_liveness_stream_names_the_moving_attempt(
     assert str(launcher.value) == text
     mirror = resumption._launcher_refusal(runs.read_pointer(run_id), config=None)
     assert mirror is not None and str(mirror) == text
+
+
+def test_a_round_opened_after_the_pointer_read_is_still_named(
+    home: Path, tmp_path: Path
+) -> None:
+    """The round record is read afresh, so a round opened since the read counts.
+
+    A sweep holds a pointer it read before the review reflex opened the round.
+    The refusal must still say the round delivers by itself, because telling the
+    coordinator to stop is wrong in exactly the case the section was written
+    about. The record handed in here carries no round, and the live pointer on
+    disk does, which is the difference the owner's fresh read makes.
+    """
+    run_id = "r-refused-late-round"
+    with _live_worker() as pid:
+        _pointer(
+            tmp_path,
+            run_id,
+            pid=pid,
+            attempt=2,
+            attempt_kind="resume",
+            repair_round=True,
+        )
+        _attempt_records(run_id, 2, pid=pid, attempt_kind="resume")
+        stale = dict(runs.read_pointer(run_id))
+        stale.pop("repair_rounds", None)
+
+        text = str(resumption.live_process_refusal(stale, reading="alive"))
+
+    assert "attempt 2" in text, text
+    assert "repair round" in text, text
+
+
+def test_an_unidentifiable_stream_claims_no_age(home: Path, tmp_path: Path) -> None:
+    """An attempt whose own stream cannot be found is dated by nothing.
+
+    The run's newest stream is the first attempt's, but the attempt being named
+    is the second, so calling that age this attempt's newest record would date
+    it by a neighbour. The message leaves the age out instead of guessing it.
+    """
+    run_id = "r-refused-borrowed-stream"
+    with _live_worker() as pid:
+        _pointer(tmp_path, run_id, pid=pid, attempt=2, attempt_kind="resume")
+        _attempt_records(run_id, 2, pid=pid, attempt_kind="resume")
+        _stream(runs.run_dir(run_id) / "stream.jsonl", assistant=True)
+        record = dict(runs.read_pointer(run_id))
+        record["log_path"] = ""
+
+        text = str(resumption.live_process_refusal(record, reading="alive"))
+
+    assert "attempt 2" in text, text
+    assert "newest stream record" not in text, text
