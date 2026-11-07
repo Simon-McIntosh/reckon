@@ -1,0 +1,76 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T20:02:57.700Z",
+  "dispatched_at": "2026-11-07T19:54:06Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:96",
+      "id": "reasoning-1",
+      "reason": "the section's measure (\"under 2 s warm\") tests the one case a dispatch never hits; without a persisted index or a cold bar the node ships a change that leaves the cited defect in place.",
+      "text": "\u00a711's deliverable indexes findings by path \"once\", but the index is a module-level dict (`reckon/crew/findings.py:297-298`, `_INDEXES`) that dies with the process; a `crew dispatch` runs fresh every time (\u00a71, line 47), so the first `_open_findings` call in every dispatch rebuilds it, which the section's own fragment records at 66.3 s \u2014 the ten-minute dispatch the Why cites is not fixed.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:100",
+      "id": "done_when-1",
+      "reason": "the bar and the accepted outcome now disagree, and a node sent at \u00a712 would either redo landed code or fail its own gate.",
+      "text": "\u00a712 declares done only when the live-store read is \"under 2 s\", but the plan's own comment on the landed run records 3.485 s and calls it \"the live-store timer misses the plan's under-2-s bar at 3.485 s while the fragment claims a pass verdict\"; the section is still declared `implementable`, so a node dispatched to it can neither meet the bar nor legitimately close.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:24",
+      "id": "wiring-1",
+      "reason": "a dispatch on either section would rebuild landed work, exactly the wasted-node outcome the \u00a75 comment describes.",
+      "text": "`plan-section-declarations` marks s11 and s12 `implementable`, yet `reckon/crew/findings.py` already carries `_indexed_rows` (line 447) and `plan_review.delivered_reports` already passes its plan to `_stored_review_run_ids` (line 4393), the landing comments at lines 131-141 record both measures, and both evidence fragments are committed \u2014 the same declared-stale-after-landing defect the `c-s27-declared-s5` comment records for \u00a75; `f-arcwc-001` and `f-arcwc-002` order neither section.",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:100",
+      "id": "anchors_resolve-1",
+      "reason": "the chain is still readable by symbol name and no node's action depends on the line number; this is a citation that has drifted, not a wrong mechanism.",
+      "text": "the Why places `promotion._complete_locked` \"near line 1462\", but the function is defined at `reckon/crew/promotion.py:1065` in `45e233041537`, `1ba5fc9122` and the current head, and \u00a711's `_committed_record_paths` \"near line 302\" (`:96`) was removed by `e073cf891a`, the commit that landed \u00a711 itself.",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "1bd05042febde03f7fea44ce7bad0f2efa9ca2bc",
+  "plan_fingerprint": "b437b2bf5ada62e95354b1f215d28e95c332c15588e7a02c1feea44d75fe064c",
+  "plan_slug": "a-read-costs-what-changed",
+  "plan_version": 45,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T194952912480-plan-review-of-a-read-costs-what-changed",
+  "reviewed_blob_sha": "83c83e459f3cc9df55a40656d6bfc789a05c8e33",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a712 cites `promotion._complete_locked` \"near line 1462\" but it is defined at `reckon/crew/promotion.py:1065` at every revision the plan names, and \u00a711's `_committed_record_paths` \"near line 302\" no longer exists on main.",
+    "done_when": "a finding \u2014 \u00a712's done-when bar (\"the read under 2 s\") is missed by the work the plan itself records at 3.485 s, so the section's measure cannot pass as written while the section stays implementable.",
+    "evidence_paths": "pass \u2014 \u00a711 and \u00a712 put their tests in `tests/` in the repository and their logs under the run directory, and both landed fragments sit under `docs/evidence/fragments/a-read-costs-what-changed/`.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach the symbols or comments in \u00a711 and \u00a712; the mechanism is stated in its own terms.",
+    "reasoning": "a finding \u2014 \u00a711's index is in-process, so the fresh `crew dispatch` process the Why cites rebuilds it and still pays 66.3 s, which the section's warm-only bar does not measure.",
+    "single_goal": "pass \u2014 \u00a711 names one deliverable (an index behind `findings_by_path`) and \u00a712 names one (`delivered_reports` scoped to its plan); neither carries a second.",
+    "wiring": "a finding \u2014 \u00a711 and \u00a712 are declared `implementable` in `plan-section-declarations` while both deliverables are already on main with landing comments and evidence fragments, and no followup or `plan-section-depends-on` entry orders \u00a710\u2013\u00a712."
+  },
+  "section_digests": {
+    "_document": "9283c3a0d76ffcaa6d8465fb3f04c5fc79dbc04f54f578c71fe2d3afe59618af",
+    "s1": "f8fb0fbbfbbc79977a59ec9d78c0d66f47803aa96db83e4d628a1dfb6b40e6c3",
+    "s10": "68fc6d75acf0741225ab448369611e4eda9f862b50d7907857c1abb24b4138e4",
+    "s11": "2a249381081ebbf2d99b7f9da3b09b1d3b87c6ada44952d6b665283e27021c40",
+    "s12": "c6c234ba14598d6a537e09000d8f5d406295ad40c3c124db34cb1b84868bb22e",
+    "s2": "7de6c2e256fca5545163c6149c674fea249ddd1a72361b49c89ef5beaa22263d",
+    "s3": "d11cdceab942c4935f32d292e26f2111b011ca4571980a6c54ef6ae23894aadb",
+    "s4": "d14b5fa9a6b6ef26da6f95b50c43aa782fdbe679ca28020a3095af71cd579417",
+    "s5": "ba22eff9814ea16ac19404864f9a2d1ec8da449b3011fba623d0d1856b2c6ecf",
+    "s6": "b0053663cc25e5e7e15595ae342d21c4c467abe74f06c8c4db86982b276898cc",
+    "s7": "2c7c6fb207a002d2bb1e223ebf1f770570f6b06942edf9ac6647253b410a67b7",
+    "s8": "9a012c065cbd8db9e5e69070d20531b84a584582cc0bf8f45fff060b7f31f464",
+    "s9": "1404fbf63401ab3bd4204175d16adb89094eaa1f1b25160e73fd2bb9c625d0b1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T23:16:15.637190+00:00",
+  "total": null
+}
