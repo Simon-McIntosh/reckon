@@ -1,0 +1,44 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T09:34:09.894Z",
+  "dispatched_at": "2026-11-07T09:22:10Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/an-evidence-record-counts-only-what-it-read.html:44",
+      "id": "reasoning-1",
+      "reason": "it adds a sixth site (or a stated exclusion beside the existing ones) and a done-when case, and without it the node's own test would pass while a real production sink still accepts exactly the prose \u00a71 counts.",
+      "text": "the deliverable's site list is stated as exhaustive over comment and followup prose, yet `_apply_resolve` writes new authored prose into a followup at `reckon/_store.py:3849-3851` (`updates[\"outcome\"] = op.get(\"outcome\", \"\")`), a sink the plan neither lists among the five nor excludes the way it explicitly excludes gate measures, section titles and the promotion writer's landing comments; the audit does read that prose, since `deferred_work_term(soup)` walks the whole plan document and repo plans already carry `follow-ons` inside `<p class=\"r-fu-outcome\">` (e.g. `docs/plans/a-finished-worktree-releases-without-a-force.html:198`), so a resolve outcome saying \"two follow-ons go to \u00a75\" would pass the widened store unchanged",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "a8e52b5089788e69f0d94fbc0cecc52aef2a6b7a",
+  "plan_fingerprint": "a1a7e51a3ee11dc777410bcda5747a3a3b3496489ab1c83b7194b2b7c8ab7547",
+  "plan_slug": "an-evidence-record-counts-only-what-it-read",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T091230245719-plan-review-of-an-evidence-record-counts-only-what-it-read",
+  "reviewed_blob_sha": "4dcc9f4989d70cb05c9eec44ce61aadda948b62a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves in the tree at 044085dc60: `_DEFERRED_WORK_TERM` (reckon/doccheck.py:419), `_prose_deferred_work_term` (reckon/_store.py:993), the `_apply_append` comments and followups branches (reckon/_store.py:3798, 3757), `_carry_section_moves` (reckon/_store.py:3060\u20133077), `append_to_list` (reckon/_store.py:2381\u20132389), the `followups.<id>.<field>` dispatch (reckon/_store.py:3485), `_require_authored_value` (reckon/_store_section_ops.py:141\u2013153, reached from the `sections.<id>.body` set at line 276), the promotion writer (reckon/crew/promotion_scope.py:1458\u20131471) and `append_to_list`'s MCP caller (reckon/mcp_edit_plan.py:253).",
+    "done_when": "pass \u2014 six cases and five declared negative controls, each flipping a named assertion: regex restore (cases 1, 2, 4), unchecked followup op sites (case 3), unchecked `append_to_list` (case 3), bare `\u00a7N` (case 5), dropped `<code>` exemption (case 6); every case is observable in a temporary repository.",
+    "evidence_paths": "pass \u2014 the audit output and finding count over power_convertor's `docs/plans/`, the tests, the base-revision arm and ruff all write under the run directory, each log stating its revision, its literal command and a final `EXIT=`.",
+    "naming": "pass \u2014 `_DEFERRED_WORK_TERM`, `_prose_deferred_work_term` and the new test filename name the mechanism; no plan labels, stage names or ticket numbers appear.",
+    "reasoning": "a finding \u2014 the \u00a73 deliverable presents its five sites as \"every site that writes a comment or followup body\", but the resolve op writes authored prose into a followup's `outcome` and is neither listed nor excluded.",
+    "single_goal": "pass \u2014 one deliverable: widen `_DEFERRED_WORK_TERM` to the onward-work spellings and land the resulting refusal on the comment/followup prose sinks, closed by one verdict.",
+    "wiring": "pass \u2014 \u00a73's declared wait on \u00a72 resolves and is consistent with `plan-section-depends-on` (`s3: [an-evidence-record-counts-only-what-it-read#s2]`), which is the shared `reckon/_store.py` the section names in its own last sentence, and the followup orders \u00a72 \u2192 \u00a73 \u2192 \u00a74."
+  },
+  "section_digests": {
+    "_document": "6d35efce52466005f8ee56997c8dc7bcca998d7c41fcd252d254bc7264596281",
+    "s1": "bf811a5d7f572845450c32733084679b1cf3759ba9fa90f902857640fab3056f",
+    "s2": "0b8bed0f03d053457f9c7efd06dd0ff61e4d509f00a6f7518b6e3c911a96a555",
+    "s3": "5bc88028b0ecbe6db5c373f9df92f1926355b730aa3cbc31e82975df8369809b",
+    "s4": "8bc85303e2974b9aaad5c930875da392c800a9d548ad0c0b9390bd43b381a09d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T09:41:00.330311+00:00",
+  "total": null
+}
