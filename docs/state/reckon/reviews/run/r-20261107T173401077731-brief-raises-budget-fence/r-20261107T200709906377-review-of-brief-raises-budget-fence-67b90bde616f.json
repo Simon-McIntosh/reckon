@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch_plan.py:843",
+    "reckon/crew/queue_edit.py:179",
+    "reckon/crew/dispatch.py:1670",
+    "reckon/crew_dispatch_commands.py:1661"
+  ],
+  "completed_at": "2026-11-07T20:22:08.597Z",
+  "dispatched_at": "2026-11-07T20:09:11Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "211",
+      "severity": "non-blocking",
+      "text": "non-blocking: _node_from_pointer rebuilds a queued request's TaskNode field by field and never names over_fence_reason, so a request the lane queues and later admits launches with the reason lost and is refused by validate_node's bounded check through dispatch.py:1670, which is the default when the lane is full; the file is outside this node's fence and the repair belongs to the node claiming it."
+    },
+    {
+      "file": "reckon/crew_dispatch_commands.py",
+      "line": "1316",
+      "severity": "non-blocking",
+      "text": "non-blocking: the diff writes this module and the new test file outside the three paths the dispatch prompt declared, although plan section 3's done-when names both, so the fence and the plan disagree rather than the change overreaching."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T173401077731-brief-raises-budget-fence/logs/gate.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate log's header names revision 5a444bc33b51e2910b11cc198b199ff245956ce9, at which tests/test_a_budget_may_exceed_its_fence_with_a_reason.py does not exist, so the receipt names a revision that does not contain the change it measured; negative-control.log:1 states the same base revision."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T173401077731-brief-raises-budget-fence/manifest.md",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: baseline_suite and after_suite are null even though the plan's done-when requires the head and base arms to add no failure, so the delta of 0 lives only in free-text logs and no structured reader sees it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 5a444bc33b51e2910b11cc198b199ff245956ce9; three commits add the field and its as_dict line, the bounded-check clause, the CLI option, the test file and the landing fragment.",
+    "done_when": "the done-when names tests/test_a_budget_may_exceed_its_fence_with_a_reason.py and asks for three arms plus a negative control; the gate log records 7 passed and the negative control records 2 failed 1 passed.",
+    "goal": "the node's goal is to let a brief raise the resolved time fence when the caller records why; reckon/crew/node.py:1368 admits an over-fence budget only when over_fence_reason is non-blank, and reckon/crew_dispatch_commands.py:1316 adds --over-fence REASON onto the node.",
+    "manifest": "read; it records status complete with the three commits, the gate, head arm 456 passed and base arm 449 passed, but leaves baseline_suite and after_suite null.",
+    "write_paths": "the dispatch fence lists reckon/crew/node.py, the landing fragment and the figures dir, while the diff also writes reckon/crew_dispatch_commands.py and the new test, which plan section 3's done-when names but the run record's scope omits."
+  },
+  "justifications": {
+    "durability": "tests/test_a_budget_may_exceed_its_fence_with_a_reason.py:195 and :245 redden when the reason clause is dropped (negative control 2 failed), but no test covers the queue-admission rebuild that drops the reason.",
+    "evidence": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T173401077731-brief-raises-budget-fence/logs/head-arm.log records 456 passed EXIT=0 and base-arm.log 449 passed EXIT=0, yet the manifest's structured baseline_suite and after_suite fields are null, so promotion reads no recorded delta.",
+    "fit": "reckon/crew/node.py:783 follows the TaskNode field-with-comment idiom and adds no forbidden name, though the fragment docs/evidence/fragments/a-gate-halts-only-on-substance/brief-raises-budget-fence.html ends without a trailing newline.",
+    "goal_fidelity": "reckon/crew/node.py:1368 admits the budget on a recorded reason and refuse-code names --over-fence otherwise, but reckon/crew/queue_admission.py:188 rebuilds the node without over_fence_reason so a queued request loses it before launch.",
+    "reuse": "no owner of a validation waiver exists; the search over reckon/crew for a reason-bearing exception found only the unrelated --no-fence (reckon/crew_dispatch_commands.py:1436), and the bounded check is extended in place at reckon/crew/node.py:1368.",
+    "scope_discipline": "reckon/crew_dispatch_commands.py:1316 and tests/test_a_budget_may_exceed_its_fence_with_a_reason.py lie outside the fence the dispatch prompt declared, though plan section 3's done-when names both."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to let a brief raise the resolved time fence when the caller records why; reckon/crew/node.py:1368 admits an over-fence budget only when over_fence_reason is non-blank, and reckon/crew_dispatch_commands.py:1316 adds --over-fence REASON onto the node.\nVERDICT done_when: the done-when names tests/test_a_budget_may_exceed_its_fence_with_a_reason.py and asks for three arms plus a negative control; the gate log records 7 passed and the negative control records 2 failed 1 passed.\nVERDICT write_paths: the dispatch fence lists reckon/crew/node.py, the landing fragment and the figures dir, while the diff also writes reckon/crew_dispatch_commands.py and the new test, which plan section 3's done-when names but the run record's scope omits.\nVERDICT manifest: read; it records status complete with the three commits, the gate, head arm 456 passed and base arm 449 passed, but leaves baseline_suite and after_suite null.\nVERDICT diff: read commit by commit against 5a444bc33b51e2910b11cc198b199ff245956ce9; three commits add the field and its as_dict line, the bounded-check clause, the CLI option, the test file and the landing fragment.\nCALL_SITES: reckon/crew/dispatch_plan.py:843, reckon/crew/queue_edit.py:179, reckon/crew/dispatch.py:1670, reckon/crew_dispatch_commands.py:1661\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/node.py:1368 admits the budget on a recorded reason and refuse-code names --over-fence otherwise, but reckon/crew/queue_admission.py:188 rebuilds the node without over_fence_reason so a queued request loses it before launch.\nSCORE evidence: 15\nJUSTIFICATION evidence: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T173401077731-brief-raises-budget-fence/logs/head-arm.log records 456 passed EXIT=0 and base-arm.log 449 passed EXIT=0, yet the manifest's structured baseline_suite and after_suite fields are null, so promotion reads no recorded delta.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: reckon/crew_dispatch_commands.py:1316 and tests/test_a_budget_may_exceed_its_fence_with_a_reason.py lie outside the fence the dispatch prompt declared, though plan section 3's done-when names both.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_budget_may_exceed_its_fence_with_a_reason.py:195 and :245 redden when the reason clause is dropped (negative control 2 failed), but no test covers the queue-admission rebuild that drops the reason.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/node.py:783 follows the TaskNode field-with-comment idiom and adds no forbidden name, though the fragment docs/evidence/fragments/a-gate-halts-only-on-substance/brief-raises-budget-fence.html ends without a trailing newline.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner of a validation waiver exists; the search over reckon/crew for a reason-bearing exception found only the unrelated --no-fence (reckon/crew_dispatch_commands.py:1436), and the bounded check is extended in place at reckon/crew/node.py:1368.\nFINDING reckon/crew/queue_admission.py:211 non-blocking: _node_from_pointer rebuilds a queued request's TaskNode field by field and never names over_fence_reason, so a request the lane queues and later admits launches with the reason lost and is refused by validate_node's bounded check through dispatch.py:1670, which is the default when the lane is full; the file is outside this node's fence and the repair belongs to the node claiming it.\nFINDING reckon/crew_dispatch_commands.py:1316 non-blocking: the diff writes this module and the new test file outside the three paths the dispatch prompt declared, although plan section 3's done-when names both, so the fence and the plan disagree rather than the change overreaching.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T173401077731-brief-raises-budget-fence/logs/gate.log:1 non-blocking: the gate log's header names revision 5a444bc33b51e2910b11cc198b199ff245956ce9, at which tests/test_a_budget_may_exceed_its_fence_with_a_reason.py does not exist, so the receipt names a revision that does not contain the change it measured; negative-control.log:1 states the same base revision.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T173401077731-brief-raises-budget-fence/manifest.md:1 non-blocking: baseline_suite and after_suite are null even though the plan's done-when requires the head and base arms to add no failure, so the delta of 0 lives only in free-text logs and no structured reader sees it.\n",
+  "review_run_id": "r-20261107T200709906377-review-of-brief-raises-budget-fence-67b90bde616f",
+  "reviewed_base_sha": "5a444bc33b51e2910b11cc198b199ff245956ce9",
+  "reviewed_head_sha": "67b90bde616f33639ada0d14394091109638e163",
+  "reviewed_run_id": "r-20261107T173401077731-brief-raises-budget-fence",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T22:38:02.190207+00:00",
+  "total": 101
+}

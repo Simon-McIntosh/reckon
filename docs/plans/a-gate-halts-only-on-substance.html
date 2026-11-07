@@ -24,7 +24,7 @@
   <title>A Gate Halts Only On Substance | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="8">
 <meta name="plan-modified" content="2026-11-07">
 </head>
 <body>
@@ -82,6 +82,9 @@
 <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261107T173401077731-brief-raises-budget-fence" data-who="reckon-build" data-when="2026-11-07T19:35:57.388Z">
     <div class="r-comment-body"><p>an over-fence time budget now passes the bounded check when `crew dispatch --over-fence REASON` records why, the reason stored on the node as over_fence_reason and carried by TaskNode.as_dict() onto the run record and ledger row; without it the refusal names --over-fence, and a budget inside the fence is unchanged — gate 7 passed, head arm 456 passed, base arm 449 passed, negative control 2 failed 1 passed</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261107T200709906377-review-of-brief-raises-budget-fence-67b90bde616f" data-who="reckon-build" data-when="2026-11-07T20:22:08.597Z">
+    <div class="r-comment-body"><p>independent review of r-20261107T173401077731-brief-raises-budget-fence at head 67b90bde61 scored goal_fidelity 19, evidence 15, scope_discipline 14, durability 16, fit 17, reuse 20 against base 5a444bc, added_failure_count 0, with four non-blocking findings: the queue-admission rebuild drops over_fence_reason, two written paths sit outside the dispatch fence though plan section 3 names them, the gate log header names a base revision that does not contain the test, and the manifest&#x27;s baseline_suite/after_suite are null</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261107T173532496808-resume-changes-run-budget" data-who="reckon-build" data-when="2026-11-07T18:48:07.600Z">
     <div class="r-comment-body"><p>crew resume takes --time-budget (recorded on the run's node, each change kept in budget_changes naming the figure it replaced and the reason where one was given) and --over-fence REASON — a 25m run resumed at 45m composes its resumed fence as deadline 2031-01-01T01:45:00Z from the pinned launch and stores 45m, a 90m resume above the 60m fence is refused naming --over-fence without --over-fence and accepted with a reason the run then keeps; the importer gate ran 377 tests at head and 374 at base, 0 failures either arm.</p></div>
