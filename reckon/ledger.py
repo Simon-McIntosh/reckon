@@ -38,6 +38,7 @@ import contextlib
 import fcntl
 import hashlib
 import json
+import logging
 import os
 import random
 import re
@@ -60,6 +61,25 @@ from typing import Any
 from reckon import _store, file_memo
 from reckon._plan_html import SECTION_NUMBER_PATTERN
 from reckon._timestamps import parse_utc
+
+_LOG = logging.getLogger(__name__)
+_DAMAGED_RUN_RECORDS: ContextVar[tuple[str, tuple[Path, ...]]] = ContextVar(
+    "ledger_damaged_run_records", default=("", ())
+)
+
+
+def damaged_run_records(project: str) -> tuple[Path, ...]:
+    """Return damaged documents found by this context's latest project read."""
+    recorded_project, paths = _DAMAGED_RUN_RECORDS.get()
+    return paths if recorded_project == project else ()
+
+
+def _report_damaged_run_records(project: str, paths: Iterable[Path]) -> None:
+    damaged = tuple(sorted(set(paths)))
+    _DAMAGED_RUN_RECORDS.set((project, damaged))
+    for path in damaged:
+        _LOG.warning("skipping damaged run record at %s", path)
+
 
 # The slug the ledger occupies in a project's state directory. It sits beside
 # index.json rather than inside it because project config and implementation
@@ -201,6 +221,10 @@ RECORD_FIELDS = (
 
 class LedgerError(Exception):
     """A ledger read or write cannot proceed, and the message says why."""
+
+
+class DamagedRunRecordError(LedgerError):
+    """A run document exists but cannot represent its named run."""
 
 
 class SuiteDeltaError(LedgerError):
@@ -1268,12 +1292,18 @@ def read_document(source: Path) -> Any:
 def _read_run(source: Path) -> dict[str, Any]:
     try:
         record = read_document(source)
-    except (OSError, ValueError) as exc:
+    except OSError as exc:
         raise LedgerError(
             f"cannot read run {source.stem!r} at {source}: {exc}"
         ) from exc
+    except ValueError as exc:
+        raise DamagedRunRecordError(
+            f"cannot read run {source.stem!r} at {source}: {exc}"
+        ) from exc
     if not isinstance(record, dict) or record.get("run_id") != source.stem:
-        raise LedgerError(f"run {source.stem!r} at {source} must hold its own run_id")
+        raise DamagedRunRecordError(
+            f"run {source.stem!r} at {source} must hold its own run_id"
+        )
     # The row's outside-scope key is mapped on the way in, so a document written
     # before the key was renamed reaches every reader under the current one and
     # the retired spelling is never carried into a later write.
@@ -1303,7 +1333,7 @@ def _index_payload(
             {"run_id": row[0]}
             for row in connection.execute(
                 "SELECT run_id FROM aggregate_rows WHERE run_id IS NOT NULL "
-                "UNION ALL SELECT name FROM records WHERE name NOT IN "
+                "UNION ALL SELECT name FROM records WHERE payload IS NOT NULL AND name NOT IN "
                 "(SELECT run_id FROM aggregate_rows WHERE run_id IS NOT NULL)"
             )
         ]
@@ -1318,7 +1348,7 @@ def _index_payload(
     extra = [
         normalize_outside_scope_paths(json.loads(row[0]))
         for row in connection.execute(
-            f"SELECT {column} FROM records WHERE name NOT IN "  # noqa: S608 - fixed column names
+            f"SELECT {column} FROM records WHERE payload IS NOT NULL AND name NOT IN "  # noqa: S608 - fixed column names
             "(SELECT run_id FROM aggregate_rows WHERE run_id IS NOT NULL) ORDER BY name"
         )
     ]
@@ -1326,6 +1356,18 @@ def _index_payload(
         data["runs"].extend(extra)
         data["runs"].sort(key=promotion_order_key)
     return data, version
+
+
+def _indexed_damaged_paths(
+    connection: sqlite3.Connection, project: str, root: str | Path | None
+) -> tuple[Path, ...]:
+    runs = ledger_path(project, root).parent / "runs"
+    return tuple(
+        runs / f"{name}.json"
+        for (name,) in connection.execute(
+            "SELECT name FROM records WHERE payload IS NULL ORDER BY name"
+        )
+    )
 
 
 def _last_good_index_data(
@@ -1374,8 +1416,10 @@ def _last_good_index_data(
                 headers_only=headers_only,
                 picker_only=picker_only,
             )
+            damaged = _indexed_damaged_paths(connection, project, root)
     except (sqlite3.Error, OSError, ValueError, KeyError, TypeError):
         return None
+    _report_damaged_run_records(project, damaged)
     return data, version, max(0.0, time.time() - refreshed_at)
 
 
@@ -1385,13 +1429,17 @@ def _last_good_index_data(
 # The first read in a region builds it and the rest are served the same result.
 # Outside a region each read keeps the behaviour it has now.
 _INDEX_REGION: ContextVar[
-    dict[tuple[str, str, bool, bool], tuple[dict[str, Any], int]] | None
+    dict[
+        tuple[str, str, bool, bool],
+        tuple[dict[str, Any], int, tuple[Path, ...]],
+    ]
+    | None
 ] = ContextVar("ledger_index_region", default=None)
 
 
 @contextlib.contextmanager
 def index_reuse() -> Iterable[
-    dict[tuple[str, str, bool, bool], tuple[dict[str, Any], int]]
+    dict[tuple[str, str, bool, bool], tuple[dict[str, Any], int, tuple[Path, ...]]]
 ]:
     """Build the run index once for every reader inside this region.
 
@@ -1426,7 +1474,9 @@ def _indexed_data(
         picker_only,
     )
     if reuse is not None and index_key in reuse:
-        return reuse[index_key]
+        data, version, damaged = reuse[index_key]
+        _report_damaged_run_records(project, damaged)
+        return data, version
     aggregate = ledger_path(project, root)
     aggregate_stamp = json.dumps(_file_identity(aggregate))
     snapshot = _run_snapshot(project, root)
@@ -1512,7 +1562,18 @@ def _indexed_data(
                 prior = stored.pop(source.stem, None)
                 if prior != encoded:
                     changed.append(source.stem)
-                    record = _read_run(source)
+                    try:
+                        record = _read_run(source)
+                    except DamagedRunRecordError as exc:
+                        if _file_identity(source) != stamp:
+                            raise OSError(
+                                f"run changed during index read: {source}"
+                            ) from exc
+                        connection.execute(
+                            "INSERT OR REPLACE INTO records VALUES (?, ?, NULL, NULL)",
+                            (source.stem, encoded),
+                        )
+                        continue
                     if _file_identity(source) != stamp:
                         # Refuse to publish a cache built across a concurrent edit.
                         # The caller's uncached path still supplies the current read.
@@ -1557,12 +1618,16 @@ def _indexed_data(
                     "INSERT OR REPLACE INTO metadata VALUES ('refreshed_at', ?)",
                     (str(time.time()),),
                 )
-            return _index_payload(
+            result = _index_payload(
                 connection,
                 meta,
                 headers_only=headers_only,
                 picker_only=picker_only,
             )
+            _report_damaged_run_records(
+                project, _indexed_damaged_paths(connection, project, root)
+            )
+            return result
 
     with contextlib.closing(sqlite3.connect(path, timeout=0.2)) as connection:
         try:
@@ -1581,7 +1646,7 @@ def _indexed_data(
             finally:
                 Path(temporary).unlink(missing_ok=True)
     if reuse is not None:
-        reuse[index_key] = result
+        reuse[index_key] = (*result, damaged_run_records(project))
     return result
 
 
@@ -1650,6 +1715,7 @@ def load(
     aggregate keeps its index; that shape is a ledger whose runs are split out
     by their own files.
     """
+    _report_damaged_run_records(project, ())
     if use_index and _ledger_holds_content(project, root):
         try:
             return _indexed_data(
@@ -1737,11 +1803,10 @@ def _merge_run_documents(
 
     A run that owns a file is held twice, once as an aggregate row and once as
     its own document. The union counts it once, so two copies must serialise
-    alike; ``refuse`` is the only difference between the modes. A refusing
-    caller — the reader every ordinary read goes through — loses the whole read
-    to a document that does not stand for its run or that disagrees with the
-    aggregate, so no caller counts an incomplete history. A non-refusing
-    caller loses only the document it cannot use and keeps the rest.
+    alike; ``refuse`` controls whether disagreement with the aggregate stops
+    the read. A damaged document is skipped and reported in either mode so
+    healthy runs stay visible. A non-refusing caller also skips unreadable
+    documents and keeps the aggregate's row when a document disagrees with it.
 
     Returns whether the union gained a row, so a caller whose documents changed
     nothing leaves the stored order alone.
@@ -1769,9 +1834,12 @@ def _merge_run_documents(
     for source in sources:
         try:
             record = _read_run(source)
-        except LedgerError:
-            if refuse:
+        except LedgerError as exc:
+            if refuse and not isinstance(exc, DamagedRunRecordError):
                 raise
+            _report_damaged_run_records(
+                project, (*damaged_run_records(project), source)
+            )
             continue
         run_id = record["run_id"]
         if run_id in by_id:

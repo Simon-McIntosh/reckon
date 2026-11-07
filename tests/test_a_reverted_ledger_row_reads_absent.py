@@ -66,7 +66,15 @@ def test_rollback_ignores_an_unrelated_unreadable_document(
         if args and args[0] == "add" and not saw_append:
             assert run_file.is_file(), "the append must precede staging"
             other.parent.mkdir(parents=True, exist_ok=True)
-            other.write_text("{broken json\n")
+            other.write_text('{"run_id": "unrelated"}\n')
+            original_read_document = ledger.read_document
+
+            def unreadable(source):
+                if source == other:
+                    raise PermissionError("unrelated document cannot be read")
+                return original_read_document(source)
+
+            monkeypatch.setattr(ledger, "read_document", unreadable)
             saw_append = True
         return real_git(checkout, *args, **kwargs)
 

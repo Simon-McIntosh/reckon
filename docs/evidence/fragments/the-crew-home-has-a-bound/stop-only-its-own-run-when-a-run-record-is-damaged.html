@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-crew-home-has-a-bound">
+  <meta name="plan-evidence-for" content="reckon:the-crew-home-has-a-bound">
+  <meta name="plan-verifies" content="reckon:the-crew-home-has-a-bound#s12">
+  <meta name="plan-recorded-at" content="2026-11-06">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,ledger,run-record,promotion">
+  <title>A damaged run record stops only its own run — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="stop-only-its-own-run-when-a-run-record-is-damaged-landing" data-node="stop-only-its-own-run-when-a-run-record-is-damaged" data-reckon="landed" data-when="2026-11-06">
+<section>
+<h3 id="stop-only-its-own-run-when-a-run-record-is-damaged-change">What changed</h3>
+<p>The ledger now records a malformed per-run document as a damaged path and keeps reading other runs. The index marks that document with a null payload so a warm read still reports it; the aggregate fallback skips it as well. A promotion refuses only when the path belongs to the run being promoted. The best-effort document reader also skips and reports unreadable run files while the refusing read still raises on their I/O errors.</p>
+</section>
+<section>
+<h3 id="stop-only-its-own-run-when-a-run-record-is-damaged-measure">Measured behavior</h3>
+<p>At the base revision, all three new temporary-store cases failed on the zero-byte run document. At the repaired revision, all three passed: the index and fallback each listed the healthy run and reported the damaged path, a different run promoted, and the damaged run was refused with its path. Three isolated source mutations restored the aborting index read, the aborting fallback read, and the blanket promotion refusal in turn. Each made its corresponding test fail.</p>
+<p>The source and test commit is <code>25fed3476cd0d69dd325b717ff02ee39438caef1</code>. Scoped Ruff reported two findings before and after, both pre-existing in <code>promotion.py</code>; format checks passed.</p>
+<p>An unreadable-file regression case first raised <code>LedgerError</code> from the best-effort reader. After the repair in <code>cc7d5258c9f8dd921f7b8f75679388b4b11060b7</code>, the 108-case focused gate passed: it retained the other document rows, reported the unreadable path, and verified that the refusing read still raises. Scoped Ruff and format checks passed on the repair paths.</p>
+</section>
+<section>
+<h3 id="stop-only-its-own-run-when-a-run-record-is-damaged-limit">Verification limit</h3>
+<p>The three cases in <code>tests/test_ledger_files_and_index_agree.py::test_bad_run_file_is_not_silently_omitted</code> now assert that healthy rows remain, <code>damaged_run_records(project)</code> names the damaged path, and the warning names it. All three pass. The earlier five-file comparison found these as its only added failures; a 300-second repository-ledger timeout occurred on both arms.</p>
+<p>An AST selection found 266 base test files and 267 head test files directly importing <code>reckon.ledger</code>. Each arm ran alone with four workers under a 30-minute bound. Base reached about 89% and head about 90%; both exited 124 without a pytest summary. These partial arms do not establish an added-failure count. The coordinator's landing measurement must complete the paired importer gate.</p>
+<p>The serial two-file scoped gate also exited 124 at its ten-minute bound, after 51 cases and before a summary. The new three-case test and the three revised malformed-document cases each passed in separate focused runs. The scoped gate and importer comparison remain unproved by complete worker receipts.</p>
+<p>On the resumed repair, the two base importer halves completed with 2,845 passed, 11 failed, 11 errors and 4 skipped across the 266 existing files. The first head half in the worktree was stopped during stalled collection with exit 143; a node-local scratch retry reached about 83% and exited 124 without a summary. The second head half was not started after the two failed attempts. The completed 108-case focused gate verifies the repair, but the importer population still has no completed head comparison.</p>
+<p>A later integrated review reproduced one rollback test failure: its direct strict-load assertion expects malformed JSON in an unrelated run document to raise, although this section requires the fallback to skip and report that document. The rollback receipt itself checks its own row and aggregate, and its preceding assertions passed. An isolated proposal kept every assertion but made the unrelated document raise a real read error; the named test then passed. The test path is outside this worker's write grant, so the proposal remains in the run record rather than the repository.</p>
+<p>The current mainline importer arm completed across 319 files with 3,243 passed, 11 failed and 4 skipped. The 320-file scratch head arm with that fixture proposal completed with 3,241 passed, 12 failed, 5 errors and 4 skipped. Six failing IDs were added; five were 90-second setup timeouts in one held-worktree test file, and one was a 90-second ledger-duration timeout. These files are outside this worker's grant. The head measurement is a scratch probe, not a committed repair receipt.</p>
+</section>
+<section>
+<h3 id="stop-only-its-own-run-when-a-run-record-is-damaged-rollback">Rollback fixture repaired</h3>
+<p>The rollback case now injects a <code>PermissionError</code> from the document reader for the unrelated run instead of writing malformed JSON, and keeps every assertion it had: the row's own file is removed by the rollback, the unrelated document survives, the aggregate no longer holds the row, the strict load still raises naming <code>unrelated</code>, and the later promotion succeeds once the obstacle is cleared. The case passes at the base revision with the original fixture and at the repaired head with the new one.</p>
+<p>The six added importer IDs were rerun one file at a time with two workers. <code>tests/test_held_worktree_records_match_each_record_once.py</code> passed at head (5 passed, 90.9&#8239;s) and timed out at base in its module fixture inside <code>run_store.append</code> (5 errors at the 90&#8239;s bound). <code>tests/test_ledger.py</code> passed at head (97 passed, 163.6&#8239;s) and at base failed only <code>test_committed_runs_measure_or_explain_every_duration</code> on the same 90&#8239;s bound, with 96 passing. Both are timeouts on a contended node, not assertion failures, and neither file was modified.</p>
+<p>Three isolated source mutations at this head restored the aborting index read, the aborting fallback read and the blanket promotion refusal; each made only its corresponding case fail, and the control run exited 1.</p>
+</section>
+</article>
+</body>
+</html>
