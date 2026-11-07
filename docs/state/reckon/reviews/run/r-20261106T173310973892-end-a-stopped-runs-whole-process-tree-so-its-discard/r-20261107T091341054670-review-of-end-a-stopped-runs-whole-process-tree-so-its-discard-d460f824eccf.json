@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-07T09:33:41.149Z",
+  "dispatched_at": "2026-11-07T09:17:19Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_sessions.py",
+      "line": 2238,
+      "severity": "non-blocking",
+      "text": "RECKON_STOP_ESCALATION is a production switch read on every stop whose only purpose is the negative-control test, so any environment carrying it silently reinstates the defect this node fixed."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T173310973892-end-a-stopped-runs-whole-process-tree-so-its-discard/manifest.md",
+      "line": 16,
+      "severity": "non-blocking",
+      "text": "the head arm recorded in after_suite ran in the node's worktree rather than from a git checkout under the run's scratch directory as the plan's done-when requires, and no log records that the four follower variables were unset, though the arm names its revision and collected the new tests."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \"End a stopped run's whole process tree so its discard succeeds\", and reckon/crew/dispatch_sessions.py:2100-2106 now resolves that tree before signalling while :2142-2156 escalates to SIGKILL after the 2 s settle, so a wrapper that ignores SIGTERM no longer leaves the run undiscardable.\nVERDICT done_when: the done_when names tests/test_stop_reaps_run_tree.py and each of its clauses is asserted there \u2014 both pids dead and named (:152-161), the following discard succeeding (:164-165), the bystander untouched (:168) \u2014 with the manifest recording \"2 passed in 11.15s\" at head and the red mutation \"1 failed, 1 passed\" EXIT=1.\nVERDICT write_paths: the node declared five paths (three code/test, one evidence fragment, one figures directory); git diff --stat 030cee9ff4..d460f824ec touches only the three code/test paths plus the fragment, all inside that set, and the figures directory is unused.\nVERDICT manifest: read; it records status complete, the gate command, baseline_suite and after_suite JSON each naming the same single failure id with completed true and both logs ending EXIT=1, a bare negative_control_log path, failure_attribution for the pre-existing failure, and a landing line; the head arm is recorded as run in the node's worktree rather than a scratch checkout.\nVERDICT diff: read both commits against 030cee9ff4 \u2014 f9dc1666a4 adds 108 lines to reckon/crew/dispatch_sessions.py, a sig parameter to reckon/crew/process_signal.py and the 190-line test; d460f824ec adds only the 60-line evidence fragment; no plan or unrelated file is touched.\nCALL_SITES: reckon/crew_run_commands.py:2376 (crew stop -> terminate), reckon/crew/promotion.py:1989 (discard refuses while a recorded pid is alive), reckon/crew/promotion_release.py:438, reckon/crew/recovery_watch.py:661, reckon/crew/dispatch.py:3451 (other _signal_process_group callers that keep the default SIGTERM)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_sessions.py:2142-2156 escalates to SIGKILL once _await_run_processes_gone reports survivors and waits again, and the record built at :2159-2186 names target_pids, killed_pids and any survivor.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-head-template.log carries \"2 passed in 8.91s\" EXIT=0 at d460f824 and negative-control-escalation-dropped.log carries \"1 failed, 1 passed\" EXIT=1 naming the first case, with the head arm in gate-after-importers.log run in the worktree rather than a scratch checkout.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 030cee9ff4..d460f824ec shows exactly reckon/crew/dispatch_sessions.py, reckon/crew/process_signal.py, tests/test_stop_reaps_run_tree.py and the evidence fragment, all inside the declared write scope.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control-escalation-dropped.log fails tests/test_stop_reaps_run_tree.py::test_a_stop_ends_the_whole_tree_and_the_discard_then_succeeds once the escalation call is removed, and the in-suite control at :173 reddens if the disable path stops disabling, but the \"printed\" assertion at :161 searches the whole record, so it survives a detail string that stopped naming pids.\nSCORE fit: 16\nJUSTIFICATION fit: the escalation mirrors the existing graceful branch in the same function and routes through the shared signal_worker owner, but reckon/crew/dispatch_sessions.py:2238 adds a production environment switch whose only purpose is the test.\nSCORE reuse: 17\nJUSTIFICATION reuse: no callable escalation helper exists to extend \u2014 reckon/crew/dispatch_launch.py:3550 and :3646 escalate inline inside the supervisor loop \u2014 and the new function funnels through the same signal_worker in reckon/crew/process_signal.py:836.\nFINDING reckon/crew/dispatch_sessions.py:2238 non-blocking: RECKON_STOP_ESCALATION is a production switch read on every stop whose only purpose is the negative-control test, so any environment carrying it silently reinstates the defect this node fixed.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T173310973892-end-a-stopped-runs-whole-process-tree-so-its-discard/manifest.md:16 non-blocking: the head arm recorded in after_suite ran in the node's worktree rather than from a git checkout under the run's scratch directory as the plan's done-when requires, and no log records that the four follower variables were unset, though the arm names its revision and collected the new tests.\n",
+  "review_run_id": "r-20261107T091341054670-review-of-end-a-stopped-runs-whole-process-tree-so-its-discard-d460f824eccf",
+  "reviewed_base_sha": "030cee9ff4f1abbf029a9880d1c5e4b6a1553d55",
+  "reviewed_head_sha": "d460f824eccf0dcce18b2dfa6107d4974106c16d",
+  "reviewed_run_id": "r-20261106T173310973892-end-a-stopped-runs-whole-process-tree-so-its-discard",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T09:41:25.760686+00:00",
+  "total": 106
+}
