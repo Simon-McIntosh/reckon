@@ -1147,6 +1147,11 @@ def _complete_locked(
             checkout=checkout,
         )
     ledger_data, ledger_version = ledger.load(project, root=ledger_root)
+    damaged_record = ledger.run_path(project, run_id, ledger_root)
+    if damaged_record in ledger.damaged_run_records(project):
+        raise ledger.LedgerError(
+            f"cannot promote run {run_id!r}: its record is damaged at {damaged_record}"
+        )
     existing = next(
         (
             item

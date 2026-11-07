@@ -249,12 +249,36 @@ def test_run_files_survive_without_an_aggregate_run_list(corpus, aggregate_state
 
 
 @pytest.mark.parametrize("payload", ["not-json", "[]", '{"run_id": "r-wrong"}'])
-def test_bad_run_file_is_not_silently_omitted(corpus, payload):
+def test_bad_run_file_is_not_silently_omitted(corpus, payload, caplog):
     _, rows = corpus
     path = place_rows(rows, "files").parent / "runs" / f"{rows[0]['run_id']}.json"
     path.write_text(payload)
-    with pytest.raises(ledger.LedgerError, match=rows[0]["run_id"]):
-        ledger.load(PROJECT)
+    data, _version = ledger.load(PROJECT)
+    assert data["runs"] == rows[1:]
+    assert ledger.damaged_run_records(PROJECT) == (path,)
+    assert str(path) in caplog.text
+
+
+def test_unreadable_run_file_does_not_hide_other_document_rows(
+    corpus, monkeypatch, caplog
+):
+    _, rows = corpus
+    path = place_rows(rows, "files").parent / "runs" / f"{rows[0]['run_id']}.json"
+    assert path.is_file()
+    assert ledger.load(PROJECT, use_index=False)[0]["runs"] == rows
+    original_read_document = ledger.read_document
+
+    def unreadable(source):
+        if source == path:
+            raise PermissionError("run document cannot be read")
+        return original_read_document(source)
+
+    monkeypatch.setattr(ledger, "read_document", unreadable)
+    with pytest.raises(ledger.LedgerError, match="cannot read run"):
+        ledger.load(PROJECT, use_index=False)
+    assert ledger.run_rows_from_documents(PROJECT) == rows[1:]
+    assert ledger.damaged_run_records(PROJECT) == (path,)
+    assert str(path) in caplog.text
 
 
 def test_serialisation_is_stable_and_keeps_every_field():
