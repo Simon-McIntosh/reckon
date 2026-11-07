@@ -35,9 +35,28 @@
       "note": "\u00a78 names a pid only when the recorded worker pid itself was read alive on this host; when liveness came from the session walk it names the attempt and says the worker was found by its session id, with no pid; for a placed run it names the attempt and does not present the scheduler client's pid as the worker's, with a case for each arm",
       "reason": "",
       "when": "2026-11-07T18:44:43.192754+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "6a8fa592cca6ed8c19d4f1c380f1666415be40f2",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "the third case is stated as a regression guard on widen_claim already writing node.write_paths (claims.py near line 134), which the fence reads (dispatch_sessions.py near line 1351); it passes at the base by design and its control is removed",
+      "reason": "",
+      "when": "2026-11-07T18:44:52.545535+00:00"
     }
   ],
   "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "6a8fa592cca6ed8c19d4f1c380f1666415be40f2",
+      "commit_basis": "edit",
+      "note": "the third case is stated as a regression guard on widen_claim already writing node.write_paths (claims.py near line 134), which the fence reads (dispatch_sessions.py near line 1351); it passes at the base by design and its control is removed",
+      "reason": "",
+      "when": "2026-11-07T18:44:52.545535+00:00"
+    },
     "reasoning-1": {
       "action": "acted",
       "by": "",
