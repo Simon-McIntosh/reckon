@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T04:04:47.935Z",
+  "dispatched_at": "2026-11-07T03:59:08Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/an-evidence-record-counts-only-what-it-read.html:50",
+      "id": "reasoning-1",
+      "reason": "a node implementing the rule as written will carry stale generated content forward on exactly the pre-marker records that motivated the section, and the plan needs either a bound on the legacy rule or this as a stated residual with a case.",
+      "text": "the deliverable justifies the data-evidence-origin mark by saying it stops a stale generated section from being republished, but for a pre-marker record the legacy rule treats any unmarked section whose id is \"none of the ids a synthesis can produce\" as appended and carries it forward. Two routine ways an id stops being producible while its unmarked generated section remains on the record: (a) the section is deleted from the plan, so its authored id is absent from `_section_labels(source)` and, with no comments or runs left, absent from `available = set(comments_by_section) | set(runs_by_section)` (reckon/evidence.py:337-353); (b) a ledger run's `section` key, which `_render_document` renders as a section of that id (line ~372), is no longer returned for the plan. In both, the legacy rule carries the unmarked generated section forward as though an append had written it. The plan names only the opposite misclassification (a pre-marker append replaced by a rendered section) and only the plan-section-id drop case (s9), so this republish path is neither covered by a case nor stated as a residual.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/an-evidence-record-counts-only-what-it-read.html:50",
+      "id": "reasoning-2",
+      "reason": "the function still needs the plan's comment keys and the ledger's section keys, and the argument for placing the refusal in the write half rather than the pure validator is unaffected by the overstatement.",
+      "text": "the placement argument says `_apply_evidence_appends` \"reads neither the plan nor the ledger today\", but that function already reads the plan through `_evidence_plan_title` (reckon/_store.py:1185 \u2192 `read_plan` at :1177) when it builds a shell.",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "d59b71065b0fb0ce0965c078a2b42daba883881b",
+  "plan_fingerprint": "ce621b993329aae24fa2018422fc9f70ac6ef51e38f1714a5bb3c7770e0a8ca7",
+  "plan_slug": "an-evidence-record-counts-only-what-it-read",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T035752845906-plan-review-of-an-evidence-record-counts-only-what-it-read",
+  "reviewed_blob_sha": "3e8b36f9b1117cb4c4ffd68b161f76430f8c72ac",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol and line range resolves in the worktree (_section_key:50, _render_document:329-380 with _top\u2192outcome at 372, EvidenceSynthesisResult:24, synthesize_landed_record:636, _apply_evidence_appends:1230, _apply_append_evidence:1278 with the anchor-shape guard at 1292-1299, synthesize_evidence:1473).",
+    "done_when": "pass \u2014 the gate names ten cases and twelve negative controls, each of the ten covered by at least one control; the count reconciles with the enumeration.",
+    "evidence_paths": "pass \u2014 every gate log is required under the run directory with its revision, literal command and a trailing EXIT=, not a scratch path.",
+    "naming": "pass \u2014 dropped_anchors, unmarked_losses and data-evidence-origin name the mechanism; no plan labels, ticket numbers or changelog prose.",
+    "reasoning": "a finding \u2014 the root cause (a fresh re-render discards appended sections) is supported by the code, but the legacy rule's guarantee that the synthesis \"carries forward only marked sections ... keeps it from republishing a stale section an earlier synthesis generated but this one no longer produces\" does not hold for pre-marker records (plan line 50).",
+    "single_goal": "pass \u2014 one deliverable: a re-synthesis preserves appended anchors, with the anchor refusal serving that same guarantee rather than a second outcome.",
+    "wiring": "pass \u2014 s4's depends-on (s2, s3) matches the shared write paths exactly: _store.py is shared with both and evidence.py with s2, while project_maintenance_commands.py is written by no other section."
+  },
+  "section_digests": {
+    "_document": "6d35efce52466005f8ee56997c8dc7bcca998d7c41fcd252d254bc7264596281",
+    "s1": "7c52117565966edec5de56bc0448d4a141edbcb73ac18ede5f2cb0c34f424f0a",
+    "s2": "143dc532dde638505b6cf743e1b2af8b2d754fbd94debf4fdb0b351e623a2a39",
+    "s3": "1e19a712fd2dad1c38a11f7b6164b1fcc01c996e78f3297edb135a1d5fd7c0cf",
+    "s4": "8a1409ec1be672aa81db8ef2ffa13d6ba5047ae44ebf6c6b768841213fad1b3f"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T04:15:34.031556+00:00",
+  "total": null
+}
