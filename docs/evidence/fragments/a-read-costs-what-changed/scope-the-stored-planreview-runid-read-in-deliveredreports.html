@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+    <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-costs-what-changed">
+  <meta name="plan-title" content="A promotion reads one plan's stored reviews">
+  <meta name="plan-summary" content="Promoting a plan review matched that plan's delivered reports against the whole project's stored review ids; the stored-id read is now scoped to the plan the promotion names, which cuts one plan's promotion read from 20-26 s to under 2 s on the live store.">
+  <meta name="plan-evidence-for" content="reckon:a-read-costs-what-changed">
+  <meta name="plan-verifies" content="reckon:a-read-costs-what-changed#s12">
+  <meta name="plan-recorded-at" content="2026-11-07">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-tags" content="crew,plan-review,promotion,read-cost">
+  <title>A promotion reads one plan's stored reviews — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="scope-the-stored-planreview-runid-read-in-deliveredreports-record" data-node="scope-the-stored-planreview-runid-read-in-deliveredreports" data-reckon="landed" data-when="2026-11-07">
+  <h2 id="scope-the-stored-planreview-runid-read-in-deliveredreports-head">A promotion reads one plan's stored reviews</h2>
+  <p id="scope-the-stored-planreview-runid-read-in-deliveredreports-defect">Promoting one delivered plan review asked the store which review-run ids it already held, and asked for the whole project's. <code>_stored_review_run_ids</code> called <code>list_plan_reviews(project=project)</code> with no plan, so a promotion of one plan read every stored plan review of every plan, while the run names the plan it reviewed. On the live store that day — 2,035 stored plan reviews across the project's plan directories — one <code>delivered_reports</code> call for a single plan took 20.2 to 25.6 s.</p>
+  <p id="scope-the-stored-planreview-runid-read-in-deliveredreports-change">The stored-id read now takes the plan it is asked about and passes it to the same listing: <code>_stored_review_run_ids(project, plan_slug)</code> calls <code>list_plan_reviews(project=project, plan_slug=plan_slug)</code>, and <code>delivered_reports</code> passes the plan it was given. The listing already scoped itself to one plan's committed <code>plan/&lt;slug&gt;</code> directory and to the staging glob <code>plan-&lt;slug&gt;.v*.json</code>; only the caller failed to ask. A whole-project read is kept for a caller that names no plan, which is what the parameter being optional does.</p>
+  <p id="scope-the-stored-planreview-runid-read-in-deliveredreports-gate">A new <code>tests/test_a_plan_review_promotion_reads_one_plan.py</code> fills a temporary store with a review of each of two plans and a delivered report for one of them, then records every path <code>plan_review._load</code> opens while <code>delivered_reports</code> answers for that one plan. The other plan's record is never opened, every stored record opened belongs to the plan asked about, and the report already stored for that plan still reports <code>stored=True</code> while the unstored one reports <code>stored=False</code>. Head arm: 2 passed, <code>EXIT=0</code>.</p>
+  <p id="scope-the-stored-planreview-runid-read-in-deliveredreports-negative">The declared mutation passes no plan to the stored-id read, and the negative control applies exactly that: with <code>stored=_stored_review_run_ids(project)</code> the one-plan case opens <code>plan-plan-scope-other.v1.json</code> and fails on the assertion that no other plan's record was opened — 1 failed, 1 passed, <code>EXIT=1</code>. The same mutation run through the node's own test as the base arm fails the same case, <code>EXIT=1</code>, so the case distinguishes the scoped read from the unscoped one and not merely from a missing file.</p>
+  <p id="scope-the-stored-planreview-runid-read-in-deliveredreports-timer">The same timer on the live store, five runs each: <code>delivered_reports</code> for <code>the-monitor-shows-the-work-it-watches</code> measured 20.176, 25.590, 23.947, 23.166 and 20.176 s at the base code, and 1.995 to 3.485 s at head on the same loaded store; for <code>a-plan-is-reviewed-before-it-is-built</code> it measured 1.652 to 2.495 s at head. The scoped stored-id read itself, which is what this node changed, measured 1.135 to 1.524 s on the first plan and 1.537 to 2.127 s on the second. The remainder of <code>delivered_reports</code> is the report-root enumeration of 101 delivery sidecars, which this node does not touch; the shared store was heavily loaded while these ran and the figures move by a second or more between passes.</p>
+  <p id="scope-the-stored-planreview-runid-read-in-deliveredreports-remarks">One arm is recorded as measured and not as complete: the 101 test files importing <code>reckon.crew.plan_review</code> were run at head with <code>-n 4</code> and reached 93 % with 4 failures before the background runner's own limit stopped it, so no summary line and no failure ids exist for it. That arm is not evidence of a clean population and is reported as stopped rather than as passed; the failures were not attributed. The node's own gate, the scoped-arm and base-arm logs beside it, and the ruff checks on the staged paths are complete.</p>
+</article>
+</body>
+</html>

@@ -4296,10 +4296,16 @@ def write_review_sidecar(
     return path
 
 
-def _stored_review_run_ids(project: str) -> set[str]:
-    """Return the review-run ids the stored records for ``project`` carry."""
+def _stored_review_run_ids(project: str, plan_slug: str | None = None) -> set[str]:
+    """Return the review-run ids the stored records for ``project`` carry.
+
+    A caller that knows the plan names it, so the read takes that plan's
+    records rather than every plan's: a promotion asks about one plan's
+    reviews and the store holds every plan's. Omitted, the walk covers the
+    whole project.
+    """
     ids: set[str] = set()
-    for record in list_plan_reviews(project=project):
+    for record in list_plan_reviews(project=project, plan_slug=plan_slug):
         run_id = str(record.get("review_run_id") or "").strip()
         if run_id:
             ids.add(run_id)
@@ -4386,7 +4392,7 @@ def delivered_reports(
         keep=lambda sidecar: (
             wanted is None or str(sidecar.get("plan_fingerprint") or "") in wanted
         ),
-        stored=_stored_review_run_ids(project),
+        stored=_stored_review_run_ids(project, plan_slug),
     )
 
 
