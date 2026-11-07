@@ -23,7 +23,7 @@
   <title>A Dry Run Must Resolve What The Real Call Resolves | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="21">
 <meta name="plan-modified" content="2026-11-07">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;}">
 </head>
@@ -194,6 +194,12 @@ Measured twice on 2026-09-21. A dry run naming a sprint id as --plan returned ok
 <div class="r-comment" data-section="_top" data-id="c-reconcile-s5" data-who="" data-when="">
     <div class="r-comment-body"><p>Declared done on 3 November: a triage of the ready-idle sections found the code at HEAD already meets this section. tests/test_dry_run_reaches_admission.py:137 and tests/test_dry_run_predicts_the_launcher.py cover real admission and launch resolution on dry runs; the historical early stop is replaced.</p></div>
 </div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261106T161252641125-review-of-document-the-dryrun-discriminator-beside-its-cli-option-c06531bbef4b" data-who="reckon-build" data-when="2026-11-07T08:36:22.845Z">
+    <div class="r-comment-body"><p>review of r-20261103T080731600837-document-the-dryrun-discriminator-beside-its-cli-option at base c845c2bb5f3d212a769934c76666b268f4818cf6 head c06531bbef4b00736c51ca72130ea412232e152a — status parsed, goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 20, reuse 20, added_failure_count 0 with no added ids over the reviewed run's own baseline/after arms, one non-blocking finding at the evidence fragment's head-arm row (line 39 cites 4e6caecda where after-suite.log's header records c06531bbef).</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261103T080731600837-document-the-dryrun-discriminator-beside-its-cli-option" data-who="reckon-build" data-when="2026-11-06T16:10:46.633Z">
+    <div class="r-comment-body"><p>record in §4 that the `--dry-run` help of `reckon crew dispatch` now carries the discriminator question beside the skip promise, guarded by `tests/test_dry_run_discriminator_documented.py` (head arm 3 passed EXIT=0; removal of the sentence gives 2 failed EXIT=1).</p></div>
+</div>
 <div class="r-comment" data-section="s5" data-id="c-20261005T0115-dry-run-skips-plan-gates-without-repo" data-who="too-coord-1005" data-when="2026-10-05T01:15:00Z">
     <div class="r-comment-body">Measured 2026-10-05 with the plan-review gate in enforce: `reckon crew dispatch --dry-run` for an implement node on a-plan-is-reviewed-before-it-is-built answered ok with no warning when --repo was omitted, and exit 4 plan-review-missing naming two unanswered findings when --repo named the checkout. In plan_dispatch the authority block that runs require_plan_section_visible and require_plan_reviewed is guarded by `verdict.ok and repo is not None`, and the CLI passes the --repo option through unresolved, so a dry run without --repo skips the committed-section and plan-review gates entirely while a real dispatch resolves the mount and meets them. The dry run should resolve the project's mount the way the real call does before judging.</div>
 </div>
@@ -217,9 +223,6 @@ Measured twice on 2026-09-21. A dry run naming a sprint id as --plan returned ok
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261003T031838905998-review-of-every-dry-run-refusal-carries-the-echo" data-who="reckon-build" data-when="2026-10-03T03:30:43.465Z">
     <div class="r-comment-body"><p>independent review of run r-20261003T014604919126-every-dry-run-refusal-carries-the-echo stored at base baddc6cef37d5fee913ca844a825c3bcc844daaa head 2fb76078b735869223c4c0d3d68d788d3dc9daee - goal_fidelity 17, evidence 18, scope_discipline 20, durability 19, fit 20 (total 94); one follow-on finding (plan-unavailable/plan-review-missing/CompetenceLimit dry-run refusals still omit dry_run: true); added_failure_count 0 with no added ids over the reviewed run's own baseline_suite/after_suite arms (base 41e6fc48f 6 failed/494 passed, head d21d94bff 5 failed/498 passed)</p></div>
-</div>
-<div class="r-comment" data-section="s4" data-id="c-run-r-20261106T161252641125-review-of-document-the-dryrun-discriminator-beside-its-cli-option-c06531bbef4b" data-who="reckon-build" data-when="2026-11-07T08:36:22.845Z">
-    <div class="r-comment-body"><p>review of r-20261103T080731600837-document-the-dryrun-discriminator-beside-its-cli-option at base c845c2bb5f3d212a769934c76666b268f4818cf6 head c06531bbef4b00736c51ca72130ea412232e152a — status parsed, goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 20, reuse 20, added_failure_count 0 with no added ids over the reviewed run&#x27;s own baseline/after arms, one non-blocking finding at the evidence fragment&#x27;s head-arm row (line 39 cites 4e6caecda where after-suite.log&#x27;s header records c06531bbef).</p></div>
 </div>
 </section>
 </main>
