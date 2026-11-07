@@ -10,6 +10,13 @@
   "call_sites_note": "Three production call sites reach _snapshot_evidence, and I read each: line 1070 takes evidence[2] as snapshot_declarations and returns early when it is None, line 1123 unpacks all three parts and falls back to the record's stored digests when the snapshot is absent, and line 3872 returns dict(evidence[1]) as the snapshot's prose. All three keep their previous contract because the memo returns the same three-part tuple the base composed, and the dict/Mapping types survive the JSON round trip unchanged.",
   "completed_at": "2026-11-07T10:06:11.527Z",
   "dispatched_at": "2026-11-07T09:55:13Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "measured by the coordinator: ruff check on the changed paths reports 9 findings at base and 0 at head, and ruff format --check passes",
+      "recorded_at": "2026-11-07T10:16:30.906011+00:00"
+    }
+  },
   "findings": [
     {
       "detail": "The manifest's tests line names only the pytest command, its test_logs list five pytest logs and none for ruff, and no rubric line mentions lint. I ran both against the reviewed tree and they are clean (ruff check: 'All checks passed!', EXIT=0; ruff format --check: '2 files already formatted', EXIT=0, over reckon/crew/plan_review.py and tests/test_a_review_snapshot_is_parsed_once.py), so the code satisfies the clause and nothing about the landing is wrong. What is missing is the record: a reader of this run cannot tell the clause was measured rather than skipped, which is the shape the delivery contract exists to prevent.",
