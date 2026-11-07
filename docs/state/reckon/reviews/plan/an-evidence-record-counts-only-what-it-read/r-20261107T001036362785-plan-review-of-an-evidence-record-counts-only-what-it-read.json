@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T00:19:16.258Z",
+  "dispatched_at": "2026-11-07T00:12:15Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:51",
+      "id": "done_when-1",
+      "reason": "without a control that duplicates the synthesis's own rendered section, one of the seven assertions the gate is graded on is never shown to be able to fail.",
+      "text": "seven cases are graded by six negative controls: rendering only the synthesis's own sections drops x-appended (case 1), carrying every section carries s9 (case 3), ignoring unmarked sections drops legacy-anchor (case 4), exempting marked sections duplicates (case 5), accepting any anchor stores (case 6), dropping silently unnames (case 7), and no control falsifies case 2",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:50",
+      "id": "reasoning-1",
+      "reason": "the deliverable's promise that a published anchor keeps resolving and that no append is dropped silently is false for that pre-marker class, so the plan should either name those drops in the result or state the limitation explicitly.",
+      "text": "the legacy rule (\"an unmarked section counts as appended when its id is none of the ids a synthesis can produce\") classifies a pre-marker append anchored to a plan section id or to an id the synthesis now renders as NOT appended, so it is dropped as a stale generated section and is excluded from the result's dropped-anchor field the plan says names every dropped append",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "e2cd451342c24927a5ae7855f98e04fb369eee79",
+  "plan_fingerprint": "47e5faffc30daf0a2c7eef76d17d0459ba910b2bae6fabbf3bf377898f3726a6",
+  "plan_slug": "an-evidence-record-counts-only-what-it-read",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T001036362785-plan-review-of-an-evidence-record-counts-only-what-it-read",
+  "reviewed_blob_sha": "c10d27695ed21bb532bee43b2e41641818d3c539",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 _evidence_section_html (_store.py:1197), _apply_evidence_appends (_store.py:1230), the anchor-shape guard (_store.py:1292-1299), EvidenceSynthesisResult (evidence.py:24), _render_document's comment-key/run-section ids (evidence.py:338-354), _section_key (evidence.py:50) and synthesize_evidence (project_maintenance_commands.py:1473) all resolve.",
+    "done_when": "a finding \u2014 \u00a74 enumerates seven cases but declares six negative controls, leaving the second case (the synthesis's own section appears exactly once) with no control that falsifies it.",
+    "evidence_paths": "pass \u2014 \u00a74 requires every log under the run directory, opening with its revision and literal command and ending in EXIT=, not a scratchpad or node-local path.",
+    "naming": "pass \u2014 the new test file and the data-evidence-origin attribute name the mechanism, with no plan, sprint or ticket identifiers.",
+    "reasoning": "a finding \u2014 the deliverable promises \"an anchor once published keeps resolving\" and \"it is never silent\", but the legacy rule classifies an unmarked section whose id a synthesis can produce as not appended and drops it without naming it, so a pre-marker append anchored to a plan section id (e.g. s4) vanishes silently on re-synthesis.",
+    "single_goal": "pass \u2014 \u00a74's mark, carry-forward, refusal and result field all serve one goal, that an appended anchor keeps resolving across a re-synthesis.",
+    "wiring": "pass \u2014 plan-section-depends-on gives s4 [s2, s3], and s4 shares reckon/evidence.py with \u00a72 and reckon/_store.py with \u00a72 and \u00a73, so each declared wait matches the write paths."
+  },
+  "section_digests": {
+    "_document": "6d35efce52466005f8ee56997c8dc7bcca998d7c41fcd252d254bc7264596281",
+    "s1": "7c52117565966edec5de56bc0448d4a141edbcb73ac18ede5f2cb0c34f424f0a",
+    "s2": "143dc532dde638505b6cf743e1b2af8b2d754fbd94debf4fdb0b351e623a2a39",
+    "s3": "1e19a712fd2dad1c38a11f7b6164b1fcc01c996e78f3297edb135a1d5fd7c0cf",
+    "s4": "1bae63ba12cc8666daa45cd242c840ec04c42c0e43a13a2f37d091c4c8e51a04"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T00:29:34.012376+00:00",
+  "total": null
+}
