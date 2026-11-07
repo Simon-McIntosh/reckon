@@ -385,6 +385,10 @@ def apply_followup_field_set(
         )
     if not isinstance(value, str) or (field == "title" and not value.strip()):
         raise _op_error(f"followups.{ident}.{field} must be a non-empty string")
+    if field == "body":
+        from reckon._store import _refuse_deferred_work_term
+
+        _refuse_deferred_work_term(value, subject=f"followups.{ident}.body")
     working["followups"][index] = {**followup, field: value}
 
 
