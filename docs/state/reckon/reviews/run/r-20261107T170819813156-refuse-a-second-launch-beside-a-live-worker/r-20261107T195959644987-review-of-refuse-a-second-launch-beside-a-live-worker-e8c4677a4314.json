@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:3878 _run_supervisor calls _supervisor_spawn_worker",
+    "reckon/crew/dispatch_launch.py:2411 supervised_launch calls _prepare_attempt_records then _start_supervisor at :2437, reached from reckon/crew/resumption.py",
+    "reckon/crew/dispatch.py:3338 the dispatch launch calls _prepare_attempt_records then _start_supervisor at :3366"
+  ],
+  "completed_at": "2026-11-07T20:18:15.592Z",
+  "dispatched_at": "2026-11-07T20:03:15Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_liveness.py",
+      "line": 1292,
+      "severity": "non-blocking",
+      "text": "non-blocking: live_worker_pid returns record['pid'] whenever record_process_alive(record) is True, and that read answers True from the session walk over a *different* live process, so the pid it returns can be dead. Measured here (RECKON_HOME temp, worker.json pid 645 dead, a live child carrying the session id pid 646): live_worker_pid -> 645. reckon/crew/dispatch_launch.py:2809 feeds that value straight into the refusal text, so in the session-walk case the launch is refused naming a pid that no longer exists; the guard fires correctly, but the pid a reader is told to observe or stop is not the holder. The seam's predecessor named found[0] from _session_process_pids and did not have this defect, so the repair round traded a correct pid for the owner read."
+    },
+    {
+      "file": "tests/test_a_queued_run_launches_once.py",
+      "line": 164,
+      "severity": "non-blocking",
+      "text": "non-blocking: the session-walk case asserts only the prefix 'still has a live worker (pid ' whereas the revision under review's predecessor asserted f'... (pid {stand_in.pid})'. The weakened form passes whatever pid the refusal carries, which is exactly how the dead-pid defect above reaches a green gate; a refusal naming 645 (dead) and one naming the live 646 are indistinguishable to it. The case still reddens if no refusal is raised, so it is not a false guard, but it no longer guards the pid."
+    },
+    {
+      "file": "tests/test_a_queued_run_launches_once.py",
+      "line": 126,
+      "severity": "non-blocking",
+      "text": "non-blocking: plan s5's done-when names two negative controls -- removing the check launches the second worker in the first case, and stubbing the liveness read to pids-only launches it in the second. Both in-test controls were deleted in this range; only the first is replaced, by an out-of-suite working-tree mutation recorded in logs/negative_control.log. logs/negative_control_revert_fix.log reverses the supervisor exclusion and guards a different behaviour, so nothing recorded shows that the session walk itself is load-bearing in test_a_second_launch_is_refused_through_the_session_walk."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T170819813156-refuse-a-second-launch-beside-a-live-worker/logs/head_arm.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T170819813156-refuse-a-second-launch-beside-a-live-worker/logs/repair_base_arm.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Read a0933cf939..e8c4677a commit by commit: c6375fd577 deletes _prior_worker_record and _live_worker_beside_the_launch and makes the seam call recovery_liveness.live_worker_pid, ccd89391d3 adds _without_this_supervisor (dispatch_launch.py:2759) and drops the launching supervisor's own pointer pid, e8c4677a43 rewrites the evidence fragment; tests/test_a_queued_run_launches_once.py drops from five cases to three, removing both in-test negative controls and the pid assertion in the session-walk case.",
+    "done_when": "Plan s5's done-when names three cases, two negative controls, an importer arm and ruff; logs/head_arm.log ends '3 passed in 4.34s' EXIT=0, logs/base_arm.log (revision 296e8e7b3d) ends '2 failed, 1 passed in 2.74s' EXIT=1 with the two refusal ids (base_arm.log is at the dispatch base, not a0933cf9), the importer arm now runs to completion at both revisions, but only the first of the two named negative controls is recorded and it is out of suite, not in-test.",
+    "goal": "Plan s5 asks the supervisor's spawn seam to refuse a launch whose run already has a live worker and to name its pid; reckon/crew/dispatch_launch.py:2809 reads recovery_liveness.live_worker_pid and raises the refusal at :2811 before the worker record is written.",
+    "manifest": "Read r-20261107T170819813156-refuse-a-second-launch-beside-a-live-worker/manifest.md: status complete, five commits named, baseline_suite=repair_base_arm.log (a0933cf9, 3 passed EXIT=0) and after_suite=head_arm.log (e8c4677a, 3 passed EXIT=0), the importer arms at both revisions, and both negative-control logs named; every log cited ends in a bare EXIT= line.",
+    "write_paths": "The node declared reckon/crew/dispatch_launch.py, tests/test_a_queued_run_launches_once.py and its evidence fragment; git diff --stat a0933cf939..e8c4677a changes exactly those three files (91 insertions, 145 deletions) and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_queued_run_launches_once.py:145 fails with DID NOT RAISE at the dispatch base 296e8e7b3d and with the refusal removed, but the session-walk assertion at :164 was weakened to a prefix and no recorded control shows the walk is load-bearing.",
+    "evidence": "logs/head_arm.log and logs/repair_base_arm.log each end in a summary line and every cited log ends in a bare EXIT=, and the importer arms now run to completion at both revisions (head 1 failed/560 passed vs base 3 failed/558 passed, the shared failure pre-existing), but one of plan s5's two named negative controls is unrecorded.",
+    "fit": "reckon/crew/dispatch_launch.py:2759-2774 follows the module's private-helper and docstring idiom, imports live_worker_pid inside the seam as _prepare_attempt_records already does, and adds no plan label, ticket id or version in a name or comment.",
+    "goal_fidelity": "reckon/crew/dispatch_launch.py:2809-2816 refuses before the worker record is written, but in the session-walk branch the pid it names is the dead recorded pid rather than the live holder, and the worker-record arm is answerable only while the canonical worker.json exists, which _prepare_attempt_records unlinks before the supervisor starts.",
+    "reuse": "The duplicated helpers are gone and the seam now calls the existing owner recovery_liveness.py:1275 live_worker_pid instead of composing its own read; the one added definition, _without_this_supervisor at dispatch_launch.py:2759, removes the caller's own pid from the record handed to that owner and adds no second liveness mechanism.",
+    "scope_discipline": "git diff --stat a0933cf939..e8c4677a touches only reckon/crew/dispatch_launch.py, tests/test_a_queued_run_launches_once.py and the declared evidence fragment, with no plan edit and no shared state written."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Plan s5 asks the supervisor's spawn seam to refuse a launch whose run already has a live worker and to name its pid; reckon/crew/dispatch_launch.py:2809 reads recovery_liveness.live_worker_pid and raises the refusal at :2811 before the worker record is written.\nVERDICT done_when: Plan s5's done-when names three cases, two negative controls, an importer arm and ruff; logs/head_arm.log ends '3 passed in 4.34s' EXIT=0, logs/base_arm.log (revision 296e8e7b3d) ends '2 failed, 1 passed in 2.74s' EXIT=1 with the two refusal ids, the importer arm now runs to completion at both revisions, but only the first of the two named negative controls is recorded and it is out of suite, not in-test.\nVERDICT write_paths: The node declared reckon/crew/dispatch_launch.py, tests/test_a_queued_run_launches_once.py and its evidence fragment; git diff --stat a0933cf939..e8c4677a changes exactly those three files (91 insertions, 145 deletions) and nothing else.\nVERDICT manifest: Read r-20261107T170819813156-refuse-a-second-launch-beside-a-live-worker/manifest.md: status complete, five commits named, baseline_suite=repair_base_arm.log (a0933cf9, 0 failures) and after_suite=head_arm.log (e8c4677a, 0 failures), the importer arms at both revisions, and both negative-control logs named; every log cited ends in a bare EXIT= line.\nVERDICT diff: Read a0933cf939..e8c4677a commit by commit: c6375fd577 deletes _prior_worker_record and _live_worker_beside_the_launch and makes the seam call recovery_liveness.live_worker_pid, ccd89391d3 adds _without_this_supervisor (dispatch_launch.py:2759) and drops the launching supervisor's own pointer pid, e8c4677a43 rewrites the evidence fragment; the test file drops from five cases to three, removing both in-test negative controls and the pid assertion in the session-walk case.\nCALL_SITES: reckon/crew/dispatch_launch.py:3878 _run_supervisor calls _supervisor_spawn_worker, reckon/crew/dispatch_launch.py:2411 supervised_launch calls _prepare_attempt_records then _start_supervisor at :2437, reckon/crew/dispatch.py:3338 the dispatch launch calls _prepare_attempt_records then _start_supervisor at :3366\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:2809-2816 refuses before the worker record is written, but in the session-walk branch the pid it names is the dead recorded pid rather than the live holder, and the worker-record arm is answerable only while the canonical worker.json exists, which _prepare_attempt_records unlinks before the supervisor starts.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/head_arm.log and logs/repair_base_arm.log each end in a summary line and every cited log ends in a bare EXIT=, and the importer arms now run to completion at both revisions (head 1 failed/560 passed vs base 3 failed/558 passed, the shared failure pre-existing), but one of plan s5's two named negative controls is unrecorded.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat a0933cf939..e8c4677a touches only reckon/crew/dispatch_launch.py, tests/test_a_queued_run_launches_once.py and the declared evidence fragment, with no plan edit and no shared state written.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_queued_run_launches_once.py:145 fails with DID NOT RAISE at the dispatch base 296e8e7b3d and with the refusal removed, but the session-walk assertion at :164 was weakened to a prefix and no recorded control shows the walk is load-bearing.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/dispatch_launch.py:2759-2774 follows the module's private-helper and docstring idiom, imports live_worker_pid inside the seam as _prepare_attempt_records already does, and adds no plan label, ticket id or version in a name or comment.\nSCORE reuse: 18\nJUSTIFICATION reuse: The duplicated helpers are gone and the seam now calls the existing owner recovery_liveness.py:1275 live_worker_pid instead of composing its own read; the one added definition, _without_this_supervisor at dispatch_launch.py:2759, removes the caller's own pid from the record handed to that owner and adds no second liveness mechanism.\nFINDING reckon/crew/recovery_liveness.py:1292 non-blocking: live_worker_pid returns record['pid'] whenever record_process_alive(record) is True, and that read answers True from the session walk over a different live process, so the pid it returns can be dead; measured live_worker_pid -> 645 where 645 was dead and 646 was the live session carrier.\nFINDING tests/test_a_queued_run_launches_once.py:164 non-blocking: the session-walk case asserts only the prefix 'still has a live worker (pid ' whereas the revision under review's predecessor asserted the stand-in's live pid, so the case passes whatever pid the refusal carries and cannot detect a refusal naming the dead recorded pid.\nFINDING tests/test_a_queued_run_launches_once.py:126 non-blocking: plan s5's done-when names two negative controls and both in-test controls were deleted in this range; only the first is replaced, by an out-of-suite working-tree mutation, so nothing recorded shows the session walk is load-bearing in the session-walk case.\n",
+  "review_run_id": "r-20261107T195959644987-review-of-refuse-a-second-launch-beside-a-live-worker-e8c4677a4314",
+  "reviewed_base_sha": "a0933cf939c656f0e10e2c9757545463c29a7fb6",
+  "reviewed_head_sha": "e8c4677a43142616483f2947af16718fdc4bcc5f",
+  "reviewed_run_id": "r-20261107T170819813156-refuse-a-second-launch-beside-a-live-worker",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 15,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T20:31:07.129578+00:00",
+  "total": 99
+}
