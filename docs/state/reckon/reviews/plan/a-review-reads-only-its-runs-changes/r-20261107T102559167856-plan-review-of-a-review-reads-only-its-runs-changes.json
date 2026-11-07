@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T10:32:44.220Z",
+  "dispatched_at": "2026-11-07T10:26:49Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-reads-only-its-runs-changes.html:39",
+      "id": "reasoning-1",
+      "reason": "a worker following the section as written would anchor the repair on the head-move/`_review_delivered_paths` range, which only ever affects a re-review, and could leave the first-composition oversize untouched; the node must first establish which composed field carries the 160 paths (goal, scope, declared input, or brief) before naming the site to change.",
+      "text": "\u00a72 states \"The composer's changed-path list comes from two-dot ranges off the record's `base_sha`: `_changed_paths_between` \u2026 called near lines 971, 1039 and 1091\", but reading those sites: 971 is `_changed_figure_paths` (figure-review images only), 1039 is `_review_delivered_paths` (used by the head-move decision) and 1091 is `review_head_move` itself, whose paths reach the goal as the incremental `delta` and are printed only \"covering only the commits it gained since it was reviewed\" (`reckon/crew/recovery_review_subject.py:1006\u20131015`). For a first review of a run, `delta` is empty and that goal names no changed paths at all, so none of the three cited sites is the one that puts a base-range path list into the composed review node the estimate then charges 4,000 tokens per mention for. The section names a caller for the incremental path but not the caller on the path that produced the cited refusal",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "27e97c69b4265c101e7186862196b26e80640328",
+  "plan_fingerprint": "15675fc979becb1ba2c10ea9713bcafd37fb5961af505cd46670991458a1d587",
+  "plan_slug": "a-review-reads-only-its-runs-changes",
+  "plan_version": 4,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T102559167856-plan-review-of-a-review-reads-only-its-runs-changes",
+  "reviewed_blob_sha": "68cb36af3ee0c3208845edb650b9c5b402e6a4d8",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every code anchor resolves: `_context_file_inputs` (`reckon/crew/routing.py:3262`, summed at 3510/3594), `_changed_paths_between` (`reckon/crew/recovery_review_dispatch.py:937`, called at 971, 1039, 1091), `changed_paths` (`reckon/clones.py:629`), `git rev-list HEAD ^integration_ref ^base_sha` (`reckon/crew/node.py:1537`), and `review_head_move`/`delta_base`/`review_tier` LIGHT (recovery_review_dispatch.py:1062, 1106; recovery_review_subject.py:1053\u20131058). The two ranges reproduce on the run's tree (`git diff --shortstat` gives 6 files/320 insertions for `origin/main...HEAD` and 160 files/122,334 insertions for `fc5a7fb2b2..HEAD`), and the 4,000-token flat mention rate at `reckon/crew/routing.py:74` accounts for 160 \u00d7 4,000 \u2248 640k of the 670,392 the refusal reported.",
+    "done_when": "pass \u2014 \u00a72's done-when names one deliverable at `docs/evidence/fragments/a-review-reads-only-its-runs-changes/where-a-review-takes-its-range.html`, and the revised negative control now fails on the unfixed code (the composer's named paths are not a subset of `origin/main...HEAD`) and passes only once the narrowed range is used; both of the numbers it rests on reproduce on the cited run.",
+    "evidence_paths": "pass \u2014 the note lands under the repository's own `docs/evidence/fragments/` tree and its command logs land under the run directory, both durable; no session scratchpad or node-local `/tmp` path is named.",
+    "naming": "pass \u2014 the section names real symbols and file paths; no plan labels, stage names, ticket numbers or version tags reach a symbol or filename, and the evidence-note path is a capability name.",
+    "reasoning": "a finding \u2014 the stated mechanism is right in shape but the section credits the changed-path list to the incremental head-move call sites, not to the composer that actually puts paths into a review node's goal.",
+    "single_goal": "pass \u2014 the section carries one deliverable, an investigation note; the repair it describes is stated as text inside that note, not implemented, and the section says so explicitly (\"It edits no product source and no plan\").",
+    "wiring": "pass \u2014 \u00a72 declares no depends-on/informs/gates of its own; the single relationship it carries, followup f-arroirc-001 naming `/reckon-build a-review-reads-only-its-runs-changes \u00a72`, resolves to this section, and `plan-after` names `work-is-never-stuck-behind-the-admission-loop` as the ordering plan."
+  },
+  "section_digests": {
+    "_document": "0af1d00b32938d873bd915295342a4613cff1539f736606eeda3c49d770048ad",
+    "s1": "3af442a13134b7c46db2d98609970c3d9e560ca12eb3deabbed535c7f74c5dca",
+    "s2": "299fc872b9eed38efa86cdaaecc37fe94806f46a7b5fe57c2de696dccd45502d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T10:41:39.900365+00:00",
+  "total": null
+}
