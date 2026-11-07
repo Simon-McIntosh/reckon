@@ -332,7 +332,16 @@ def _render_document(
     source: str,
     records: Sequence[Mapping[str, Any]],
     root: Path,
+    created_by_append: bool = False,
 ) -> str:
+    """Render a landed record.
+
+    ``created_by_append`` says this document is the empty frame an
+    :func:`append_evidence` creates before any section lands in it. Such a
+    frame has read nothing, so it states no run, comment or commit count and
+    no verdict — the counts a synthesis computes are the only ones the record
+    may publish.
+    """
     plan_slug = str(plan.get("slug") or "").strip()
     plan_title = str(plan.get("title") or plan_slug).strip()
     comments_by_section = {
@@ -403,10 +412,13 @@ def _render_document(
         parts.append("  </section>")
         sections.append("\n".join(parts))
 
-    summary = (
-        f"Closure synthesis for {plan_title}: {len(records)} committed run(s), "
-        f"{comment_count} section-anchored comment(s), and {len(commits)} landed commit(s)."
-    )
+    if created_by_append:
+        summary = f"Landing record for {plan_title}: evidence appended by section."
+    else:
+        summary = (
+            f"Closure synthesis for {plan_title}: {len(records)} committed run(s), "
+            f"{comment_count} section-anchored comment(s), and {len(commits)} landed commit(s)."
+        )
     meta_lines = [
         f'  <meta name="docs-project" content="{_escape(project)}">',
         '  <meta name="reckon-type" content="evidence">',
@@ -414,8 +426,11 @@ def _render_document(
         f'  <meta name="plan-title" content="{_escape(plan_title)} — landed record">',
         f'  <meta name="plan-summary" content="{_escape(summary)}">',
         f'  <meta name="plan-evidence-for" content="{_escape(plan_slug)}">',
-        f'  <meta name="plan-verdict" content="{_overall_verdict(records)}">',
     ]
+    if not created_by_append:
+        meta_lines.append(
+            f'  <meta name="plan-verdict" content="{_overall_verdict(records)}">'
+        )
     if recorded_at:
         meta_lines.append(
             f'  <meta name="plan-recorded-at" content="{_escape(recorded_at)}">'
