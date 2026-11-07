@@ -1,0 +1,46 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T12:54:55.937Z",
+  "dispatched_at": "2026-11-07T12:47:25Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-queued-request-is-checked-when-queued.html:47",
+      "id": "reasoning-1",
+      "reason": "the plan carries two contradictory accounts of one event, and a reader or a later node taking \u00a73's premise over \u00a75's finding would hunt a restoring caller that does not exist; one sentence in \u00a73 removes the contradiction.",
+      "text": "\u00a73 asks the investigator to establish \"which restored a new inode there at 23:50Z\", while \u00a75 (line 55) and \u00a71 (line 37) record that there was no restore: the new inode came from the same `_create_worktree` call seconds later and 23:50 was local time for 22:50:26Z",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "b44e98019d76684b39f640e2d9c567cb65d87e6c",
+  "plan_fingerprint": "11bddc3e1cdd8e30d1659cc7c7e02ef6467aee956927180218b4bd90b677ce4e",
+  "plan_slug": "a-queued-request-is-checked-when-queued",
+  "plan_version": 20,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T124533870873-plan-review-of-a-queued-request-is-checked-when-queued",
+  "reviewed_blob_sha": "98998042227b26046f49e6f0386371677bbe0c8c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_queue_batch` exists at `reckon/crew/dispatch_batch.py:502`; `reckon/crew/dispatch_plan.py:823` is exactly `node.manifest_path = node.manifest_path or durable_manifest`; `run_dir(run_id)` is `runs_dir() / run_id`, so the cited `runs_dir()/<run_id>/manifest.md` shape is right; and `crew queue edit` accepts `--time-budget` and restricts edits to `EDITABLE_NODE_FIELDS = (\"done_when\", \"write_paths\", \"time_budget\")`.",
+    "done_when": "pass \u2014 \u00a76's done-when is measurable (an edit stored, a named manifest path under the request's own run directory) and its negative control is a real mutation: removing the manifest default from the batch entry flips the same edit to a refusal naming `independently-verifiable`, a check that fires on a TaskNode with an empty `manifest_path` and clears with an absolute one (probed directly:",
+    "evidence_paths": "pass \u2014 the deliverable is a test under `tests/`; no section scratch path is named.",
+    "naming": "pass \u2014 `tests/test_a_batch_request_can_be_edited.py` names the behaviour; no plan label, stage name or ticket number appears in the section.",
+    "reasoning": "a finding \u2014 \u00a76's own reasoning holds, but \u00a73 (line 47) still asserts a \"restoring\" caller at 23:50Z that \u00a75 and \u00a71 state did not happen.",
+    "single_goal": "pass \u2014 one deliverable, the manifest default in `_queue_batch`, with its test.",
+    "wiring": "pass \u2014 \u00a76 carries no `data-links`, but its ordering on \u00a72 is stated in its own text and the earlier wiring finding on exactly that point was answered by dispatching \u00a76 with `--after` the \u00a72 run; no relationship points at a wrong node."
+  },
+  "section_digests": {
+    "_document": "ed27a7303222f8350e46233951fe59de80aa01ec9add1c79c607622c712a734b",
+    "s1": "196da1e620e2e482d27bdd207b57d91dc82c799811a9f88189e2350ff4eeb51a",
+    "s2": "f0bb78f495e184d08f264ee0c8670552bf2417dc09e1fccec557d64974b999ef",
+    "s3": "f288d709dea574f288a4293a730c4c2c68204ee12bcbcc8ecb597365aea1936f",
+    "s4": "214c26ee307b26a9189e695057c758aa5f11833093fa7379f62bdba78c540705",
+    "s5": "14904131688ef295e846a5981db7f3012be401c872b746a8e4d5525277b7f620",
+    "s6": "9fd7213f2d6f0bab3f756ca0963129a03ad23ecf38500889a8fd09f89dec519f"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T13:08:07.452210+00:00",
+  "total": null
+}
