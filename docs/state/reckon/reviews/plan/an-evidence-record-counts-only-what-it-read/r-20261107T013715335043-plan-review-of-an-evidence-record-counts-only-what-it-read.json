@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T01:47:41.471Z",
+  "dispatched_at": "2026-11-07T01:38:38Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:50",
+      "id": "reasoning-1",
+      "reason": "the plan leaves one comparison operand's spelling unstated, and normalising the anchor through `_section_key` plus one case is the difference between the refusal firing and the duplicate being created.",
+      "text": "the refusal compares the requested anchor against ids `_section_key` makes of the plan side, but nothing in \u00a74 normalises the requested anchor itself: an append anchored `s5.1` (the plan's own authored spelling, admitted by the shape guard's `[A-Za-z0-9][A-Za-z0-9._-]*`) is not equal to the producible `s5-1`, so it is accepted and writes `id=\"s5.1\"` that then sits beside the synthesis's own `id=\"s5-1\"`, the collision the refusal exists to prevent; the ninth case tests only anchor `s5-1`.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:50",
+      "id": "reasoning-2",
+      "reason": "a pre-marker append of that shape disappears without a record, which is the anchor-and-content loss \u00a74 exists to end; naming the dropped producible ids is one field entry and one case.",
+      "text": "the \"never silent\" guarantee covers only unmarked ids that this run renders (\"replaced by the rendered one\", listed as a replaced unmarked id), but a pre-marker append anchored to a producible id the run does *not* render (for example a plan section id with no comments or runs, which the append could have taken because nothing rendered it then) is dropped by the legacy rule and named nowhere; the third case states exactly that drop as intended and asserts nothing about the result.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "e17dea0f877b811b4e1c4f8afb537b7ee95f8f1b",
+  "plan_fingerprint": "48be48f6cdce9e3f2fa39c086616d7fe9d688af80cc0418097d5947930b4bd56",
+  "plan_slug": "an-evidence-record-counts-only-what-it-read",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T013715335043-plan-review-of-an-evidence-record-counts-only-what-it-read",
+  "reviewed_blob_sha": "b486c2e51e44bce1363d8966b96e12554899a660",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_evidence_section_html` (reckon/_store.py:1197), `_apply_evidence_appends` (1230), the anchor-shape guard (1292\u20131299), `_render_document` (reckon/evidence.py:329\u2013354 and the id write at 372), `_section_key` (50), `EvidenceSynthesisResult` (24) and `synthesize_evidence` (reckon/project_maintenance_commands.py:1473) all resolve, and `_section_key(\"s5.1\")` returns `s5-1` as the plan claims.",
+    "done_when": "pass \u2014 ten cases, each paired with a negative control that falsifies a named assertion (including the authored-vs-rendered spelling control), plus a base-revision regression arm and per-log revision/command/EXIT= requirements.",
+    "evidence_paths": "pass \u2014 every gate log is required under the run directory, header-pinned to its revision and literal command and closed with a bare `EXIT=`.",
+    "naming": "pass \u2014 `data-evidence-origin=\"append\"` names what it records, and no plan label, stage name or ticket number reaches a symbol or comment.",
+    "reasoning": "a finding \u2014 the stated root cause is reproduced and the caller is named, but the anchor refusal is specified only for the producible side, and the legacy drop is specified only for ids this run renders.",
+    "single_goal": "pass \u2014 one deliverable: a re-synthesis keeps appended anchors resolvable, with the new mark, the collision refusal and the result field as parts of that one outcome.",
+    "wiring": "pass \u2014 \u00a74 declares waits on s2 and s3 in `plan-section-depends-on`, and those are exactly the sections whose declared write paths (`reckon/_store.py`, and for \u00a72 `reckon/evidence.py`) it shares."
+  },
+  "section_digests": {
+    "_document": "6d35efce52466005f8ee56997c8dc7bcca998d7c41fcd252d254bc7264596281",
+    "s1": "7c52117565966edec5de56bc0448d4a141edbcb73ac18ede5f2cb0c34f424f0a",
+    "s2": "143dc532dde638505b6cf743e1b2af8b2d754fbd94debf4fdb0b351e623a2a39",
+    "s3": "1e19a712fd2dad1c38a11f7b6164b1fcc01c996e78f3297edb135a1d5fd7c0cf",
+    "s4": "dfe683d10b0ebcf0ed354e10856a5519d60e6b1024f07a753a76d2ac7c38428e"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T03:28:26.520732+00:00",
+  "total": null
+}
