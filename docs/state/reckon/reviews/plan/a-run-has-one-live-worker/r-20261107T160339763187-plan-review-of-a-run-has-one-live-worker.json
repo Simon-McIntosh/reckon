@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T16:46:27.313Z",
+  "dispatched_at": "2026-11-07T16:26:33Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:145",
+      "id": "done_when-1",
+      "reason": "a worker performing the stated reproduction either records the wrong behaviour in the gate log or adds `--reason`/`--run` on its own initiative, so the section's reproduce-before-repair step does not exercise the path its own cases drive.",
+      "text": "the reproduce-first sentence seeds \"a widen of a run in a temporary crew home whose worker record names a live stand-in process\", but `widen_claim` refuses any non-self widen while `record_process_alive(pointer) is True` (`reckon/crew/claims.py:106`), so that arm returns the ClaimAmendmentRefusedError text (\"its worker is still running; wait for that process to exit\"), not the `ok` result with `write_paths` that nova-39 saw; the defect is only observable through a self-widen, which the first test case names and the reproduction does not",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "e9805b3a4cb362516dc5bc3f14e880c9f70eaec1",
+  "plan_fingerprint": "1df865f238000c858581b43a1f802d141a285d563f8edd7115be7ccfdc2f05d4",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 30,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T160339763187-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "60b85c74771bfda24e6b927c670b95560e082bd7",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `crew_widen` is at `reckon/crew_run_commands.py:1658`, `claims.widen_claim` at `reckon/crew/claims.py:64`, `record_process_alive` at `reckon/crew/process_liveness.py:300`; the new comment's evidence resolves (`attempt-1-worker.json` pid 183824 at 13:52:24Z, `attempt-2-worker.json` pid 195147 at 13:54:05Z, and `stream.jsonl` lines 3911/3961 carry the two EROFS records it describes).",
+    "done_when": "a finding \u2014 \u00a78's reproduce-first step says \"a widen of a run \u2026 whose worker record names a live stand-in process\", but a plain widen in that state is refused, so the arm cannot observe the ok-result defect the section is about.",
+    "evidence_paths": "pass \u2014 the reproduction output goes into the gate log and every log sits under the run directory, both durable; nothing in \u00a78 is written to a session scratchpad or a node-local path.",
+    "naming": "pass \u2014 `takes_effect` names the behaviour; \u00a78 adds no plan label, ticket number or version tag, and its prose states the mechanism rather than any tracker reference.",
+    "reasoning": "pass \u2014 the stated cause holds: the widen's emitted result carries no timing word (`crew_widen` emits run_id/phase/node/session_id/added/write_paths/grants and nothing about mounts), and \"a running worker's mounts are fixed when bwrap starts it\" is confirmed by `attempt-1-worker.json`'s argv, which binds the worktree at launch; the section correctly scopes the replaced-tree cause out to \u00a75 rather than blaming a widen.",
+    "single_goal": "pass \u2014 \u00a78 carries one deliverable (the widen result says when widened paths take effect); its three cases all serve it, and it is not merged with \u00a75 even though both are about mounts.",
+    "wiring": "pass \u2014 \u00a78 is declared `implementable` in `plan-section-declarations`, f-arolw-008 drives it with the matching `/reckon-build \u2026 \u00a78` prompt, its `data-links=\"\"` needs no section wait (it writes `crew_run_commands.py` and `claims.py`, which no other section writes), and the surviving s7\u2192s6 wait still matches `plan-section-depends-on`."
+  },
+  "section_digests": {
+    "_document": "a84f6acdfa5bde1ab873fc2f587979b77f777a0513526a030168c36c7dbcbbf5",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "c8fe2a5a6c5765bc70ba45627cc9f5778b225a5e1deff2cc1bb1e0e08214362a",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "63bd79fcdd7baf06c8cc0bbc04ef21beec3605a6fdb13eed90b3ad410f8516e7",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b",
+    "s8": "66957487c640704a17b67ab58c76b54eaa8a80809a59c0d191269292effb324c"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T17:00:59.590818+00:00",
+  "total": null
+}
