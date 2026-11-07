@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T09:11:00.084Z",
+  "dispatched_at": "2026-11-07T09:02:33Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-held-lane-never-holds-a-review.html:39",
+      "id": "reasoning-1",
+      "reason": "an implementer following \u00a72 literally ships a repair that still leaves such a review held indefinitely behind a budget reset, which is the exact defect the plan exists to remove.",
+      "text": "\u00a72 promises that \"A review request whose lane came from the review reflex following its run \u2026 is rebound by `_local_fallback`\", but the specified change relaxes only the `named_route` and picker-action guards; `_local_fallback` returns `None` earlier still at `reckon/crew/queue_admission.py:639` when `pointer.get(\"picker_selection\")` is not a mapping, and a review whose composer recorded no picker selection has no such key at all \u2014 `review_lane_selection` starts `None` in `reckon/crew/recovery_review_dispatch.py:2872` and is filled only when `lane_names_a_choice` is true, which `reckon/crew/dispatch_picker.py:1045` makes false unless the routing picker is on `route` and the lane declares two or more models, and `dispatch.py:1766` writes `picker_selection` onto the pointer only when it is not `None`",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-held-lane-never-holds-a-review.html:39",
+      "id": "reasoning-2",
+      "reason": "the same origin is computable in `_dispatch_composed_review`, which is already a write path, so the repair stays inside the declared scope even though the sentence points one function to the side of it.",
+      "text": "\u00a72 says the composer \"orders lanes in `_ordered_review_lanes` \u2026 [and] records that origin on the route it passes to dispatch\", but `_ordered_review_lanes` returns a lane list with no provenance, and the function that knows the reviewed run's backend (`_composed_review_lane`, `reckon/crew/recovery_review_subject.py:1137`) is not among \u00a72's write paths",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "84b903421c161d3ff8bac7bb4a95f93972b34d9f",
+  "plan_fingerprint": "64e35c6d89fa592b36ed7d3e366b8c18b9bea3717c3a296ea232dac0f30eb566",
+  "plan_slug": "a-held-lane-never-holds-a-review",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T090103118515-plan-review-of-a-held-lane-never-holds-a-review",
+  "reviewed_blob_sha": "86a89322b5251e49e6f5c568e170d28d4e064171",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every citation resolves at the line given: `_local_fallback` at `reckon/crew/queue_admission.py:628`, the `named_route` write at `reckon/crew/dispatch.py:1770`, `_review_excluded_backends` at `reckon/crew/recovery_review_dispatch.py:1552`, `_ordered_review_lanes` at `:1633`, and `review_excluded_backends:` at `docs/state/reckon/flight.yaml:73`.",
+    "done_when": "pass \u2014 the three declared cases each assert a distinct observable outcome (rebind with `route_fallback`, no rebind for a caller-named route, the origin recorded on the composed review's `named_route`), and the negative control is real: restoring `pointer.get(\"named_route\")` as authoritative makes case 1 stop rebinding, so the gate can fail.",
+    "evidence_paths": "pass \u2014 the plan names no session scratchpad or node-local temporary path; its gate is a repository test file and a ruff pair, and no evidence artefact is directed anywhere that does not survive the run.",
+    "naming": "pass \u2014 the proposed test filename `test_a_held_lane_never_holds_a_review.py` and the proposed `set_by: \"review-follows-run\"` both name a behaviour rather than a plan stage, ticket or version, and the section carries no changelog prose.",
+    "reasoning": "a finding \u2014 the root cause is right and the cited evidence supports it, and the mechanism is reached by a live caller (`_launch_queued`'s `except BudgetHold` at `reckon/crew/queue_admission.py:4563`), but the deliverable's universal claim is wider than the guards \u00a72 relaxes, so one reachable branch still never rebinds.",
+    "single_goal": "pass \u2014 \u00a72 carries one deliverable (the rebind of a review-follows-run route under a budget hold) and its test, with the budget read explicitly delegated to admission rather than re-derived.",
+    "wiring": "pass \u2014 `plan-after` names `work-is-never-stuck-behind-the-admission-loop`, whose \u00a729 is the cited incident, and the mechanism it repairs (`_local_fallback`) already landed in 1f0303dbdd, so no unlanded dependency is missing and no relationship points at a wrong node."
+  },
+  "section_digests": {
+    "_document": "53422e159c6c3bb5222bc30d95bb52f02b072bd0c70f6e64ce7ea665403bfb63",
+    "s1": "5e18290da06165cccdde0bffe86afdb6c162dafd3e5cc5a316459a049cef1045",
+    "s2": "4bdaec591e851543fdfb1bfdd02e8f2ff89b046b6d152aac0ec46b28dc559dac"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T09:21:52.891423+00:00",
+  "total": null
+}
