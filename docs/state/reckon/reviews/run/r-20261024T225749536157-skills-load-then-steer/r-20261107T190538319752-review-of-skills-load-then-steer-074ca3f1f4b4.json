@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: gate-base.log (f315e62701, EXIT=1) fails tests/test_skills_load_full_width.py::test_dispatch_set_includes_sections_waiting_for_upstream and ::test_waits_are_authored_and_queue_steering_is_discoverable; gate-after.log (074ca3f1f4, EXIT=0) fails none, so no failure is added.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-07T19:30:38.791Z",
+  "dispatched_at": "2026-11-07T19:09:43Z",
+  "findings": [
+    {
+      "file": "tests/test_skills_load_full_width.py",
+      "line": "90",
+      "severity": "non-blocking",
+      "text": "the caveat-absence check walks skills/*.md without proving the glob matched anything and matches only the two literal phrasings, so an empty tree or a reworded caveat passes it while the done-when's \"no interim metered-lane caveat\" clause reads as guarded."
+    },
+    {
+      "file": "tests/test_skills_load_full_width.py",
+      "line": "96",
+      "severity": "non-blocking",
+      "text": "test_edit_skill_states_the_queued_request_hold_rule_uses_the_marked_hold re-asserts the same two sentences of skills/reckon-edit/SKILL.md that test_edit_skill_states_the_queued_request_hold_rule already asserts at line 79, so it adds a ninth test without widening coverage."
+    },
+    {
+      "file": "tests/test_skill_contracts.py",
+      "line": "1569",
+      "severity": "non-blocking",
+      "text": "the done-when's \"the skill-contract tests pass\" clause is unmet at head (this verb-coverage test now fails on \"reckon crew station\", and :374 fails on routing identifiers in reckon/crew/directory.py); the node's change clears the queue-hold omission this test previously named, and the residue needs a node holding reckon/crew/directory.py and the build skill's station documentation."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none: no runtime code path reaches this change; the diff touches three skill markdown files, AGENTS.md and one test file",
+    "diff": "read commit 074ca3f1f4 against f315e62701, 6 files changed 104 insertions / 31 deletions: three skill and guideline files reworded to name the steering verbs, tests/test_skills_load_full_width.py rewritten to the new wording with five added test functions, and the landing fragment added.",
+    "done_when": "I re-ran the done-when's grep per file at 074ca3f1f4 \u2014 crew dispatch --batch (1), crew queue hold (1), release (1), reprioritise (2), drop (2) and plan-review-owed (1) in skills/reckon-build/SKILL.md, the same six in skills/reckon-build/references/sprint-orchestration.md, plan-review-owed (1) in skills/reckon-edit/SKILL.md, crew dispatch --batch (1) in AGENTS.md, and zero hits for either interim-caveat phrasing across skills/*.md; the manifest records the head arm 9 passed EXIT=0 and the base arm 2 failed / 2 passed EXIT=1, and I reproduced 9 passed at head, but the closing clause \"the skill-contract tests pass\" is unmet at head (2 failures, both pre-existing and outside the node's write scope).",
+    "goal": "the node goal is to add the hold, release, loading-check and plan-review-owed steps to the build and edit skills' steering pattern; skills/reckon-build/SKILL.md:168-177 now names crew queue edit, hold, release, reprioritise and drop plus the plan-review-owed hold, skills/reckon-edit/SKILL.md:212-224 gains the queued-request hold rule, and AGENTS.md:31 names crew dispatch --batch.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T225749536157-skills-load-then-steer/manifest.md; status complete, commits 074ca3f1f4b4f47624af8be10723b980914cdd15, tests PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_skills_load_full_width.py, baseline_suite 2 failures at f315e62701, after_suite 0 failures, negative_control_log named with 1 failed / 8 passed.",
+    "write_paths": "the manifest declares six write paths plus docs/figures/a-queue-holds-the-whole-plan/skills-load-then-steer; git show --stat 074ca3f1f4 changes exactly six files, every one inside that set, plus the always-permitted landing fragment, and writes no figure."
+  },
+  "justifications": {
+    "durability": "each added assertion is a presence check whose string is the delivered text, so removing the landed sentence reddens it, and negative-control.log:21 demonstrates exactly that for \"reckon crew queue hold --run\" (EXIT=1, a failing id the head arm passes); the caveat-absence check at tests/test_skills_load_full_width.py:90 is the weak link because it asserts an absence over a glob with no positive control.",
+    "evidence": "the grep figures are reproducible per file at 074ca3f1f4 and gate-base.log:36 records \"2 failed, 2 passed\" against gate-after.log:6 \"9 passed\", but the done-when's last clause is falsified at head by tests/test_skill_contracts.py:1569 and :374 (2 failures), which the manifest discloses under outside_scope rather than records as a pass.",
+    "fit": "the added test functions at tests/test_skills_load_full_width.py:71-99 reuse the file's imported normalized helper and its prose-assertion idiom, and the names and the commit subject carry no plan, section or version label.",
+    "goal_fidelity": "skills/reckon-build/SKILL.md:168-177 and skills/reckon-edit/SKILL.md:212-224 land every step the goal names, and I checked the prose against reckon/crew/queue_edit.py:300-311 (edit accepts steering, done-when, write paths, time budget and route) and reckon/crew/queue_admission.py:68 (plan-review-owed) so the skills teach commands and holds that exist.",
+    "reuse": "the only added definitions are test functions in the declared test file and they import tests/test_skill_contracts.py's normalized owner rather than forking a normalizer; verb coverage for the build skill partially overlaps tests/test_skill_contracts.py:1569, but the reference-file check covers a file that owner never reads.",
+    "scope_discipline": "every path in git show --stat 074ca3f1f4 lies inside the six declared write paths, and the one out-of-scope artifact the node could have written, a figure directory, is correctly absent."
+  },
+  "node": "review-of-skills-load-then-steer-074ca3f1f4b4",
+  "node:reviewed": "skills-load-then-steer",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to add the hold, release, loading-check and plan-review-owed steps to the build and edit skills' steering pattern; skills/reckon-build/SKILL.md:168-177 now names crew queue edit, hold, release, reprioritise and drop plus the plan-review-owed hold, skills/reckon-edit/SKILL.md:212-224 gains the queued-request hold rule, and AGENTS.md:31 names crew dispatch --batch.\nVERDICT done_when: I re-ran the done-when's grep per file at 074ca3f1f4 \u2014 crew dispatch --batch (1), crew queue hold (1), release (1), reprioritise (2), drop (2) and plan-review-owed (1) in skills/reckon-build/SKILL.md, the same six in skills/reckon-build/references/sprint-orchestration.md, plan-review-owed (1) in skills/reckon-edit/SKILL.md, crew dispatch --batch (1) in AGENTS.md, and zero hits for either interim-caveat phrasing across skills/*.md; the manifest records the head arm 9 passed EXIT=0 and the base arm 2 failed / 2 passed EXIT=1, and I reproduced 9 passed at head, but the closing clause \"the skill-contract tests pass\" is unmet at head (2 failures, both pre-existing and outside the node's write scope).\nVERDICT write_paths: the manifest declares six write paths plus docs/figures/a-queue-holds-the-whole-plan/skills-load-then-steer; git show --stat 074ca3f1f4 changes exactly six files, every one inside that set, plus the always-permitted landing fragment, and writes no figure.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T225749536157-skills-load-then-steer/manifest.md; status complete, commits 074ca3f1f4b4f47624af8be10723b980914cdd15, tests PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_skills_load_full_width.py, baseline_suite 2 failures at f315e62701, after_suite 0 failures, negative_control_log named with 1 failed / 8 passed.\nVERDICT diff: read commit 074ca3f1f4 against f315e62701, 6 files changed 104 insertions / 31 deletions: three skill and guideline files reworded to name the steering verbs, tests/test_skills_load_full_width.py rewritten to the new wording with five added test functions, and the landing fragment added.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: skills/reckon-build/SKILL.md:168-177 and skills/reckon-edit/SKILL.md:212-224 land every step the goal names, and I checked the prose against reckon/crew/queue_edit.py:300-311 (edit accepts steering, done-when, write paths, time budget and route) and reckon/crew/queue_admission.py:68 (plan-review-owed) so the skills teach commands and holds that exist.\nSCORE evidence: 16\nJUSTIFICATION evidence: the grep figures are reproducible per file at 074ca3f1f4 and gate-base.log:36 records \"2 failed, 2 passed\" against gate-after.log:6 \"9 passed\", but the done-when's last clause is falsified at head by tests/test_skill_contracts.py:1569 and :374 (2 failures), which the manifest discloses under outside_scope rather than records as a pass.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git show --stat 074ca3f1f4 lies inside the six declared write paths, and the one out-of-scope artifact the node could have written, a figure directory, is correctly absent.\nSCORE durability: 18\nJUSTIFICATION durability: each added assertion is a presence check whose string is the delivered text, so removing the landed sentence reddens it, and negative-control.log:21 demonstrates exactly that for \"reckon crew queue hold --run\" (EXIT=1, a failing id the head arm passes); the caveat-absence check at tests/test_skills_load_full_width.py:90 is the weak link because it asserts an absence over a glob with no positive control.\nSCORE fit: 18\nJUSTIFICATION fit: the added test functions at tests/test_skills_load_full_width.py:71-99 reuse the file's imported normalized helper and its prose-assertion idiom, and the names and the commit subject carry no plan, section or version label.\nSCORE reuse: 17\nJUSTIFICATION reuse: the only added definitions are test functions in the declared test file and they import tests/test_skill_contracts.py's normalized owner rather than forking a normalizer; verb coverage for the build skill partially overlaps tests/test_skill_contracts.py:1569, but the reference-file check covers a file that owner never reads.\nFINDING tests/test_skills_load_full_width.py:90 non-blocking: the caveat-absence check walks skills/*.md without proving the glob matched anything and matches only the two literal phrasings, so an empty tree or a reworded caveat passes it while the done-when's \"no interim metered-lane caveat\" clause reads as guarded.\nFINDING tests/test_skills_load_full_width.py:96 non-blocking: test_edit_skill_states_the_queued_request_hold_rule_uses_the_marked_hold re-asserts the same two sentences of skills/reckon-edit/SKILL.md that test_edit_skill_states_the_queued_request_hold_rule already asserts at line 79, so it adds a ninth test without widening coverage.\nFINDING tests/test_skill_contracts.py:1569 non-blocking: the done-when's \"the skill-contract tests pass\" clause is unmet at head (this verb-coverage test now fails on \"reckon crew station\", and :374 fails on routing identifiers in reckon/crew/directory.py); the node's change clears the queue-hold omission this test previously named, and the residue needs a node holding reckon/crew/directory.py and the build skill's station documentation.",
+  "review_run_id": "r-20261107T190538319752-review-of-skills-load-then-steer-074ca3f1f4b4",
+  "reviewed_base_sha": "f315e62701f1ab6657ae2b68fa502d7b6862e9a9",
+  "reviewed_head_sha": "074ca3f1f4b4f47624af8be10723b980914cdd15",
+  "reviewed_run_id": "r-20261024T225749536157-skills-load-then-steer",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T19:20:52+00:00",
+  "total": 107
+}

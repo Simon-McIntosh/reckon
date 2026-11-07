@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="285">
+<meta name="plan-version" content="286">
 <meta name="plan-modified" content="2026-11-07">
 </head>
 <body>
@@ -332,6 +332,12 @@
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261027T050146365874-drain-week-view" data-who="reckon-build" data-when="2026-10-27T07:27:37Z">
     <div class="r-comment-body"><p>An overdue awaiting-upstream request appears in stuck whenever admission resolves its waits to a different phase, including queued and blocked-upstream; the pending arm stays out. Base and final-head focused gates each have 35 passes and one identical inventory failure, with zero added ids; reversing the answer fails the blocked arm.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261024T225749536157-skills-load-then-steer" data-who="reckon-build" data-when="2026-11-07T18:38:34.873Z">
+    <div class="r-comment-body"><p>skills/reckon-build/SKILL.md and skills/reckon-build/references/sprint-orchestration.md now name all five steering verbs (crew queue edit, hold, release, reprioritise, drop) and the plan-review-owed hold, the build skill's interim metered-lane caveat is removed, skills/reckon-edit/SKILL.md gains the queued-request hold rule, AGENTS.md names crew dispatch --batch, and tests/test_skills_load_full_width.py is rewritten to the reworded text (9 passed at head; 2 failed / 2 passed at base f315e62701; negative control fails with EXIT=1)</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261107T190538319752-review-of-skills-load-then-steer-074ca3f1f4b4" data-who="reckon-build" data-when="2026-11-07T19:30:38.791Z">
+    <div class="r-comment-body"><p>Independent review of skills-load-then-steer at head 074ca3f1f4 against base f315e62701: goal_fidelity 19, evidence 16, scope_discipline 19, durability 18, fit 18, reuse 17 (total 107); added_failure_count 0 derived from gate-base.log (2 failures) and gate-after.log (0); 3 non-blocking findings (the caveat-absence test lacks a positive control, one duplicate edit-skill test, and the done-when&#x27;s skill-contract clause is unmet at head for pre-existing out-of-scope reasons); record at review-records/r-20261024T225749536157-skills-load-then-steer.json passes crew check --review.</p></div>
 </div>
 <div class="r-comment" data-section="s14" data-id="c-s14-seeded-violation" data-who="" data-when="">
     <div class="r-comment-body"><p>The content review of 27 October found that §14 has no negative control: a drain whose counters never increment would report zero DAG-order violations. When §14 is dispatched, its done-when gains one: before the week starts, the coordinator seeds a request that launches before its upstream lands, and the drain instrument must report exactly that one violation.</p></div>
@@ -803,9 +809,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261026T221905269639-drain-lists-unloaded" data-who="reckon-build" data-when="2026-10-27T00:05:11Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/a-queue-holds-the-whole-plan/drain-lists-unloaded.html — matched six-file delta: 1 landing failure and 60 passed at source-reverted base, 61 passed at repaired head; both answering-commit inverse controls failed the landing assertion.</p></div>
-</div>
-<div class="r-comment" data-section="s13" data-id="c-run-r-20261024T225749536157-skills-load-then-steer" data-who="reckon-build" data-when="2026-11-07T18:38:34.873Z">
-    <div class="r-comment-body"><p>skills/reckon-build/SKILL.md and skills/reckon-build/references/sprint-orchestration.md now name all five steering verbs (crew queue edit, hold, release, reprioritise, drop) and the plan-review-owed hold, the build skill&#x27;s interim metered-lane caveat is removed, skills/reckon-edit/SKILL.md gains the queued-request hold rule, AGENTS.md names crew dispatch --batch, and tests/test_skills_load_full_width.py is rewritten to the reworded text (9 passed at head; 2 failed / 2 passed at base f315e62701; negative control fails with EXIT=1)</p></div>
 </div>
 </section>
 </main>
