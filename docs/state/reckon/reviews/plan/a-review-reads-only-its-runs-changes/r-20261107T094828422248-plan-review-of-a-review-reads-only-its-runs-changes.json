@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T09:55:49.836Z",
+  "dispatched_at": "2026-11-07T09:49:25Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-reads-only-its-runs-changes.html:35",
+      "id": "reasoning-1",
+      "reason": "a node built on \u00a72 would implement the range the plan states in \u00a71 and measure no reduction, shipping a repair that leaves the 670k-token estimate intact.",
+      "text": "\u00a71 prescribes \"the three-dot diff against the integration branch, `git diff <base>...HEAD`\", but on the cited run the base is itself the merge base, so `<base>...HEAD` returns the identical 160 files and 122,334 insertions as `<base>..HEAD`; the range that actually isolates the run's own work is `origin/main...HEAD`, which returns 6 files and 320 insertions. The sentence's second alternative, \"or equivalently the diff of the run's own non-merge commits\", is the correct one and is not equivalent \u2014 they differ by 154 files.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-reads-only-its-runs-changes.html:39",
+      "id": "done_when-1",
+      "reason": "the control is the only thing that would tell a worker its range change is real, and as written it passes on the unfixed code, so the gate cannot show the guard fires.",
+      "text": "the negative control, \"the same measurement on a run that never merged main gives the same paths under both ranges\", is satisfied trivially whenever the compared ranges are `<base>...HEAD` and `<base>..HEAD`, because a base that is an ancestor of the head makes three-dot and two-dot identical \u2014 the control holds however the composer behaves and so distinguishes nothing.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-reads-only-its-runs-changes.html:39",
+      "id": "anchors_resolve-1",
+      "reason": "the investigation is defined by the sites the worker records and the anchors it gives for them, so a corrected count changes the prose a reader passes over, not the deliverable or its measure.",
+      "text": "\"which of the twelve range sites\" asserts a count with no anchor, no list and no source; a grep of `reckon/crew/` and `reckon/clones.py` for two-dot range forms finds six, none of them enumerated in the plan, and the reviewed entries `971`, `1039` and `1091` of `_changed_paths_between` include a call (`reviewed_head..head`) that is not off `base_sha`.",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "3a644940c42bbec5c15136aabf225591faba4674",
+  "plan_fingerprint": "e98988181c796f1dcaf92ce9a7bc5bbff955f1f3820c3eda087310a78399548f",
+  "plan_slug": "a-review-reads-only-its-runs-changes",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T094828422248-plan-review-of-a-review-reads-only-its-runs-changes",
+  "reviewed_blob_sha": "fb9d76428f8ace7d09a3bcd9cd6f3fc77dd5af1d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the \"twelve range sites\" count at line 39 names no anchor and no enumeration.",
+    "done_when": "a finding \u2014 the negative control at line 39 cannot fail under the range \u00a71 defines.",
+    "evidence_paths": "pass \u2014 the note lands under `docs/evidence/fragments/` in the repository and the command logs under the crew run directory, both durable and openable by a later reader.",
+    "naming": "pass \u2014 \u00a72 creates no product symbols, and the evidence-note path carries a plan slug where a plan's own record is expected to.",
+    "reasoning": "a finding \u2014 \u00a71's prescribed range reproduces the 160-file span it is meant to correct.",
+    "single_goal": "pass \u2014 \u00a72 delivers one artifact, the evidence note at `docs/evidence/fragments/a-review-reads-only-its-runs-changes/where-a-review-takes-its-range.html`, whose repair statement is part of that note rather than a second deliverable.",
+    "wiring": "pass \u2014 `plan-after` names `work-is-never-stuck-behind-the-admission-loop`, which exists, and the two cross-plan anchors it cites (`the-crew-home-has-a-bound` \u00a712, `the-monitor-shows-the-work-it-watches` \u00a7114) both resolve."
+  },
+  "section_digests": {
+    "_document": "0af1d00b32938d873bd915295342a4613cff1539f736606eeda3c49d770048ad",
+    "s1": "586fab75d6d773e7b9c244a094239cf2608322f5edb894eae41d683b194e16cf",
+    "s2": "1bb5efc934126d85b57acb16d2465c85351284c268b16f21d0d45171e560dd9e"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T10:10:05.531081+00:00",
+  "total": null
+}
