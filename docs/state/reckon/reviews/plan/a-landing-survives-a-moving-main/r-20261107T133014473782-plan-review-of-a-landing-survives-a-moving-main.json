@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T13:50:34.344Z",
+  "dispatched_at": "2026-11-07T13:41:06Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-landing-survives-a-moving-main.html:39",
+      "id": "reuse_search-1",
+      "reason": "the deliverable's stated rule is false as written (the catalogue), and a content identity answers it without a path list anyone must maintain.",
+      "text": "the plan decides \"which paths cannot change the measurement\" by hand (`reckon/`, `tests/`, `pyproject.toml`, `uv.lock` invalidate; `docs/` plans, state, evidence and figures do not) and cites no prior search, while three mechanisms already answer it and one of them defeats the list: `docs/state/reckon/model-catalogue.yaml` is a product input read by `reckon/checkout_trust.py:153` and asserted by `tests/test_catalogue_declares_lanes.py:41`, `tests/test_no_layer_declares_a_lane_model_name.py:51`, `tests/test_old_names_resolve.py:32`, `tests/test_subscription_lanes_record_no_spend.py:72` and `tests/test_a_reload_image_carries_the_model_catalogue.py:15`, so a docs-only commit there changes what the armed measure would report and the plan's rule would keep a stale measurement. The census of machinery the plan should have found: `reckon/checkout_trust.py:226` `committed_reckon_tree` (content-addressed `HEAD:reckon` tree id, documented as unmoved by \"a plan edit, a run-state write, a promotion record\"), `reckon/checkout_trust.py:388` `source_code_identity`, `reckon/crew/follower_registration.py:33` `follower_code_stamp` and `reckon/crew/queue_landing.py:325` `_landing_code_stamp` (both already in this exact file), `reckon/clones.py:629` `changed_paths`, and `reckon/crew/dispatch_admission.py:775` `_is_product_source`.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/queue_landing.py:325",
+      "id": "duplicate_owner-1",
+      "reason": "it changes what the node writes (a modified owner plus one call site instead of a new predicate in `queue_landing.py`) and removes the maintain-list surface the plan currently creates.",
+      "text": "the plan re-implements product identity inside `queue_landing.py` (a path predicate beside the deferral and the store) rather than extending the owner of that idea, `reckon/checkout_trust.committed_reckon_tree:226`, which already compares git tree ids for `reckon/` and `skills/` and already has four callers in this repo (`follower_code_stamp`, `follower_registration.py:33`; `_landing_code_stamp`, `queue_landing.py:325`; `checkout_trust.source_code_identity:388`; the catalogue blob reader, `checkout_trust.py:277`) \u2014 a second placement drifts from the first the moment either list changes, and the author of any future \"does this commit matter\" question will find two answers. The honest change is to widen that reader's tree set (`git ls-tree HEAD reckon tests pyproject.toml uv.lock`) and compare ids, which is one git call and needs no list of \"safe\" directories.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/queue_landing.py:1129",
+      "id": "deep_module-1",
+      "reason": "as written the feature cannot land anything; the done-when's first case would still be deferred by a site the plan does not touch, so the node would fail its own gate.",
+      "text": "the plan names two of the three places that compare the measured primary to the current one; the third, `_verified_measurement`, refuses at `:1129` with \"the measured primary changed before completion\" and is reached through `_land` from `:1486` on every landing, so a measurement the plan keeps at `:704`/`:1459` is re-refused a few lines later and the run is turned into an obligation instead of landing \u2014 and behind it `:1131` (`candidate` vs `population[\"candidate_sha\"]`) and `:1136` (`change_markers(repo, measured.population[\"main_sha\"], head)`) still judge the merge onto the *old* primary, which is not the tree being landed once main has moved. The complexity must sit behind one function, e.g. `_measurement_survives(record, current_primary)`, called at `:704`, `:1129` and `:1459`, with the candidate identity either re-derived on the current primary or explicitly declared out of scope.",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-survives-a-moving-main.html:40",
+      "id": "interface_budget-1",
+      "reason": "one sentence in \u00a72 choosing a sibling key or a widened element type, and naming the three consumers, makes the node's change reviewable and keeps the existing assertion honest.",
+      "text": "\u00a72 requires that \"the pass record names a deferred run's reason\" without saying how: `deferred` is currently `list[str]` of run ids (`queue_landing.py:1250`, `:1424`, `:1460`, returned at `:1551`) and is consumed by `reckon/project_brief.py:203`, `reckon/mcp.py:2475` and `reckon/mcp_views.py:3790` (all `len()`, so tolerant) but asserted as a list of id strings at `tests/test_the_landing_pass_measures_and_lands.py:745`, so widening the element type breaks a passing test while a sibling key adds surface beside it. The section names neither option, nor what it retires or merges; the remaining three families are untouched (no CLI option, no MCP view, and the reason is a deferral string rather than a new refusal family).",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "5b82c96a221f272be201a15f54740f433c0ce89b",
+  "plan_fingerprint": "5e1b2b4af787c9f09549e9693a9d977062981ee17f3380bb897d28fdd79e204e",
+  "plan_slug": "a-landing-survives-a-moving-main",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T133014473782-plan-review-of-a-landing-survives-a-moving-main",
+  "reviewed_blob_sha": "ce05fa0671eea96f2d2e320a8420706d9b7935d4",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the invalidation rule is spread across three comparisons of the measured primary (`queue_landing.py:704`, `:1129`, `:1459`) plus the candidate identity at `:1131`, and the plan names two of them, so one deep helper must own the decision or the kept measurement is refused at landing.",
+    "duplicate_owner": "a finding \u2014 the product-identity concept is placed a second time in `queue_landing.py` instead of extending `reckon/checkout_trust.py`, which already carries the product tree id, its justification, its hold and its callers.",
+    "interface_budget": "a finding \u2014 public_definitions 2361, cli_options 465, mcp_views 15, refusal_families 23; \u00a72 adds no CLI option and no MCP view, but it changes the element type of the published `deferred` key without naming whether the reason rides a new key or widens the existing one, and names no retirement.",
+    "reuse_search": "a finding \u2014 the plan searched nothing and cites no mechanism, while `reckon/checkout_trust.committed_reckon_tree` already answers exactly the question \u00a72 is about (\"did a commit touch the product?\"), and `reckon/clones.changed_paths:629` and `reckon/crew/dispatch_admission._is_product_source:775` already own path classification.",
+    "thin_wrapper": "pass \u2014 \u00a72 extends two existing call sites inside `reckon/crew/queue_landing.py` and adds no layer over the machinery it is changing."
+  },
+  "section_digests": {
+    "_document": "0c09b995f81e56f46b5311239b20550ac6cba02276f4622a3c55073376561a86",
+    "s1": "b015a20ce3f6cd7465bcf445b187aa5a5ee8d726ee68119d14d14f5048e9f3e0",
+    "s2": "5ff4b84fa9882207b266ebd9f6b7c3b836a9581c672efe87aec1391e9ae57af0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T14:21:57.747612+00:00",
+  "total": null
+}
