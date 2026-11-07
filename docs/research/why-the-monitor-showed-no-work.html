@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="why-the-monitor-showed-no-work">
+  <meta name="plan-title" content="Why The Monitor Showed No Work">
+  <meta name="plan-summary" content="Root causes for nine monitor and admission defects one power_convertor session met on 6 and 7 November, each mapped to the plan section that repairs it.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-informs" content="the-monitor-shows-the-work-it-watches,a-queued-request-is-checked-when-queued,a-run-has-one-live-worker,a-promotion-reads-the-evidence-it-is-given,a-held-lane-never-holds-a-review,a-review-reads-only-its-runs-changes">
+  <title>Why The Monitor Showed No Work | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-11-07">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — The symptom and the session</h2>
+    <p>The power_convertor lead asked three times on 7 November why &ldquo;the monitor is not showing any work&rdquo;. The session was <code>c71ae21b-bd1a-4f28-a356-27ade6673050</code> on clu-2068, building plan <code>filter-recommendation-claims</code>. Its coordinator, power-convertor-16, reported nine defects behind that one symptom. Three other sessions met several of them the same day: nova-8a lost three hours to one, and reckon's own admission work was blocked twice by another. This page gives each defect's cause as measured, the plan section that repairs it, and its state when written. Evidence for power_convertor's runs is under <code>~/.cache/power_convertor-filter-review/</code> and <code>~/.config/reckon/crew/runs/&lt;run&gt;/</code>.</p>
+
+    <h2 id="s2">§2 — The nine defects</h2>
+    <table>
+      <thead><tr><th>Defect</th><th>Cause</th><th>Owner</th><th>State, 7 November</th></tr></thead>
+      <tbody>
+        <tr><td>A. The pane omits run starts</td><td>The follower was alive and the producer logged <code>queued → working</code>, but the pane relayed only delivered, landed and halted rows. Some filter between the producer and the pane drops a run's transition into <code>working</code>; the section's first step names it.</td><td><code>the-monitor-shows-the-work-it-watches</code> §115</td><td>Filed; review owed</td></tr>
+        <tr><td>B. A follower dies or settles and nothing re-arms it; no review composes after <code>crew resume</code></td><td>The host re-arms a follower only on the session's next dispatch, so a follower that exits under a live host is invisible, and a session whose only open work is a review waits on nothing. Separately, many &ldquo;the reflex owns this&rdquo; rows were reflex <em>refusals</em> the row hid: a run whose newest review carries an undisposed blocking finding is refused on every sweep (114 times on one nova run), with the dispose command recorded on the pointer's <code>review_dispatch</code>.</td><td><code>the-monitor-shows-the-work-it-watches</code> §109 and §110; §114 for the row</td><td>§110 shipped; §109 open; §114 running</td></tr>
+        <tr><td>C. The obligations snapshot goes stale</td><td>The hook read snapshots 44 to 78 minutes old marked &ldquo;producer reloading&rdquo;, while the producer reloads every 10 to 50 minutes; a disposed obligation stayed listed after its commit. The snapshot is not republished promptly after a reload.</td><td><code>the-monitor-shows-the-work-it-watches</code> §116</td><td>Filed; review owed</td></tr>
+        <tr><td>D. <code>--batch</code> queues entries admission later refuses</td><td>The node-contract verdict is composed inline in <code>plan_dispatch</code> from four checks, so the batch path never runs it; spec level, negative control and a <code>1h30m</code> time budget all pass at queue time and fail at launch, surfacing only as <code>queued-awaiting-session</code>.</td><td><code>a-queued-request-is-checked-when-queued</code> §2</td><td>Queued behind its file holders</td></tr>
+        <tr><td>E. <code>crew queue edit</code> refuses every batch-made request</td><td>The batch path stores no manifest path on the request, so every edit fails the independently-verifiable check and the only remedy, drop and requeue, loses queue position.</td><td><code>a-queued-request-is-checked-when-queued</code> §6</td><td>Filed; review in progress</td></tr>
+        <tr><td>F. A worker's supervisor outlives its finished turn</td><td>After a delivered or blocked manifest the run's <code>srun</code> stays alive, so <code>crew resume</code> refuses &ldquo;still has a live process&rdquo; until <code>crew stop</code>; in one case the leftover kept writing after delivery.</td><td>Offered to <code>a-run-has-one-live-worker</code> (reckon-e0)</td><td>Awaiting e0</td></tr>
+        <tr><td>G. A live worktree moved to <code>_trash</code>; the worker wrote into a read-only mount for an hour</td><td>Not the queue drop. A second launch of the same request, from a reckon process running a reload image, reached <code>_create_worktree</code>, found the first launch's tree at the shared path and released it, because the launch-side claim view drops the launching run's own pointer (<code>reckon/crew/routing.py</code> near line 1092). The first worker's read-write bind kept pointing at the moved inode, leaving only the read-only parent mount. The reported 23:50 was local time for 22:50:26Z. Reproduced on reckon's own run <code>r-20261107T092649116030</code> at 11:04 and 11:08Z the same day. Full trace: <code>~/.config/reckon/crew/reports/reckon/what-trashed-the-live-worktree.md</code>.</td><td><code>a-queued-request-is-checked-when-queued</code> §5 (no second launch releases a live tree); <code>a-run-has-one-live-worker</code> §5 (no duplicate admission)</td><td>Both filed; §5 in review</td></tr>
+        <tr><td>H. Plan-review answers attach to the wrong review</td><td><code>read_plan_review</code> chooses among covering reviews by the largest <code>plan_version</code> integer (<code>reckon/crew/plan_review.py</code> near line 1262), which is not commit order, and <code>--review-run</code> was searched only after a refusal that fired first.</td><td><code>a-queued-request-is-checked-when-queued</code> §4</td><td>Built; folding its review findings</td></tr>
+        <tr><td>I. Promotion's evidence reader fails on two manifest shapes</td><td><code>test_logs</code> as space-separated paths on one line is read as one path, and a red base's <code>baseline_suite</code>/<code>after_suite</code> are often omitted or placed in another field; the refusal names neither shape.</td><td>Offered to <code>a-promotion-reads-the-evidence-it-is-given</code> (reckon-e0)</td><td>Awaiting e0</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s3">§3 — What a coordinator can do until the repairs land</h2>
+    <ul>
+      <li>A <code>review-missing</code> row that says the reflex owns it: read <code>review_dispatch</code> on the run's live pointer. If it is a refusal for an undisposed blocking finding, dispose the finding (folded when the new head fixes it) and the reflex composes the next review itself.</li>
+      <li>A silent pane, or no review after <code>crew resume</code>: run <code>reckon crew follow --project &lt;project&gt; --session &lt;session&gt;</code>, which makes the host re-arm the session's follower.</li>
+      <li>A run blocked on a read-only worktree (Errno 30): run <code>crew stop</code> on it, then <code>crew resume</code>. The tree at the path, and any uncommitted work in it, is kept.</li>
+      <li>Batch entries: set <code>spec_level</code>, <code>negative_control</code> and an integer time budget (<code>90m</code>, not <code>1h30m</code>) before queueing.</li>
+    </ul>
+  </main>
+</body>
+</html>
