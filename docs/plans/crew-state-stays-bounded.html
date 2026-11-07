@@ -24,7 +24,7 @@
   <title>Crew State Stays Bounded | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="62">
+<meta name="plan-version" content="63">
 <meta name="plan-modified" content="2026-11-07">
 </head>
 <body>
@@ -244,6 +244,12 @@
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261107T164302244043-review-of-a-retention-pass-finishes-inside-its-slot-6cc3130cd220" data-who="reckon-build" data-when="2026-11-07T17:00:24.773Z">
+    <div class="r-comment-body"><p>Independent review of a-retention-pass-finishes-inside-its-slot at reviewed_base_sha 976bf02dccae14be7d82bd52c13c0f787a49ed85 and reviewed_head_sha 6cc3130cd220a69f804bc0ef4f8900f006043f21: scores goal_fidelity 19, evidence 15, scope_discipline 18, durability 19, fit 19, reuse 16 (106/120), added_failure_count 0 from the base and head arms' EXIT=0 logs, three non-blocking findings, nothing blocking.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261107T145629802776-a-retention-pass-finishes-inside-its-slot" data-who="reckon-build" data-when="2026-11-07T16:36:15Z">
+    <div class="r-comment-body"><p>Bounded a retention pass to its examined limit with a cursor persisted only by applied passes; on a synthetic 2,000-directory home a --limit 100 applied pass reaches a prune candidate behind a 300-directory withheld head by the fourth pass, a dry run leaves the cursor byte-identical while the next applied pass removes the candidates it offered, and a --limit 500 dry run on the real 20,975-directory store finished in 223.93 s with judge (166.63 s) the slowest phase</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-20261023-s2-owners" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
     <div class="r-comment-body"><p>Design review on 2026-10-23: <code>supervisor.json</code>, composed at dispatch by <code>_supervisor_spec</code> in <code>reckon/crew/dispatch_launch.py</code>, already carries <code>argv</code> in the run directory, so §2 should extend it rather than add a second sidecar. The review also lists the live-pointer read sites §2 must route, among them <code>reckon/run_record.py</code>, <code>reckon/crew/promotion.py</code>, <code>reckon/crew/queue_admission.py</code>, <code>reckon/crew/recovery_watch.py</code> and <code>reckon/serve.py</code>.</p></div>
 </div>
@@ -336,9 +342,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-10-23T11:30:00Z">
     <div class="r-comment-body"><p>Section 9 landed at merge <code>d549d0066</code>: the retention-sweep verb is exempt as operator maintenance, and the skill-contract verb case passes. <a href="/reckon/evidence/archive/crew-state-stays-bounded-landed.html#s9">evidence</a></p></div>
-</div>
-<div class="r-comment" data-section="s10" data-id="c-run-r-20261107T164302244043-review-of-a-retention-pass-finishes-inside-its-slot-6cc3130cd220" data-who="reckon-build" data-when="2026-11-07T17:00:24.773Z">
-    <div class="r-comment-body"><p>Independent review of a-retention-pass-finishes-inside-its-slot at reviewed_base_sha 976bf02dccae14be7d82bd52c13c0f787a49ed85 and reviewed_head_sha 6cc3130cd220a69f804bc0ef4f8900f006043f21: scores goal_fidelity 19, evidence 15, scope_discipline 18, durability 19, fit 19, reuse 16 (106/120), added_failure_count 0 from the base and head arms&#x27; EXIT=0 logs, three non-blocking findings, nothing blocking.</p></div>
 </div>
 </section>
 </main>
