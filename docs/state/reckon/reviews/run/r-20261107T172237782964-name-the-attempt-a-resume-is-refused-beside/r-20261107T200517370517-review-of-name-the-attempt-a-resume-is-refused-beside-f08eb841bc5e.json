@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch_sessions.py:1222 resume_plan",
+    "reckon/crew/dispatch_sessions.py:1306 resume_plan (via _observed_end_refusal)",
+    "reckon/crew/dispatch_sessions.py:1918 change_lane (via _observed_end_refusal)",
+    "reckon/crew/resumption.py:2361 sweep (via _launcher_refusal)",
+    "reckon/crew/resumption.py:2278 sweep (via _observed_end_refusal)"
+  ],
+  "completed_at": "2026-11-07T20:22:34.028Z",
+  "dispatched_at": "2026-11-07T20:09:58Z",
+  "evidence_read": [
+    "manifest",
+    "baseline_suite",
+    "after_suite",
+    "negative_control_log",
+    "diff",
+    "call_sites",
+    "test_files",
+    "plan_section"
+  ],
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T172237782964-name-the-attempt-a-resume-is-refused-beside/logs/repair-after.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the gate log's revision header names 248e2dcdea while the manifest's after_suite.revision names f08eb841bc as the revision this log measured; the differing commit is the docs-only landing fragment so the code state is identical, but the record and the log it cites disagree on the one field that says which revision was read."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit by commit against 2c1996aa: 114f54d2 repairs the in-motion assertion, 248e2dcdea drops the newest-stream fallback and reads the opened round through _opened_repair_rounds, and f08eb841bc records the repair in the landing fragment only.",
+    "done_when": "the section's done-when names tests/test_a_refused_resume_names_the_live_attempt.py and the neighbouring doors; logs/repair-after.log records 12 passed EXIT=0 and logs/repair-baseline.log 1 failed, 9 passed EXIT=1.",
+    "goal": "the delta answers section 6's requirement that the in-motion door says liveness unknown and never live process; reckon/crew/resumption.py:1237-1252 composes that opening and resumption.py:1156 reads the round through its owner.",
+    "manifest": "read complete; it names 114f54d2, 248e2dcdea and f08eb841bc over the first round's commits, records both gate arms and two negative-control logs, but its after_suite.revision names f08eb841bc while logs/repair-after.log:1 names 248e2dcdea.",
+    "write_paths": "the manifest declares resumption.py, dispatch_sessions.py, both test files and the landing fragment; git diff --stat 2c1996aa..f08eb841bc touches exactly those and nothing outside them."
+  },
+  "justifications": {
+    "durability": "the three delta assertions each redden under a recorded reverted mutation: tests/test_a_refused_resume_names_the_live_attempt.py:391 on the passed-record lookup, :424 on the restored newest-stream fallback, and tests/test_a_resume_never_launches_beside_another_node.py:298 on the live-process wording.",
+    "evidence": "logs/repair-after.log records 12 passed EXIT=0 and logs/repair-baseline.log 1 failed, 9 passed EXIT=1 with the literal command on their header lines, though the manifest's after_suite.revision names f08eb841bc while logs/repair-after.log:1 ran at 248e2dcdea.",
+    "fit": "reckon/crew/resumption.py:81 imports _opened_repair_rounds through reckon.crew.recovery's deliberate re-export at reckon/crew/recovery.py:169, the pattern the module already uses for its other private recovery names.",
+    "goal_fidelity": "reckon/crew/resumption.py:1246-1252 dates an attempt only by its own stream and omits the age when none can be identified, and resumption.py:1156 reads the opened round through _opened_repair_rounds, so both behaviours the section states are present.",
+    "reuse": "reckon/crew/resumption.py:1156 delegates to the owner _opened_repair_rounds at reckon/crew/recovery_repair_dispatch.py:871 instead of re-reading REPAIR_ROUNDS_FIELD itself, and the delta adds no new definition.",
+    "scope_discipline": "every path in git diff --stat 2c1996aa..f08eb841bc (resumption.py, the two test files and the landing fragment) is inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the delta answers reckon:a-run-has-one-live-worker section 6's requirement that the in-motion door says liveness unknown and never live process, and that the repair round is read and streams dated correctly; reckon/crew/resumption.py:1237-1252 composes that opening, says \"liveness unknown\", and never says \"live process\".\nVERDICT done_when: the section's done-when names tests/test_a_refused_resume_names_the_live_attempt.py and the neighbouring doors; the manifest records logs/repair-after.log 12 passed EXIT=0 against logs/repair-baseline.log 1 failed, 9 passed EXIT=1, and both logs end in EXIT= lines.\nVERDICT write_paths: the manifest declares resumption.py, dispatch_sessions.py, both test files and the landing fragment; git diff --stat 2c1996aa..f08eb841bc touches resumption.py, tests/test_a_refused_resume_names_the_live_attempt.py, tests/test_a_resume_never_launches_beside_another_node.py and the fragment, all inside that list.\nVERDICT manifest: read at the reviewed run directory; it states status complete, names 114f54d2, 248e2dcdea and f08eb841bc over the first round's commits, and records both gate arms and two negative-control logs, but its after_suite.revision names f08eb841bc while the log it points to (logs/repair-after.log:1) ran at 248e2dcdea.\nVERDICT diff: read commit by commit against 2c1996aa: 114f54d2 repairs the in-motion assertion in tests/test_a_resume_never_launches_beside_another_node.py to require \"liveness unknown\" and forbid \"still has a live process\", 248e2dcdea drops the newest-stream fallback from _attempt_stream_age and reads the opened round through _opened_repair_rounds, and f08eb841bc records the repair in the landing fragment only.\nCALL_SITES: reckon/crew/dispatch_sessions.py:1222 resume_plan, reckon/crew/dispatch_sessions.py:1306 resume_plan (via _observed_end_refusal), reckon/crew/dispatch_sessions.py:1918 change_lane (via _observed_end_refusal), reckon/crew/resumption.py:2361 sweep (via _launcher_refusal), reckon/crew/resumption.py:2278 sweep (via _observed_end_refusal)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/resumption.py:1246-1252 now dates an attempt only by a stream that belongs to it and leaves the age out when it cannot identify one, and resumption.py:1156 reads the round through _opened_repair_rounds, so both behaviours the section states are present.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/repair-after.log and logs/repair-baseline.log record 12 passed EXIT=0 and 1 failed, 9 passed EXIT=1 with the literal command on their header lines, though the manifest's after_suite.revision names f08eb841bc while logs/repair-after.log:1 ran at 248e2dcdea.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat 2c1996aa..f08eb841bc (resumption.py, the two test files and the landing fragment) is inside the node's declared write paths, and nothing else changed.\nSCORE durability: 19\nJUSTIFICATION durability: the three delta assertions are independent of what the test supplies and each is recorded red under a reverted mutation \u2014 tests/test_a_refused_resume_names_the_live_attempt.py:391 reddens on the passed-record lookup, :424 on the restored newest-stream fallback, and tests/test_a_resume_never_launches_beside_another_node.py:298 on the live-process wording.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/resumption.py:81 imports _opened_repair_rounds through reckon.crew.recovery's deliberate re-export at reckon/crew/recovery.py:169, the same pattern the module already uses for its other private recovery names, and no delta name carries a plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/resumption.py:1156 now delegates to the owner _opened_repair_rounds at reckon/crew/recovery_repair_dispatch.py:871 instead of re-reading REPAIR_ROUNDS_FIELD itself, and the delta adds no new definition.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T172237782964-name-the-attempt-a-resume-is-refused-beside/logs/repair-after.log:1 non-blocking: the gate log's revision header names 248e2dcdea while the manifest's after_suite.revision names f08eb841bc as the revision this log measured; the differing commit is the docs-only landing fragment so the code state is identical, but the record and the log it cites disagree on the one field that says which revision was read.\n",
+  "review_run_id": "r-20261107T200517370517-review-of-name-the-attempt-a-resume-is-refused-beside-f08eb841bc5e",
+  "reviewed_base_sha": "2c1996aa2ec57a6c5eab117770e30392095d4e71",
+  "reviewed_head_sha": "f08eb841bc5e612a0b16ec6df36130dd2d4b1525",
+  "reviewed_run_id": "r-20261107T172237782964-name-the-attempt-a-resume-is-refused-beside",
+  "rubric": "landed-node",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T20:39:03.401125+00:00",
+  "total": 114
+}
