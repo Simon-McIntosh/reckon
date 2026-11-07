@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-refusal-comes-before-the-work">
+  <meta name="plan-verifies" content="reckon:a-refusal-comes-before-the-work#s4">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-07">
+  <title>An edit refusal names every missing field at once | reckon</title>
+  <link rel="stylesheet" href="/reckon/_shared/foundation.css">
+  <link rel="stylesheet" href="/reckon/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="name-every-missing-field-in-an-edit-refusal-landing">
+  <h2>An edit refusal names every missing field at once</h2>
+  <p><code>append_evidence</code> raised on <code>plan</code>, then <code>anchor</code>, then
+  <code>title</code>, then <code>body</code>; <code>close</code> raised on <code>status</code> and
+  then <code>by</code>. Each retry spent a round trip to learn the next field. The three op guards
+  in <code>reckon/_store.py</code> now collect their problems into one list and raise a single
+  <code>OpError</code> naming all of them, joined with <code>"; "</code> (the join the close guards
+  already used). A call with exactly one problem keeps the exact message it gave before, because
+  <code>_missing_fields_refusal</code> returns the bare problem in that case rather than a
+  one-element join.</p>
+  <p><code>append</code> has one required field (<code>target</code>) and already named every
+  field it can be missing, so it participates in the check without a change; the new test pins its
+  message so a later field added to that op cannot reintroduce one-at-a-time discovery silently.</p>
+  <p>The stored message is observable at the tool boundary: the refusal reaches
+  <code>_edit_plan_tool</code> as <code>{"ok": false, "error": "op_error", "detail": …}</code>, so
+  the new test asserts on what a caller actually reads rather than on an internal exception.</p>
+
+  <table>
+    <caption>Suite arms over the node&rsquo;s test file.</caption>
+    <thead><tr><th>Arm</th><th>Revision / tree</th><th>Result</th><th>Log</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>base</td>
+        <td><code>708748fd78</code>, <code>git archive</code> extraction with this node&rsquo;s new test copied in</td>
+        <td>3 failed, 1 passed, EXIT=1</td>
+        <td><code>logs/base.log</code> (run directory)</td>
+      </tr>
+      <tr>
+        <td>head</td>
+        <td><code>94fbb3cd48</code>, the worktree</td>
+        <td>4 passed, EXIT=0</td>
+        <td><code>logs/after.log</code> (run directory)</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>The base arm is the reproduction: it fails the three multi-field cases
+  (<code>test_append_evidence_with_every_field_missing_names_all_four</code>,
+  <code>test_append_evidence_with_two_malformed_fields_names_both</code>,
+  <code>test_close_with_every_field_missing_names_all_three</code>) and passes the single-problem
+  case, so the messages it prints at base are the ones quoted above. The declared negative control
+  restores the first-field raise in <code>_apply_append_evidence</code> &mdash; the head then reports
+  2 failed ids with EXIT=1 (<code>logs/negative-control.log</code>), which shows the multi-field
+  assertions fire rather than merely pass.</p>
+  <p>Neighbouring suites over the same module (<code>test_edit_plan_append_evidence.py</code>,
+  <code>test_a_plan_closes_in_one_op.py</code>, <code>test_edit_plan.py</code>) pass 101 tests with
+  EXIT=0 (<code>logs/neighbours.log</code>), so no existing caller depended on a first-only refusal.
+  Ruff adds no finding on either staged path: <code>reckon/_store.py</code> carried 13 findings at
+  the base revision and carries 13 at head, and the new test file is clean and formatted.</p>
+</section>
+</main>
+</body>
+</html>
