@@ -1,0 +1,57 @@
+<article class="landed-report" data-run-id="r-20261107T174524601458-queued-launch-ignores-coordinator-backlog" data-node="queued-launch-ignores-coordinator-backlog">
+  <h3 id="queued-launch-ignores-coordinator-backlog-summary">queued-launch-ignores-coordinator-backlog — an admission launch no longer re-applies its coordinator's backlog</h3>
+  <p id="queued-launch-ignores-coordinator-backlog-change">
+    <code>reckon/crew/queue_admission.py</code> passes
+    <code>unreconciled_override=True</code> at the admission launch instead of
+    the request's stored <code>allow_unreconciled_runs</code>, so a launch from
+    the queue is never refused on its session's terminal backlog.
+    <code>reckon/crew/dispatch.py</code> records the exception as an admission
+    waiver in <code>unreconciled_override</code>: <code>source</code> reads
+    <code>admission-launch</code> (or <code>coordinator</code> for a named
+    waiver), the waived rows ride in <code>waived_runs</code>, and the field is
+    written only when a backlog was actually waived, so a request with nothing
+    overdue records none. A direct dispatch keeps the refusal unchanged, and
+    the queue-time check of a new request is untouched.
+  </p>
+  <p id="queued-launch-ignores-coordinator-backlog-measure">
+    <strong>Measure.</strong> Gate built from the head tree at
+    <code>1bd720c73e239bf4eb705712259a0ba1399d2d45</code>: every file importing
+    <code>reckon.crew.queue_admission</code> (67 files, the new one included),
+    run in the foreground with the main checkout's
+    <code>.venv/bin/python -m pytest -p no:cacheprovider -q -n 4</code>,
+    one arm at a time. Head arm: 458 passed, 3 failed, EXIT=1. The same three
+    ids — <code>test_a_decline_only_round_names_its_decision_and_what_it_left</code>,
+    <code>test_a_new_dispatch_over_a_queued_claim_at_the_session_cap_is_refused</code>
+    and <code>test_the_live_view_lists_the_unplaceable_run_as_queued</code> — also
+    fail at base <code>2960ad4da8b01b5338a7bade1cac18f58c4bc871</code>, measured in
+    the same four-file set at the base revision (3 failed, 18 passed), so the
+    change adds no failure. The new file contributes 3 passing tests. Logs
+    <code>gate-head-arm.log</code> and <code>gate-base-four.log</code> under the run
+    directory, each ending in an <code>EXIT=</code> line.
+  </p>
+  <p id="queued-launch-ignores-coordinator-backlog-reproduction">
+    <strong>Reproduction at base.</strong> Before the change, an admission launch
+    of a queued request whose session had one delivered run older than the grace
+    failed with <code>UnreconciledRuns: project has 1 unreconciled run(s) older
+    than the 5m grace: - r-delivered</code>, and the pass reported the request
+    under <code>failed</code> with that text in <code>failure_detail</code>. The
+    same request launches after the change, and its pointer carries
+    <code>unreconciled_override = {requested: true, source: "admission-launch",
+    grace: "5m", waived_runs: [{run_id: "r-delivered", ...}]}</code>.
+  </p>
+  <p id="queued-launch-ignores-coordinator-backlog-negative-control">
+    <strong>Negative control.</strong> Restoring the stored
+    <code>allow_unreconciled_runs</code> expression at the launch site reddens
+    <code>test_an_admission_launch_waives_its_coordinator_backlog</code> alone
+    (1 failed, 2 deselected, EXIT=1), which the head arm passes. Log
+    <code>negative-control.log</code> under the run directory, ending in an
+    <code>EXIT=</code> line.
+  </p>
+  <p id="queued-launch-ignores-coordinator-backlog-control">
+    <strong>Superseded control updated.</strong>
+    <code>tests/test_a_review_is_not_refused_for_its_run.py</code> asserted that a
+    queued implementation node was still refused, which is the behaviour this
+    section retires. Its stated purpose — a control showing the fence is genuinely
+    armed — is kept against a direct dispatch, the case that still refuses.
+  </p>
+</article>
