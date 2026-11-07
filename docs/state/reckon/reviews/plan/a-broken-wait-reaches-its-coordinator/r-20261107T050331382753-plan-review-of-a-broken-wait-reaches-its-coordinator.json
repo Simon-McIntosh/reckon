@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T05:13:49.770Z",
+  "dispatched_at": "2026-11-07T05:04:42Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-broken-wait-reaches-its-coordinator.html:42",
+      "id": "done_when-1",
+      "reason": "the case as written can never fail, so the deliverable's own requirement that the refusal be rewritten would ship unmeasured; asserting on text the refusal does not carry today (the appended `_SACCT_STATE_FORM` form, absent from the measured message) or adding a control that restores the old wording makes it discriminate.",
+      "text": "\u00a72's second done-when case asserts the refusal for `[\"python3\",\"-c\",\"print('pending')\"]` \"names the interpreter and carries `_WAIT_ACCEPTED_SHAPES`\", but the refusal at HEAD already prints the probe repr (which contains `python3`) and already appends `_WAIT_ACCEPTED_SHAPES` verbatim from `reckon/crew/recovery_liveness.py:1004-1009` \u2014 measured at 8c1e6b4943: `missing or invalid wait_probe ['python3', '-c', \"print('pending')\"] cannot fail: it names nothing outside the worker \u2014 no job id, pid, port or path \u2014 so its result cannot differ between sweeps and it tests nothing; the reader accepts a shell-free argument vector whose first element is a bare program name, or a file condition declared as wait_file with one path or a JSON array of paths`; the case is therefore green before the change, and it is the only one of \u00a72's five cases with no negative control of its own (controls 1 and 2 target the first case, 3 the third, 4 the fourth)",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-broken-wait-reaches-its-coordinator.html:42",
+      "id": "reasoning-1",
+      "reason": "one clause deciding whether the glued form is also accepted as a reference (so the declaration stops being refused) or dropping case 4 changes what the node implements and what its fourth control proves, and without it \u00a72 delivers a reader whose two preserved forms have no production caller.",
+      "text": "\u00a72's fourth done-when case requires `[\"squeue\",\"-h\",\"-j1306915\"]` to \"name job 1306915 through the new reader\" and its fourth control to fail when \"the glued form\" is dropped, but the deliverable widens only the word splitter and the job-id return, not the flag match that decides a probe names anything: measured at 8c1e6b4943, `_wait_probe_reference_kind([\"squeue\",\"-h\",\"-j1306915\"])` is `None` and `_wait_probe_cannot_fail` is `True`, so `_manifest_wait` refuses that exact vector as `wait_probe ['squeue', '-h', '-j1306915'] cannot fail: it names nothing outside the worker`, and the widened splitter cannot change it because the vector's token `-j1306915` fails `_WAIT_PROBE_JOB_FLAGS` at `reckon/crew/recovery_wait.py:719` \u2014 the same holds for `_wait_probe_job_id`'s bare-digit fallback, which `squeue` never satisfies \u2014 so the glued and bare-digit forms \u00a74 inherits are parsed by a reader that no declarable manifest can reach, and the rewritten refusal, which \u00a72 asks to state what the reader accepts, would say \"names nothing\" about a probe the reader names a job from",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "3c229835a1220435d9dc3b6c6a164bea8d3688aa",
+  "plan_fingerprint": "621a7f6fca33d4d72e4861a5d4b62584d2e91281309a7fa341f598c8252f15e5",
+  "plan_slug": "a-broken-wait-reaches-its-coordinator",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T050331382753-plan-review-of-a-broken-wait-reaches-its-coordinator",
+  "reviewed_blob_sha": "ae076700c93d7983d41861a6345307e8e80c701c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol either unit cites resolves: `_wait_probe_shell_words` :744, `_wait_probe_reference_kind` :683, `_wait_probe_cannot_fail`'s no-op/printer branches :796 and :798, `_wait_probe_is_a_no_op` :814, `_WAIT_ACCEPTED_SHAPES` :215, `_producer_gone_verdict` :535, `_wait_probe_job_id` :487 with call sites :517 and :566, `WAIT_PRODUCER_GONE_SECONDS` :398; `_wait_probe_prints_structured_output` is cited \"near line 856\" and is defined at :844 (the docstring spans :845-856), a 12-line drift that still lands inside the named function and is not a defect.",
+    "done_when": "a finding \u2014 \u00a72's second done-when case (\"`[\"python3\",\"-c\",\"print('pending')\"]` is still refused, and the refusal names the interpreter and carries `_WAIT_ACCEPTED_SHAPES`\") passes on the unfixed code at HEAD 8c1e6b4943.",
+    "evidence_paths": "pass \u2014 both units write their gate logs \"under the run directory\" and require each log to open with its revision and literal command and close with a bare `EXIT=` line.",
+    "naming": "pass \u2014 the two new test filenames (`test_a_probe_is_read_for_the_program_it_runs.py`, `test_a_run_parked_on_a_live_job_keeps_waiting.py`) and the described symbols are named for behaviour; no section, sprint, ticket or version label reaches a path, symbol or comment.",
+    "reasoning": "a finding \u2014 \u00a72's fourth done-when case measures a job-id reading the declaration guard still refuses, so the glued form \u00a72 preserves for \u00a74 is reachable by no declarable manifest.",
+    "single_goal": "pass \u2014 \u00a72's four clauses (widened splitter, read-through at the four `probe[0]` sites, job-id return, refusal text) are facets of one reader whose whole purpose is that a probe be read for the program it runs, and all are measured by one test file; \u00a74 has one deliverable (delete one job-id reader and route two call sites at \u00a72's).",
+    "wiring": "pass \u2014 the sidecar's `plan-section-depends-on` declares `s4: [a-broken-wait-reaches-its-coordinator#s2]`, which matches \u00a74's closing sentence \"It reads the reader \u00a72 adds, so it waits for \u00a72\", and \u00a71's `plan-after` points at a plan whose \u00a74 this plan's \u00a73 says has landed."
+  },
+  "section_digests": {
+    "_document": "d03f5f33ba4e3c3040d3555977705f88d6fe07b3409e73c3c07db45f1032f907",
+    "s1": "261438fe26041f770a527d758f1d74089637c1787c8d78d49957c57b9c122a42",
+    "s2": "cf933e42b9ba3e5286e69e98dc54d0601467b3b1e0561a008467431e37502e98",
+    "s3": "6cef4e4166979301849917a3d7f964e2d68eaf336d3724c41fb5482ae86de817",
+    "s4": "27a400841a6080e6979c6a5587892e40135a49a212f665dff5ba055c5ea2c942"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T05:18:36.891240+00:00",
+  "total": null
+}
