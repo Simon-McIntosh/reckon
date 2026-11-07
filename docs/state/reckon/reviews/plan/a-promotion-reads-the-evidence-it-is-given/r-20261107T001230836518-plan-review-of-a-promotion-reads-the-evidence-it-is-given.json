@@ -1,0 +1,87 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T00:23:47.794Z",
+  "dispatched_at": "2026-11-07T00:13:55Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:73",
+      "id": "wiring-1",
+      "reason": "the followup is what a coordinator reads to choose the next wave, so as written it under-dispatches three implementable sections and the plan would sit half-built with every section still declared implementable.",
+      "text": "the followup `f-aprteiig-001` is titled \"Build \u00a72, then \u00a74\" and its body accounts only for those two sections, while `plan-section-declarations` marks \u00a75, \u00a76 and \u00a77 `implementable` and none of them is mentioned; a coordinator scheduling from the followup would dispatch two of the four buildable sections and leave \u00a75's shared matching rule, \u00a76's release repair and \u00a77's receipt check unbuilt, even though \u00a77's declared wait on \u00a74 is satisfied by the same wave",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:49",
+      "id": "reasoning-1",
+      "reason": "a descope that names a section which does not cover the defect drops one of the three defects the plan's own \u00a71 table says it exists to repair, and no later node will notice the gap.",
+      "text": "\u00a73 is descoped with the reason \"Duplicates a-review-gate-judges-what-it-covers \u00a74, which already owns promoting a review run on its stored record\", but that section's actual deliverable is that promotion \"does not require the manifest's `tests` line to be an executable command\" and its done-when tests a prose `tests` line plus a missing record; it never mentions `exit_status`, `log_digest`, `gate_check` or `_default_gate_evidence_from_manifest`, which are exactly the fields \u00a71 row 2 records as missing, so the defect \u00a73 exists to repair is owned by nothing",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:60",
+      "id": "anchors_resolve-1",
+      "reason": "each drifted anchor also names its file and symbol, so a worker greps the symbol and lands on the right site; the drift costs minutes and misleads no repair.",
+      "text": "the \u00a75 negative-control site is cited as `reckon/crew/promotion_checks.py` \"near lines 2071\u20132097 \u2014, where `added = control_ids - reference_ids`\", but that comparison is at line 2142 (`added = [] if reference_ids is None else sorted(control_ids - reference_ids)`) and lines 2071\u20132097 hold the negative-control exemption branch, not the comparison; the same drift appears at \u00a72's `canonical_node_id` (\"near line 1938\", actual 2002), \u00a75's `reckon/crew/promotion_records.py` \"near line 685\" (the `ledger.added_failure_ids` call is at 788) and \u00a73's `_default_gate_evidence_from_manifest` \"near line 244\" (actual 308)",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:46",
+      "id": "naming-1",
+      "reason": "the specification states the return in the same sentence the name appears in, so no implementer can read it the other way; a rename is a nicety, not a repair.",
+      "text": "\u00a72 specifies `failure_ids_covered(base_ids, head_ids)` as the predicate that \"returns the head ids the base does not cover\", so the name asserts the complement of its return; the same pairing is reused by \u00a75 and \u00a77",
+      "type": "naming",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:54",
+      "id": "done_when-1",
+      "reason": "the case is additive noise rather than a wrong measure, and the section's first two cases plus its declared negative control already discriminate the new rule.",
+      "text": "\u00a74's third done-when case, \"A commit at or below the base is named too, because it is not the run's work\", passes identically before and after the change: a declared commit below the base is outside both today's `resolving_presented < resolving_declared` set and the new `presented \u222a (base..presented)` covered set, so it proves nothing about the new mechanism while appearing to",
+      "type": "done_when",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:60",
+      "id": "done_when-2",
+      "reason": "the per-site positive cases assert the new behaviour, so reverting either uncontrolled site fails the test suite directly; the control count is thin evidence rather than a hole a worker could fall through.",
+      "text": "\u00a75's single negative control restores the set difference at the negative-control admission only, leaving the `reckon/ledger.py` attribution site and the `reckon/crew/landing_measure.py` diff with no control of their own, although the section's headline claim is that all three share one rule",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "e2cd451342c24927a5ae7855f98e04fb369eee79",
+  "plan_fingerprint": "435b91c26ab0d46d360e86cd147a1606934360e92c06d9c9d57a088246f90d9e",
+  "plan_slug": "a-promotion-reads-the-evidence-it-is-given",
+  "plan_version": 10,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T001230836518-plan-review-of-a-promotion-reads-the-evidence-it-is-given",
+  "reviewed_blob_sha": "23bf7223c5057771f7caa872a6dd68cd1f8ee2bb",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 every file and symbol an anchor names resolves (`canonical_node_id`, `_zero_added_against_a_red_base`, `_require_verdict_matches_exit_status`, `_require_gate_evidence`, `_revision_is_ancestor`, `_record_release_on_ledger`, `_release_after_promotion`, `_release_run_workspace`, `_land_a_promoted_run`, `gate_log_failure_ids`, `added_failure_ids`, the merge `commit` field, `tests/test_a_short_commit_list_is_reported.py`, the power_convertor note and the sibling plan `a-review-gate-judges-what-it-covers` all exist), but several cited line numbers have drifted.",
+    "done_when": "a finding \u2014 every node names at least one negative control that restores base behaviour (\u00a72 exact-id compare and bracket-strip, \u00a74 per-sha requirement, \u00a75 restored set difference, \u00a76 pre-merge receipt and recorded-checkout HEAD, \u00a77 eight mutations), but \u00a74's third case cannot distinguish its new rule from the old one.",
+    "evidence_paths": "pass \u2014 \u00a76 requires every log under the run directory with revision, literal command and a terminal `EXIT=`, and \u00a77's evidence is likewise the gate log a promotion cites; \u00a72, \u00a74 and \u00a75 rest on the run record's own gate and suite arms, which live in the crew run directory rather than a scratch tree.",
+    "naming": "a finding \u2014 the symbol names and test filenames are mechanism-named with no plan labels, ticket numbers or version tags, but `failure_ids_covered` is named for the opposite of its stated return.",
+    "reasoning": "a finding \u2014 \u00a72, \u00a74, \u00a76 and \u00a77 each state a root cause the cited code supports, but \u00a73's descope rests on a sibling plan section that does not own the defect \u00a73 describes.",
+    "single_goal": "pass \u2014 \u00a72 (one predicate in one identity module), \u00a74 (one coverage rule at one site), \u00a75 (one matching rule across three named comparison sites), \u00a76 (one release-accounting defect), \u00a77 (one receipt-versus-log agreement check) each name a single deliverable; \u00a73 is descoped, not carried alongside another goal.",
+    "wiring": "a finding \u2014 the section relationship graph is correct (s4\u2192s2, s5\u2192s2, s7\u2192s4 all resolve, and s2's predicate is the transitive input s7 needs through s4), but the plan's next-invocation followup `f-aprteiig-001` schedules only \u00a72 and \u00a74 while \u00a75, \u00a76 and \u00a77 are declared `implementable`."
+  },
+  "section_digests": {
+    "_document": "16b7e0ac064041177a182b808ca05352e7de20cac229dccd88501dc6a3e40354",
+    "s1": "5eac0eb57fbf9fccaeee6fb2da59c42ca24c4433f0cffcb4b7de1b6b04324b6c",
+    "s2": "fe74e7e01c9a6ccef1719f555e5352545a20da84a1770862fc2751cdb6598747",
+    "s3": "479c8ebc617467c2744513e850433e87af52a3d22110620dcfdfb48f9975d081",
+    "s4": "80e452e08578901bf28b21ac56f7ff38a65532179befbebd65581a10820c5bd9",
+    "s5": "bb42325f383db769e04822e4d230cc887e0c6fd955d89dc50dd006b4d3715684",
+    "s6": "2e81c0cbe61ef60fc16acb159e81912b5b6263e9d12b8059efbd9482d722976c",
+    "s7": "f732f1ba2ad1c74b5433f39e3eb879b42f7899c1f6894b376d3445b31e7e05fb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T00:40:41.212680+00:00",
+  "total": null
+}
