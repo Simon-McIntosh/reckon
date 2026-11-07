@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="96">
+<meta name="plan-version" content="97">
 <meta name="plan-modified" content="2026-11-07">
 </head>
 <body>
@@ -449,23 +449,30 @@ separates are: a sweep that is never requested for the session; a sweep that is 
 raises before its review or repair pass; a pass that refuses silently; and a sweep held in
 flight. Ticks of four to sixteen minutes on the loaded node, measured 7 November, make
 requests rare under any of them.</p>
+<p>One cause has since been measured. reckon-0f profiled its own follower while its review
+reflex stalled and found every py-spy sample walking other projects' events files; commit
+<code>ad3e2764bd</code> makes those reads incremental. The worker first confirms whether the
+starvation still reproduces on a main that carries <code>ad3e2764bd</code>, and investigates the
+remaining candidates only if it does.</p>
 <p><strong>Deliverable.</strong> One investigation that reproduces a starved duty from a
 recorded instance and names its cause, followed by the repair of that cause. The worker first
 records, for one live session whose follower is alive, when its sweep was last requested,
 started and finished, and what its review and repair passes returned. It then names which
 candidate holds, or a cause outside the list, and repairs it so that a delivered run's review
-and repair duties are dispatched within one sweep beat while its follower is alive. The
+and repair duties are dispatched by the next sweep requested for that session while its follower is alive.
+How often sweeps are requested follows the station's tick, which is §13's. The
 obligation's wording is §15's.</p>
 <p><strong>Done when</strong> the run's manifest names the cause with the recorded instance
 that shows it, and a new <code>tests/test_a_sessions_duties_run_while_its_follower_is_alive.py</code>
 reproduces that cause on a synthetic crew home and shows two things:</p>
 <ul>
-<li>a delivered run that owes a review has its review dispatched within one sweep beat;</li>
+<li>a delivered run that owes a review has its review dispatched by the next sweep the test's
+controlled tick requests for that session;</li>
 <li>a delivered run whose stored review carries an open blocking finding has its repair round
-opened within one sweep beat.</li>
+opened by that same sweep.</li>
 </ul>
-<p>Negative control: the same test at the base revision shows the review not dispatched in
-the reproduced condition. The test files importing the changed modules add no failure against
+<p>Negative control: the same test at the base revision shows, in the reproduced condition,
+the review not dispatched and the repair round not opened. The test files importing the changed modules add no failure against
 base in matched arms, and ruff check and ruff format --check add no finding on the staged
 paths.</p>
 
@@ -486,8 +493,9 @@ review-duty row kept promising "expected within about 120 s (the follower's swee
 newest review carries an open blocking finding as owing a repair, never as promotable. The row
 names the repair's state: not opened, held for advice, or in flight. Every row's command names
 the row's own run. A review duty the reflex owns that has been owed for longer than the sweep
-cadence is worded as overdue, with its age and the direct dispatch command, instead of
-promising the cadence.</p>
+cadence is worded as overdue, with its age and a statement that the reflex has not dispatched it,
+instead of promising the cadence. It carries no dispatch command of its own, so the reflex
+stays the single dispatcher of a run's review.</p>
 <p><strong>Done when</strong> a new
 <code>tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py</code>
 shows four things on a synthetic crew home:</p>
@@ -496,8 +504,8 @@ shows four things on a synthetic crew home:</p>
 not <code>promotable-stale</code> and whose command is not <code>crew complete</code>;</li>
 <li>with that run's repair held for advice, the row names the advice hold and the resume
 command for that run;</li>
-<li>a review duty owed for longer than the cadence is worded as overdue with its age and the
-direct dispatch command, and carries no "within about 120 s";</li>
+<li>a review duty owed for longer than the cadence is worded as overdue with its age, carries no dispatch
+command, and carries no "within about 120 s";</li>
 <li>a row for an admission-held run names only its own run id in its command. This case is a
 regression guard: it may already hold at base, and the first case's control is the section's
 falsification.</li>
