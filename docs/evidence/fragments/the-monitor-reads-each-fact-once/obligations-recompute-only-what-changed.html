@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Obligations recompute only what changed</title>
+<meta name="plan" content="the-monitor-reads-each-fact-once">
+<meta name="node" content="obligations-recompute-only-what-changed">
+</head>
+<body>
+<article class="r-landing" id="obligations-recompute-only-what-changed">
+  <h2>Obligations recompute only what changed</h2>
+  <p>A steady-state obligations publish now recomputes only the runs whose inputs moved. Three
+  per-run derivations are memoised at the obligations layer: the review tier, keyed on the run's
+  resolved head and tree, cited commits, manifest stat identity and the plan's change token; the
+  held-worktree records, keyed on the ledger file's signature, git's worktree registry and the live
+  pointer directory; and the classification memo, which is not rewritten when the bytes on disk
+  already hold the memo it would write.</p>
+  <p><code>tests/test_the_station_reads_only_what_changed.py</code> drives two ticks over a
+  synthetic crew home of six review-owing runs. The second tick makes <b>zero</b>
+  <code>_plan_state_for_run</code> calls, <b>zero</b> <code>ledger.runs</code> reads, <b>zero</b> git
+  subprocesses and <b>zero</b> classification-memo writes; moving one run's head recomputes only
+  that run's tier; and every payload equals the one computed with the memos cleared. At the base
+  revision the same test fails those zero-count assertions, reading plan state six times and
+  recomputing all six tiers on the second tick.</p>
+  <p>Against the live crew home the second of two <code>payload_for</code> passes over four live
+  sessions took <b>75.761 s</b> against a target of under 2 s, so the live-cost half of the measure
+  is <em>not</em> met. Both timings, and the profile table that names the chains, are recorded in
+  <code>docs/research/monitor-storage-load-rca.html</code>. The remaining cost is the review-store
+  read each duty makes, which this change did not cover.</p>
+</article>
+</body>
+</html>
