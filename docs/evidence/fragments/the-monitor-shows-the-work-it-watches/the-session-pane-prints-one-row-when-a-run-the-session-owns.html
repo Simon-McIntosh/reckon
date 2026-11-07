@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-title" content="The session pane shows a run starting">
+  <meta name="plan-summary" content="The pane prints one row when a run the session owns reaches working from queued, and one when its first streamed row arrives already in working; a peer session's starts still print nothing.">
+  <meta name="plan-evidence-for" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s115">
+  <meta name="plan-recorded-at" content="2026-11-07">
+  <title>The session pane shows a run starting | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-session-pane-prints-one-row-when-a-run-the-session-owns" data-reckon="landed" data-when="2026-11-07">
+  <h2>The session pane shows a run starting</h2>
+  <p id="the-session-pane-prints-one-row-when-a-run-the-session-owns-what">A run's beginning reaches the pane from more than one pair. <code>START_KINDS</code> in <code>reckon/crew/ticker.py</code> now also holds <code>("queued", "working")</code> — an admission pass launching a request the pane listed as queued — and <code>(None, "working")</code>, a follower attaching after a run began and delivering that run's first row already in the pane's working word with no left side. <code>RowPolicy._is_own_start</code> reads the same set and excludes a baseline first, so inventory taken at attach is never a first row; <code>_is_own_launch</code> keeps its own baseline exclusion. Both new pairs still gate on the pane's own session, so a peer's start prints nothing.</p>
+  <p id="the-session-pane-prints-one-row-when-a-run-the-session-owns-measure">Reproduced first: at the base revision the new test's two positive cases read no row (<code>2 failed, 1 passed</code>), and its peer case passed, so the instrument saw a known-absent row rather than failing to start. At the head revision both print exactly one row, and a repeated row of either pair adds none. The follower's own settled-rows cases encode the rule this replaces — they expected a first streamed row already in <code>working</code> to be held back — so those two now expect the start row: the owning pane draws four rows with it counted once, the observer pane five, and every other assertion in both is kept. Two negative-control arms, one per new pair, each restore that exclusion and return their failures with <code>EXIT=1</code>: <code>1 failed, 5 passed</code> for the queued pair and <code>3 failed, 3 passed</code> for the no-left-side pair, whose three are the node test's case and both follower cases. The gate over the node test and the follower's file reads <code>6 passed</code>, and the 44 test files importing <code>reckon.crew.ticker</code> read <code>484 passed</code> at head against <code>481</code> at base. Every arm was measured after main was merged in, so the tests are judged against the tree the landing sees; the base arm, the gate and both negative-control logs are named in the run's manifest and each starts with its revision and ends with a bare <code>EXIT=</code> line.</p>
+</article>
+</body>
+</html>

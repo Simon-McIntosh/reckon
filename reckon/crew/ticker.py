@@ -1293,9 +1293,19 @@ ARRIVAL_WINDOW = 90.0
 # the moment it is drawn. The states the pane draws ``delivered`` or ``landed``
 # are excluded, because a producer re-reading a rewritten manifest as working
 # (`delivered -> working`) is not resumed work and stays held.
+#
+# Two more rows announce the same beginning. A request the pane listed as
+# ``queued`` begins when an admission pass launches it, so ``queued ->
+# working`` is the work starting rather than a phase change the pane can spare.
+# A follower attaching after a run began delivers that run's first row already
+# in ``working``, with ``None`` for its left side; the row is that run's first
+# sighting and the renderer paints the word it left itself, so the pair counts
+# as a first row and counts once — the attempt's memory keeps a later row with
+# the same left side from printing again. Inventory is never such a row, and
+# ``RowPolicy`` excludes a baseline before it reads the set.
 START_KIND: tuple[Any, Any] = ("dispatched", "working")
 START_KINDS: frozenset[tuple[Any, Any]] = frozenset(
-    {START_KIND, ("starting", "working")}
+    {START_KIND, ("starting", "working"), ("queued", "working"), (None, "working")}
 ) | frozenset((state, "working") for state in PANE_STATES["halted"])
 
 # ── The settle hold ───────────────────────────────────────────────────────────
@@ -1668,10 +1678,14 @@ class RowPolicy:
         silence about it is what keeps another session's history off this one's
         line. A pane with no named session owns no run, so no start qualifies.
         Every start pair qualifies — a fresh launch's ``dispatched -> working``,
-        a relaunched attempt's ``starting -> working`` and a resume's move out of
-        any stop state into ``working`` — because each announces the same news,
-        that the run began.
+        a relaunched attempt's ``starting -> working``, a resume's move out of
+        any stop state into ``working``, an admitted request's ``queued ->
+        working`` and a first row already in ``working`` with no left side —
+        because each announces the same news, that the run began. Inventory is
+        not one of them: a baseline describes a run already on screen.
         """
+        if is_baseline(event):
+            return False
         if self._own_session is None:
             return False
         if str(event.get("session") or "") != self._own_session:

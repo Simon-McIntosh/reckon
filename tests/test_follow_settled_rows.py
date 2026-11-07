@@ -256,7 +256,9 @@ def _deliver(
 def test_the_pane_receives_only_the_settled_changes(home) -> None:
     """Two runs deliver their start, completion, and block.
 
-    The owning pane draws the launch, the completion and the block. The terminal
+    The owning pane draws the launch, the completion and the block. The second
+    run's first streamed row arrives already in ``working`` with no left side,
+    so its start prints as its own row rather than staying hidden. The terminal
     echo (``complete -> recorded``) is the landing of a delivery the pane has
     not shown yet, so it stays hidden.
     """
@@ -264,14 +266,16 @@ def test_the_pane_receives_only_the_settled_changes(home) -> None:
     # The attach's own re-announcements ask for nothing, so the first arming
     # wakes nobody.
     assert first == [], first
-    assert len(rows) == 3, rows
+    assert len(rows) == 4, rows
     assert _states(rows) == [
+        (None, "working"),
         ("dispatched", "working"),
         ("working", "complete"),
         ("exited-unfinished", "blocked"),
     ], rows
-    # The launch opens the run's attempt, so the pane draws it once.
+    # The launch opens each run's attempt, so the pane draws each start once.
     assert _states(rows).count(("dispatched", "working")) == 1, rows
+    assert _states(rows).count((None, "working")) == 1, rows
     assert _view(_fixture_events()[1]).strip()
 
 
@@ -301,11 +305,13 @@ def test_observer_context_shown_still_leaves_the_start_rows_out(
 
     The observer path keeps more context for the rows it draws -- the second run
     is named out of ``working`` rather than ``exited-unfinished`` -- and it
-    carries the launch, because every pane reads one carriage rule. A bare
-    re-announcement still adds nothing.
+    carries the launch, because every pane reads one carriage rule. The second
+    run's first streamed row arrives already in ``working``, so its start prints
+    too. A bare re-announcement still adds nothing.
     """
     _, rows, _ = _deliver(home)
     assert _states(rows) == [
+        (None, "working"),
         ("dispatched", "working"),
         ("working", "complete"),
         ("complete", "recorded"),
