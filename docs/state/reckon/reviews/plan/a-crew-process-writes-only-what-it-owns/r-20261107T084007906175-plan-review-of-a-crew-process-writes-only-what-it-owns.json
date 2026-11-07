@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T08:48:20.841Z",
+  "dispatched_at": "2026-11-07T08:42:09Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:53",
+      "id": "reasoning-1",
+      "reason": "a node told to put the census check in `supervise` puts it in a function holding no per-child state and no exit status, and the gate it writes there cannot observe a restart.",
+      "text": "\u00a75 says \"`supervise` (`reckon/crew/session_host.py` near line 625) restarts a child that exits other than settled\", but `supervise` is at line 648 and is only the select/read loop; every restart is decided in `tick()` (`reckon/crew/session_host.py:512`\u2013566), where the exit is collected (`_poll_exit`, 568) and the new pid spawned (558)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:53",
+      "id": "reasoning-2",
+      "reason": "the node would land a second guard beside one that already covers the restart and defeat neither, so \u00a75's 0.75 h produces no change in the behaviour its evidence describes unless the section says which residual state (census child present but registration not live) it is for.",
+      "text": "\u00a75's mechanism cannot produce the outcome \u00a71 records, and the guard it adds partly exists: \u00a71's evidence is that nova-8a's own host \"still listed no child\", so \"settle the child when another live host's census already serves the pair\" would not have stopped the replacement pid 1076196; and `tick()` already refuses to spawn that replacement when a live follower this host did not start holds the pair (`_foreign_live_follower`, reckon/crew/session_host.py:460, consulted at 553), deferring rather than restarting",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "4b591cc0caa831d747541586d72254c103454e9c",
+  "plan_fingerprint": "3ee5008a8b67dd647e87fb55611660a412e22beaa14547c2e54704c64420e269",
+  "plan_slug": "a-crew-process-writes-only-what-it-owns",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T084007906175-plan-review-of-a-crew-process-writes-only-what-it-owns",
+  "reviewed_blob_sha": "f1ef3aa779867aed197d23fa2528640152a03c09",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `write` (reckon/ledger.py:2007), `record_hold_checks` (3437), `_commit_state_write` (2438), `promotion_gate.py:1051`, `_ask_session_host` (dispatch_watch.py:746), `_ask_session_host_for_follower` (770), `_rearm_session_follower` (785), `_session_host_child_pid` (695), `_session_from_followers` (coordinator_obligations.py:439) and its call in `locate_session` (865) all resolve, and the snapshot `plan.html` is byte-identical to the live plan.",
+    "done_when": "a finding \u2014 \u00a75's negative control cannot tell settling from the deferral the base revision already performs, so the case it measures is not the harm \u00a71 records.",
+    "evidence_paths": "pass \u2014 every section writes its gate log \"under the run directory\" and the new tests under `tests/`, both durable, and none names a scratchpad or a node-local path.",
+    "naming": "pass \u2014 no plan labels, gate ids, ticket numbers or version tags appear in the sections, the new test filenames name the behaviour they assert, and the only prose change asked of the source (`record_hold_checks`' docstring) states the mechanism.",
+    "reasoning": "two findings \u2014 \u00a75 names `supervise` as the restart site, and the base revision already refuses the restart in the shape \u00a75's done-when tests.",
+    "single_goal": "pass \u2014 the ask-ownership and census work stays in \u00a73 (`reckon/crew/dispatch_watch.py` only) and the host restart policy has moved to \u00a75 (`reckon/crew/session_host.py` only); each node now names one deliverable and one write pair.",
+    "wiring": "pass \u2014 `plan-section-declarations` now carries s5 beside s2\u2013s4, the followup's `data-recommends-skill` and its command block invoke the whole plan with no single section named, and `plan-after` resolves to `docs/plans/the-monitor-shows-the-work-it-watches.html`."
+  },
+  "section_digests": {
+    "_document": "60cf17bd888d5a9ecf15d67c596308acfc4d285e141d511109b748c7cf0aa41a",
+    "s1": "2651bf4298a4407ecc3db64cfd2b505bc2ebb153a5c21564bc75e7c5f46b3ef1",
+    "s2": "483be3d2a782222b6c0760abf47889434d7552b6f0b7f56edad2f26cf2d9d397",
+    "s3": "c2ed3308fbf682d961321976e90da0d1a3dfbf85d4bb4c8a085d8b464bc55060",
+    "s4": "e88fcf79ec58d8305f36e37d69846c8e0a1a10f1b73fc6c167c25b700165e123",
+    "s5": "9018db07e9f3be7d7686a7733d23a353ca9c4abc239f84119dce7590bcdf8a31"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T08:55:16.253597+00:00",
+  "total": null
+}
