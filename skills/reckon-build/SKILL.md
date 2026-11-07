@@ -165,10 +165,16 @@ landed. Never load a plan wholesale: choose each section, and steer the queue as
 earlier results come back. A declared section wait parks its node
 `awaiting-upstream` until the upstream lands, with no further coordinator
 dispatch. The queue orders only waits declared in `plan-section-depends-on`.
-Read progress through `crew view live` and steer waiting requests with the three
-queue verbs below. Until metered admission serves a request after its upstream
-lands, a metered request still `awaiting-upstream` or `queued` after that landing
-must be dropped and dispatched again; the run-queued obligation names it.
+Read progress through `crew view live` and steer the queue rather than feeding it:
+change a queued request's brief, done-when, write paths, time budget or route with
+`reckon crew queue edit --run <id>`; pause it with
+`reckon crew queue hold --run <id> --reason <why>` and resume it with
+`reckon crew queue release --run <id> --reason <why>`; bump it with
+`reckon crew queue reprioritise --run <id> --priority <integer>`; and withdraw it
+with `reckon crew queue drop --run <id> --reason <why>`. An edit to a queued
+section needs its review answered, not its request re-dispatched: the admission
+pass holds each request whose own section uncovered with the `plan-review-owed`
+hold, and releases it as soon as the review is stored.
 The detailed loading rule is in
 [references/sprint-orchestration.md §12](references/sprint-orchestration.md).
 

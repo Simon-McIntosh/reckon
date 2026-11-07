@@ -798,8 +798,17 @@ views answer the whole beat, each in one bounded read:
   and `stale`. A full lane is read here, not inferred from your own run count,
   and a stale document is not sized from.
 
-Read `crew view live` for progress and use the build skill's queue edit,
-reprioritise and drop verbs to steer requests before launch. A plan whose
+Read `crew view live` for progress and steer the queue rather than feeding it.
+Change a queued request's brief, done-when, write paths, time budget or route
+with `reckon crew queue edit --run <id>`; pause it with
+`reckon crew queue hold --run <id> --reason <why>` and resume it with
+`reckon crew queue release --run <id> --reason <why>`; bump it with
+`reckon crew queue reprioritise --run <id> --priority <integer>`; and withdraw it
+with `reckon crew queue drop --run <id> --reason <why>`. An edit to a queued
+section is read when that request launches, so answering the edit's review is
+what releases it: the admission pass holds each request whose own section the
+edit uncovered with the `plan-review-owed` hold, and releases it as soon as the
+review is stored. A plan whose
 `dependency_readiness` reads `closable` still needs its owner to close it or
 make a descope decision. Name an unloaded critical-path link owned by a peer to
 that owner. A full lane holds requests in the central queue; it does not narrow
