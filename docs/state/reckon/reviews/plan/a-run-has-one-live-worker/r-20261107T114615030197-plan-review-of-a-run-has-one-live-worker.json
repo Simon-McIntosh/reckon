@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T12:00:00.854Z",
+  "dispatched_at": "2026-11-07T11:47:22Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:100",
+      "id": "reasoning-1",
+      "reason": "a node built to this text would add a guard and a passing test at a seam no dispatch reaches, so the test would prove a path that never runs and the second launch of a real run would still happen.",
+      "text": "\u00a75 places the refusal in `_spawn_detached_worker` and calls it \"where every worker admission or dispatch launches is started\", but a fresh dispatch never reaches that function: reckon/crew/dispatch.py:3337-3366 writes `supervisor.json` and calls `_start_supervisor`, and the supervisor spawns the worker itself in `_supervisor_spawn_worker` (reckon/crew/dispatch_launch.py:2759-2831) via `_spawn_worker_retrying_a_vanished_bind`; `_spawn_detached_worker`'s only in-tree callers are tests plus the `_spawn` compatibility seam (dispatch_launch.py:1494-1530), whose own docstring states \"Fresh dispatches already construct their supervisor before reaching this compatibility seam\" and that its remaining callers \"are internal launch probes with no continuation identity\" \u2014 and the plan's own cited run shows it, because `supervisor.json` in `r-20261106T212311176377-icm-strip-error-sweep` carries `attempt_kind: dispatch` at `2026-11-06T21:31:51Z`, the second launch's timestamp, which only `_start_supervisor` writes",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:24",
+      "id": "wiring-1",
+      "reason": "the declared wait is already satisfied on the branch, so the plan needlessly stores \u00a75 awaiting-upstream and the \u00a75 brief would fence a node against a dependency whose capability is already present in the tree.",
+      "text": "\u00a75 is declared to wait on \u00a74, and \u00a74's session walk is described as future work (\"That owner gains one more read\", \"\u00a74 extends with its walk for the run's worker session id\"), but that walk already exists in `record_process_alive` at reckon/crew/process_liveness.py:377-379 and landed at commit a4ef5f35b1 (\"refuse resume beside a live worker named only by its session\"), which `git merge-base --is-ancestor a4ef5f35b1 HEAD` confirms is an ancestor of the review base, with its test `tests/test_resume_finds_unrecorded_live_session.py`; \u00a75's own plan comment for s4 records that landing at head 5 passed EXIT=0, yet `plan-section-declarations` still marks s4 `implementable` and followup f-arolw-004 open",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "98c62ac0f6a623a12a8dbe0b431e1a172be9ba1c",
+  "plan_fingerprint": "94dd8b6a4b1085aa32435b17a9f9392c50a702275e7b92a50609083adf96d2d6",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 24,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T114615030197-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "2a9319d272b653e7a7cc983710a7b73322c41c64",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_spawn_detached_worker` resolves at reckon/crew/dispatch_launch.py:1734, `record_process_alive` resolves in reckon/crew/runs.py as a re-export (reckon/crew/runs.py:4341) of the definition in reckon/crew/process_liveness.py:300, and every cited record (`attempt-1-worker.json, attempt.json, claim.json, attempt-2-worker.json, attempt-1-exit.json, supervisor.json, manifest-attempt-1.md`) exists and is readable.",
+    "done_when": "pass \u2014 \u00a75's done-when names three observable cases through the reproduced launch path plus two negative controls (removing the check launches the second worker; stubbing `record_process_alive` to pids-only launches it in the session case), each of which can fail.",
+    "evidence_paths": "pass \u2014 logs go under the run directory (`~/.config/reckon/crew/runs/<run>/`) and the cited evidence copy is on `/work/projects/imas_gpu/sophelio/evidence/iron-core-magnetisation/strip-sweep-attempt-1/`, both durable paths.",
+    "naming": "pass \u2014 the only new name is `tests/test_a_queued_run_launches_once.py`, carrying no plan label, stage name, ticket number or version tag.",
+    "reasoning": "a finding \u2014 the stated mechanism sits in `_spawn_detached_worker`, which no production dispatch, admission or resume path reaches, while the second launch of the cited run demonstrably went through the per-run supervisor.",
+    "single_goal": "pass \u2014 one deliverable, the live-worker refusal at the spawn point, with the path reproduction as its first step rather than a second goal.",
+    "wiring": "a finding \u2014 \u00a75 declares a section wait on \u00a74 (`plan-section-depends-on` at docs/plans/a-run-has-one-live-worker.html:24), but the capability it waits on already landed, so the queue holds \u00a75 behind a satisfied dependency."
+  },
+  "section_digests": {
+    "_document": "9c093124e56b09842d144b3bd203b65df88f4383e9c24aeb3639ad684e23623a",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "c8fe2a5a6c5765bc70ba45627cc9f5778b225a5e1deff2cc1bb1e0e08214362a",
+    "s5": "1321bcf07186e7f6543c9dc2d6b97a57b36f5082b3554ea1ba8aa5cd4de226e7"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T12:09:23.849235+00:00",
+  "total": null
+}
