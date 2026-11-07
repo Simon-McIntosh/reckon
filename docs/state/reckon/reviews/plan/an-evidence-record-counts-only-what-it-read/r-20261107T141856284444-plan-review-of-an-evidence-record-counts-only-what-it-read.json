@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T14:41:28.758Z",
+  "dispatched_at": "2026-11-07T14:22:48Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:46",
+      "id": "anchors_resolve-1",
+      "reason": "the anchor names the wrong branches, so the refusal lands where the section did not mean to add one and not where it must.",
+      "text": "the comments-branch anchor \"the comments branch of `_apply_append` (near lines 3798\u20133807)\" does not resolve: lines 3798\u20133807 are the `research` and `questions` branches of `_apply_append` (reckon/_store.py:3791\u20133810), and the comments branch that writes `data.comments[section]` is reckon/_store.py:3811\u20133821, so a worker adding the refusal at the cited lines refuses research and question bodies and leaves comments \u2014 the site done-when case three asserts \u2014 unchecked",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:46",
+      "id": "anchors_resolve-2",
+      "reason": "the anchor points at a prompt-only branch and the write that must refuse sits in a module the section does not grant, so the case-four gate is unreachable without a scope change.",
+      "text": "the anchor \"the followups.<id>.<field> set (near lines 3482\u20133486)\" resolves to the `followups.<id>.prompt` branch (reckon/_store.py:3482\u20133496), not the body set: the general field-set branch is line 3495 and it delegates to `apply_followup_field_set` (reckon/_store_section_ops.py:362\u2013388), which assigns `working[\"followups\"][index] = {**followup, field: value}` with no deferred-work check, so done-when case four's `followups.<id>.body` case needs the guard at line 3495 in `reckon/_store.py` or inside `apply_followup_field_set`, and the latter module is not among \u00a73's declared write paths",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "352693705f79546c1979e35dcca5c7ef78141bb1",
+  "plan_fingerprint": "9a0c23d5a3b2dc393ca6c430c79a61ccdc52467d89158d9a5ee43002cdb6c6a7",
+  "plan_slug": "an-evidence-record-counts-only-what-it-read",
+  "plan_version": 4,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T141856284444-plan-review-of-an-evidence-record-counts-only-what-it-read",
+  "reviewed_blob_sha": "52b8a9249cc1cc0e9bd2d41bc2d1f5792a5224e4",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "two findings \u2014 the `_apply_append` comments-branch anchor resolves to the research and questions branches, and the followups field-set anchor resolves to the prompt branch rather than the body set.",
+    "done_when": "pass \u2014 the seven cases each name a negative control, the controls cover the case list one for one, and the followup body-set case is measurable provided the second anchors_resolve finding is corrected.",
+    "evidence_paths": "pass \u2014 every log is required under the run directory, headed by its revision and the literal command and ending in `EXIT=`, so nothing lands in a node-local temporary path.",
+    "naming": "pass \u2014 `_DEFERRED_WORK_TERM`, `_prose_deferred_work_term` and `tests/test_every_spelling_of_deferred_work_is_read.py` name the mechanism; no plan labels, stage names or ticket numbers reach them.",
+    "reasoning": "pass \u2014 the root cause matches \u00a71's evidence (the regex is one spelling today), the mechanism produces each done-when case, and every refusal site is named with the caller that reaches it.",
+    "single_goal": "pass \u2014 \u00a73's one deliverable is that the deferred-work rule reads every spelling on every comment and followup body, and its gate closes on that alone.",
+    "wiring": "pass \u2014 `plan-section-depends-on` gives s3 a wait on `an-evidence-record-counts-only-what-it-read#s2`, the section whose write path s3 shares, and no declared relationship points at a node that does not exist."
+  },
+  "section_digests": {
+    "_document": "6d35efce52466005f8ee56997c8dc7bcca998d7c41fcd252d254bc7264596281",
+    "s1": "49581a4c899ba79b704cec124eaa4b18560c0c76dfd26327155915e9f48ca5a2",
+    "s2": "0b8bed0f03d053457f9c7efd06dd0ff61e4d509f00a6f7518b6e3c911a96a555",
+    "s3": "4c3cbda8e16a7d168ba1b59831eebbf98f9c65093416b22a8cb59edfdeef3994",
+    "s4": "2a4595f5aefc320f23756d7c834443e983a185161f61e8078d9bd7a31df7e991"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T14:46:30.872891+00:00",
+  "total": null
+}
