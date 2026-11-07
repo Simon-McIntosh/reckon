@@ -1,0 +1,95 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T21:40:47.762Z",
+  "dispatched_at": "2026-11-07T21:21:03Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html#s14",
+      "id": "done_when-1",
+      "reason": "the worker must add a base-arm assertion that the repair is not opened in the reproduced condition, and without it the section's own falsification covers half its deliverable.",
+      "text": "the second done-when bullet (a delivered run whose stored review carries an open blocking finding has its repair round opened within one sweep beat) declares no negative control, while the stated control measures only \"the review not dispatched\"; the base arm therefore cannot show the repair guard fires, and at base `recovery_repair_dispatch.dispatch_repair_for_run` already opens repairs for unworked runs, so a green base arm would leave the bullet measuring nothing",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html#s14",
+      "id": "reasoning-1",
+      "reason": "a worker would either write a test that forces a synthetic tick and passes an unchanged station, or discover mid-node that the measure needs a scope the section does not grant.",
+      "text": "the fix target \"dispatched within one sweep beat\" is unachievable under the section's own evidence: `SWEEP_BEAT_SECONDS` is `resumption.DEFAULT_SWEEP_SECONDS` (120 s, station.py:43, resumption.py:421), and the plan states ticks of four to sixteen minutes, so a sweep cannot even be requested inside one 120 s beat after a run delivers; the repair that would satisfy the bullet is a tick-duration change the section never names",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html#s15",
+      "id": "reasoning-2",
+      "reason": "either the section must name the command it means (and add a CLI verb, an unstated deliverable) or say what keeps the coordinator and the reflex from dispatching the same review.",
+      "text": "the overdue limb requires the row to carry \"the direct dispatch command\", but no run-scoped review-dispatch command exists: `reckon crew review` is plan-scoped (`--project --plan --rubric`, plan_review.py:231), the only shell surface that dispatches a run's review is the project-wide `recovery_watch --dispatch-reviews --project` (recovery_watch.py:3603-3623), and `obligations.py:704-716` states that naming the reflex as owner \"is what leaves one actor dispatching a run's review\" for the race fix it already made; a direct command printed beside an armed reflex reintroduces exactly the two-actor collision that guard exists to prevent",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html#s15",
+      "id": "single_goal-1",
+      "reason": "all three are facets of one derivation in one module, so one worker can hold them together and the title is a summary rather than a scope error.",
+      "text": "the title and deliverable name \"never offers a promotion past an open blocking finding\", but the four done-when bullets also measure an admission-held row naming its own run id and an overdue wording carrying a dispatch command; three independent behaviours close on one verdict",
+      "type": "single_goal",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "7672caa39a9fb1c6646443bbee713b4e6075b5de",
+  "plan_fingerprint": "5c87627afa6ba3fc134faa1311282d1bc88c01d075ba0a76ee2b2cf2ff8d526a",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 96,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "noted",
+      "by": "plan-review-reflex",
+      "finding": "single_goal-1",
+      "reason": "all three are facets of one derivation in one module, so one worker can hold them together and the title is a summary rather than a scope error.",
+      "when": "2026-11-07T21:50:36.325483+00:00"
+    }
+  ],
+  "responses": {
+    "single_goal-1": {
+      "action": "noted",
+      "by": "plan-review-reflex",
+      "reason": "all three are facets of one derivation in one module, so one worker can hold them together and the title is a summary rather than a scope error.",
+      "when": "2026-11-07T21:50:36.325483+00:00"
+    }
+  },
+  "review_run_id": "r-20261107T211602720839-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "cd3ee14e928b2a2b4e178b7c4135980b0650b843",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/station.py` (`self.sweeps.request` at :537, `SweepBeat.request` at :250, its docstring at :229), `reckon/crew/resumption.py:2136` sweep (which does iterate `list_live` and walk no registered worktrees), and `reckon/crew/obligations.py` near :690 (\"expected within about {window} s (the follower's sweep cadence)\" at :718) all resolve as cited.",
+    "done_when": "a finding \u2014 \u00a714's negative control (\"the same test at the base revision shows the review not dispatched in the reproduced condition\") covers only the review bullet and states nothing about the repair round the second bullet measures.",
+    "evidence_paths": "pass \u2014 neither section names a scratch or node-local path for its gate; both put evidence in the run's own manifest and in a test file at the repository `tests/` root.",
+    "naming": "pass \u2014 the two test filenames (test_a_sessions_duties_run_while_its_follower_is_alive.py, test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py) and the section prose name mechanisms, with no plan labels, stage names or ticket numbers.",
+    "reasoning": "findings \u2014 \u00a714's measure is contradicted by the section's own tick measurement, and \u00a715's overdue wording asks for a command the CLI does not have and a second dispatcher the reflex design forbids.",
+    "single_goal": "a finding \u2014 \u00a715 now carries three behaviours (repair classification, non-promotable row, overdue wording) under one title naming only the first, so one gate verdict stands for three untested-in-common behaviours. Not raised past the earlier split because they share one derivation and one file.",
+    "wiring": "pass \u2014 \u00a714 and \u00a715 declare no depends-on/informs/gates edges; \u00a715's duty-wording limb is legitimately owned here after the \u00a714 split, and no relationship points at a node that does not exist."
+  },
+  "section_digests": {
+    "_document": "cc5a37a4e5aabdb870bf1071512e6afa03b0a4c02c7d4a1b9936b9ddbfda15d1",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "3b11fe0cd53015121e6d566c554c6c77b13236b3700a90279e77a6bc755ea0a3",
+    "s14": "d8610e19de8485dfdd9954c876dc1b6c19c8729393be161e279151405455c914",
+    "s15": "7e1f87fa9ef47087a2cea979364e52ac58d4d9afd3350d10f0ff2d151deefff7",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T21:50:04.781011+00:00",
+  "total": null
+}
