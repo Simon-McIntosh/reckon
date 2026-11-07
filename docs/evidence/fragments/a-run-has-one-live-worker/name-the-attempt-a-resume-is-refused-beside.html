@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-run-has-one-live-worker">
+  <meta name="plan-title" content="A refused resume names the attempt that is live">
+  <meta name="plan-summary" content="One composer builds the live-process refusal at all three doors, and it names the attempt from the run's own records: its number, pid and launch time, its kind, whether a resume is a repair round the review reflex opened, and the age of its newest stream record.">
+  <meta name="plan-evidence-for" content="reckon:a-run-has-one-live-worker">
+  <meta name="plan-recorded-at" content="2026-11-07">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,resume,liveness,attempt">
+  <title>A refused resume names the attempt that is live — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="name-the-attempt-a-resume-is-refused-beside" data-reckon="landed" data-when="2026-11-07">
+  <h2 id="name-the-attempt-a-resume-is-refused-beside-title">A refused resume names the attempt that is live</h2>
+
+  <p id="name-the-attempt-a-resume-is-refused-beside-defect">A run delivers, a review raises a blocking finding, and the review reflex resumes it as a second attempt. A coordinator who then types <code>crew resume</code> meets the bare sentence <code>run '&lt;id&gt;' still has a live process; observe or stop it before resuming</code>. It names no attempt, so it reads as a stale process, and the coordinator stops the worker that was about to deliver. The defect is reproduced against the dispatch base <code>5bc89fc029</code> in a temporary crew home holding a live attempt-2 worker record whose advice opens with the repair-round token:</p>
+  <pre id="name-the-attempt-a-resume-is-refused-beside-defect-text"><code>REFUSAL: run 'r-repro-live-attempt' still has a live process; observe or stop it before resuming</code></pre>
+  <p>The same script against the delivered head gives the same opening and then names the process it found:</p>
+  <pre id="name-the-attempt-a-resume-is-refused-beside-head-text"><code>REFUSAL: run 'r-repro-live-attempt' still has a live process; observe or stop it before resuming. That process is attempt 2 (pid 1375, launched 2026-11-07T06:25:56Z), a resume; the review reflex opened it as a repair round, which delivers by itself: advice sent after it does will reach it; its newest stream record is 0s old.</code></pre>
+
+  <h3 id="name-the-attempt-a-resume-is-refused-beside-what-changed">What changed</h3>
+  <ul id="name-the-attempt-a-resume-is-refused-beside-changes">
+    <li><code>reckon/crew/resumption.py</code> gains <code>live_process_refusal(record, *, reading)</code>, the one composer. It reads the run's own records: the immutable <code>attempt-&lt;n&gt;-worker.json</code> receipts (with the canonical <code>worker.json</code> as a fallback), <code>attempt.json</code> for the attempt's kind, the pointer's <code>repair_rounds</code> for a round the reflex opened, and the stream files for the age of the newest record. A detail the records do not hold is left out, never guessed.</li>
+    <li>All three doors call it: <code>_launcher_refusal</code> and <code>_stream_reading_refusal</code> in <code>resumption.py</code>, and <code>resume_plan</code> in <code>reckon/crew/dispatch_sessions.py</code>. At the two pid-alive sites the old sentence stays as the opening, so the tests that match it keep passing. The in-motion site opens with <code>liveness unknown</code> — no pid could be read here and no exit was recorded — and never says <code>live process</code>.</li>
+    <li>A process found only by the session walk is attributed to no attempt, so it keeps the bare sentence: nothing in the records ties that pid to a receipt, and naming the nearest one would be a guess.</li>
+    <li><code>tests/test_a_refused_resume_names_the_live_attempt.py</code> is new: five cases through <code>resume_plan</code>, the sweep's mirror and the stream-reading gate.</li>
+  </ul>
+
+  <h3 id="name-the-attempt-a-resume-is-refused-beside-gate">The gate</h3>
+  <ul id="name-the-attempt-a-resume-is-refused-beside-cases">
+    <li><code>test_a_repair_round_attempt_is_named</code> — a live attempt 2 that a review round opened is named with its pid, launch time and kind, and the message says the round delivers by itself. Both launch doors give it.</li>
+    <li><code>test_a_coordinator_resume_is_named_without_the_repair_wording</code> — the same shape with no opened round is named, and is not called a repair round.</li>
+    <li><code>test_a_live_process_found_by_its_session_invents_no_attempt</code> — a live process no receipt records keeps the bare sentence with no attempt and no pid.</li>
+    <li><code>test_both_launch_doors_give_the_same_message</code> — parity: the launcher and the sweep's prediction are byte-identical.</li>
+    <li><code>test_an_unknown_liveness_stream_names_the_moving_attempt</code> — a run launched elsewhere, with no pid here and no exit record, is refused naming attempt 2 and the age of its newest record, saying its liveness could not be read on this host.</li>
+  </ul>
+  <table id="name-the-attempt-a-resume-is-refused-beside-arms">
+    <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+    <tbody>
+      <tr><td>Base <code>5bc89fc029</code> with the new test copied in</td><td>3 failed, 2 passed, <code>EXIT=1</code> — the three naming cases, each with the bare sentence</td><td><code>r-20261107T172237782964-name-the-attempt-a-resume-is-refused-beside/logs/baseline-suite.log</code></td></tr>
+      <tr><td>Delivered head <code>c91556d055</code></td><td>5 passed, <code>EXIT=0</code></td><td><code>…/logs/after-suite.log</code></td></tr>
+      <tr><td>Declared mutation: the message composed at one site only</td><td>3 failed, 2 passed, <code>EXIT=1</code>; the parity case is among the failures</td><td><code>…/logs/negative-control.log</code></td></tr>
+    </tbody>
+  </table>
+  <p id="name-the-attempt-a-resume-is-refused-beside-logs">Every arm ran in the assigned worktree or a scratch copy of the base, with the module under test imported from the tree named on the log's first lines, and each log ends in an <code>EXIT=</code> line.</p>
+
+  <h3 id="name-the-attempt-a-resume-is-refused-beside-control">Declared negative control</h3>
+  <p>The declared mutation is <em>composing the message at one site only fails the parity case</em>. Applied to a scratch copy of the delivered head — <code>resume_plan</code> raising its own sentence instead of calling the composer, while <code>resumption.py</code> keeps it — three cases fail, the parity case among them, and two pass. The log is <code>…/logs/negative-control.log</code>.</p>
+
+  <h3 id="name-the-attempt-a-resume-is-refused-beside-delta">Delta on the neighbouring modules</h3>
+  <p id="name-the-attempt-a-resume-is-refused-beside-delta-text">The three tests the section names as the doors' own — <code>test_resume_refuses_a_live_worker.py</code>, <code>test_resume_sweep_needs_an_observed_death.py</code> and <code>test_a_resume_never_launches_beside_another_node.py</code> — were run in both arms: 18 passed at base <code>5bc89fc029</code> (<code>EXIT=0</code>), and 1 failed with 17 passed at the head before the assertion was repaired (<code>EXIT=1</code>). That failure was <code>test_a_stream_in_motion_refuses_the_resume</code>, which asserted <code>"still has a live process"</code> for the in-motion door, while the door says <code>liveness unknown</code> and never <code>live process</code>, which is what the section requires of it because no process was read alive there. The assertion now requires <code>liveness unknown</code> and forbids the live-process claim, and with that one-line change both files pass: 12 passed at <code>248e2dcdea</code> (<code>EXIT=0</code>) against 1 failed and 9 passed at the repair's base <code>2c1996aa</code> (<code>EXIT=1</code>). A wider run over the 61 test files importing the two changed modules was started and stopped at 38% by the harness background limit, so it is not cited here.</p>
+
+  <p id="name-the-attempt-a-resume-is-refused-beside-reuse">The repair also removed a duplicate the review named. The opened repair round is no longer looked up on the record the refusal was handed; it is read through <code>_opened_repair_rounds</code> in <code>reckon/crew/recovery_repair_dispatch.py</code>, the owner that reads the live pointer afresh, so a round opened after a sweep read its pointer is still named. And an attempt is dated only by a stream that belongs to it: the run's newest stream is no longer a fallback, so a second attempt is never given the first attempt's age. Two cases guard the pair, and reverting the repair reddens both (<code>EXIT=1</code>).</p>
+</article>
+</body>
+</html>

@@ -1219,9 +1219,7 @@ def resume_plan(
         from reckon.crew import resumption as _resumption
 
         _resumption.store_refused_advice(run_id, advice)
-        raise CrewError(
-            f"run {run_id!r} still has a live process; observe or stop it before resuming"
-        )
+        raise _resumption.live_process_refusal(record, reading="alive")
     # A launch is not atomic with the check above: the plan is built and the
     # process spawned before the attempt's pid is folded onto the pointer, so a
     # second door reading this record inside that window would see a run whose
