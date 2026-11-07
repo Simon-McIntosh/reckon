@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-07T16:22:10.920Z",
+  "dispatched_at": "2026-11-07T16:01:41Z",
+  "findings": [
+    {
+      "file": "tests/test_a_landing_survives_a_moving_main.py",
+      "line": 338,
+      "severity": "non-blocking",
+      "text": "tests/test_a_landing_survives_a_moving_main.py:338 asserts that the returned measurement's population main_sha equals the base the test itself passed to _record, so both sides of the assertion move together: deleting the moved branch in reckon/crew/queue_landing.py:1246-1257 (judging the merge onto the current primary) leaves this assertion and line 337 true, because the stored measurement is returned unchanged. The behaviour the test names is guarded only indirectly by test_a_delivery_that_no_longer_merges_onto_primary_is_not_landed, which catches a conflict but not a stale-base judgement over a clean merge; recording the base merge._merge_tree was called with, or the judged base, would make this test fail if the branch regressed."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T142747239708-the-lander-keeps-a-deliverys-measurement-when-main-moves/manifest.md",
+      "line": 22,
+      "severity": "non-blocking",
+      "text": "manifest.md:22 records the pytest arms only: the done-when also requires ruff check and ruff format --check to add no findings on the staged paths, and neither result is recorded anywhere in the manifest or in a log. Re-running both over reckon/crew/queue_landing.py and tests/test_a_landing_survives_a_moving_main.py in the reviewed tree shows them clean (all checks passed; 2 files already formatted), so the shipped code satisfies it and the gap is in the record, not the change."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the lander keeps a delivery's measurement when main moves only by commits that cannot change the measured product; reckon/crew/queue_landing.py:857 (_moved_primary_keeps_the_measurement) and the reuse path at queue_landing.py:670-716 deliver exactly that, gated on the five measured inputs.\nVERDICT done_when: the done-when names tests/test_a_landing_survives_a_moving_main.py exercising four behaviours with a temporary repository and a stubbed measure; the six tests there cover docs-only reuse, product-move re-measurement, a stale measurement that no longer merges, and the pass-recorded deferral reason, and the head arm at 6e257846 records 106 passed EXIT=0.\nVERDICT write_paths: the declared scope is reckon/crew/queue_landing.py, tests/test_a_landing_survives_a_moving_main.py and the landing fragment; git diff --stat over 976bf02d..ddfbb0a16e shows exactly those three paths (172, 458 and 62 lines).\nVERDICT manifest: read; it records the base arm 100 passed EXIT=0 at 976bf02d, the head arm 106 passed EXIT=0 at 6e257846, the negative control 4 failed EXIT=1, and commits 6e257846c5 and ddfbb0a16e with the measured inputs named in evidence_inputs.\nVERDICT diff: read commit by commit against 976bf02d; 6e257846c5 adds the measured-input identity, the reuse test at both deferral sites and deferred_reasons, and ddfbb0a16e adds only the evidence fragment.\nCALL_SITES: reckon/crew_run_commands.py:3107, reckon/crew/queue_admission.py:5180, reckon/crew/queue_landing.py:1273, reckon/crew/queue_landing.py:1553\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_landing.py:857-897 decides reuse by comparing git tree ids for reckon, tests, pyproject.toml, uv.lock and the model catalogue and fails closed on an unreadable read.\nSCORE evidence: 17\nJUSTIFICATION evidence: the head-arm log at logs/head-arm.log ends 106 passed EXIT=0 and the negative control logs/negative-control.log ends EXIT=1 with four failing ids the head arm does not fail, but the done-when's ruff check and ruff format --check results are not recorded.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 976bf02d ddfbb0a16e lists only reckon/crew/queue_landing.py, tests/test_a_landing_survives_a_moving_main.py and the landing fragment, all inside the declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_landing_survives_a_moving_main.py:363 fails if a product move reuses a measurement and line 395 fails if a conflicting head lands, but line 338 compares values the test supplied itself and so does not guard the merge-onto-current-primary reading.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/queue_landing.py:808-897 follows the module's existing docstring and fail-closed idiom and introduces no plan, ticket or version labels in its names.\nSCORE reuse: 18\nJUSTIFICATION reuse: the package side is read through checkout_trust.committed_reckon_tree at reckon/crew/queue_landing.py:893 and the catalogue path through checkout_trust.CATALOGUE_RELATIVE_PATH, and no existing owner reads a caller-named path set at an arbitrary revision.\nFINDING tests/test_a_landing_survives_a_moving_main.py:338 non-blocking: the assertion compares the returned population main_sha against the base the test passed to _record, so it holds whatever the landing does and does not guard the merge-onto-current-primary branch at queue_landing.py:1246-1257.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T142747239708-the-lander-keeps-a-deliverys-measurement-when-main-moves/manifest.md:22 non-blocking: the done-when also requires ruff check and ruff format --check to add no findings on the staged paths and neither result is recorded; re-running both on the two staged files is clean.\n",
+  "review_run_id": "r-20261107T155903209252-review-of-the-lander-keeps-a-deliverys-measurement-when-main-moves-ddfbb0a16e1c",
+  "reviewed_base_sha": "976bf02dccae14be7d82bd52c13c0f787a49ed85",
+  "reviewed_head_sha": "ddfbb0a16e1c2078c3069aadd3b93eaf693b2f86",
+  "reviewed_run_id": "r-20261107T142747239708-the-lander-keeps-a-deliverys-measurement-when-main-moves",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T16:52:48.463976+00:00",
+  "total": 107
+}
