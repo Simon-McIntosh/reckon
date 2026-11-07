@@ -1,0 +1,36 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T11:59:47.475Z",
+  "dispatched_at": "2026-11-07T11:50:06Z",
+  "findings": [],
+  "plan_commit": "9e809d39a60510563094e8ada24ce337d0717b7a",
+  "plan_fingerprint": "555b2b7e9e9a420c1a1a68d8317529a428e72691a0891c024a62c6a8c451bdc9",
+  "plan_slug": "a-refusal-comes-before-the-work",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T114735730398-plan-review-of-a-refusal-comes-before-the-work",
+  "reviewed_blob_sha": "c7a6ec78605964728cd4d9ee865f66bb0fb11d08",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor in s3 resolves in the assigned tree: `crew_dispatch` at reckon/crew_dispatch_commands.py:1456 (section says near 1451), `--brief`/`--plan` at :1159/:1157-1159, `EXECUTABLE_SECTION_ROLES` at reckon/evidence.py:277 exactly as cited ({\"implement\",\"test\"}), `if pair_backend:` at :1826 (section's near 1821 is the adjacent refusal line), the `--dry-run` branch's `plan_dispatch` call at :1922 (section's near 1917), `dispatch_options` assembly at :1866 and :2184 (near 1861/2179), the launch record literal and its `route_fallback` copy at reckon/crew/dispatch.py:3020, `_require_brief_owner` at reckon/crew/promotion_checks.py:1769 with its role gate at :1794, all eight `plan_dispatch` callers named (dispatch.py:687, 1047, 1177, 1233, 1670, 2009; dispatch_sessions.py:1713; recovery_review_dispatch.py:2924), and `_entry_node` at reckon/crew/dispatch_batch.py:355 with its project/plan/section requirement at :371-379.",
+    "done_when": "pass \u2014 the eight cases each name an observable outcome in a temporary crew home, and seven negative controls are declared, one per refusal surface the section claims (CLI refusal, role set, landing read, missing-value discharge, dry-run flag read, pair-split placement, launch-record copy); two cases carry no control of their own, and neither weakens the measure, since each is the detector for the control beside it.",
+    "evidence_paths": "pass \u2014 \"Every log is under the run directory\", the durable crew run directory, with the suite-vs-base delta stated against the base revision.",
+    "naming": "pass \u2014 the new test file is named for the mechanism (`test_a_brief_run_names_its_plan_at_dispatch.py`), and no plan label, stage name, ticket number or changelog prose reaches a symbol or a comment; the section's \"\u00a72\" references are plan prose, not code.",
+    "reasoning": "pass \u2014 the mechanism reaches non-dispatch plan_dispatch callers by design (they re-dispatch, change lane or admit an already-recorded run, and the smaller set is stated), and it does reach every dispatch-time door the section claims: `node` is built at crew_dispatch_commands.py:1632, before the pair split at :1826, so a check placed there has the role and the brief and covers the pair arms (dispatch.py:1177, :1233), the live call and the `--dry-run` call at :1922; the launched pointer keeps the value on the queued path because queue_admission.py:349 reads `pointer[\"dispatch_options\"]` and :423 passes it into `dispatch()`, which the launch record then copies, and the record the plan writes that value into is the one the landing discharge receives, since promotion reads the live pointer at reckon/crew/promotion.py:1125 and :2016 and hands that record to `_require_brief_owner` at promotion_checks.py:2412.",
+    "single_goal": "pass \u2014 the section carries one deliverable (a brief executable-role dispatch cannot be stored without an owner), whose three joints \u2014 the dispatch refusal, the recorded value, the landing read \u2014 are the single mechanism.",
+    "wiring": "pass \u2014 s3 declares `depends-on a-refusal-comes-before-the-work#s2`, which resolves and is the dependency its write paths require: both s2 and s3 write `reckon/crew/node.py` and `reckon/crew/dispatch.py` (s2 at queue_requests, dispatch.py:293; s3 at the launch record, dispatch.py:~2873-3094), and s5's declared wait on both s2 and s3 matches the shared `crew_dispatch_commands.py`/`dispatch_plan.py` writes."
+  },
+  "section_digests": {
+    "_document": "fe86ddc53d6df02ed8681809f4399744a8daf0946c333b28fc3a6b583769f545",
+    "s1": "75df880739e89570186a1c16cae47d54a4d457a4a6e99c09b2d62c21368dc424",
+    "s2": "82627aab8394f0209c300c78167c8eb9a00cc5acf2e8b3a32be25df3b62c3f92",
+    "s3": "050ed6d1427a9eae3d536cec81794fbb866e8b6d6f4ff6e1e0f6efd162947b90",
+    "s4": "2a97d35fa0e69a6331d78f727d1ded35d267ff23bba3ff069f80e200825410f0",
+    "s5": "c6bcd8dc06779761ce142ed5ed5f70c6da3c790175716e80a8adde0bd2936039"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T12:18:14.010831+00:00",
+  "total": null
+}
