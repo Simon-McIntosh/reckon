@@ -1424,6 +1424,32 @@ def _store_index(directory: Path) -> dict[str, list[dict[str, Any]]]:
     return _store_indexes(directory)[0]
 
 
+def review_entries_signature(project: str, reviewed_run_id: str) -> tuple[Any, ...]:
+    """The indexed entries one reviewed run can select, without opening them.
+
+    The index updates after an atomic store write moves the directory. Another
+    run's new record leaves this run's key unchanged. The committed directory
+    is included because promotion can replace staging as the selected source.
+    """
+    directory = _review.review_store_root() / project
+    entries = _store_index(directory).get(reviewed_run_id) or []
+    committed = _review.committed_review_root(project)
+    run_directory = (
+        committed / _review.COMMITTED_RUN_DIRNAME / reviewed_run_id
+        if committed is not None
+        else None
+    )
+    committed_identity = (
+        _store_directory_identity(run_directory) if run_directory is not None else None
+    )
+    return (
+        str(directory),
+        tuple(sorted((entry["name"], entry["identity"]) for entry in entries)),
+        str(run_directory or ""),
+        committed_identity,
+    )
+
+
 def _review_run_index(directory: Path) -> dict[str, list[dict[str, Any]]]:
     """Return the review-run index, loaded and updated rather than rebuilt.
 
