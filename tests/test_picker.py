@@ -374,7 +374,7 @@ def test_client_posts_typed_shape_and_timeout(monkeypatch, tmp_path):
     assert json.loads(request.data) == {
         "state": {"fact": 1},
         "questions": {"route": {"type": "choice"}},
-        "model": "typesafe/jev-1.13",
+        "model": client.JEV_MODEL,
     }
 
 
