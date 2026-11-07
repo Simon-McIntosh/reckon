@@ -63,6 +63,7 @@ import json
 import re
 import shlex
 import subprocess
+import sys
 import time
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from contextlib import contextmanager
@@ -874,13 +875,29 @@ def _review_snapshot(
     return snapshot if snapshot.is_file() else None
 
 
+#: Persisted store holding one snapshot's whole evidence, keyed by the
+#: snapshot's content digest. The identity is the content alone, because two
+#: reviews of one plan that read the same bytes carry the same evidence.
+_SNAPSHOT_EVIDENCE_MEMO = "plan-review-snapshot-evidence"
+_SNAPSHOT_EVIDENCE_VERSION = 1
+
+
+def _snapshot_evidence_payload(text: str) -> dict[str, Any]:
+    """The three parts of a snapshot's evidence, in their stored shape."""
+    return {
+        "digests": _section_digests(text),
+        "prose": _prose_texts(text),
+        "declarations": _snapshot_declarations(text),
+    }
+
+
 def _snapshot_evidence(
     project: str, plan_slug: str, record: Mapping[str, Any]
 ) -> tuple[dict[str, str], dict[str, str], Mapping[str, Any] | None] | None:
     """Recompute a stored review's snapshot evidence, or ``None`` without one.
 
     The stored record names the run that composed the review; that run's report
-    directory holds the ``plan.html`` snapshot the reviewer read. Recomputing
+    directory holds the ``plan.html`` snapshot the reviewer read. Recomposing
     the unit digests and prose from that snapshot under the present definition
     is what makes a definition change re-review nothing — the review still
     covers the content it read, measured the way the definition measures it now
@@ -888,12 +905,40 @@ def _snapshot_evidence(
     section was implementable when the review read it. ``None`` means the record
     names no run or the snapshot is missing, so the caller falls back to the
     stored digests and reads the threshold as zero for that review alone.
+
+    The three parts are computed and persisted together under the snapshot's
+    content digest, carrying the source digests of this module and
+    ``_plan_html``, so a snapshot the store has already parsed is read from the
+    store rather than parsed again by either parser — in this process or in a
+    later one. A stored entry written by another revision of either producer is
+    treated as absent.
     """
     snapshot = _review_snapshot(project, plan_slug, record)
     if snapshot is None:
         return None
     text = snapshot.read_text(encoding="utf-8", errors="replace")
-    return _section_digests(text), _prose_texts(text), _snapshot_declarations(text)
+    from reckon import metadata_index
+
+    identity = hashlib.sha256(text.encode("utf-8")).hexdigest()
+    held = metadata_index.persisted_memo(
+        _SNAPSHOT_EVIDENCE_MEMO,
+        _SNAPSHOT_EVIDENCE_VERSION,
+        (identity,),
+        (sys.modules[__name__], _plan_html),
+        compute=lambda: _snapshot_evidence_payload(text),
+    )
+    if not isinstance(held, Mapping):
+        return None
+    digests = held.get("digests")
+    prose = held.get("prose")
+    declarations = held.get("declarations")
+    if not isinstance(digests, dict) or not isinstance(prose, dict):
+        return None
+    return (
+        digests,
+        prose,
+        declarations if isinstance(declarations, Mapping) else None,
+    )
 
 
 def _snapshot_declarations(document: str) -> Mapping[str, Any] | None:
