@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T06:49:42.809Z",
+  "dispatched_at": "2026-11-07T06:44:28Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-refusal-comes-before-the-work/r-20261107T064228551719-plan-review-of-a-refusal-comes-before-the-work/plan.html:50",
+      "id": "reasoning-1",
+      "reason": "the section must name the dry-run call site as the second threader (it is already in the write paths), or a node that follows the brief exactly lands a change that refuses a valid preview.",
+      "text": "\u00a73 says `plan_dispatch` \"calls it with the two values as new parameters, which `dispatch()` (`reckon/crew/dispatch.py` near line 1670) threads through from the CLI\", but the dry-run branch calls `plan_dispatch` directly at `reckon/crew_dispatch_commands.py:1917` with its own argument list and never enters `dispatch()`, so implementing exactly as written leaves that caller passing the empty defaults and `crew dispatch --dry-run --brief ... --plan-link <slug>` is refused as though no link were given \u2014 \u00a75 of the same plan already records that the dry run calls `plan_dispatch` at that line, so the omission is inside the plan's own evidence",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-refusal-comes-before-the-work/r-20261107T064228551719-plan-review-of-a-refusal-comes-before-the-work/plan.html:51",
+      "id": "done_when-1",
+      "reason": "",
+      "text": "\u2014 the four negative controls are numbered against a five-case list, so read literally \"not reading `dispatch_options` makes the third case refuse\" names the third case (`one with --plan-link is stored with the link in dispatch_options`), which is a dispatch-time storage assertion that landing-side reading cannot affect, and \"treating a missing recorded link as a discharge makes the fourth case pass\" names the fourth case (`its landing discharge passes with no landing flag`), which already passes and so cannot be falsified by that mutation \u2014 the mutations are right but their numbers are one list-position off from the cases they can falsify (the fifth case is the one that must stop being refused); WOULD_CHANGE_THE_PLAN: yes \u2014 REASON: a worker following the numbered controls to the letter runs a mutation against a case it cannot change, and either reports an unreachable control or reshapes the test to make the number fit.",
+      "type": "done_when",
+      "would_change": null
+    }
+  ],
+  "plan_commit": "5f82b733a31b5094b90643dee3b5696bbe1e5305",
+  "plan_fingerprint": "50a6d9fb4c5966d62deef43204c2861ca4c194f8cd3c8e2803bc86e0034365cd",
+  "plan_slug": "a-refusal-comes-before-the-work",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T064228551719-plan-review-of-a-refusal-comes-before-the-work",
+  "reviewed_blob_sha": "42d5c7e71b7eab80c2e204745b455e31458daf24",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 checked each: `EXECUTABLE_SECTION_ROLES` at `reckon/evidence.py:277` is `frozenset({\"implement\", \"test\"})` and is what `_require_brief_owner` gates on (`reckon/crew/promotion_checks.py:1794`); `_require_brief_owner` is at `:1769` (cited \"near 1775\"); `--plan` and `--brief` sit at `reckon/crew_dispatch_commands.py:1158-1159`; `crew_dispatch` is at `:1451`; `dispatch_options` is assembled at `:1828-1861` and `:2179-2182` from `click.get_current_context().params`, so a new flag rides in unasked; `plan_dispatch(` is called from `dispatch()` at `reckon/crew/dispatch.py:1670`; `_entry_node` refuses an entry naming no `plan` at `reckon/crew/dispatch_batch.py:372-375`, which confirms the section's claim that no batch entry is brief-only.",
+    "done_when": "a finding \u2014 \u00a73's five done-when cases are each failable and measurable, but its four negative controls are numbered \"the third case\" and \"the fourth case\" against that five-item list, and the natural reading of both numbers names a case the stated mutation cannot affect.",
+    "evidence_paths": "pass \u2014 \u00a73 puts every log under the run directory, starting with its revision and the literal command and ending in `EXIT=`, so nothing lands in a scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 \u00a73 introduces `--plan-link` and `--unplanned-reason` and reads an existing constant; no plan label, stage name, ticket number or version tag reaches a symbol, and the section carries no changelog prose.",
+    "reasoning": "a finding \u2014 the section names one caller (`dispatch()`) as threading the two new values into `plan_dispatch`, while a second production caller of `plan_dispatch` \u2014 the dry-run branch of `crew dispatch` at `reckon/crew_dispatch_commands.py:1917` \u2014 calls it directly and would keep passing empty values; the cited evidence holds otherwise (the recorded value does reach a queued run, because `_queued_request_record` stores the caller's `dispatch_options` on the held path at `reckon/crew/dispatch.py:1940-1947` and `:2167-2176`, and admission reads it back).",
+    "single_goal": "pass \u2014 \u00a73 carries one deliverable: the brief run's plan link and unplanned reason are asked for and recorded at dispatch, and the landing discharge reads the recorded value.",
+    "wiring": "pass \u2014 \u00a73's wait on \u00a72 is declared in `plan-section-depends-on` (`{\"s3\": [\"a-refusal-comes-before-the-work#s2\"]}`) and restated in the section, and the three files it shares are in \u00a72's write paths, so no needed dependency is missing and no relationship points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "fe86ddc53d6df02ed8681809f4399744a8daf0946c333b28fc3a6b583769f545",
+    "s1": "75df880739e89570186a1c16cae47d54a4d457a4a6e99c09b2d62c21368dc424",
+    "s2": "82627aab8394f0209c300c78167c8eb9a00cc5acf2e8b3a32be25df3b62c3f92",
+    "s3": "116d224116741ed3ca6936e41ebeb3351e131255121322cdcce61fa0b998230f",
+    "s4": "2a97d35fa0e69a6331d78f727d1ded35d267ff23bba3ff069f80e200825410f0",
+    "s5": "95b6f7534336d8938a033677b232892e649b24794872574f8706be13d8f17bd3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T07:01:00.019466+00:00",
+  "total": null
+}
