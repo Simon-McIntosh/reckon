@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T13:40:15.195Z",
+  "dispatched_at": "2026-11-07T13:19:03Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:77",
+      "id": "reasoning-1",
+      "reason": "the justification is the only thing standing between the deliverable and the same defect in a sibling guarded key, so a worker implementing \u00a78 as written leaves the class half-fixed and the case list would need a `changed_paths` case added.",
+      "text": "\u00a78 limits the whitespace-split to `test_logs` and justifies excluding the other guarded fields with \"because `commits` entries are written as a sha followed by a subject\", but `_GUARDED_LIST_KEYS` (reckon/crew/reports.py:115\u2013117) is `{changed_paths, orientation_write_paths, test_logs, commits}`; `changed_paths` entries are paths, not sha-plus-subject, so a space-joined `changed_paths` line is read as one entry and every consumer that takes its entries one at a time \u2014 the same guard shape the section exists to repair \u2014 reads only the first path, while the stated reason appears to have cleared it",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:79",
+      "id": "reasoning-2",
+      "reason": "the third deliverable and its sixth case are still reachable and still worth building (a parseable no-arms manifest reaches it), so the node's work is unchanged; only the Why's attribution to the glued manifest is loose.",
+      "text": "\u00a78's third deliverable is presented as the repair for the second cited defect (\"the refusal \u2026 never says \u2026 nor where one was found\"), but after the second deliverable lands the glued manifest is refused earlier and louder by `_require_recognised_manifest_status` (reckon/crew/promotion_checks.py:572\u2013577), which re-raises `ManifestParseError` from `parse_manifest` while `_fresh_manifest` (same file, 462\u2013467) swallows it as `None`; the third deliverable's refusal in `_require_*verdict_matches_exit_status` therefore fires only for a manifest that parses and genuinely records no arms",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "d913746be31ed8720cb3bf00537d61c0ed5a7b27",
+  "plan_fingerprint": "7f3dbb1a1058685616a5451020b3c6483171a6613f6edb753217ffc576f92936",
+  "plan_slug": "a-promotion-reads-the-evidence-it-is-given",
+  "plan_version": 15,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T131722541488-plan-review-of-a-promotion-reads-the-evidence-it-is-given",
+  "reviewed_blob_sha": "40f0c67775234bcf9b3686c213439a1fe958ff40",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor resolves: `_looks_like_a_list_entry_token` at `reckon/crew/reports.py:923`, `_refuse_joined_list_separator` at 957, `logs[0]` at `reckon/crew/promotion_records.py:362`, the cited-log audit loop at `reports.py:1471`, `_cited_log_paths` at 2949, `suite_observation_missing_fields` at `reckon/ledger.py:490`; and the two evidence files exist with the cited content at the cited lines (line 12 of `manifest.md.before-arms` is two space-separated log paths, line 33 of `manifest.md.attempt-2.asdelivered` is the glued `herebaseline_suite: {\u2026}`, and `gate-current6.log` ends `EXIT=1`).",
+    "done_when": "pass \u2014 \u00a78 names seven cases and three declared controls (one-entry read fails case 1, refusing any mention of `baseline_suite` fails case 5, a literal field list fails the seventh case's monkeypatched field), and the defect reproduction is required before any change.",
+    "evidence_paths": "pass \u2014 the reproduction and the blast-radius census are recorded in the gate log and the run directory under `~/.config/reckon/crew/runs/`, which is durable; no scratchpad path is named.",
+    "naming": "pass \u2014 `tests/test_a_manifest_is_read_in_the_shapes_workers_write.py` and the prose name mechanisms, carrying no plan label, stage name or ticket number.",
+    "reasoning": "a finding \u2014 \u00a78's scope decision is justified by a reason that covers only `commits`, leaving the path-shaped guarded key `changed_paths` with the identical unreadable-entry defect.",
+    "single_goal": "pass \u2014 all seven cases test one deliverable, that promotion reads and narrates a manifest's suite evidence in the shapes workers write it.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `s8: [\"\u2026#s7\"]`, \u00a78's own closing sentence and the build followup place \u00a78 after \u00a77 because both write `reckon/crew/promotion_evidence.py`, and \u00a77's write paths do include that file, so the wait points at the node that actually writes the shared module."
+  },
+  "section_digests": {
+    "_document": "2f84869cfe4855fe07ab334075df36e6e60ef8400b742b43814dc8124768b7f0",
+    "s1": "5eac0eb57fbf9fccaeee6fb2da59c42ca24c4433f0cffcb4b7de1b6b04324b6c",
+    "s2": "259d093654ecf00609d51d02f39bb21a9feda5af8b5626a64e881f7e85d5abe4",
+    "s3": "479c8ebc617467c2744513e850433e87af52a3d22110620dcfdfb48f9975d081",
+    "s4": "bc5eebc33cf8175dd508f65245c7126745fc3e87a3e75e6229c55004ae265f62",
+    "s5": "5454a3b2f3bbdc9fe34ced889604aa90092b4d22e83912038c83a1392ab1631d",
+    "s6": "2e81c0cbe61ef60fc16acb159e81912b5b6263e9d12b8059efbd9482d722976c",
+    "s7": "1d7652463a13d9925f53c3bae1f6801e173af020bd09d5e7444d0511c37e788b",
+    "s8": "d644a546c7b38663ecb123f8e753fb5b8bc1f5f2354638343289362db55efb32"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T14:06:45.267568+00:00",
+  "total": null
+}
