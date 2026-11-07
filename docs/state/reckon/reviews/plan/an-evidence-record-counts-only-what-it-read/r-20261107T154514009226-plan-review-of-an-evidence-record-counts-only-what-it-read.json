@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T16:03:57.966Z",
+  "dispatched_at": "2026-11-07T15:49:31Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:47",
+      "id": "done_when-1",
+      "reason": "the control must say \"two or more capturing groups\" (or assert the message quotes the whole match rather than a group), otherwise the node's gate reports a guard that never fires.",
+      "text": "\u00a73's second negative control says \"a capturing group in the pattern fails the second case\", but `deferred_work_terms` returns `re.findall` (reckon/doccheck.py:434-442) and a pattern with exactly ONE capture group makes `findall` return the group text as a string, not a tuple \u2014 measured at HEAD on the string \"a follow-on and a follow-on\": no group \u2192 `['follow-on', 'follow-on']` strings; one group `\\b(follow)-ons?\\b` \u2192 `['follow', 'follow']` (still strings); two groups `\\b(follow)-(on)s?\\b` \u2192 `[('follow', 'on'), ('follow', 'on')]` tuples; so a node that adds one group and runs the stated control sees the second case pass and records a control that proves nothing, which is exactly the fail-open shape the section exists to close",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:46",
+      "id": "reasoning-1",
+      "reason": "either name the surface the plan relies on (the MCP entry point or deployer that calls it) or drop the site and say so, because as written a node delivers and tests a guard on a dead function and calls the requirement met.",
+      "text": "\u00a73 adds the prose refusal to `_append_comment` and spends case 3 and one control on it, but that function is reached by no production path: `reckon/mcp_edit_plan.py:137` defines it, `reckon/mcp.py:221` re-exports it, and the only callers are tests (`tests/test_mcp_tools.py:749,753`, `tests/test_plan_reads_stay_in_the_worktree.py:196`) \u2014 it is not registered as a FastMCP tool (mcp.py registers by `mcp.tool(name=...)`, and no such registration names it), so the guard is exercised only by the new test while nothing in the product writes a comment through it",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:47",
+      "id": "done_when-2",
+      "reason": "the node needs the fixture design stated explicitly (one plan per spelling, or an assertion on `deferred_work_terms`), or case 1 fails against a correct implementation.",
+      "text": "\u00a73's first case reads as though one audit run reports every new spelling in a plan, but the audit emits at most one finding per document: `reckon/doccheck.py:1728` calls `deferred_work_term(soup)`, which returns only `terms[0]` (doccheck.py:430), so a fixture plan carrying several spellings in its comments reports the first and silently carries the rest",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "7a13478249b4e75afade1cde071153fbc3c681bc",
+  "plan_fingerprint": "2a552a9f9dc0f42e8e9b14fcc641c46a662014b98143523eba14a947f832be4e",
+  "plan_slug": "an-evidence-record-counts-only-what-it-read",
+  "plan_version": 5,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T154514009226-plan-review-of-an-evidence-record-counts-only-what-it-read",
+  "reviewed_blob_sha": "5adf1a874e38cb7b8618b16fbeecd3d03e810f98",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor resolves at HEAD: `_DEFERRED_WORK_TERM` and `DEFERRED_WORK_TERM_IN_PROSE` (doccheck.py:412,419), the reader (doccheck.py:434) and single-term accessor (doccheck.py:422), `_prose_deferred_work_term` (_store.py:993), `_require_authored_value` (_store_section_ops.py:153), the comments branch of `_apply_append` (`if target == \"comments\"`, _store.py:3811) and not the research/questions branches at 3791/3801, the followups append op (_store.py:3770), `append_to_list` (_store.py:2379), the field-set delegation (_store.py:3498) into `apply_followup_field_set` (_store_section_ops.py:362), `_append_comment` (mcp_edit_plan.py:137, exported at mcp.py:221), the followup-add route to `append_to_list` (mcp_edit_plan.py:253), `_carry_section_moves` (write at _store.py:3076), the promotion writer (promotion_scope.py:1458-1471) and `_apply_resolve` (_store.py:3842-3867).",
+    "done_when": "a finding \u2014 \u00a73's second negative control (\"a capturing group in the pattern fails the second case\") cannot fail for a single capture group, because `re.findall` returns strings, not tuples, when the pattern has exactly one group.",
+    "evidence_paths": "pass \u2014 the gate writes its audit output, finding count and test logs under the run directory, which survives the run.",
+    "naming": "pass \u2014 no plan label, ticket number or version tag reaches a symbol, filename or comment in \u00a73.",
+    "reasoning": "a finding \u2014 \u00a73 adds the refusal to `_append_comment`, which no production caller in this repository reaches, and names no caller for it.",
+    "single_goal": "pass \u2014 one rule, one regex and its refusal sites: the section carries a single deliverable and one gate over it.",
+    "wiring": "pass \u2014 \u00a73's only shared write path, `reckon/_store.py`, is declared as a wait on \u00a72 in `plan-section-depends-on`, and its new grant of `reckon/_store_section_ops.py` collides with no other node."
+  },
+  "section_digests": {
+    "_document": "6d35efce52466005f8ee56997c8dc7bcca998d7c41fcd252d254bc7264596281",
+    "s1": "49581a4c899ba79b704cec124eaa4b18560c0c76dfd26327155915e9f48ca5a2",
+    "s2": "0b8bed0f03d053457f9c7efd06dd0ff61e4d509f00a6f7518b6e3c911a96a555",
+    "s3": "959117899d703cbf6ecc5fef9e5f13145f1664c1421df649543ff2b3da5d3b9d",
+    "s4": "2a4595f5aefc320f23756d7c834443e983a185161f61e8078d9bd7a31df7e991"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T16:45:27.941001+00:00",
+  "total": null
+}
