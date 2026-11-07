@@ -25,8 +25,8 @@
   <title>A Read Costs What Changed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="33">
-<meta name="plan-modified" content="2026-11-05">
+<meta name="plan-version" content="34">
+<meta name="plan-modified" content="2026-11-07">
 </head>
 <body>
   <main class="plan-doc">
@@ -111,7 +111,7 @@
     <div class="r-comment-body"><p>§8 landed as merge <code>35d1161619</code>; main is green on the two stat-identity tests again. <a href="/reckon/evidence/archive/a-read-costs-what-changed-landed.html#s8-a-persisted-answer-still-reuses-rows">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-defer-s9" data-who="" data-when="">
-    <div class="r-comment-body"><p>Deferred on its content review of 5 November. <code>compose_project_state</code> reads the project's resource documents (sprints, milestones, blockers, timeline, manifest) and their versions (<code>reckon/project_state.py</code> near lines 1495&ndash;1583); it never reads a plan file, so the &ldquo;composes every plan&rdquo; premise overstated the saving. §9 resumes only if a timed distributed <code>read_plan(view="summary")</code> shows that call is a material share of the read.</p></div>
+    <div class="r-comment-body"><p>Deferred on its content review of 5 November. <code>compose_project_state</code> reads the project's resource documents (sprints, milestones, blockers, timeline, manifest) and their versions (<code>reckon/project_state.py</code> near lines 1495–1583); it never reads a plan file, so the “composes every plan” premise overstated the saving. §9 resumes only if a timed distributed <code>read_plan(view="summary")</code> shows that call is a material share of the read.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261103T033801666237-review-of-every-read-enters-the-existing-scopes-cab4f5243072" data-who="reckon-build" data-when="2026-11-03T03:55:09.358Z">
     <div class="r-comment-body"><p>Reviewed run r-20261103T021938516080 at base 9bdaea5 and head cab4f52430: parsed verdict on all six checklist items and all six dimensions (goal_fidelity 18, evidence 15, scope_discipline 19, durability 16, fit 17, reuse 14; total 99), with five non-blocking findings and one added suite failure (tests/test_spa_shell_geometry.py::test_rendered_topbar_children_follow_the_canvas_order, a browser-probe readiness timeout that passes twice at base).</p></div>
@@ -145,6 +145,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261103T103857095482-a-persisted-answer-still-reuses-rows" data-who="reckon-build" data-when="2026-11-04T09:22:03.388Z">
     <div class="r-comment-body"><p>Revalidating a persisted value no longer hashes the source file of each module that produced it: the envelope records each producer's source stat identity beside its digest and reuses the recorded digest when that identity has not moved, so a cold build reuses every covered row by stat identity again; both stat-identity tests and the code-version test pass 8/8 in each of three serial head passes, and reverting the fix turns exactly the two declared tests red.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261107T095252178521-review-of-a-stored-plan-review-snapshot-is-parsed-once-across-5be11339a0e7" data-who="reckon-build" data-when="2026-11-07T10:06:11.527Z">
+    <div class="r-comment-body"><p>Reviewed r-20261107T092428175121-a-stored-plan-review-snapshot-is-parsed-once-across at base b8197d40a168 → head 5be11339a0e7: scores goal_fidelity 19, evidence 15, scope_discipline 20, durability 18, fit 18, reuse 20; two non-blocking findings (the done-when&#x27;s ruff arm is recorded nowhere though both commands are clean; the per-snapshot persisted memo is never evicted) and no blocking defect, so the change does what it claims — a second process parses 0 of 10 stored snapshots against the base&#x27;s 20.</p></div>
 </div>
 </section>
 </main>
