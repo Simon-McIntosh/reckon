@@ -1,0 +1,73 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T22:10:53.509Z",
+  "dispatched_at": "2026-11-07T21:42:34Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:149",
+      "id": "done_when-1",
+      "reason": "the section's measure would not cover half of its own stated repair, so the defect it exists to remove could ship green.",
+      "text": "\u00a79's four cases all call `_supervisor_spawn_worker` in tests/test_a_queued_run_launches_once.py (:144, :163, :174), while the other repaired site `_prepare_attempt_records` (dispatch_launch.py:1943) is reached first on every fresh dispatch (dispatch.py:3338) and no case drives it through the session-walk arm; a node that fixes only the supervisor site passes all four cases and leaves the launcher naming a dead pid",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:149",
+      "id": "reasoning-1",
+      "reason": "without the contract the worker either breaks a caller outside its write scope (and must stop) or silently rewords another command's refusal, and the env-scan arm's pid naming that :602 guards is left undefined.",
+      "text": "\u00a79 requires both refusals to read the arm \"through `live_worker_pid`\", but that function returns `int | None` (recovery_liveness.py:1275) and has consumers \u00a79 neither grants nor mentions: `reckon/crew/resumption.py:1451` builds the \"reads 'alive' for a lift\" refusal from its pid, and tests/test_resume_refuses_a_live_worker.py:517 and :602 assert the `_prepare_attempt_records` refusal text for the worker-record and environment-mark arms; naming the session id in the session-walk arm therefore needs a return-shape or companion change whose contract and blast radius are unstated",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:25",
+      "id": "wiring-1",
+      "reason": "a coordinator dispatching from the open followups builds \u00a78 and never dispatches \u00a79, so the section that words the launch refusal is left unbuilt while the plan reports it implementable.",
+      "text": "`s9` is declared implementable, but the only followup covering it, f-arolw-008 (:193), carries `data-recommends-skill=\"/reckon-build a-run-has-one-live-worker \u00a78\"` and the prompt `\u00a78` alone; \u00a78 and \u00a79 are two sections with separate write paths and a declared wait between them, and the same defect raised for \u00a76 was answered by adding a second followup (f-arolw-007) beside f-arolw-006",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:149",
+      "id": "anchors_resolve-1",
+      "reason": "a worker reaches the same repair from the instruction, replacing the one vacuous assertion with whole-text assertions, so the count does not alter the work.",
+      "text": "\u00a79 states the review of \u00a75 at e8c4677a43 found \"two of its controls (`assert pid > 0`)\" that pass whatever the code does, and that both new controls replace them; that review's finding (f8b64fdabe7) records the two in-test controls as deleted in the range rather than vacuous, and the current tree carries exactly one `assert pid > 0` (tests/test_a_queued_run_launches_once.py:175)",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "bf3fdfb2d53d959691fb6987c93fabaf13af6828",
+  "plan_fingerprint": "c3c2f5a8d8e133fca6b059c003ea263ec72915fd900afea450632e6ccc2c4ac0",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 45,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T213013102004-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "0acaef39cfa95c4dd1de5973eaadabbc4502332b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a79's claim about two `assert pid > 0` controls matches neither the review it cites nor the current test file; every other file, line and commit anchor in \u00a78 and \u00a79 resolves.",
+    "done_when": "a finding \u2014 \u00a79 repairs two refusal sites but all four of its cases drive only `_supervisor_spawn_worker`, so the `_prepare_attempt_records` half of the repair (the first refusal a fresh dispatch meets) is never exercised and a single-site fix passes every case.",
+    "evidence_paths": "pass \u2014 each section's evidence is the reproduced output and the armed gate log under the run directory that a later reader opens; no scratchpad or node-local temporary path is named.",
+    "naming": "pass \u2014 `takes_effect` and the arm names describe the mechanism, and no plan label, ticket number or version tag reaches a symbol, path or comment.",
+    "reasoning": "a finding \u2014 the stated root cause does match its cited measurement (the \u00a75 review's worker.json pid 645 dead against a live child 646, `recovery_liveness.py:1293`), and \u00a78's mechanism reaches its done-when through `crew_widen`; but \u00a79 routes both refusals through `live_worker_pid`, whose return shape and other consumers the plan leaves unstated, so the mechanism cannot produce the session-id wording without touching files \u00a79 does not grant.",
+    "single_goal": "pass \u2014 \u00a78 is the widen result's `takes_effect` field and \u00a79 is the launch refusal's wording; the split is clean, and \u00a78's write paths no longer carry \u00a75's launch sites or its test.",
+    "wiring": "a finding \u2014 s9 is declared implementable, but no open followup invokes it: f-arolw-008's recommends-skill and prompt name \u00a78 alone, so a coordinator dispatching from the followups leaves \u00a79 undispatched and its declared s9\u2192s8 wait orders nothing."
+  },
+  "section_digests": {
+    "_document": "732de762fcd8d53728c32da77fbf561c4d0ef6166a9d5e6eb13aad60e9177eca",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "c8fe2a5a6c5765bc70ba45627cc9f5778b225a5e1deff2cc1bb1e0e08214362a",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "63bd79fcdd7baf06c8cc0bbc04ef21beec3605a6fdb13eed90b3ad410f8516e7",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b",
+    "s8": "1615d40635864933b3396d3d4ae7b0f94361ec3a105caa540ba761ad95bd24fe",
+    "s9": "555bc4ab461e4823a55de013f789124474777146007e56ba90ff0e0346308263"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T22:12:08.776385+00:00",
+  "total": null
+}
