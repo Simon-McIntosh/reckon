@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T06:34:25.733Z",
+  "dispatched_at": "2026-11-07T06:29:24Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-refusal-comes-before-the-work.html:50",
+      "id": "reasoning-1",
+      "reason": "a worker would either invent a plan_dispatch parameter and thread it through dispatch.py (a scope extension \u00a73 does not declare) or move the refusal to the CLI, contradicting the stated location.",
+      "text": "\u00a73 says the brief refusal \"is a finding in `reckon/crew/node.py` ... and `plan_dispatch` calls it\", but `plan_dispatch` (reckon/crew/dispatch_plan.py:557-584) takes no plan_link or unplanned_reason parameter and the plan forbids a new TaskNode field, so the named caller cannot see whether either flag was given; the real launch runs plan_dispatch from `dispatch()` in reckon/crew/dispatch.py (call at :1670), which is not in \u00a73's declared write paths, so implementing the mechanism as written requires editing dispatch.py outside scope",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-refusal-comes-before-the-work.html:50",
+      "id": "reasoning-2",
+      "reason": "left as written, the plan moves the check earlier for one of the two roles the landing refusal covers and silently leaves the other where \u00a71 complains it is.",
+      "text": "\u00a73 refuses only \"an implement-role dispatch with `--brief` and no `--plan`\", while the landing discharge it mirrors (`_require_brief_owner`, reckon/crew/promotion_checks.py:1794) gates on `EXECUTABLE_SECTION_ROLES` = {\"implement\", \"test\"} (reckon/evidence.py:277), so a test-role brief run still meets the plan-link request only after the work is done \u2014 the exact defect \u00a71 states",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "8de4ab065958e4d50395f93dc81a51979aa6cc31",
+  "plan_fingerprint": "3cab7912fd624cb47be784d0d0d7198a2b5644d30146ef1854271c075436b441",
+  "plan_slug": "a-refusal-comes-before-the-work",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T062719089975-plan-review-of-a-refusal-comes-before-the-work",
+  "reviewed_blob_sha": "1e2fece9c07c6325709dbeae90787c9a6ede8191",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 crew_dispatch resolves at reckon/crew_dispatch_commands.py:1451, --plan at :1157, --brief at :1159, dispatch_options at :1861 and :2179, _require_brief_owner at reckon/crew/promotion_checks.py:1769, and _entry_node's project/plan/section requirement at reckon/crew/dispatch_batch.py:372-375.",
+    "done_when": "pass \u2014 four measured cases with three declared negative controls, each of which changes a case's outcome, so the guard is shown to fire.",
+    "evidence_paths": "pass \u2014 the done-when requires every log under the run directory with its revision, literal command and a trailing EXIT= line.",
+    "naming": "pass \u2014 dispatch_options, plan_link and unplanned_reason are mechanism names, and no plan label or ticket number reaches a symbol or filename.",
+    "reasoning": "a finding \u2014 \u00a73 places the dispatch refusal in reckon/crew/node.py \"and `plan_dispatch` calls it\", but plan_dispatch receives neither flag and the real launch path reaches plan_dispatch through a file outside \u00a73's write paths; and \u00a73 scopes the refusal to implement-role while the landing discharge it mirrors covers both implement and test.",
+    "single_goal": "pass \u2014 \u00a73 carries one deliverable: a brief run's plan link is recorded at dispatch and consumed at landing.",
+    "wiring": "pass \u2014 \u00a73's plan-section-depends-on names s2, the section whose files (reckon/crew/node.py, reckon/crew/dispatch_plan.py) it shares, and `_require_brief_owner` and `_entry_node` resolve where promised."
+  },
+  "section_digests": {
+    "_document": "fe86ddc53d6df02ed8681809f4399744a8daf0946c333b28fc3a6b583769f545",
+    "s1": "75df880739e89570186a1c16cae47d54a4d457a4a6e99c09b2d62c21368dc424",
+    "s2": "82627aab8394f0209c300c78167c8eb9a00cc5acf2e8b3a32be25df3b62c3f92",
+    "s3": "f401c4b4ef09a11ac1ca22405c55730ed687c9f86f14a133cc1305c7fcf0cfbe",
+    "s4": "2a97d35fa0e69a6331d78f727d1ded35d267ff23bba3ff069f80e200825410f0",
+    "s5": "95b6f7534336d8938a033677b232892e649b24794872574f8706be13d8f17bd3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T06:40:25.480509+00:00",
+  "total": null
+}
