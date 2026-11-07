@@ -275,7 +275,12 @@ def test_two_doors_reading_one_attempt_launch_only_once(
 def test_a_stream_in_motion_refuses_the_resume(
     home: Path, tmp_path: Path, repo: Path
 ) -> None:
-    """A foreign worker still writing is a life this host can read, so refuse."""
+    """A foreign worker still writing is a life this host can read, so refuse.
+
+    This host can read no pid of it, so the refusal says its liveness is unknown
+    rather than claiming it found a live process: the stream is the evidence,
+    and the message says so.
+    """
     _pointer(
         tmp_path,
         repo,
@@ -290,7 +295,8 @@ def test_a_stream_in_motion_refuses_the_resume(
 
     refusal = str(raised.value)
     assert REFUSED_RUN in refusal, refusal
-    assert "still has a live process" in refusal, refusal
+    assert "liveness unknown" in refusal, refusal
+    assert "still has a live process" not in refusal, refusal
 
 
 def test_a_stream_past_the_window_launches(
