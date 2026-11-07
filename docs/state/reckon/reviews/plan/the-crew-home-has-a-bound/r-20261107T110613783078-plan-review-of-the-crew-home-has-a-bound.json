@@ -1,0 +1,69 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T11:13:53.187Z",
+  "dispatched_at": "2026-11-07T11:07:04Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-crew-home-has-a-bound/r-20261107T110613783078-plan-review-of-the-crew-home-has-a-bound/plan.html:179",
+      "id": "wiring-1",
+      "reason": "without a declared order or `plan-section-depends-on`, \u00a711 and \u00a713 are dispatchable in the same beat against one file, and the collision surfaces only as a merge conflict after both gates have passed.",
+      "text": "\u00a713 declares `reckon/crew/gc.py` as an exclusive write path, and the still-open \u00a711 (line 171) declares the same file plus an operational `crew gc --apply` pass that reads the same region of `garbage_collect`; both sections are `data-status=\"implementable\"` and both have open followups (`f-tchhab-011`, `f-tchhab-013`), so a coordinator dispatching the two together gets two workers writing `gc.py` in separate worktrees with no declared order \u2014 while the plan serialises every other same-module pair in prose (`after \u00a72`, `after \u00a73`, `after \u00a76`)",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-crew-home-has-a-bound/r-20261107T110613783078-plan-review-of-the-crew-home-has-a-bound/plan.html:179",
+      "id": "reasoning-1",
+      "reason": "the root cause \u00a713 acts on (\"nothing removes the memo entries\") is unaffected, and the deliverable no longer borrows any pick-input rule, so a builder reads the clause as motivation and the explicit mechanism beside it as the instruction.",
+      "text": "the Why says `reckon/crew/gc.py` \"sweeps the pick-input and ledger caches\", but the only cache sweep in the file matches `ledger-*.sqlite` under `cache_root(\"pick-input\")` and its own docstring records that the picker's `picker-*.json` inputs \"in the same root are untouched\" (`reckon/crew/gc.py:407,421`), so the clause repeats a loose phrase from the review it cites rather than describing the code",
+      "type": "reasoning",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-crew-home-has-a-bound/r-20261107T110613783078-plan-review-of-the-crew-home-has-a-bound/plan.html:179",
+      "id": "reasoning-2",
+      "reason": "a memo entry is recomputed on its next miss (`persisted_memo` passes `compute=` at `reckon/crew/plan_review.py:928`), so pruning one from a run-confined pass costs one reparse rather than correctness, and the builder has the guarded neighbour in view.",
+      "text": "\u00a713 says `crew gc` sweeps the memo store but never states whether the run-confined pass (`crew gc --run <id>`) does, while the hook it must sit beside is guarded on exactly that (`_orphan_ledger_indexes(apply=apply, now=now) if run_id is None else []`, `reckon/crew/gc.py:844`)",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "effb98f15d7733c102a1c7914cd076b03e115a4c",
+  "plan_fingerprint": "ee0e2f6ddef34dd0c748abfcb4335c50c58613cd376fd8c85888c06f406de05f",
+  "plan_slug": "the-crew-home-has-a-bound",
+  "plan_version": 100,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T110613783078-plan-review-of-the-crew-home-has-a-bound",
+  "reviewed_blob_sha": "6adf410a901bb218134553cb1b225e01c77f878d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 all resolve: `LEDGER_INDEX_UNRECORDED_MAX_AGE_DAYS` is exactly at `reckon/crew/gc.py:213`, `_write_persisted_memo` at `reckon/metadata_index.py:2049` and is the only writer of a memo file, `plan_review._snapshot_evidence` at `reckon/crew/plan_review.py:894` keys `persisted_memo` on `sha256(text)` so one file exists per distinct snapshot digest, and the cited run `r-20261107T092428175121` exists with review total 110.",
+    "done_when": "pass \u2014 the done-when names a new test file, three observable outcomes (an entry past the threshold removed, one inside it kept, each removal printed) and a negative control that removes the sweep so the test goes red; every clause is falsifiable and the mechanism (`crew gc` reading each entry's mtime) can produce it.",
+    "evidence_paths": "pass \u2014 the evidence is a test file committed under `tests/` and `crew gc`'s own reported rows, emitted through `_emit_crew_result(report, pretty)` (`reckon/crew_run_commands.py:2129`), not a scratchpad.",
+    "naming": "pass \u2014 the new test name `test_the_persisted_memo_store_has_a_bound.py` and the cited symbols carry no plan label, section number, ticket or version tag; the threshold is named by what it ages.",
+    "reasoning": "a finding \u2014 the root cause holds (nothing sweeps `cache/plan-review-snapshot-evidence/`, confirmed by grepping every `cache_root(`/`_config_home()` sweep in the tree), and the mechanism reaches `garbage_collect` through `crew gc` (`reckon/crew_run_commands.py:2111`), the function's only production caller; the two defects are subsidiary: \u00a713 repeats an inherited mis-description of what gc already sweeps, and it leaves the run-confined pass's scope unstated beside a hook whose neighbour is guarded on `run_id is None`.",
+    "single_goal": "pass \u2014 \u00a713 carries one deliverable, bounding the persisted-memo store, with one write path plus its test.",
+    "wiring": "a finding \u2014 \u00a713 (line 179) and the still-open \u00a711 (line 171) both declare `reckon/crew/gc.py` as an exclusive write path, and neither section declares an order or a wait on the other."
+  },
+  "section_digests": {
+    "_document": "8dbf3931cf51d4f9e385eee50ffeaf942f75c992211bd29b064ea8615ef7a5d7",
+    "s1": "32d74b1202f967c9688afa80dbd94719f49d78f6a5afcc8d56d9c46602e1c0a5",
+    "s10": "56c18da5f95c1af6bc07050b4374f565f11fa8750f575894cd4e1cc2b5ea773a",
+    "s11": "80acd3bb5f292230c27316d662ee39353a2f9d2571e4aa608f5e765924e25480",
+    "s12": "45922de00c241b79de39fff9312c389ca9030f6fa16a304a9d0c35e383ad77be",
+    "s13": "acf680c3187bbb981fd28a86fcf53a07328031935536c58872746cc6e10a6f26",
+    "s2": "9328c20a14a28cadebc0cf3424b9fa61772f8c3bea7e4f7b1e097571697c0369",
+    "s3": "42466bfb93ed68c3dcdb669550dae38d00ebbdea5e24407a7579076255209fbf",
+    "s4": "ea437bee063bb05e8f8ddb6f7a30f7f066d66dff1770c1488e31b86a6f5c7ba8",
+    "s5": "75a8a336e2ee62426e5a8c3ed3310e0cf614b82a8cf7ae6a5985fcb99f2b1648",
+    "s6": "3f82b3311550663b1d18b1428203c2b44805aff91f1c998049de11dd82bfe201",
+    "s7": "d966e9dc54000fcf7d43d9d39567b2a791c2670b0224b881649472a126a8f106",
+    "s8": "07d9242815cd2c19cf76c9484aa28c908834190af477f204091de9d695b3e8a5",
+    "s9": "5e8a5c96b9e0b65736bdee8a24254ce6fe4a12c73dcb34c44b3a5a72b6e6d9c8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T11:24:22.768268+00:00",
+  "total": null
+}
