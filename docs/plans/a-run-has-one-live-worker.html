@@ -22,12 +22,12 @@
   <meta name="plan-depends-on" content="a-crew-process-ends-with-its-owner">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-section-depends-on" content="{&quot;s7&quot;: [&quot;a-run-has-one-live-worker#s6&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>A Run Has One Live Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.67">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="29">
 <meta name="plan-modified" content="2026-11-07">
 <meta name="plan-commits" content="a88e6f09">
 </head>
@@ -140,6 +140,10 @@
 </ul>
 <p>Negative controls: writing the diff after the signal fails a case where the stand-in deletes its file on SIGTERM; leaving the path out of the exit record fails the first case. The armed suite command passes at the head, judged by delta against the dispatch base with the new test copied into the base tree. The test asserts that the real crew home is untouched.</p>
 
+    <h2 id="s8">§8 — A widen says when its paths take effect</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> nova-39 reported on 7 November that <code>crew widen</code> on <code>r-20261107T133413665344-bank-warm-stall</code> returned ok and listed all three paths under <code>write_paths</code>, while the run's worker still could not write them. A running worker's mounts are fixed when bwrap starts it, so no change to the run's claim reaches that worker. The new paths reach only the next attempt. The widen's result (<code>crew_widen</code>, <code>reckon/crew_run_commands.py</code> near line 1658, through <code>claims.widen_claim</code>) says none of this, so a coordinator reads ok as a fixed fence. In that run the read-only tree itself came from the duplicate launch §5 refuses, which no widen can repair.</p><p><strong>Deliverable.</strong> The widen result carries a <code>takes_effect</code> field. When a worker of the run is alive, as <code>record_process_alive</code> reads it, the field names that worker's attempt and pid and says its mounts are unchanged, so the paths apply from the next attempt. When no worker is alive, it says the next resume or launch mounts them. The text names the field the fence is built from at launch, so a reader knows what was changed.</p><p>Write paths: <code>reckon/crew_run_commands.py</code>, <code>reckon/crew/claims.py</code> and the new test <code>tests/test_a_widen_says_when_it_takes_effect.py</code>.</p><p><strong>Done when.</strong> The defect is reproduced first: a widen of a run in a temporary crew home whose worker record names a live stand-in process returns no word on when the paths apply, and that output is recorded in the gate log. The new test then shows three cases:</p><ul><li>a self-widen beside a live worker names that attempt and its pid, and says its mounts are unchanged;</li><li>a widen of a stopped run says the next attempt mounts the paths;</li><li>the field the fence is read from at launch carries the widened paths after the call.</li></ul><p>Negative controls: dropping the liveness read makes the first case read as the second; leaving the fence's source field unwidened fails the third. The armed suite command passes at the head, judged by delta against the dispatch base with the new test copied into the base tree. The test asserts that the real crew home is untouched.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-arolw-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-08" data-recommends-skill="/reckon-build a-run-has-one-live-worker §2" data-resolved-at="2026-10-08T06:06:11+00:00" data-resolved-by="reckon-build">
@@ -182,6 +186,11 @@
     <div class="r-fu-body"><p>§6 makes the live-process refusal name the attempt it found, at all three sites. It shares no write path with §5 and runs beside it. §7 waits on §6 through its declared section wait, because both write <code>dispatch_sessions.py</code>.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-run-has-one-live-worker §6</pre>
     </article>
+<article class="r-fu" data-id="f-arolw-008" data-status="open" data-written-by="coordinator" data-written-at="2026-11-07" data-recommends-skill="/reckon-build a-run-has-one-live-worker §8" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §8</h4>
+    <div class="r-fu-body"><p>§8 makes a widen say when its paths take effect. It writes <code>crew_run_commands.py</code> and <code>claims.py</code>, which no other section of this plan writes, so it runs beside §5 and §6.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-run-has-one-live-worker §8</pre>
+    </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s2" data-id="c-s2-second-instance" data-who="reckon-build" data-when="2026-10-08T04:05:00Z">
@@ -210,6 +219,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261103T081723238648-refuse-resume-beside-a-live-worker-identified-by-session-id" data-who="reckon-build" data-when="2026-11-05T13:50:07.138Z">
     <div class="r-comment-body"><p>Refuse resume beside a worker whose supervisor wrote no record: `record_process_alive` now reads a live process of this user whose whole argv element is the run's session id when every recorded pid is dead, so `resume_plan` and `_launcher_refusal` both refuse a second worker (head 5 passed, EXIT=0; base arm 2 failed, EXIT=1).</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-s5-bank-warm-stall" data-who="coordinator" data-when="2026-11-07">
+    <div class="r-comment-body"><p>A third instance, in nova. <code>r-20261107T133413665344-bank-warm-stall</code> was queued and admitted as two attempts: attempt 1 launched at 13:52:24Z (pid 183824) and attempt 2 at 13:54:05Z (pid 195147), and both ran until about 14:17Z (<code>attempt-1-exit.json</code>, <code>attempt-2-exit.json</code>). Attempt 1 hit EROFS under a read-write bind (<code>stream.jsonl</code> lines 3911 and 3961), the replaced-tree shape reckon-0f traced.</p></div>
 </div>
 </section>
 </main>
