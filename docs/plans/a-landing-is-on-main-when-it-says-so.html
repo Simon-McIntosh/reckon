@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="work-is-never-stuck-behind-the-admission-loop">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;descoped&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;descoped&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;descoped&quot;}">
   <title>A Landing Is On Main When It Says So | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="5">
-<meta name="plan-modified" content="2026-11-06">
+<meta name="plan-version" content="7">
+<meta name="plan-modified" content="2026-11-08">
 </head>
 <body>
   <main class="plan-doc">
@@ -35,9 +35,15 @@
     <p>A first reading of that incident blamed the lander for not merging. It was wrong: the coordinator's own merge landed the head while the lander was measuring its candidate (17:19:33&ndash;17:24:16Z), and the lander's refusal is the post-merge release refusal. §2 and §4, written on that reading, are descoped.</p>
 
     <h2 id="s2">§2 — A promotion with --land ends with the head on the remote, or says it did not</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="descoped" data-descope-reason="the review of v1 showed the head was merged before the lander&#x27;s release refusal, so no landing left a head unmerged" data-links=""></section>
-    <p><strong>Deliverable.</strong> The worker first reproduces, from the run's <code>landing.json</code> and the <code>--land</code> path in <code>reckon/crew_run_commands.py</code>, why the land step left <code>11f880b126</code> unmerged while the promote and release commits were written, and names the cause in the manifest. Then <code>--land</code> is made to end in one of two states: the reviewed head is an ancestor of the remote branch, checked by reading the remote after the push, or the command exits non-zero naming the step that failed and the commits left unpushed. Promote and release commits are never left on the local branch without a push attempt that is reported.</p>
-    <p><strong>Done when</strong> a new <code>tests/test_a_landing_is_on_main_when_it_says_so.py</code> shows three things with a temporary repository and a bare remote: a successful <code>--land</code> leaves the reviewed head an ancestor of the remote branch; a land step whose merge is forced to fail exits non-zero naming the merge step and leaves no unreported local commits; and a push forced to fail exits non-zero naming the unpushed commits. Three negative controls, one per case: skipping the merge after promotion makes the first case's head absent from the remote; swallowing the merge failure makes the second case exit zero; and swallowing the push failure makes the third case exit zero. The test files importing <code>reckon.crew_run_commands</code> or <code>reckon.crew.merge</code> add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>. Ruff adds no findings on the staged paths. Every log is under the run directory, starts with its revision and the literal command, and ends in <code>EXIT=</code>. Write paths: <code>reckon/crew_run_commands.py</code> and the new test; any change the cause needs in <code>reckon/crew/merge.py</code> or <code>reckon/crew/queue_landing.py</code> is named in the manifest.</p>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> The worker first reproduces, from the run's <code>landing.json</code> and the <code>--land</code> path in <code>reckon/crew_run_commands.py</code>, why the land step left <code>11f880b126</code> unmerged while the promote and release commits were written, and names the cause in the manifest. Then <code>--land</code> is made to end in one of two states: the reviewed head is an ancestor of the remote branch, checked by reading the remote after the push, or the command exits non-zero naming the step that failed and the commits left unpushed. Promote and release commits are never left on the local branch without a push attempt that is reported. A <code>--land</code> killed after it has pushed its promote
+and release commits and before its merge is not left looking landed: either the promotion
+record is written only after the merge reaches the remote, or the next landing pass finds a
+promoted run whose head is not on the remote branch and finishes the merge.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_a_landing_is_on_main_when_it_says_so.py</code> shows three things with a temporary repository and a bare remote: a successful <code>--land</code> leaves the reviewed head an ancestor of the remote branch; a land step whose merge is forced to fail exits non-zero naming the merge step and leaves no unreported local commits; a push forced to fail exits non-zero naming the unpushed commits; and a <code>--land</code> killed
+between its promotion and its merge ends, after the next landing pass, with the reviewed head an
+ancestor of the remote branch. Three negative controls, one per case: skipping the merge after promotion makes the first case's head absent from the remote; swallowing the merge failure makes the second case exit zero; swallowing the push failure makes the third case exit zero; and leaving a killed landing
+unfinished makes the fourth case's head absent from the remote. The test files importing <code>reckon.crew_run_commands</code> or <code>reckon.crew.merge</code> add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>. Ruff adds no findings on the staged paths. Every log is under the run directory, starts with its revision and the literal command, and ends in <code>EXIT=</code>. Write paths: <code>reckon/crew_run_commands.py</code> and the new test; any change the cause needs in <code>reckon/crew/merge.py</code> or <code>reckon/crew/queue_landing.py</code> is named in the manifest.</p>
 
     <h2 id="s3">§3 — A withheld worktree is reported as a release outcome, not a landing</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
@@ -63,6 +69,11 @@
     </article>
 </section>
     
+<section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-reopen-s2" data-who="reckon-build" data-when="2026-11-08T00:30:00Z">
+    <div class="r-comment-body"><p>§2 reopened. It was descoped on the finding that no landing left a head unmerged. On 7 November reckon-0f measured one that did: <code>crew complete --land</code> on <code>r-20261107T152305119816</code> was killed by its time bound (exit 143) after pushing promote <code>c0ba9ee0af</code> (passed) and release <code>3deae1db06</code>. The monitor drew the run as landed, but none of its commits (<code>b1cfbd7d30</code>, <code>c0ec02d067</code>, <code>06c67c9893</code>) reached origin/main for about three hours, until <code>crew gc</code> withheld the tree and reckon-0f merged the head by hand. The done-when gains that fourth case. The same day, four <code>--land</code> calls exited 1 with a false "worktree withheld" after merging and pushing successfully (5bc89fc029, ea60b2749f, b706dae898 and r-20261107T100007560977); that is §3's.</p></div>
+</div>
+</section>
 </main>
 </body>
 </html>
