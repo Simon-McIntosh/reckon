@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T18:38:30.894Z",
+  "dispatched_at": "2026-11-07T18:25:20Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-crew-process-writes-only-what-it-owns/r-20261107T182348355555-plan-review-of-a-crew-process-writes-only-what-it-owns/plan.html:57",
+      "id": "done_when-1",
+      "reason": "without one case carrying a marked request line through the host into its child entry, the seam \u00a73 was changed to feed is untested and an implementation can go green while abandoning every run dispatched before a /clear.",
+      "text": "\u00a75's fifth case supplies the `owner_checked: true` child entry as a previous record written by the test, while nothing asserts the production path that must create it: a request line marked by \u00a73's `_request_host_follower`, parsed by `session_host.parse_request` (`reckon/crew/session_host.py:193`), which returns only `(project, session)` and discards the mark, and recorded by `SessionHost.record()` (`:368`), whose child entries carry only project/session/pid/settled_at \u2014 an implementation that adds the start-up scan and `waiting_for_dispatch` but never stores the mark passes every case in \u00a73 and \u00a75 while the pre-/clear adoption is dead in production",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-crew-process-writes-only-what-it-owns/r-20261107T182348355555-plan-review-of-a-crew-process-writes-only-what-it-owns/plan.html:47",
+      "id": "done_when-2",
+      "reason": "one bullet, \"a hand-off naming the calling session writes one request\", closes a hole where the new guard can disable a production delivery path with every declared case green.",
+      "text": "\u00a73 puts the guard in `_request_host_follower`, the writer both paths share, but its four cases measure only the ask's positive path (case 2) and the hand-off's refusal (case 3), so a guard that also refuses a legitimate hand-off \u2014 for instance because `_calling_session()` resolves empty in a follower process rather than in the session's Claude process \u2014 passes all four cases while the hand-off silently stops writing its request",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "5a444bc33b51e2910b11cc198b199ff245956ce9",
+  "plan_fingerprint": "008173c820b186f66d9b14ef309acfccfda844f8690056a2fe916fa87022132c",
+  "plan_slug": "a-crew-process-writes-only-what-it-owns",
+  "plan_version": 8,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T182348355555-plan-review-of-a-crew-process-writes-only-what-it-owns",
+  "reviewed_blob_sha": "60ea842f8af26e51181d59bab37fa16093c09f0f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 each symbol \u00a73 cites resolves at the stated place: `_request_host_follower` (`reckon/crew/dispatch_watch.py:818`), `_ask_session_host` (`:746`), `_ask_session_host_for_follower` (`:770`), `_rearm_session_follower` (`:785`), `_session_host_child_pid` (`:695`), `_hand_off_to_waiting_host` (`:870`), and `_hand_off_from_follower` (`reckon/crew_follow_commands.py:628`).",
+    "done_when": "a finding \u2014 \u00a73's hand-off path has only a refusal case, and \u00a75's fifth case accepts a hand-written marked child entry rather than producing one through the host, so the \u00a73\u2192\u00a75 seam the change_under_review creates is measured nowhere.",
+    "evidence_paths": "pass \u2014 every gate log in \u00a73 is written under the run directory with its revision, literal command and `EXIT=` trailer, and the deliverable's reproduction path is recorded there too.",
+    "naming": "pass \u2014 `owner_checked` names the mechanism (the ownership check passed) rather than any plan, stage or ticket label.",
+    "reasoning": "pass \u2014 \u00a71's evidence (nova-39's host holding nova-8a's session 35a66cc6, and `_ask_session_host_for_follower` returning True with nothing spawned) supports both the ownership guard and the census fix; the guard sits in the one writer both follow-request paths use (`reckon/crew/dispatch_watch.py:760` for the ask, `:884` for the hand-off), and the production caller of the ask is `_arrange_dispatch_follower` (`reckon/crew/dispatch.py:398`), so the mechanism runs on the real path.",
+    "single_goal": "pass \u2014 \u00a73's ownership guard and its `_session_host_child_pid` test both sit in `reckon/crew/dispatch_watch.py` and answer one question, whether a host is asked to follow a pair it owns.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `s5` on `a-crew-process-writes-only-what-it-owns#s3`, which is exactly the dependency \u00a75's start-up scan needs (it reads the `owner_checked` mark \u00a73's guard puts on the request line), and the open followup names \u00a72 to \u00a75."
+  },
+  "section_digests": {
+    "_document": "7848c4a22debbc4310e02052a09e0978b08f6e538ba797332694c84678155ff8",
+    "s1": "38e026f18d1b42b1d79978e1ed1cf6179e085908a249e5762f39a683dcc8123f",
+    "s2": "f11be171c26248fbc871d99510f0013c9dfc0a181d247f07861e86dc0d156f40",
+    "s3": "461d59021de9ff5628831426eb150476caf73950dfbacd6b424f2eca55245e3d",
+    "s4": "e88fcf79ec58d8305f36e37d69846c8e0a1a10f1b73fc6c167c25b700165e123",
+    "s5": "42a82c29dc5f89d4028105dbfcfa71ac089ba1561fcd53f311ea24ace35fb09d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T18:48:42.674437+00:00",
+  "total": null
+}
