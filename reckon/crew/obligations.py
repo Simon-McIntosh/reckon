@@ -76,7 +76,20 @@ REVIEW_CLASSIFICATION_KINDS = frozenset({"scoring", "promotable"})
 RECOVERY_CLASSIFICATION_DUTY_KINDS = {
     "needs-help": "needs-help",
     "launch-failed": "launch-failed",
+    # Both classifications whose recovery verb is ``repair``: the run's own
+    # declaration is what is wrong, so no sweep, resume or promotion moves it
+    # until the session edits the thing the classifier refused. Left out, they
+    # reach no duty at all and a run whose wait the reader refused sits idle
+    # with the session told nothing.
+    "unreadable": "unreadable",
+    "exited-unfinished": "exited-unfinished",
 }
+
+#: The recovery duty kinds whose evidence is the classifier's own account of
+#: what is wrong with the run, carried on the row's ``detail``. A coordinator
+#: reading one of these owes a repair, so the obligation says what to repair
+#: rather than only that the run is halted.
+CLASSIFIER_DETAIL_DUTY_KINDS = frozenset({"unreadable", "exited-unfinished"})
 
 # A duty kind whose evidence is a stored review rather than a live run's state:
 # the row is owed while the dimension carries no disposition, and it names the
@@ -775,8 +788,14 @@ def _partition_acknowledged(
 
 
 def _live_item(row: Mapping[str, Any], *, kind: str, now: datetime) -> dict[str, Any]:
-    """Project one recovery row into the stable obligation shape."""
-    return {
+    """Project one recovery row into the stable obligation shape.
+
+    A kind whose remedy is a repair carries the classifier's own account of the
+    refusal as its ``reason``, because "repair the waiting declaration" names
+    nothing a session can act on without the text that says what the reader
+    refused.
+    """
+    item = {
         "kind": kind,
         "run_id": str(row.get("run_id") or ""),
         "node": str(row.get("node") or ""),
@@ -784,6 +803,9 @@ def _live_item(row: Mapping[str, Any], *, kind: str, now: datetime) -> dict[str,
         "age_seconds": _row_age(row, now=now),
         "next_command": str(row.get("next_action") or ""),
     }
+    if kind in CLASSIFIER_DETAIL_DUTY_KINDS:
+        item["reason"] = str(row.get("detail") or "")
+    return item
 
 
 def admission_verdicts() -> dict[str, dict[str, Any]]:
