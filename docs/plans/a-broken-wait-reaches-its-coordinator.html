@@ -25,7 +25,7 @@
   <title>A Broken Wait Reaches Its Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="6">
 <meta name="plan-modified" content="2026-11-07">
 </head>
 <body>
@@ -71,6 +71,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261107T073730077861-review-of-keep-a-run-parked-on-a-live-job-waiting-1a067cd9e8ff" data-who="reckon-build" data-when="2026-11-07T07:47:30.197Z">
     <div class="r-comment-body"><p>reviewed run r-20261107T061633378515 at 1a067cd9e8 over base 6d47102380 for plan reckon:a-broken-wait-reaches-its-coordinator §4; record status parsed, scores goal_fidelity 19, evidence 15, scope_discipline 19, durability 18, fit 15, reuse 20; added_failure_count 0 against the reviewed run's own baseline/after gate logs and the two classifier arms; two non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261107T061633378515-keep-a-run-parked-on-a-live-job-waiting" data-who="reckon-build" data-when="2026-11-07T07:46:30Z">
+    <div class="r-comment-body"><p>reckon/crew/recovery_classification.py deletes its own job-id reader and both call sites read the job id from the shared probe reader, so a sacct or interpreter probe names its job and a job the scheduler still lists keeps the run waiting; the new gate passes 4 of 4 and the classifier test files add no failure against the base arm (663 passed / 1 failed at base, 667 passed / 1 failed at head, same failure id).</p></div>
 </div>
 </section>
 </main>
