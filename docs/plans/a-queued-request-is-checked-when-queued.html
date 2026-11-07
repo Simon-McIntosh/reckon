@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-queued-request-is-checked-when-queued">
+  <meta name="plan-title" content="A Queued Request Is Checked When Queued">
+  <meta name="plan-summary" content="A batch entry is refused at queue time for the contract a launch would refuse, a dropped request never trashes a live successor's worktree, and an answer lands on its review.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="3.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S27">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-after" content="work-is-never-stuck-behind-the-admission-loop">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <title>A Queued Request Is Checked When Queued | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-11-07">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: three defects one session met while queueing work</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p>The power_convertor coordinator, session <code>c71ae21b</code> on clu-2068, reported these on the night of 6 to 7 November.</p>
+    <ul>
+      <li><strong>A batch queues what a launch refuses.</strong> <code>reckon crew dispatch --batch</code> returned <code>ok: true, queued: 6, refused: 0</code> for entries with no <code>spec_level</code> and no <code>negative_control</code> that declared test files as write paths. When the admit pass reached the two runnable entries it refused both (&ldquo;node is not dispatchable &mdash; spec-level &hellip; negative_control &hellip;&rdquo;), and the refusal appeared only in each pointer's <code>failure</code> field; the obligation read <code>queued-awaiting-session</code> with <code>next_command: reckon crew dispatch</code>. The four entries awaiting upstream would have met the same refusal hours later. Queue-time admission already runs the domain findings for each batch node (<code>reckon/crew/dispatch.py</code> near lines 322&ndash;331) but not the node-contract properties a single dispatch checks.</li>
+      <li><strong>A dropped request's cleanup trashed a live successor's worktree.</strong> About 22:40Z the coordinator dropped a refused request with <code>crew queue drop</code> and requeued the same plan, section and node. The new request <code>r-20261106T224214853358-edge-window-settle</code> launched at 22:49Z under bwrap with a read-write bind of its worktree; at 22:50:26Z that worktree was moved to <code>_trash/edge-window-settle-20261106T225026473243Z</code>, and at 23:50Z a different inode was restored at the same path. The bind still resolved to the moved original, so for about an hour every write failed with Errno 30. The uncommitted work survived in the restored tree.</li>
+      <li><strong>An answer is attached to an older review.</strong> For plan <code>filter-recommendation-claims</code> four content reviews are stored (plan commits <code>ccc3a4ac4</code>, <code>4c8406361</code>, <code>f736e32f0</code>, <code>9adad8864</code>). After the newest was promoted, <code>crew view plan-review</code> still served the review at <code>4c8406361</code> (run <code>r-20261106T222646371017</code>); <code>--answer reasoning-1</code> wrote onto that older review, whose finding of the same id says something different, and <code>--review-run</code> naming either newer review was refused as &ldquo;does not raise finding &hellip; the covering reviews are &hellip;222646&hellip;&rdquo;. Findings raised only by the newer reviews cannot be answered.</li>
+    </ul>
+
+    <h2 id="s2">§2 — A batch entry is refused at queue time for the node contract a launch would refuse</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> The batch path in <code>reckon/crew/dispatch.py</code> runs, for every entry before any is queued, the same node-contract validation a single dispatch runs (the check that raises &ldquo;node is not dispatchable&rdquo; naming the failing properties), and refuses the batch's failing entries in the result it already returns, each naming its properties; nothing is queued for a refused entry. It reuses the existing validator; it adds no second list of properties.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_a_batch_entry_is_checked_when_queued.py</code> shows two things with a synthesised repository: a batch of two entries, one missing its <code>negative_control</code> while declaring a test write path, queues the valid entry and refuses the other naming <code>negative_control</code>, with no pointer written for it; and a batch of valid entries queues them all. Negative control: skipping the contract validation on the batch path makes the invalid entry queue. The test files importing <code>reckon.crew.dispatch</code> add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>. Ruff check and ruff format --check add no findings on the staged paths. Write paths: <code>reckon/crew/dispatch.py</code> and the new test.</p>
+
+    <h2 id="s3">§3 — Find what trashed a live request's worktree after its predecessor was dropped</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> An investigation, not a repair. Reading <code>crew queue drop</code>, the discard and garbage-collection paths that move a worktree to <code>_trash</code>, and the restore path, the worker names which one moved <code>edge-window-settle</code>'s worktree at 22:50:26Z and which restored a new inode at 23:50Z, and whether either resolves the worktree by node path rather than by run id or checks for a live pointer holding the path. It reproduces the case in a temporary repository: drop a queued request, queue a successor for the same plan, section and node, launch it, and run the cleanup that fired. It writes the repair as a new implementable section of this plan with write paths, a test and a negative control, and edits no product source.</p>
+    <p><strong>Done when</strong> an evidence note at <code>docs/evidence/fragments/a-queued-request-is-checked-when-queued/what-trashed-the-live-worktree.html</code> names the moving and the restoring code with file and line anchors, shows the reproduction moving a worktree a live pointer holds, and gives the cause in one sentence the reproduction supports; as a negative control the same reproduction with no successor leaves nothing live affected. The plan carries a new implementable section for the repair. Every command is logged under the run directory, starting with its revision and the literal command and ending in <code>EXIT=</code>. Write paths: the evidence note and this plan.</p>
+
+    <h2 id="s4">§4 — Find why an answer is pinned to an older stored review, and write the repair</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> An investigation, not a repair. The worker reads how <code>crew view plan-review</code> chooses its <code>record</code> and how <code>crew review --answer</code> and <code>--review-run</code> resolve the covering review (<code>reckon/crew/plan_review.py</code> and the CLI that calls it), and names why a plan with four stored content reviews serves and answers against the second-newest: whether the choice keys on file modification time, on rubric precedence, on coverage of uncovered units, or on something else. It reproduces it with a temporary plan carrying three stored content reviews at successive plan commits, the oldest file rewritten last, and records which review each call selects. It writes the repair as a new implementable section of this plan, under which an answer lands on the review whose finding it names and a newer review's findings can be answered. It edits no product source.</p>
+    <p><strong>Done when</strong> an evidence note at <code>docs/evidence/fragments/a-queued-request-is-checked-when-queued/which-review-an-answer-reaches.html</code> names the selection code with file and line anchors, shows the reproduction serving and answering against a review that is not the newest, and states the cause in one sentence the reproduction supports; as a negative control the same reproduction with no file rewritten after the newest review selects the newest. The plan carries a new implementable section for the repair. Every command is logged under the run directory, starting with its revision and the literal command and ending in <code>EXIT=</code>. Write paths: the evidence note and this plan.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-aqricwq-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="coordinator" data-written-at="2026-11-07" data-recommends-skill="/reckon-build a-queued-request-is-checked-when-queued §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §2; investigate §3 and §4</h4>
+    <div class="r-fu-body"><p>§2 writes only <code>dispatch.py</code>; §3 and §4 are read-only investigations and can run beside it.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-queued-request-is-checked-when-queued §2</pre>
+    </article>
+</section>
+
+</main>
+</body>
+</html>
