@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T10:34:32.297Z",
+  "dispatched_at": "2026-11-07T10:27:56Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-review-waits-on-no-plan-decision.html:44",
+      "id": "reasoning-1",
+      "reason": "the node would either fail its own gate or invent a predicate the deliverable does not name, and would have to touch `routing.py`/`recovery_review_subject.py`, which its write paths exclude; the deliverable must name the composite owner to work.",
+      "text": "\u00a73 says `_node_is_a_reviewer` is \"the TaskNode-shaped owner\" of \"is this node a reviewer\" and infers that delegating to it also recognises a review node by its minted id, but `reckon/crew/reports.py:1831-1833` is `return str(node.role or \"\").strip() == REVIEW_ROLE` and nothing else. Measured in this worktree: for a node with a `REVIEW_NODE_PREFIX` id and `role='implement'`, `_node_is_a_reviewer` returns `False` while `_is_review_node({'node': {'id': ...}})` returns `True`. The minted-id question is owned by `recovery_review_subject._is_review_node`, composed with a role test in `routing._plan_review_exempt` (`reckon/crew/routing.py:2465-2483`), not by `_node_is_a_reviewer`. So the deliverable as written reproduces the inline comparison exactly (a no-op), and the done-when case it is meant to satisfy \u2014 a minted-id reviewer with another role getting no readiness ref \u2014 cannot pass.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-review-waits-on-no-plan-decision.html:44",
+      "id": "done_when-1",
+      "reason": "without a control that can differ, \u00a73's gate cannot demonstrate the exemption is enforced at all; the section needs a control that flips on the identity route it claims to add (e.g. a minted-id node whose role is not `REVIEW_ROLE`, checked against a role-only predicate).",
+      "text": "the negative control \"restoring the inline role comparison makes that case receive the readiness ref\" cannot distinguish the two arms: `_node_is_a_reviewer` evaluates `str(node.role or \"\").strip() == REVIEW_ROLE`, the identical expression \u00a72's run wrote inline, so restoring one and keeping the other produce the same verdict for every node. A control whose two arms are the same predicate passes without showing the guard fires.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-review-waits-on-no-plan-decision.html:42",
+      "id": "wiring-1",
+      "reason": "the plan should declare \u00a73 dependent on \u00a72 (or fold the deduplication into \u00a72), otherwise admission can release \u00a73 against code it cannot see and the two sections collide on one write path.",
+      "text": "\u00a73 has no declared wait on \u00a72, but at this tree's head `_needs_own_section_verdict` (`reckon/crew/queue_admission.py:3066`) carries no role test at all: the inline comparison \u00a73 exists to replace is present only in \u00a72's run head `d7ab26d178`, which is not an ancestor of `HEAD` (verified: `merge-base --is-ancestor` returns non-zero). \u00a72 is declared `implementable` with its build followup `f-arrwonpd-001` open, and the plan declares no `plan-section-depends-on` (the convention used by e.g. `docs/plans/a-coordinator-sees-the-board.html`). Dispatched before \u00a72 lands, \u00a73 has nothing to convert, so it must either re-implement \u00a72's change or no-op \u2014 on the same file and the same test file \u00a72 writes.",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "71f085f5eba8bc02a4b344ebdcbb73f2775f1be2",
+  "plan_fingerprint": "6441ea6060b314c1775f997288a2885939b924ff40d8bb2af75cce854ed132d0",
+  "plan_slug": "a-run-review-waits-on-no-plan-decision",
+  "plan_version": 6,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T102700832934-plan-review-of-a-run-review-waits-on-no-plan-decision",
+  "reviewed_blob_sha": "bed84cb569309ada79b5f07dadd95b0ba6ab3083",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reports.py:1831` `_node_is_a_reviewer`, `recovery_vocabulary.py:155` `REVIEW_ROLE` and `recovery_review_delivery.py:45` `_is_review_run` all resolve as cited, and `_gate_section` exists in `tests/test_a_queued_request_waits_on_its_dependencies.py:258`.",
+    "done_when": "a finding \u2014 \u00a73's negative control is vacuous: \"restoring the inline role comparison\" restores byte-for-byte the same predicate `_node_is_a_reviewer` evaluates, so the two arms cannot differ.",
+    "evidence_paths": "pass \u2014 \u00a73's gate names a repository test file and the run-dir log contract supplies the log path; nothing lands in a node-local temporary directory.",
+    "naming": "pass \u2014 \u00a73 adds no plan label, ticket number or version tag to a symbol or comment; `\u00a73` appears only as the plan's own section heading.",
+    "reasoning": "a finding \u2014 \u00a73's stated premise, that delegating to `_node_is_a_reviewer` also recognises a review node by its minted id, is contradicted by that function's own body, which compares role only.",
+    "single_goal": "pass \u2014 \u00a73 carries one deliverable (route the review-role question through its named owner), and its write paths are the three modules that deliverable touches.",
+    "wiring": "a finding \u2014 \u00a73 declares no dependency on \u00a72, yet its deliverable edits a role comparison that exists only in \u00a72's unmerged run head, and both sections write `reckon/crew/queue_admission.py` and the same test file."
+  },
+  "section_digests": {
+    "_document": "36e51a79f408bd4c905cff6b116b743523c9d61fb2d58206259328a3cf5fad2f",
+    "s1": "f8903a088686a50a292f05ce0d5202a70094501bd58a8dda1aa58ac77bcb82ef",
+    "s2": "e2678cf2455f7ceb9af9591026db48814510d00b9a248c811ed4cd3f39cbbaf3",
+    "s3": "642a4a801720c839199777b7091656af6de0ae15a568d743e1e686cb8183bbbf"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T10:45:04.159444+00:00",
+  "total": null
+}
