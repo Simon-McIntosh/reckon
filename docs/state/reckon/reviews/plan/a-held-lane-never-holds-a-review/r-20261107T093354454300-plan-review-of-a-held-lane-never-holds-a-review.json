@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T09:46:23.647Z",
+  "dispatched_at": "2026-11-07T09:34:55Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-held-lane-never-holds-a-review.html:39",
+      "id": "reasoning-1",
+      "reason": "a worker implementing only the named site fails the done-when's third case (a reflex-composed run review recording its origin), and the first two test cases are then indistinguishable, because the held request from \u00a71 also carries `set_by: \"dispatch\"`; the site named must be the run-review branch at recovery_review_dispatch.py:2781-2865.",
+      "text": "s2 says \"The lane a review follows is chosen by `_composed_review_lane`\" and that recording the origin there reaches dispatch, but `dispatch_review_for_run` calls `_composed_review_lane` only when `record[\"subject\"] == \"plan\"` (recovery_review_dispatch.py:2763, guarded at :2762); the reflex's run review (`recovery_watch.py:3622`, `prefer_local=True`) takes the `else` branch at :2781-2865 and gets its lane from `_review_lane_candidates(..., owning_backend=record[\"backend\"])` at :2830, so recording provenance in `_composed_review_lane` sets nothing on the executed route and the review of a run still reaches `dispatch()` as `set_by: \"dispatch\"`, indistinguishable from a caller's `--backend`",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "6888e18f84a7823aa375fa05d0d932b3565e8988",
+  "plan_fingerprint": "783edb413f062a33d967766d26aac94f1229ef2cb40a330c57243d5c1089f3b4",
+  "plan_slug": "a-held-lane-never-holds-a-review",
+  "plan_version": 4,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T093354454300-plan-review-of-a-held-lane-never-holds-a-review",
+  "reviewed_blob_sha": "24c9cca033d74cd5247af91e131590194e802c36",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_composed_review_lane` (recovery_review_subject.py:1137), `_ordered_review_lanes`/`_review_excluded_backends` (recovery_review_dispatch.py:1633, :1552), `review_lane_selection` (:2872), the `picker_selection` write (dispatch.py:1766) and the `queue_admission.py:639` guard all resolve at the cited lines; extensionless plan links are not involved.",
+    "done_when": "pass \u2014 three stubbed cases, a declared negative control that makes case one stop rebinding, plus ruff and added-failure deltas; whether the third case is reachable by the named mechanism is scored under reasoning.",
+    "evidence_paths": "pass \u2014 the gate is `tests/test_a_held_lane_never_holds_a_review.py` in the repository; no gate or evidence path is placed in a scratchpad or node-local temporary directory.",
+    "naming": "pass \u2014 `test_a_held_lane_never_holds_a_review.py` and the `review-follows-run` value are named by mechanism; no plan label, ticket number or changelog prose is carried into code.",
+    "reasoning": "a finding \u2014 s2 names `_composed_review_lane` as the site where a run review's followed lane is chosen, but the reflex's executed dispatch of a run review never calls it.",
+    "single_goal": "pass \u2014 s2 declares one repair: a reflex-followed lane yields to a hold at `_local_fallback`.",
+    "wiring": "pass \u2014 `plan-after` resolves to an existing plan and s2 declares no dependency it needs and omits; s1 is `done`, s2 `implementable`."
+  },
+  "section_digests": {
+    "_document": "53422e159c6c3bb5222bc30d95bb52f02b072bd0c70f6e64ce7ea665403bfb63",
+    "s1": "5e18290da06165cccdde0bffe86afdb6c162dafd3e5cc5a316459a049cef1045",
+    "s2": "a5683e0c056ecee627d0d6cc631db8c857bcf5676d5522f24135fe57c33987fb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T09:56:42.685089+00:00",
+  "total": null
+}
