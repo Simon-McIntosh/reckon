@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T19:10:41.522Z",
+  "dispatched_at": "2026-11-07T18:58:08Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:145",
+      "id": "reasoning-1",
+      "reason": "without the owner module in the write paths, or a reading that carries its arm, the node cannot satisfy cases 1 and 3 except by a second liveness implementation, which is the defect \u00a74 exists to prevent.",
+      "text": "\u00a78 requires the result to distinguish a live recorded pid from the session-walk arm and from a placed run, but `record_process_alive` answers only `bool | None` (`reckon/crew/process_liveness.py:300`, returning at `:380`); the arm is decided inside it (placement at `:356`, session walk at `:377-379`, start-time reuse check at `:337-347`), and `reckon/crew/process_liveness.py` is not among \u00a78's write paths, so a node must either duplicate the liveness decision in `crew_run_commands.py`/`claims.py` \u2014 two implementations of one truth that drift the moment the reuse check changes \u2014 or edit outside its fence.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:145",
+      "id": "reasoning-2",
+      "reason": "a coordinator told \"the next launch mounts them\" while liveness was never read is exactly the false assurance the field is being added to remove, so the field needs the \"liveness could not be read on this host\" arm the plan's own \u00a76 already uses.",
+      "text": "\u00a78 says that \"when no worker is alive, it says the next resume or launch mounts them\", but the reading it names is tri-state: `record_process_alive` also answers `None` when the record names no process or the scheduler cannot be queried (`reckon/crew/process_liveness.py:352-358`, with `process_alive` returning `None` for a missing pid), and `widen_claim` treats anything other than `True` as \"not alive\" (`reckon/crew/claims.py:106`); the deliverable collapses that unproven reading into a positive statement.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "e2e2c23a3854efd688c6bd419ed87e1d69038bfb",
+  "plan_fingerprint": "5bce005b6cbae660291476be82ed5e7856c73aa8990156a2e031c7aaa28be355",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 33,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T185527435578-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "ac71877393d483518a0d269861d7245c2c26c875",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `crew_widen` at `reckon/crew_run_commands.py:1658`, the live-worker refusal at `reckon/crew/claims.py:106`, the fence's source write at `claims.py:134`, the fence read at `reckon/crew/dispatch_sessions.py:1351`, the session walk at `reckon/crew/process_liveness.py:377-379`, and the placed-run statement at `process_liveness.py:325` all resolve exactly.",
+    "done_when": "pass \u2014 four named cases, two declared negative controls (dropping the liveness read; naming the session-walk arm's pid as the worker's), and the fourth case is declared a base-passing regression guard on `widen_claim` already writing `node[\"write_paths\"]` rather than a repair; the test also asserts the real crew home is untouched.",
+    "evidence_paths": "pass \u2014 the reproduction runs in a temporary crew home (scaffolding), while both pre-repair outputs and the suite result are recorded in the run's gate log, which the dispatch contract places on a durable path.",
+    "naming": "pass \u2014 `takes_effect`, the arm wording and the test filename describe mechanism; no plan labels, stage names, ticket numbers or changelog prose reach a symbol.",
+    "reasoning": "a finding \u2014 the deliverable requires the widen result to say which of three liveness arms answered, but the named owner of that decision returns a bare `bool | None` and owns the arm internally, in a module \u00a78 does not grant.",
+    "single_goal": "pass \u2014 \u00a78 carries one deliverable, a `takes_effect` field on the widen result; its three reported arms are facets of that one field, not separate goals.",
+    "wiring": "pass \u2014 s8 is declared implementable and the open followup f-arolw-008 recommends `/reckon-build a-run-has-one-live-worker \u00a78`; its write paths (`reckon/crew_run_commands.py`, `reckon/crew/claims.py`, the new test) overlap no other section's, and its empty `data-links` is right because \u00a75 is cited as background for the read-only tree, not consumed."
+  },
+  "section_digests": {
+    "_document": "a84f6acdfa5bde1ab873fc2f587979b77f777a0513526a030168c36c7dbcbbf5",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "c8fe2a5a6c5765bc70ba45627cc9f5778b225a5e1deff2cc1bb1e0e08214362a",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "63bd79fcdd7baf06c8cc0bbc04ef21beec3605a6fdb13eed90b3ad410f8516e7",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b",
+    "s8": "1e0df612b6818d6aabe8dc01d61fdd525600d4374443f5d0cc16af65c4e5134a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T19:19:40.797565+00:00",
+  "total": null
+}
