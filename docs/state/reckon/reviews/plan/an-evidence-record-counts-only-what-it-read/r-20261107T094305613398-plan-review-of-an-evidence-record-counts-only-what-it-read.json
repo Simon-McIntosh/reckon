@@ -1,0 +1,76 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T09:56:15.224Z",
+  "dispatched_at": "2026-11-07T09:44:11Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/an-evidence-record-counts-only-what-it-read/r-20261107T094305613398-plan-review-of-an-evidence-record-counts-only-what-it-read/plan.html:35",
+      "id": "reasoning-1",
+      "reason": "\u00a73 is the plan's most expensive section (1.25h across five write sites) and its case rests on a population roughly 40x larger than the spellings it proposes to add, so a correct figure changes both the motivation and the section's priority.",
+      "text": "the \"more than 400 across 19 plans, 59 in shared-coil-supply-model alone\" figure is presented as the prevalence of deferred-work prose, but it is a count over power-convertor-df's census pattern (power_convertor/docs/briefs/prose-follow-on-audit.md:24), which is dominated by `follow-on` \u2014 the one spelling reckon already refuses; measured in that checkout, `follow-ons?` occurs 501 times across docs/plans/ in 19 plans and 76 times in shared-coil-supply-model, against 2 occurrences of `carry to \u00a7N`, 6 of `go(es) to \u00a7N` and 1 of `go(es) to a follow-up node`",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/an-evidence-record-counts-only-what-it-read/r-20261107T094305613398-plan-review-of-an-evidence-record-counts-only-what-it-read/plan.html:44",
+      "id": "reasoning-2",
+      "reason": "a builder implementing the regex as written delivers a rule that still misses roughly 40 occurrences in the corpus the section cites, so the section's own claim of completeness is unmet by its mechanism and the regex must carry the past-tense form at least.",
+      "text": "\u00a73 is titled \"the deferred-work rule reads every spelling\" and proposes covering `carry|carries to \u00a7N`, `go|goes to \u00a7N` and `go|goes to a follow-up (node|section|plan)`, but the census this section is drawn from patterns `carr(y|ies|ied) (forward|to)` as well as `left for|later node|next node|separate node|deferred to|for a later|followon|follow on`, and those spellings are present today in power_convertor's docs/plans/ \u2014 `carried to \u00a7N` 4 times, `next node` 9, `followon` 5, `later node` 2, `separate node` 2, `left for` 2, `follow on` 2, `deferred to` 1 \u2014 all of which the declared mechanism leaves unreported and unrefused",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/an-evidence-record-counts-only-what-it-read/r-20261107T094305613398-plan-review-of-an-evidence-record-counts-only-what-it-read/plan.html:50",
+      "id": "reasoning-3",
+      "reason": "no done-when case turns on `top`, and the refusal behaves correctly for that anchor whether or not it is reserved, so the sentence overstates a property rather than directing a wrong implementation.",
+      "text": "\u00a74 asserts \"Both sets carry `top`\", but defines the rendered set as the plan's comment keys plus the current ledger runs' section keys; a plan with no plan-level comment has no `top` key, so the rendered set would not carry it and the reserved set (rendered plus plan sections plus `outcome`) would not either unless `top` is added explicitly",
+      "type": "reasoning",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/an-evidence-record-counts-only-what-it-read/r-20261107T094305613398-plan-review-of-an-evidence-record-counts-only-what-it-read/plan.html:35",
+      "id": "reasoning-4",
+      "reason": "the quotes are illustrative and every other part of \u00a71's root cause reproduces, so the correction is to the citation, not to the work.",
+      "text": "\u00a71 says \"Followup bodies and close comments in power_convertor carry phrases such as ... `the remaining non-blocking items go to a follow-up node`\", but that phrase occurs zero times in any plan, comment or followup in that checkout and only in power_convertor/docs/briefs/prose-follow-on-audit.md:11, where it is given under \"Examples include:\" rather than as a located hit",
+      "type": "reasoning",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/an-evidence-record-counts-only-what-it-read/r-20261107T094305613398-plan-review-of-an-evidence-record-counts-only-what-it-read/plan.html:50",
+      "id": "anchors_resolve-1",
+      "reason": "each symbol is named exactly and resolves by grep, so the hints cost a builder one search and point at no renamed or deleted target.",
+      "text": "three \"near line\" hints are further off than the rest: `_section_key` is cited at near line 70 and is defined at reckon/evidence.py:50, `_require_authored_value` is cited at near line 141 and is defined at reckon/_store_section_ops.py:153, and the `available` set is cited at near line 353 and is computed at reckon/evidence.py:349",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "e77867e071611651b7b21e8a08c2f57b29f1204d",
+  "plan_fingerprint": "d0d794b51d6e28770f1a07b7f1158298fefc64fb6c7e20d44b8661d90f7a5516",
+  "plan_slug": "an-evidence-record-counts-only-what-it-read",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T094305613398-plan-review-of-an-evidence-record-counts-only-what-it-read",
+  "reviewed_blob_sha": "48c9c51943254d745e667860190c30e6323dee68",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 every file, symbol and commit the plan cites resolves, but three \"near line\" hints point 4\u201320 lines away from their target.",
+    "done_when": "pass \u2014 each of the three sections states a falsifiable measure backed by named negative controls (three in \u00a72, five in \u00a73, seven in \u00a74), and each of \u00a74's nine cases is covered by at least one control.",
+    "evidence_paths": "pass \u2014 every gate log, and the \u00a73 census output over power_convertor's docs/plans/, is written under the run directory rather than a node-local temporary path.",
+    "naming": "pass \u2014 the three new test filenames (test_an_appended_record_claims_no_counts.py, test_every_spelling_of_deferred_work_is_read.py, test_a_resynthesis_keeps_appended_anchors.py) and the new symbols (_DEFERRED_WORK_TERM, lost_anchors, data-evidence-origin) name mechanisms, with no plan labels, stage names, ticket numbers or changelog prose.",
+    "reasoning": "a finding \u2014 \u00a71's root cause is exactly right and reproduces, but its prevalence figure measures the spelling the rule already catches, and \u00a73's declared regex leaves spellings named in the same census unread, so the section's \"every spelling\" scope is not produced by its mechanism.",
+    "single_goal": "pass \u2014 each section names one deliverable: \u00a72 one renderer parameter and its caller, \u00a73 one widened regex and its five enforcement sites, \u00a74 one derived-set function and its three consumers, each closed by one gate.",
+    "wiring": "pass \u2014 the plan's plan-section-depends-on declares s3 after s2 and s4 after s2 and s3, matching the order the single followup names and the shared reckon/_store.py each section edits, and plan-after `a-finished-plan-closes` resolves (docs/plans/a-finished-plan-closes.html exists)."
+  },
+  "section_digests": {
+    "_document": "6d35efce52466005f8ee56997c8dc7bcca998d7c41fcd252d254bc7264596281",
+    "s1": "bf811a5d7f572845450c32733084679b1cf3759ba9fa90f902857640fab3056f",
+    "s2": "0b8bed0f03d053457f9c7efd06dd0ff61e4d509f00a6f7518b6e3c911a96a555",
+    "s3": "59e09e97d4622a25ca58b7441d84d01995cfc99f626db777bea52569bacb198d",
+    "s4": "8bc85303e2974b9aaad5c930875da392c800a9d548ad0c0b9390bd43b381a09d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T10:08:29.395997+00:00",
+  "total": null
+}
