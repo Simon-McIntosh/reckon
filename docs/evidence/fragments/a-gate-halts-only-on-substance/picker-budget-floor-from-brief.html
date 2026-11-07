@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-gate-halts-only-on-substance">
+  <meta name="plan-evidence-for" content="a-gate-halts-only-on-substance">
+  <title>The picker sizes a heavy gate at the resolved fence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>The picker sizes a heavy gate at the resolved fence</h1>
+      <p class="lead">The picker classified a node only by the time budget the node declared, so a brief naming a queued cluster job and no budget of its own was sized at the small implement default &mdash; 8&nbsp;m, the <code>up_to_30m</code> bucket &mdash; and reported to the router as small-node work. A node whose goal, done-when or brief names the compute its gate runs on is now sized at the resolved fence, and a node naming no such compute keeps the budget it declares.</p>
+    </header>
+
+    <section id="picker-budget-floor-from-brief-what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/crew/picker/lane_context.py</code>: a new <code>node_budget(node, config=...)</code> returns the budget the picker sizes a node by. A node naming no gate compute keeps its declared budget unchanged. A node whose goal, done-when or brief names a scheduler, a GPU model or host, a partition or a cluster job takes the larger of that declared budget and the resolved fence (<code>resolved_time_ceiling</code>). <code>return_times</code> and <code>build</code> size the node through it, so the size key and bucket they report are the floored ones.</li>
+        <li><code>tests/test_a_heavy_gate_gets_a_full_budget.py</code> (new): a brief naming a betelgeuse H200 job and no time budget receives the resolved fence; the same brief at the 8&nbsp;m implement default reports <code>size_bucket: over_60m</code> rather than <code>up_to_30m</code>; a node naming no compute keeps <code>8m</code> and <code>up_to_30m</code>; a declared budget already above the fence is not lowered; and a heavy brief with no fence configured keeps what it declares.</li>
+      </ul>
+    </section>
+
+    <section id="picker-budget-floor-from-brief-reproduction">
+      <h2>Reproduction at the base revision</h2>
+      <p>The base module was loaded from <code>git show HEAD:reckon/crew/picker/lane_context.py</code> and driven with the same stubbed node (brief naming the H200 job, <code>time_budget="8m"</code>, fence <code>6h</code>): <code>has node_budget: False</code>, <code>size_key: time_budget size_bucket: up_to_30m</code>. The head module reports <code>over_60m</code> for the same node.</p>
+    </section>
+
+    <section id="picker-budget-floor-from-brief-the-gate">
+      <h2>The gate</h2>
+      <p>Every test file importing <code>reckon.crew.picker.lane_context</code> (17 files) plus the new file was run at base and at head, each arm in its own process with a scratch tree under <code>$TMPDIR</code>. The base arm ran from a full <code>git archive HEAD</code> extraction, so the interpreter resolved the base module (header names <code>module.__file__</code>); the head arm ran in the worktree. Both arms carry the same two failing ids in <code>tests/test_orchestrator_assessment_reaches_jev.py</code>, pre-existing at the base revision, so the change adds none.</p>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>Base <code>5a444bc33b</code>, scratch extraction (17 files)</td><td>2 failed, 180 passed, <code>EXIT=1</code></td><td><code>gate-base.log</code></td></tr>
+          <tr><td>Head, worktree (17 files + new)</td><td>2 failed, 185 passed, <code>EXIT=1</code>; zero added ids</td><td><code>gate-head.log</code></td></tr>
+          <tr><td>Base <code>5a444bc33b</code>, new file only</td><td>5 failed, <code>EXIT=1</code></td><td><code>gate-base-newtest.log</code></td></tr>
+          <tr><td>Negative control: floor removed</td><td>2 failed, 3 passed, <code>EXIT=1</code></td><td><code>negative-control.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>Logs live under the run directory <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T173836158667-picker-budget-floor-from-brief/</code>. Ruff check and ruff format --check were scoped to the two staged paths and report no findings.</p>
+    </section>
+
+    <section id="picker-budget-floor-from-brief-negative-control">
+      <h2>Declared negative control</h2>
+      <p>Declared mutation: <em>removing the floor gives the H200 node the small size again</em>. Applied to a scratch copy of the head tree (<code>node_budget</code> returns the declared budget before the fence is read), the new file reports 2 failed, 3 passed with <code>EXIT=1</code>: the two fence cases redden and the three cases that assert unchanged behaviour stay green.</p>
+    </section>
+  </main>
+</body>
+</html>
