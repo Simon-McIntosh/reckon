@@ -1,0 +1,44 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T05:54:12.779Z",
+  "dispatched_at": "2026-11-07T05:46:38Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-broken-wait-reaches-its-coordinator.html:36",
+      "id": "reasoning-1",
+      "reason": "\u00a73 states the map's current contents correctly and its deliverable (two new classification entries) is unaffected, so no node is misdirected.",
+      "text": "\u00a71 says `RECOVERY_CLASSIFICATION_DUTY_KINDS` \"lists only needs-help\", but the current map is `{\"needs-help\", \"launch-failed\"}` and \u00a73 states the second entry was added by the plan this one follows; a reader checking \u00a71's claim against the tree finds it false",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "bac3d34f9c0b336bce19feb31f1c648d7317c863",
+  "plan_fingerprint": "f57d2f692795b97fdce14b2f660aabd835a8d51af70ca5f8629dd6003169511d",
+  "plan_slug": "a-broken-wait-reaches-its-coordinator",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T054503042983-plan-review-of-a-broken-wait-reaches-its-coordinator",
+  "reviewed_blob_sha": "c3085175bfbc41e2f443f2202bfd8446752342e4",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every named file and symbol exists: `_wait_probe_reference_kind` (recovery_wait.py:683), `_WAIT_PROBE_SHELL_COMMANDS` (:668), `_wait_probe_shell_words` (:744), `_wait_probe_is_a_no_op` (:803), `_WAIT_PROBE_JOB_FLAGS` (:662, used :719), `_WAIT_ACCEPTED_SHAPES` (:215), `_wait_probe_prints_structured_output` (recovery_liveness.py:844), `_SACCT_STATE_FORM` (:841), the refusal text (:1006), `_wait_probe_job_id` (recovery_classification.py:487) with its two callers (:517, :566), `_producer_gone_verdict` (:535), `RECOVERY_CLASSIFICATION_DUTY_KINDS` (obligations.py:75), `DUTY_ROW_FIELDS` (:95, `reason` present), `_live_item` (:727), `_producer_gone_item` (:804), and the repair verbs (recovery_vocabulary.py:87-88); several \"near line\" numbers drift by about ten lines but every name resolves.",
+    "done_when": "pass \u2014 each implementable section asserts a measurable claim and declares its negative controls (\u00a72 five, \u00a73 four, \u00a74 two), plus a base-revision failure delta and a log shape (`EXIT=`); I reproduced each premise the controls rest on against the current tree, so none is an assertion that holds regardless of the code.",
+    "evidence_paths": "pass \u2014 the named logs sit under the run directory (durable under `~/.config/reckon/crew/runs/`) and the new tests sit in the repository's `tests/` tree; nothing is placed in a node-local temporary path.",
+    "naming": "pass \u2014 the three new test filenames name the mechanism (`test_a_probe_is_read_for_the_program_it_runs.py`, `test_a_refused_wait_is_an_obligation.py`, `test_a_run_parked_on_a_live_job_keeps_waiting.py`), carry no plan labels, stage names, ticket numbers or version tags, and none collides with an existing file.",
+    "reasoning": "a finding \u2014 the mechanisms hold on every check I could reproduce, but \u00a71 asserts in the present tense that the duty map \"lists only needs-help\" while the same plan's \u00a73 says that map now also carries `launch-failed`.",
+    "single_goal": "pass \u2014 \u00a72 is one reader with its two read-through sites, \u00a73 is one duty map plus the projection that carries its reason, \u00a74 is one job-id reader retired and its two callers rewired.",
+    "wiring": "pass \u2014 `plan-after` names an existing plan (`docs/plans/a-reexec-never-orphans-a-dispatch.html`), `plan-section-depends-on` declares s4\u2192s2 and s4 is the only section that reads \u00a72's reader, and the followup's build order (s2/s3 then s4) matches those edges."
+  },
+  "section_digests": {
+    "_document": "d03f5f33ba4e3c3040d3555977705f88d6fe07b3409e73c3c07db45f1032f907",
+    "s1": "261438fe26041f770a527d758f1d74089637c1787c8d78d49957c57b9c122a42",
+    "s2": "116d72f69ab230215539e56ebc06c573fa391abfdc71da1e29470354bd451dd5",
+    "s3": "6cef4e4166979301849917a3d7f964e2d68eaf336d3724c41fb5482ae86de817",
+    "s4": "27a400841a6080e6979c6a5587892e40135a49a212f665dff5ba055c5ea2c942"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T05:59:51.752256+00:00",
+  "total": null
+}
