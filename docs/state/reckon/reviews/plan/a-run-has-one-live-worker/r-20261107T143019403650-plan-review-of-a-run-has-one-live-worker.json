@@ -1,0 +1,47 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T14:54:11.524Z",
+  "dispatched_at": "2026-11-07T14:35:19Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:118",
+      "id": "reasoning-1",
+      "reason": "a worker must choose between the test-compatibility rule (existing tests at tests/test_resume_sweep_needs_an_observed_death.py:276 and tests/test_resume_refuses_a_live_worker.py:302 match the sentence by substring) and the \"never calls it live\" rule, and whichever it picks the in-motion refusal either still reads to a coordinator as a stray live process to stop \u2014 the exact misreading \u00a76 exists to remove \u2014 or breaks the stated test-compat claim; the plan should state which clause carries the unknown reading and whether the opening sentence is scoped to the two pid-live sites only.",
+      "text": "the changed paragraph says the in-motion composer must name the attempt's stream age and say \"its liveness could not be read on this host\", and that \"It never calls the attempt live\", but the unchanged deliverable at line 111 requires \"The present sentence stays as the message's opening\" at all three sites, and that sentence at resumption.py:1112 is \"run '<id>' still has a live process; observe or stop it before resuming\" \u2014 so the composed message both asserts a live process and disclaims any liveness reading, and the fifth case as written passes on either wording",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "959ef3fece0d52fdfd607e9dd0a875202f116385",
+  "plan_fingerprint": "eabe0cac55e49e2921fa8e42e47d0de54a9001eca21f0686829e6ca0087f6284",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 28,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T143019403650-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "cfd88c398edc6335b98c15253066a495cd2de2e4",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol and line resolves as stated: `_stream_reading_refusal` (resumption.py:1079, message at :1112), `_observed_end_refusal` (:1144), `_process_reading` (recovery_liveness.py:437), `attempt_kind`, `attempt-<n>-worker.json`, and the `repair_rounds` record in `recovery_review_dispatch.py`.",
+    "done_when": "pass \u2014 \u00a76's five cases are measurable, each names a distinct observable and three negative controls are declared (one-site composition, dropped repair-round lookup, in-motion site left on its own sentence), so the done-when can fail.",
+    "evidence_paths": "pass \u2014 the reproduction and gate logs sit under the run directory per the dispatch contract; no scratchpad or node-local path is named.",
+    "naming": "pass \u2014 \u00a76 introduces no plan labels, ticket numbers or version tags into symbols or comments.",
+    "reasoning": "a finding \u2014 the changed paragraph requires the in-motion message never to call the attempt live, while the same deliverable requires the existing \"still has a live process\" sentence to remain the message's opening at that same site, and the two cannot both hold.",
+    "single_goal": "pass \u2014 \u00a76 carries one deliverable, the single composer naming the live/unknown attempt at the three existing-sentence sites.",
+    "wiring": "pass \u2014 \u00a77's declared wait on \u00a76 is correct (both write `dispatch_sessions.py`, \u00a75 writes only `dispatch_launch.py`), and open followups `f-arolw-006` (\u00a75) and `f-arolw-007` (\u00a76) drive both implementable sections."
+  },
+  "section_digests": {
+    "_document": "5498229a1a343acbed84d063c42d12ea1e871b218002fcd75010244770a3d7cb",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "c8fe2a5a6c5765bc70ba45627cc9f5778b225a5e1deff2cc1bb1e0e08214362a",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "053c954261eab696e365a654ff843c6a2c35d54fb71ba688c844f5ba76c06d2a",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T15:39:44.220262+00:00",
+  "total": null
+}
