@@ -1,0 +1,32 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-07T10:01:34.729Z",
+  "dispatched_at": "2026-11-07T09:52:24Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T173310973892-end-a-stopped-runs-whole-process-tree-so-its-discard/negative-control-escalation-dropped.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The log opens \"revision: d460f824ec + working tree\" and gate-head-resumed.log:1 likewise, so the record carries no gate or control log at the landed a1a263e3ee and cannot show from its own artifacts that the rerun used the switch-free code; the claim rests on the manifest checkpoint (manifest.md:6) alone. The red remains valid evidence because the mutation edits terminate and asserts the first case, both untouched by 617640075e, and my own head run of the same test passes."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is \"End a stopped run's whole process tree so its discard succeeds\", and the two commits gained since the prior review (617640075e, a1a263e3ee) leave that behaviour intact while making the SIGKILL escalation unconditional at reckon/crew/dispatch_sessions.py:2247-2272, so no environment can reinstate the defeated SIGTERM-only stop.\nVERDICT done_when: the done_when at the source run's prompt.txt:112 asks that tests/test_stop_reaps_run_tree.py end both wrapper processes, print their pids, let the following discard succeed, leave a bystander alive, and go red when the escalation is dropped; tests/test_stop_reaps_run_tree.py:137-200 asserts each clause and negative-control-escalation-dropped.log records \"1 failed, 1 passed\" EXIT=1.\nVERDICT write_paths: the source node declared five paths (reckon/crew/dispatch_sessions.py, reckon/crew/process_signal.py, tests/test_stop_reaps_run_tree.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/end-a-stopped-runs-whole-process-tree-so-its-discard.html, and a figures directory); git diff --stat d460f824ec..a1a263e3ee touches only dispatch_sessions.py (18 deletions), the test (7/5) and the fragment (7/3), all inside that set, and the reviewed increment adds no path outside it.\nVERDICT manifest: read; it records status complete, states at checkpoint line 6 that the switch was removed and the section tests and control rerun, the gate command at line 11, and after_suite at line 16 naming revision f9dc1666a4 with the same single pre-existing failure id as baseline_suite, both arms ending EXIT=1.\nVERDICT diff: read both commits against d460f824ec commit by commit - 617640075e deletes the RECKON_STOP_ESCALATION constant, its reader and the now-unused import os from reckon/crew/dispatch_sessions.py and rewrites the control to monkeypatch _escalate_run_stop with a no-op; a1a263e3ee rewrites the negative-control paragraph of the evidence fragment to say the escalation carries no switch; no other file is touched.\nCALL_SITES: reckon/crew_run_commands.py:2376 (crew stop calls dispatch_sessions.terminate, which reaches _escalate_run_stop), reckon/crew/promotion.py:1989 (discard refuses while a recorded pid is alive, the behaviour the escalation exists to satisfy)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_sessions.py:2247-2272 now escalates unconditionally, so the increment removes the one route by which a deployment could restore the defect the node exists to end.\nSCORE evidence: 17\nJUSTIFICATION evidence: I re-ran the gate at the landed head in a git-archive extraction (my run log records 2 passed, EXIT=0, module resolved to the extraction), but negative-control-escalation-dropped.log:1 names \"d460f824ec + working tree\" rather than a1a263e3ee.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat d460f824ec..a1a263e3ee shows exactly the evidence fragment, reckon/crew/dispatch_sessions.py and tests/test_stop_reaps_run_tree.py, each a declared write path.\nSCORE durability: 18\nJUSTIFICATION durability: removing the escalation call reddens tests/test_stop_reaps_run_tree.py:152 (negative-control-escalation-dropped.log) and the revised control at :175-190 reddens loudly through AttributeError if _escalate_run_stop is renamed, though its `assert not record[\"killed_pids\"]` compares the record against the no-op's own [] and carries no independent weight.\nSCORE fit: 19\nJUSTIFICATION fit: the removal leaves no orphaned constant, comment or import in reckon/crew/dispatch_sessions.py and the test's control now uses pytest's own monkeypatch idiom rather than an environment variable.\nSCORE reuse: 20\nJUSTIFICATION reuse: the increment adds no definition at all - it deletes an ad-hoc switch and the escalation continues to funnel through the existing _signal_process_group and signal_worker owners in reckon/crew/process_signal.py.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261106T173310973892-end-a-stopped-runs-whole-process-tree-so-its-discard/negative-control-escalation-dropped.log:1 non-blocking: the log opens \"revision: d460f824ec + working tree\" and gate-head-resumed.log:1 likewise, so the record carries no gate or control log at the landed a1a263e3ee and cannot show from its own artifacts that the rerun used the switch-free code; the claim rests on the manifest checkpoint (manifest.md:6) alone. The red remains valid evidence because the mutation edits terminate and asserts the first case, both untouched by 617640075e, and my own head run of the same test passes.\n",
+  "review_run_id": "r-20261107T095007248040-review-of-end-a-stopped-runs-whole-process-tree-so-its-discard-a1a263e3ee66",
+  "reviewed_base_sha": "d460f824eccf0dcce18b2dfa6107d4974106c16d",
+  "reviewed_head_sha": "a1a263e3ee66cf02a4bf0abbcfab9828836b8ab9",
+  "reviewed_run_id": "r-20261106T173310973892-end-a-stopped-runs-whole-process-tree-so-its-discard",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T10:08:01.745073+00:00",
+  "total": 113
+}
