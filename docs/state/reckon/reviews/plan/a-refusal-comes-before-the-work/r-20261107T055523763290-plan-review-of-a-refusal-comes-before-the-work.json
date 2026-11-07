@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T06:02:35.218Z",
+  "dispatched_at": "2026-11-07T05:56:27Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-refusal-comes-before-the-work.html:48",
+      "id": "reasoning-1",
+      "reason": "the section's write-path list decides where the worker may write, so as written it forces a second, CLI-local implementation of a check s2 says must exist once in `validate_node`.",
+      "text": "s3 requires an implement-role brief dispatch with neither flag to be refused \"at dispatch ... on the single path and for a batch entry\", but its declared write paths are `reckon/crew_run_commands.py`, `reckon/crew/dispatch.py`, `reckon/crew/dispatch_batch.py`, `reckon/crew/promotion_checks.py` and the new test: they omit `reckon/crew/dispatch_plan.py` and `reckon/crew/node.py`, the two files where a single-path contract refusal can live once s2 has moved the contract into the whole-node judge. A worker obeying s3 literally must either write the single-path refusal into the CLI (`crew_run_commands.py`) \u2014 which reintroduces exactly the duplicated-refusal split s2 exists to remove, and leaves the batch and single paths judged by two different implementations \u2014 or write outside its fence.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-refusal-comes-before-the-work.html:44",
+      "id": "done_when-1",
+      "reason": "the section already requires a temporary repository for the test, which implies the flag; the fix is one clause naming `--repo <temp repo>` on the dry-run invocation, and a worker reaching the failure sees the guard directly.",
+      "text": "s2's sixth bullet (\"For each refused entry, the single path's `--dry-run` of the same node reports the same detail\") cannot be satisfied for the fourth entry as stated: `plan_dispatch` only runs `gate_population_finding` when `repo is not None` (`reckon/crew/dispatch_plan.py:861`), and `--repo` defaults to `None`, so a dry run naming only the temporary crew home reports nothing for the glob population and the assertion fails or is silently weakened. The section does say the test uses \"a temporary crew home and repository\", but never says the dry run must be handed `--repo` to reach it.",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "c429c2a184c6950357cff0c88f79e3e1e2e6cae0",
+  "plan_fingerprint": "63adc626bcff2579d17be6f15bb777c425cd9f87725beba7324342b6365bd7ed",
+  "plan_slug": "a-refusal-comes-before-the-work",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T055523763290-plan-review-of-a-refusal-comes-before-the-work",
+  "reviewed_blob_sha": "10ae846ed74dffdddf2d9a060d45be06d242067f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves at `c429c2a184`: `validate_node` (node.py:1182) with its execution-fit block at 1255-1262, `negative_control_finding` (1054), `gate_population_finding` (1145), `_DELIVERABLE_ACTIONS` at node.py:79, the three call sites in `dispatch_plan.py` (843, 851, 862, 869), `queue_requests` (dispatch.py:293), `queue_batch`/`_queue_batch` (dispatch_batch.py:478/502), `_contract_findings` (queue_edit.py:164), `_require_write_paths_in_authority` (dispatch_admission.py:1983, called at dispatch_plan.py:911), `_effective_backend` (routing.py:159), `roles.<role>.execution_capable` (flight.py:1679-1694), `_apply_append_evidence`'s four raises (_store.py:1283-1305), `_apply_close`'s three (_store.py:4140-4147), `_apply_append` (`_store.py:3668`), the promotion discharge at promotion_checks.py:1770-1803, the dry-run call at crew_dispatch_commands.py:1915, `--allow-execution-mismatch` at 1925 and its re-read at queue_admission.py:400, and `tests/test_crew.py:1459`. Both cross-plan citations resolve: `a-plan-is-reviewed-before-it-is-built.html` exists and followup `f-apirbiib-dry-run-gate-skip` is present and open; `a-dry-run-must-resolve-what-the-real-call-resolves.html` exists.",
+    "done_when": "a finding \u2014 s2's sixth bullet asserts that for each refused batch entry \"the single path's `--dry-run` of the same node reports the same detail\", but the gate-population refusal is guarded by `if repo is not None` (`reckon/crew/dispatch_plan.py:861`) and `--repo` defaults to `None` (`reckon/crew_dispatch_commands.py:1334-1337`), so that assertion is vacuous for the fourth entry unless the dry run is given `--repo`.",
+    "evidence_paths": "pass \u2014 s2 pins every log to the run directory with revision header and a bare `EXIT=` terminator, and s3/s4/s5 reuse the same run-directory convention rather than a scratch or node-local path.",
+    "naming": "pass \u2014 the four test filenames are named by what they assert (`test_every_path_meets_the_node_contract.py`, `test_a_brief_run_names_its_plan_at_dispatch.py`, `test_an_edit_refusal_names_every_field.py`, `test_a_dry_run_fences_write_paths.py`), and no section prescribes a symbol, comment or file carrying a section label, stage name or ticket number.",
+    "reasoning": "a finding \u2014 s1's evidence reproduces in code and s5's root cause is real (the dry-run branch calls `plan_dispatch` directly at crew_dispatch_commands.py:1915 with the raw `--repo`, which is `None` by default, while the launch path calls `crew_module.dispatch`, which resolves the project mount at reckon/crew/dispatch.py:1549, so only the real call reaches the fence at dispatch_plan.py:889-911); s2's, s4's and s5's mechanisms each produce their done-when on a named production caller. s3's mechanism, however, is placed outside the shared judge s2 builds.",
+    "single_goal": "pass \u2014 s2 (one judge reached by three callers), s3 (the brief's plan link recorded at dispatch and discharged from the record), s4 (each edit refusal names every missing field) and s5 (the dry run applies the real call's fence) each carry one deliverable, and s2's several call sites are the delivery of its one goal rather than a second deliverable.",
+    "wiring": "pass \u2014 the two declared section waits (s3\u2192s2, s5\u2192s2) each match a file the two sections genuinely share (`reckon/crew/dispatch.py`, `reckon/crew/dispatch_plan.py`), s4 is independent, and no relationship points at a node the plan does not contain."
+  },
+  "section_digests": {
+    "_document": "fe86ddc53d6df02ed8681809f4399744a8daf0946c333b28fc3a6b583769f545",
+    "s1": "75df880739e89570186a1c16cae47d54a4d457a4a6e99c09b2d62c21368dc424",
+    "s2": "fc18bfe8543c38908c01240bb0f945bd67bf2d845d09d8f397f4b7896796aa5b",
+    "s3": "0acf843d56160e84918aa78d737e47fd12a4d931057f606999907b5560fdf5ef",
+    "s4": "2a97d35fa0e69a6331d78f727d1ded35d267ff23bba3ff069f80e200825410f0",
+    "s5": "95b6f7534336d8938a033677b232892e649b24794872574f8706be13d8f17bd3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T06:07:42.406309+00:00",
+  "total": null
+}
