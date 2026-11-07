@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T13:38:37.537Z",
+  "dispatched_at": "2026-11-07T13:16:40Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:46",
+      "id": "reasoning-1",
+      "reason": "\u00a73 must either add the call at `_append_comment`, which extends its declared write paths (currently only `reckon/doccheck.py`, `reckon/_store.py` and the test) to `reckon/mcp_edit_plan.py`, or state deliberately that this writer is out of scope as it does for the promotion writer; leaving it unnamed makes the node's \"every site\" claim untrue and no case in its done-when exercises it.",
+      "text": "`_append_comment` (reckon/mcp_edit_plan.py:136-181, exported as `reckon.mcp._append_comment` and listed among the run-scoped plan-state writers in tests/test_plan_reads_stay_in_the_worktree.py:196) appends `data.comments[section_id]` and calls only `_run_scoped_write_guard` before `write_plan` \u2014 no authored-body check at all \u2014 so a comment posted through it still carries `go to a follow-up node` while the identical body posted through the `append` op is refused, which is exactly the write/audit disagreement \u00a73 exists to close (\"It keeps its one reader, so the audit warning and the store refusal widen together\" holds for the regex but not for coverage)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-evidence-record-counts-only-what-it-read.html:47",
+      "id": "done_when-1",
+      "reason": "the case does have a falsifier under a control already declared, so the node's gate is sound; extending the first control's sentence to \"the first, third and fifth cases\" is a one-word precision fix that changes nothing a node would build.",
+      "text": "the fifth case (\"A `sections.<id>.body` set carrying a new spelling is refused\") is the one of the seven with no control named in \"Six negative controls\", so a reader grading the gate against its own count cannot tell which mutation falsifies it, although \"restoring the one-spelling regex\" in fact falsifies it as well as the first and third cases",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "9e9d72f3c6c47377cb9d5dcf0cfbe4a8d87c7ade",
+  "plan_fingerprint": "280be9f8c287c3a9c7a1e94ee736818f273b589b3a597093e456770f327fcbfe",
+  "plan_slug": "an-evidence-record-counts-only-what-it-read",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T131434943725-plan-review-of-an-evidence-record-counts-only-what-it-read",
+  "reviewed_blob_sha": "6130455c807d80d3b555522e0700bde8a6bb8e3d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every \u00a73 anchor resolves at the file and line it names: `reckon/doccheck.py:412` and `:419` (`DEFERRED_WORK_TERM_IN_PROSE`, `_DEFERRED_WORK_TERM`), `reckon/_store.py:993`, `:2381-2389`, `:3060-3077`, `:3482-3486`, `:3760-3777`, `:3798-3807`, `:3849-3851`, `reckon/_store_section_ops.py:153`, `reckon/mcp_edit_plan.py:256` and `reckon/crew/promotion_scope.py:1458-1471`; and all three quoted power_convertor phrases resolve verbatim (`docs/briefs/prose-follow-on-audit.md:11`, `docs/plans/filter-recommendation-for-coil-health.html:226`, `docs/plans/quench-detection-converter-pickup.html:84`).",
+    "done_when": "a finding \u2014 \u00a73's \"Six negative controls\" sentence (plan line 47) names no control for the fifth of its seven cases, the `sections.<id>.body` refusal.",
+    "evidence_paths": "pass \u2014 every \u00a73 log is required under the run directory, headed by its revision and literal command and terminated by `EXIT=`, and the census measurement (`reckon audit-doc` over power_convertor's `docs/plans/`) is a reproducible command on a durable path (`reckon audit-doc` takes paths as arguments; verified at `reckon/project_maintenance_commands.py:1618-1663`).",
+    "naming": "pass \u2014 \u00a73 names only existing symbols and one new test file (`tests/test_every_spelling_of_deferred_work_is_read.py`), with no plan label, stage name, ticket number or version tag, and no changelog prose.",
+    "reasoning": "a finding \u2014 the deliverable's claim that the refusal is added \"at every site that writes a comment or followup body\" (plan line 46) is false: `_append_comment` in `reckon/mcp_edit_plan.py:136-181` writes a comment body straight through `write_plan` and appears neither in \u00a73's five sites nor in its write paths.",
+    "single_goal": "pass \u2014 \u00a73 carries one deliverable, widening one regex and adding the refusal at the sites that write comment and followup bodies, which its done-when measures as one behaviour.",
+    "wiring": "pass \u2014 \u00a73 declares a wait on \u00a72 for the shared `reckon/_store.py`, and `plan-section-depends-on` carries `{\"s3\": [\"...#s2\"]}` while \u00a74 names both \u00a72 and \u00a73 for the same file, so no node holds an unstated shared write."
+  },
+  "section_digests": {
+    "_document": "6d35efce52466005f8ee56997c8dc7bcca998d7c41fcd252d254bc7264596281",
+    "s1": "49581a4c899ba79b704cec124eaa4b18560c0c76dfd26327155915e9f48ca5a2",
+    "s2": "0b8bed0f03d053457f9c7efd06dd0ff61e4d509f00a6f7518b6e3c911a96a555",
+    "s3": "195c7a7c1ee0343345e1f7008b39e88aa8b22a5ed45a4ed1d26e9f2636174b01",
+    "s4": "2a4595f5aefc320f23756d7c834443e983a185161f61e8078d9bd7a31df7e991"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T14:00:18.049078+00:00",
+  "total": null
+}
