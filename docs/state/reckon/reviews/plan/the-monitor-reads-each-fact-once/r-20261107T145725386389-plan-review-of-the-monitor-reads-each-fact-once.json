@@ -1,0 +1,69 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T15:53:32.095Z",
+  "dispatched_at": "2026-11-07T15:40:02Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:411",
+      "id": "done_when-1",
+      "reason": "a node reaching this clause discovers, after the census, that one arm cannot pass for the input it was told to use, and will either weaken its own negative control mid-build or rewrite the measure mid-build, which is exactly what the section must not leave to the worker.",
+      "text": "\"builds its own fixture crew home of at least five runs whose dominant input, the one the census names, totals at least 10 MB across its paths, moves that input between two ticks, and asserts \u2026 the second tick reads under 1 MB from that input's paths, while the same test at the base revision reads at least the input's full size from them\" \u2014 one of the two arms is unsatisfiable whichever input the census names. If the dominant input is a whole-file keyed input (a run's manifest or the run records, both in `_classification_inputs`, `reckon/crew/recovery_memo.py:450-480`), moving it changes the key (`_classification_key`, `:483`), so the head's tick reclassifies and re-reads the file in full, failing the head arm's \"< 1 MB from that input's paths\". If the dominant input is a stream, the base revision already resumes it from the memo's cursor (`recovery_stream._observed_stream`, `:508-575`, resumed through `_backends.observe_log` while the inode and head fingerprint still match, which an append keeps), so the base arm reads only the appended delta and never the input's full size, failing the control.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:407",
+      "id": "done_when-2",
+      "reason": "the clause offers `strace` as the alternative in the same breath and a monkeypatched `open` returning a counting proxy is the obvious reading of the intent, so a node recovers without the plan text changing.",
+      "text": "\"counting bytes per path through an instrument that sees every read the station process makes (a Python audit hook on `open` wrapping the returned file's reads, or `strace -f -e trace=read,pread64,openat` summarised by path)\" \u2014 the first instrument named cannot be built: `sys.addaudithook` receives an `open` event carrying the path and mode and returns nothing, so an audit hook cannot wrap the returned file object or count bytes read through it.",
+      "type": "done_when",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:391",
+      "id": "reasoning-1",
+      "reason": "the section deliberately names no root cause and defers to the per-path census, which remains the measure that decides, so neither the mixed-population comparison nor the incomplete candidate list changes what the census node does.",
+      "text": "the paragraph sets the \u00a712 tick probe's \"cold station tick over five live runs at 83 MB and the next ticks at 0.07 MB\" beside \"the same run measured the station over five live pointers on the fleet at 126 MB/min\" and concludes \"the fleet's ticks are not warm\". The first pair is a fixture-home probe; the second is a fleet measurement of different pointers, so the two are not one series and the arithmetic (60 \u00d7 0.07 \u2248 4 MB, vs 83 + 59 \u00d7 0.07 \u2248 87 MB) does not by itself compare like with like. What does hold \u2014 and is stronger than the paragraph's candidate list \u2014 is that the run's own stream stat is in the reuse key (`_classification_inputs` includes `_file_identity(log)`, size and mtime_ns, `reckon/crew/recovery_memo.py:450-480`; `_snapshot_reuse_key` adds it again at `reckon/crew/recovery_watch.py:1234-1241`), so an append-only growing stream moves the key on every tick and the snapshot is dropped. The paragraph names the manifest, the run records, the review store and the tree head as churn inputs but not the stream.",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "d7fd17eb2d1f574cffbe1c36ff4dbd9654a04a07",
+  "plan_fingerprint": "cfc2a0c67974ffd2673db5fef0e94e36d15478487ccd04145209d71cd385069e",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 91,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T145725386389-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "f9bd24dd236843473541fe442249948f8657cb0b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `StationStore.ingest_stream` (`reckon/crew/station_store.py:611`), `classify_tick` (`:764`), `recovery_watch._watch_snapshot` (`reckon/crew/recovery_watch.py:1527`), `recovery_watch._snapshot_reuse_key` (`:1217`), `recovery_stream._observed_stream` (`reckon/crew/recovery_stream.py:508`), `docs/research/monitor-storage-load-rca.html` (#s2 present) and `tests/test_the_station_reads_only_what_changed.py` (absent, correctly, since the section creates it) all behave as the section describes.",
+    "done_when": "a finding \u2014 the fixture's two arms cannot both hold: for a whole-file input the identity is in the classification key so the head arm still reads the moved input in full, while for a stream the base arm already resumes, so it never reads the input's full size.",
+    "evidence_paths": "pass \u2014 the census log and the negative-control test log go to the crew run directory under `/home/ITER/mcintos/.config/reckon/crew/runs/\u2026`, and the before/after figures into `docs/research/monitor-storage-load-rca.html` (\u00a78/\u00a710/\u00a711 of the RCA already carry prior measurements there); none lands in a scratchpad.",
+    "naming": "pass \u2014 `tests/test_the_station_reads_only_what_changed.py` and the instruments are named by what they measure; no plan labels, ticket numbers, gate ids or changelog prose appear in the new text beyond the code identifiers that exist today.",
+    "reasoning": "a finding \u2014 the paragraph compares a fixture-home tick probe with a fleet-node measurement as if one run's same five pointers produced both, and its list of candidate churn inputs omits the run's own stream, whose stat identity is in the reuse key.",
+    "single_goal": "pass \u2014 one deliverable (make a steady-state tick read only what changed), with the census, the fixture, the verdict-equivalence clause and the fleet window all measuring that one change; \u00a712 holds the cutover, and its done-when would leave \u00a713's space unused.",
+    "wiring": "pass \u2014 \u00a713 consumes `StationStore.ingest_stream` (`reckon/crew/station_store.py:611`) and `classify_tick` (`:764`), both landed, and feeds \u00a712, whose `plan-section-depends-on` already names `s13`; no dependency the section needs is missing and none of its relationships points elsewhere."
+  },
+  "section_digests": {
+    "_document": "c4f35786760d2dd4e5b3fcfb43d589b92078a62b0590edbdac991765da99b96a",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "3b11fe0cd53015121e6d566c554c6c77b13236b3700a90279e77a6bc755ea0a3",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-07T16:59:30.523166+00:00",
+  "total": null
+}
