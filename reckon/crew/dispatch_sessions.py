@@ -2207,11 +2207,6 @@ def terminate(run_id: str) -> dict[str, Any]:
 _STOP_SETTLE_SECONDS = 2.0
 _STOP_SETTLE_POLL_SECONDS = 0.02
 
-# How long one read-only git command may take over a worktree being preserved.
-# A stop must not hang on a tree whose storage has stalled: the attempt's work
-# is worth waiting for briefly, and the run still ends if it never answers.
-_STOP_WORKTREE_GIT_TIMEOUT_SECONDS = 60.0
-
 # The attempt's uncommitted work is written under this name in its run
 # directory, numbered by the attempt that held it so a later stop of a later
 # attempt cannot overwrite what an earlier one left behind.
@@ -2226,40 +2221,28 @@ def _stopped_attempt_diff_path(run_directory: Path, attempt: int) -> Path:
     return run_directory / _STOPPED_ATTEMPT_DIFF_NAME.format(number=number)
 
 
-def _worktree_git_read(worktree: Path, *arguments: str) -> str:
-    """One read-only git command in ``worktree``, decoded, or a CrewError."""
-    try:
-        completed = subprocess.run(
-            ["git", "-C", str(worktree), *arguments],
-            capture_output=True,
-            check=False,
-            timeout=_STOP_WORKTREE_GIT_TIMEOUT_SECONDS,
-        )
-    except (OSError, subprocess.SubprocessError) as exc:
-        raise CrewError(f"git {' '.join(arguments)} could not run: {exc}") from exc
-    if completed.returncode != 0:
-        message = completed.stderr.decode("utf-8", "replace").strip()
-        raise CrewError(
-            f"git {' '.join(arguments)} exited {completed.returncode}"
-            + (f": {message}" if message else "")
-        )
-    return completed.stdout.decode("utf-8", "replace")
-
-
 def _preserve_stopped_worktree(
     run_directory: Path, record: Mapping[str, Any]
 ) -> dict[str, Any]:
     """Write a stopped attempt's uncommitted work into its run directory.
 
-    The tracked changes are kept as ``git diff HEAD`` byte for byte, so the
-    file applies as a patch; the names of untracked files follow it as comment
-    lines, because their content is not in the diff and a reader needs to know
-    the tree held more than the patch carries.
+    The tracked changes are kept verbatim from ``git diff HEAD``, read with the
+    same flags the worktree release uses to save residue so the section above
+    the untracked names is the patch a reader can apply on its own. The names of
+    untracked files follow it as comment lines, because their content is not in
+    the diff and a reader needs to know the tree held more than the patch
+    carries.
 
     Three outcomes are reported rather than raised, because the stop proceeds
     whatever the tree does: the work was saved and where, the tree was clean so
     nothing was written, or the tree could not be read and is named with the
     reason. A run whose record names no worktree has none to preserve.
+
+    The release's own residue capture (:func:`reckon.crew.routing.
+    _save_and_release_worktree`) is not the owner this can call: it saves and
+    then clears the tree, and it refuses a live worktree outright, which is
+    exactly what a run being stopped still is. A stop must leave the tree for
+    the next attempt, so only the read half is shared here.
     """
     worktree = str(record.get("worktree") or "")
     if not worktree:
@@ -2274,25 +2257,25 @@ def _preserve_stopped_worktree(
         attempt = int(record.get("attempt") or 1)
     except (TypeError, ValueError):
         attempt = 1
-    try:
-        tracked = _worktree_git_read(tree, "diff", "HEAD")
-        untracked = [
-            line
-            for line in _worktree_git_read(
-                tree, "ls-files", "--others", "--exclude-standard"
-            ).splitlines()
-            if line.strip()
-        ]
-    except CrewError as exc:
+    diff_result, diff_error = _worktree_git_read(
+        tree, "diff", "HEAD", "--binary", "--no-ext-diff", "--no-renames", "--"
+    )
+    listed, listed_error = _worktree_git_read(
+        tree, "ls-files", "--others", "--exclude-standard"
+    )
+    if diff_error or listed_error or diff_result is None or listed is None:
+        reason = diff_error or listed_error or "git returned no reading"
         return {
             "state": "unreadable",
             "worktree": worktree,
             "path": None,
             "detail": (
-                f"the worktree {worktree!r} could not be read ({exc}), so its "
+                f"the worktree {worktree!r} could not be read ({reason}), so its "
                 "uncommitted work was not saved; the stop proceeded"
             ),
         }
+    tracked = diff_result.stdout
+    untracked = [line for line in listed.stdout.splitlines() if line.strip()]
     if not tracked.strip() and not untracked:
         return {
             "state": "clean",
