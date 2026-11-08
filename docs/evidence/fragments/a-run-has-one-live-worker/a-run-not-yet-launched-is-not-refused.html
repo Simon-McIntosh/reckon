@@ -30,10 +30,21 @@
     record names a live pid is refused naming that pid; a placed pointer with a recorded pid and no worker record is refused
     with the placed-unknown text. The never-launched case also passes through <code>_supervisor_spawn_worker</code>, which
     spawns the stand-in and records its pid. Every case asserts the operator's own crew home listing is unchanged.</p>
+  <p id="a-run-not-yet-launched-is-not-refused-repair">A repair round answered two review findings. The guard now reads the run
+    directory through <code>recovery_wait._run_directory</code> and "shown gone" through
+    <code>recovery_liveness._worker_record_liveness</code> instead of keeping private copies of either read, so one
+    module owns each and the launching-host rule comes with the owner. The placed refusal case in
+    <code>tests/test_a_queued_run_launches_once.py</code> had asserted the superseded predicate through a dead worker
+    record; it now keeps its purpose — a placed refusal of unknown liveness that names the job and never the client's pid —
+    on a record this rule still refuses, a placed pointer with the live client's pid and no worker record.</p>
   <ul id="a-run-not-yet-launched-is-not-refused-evidence">
     <li>reproduction: <code>reproduce.log</code> (refused under the previous predicate, proceeds under the guard)</li>
-    <li>head arm: <code>gate-head.log</code> (revision 1af5c0733a, 5 passed, EXIT=0)</li>
+    <li>head arm: <code>gate-head.log</code> (revision aaa5ea90e3, the revision its header records, 5 passed, EXIT=0)</li>
     <li>base arm: <code>baseline.log</code> (revision 085fa4606a, 3 failed, 2 passed, EXIT=1, defect reproduced)</li>
     <li>negative control, previous predicate restored: <code>negative-control.log</code> (3 failed, 2 passed, EXIT=1)</li>
+    <li>armed suite, repair base: <code>repair-baseline.log</code> (revision aaa5ea90e3, 1 failed, 10 passed, EXIT=1 — the placed refusal case still asserting the superseded predicate)</li>
+    <li>armed suite, repair head: <code>repair-head.log</code> (revision 87b9c8c452, 11 passed, EXIT=0)</li>
+    <li>reverted test commit 87b9c8c452: <code>negative-control-reverted-test-commit.log</code> (1 failed, EXIT=1)</li>
+    <li>reverted reuse commit 468d20f252: <code>negative-control-reverted-reuse-commit.log</code> (duplicate helpers return: 5 hits, owner calls absent)</li>
   </ul>
 </section>
