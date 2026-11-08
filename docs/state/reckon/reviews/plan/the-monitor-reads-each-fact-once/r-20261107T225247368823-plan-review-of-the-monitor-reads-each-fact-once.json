@@ -71,6 +71,13 @@
       "note": "the base arm does differ: the unchanged base SweepBeat class fails the review and repair observations (EXIT=1) while head passes, because the cause is the scheduler, not the event-file reads ad3e2764bd fixed",
       "reason": "",
       "when": "2026-11-08T05:30:44.761376+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "finding": "single_goal-1",
+      "reason": "the measured cause is a dropped sweep request in the scheduler, not a read cost, so \u00a714 and \u00a713 claim different mechanisms",
+      "when": "2026-11-08T05:30:58.016505+00:00"
     }
   ],
   "responses": {
@@ -100,6 +107,12 @@
       "note": "\u00a714 now records the cause its worker measured: SweepBeat.request drops a due request that arrives while that session's sweep is in flight and never replays it; reckon-0f's follower finding stays only as a separate follower-side cost",
       "reason": "",
       "when": "2026-11-08T05:30:24.639214+00:00"
+    },
+    "single_goal-1": {
+      "action": "declined",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "reason": "the measured cause is a dropped sweep request in the scheduler, not a read cost, so \u00a714 and \u00a713 claim different mechanisms",
+      "when": "2026-11-08T05:30:58.016505+00:00"
     }
   },
   "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-monitor-reads-each-fact-once/r-20261107T225247368823-plan-review-of-the-monitor-reads-each-fact-once.json",
