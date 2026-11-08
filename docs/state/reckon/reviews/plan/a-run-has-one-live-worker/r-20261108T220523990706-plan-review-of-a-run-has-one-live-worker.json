@@ -1,0 +1,77 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T22:11:47.744Z",
+  "dispatched_at": "2026-11-08T22:06:23Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:238",
+      "id": "wiring-1",
+      "reason": "the followup invokes \u00a713 by name and the section itself lists the test path, so a worker that reads the section (the semantic authority) gets it; the body is incomplete rather than wrong.",
+      "text": "`f-arolw-013` names three source paths and not the section's fourth write path, the new test, so a node reading the followup alone would not create the file the done-when measures",
+      "type": "wiring",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:165",
+      "id": "done_when-1",
+      "reason": "it is the interval the prescribed recording point leaves open, and a gate that never exercises it passes whatever the implementation does there.",
+      "text": "the seven cases include the launcher-alive-past-the-window and the launcher-dead-with-a-recorded-supervisor cases but none where the launcher dies after the supervisor has started and before its pid is written, so the gate cannot show the freeing rule holds across that interval",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:165",
+      "id": "reasoning-1",
+      "reason": "the recording point cannot produce the invariant the section states, so the node must either persist the pid inside the spawn step (before the survival wait, as the fleet ack file already does) or have the supervisor record its own pid on start, and a case must cover it.",
+      "text": "the section frees a reservation only when no process of its launch is alive and prescribes recording the supervisor's pid \"as soon as `_start_supervisor` returns it\", but `_start_supervisor` does not return until `_confirm_supervisor_survived` has waited up to `SUPERVISOR_SURVIVAL_SECONDS` = 2.0 s (dispatch_launch.py:2371, 2390, called at :2721 and :2725), so through that whole interval a live supervisor is unrecorded and a launcher killed there frees the reservation \u2014 a second launch is then admitted beside a live supervisor, which is the two-workers-one-worktree defect the section exists to close",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:165",
+      "id": "reasoning-2",
+      "reason": "the section's own extension of the rule to in-harness doors has no freeing path, so the mechanism as written deadlocks the run on the door it explicitly covers; the rule needs a release at the end of the launch (unwind or completion) with process liveness only as the fallback for a killed launcher.",
+      "text": "the section extends the reservation to \"an in-harness dispatch and a caller-supplied launcher\" and then frees it only when no process of its launch is alive, but an in-harness launch is delegated rather than spawned (dispatch.py:3037) and starts no supervisor, so the only process the rule can inspect is the dispatching process \u2014 the coordinator or MCP server, which outlives the launch by design \u2014 and a failed or completed in-harness launch of an existing run id therefore holds its reservation until that process exits, refusing every later launch of the run with nothing in flight",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "9192ec62fa945c1d4eb3e47bb8f64fe62ff6f70f",
+  "plan_fingerprint": "50d3b46f525a568941d7d29eeb425324bc2d8c046b2402d7f3a0f18fd5c66ccb",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 92,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T220523990706-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "921b0b40f8771507a573729176978ccbc0bcf035",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every citation resolves in this tree: `_retired_attempt_ended` at reckon/crew/dispatch_launch.py:2072, `_claim_may_be_reclaimed` at reckon/crew/resumption.py:366 with the `current == claimed` early return at :382, `claim_next_attempt` numbering from the record's attempt at reckon/crew/resumption.py:401, `LAUNCH_WINDOW_SECONDS = 120 (recovery_vocabulary.py:55` line as written), the pre-worktree live-worker check at reckon/crew/dispatch.py:2534 (before `_create_worktree` at :2834, the pointer writes at :2748/:3082 and the launch-kind branch at :3426), `_prepare_attempt_records` inside the CLI branch at reckon/crew/dispatch.py:3438, `_start_supervisor` at reckon/crew/dispatch_launch.py:2694, and commit 9587a26dd7 resolves as a commit.",
+    "done_when": "a finding \u2014 the seven cases have no case for a launcher killed after its supervisor has started but before the supervisor's pid is recorded, which is the widest interval the freeing rule has to survive (`_start_supervisor` blocks up to `SUPERVISOR_SURVIVAL_SECONDS` before it returns the pid).",
+    "evidence_paths": "pass \u2014 the reproduction output and every gate log sit under the run directory (`~/.config/reckon/crew/runs/<run>/`), which is durable and opens after the run, and no case writes to a node-local or session-scratch path.",
+    "naming": "pass \u2014 the new test is `tests/test_a_concurrent_launch_is_refused.py` and the section's terms (`reservation`, `in flight`, `launcher`, `supervisor`) are mechanism names; no plan label, stage name, ticket number or version tag reaches a symbol, and no changelog prose is prescribed for the code.",
+    "reasoning": "two findings \u2014 the freeing rule's supervisor check is recorded only after `_start_supervisor` has already blocked for up to the survival window, and for an in-harness dispatch the only process of its launch is the delegating process, which outlives the launch and so never frees the reservation.",
+    "single_goal": "pass \u2014 \u00a713 carries one deliverable, the reservation that refuses a second launch of a run id; the resumption.py reader refactor an earlier review flagged is no longer part of it, and the three source paths serve that one refusal.",
+    "wiring": "a finding \u2014 the open followup `f-arolw-013` that hands \u00a713 to a build node names `reckon/crew/dispatch.py`, `reckon/crew/dispatch_launch.py` and `reckon/crew/resumption.py` but omits the section's new test file, so the one hand-off a worker reads is short one write path."
+  },
+  "section_digests": {
+    "_document": "eeade309f31284b9ed0684d845f9e7ae9f528f9713bcf3e0b9a1f727559e9483",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s10": "6dc41ff672ef42b279e0d66e033f19c8c35deb5c39f0efeb637f11ccedd3f7d4",
+    "s11": "beb7d054249b6e83a0d555fe9051398e9d5fb537152e967098b323eb4c3c0122",
+    "s12": "84e2cc4249fe87aae0d3fc8134f2e4808ab95216a81db6b06c7e82eec1df1031",
+    "s13": "84fa66561cd03fccf579a3ca1c02180bf5fe8eea4c2b2a65f79fbe1f6962f68b",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "3a58d93f403c56db20efa76febfb2e44549d3805ff296517c27f63bc01055fb8",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "63bd79fcdd7baf06c8cc0bbc04ef21beec3605a6fdb13eed90b3ad410f8516e7",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b",
+    "s8": "1615d40635864933b3396d3d4ae7b0f94361ec3a105caa540ba761ad95bd24fe",
+    "s9": "1a571813cf821821012487f1bc0e7a9bb360370e7b12b6440683c365dba25774"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T22:15:18.453628+00:00",
+  "total": null
+}
