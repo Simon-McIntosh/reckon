@@ -1,0 +1,106 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "fails_when": "The actual fixture git command returns the wrong status, invalidating the evidence stimulus; this guards fixture setup, not production behavior.",
+      "lines": "tests/test_a_conflicting_landing_is_repaired.py:186"
+    },
+    {
+      "fails_when": "Removing gate validation lets any invalid capture land, changing manual exit to zero and/or automatic status from repair-gate-refused to finished; removing a specific exit/command/revision check makes its corresponding loop case fail.",
+      "lines": "tests/test_a_conflicting_landing_is_repaired.py:298,302,303"
+    },
+    {
+      "fails_when": "A refused attempt deletes the pending record or pointer, pushes the repair, rewrites promotion/plan bytes, reopens a repair round, or leaves dirty/conflict-marker content; each compares independently observed state with its pre-attempt snapshot or expected invariant.",
+      "lines": "tests/test_a_conflicting_landing_is_repaired.py:305-311"
+    },
+    {
+      "fails_when": "Removing crew_complete gate verdict validation permits the explicitly failed manual verdict to finish; exit, refusal wording, retained record and remote snapshot then diverge.",
+      "lines": "tests/test_a_conflicting_landing_is_repaired.py:315-318"
+    },
+    {
+      "fails_when": "A valid repair is refused or the receipt names the original rather than repaired head; the head identity is also independently checked by existing remote ancestry and content assertions at :337-343.",
+      "lines": "tests/test_a_conflicting_landing_is_repaired.py:320,325,326"
+    }
+  ],
+  "assertion_independence": "No added regression assertion is tautological: input-derived head comparison is backed by independent bare-remote ancestry/content; refusal assertions observe production outcomes and snapshot bytes, not values echoed from the supplied evidence.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/pending_landing.py:_delivered_repair",
+    "reckon/crew/pending_landing.py:finish_pending_landings",
+    "reckon/crew/queue_landing.py:land_once (line 1411 at reviewed head)",
+    "reckon/crew_run_commands.py:crew_complete (lines 3213-3228 at reviewed head)"
+  ],
+  "completed_at": "2026-11-08T13:50:22Z",
+  "dispatched_at": "2026-11-08T13:40:21Z",
+  "findings": [],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_conflicting_landing_is_repaired.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T093343768873-a-conflicting-landing-is-repaired/repair-gate-head-fixed.log",
+      "observed_failure_ids": [],
+      "observed_summary": "4 passed in 71.72s (0:01:11)",
+      "revision": "50952cce955e8fce34738138b6ed0beee7e4ddf8"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_conflicting_landing_is_repaired.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T093343768873-a-conflicting-landing-is-repaired/repair-gate-base.log",
+      "observed_failure_ids": [],
+      "observed_summary": "4 passed in 72.42s (0:01:12)",
+      "revision": "9f88e600fbd4fe91c7af015ffd859d9530196b92"
+    }
+  },
+  "gate_revision_note": "Head gate ran at 50952cce955e8fce34738138b6ed0beee7e4ddf8; d6cb4e5aa8abeecfd79cc15598d297f0f9057402 changes only the evidence fragment. No suite was rerun by this review.",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified four production call sites at the reviewed head.",
+    "diff": "Read commits 49f1c15074d8dc267675fdcdfba36e8bc772d58c, 50952cce955e8fce34738138b6ed0beee7e4ddf8 and d6cb4e5aa8abeecfd79cc15598d297f0f9057402 against 9f88e600fbd4fe91c7af015ffd859d9530196b92; their four-file delta adds gate refusals, route coverage and cumulative evidence without unrelated changes.",
+    "done_when": "Live plan s3 and the source done_when require bare-remote conflict/repair landings; repair-gate-base.log and repair-gate-head-fixed.log each record four passing cases, and repair-gate-negative.log records both repair routes failing when the answering commit is reversed.",
+    "goal": "The source live pointer goal returns conflicting landings for repair; pending_landing.py:141 now refuses a delivered repair until its exact head has passing captured gate evidence, answering the prior blocking finding.",
+    "manifest": "Read the source manifest.md and its baseline_suite/after_suite logs; both completed receipts match four passing cases and zero failure IDs, while the negative log records two failures and two passes.",
+    "write_paths": "Read the source live pointer node.write_paths; all four files changed since 9f88e600 are granted, including pending_landing.py, the existing test, crew_run_commands.py and the evidence fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_a_conflicting_landing_is_repaired.py:298-320 requires refusals for seven invalid captures in both routes and an explicit failed manual verdict, with reverse-commit evidence proving the missing-gate regression fails both routes.",
+    "evidence": "Source repair-gate-base.log and repair-gate-head-fixed.log record four passing cases each and repair-gate-negative.log records two repair-route failures, but the importer results in the evidence fragment are historical rather than rerun for this delta.",
+    "fit": "reckon/crew/pending_landing.py:145 uses the surrounding lazy-import and CrewError idiom, and its added names describe evidence validation without forbidden plan or release labels.",
+    "goal_fidelity": "reckon/crew/pending_landing.py:141 and :240 validate the repair before selecting its head and preserve pending work on refusal, while crew_run_commands.py:3214 rejects an explicitly failed verdict.",
+    "reuse": "Capability searches and owner reads in promotion_records.py:308, promotion_evidence.py:1101, reports.py:1381 and tests/helpers/landing_repository.py:64 show the repair wrapper reuses evidence readers and CLI fixtures while adding stricter exact-head admission absent from those existing validators.",
+    "scope_discipline": "The four paths in the incremental diff are all present in the source live pointer node.write_paths and only address revision-bound merge-repair gate validation."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source live pointer goal returns conflicting landings for repair; pending_landing.py:141 now refuses a delivered repair until its exact head has passing captured gate evidence, answering the prior blocking finding.\nVERDICT done_when: Live plan s3 and the source done_when require bare-remote conflict/repair landings; repair-gate-base.log and repair-gate-head-fixed.log each record four passing cases, and repair-gate-negative.log records both repair routes failing when the answering commit is reversed.\nVERDICT write_paths: Read the source live pointer node.write_paths; all four files changed since 9f88e600 are granted, including pending_landing.py, the existing test, crew_run_commands.py and the evidence fragment.\nVERDICT manifest: Read the source manifest.md and its baseline_suite/after_suite logs; both completed receipts match four passing cases and zero failure IDs, while the negative log records two failures and two passes.\nVERDICT diff: Read commits 49f1c15074d8dc267675fdcdfba36e8bc772d58c, 50952cce955e8fce34738138b6ed0beee7e4ddf8 and d6cb4e5aa8abeecfd79cc15598d297f0f9057402 against 9f88e600fbd4fe91c7af015ffd859d9530196b92; their four-file delta adds gate refusals, route coverage and cumulative evidence without unrelated changes.\nCALL_SITES: reckon/crew/pending_landing.py:_delivered_repair, reckon/crew/pending_landing.py:finish_pending_landings, reckon/crew/queue_landing.py:land_once (line 1411 at reviewed head), reckon/crew_run_commands.py:crew_complete (lines 3213-3228 at reviewed head)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/pending_landing.py:141 and :240 validate the repair before selecting its head and preserve pending work on refusal, while crew_run_commands.py:3214 rejects an explicitly failed verdict.\nSCORE evidence: 19\nJUSTIFICATION evidence: Source repair-gate-base.log and repair-gate-head-fixed.log record four passing cases each and repair-gate-negative.log records two repair-route failures, but the importer results in the evidence fragment are historical rather than rerun for this delta.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The four paths in the incremental diff are all present in the source live pointer node.write_paths and only address revision-bound merge-repair gate validation.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_conflicting_landing_is_repaired.py:298-320 requires refusals for seven invalid captures in both routes and an explicit failed manual verdict, with reverse-commit evidence proving the missing-gate regression fails both routes.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/pending_landing.py:145 uses the surrounding lazy-import and CrewError idiom, and its added names describe evidence validation without forbidden plan or release labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches and owner reads in promotion_records.py:308, promotion_evidence.py:1101, reports.py:1381 and tests/helpers/landing_repository.py:64 show the repair wrapper reuses evidence readers and CLI fixtures while adding stricter exact-head admission absent from those existing validators.\n",
+  "reproduction_quote": "repair-gate-negative.log: expected repair-gate-refused, actual finished; FAILED test_conflicting_delivery_opens_repair_then_lands[manual] and [automatic]; 2 failed, 2 passed in 54.36s; EXIT=1.",
+  "reuse_analysis": {
+    "_complete_land": "Extends existing wrapper by forwarding extra CLI flags to tests/helpers/landing_repository.py:_complete_land.",
+    "_require_repair_gate": "Wraps existing manifest fill, required-field reader, exit parser, command reader/normalizer and canonical revision resolver; existing _require_gate_log_agrees tolerates unreadable/digest-only evidence and does not enforce this repair-specific exact head, so it cannot supply the stricter admission contract unchanged.",
+    "deliver_repair_gate": "Search tests/helpers for gate capture capability found only landing CLI fixture; new helper supplies a local real-command capture and seven malformed shapes rather than duplicating a capture owner."
+  },
+  "review_method": "Incremental artifact review; production files read from git objects at reviewed_head_sha, never inferred from this review worktree HEAD; no code changed or test suite rerun.",
+  "review_run_id": "r-20261108T133833261395-review-of-a-conflicting-landing-is-repaired-d6cb4e5aa8ab",
+  "reviewed_base_sha": "9f88e600fbd4fe91c7af015ffd859d9530196b92",
+  "reviewed_head_sha": "d6cb4e5aa8abeecfd79cc15598d297f0f9057402",
+  "reviewed_run_id": "r-20261108T093343768873-a-conflicting-landing-is-repaired",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T14:40:19.550245+00:00",
+  "total": 119
+}
