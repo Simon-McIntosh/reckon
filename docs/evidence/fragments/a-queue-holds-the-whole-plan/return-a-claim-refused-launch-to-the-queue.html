@@ -1,0 +1,49 @@
+<section id="return-a-claim-refused-launch-to-the-queue-landing">
+  <h2>A launch refused on a claim returns its request to the queue</h2>
+  <p>A claim can be taken in the window between the pre-launch claim check and
+  the launch itself. The launch then raises <code>ScopeConflict</code> after
+  the request's pointer has been published in phase <code>starting</code>.
+  Recording that refusal as a failed attempt stamped the failure onto the
+  starting pointer and left it there: the run carried no
+  <code>admit_request</code> and no attempt start, so
+  <code>_requeue_admitted_failures</code> never touched it, and it had no
+  launch clock for the stranded-launch reaper. On 8 November such a request sat
+  for 55 minutes until a coordinator discarded it.</p>
+  <p>The refusal is now a hold. <code>_restore_refused_launch_to_queue</code>
+  writes the request back as one queued pointer, carrying the hold
+  <code>_refusal_hold</code> builds from the refusal — the holder's run, node,
+  session, phase and path — and the pass records the verdict
+  <code>held-on-claim</code> instead of <code>failed</code>. No failure and no
+  retry back-off are stamped, so the next pass launches the request as soon as
+  that claim is released. The pre-launch check already judges a stopped run's
+  claim through <code>claim_disposition</code>, the rule the dispatcher uses;
+  the tests here now guard that reading as well.</p>
+  <p id="return-a-claim-refused-launch-to-the-queue-reproduction"><strong>Reproduced first at base <code>b0708be48a</code>.</strong>
+  <code>test_a_claim_taken_at_launch_returns_the_request_to_the_queue</code>
+  failed with <code>assert 'starting' == 'queued'</code>, the pointer left in
+  phase <code>starting</code> with its failure recorded — the shape of the
+  discarded pointer kept under
+  <code>~/.cache/reckon-evidence/stranded-starting-on-scope-conflict-2026-11-08/</code>.
+  Log: <code>reproduction-before.log</code>, EXIT=1.</p>
+  <p id="return-a-claim-refused-launch-to-the-queue-head"><strong>Head
+  arm.</strong> At committed head <code>abfb16b441</code> the four cases in
+  <code>tests/test_a_claim_refused_launch_returns_to_the_queue.py</code> passed
+  (4 passed); log <code>after-suite.log</code>, EXIT=0. The base arm ran the
+  same test file copied into a scratch tree of
+  <code>b0708be48a</code>: 1 failed and 3 passed, the failure being that one
+  case; log <code>baseline-suite.log</code>, EXIT=1. The change therefore adds
+  no failure at the head.</p>
+  <p id="return-a-claim-refused-launch-to-the-queue-controls"><strong>Negative
+  controls.</strong> Reading only live runs' claims before launch (a stopped
+  holder's disposition forced non-binding) let the first case launch:
+  <code>assert ['r-queued'] == []</code>, log
+  <code>negative-control-live-claims-only.log</code>, EXIT=1. Recording the
+  launch's refusal without restoring the phase (the restored pointer forced
+  back to <code>starting</code>) left the second case in <code>starting</code>:
+  <code>assert 'starting' == 'queued'</code>, log
+  <code>negative-control-refusal-without-phase-restore.log</code>, EXIT=1.
+  Ruff check and format check report no findings on the two staged paths.</p>
+  <p>The fourth case reads the real crew home before and after a pass and
+  requires its live pointer set unchanged, so no record this node's tests write
+  can escape the temporary home.</p>
+</section>
