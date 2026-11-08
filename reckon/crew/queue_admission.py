@@ -16,6 +16,7 @@ from __future__ import annotations
 import contextlib
 import copy
 import fcntl
+import hashlib
 import json
 import os
 import subprocess
@@ -2042,6 +2043,7 @@ def _pass_verdict_record(
         "started_at": result.get("started_at"),
         "ended_at": result.get("ended_at"),
         "release_seconds": result.get("release_seconds"),
+        "waits_seconds": result.get("waits_seconds"),
         "launch_seconds": result.get("launch_seconds"),
         "land_seconds": result.get("land_seconds"),
         "lane": lane,
@@ -4007,6 +4009,180 @@ def _move_pointer(run_id: str, phase: str) -> bool:
     return True
 
 
+#: The plan evidence one admission pass has read, keyed by the plan text and the
+#: stored reviews that judgment reads. A pass judges the review gate for every
+#: request it considers, and each judgment re-read the same plan four times. The
+#: pass holds the answer while neither the plan nor its review store has moved.
+_PLAN_REVIEW_PASS: ContextVar[dict[tuple[Any, ...], _PlanReviewRecord] | None] = (
+    ContextVar("queue_admission_plan_review_pass", default=None)
+)
+
+
+@contextmanager
+def plan_review_pass() -> Iterator[None]:
+    """Read each plan's review evidence once for the length of one pass.
+
+    Entered by an admission pass, which judges the review gate for every request
+    it considers. Outside such a pass each judgment reads the plan itself, so a
+    direct dispatch and a coordinator's own read always see the plan as it is
+    now.
+    """
+
+    token = _PLAN_REVIEW_PASS.set({})
+    try:
+        yield
+    finally:
+        _PLAN_REVIEW_PASS.reset(token)
+
+
+class _PlanReviewRecord:
+    """What one pass read once about one plan's review evidence.
+
+    The coverage, the section digests and the parsed plan state are read when
+    the record is built. The document-contract verdict reads a review snapshot
+    of its own, so it is taken only when a request actually needs it and held
+    from then on: a plan whose document unit no request reads costs no snapshot
+    read at all. The dispatch gate's answer is memoized here too, keyed by the
+    section a request builds and by whether the request is exempt from the gate,
+    because those are the whole of what the gate's verdict turns on for one
+    plan.
+    """
+
+    def __init__(
+        self,
+        *,
+        project: str,
+        plan_slug: str,
+        path: Path,
+        records: Sequence[Mapping[str, Any]],
+        uncovered: set[str],
+        changes: Mapping[str, float | None],
+        digests: Mapping[str, str],
+        state: Mapping[str, Any],
+    ) -> None:
+        self.project = project
+        self.plan_slug = plan_slug
+        self.path = path
+        self.records = records
+        self.uncovered = uncovered
+        self.changes = changes
+        self.digests = digests
+        self.state = state
+        self.gate: dict[tuple[str, bool], str | None] = {}
+        self._document_is_contract: bool | None = None
+
+    def documents_change_is_contract(self) -> bool:
+        """Whether the plan's document unit changed in the text a node reads."""
+        if self._document_is_contract is None:
+            from reckon.crew import routing
+
+            self._document_is_contract = routing._document_change_is_contract(
+                self.project, self.plan_slug, plan=self.path, records=self.records
+            )
+        return self._document_is_contract
+
+    def gate_owed(
+        self,
+        node: TaskNode,
+        *,
+        repo: str,
+        options: Mapping[str, Any],
+    ) -> str | None:
+        """The dispatch gate's verdict, read once per section and exemption.
+
+        The gate's verdict turns on the plan and on the units the request reads,
+        and the queue holds one request per node, so a key carrying the
+        request's own identity would never be reused. Keyed on the section it
+        builds and on whether the request is exempt from the gate at all, two
+        implement requests on one section share one read while a review
+        request's exempt verdict is never handed to a building one.
+        """
+        from reckon.crew import routing
+
+        key = (str(node.section or ""), routing._plan_review_exempt(node))
+        if key not in self.gate:
+            self.gate[key] = _dispatch_gate_owed(
+                node, project=self.project, repo=repo, options=options
+            )
+        return self.gate[key]
+
+
+def _plan_text_digest(path: Path) -> str:
+    """The content identity of one plan file, or ``""`` when it is unreadable."""
+    try:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError:
+        return ""
+
+
+def _stored_review_key(project: str, plan_slug: str) -> tuple[tuple[str, ...], ...]:
+    """The identities and digests of the stored reviews a plan's judgment reads."""
+    from reckon.crew import plan_review
+
+    entries: list[tuple[str, ...]] = []
+    for record in plan_review.list_plan_reviews(project, plan_slug):
+        digests = record.get("section_digests") or {}
+        entries.append(
+            (
+                plan_review._plan_review_identity(record)
+                or str(record.get("review_path") or ""),
+                str(record.get("plan_version") or ""),
+                str(record.get("plan_fingerprint") or ""),
+                str(record.get("reviewed_blob_sha") or ""),
+                str(record.get("status") or ""),
+                hashlib.sha256(
+                    json.dumps(digests, sort_keys=True, default=str).encode("utf-8")
+                ).hexdigest(),
+            )
+        )
+    return tuple(sorted(entries))
+
+
+def _build_plan_review_record(
+    path: Path, *, project: str, plan_slug: str
+) -> _PlanReviewRecord:
+    """Read one plan's review coverage, digests and state for a pass."""
+    from reckon import _plan_html as plan_html
+    from reckon.crew import plan_review
+
+    records, uncovered, changes = plan_review.review_coverage(
+        project, plan_slug, plan=path
+    )
+    return _PlanReviewRecord(
+        project=project,
+        plan_slug=plan_slug,
+        path=path,
+        records=records,
+        uncovered=uncovered,
+        changes=changes,
+        digests=plan_review._section_digests(path),
+        state=plan_html.read_state_file(path),
+    )
+
+
+def _plan_review_record(
+    path: Path, *, project: str, plan_slug: str
+) -> _PlanReviewRecord:
+    """The plan's review evidence for this pass, read once and reused.
+
+    Outside a pass nothing is held, so the record is built for this caller
+    alone. Inside one it is keyed by the plan's content and by the stored
+    reviews it reads: a plan edited, a review stored or a review rewritten
+    during the pass changes the key, so the next decision on that plan is taken
+    against what the plan and its store say now rather than against a reading
+    the pass has outlived.
+    """
+    cache = _PLAN_REVIEW_PASS.get()
+    if cache is None:
+        return _build_plan_review_record(path, project=project, plan_slug=plan_slug)
+    key = (str(path), _plan_text_digest(path), _stored_review_key(project, plan_slug))
+    record = cache.get(key)
+    if record is None:
+        record = _build_plan_review_record(path, project=project, plan_slug=plan_slug)
+        cache[key] = record
+    return record
+
+
 def _dispatch_gate_owed(
     node: TaskNode,
     *,
@@ -4066,7 +4242,6 @@ def _plan_review_owed(
     Only the enforced mode holds, exactly as the dispatch gate does; under the
     shipped report-only default the launch proceeds.
     """
-    from reckon import _plan_html as plan_html
     from reckon import flight
     from reckon.crew import plan_review, routing
 
@@ -4086,47 +4261,49 @@ def _plan_review_owed(
         # coordinator has answered the review question for that dispatch.
         return None
     contract = pointer.get(REVIEW_CONTRACT_KEY)
+    path = Path(repo) / "docs" / "plans" / f"{node.plan}.html"
     if not isinstance(contract, Mapping) or not _contract_is_current(contract, node):
         # A request queued by a writer that records no contract is judged by the
         # dispatch gate itself, which is what admission asked before requests
         # carried their own: it holds on every unit the request reads. Narrowing
         # that to the request's own contract needs the digests taken at queue
         # time, so a pointer without them keeps the wider hold rather than
-        # holding nothing.
-        return _dispatch_gate_owed(node, project=project, repo=repo, options=options)
+        # holding nothing. The gate's answer is read through the same per-plan
+        # record, so a pass that holds several such requests over one plan asks
+        # the gate once.
+        try:
+            evidence = _plan_review_record(path, project=project, plan_slug=node.plan)
+        except Exception:  # noqa: BLE001 - an unreadable plan answers through the gate
+            return _dispatch_gate_owed(
+                node, project=project, repo=repo, options=options
+            )
+        return evidence.gate_owed(node, repo=repo, options=options)
     try:
-        path = Path(repo) / "docs" / "plans" / f"{node.plan}.html"
-        records, uncovered, changes = plan_review.review_coverage(
-            project, node.plan, plan=path
-        )
+        evidence = _plan_review_record(path, project=project, plan_slug=node.plan)
         units = plan_review_units(node.section)
-        if not any(unit not in uncovered for unit in units):
+        if not any(unit not in evidence.uncovered for unit in units):
             # No stored review covers a single unit this request reads — the
             # plan is unreviewed, or every review is incomplete — so there is no
             # reviewed text to compare against and the request is owed the
             # review the dispatch gate asks for. Answering here with the gate's
             # own verdict is what keeps a queued request and a fresh dispatch
             # from disagreeing.
-            return _dispatch_gate_owed(
-                node, project=project, repo=repo, options=options
-            )
-        digests = plan_review._section_digests(path)
+            return evidence.gate_owed(node, repo=repo, options=options)
+        digests = evidence.digests
         moved: list[str] = []
         unit = str(contract.get("section") or "")
         if (
             unit
-            and unit in uncovered
+            and unit in evidence.uncovered
             and str(digests.get(unit) or "") != str(contract.get("section_digest"))
         ):
             moved.append(unit)
-        state = plan_html.read_state_file(path)
+        state = evidence.state
         if (
-            plan_review.DOCUMENT_UNIT in uncovered
+            plan_review.DOCUMENT_UNIT in evidence.uncovered
             and routing._contract_digest(state)
             != str(contract.get("document_digest") or "")
-            and routing._document_change_is_contract(
-                project, node.plan, plan=path, records=records
-            )
+            and evidence.documents_change_is_contract()
         ):
             moved.append(plan_review.DOCUMENT_UNIT)
     except Exception:  # noqa: BLE001 - an unreadable plan holds nothing
@@ -4137,7 +4314,7 @@ def _plan_review_owed(
         f"plan {node.plan!r} in project {project!r} changed after this request "
         "was queued and no stored review covers the new text; "
         f"uncovered units: {', '.join(sorted(moved))}; "
-        f"{routing._uncovered_change_detail(moved, changes)}"
+        f"{routing._uncovered_change_detail(moved, evidence.changes)}"
         "the request waits until a review of that text is stored; "
         f"compose one with `{plan_review.review_invocation(project, node.plan)}`"
     )
@@ -4517,6 +4694,7 @@ def admit_once(
         _admit_lock() if lock else nullcontext(),
         readiness_pass(),
         review_read_pass(),
+        plan_review_pass(),
     ):
         result["requeued"] = _requeue_admitted_failures(
             runs.list_live(phase=LAUNCH_FAILED_PHASE), verdicts=result["verdicts"]
@@ -4527,10 +4705,12 @@ def admit_once(
         # to ``blocked-upstream`` the moment one is closed as abandoned or
         # failed, with no coordinator turn in between. This is what lets a
         # batch queued in one call launch in dependency order.
+        waits_started = time.monotonic()
         upstream = advance_waiting_requests(live)
         result["released_plan_review"] = _release_plan_review_holds(
             live, config_for=config_for
         )
+        result["waits_seconds"] = round(time.monotonic() - waits_started, 3)
         result["promoted_upstream"] = upstream["promoted"]
         result["blocked_upstream"] = upstream["blocked"]
         result["upstream_obligations"] = upstream["obligations"]
@@ -5261,16 +5441,20 @@ def _record_stage_timings(
 ) -> None:
     """Record the pass's start, end and per-stage seconds on its verdict row.
 
-    Release, launch and land are measured apart because they are held by
-    different things — a lane slot, a merge, a suite — and a row that reported
-    one duration would not tell a reader which of them stalled. ``land_seconds``
-    is the duration of the landing action the row reports: the pass itself
-    never waits for it.
+    Release, waits, launch and land are measured apart because they are held by
+    different things — a lane slot, a plan's wait resolution and review holds, a
+    merge, a suite — and a row that reported one duration would not tell a
+    reader which of them stalled. The pass reports the wait stage from its own
+    clock, so no time.sleep or plan read there is charged to ``launch_seconds``,
+    which then covers only launch decisions and launches. ``land_seconds`` is
+    the duration of the landing action the row reports: the pass itself never
+    waits for it.
     """
     result["started_at"] = started_at
     result["ended_at"] = _utc_now()
     result["release_seconds"] = round(released - started, 3)
-    result["launch_seconds"] = round(ended - released, 3)
+    waits = float(result.get("waits_seconds") or 0.0)
+    result["launch_seconds"] = round(max(0.0, ended - released - waits), 3)
     result["land_seconds"] = round(float(landing.get("seconds") or 0.0), 3)
 
 
