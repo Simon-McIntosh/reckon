@@ -164,19 +164,32 @@ def test_code_stamp_is_probed_once(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     probes = []
+    stamp = {"value": "known-stamp"}
+    dirty = {"value": False}
     queue_admission._TRUSTED_CODE_STAMPS.clear()
     monkeypatch.setattr(queue_admission, "_source_root", lambda: tmp_path)
-    monkeypatch.setattr(queue_admission, "_admit_code_stamp", lambda: "known-stamp")
+    monkeypatch.setattr(queue_admission, "_admit_code_stamp", lambda: stamp["value"])
     monkeypatch.setattr(
-        checkout_trust, "tracked_reckon_tree_is_dirty", lambda _: (False, "")
+        checkout_trust,
+        "tracked_reckon_tree_is_dirty",
+        lambda _: (dirty["value"], "tracked edit" if dirty["value"] else ""),
     )
     monkeypatch.setattr(checkout_trust, "published_reload_image", lambda _: False)
 
     def probe(root: Path) -> tuple[bool, str]:
         probes.append(root)
-        return True, ""
+        return (
+            (True, "") if stamp["value"] == "known-stamp" else (False, "cannot import")
+        )
 
     monkeypatch.setattr(checkout_trust, "_probe_imports", probe)
     assert queue_admission._checkout_code_is_trusted()
     assert queue_admission._checkout_code_is_trusted()
     assert probes == [tmp_path]
+    dirty["value"] = True
+    assert not queue_admission._checkout_code_is_trusted()
+    assert probes == [tmp_path]
+    dirty["value"] = False
+    stamp["value"] = "changed-stamp"
+    assert not queue_admission._checkout_code_is_trusted()
+    assert probes == [tmp_path, tmp_path]

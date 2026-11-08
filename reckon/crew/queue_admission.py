@@ -888,6 +888,9 @@ def _checkout_code_is_trusted() -> bool:
 
     stamp = _admit_code_stamp()
     root = _source_root()
+    dirty, _detail = checkout_trust.tracked_reckon_tree_is_dirty(root)
+    if dirty:
+        return False
     key = (str(root), stamp)
     remembered = _TRUSTED_CODE_STAMPS.get(key)
     if remembered is not None:
