@@ -1,0 +1,36 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T16:28:11.154Z",
+  "dispatched_at": "2026-11-08T16:19:36Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/follow-live-runs-on-host-rearm.html",
+      "line": 137,
+      "severity": "non-blocking",
+      "text": "The gained commit adds 'which breaks only the batch and passes when run alone'. Every other figure in this paragraph is carried by a log under the run directory whose header names its revision and whose last line is EXIT=, but no log records this lone-case run: the support is the worker transcript resume-3.jsonl line 378, which prints '1 passed in 35.00 s' with no EXIT= line and cites no command, so a reader cannot reconcile it the way the other citations allow. The claim is true -- the single-case run at 6c83e9f27f passed -- but the fragment should cite it the way it cites the batch arms, or a log carrying it should be written beside them."
+    }
+  ],
+  "item_verdicts": {
+    "goal_fidelity": "read the node goal from dispatch-detail.json ('make a re-armed host follow its session's live runs at once'); the one gained commit cbe5106ea1 changes no code, only the prose record of the plugin entry point and reckon/crew/session_host.py at docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/follow-live-runs-on-host-rearm.html:131-152."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal 'make a re-armed host follow its session's live runs at once' from dispatch-detail.json; the gained commit cbe5106ea1 changes no code and corrects the evidence fragment that records it at docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/follow-live-runs-on-host-rearm.html:131-152.\nVERDICT done_when: read the done_when from dispatch-detail.json; the manifest records two armed arms now, gate-repair-base.log '15 passed' EXIT=0 at 6c83e9f27f and gate-repair-after.log '15 passed' EXIT=0 at 48719901cb, both complete, against the dispatch-base arm gate-base.log '4 failed, 3 passed' EXIT=1 at e5179a465f, and the manifest's baseline_suite/after_suite fields carry the two green ones.\nVERDICT write_paths: read the seven declared write paths from dispatch-detail.json; the sole path in the gained diff, docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/follow-live-runs-on-host-rearm.html, is the sixth of them.\nVERDICT manifest: read the manifest at the run directory; it reports complete, its changed_paths match the node's six staged paths, its baseline_spec and after_suite both quote reviewable logs, and its checkpoint and later paragraph correct the station-batch evidence rather than asserting a cause.\nVERDICT diff: read commit cbe5106ea1 against base 48719901cb; one hunk in one declared file, 18 insertions and 12 deletions confined to the Station and follower tests paragraph, removing the unsupported attribution and resting the record on station-combo-head.log and station-combo-answering-reverted.log.\nCALL_SITES: reckon/evidence.py:compose_landed_record, reckon/crew/reports.py:_fragment_plan_of\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the gained commit is docs-only and the code the goal names, plugins/crew-host/bin/crew-host and reckon/crew/session_host.py, is unchanged; the gained change corrects the record of it at follow-live-runs-on-host-rearm.html:131-152.\nSCORE evidence: 16\nJUSTIFICATION evidence: every figure in the rewritten paragraph reconciles with the log it cites -- station-combo-head.log '60 passed in 89.63s' EXIT=0 at 17-6c83e9f27f, station-combo-answering-reverted.log '1 failed, 59 passed in 17-61.11s' EXIT=1 with 'tests/test_follower_freshness.py:318: AssertionError', and station-tests.log's own header '(working tree carries the moved judgement)' at follow-live-runs-on-host-rearm.html:140-143 -- with the one lone-case figure at line 137 resting on a transcript rather than a log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the whole gained diff is on docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/follow-live-runs-on-host-rearm.html, one of the seven declared write paths, and adds nothing the goal does not imply.\nSCORE durability: 15\nJUSTIFICATION durability: the gained commit adds no assertion, so nothing reddens if the citation regresses; what it can be checked by is the reversible procedure recorded in the run directory, not a test.\nSCORE fit: 20\nJUSTIFICATION fit: the replacement paragraph at follow-live-runs-on-host-rearm.html:131-152 keeps the surrounding evidence-fragment prose, and cbe5106ea1 carries a conventional subject with a body that states the reason and names no plan, sprint or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module; a capability search over docs/evidence/fragments/ and reckon/crew/ for evidence-record rendering found reckon/evidence.py:686 compose_landed_record as the one owner, and the prose feeds it without duplicating it.\nFINDING docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/follow-live-runs-on-host-rearm.html:137 non-blocking: the new sentence 'passes when run alone' has no log under the run directory, unlike every other figure in the paragraph, so its only support is the transcript resume-3.jsonl:378 ('1 passed in 35.00 s'), which carries no revision header and no EXIT= line.\n",
+  "review_run_id": "r-20261108T160626043262-review-of-follow-live-runs-on-host-rearm-cbe5106ea1e6",
+  "reviewed_base_sha": "48719901cb37d583d18359bd6c720fe9eda1d548",
+  "reviewed_head_sha": "cbe5106ea1e63a57c17b56777671f6be0af689c6",
+  "reviewed_run_id": "r-20261108T034846688854-follow-live-runs-on-host-rearm",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "statu": "",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T16:58:37.508471+00:00",
+  "total": 108
+}
