@@ -2082,8 +2082,9 @@ def classify_pointer(
         detail = (
             "a stranded launch: the pointer"
             f"{where} has held the pre-spawn phase "
-            f"{str(record.get('phase') or '')!r} for {held} past the "
-            f"{STRANDED_LAUNCH_BOUND_SECONDS}s bound, with no worker record, "
+            f"{str(record.get('phase') or '')!r} for {held} since its launch clock "
+            f"began, past the {STRANDED_LAUNCH_BOUND_SECONDS}s bound, with no "
+            "worker record, "
             "stream or launch log in its run directory, so the launch was cut off "
             "before it spawned and nothing recorded an end"
         )

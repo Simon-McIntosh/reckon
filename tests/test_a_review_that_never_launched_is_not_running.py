@@ -15,12 +15,15 @@ as a launch failure naming the host that issued it. The fallback is confined to
 a cli pointer: an in-harness pointer under the same conditions still reads as
 running, because its liveness belongs to the calling harness.
 
-The three cases run against a temporary crew home, so the operator's live
-pointers and run directories are never read or written.
+A launch that left no claim behind is dated from the pointer's creation, and a
+claim naming another run is refused by the reader that owns it, so a foreign
+claim cannot date this pointer.
+
+The cases run against a temporary crew home, so the operator's live pointers
+and run directories are never read or written.
 
 The declared negative control removes the claim-and-creation fallback from the
-dating; the first case then reads as running, at the base revision and under
-the mutation.
+dating; both dated cases then read as running.
 """
 
 from __future__ import annotations
@@ -52,6 +55,9 @@ SESSION = "never-launched-session"
 STALE_RUN_ID = "r-never-launched-stale"
 YOUNG_RUN_ID = "r-never-launched-young"
 IN_HARNESS_RUN_ID = "r-never-launched-in-harness"
+CREATION_RUN_ID = "r-never-launched-creation"
+FOREIGN_CLAIM_RUN_ID = "r-never-launched-foreign-claim"
+FOREIGN_RUN = "r-another-runs-claim"
 LAUNCHER_HOST = "98dci4-clu-2068"
 
 BOUND = recovery_liveness.STRANDED_LAUNCH_BOUND_SECONDS
@@ -82,29 +88,41 @@ def _never_launched_pointer(
     run_id: str,
     *,
     claimed_seconds_ago: float,
+    created_seconds_ago: float | None = None,
     launch: str = "cli",
     launcher_host: str = LAUNCHER_HOST,
+    record_claim: bool = True,
+    claim_run_id: str | None = None,
 ) -> dict:
     """A launch that stopped between composing its claim and spawning a worker.
 
     Every trace a spawned worker would leave is absent by construction: no
     attempt record and no attempt claim date the run, the pointer names no pid,
     and the stream and stderr path it names were never written. The claim is the
-    one record the launch left, and it carries the moment the run began.
+    one record the launch left, and it carries the moment the run began, unless
+    a case withholds it or names another run's claim to check that neither dates
+    this pointer.
     """
     directory = run_dir(run_id)
     directory.mkdir(parents=True, exist_ok=True)
     claimed = datetime.now(UTC) - timedelta(seconds=claimed_seconds_ago)
-    # The claim a dispatch registers before it composes anything else. Its name
-    # is written out rather than read from the module under test, so the case
-    # reports the defect in the dating, not a name the base revision lacks.
-    _write_json(
-        directory / "claim.json",
-        {
-            "run_id": run_id,
-            "claim_registered_at": claimed.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        },
+    created = datetime.now(UTC) - timedelta(
+        seconds=claimed_seconds_ago
+        if created_seconds_ago is None
+        else created_seconds_ago
     )
+    if record_claim:
+        # The claim a dispatch registers before it composes anything else. Its
+        # name is written out rather than read from the module under test, so
+        # the case reports the defect in the dating, not a name the base
+        # revision lacks.
+        _write_json(
+            directory / "claim.json",
+            {
+                "run_id": claim_run_id or run_id,
+                "claim_registered_at": claimed.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            },
+        )
     record = {
         "run_id": run_id,
         "project": PROJECT,
@@ -116,7 +134,7 @@ def _never_launched_pointer(
         "role": "review",
         "session": SESSION,
         "session_id": SESSION,
-        "created_at": claimed.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "created_at": created.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "phase": "starting",
         "log_path": str(directory / "stream.jsonl"),
         "stderr_path": str(directory / "stderr.log"),
@@ -172,3 +190,34 @@ def test_an_in_harness_run_with_no_attempt_clock_still_reads_as_running() -> Non
 
     assert row["classification"] == "running"
     assert "in-harness" in row["detail"]
+
+
+def test_a_claim_less_launch_is_dated_from_its_pointer_creation() -> None:
+    """A launch that left no claim is still dated from when its pointer was written."""
+    _never_launched_pointer(
+        CREATION_RUN_ID, claimed_seconds_ago=STALE_SECONDS, record_claim=False
+    )
+
+    row = _row(CREATION_RUN_ID)
+
+    assert row["classification"] == "launch-failed"
+    assert "stranded launch" in row["detail"]
+
+
+def test_a_claim_naming_another_run_does_not_date_this_pointer() -> None:
+    """The claim reader refuses a claim that names a different run.
+
+    The claim is old and this pointer's creation is young, so a reader that
+    accepted the foreign claim would date the launch past the bound; the
+    reader that owns the claim validates it against the run and refuses it.
+    """
+    _never_launched_pointer(
+        FOREIGN_CLAIM_RUN_ID,
+        claimed_seconds_ago=STALE_SECONDS,
+        created_seconds_ago=YOUNG_SECONDS,
+        claim_run_id=FOREIGN_RUN,
+    )
+
+    row = _row(FOREIGN_CLAIM_RUN_ID)
+
+    assert row["classification"] == "running"

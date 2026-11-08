@@ -743,13 +743,6 @@ def _resumed_launch_is_stranded(
     return now_seconds - started > STRANDED_LAUNCH_BOUND_SECONDS
 
 
-# The run directory's record of the moment the run's dispatch claim was
-# registered. A cli dispatch writes it at the run id's own moment, before the
-# worktree is cut and before any attempt exists, so it is the only statement a
-# launch that never spawned anything makes about when it began.
-CLAIM_RECORD_NAME = "claim.json"
-
-
 def _claim_registered_seconds(record: Mapping[str, Any]) -> float | None:
     """When the run's dispatch claim was registered, or None when nothing records it.
 
@@ -758,19 +751,20 @@ def _claim_registered_seconds(record: Mapping[str, Any]) -> float | None:
     claim left in the run directory is a launch that was admitted and then
     stopped before its supervisor existed, and the instant it names is the
     earliest moment the run can be dated from.
+
+    The read belongs to the module that composes the launch, and it is taken
+    there rather than repeated here: that reader validates the claim against the
+    run it names, and a second copy would be free to drift from it about the
+    same file.
     """
-    run_id = str(record.get("run_id") or "")
-    try:
-        payload = json.loads(
-            (_run_directory(record) / CLAIM_RECORD_NAME).read_text(encoding="utf-8")
-        )
-    except (OSError, ValueError):
-        return None
-    if not isinstance(payload, Mapping):
-        return None
-    if run_id and payload.get("run_id") not in (None, run_id):
-        return None
-    registered = parse_utc(str(payload.get("claim_registered_at") or ""))
+    # Imported here rather than at module scope: the launch module reaches into
+    # this one for liveness readings, so a module-scope import would be a cycle.
+    from reckon.crew.dispatch_launch import _claim_registration_for_worker
+
+    raw = _claim_registration_for_worker(
+        _run_directory(record), str(record.get("run_id") or "")
+    )
+    registered = parse_utc(raw)
     return registered.timestamp() if registered is not None else None
 
 
@@ -839,10 +833,10 @@ def _stranded_launch(record: Mapping[str, Any], *, now_seconds: float) -> bool:
     stderr_path = str(record.get("stderr_path") or "").strip()
     if stderr_path and Path(stderr_path).exists():
         return False
-    started = _stranded_launch_age_seconds(record, now_seconds=now_seconds)
-    if started is None:
+    age = _stranded_launch_age_seconds(record, now_seconds=now_seconds)
+    if age is None:
         return False
-    return started > STRANDED_LAUNCH_BOUND_SECONDS
+    return age > STRANDED_LAUNCH_BOUND_SECONDS
 
 
 def _run_stream_quiet_seconds(
