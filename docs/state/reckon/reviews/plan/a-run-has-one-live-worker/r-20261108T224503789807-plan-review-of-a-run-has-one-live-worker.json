@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T22:52:57.941Z",
+  "dispatched_at": "2026-11-08T22:46:09Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:165",
+      "id": "reasoning-1",
+      "reason": "the freeing rule must be keyed on the reserved attempt's own end (its exit receipt or worker record, which \u00a712 already reads) or on a per-invocation launch process rather than on the dispatching process's liveness, and a case where the launcher is still alive must be added, or the node will build a reservation the fleet's own admission service holds forever.",
+      "text": "\u00a713 frees a CLI reservation \"only when neither its launcher nor the supervisor it started is alive\", but the door that relaunches an existing run id on the fleet is `admit_once`, which calls `dispatch(...)` in-process (reckon/crew/queue_admission.py:387 and :432) inside `admit_until_stopped` (:5653), a fleet service that runs for hours and launches one run after another; the reserving \"launcher\" is therefore that service's pid, which is still alive long after the run's supervisor has exited, so the reservation is never freed and every admitted run becomes permanently unlaunchable \u2014 review rounds and repair resumes included \u2014 and the done-when cannot catch it because all its launcher cases use a short-lived stand-in and none has a launcher that outlives its supervisor",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:165",
+      "id": "reasoning-2",
+      "reason": "the \"Freed by liveness, never by age\" bullet already forbids that branch for the new reservation, so a node following the constraints implements the right rule; the sentence only overstates why the reuse fails, and it costs a reader a re-reading of the helper rather than sending the design down a wrong path.",
+      "text": "the Why argues `_claim_may_be_reclaimed` \"cannot free a killed dispatch either\" because it answers not-reclaimable once the pointer reaches the claimed number, but \u00a713's own \"Before the tree\" constraint takes the reservation ahead of the pointer write, and `_claim_may_be_reclaimed`'s third branch (reckon/crew/resumption.py:383\u2013387) frees a claim whose pointer is short of it once LAUNCH_WINDOW_SECONDS has elapsed; a dispatch killed between reserving and writing its pointer is exactly that state, so the existing helper does free a killed dispatch, by age",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "3298ab51e907b0619526f6671d7b9cae4984c310",
+  "plan_fingerprint": "9858a769b9e1a1832abb2c09ddc9c47035a5739aebeaeeb19eb4a048e455ef7b",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 96,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T224503789807-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "eab61ce15b116544f38150108bd2226c1de9075f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_retired_attempt_ended` (dispatch_launch.py:2072), `_claim_may_be_reclaimed` (:366\u2013387), `claim_next_attempt` (:389, numbering at :398), `_create_worktree` (dispatch.py:2834), \u00a710's pre-worktree check (dispatch.py:2531), `_start_supervisor` (dispatch_launch.py:2694) with `_confirm_supervisor_survived` after the pid is known, `SUPERVISOR_SURVIVAL_SECONDS = 2.0`, `LAUNCH_WINDOW_SECONDS = 120`, the in-harness delegation comment (dispatch.py:3037) and the in-harness liveness reading (recovery_classification.py:2157) all resolve.",
+    "done_when": "a finding \u2014 every declared case pairs with a logged control, but no case covers the launcher outliving the supervisor it started, which is the fleet's normal admitted path (see the reasoning finding).",
+    "evidence_paths": "pass \u2014 the gate log, reproduction output, negative-control logs and the new test's real-home guard all live under the run directory, which is on durable storage, not a scratchpad or a node-local path.",
+    "naming": "pass \u2014 `tests/test_a_concurrent_launch_is_refused.py` and the described reservation symbols name the behaviour; no plan label, stage name or ticket number is introduced, and \u00a713/f-arolw-013 appear only in plan prose.",
+    "reasoning": "a finding \u2014 the root cause matches the cited evidence and each constraint is reachable, but the freeing rule is keyed on `_retired_attempt_ended`'s neighbours on the real dispatch caller path where the launcher is a long-lived service, so the mechanism cannot satisfy the deliverable's \"no launch that has ended, or been killed, leaves the run unlaunchable\".",
+    "single_goal": "pass \u2014 \u00a713 has one deliverable, refusing a launch while another launch of the run is in flight; the receipt-read placement note and the write-path list are design constraints on that single deliverable.",
+    "wiring": "pass \u2014 \u00a713 declares no section wait because \u00a710 and \u00a712 are both landed (plan-section-declarations), and the open followup f-arolw-013 names all four write paths, the new test included."
+  },
+  "section_digests": {
+    "_document": "eeade309f31284b9ed0684d845f9e7ae9f528f9713bcf3e0b9a1f727559e9483",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s10": "6dc41ff672ef42b279e0d66e033f19c8c35deb5c39f0efeb637f11ccedd3f7d4",
+    "s11": "beb7d054249b6e83a0d555fe9051398e9d5fb537152e967098b323eb4c3c0122",
+    "s12": "84e2cc4249fe87aae0d3fc8134f2e4808ab95216a81db6b06c7e82eec1df1031",
+    "s13": "1819443ea1f1b9db5693f9787a4caa0b8ffb66fe02313ef270f8e66fd4c38258",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "3a58d93f403c56db20efa76febfb2e44549d3805ff296517c27f63bc01055fb8",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "63bd79fcdd7baf06c8cc0bbc04ef21beec3605a6fdb13eed90b3ad410f8516e7",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b",
+    "s8": "1615d40635864933b3396d3d4ae7b0f94361ec3a105caa540ba761ad95bd24fe",
+    "s9": "1a571813cf821821012487f1bc0e7a9bb360370e7b12b6440683c365dba25774"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T22:59:09.722103+00:00",
+  "total": null
+}
