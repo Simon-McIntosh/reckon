@@ -410,3 +410,31 @@ def test_without_the_writer_hook_the_same_read_opens_one_record(
         "with the hook withheld the read opened "
         f"{len(record_reads)} records, so the hook is not what spares it"
     )
+
+
+def test_the_persisted_cache_machinery_is_shared_rather_than_restated() -> None:
+    """One stamp, one path and one document read serve every node-local cache.
+
+    Three modules keep a disposable index in the node-local cache. Each of the
+    four pieces — the stamp of the sources whose content fixes what an entry
+    means, the path, the document read and the atomic write — is the same
+    question in all three, so a copy per module is three places for one rule to
+    drift, and the failure is silent: a document written by one copy is trusted
+    by another that spells the rule differently.
+    """
+    assert findings_module._index_code_stamp() == review_records.cache_code_stamp(
+        findings_module._index_sources()
+    )
+    assert findings_module._index_cache_path(
+        ("proj", "store", "root")
+    ) == review_records.cache_document_path("proj", "findings-index", "store\x00root")
+    store = Path("/nonexistent-store")
+    assert review_records._index_cache_path(
+        store
+    ) == review_records.cache_document_path(
+        store.name, "store-index", str(store.resolve())
+    )
+    # The writer hook is the one implementation, not a per-module wrapper around
+    # it: a wrapper is where a module quietly stops refreshing the index.
+    assert not hasattr(review_records, "_note_findings_index")
+    assert not hasattr(plan_review, "_note_findings_index")
