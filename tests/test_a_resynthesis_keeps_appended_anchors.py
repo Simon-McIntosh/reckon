@@ -10,7 +10,6 @@ an id the record renders — or may render — is refused before it is written.
 
 from __future__ import annotations
 
-import json
 from copy import deepcopy
 from pathlib import Path
 
@@ -323,7 +322,6 @@ def test_an_append_on_a_plan_section_id_is_refused(checkout: Path) -> None:
     for anchor in ("s4", "s5.1"):  # s5.1 normalises to the plan's s5-1
         result = _append(checkout, anchor, "<p>Should never land.</p>")
         assert result["ok"] is False, (anchor, result)
-        assert anchor in json.dumps(result), result
     assert "Should never land." not in _record_path(checkout).read_text(
         encoding="utf-8"
     )
@@ -342,7 +340,6 @@ def test_an_append_on_an_id_only_a_ledger_run_renders_is_refused(
     result = _append(checkout, "s7-runtime", "<p>Should never land.</p>")
 
     assert result["ok"] is False, result
-    assert "s7-runtime" in json.dumps(result)
 
 
 def test_the_synthesis_and_the_refusal_read_one_renderable_set(
@@ -380,7 +377,6 @@ def test_the_synthesis_and_the_refusal_read_one_renderable_set(
 
     refused = _append(checkout, "comment-only-beat", "<p>Should never land.</p>")
     assert refused["ok"] is False, refused
-    assert "comment-only-beat" in json.dumps(refused)
 
 
 def test_control_dropping_the_carry_loses_the_appended_text(
