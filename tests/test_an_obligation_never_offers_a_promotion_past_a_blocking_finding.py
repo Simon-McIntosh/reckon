@@ -10,7 +10,8 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery, review as review_module, runs
+from reckon.crew import recovery, runs
+from reckon.crew import review as review_module
 from tests.helpers.git import git
 
 obligations = importlib.import_module("reckon.crew.obligations")

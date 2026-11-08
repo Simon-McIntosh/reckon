@@ -1748,9 +1748,7 @@ def _review_duty_item(
             # compose this review, the duty names that reflex and the window
             # its cadence promises, as a field beside the words so a reader
             # deciding whether to act reads the same figure the text quotes.
-            item["next_command"] = _reflex_review_command(
-                project, pointer, age=age
-            )
+            item["next_command"] = _reflex_review_command(project, pointer, age=age)
             item["review_owner"] = "reflex"
             item["reflex_window_seconds"] = _reflex_review_window_seconds()
     return item
