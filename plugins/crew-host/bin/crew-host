@@ -1,13 +1,17 @@
 #!/usr/bin/env bash
 #
 # Session host entry point. Claude Code starts this as a plugin monitor for the
-# whole session. It waits silently on a node-local FIFO named for its owner —
-# the Claude process named by CLAUDE_PID together with that process's start
-# time, a pair that survives /clear where the session id does not — and exits
-# silently when its owner is gone. On the first request line it replaces itself
-# (same pid, same stdout) with `reckon crew host`, which is the protocol's only
-# reader. The FIFO descriptor stays open across exec, so a request written in
-# the gap waits in the pipe rather than being lost.
+# whole session. It names a node-local FIFO for its owner -- the Claude process
+# named by CLAUDE_PID together with that process's start time, a pair that
+# survives /clear where the session id does not -- and replaces itself at once
+# (same pid, same stdout) with `reckon crew host`, handing the host that open
+# descriptor and no first request. Waiting on the FIFO for a first request
+# before executing the host left a re-armed session with live runs and no new
+# dispatch showing an empty pane indefinitely: a request arrives only with a
+# dispatch, so nothing ever executed the host. The host reads its owner's
+# session on start and follows the live runs that session already owns, then
+# serves the FIFO. The descriptor stays open across exec, so a request written
+# in the gap waits in the pipe rather than being lost.
 set -u
 
 owner_pid="${CLAUDE_PID:-}"
@@ -19,10 +23,6 @@ owner_pid="${CLAUDE_PID:-}"
 # before counting fields.
 owner_start="$(sed 's/^.*) //' "/proc/$owner_pid/stat" | awk '{print $20}')"
 [ -n "$owner_start" ] || exit 0
-
-# The read timeout bounds one wait; the owner's liveness is re-checked each time
-# it elapses. Overridable only so the tests can exercise the loop quickly.
-wait_interval="${RECKON_SESSION_HOST_INTERVAL:-60}"
 
 if [ -n "${XDG_RUNTIME_DIR:-}" ]; then
   runtime="$XDG_RUNTIME_DIR"
@@ -38,10 +38,9 @@ state_dir="$runtime/reckon-session-host"
 mkdir -p "$state_dir" || exit 0
 fifo="$state_dir/$owner_pid-$owner_start.fifo"
 
-# Remove the FIFO on the signals a monitor is stopped with, so a session that
-# ends before its first request leaves nothing behind. The trap is gone the
-# moment the exec below replaces this shell with the host: from then on the
-# host owns removal, and this entry point never sees the signal.
+# Remove the FIFO if this shell is stopped in the short window before the exec
+# below. The trap is gone the moment the exec replaces this shell with the host:
+# from then on the host owns removal, on a signal and on its owner's end alike.
 trap 'rm -f "$fifo"; exit 0' TERM HUP INT
 
 [ -p "$fifo" ] || mkfifo "$fifo" || exit 0
@@ -50,25 +49,9 @@ trap 'rm -f "$fifo"; exit 0' TERM HUP INT
 # written before the exec waits in the pipe.
 exec 3<>"$fifo" || { rm -f "$fifo"; exit 0; }
 
-owner_alive() {
-  kill -0 "$owner_pid" 2>/dev/null || return 1
-  [ "$(sed 's/^.*) //' "/proc/$owner_pid/stat" 2>/dev/null | awk '{print $20}')" = "$owner_start" ]
-}
-
-while owner_alive; do
-  line=
-  if IFS= read -r -t "$wait_interval" -u 3 line; then
-    script_path="$(readlink -f "$0")"
-    checkout="$(cd "$(dirname "$script_path")/../../.." && pwd)"
-    exec "$checkout/.venv/bin/reckon" crew host \
-      --owner-pid "$owner_pid" \
-      --owner-start "$owner_start" \
-      --fd 3 \
-      --first-request "$line"
-  fi
-done
-
-# Reached only when the owner is gone: the exec path above never returns here.
-# Remove the FIFO this process created so a later session does not inherit it.
-rm -f "$fifo"
-exit 0
+script_path="$(readlink -f "$0")"
+checkout="$(cd "$(dirname "$script_path")/../../.." && pwd)"
+exec "$checkout/.venv/bin/reckon" crew host \
+  --owner-pid "$owner_pid" \
+  --owner-start "$owner_start" \
+  --fd 3
