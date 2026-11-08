@@ -1,0 +1,90 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T20:21:54.933Z",
+  "dispatched_at": "2026-11-08T20:13:01Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:201",
+      "id": "single_goal-1",
+      "reason": "a node dispatched for \u00a725 reads a second deliverable in its own heading that its body and write path no longer own, which re-merges the two goals single_goal-1 separated.",
+      "text": "\u00a725's heading reads \"A parsed review at a head wins over an incomplete one, and a committed record can be repaired\", but the repair deliverable is now \u00a726 and \u00a725's body, done-when and write paths hold only the selection change",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:203",
+      "id": "done_when-1",
+      "reason": "a node that synthesises the fixture in the host staging store cannot reproduce the stated control (glob order is directory-entry order), so its negative control measures nothing or reports flakily, and the done-when must name a temporary repository/committed docs tree and say the sorted order is the committed caller's.",
+      "text": "\u00a725's negative control is \"the current first-in-sorted-order selection makes the first case refuse when the incomplete record sorts first\", but `_select_stored_record` (`reckon/crew/review_records.py:414`) does not sort: the committed caller passes `sorted(run_directory.glob(\"*.json\"))` (`review_records.py:589`) while the staging caller passes the bare path plus an unsorted `glob` (`review_records.py:621-626`), so the control has no deterministic order unless the fixture puts both records in a committed docs tree, and the done-when names only \"a temporary crew home\"",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:207",
+      "id": "reasoning-1",
+      "reason": "as written, a node satisfies \"the record reads superseded afterwards\" only by reading the file directly, while the gate reads through the selection and still sees the old status; the section must say where the as-delivered copy goes (outside the committed run directory) or how selection skips it, and that second fix lives in `reckon/crew/review_records`/`review_records.py`, outside the declared write paths.",
+      "text": "\u00a726 says the repair \"writes the repair where the record lives\", but `repair_run_review` writes `preserved = source.with_name(source.stem + \".asdelivered.json\")` beside the source (`reckon/crew/review.py:3366`), and the committed reader selects from `sorted(run_directory.glob(\"*.json\"))`, where `<review-run>.at-<head>.asdelivered.json` sorts before `<review-run>.at-<head>.json`; both carry the same head, so `_select_stored_record` returns the preserved, still-unsuperseded copy and the gate keeps refusing",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-review-is-kept-as-a-committed-record.html:207",
+      "id": "reasoning-2",
+      "reason": "without a stated resolution rule the node must either infer the project from the path shape (a rule the `--project` cross-check exists to avoid) or edit `reckon/crew_run_commands.py`, which is not in \u00a726's declared write paths, and it must relax the filename guard \u00a726 never mentions.",
+      "text": "\u00a726 requires `crew repair --review` to accept \"the run's committed review location\" but does not say how `repair_run_review` identifies it: the function takes no `--project` (`reckon/crew/review.py:3302`), the CLI's `--project` is only a cross-check because `crew_repair` calls `_accept_a_matching_project(run_id, project)` without passing its resolved result (`reckon/crew_run_commands.py:1323`), and the committed root needs the project (`committed_review_root(project)`), while a committed record's filename is the *review* run id, so the existing `source.name.startswith(reviewed_run_id)` guard also refuses it",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "f69494b87203921f83c98fd3dc300e09edfb01c8",
+  "plan_fingerprint": "67c644485666a7ff72d48deb6d89afc2929af931456d039027c3f38feefb1d20",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 186,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T201132587328-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "d9b3a0921c82cdfd2199e373649d77a9b8df13c8",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves at the line it claims: `_unreviewed_refusal` at `reckon/crew/promotion_checks.py:1405` (message at 1435), the repair refusal at `_select_stored_record` at `reckon/crew/review.py:3312`, `_select_stored_record` at `reckon/crew/review_records.py:414`, `select_review_for_head` at `reckon/crew/recovery_review_subject.py:113`, `read_review` at `reckon/crew/review.py:3552`; `docs/state/<project>/reviews/run/<run>/` matches `committed_review_root` (`review.py:2506-2522`) with `COMMITTED_REVIEWS_DIRNAME` \"reviews\" and `COMMITTED_RUN_DIRNAME` \"run\" (`review.py:2423-2425`).",
+    "done_when": "a finding \u2014 \u00a725's done-when builds its fixture from \"a temporary crew home\" alone, yet the selection order its negative control depends on is the committed tree's `sorted(run_directory.glob(\"*.json\"))`, so the control only reproduces in a committed docs tree.",
+    "evidence_paths": "pass \u2014 both sections name \"logs under the run directory\", the crew run directory that survives the run, and the new test files are repository paths.",
+    "naming": "pass \u2014 `tests/test_a_parsed_review_wins_over_an_incomplete_one.py` and `tests/test_a_committed_review_record_can_be_repaired.py` name the mechanism, and neither section carries a plan label or ticket number into a symbol.",
+    "reasoning": "a finding \u2014 \u00a726's repair writes an `.asdelivered.json` copy beside the record it repairs, and in the committed run directory that copy sorts ahead of the repaired record in the very `sorted(glob(\"*.json\"))` selection the gate reads, so the repair leaves the refusal in place.",
+    "single_goal": "a finding \u2014 \u00a725's heading still carries the repair deliverable that the split moved to \u00a726.",
+    "wiring": "pass \u2014 \u00a725 and \u00a726 are both declared `implementable` in `plan-section-declarations` and each is named by an open followup (`f-erikacr-024` for \u00a725, `f-erikacr-025` for \u00a726), and the two write disjoint modules (`reckon/crew/review_records.py` versus `reckon/crew/review.py`), so no depends-on is owed between them."
+  },
+  "section_digests": {
+    "_document": "46d139bf8ea722ef5067aa6af556cf53dd1c4c161a195ee33d9b722f8b525fe3",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s10": "8e08c7c8a99206f9db453d65cb98c9c40f69e4c07325e55c639d885f927f0ae3",
+    "s11": "a8a04a9908b25d410e85f68b11504ae3940e469acc04fa4ac25e8ebb8373a2d0",
+    "s12": "bb85d80dcb9e0286d21a8ca6acd3af79e736c64c84b5ac85569fc6ce2c73863b",
+    "s13": "18a2d10f1e3c66be8277b7b4ef2922db7611cded7589553da5347b9a1ee5cd0f",
+    "s14": "90fd381b5f80417031410428331e779266feb4e517d89e5237d29cbe1c5e4700",
+    "s15": "72f678eb5f0bc62870da1cc4637f6db55365548aa9b52f46884cc0b3551a6ae7",
+    "s16": "7a5788c2a3fa1a2f0029d46feab7c3ed8a6b2a35c6ca9788fbe9911d5ab9cb56",
+    "s17": "86a993485a8a8461fd1e5e336bf8623e585cd4540daa1e5b5e78af2a0c172ce5",
+    "s18": "c89ae3a282a47cc0790b201cd56e732fc633876a1f1bd4dea1ae9521bd21574a",
+    "s19": "1ae8ba274c5965e60610446e8b60f06c93772468c117cf677c3fe8e2efeff862",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s20": "c4d6ffe26d4b44f9ab15c017f5c0524d7dd00fbe4c8d2d2f707923425bb50092",
+    "s21": "931b2870fb36b75949015af97ccfe184a222d06e1a7706463e9da0e5dc06b1e7",
+    "s22": "6574cd53cba003ceaa5bf39f4e436b0016f15f4822a35435ffa2791a99917430",
+    "s23": "50771e5200ab695fbcae4380ab62d0a12265b1413e3b62377a00690284da83c2",
+    "s24": "2df4de303f66f49436244e31cc063817e1355c92015249b533072887c94bf476",
+    "s25": "ec164cfdb02935e36b1fd007862e7fc2626b9de5b89d25b00737a36876913320",
+    "s26": "a07e601d65d297c1c42e4a530e3c37ed4b1704fd61a2ab439229a9e8221171d6",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "d292be9ad6a414aacd3a2fe40d7730c79ce5dc8f1983898056f5916b02ca2ed0",
+    "s9": "85877b77c395ca8a1482bef5887cfc72cbf6109174dba2c01265aa015a906d73"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T20:33:24.974904+00:00",
+  "total": null
+}
