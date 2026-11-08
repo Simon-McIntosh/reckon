@@ -1,0 +1,88 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    "Line 224 independently requires refusal on the first failed proof; accepting unproved code fails it.",
+    "Line 225 independently requires recovery on the second call for each refusal type; reinstating unconditional False memoization prevents the second proof and fails it.",
+    "Line 226 requires continued trust after recovery; refusing the proved stamp fails it.",
+    "Line 227 fixes the total at two probes: reinstating False memoization yields one and bypassing successful memoization yields three; tmp_path checks the probe root and does not echo a return value supplied to the code.",
+    "Lines 245-247 compare readiness identity against the existing signature owner applied independently to the actual file stat; corrupting fields or dropping the entry fails equality.",
+    "Line 249 applies the same independent owner/file expectation to ranking identity; corrupting its signature fails equality.",
+    "Line 250 independently requires exactly two observed calls to the patched shared owner: reinstating either inline tuple reduces the count, although both equality assertions can still pass; the combined count is the regression guard for reuse.",
+    "No new assertion merely echoes a value injected into the code under test; equalities to the shared owner intentionally establish delegation and are backed by the separate call-count assertion."
+  ],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:admit_until_stopped:5433",
+    "reckon/crew/queue_admission.py:_readiness_rows:2680",
+    "reckon/crew/queue_admission.py:_readiness_rows:2701",
+    "reckon/crew/queue_admission.py:_readiness_rows:2717",
+    "reckon/crew/queue_order.py:_roadmap_priority_keys:61"
+  ],
+  "completed_at": "2026-11-08T12:20:22Z",
+  "dispatched_at": "2026-11-08T12:10:37Z",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_pass_builds_each_project_once.py tests/test_an_admission_pass_finishes_in_ten_seconds.py tests/test_an_admission_pass_reads_each_project_once.py tests/test_an_admission_pass_reads_the_roadmap_once.py tests/test_queue_dag_waits.py tests/test_the_admit_service_runs_current_code.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T070800995872-an-admission-pass-finishes-in-under-ten-seconds/repair-head-suite.log",
+      "observed_failure_ids": [],
+      "revision": "127ef7e414a66182ac32c06fa11977f3a73eac94",
+      "summary": "48 passed in 585.00s (0:09:44)"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_pass_builds_each_project_once.py tests/test_an_admission_pass_finishes_in_ten_seconds.py tests/test_an_admission_pass_reads_each_project_once.py tests/test_an_admission_pass_reads_the_roadmap_once.py tests/test_queue_dag_waits.py tests/test_the_admit_service_runs_current_code.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T070800995872-an-admission-pass-finishes-in-under-ten-seconds/repair-baseline-suite.log",
+      "observed_failure_ids": [],
+      "revision": "baeefd7617bf87f8f2248f8d5c26ff56f46c2df7",
+      "summary": "45 passed in 416.22s (0:06:56)"
+    }
+  },
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified five production calls at the reviewed head.",
+    "diff": "Read the sole new commit 127ef7e414a66182ac32c06fa11977f3a73eac94 against its parent baeefd7617bf87f8f2248f8d5c26ff56f46c2df7; its three-file diff excludes transient refusals from memoization, replaces duplicated stat tuples, and adds three regression cases.",
+    "done_when": "Source manifest.md:18-19 and repair-baseline-suite.log/repair-head-suite.log record the same six-file command with 45 and 48 passes and zero added failures; repair-negative-control.log records all three new cases failing on parent code, while these receipts do not establish the original live-service timing or all-importer gate.",
+    "goal": "Read brief.md and live docs/plans/work-is-never-stuck-behind-the-admission-loop.html#s32; this incremental repair restores retryable trust checks and shared signatures, while the original live ten-second service measure remains outside this repair.",
+    "manifest": "Read source manifest.md and its repair receipts; baseline_suite and after_suite match their complete zero-failure logs and module paths, and the source explicitly leaves restarted-service timing to the coordinator.",
+    "write_paths": "Source manifest.md:3 grants both production files and tests/test_an_admission_pass_finishes_in_ten_seconds.py; git diff --stat from baeefd7617bf87f8f2248f8d5c26ff56f46c2df7 to 127ef7e414a66182ac32c06fa11977f3a73eac94 contains exactly those three files."
+  },
+  "justifications": {
+    "durability": "tests/test_an_admission_pass_finishes_in_ten_seconds.py:224-227 fails when transient False is cached or successful True is not cached, and :245-250 fails when either caller resumes inlining the stat tuple, as the three-failure parent-code control confirms.",
+    "evidence": "Source repair-baseline-suite.log and repair-head-suite.log record matching commands, correct imported source paths, 45/48 passes and EXIT=0, and repair-negative-control.log records three failures, but the original live-service and all-importer measures are not established by this repair gate.",
+    "fit": "reckon/crew/queue_admission.py:902-904 uses the existing typed refusal reasons from checkout_trust.py:676/691, and both signature callers retain their established ordering and missing-file behavior without adding forbidden names.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:899-908 preserves same-stamp retries for both transient refusal types, and queue_admission.py:2757 plus queue_order.py:31 delegate identity construction as the incremental repair requires.",
+    "reuse": "Both changed file-identity callers wrap reckon/file_memo.py:279 signature_from_stat, the owner found by searching stat-identity capabilities, and the transient policy uses checkout_trust.py:948 moved_checkout_is_trustworthy rather than implementing another proof.",
+    "scope_discipline": "The complete incremental diff changes only reckon/crew/queue_admission.py, reckon/crew/queue_order.py and tests/test_an_admission_pass_finishes_in_ten_seconds.py, all granted by source manifest.md:3."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read brief.md and live docs/plans/work-is-never-stuck-behind-the-admission-loop.html#s32; this incremental repair restores retryable trust checks and shared signatures, while the original live ten-second service measure remains outside this repair.\nVERDICT done_when: Source manifest.md:18-19 and repair-baseline-suite.log/repair-head-suite.log record the same six-file command with 45 and 48 passes and zero added failures; repair-negative-control.log records all three new cases failing on parent code, while these receipts do not establish the original live-service timing or all-importer gate.\nVERDICT write_paths: Source manifest.md:3 grants both production files and tests/test_an_admission_pass_finishes_in_ten_seconds.py; git diff --stat from baeefd7617bf87f8f2248f8d5c26ff56f46c2df7 to 127ef7e414a66182ac32c06fa11977f3a73eac94 contains exactly those three files.\nVERDICT manifest: Read source manifest.md and its repair receipts; baseline_suite and after_suite match their complete zero-failure logs and module paths, and the source explicitly leaves restarted-service timing to the coordinator.\nVERDICT diff: Read the sole new commit 127ef7e414a66182ac32c06fa11977f3a73eac94 against its parent baeefd7617bf87f8f2248f8d5c26ff56f46c2df7; its three-file diff excludes transient refusals from memoization, replaces duplicated stat tuples, and adds three regression cases.\nCALL_SITES: reckon/crew/queue_admission.py:admit_until_stopped:5433, reckon/crew/queue_admission.py:_readiness_rows:2680, reckon/crew/queue_admission.py:_readiness_rows:2701, reckon/crew/queue_admission.py:_readiness_rows:2717, reckon/crew/queue_order.py:_roadmap_priority_keys:61\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:899-908 preserves same-stamp retries for both transient refusal types, and queue_admission.py:2757 plus queue_order.py:31 delegate identity construction as the incremental repair requires.\nSCORE evidence: 18\nJUSTIFICATION evidence: Source repair-baseline-suite.log and repair-head-suite.log record matching commands, correct imported source paths, 45/48 passes and EXIT=0, and repair-negative-control.log records three failures, but the original live-service and all-importer measures are not established by this repair gate.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The complete incremental diff changes only reckon/crew/queue_admission.py, reckon/crew/queue_order.py and tests/test_an_admission_pass_finishes_in_ten_seconds.py, all granted by source manifest.md:3.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_an_admission_pass_finishes_in_ten_seconds.py:224-227 fails when transient False is cached or successful True is not cached, and :245-250 fails when either caller resumes inlining the stat tuple, as the three-failure parent-code control confirms.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/queue_admission.py:902-904 uses the existing typed refusal reasons from checkout_trust.py:676/691, and both signature callers retain their established ordering and missing-file behavior without adding forbidden names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Both changed file-identity callers wrap reckon/file_memo.py:279 signature_from_stat, the owner found by searching stat-identity capabilities, and the transient policy uses checkout_trust.py:948 moved_checkout_is_trustworthy rather than implementing another proof.\n",
+  "reuse_search": "Searched stat-identity fields/signature capabilities and transient proof reason handling; opened file_memo.signature_from_stat and checkout_trust.moved_checkout_is_trustworthy/reckon_imports and typed reasons at the exact reviewed revision. No new production definition is added; new test definitions are fixtures/probes scoped to the existing test module.",
+  "review_run_id": "r-20261108T120858404421-review-of-an-admission-pass-finishes-in-under-ten-seconds-127ef7e414a6",
+  "review_scope": "Incremental review only: sole repair commit after prior reviewed head baeefd7617bf87f8f2248f8d5c26ff56f46c2df7. No new defect found. This does not dispose of previous findings about original-node live timing or broader importer evidence.",
+  "reviewed_base_sha": "baeefd7617bf87f8f2248f8d5c26ff56f46c2df7",
+  "reviewed_head_sha": "127ef7e414a66182ac32c06fa11977f3a73eac94",
+  "reviewed_run_id": "r-20261108T070800995872-an-admission-pass-finishes-in-under-ten-seconds",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T12:31:01.598501+00:00",
+  "total": 118
+}
