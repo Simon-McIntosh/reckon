@@ -3218,6 +3218,13 @@ def crew_complete(
             merge_module.MergeError,
         ) as exc:
             raise click.ClickException(str(exc)) from exc
+    if land:
+        # Written before the promotion pushes anything, so a process killed
+        # between the promotion and its merge leaves a record the landing pass
+        # finds and finishes, instead of a run that reads as landed.
+        from reckon.crew import pending_landing
+
+        pending_landing.write_pending(run_id, str(project or ""))
     try:
         result = crew_module.complete(
             run_id,
@@ -3440,6 +3447,9 @@ def _land_a_promoted_run(
         )
         return report, code
     report["steps"]["land"] = {"ok": True, **landed}
+    from reckon.crew import pending_landing
+
+    pending_landing.clear_pending(run_id)
     release = release_module._release_after_promotion(
         run_id, record, None, gate=str(gate)
     )

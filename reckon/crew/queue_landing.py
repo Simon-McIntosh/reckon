@@ -1393,10 +1393,17 @@ def land_once() -> dict[str, Any]:
     records and stored reviews — so holding the boundary across a landing
     masks nothing.
     """
+    from reckon.crew import pending_landing
     from reckon.crew.queue_admission import plan_read_scopes
 
+    # A landing promoted but never merged is finished before new deliveries are
+    # judged: its promotion already counts as landed everywhere else.
+    finished = pending_landing.finish_pending_landings()
     with plan_read_scopes():
-        return _land_deliveries()
+        result = _land_deliveries()
+    if finished:
+        result["interrupted_landings"] = finished
+    return result
 
 
 def _land_deliveries() -> dict[str, Any]:
