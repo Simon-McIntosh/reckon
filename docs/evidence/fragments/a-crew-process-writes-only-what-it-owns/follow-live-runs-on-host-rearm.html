@@ -131,19 +131,25 @@
       <p><strong>Station and follower tests</strong> over the seven files that
         import <code>station_subscriber</code>, run as one batch:
         <strong>60 passed in 89.63 s, EXIT=0</strong> at head
-        (<code>station-combo-head.log</code>). The batch carried one failure
-        before the shared-rule commit: <code>test_failed_reexec_reports_once_and_keeps_the_registration</code>
-        broke only the batch, and it disappeared once the launch-record rule
-        moved into <code>station_subscriber.live_work_populations</code>
-        (<code>station-tests.log</code>, the failing arm at
-        <code>bae7b6ab8d</code>). The pairing is recorded as a control rather
-        than an attribution: reverting that commit&rsquo;s two files at head
-        and re-running the same batch reproduces the failure exactly &mdash;
-        <strong>1 failed, 59 passed in 61.11 s, EXIT=1</strong>, the same
-        assertion at <code>tests/test_follower_freshness.py:318</code>
+        (<code>station-combo-head.log</code>). The batch carried one failure earlier in the
+        node&rsquo;s work &mdash;
+        <code>test_failed_reexec_reports_once_and_keeps_the_registration</code>,
+        which breaks only the batch and passes when run alone. An earlier run
+        recorded that failure at revision <code>bae7b6ab8d</code> with the moved
+        judgement already in its working tree, so
+        <code>station-tests.log</code> measures the batch with the change
+        present: it is not an arm for the state before the commit, and it also
+        shows the failure is not deterministically absent with the change in
+        place. What the record supports is the pairing at head: reverting the
+        shared-rule commit&rsquo;s two files and re-running the same batch
+        reproduces the failure exactly &mdash; <strong>1 failed, 59 passed in
+        61.11 s, EXIT=1</strong>, the same assertion at
+        <code>tests/test_follower_freshness.py:318</code>
         (<code>station-combo-answering-reverted.log</code>) &mdash; and
-        restoring them clears it. So this node&rsquo;s change removed a failure
-        in the follower tests rather than inheriting one.</p>
+        restoring them clears it. So the change is associated with the batch
+        passing at head; it does not make the batch deterministically clean, and
+        the earlier claim in this record that the failure predates the work is
+        withdrawn as unsupported.</p>
       <p><strong>Lint:</strong> <code>ruff check</code> and
         <code>ruff format --check</code> over the three staged Python paths.
         Delta against the base revision&rsquo;s own copies is zero findings: one
