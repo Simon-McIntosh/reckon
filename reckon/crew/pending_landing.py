@@ -46,7 +46,13 @@ def _record_path(run_id: str) -> Path:
     return pending_dir() / f"{run_id}.json"
 
 
-def write_pending(run_id: str, project: str, *, now: float | None = None) -> None:
+def write_pending(
+    run_id: str,
+    project: str,
+    *,
+    now: float | None = None,
+    pointer: Mapping[str, Any] | None = None,
+) -> None:
     """Record that ``run_id`` is about to be promoted and landed. Best-effort."""
     path = _record_path(run_id)
     try:
@@ -58,6 +64,7 @@ def write_pending(run_id: str, project: str, *, now: float | None = None) -> Non
                     "project": project,
                     "written_at": time.time() if now is None else now,
                     "attempts": 0,
+                    **({"pointer": dict(pointer)} if pointer else {}),
                 }
             ),
             encoding="utf-8",
@@ -106,8 +113,36 @@ def _reviewed_head(row: Mapping[str, Any]) -> str:
     return next((sha for sha in reversed(commits) if sha), "")
 
 
+def _delivered_repair(
+    pointer: Mapping[str, Any],
+    original: str,
+    conflict: Mapping[str, Any],
+    repository: Path,
+) -> str:
+    """Read a fresh completed repair that retains the promoted head and primary."""
+    from reckon.crew import merge, recovery
+    from reckon.crew.queue_landing import _delivered_revision
+    from reckon.crew.recovery_repair_dispatch import _reviewed_run_is_busy
+
+    if _reviewed_run_is_busy(pointer):
+        return ""
+    classified = recovery.classify_pointer(pointer)
+    if classified.get("manifest_status") != "complete":
+        return ""
+    head, _tree = recovery._review_head_and_tree(pointer)
+    delivered = _delivered_revision(classified.get("manifest_commits") or ())
+    if not head or head == original or not recovery.same_revision(head, delivered):
+        return ""
+    primary = str(conflict.get("main_revision") or "")
+    if not primary or not all(
+        merge._is_ancestor(repository, parent, head) for parent in (original, primary)
+    ):
+        return ""
+    return head
+
+
 def finish_pending_landings(
-    *, now: float | None = None, land=None, live_run_ids=None
+    *, now: float | None = None, land=None, live_run_ids=None, only_run: str = ""
 ) -> list[dict[str, Any]]:
     """Finish every promoted-but-unmerged landing, returning one row per record.
 
@@ -133,9 +168,11 @@ def finish_pending_landings(
             continue
         run_id = str(record.get("run_id") or "")
         project = str(record.get("project") or "")
-        if not run_id or not project:
+        if not run_id or not project or (only_run and run_id != only_run):
             continue
-        if int(record.get("attempts") or 0) >= MAX_FINISH_ATTEMPTS:
+        if int(record.get("attempts") or 0) >= MAX_FINISH_ATTEMPTS and not record.get(
+            "merge_conflict"
+        ):
             results.append({"run_id": run_id, "status": "gave-up"})
             continue
         row = _promoted_row(project, run_id)
@@ -145,14 +182,38 @@ def finish_pending_landings(
                 clear_pending(run_id)
                 results.append({"run_id": run_id, "status": "dropped-unpromoted"})
             continue
-        if run_id in live:
-            # The promotion row exists but the --land that wrote it may still be
-            # merging: its pointer is removed by the promotion, so a live pointer
-            # here is a run being promoted again. Leave it to that process.
+        conflict = record.get("merge_conflict") or {}
+        pointer = None
+        if conflict:
+            try:
+                pointer = runs.read_pointer(run_id)
+            except runs.CrewError:
+                pointer = None
+        if run_id in live and not (pointer or {}).get("pending_landing_repair"):
             continue
         head = _reviewed_head(row)
         if not head:
             continue
+        repository = merge.project_repository(project)
+        if conflict:
+            repaired = (
+                _delivered_repair(pointer, head, conflict, repository)
+                if pointer
+                else ""
+            )
+            if not repaired:
+                from reckon.crew.recovery_repair_dispatch import dispatch_merge_repair
+
+                dispatch_merge_repair(
+                    record.get("pointer") or row,
+                    head=head,
+                    primary=str(conflict.get("main_revision") or ""),
+                    paths=conflict.get("paths") or (),
+                    promoted=True,
+                )
+                results.append({"run_id": run_id, "status": "awaiting-merge-repair"})
+                continue
+            head = repaired
         try:
             repository = merge.project_repository(project)
             landed = lander(
@@ -167,6 +228,26 @@ def finish_pending_landings(
                     f"pass finishes that merge of {head}."
                 ),
             )
+        except merge.MergeConflictError as exc:
+            from reckon.crew.recovery_repair_dispatch import dispatch_merge_repair
+
+            repair = dispatch_merge_repair(
+                record.get("pointer") or row,
+                head=exc.head,
+                primary=exc.base,
+                paths=exc.paths,
+                promoted=True,
+            )
+            results.append(
+                {
+                    "run_id": run_id,
+                    "status": "merge-conflict",
+                    "paths": exc.paths,
+                    "main_revision": exc.base,
+                    "repair": repair,
+                }
+            )
+            continue
         except merge.MergeError as exc:
             record["attempts"] = int(record.get("attempts") or 0) + 1
             record["last_error"] = str(exc)
@@ -174,6 +255,11 @@ def finish_pending_landings(
                 path.write_text(json.dumps(record), encoding="utf-8")
             results.append({"run_id": run_id, "status": "failed", "error": str(exc)})
             continue
+        if pointer is not None and pointer.get("pending_landing_repair"):
+            runs.pointer_path(run_id).unlink(missing_ok=True)
+            merge.release_landed_worktrees(
+                repository, str(landed["commit"]), head=head, projects=[project]
+            )
         clear_pending(run_id)
         results.append(
             {

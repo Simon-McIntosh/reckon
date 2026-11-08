@@ -168,28 +168,6 @@ def _install_carried_answer() -> None:
 _install_carried_answer()
 
 
-def _serialized_complete_landing(callback):
-    """Hold the repository while a completion checks, promotes and lands its head."""
-    from functools import wraps
-
-    @wraps(callback)
-    def locked(*args, **kwargs):
-        from reckon.crew import merge, runs
-
-        if kwargs.get("land") and not kwargs.get("dry_run"):
-            try:
-                pointer = runs.read_pointer(kwargs["run_id"])
-            except runs.CrewError:
-                pointer = {}
-            if pointer:
-                repository = merge.project_repository(str(pointer.get("project") or ""))
-                with merge.landing_lock(repository):
-                    return callback(*args, **kwargs)
-        return callback(*args, **kwargs)
-
-    return locked
-
-
 def _merge_land_refusal(
     exc: Exception, *, resume: str | None = None
 ) -> tuple[dict[str, Any], int]:
@@ -3080,7 +3058,6 @@ def _refuse_a_flag_as_a_reason(
     ),
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-@_serialized_complete_landing
 def crew_complete(
     run_id,
     gate,
@@ -3233,34 +3210,21 @@ def crew_complete(
             pretty,
         )
         return
-    if land and pointer:
-        from reckon.crew import merge as merge_module
-        from reckon.crew.recovery_repair_dispatch import dispatch_merge_repair
+    if pointer.get("pending_landing_repair"):
+        if not land:
+            raise click.ClickException(
+                "this run is already promoted; finish its pending landing with --land"
+            )
+        from reckon.crew import pending_landing
 
-        repository = merge_module.project_repository(str(pointer.get("project") or ""))
-        head = _reviewed_head_of({"commits": commits})
-        if not head and pointer.get("worktree"):
-            head = merge_module._rev_parse(Path(pointer["worktree"]), "HEAD")
-        if head:
-            primary = merge_module._rev_parse(repository, "HEAD")
-            _tree, conflicts = merge_module._merge_tree(repository, primary, head)
-            refusing = merge_module.refusing_conflicts(conflicts)
-            if refusing:
-                repair = dispatch_merge_repair(
-                    pointer, head=head, primary=primary, paths=refusing
-                )
-                _emit_crew_result(
-                    {
-                        "ok": False,
-                        "run_id": run_id,
-                        "outcome": "merge-conflict",
-                        "paths": refusing,
-                        "main_revision": primary,
-                        "repair": repair,
-                    },
-                    pretty,
-                )
-                raise click.exceptions.Exit(1)
+        finished = pending_landing.finish_pending_landings(only_run=run_id)
+        ok = any(row.get("status") == "finished" for row in finished)
+        _emit_crew_result(
+            {"ok": ok, "run_id": run_id, "pending_landings": finished}, pretty
+        )
+        if not ok:
+            raise click.exceptions.Exit(1)
+        return
     if candidate:
         from reckon.crew import merge as merge_module
         from reckon.crew import queue_landing
@@ -3280,7 +3244,9 @@ def crew_complete(
         # finds and finishes, instead of a run that reads as landed.
         from reckon.crew import pending_landing
 
-        pending_landing.write_pending(run_id, str(project or ""))
+        pending_landing.write_pending(
+            run_id, str(pointer.get("project") or project or ""), pointer=pointer
+        )
     try:
         result = crew_module.complete(
             run_id,
@@ -3485,6 +3451,26 @@ def _land_a_promoted_run(
             body=body,
             **({"candidate": candidate} if candidate else {}),
         )
+    except merge_module.MergeConflictError as exc:
+        from reckon.crew.recovery_repair_dispatch import dispatch_merge_repair
+
+        repair = dispatch_merge_repair(
+            {**record, **(pointer or {})},
+            head=exc.head,
+            primary=exc.base,
+            paths=exc.paths,
+            promoted=True,
+        )
+        report["steps"]["land"] = {
+            "ok": False,
+            "error": str(exc),
+            "outcome": "merge-conflict",
+            "paths": exc.paths,
+            "main_revision": exc.base,
+            "repair": repair,
+        }
+        report["worktree_released"] = False
+        return report, 1
     except merge_module.MergePushOutstandingError as exc:
         report["steps"]["land"] = {
             "ok": True,

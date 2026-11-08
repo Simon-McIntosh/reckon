@@ -3,10 +3,18 @@
 from __future__ import annotations
 
 import json
+import subprocess
 
 import pytest
 
-from reckon.crew import merge, queue_landing, recovery, resumption, runs
+from reckon import crew_run_commands
+from reckon.crew import (
+    pending_landing,
+    queue_landing,
+    recovery,
+    resumption,
+    runs,
+)
 from reckon.crew.recovery_repair_dispatch import (
     REPAIR_DISPATCH_FIELD,
     REPAIR_ROUNDS_FIELD,
@@ -169,14 +177,27 @@ def test_conflicting_delivery_opens_repair_then_lands(deliveries, monkeypatch, r
     assert landed.exit_code == 0, landed.output
     repository = second["repository"]
     primary = git(repository, "rev-parse", "HEAD")
-    remote_before = git(second["origin"], "rev-parse", "main")
     if route == "manual":
         result = _complete_land(second)
         assert result.exit_code != 0, result.output
-        assert "conflict" in result.output, result.output
+        receipt = json.loads(result.output)
+        assert receipt["steps"]["promote"]["ok"]
+        assert receipt["steps"]["land"]["outcome"] == "merge-conflict"
     else:
-        automatic_conflict(second, monkeypatch)
-    assert git(second["origin"], "rev-parse", "main") == remote_before
+        # The completed promotion survives a process ending before its merge.
+        with monkeypatch.context() as interrupted:
+            interrupted.setattr(
+                crew_run_commands,
+                "_land_a_promoted_run",
+                lambda *a, **k: ({"ok": False, "interrupted": True}, 1),
+            )
+            result = _complete_land(second)
+        assert result.exit_code != 0, result.output
+        assert not runs.pointer_path(second["run_id"]).exists()
+        result = queue_landing.land_once()
+        assert result["interrupted_landings"][0]["status"] == "merge-conflict", result
+    primary = git(repository, "rev-parse", "HEAD")
+    assert "second delivered" not in git(second["origin"], "show", "main:" + SOURCE)
     assert_clean(repository)
     pointer = runs.read_pointer(second["run_id"])
     outcome = pointer.get("merge_conflict", {})
@@ -191,31 +212,63 @@ def test_conflicting_delivery_opens_repair_then_lands(deliveries, monkeypatch, r
     assert SOURCE in advice and primary in advice
     assert "merge" in advice and "gate" in advice
     assert "both" in advice
-    if route == "automatic":
-        automatic_conflict(second, monkeypatch)
-        assert len(resumed) == 1, "one conflict must not resume the same round twice"
-    # Commit the resolved merge without ever writing conflict markers to the checkout.
+    assert pointer["pending_landing_repair"] is True
+    pending_path = pending_landing._record_path(second["run_id"])
+    assert pending_path.is_file()
+    assert (
+        pending_landing.finish_pending_landings()[0]["status"]
+        == "awaiting-merge-repair"
+    )
+    assert len(resumed) == 1, "one conflict must not resume the same round twice"
+    plan = repository / "docs" / "plans" / (PLAN + ".html")
+    ledger = (
+        repository / "docs" / "state" / PROJECT / "runs" / (second["run_id"] + ".json")
+    )
+    plan_before, promotion_before = plan.read_bytes(), ledger.read_bytes()
+    # Resolve a real worker merge, including all primary files it brings in.
     worktree = second["worktree"]
+    worker_merge = subprocess.run(
+        ["git", "-C", str(worktree), "merge", "--no-commit", "--no-ff", primary],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert worker_merge.returncode == 1, worker_merge.stdout + worker_merge.stderr
+    assert SOURCE in worker_merge.stdout
+    assert_clean(repository)
     content = ORIGINAL.replace("first original", "first delivered + second delivered")
     (worktree / SOURCE).write_text(content)
     git(worktree, "add", SOURCE)
-    tree = git(worktree, "write-tree")
-    repaired = merge._commit_tree(
+    git(
         worktree,
-        tree,
-        [second["head"], primary],
-        "fix: combine function changes\n\nPreserve both delivered results.\n",
+        "commit",
+        "-q",
+        "-m",
+        "fix: combine function changes",
+        "-m",
+        "Preserve both delivered results and primary metadata.",
     )
-    git(worktree, "merge", "--ff-only", repaired)
+    repaired = git(worktree, "rev-parse", "HEAD")
     second["authored_head"] = second["head"]
     second["head"] = repaired
     second["manifest"].write_text(
         f"status: complete\ncommits: {second['authored_head']} {repaired}\n"
     )
-    result = _complete_land(second)
-    assert result.exit_code == 0, result.output
-    receipt = json.loads(result.output)
-    assert receipt["steps"]["land"]["pushed"], receipt
+    second["gate_log"].write_text("# command: true\nEXIT=0\n")
+    result = queue_landing.land_once()
+    finished = result["interrupted_landings"][0]
+    assert finished["status"] == "finished", result
+    assert finished["head"] == repaired
+    assert not pending_path.exists()
+    assert not runs.pointer_path(second["run_id"]).exists()
+    assert plan.read_bytes() == plan_before, (
+        "finishing the merge must not write the plan"
+    )
+    assert ledger.read_bytes() == promotion_before, "the promotion record must stand"
+    assert (
+        git(repository, "rev-list", "--first-parent", "--count", primary + "..HEAD")
+        == "1"
+    )
     assert "first delivered + second delivered" in git(
         repository, "show", "main:" + SOURCE
     )
@@ -223,3 +276,17 @@ def test_conflicting_delivery_opens_repair_then_lands(deliveries, monkeypatch, r
         repository, "rev-parse", "main"
     )
     assert_clean(repository)
+
+
+def test_unpromoted_automatic_conflict_opens_repair(deliveries, monkeypatch):
+    deliver, resumed = deliveries
+    first = deliver("first", "first original", "first delivered")
+    second = deliver("second", "first original", "second delivered")
+    result = _complete_land(first)
+    assert result.exit_code == 0, result.output
+    automatic_conflict(second, monkeypatch)
+    pointer = runs.read_pointer(second["run_id"])
+    assert pointer["merge_conflict"]["outcome"] == "merge-conflict"
+    assert pointer["merge_conflict"]["paths"] == [SOURCE]
+    assert pointer[REPAIR_ROUNDS_FIELD]["count"] == 1
+    assert len(resumed) == 1

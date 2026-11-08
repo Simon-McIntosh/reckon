@@ -1429,6 +1429,8 @@ def _land_deliveries() -> dict[str, Any]:
     # exists to stay off that cost.
     history: dict[str, list[dict[str, Any]]] = {}
     for pointer in live:
+        if pointer.get("pending_landing_repair"):
+            continue
         if (
             str(pointer.get("role") or (pointer.get("node") or {}).get("role") or "")
             != "implement"

@@ -37,6 +37,7 @@ def dispatch_merge_repair(
     head: str,
     primary: str,
     paths: Sequence[str],
+    promoted: bool = False,
 ) -> dict[str, Any]:
     """Open a merge repair on the delivery's own worker, preserving its claim.
 
@@ -59,7 +60,8 @@ def dispatch_merge_repair(
         "Do not discard either side or commit conflict markers. Re-run this "
         "run's own gate and deliver the repaired head and fresh manifest again. "
         "Keep the original delivery commits and the repaired merge head in "
-        "the manifest citations.\n"
+        "the manifest citations. Already promoted runs finish through their "
+        "pending landing by merge alone; do not promote them again.\n"
     )
     receipt: dict[str, Any] = {
         "outcome": "merge-conflict",
@@ -72,6 +74,13 @@ def dispatch_merge_repair(
     }
     receipt_path = runs.run_dir(run_id) / "merge-repair.json"
     fresh = _live_pointer_or_absent(run_id)
+    if fresh is None and promoted:
+        from reckon.crew import pending_landing
+
+        pending = pending_landing._read(pending_landing._record_path(run_id))
+        if pending is not None:
+            fresh = {**record, "pending_landing_repair": True}
+            runs._write_json(runs.pointer_path(run_id), fresh)
     previous = (fresh or {}).get("merge_conflict") or {}
     if previous.get("round_id") == round_id and previous.get("status") == "resumed":
         return dict(previous)
@@ -107,6 +116,13 @@ def dispatch_merge_repair(
                 )
         _mutate_pointer(run_id, save)
     runs._write_json(receipt_path, receipt)
+    if promoted:
+        from reckon.crew import pending_landing
+
+        pending = pending_landing._read(pending_landing._record_path(run_id))
+        if pending is not None:
+            pending["merge_conflict"] = receipt
+            runs._write_json(pending_landing._record_path(run_id), pending)
     return receipt
 
 
