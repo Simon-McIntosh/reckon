@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -151,7 +152,7 @@ def _payload(state: Any) -> dict[str, Any]:
 def test_each_review_is_read_once_until_its_entries_move(
     fleet: dict[str, Any], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A store change invalidates one run, and an unchanged pass stats no files."""
+    """An unchanged pass reads no records; a store change invalidates one run."""
     obligations_module._clear_cached_obligation_inputs()
     state = obligation_snapshot.fleet_state(PROJECT, now=OBSERVED_AT)
     assert len([row for row in state.rows if row.get("session") == SESSION]) >= 5
@@ -165,7 +166,7 @@ def test_each_review_is_read_once_until_its_entries_move(
     reads: list[Path] = []
     real_refresh = review_records._refresh_store_entries
     real_select = recovery_module.select_review_for_head
-    real_stat = Path.stat
+    real_stat = os.stat
     real_read_text = Path.read_text
 
     def refresh(path: Path) -> Any:
@@ -176,9 +177,11 @@ def test_each_review_is_read_once_until_its_entries_move(
         selected.append(run_id)
         return real_select(project, run_id, head, **kwargs)
 
-    def stat(path: Path, *args: Any, **kwargs: Any) -> Any:
-        if path.suffix == ".json" and path.parent == directory:
-            stats.append(path)
+    def stat(path: Any, *args: Any, **kwargs: Any) -> Any:
+        if isinstance(path, (str, bytes, os.PathLike)):
+            target = Path(os.fsdecode(path))
+            if target.suffix == ".json" and target.parent == directory:
+                stats.append(target)
         return real_stat(path, *args, **kwargs)
 
     def read_text(path: Path, *args: Any, **kwargs: Any) -> str:
@@ -188,7 +191,7 @@ def test_each_review_is_read_once_until_its_entries_move(
 
     # A known record proves that the stat instrument can see its target.
     known = next(directory.glob("*.json"))
-    monkeypatch.setattr(Path, "stat", stat)
+    monkeypatch.setattr(os, "stat", stat)
     monkeypatch.setattr(Path, "read_text", read_text)
     known.stat()
     known.read_text(encoding="utf-8")
@@ -201,7 +204,7 @@ def test_each_review_is_read_once_until_its_entries_move(
 
     assert _payload(state) == first
     assert refreshed == []
-    assert stats == []
+    assert len(stats) <= LIVE_RUNS, "only this cohort's indexed entries are stat'ed"
     assert reads == []
     assert selected == [], selected
 
@@ -237,6 +240,27 @@ def test_each_review_is_read_once_until_its_entries_move(
 
     obligations_module._clear_cached_obligation_inputs()
     assert _payload(state) == changed
+
+
+def test_an_in_place_rewrite_reselects_the_reviewed_run(fleet: dict[str, Any]) -> None:
+    """A record rewritten at one path changes selection without a new entry."""
+    obligations_module._clear_cached_obligation_inputs()
+    state = obligation_snapshot.fleet_state(PROJECT, now=OBSERVED_AT)
+    before = _payload(state)
+    run_id = "run-02"
+    directory = review_module.review_store_root() / PROJECT
+    path = next(directory.glob(f"{run_id}.at-*.json"))
+    directory_mtime = directory.stat().st_mtime_ns
+    record = json.loads(path.read_text(encoding="utf-8"))
+    record["reviewed_head_sha"] = _git(fleet["worktrees"][run_id], "rev-parse", "HEAD")
+    record["rewrite_probe"] = "the record changed at its existing path"
+    path.write_text(json.dumps(record), encoding="utf-8")
+    assert directory.stat().st_mtime_ns == directory_mtime
+
+    after = _payload(state)
+    assert after != before, "the current head now has a stored review"
+    obligations_module._clear_cached_obligation_inputs()
+    assert _payload(state) == after
 
 
 def test_a_removed_tree_drops_its_held_record_after_pointer_churn(
