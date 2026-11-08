@@ -1,0 +1,95 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "fails_when": "The observed process_alive value differs from the state established by an owned live child, a terminated and waited child, or an incomplete worker record; expected_alive is not supplied to classify_pointer.",
+      "path": "tests/test_a_live_worker_is_never_noted_ended.py:55"
+    },
+    {
+      "fails_when": "Nonterminal manifests are classified as something other than running in any of the three cases; running is an independent expected policy result.",
+      "path": "tests/test_a_live_worker_is_never_noted_ended.py:56"
+    },
+    {
+      "fails_when": "The exited branch stops emitting process ended, for example if False is routed to the unknown wording.",
+      "path": "tests/test_a_live_worker_is_never_noted_ended.py:60"
+    },
+    {
+      "fails_when": "The exited branch loses the not reported dead qualification.",
+      "path": "tests/test_a_live_worker_is_never_noted_ended.py:61"
+    },
+    {
+      "fails_when": "The base broad else is reinstated, emitting process ended for unknown liveness, or the live branch is given ended wording; the base log demonstrates failure for unknown.",
+      "path": "tests/test_a_live_worker_is_never_noted_ended.py:63"
+    },
+    {
+      "fails_when": "Either live or unknown wording gains not reported dead; reinstating the base broad else violates this assertion for unknown, although line 63 stops that arm first.",
+      "path": "tests/test_a_live_worker_is_never_noted_ended.py:64"
+    },
+    {
+      "fails_when": "Unknown liveness is routed to a generic live or ended message without unknown; reinstating the base broad else violates this assertion, although line 63 stops that arm first.",
+      "path": "tests/test_a_live_worker_is_never_noted_ended.py:66"
+    }
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/query.py:446",
+    "reckon/crew/runs.py:4124",
+    "reckon/crew/recovery_watch.py:500"
+  ],
+  "completed_at": "2026-11-08T08:42:46Z",
+  "dispatched_at": "2026-11-08T08:31:53Z",
+  "failure_delta_evidence": {
+    "after_failure_ids": [],
+    "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T074214362719-a-live-worker-is-never-noted-as-ended/committed-gate.log",
+    "baseline_failure_ids": [
+      "tests/test_a_live_worker_is_never_noted_ended.py::test_a_process_ended_note_requires_an_exited_worker[unknown]"
+    ],
+    "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T074214362719-a-live-worker-is-never-noted-as-ended/base-gate.log",
+    "matched_importers": {
+      "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T074214362719-a-live-worker-is-never-noted-as-ended/head-importers.log",
+      "after_summary": "241 passed, 17 warnings in 277.34s (0:04:37)",
+      "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T074214362719-a-live-worker-is-never-noted-as-ended/base-importers.log",
+      "baseline_summary": "241 passed, 17 warnings in 60.61s (0:01:00)"
+    }
+  },
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Commit a67da2153641ca86f00f0315407ed68a97e85b31 changes only classifier wording and adds the three-state test, while 8ba3da17bfdeb9bf314d2e2da16c7af6d1813fa8 adds the matching evidence fragment; both diffs were read against base 3189bf2bb67125527123085a26ab933fa7777b22.",
+    "done_when": "The source node done_when and live plan section s17 require synthetic alive, unknown and exited cases plus matched importer and lint checks; base-gate.log records only unknown failing, committed-gate.log records 3 passed, and base-importers.log and head-importers.log each record 241 passed with clean lint.log.",
+    "goal": "The source goal in crew/live/r-20261108T074214362719-a-live-worker-is-never-noted-as-ended.json requires ended wording only for a gone worker, and reckon/crew/recovery_classification.py:1886 now reserves that wording for alive is False.",
+    "manifest": "The source manifest.md names both delivered commits and readable gate logs, accurately acknowledges that proven-live behavior already passed at base, and reports the unknown-liveness reproduction rather than claiming the anticipated live failure occurred.",
+    "write_paths": "The source pointer's node.write_paths declares the classifier, regression test, evidence fragment and optional figure directory; all three paths changed between 3189bf2bb67125527123085a26ab933fa7777b22 and 8ba3da17bfdeb9bf314d2e2da16c7af6d1813fa8 are within that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_live_worker_is_never_noted_ended.py:55-66 independently checks the three liveness states and both note fragments, so reinstating the base broad else fails the unknown absence and explicit-unknown assertions, as base-gate.log demonstrates for the first absence assertion.",
+    "evidence": "The source run's base-gate.log records the unknown case failing with the ended note and committed-gate.log records 3 passed, while its importer logs each record 241 passed and lint.log records clean checks for both Python paths.",
+    "fit": "reckon/crew/recovery_classification.py:1886 extends the existing identity-based liveness branches without changing classification or actions, and tests/test_a_live_worker_is_never_noted_ended.py:18 uses the existing isolated home fixture and mechanism-based names.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:1882-1896 keeps the live wording, limits ended wording to an observed false liveness value, and explicitly describes unknown liveness.",
+    "reuse": "Capability searches for worker-record liveness, isolated crew homes and process-ended wording found owners in reckon/crew/recovery_liveness.py:279, tests/conftest.py:1539 and reckon/crew/recovery_classification.py:1876; the change extends the wording owner and its sole new test definition reuses these owners without adding a competing runtime capability.",
+    "scope_discipline": "The three paths in the reviewed diff match the source pointer's node.write_paths and the evidence fragment documents precisely the classifier change and its measurements."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source goal in crew/live/r-20261108T074214362719-a-live-worker-is-never-noted-as-ended.json requires ended wording only for a gone worker, and reckon/crew/recovery_classification.py:1886 now reserves that wording for alive is False.\nVERDICT done_when: The source node done_when and live plan section s17 require synthetic alive, unknown and exited cases plus matched importer and lint checks; base-gate.log records only unknown failing, committed-gate.log records 3 passed, and base-importers.log and head-importers.log each record 241 passed with clean lint.log.\nVERDICT write_paths: The source pointer's node.write_paths declares the classifier, regression test, evidence fragment and optional figure directory; all three paths changed between 3189bf2bb67125527123085a26ab933fa7777b22 and 8ba3da17bfdeb9bf314d2e2da16c7af6d1813fa8 are within that scope.\nVERDICT manifest: The source manifest.md names both delivered commits and readable gate logs, accurately acknowledges that proven-live behavior already passed at base, and reports the unknown-liveness reproduction rather than claiming the anticipated live failure occurred.\nVERDICT diff: Commit a67da2153641ca86f00f0315407ed68a97e85b31 changes only classifier wording and adds the three-state test, while 8ba3da17bfdeb9bf314d2e2da16c7af6d1813fa8 adds the matching evidence fragment; both diffs were read against base 3189bf2bb67125527123085a26ab933fa7777b22.\nCALL_SITES: reckon/crew/query.py:446, reckon/crew/runs.py:4124, reckon/crew/recovery_watch.py:500\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:1882-1896 keeps the live wording, limits ended wording to an observed false liveness value, and explicitly describes unknown liveness.\nSCORE evidence: 20\nJUSTIFICATION evidence: The source run's base-gate.log records the unknown case failing with the ended note and committed-gate.log records 3 passed, while its importer logs each record 241 passed and lint.log records clean checks for both Python paths.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The three paths in the reviewed diff match the source pointer's node.write_paths and the evidence fragment documents precisely the classifier change and its measurements.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_live_worker_is_never_noted_ended.py:55-66 independently checks the three liveness states and both note fragments, so reinstating the base broad else fails the unknown absence and explicit-unknown assertions, as base-gate.log demonstrates for the first absence assertion.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/recovery_classification.py:1886 extends the existing identity-based liveness branches without changing classification or actions, and tests/test_a_live_worker_is_never_noted_ended.py:18 uses the existing isolated home fixture and mechanism-based names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for worker-record liveness, isolated crew homes and process-ended wording found owners in reckon/crew/recovery_liveness.py:279, tests/conftest.py:1539 and reckon/crew/recovery_classification.py:1876; the change extends the wording owner and its sole new test definition reuses these owners without adding a competing runtime capability.\n",
+  "review_run_id": "r-20261108T082942947249-review-of-a-live-worker-is-never-noted-as-ended-8ba3da17bfde",
+  "reviewed_base_sha": "3189bf2bb67125527123085a26ab933fa7777b22",
+  "reviewed_head_sha": "8ba3da17bfdeb9bf314d2e2da16c7af6d1813fa8",
+  "reviewed_run_id": "r-20261108T074214362719-a-live-worker-is-never-noted-as-ended",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_referential_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T08:58:17.855794+00:00",
+  "total": 120
+}
