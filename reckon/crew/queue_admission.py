@@ -887,17 +887,19 @@ def _checkout_code_is_trusted() -> bool:
     from reckon import checkout_trust
 
     stamp = _admit_code_stamp()
-    remembered = _TRUSTED_CODE_STAMPS.get(stamp)
+    root = _source_root()
+    key = (str(root), stamp)
+    remembered = _TRUSTED_CODE_STAMPS.get(key)
     if remembered is not None:
         return remembered
-    verdict = checkout_trust.moved_checkout_is_trustworthy(_source_root())
+    verdict = checkout_trust.moved_checkout_is_trustworthy(root)
     if not verdict.dirty and stamp != checkout_trust.IDENTITY_UNKNOWN:
         _TRUSTED_CODE_STAMPS.clear()
-        _TRUSTED_CODE_STAMPS[stamp] = verdict.trusted
+        _TRUSTED_CODE_STAMPS[key] = verdict.trusted
     return verdict.trusted
 
 
-_TRUSTED_CODE_STAMPS: dict[str, bool] = {}
+_TRUSTED_CODE_STAMPS: dict[tuple[str, str], bool] = {}
 
 
 def _reexec_into_current_code() -> None:
