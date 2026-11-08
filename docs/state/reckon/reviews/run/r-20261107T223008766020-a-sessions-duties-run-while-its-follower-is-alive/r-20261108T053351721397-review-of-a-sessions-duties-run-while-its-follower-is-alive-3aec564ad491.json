@@ -1,0 +1,106 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Reviewed baseline_suite exit 4 has no tests and no failure IDs; after_suite exit 0 has one passed and no failure IDs, hence observed head-only IDs are empty. This is not a completed matched regression comparison.",
+  "assertion_analysis": [
+    {
+      "fails_if": "the first station tick never requests a sweep",
+      "file": "tests/test_a_sessions_duties_run_while_its_follower_is_alive.py",
+      "line": 116
+    },
+    {
+      "fails_if": "the sweep thread remains blocked after release",
+      "file": "tests/test_a_sessions_duties_run_while_its_follower_is_alive.py",
+      "line": 126
+    },
+    {
+      "fails_if": "the due request is dropped or replayed more than once",
+      "file": "tests/test_a_sessions_duties_run_while_its_follower_is_alive.py",
+      "line": 127
+    },
+    {
+      "fails_if": "the replayed sweep does not invoke the local review recorder after delivery",
+      "file": "tests/test_a_sessions_duties_run_while_its_follower_is_alive.py",
+      "line": 128
+    },
+    {
+      "fails_if": "the replayed sweep does not invoke the local repair recorder after delivery",
+      "file": "tests/test_a_sessions_duties_run_while_its_follower_is_alive.py",
+      "line": 129
+    },
+    {
+      "fails_if": "the recovery report does not carry the local recorder review output",
+      "file": "tests/test_a_sessions_duties_run_while_its_follower_is_alive.py",
+      "line": 136
+    },
+    {
+      "fails_if": "the recovery report does not carry the local recorder repair output",
+      "file": "tests/test_a_sessions_duties_run_while_its_follower_is_alive.py",
+      "line": 137
+    }
+  ],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/station.py:548 Station.tick",
+    "reckon/crew/station.py:416 Station.__init__"
+  ],
+  "completed_at": "2026-11-08T05:46:04Z",
+  "dispatched_at": "2026-11-08T05:36:01Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive.html",
+      "line": "18",
+      "severity": "blocking",
+      "text": "blocking: the recorded instance has no exact sweep request or start timestamp, so the explicitly required historical timing evidence is absent."
+    },
+    {
+      "file": "tests/test_a_sessions_duties_run_while_its_follower_is_alive.py",
+      "line": "96",
+      "severity": "blocking",
+      "text": "blocking: replacing dispatch_awaiting_reviews with a local recorder makes the review and repair assertions report simulated outcomes rather than proving the real duties dispatched and opened."
+    },
+    {
+      "file": "matched_head.log",
+      "line": "1",
+      "severity": "blocking",
+      "text": "blocking: the purported matched head arm records the base SHA, so the 12 passing cases cannot establish a zero-failure delta against the landed head."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "commits 64eaedef4abcf73710f975541a9a3e166011cf4f, 30c977d2b10e35294248e4b7af5aa4af8e1d35dc and 3aec564ad491f6d9d6dde4606786f2a68bc78231 change station.py, one test and one evidence fragment; the test mocks the production review pass at tests/test_a_sessions_duties_run_while_its_follower_is_alive.py:96.",
+    "done_when": "prompt.txt:122 requires historical request/start/finish times and actual review and repair dispatch; docs/evidence/fragments/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive.html:18 admits two times are missing, while negative_control.log shows the scheduler regression failing.",
+    "goal": "the source prompt goal at prompt.txt:38 asks for a cause and repair; reckon/crew/station.py:266 replays a due in-flight request, but the recorded instance cannot prove its exact timing.",
+    "manifest": "manifest.md reports one passing head case, one failing base scheduler mutation and 12 matched cases per arm, while its checkpoint and blockers admit incomplete historical timing and a timed-out broad base run.",
+    "write_paths": "prompt.txt:77-84 declares seven allowed paths, and the three paths in the diff from fdfcd7d77a7347a068604e52f00696e3c338eb15 to 3aec564ad491f6d9d6dde4606786f2a68bc78231 are among them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_sessions_duties_run_while_its_follower_is_alive.py:127 fails if the pending sweep is dropped or duplicated, as negative_control.log shows, but lines 128-137 observe a substituted dispatch function.",
+    "evidence": "negative_control.log:1-80 records the base scheduler failing and after_suite.log records one pass, but matched_head.log:1 names the base revision and the test at tests/test_a_sessions_duties_run_while_its_follower_is_alive.py:96 replaces real dispatch.",
+    "fit": "reckon/crew/station.py:247 and 266-298 extend SweepBeat's existing lock and per-session state without a forbidden source name.",
+    "goal_fidelity": "reckon/crew/station.py:266-298 repairs dropped in-flight requests, but docs/evidence/fragments/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive.html:18 lacks the requested historical timing proof.",
+    "reuse": "the capability search for session sweep request scheduling in reckon/crew found SweepBeat as the owner at reckon/crew/station.py:226, and the change extends that class.",
+    "scope_discipline": "the three paths changed from fdfcd7d77a7347a068604e52f00696e3c338eb15 to 3aec564ad491f6d9d6dde4606786f2a68bc78231 all occur in prompt.txt:77-84 and serve this goal."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source prompt goal at prompt.txt:38 asks for a cause and repair; reckon/crew/station.py:266 replays a due in-flight request, but the recorded instance cannot prove its exact timing.\nVERDICT done_when: prompt.txt:122 requires historical request/start/finish times and actual review and repair dispatch; docs/evidence/fragments/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive.html:18 admits two times are missing, while negative_control.log shows the scheduler regression failing.\nVERDICT write_paths: prompt.txt:77-84 declares seven allowed paths, and the three paths in the diff from fdfcd7d77a7347a068604e52f00696e3c338eb15 to 3aec564ad491f6d9d6dde4606786f2a68bc78231 are among them.\nVERDICT manifest: manifest.md reports one passing head case, one failing base scheduler mutation and 12 matched cases per arm, while its checkpoint and blockers admit incomplete historical timing and a timed-out broad base run.\nVERDICT diff: commits 64eaedef4abcf73710f975541a9a3e166011cf4f, 30c977d2b10e35294248e4b7af5aa4af8e1d35dc and 3aec564ad491f6d9d6dde4606786f2a68bc78231 change station.py, one test and one evidence fragment; the test mocks the production review pass at tests/test_a_sessions_duties_run_while_its_follower_is_alive.py:96.\nCALL_SITES: reckon/crew/station.py:548 Station.tick, reckon/crew/station.py:416 Station.__init__\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/station.py:266-298 repairs dropped in-flight requests, but docs/evidence/fragments/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive.html:18 lacks the requested historical timing proof.\nSCORE evidence: 7\nJUSTIFICATION evidence: negative_control.log:1-80 records the base scheduler failing and after_suite.log records one pass, but matched_head.log:1 names the base revision and the test at tests/test_a_sessions_duties_run_while_its_follower_is_alive.py:96 replaces real dispatch.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three paths changed from fdfcd7d77a7347a068604e52f00696e3c338eb15 to 3aec564ad491f6d9d6dde4606786f2a68bc78231 all occur in prompt.txt:77-84 and serve this goal.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_sessions_duties_run_while_its_follower_is_alive.py:127 fails if the pending sweep is dropped or duplicated, as negative_control.log shows, but lines 128-137 observe a substituted dispatch function.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/station.py:247 and 266-298 extend SweepBeat's existing lock and per-session state without a forbidden source name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search for session sweep request scheduling in reckon/crew found SweepBeat as the owner at reckon/crew/station.py:226, and the change extends that class.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive.html:18 blocking: the recorded instance has no exact sweep request or start timestamp, so the explicitly required historical timing evidence is absent.\nFINDING tests/test_a_sessions_duties_run_while_its_follower_is_alive.py:96 blocking: replacing dispatch_awaiting_reviews with a local recorder makes the review and repair assertions report simulated outcomes rather than proving the real duties dispatched and opened.\nFINDING matched_head.log:1 blocking: the purported matched head arm records the base SHA, so the 12 passing cases cannot establish a zero-failure delta against the landed head.\n",
+  "review_run_id": "r-20261108T053351721397-review-of-a-sessions-duties-run-while-its-follower-is-alive-3aec564ad491",
+  "reviewed_base_sha": "fdfcd7d77a7347a068604e52f00696e3c338eb15",
+  "reviewed_head_sha": "3aec564ad491f6d9d6dde4606786f2a68bc78231",
+  "reviewed_run_id": "r-20261107T223008766020-a-sessions-duties-run-while-its-follower-is-alive",
+  "scores": {
+    "durability": 14,
+    "evidence": 7,
+    "fit": 19,
+    "goal_fidelity": 14,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T05:58:28.321291+00:00",
+  "total": 94
+}
