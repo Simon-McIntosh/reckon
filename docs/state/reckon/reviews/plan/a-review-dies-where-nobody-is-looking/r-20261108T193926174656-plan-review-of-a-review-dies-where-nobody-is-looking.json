@@ -1,0 +1,108 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T19:49:12.578Z",
+  "dispatched_at": "2026-11-08T19:41:04Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-dies-where-nobody-is-looking.html#s6",
+      "id": "reasoning-1",
+      "reason": "a coordinator reading s6 schedules a structural-half node for work already present, or a worker lands a second implementation of the same rule.",
+      "text": "\u00a76 closes with \"Not landed, and still open: the structural half is untouched \u2026 `impl`, `version` and `modified` are not yet written as one contiguous block, and the reader still resolves a duplicate last-wins\", but `_set_meta_block` (reckon/_plan_html.py:2064, called from the plan write path at reckon/_plan_html.py:2292) writes exactly that contiguous block, and `read_state` now keeps the first occurrence and reports the rest (reckon/_plan_html.py:1315-1328), so both halves the paragraph calls untouched are in the tree while the section is declared `done`.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-dies-where-nobody-is-looking.html#s11",
+      "id": "reasoning-2",
+      "reason": "dispatching \u00a711 spends a node re-doing landed work, and the section should be closed rather than built.",
+      "text": "\u00a711 is declared `implementable` on the claim that `_scalar_duplicate_findings` \"tells the reader that 'the reader takes the last one'\", but that work has landed at 4aa3059efe, which rewrote the message and docstring to the first-copy rule (reckon/doccheck.py:1045-1055) and added `tests/test_the_duplicate_audit_states_the_reader_rule.py`; the quoted last-copy sentence appears nowhere in `reckon/doccheck.py`, and the \"line 774 on 2026-10-03\" anchor now resolves to line 1045.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-dies-where-nobody-is-looking.html#s9",
+      "id": "reasoning-3",
+      "reason": "a node sizing its task to 480000 either never reaches compaction or is refused by the endpoint exactly as \u00a77 describes, and under \u00a79's own wording that refusal is recorded as the negative result, so the plan would measure the wrong death shape.",
+      "text": "\u00a79's task must \"exceed the lane's effective boundary\", but \u00a77 measured that boundary at 200000 tokens while the plan's own followup records the lead setting clive's declared window to 480000 (dotfiles cb070f4), and \u00a79's opening names \"this window\" without saying which of the two figures the worker must cross.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-dies-where-nobody-is-looking.html#s10",
+      "id": "done_when-1",
+      "reason": "a zero after-rate from a scan that reads no death records is indistinguishable from a real zero, and that is the section's entire deliverable.",
+      "text": "\u00a710's done-when states the window count, death count, rate with interval and the compared before-rate, and its only guard is the \"fewer than 60 reviews\" clause; nothing requires the scan to find a death known present, and \u00a710 is the one section whose headline result is a rate that may legitimately be zero.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-dies-where-nobody-is-looking.html#s9",
+      "id": "single_goal-1",
+      "reason": "one verdict cannot close both, and the prevention half's scope is set by the demonstration's outcome, so a node dispatched to \u00a79 has no bounded deliverable to be closed against.",
+      "text": "\u00a79 delivers two things: a dispatch that demonstrates compaction and an open-ended prevention programme (\"Each prevention is measured by the death rate of its cell before and after\"), whose candidates and count are not fixed by the plan.",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-dies-where-nobody-is-looking.html#_document",
+      "id": "wiring-1",
+      "reason": "a satisfied blocking edge keeps an active plan gated on work this plan has finished.",
+      "text": "`plan-blocks` names `the-orchestrator-lane-is-not-a-worker-lane`, but \u00a71 \u2014 the condition the followup ties that fence to (\"Do not close the orchestrator-lane fence until \u00a71 reports\") \u2014 has reported, 3603de359 carrying the exit-record correlation of 392 review/xhigh deaths in 1324 attempts.",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-dies-where-nobody-is-looking.html#s8",
+      "id": "anchors_resolve-1",
+      "reason": "the section's only regeneration route is unopenable, and the census is what keeps its figures current.",
+      "text": "\u00a78 attributes the census to `reckon/crew/carryover_census.py`, which does not exist in the tree; the script is `scripts/census/carryover_census.py`, so a node asked to regenerate `docs/research/data/session-carryover.json` follows a path that resolves nowhere.",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-dies-where-nobody-is-looking.html#s6",
+      "id": "anchors_resolve-2",
+      "reason": "the record is reachable from the five sibling links, so a reader is not lost, but the one link is dead in the surface.",
+      "text": "\u00a76's \"attached evidence record\" links `/plan/reckon/a-review-dies-where-nobody-is-looking-landed`, but `/plan/<project>/<slug>` is the state-JSON route (docs/ui/plan.jsx:718), the record is a page at `docs/evidence/archive/a-review-dies-where-nobody-is-looking-landed.html`, and the five sibling references to the same record all use `/reckon/evidence/archive/\u2026`.",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "efe31c313ed496bc3c937f4f807463d3022d6945",
+  "plan_fingerprint": "8f7eea5730ae5dff4cf123e17e83f18a0dd2c194c671d034cd98c817d7bb9412",
+  "plan_slug": "a-review-dies-where-nobody-is-looking",
+  "plan_version": 100,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T193926174656-plan-review-of-a-review-dies-where-nobody-is-looking",
+  "reviewed_blob_sha": "b9d9c082e5058691839f3e1fce38e35479f7c2f9",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a78 cites `reckon/crew/carryover_census.py`, which resolves nowhere; the census script lives at `scripts/census/carryover_census.py`. Every other cited file, plan and evidence record resolves.",
+    "done_when": "a finding \u2014 \u00a710's after-window measure declares no negative control for a zero death rate, which is the one result a broken scan would also produce.",
+    "evidence_paths": "pass \u2014 the landed sections cite one cumulative archive record under `docs/evidence/archive/`, and \u00a712 names logs under the crew run directory rather than a scratchpad.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach the symbols and filenames the two implementable sections prescribe.",
+    "reasoning": "findings \u2014 \u00a76's closing status paragraph is refuted by the current code, \u00a711's stated defect has already landed, and \u00a79 sizes its task against a boundary figure the plan itself reports as changed.",
+    "single_goal": "a finding \u2014 \u00a79 carries both the compaction demonstration and an unbounded prevention programme whose cells are measured separately.",
+    "wiring": "a finding \u2014 `plan-blocks` still names `the-orchestrator-lane-is-not-a-worker-lane` although \u00a71, the condition the plan's own followup ties that fence to, has reported."
+  },
+  "section_digests": {
+    "_document": "0a1484c6d42321f61eb5872a46b3bdcb4e836366b99d1ef9ebc08795eb628d05",
+    "s1": "b13bacdd3dd40a8e3cb226066b6660b6aebf8a50b7f0d135972dce72a067ff10",
+    "s10": "a5c034b4157c2223c785f33e695ea65b6b5a8d2715cc7920e0089851b40ee94d",
+    "s11": "ee506b104842ed50a3cea08abe395e6e43918cff0f3239ce091415fe2e98fe39",
+    "s12": "f34aff9875ad00ad0d781d7805d52889b986efe74f16afeb8b465b4b29ef6615",
+    "s2": "06b36b451d3e1f9cc4f3c7c8c54bc8f4a1c93efe0eab5a9d7dccde893ace0c54",
+    "s3": "017097c61e4fa1d5d2dc8f168b9f71610c2ae361ff0f2c1d5cffb2b68c7df410",
+    "s4": "dfa3413c15b5496e8adbcf0232faeb0066257492e10fbd4fa9aefccc0fb09e77",
+    "s5": "2a352f8bf478dcdf4e8b5b0125205012974807a199c4b04c43b93d0b94534685",
+    "s6": "a9509e66f17fcf2ce1a5c6f73f1bf69c9b8e9f0a5fc2c8828b680e6e533c8a89",
+    "s7": "7132004ffea77391601b22ef619715e5e1b92d1f216e8fa177ee601bd9d6b7dd",
+    "s8": "8b258458e56f488bec3ad12a01ff14bb102096e78b20d9099bb99ca2911f2964",
+    "s9": "059f92c7b3786222a361ca3a5049648fd0cccb17f00ec762e7bdfba6ee02e958"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T20:16:45.775722+00:00",
+  "total": null
+}
