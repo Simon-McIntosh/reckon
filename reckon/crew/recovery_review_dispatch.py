@@ -2057,17 +2057,38 @@ def _resolved_review_config(
     return flight.resolve(project=project).config
 
 
-def _standing_plan_review(project: str, plan_slug: str) -> str:
+def _standing_plan_review(
+    project: str,
+    plan_slug: str,
+    *,
+    session: str = "",
+    pointers: Sequence[Mapping[str, Any]] | None = None,
+) -> str:
     """The live plan-review run standing for ``plan_slug``, or empty.
 
-    One reader for both the locked dispatch and the preview, so the answer a
-    dry run reports and the answer the lock protects cannot be two spellings
-    of the same scan.
+    One reader for the locked dispatch, the preview and the obligations view,
+    so the answer a dry run reports, the answer the lock protects and the
+    review a queued request is waiting on cannot be three spellings of the same
+    scan. ``session`` keeps only a review that session composed, which is the
+    one whose outcome that session reads as its own. ``pointers`` lets a caller
+    already holding the live pointer set hand it over rather than have it read
+    again, so the review a view names comes from the same reading as the row
+    that names it.
+
+    A pointer whose ``node`` is not a mapping is skipped rather than read: this
+    runs inside every session's obligations reading, and one malformed pointer
+    on disk must not raise the reader out of listing everything else.
     """
-    for pointer in list_live(project=project):
-        node = pointer.get("node") or {}
-        if node.get("id") == f"{PLAN_REVIEW_NODE_PREFIX}{plan_slug}":
-            return str(pointer.get("run_id") or "")
+    live = list_live(project=project) if pointers is None else pointers
+    for pointer in live:
+        node = pointer.get("node")
+        if not isinstance(node, Mapping):
+            continue
+        if node.get("id") != f"{PLAN_REVIEW_NODE_PREFIX}{plan_slug}":
+            continue
+        if session and str(pointer.get("session") or "") != session:
+            continue
+        return str(pointer.get("run_id") or "")
     return ""
 
 

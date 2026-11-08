@@ -1400,6 +1400,16 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
     # the admission pass admits by; a session with nothing queued never orders
     # anything.
     queued_placements: dict[str, dict[str, int]] | None = None
+
+    def _queue_placements() -> dict[str, dict[str, int]]:
+        """The ordering, resolved for the first row that reads as waiting."""
+        nonlocal queued_placements
+        if queued_placements is None:
+            queued_placements = module.queue_admission.queued_placements(
+                list(state.pointers.values()), now=state.now
+            )
+        return queued_placements
+
     # Read once for the whole payload, exactly as the derivation reads it once
     # for the whole view, so a slice and the derivation over the same files
     # tell the same request's stall from the same reading.
@@ -1454,29 +1464,19 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
             continue
         if classification == "queued":
             # A queued request is listed as waiting by the derivation, so the
-            # slice has to list it too: the row is built through the
+            # slice has to list it too: the row is read through the
             # derivation's own helper, from the same ordering, which is what
-            # keeps this payload equal to the derivation field for field.
-            if row.get("session_refusal"):
-                items.append(
-                    module._live_item(
-                        row,
-                        kind=module.QUEUED_AWAITING_SESSION_DUTY_KIND,
-                        now=state.now,
-                    )
-                )
-                continue
-            if queued_placements is None:
-                queued_placements = module.queue_admission.queued_placements(
-                    list(state.pointers.values()), now=state.now
-                )
+            # keeps this payload equal to the derivation field for field — the
+            # decision a refusal makes about the row included.
             items.append(
-                module._queued_item(
+                module._queued_row_item(
                     row,
-                    placements=queued_placements,
-                    now=state.now,
+                    placements=_queue_placements,
                     verdicts=verdicts,
                     pointer=pointer,
+                    live_pointers=list(state.pointers.values()),
+                    session=session,
+                    now=state.now,
                 )
             )
             continue
