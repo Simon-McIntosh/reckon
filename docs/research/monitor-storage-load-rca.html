@@ -387,17 +387,22 @@
         <tr><td>base <code>51d53c06ac2c</code></td><td>47.406 s</td><td>80.275 s</td><td>52.023 s</td><td>4</td></tr>
         <tr><td>review-entry memo <code>19c6b87e9102</code></td><td>52.741 s</td><td>76.034 s</td><td>26.419 s</td><td>4</td></tr>
         <tr><td>in-place-safe source <code>b166d7113a2d</code></td><td>50.517 s</td><td>105.186 s</td><td>68.106 s</td><td>4</td></tr>
+        <tr><td>reviewed head <code>f4002db9353a</code></td><td>102.368 s</td><td>136.065 s</td><td>68.105 s</td><td>4</td></tr>
       </tbody>
     </table>
     <p>The first two readings shared a measurement window: the second pass improved by 25.604 s but
     remained above the 5 s target. The later in-place-safe reading covered 22 duties instead of 23;
     its two payloads were equal, and its 68.106 s second pass also missed the bound. These live
     readings have different fleet inputs and cannot isolate the cost of file revalidation. The
-    synthetic six-run control showed zero review-store file reads and zero store-wide refreshes on an
+    final reviewed head also returned equal payloads across 23 duties, but its 68.105 s second
+    pass remained above the 5 s target. The rewrite-safe source and reviewed head have identical
+    product code. The synthetic six-run control showed zero review-store file reads and zero
+    store-wide refreshes on an
     unchanged second payload, with stats bounded by the run's indexed entries; adding one review
     record reselected only its run, and an in-place rewrite now changes that run's selection. The
-    zero-file-stat reading from the earlier memo omitted same-path rewrites and is no longer the
-    correctness contract. A profile of one live session with 16
+    zero-file-stat reading from the earlier memo omitted same-path rewrites. Detecting an
+    unannounced in-place rewrite requires inspecting its file or receiving a reliable change
+    notification; the current store supplies no notification. A profile of one live session with 16
     runs measured a 40.711 s second pass under profiling overhead. Two queued-placement calls took
     38.923 s inclusive, with project discovery nested in that work at 24.375 s. These are cumulative
     times, so they must not be added. The remaining live cost is in queued ordering and project
