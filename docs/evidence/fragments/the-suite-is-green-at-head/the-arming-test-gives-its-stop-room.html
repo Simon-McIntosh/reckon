@@ -33,16 +33,19 @@
   did what it promises, and the test asserted a delivery that bound never guaranteed.</p>
   <p id="the-arming-test-gives-its-stop-room-change"><strong>Change.</strong> Test only,
   <code>tests/test_arm_lock_is_never_held_by_a_follower.py</code>. The arming bound is
-  now <code>STOP_CHILD_ARM_BOUND_SECONDS = 12</code>, sized so the stop child can start,
-  signal and finish; the <code>communicate</code> timeout is derived from it
+  now <code>STOP_CHILD_ARM_BOUND_SECONDS = 40</code>, sized so the stop child can start,
+  signal and finish even when a load spike has consumed most of arming's own start; the
+  <code>communicate</code> timeout is derived from it
   (<code>ARM_OUTPUT_SECONDS = STOP_CHILD_ARM_BOUND_SECONDS * 2</code>) rather than being
   a separate literal; and <code>term-seen</code> is read through a bounded wait whose
-  failure message is still "the stop request must reach the producer". Given that room
-  the child reaches <code>unwatch</code>, which signals the producer and then reports its
-  own seat bound, so the assertion that arming names a bound accepts whichever bound
-  ended the attempt instead of pinning the product's two-second figure. Both claims
-  stand: arming ends with exit 3 naming a bound, and the stop request reaches the
-  producer.</p>
+  failure message is still "the stop request must reach the producer". Only two bounds
+  can end the attempt, and the assertion accepts exactly those, each read from the code
+  that enforces it: <code>within {STOP_CHILD_ARM_BOUND_SECONDS:g}s; arming stopped</code>
+  from <code>reckon/crew/dispatch_watch.py</code> when arming's own bound expires, and
+  <code>beyond {UNWATCH_SEAT_WAIT_SECONDS:g}s</code> from
+  <code>reckon/crew/recovery_watch.py</code> when the stop child reaches
+  <code>unwatch</code> and the seat stays held. Both claims stand: arming ends with exit
+  3 naming the bound that ended the attempt, and the stop request reaches the producer.</p>
   <p id="the-arming-test-gives-its-stop-room-reproduction"><strong>Reproduction at the
   base.</strong> <code>7db6cd8de4</code>, the case alone 10 times with the 19-file
   importer population of <code>reckon.crew.dispatch_watch</code> beside it at
@@ -53,18 +56,24 @@
   2.9 s, so it came from the fixture teardown's terminate and never from a stop child.
   No base run reached the signal.</p>
   <p id="the-arming-test-gives-its-stop-room-measure"><strong>Measure.</strong> At the
-  head, the same 10-of-20 protocol under the same population, load average 64 to 71:
-  <strong>20 of 20 passed</strong>. In all 20 the poller saw the marker written
-  <strong>before</strong> arming exited, by 2.2 to 3.0 s &mdash; the stop was delivered
-  while arming was still waiting, which is the claim the base runs could not show. Suite
-  arms over the node's own test file: base <code>7db6cd8de4</code> 1 failed and 4
-  passed, <code>EXIT=1</code>; head 5 passed, <code>EXIT=0</code>. Ruff check and
-  <code>ruff format --check</code> add no findings on the staged path.</p>
+  head, the same 10-of-20 protocol under the same population: <strong>20 of 20
+  passed</strong>. In all 20 the poller saw the marker written <strong>before</strong>
+  arming exited, by 2.2 to 2.8 s &mdash; the stop was delivered while arming was still
+  waiting, which is the claim the base runs could not show. An earlier head bound of 12 s
+  failed one loaded run in twenty, with arming's own start having eaten the margin and the
+  stop child killed before it signalled; the bound now carries margin past that spike, and
+  widening the wait for the marker instead was rejected because the fixture teardown's own
+  terminate would then have stood in for the child's signal. Suite arms over the node's
+  own test file: base <code>7db6cd8de4</code> 1 failed and 4 passed, <code>EXIT=1</code>;
+  head 5 passed, <code>EXIT=0</code>. Ruff check and <code>ruff format --check</code> add
+  no findings on the staged path.</p>
   <p id="the-arming-test-gives-its-stop-room-control"><strong>Negative control.</strong>
-  Declared mutation: restore the two-second bound and the immediate term-seen assertion,
-  and at least one of 20 loaded runs fails. Applied on an extraction of the head and run
-  20 times under the same load: <strong>20 of 20 failed</strong> at the term-seen
-  assertion, <code>EXIT=1</code>. The head arm fails none of them.</p>
+  Two, both applied on extractions of the head. Restore the two-second bound and the
+  immediate term-seen assertion: 20 of 20 loaded runs failed at the term-seen assertion.
+  Make the seat refusal report <code>30s</code> in place of the bound that ended the
+  attempt: the assertion fails, reporting that it accepts only
+  <code>within 40s; arming stopped</code> or <code>beyond 2s</code>, so a message naming
+  an unrelated duration no longer passes. The head arm fails neither.</p>
 </article>
 </body>
 </html>
