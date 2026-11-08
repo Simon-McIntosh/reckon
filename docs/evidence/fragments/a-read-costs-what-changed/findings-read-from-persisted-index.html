@@ -119,13 +119,32 @@
     <thead><tr><th>arm</th><th>passed</th><th>failed</th><th>added over base</th></tr></thead>
     <tbody>
       <tr><td>base (fba33c99)</td><td>730</td><td>40</td><td>—</td></tr>
-      <tr><td>head (a1e64678)</td><td>735</td><td>36</td><td>0</td></tr>
+      <tr><td>head (9f70ba4d)</td><td>735</td><td>36</td><td>1</td></tr>
     </tbody>
   </table>
 
-  <p>The head arm's 36 failing ids are a strict subset of the base arm's 40:
-  nothing in this population fails here that did not already fail at the base.
-  Logs:
+  <p>Comparing the two arms by test id, 35 of the head arm's 36 failing ids fail at
+  the base too, and four ids the base failed pass at the head. The one id the
+  head adds is
+  <code>test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py::test_overdue_review_duty_reports_age_without_a_dispatch_command</code>
+  — a <code>pytest-timeout</code> expiry inside an xdist worker while twelve
+  pytest processes shared a node above load 80, not a test failure. Run
+  serially it passes at both arms (7 passed each, EXIT=0). No failure is
+  attributable to this change. Logs:
   <code>logs/importer-population-base.log</code> and
   <code>logs/importer-population-head.log</code>.</p>
+
+  <p>Correcting the line above: an id-by-id comparison of those two logs
+  reports one id the head arm adds and four it drops, not a strict subset. The
+  four it drops are tests that need a git tree, which the base arm's archive
+  does not carry. The one it adds is
+  <code>test_overdue_review_duty_reports_age_without_a_dispatch_command</code>,
+  and the head log records its cause as a pytest timeout of 300 s inside an
+  xdist worker while twelve pytest processes shared a node already above load
+  80. Run on its own it passes at both arms — 7 passed at the head and 7 passed
+  at the base, both exiting 0
+  (<code>logs/importer-delta-added-id-serial.log</code>). The count comparison
+  and the id comparison therefore disagree, and the id comparison is the honest
+  one; the single added id is a timeout under parallel load, not a failure the
+  change causes.</p>
 </section>
