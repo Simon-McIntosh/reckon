@@ -1,0 +1,51 @@
+<section class="evidence-fragment" id="a-resumed-placed-run-spawns">
+  <h3 id="a-resumed-placed-run-spawns-heading">A resumed placed run spawns once its previous attempt has ended</h3>
+  <p id="a-resumed-placed-run-spawns-what">A resume of a run placed on the fleet's <code>srun</code> placement was
+    refused at the spawn guard. <code>_prepare_attempt_records</code> retires the canonical <code>worker.json</code> and
+    <code>exit.json</code> into <code>attempt-N-worker.json</code> and <code>attempt-N-exit.json</code> before either
+    guard runs. The scheduler cannot answer for that placement, so the liveness read stays placed with liveness unknown.
+    <code>_launch_refused_by</code> in <code>reckon/crew/dispatch_launch.py</code> then found the attempt receipts, so
+    <code>_record_holds_a_worker</code> answered true, while <code>_worker_record_liveness</code> found no canonical worker
+    record and answered None, and <code>is not False</code> refused. The refused attempt left its own exit receipt and no
+    canonical worker record, so the first guard refused every further resume the same way.</p>
+  <p id="a-resumed-placed-run-spawns-guard">The shared predicate now reads the newest attempt receipts when no canonical
+    worker record exists: the highest N with an <code>attempt-N-worker.json</code> or <code>attempt-N-exit.json</code>.
+    An exit receipt for that attempt is its own record that it ended. A worker receipt with no exit beside it is probed
+    through <code>record_process_alive</code>, the same start-tick comparison the retired worker's pid needs, and a dead pid
+    lets the launch through. A retired worker receipt whose pid is alive; a receipt that cannot be read; and every reading
+    that is alive all still refuse. While a canonical worker record exists the predicate answers exactly as before, so a
+    pointer pid with no worker record to answer for it is still a refusal. Both callers,
+    <code>_prepare_attempt_records</code> and <code>_supervisor_spawn_worker</code>, reach the one predicate and answer
+    alike; <code>live_worker_reading</code> and <code>record_process_liveness</code> are unchanged.</p>
+  <p id="a-resumed-placed-run-spawns-measure">The reproduction ran first: a temporary crew home holding a placed run with a
+    retired <code>attempt-1-worker.json</code> naming a dead pid, an <code>attempt-1-exit.json</code>, a current
+    <code>attempt.json</code> for attempt 2, no canonical worker record and a pointer pid that is not the supervisor's own
+    was passed to <code>_supervisor_spawn_worker</code>, which refused with
+    <code>cannot read whether its worker is live (placed on job 1291586, liveness unknown): a launch that started now would
+    run a second worker beside it</code>. The gate is <code>tests/test_a_resumed_placed_run_spawns.py</code>: at the head
+    revision it reports <strong>5 passed, EXIT=0</strong>, and the same three-file population including
+    <code>tests/test_a_queued_run_launches_once.py</code> and <code>tests/test_a_run_not_yet_launched_is_not_refused.py</code>
+    reports <strong>16 passed, EXIT=0</strong>. At the dispatch base (e8fa945150) with the new test copied in it reports
+    <strong>3 failed, 2 passed, EXIT=1</strong>, failing the exit-receipt case, the dead-worker-receipt case and the
+    further-resume case — the defect reproduced — and the same population reports <strong>3 failed, 13 passed,
+    EXIT=1</strong> with the two neighbouring launch tests passing at both arms.</p>
+  <p id="a-resumed-placed-run-spawns-control">The negative control restores the predicate that refuses a placed-unknown
+    reading whenever attempt receipts exist without a canonical worker record, in a scratch copy of the head tree. It
+    reports <strong>3 failed, 2 passed, EXIT=1</strong> on the same three ids, so the check fails against the mutation it
+    declares.</p>
+  <p id="a-resumed-placed-run-spawns-cases">The five cases run with the scheduler query stubbed to answer nothing. Four go
+    through <code>_supervisor_spawn_worker</code>: a resumed placed run whose previous attempt has an exit receipt spawns;
+    one whose previous worker receipt names a dead pid and has no exit receipt spawns; one whose previous worker receipt
+    names a live pid is refused with the second-worker text and records no worker; a never-launched placed run still spawns.
+    The fifth goes through <code>_prepare_attempt_records</code>: a further resume of a run whose previous attempt was
+    itself refused at spawn, leaving only <code>attempt-N-exit.json</code> and no canonical worker record, passes the first
+    guard and spawns. Every case asserts the operator's own crew home listing is unchanged.</p>
+  <ul id="a-resumed-placed-run-spawns-evidence">
+    <li>reproduction: <code>repro-defect.log</code> (the spawn guard refusing a resumed placed run whose previous attempt ended)</li>
+    <li>head arm: <code>gate-after-suite.log</code> (revision 486097d6bb, 5 passed, EXIT=0)</li>
+    <li>head population: <code>gate-after-population.log</code> (revision 486097d6bb, 16 passed, EXIT=0)</li>
+    <li>base arm: <code>gate-baseline-suite.log</code> (revision e8fa945150 with the new test copied in, 3 failed, 2 passed, EXIT=1)</li>
+    <li>base population: <code>gate-baseline-population.log</code> (revision e8fa945150, 3 failed, 13 passed, EXIT=1)</li>
+    <li>negative control, restored predicate: <code>negative-control.log</code> (3 failed, 2 passed, EXIT=1)</li>
+  </ul>
+</section>
