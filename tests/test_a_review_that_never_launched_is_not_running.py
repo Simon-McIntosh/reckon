@@ -57,7 +57,6 @@ YOUNG_RUN_ID = "r-never-launched-young"
 IN_HARNESS_RUN_ID = "r-never-launched-in-harness"
 CREATION_RUN_ID = "r-never-launched-creation"
 FOREIGN_CLAIM_RUN_ID = "r-never-launched-foreign-claim"
-FOREIGN_RUN = "r-another-runs-claim"
 LAUNCHER_HOST = "98dci4-clu-2068"
 
 BOUND = recovery_liveness.STRANDED_LAUNCH_BOUND_SECONDS
@@ -92,7 +91,7 @@ def _never_launched_pointer(
     launch: str = "cli",
     launcher_host: str = LAUNCHER_HOST,
     record_claim: bool = True,
-    claim_run_id: str | None = None,
+    claim_names_its_run: bool = True,
 ) -> dict:
     """A launch that stopped between composing its claim and spawning a worker.
 
@@ -100,8 +99,8 @@ def _never_launched_pointer(
     attempt record and no attempt claim date the run, the pointer names no pid,
     and the stream and stderr path it names were never written. The claim is the
     one record the launch left, and it carries the moment the run began, unless
-    a case withholds it or names another run's claim to check that neither dates
-    this pointer.
+    a case withholds it or writes one that does not name this run, to check that
+    neither dates this pointer.
     """
     directory = run_dir(run_id)
     directory.mkdir(parents=True, exist_ok=True)
@@ -115,14 +114,15 @@ def _never_launched_pointer(
         # The claim a dispatch registers before it composes anything else. Its
         # name is written out rather than read from the module under test, so
         # the case reports the defect in the dating, not a name the base
-        # revision lacks.
-        _write_json(
-            directory / "claim.json",
-            {
-                "run_id": claim_run_id or run_id,
-                "claim_registered_at": claimed.strftime("%Y-%m-%dT%H:%M:%SZ"),
-            },
-        )
+        # revision lacks. A payload that does not name its run is what a
+        # half-written claim looks like, and the reader that owns the record
+        # refuses it.
+        payload: dict[str, str] = {
+            "claim_registered_at": claimed.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        }
+        if claim_names_its_run:
+            payload["run_id"] = run_id
+        _write_json(directory / "claim.json", payload)
     record = {
         "run_id": run_id,
         "project": PROJECT,
@@ -204,18 +204,18 @@ def test_a_claim_less_launch_is_dated_from_its_pointer_creation() -> None:
     assert "stranded launch" in row["detail"]
 
 
-def test_a_claim_naming_another_run_does_not_date_this_pointer() -> None:
-    """The claim reader refuses a claim that names a different run.
+def test_a_claim_that_does_not_name_its_run_does_not_date_this_pointer() -> None:
+    """The claim reader refuses a claim that does not name the run it sits in.
 
     The claim is old and this pointer's creation is young, so a reader that
-    accepted the foreign claim would date the launch past the bound; the
-    reader that owns the claim validates it against the run and refuses it.
+    took the unnamed claim would date the launch past the bound; the reader
+    that owns the record validates it against the run and refuses it.
     """
     _never_launched_pointer(
         FOREIGN_CLAIM_RUN_ID,
         claimed_seconds_ago=STALE_SECONDS,
         created_seconds_ago=YOUNG_SECONDS,
-        claim_run_id=FOREIGN_RUN,
+        claim_names_its_run=False,
     )
 
     row = _row(FOREIGN_CLAIM_RUN_ID)
