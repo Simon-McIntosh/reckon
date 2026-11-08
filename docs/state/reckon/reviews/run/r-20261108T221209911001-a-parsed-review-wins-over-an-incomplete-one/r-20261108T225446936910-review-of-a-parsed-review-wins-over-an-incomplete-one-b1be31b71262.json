@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: baseline_suite (logs/review-records-importers-base.log) records failure_count 0 with failure_ids [] at bb23ab6e26a4, after_suite (logs/node-suite-after.log) records failure_count 0 with failure_ids [] at 9614786681f545; the importers after arm (logs/review-records-importers-after.log) likewise records 57 passed EXIT=0 at 9614786681. No failure id appears after that is absent before.",
+  "base_log_revision": "bb23ab6e26a40b663a20e878cb3ea9f8095d31d7",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:404",
+    "reckon/crew/promotion_checks.py:_require_review_waiver",
+    "reckon/crew/review_records.py:486"
+  ],
+  "completed_at": "2026-11-08T23:02:24.841Z",
+  "dispatched_at": "2026-11-08T22:56:59Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the control log's revision line names the earlier commit, but its test and red result are at 9614786681 and later; a provenance label, not a measurement",
+      "recorded_at": "2026-11-08T23:06:00.352737+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "logs/negative-control-unsummed-record.log",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "non-blocking: the unsummed negative control's header names revision 8269033355d3f427f12d940e1a4cd5caf7b52501, but the test it runs (test_an_unsummed_complete_record_wins_after_its_total_is_derived) was added by 9614786681 and does not exist at that revision, so the log's provenance line contradicts its own three-dot collection and a reader checking the cited revision finds no such test; the control itself is valid, but a later audit cannot verify which tree produced it."
+    }
+  ],
+  "head_log_revision": "9614786681f545c93afd35d087cdf74d1d085354",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit against 8269033355d3: 9614786681 adds UNSUMMED_NAME, _unsummed_record() and test_an_unsummed_complete_record_wins_after_its_total_is_derived to the test file; b1be31b712 edits only the evidence fragment, moving the case count to three and adding the second negative-control row. 40 insertions, 4 deletions, no runtime code changed.",
+    "done_when": "the source node's done_when (prompt.txt:111) asks both cases to pass through the promotion gate's raising caller with a logged negative control and no importer delta; the gate log logs/node-suite-after.log records 3 passed EXIT=0 at 9614786681, logs/negative-control-unsummed-record.log records 1 failed, 2 passed EXIT=1 naming test_an_unsummed_complete_record_wins_after_its_total_is_derived, and the importer arms are 57 passed/EXIT=0 both.",
+    "goal": "the source node's goal is to make the stored-review selection take a parsed complete record over an incomplete one at the same head; the commits gained since review (9614786681, b1be31b712) add the case the earlier review found missing, at tests/test_a_parsed_review_wins_over_an_incomplete_one.py:136-149, over reckon/crew/review_records.py:417-433.",
+    "manifest": "read; it states the node gate at 9614786681 as 3 passed EXIT=0 (logs/node-suite-after.log), both importer arms as 57 passed EXIT=0, and the unsummed negative control as 1 failed, 2 passed EXIT=1 (logs/negative-control-unsummed-record.log).",
+    "write_paths": "the source node's declared paths (manifest.md:3) are reckon/crew/review_records.py, tests/test_a_parsed_review_wins_over_an_incomplete_one.py, the evidence fragment and its figures directory; the gained diff touches only tests/test_a_parsed_review_wins_over_an_incomplete_one.py and docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-parsed-review-wins-over-an-incomplete-one.html, both inside them."
+  },
+  "justifications": {
+    "durability": "the new assertion at tests/test_a_parsed_review_wins_over_an_incomplete_one.py:145 reddens when the total derivation is skipped, shown by logs/negative-control-unsummed-record.log failing with 'incomplete' == 'parsed' while the other two cases pass, so the guard is proven to fire rather than merely to pass.",
+    "evidence": "logs/node-suite-after.log ends 3 passed in 1.86s / EXIT=0 and logs/negative-control-unsummed-record.log ends 1 failed, 2 passed / EXIT=1 naming the new test, though that log's second header line names revision 8269033355d3 at which the test does not exist, so its provenance line does not match the tree it ran.",
+    "fit": "tests/test_a_parsed_review_wins_over_an_incomplete_one.py:34 follows the INCOMPLETE_NAME/PARSED_NAME constant idiom and :52 mirrors _complete_record with a mechanism docstring, and no plan, stage or ticket identifier appears in the added names or comments.",
+    "goal_fidelity": "tests/test_a_parsed_review_wins_over_an_incomplete_one.py:136-149 writes a six-dimension record with no total beside a first-sorting incomplete one and asserts the gate returns it parsed, which is exactly the branch reckon/crew/review_records.py:431-432 exists for.",
+    "reuse": "the test drives the committed gate end to end through promotion_release._review_for_promotion, and the derivation it relies on is the existing owner reckoned at reckon/crew/review_records.py:431 (_review._has_integer_total / _review._derive_landed_total); a search of reckon/crew for a stored-record selection by completeness found _select_stored_record as the single owner, so nothing is forked.",
+    "scope_discipline": "the whole diff since 8269033355d3 is two files, the test and the node's own evidence fragment, both declared in manifest.md:3, and no runtime module was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to select a parsed complete record over an incomplete one at the same head; the commits gained since review add the unsummed case at tests/test_a_parsed_review_wins_over_an_incomplete_one.py:136-149 over reckon/crew/review_records.py:417-433.\nVERDICT done_when: the done_when asks both cases through the gate's raising caller with a logged control and no importer delta; logs/node-suite-after.log records 3 passed EXIT=0 and logs/negative-control-unsummed-record.log records 1 failed, 2 passed EXIT=1 naming the new test.\nVERDICT write_paths: the declared scope in manifest.md:3 covers reckon/crew/review_records.py, the test file and the evidence fragment; the gained diff touches only the last two.\nVERDICT manifest: read; it states the node gate at 9614786681 as 3 passed, both importer arms as 57 passed, and the unsummed control as 1 failed, 2 passed.\nVERDICT diff: read commit by commit against 8269033355d3; 9614786681 adds the fixture and test, b1be31b712 edits only the evidence fragment, 40 insertions and 4 deletions with no runtime code changed.\nCALL_SITES: reckon/crew/promotion.py:404, reckon/crew/promotion_checks.py:_require_review_waiver, reckon/crew/review_records.py:486\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_parsed_review_wins_over_an_incomplete_one.py:136-149 exercises exactly the derivation branch at reckon/crew/review_records.py:431-432.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/node-suite-after.log ends 3 passed / EXIT=0 and the control log ends 1 failed, 2 passed / EXIT=1, but that log's header names 8269033355d3 where its test does not exist.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff since 8269033355d3 is only tests/test_a_parsed_review_wins_over_an_incomplete_one.py and docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-parsed-review-wins-over-an-incomplete-one.html, both declared.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_parsed_review_wins_over_an_incomplete_one.py:145 reddens to 'incomplete' == 'parsed' when the derivation is skipped, per logs/negative-control-unsummed-record.log.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_a_parsed_review_wins_over_an_incomplete_one.py:34 and :52 follow the file's existing constant and fixture idiom with mechanism-word names.\nSCORE reuse: 20\nJUSTIFICATION reuse: the test drives promotion_release._review_for_promotion and the derivation owned by reckon/crew/review_records.py:431 rather than restating either.\nFINDING logs/negative-control-unsummed-record.log:2 non-blocking: the control log names revision 8269033355d3, at which the test it runs does not exist, so its provenance line contradicts its own collection and cannot be audited against a tree.",
+  "review_run_id": "r-20261108T225446936910-review-of-a-parsed-review-wins-over-an-incomplete-one-b1be31b71262",
+  "review_scope": "only the commits gained since the earlier review at 8269033355d3f427f12d940e1a4cd5caf7b52501: 9614786681f545c93afd35d087cdf74d1d085354 and b1be31b712621f41756da0fc3c09b1678cf31bf1",
+  "reviewed_base_sha": "8269033355d3f427f12d940e1a4cd5caf7b52501",
+  "reviewed_head_sha": "b1be31b712621f41756da0fc3c09b1678cf31bf1",
+  "reviewed_run_id": "r-20261108T221209911001-a-parsed-review-wins-over-an-incomplete-one",
+  "reviewer": "review-of-a-parsed-review-wins-over-an-incomplete-one-b1be31b71262",
+  "reviewer_run_id": "r-20261108T225446936910-review-of-a-parsed-review-wins-over-an-incomplete-one-b1be31b71262",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T23:10:40.003056+00:00",
+  "total": 114
+}

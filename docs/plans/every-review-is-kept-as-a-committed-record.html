@@ -20,13 +20,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;implementable&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;deferred&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s25&quot;:&quot;implementable&quot;,&quot;s26&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;implementable&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;deferred&quot;,&quot;s25&quot;:&quot;implementable&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>Every Review Is Kept As A Committed Record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.97">
-<meta name="plan-version" content="190">
-<meta name="plan-modified" content="2026-11-08">
+<meta name="plan-version" content="191">
+<meta name="plan-modified" content="2026-11-09">
 </head>
 <body>
   <main class="plan-doc">
@@ -533,6 +533,12 @@
 <div class="r-comment" data-section="s23" data-id="c-run-r-20261019T181215792224-s23-population-at-merge" data-who="reckon-build" data-when="2026-10-19T19:09:34.662Z">
     <div class="r-comment-body"><p>population measurement of the stored-review total head: merging 81331dba (candidate merge ea6dbeffb) onto main f79098cb1 over the 174-file importer population adds no failing test id — its two candidate-only ids (tests/test_crew.py watcher tests) fail at base too when run alone (4/5 and 2/5), while the head repairs five base failures (14 failed/1661 passed at base; 11 failed/1670 passed at the candidate)</p></div>
 </div>
+<div class="r-comment" data-section="s25" data-id="c-run-r-20261108T223033265909-review-of-a-parsed-review-wins-over-an-incomplete-one-8269033355d3" data-who="reckon-build" data-when="2026-11-08T22:40:49.975Z">
+    <div class="r-comment-body"><p>an independent review of 8269033355d3 is stored as a parsed record scoring all six dimensions (112/120), reviewed_base_sha bb23ab6e26a40b663a20e878cb3ea9f8095d31d7 and reviewed_head_sha 8269033355d3f427f12d940e1a4cd5caf7b52501 carried beside it, added_failure_count 0 derived from the reviewed run's baseline_suite and after_suite logs, with one non-blocking finding</p></div>
+</div>
+<div class="r-comment" data-section="s25" data-id="c-run-r-20261108T225446936910-review-of-a-parsed-review-wins-over-an-incomplete-one-b1be31b71262" data-who="reckon-build" data-when="2026-11-08T23:02:24.841Z">
+    <div class="r-comment-body"><p>reviewed only the commits r-20261108T221209911001 gained since its earlier review at 8269033355d3 — the unsummed-record case and its evidence update — and stored a parsed record at the reviewed head b1be31b7126 scoring all six dimensions (19/17/20/19/19/20, total 114), carrying reviewed_base_sha 8269033355d3f427f12d940e1a4cd5caf7b52501 and reviewed_head_sha b1be31b712621f41756da0fc3c09b1678cf31bf1, with added_failure_count 0 and one non-blocking finding on the control log&#x27;s provenance line, the earlier review&#x27;s durability finding now closed and proven by a red negative control rather than by a passing suite</p></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261006T140311245358-review-of-review-records-have-a-committed-root" data-who="reckon-build" data-when="2026-10-06T14:10:37.516Z">
     <div class="r-comment-body"><p>Independent review of run r-20261006T134946510136-review-records-have-a-committed-root (reckon:every-review-is-kept-as-a-committed-record §3) stored a parsed record at both fence paths — scores goal_fidelity 20, evidence 16, scope_discipline 20, durability 16, fit 20, reuse 20 (total 112), reviewed_base_sha 3c7a3f36a and reviewed_head_sha 2e05df719, added_failure_count null (the reviewed manifest carries no baseline_suite/after_suite arm) — with two follow-on findings: review_path's committed branch defaults a missing review_run_id to reviewed_run_id where its sibling plan_review_path refuses, and run_record_times' live-pointer fallback is untested. No blocking finding; the node's committed-store mechanism is correct and its declared guard fires.</p></div>
 </div>
@@ -745,9 +751,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261103T083142255959-finish-the-remaining-reviewrecord-recurrence-fold" data-who="reckon-build" data-when="2026-11-05T11:22:27.992Z">
     <div class="r-comment-body"><p>Added tests/test_review_finding_recurrence.py, a synthesised-store gate that computes both consecutive-review recurrence shares per finding type from the stored responses and asserts the plan-review view reports the same fold; the 7-13 October window gives duplicate_owner 42 findings, any 16 (38.1%), acted 9 (21.4%) against the whole-history 83.3% and 41.9%; head arm 4 passed EXIT=0, base arm 4 passed EXIT=0 (0 added), negative control 3 failed 1 passed EXIT=1.</p></div>
-</div>
-<div class="r-comment" data-section="s25" data-id="c-run-r-20261108T223033265909-review-of-a-parsed-review-wins-over-an-incomplete-one-8269033355d3" data-who="reckon-build" data-when="2026-11-08T22:40:49.975Z">
-    <div class="r-comment-body"><p>an independent review of 8269033355d3 is stored as a parsed record scoring all six dimensions (112/120), reviewed_base_sha bb23ab6e26a40b663a20e878cb3ea9f8095d31d7 and reviewed_head_sha 8269033355d3f427f12d940e1a4cd5caf7b52501 carried beside it, added_failure_count 0 derived from the reviewed run's baseline_suite and after_suite logs, with one non-blocking finding</p></div>
 </div>
 </section>
 </main>
