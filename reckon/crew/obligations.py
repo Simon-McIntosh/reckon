@@ -1026,7 +1026,13 @@ def _partition_acknowledged(
     return owed, deferred
 
 
-def _live_item(row: Mapping[str, Any], *, kind: str, now: datetime) -> dict[str, Any]:
+def _live_item(
+    row: Mapping[str, Any],
+    *,
+    kind: str,
+    now: datetime,
+    pointer: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
     """Project one recovery row into the stable obligation shape.
 
     A kind whose remedy is a repair carries the classifier's own account of the
@@ -1044,6 +1050,13 @@ def _live_item(row: Mapping[str, Any], *, kind: str, now: datetime) -> dict[str,
     }
     if kind in CLASSIFIER_DETAIL_DUTY_KINDS:
         item["reason"] = str(row.get("detail") or "")
+    if kind == QUEUED_RUN_DUTY_KIND and pointer is not None:
+        hold = queue_admission.recorded_pass_hold(pointer)
+        verdict = str(hold.get("verdict") or "")
+        if verdict:
+            reason = str(hold.get("reason") or "")
+            item["reason"] = f"{verdict}: {reason}" if reason else verdict
+            item["next_command"] = f"wait: {item['reason']}"
     return item
 
 
@@ -1154,6 +1167,7 @@ def _queued_item(
     placements: Mapping[str, Mapping[str, int]],
     now: datetime,
     verdicts: Mapping[str, Mapping[str, Any]] | None = None,
+    pointer: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """The waiting duty one queued request owes the session that dispatched it.
 
@@ -1188,15 +1202,19 @@ def _queued_item(
         and str(row.get("phase") or "") == queue_admission.QUEUED_PHASE
     ):
         return _stalled_item(row, stall=stall, now=now)
-    item = _live_item(row, kind=QUEUED_RUN_DUTY_KIND, now=now)
+    item = _live_item(row, kind=QUEUED_RUN_DUTY_KIND, now=now, pointer=pointer)
     placement = placements.get(str(row.get("run_id") or ""))
     if placement is not None:
+        hold_reason = item.get("reason")
         item.update(placement)
-        item["next_command"] = (
-            f"waiting for a lane slot: position {placement['position']} "
-            f"of the queued requests, rank {placement['rank']} among "
-            f"this session's"
-        )
+        if hold_reason:
+            item["reason"] = hold_reason
+        else:
+            item["next_command"] = (
+                f"waiting for a lane slot: position {placement['position']} "
+                f"of the queued requests, rank {placement['rank']} among "
+                f"this session's"
+            )
     return item
 
 
@@ -2574,7 +2592,13 @@ def _obligations_view(
                 )
                 continue
             items.append(
-                _queued_item(row, placements=placements, now=now, verdicts=verdicts)
+                _queued_item(
+                    row,
+                    placements=placements,
+                    now=now,
+                    verdicts=verdicts,
+                    pointer=pointers.get(str(row.get("run_id") or "")),
+                )
             )
             continue
         kind = ""
