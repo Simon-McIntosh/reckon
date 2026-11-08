@@ -778,7 +778,9 @@ def _merge_conflicts(pointer: Mapping[str, Any], head: str) -> list[str]:
     from reckon.crew import merge
 
     try:
-        _merged_tree, conflicts = merge._merge_tree(repo, "HEAD", head)
+        _merged_tree, conflicts = merge._merge_tree(
+            repo, str(pointer.get("merge_primary_revision") or "HEAD"), head
+        )
     except (merge.MergeError, OSError):
         return []
     return merge.refusing_conflicts(conflicts)
@@ -1269,6 +1271,14 @@ def _verified_measurement(
     if moved:
         merged_tree, conflicts = merge._merge_tree(repo, primary, head)
         if merge.refusing_conflicts(conflicts):
+            from reckon.crew.recovery_repair_dispatch import dispatch_merge_repair
+
+            dispatch_merge_repair(
+                pointer,
+                head=head,
+                primary=primary,
+                paths=merge.refusing_conflicts(conflicts),
+            )
             raise CrewError(
                 "the head no longer merges cleanly onto the primary: "
                 + ", ".join(merge.refusing_conflicts(conflicts))
@@ -1502,8 +1512,10 @@ def _land_deliveries() -> dict[str, Any]:
                     }
                 )
                 continue
-            if previous.get("status") == "refused" and _refusal_holds(
-                previous, code_stamp, review_stamp
+            if (
+                previous.get("status") == "refused"
+                and not pointer.get("merge_conflict")
+                and _refusal_holds(previous, code_stamp, review_stamp)
             ):
                 continue
         if stale or awaiting_tier:
@@ -1551,9 +1563,18 @@ def _land_deliveries() -> dict[str, Any]:
         # A head that conflicts with the primary branch cannot be landed at all,
         # so it is refused before the expensive measurement rather than after
         # it, and the refusal names the paths the next writer must resolve.
-        conflicting = _merge_conflicts(pointer, head)
+        conflict_primary = _primary_revision(pointer)
+        conflicting = _merge_conflicts(
+            {**pointer, "merge_primary_revision": conflict_primary}, head
+        )
         if conflicting:
-            guard = "the head conflicts with the primary branch: " + ", ".join(
+            from reckon.crew.recovery_repair_dispatch import dispatch_merge_repair
+
+            primary = conflict_primary
+            repair = dispatch_merge_repair(
+                pointer, head=head, primary=primary, paths=conflicting
+            )
+            guard = f"merge-conflict against primary {primary}: " + ", ".join(
                 conflicting
             )
             _record_attempt(
@@ -1564,6 +1585,7 @@ def _land_deliveries() -> dict[str, Any]:
                 code_stamp=code_stamp,
                 review_stamp=review_stamp,
                 previous=previous,
+                remedy=str(repair["advice"]),
             )
             obligations.append(
                 {

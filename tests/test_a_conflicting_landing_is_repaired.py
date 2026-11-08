@@ -23,8 +23,13 @@ from tests.helpers.landing_repository import (
 
 
 def _complete_land(run):
+    citations = []
+    if run.get("authored_head"):
+        citations = ["--commit", run["head"]]
+        run = {**run, "head": run["authored_head"]}
     return complete_land(
         run,
+        *citations,
         "--waive-unreviewed-promotion",
         "The fixture tests merge conflicts rather than independent review.",
     )
@@ -202,8 +207,11 @@ def test_conflicting_delivery_opens_repair_then_lands(deliveries, monkeypatch, r
         "fix: combine function changes\n\nPreserve both delivered results.\n",
     )
     git(worktree, "merge", "--ff-only", repaired)
+    second["authored_head"] = second["head"]
     second["head"] = repaired
-    second["manifest"].write_text(f"status: complete\ncommits: {repaired}\n")
+    second["manifest"].write_text(
+        f"status: complete\ncommits: {second['authored_head']} {repaired}\n"
+    )
     result = _complete_land(second)
     assert result.exit_code == 0, result.output
     receipt = json.loads(result.output)

@@ -31,11 +31,15 @@ fallback beside it.
 
 from __future__ import annotations
 
+import fcntl
 import os
 import re
 import subprocess
 import time
 from collections.abc import Callable, Iterable, Mapping
+from contextlib import contextmanager
+from contextvars import ContextVar
+from functools import wraps
 from pathlib import Path
 
 # The repository's own pre-push guard refuses a line-anchored ``co-authored-by``
@@ -73,6 +77,19 @@ class MergeError(Exception):
     """A landing refused with nothing written to the checkout's index or tree."""
 
 
+class MergeConflictError(MergeError):
+    """A real merge conflict, pinned to the primary revision it met."""
+
+    def __init__(self, paths: list[str], base: str, head: str) -> None:
+        self.paths = paths
+        self.base = base
+        self.head = head
+        super().__init__(
+            f"the head conflicts with primary {base}; nothing was written: "
+            + ", ".join(paths)
+        )
+
+
 class MergePushOutstandingError(MergeError):
     """The merge landed and only the push is outstanding.
 
@@ -86,6 +103,56 @@ class MergePushOutstandingError(MergeError):
         super().__init__(
             "the merge landed; only the push is outstanding (rerun to push): " + detail
         )
+
+
+_HELD_LANDINGS: ContextVar[frozenset[str]] = ContextVar(
+    "held_landings", default=frozenset()
+)
+
+
+@contextmanager
+def landing_lock(repo: Path):
+    """Keep a landing's preflight, promotion and merge together across processes.
+
+    Promotion removes the live pointer. All object landings share this lock so
+    another landing cannot introduce a source conflict after that removal.
+    Nested calls in the same execution reuse the lock; other threads wait too.
+    """
+    common = _run(repo, "rev-parse", "--path-format=absolute", "--git-common-dir")
+    if common.returncode:
+        raise MergeError("cannot resolve the landing repository's common git directory")
+    key = common.stdout.strip()
+    held = _HELD_LANDINGS.get()
+    if key in held:
+        yield
+        return
+    with (Path(key) / "reckon-landing.lock").open("a") as lock:
+        until = time.monotonic() + 120
+        while True:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if time.monotonic() >= until:
+                    raise MergeError(
+                        "another landing held the repository for 120 seconds"
+                    ) from None
+                time.sleep(DEFAULT_RETRY_SECONDS)
+        token = _HELD_LANDINGS.set(held | {key})
+        try:
+            yield
+        finally:
+            _HELD_LANDINGS.reset(token)
+            fcntl.flock(lock, fcntl.LOCK_UN)
+
+
+def _serialized_landing(callback):
+    @wraps(callback)
+    def locked(repo, *args, **kwargs):
+        with landing_lock(Path(repo)):
+            return callback(repo, *args, **kwargs)
+
+    return locked
 
 
 def project_repository(project: str) -> Path:
@@ -240,7 +307,11 @@ def _merge_tree(repo: Path, base: str, head: str) -> tuple[str, list[str]]:
     if not lines:
         raise MergeError("merge-tree produced no tree")
     tree = lines[0].strip()
-    conflicts = [line.strip() for line in lines[1:] if line.strip()]
+    conflicts = []
+    for line in lines[1:]:
+        if not line.strip():
+            break
+        conflicts.append(line.strip())
     return tree, conflicts
 
 
@@ -537,9 +608,7 @@ def build_merge_commit(
     tree, conflicts = _merge_tree(repo, base, head)
     refusing = refusing_conflicts(conflicts)
     if refusing:
-        raise MergeError(
-            "the head conflicts; nothing was written: " + ", ".join(refusing)
-        )
+        raise MergeConflictError(refusing, base, head)
     return _commit_tree(repo, tree, [base, head], message)
 
 
@@ -673,6 +742,7 @@ def _push_and_confirm(repo: Path, remote: str, commit: str, branch: str) -> str:
     return remote_head
 
 
+@_serialized_landing
 def land_merge(
     repo: str | Path,
     *,

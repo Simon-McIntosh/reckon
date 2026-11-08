@@ -1,0 +1,7 @@
+<section id="a-conflicting-landing-is-repaired-checkpoint">
+  <h3>Merge repair checkpoint: delivery remains blocked</h3>
+  <p>The base reproduction passed independent function edits and failed both conflict-repair cases: 1 passed, 2 failed. Manual completion removed the live pointer before the conflict refusal; automatic landing retained the pointer but opened no repair.</p>
+  <p>The partial implementation pins conflict paths and the primary revision, preserves the live run through manual preflight, writes merge-repair advice before resuming the worker, and shares a repository landing lock across preflight, promotion and merge.</p>
+  <p>The latest node gate still reports 1 passed, 2 failed. Both conflicting cases now open a repair round and accept a head merging primary, but their subsequent promotion creates a new conflict in <code>docs/plans/plan-a.html</code>. The merge refuses it without writing conflict markers. The required two-failure stop rule ended this attempt; the implementation is not ready for promotion.</p>
+  <p>The related base arm reports 395 passed, 3 failed. No head regression arm ran after the stop. Durable receipts and logs are named in the worker manifest.</p>
+</section>

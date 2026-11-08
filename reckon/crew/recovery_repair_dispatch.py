@@ -31,6 +31,85 @@ REPAIR_ADVICE_HOLD_SECONDS = 60
 REPAIR_ADVICE_HOLD_FIELD = "repair_advice_hold"
 
 
+def dispatch_merge_repair(
+    record: Mapping[str, Any],
+    *,
+    head: str,
+    primary: str,
+    paths: Sequence[str],
+) -> dict[str, Any]:
+    """Open a merge repair on the delivery's own worker, preserving its claim.
+
+    The primary and head pin the round: re-reading one refusal cannot resume a
+    second worker, while a later delivery or primary creates a distinct round.
+    The receipt is durable before launch, including when the lane refuses it.
+    """
+    from reckon.crew import merge, resumption
+    from reckon.crew.dispatch import BudgetHold, LanePaused
+
+    run_id = str(record.get("run_id") or "")
+    branch = merge._current_branch(Path(str(record.get("repo") or "")))
+    round_id = f"{run_id}:merge:{primary}@{head}"
+    advice = (
+        _repair_round_token(round_id) + "\n"
+        f"Landing met a merge conflict against primary {branch} at {primary}.\n"
+        f"Conflicted paths: {', '.join(paths)}.\n"
+        f"Merge the current primary {branch} into this run's worktree, resolve "
+        "the named paths keeping both changes' intent, and commit the merge. "
+        "Do not discard either side or commit conflict markers. Re-run this "
+        "run's own gate and deliver the repaired head and fresh manifest again. "
+        "Keep the original delivery commits and the repaired merge head in "
+        "the manifest citations.\n"
+    )
+    receipt: dict[str, Any] = {
+        "outcome": "merge-conflict",
+        "paths": list(paths),
+        "main_revision": primary,
+        "head": head,
+        "round_id": round_id,
+        "advice": advice,
+        "status": "opened",
+    }
+    receipt_path = runs.run_dir(run_id) / "merge-repair.json"
+    fresh = _live_pointer_or_absent(run_id)
+    previous = (fresh or {}).get("merge_conflict") or {}
+    if previous.get("round_id") == round_id and previous.get("status") == "resumed":
+        return dict(previous)
+    runs._write_json(receipt_path, receipt)
+
+    def save(pointer: dict[str, Any]) -> dict[str, Any]:
+        pointer["merge_conflict"] = dict(receipt)
+        return pointer
+
+    if fresh is None:
+        receipt["status"] = "refused"
+        receipt["reason"] = (
+            "the live pointer is absent; the repair needs its retained worker"
+        )
+    else:
+        _mutate_pointer(run_id, save)
+        busy = _reviewed_run_is_busy(fresh)
+        if busy:
+            receipt["status"], receipt["reason"] = "held", busy
+        else:
+            try:
+                resumption._resume(run_id, fresh, config=None, advice=advice)
+            except (BudgetHold, LanePaused, CrewError, OSError) as exc:
+                receipt["status"], receipt["reason"] = "refused", str(exc)
+            else:
+                receipt["status"] = "resumed"
+                _record_repair_dispatch(
+                    run_id,
+                    status="resumed",
+                    reason=advice,
+                    round_id=round_id,
+                    node_id=f"{repair_module.REPAIR_NODE_PREFIX}merge-{head[:12]}",
+                )
+        _mutate_pointer(run_id, save)
+    runs._write_json(receipt_path, receipt)
+    return receipt
+
+
 def _dimension_floors(project: str, config: Mapping[str, Any] | None) -> dict[str, int]:
     """Resolve declared floors without blocking a review when config is unreadable."""
     from reckon.crew import review_dispositions

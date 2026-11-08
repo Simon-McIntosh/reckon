@@ -168,6 +168,28 @@ def _install_carried_answer() -> None:
 _install_carried_answer()
 
 
+def _serialized_complete_landing(callback):
+    """Hold the repository while a completion checks, promotes and lands its head."""
+    from functools import wraps
+
+    @wraps(callback)
+    def locked(*args, **kwargs):
+        from reckon.crew import merge, runs
+
+        if kwargs.get("land") and not kwargs.get("dry_run"):
+            try:
+                pointer = runs.read_pointer(kwargs["run_id"])
+            except runs.CrewError:
+                pointer = {}
+            if pointer:
+                repository = merge.project_repository(str(pointer.get("project") or ""))
+                with merge.landing_lock(repository):
+                    return callback(*args, **kwargs)
+        return callback(*args, **kwargs)
+
+    return locked
+
+
 def _merge_land_refusal(
     exc: Exception, *, resume: str | None = None
 ) -> tuple[dict[str, Any], int]:
@@ -3058,6 +3080,7 @@ def _refuse_a_flag_as_a_reason(
     ),
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+@_serialized_complete_landing
 def crew_complete(
     run_id,
     gate,
@@ -3210,6 +3233,34 @@ def crew_complete(
             pretty,
         )
         return
+    if land and pointer:
+        from reckon.crew import merge as merge_module
+        from reckon.crew.recovery_repair_dispatch import dispatch_merge_repair
+
+        repository = merge_module.project_repository(str(pointer.get("project") or ""))
+        head = _reviewed_head_of({"commits": commits})
+        if not head and pointer.get("worktree"):
+            head = merge_module._rev_parse(Path(pointer["worktree"]), "HEAD")
+        if head:
+            primary = merge_module._rev_parse(repository, "HEAD")
+            _tree, conflicts = merge_module._merge_tree(repository, primary, head)
+            refusing = merge_module.refusing_conflicts(conflicts)
+            if refusing:
+                repair = dispatch_merge_repair(
+                    pointer, head=head, primary=primary, paths=refusing
+                )
+                _emit_crew_result(
+                    {
+                        "ok": False,
+                        "run_id": run_id,
+                        "outcome": "merge-conflict",
+                        "paths": refusing,
+                        "main_revision": primary,
+                        "repair": repair,
+                    },
+                    pretty,
+                )
+                raise click.exceptions.Exit(1)
     if candidate:
         from reckon.crew import merge as merge_module
         from reckon.crew import queue_landing
