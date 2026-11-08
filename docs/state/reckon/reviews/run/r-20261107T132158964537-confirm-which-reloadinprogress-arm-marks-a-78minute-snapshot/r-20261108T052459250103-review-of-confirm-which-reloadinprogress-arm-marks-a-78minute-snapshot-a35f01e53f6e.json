@@ -1,0 +1,62 @@
+{
+  "absent": [
+    "goal_fidelity",
+    "evidence",
+    "scope_discipline",
+    "durability",
+    "fit",
+    "reuse"
+  ],
+  "absent_items": [
+    "goal",
+    "done_when",
+    "write_paths",
+    "manifest",
+    "diff",
+    "call_sites"
+  ],
+  "claim_summary": {
+    "detail": "The report's census summary says 101 session snapshots, 12 carrying the then-current stamp at 15-122 s and 89 at 4404-3112465 s; its logged table contains exactly 101 parseable session rows split 12 and 89 with those age extrema (plus 18 separate unreadable station-snapshot rows).",
+    "verdict": "agrees"
+  },
+  "claims": [
+    {
+      "detail": "The stale_code_old hook drive at the reviewed revision used a 4680 s snapshot and printed \"producer reloading, last snapshot 1h18m old\", matching the report's first table and logs/01-stale-code-old.log.",
+      "rank": "1",
+      "verdict": "reproduced"
+    },
+    {
+      "detail": "The no_producer_old hook drive at the reviewed revision used a 4680 s snapshot and printed \"are not current: no producer; run `reckon crew watch --ensure --project snapshot-arm-fixture`\", matching the report's no-producer arm and logs/04-no-producer-old.log.",
+      "rank": "2",
+      "verdict": "reproduced"
+    },
+    {
+      "detail": "The report's census states 101 session snapshots: 12 current-stamp rows aged 15-122 s and 89 older-stamp rows aged 4404-3112465 s. The rerun found 102: 12 current-stamp rows aged 12-248 s and 90 older-stamp rows aged 18125-3169451 s; the shared live input changed between observations.",
+      "rank": "3",
+      "verdict": "differs"
+    }
+  ],
+  "completed_at": "2026-11-08T05:39:26Z",
+  "dispatched_at": "2026-11-08T05:28:36Z",
+  "evidence_logs": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T052459250103-review-of-confirm-which-reloadinprogress-arm-marks-a-78minute-snapshot-a35f01e53f6e/claim-1-stale-code-old.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T052459250103-review-of-confirm-which-reloadinprogress-arm-marks-a-78minute-snapshot-a35f01e53f6e/claim-2-no-producer-old.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T052459250103-review-of-confirm-which-reloadinprogress-arm-marks-a-78minute-snapshot-a35f01e53f6e/claim-3-snapshot-census.log"
+  ],
+  "findings": [],
+  "item_aggregate": null,
+  "item_verdicts": {},
+  "justifications": {},
+  "project": "reckon",
+  "raw_text": "CLAIM 1: reproduced: The stale_code_old hook drive at the reviewed revision used a 4680 s snapshot and printed \"producer reloading, last snapshot 1h18m old\", matching the report's first table and logs/01-stale-code-old.log.\nCLAIM 2: reproduced: The no_producer_old hook drive at the reviewed revision used a 4680 s snapshot and printed \"are not current: no producer; run `reckon crew watch --ensure --project snapshot-arm-fixture`\", matching the report's no-producer arm and logs/04-no-producer-old.log.\nCLAIM 3: differs: The report's census states 101 session snapshots: 12 current-stamp rows aged 15-122 s and 89 older-stamp rows aged 4404-3112465 s. The rerun found 102: 12 current-stamp rows aged 12-248 s and 90 older-stamp rows aged 18125-3169451 s; the shared live input changed between observations.\nCLAIM_SUMMARY: agrees: The report's census summary says 101 session snapshots, 12 carrying the then-current stamp at 15-122 s and 89 at 4404-3112465 s; its logged table contains exactly 101 parseable session rows split 12 and 89 with those age extrema (plus 18 separate unreadable station-snapshot rows).\n",
+  "review_run_id": "r-20261108T052459250103-review-of-confirm-which-reloadinprogress-arm-marks-a-78minute-snapshot-a35f01e53f6e",
+  "reviewed_base_sha": "a35f01e53f6ef4c50ce97d0fdc9fb38484821f07",
+  "reviewed_head_sha": "a35f01e53f6ef4c50ce97d0fdc9fb38484821f07",
+  "reviewed_run_id": "r-20261107T132158964537-confirm-which-reloadinprogress-arm-marks-a-78minute-snapshot",
+  "rubric": "claims",
+  "scores": {},
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T05:34:47.660065Z",
+  "total": null
+}
