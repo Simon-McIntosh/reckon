@@ -1,0 +1,46 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-08T01:34:20Z",
+  "dispatched_at": "2026-11-08T01:24:46Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none",
+    "diff": "Commit 9b463ed818c4b3a4e1c02db76623ddd7ba82276a adds a prewrite copy and independent accessor comparison at tests/test_the_first_six_fields_leave_the_live_pointer.py:232-267; commit 574124107b94823f9ca378994420e5dc0a159261 records that repair and Ruff results in the evidence fragment:7.",
+    "done_when": "The source measure in prompt.txt:125-126 is supported by manifest.md:19-21, repair-baseline-suite.log and repair-after-suite.log each reporting 19 passed, and the Ruff receipts reporting no findings.",
+    "goal": "The source goal in prompt.txt:38 moves six dispatch fields; tests/test_the_first_six_fields_leave_the_live_pointer.py:236-267 now protects the already landed move against changed sidecar values.",
+    "manifest": "The source manifest.md:15-21 names the exact pytest gate, both completed suite arms, zero failures, and the red old-pointer control; its ruff_check and ruff_format_check fields name readable EXIT=0 receipts.",
+    "write_paths": "The source scope in prompt.txt:77-90 includes both changed paths; the two-commit diff changes only tests/test_the_first_six_fields_leave_the_live_pointer.py and docs/evidence/fragments/crew-state-stays-bounded/the-first-six-fields-leave-the-live-pointer.html."
+  },
+  "justifications": {
+    "durability": "tests/test_the_first_six_fields_leave_the_live_pointer.py:266 fails when a sidecar value changes after the captured payload, as sensitivity-head.log demonstrates and sensitivity-reversed.log contrasts.",
+    "evidence": "The source manifest.md baseline_suite and after_suite fields cite completed 19-pass logs with EXIT=0, and its ruff_check and ruff_format_check fields cite separate EXIT=0 logs.",
+    "fit": "tests/test_the_first_six_fields_leave_the_live_pointer.py:233-246 uses the existing monkeypatch fixture and names its local wrapper for the value it captures; the evidence fragment:7 follows its surrounding paragraph structure.",
+    "goal_fidelity": "tests/test_the_first_six_fields_leave_the_live_pointer.py:236-267 guards all six moved fields against incorrect sidecar contents without changing the working production move.",
+    "reuse": "A capability search of reckon/crew/runs.py:166-221 found the existing detail splitter and accessor; the test wrapper at tests/test_the_first_six_fields_leave_the_live_pointer.py:236 only observes that owner and adds no competing runtime mechanism.",
+    "scope_discipline": "The diff from f06b0edc31a30c27015b01b6ebc5afb056463ec2 to 574124107b94823f9ca378994420e5dc0a159261 touches only the test and evidence fragment allowed by prompt.txt:77-90."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source goal in prompt.txt:38 moves six dispatch fields; tests/test_the_first_six_fields_leave_the_live_pointer.py:236-267 now protects the already landed move against changed sidecar values.\nVERDICT done_when: The source measure in prompt.txt:125-126 is supported by manifest.md:19-21, repair-baseline-suite.log and repair-after-suite.log each reporting 19 passed, and the Ruff receipts reporting no findings.\nVERDICT write_paths: The source scope in prompt.txt:77-90 includes both changed paths; the two-commit diff changes only tests/test_the_first_six_fields_leave_the_live_pointer.py and docs/evidence/fragments/crew-state-stays-bounded/the-first-six-fields-leave-the-live-pointer.html.\nVERDICT manifest: The source manifest.md:15-21 names the exact pytest gate, both completed suite arms, zero failures, and the red old-pointer control; its ruff_check and ruff_format_check fields name readable EXIT=0 receipts.\nVERDICT diff: Commit 9b463ed818c4b3a4e1c02db76623ddd7ba82276a adds a prewrite copy and independent accessor comparison at tests/test_the_first_six_fields_leave_the_live_pointer.py:232-267; commit 574124107b94823f9ca378994420e5dc0a159261 records that repair and Ruff results in the evidence fragment:7.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_the_first_six_fields_leave_the_live_pointer.py:236-267 guards all six moved fields against incorrect sidecar contents without changing the working production move.\nSCORE evidence: 19\nJUSTIFICATION evidence: The source manifest.md baseline_suite and after_suite fields cite completed 19-pass logs with EXIT=0, and its ruff_check and ruff_format_check fields cite separate EXIT=0 logs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diff from f06b0edc31a30c27015b01b6ebc5afb056463ec2 to 574124107b94823f9ca378994420e5dc0a159261 touches only the test and evidence fragment allowed by prompt.txt:77-90.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_first_six_fields_leave_the_live_pointer.py:266 fails when a sidecar value changes after the captured payload, as sensitivity-head.log demonstrates and sensitivity-reversed.log contrasts.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_the_first_six_fields_leave_the_live_pointer.py:233-246 uses the existing monkeypatch fixture and names its local wrapper for the value it captures; the evidence fragment:7 follows its surrounding paragraph structure.\nSCORE reuse: 20\nJUSTIFICATION reuse: A capability search of reckon/crew/runs.py:166-221 found the existing detail splitter and accessor; the test wrapper at tests/test_the_first_six_fields_leave_the_live_pointer.py:236 only observes that owner and adds no competing runtime mechanism.\nASSERTION tests/test_the_first_six_fields_leave_the_live_pointer.py:256: set(expected) differs from DETAIL_FIELDS if any of the six values never reaches the splitter.\nASSERTION tests/test_the_first_six_fields_leave_the_live_pointer.py:257: the picker backend differs from native if the dispatched choice changes.\nASSERTION tests/test_the_first_six_fields_leave_the_live_pointer.py:258: the admission payload differs from the supplied run and project if stamping changes its fields.\nASSERTION tests/test_the_first_six_fields_leave_the_live_pointer.py:266: the accessor differs from the prewrite copy if the sidecar is missing, corrupted or read through the wrong path; the corrupted-backend control proves it fails.",
+  "review_run_id": "r-20261108T012121211749-review-of-the-first-six-fields-leave-the-live-pointer-574124107b94",
+  "reviewed_base_sha": "f06b0edc31a30c27015b01b6ebc5afb056463ec2",
+  "reviewed_head_sha": "574124107b94823f9ca378994420e5dc0a159261",
+  "reviewed_run_id": "r-20261107T162323087195-the-first-six-fields-leave-the-live-pointer",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T01:53:53.313105+00:00",
+  "total": 116
+}
