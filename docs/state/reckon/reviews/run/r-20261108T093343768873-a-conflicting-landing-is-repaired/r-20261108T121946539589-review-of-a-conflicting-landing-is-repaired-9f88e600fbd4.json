@@ -1,0 +1,452 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "assertion": "git(repository, \"status\", \"--porcelain\") == \"\"",
+      "fails_when": "A landing dirties the main checkout index or working tree.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 124
+    },
+    {
+      "assertion": "\"<<<<<<<\" not in content",
+      "fails_when": "A landing leaves the named conflict marker in the committed source.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 126
+    },
+    {
+      "assertion": "\"=======\" not in content",
+      "fails_when": "A landing leaves the named conflict marker in the committed source.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 127
+    },
+    {
+      "assertion": "\">>>>>>>\" not in content",
+      "fails_when": "A landing leaves the named conflict marker in the committed source.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 128
+    },
+    {
+      "assertion": "result.exit_code == 0",
+      "fails_when": "The real completion command reports the wrong success/refusal outcome for this clean, conflicting or interrupted route.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 137
+    },
+    {
+      "assertion": "receipt[\"steps\"][\"land\"][\"pushed\"]",
+      "fails_when": "The completion receipt does not confirm a pushed landing; remote ref assertions independently check that claim.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 139
+    },
+    {
+      "assertion": "\"first delivered\" in content and \"second delivered\" in content",
+      "fails_when": "The committed source drops an independent delivery, omits the combined repair content, or pushes the conflicting second delivery before repair.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 142
+    },
+    {
+      "assertion": "git(second[\"origin\"], \"rev-parse\", \"main\") == git(\n        second[\"repository\"], \"rev-parse\", \"main\"\n    )",
+      "fails_when": "The local and bare-remote primary refs differ because landing failed to push the commit.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 143
+    },
+    {
+      "assertion": "resumed == []",
+      "fails_when": "Conflict handling opens no repair, resumes more than once for the same round, or resumes for an independent clean landing.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 146
+    },
+    {
+      "assertion": "result[\"landed\"] == []",
+      "fails_when": "The named repair bookkeeping or success state differs from the independently exercised real git landing; inspect the cited assertion expression.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 166
+    },
+    {
+      "assertion": "\"conflict\" in result[\"obligations\"][0][\"guard\"]",
+      "fails_when": "The named repair bookkeeping or success state differs from the independently exercised real git landing; inspect the cited assertion expression.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 167
+    },
+    {
+      "assertion": "landed.exit_code == 0",
+      "fails_when": "The real completion command reports the wrong success/refusal outcome for this clean, conflicting or interrupted route.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 177
+    },
+    {
+      "assertion": "result.exit_code != 0",
+      "fails_when": "The real completion command reports the wrong success/refusal outcome for this clean, conflicting or interrupted route.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 182
+    },
+    {
+      "assertion": "receipt[\"steps\"][\"promote\"][\"ok\"]",
+      "fails_when": "The manual conflict path discards or fails its initial promotion rather than preserving its promotion record.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 184
+    },
+    {
+      "assertion": "receipt[\"steps\"][\"land\"][\"outcome\"] == \"merge-conflict\"",
+      "fails_when": "The base behavior is reinstated: a conflict is refused without a merge-conflict receipt or resumed repair record.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 185
+    },
+    {
+      "assertion": "result.exit_code != 0",
+      "fails_when": "The real completion command reports the wrong success/refusal outcome for this clean, conflicting or interrupted route.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 195
+    },
+    {
+      "assertion": "not runs.pointer_path(second[\"run_id\"]).exists()",
+      "fails_when": "Promotion fails to retain a pending repair or successful landing fails to remove its pending record/live pointer.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 196
+    },
+    {
+      "assertion": "result[\"interrupted_landings\"][0][\"status\"] == \"merge-conflict\"",
+      "fails_when": "The named repair bookkeeping or success state differs from the independently exercised real git landing; inspect the cited assertion expression.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 198
+    },
+    {
+      "assertion": "\"second delivered\" not in git(second[\"origin\"], \"show\", \"main:\" + SOURCE)",
+      "fails_when": "The committed source drops an independent delivery, omits the combined repair content, or pushes the conflicting second delivery before repair.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 200
+    },
+    {
+      "assertion": "outcome.get(\"outcome\") == \"merge-conflict\"",
+      "fails_when": "The base behavior is reinstated: a conflict is refused without a merge-conflict receipt or resumed repair record.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 204
+    },
+    {
+      "assertion": "outcome[\"paths\"] == [SOURCE]",
+      "fails_when": "The real git conflict file is omitted or diagnostic prose is mistaken for a conflict path.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 205
+    },
+    {
+      "assertion": "outcome[\"main_revision\"] == primary",
+      "fails_when": "Conflict recording or advice uses a revision other than the independently observed primary git HEAD.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 206
+    },
+    {
+      "assertion": "pointer[REPAIR_ROUNDS_FIELD][\"count\"] == 1",
+      "fails_when": "Conflict handling opens no repair, resumes more than once for the same round, or resumes for an independent clean landing.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 207
+    },
+    {
+      "assertion": "round_record[\"status\"] == \"resumed\"",
+      "fails_when": "Conflict handling opens no repair, resumes more than once for the same round, or resumes for an independent clean landing.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 209
+    },
+    {
+      "assertion": "len(resumed) == 1",
+      "fails_when": "Conflict handling opens no repair, resumes more than once for the same round, or resumes for an independent clean landing.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 210
+    },
+    {
+      "assertion": "SOURCE in advice and primary in advice",
+      "fails_when": "Conflict recording or advice uses a revision other than the independently observed primary git HEAD.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 212
+    },
+    {
+      "assertion": "\"merge\" in advice and \"gate\" in advice",
+      "fails_when": "Repair advice omits merge, gate or preservation of both changes as required by the plan.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 213
+    },
+    {
+      "assertion": "\"both\" in advice",
+      "fails_when": "Repair advice omits merge, gate or preservation of both changes as required by the plan.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 214
+    },
+    {
+      "assertion": "pointer[\"pending_landing_repair\"] is True",
+      "fails_when": "Promotion fails to retain a pending repair or successful landing fails to remove its pending record/live pointer.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 215
+    },
+    {
+      "assertion": "pending_path.is_file()",
+      "fails_when": "Promotion fails to retain a pending repair or successful landing fails to remove its pending record/live pointer.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 217
+    },
+    {
+      "assertion": "pending_landing.finish_pending_landings()[0][\"status\"]\n        == \"awaiting-merge-repair\"",
+      "fails_when": "Promotion fails to retain a pending repair or successful landing fails to remove its pending record/live pointer.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 218
+    },
+    {
+      "assertion": "len(resumed) == 1",
+      "fails_when": "Conflict handling opens no repair, resumes more than once for the same round, or resumes for an independent clean landing.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 222
+    },
+    {
+      "assertion": "worker_merge.returncode == 1",
+      "fails_when": "The synthetic fixture no longer produces an actual git same-line merge conflict before resolving it.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 236
+    },
+    {
+      "assertion": "SOURCE in worker_merge.stdout",
+      "fails_when": "The real git conflict file is omitted or diagnostic prose is mistaken for a conflict path.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 237
+    },
+    {
+      "assertion": "finished[\"status\"] == \"finished\"",
+      "fails_when": "The finisher never completes the repaired delivery or selects the stale original head; receipt selection is supplementary to independent content and remote-ancestry checks.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 260
+    },
+    {
+      "assertion": "finished[\"head\"] == repaired",
+      "fails_when": "The finisher never completes the repaired delivery or selects the stale original head; receipt selection is supplementary to independent content and remote-ancestry checks.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 261
+    },
+    {
+      "assertion": "not pending_path.exists()",
+      "fails_when": "Promotion fails to retain a pending repair or successful landing fails to remove its pending record/live pointer.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 262
+    },
+    {
+      "assertion": "not runs.pointer_path(second[\"run_id\"]).exists()",
+      "fails_when": "Promotion fails to retain a pending repair or successful landing fails to remove its pending record/live pointer.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 263
+    },
+    {
+      "assertion": "plan.read_bytes() == plan_before",
+      "fails_when": "Repair finishing rewrites previously captured plan or promotion-record bytes.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 264
+    },
+    {
+      "assertion": "ledger.read_bytes() == promotion_before",
+      "fails_when": "Repair finishing rewrites previously captured plan or promotion-record bytes.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 267
+    },
+    {
+      "assertion": "git(repository, \"rev-list\", \"--first-parent\", \"--count\", primary + \"..HEAD\")\n        == \"1\"",
+      "fails_when": "Finishing the repair adds a second promotion or another primary integration commit.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 268
+    },
+    {
+      "assertion": "\"first delivered + second delivered\" in git(\n        repository, \"show\", \"main:\" + SOURCE\n    )",
+      "fails_when": "The committed source drops an independent delivery, omits the combined repair content, or pushes the conflicting second delivery before repair.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 272
+    },
+    {
+      "assertion": "git(second[\"origin\"], \"rev-parse\", \"main\") == git(\n        repository, \"rev-parse\", \"main\"\n    )",
+      "fails_when": "The local and bare-remote primary refs differ because landing failed to push the commit.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 275
+    },
+    {
+      "assertion": "git(second[\"origin\"], \"merge-base\", repaired, \"main\") == repaired",
+      "fails_when": "The repaired commit is absent from the bare remote main ancestry, even if the result receipt echoes the expected head.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 278
+    },
+    {
+      "assertion": "result.exit_code == 0",
+      "fails_when": "The real completion command reports the wrong success/refusal outcome for this clean, conflicting or interrupted route.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 287
+    },
+    {
+      "assertion": "pointer[\"merge_conflict\"][\"outcome\"] == \"merge-conflict\"",
+      "fails_when": "The base behavior is reinstated: a conflict is refused without a merge-conflict receipt or resumed repair record.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 290
+    },
+    {
+      "assertion": "pointer[\"merge_conflict\"][\"paths\"] == [SOURCE]",
+      "fails_when": "The real git conflict file is omitted or diagnostic prose is mistaken for a conflict path.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 291
+    },
+    {
+      "assertion": "pointer[REPAIR_ROUNDS_FIELD][\"count\"] == 1",
+      "fails_when": "Conflict handling opens no repair, resumes more than once for the same round, or resumes for an independent clean landing.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 292
+    },
+    {
+      "assertion": "len(resumed) == 1",
+      "fails_when": "Conflict handling opens no repair, resumes more than once for the same round, or resumes for an independent clean landing.",
+      "file": "tests/test_a_conflicting_landing_is_repaired.py",
+      "line": 293
+    }
+  ],
+  "assertion_independence": "finished[\"head\"] == repaired checks a receipt against the delivered input and is not sufficient landing proof alone; the test independently reads remote merge-base, committed source, primary commit count and unchanged document bytes. No assertion was counted as proving a push merely because it echoes the requested head. The failed/stale gate refusal has no assertion, recorded as a blocking finding.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/merge.py:build_merge_commit",
+    "reckon/crew/queue_landing.py:_verified_measurement",
+    "reckon/crew/queue_landing.py:_land_deliveries",
+    "reckon/crew/pending_landing.py:finish_pending_landings",
+    "reckon/crew_run_commands.py:crew_complete",
+    "reckon/crew_run_commands.py:_land_a_promoted_run"
+  ],
+  "completed_at": "2026-11-08T12:33:40Z",
+  "dispatched_at": "2026-11-08T12:21:42Z",
+  "findings": [
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": "131",
+      "severity": "blocking",
+      "text": "blocking: _delivered_repair accepts a complete manifest plus commit ancestry without reading or validating a fresh gate for that repaired head; finish_pending_landings then pushes it directly, and crew_run_commands.py:3213 takes this branch before normal gate validation, so a repair with a failed, missing or stale gate can land despite the required own-gate rerun; require revision-bound repair gate evidence before selecting it and add refusal cases without promoting the run again."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_conflicting_landing_is_repaired.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T093343768873-a-conflicting-landing-is-repaired/node-rechecked.log",
+      "observed_failure_ids": [],
+      "revision": "6e51af7316fbb85e6b67b9b2fd97f5d14fc38224"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=/var/tmp/merge-repair-resumed-base-vhtp1fdd /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/1fb615a0-2801-4418-bbb4-c2914719e520/a-conflicting-landing-is-repaired/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_conflicting_landing_is_repaired.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 3,
+      "failure_ids": [
+        "tests/test_a_conflicting_landing_is_repaired.py::test_conflicting_delivery_opens_repair_then_lands[automatic]",
+        "tests/test_a_conflicting_landing_is_repaired.py::test_conflicting_delivery_opens_repair_then_lands[manual]",
+        "tests/test_a_conflicting_landing_is_repaired.py::test_unpromoted_automatic_conflict_opens_repair"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T093343768873-a-conflicting-landing-is-repaired/negative-control-resumed.log",
+      "observed_failure_ids": [
+        "tests/test_a_conflicting_landing_is_repaired.py::test_conflicting_delivery_opens_repair_then_lands[automatic]",
+        "tests/test_a_conflicting_landing_is_repaired.py::test_conflicting_delivery_opens_repair_then_lands[manual]",
+        "tests/test_a_conflicting_landing_is_repaired.py::test_unpromoted_automatic_conflict_opens_repair"
+      ],
+      "revision": "b0708be48a046eb6c3371fa2f73021470bdcb153"
+    }
+  },
+  "gate_revision_note": "Head gate at 6e51af7316fbb85e6b67b9b2fd97f5d14fc38224; final reviewed commit changes only the evidence HTML, verified from its diff.",
+  "importer_evidence": {
+    "added_failure_ids": [],
+    "base_failure_ids": [
+      "tests/test_crew.py::test_dispatch_launches_a_cli_backend_and_records_the_run",
+      "tests/test_crew_lane_change.py::test_redispatch_continues_a_stream_resolved_session_and_records_its_source",
+      "tests/test_crew_lane_change.py::test_redispatch_keeps_the_run_node_and_worktree"
+    ],
+    "base_summaries": [
+      "3 failed, 395 passed in 607.67s (0:10:07)",
+      "57 passed in 20.12s"
+    ],
+    "base_total": 455,
+    "files": [
+      "tests/test_a_crew_verb_ok_reads_its_outcome.py",
+      "tests/test_a_delivered_run_reaches_a_landing_verdict.py",
+      "tests/test_a_failed_land_exits_nonzero.py",
+      "tests/test_a_landing_measure_is_bounded_by_what_it_measures.py",
+      "tests/test_a_landing_measures_the_tests_a_delivery_changed.py",
+      "tests/test_a_landing_reads_binary_files.py",
+      "tests/test_a_landing_refusal_names_its_remedy.py",
+      "tests/test_a_landing_survives_a_moving_main.py",
+      "tests/test_a_lane_change_keeps_its_waivers.py",
+      "tests/test_a_merge_releases_its_worktree.py",
+      "tests/test_a_promoted_code_review_is_stored.py",
+      "tests/test_a_refusal_is_judged_again_when_it_changes.py",
+      "tests/test_a_reopened_run_reads_as_working.py",
+      "tests/test_a_resume_can_change_its_budget.py",
+      "tests/test_a_resumed_worker_is_not_ended_as_delivered.py",
+      "tests/test_a_reviewed_head_lands_without_touching_the_index.py",
+      "tests/test_a_run_a_review_does_not_block_lands.py",
+      "tests/test_an_admission_pass_reads_each_project_once.py",
+      "tests/test_an_announcement_names_who_it_cannot_reach.py",
+      "tests/test_an_interrupted_landing_is_finished_by_the_next_pass.py",
+      "tests/test_crew.py",
+      "tests/test_crew_families_fold.py",
+      "tests/test_crew_lane_change.py",
+      "tests/test_crew_tool_carries_the_write_verbs.py",
+      "tests/test_landing_runs_beside_admission.py",
+      "tests/test_merge_requires_promotable_run.py",
+      "tests/test_one_call_lands_a_run.py",
+      "tests/test_queue_landing.py",
+      "tests/test_queue_verbs.py",
+      "tests/test_the_lander_measures_the_population.py",
+      "tests/test_the_lander_skips_a_run_landed_elsewhere.py",
+      "tests/test_the_lander_waits_for_every_owed_review.py",
+      "tests/test_the_landing_pass_measures_and_lands.py"
+    ],
+    "head_failure_ids": [
+      "tests/test_crew.py::test_dispatch_launches_a_cli_backend_and_records_the_run",
+      "tests/test_crew_lane_change.py::test_redispatch_continues_a_stream_resolved_session_and_records_its_source",
+      "tests/test_crew_lane_change.py::test_redispatch_keeps_the_run_node_and_worktree"
+    ],
+    "head_summary": "3 failed, 452 passed in 730.38s (0:12:10)",
+    "head_total": 455,
+    "removed_failure_ids": []
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read the six source commits from b0708be48a046eb6c3371fa2f73021470bdcb153 through 9f88e600fbd4fe91c7af015ffd859d9530196b92; their final seven-file diff preserves promotion records but pending_landing.py:131 accepts repaired heads without fresh gate evidence.",
+    "done_when": "The live plan section s3 and source node done_when require real bare-remote landings and repair; node-rechecked.log records four passing cases, negative-control-resumed.log records three failing repair cases, and importer gate logs retain the same three failure IDs at base and head.",
+    "goal": "The source node goal in its live pointer is to return real landing conflicts for repair; reckon/crew/recovery_repair_dispatch.py:34 and pending_landing.py:144 implement that flow, with a blocking gap in repair-gate validation.",
+    "manifest": "The source manifest.md names six commits and completed baseline_suite/after_suite logs, whose actual summaries and failure IDs agree with its four-pass head and three-failure base claims.",
+    "write_paths": "The source live pointer node.write_paths includes all seven changed files, including coordinator-granted reckon/crew/pending_landing.py documented in resume-1-advice.txt."
+  },
+  "justifications": {
+    "durability": "tests/test_a_conflicting_landing_is_repaired.py:185 guards missing outcomes and :278 guards missing remote ancestry, but :249 supplies a successful dummy gate and never tests refusal of failed or stale repair evidence.",
+    "evidence": "tests/test_a_conflicting_landing_is_repaired.py exercises real git conflicts and remote ancestry, and source node-rechecked.log, negative-control-resumed.log and importer logs record completed results at the stated code revisions.",
+    "fit": "reckon/crew/merge.py:76 extends MergeError, recovery_repair_dispatch.py:34 uses the existing repair-record and resume helpers, and new names describe mechanisms without forbidden labels.",
+    "goal_fidelity": "reckon/crew/recovery_repair_dispatch.py:34 records pinned conflict advice and resumes the owner, but pending_landing.py:131 permits completion without verifying the repaired head's gate.",
+    "reuse": "Capability searches for conflict handling, repair dispatch, completed-delivery selection and landing fixtures located owners in merge.py, recovery_repair_dispatch.py, queue_landing.py, pending_landing.py and tests/helpers/landing_repository.py, which the additions extend or call.",
+    "scope_discipline": "Every changed path is in the source live pointer node.write_paths, with pending_landing.py explicitly authorized by resume-1-advice.txt and all changes serving conflict repair."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node goal in its live pointer is to return real landing conflicts for repair; reckon/crew/recovery_repair_dispatch.py:34 and pending_landing.py:144 implement that flow, with a blocking gap in repair-gate validation.\nVERDICT done_when: The live plan section s3 and source node done_when require real bare-remote landings and repair; node-rechecked.log records four passing cases, negative-control-resumed.log records three failing repair cases, and importer gate logs retain the same three failure IDs at base and head.\nVERDICT write_paths: The source live pointer node.write_paths includes all seven changed files, including coordinator-granted reckon/crew/pending_landing.py documented in resume-1-advice.txt.\nVERDICT manifest: The source manifest.md names six commits and completed baseline_suite/after_suite logs, whose actual summaries and failure IDs agree with its four-pass head and three-failure base claims.\nVERDICT diff: Read the six source commits from b0708be48a046eb6c3371fa2f73021470bdcb153 through 9f88e600fbd4fe91c7af015ffd859d9530196b92; their final seven-file diff preserves promotion records but pending_landing.py:131 accepts repaired heads without fresh gate evidence.\nCALL_SITES: reckon/crew/merge.py:build_merge_commit, reckon/crew/queue_landing.py:_verified_measurement, reckon/crew/queue_landing.py:_land_deliveries, reckon/crew/pending_landing.py:finish_pending_landings, reckon/crew_run_commands.py:crew_complete, reckon/crew_run_commands.py:_land_a_promoted_run\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_repair_dispatch.py:34 records pinned conflict advice and resumes the owner, but pending_landing.py:131 permits completion without verifying the repaired head's gate.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_a_conflicting_landing_is_repaired.py exercises real git conflicts and remote ancestry, and source node-rechecked.log, negative-control-resumed.log and importer logs record completed results at the stated code revisions.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Every changed path is in the source live pointer node.write_paths, with pending_landing.py explicitly authorized by resume-1-advice.txt and all changes serving conflict repair.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_conflicting_landing_is_repaired.py:185 guards missing outcomes and :278 guards missing remote ancestry, but :249 supplies a successful dummy gate and never tests refusal of failed or stale repair evidence.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/merge.py:76 extends MergeError, recovery_repair_dispatch.py:34 uses the existing repair-record and resume helpers, and new names describe mechanisms without forbidden labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for conflict handling, repair dispatch, completed-delivery selection and landing fixtures located owners in merge.py, recovery_repair_dispatch.py, queue_landing.py, pending_landing.py and tests/helpers/landing_repository.py, which the additions extend or call.\nFINDING reckon/crew/pending_landing.py:131 blocking: _delivered_repair accepts a complete manifest plus commit ancestry without reading or validating a fresh gate for that repaired head; finish_pending_landings then pushes it directly, and crew_run_commands.py:3213 takes this branch before normal gate validation, so a repair with a failed, missing or stale gate can land despite the required own-gate rerun; require revision-bound repair gate evidence before selecting it and add refusal cases without promoting the run again.\n",
+  "reproduction_quote": "negative-control-resumed.log: tests/test_a_conflicting_landing_is_repaired.py:289: KeyError: 'merge_conflict'; 3 failed, 1 passed in 92.62s (0:01:32); EXIT=1",
+  "reuse_analysis": [
+    "MergeConflictError extends the existing MergeError owner in merge.py and carries the merge-tree capability result.",
+    "dispatch_merge_repair extends recovery_repair_dispatch.py, calls existing _reviewed_run_is_busy, _mutate_pointer, _repair_round_token, _record_repair_dispatch and resumption._resume; dispatch_repair_for_run is the existing review-finding composer and does not own a merge-conflict receipt.",
+    "_delivered_repair extends pending_landing.py and calls queue_landing._delivered_revision, recovery.classify_pointer, recovery._review_head_and_tree and merge._is_ancestor rather than duplicating their mechanisms.",
+    "Test helpers reuse tests/helpers/git.py and tests/helpers/landing_repository.py for repository setup and completion; added fixtures and assertions specialize the real overlapping-edit workflow."
+  ],
+  "review_method": "Read-only review; no implementation mutation or test rerun. Finding follows the added selector and both production landing callers; no experiment was claimed.",
+  "review_run_id": "r-20261108T121946539589-review-of-a-conflicting-landing-is-repaired-9f88e600fbd4",
+  "reviewed_base_sha": "b0708be48a046eb6c3371fa2f73021470bdcb153",
+  "reviewed_head_sha": "9f88e600fbd4fe91c7af015ffd859d9530196b92",
+  "reviewed_run_id": "r-20261108T093343768873-a-conflicting-landing-is-repaired",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T13:32:24.382186+00:00",
+  "total": 111
+}
