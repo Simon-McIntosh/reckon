@@ -305,6 +305,10 @@ def without_dispatch_identity(monkeypatch):
 def without_the_live_claude_session(monkeypatch):
     """No test reaches the session host of the Claude session that ran it."""
     monkeypatch.delenv("CLAUDE_PID", raising=False)
+    # The session identity is resolved from CLAUDE_CODE_SESSION_ID as well, so a
+    # host a test builds would otherwise name the session that ran the suite as
+    # its own owner and restart children that session never asked for.
+    monkeypatch.delenv("CLAUDE_CODE_SESSION_ID", raising=False)
 
 
 # A crew-host session exports four variables into every process it starts,

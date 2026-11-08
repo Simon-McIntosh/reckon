@@ -67,7 +67,9 @@ def _host(
 def _request(
     host: session_host.SessionHost, session: str, project: str = PROJECT
 ) -> None:
-    host.handle(json.dumps({"project": project, "session": session}))
+    host.handle(
+        json.dumps({"project": project, "session": session, "owner_checked": True})
+    )
 
 
 def _census(host: session_host.SessionHost) -> dict[str, Any]:
