@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.97">
-<meta name="plan-version" content="191">
+<meta name="plan-version" content="192">
 <meta name="plan-modified" content="2026-11-09">
 </head>
 <body>
@@ -537,7 +537,10 @@
     <div class="r-comment-body"><p>an independent review of 8269033355d3 is stored as a parsed record scoring all six dimensions (112/120), reviewed_base_sha bb23ab6e26a40b663a20e878cb3ea9f8095d31d7 and reviewed_head_sha 8269033355d3f427f12d940e1a4cd5caf7b52501 carried beside it, added_failure_count 0 derived from the reviewed run's baseline_suite and after_suite logs, with one non-blocking finding</p></div>
 </div>
 <div class="r-comment" data-section="s25" data-id="c-run-r-20261108T225446936910-review-of-a-parsed-review-wins-over-an-incomplete-one-b1be31b71262" data-who="reckon-build" data-when="2026-11-08T23:02:24.841Z">
-    <div class="r-comment-body"><p>reviewed only the commits r-20261108T221209911001 gained since its earlier review at 8269033355d3 — the unsummed-record case and its evidence update — and stored a parsed record at the reviewed head b1be31b7126 scoring all six dimensions (19/17/20/19/19/20, total 114), carrying reviewed_base_sha 8269033355d3f427f12d940e1a4cd5caf7b52501 and reviewed_head_sha b1be31b712621f41756da0fc3c09b1678cf31bf1, with added_failure_count 0 and one non-blocking finding on the control log&#x27;s provenance line, the earlier review&#x27;s durability finding now closed and proven by a red negative control rather than by a passing suite</p></div>
+    <div class="r-comment-body"><p>reviewed only the commits r-20261108T221209911001 gained since its earlier review at 8269033355d3 — the unsummed-record case and its evidence update — and stored a parsed record at the reviewed head b1be31b7126 scoring all six dimensions (19/17/20/19/19/20, total 114), carrying reviewed_base_sha 8269033355d3f427f12d940e1a4cd5caf7b52501 and reviewed_head_sha b1be31b712621f41756da0fc3c09b1678cf31bf1, with added_failure_count 0 and one non-blocking finding on the control log's provenance line, the earlier review's durability finding now closed and proven by a red negative control rather than by a passing suite</p></div>
+</div>
+<div class="r-comment" data-section="s25" data-id="c-run-r-20261108T221209911001-a-parsed-review-wins-over-an-incomplete-one" data-who="reckon-build" data-when="2026-11-08T22:52:35Z">
+    <div class="r-comment-body"><p>landed a stored-review selection that prefers a parsed, complete record over an incomplete one at the same head, deriving a stored record&#x27;s total before judging it complete (node gate 3 passed; the eight review_records importer files 57 passed at base and 57 at head; first-match control 1 failed, 1 passed; derivation-skipping control 1 failed, 2 passed)</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261006T140311245358-review-of-review-records-have-a-committed-root" data-who="reckon-build" data-when="2026-10-06T14:10:37.516Z">
     <div class="r-comment-body"><p>Independent review of run r-20261006T134946510136-review-records-have-a-committed-root (reckon:every-review-is-kept-as-a-committed-record §3) stored a parsed record at both fence paths — scores goal_fidelity 20, evidence 16, scope_discipline 20, durability 16, fit 20, reuse 20 (total 112), reviewed_base_sha 3c7a3f36a and reviewed_head_sha 2e05df719, added_failure_count null (the reviewed manifest carries no baseline_suite/after_suite arm) — with two follow-on findings: review_path's committed branch defaults a missing review_run_id to reviewed_run_id where its sibling plan_review_path refuses, and run_record_times' live-pointer fallback is untested. No blocking finding; the node's committed-store mechanism is correct and its declared guard fires.</p></div>
