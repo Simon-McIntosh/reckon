@@ -128,13 +128,22 @@
         <code>tests/test_no_test_reaches_the_live_session_host.py</code>) at
         head: <strong>24 passed in 73.60 s, EXIT=0</strong>. Log:
         <code>neighbouring-tests.log</code>.</p>
-      <p><strong>Station and follower tests</strong> over the files that import
-        <code>station_subscriber</code>: <strong>59 passed, 1 failed</strong>.
-        The failure is pre-existing: <code>test_failed_reexec_reports_once_and_keeps_the_registration</code>
-        fails identically with the parent revision&rsquo;s
-        <code>station_subscriber.py</code> restored, and exercises the
-        follower code-stamp reloader rather than the live-work rule. Log:
-        <code>station-tests.log</code>.</p>
+      <p><strong>Station and follower tests</strong> over the seven files that
+        import <code>station_subscriber</code>, run as one batch:
+        <strong>60 passed in 89.63 s, EXIT=0</strong> at head
+        (<code>station-combo-head.log</code>). The batch carried one failure
+        before the shared-rule commit: <code>test_failed_reexec_reports_once_and_keeps_the_registration</code>
+        broke only the batch, and it disappeared once the launch-record rule
+        moved into <code>station_subscriber.live_work_populations</code>
+        (<code>station-tests.log</code>, the failing arm at
+        <code>bae7b6ab8d</code>). The pairing is recorded as a control rather
+        than an attribution: reverting that commit&rsquo;s two files at head
+        and re-running the same batch reproduces the failure exactly &mdash;
+        <strong>1 failed, 59 passed in 61.11 s, EXIT=1</strong>, the same
+        assertion at <code>tests/test_follower_freshness.py:318</code>
+        (<code>station-combo-answering-reverted.log</code>) &mdash; and
+        restoring them clears it. So this node&rsquo;s change removed a failure
+        in the follower tests rather than inheriting one.</p>
       <p><strong>Lint:</strong> <code>ruff check</code> and
         <code>ruff format --check</code> over the three staged Python paths.
         Delta against the base revision&rsquo;s own copies is zero findings: one
