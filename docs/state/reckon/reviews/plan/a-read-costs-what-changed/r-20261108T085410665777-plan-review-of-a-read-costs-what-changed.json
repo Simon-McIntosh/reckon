@@ -1,0 +1,85 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T09:16:11.468Z",
+  "dispatched_at": "2026-11-08T09:00:47Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:104",
+      "id": "reasoning-1",
+      "reason": "a worker following the bullet rebuilds a cache that exists and leaves the repeated covered-tree walk in place, so the first done-when case (\"list the directory once\") still fails.",
+      "text": "s13 says resource identity resolution will \"answer from one directory index per process, keyed on the directory's signature through `reckon/file_memo.py`\", but `_directory_identity_index` already does exactly that (`reckon/resources.py:851-878`: `_INDEX_MEMO[key] = (listing, index)`, reused while `stored[0] == listing`, and the listing's entries are `file_memo.file_signature(path)` at `:831`); what actually costs the 19 % is `_identity_listing` calling `metadata_index._reuse_covered` on every resolve (`:816`), before the memo is consulted at `:859` \u2014 the validation-repeated defect \u00a74's descope note says is fixed by entering `resources.resource_scan_scope`, which `reckon/crew/recovery_review_dispatch.py` never enters (no `resource_scan_scope` or `discovery_file_scope` anywhere in it)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:104",
+      "id": "reasoning-2",
+      "reason": "the section cannot be closed on the measure it declares unless the worktree cost is made mandatory, and no reader can tell from the shares whether the bar is reachable at all.",
+      "text": "the done-when requires the after wall time \"at most half the before figure\", while the profile the section rests on puts 29 % \u2014 its largest single cost \u2014 in `routing._create_worktree`, a cost the deliverable explicitly leaves optional (\"why the worktree creation stays as it is or how it was shortened\"); the three costs it does name total 48 %, so even a perfect implementation lands near the bar, and the 28 % \"in `pathlib.stat` overall\" is listed beside them as though the five shares were a partition of one budget",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:104",
+      "id": "done_when-1",
+      "reason": "a third of the deliverable is unmeasurable as written, so a worker can pass every case without touching it, and a worker that reads it literally will change nothing.",
+      "text": "\"the capability record is read once per dispatch\" is in the deliverable but has no case in the done-when, no negative control and no count; `_recorded_capability` has exactly one call site (`reckon/crew/dispatch.py:2853`), so as written it names no repeat to remove and the 14 % is really the cost inside `resolve_section_routing` when the route carries no `section_routing` evidence (`:1350-1357`), a function the section never names",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:104",
+      "id": "done_when-2",
+      "reason": "the read is the section's only evidence that anything improved, and as written it can pass or fail on machine noise or on which moment the worker chose to measure.",
+      "text": "the timer arm is \"the same timer, run on the live store before and after \u2026 at a comparable load\", which defines no load, no repeat count and no tolerance, on a section that itself records the store running at load average 80 to 120, and it carries no negative control of the kind \u00a77 declares for its own timer; the \"before\" figure is also the one the Why says never completed \u2014 three calls ran past their 300 to 560 s bound without creating a review \u2014 so a before wall time may not exist to divide by",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:104",
+      "id": "evidence_paths-1",
+      "reason": "the dispatch contract already places logs under the run's own directory, so a worker's default lands durably even without the clause.",
+      "text": "s13 requires a live-store timer and a 60 s `py-spy --idle` profile but declares no containing path, while \u00a77 (\"the log, under the run's `logs/`\"), \u00a79 (\"every log is under the run directory\") and \u00a710 (\"every command is logged under the run directory\") each declare one",
+      "type": "evidence_paths",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "e5179a465f02c7af588b840169b8fcc14b7fca65",
+  "plan_fingerprint": "887e162e236df19aca069714389ec49be11a4d420aebdff8ea30a2628efc35b5",
+  "plan_slug": "a-read-costs-what-changed",
+  "plan_version": 47,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T085410665777-plan-review-of-a-read-costs-what-changed",
+  "reviewed_blob_sha": "40bc36b182b951337f17cc9cdd9ae2d22b5852e5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/file_memo.py`, `resources.resolve_resource`, `resources._directory_identity_index`, `resources._identity_listing`, `metadata_index._reuse_covered`, `ledger._file_identity` (now `:1063`), `dispatch._recorded_capability` (`:1332`), `routing._create_worktree` (`:2275`), `_dispatch_composed_review` (`:2692`) and `dispatch_review_for_run` (`:2512`) all resolve, and the cited run `r-20261108T052434073237` exists with no `review_dispatch` in its manifest.",
+    "done_when": "a finding \u2014 the deliverable's third change (the capability record read once per dispatch) has no case, and the wall-time arm has no negative control and no defined load.",
+    "evidence_paths": "a finding \u2014 s13 names no path for its timer output or its `py-spy` profile, where \u00a77 (`the run's logs/`), \u00a79 and \u00a710 each declare one.",
+    "naming": "pass \u2014 the new test file and the prose carry no plan labels, stage names or ticket numbers; costs are named by mechanism.",
+    "reasoning": "a finding \u2014 the stated mechanism for the 19 % resource-identity cost is already implemented in the file it names, and the plan's own \u00a74 descoped it as fixed by entering the existing scope, which this path does not enter.",
+    "single_goal": "pass \u2014 the three changes in s13 are one mechanism (read each identity once) applied at three call sites, the same shape \u00a76 uses; the worktree clause is reporting, not a second deliverable.",
+    "wiring": "pass \u2014 s13's declared write paths (`reckon/resources.py`, `reckon/ledger.py`, `reckon/crew/dispatch.py`) are all owned by sections already landed (\u00a72 `901325c5a6`, \u00a74 descoped into \u00a72, \u00a76), so the missing `s13` entry in `plan-section-depends-on` hides no unlanded dependency, and `plan-informs` is unchanged."
+  },
+  "section_digests": {
+    "_document": "73d38224b3e2ac127107d5f7011a6e99d4177e04a3b496e58784ec24e28405bd",
+    "s1": "f8fb0fbbfbbc79977a59ec9d78c0d66f47803aa96db83e4d628a1dfb6b40e6c3",
+    "s10": "68fc6d75acf0741225ab448369611e4eda9f862b50d7907857c1abb24b4138e4",
+    "s11": "2a249381081ebbf2d99b7f9da3b09b1d3b87c6ada44952d6b665283e27021c40",
+    "s12": "c6c234ba14598d6a537e09000d8f5d406295ad40c3c124db34cb1b84868bb22e",
+    "s13": "5202a8fb90f245d0f14bf0698161d39874e856a89c2e2bcf0d75349ae8d8bb44",
+    "s2": "7de6c2e256fca5545163c6149c674fea249ddd1a72361b49c89ef5beaa22263d",
+    "s3": "d11cdceab942c4935f32d292e26f2111b011ca4571980a6c54ef6ae23894aadb",
+    "s4": "d14b5fa9a6b6ef26da6f95b50c43aa782fdbe679ca28020a3095af71cd579417",
+    "s5": "ba22eff9814ea16ac19404864f9a2d1ec8da449b3011fba623d0d1856b2c6ecf",
+    "s6": "b0053663cc25e5e7e15595ae342d21c4c467abe74f06c8c4db86982b276898cc",
+    "s7": "2c7c6fb207a002d2bb1e223ebf1f770570f6b06942edf9ac6647253b410a67b7",
+    "s8": "9a012c065cbd8db9e5e69070d20531b84a584582cc0bf8f45fff060b7f31f464",
+    "s9": "1404fbf63401ab3bd4204175d16adb89094eaa1f1b25160e73fd2bb9c625d0b1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T10:06:57.161932+00:00",
+  "total": null
+}
