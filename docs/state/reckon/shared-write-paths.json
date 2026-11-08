@@ -76,6 +76,34 @@
   {
    "path": "reckon/crew/runs.py",
    "reason": "Pointer readers, accessors and listing helpers are separate functions; the live-pointer slimming touched accessors while others touched listings. Workers run in isolated worktrees and crew merge refuses a textual conflict, so concurrent edits meet at the merge, not at dispatch."
+  },
+  {
+   "path": "reckon/crew/queue_edit.py",
+   "reason": "Each queue verb (edit, reprioritise, drop, hold, release) is its own function. Workers run in isolated worktrees and crew merge refuses a textual conflict, so concurrent edits meet at the merge, not at dispatch (interim, until concurrent-edits-meet-at-the-merge \u00a72 makes source shared by default)."
+  },
+  {
+   "path": "reckon/crew/dispatch_claims.py",
+   "reason": "Claim checks for dispatch, widen and repository scope are separate functions. Workers run in isolated worktrees and crew merge refuses a textual conflict, so concurrent edits meet at the merge, not at dispatch (interim, until concurrent-edits-meet-at-the-merge \u00a72 makes source shared by default)."
+  },
+  {
+   "path": "reckon/crew/promotion_scope.py",
+   "reason": "Scope acceptance and peer-claim checks at promotion are separate functions. Workers run in isolated worktrees and crew merge refuses a textual conflict, so concurrent edits meet at the merge, not at dispatch (interim, until concurrent-edits-meet-at-the-merge \u00a72 makes source shared by default)."
+  },
+  {
+   "path": "reckon/crew/merge.py",
+   "reason": "Merge building, conflict reporting and push are separate functions. Workers run in isolated worktrees and crew merge refuses a textual conflict, so concurrent edits meet at the merge, not at dispatch (interim, until concurrent-edits-meet-at-the-merge \u00a72 makes source shared by default)."
+  },
+  {
+   "path": "reckon/crew/queue_landing.py",
+   "reason": "The lander's measurement, review gate and merge steps are separate functions. Workers run in isolated worktrees and crew merge refuses a textual conflict, so concurrent edits meet at the merge, not at dispatch (interim, until concurrent-edits-meet-at-the-merge \u00a72 makes source shared by default)."
+  },
+  {
+   "path": "reckon/crew_run_commands.py",
+   "reason": "Each crew run verb (complete, land, resume, widen, discard) is its own command function. Workers run in isolated worktrees and crew merge refuses a textual conflict, so concurrent edits meet at the merge, not at dispatch (interim, until concurrent-edits-meet-at-the-merge \u00a72 makes source shared by default)."
+  },
+  {
+   "path": "reckon/crew/recovery_repair_dispatch.py",
+   "reason": "Repair composition, advice holds and resume are separate functions. Workers run in isolated worktrees and crew merge refuses a textual conflict, so concurrent edits meet at the merge, not at dispatch (interim, until concurrent-edits-meet-at-the-merge \u00a72 makes source shared by default)."
   }
  ]
 }
