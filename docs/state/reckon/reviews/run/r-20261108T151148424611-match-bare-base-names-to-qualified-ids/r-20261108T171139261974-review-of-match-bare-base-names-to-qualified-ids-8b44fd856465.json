@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs, not its manifest: logs/baseline-suite.log carries 8 FAILED lines at 3bca1c369f and EXIT=1, logs/after-suite.log carries 0 at 8b44fd856465 and EXIT=0, so the head adds none of the base's eight; the widened delta pair gives the same 8 -> 0 (logs/delta-importers-baseline.log, logs/delta-importers-head.log).",
+  "base_log_revision": "3bca1c369fbeb6ead4fdef7a9dd07d0325e82208",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/promotion.py:582"
+  ],
+  "completed_at": "2026-11-08T17:18:55.419Z",
+  "dispatched_at": "2026-11-08T17:12:31Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/match-bare-base-names-to-qualified-ids.html",
+      "line": "56",
+      "severity": "non-blocking",
+      "text": "the head-arm rows at :56 and :67 read 'the commit this fragment lands with' instead of a revision, so the rendered evidence names no sha a reader can check, and a later commit touching only this fragment would silently misattribute the arms measured at 8b44fd856465; the logs carry the sha, the page does not."
+    }
+  ],
+  "head_log_revision": "8b44fd8564652b10d28e162f0cd3703a635c9055",
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit by commit over 7d46d059d6..8b44fd8564 \u2014 932fce594a rewrites the _require_verdict_matches_exit_status docstring so it names _red_base_uncovered_ids rather than a function the body does not call, c64cc32fa2 names the eight measured files and the unmeasured review importers, 8b44fd8564 replaces a stale head revision with 'the commit this fragment lands with'; 47 insertions and 19 deletions in two files, nothing outside the declared scope.",
+    "done_when": "the done_when names six cases in tests/test_a_red_base_matches_bare_names.py plus a sweep of the test files importing the changed modules, and the re-recorded arms assert both halves \u2014 logs/baseline-suite.log is 8 failed at 3bca1c369f and EXIT=1, logs/after-suite.log is 8 passed at 8b44fd8564 and EXIT=0, and the widened delta arm is 8 failed/38 passed at the base against 46 passed at the head (logs/delta-importers-baseline.log, logs/delta-importers-head.log), so the segment the previous review found unmeasured at 5 files is now measured at 8.",
+    "goal": "the node's goal is plan section 2 of a-promotion-reads-the-evidence-it-is-given \u2014 a red base's bare failure names matched to the head's qualified ids \u2014 and the three commits gained since the previous review (932fce594a, c64cc32fa2, 8b44fd8564) fold the two non-blocking findings that review recorded, leaving the behaviour at reckon/crew/promotion_evidence.py:1213 and reckon/crew/review.py unchanged.",
+    "manifest": "read; it records status complete, five commits, the gate command, both suite arms with revisions 3bca1c369f and 8b44fd8564 and their 8 failed / 8 passed results, the widened delta figures in its artifacts line, a trial negative_control_log path that exists, and rubric lines for all six dimensions.",
+    "write_paths": "the dispatch declares reckon/crew/promotion_evidence.py, reckon/crew/review.py, tests/test_a_red_base_matches_bare_names.py, the evidence fragment and a figure directory; the diff of the three gained commits touches only reckon/crew/promotion_evidence.py (docstring lines 1343-1354) and the fragment, and adds no figure."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is plan section 2 of a-promotion-reads-the-evidence-it-is-given \u2014 a red base's bare failure names matched to the head's qualified ids \u2014 and the three commits gained since the previous review (932fce594a, c64cc32fa2, 8b44fd8564) fold the two non-blocking findings that review recorded, leaving the behaviour at reckon/crew/promotion_evidence.py:1213 and reckon/crew/review.py unchanged.\nVERDICT done_when: the done_when names six cases in tests/test_a_red_base_matches_bare_names.py plus a sweep of the test files importing the changed modules, and the re-recorded arms assert both halves \u2014 logs/baseline-suite.log is 8 failed at 3bca1c369f and EXIT=1, logs/after-suite.log is 8 passed at 8b44fd8564 and EXIT=0, and the widened delta arm is 8 failed/38 passed at the base against 46 passed at the head (logs/delta-importers-baseline.log, logs/delta-importers-head.log), so the segment the previous review found unmeasured at 5 files is now measured at 8.\nVERDICT write_paths: the dispatch declares reckon/crew/promotion_evidence.py, reckon/crew/review.py, tests/test_a_red_base_matches_bare_names.py, the evidence fragment and a figure directory; the diff of the three gained commits touches only reckon/crew/promotion_evidence.py (docstring lines 1343-1354) and the fragment, and adds no figure.\nVERDICT manifest: read; it records status complete, five commits, the gate command, both suite arms with revisions 3bca1c369f and 8b44fd8564 and their 8 failed / 8 passed results, the widened delta figures in its artifacts line, a trial negative_control_log path that exists, and rubric lines for all six dimensions.\nVERDICT diff: read commit by commit over 7d46d059d6..8b44fd8564 \u2014 932fce594a rewrites the _require_verdict_matches_exit_status docstring so it names _red_base_uncovered_ids rather than a function the body does not call, c64cc32fa2 names the eight measured files and the unmeasured review importers, 8b44fd8564 replaces a stale head revision with 'the commit this fragment lands with'; 47 insertions and 19 deletions in two files, nothing outside the declared scope.\nCALL_SITES: reckon/crew/promotion.py:582 (the lambda in the _require_independently checker list at :543 that reaches _require_verdict_matches_exit_status, whose body calls _red_base_uncovered_ids at reckon/crew/promotion_evidence.py:1360)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the gained diff leaves reckon/crew/promotion_evidence.py:1213-1285 untouched and only corrects the docstring at :1345-1354 to name the function the body calls at :1360, which is what the previous finding asked for.\nSCORE evidence: 18\nJUSTIFICATION evidence: docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/match-bare-base-names-to-qualified-ids.html:56 and :67 now name the head arm by its landing commit instead of a sha, so a reader of the rendered page cannot name the revision the 8 passed and 46 passed arms ran at, though logs/after-suite.log:1 and logs/delta-importers-head.log:1 both carry 8b44fd856465 and the file's own commit resolves it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the whole gained diff is reckon/crew/promotion_evidence.py's docstring and the fragment, both inside the dispatch's declared write paths, and no plan, index or sprint state is touched.\nSCORE durability: 13\nJUSTIFICATION durability: the increment adds no assertion, so nothing reddens if reckon/crew/promotion_evidence.py:1345 reverts to naming _zero_added_against_a_red_base; the behaviour the docstring describes stays guarded by tests/test_a_red_base_matches_bare_names.py, which is 8 passed at 8b44fd856465.\nSCORE fit: 19\nJUSTIFICATION fit: the rewritten docstring at reckon/crew/promotion_evidence.py:1334-1354 keeps the module's third-person mechanism style and quotes no plan, stage or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the increment defines nothing new; the corrected docstring at reckon/crew/promotion_evidence.py:1346 points at _red_base_uncovered_ids at :1213, the single owner of the comparison, rather than introducing a second description of it.\nFINDING docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/match-bare-base-names-to-qualified-ids.html:56 non-blocking: the head-arm rows at :56 and :67 now read 'the commit this fragment lands with' instead of a revision, so the rendered evidence names no sha a reader can check, and a later commit touching only this fragment would silently misattribute the arms measured at 8b44fd856465; the logs carry the sha, the page does not.",
+  "review_run_id": "r-20261108T171139261974-review-of-match-bare-base-names-to-qualified-ids-8b44fd856465",
+  "reviewed_base_sha": "7d46d059d6b83d5e6721d3a1ef091114d9359e2f",
+  "reviewed_commits": [
+    "932fce594a875f7f594a1445a58359e00a2b2e1c",
+    "c64cc32fa28ff4d1d022dca419fd6f5d692da08f",
+    "8b44fd8564652b10d28e162f0cd3703a635c9055"
+  ],
+  "reviewed_head_sha": "8b44fd8564652b10d28e162f0cd3703a635c9055",
+  "reviewed_run_id": "r-20261108T151148424611-match-bare-base-names-to-qualified-ids",
+  "scope": "the three commits gained since the previous review (7d46d059d6 -> 8b44fd8564)",
+  "scores": {
+    "durability": 13,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T18:25:00Z",
+  "total": 110
+}
