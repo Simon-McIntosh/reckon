@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T17:21:21.791Z",
+  "dispatched_at": "2026-11-08T17:15:03Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-costs-what-changed.html:109",
+      "id": "reasoning-1",
+      "reason": "the section lists `reckon/crew/review_records.py` in its own write paths, so the very first later change to the record reader would leave a persisted index serving rows derived by code that no longer exists, which is the exact staleness the digest is declared to prevent.",
+      "text": "the digest is specified as \"at least `reckon/crew/findings.py` and `reckon/crew/review.py`, whose `_committed_record_at` reads every committed record\", but `_committed_record_at` is defined in `reckon/crew/review_records.py:100` and only re-exported by `review.py` at :3673-3681, so hashing `review.py` does not hash the reader's body; and `_record_rows` derives every row's `path` through `runs._repository_relative_scope` (`reckon/crew/runs.py:1187`), which the digest does not name either",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-costs-what-changed.html:109",
+      "id": "done_when-1",
+      "reason": "without it the node builds three hooks whose absence the gate cannot detect, and a `yes` verdict on the section would claim a writer-updated index it has not shown.",
+      "text": "the deliverable names three record writers whose \"entry they wrote\" must be updated (`store_committed_review`, `record_response`, `store_code_review`), but cases two, three and five all pass with none of the writer hooks implemented: `record_response` and `store_committed_review` write through `write_json_atomically` (`plan_review.py:2345`, `reckon/_store.py:620-640`), whose sibling-temporary rename moves the containing directory's stat identity, and the section's own trust rule (\"a directory whose signature moved is rescanned\") plus the landed in-process index's `_directory_records` keyed on that same identity (`findings.py:335-345`) already re-read such a record; so three of the six cases cannot fail for the mechanism they are declared to measure",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "7c471b90ee340f40eec12c9a5ff1ba731059e72d",
+  "plan_fingerprint": "b99dab8c0fd9ea4c01cd3c390a644f5b24c901bdc8ccbcf976ba7f0560cd74e6",
+  "plan_slug": "a-read-costs-what-changed",
+  "plan_version": 54,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T171139108898-plan-review-of-a-read-costs-what-changed",
+  "reviewed_blob_sha": "01f44aa05d786951594e1611d06b3070e425287c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `node_local_cache_dir` (:985), `_index_cache_path` (:1040), `store_committed_review` (:168), `_index_sources` (:1014) and `record_response` (:2217) all resolve in `reckon/crew/review_records.py` and `reckon/crew/plan_review.py`, and `_committed_record_at` resolves on `reckon/crew/review.py` through its re-export at :3673.",
+    "done_when": "a finding \u2014 three of the six cases assert the record-writer hooks but pass on the directory-rescan alone.",
+    "evidence_paths": "pass \u2014 every timing is logged under the run's `logs/`, and the done-when redirects the node-local cache to a temporary path and asserts the real one untouched.",
+    "naming": "pass \u2014 the section names no plan label, stage identifier or ticket number, and its mechanism is stated in terms of the code.",
+    "reasoning": "a finding \u2014 the declared source digest omits the module that defines the record reader, so a change to it leaves every stored entry stale.",
+    "single_goal": "pass \u2014 \u00a714 is one change, the write-time findings index; the interface week count is explicitly left out of the deliverable.",
+    "wiring": "pass \u2014 \u00a714 declares no depends-on, and its upstream is already landed or descoped (\u00a711 is done, \u00a713 is descoped with its profile cited by \u00a714), so no missing relationship."
+  },
+  "section_digests": {
+    "_document": "090f283a2adb21268293f3f9f36bccafc5b05deb95642975aaeab367e4fd63f2",
+    "s1": "f8fb0fbbfbbc79977a59ec9d78c0d66f47803aa96db83e4d628a1dfb6b40e6c3",
+    "s10": "68fc6d75acf0741225ab448369611e4eda9f862b50d7907857c1abb24b4138e4",
+    "s11": "2a249381081ebbf2d99b7f9da3b09b1d3b87c6ada44952d6b665283e27021c40",
+    "s12": "c6c234ba14598d6a537e09000d8f5d406295ad40c3c124db34cb1b84868bb22e",
+    "s13": "5ad3b5418d98e6b0afe0d6762c6e34b89b31509e7e0c346c4b5757fc5f9bc443",
+    "s14": "3614708cc686b1aae04bdaa66c5ca55268305b0b9aa743e9b43fdfe333694c78",
+    "s2": "7de6c2e256fca5545163c6149c674fea249ddd1a72361b49c89ef5beaa22263d",
+    "s3": "d11cdceab942c4935f32d292e26f2111b011ca4571980a6c54ef6ae23894aadb",
+    "s4": "d14b5fa9a6b6ef26da6f95b50c43aa782fdbe679ca28020a3095af71cd579417",
+    "s5": "ba22eff9814ea16ac19404864f9a2d1ec8da449b3011fba623d0d1856b2c6ecf",
+    "s6": "b0053663cc25e5e7e15595ae342d21c4c467abe74f06c8c4db86982b276898cc",
+    "s7": "2c7c6fb207a002d2bb1e223ebf1f770570f6b06942edf9ac6647253b410a67b7",
+    "s8": "9a012c065cbd8db9e5e69070d20531b84a584582cc0bf8f45fff060b7f31f464",
+    "s9": "1404fbf63401ab3bd4204175d16adb89094eaa1f1b25160e73fd2bb9c625d0b1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T17:28:31.949776+00:00",
+  "total": null
+}
