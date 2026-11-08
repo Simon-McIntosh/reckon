@@ -296,19 +296,19 @@ def _launch_reread_refusal(pointer: Mapping[str, Any]) -> str | None:
 
     A pass ranks the queued pointers it read at its start and then works
     through the queue, so a request can move while the pass is busy with the
-    others: a coordinator may promote, discard or stop it, and a supervisor may
-    end an attempt of it that already ran. Launching from the pass's opening
-    read would then start a second attempt on a request that no longer waits,
-    overwriting an attempt's manifest, so the pointer and the run's attempt
-    records are re-read together here, under the same per-run lock every
-    pointer writer takes.
+    others: a coordinator may hold, promote, discard or stop it, and a
+    supervisor may end an attempt of it that already ran. Launching from the
+    pass's opening read would then start a second attempt on a request that no
+    longer waits, overwriting an attempt's manifest, so the pointer and the
+    run's attempt records are re-read together here, under the same per-run
+    lock every pointer writer takes.
     """
     run_id = str(pointer.get("run_id") or "")
     if not run_id:
         return None
     with runs._pointer_lock(run_id):
         try:
-            runs.pointer_path(run_id).read_text(encoding="utf-8")
+            text = runs.pointer_path(run_id).read_text(encoding="utf-8")
         except FileNotFoundError:
             return (
                 "the request's live pointer was removed while the pass waited on "
@@ -316,6 +316,21 @@ def _launch_reread_refusal(pointer: Mapping[str, Any]) -> str | None:
             )
         except OSError as exc:
             return f"the request's live pointer cannot be read: {exc}"
+        try:
+            current = json.loads(text)
+        except ValueError:
+            current = None
+        phase = str(current.get("phase") or "") if isinstance(current, Mapping) else ""
+        if phase == HELD_PHASE:
+            hold = current.get("queue_hold")
+            reason = (
+                str(hold.get("reason") or "").strip()
+                if isinstance(hold, Mapping)
+                else ""
+            )
+            return "the request was held while the pass waited on it" + (
+                f": {reason}" if reason else ""
+            )
         return _attempt_with_a_result(run_id)
 
 
