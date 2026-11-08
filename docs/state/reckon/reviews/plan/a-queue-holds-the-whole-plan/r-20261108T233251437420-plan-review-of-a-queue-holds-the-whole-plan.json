@@ -53,6 +53,16 @@
       "note": "\u00a739's fixture stores plan as an empty string, the shape the dispatcher writes, and its negative control is today's guard",
       "reason": "",
       "when": "2026-11-08T23:46:06.385582+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "0502456456e8770529786d59229054f1f1eaf42e",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "\u00a739 goes first; \u00a738 now waits only on \u00a739, and \u00a729 and \u00a737 wait on \u00a738, so the four queue_admission.py sections run in one order without \u00a738 starving behind undispatched sections",
+      "reason": "",
+      "when": "2026-11-08T23:46:14.819849+00:00"
     }
   ],
   "responses": {
@@ -73,6 +83,15 @@
       "note": "\u00a739 is rewritten around the measured cause: the stored plan is an empty string, and the empty-string guard treats dataclasses.MISSING as a truthy default, so it drops the value for a field with no default",
       "reason": "",
       "when": "2026-11-08T23:46:00.993850+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "0502456456e8770529786d59229054f1f1eaf42e",
+      "commit_basis": "edit",
+      "note": "\u00a739 goes first; \u00a738 now waits only on \u00a739, and \u00a729 and \u00a737 wait on \u00a738, so the four queue_admission.py sections run in one order without \u00a738 starving behind undispatched sections",
+      "reason": "",
+      "when": "2026-11-08T23:46:14.819849+00:00"
     }
   },
   "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-queue-holds-the-whole-plan/r-20261108T233251437420-plan-review-of-a-queue-holds-the-whole-plan.json",
