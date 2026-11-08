@@ -1,0 +1,32 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T06:44:43Z",
+  "dispatched_at": "2026-11-08T06:36:13Z",
+  "findings": [
+    {
+      "file": "tests/test_the_first_six_fields_leave_the_live_pointer.py",
+      "line": "297",
+      "severity": "blocking",
+      "text": "The replacement size assertion compares the pointer with fields the same test injects and stays true when the pointer is 13464 or 16539 bytes, so it cannot enforce the source node's under-12-KiB done_when."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 requires moving six dispatch fields; the gained test at tests/test_the_first_six_fields_leave_the_live_pointer.py:274-297 checks their placement but no longer enforces the source node's pointer bound.\nVERDICT done_when: prompt.txt:125-126 requires a test dispatch pointer below 12 KiB; long-tmpdir-head-suite.log records 19 passed, while long-tmpdir-targeted-after.log measures 16539 bytes and short-tmpdir-targeted-after.log measures 13464 bytes.\nVERDICT write_paths: prompt.txt:77-90 declares the test and landing fragment; the e29126b3eb70fe38566402e26cef3638341ef759 diff changes only those two paths.\nVERDICT manifest: manifest.md records a completed 19-pass baseline_suite and after_suite with zero failure ids, but its evidence_inputs says section_bound_not_node_gate despite prompt.txt:125-126 making the bound a node measure.\nVERDICT diff: e29126b3eb70fe38566402e26cef3638341ef759 changes the fragment at line 5 and replaces the absolute size assertion with a same-data comparison at tests/test_the_first_six_fields_leave_the_live_pointer.py:277-297.\nCALL_SITES: none\nSCORE goal_fidelity: 12\nJUSTIFICATION goal_fidelity: tests/test_the_first_six_fields_leave_the_live_pointer.py:297 passes while the measured pointer exceeds the 12 KiB condition in prompt.txt:125-126.\nSCORE evidence: 8\nJUSTIFICATION evidence: long-tmpdir-head-suite.log records 19 passed and EXIT=0, but long-tmpdir-targeted-after.log records 16539 bytes against the 12288-byte bound.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the commit changes only tests/test_the_first_six_fields_leave_the_live_pointer.py and docs/evidence/fragments/crew-state-stays-bounded/the-first-six-fields-leave-the-live-pointer.html, both in prompt.txt:77-90.\nSCORE durability: 6\nJUSTIFICATION durability: tests/test_the_first_six_fields_leave_the_live_pointer.py:297 compares serialized fields with the same fields injected by the test, so reverting the under-12-KiB guard leaves the test green at 16539 bytes.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_the_first_six_fields_leave_the_live_pointer.py:230-247 uses the existing budget and paid-lanes readers through a local fixture wrapper and adds no forbidden code name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search found reckon/budget.py:2525 as the production window reader, and tests/test_the_first_six_fields_leave_the_live_pointer.py:230-235 wraps existing paid-lanes readers only for this fixture.\nFINDING tests/test_the_first_six_fields_leave_the_live_pointer.py:297 blocking: the replacement size assertion compares the pointer with fields the same test injects and stays true when the pointer is 13464 or 16539 bytes, so it cannot enforce the source node's under-12-KiB done_when.\nASSERTION tests/test_the_first_six_fields_leave_the_live_pointer.py:232: Fails if the synthetic quota document cannot be decoded, as quota-document-negative-control.log demonstrates with EXIT=1.\nASSERTION tests/test_the_first_six_fields_leave_the_live_pointer.py:234: Fails if the decoded document has no native window mapping.\nASSERTION tests/test_the_first_six_fields_leave_the_live_pointer.py:258: Fails if the patched budget reader never opens the synthetic quota path through Path.open.\nASSERTION tests/test_the_first_six_fields_leave_the_live_pointer.py:266: Fails if the dispatch pace group differs from the configured test-wallet value.\nASSERTION tests/test_the_first_six_fields_leave_the_live_pointer.py:267: Fails if the dispatch pace record does not carry the fixture's five_hour utilisation of 0.25.\nASSERTION tests/test_the_first_six_fields_leave_the_live_pointer.py:297: It could fail only if the test's own inline JSON serialization loses bytes relative to its serialization of the same moved mapping; a production pointer growing beyond 12 KiB does not make it fail.",
+  "review_run_id": "r-20261108T063432314311-review-of-the-first-six-fields-leave-the-live-pointer-e29126b3eb70",
+  "reviewed_base_sha": "1111c7e5e9b1e83cf76bd3a41587fd0c09ee7110",
+  "reviewed_head_sha": "e29126b3eb70fe38566402e26cef3638341ef759",
+  "reviewed_run_id": "r-20261107T162323087195-the-first-six-fields-leave-the-live-pointer",
+  "scores": {
+    "durability": 6,
+    "evidence": 8,
+    "fit": 18,
+    "goal_fidelity": 12,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T07:00:18.128909+00:00",
+  "total": 84
+}
