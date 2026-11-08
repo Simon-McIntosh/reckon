@@ -2345,6 +2345,9 @@ def record_response(
             committed, updated, indent=2, sort_keys=True, fsync=False, mode=None
         )
         _commit_record_write(str(updated.get("project") or ""), committed)
+        from reckon.crew.findings import note_record_written
+
+        note_record_written(committed, project=str(updated.get("project") or ""))
         return committed
     return store_plan_review(updated, base_dir=base_dir)
 
@@ -5425,6 +5428,9 @@ def store_code_review(
     write_json_atomically(
         path, stored, indent=2, sort_keys=True, fsync=False, mode=None
     )
+    from reckon.crew.findings import note_record_written
+
+    note_record_written(path, project=project)
     return path
 
 

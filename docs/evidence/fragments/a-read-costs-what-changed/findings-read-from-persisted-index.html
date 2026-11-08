@@ -1,0 +1,148 @@
+<section id="findings-read-from-persisted-index-landing">
+  <h2>A dispatch reads findings from an index kept at write time</h2>
+
+  <p><strong>What changed.</strong>
+  <code>reckon/crew/findings.py</code> no longer derives the finding rows of a
+  project inside the process that reads them. It persists them to the node-local
+  cache directory <code>review_records.node_local_cache_dir</code> already uses
+  for its own store index — never the tracked tree — under a document stamped
+  with the digest of the four modules that fix how a row is derived
+  (<code>findings.py</code>, <code>review.py</code>,
+  <code>review_records.py</code> and <code>runs.py</code>). A fresh process
+  starts from that document.</p>
+
+  <p>Two levels of stat identity decide what is reused. A review directory whose
+  own identity is unchanged is trusted whole: no listing, no record read, one
+  stat. A directory that moved is rescanned record by record against each
+  record's identity, which is what carries the rows of every other record
+  forward and reads only the one that changed. The two parents —
+  <code>reviews/run/</code> and <code>reviews/plan/</code> — are cached the same
+  way, so a store of thousands of review directories is not re-listed by each
+  dispatch. Two subtrees are covered: the committed reviews tree, and the
+  crew-home store the code reviews live in, which
+  <code>list_code_reviews</code> previously read whole on every call.</p>
+
+  <p>The three writers that change a record refresh the entry they wrote:
+  <code>review_records.store_committed_review</code>,
+  <code>plan_review.record_response</code> (on the committed copy it rewrites)
+  and <code>plan_review.store_code_review</code>. The entry's directory is left
+  with no trusted signature — a concurrent write could land between the writer's
+  read and its directory stat, and a signature recorded then would make a later
+  reader trust an entry missing that write — so the next reader rescans that one
+  directory, finds every record's identity unchanged and opens nothing. A writer
+  never creates the document a reader builds: an index covering part of a store
+  would look trustworthy everywhere it was silent.</p>
+
+  <p>Each row now also carries <code>response</code>, the answer recorded
+  against its finding, which the reader did not surface before; the disposition
+  it already carried is a different question and is unchanged.</p>
+
+  <p>The node-local cache itself is not new, and the pieces this index needs were
+  already in the store's index beside it: the stamp of the sources whose content
+  fixes what an entry means, the cache path a key derives, the tolerant document
+  read, and the atomic write that treats a failed cache write as no cache. Those
+  four now live once, in <code>review_records</code>, and the findings index
+  calls them — a second copy of a rule a third module has already implemented is
+  where two readers silently start disagreeing about one document. The writer
+  hook follows the same shape: the refusal to fail a write that has already
+  landed sits inside <code>findings.note_record_written</code>, so both callers
+  call it rather than each wrapping it in its own except clause.</p>
+
+  <h3 id="findings-read-from-persisted-index-measured">Measured</h3>
+
+  <p>The live store, <code>findings_by_path("reckon")</code> for one dispatch's
+  write paths, each figure from a separate process (module and working
+  directory as imported: this worktree). Load average is logged beside each
+  figure because it moves the number more than anything else on this node.</p>
+
+  <table id="findings-read-from-persisted-index-timings">
+    <caption>Wall time of one fresh-process <code>findings_by_path</code> over
+    5,503 records and 11,804 rows in 2,550 review directories.</caption>
+    <thead><tr><th>arm</th><th>wall time</th><th>load average</th></tr></thead>
+    <tbody>
+      <tr><td>index deleted (control)</td><td>56.30 s</td><td>70.4</td></tr>
+      <tr><td>index current, run 1</td><td>0.81 s</td><td>68.5</td></tr>
+      <tr><td>index current, run 2</td><td>0.90 s</td><td>69.4</td></tr>
+      <tr><td>index current, run 3</td><td>1.62 s</td><td>69.6</td></tr>
+      <tr><td>index current, run 4</td><td>1.07 s</td><td>88.4</td></tr>
+      <tr><td>index current, run 5</td><td>1.28 s</td><td>86.4</td></tr>
+      <tr><td>index current, run 6</td><td>1.87 s</td><td>81.5</td></tr>
+    </tbody>
+  </table>
+
+  <p>Runs 4–6 were taken at the delivered head, at nearly thirty points more
+  load than runs 1–3, and still inside the two-second bound. The first read
+  after a source digest moves pays the rebuild — 69.84 s at load 89.5 here —
+  which is the cost runs 1–6 avoid.</p>
+
+  <p>The material saved is the record parsing and the child-directory listing:
+  before the parent listing was cached, a fresh process spent 1.82 s of its
+  2.7–3.0 s in re-listing 2,550 review directories, against 0.20 s to load the
+  16.6 MB document and 0.26 s to stat every directory.</p>
+
+  <h3 id="findings-read-from-persisted-index-check">The check</h3>
+
+  <p><code>tests/test_findings_are_read_from_a_write_time_index.py</code> holds
+  the six facts the section names against a temporary crew home, checkout and
+  code-review store, with the node-local cache redirected and the operator's own
+  cache asserted untouched: a fresh process opens no record; an answer recorded
+  through <code>record_response</code> comes back on its row without opening
+  another record; a record committed by promotion is returned by the next read;
+  a record written into a directory behind the index's back is returned; a code
+  review stored through <code>store_code_review</code> is returned without
+  opening another; and a moved source digest rebuilds every entry. A further
+  three cases hold each writer to leaving the next read nothing to open, and
+  their control withholds the hook and shows the same read opening exactly one
+  record. A fourteenth case holds the three modules to one implementation of the
+  cache's four shared rules: it fails if any of them restates the stamp, the
+  path, the document read or the write, or if either writer regrows a wrapper
+  around the hook.</p>
+
+  <p>Negative controls: deleting the persisted index before the fresh read makes
+  that first case open both records and fail. Replacing
+  <code>review_records.cache_code_stamp</code> and
+  <code>review_records.cache_document_path</code> with sentinels and requiring
+  both indexes to follow them makes the fourteenth case fail if either answers
+  from a copy of its own; restating the digest inside <code>findings.py</code>
+  reddens it, which is the drift the case exists to catch.</p>
+
+  <h3 id="findings-read-from-persisted-index-importers">The importer population</h3>
+
+  <p>The change reaches three modules other tests import, so the whole
+  population was run on both sides: the 97 test files under <code>tests/</code>
+  that import <code>reckon.crew.findings</code>,
+  <code>reckon.crew.review_records</code> or <code>reckon.crew.plan_review</code>,
+  at the repair base and at the head, each with a per-test timeout under
+  <code>-n 6</code>.</p>
+
+  <table id="findings-read-from-persisted-index-importers-table">
+    <caption>The same 97-file population over each tree, run with a per-test
+    timeout under <code>-n 6</code>.</caption>
+    <thead><tr><th>arm</th><th>passed</th><th>failed</th></tr></thead>
+    <tbody>
+      <tr><td>base (fba33c99)</td><td>770</td><td>39</td></tr>
+      <tr><td>head (a1e64678)</td><td>773</td><td>37</td></tr>
+    </tbody>
+  </table>
+
+  <p>An id-by-id comparison does not match the tallies, and the ids are the
+  honest reading: the head arm adds exactly one failing id and drops three. The
+  three it drops
+  (<code>test_this_repository_reads_the_same_modules_as_the_reckon_listing</code>
+  and two cases of
+  <code>test_a_matching_project_is_accepted_and_a_disagreeing_one_refused</code>)
+  need a git tree, which the base arm's archive does not carry.</p>
+
+  <p>The one it adds is
+  <code>test_overdue_review_duty_reports_age_without_a_dispatch_command</code>,
+  and the mechanism is an age assertion rather than a timeout: the case asserts
+  <code>"50m" in row["next_command"]</code> and the duty it read back said
+  <code>review overdue by 51m 2s</code>. The fixture's age crosses the
+  fifty-minute boundary while the worker waits its turn, so the case is
+  wall-clock sensitive under load and either arm can lose it. Run on its own it
+  passes at both arms — 7 passed at the head and 7 passed at the base, both
+  exiting 0 (<code>logs/importer-delta-added-id-serial.log</code>). No failure
+  in this population is attributable to the change. Population logs:
+  <code>logs/importer-population-base.log</code> and
+  <code>logs/importer-population-head.log</code>.</p>
+</section>
