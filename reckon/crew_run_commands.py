@@ -3440,10 +3440,23 @@ def _land_a_promoted_run(
         )
         return report, code
     report["steps"]["land"] = {"ok": True, **landed}
+    # The release judges the worker's head against the commit this landing
+    # wrote, in the checkout the merge advanced: a run whose record names a
+    # checkout the merge did not move would otherwise have its tree withheld
+    # with its head already on the branch.
     release = release_module._release_after_promotion(
-        run_id, record, None, gate=str(gate)
+        run_id,
+        record,
+        None,
+        gate=str(gate),
+        integration_repo=repository,
+        integration_commit=str(landed.get("commit") or ""),
     )
-    repository_value = str(record.get("repo") or "").strip()
+    # The ledger write and the branch read below belong to the checkout the
+    # landing advanced, not to whatever checkout the run recorded: a run whose
+    # `repo` names an observer would otherwise stage its release in a tree the
+    # ledger file is not in, and read a branch the merge never moved.
+    landing_checkout = checkout_path or repository
     # The release records its own outcome as a second ledger commit, so the
     # branch moves again after the push. The remote is left equal to the local
     # branch rather than behind it. A push that fails here is the same shape as
@@ -3454,7 +3467,7 @@ def _land_a_promoted_run(
         root=checkout_path,
         run_id=run_id,
         release=release,
-        checkout=Path(repository_value) if repository_value else None,
+        checkout=landing_checkout,
         after_merge=True,
     )
     if recorded is not None:
@@ -3465,9 +3478,9 @@ def _land_a_promoted_run(
     }
     branch = str(landed.get("branch") or "")
     remote = str(landed.get("remote") or "origin")
-    if branch and repository_value:
+    if branch:
         try:
-            head_now = merge_module._rev_parse(Path(repository_value), branch)
+            head_now = merge_module._rev_parse(landing_checkout, branch)
             pushed_head = str(landed.get("remote_head") or "")
         except merge_module.MergeError as exc:  # pragma: no cover - reported, not fatal
             report["steps"]["release"]["push_error"] = str(exc)
@@ -3477,7 +3490,7 @@ def _land_a_promoted_run(
     if head_now and head_now != pushed_head:
         try:
             pushed = merge_module._push_and_confirm(
-                Path(repository_value), remote, head_now, branch
+                landing_checkout, remote, head_now, branch
             )
         except merge_module._PushError as exc:
             report["steps"]["release"]["push_error"] = str(exc)
