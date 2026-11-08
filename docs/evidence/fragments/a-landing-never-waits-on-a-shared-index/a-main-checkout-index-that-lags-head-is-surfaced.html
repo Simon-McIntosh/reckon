@@ -1,0 +1,71 @@
+<article class="r-evidence" data-node="a-main-checkout-index-that-lags-head-is-surfaced" id="a-main-checkout-index-that-lags-head-is-surfaced-record">
+<h3>A main checkout whose index stages a path HEAD still holds is surfaced</h3>
+
+<p id="a-main-checkout-index-that-lags-head-is-surfaced-what">The obligations
+view now reads each project's registered main checkout for paths that
+<code>git diff --cached --name-only --diff-filter=D HEAD</code> lists, that the
+working tree still holds, and that the checkout does not ignore. Any such path
+is a notice naming the paths, HEAD, and the path-limited restoration
+<code>git reset -q --</code>; the reason it carries states that a plain
+<code>git commit</code> in that checkout would record the paths as deleted. The
+first read of each distinct lag — HEAD plus the path set — appends one line
+naming the instant, HEAD and the paths under the crew home
+(<code>index-lag.log</code>, with the seen keys in
+<code>index-lag-seen.json</code>), so a later occurrence can be matched to its
+writer. Reading the view never changes the index: every git call runs with
+<code>GIT_OPTIONAL_LOCKS=0</code>, so the read cannot even refresh the stat
+cache it reports on. An intended deletion and a path untracked and then ignored
+are both silent, because the file is gone in the first and the checkout ignores
+it in the second.</p>
+
+<p id="a-main-checkout-index-that-lags-head-is-surfaced-state"><strong>State:
+blocked on one line outside this node's write scope.</strong> The notice is
+declared non-blocking in the derivation's vocabulary
+(<code>obligations.NON_BLOCKING_DUTY_KINDS</code>), but the prompt hook keeps its
+own copy of that vocabulary in
+<code>reckon/hooks/coordinator_obligations.py</code> and the two are held
+together by
+<code>tests/test_queued_work_shows_where_held_work_shows.py::test_a_queued_run_never_holds_a_coordinator_stop_open</code>.
+The hook's <code>_NON_BLOCKING_KINDS</code> must gain
+<code>"index-lags-head"</code> before the derivation's claim holds. Until it
+does, that test is the one failure this change adds to the importers arm.</p>
+
+<table id="a-main-checkout-index-that-lags-head-is-surfaced-arms">
+  <caption>Each log names its revision, tree, the module as imported and the
+  command on its header lines, and ends in a bare
+  <code>EXIT=&lt;code&gt;</code>.</caption>
+  <thead><tr><th>arm</th><th>result</th><th>log</th></tr></thead>
+  <tbody>
+    <tr><td>gate, this node's test file at the head revision</td>
+      <td>5 passed; <code>EXIT=0</code></td><td><code>gate-head.log</code></td></tr>
+    <tr><td>base module substituted for the head revision, same test file</td>
+      <td>5 failed; <code>EXIT=1</code></td><td><code>base-arm.log</code></td></tr>
+    <tr><td>negative control: the detector returns before reading the checkout</td>
+      <td>1 failed (<code>test_a_lagging_index_is_a_notice_naming_the_restore</code>),
+      the index still lacking the path; <code>EXIT=1</code></td>
+      <td><code>negative-control.log</code></td></tr>
+    <tr><td>importers of <code>reckon.crew.obligations</code>, head revision</td>
+      <td>38 failed, 454 passed; <code>EXIT=1</code></td>
+      <td><code>importers-head.raw</code></td></tr>
+    <tr><td>importers, base <code>obligations.py</code> substituted</td>
+      <td>42 failed, 450 passed; <code>EXIT=1</code> (37 pre-existing, plus the
+      five of the new test file collected against the base module)</td>
+      <td><code>importers-base.log</code></td></tr>
+  </tbody>
+</table>
+
+<p id="a-main-checkout-index-that-lags-head-is-surfaced-delta">Excluding the new
+test file's own five failures from the base arm, the added failure is exactly
+one: <code>test_a_queued_run_never_holds_a_coordinator_stop_open</code>, the
+guard that keeps the derivation's and the hook's vocabularies together. No
+other importer failure differs between the arms. Ruff check and
+<code>ruff format --check</code> report no finding on the two changed paths; the
+base revision of <code>reckon/crew/obligations.py</code> carried one ruff check
+finding and was format-clean.</p>
+
+<p id="a-main-checkout-index-that-lags-head-is-surfaced-commits">Commit
+<code>86ce945f6a</code> adds <code>reckon/crew/obligations.py</code> and
+<code>tests/test_a_landing_leaves_the_index_at_head.py</code>. Logs and the run
+manifest are under
+<code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T221135803822-a-main-checkout-index-that-lags-head-is-surfaced</code>.</p>
+</article>
