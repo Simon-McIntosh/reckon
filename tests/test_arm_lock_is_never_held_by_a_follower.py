@@ -5,7 +5,6 @@ from __future__ import annotations
 import importlib
 import json
 import os
-import re
 import socket
 import subprocess
 import sys
@@ -16,6 +15,7 @@ import pytest
 
 import reckon.crew.dispatch_watch as dispatch_watch_module
 from reckon.crew import runs
+from reckon.crew.recovery_watch import UNWATCH_SEAT_WAIT_SECONDS
 
 PROJECT = "arm-lock-sample"
 SESSION = "lock-reader"
@@ -222,11 +222,14 @@ def test_stubborn_orphan_cannot_hold_arm_lock_past_bound(processes):
         )
     assert arm.returncode == 3, (stdout, stderr)
     assert "release" in stdout
-    # Arming gives up at a bound and says which. Given room to start, the stop
-    # child reaches unwatch, which reports the bound it waited out itself; a
-    # bound too short for the start expires in arming instead. Either way the
-    # message carries the bound that ended the attempt.
-    assert re.search(r"\b\d+(?:\.\d+)?s\b", stdout), stdout
+    # Only two bounds can end the attempt, and the message must name one of
+    # them: unwatch gives up at its own seat wait once the stop child reaches
+    # it, or arming's bound expires first when the child cannot start in time.
+    # Naming any other duration would not say which bound it gave up at.
+    assert (
+        f"within {STOP_CHILD_ARM_BOUND_SECONDS:g}s; arming stopped" in stdout
+        or f"beyond {UNWATCH_SEAT_WAIT_SECONDS:g}s" in stdout
+    ), stdout
     _wait(
         (home / "term-seen").exists,
         seconds=STOP_SIGNAL_GRACE_SECONDS,
