@@ -1,0 +1,81 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T23:45:22.923Z",
+  "dispatched_at": "2026-11-07T23:31:47Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:502",
+      "id": "done_when-1",
+      "reason": "a worker told four things with five bullets can satisfy the sentence by delivering four, and the bullet most likely dropped is the newly added in-flight case, which is the reported defect the change was made for.",
+      "text": "\u00a715's done-when introduces its list with \"shows four things on a synthetic crew home\" and then carries five bullets, the fourth (an in-flight review row naming that review run, not review-missing) having been added after the introduction was written",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:452",
+      "id": "reasoning-1",
+      "reason": "a worker taking the named cause at face value repairs the follower's reads (already landed as ad3e2764bd) and closes the section while the station path that owns the duty stays unexamined.",
+      "text": "\u00a714's new paragraph names the measured cause as \"reckon-0f profiled its own follower while its review reflex stalled and found every py-spy sample walking other projects' events files\", but `git grep` shows `resumption.sweep` has exactly one caller in the tree, `station.py:243` (`SweepBeat`), so a follower busy in event reads cannot starve a station-side sweep; the section that replaces \u00a710's per-follower sweep left the follower with no sweep to stall",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:466",
+      "id": "done_when-2",
+      "reason": "the section's falsification is unfireable for the cause it leads with, so a worker must either invent a cause outside the list to get a red base arm or deliver a control that holds however the code behaves.",
+      "text": "\u00a714's done-when requires a new test that \"reproduces that cause on a synthetic crew home\" while its negative control is \"the same test at the base revision shows, in the reproduced condition, the review not dispatched\"; for the cause the section now names the base revision already carries the repair (ad3e2764bd is on main), so the base arm cannot differ from the head arm, and for the station candidates a test with a \"controlled tick\" removes the very latency the cause describes",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:457",
+      "id": "single_goal-1",
+      "reason": "two implementable sections can each claim the same repair, so a node on one of them either duplicates the other's work or declares itself blocked on a dependency the plan never declares.",
+      "text": "\u00a714's deliverable is \"one investigation that reproduces a starved duty ... followed by the repair of that cause\", and with the measured cause being event-file read cost the repair is a read-cost change, which \u00a713 owns in its own words (\"remove the dominant read so a steady-state tick reads only what changed since the last one\")",
+      "type": "single_goal",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "60948a75086e8893d3fad7d05ff82044b04701cd",
+  "plan_fingerprint": "2c705a766a73e1da4ec7af9eb9ba4572e1c7ad1c3e4c17f78bb4bec17e8370da",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 99,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T225247368823-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "1536fc0471a5a549ed726f517c754416d3e814e6",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `ad3e2764bd` resolves to \"perf(follow): read another project's events file only where it grew\", `station.py` carries `self.sweeps.request` at :536\u2013537 and the SweepBeat docstring at :228, `obligations.py` carries the \"within about 120 s (the follower's sweep cadence)\" wording at :718, `recovery_review_dispatch.py:2512` is `dispatch_review_for_run`, and `recovery_classification.py:1889` produces the \"when the process ended; the run is not reported dead\" note.",
+    "done_when": "two findings \u2014 \u00a715 says its test \"shows four things\" and then lists five bullets, and \u00a714's negative control cannot fire for the cause the section now names.",
+    "evidence_paths": "pass \u2014 gates write under the run directory and tests under tests/, no scratchpad or node-local temporary path is named.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or version tags reach the named symbols or test filenames, and every title states a mechanism.",
+    "reasoning": "a finding \u2014 \u00a714's measured root cause is located in the follower, but the plan's own \u00a710 and the code leave the sweep with exactly one caller, the station.",
+    "single_goal": "a finding \u2014 \u00a714 has become an investigation whose leading measured cause is a read-cost repair that \u00a713 already owns.",
+    "wiring": "pass \u2014 s14\u2013s17 declare no depends-on, and each cites a landed upstream (\u00a710's station sweep for \u00a714/\u00a716, \u00a713's tick for \u00a714's frequency); no declared relationship points at a wrong node."
+  },
+  "section_digests": {
+    "_document": "daa1a9bcc4d34705ad32ec58d8bf0b2122b24f6a3e32fa53c2379d66d542eeb8",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "3b11fe0cd53015121e6d566c554c6c77b13236b3700a90279e77a6bc755ea0a3",
+    "s14": "1295ddbb2475ed10e54e5db9b2c6e2f72acf760aee85c04638f2c35e0fb8cfbb",
+    "s15": "13123083ca6720f10df7fbe598fb46987be52f465461880ef779c19ba91ca81c",
+    "s16": "65cd8e559a7a5ebf018bc9fe50a07bb0954f67405ab6f17c7377c38ccd363aa7",
+    "s17": "1dee50822a308fa4eeea0a45fd3cdaf6de52d9a1d74a91c2b9c7605d179da2ad",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T05:27:14.841741+00:00",
+  "total": null
+}
