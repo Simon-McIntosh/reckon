@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from reckon.crew import plan_review, runs
+from reckon.crew import obligation_snapshot, plan_review, runs
 from reckon.crew.node import PlanReviewMissingError
 from tests import test_a_queued_run_is_never_told_to_redispatch as fixtures
 
@@ -27,6 +27,7 @@ def test_a_resolved_refusal_row_states_the_current_hold(mounted_home, answered):
     refusal = PlanReviewMissingError(f"finding wiring-1 is unanswered; run `{command}`")
     record = fixtures._write_queued_pointer(f"{type(refusal).__name__}: {refusal}")
     record["node"] = {"id": "queued-request", "plan": "fixture"}
+    record["queued_at"] = fixtures.OBSERVED_AT.isoformat()
     record["reason"] = "the session has no allowance for another worker"
     record["pass_hold"] = {"verdict": "held-for-allowance", "reason": record["reason"]}
     runs._write_json(runs.pointer_path(fixtures.QUEUED_RUN), record)
@@ -42,9 +43,22 @@ def test_a_resolved_refusal_row_states_the_current_hold(mounted_home, answered):
         if item["run_id"] == fixtures.QUEUED_RUN
     )
     print(f"answered={answered}: {row}")
+    snapshot = obligation_snapshot.payload_for(
+        obligation_snapshot.fleet_state(fixtures.PROJECT, now=fixtures.OBSERVED_AT),
+        fixtures.SESSION,
+    )
+    assert (
+        next(
+            item
+            for item in snapshot["obligations"]
+            if item["run_id"] == fixtures.QUEUED_RUN
+        )
+        == row
+    )
     if answered:
         assert row["kind"] == "run-queued", row
-        assert "held-for-allowance" in str(row), row
+        assert row["reason"] == f"held-for-allowance: {record['reason']}", row
+        assert record["reason"] in row["next_command"], row
         assert "--answer wiring-1" not in str(row), row
     else:
         assert row["kind"] == "queued-awaiting-session", row

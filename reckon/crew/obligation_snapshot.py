@@ -1476,6 +1476,7 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
                     placements=queued_placements,
                     now=state.now,
                     verdicts=verdicts,
+                    pointer=pointer,
                 )
             )
             continue
