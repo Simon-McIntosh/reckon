@@ -1,0 +1,83 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T18:34:38.378Z",
+  "dispatched_at": "2026-11-08T18:20:40Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-reads-only-its-runs-changes.html:43",
+      "id": "anchors_resolve-1",
+      "reason": "the section's justification and its negative control both resolve through that link, so a worker or reviewer following it lands on a 404 and the section's evidence argument becomes an unsourced assertion.",
+      "text": "the evidence note \u00a73's whole Why rests on is cited at a path deleted by the commit that landed the section (2754cbd2dc, 179 lines removed, no new target), and `git ls-tree -r HEAD -- docs/evidence` finds nothing under `a-review-reads-only-its-runs-changes/` in either this worktree or the main checkout's head, so the figures 674,392 / 156 / 58,392 / 154-of-156 have no durable source a later reader can open",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-reads-only-its-runs-changes.html:59",
+      "id": "anchors_resolve-2",
+      "reason": "the author must either restore and commit the fragment or drop both links and inline the two figures that carry the finding, and which one it is decides whether \u00a73 can be verified at all.",
+      "text": "the landing comment cites the same deleted fragment, so the record of how \u00a72 was answered points at a document that no commit contains",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-reads-only-its-runs-changes.html:43",
+      "id": "reasoning-1",
+      "reason": "the worker must either enumerate merge commits in a second pass or the conflict resolution is silently unreviewed, and since that resolution is runtime source, dropping it makes `changes_runtime_source` read False and lets `carry_review_forward` re-stamp a review over a runtime change no reviewer read.",
+      "text": "the deliverable specifies `rev-list --no-merges tip ^integration_ref ^older` and then says it \"adds any path a merge commit in that set shows in its combined diff, so a conflict resolution the run wrote is kept\", but `--no-merges` removes exactly those commits: on `fc7f245289` (the \u00a71 run's own merge) `git rev-list --merges fc7f245289 ^main` names 1 commit while the `--no-merges` form names none of them, and on the plan's second named instance `14c9d487fb` \u2014 the conflict-resolved merge over `reckon/crew/queue_landing.py` \u2014 `rev-list --no-merges 14c9d487fb ^main` is empty and `git show --cc --name-only 14c9d487fb` names that one path, so the path the section promises to keep is the path the specified command drops",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-reads-only-its-runs-changes.html:43",
+      "id": "reasoning-2",
+      "reason": "the done-when asserts `changes_runtime_source` is False, which is correct either way, and the repair it asks for is unaffected; only the sentence claiming what happens next overstates, so a worker reading it may expect a carry that the code declines and report a surprise rather than a wrong change.",
+      "text": "\u00a73 states that with the corrected paths \"a run whose own delta holds no runtime source \u2026 so `carry_review_forward` carries the stored review to the merge head and composes none\", omitting the `touches_delivered_work` term that also gates the carry (`reckon/crew/recovery_review_dispatch.py:1206`, `:1220`), so a delta that is a test and an evidence fragment \u2014 the very case the done-when asserts \u2014 is declined rather than carried when those paths are the ones the reviewed diff delivered",
+      "type": "reasoning",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-review-reads-only-its-runs-changes.html:43",
+      "id": "done_when-1",
+      "reason": "the one mechanism the section adds beyond filtering is the merge-combined-diff union, and without a conflicted merge in the fixture the gate cannot fail on its absence, so the node can go green while carrying a runtime-source conflict resolution unreviewed.",
+      "text": "the fixture holds \"a merge of an integration branch that carries many unrelated files\" and a further run commit, so the merge is clean; none of the three assertions touches a path written by a conflict resolution, and `git show --cc --name-only 14c9d487fb` shows such a resolution is typically a single runtime path, which a helper that ignores merge commits classifies away",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-reads-only-its-runs-changes.html:47",
+      "id": "wiring-1",
+      "reason": "the obligation producer reads followups, so the plan as authored hands out a finished section and never reaches \u00a73, which is what a coordinator dispatching from this plan would act on.",
+      "text": "\u00a72's driving followup is still `data-status=\"open\"` with `data-recommends-skill=\"/reckon-build a-review-reads-only-its-runs-changes \u00a72\"` while s2 is declared done at line 23 and line 38, and no open followup carries \u00a73 even though the landing comment names \u00a73 as the repair",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "2754cbd2dc62a864df7d032b746ccc40626b8f7c",
+  "plan_fingerprint": "a74cb18a37a35c1980a9671723590abacc3bf163321c790d7a48265ca3817ced",
+  "plan_slug": "a-review-reads-only-its-runs-changes",
+  "plan_version": 8,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T181942901234-plan-review-of-a-review-reads-only-its-runs-changes",
+  "reviewed_blob_sha": "89405d2314d79f93d41dff5ac05559648b164d00",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 both \u00a73's Why link (line 43) and the landing comment (line 59) cite `docs/evidence/fragments/a-review-reads-only-its-runs-changes/where-a-review-takes-its-range.html`, which commit 2754cbd2dc deleted (179 deletions, no rename target) and which now exists only as an untracked file in one checkout, so the citation resolves at no committed revision.",
+    "done_when": "a finding \u2014 \u00a73's fixture merges an integration branch carrying unrelated files but never a conflict resolution, so the helper's stated \"so a conflict resolution the run wrote is kept\" is asserted by nothing and an implementation that drops merge-authored paths passes every arm.",
+    "evidence_paths": "pass \u2014 \u00a73's gate logs go under the run directory and its product change lands in tracked source, not a scratch or node-local path.",
+    "naming": "pass \u2014 `own_changed_paths` and `test_a_review_reads_only_its_runs_changes.py` name the behaviour, match the existing `tests/test_a_review_*` family, and carry no plan label, stage name or ticket number.",
+    "reasoning": "a finding \u2014 \u00a73's helper enumerates `rev-list --no-merges tip ^integration_ref ^older` and then promises to add \"any path a merge commit in that set shows in its combined diff\", but a `--no-merges` set contains no merge commit, so the conflict-resolution guarantee cannot execute; reproduced on the plan's own named instance, where the merge `14c9d487fb` is the only commit in `rev-list --merges \u2026 ^main` and is absent from the set the helper enumerates.",
+    "single_goal": "pass \u2014 s3 carries one deliverable (one helper plus the callers that must use it, and the one test that proves it), and its gate is a single verdict on that mechanism.",
+    "wiring": "a finding \u2014 \u00a72 is declared done (line 23, line 38) yet its driving followup f-arroirc-001 is still open and recommends `/reckon-build \u2026 \u00a72` (line 47), and no open followup carries \u00a73, so a coordinator driving from followups re-dispatches finished work; s3 also declares no `plan-section-depends-on` for the \u00a72 evidence it consumes (moot now that s2 is done, but it is the relationship the queue orders by)."
+  },
+  "section_digests": {
+    "_document": "321e3bc99119a27697d635d34e1d4b9f33d7ce216f1a7a760d22bc147ba1ccc0",
+    "s1": "3af442a13134b7c46db2d98609970c3d9e560ca12eb3deabbed535c7f74c5dca",
+    "s2": "a324bc121acb85a70e9fdcb6ec0c99aab489197974b83551dbf447fc023b56e3",
+    "s3": "cb18c52cee191654efef34d153e3dc073cc654774cc2f39fb2ccb86fde5b698c"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T18:42:08.436851+00:00",
+  "total": null
+}
