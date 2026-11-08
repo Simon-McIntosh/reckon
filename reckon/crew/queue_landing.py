@@ -19,8 +19,8 @@ from reckon.crew import landing_measure, recovery, runs
 from reckon.crew.node import CrewError, is_test_path
 from reckon.crew.promotion_records import _node_test_files
 from reckon.crew.recovery_review_acceptance import (
-    LANDED_NON_BLOCKING_REASON,
     _review_accepts_promotion,
+    record_landed_exemptions,
 )
 
 _run_srun = subprocess.run
@@ -1283,43 +1283,6 @@ def _suite_evidence_stamp(review_stamp: str, arms: Mapping[str, Any]) -> str:
     return review_stamp + ":" + _digest(dict(arms))
 
 
-def _record_landed_exemptions(
-    project: str,
-    run_id: str,
-    review: Mapping[str, Any],
-    *,
-    reviewed_head_sha: str | None = None,
-) -> list[int]:
-    """Record the findings still unanswered when the run lands, and return them.
-
-    A run reaches this pass only once every finding it raised has been answered,
-    so the answers a coordinator already recorded are the run's record and this
-    writer must not speak over them. Writing an exemption over every
-    non-blocking finding would replace a ``folded:<node>`` with the pass's own
-    ``exempted:<reason>`` and lose the node the finding was folded into, so only
-    a finding still open is recorded here.
-    """
-    from reckon.crew import findings as findings_module
-    from reckon.crew import review_dispositions
-
-    recorded: list[int] = []
-    for index, finding in enumerate(findings_module._record_findings(review)):
-        if not str(finding.get("text") or "").strip():
-            continue
-        if findings_module.finding_disposition(review, index) != "open":
-            continue
-        review_dispositions.record_finding_disposition(
-            project,
-            run_id,
-            index,
-            kind="exempted",
-            reason=LANDED_NON_BLOCKING_REASON,
-            reviewed_head_sha=reviewed_head_sha,
-        )
-        recorded.append(index)
-    return recorded
-
-
 def _landing_beat(pointer: Mapping[str, Any], run_id: str) -> str:
     """Tick the landed node's section through the ops a coordinator uses.
 
@@ -1951,7 +1914,7 @@ def _land_deliveries() -> dict[str, Any]:
         if accepted:
             landed.append(run_id)
             try:
-                _record_landed_exemptions(
+                record_landed_exemptions(
                     project, run_id, review, reviewed_head_sha=head
                 )
             except (OSError, ValueError) as exc:

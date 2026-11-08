@@ -63,13 +63,23 @@ def _blocking_finding_indexes(review: Mapping[str, Any] | None) -> tuple[int, ..
 
 
 def _excusable_finding_indexes(review: Mapping[str, Any] | None) -> tuple[int, ...]:
-    """The indexes of the findings that state a non-blocking severity."""
+    """The indexes of the findings nobody has answered and landing may excuse.
+
+    A finding that already carries a disposition is its author's answer, written
+    before the run reached here: a coordinator folds it into a follow-up node
+    and names that node, or exempts it with a reason of their own. Recording an
+    exemption over such an entry replaces the answer with this module's own and
+    loses the node a fold names, so an answered finding is not excused again.
+    """
+    from reckon.crew import findings as findings_module
+
     if not isinstance(review, Mapping):
         return ()
     return tuple(
         index
         for index, finding in enumerate(_stored_findings(review))
         if not _finding_blocks(finding)
+        and findings_module.finding_disposition(review, index) == "open"
     )
 
 
@@ -130,19 +140,32 @@ def record_landed_exemptions(
     reviewed_head_sha: str | None = None,
     base_dir: str | Path | None = None,
 ) -> list[int]:
-    """Record the review's non-blocking findings as exempted, and return them.
+    """Record the review's unanswered non-blocking findings as exempted.
 
-    A run lands because its review raised nothing blocking, so the findings it
-    did raise must not vanish with the pointer that carried them: each is
-    written into the stored record's own dispositions, naming the landing pass
-    and the reason. The record rewritten is the one for the head this review
-    read, so an exemption recorded against one revision never speaks for
-    another.
+    A run lands because its review raised nothing blocking, so a finding nobody
+    answered must not vanish with the pointer that carried it: it is written
+    into the stored record's own dispositions, naming the landing pass and the
+    reason, and returned. A finding that already carries a disposition is
+    skipped — it is the answer its author gave, and this writer would replace a
+    fold's node with a reason of its own. The record rewritten is the one for
+    the head this review read, so an exemption recorded against one revision
+    never speaks for another.
     """
     from reckon.crew import review_dispositions
 
+    # The dispositions are read from the record this writer rewrites, not from
+    # the mapping the caller holds: a caller that parsed a review in memory
+    # carries no dispositions, and reading them there would report every
+    # finding unanswered and overwrite the answers the store already holds.
+    stored = review_dispositions.stored_record_for_disposition(
+        project,
+        reviewed_run_id,
+        base_dir=base_dir,
+        reviewed_head_sha=reviewed_head_sha,
+    )
+    answered = stored if isinstance(stored, Mapping) else review
     recorded: list[int] = []
-    for index in _excusable_finding_indexes(review):
+    for index in _excusable_finding_indexes(answered):
         review_dispositions.record_finding_disposition(
             project,
             reviewed_run_id,

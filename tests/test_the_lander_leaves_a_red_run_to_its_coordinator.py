@@ -36,6 +36,10 @@ from reckon.crew import (
 )
 from reckon.crew import review as review_module
 from reckon.crew.findings import finding_disposition
+from reckon.crew.recovery_review_acceptance import (
+    LANDED_NON_BLOCKING_REASON,
+    record_landed_exemptions,
+)
 
 PROJECT = "landing-fixture"
 PLAN = "delivery-plan"
@@ -661,3 +665,42 @@ def test_a_fold_a_coordinator_recorded_survives_the_landing(
     assert stored is not None
     assert finding_disposition(stored, 0) == "folded:the-follow-up-node"
     assert finding_disposition(stored, 1) == "exempted:answered by its coordinator"
+
+
+def test_the_shared_exemption_writer_skips_a_finding_that_is_already_answered(
+    delivery: dict,
+) -> None:
+    """The one writer both paths use leaves an answered finding alone.
+
+    The landing and the promotion path record exemptions through the same
+    function, so the rule that a recorded answer stands has to live in that
+    function rather than at either call site: a copy at one site and not the
+    other is two rules that agree only until one of them is edited.
+    """
+    head = str(delivery["head"])
+    review = _accept(
+        base=str(delivery["base"]),
+        head=head,
+        findings=(
+            "non-blocking: the helper re-derives a value it could cache",
+            "non-blocking: the docstring names the wrong caller",
+        ),
+    )
+    review_dispositions.record_finding_disposition(
+        PROJECT,
+        RUN,
+        0,
+        kind="folded",
+        node="the-follow-up-node",
+        reviewed_head_sha=head,
+    )
+
+    recorded = record_landed_exemptions(PROJECT, RUN, review, reviewed_head_sha=head)
+
+    assert recorded == [1]
+    stored = review_dispositions.stored_record_for_disposition(
+        PROJECT, RUN, reviewed_head_sha=head
+    )
+    assert stored is not None
+    assert finding_disposition(stored, 0) == "folded:the-follow-up-node"
+    assert finding_disposition(stored, 1) == (f"exempted:{LANDED_NON_BLOCKING_REASON}")

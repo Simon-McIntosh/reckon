@@ -100,4 +100,16 @@
   <p>The two directories this fragment cites live beside the run, not in the
   tree: <code>gate-repair.log</code> is the importer gate at the repair commit
   and <code>negative-control-fold.log</code> is the reverted run above.</p>
+
+  <p><strong>Consolidated.</strong> The first repair wrote its own exemption
+  writer beside the shared one, differing only in a filter, which is two rules
+  that agree until one of them is edited. The rule now lives once, in
+  <code>recovery_review_acceptance._excusable_finding_indexes</code>, which
+  skips a finding that already carries a disposition, and
+  <code>record_landed_exemptions</code> reads those dispositions from the
+  record it rewrites rather than from the mapping its caller holds — a caller
+  that parsed a review in memory carries none, and reading them there would
+  report every finding unanswered and overwrite what the store holds. The
+  landing and the promotion path both call that one function, so a
+  coordinator's fold survives either route.</p>
 </section>
