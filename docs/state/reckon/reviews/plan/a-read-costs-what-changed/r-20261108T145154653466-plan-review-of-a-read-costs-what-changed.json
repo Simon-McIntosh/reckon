@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T15:22:43.231Z",
+  "dispatched_at": "2026-11-08T15:13:08Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-costs-what-changed.html:109",
+      "id": "reasoning-1",
+      "reason": "the fix is one phrase naming `reckon/crew/review.py` in the digest set, and without it a worker implementing exactly the stated floor ships an index that answers from rows a later record-reader change has invalidated.",
+      "text": "the index's staleness digest is specified as \"a digest of the source files that derive rows, at least `reckon/crew/findings.py`\", but `findings._read_record_rows` derives every committed row through `_review._committed_record_at` and `_review` is `reckon/crew/review.py` (`findings.py:388-392`), so a change to the record reader leaves every indexed entry trusted and the digest unmoved \u2014 the exact staleness the digest is added to prevent, and the precedent it cites is one module wider: `review_records._index_sources` returns `(review_records.py, _review.__file__)` (`review_records.py:1014-1017`)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-costs-what-changed.html:109",
+      "id": "done_when-1",
+      "reason": "the six numbered cases are what a worker implements and they are self-contained, so the count is a reading blemish rather than a measure that can pass while the guard is absent.",
+      "text": "the done-when says the new test \"shows four things\" and then enumerates six cases, a stale count from the rounds that added the code-store and source-digest cases",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "439f2fee5827da77d5bb8f359f1e4577abfce500",
+  "plan_fingerprint": "a65e51a0b50e82431d0286b742e36d9b7613f2b975300a566a098e6feefa1fc1",
+  "plan_slug": "a-read-costs-what-changed",
+  "plan_version": 52,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T145154653466-plan-review-of-a-read-costs-what-changed",
+  "reviewed_blob_sha": "130cb4c6537cc79e944a5d10a3385b785031cf7e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every s14 anchor resolves at head: `review_records.node_local_cache_dir` (`review_records.py:985`), `_index_cache_path` (`:1040`), `_index_sources` (`:1014`), `store_committed_review` (`:168`, called from `promotion.py:1809`), `plan_review.record_response` (`plan_review.py:2217`, which rewrites the committed copy in place through `write_json_atomically`), `store_code_review` (`:5389`), and `recovery_review_subject.py` near line 836, whose caller sits inside `if rubric == \"design\"`.",
+    "done_when": "a finding \u2014 \u00a714's done-when still says the test \"shows four things\" while enumerating six cases (First through Sixth), a count left behind by the two rounds of cases added in review.",
+    "evidence_paths": "pass \u2014 the new test lives under `tests/`, and every live-store timing and its load average is logged \"under the run's `logs/`\", the durable run directory the plan's other sections use.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach a symbol, path or comment that s14 creates; the new test file is named for the mechanism it asserts.",
+    "reasoning": "a finding \u2014 the deliverable's source digest is floored at `reckon/crew/findings.py` alone, while the rows it stamps are derived through `_read_record_rows` \u2192 `_review._committed_record_at`, where `_review` is `reckon.crew.review`.",
+    "single_goal": "pass \u2014 \u00a714 is one change, a persisted write-time findings index; the interface week count is explicitly left out and the code-review store and committed tree are two roots of the same index.",
+    "wiring": "pass \u2014 s14 needs no dependency edge that is missing: \u00a713's profile is recorded in that section's Outcome paragraph rather than delivered by it, and the landed \u00a711 index it extends is `done`, so no gating edge is owed; its three named writers and three write paths all resolve in the tree."
+  },
+  "section_digests": {
+    "_document": "090f283a2adb21268293f3f9f36bccafc5b05deb95642975aaeab367e4fd63f2",
+    "s1": "f8fb0fbbfbbc79977a59ec9d78c0d66f47803aa96db83e4d628a1dfb6b40e6c3",
+    "s10": "68fc6d75acf0741225ab448369611e4eda9f862b50d7907857c1abb24b4138e4",
+    "s11": "2a249381081ebbf2d99b7f9da3b09b1d3b87c6ada44952d6b665283e27021c40",
+    "s12": "c6c234ba14598d6a537e09000d8f5d406295ad40c3c124db34cb1b84868bb22e",
+    "s13": "5ad3b5418d98e6b0afe0d6762c6e34b89b31509e7e0c346c4b5757fc5f9bc443",
+    "s14": "1cebc269584938bbc52b469909b9c33718d131f9f6e42fa43d0f2d83e27ddcb3",
+    "s2": "7de6c2e256fca5545163c6149c674fea249ddd1a72361b49c89ef5beaa22263d",
+    "s3": "d11cdceab942c4935f32d292e26f2111b011ca4571980a6c54ef6ae23894aadb",
+    "s4": "d14b5fa9a6b6ef26da6f95b50c43aa782fdbe679ca28020a3095af71cd579417",
+    "s5": "ba22eff9814ea16ac19404864f9a2d1ec8da449b3011fba623d0d1856b2c6ecf",
+    "s6": "b0053663cc25e5e7e15595ae342d21c4c467abe74f06c8c4db86982b276898cc",
+    "s7": "2c7c6fb207a002d2bb1e223ebf1f770570f6b06942edf9ac6647253b410a67b7",
+    "s8": "9a012c065cbd8db9e5e69070d20531b84a584582cc0bf8f45fff060b7f31f464",
+    "s9": "1404fbf63401ab3bd4204175d16adb89094eaa1f1b25160e73fd2bb9c625d0b1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T15:33:44.792067+00:00",
+  "total": null
+}
