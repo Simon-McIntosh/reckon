@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-dispatch-returns-without-its-worker">
+  <meta name="plan-evidence-for" content="a-dispatch-returns-without-its-worker">
+  <title>A review that never launched is not running | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A review that never launched is not running</h1>
+      <p class="lead">A reflex-dispatched review writes its live pointer and its claim, and the launch stops before any supervisor exists. The pointer holds <code>launch: cli</code> and a pre-spawn phase, the run directory holds <code>claim.json</code> and nothing else, and no attempt was ever composed, so neither <code>attempt_started_at</code> nor an attempt claim dated it. A pointer with no launch clock cannot age, so it fell through to the in-harness sentence and read as running until a manifest appeared. A cli run is not in-harness, so a review that never started stayed running indefinitely and surfaced only as overdue. It is now dated from the claim its dispatch registered, and failing that from the pointer's own creation; past the stranded-launch bound it reads as a launch failure naming the host that issued it.</p>
+    </header>
+
+    <section id="a-review-that-never-launched-is-not-running-what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/crew/recovery_liveness.py</code>: <code>_claim_registered_seconds</code> reads the run directory's <code>claim.json</code> and returns its <code>claim_registered_at</code>, refusing a claim that names another run. <code>_claim_or_creation_seconds</code> takes that claim and falls back to the pointer's <code>created_at</code>. <code>_stranded_launch_age_seconds</code> dates a launch from the attempt clock where one exists and from that fallback only for a <code>launch: cli</code> pointer, and <code>_stranded_launch</code> now ages through it, so an in-harness pointer under the same conditions keeps its existing reading.</li>
+        <li><code>reckon/crew/recovery_classification.py</code>: the <code>launch-failed</code> stranded-launch clause names the launcher host and the span the pointer has held, where it previously stated only the bound.</li>
+        <li><code>tests/test_a_review_that_never_launched_is_not_running.py</code> (new): three cases against a temporary crew home. A cli review pointer in <code>starting</code> with a claim older than the bound, no attempt record and no <code>attempt_started_at</code>, classifies <code>launch-failed</code> and names its launcher host. The same pointer with a claim younger than the bound reads <code>running</code>. An in-harness pointer under the first case's conditions still reads <code>running</code>.</li>
+      </ul>
+    </section>
+
+    <section id="a-review-that-never-launched-is-not-running-the-gate">
+      <h2>The gate</h2>
+      <p>Every test file importing <code>reckon.crew.recovery_liveness</code> or <code>reckon.crew.recovery_classification</code> (96 files at head) was run at base and at head, one arm at a time with <code>-n 4</code>. The base arm ran in a scratch extraction of the base revision and excludes the test file this change adds; the head arm ran in the worktree. Both arms carry the same 7 failing ids, so the change adds none.</p>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>Base <code>90f6910399</code>, scratch tree, 95 files</td><td>7 failed, 807 passed, 1 skipped, <code>EXIT=1</code></td><td><code>importers_base.log</code></td></tr>
+          <tr><td>Head <code>b8ede121eb</code>, worktree, 96 files</td><td>7 failed, 810 passed, 1 skipped, <code>EXIT=1</code>; zero added ids</td><td><code>importers_head.log</code></td></tr>
+          <tr><td>Head gate, this node's test file</td><td>3 passed, <code>EXIT=0</code></td><td><code>head_gate.log</code></td></tr>
+          <tr><td>Base <code>90f6910399</code> source with the head test file</td><td>1 failed, 2 passed, <code>EXIT=1</code>; the first case reads <code>running</code></td><td><code>base_arm.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>Logs live under the run directory <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T191235309637-a-review-that-never-launched-is-not-running/logs/</code>. Both arms used the shared interpreter at <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python</code>. Ruff check passes on the three staged paths. Ruff format reports one file still to be reformatted &mdash; <code>recovery_liveness.py</code>, unformatted at the base revision in three hunks unrelated to this change &mdash; and the delta on the staged paths is zero.</p>
+    </section>
+
+    <section id="a-review-that-never-launched-is-not-running-negative-control">
+      <h2>Declared negative control</h2>
+      <p>Declared mutation: <em>removing the claim-and-creation fallback from the dating makes the first case read as running</em>. Applied in-suite through <code>RECKON_NEVER_LAUNCHED_FALLBACK_NEGATIVE_CONTROL=1</code>, which stubs the fallback to return nothing, the test file reports 1 failed, 2 passed with <code>EXIT=1</code>: <code>test_a_stale_review_with_no_attempt_clock_is_a_launch_failure</code> sees <code>running</code>. The head arm does not fail that id.</p>
+    </section>
+
+    <section id="a-review-that-never-launched-is-not-running-commits">
+      <h2>Commits</h2>
+      <p><code>ba9460680e</code> &mdash; fix(recovery): date a cli launch that never spawned from its claim. Changes <code>reckon/crew/recovery_liveness.py</code>, <code>reckon/crew/recovery_classification.py</code> and <code>tests/test_a_review_that_never_launched_is_not_running.py</code>.</p>
+      <p><code>b8ede121eb</code> &mdash; test(recovery): build the never-launched claim from its own file name. Changes <code>tests/test_a_review_that_never_launched_is_not_running.py</code> so the base arm reports the classification rather than a missing attribute.</p>
+    </section>
+  </main>
+</body>
+</html>
