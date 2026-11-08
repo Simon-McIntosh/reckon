@@ -483,3 +483,97 @@ def test_a_pointer_with_no_recorded_link_and_no_flag_is_refused_at_landing(
     message = str(refusal.value)
     assert "--plan-link" in message
     assert "--unplanned-reason" in message
+
+
+def test_the_dispatch_and_landing_refusals_agree_on_every_input() -> None:
+    """One fact, two sentences: the refusals must split the inputs identically.
+
+    The dispatch refusal and the landing refusal ask the same question of the
+    same run, at two moments. If each restated the predicate they could drift,
+    and the drift would show up only as a run dispatched without an owner that
+    lands without one too — the shape the earlier repair removed. So every
+    combination of the four inputs is put to both, and the two must agree on
+    which side of the split it falls.
+    """
+    from reckon.crew.node import brief_plan_owner_finding
+    from reckon.crew.promotion_checks import _require_brief_owner
+
+    disagreements: list[tuple[str, str, str, str, str]] = []
+    for brief in ("", BRIEF_TEXT):
+        for plan in ("", "some-plan:1.2"):
+            for role in ("implement", "test", "review"):
+                for link in ("", "some-plan"):
+                    for reason in ("", "changes no plan"):
+                        node = crew.TaskNode(
+                            id="agreement",
+                            goal="measure the paid lane queue shape",
+                            plan=plan,
+                            brief=brief,
+                            spec_level="exact",
+                            role=role,
+                            done_when=DONE_WHEN,
+                            write_paths=["result.json"],
+                            time_budget="20m",
+                            manifest_path="manifests/agreement.md",
+                        )
+                        refused_at_dispatch = (
+                            brief_plan_owner_finding(
+                                node,
+                                plan_link=link,
+                                unplanned_reason=reason,
+                            )
+                            is not None
+                        )
+                        record = {
+                            "node": {"brief": brief, "plan": plan},
+                            "role": role,
+                        }
+                        try:
+                            _require_brief_owner(
+                                "agreement",
+                                record,
+                                plan_link=link,
+                                unplanned_reason=reason,
+                            )
+                        except crew.CrewError:
+                            refused_at_landing = True
+                        else:
+                            refused_at_landing = False
+                        if refused_at_dispatch != refused_at_landing:
+                            disagreements.append((brief, plan, role, link, reason))
+
+    assert disagreements == []
+
+
+def test_a_recorded_discharge_is_read_at_the_same_inputs_as_a_given_one() -> None:
+    """Landing's fallback to the recorded value sits inside the same split.
+
+    The dispatch helps a run land without being asked twice, so the value it
+    records must discharge the owner at landing exactly where a landing flag
+    would. This keeps both readings on the one predicate: recorded and given are
+    the same fact by the time the split is asked.
+    """
+    from reckon.crew.promotion_checks import _require_brief_owner
+
+    record = {
+        "node": {"brief": BRIEF_TEXT, "plan": ""},
+        "role": "implement",
+        "plan_link": "some-plan",
+    }
+
+    assert (
+        _require_brief_owner(
+            "recorded",
+            record,
+            plan_link="",
+            unplanned_reason="",
+        )
+        is None
+    )
+    with pytest.raises(crew.CrewError):
+        _require_brief_owner(
+            "recorded",
+            {"node": {"brief": BRIEF_TEXT, "plan": ""}, "role": "implement"},
+            plan_link="",
+            unplanned_reason="",
+        )

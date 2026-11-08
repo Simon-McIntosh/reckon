@@ -1199,6 +1199,38 @@ def gate_population_finding(
 BRIEF_PLAN_OWNER_FIELD = "brief-plan-owner"
 
 
+def missing_brief_discharge(
+    *,
+    brief: str,
+    plan: str,
+    role: str,
+    plan_link: str,
+    unplanned_reason: str,
+) -> str | None:
+    """Name the executable role a brief run holds when it owes a plan owner.
+
+    A brief implementing run has no plan section to move, so nothing joins its
+    product change to a plan unless the run itself names that owner, as a plan
+    link or as an unplanned reason. This returns the role when an owner is owed
+    and neither discharge is given, and ``None`` for a run with no brief, a run
+    that names a plan, a role that executes no section, and a run that names
+    either discharge.
+
+    The dispatch refusal and the landing refusal both read this one fact, so
+    they cannot come to disagree about which runs owe an owner.
+    """
+    if not str(brief or "").strip():
+        return None
+    if str(plan or "").strip():
+        return None
+    executable = str(role or "").strip()
+    if executable not in EXECUTABLE_SECTION_ROLES:
+        return None
+    if str(plan_link or "").strip() or str(unplanned_reason or "").strip():
+        return None
+    return executable
+
+
 def brief_plan_owner_finding(
     node: TaskNode,
     *,
@@ -1216,14 +1248,14 @@ def brief_plan_owner_finding(
     plan section is briefed plan work, and the plan it names is its owner. None
     of them needs either flag.
     """
-    if not str(node.brief or "").strip():
-        return None
-    if str(node.plan or "").strip():
-        return None
-    role = str(node.role or "").strip()
-    if role not in EXECUTABLE_SECTION_ROLES:
-        return None
-    if str(plan_link).strip() or str(unplanned_reason).strip():
+    role = missing_brief_discharge(
+        brief=node.brief,
+        plan=node.plan,
+        role=node.role,
+        plan_link=plan_link,
+        unplanned_reason=unplanned_reason,
+    )
+    if role is None:
         return None
     return {
         "property": BRIEF_PLAN_OWNER_FIELD,
