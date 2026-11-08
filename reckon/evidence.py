@@ -5,7 +5,7 @@ from __future__ import annotations
 import html
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
@@ -22,12 +22,23 @@ class EvidenceSynthesisError(RuntimeError):
 
 @dataclass(frozen=True, slots=True)
 class EvidenceSynthesisResult:
-    """The canonical output and input counts for one synthesis."""
+    """The canonical output and input counts for one synthesis.
+
+    ``lost_anchors`` names every anchored section of the record the old and new
+    documents disagree about, as ``(tag, anchor)`` pairs. A record a reader
+    links to loses an anchor silently unless the rewrite says so, so each entry
+    carries why it was not carried: ``dropped`` an appended anchor the
+    synthesis now renders itself, ``replaced`` a section a rendered one took the
+    place of, ``retired`` a section on a reserved id this synthesis does not
+    render, and ``carried`` a section kept because it cannot be told apart from
+    an append.
+    """
 
     path: Path
     runs: int
     comments: int
     commits: int
+    lost_anchors: list[tuple[str, str]] = field(default_factory=list)
 
 
 # Manifest fields, in the order they are consulted, that name the durable
@@ -60,6 +71,101 @@ def _section_key(value: object) -> str:
         return _plan_html.section_anchor(section)
     key = re.sub(r"[^a-z0-9]+", "-", section.lower()).strip("-")
     return key or _plan_html.section_anchor(None)
+
+
+#: The attribute an evidence append writes on the section it creates. Without
+#: it a later synthesis cannot tell an appended anchor from one of its own
+#: sections, and rewrites the first as if it had generated it.
+APPEND_ORIGIN_ATTRIBUTE = "data-evidence-origin"
+APPEND_ORIGIN_VALUE = "append"
+
+#: The section id a plan-level key renders as, and the id the closing section
+#: takes. Both are reserved for the synthesis, so no append may claim them.
+_PLAN_LEVEL_KEY = "_top"
+_OUTCOME_SECTION_ID = "outcome"
+
+
+def _section_element_id(key: str) -> str:
+    """The element id the record writes for one rendered section key."""
+    return _OUTCOME_SECTION_ID if key == _PLAN_LEVEL_KEY else key
+
+
+def _element_section_key(element_id: str) -> str:
+    """The rendered section key an existing record's element id addresses."""
+    return _PLAN_LEVEL_KEY if element_id == _OUTCOME_SECTION_ID else _section_key(
+        element_id
+    )
+
+
+def _evidence_record_path(docs_dir: Path, plan_slug: str) -> Path:
+    """The cumulative landing record one plan's evidence appends land in."""
+    return docs_dir / "evidence" / "archive" / f"{plan_slug}-landed.html"
+
+
+def _evidence_anchor_sets(
+    plan: Mapping[str, Any],
+    records: Sequence[Mapping[str, Any]],
+    source: str,
+) -> tuple[set[str], set[str]]:
+    """The section keys a synthesis writes now, and every key it may write later.
+
+    The rendered set is what this synthesis renders: the plan's comment keys
+    together with the current ledger runs' section keys. A declared plan
+    section carrying no comment and no run is not in it, so an id only the plan
+    declares is free *today* and is still reserved, because the next comment or
+    run on it makes the synthesis claim the id and a section already sitting
+    there would be overwritten.
+
+    Every key is normalised through :func:`_section_key`, so a caller may spell
+    a section as an authored id, a section sign or prose numbering and address
+    the same section. The synthesis, the carry-forward and the append refusal
+    all read this function, so the three cannot disagree about which ids are
+    the record's own.
+    """
+    rendered_keys = {_section_key(key) for key in (plan.get("comments") or {})}
+    rendered_keys.update(_section_key(record.get("section")) for record in records)
+    rendered = {_section_element_id(key) for key in rendered_keys}
+
+    labels, _order = _section_labels(source)
+    declared = {
+        _section_key(section.get("id"))
+        for section in (plan.get("sections") or [])
+        if isinstance(section, Mapping)
+    }
+    reserved = (
+        set(rendered)
+        | set(labels)
+        | declared
+        | {_OUTCOME_SECTION_ID, _PLAN_LEVEL_KEY}
+    )
+    return rendered, reserved
+
+
+def _record_sections(html_text: str) -> list[tuple[str, str, bool]]:
+    """Return each anchored section a record holds, in document order.
+
+    The triple is the section's element id, its markup, and whether an append
+    wrote it. Only top-level sections of the document are read: a section
+    nested inside another is part of its parent's content and is carried with
+    it rather than on its own.
+    """
+    if not html_text.strip():
+        return []
+    soup = BeautifulSoup(html_text, "html.parser")
+    container = soup.find("main") or soup.find("body") or soup
+    found: list[tuple[str, str, bool]] = []
+    for child in container.children:
+        if getattr(child, "name", None) != "section":
+            continue
+        element_id = str(child.get("id") or "").strip()
+        if not element_id:
+            continue
+        marked = (
+            str(child.get(APPEND_ORIGIN_ATTRIBUTE) or "").strip().lower()
+            == APPEND_ORIGIN_VALUE
+        )
+        found.append((element_id, str(child), marked))
+    return found
 
 
 def _section_labels(source: str) -> tuple[dict[str, str], list[str]]:
@@ -333,6 +439,7 @@ def _render_document(
     records: Sequence[Mapping[str, Any]],
     root: Path,
     created_by_append: bool = False,
+    carried_sections: Sequence[str] = (),
 ) -> str:
     """Render a landed record.
 
@@ -341,6 +448,11 @@ def _render_document(
     frame has read nothing, so it states no run, comment or commit count and
     no verdict — the counts a synthesis computes are the only ones the record
     may publish.
+
+    ``carried_sections`` are anchored sections of the record being replaced
+    that this synthesis does not render itself, kept verbatim after the
+    rendered ones. Their anchors are what a link into the record resolves
+    against, so dropping one turns a live link into a dead one.
     """
     plan_slug = str(plan.get("slug") or "").strip()
     plan_title = str(plan.get("title") or plan_slug).strip()
@@ -378,7 +490,7 @@ def _render_document(
     sections: list[str] = []
     for key in section_order:
         label = labels.get(key) or ("Plan-level outcome" if key == "_top" else key)
-        section_id = "outcome" if key == "_top" else key
+        section_id = _section_element_id(key)
         comments = comments_by_section.get(key, [])
         section_runs = runs_by_section.get(key, [])
         parts = [
@@ -411,6 +523,7 @@ def _render_document(
         )
         parts.append("  </section>")
         sections.append("\n".join(parts))
+    sections.extend(carried_sections)
 
     if created_by_append:
         summary = f"Landing record for {plan_title}: evidence appended by section."
@@ -648,6 +761,53 @@ def compose_landed_record(
     return bytes(composed)
 
 
+def _carried_sections(
+    html_text: str,
+    rendered: set[str],
+    reserved: set[str],
+) -> tuple[list[str], list[tuple[str, str]]]:
+    """Split a record's existing sections into what a rewrite keeps and loses.
+
+    A rewrite keeps an appended section whose anchor this synthesis does not
+    render, because the anchor is what a link into the record resolves against
+    and the synthesis never composed that content. What it does not keep is
+    named rather than dropped quietly:
+
+    ``dropped``
+        a marked append whose id a ledger run or a comment now renders — the
+        synthesis writes that section itself, so the appended copy goes.
+    ``replaced``
+        an unrendered section on a rendered id — the synthesis's own section
+        takes the place of a section written before the mark existed.
+    ``retired``
+        an unrendered section on a reserved id — a plan section that carries no
+        comment and no run now, so nothing renders it and nothing may silently
+        keep it either.
+    ``carried``
+        a section kept because it cannot be told from an append: a record
+        written before the mark gives no way to distinguish a generated
+        section whose plan section was deleted from content a person wrote.
+        It is carried so nothing is lost, and listed so an operator can remove
+        it.
+    """
+    carried: list[str] = []
+    lost: list[tuple[str, str]] = []
+    for element_id, markup, marked in _record_sections(html_text):
+        key = _element_section_key(element_id)
+        if key in rendered:
+            lost.append(("dropped" if marked else "replaced", element_id))
+            continue
+        if marked:
+            carried.append(markup)
+            continue
+        if key in reserved:
+            lost.append(("retired", element_id))
+            continue
+        carried.append(markup)
+        lost.append(("carried", element_id))
+    return carried, lost
+
+
 def synthesize_landed_record(
     docs_dir: Path,
     project: str,
@@ -685,8 +845,19 @@ def synthesize_landed_record(
             str(record.get("run_id") or ""),
         ),
     )
-    rendered = _render_document(project, plan, source, records, docs_dir.parent)
-    destination = docs_dir / "evidence" / "archive" / f"{plan_slug}-landed.html"
+    destination = _evidence_record_path(docs_dir, plan_slug)
+    existing = ""
+    if destination.is_file():
+        try:
+            existing = destination.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            existing = ""
+    rendered_anchors, reserved_anchors = _evidence_anchor_sets(plan, records, source)
+    carried, lost = _carried_sections(existing, rendered_anchors, reserved_anchors)
+
+    rendered = _render_document(
+        project, plan, source, records, docs_dir.parent, carried_sections=carried
+    )
     destination.parent.mkdir(parents=True, exist_ok=True)
     from reckon._store import write_atomically
 
@@ -708,4 +879,6 @@ def synthesize_landed_record(
             if str(commit).strip()
         }
     )
-    return EvidenceSynthesisResult(destination, len(records), comments, commits)
+    return EvidenceSynthesisResult(
+        destination, len(records), comments, commits, lost_anchors=lost
+    )
