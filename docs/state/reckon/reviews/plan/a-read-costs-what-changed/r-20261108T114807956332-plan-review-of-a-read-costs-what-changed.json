@@ -1,0 +1,86 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T12:05:11.236Z",
+  "dispatched_at": "2026-11-08T11:52:05Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-costs-what-changed.html:109",
+      "id": "reasoning-1",
+      "reason": "the section should promise to serve that count from a write-time record (the only available option) and name its caller, instead of offering a removal the code forbids.",
+      "text": "\u00a714 offers to \"remove it from the dispatch path when nothing in a dispatch uses it\", but a dispatch does use it: `recovery_review_subject.py:837-845` computes `current_week_interface_counts` for a `rubric == \"design\"` review and renders the result into the brief as \"Interface budget this week: \u2026\" \u2014 so half of the stated either/or is unavailable and the worker is sent to re-decide something a single read of the caller settles",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-costs-what-changed.html:109",
+      "id": "reasoning-2",
+      "reason": "the write-time hook cannot land inside the declared write paths, so the node either requests a scope extension or drops the stated mechanism and passes all three cases from the rebuild-on-read path alone, and the plan should say which.",
+      "text": "\u00a714 keeps its index \"up to date when a review is stored\" and lists `reckon/crew/review.py` in its write paths, but the store site is `reckon/crew/plan_review.py:719 store_plan_review`, which writes through `write_json_atomically` at :760 (with `store_code_review` :5389 and `store_portfolio_review` :6127 beside it); `review.py` writes no record",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-costs-what-changed.html:109",
+      "id": "done_when-1",
+      "reason": "as written the node either fails a bar its mechanism cannot reach or is forced to complete an optional deliverable that no case measures, and a load-dependent bar with no control can pass or fail for reasons the node does not control.",
+      "text": "the timer \"the after figure is at most half the before figure at comparable load\" is unreachable from the findings index alone on \u00a714's own numbers (39.8 % of a dispatch leaves 60 %), while \u00a714's second deliverable is the discretionary \"either \u2026 or\" and appears in no case; \"comparable load\" also names no load measure, no repeat count and no tolerance, and the timer carries no negative control",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-costs-what-changed.html:109",
+      "id": "single_goal-1",
+      "reason": "the node cannot be closed on one verdict, and splitting the interface week count into its own section (or fixing its mechanism here) is what makes \u00a714 reviewable; as written its gate proves only the findings half.",
+      "text": "\u00a714's deliverable is two changes with one verdict: the on-disk findings index, and the interface week count, whose treatment the worker must choose (\"either serves that count from the same kind of write-time record or removes it from the dispatch path\") and report in its manifest",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-costs-what-changed.html:109",
+      "id": "evidence_paths-1",
+      "reason": "nothing durable is named for the gate log or the two measurements, so the coordinator cannot open the evidence the done-when rests on and the run's own manifest must supply a path the plan never asked for.",
+      "text": "\u00a714 requires a live-store before/after timer of `dispatch_review_for_run`, a share-of-cost measurement and a trace of the interface week count, but declares no path for any of them, where \u00a77 names \"the log, under the run's `logs/`\", \u00a79 \"every log is under the run directory\" and \u00a710 \"every command is logged under the run directory\"",
+      "type": "evidence_paths",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "a1fb5b39d8351ac4dbd7aab74367bd5cc0dc57c3",
+  "plan_fingerprint": "2b21b8375724e8e2d3bcbb35a183658e9947e315c8e0089c96dae53c96698f40",
+  "plan_slug": "a-read-costs-what-changed",
+  "plan_version": 49,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T114807956332-plan-review-of-a-read-costs-what-changed",
+  "reviewed_blob_sha": "731ef0bf069e04cfacd4a9030f3ad335c2f9f9f9",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited symbols resolve at the current head: `findings_by_path` at `reckon/crew/findings.py:483`, its in-process `_INDEXES` at :297, `_interface_week_rows` at `reckon/velocity.py:2743`, and `reckon/crew/review.py` exists; \u00a714 carries no href, so nothing extensionless needs resolving.",
+    "done_when": "a finding \u2014 \u00a714's timer bar (\"at most half the before figure\") cannot be met by the deliverable it is attached to. \u00a714's own Why attributes 39.8 % of the dispatch to `findings_by_path` and the remaining 18.1 % to the interface week count, so removing the findings cost alone leaves 60 % of the time, and the 18.1 % half is the discretionary part with no case in the done-when.",
+    "evidence_paths": "a finding \u2014 \u00a714 declares no containing path for its before/after timer, its \"first times one dispatch_review_for_run\" measurement or its trace of the interface week count, where \u00a77 (:78), \u00a79 (:88) and \u00a710 (:92) each declare one.",
+    "naming": "pass \u2014 \u00a714's new artefact is named by what it does (`test_findings_are_read_from_a_write_time_index.py`), and no plan label, section id or ticket number reaches a symbol, path or comment.",
+    "reasoning": "a finding \u2014 the two defects below. The root cause matches the cited evidence (\u00a711's index does live in one process, `_INDEXES` at `findings.py:297`, and \u00a711's own comment at :141 records the cold first call at 66.3 s), but the mechanism is pointed at one option the code rules out and at one write path that does not exist.",
+    "single_goal": "a finding \u2014 \u00a714 carries two deliverables: an on-disk findings index, and the interface week count, whose treatment is left to the worker as an either/or.",
+    "wiring": "pass \u2014 the two changed units declare consistently (declarations `s13: descoped`, `s14: implementable` at plan.html:24 each match their section's `data-status` at :103 and :108), \u00a714's remaining inputs (\u00a711's `_indexed_rows` in `reckon/crew/findings.py:447`, `velocity._interface_week_rows` at `reckon/velocity.py:2743`) have already landed, and `data-links=\"\"` matches every other section's convention."
+  },
+  "section_digests": {
+    "_document": "090f283a2adb21268293f3f9f36bccafc5b05deb95642975aaeab367e4fd63f2",
+    "s1": "f8fb0fbbfbbc79977a59ec9d78c0d66f47803aa96db83e4d628a1dfb6b40e6c3",
+    "s10": "68fc6d75acf0741225ab448369611e4eda9f862b50d7907857c1abb24b4138e4",
+    "s11": "2a249381081ebbf2d99b7f9da3b09b1d3b87c6ada44952d6b665283e27021c40",
+    "s12": "c6c234ba14598d6a537e09000d8f5d406295ad40c3c124db34cb1b84868bb22e",
+    "s13": "5ad3b5418d98e6b0afe0d6762c6e34b89b31509e7e0c346c4b5757fc5f9bc443",
+    "s14": "444743442b289f04b5f52a0ad5bb16dfcdc118f2ceab8754c0f89425df211ccf",
+    "s2": "7de6c2e256fca5545163c6149c674fea249ddd1a72361b49c89ef5beaa22263d",
+    "s3": "d11cdceab942c4935f32d292e26f2111b011ca4571980a6c54ef6ae23894aadb",
+    "s4": "d14b5fa9a6b6ef26da6f95b50c43aa782fdbe679ca28020a3095af71cd579417",
+    "s5": "ba22eff9814ea16ac19404864f9a2d1ec8da449b3011fba623d0d1856b2c6ecf",
+    "s6": "b0053663cc25e5e7e15595ae342d21c4c467abe74f06c8c4db86982b276898cc",
+    "s7": "2c7c6fb207a002d2bb1e223ebf1f770570f6b06942edf9ac6647253b410a67b7",
+    "s8": "9a012c065cbd8db9e5e69070d20531b84a584582cc0bf8f45fff060b7f31f464",
+    "s9": "1404fbf63401ab3bd4204175d16adb89094eaa1f1b25160e73fd2bb9c625d0b1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T12:38:33.340631+00:00",
+  "total": null
+}
