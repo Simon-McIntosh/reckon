@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="106">
+<meta name="plan-version" content="107">
 <meta name="plan-modified" content="2026-11-08">
 </head>
 <body>
@@ -492,7 +492,13 @@ the row's own run. A review-duty row for a run whose review is already in flight
 review run and its phase instead of reading review-missing. A review duty the reflex owns that has been owed for longer than the sweep
 cadence is worded as overdue, with its age and a statement that the reflex has not dispatched it,
 instead of promising the cadence. It carries no dispatch command of its own, so the reflex
-stays the single dispatcher of a run's review.</p>
+stays the single dispatcher of a run's review.
+A queued run's <code>queued-awaiting-session</code> row is built from the pointer's
+<code>failure</code> through <code>recovery_classification._queued_failure_remedy</code>
+(<code>reckon/crew/recovery_classification.py</code> near lines 220 and 1343); when the refusal it
+records has since been resolved, that row states the run's current hold instead. This clause is
+delivered by a second node scoped to <code>recovery_classification.py</code>, after the first node,
+which owns <code>obligations.py</code> and <code>obligation_snapshot.py</code>, lands.</p>
 <p><strong>Done when</strong> a new
 <code>tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py</code>
 shows each of the following on a synthetic crew home:</p>
