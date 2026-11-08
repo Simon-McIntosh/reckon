@@ -516,10 +516,12 @@ project index, sprint state, or a plan other than the one you are landing
 against. Do not edit the plan-version or plan-modified meta lines: every worker
 touching them makes every merge conflict there." Two limits hold even though the
 worker authors its own record, and both are about what it can see rather than
-about merge mechanics: it must not resolve its own driving followup and must
-not set a terminal status, because only the coordinator observes the other
-nodes — a worker knows its node landed, not whether the section closed. Return
-outcome data in their manifests.
+about merge mechanics: it must not resolve its own driving followup, must not
+set the plan's terminal status, and must not move its section's declaration,
+because only the coordinator observes the other nodes — a worker knows its node
+landed, not whether the section closed. The manifest's `status:` line is the
+worker's own verdict: write it `complete`, `blocked` or `failed` and return
+outcome data there.
 
 Immediately after each `reckon crew complete`, the orchestrator:
 
