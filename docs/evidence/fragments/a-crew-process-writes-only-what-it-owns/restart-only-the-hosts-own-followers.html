@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Evidence for plan a-crew-process-writes-only-what-it-owns section 6">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-writes-only-what-it-owns">
+  <meta name="plan-title" content="A running host restarts only its own session's followers">
+  <meta name="plan-summary" content="A host restarts an exited child only when its census entry carries the ownership mark or names the owner's current session; an unmarked child for another session is dropped and logged, and the deferral rule ignores a live follower started by another owner's host.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-writes-only-what-it-owns">
+  <meta name="plan-verifies" content="reckon:a-crew-process-writes-only-what-it-owns#s6">
+  <meta name="plan-recorded-at" content="2026-11-08">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,session-host,follower,ownership,restart">
+  <title>A running host restarts only its own session's followers &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A running host restarts only its own session's followers</h1>
+
+    <section id="restart-only-the-hosts-own-followers-repro">
+      <h2>The defect, reproduced first</h2>
+      <p>A host that took a request for another session kept the child and
+        restarted it on the backoff for as long as the host lived, duplicating
+        the owning session&rsquo;s follower.</p>
+      <p>The reproduction is the first case run at the dispatch base
+        <code>edc04fd259</code> before the change: the killed unmarked child for
+        another session came back with a new pid &mdash;
+        <code>AssertionError: the foreign child was restarted: [585, 586]</code>,
+        <strong>1 failed in 7.41 s, EXIT=1</strong>. Log:
+        <code>gate-repro-before-fix.log</code>.</p>
+    </section>
+
+    <section id="restart-only-the-hosts-own-followers-head">
+      <h2>The head arm</h2>
+      <p>The new test file shows all five cases: an unmarked child for another
+        session is dropped and the drop logged with project, session and pid; a
+        marked child for an earlier session of the same owner restarts; a child
+        for the owner&rsquo;s current session restarts whether or not marked; a
+        running unmarked foreign child is not signalled; and a pair held by a
+        follower whose parent is another owner&rsquo;s host is followed here,
+        while one held by this host&rsquo;s own follower or by a hand-armed one
+        with no host parent is left alone.</p>
+      <p><strong>5 passed in 57.78 s, EXIT=0</strong> at
+        <code>aebf721d7e</code>; the same file copied into a
+        <code>git archive</code> tree of the dispatch base reads
+        <strong>2 failed, 3 passed, EXIT=1</strong>, failing exactly the first
+        and fifth cases. Related files importing
+        <code>reckon.crew.session_host</code> or covering
+        <code>plugins/crew-host</code> carry the same eight ambient failure ids
+        at base and at head: zero added.</p>
+    </section>
+
+    <section id="restart-only-the-hosts-own-followers-controls">
+      <h2>Negative controls</h2>
+      <p>Each declared mutation was applied to
+        <code>reckon/crew/session_host.py</code> and the named case run:</p>
+      <ul>
+        <li>restarting regardless of the mark &rarr; first case fails
+          (<code>negative-control-1-ignore-mark.log</code>);</li>
+        <li>dropping on the mark alone, without the current-session arm &rarr;
+          third case fails (<code>negative-control-2-mark-only.log</code>);</li>
+        <li>deferring to every live follower regardless of its parent &rarr;
+          fifth case fails (<code>negative-control-3-no-parent-check.log</code>);</li>
+        <li>dropping every exited child that is not the current session&rsquo;s
+          &rarr; second case fails
+          (<code>negative-control-4-current-only.log</code>);</li>
+        <li>signalling the running foreign child &rarr; fourth case fails
+          (<code>negative-control-5-signal-running.log</code>).</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
