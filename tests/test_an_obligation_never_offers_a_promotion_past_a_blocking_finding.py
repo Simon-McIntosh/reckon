@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery, runs
+from reckon.crew import plan_review, recovery, runs
 from reckon.crew import review as review_module
 from tests.helpers.git import git
 
@@ -208,9 +208,39 @@ def test_working_review_names_its_run(home: tuple[Path, str]) -> None:
     assert "working" in f"{row.get('reason', '')} {row['next_command']}", row
 
 
-def test_resolved_admission_refusal_yields_current_queue_hold(
+def test_answered_finding_projects_current_hold_when_classification_clears(
     home: tuple[Path, str],
 ) -> None:
+    """A queued row projects its current hold once classification clears a refusal."""
+    root, head = home
+    review_root = root.parent / "config" / "crew" / "reviews"
+    review_path = plan_review.store_plan_review(
+        {
+            "project": PROJECT,
+            "plan_slug": "fixture",
+            "plan_version": 1,
+            "rubric": "plan_content_review",
+            "reviewed_blob_sha": head,
+            "findings": [{"id": "wiring-1", "type": "wiring", "section": "fixture"}],
+            "responses": {},
+            "status": "ready",
+            "review_run_id": "r-plan-review",
+        },
+        base_dir=review_root,
+    )
+    recorded = json.loads(review_path.read_text(encoding="utf-8"))
+    assert plan_review.unanswered_findings(recorded) == ["wiring-1"]
+    answered_path = plan_review.record_response(
+        recorded,
+        "wiring-1",
+        action="acted",
+        commit=head,
+        note="the dependency is declared",
+        base_dir=review_root,
+    )
+    answered = json.loads(answered_path.read_text(encoding="utf-8"))
+    assert plan_review.unanswered_findings(answered) == []
+
     run_id = "r-queued"
     pointer = {
         "run_id": run_id,
@@ -218,18 +248,25 @@ def test_resolved_admission_refusal_yields_current_queue_hold(
         "session": SESSION,
         "phase": "queued",
         "queued_at": (NOW - timedelta(minutes=3)).isoformat(),
+        "reason": "waiting for lane allowance",
         "failure": (
-            "UnreconciledRuns: run r-answered needed reconciliation; "
-            "reckon crew complete --run r-answered"
+            "PlanReviewMissingError: finding wiring-1 still needs an answer; "
+            f"run `reckon crew review --project {PROJECT} --plan fixture "
+            "--answer wiring-1 --acted`"
         ),
         "node": {"id": run_id, "plan": "fixture", "section": "fixture"},
     }
     runs._write_json(runs.pointer_path(run_id), pointer)
-    row = _row(run_id)
+
+    assert runs.read_pointer(run_id)["failure"] == pointer["failure"]
+    cleared = recovery.classify_pointer(
+        {**pointer, "failure": None}, now_seconds=NOW.timestamp()
+    )
+    row = obligations._queued_item(cleared, placements={}, now=NOW)
 
     assert row["kind"] == "run-queued", row
-    assert "r-answered" not in row["next_command"], row
-    assert "crew complete" not in row["next_command"], row
+    assert "lane" in row["next_command"], row
+    assert "wiring-1" not in row["next_command"], row
 
 
 def test_admission_held_row_names_only_its_run(home: tuple[Path, str]) -> None:
