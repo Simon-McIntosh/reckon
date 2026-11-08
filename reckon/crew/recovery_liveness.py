@@ -15,12 +15,9 @@ from reckon.crew.node import (
     LOG_STALE_AFTER_SECONDS,
 )
 from reckon.crew.process_liveness import (
-    LIVENESS_DEAD,
-    LIVENESS_PLACED,
     LIVENESS_RECORDED_PID,
     LIVENESS_UNKNOWN,
     LivenessReading,
-    placement_job_alive,
     record_process_liveness,
 )
 from reckon.crew.reports import (
@@ -1302,15 +1299,6 @@ def live_worker_reading(record: Mapping[str, Any]) -> LivenessReading:
     """
     if not _launched_on_this_host(record):
         return LivenessReading(LIVENESS_UNKNOWN, None)
-    placement = record.get("placement")
-    if isinstance(placement, Mapping) and placement:
-        job_id = str(record.get("job_id") or "")
-        placed = placement_job_alive(record)
-        if placed is None:
-            return LivenessReading(LIVENESS_PLACED, None, job_id=job_id)
-        return LivenessReading(
-            LIVENESS_PLACED if placed else LIVENESS_DEAD, placed, job_id=job_id
-        )
     # The pointer arm is taken only where the record carries a pid, as
     # :func:`live_worker_pid` has always required: the arm it reports says how
     # that pid read, not whether a pid was written at all.

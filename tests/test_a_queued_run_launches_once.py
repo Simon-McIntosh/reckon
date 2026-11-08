@@ -24,7 +24,7 @@ from pathlib import Path
 import pytest
 
 from reckon.crew import dispatch_launch as dispatch_launch_module
-from reckon.crew import recovery_liveness, runs
+from reckon.crew import process_liveness, runs
 from reckon.crew.node import CrewError
 from reckon.crew.recovery_liveness import _reading_host
 
@@ -43,9 +43,9 @@ PREPARE_TAIL = (
 )
 
 
-def _spawn_refusal(holder: str) -> str:
+def _spawn_refusal(holder: str, head: str = "still has a live worker") -> str:
     """The whole text a refusal at the supervisor's spawn must carry."""
-    return f"run {RUN_ID!r} still has a live worker ({holder}): {SPAWN_TAIL}"
+    return f"run {RUN_ID!r} {head} ({holder}): {SPAWN_TAIL}"
 
 
 def _prepare_refusal(holder: str) -> str:
@@ -236,7 +236,7 @@ def test_a_placed_runs_scheduler_client_pid_is_not_named_as_the_worker(
 ) -> None:
     """A placed run's recorded pid is the client's, so the refusal names the job."""
     client = _live_child()
-    monkeypatch.setattr(recovery_liveness, "placement_job_alive", lambda record: True)
+    monkeypatch.setattr(process_liveness, "placement_job_alive", lambda record: True)
     try:
         _rewrite_pointer(
             pid=client.pid,
@@ -262,7 +262,7 @@ def test_a_placed_run_whose_scheduler_cannot_answer_names_no_pid(
     refusal says the run is placed and that its liveness is unknown.
     """
     client = _live_child()
-    monkeypatch.setattr(recovery_liveness, "placement_job_alive", lambda record: None)
+    monkeypatch.setattr(process_liveness, "placement_job_alive", lambda record: None)
     try:
         _rewrite_pointer(
             pid=client.pid,
@@ -273,7 +273,8 @@ def test_a_placed_run_whose_scheduler_cannot_answer_names_no_pid(
         with pytest.raises(CrewError) as refused:
             dispatch_launch_module._supervisor_spawn_worker(_spec(queued_run))
         assert str(refused.value) == _spawn_refusal(
-            f"placed on job {JOB_ID}, liveness unknown"
+            f"placed on job {JOB_ID}, liveness unknown",
+            head="cannot read whether its worker is live",
         )
         assert f"pid {client.pid}" not in str(refused.value), refused.value
     finally:

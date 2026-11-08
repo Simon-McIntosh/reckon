@@ -218,6 +218,21 @@ def scheduler_job_state(
     return _ask_scheduler(_scheduler_state_argv(placement, str(job_id or "")), runner)
 
 
+def _record_is_placed(record: Mapping[str, Any] | None) -> bool:
+    """Whether the record carries a placement, whatever its scheduler answers.
+
+    :func:`placement_job_alive` answers None both for a record with no
+    placement and for one whose scheduler could not be queried, and the two are
+    not the same fact: an unplaced record falls through to its pid, while a
+    placed one must not, because the pid it records belongs to the scheduler
+    client.
+    """
+    if not record:
+        return False
+    placement = record.get("placement")
+    return isinstance(placement, Mapping) and bool(placement)
+
+
 def placement_job_alive(
     record: Mapping[str, Any] | None,
     runner: Callable[[list[str]], str | None] | None = None,
@@ -355,6 +370,11 @@ def record_process_liveness(
     so a live pid never costs the walk. A dead pid with no session hit is the
     dead arm, and a pid that could not be read at all is unknown — the same
     distinction the boolean encodes, kept here rather than lost.
+
+    A placed record is answered by its scheduler job alone. Where the scheduler
+    could not be queried the arm stays placed with liveness unknown, because
+    the pid such a record holds names the scheduler client rather than the
+    worker, so probing it would answer about the wrong process.
     """
     if not record:
         return LivenessReading(LIVENESS_UNKNOWN, None)
@@ -364,6 +384,14 @@ def record_process_liveness(
             LIVENESS_PLACED if placed else LIVENESS_DEAD,
             placed,
             job_id=str(record.get("job_id") or ""),
+        )
+    if _record_is_placed(record):
+        # The scheduler could not be asked, and a placed run's recorded pid is
+        # the scheduler client's: probing it would answer about a process that
+        # is not the worker. The arm stays placed with liveness unknown, which
+        # is what the record actually supports.
+        return LivenessReading(
+            LIVENESS_PLACED, None, job_id=str(record.get("job_id") or "")
         )
     probe = process_alive if alive is None else alive
     pid = record.get("pid")

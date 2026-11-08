@@ -1927,6 +1927,21 @@ def _live_worker_naming(reading: LivenessReading) -> str:
     return "an unrecorded process"
 
 
+def _live_worker_refusal(
+    run_id: str, reading: LivenessReading, consequence: str
+) -> str:
+    """The whole text of a launch refused over the holder it found.
+
+    A placed run whose scheduler could not be queried has no observed worker,
+    so the refusal says its liveness cannot be read rather than asserting one.
+    """
+    if reading.alive is None:
+        head = "cannot read whether its worker is live"
+    else:
+        head = "still has a live worker"
+    return f"run {run_id!r} {head} ({_live_worker_naming(reading)}): {consequence}"
+
+
 def _launch_refused_by(reading: LivenessReading) -> bool:
     """Whether this reading is reason enough to refuse a second launch.
 
@@ -1985,11 +2000,13 @@ def _prepare_attempt_records(
     holder = live_worker_reading(record)
     if _launch_refused_by(holder):
         raise CrewError(
-            f"run {run_id!r} still has a live worker "
-            f"({_live_worker_naming(holder)}): a launch "
-            "that started now would retire its worker record, so the run would "
-            "read as halted while its worker kept working; observe or stop it "
-            "before launching again"
+            _live_worker_refusal(
+                run_id,
+                holder,
+                "a launch that started now would retire its worker record, so "
+                "the run would read as halted while its worker kept working; "
+                "observe or stop it before launching again",
+            )
         )
     _supervisor_write(
         run_directory / ATTEMPT_RECORD_NAME,
@@ -2852,10 +2869,12 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
     holder = live_worker_reading(_without_this_supervisor(record))
     if _launch_refused_by(holder):
         raise CrewError(
-            f"run {run_id!r} still has a live worker "
-            f"({_live_worker_naming(holder)}): a launch that started now would "
-            "run a second worker beside it; observe or stop it before launching "
-            "again"
+            _live_worker_refusal(
+                run_id,
+                holder,
+                "a launch that started now would run a second worker beside it; "
+                "observe or stop it before launching again",
+            )
         )
     environment = _worker_runtime_environment(
         plan.get("environment") or {},
