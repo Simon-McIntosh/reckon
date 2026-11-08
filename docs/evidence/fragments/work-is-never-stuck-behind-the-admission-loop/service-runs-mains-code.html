@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-is-never-stuck-behind-the-admission-loop">
+  <meta name="plan-title" content="A service runs the code main carries">
+  <meta name="plan-summary" content="A declared service records the code stamp of the checkout that started it beside its pid; on reload a running copy whose stamp differs from a trusted checkout is stopped and started again on current code, with both stamps logged; an untrusted checkout leaves the copy alone and the supervisor logs why. Six cases, six negative controls, 0 importer failures added.">
+  <meta name="plan-evidence-for" content="work-is-never-stuck-behind-the-admission-loop">
+  <meta name="plan-recorded-at" content="2026-11-08">
+  <meta name="plan-verdict" content="passed">
+  <title>A service runs the code main carries | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A service runs the code main carries</h1>
+
+    <section id="service-runs-mains-code-what-changed">
+      <h2>What changed</h2>
+      <p><code>reckon/crew/fleet_supervisor.py</code>: a service's pid record now
+        carries a third field, the code identity of the checkout that started the
+        copy. It is written by <code>run_declared_service</code> — the wrapper that
+        becomes the service — so the record describes the process rather than what a
+        supervisor believed at spawn time; the spawn path writes it too, for the
+        window before the wrapper runs. <code>recorded_service_stamp</code> reads it,
+        and a two-field record written before this change reads as unrecorded.</p>
+      <p><code>DeclaredServices.reload</code> no longer adopts every running copy.
+        It compares the copy's stamp with the checkout's own identity, and where they
+        differ it asks the same trust probe the followers and the MCP take. A trusted
+        checkout with a differing stamp stops the copy and starts it again, logging
+        both stamps. An untrusted checkout leaves the copy running and logs the
+        refusal with its reason, once per pair of stamps. A copy with no readable
+        stamp is restarted once, so its code is known from then on. An identity read
+        that does not answer is never read as a move.</p>
+      <p>The stop confirms the old copy has gone before the replacement starts:
+        SIGTERM, then SIGKILL once the grace has run out, then a bounded wait for the
+        pid and its lock to clear. That ordering is what lets a lease-holding service
+        such as the station take its lease again instead of being refused as still
+        held, and a replacement that fails to start is scheduled for retry rather than
+        dropped from the supervisor's view.</p>
+      <p>The supervisor's own move check now records the refusal when the checkout
+        has moved and cannot be trusted, naming the probe's reason; previously that
+        case was silent.</p>
+    </section>
+
+    <section id="service-runs-mains-code-measure">
+      <h2>Measure</h2>
+      <p>Gate: <code>tests/test_a_service_runs_the_code_main_carries.py</code>, six
+        cases over a stubbed process table and a stubbed checkout — 6 passed,
+        <code>EXIT=0</code>. No real process is signalled: the supervisor's signal
+        path lands in the fake table.</p>
+      <p>Negative control: one mutation per arm, each undoing that arm alone — adopt
+        without comparing the stamp, restart regardless of stamp, ignore the trusted
+        flag, never escalate past SIGTERM, start before the old copy exits, record no
+        stamp on start. All six make their arm's case fail:
+        <code>caught=6 survived=0</code>.</p>
+      <p>Importer population (22 test files importing
+        <code>reckon.crew.fleet_supervisor</code>), base <code>a45a33f8</code> against
+        head: 0 failure ids added at head. Five ids fail in both arms and are the
+        machine-state surfaces of a shared host (reload-tree scratch, staged-write
+        inventory, station image, producer seat), not this change.</p>
+    </section>
+
+    <section id="service-runs-mains-code-caveat">
+      <h2>Caveat</h2>
+      <p>This gate measures this node's change only. Whether the merged tree keeps
+        the admit service and the station on current code is a property of the running
+        fleet, and belongs to the separately dispatched test node.</p>
+    </section>
+  </main>
+</body>
+</html>
