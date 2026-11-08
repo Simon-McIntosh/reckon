@@ -1,0 +1,72 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_stored_phase_advances.py::test_stored_phase_advances_from_starting_to_working_to_complete"
+  ],
+  "added_failures_note": "Derived by set difference of the reviewed run's own manifest suite arms: baseline_suite (dda767944d, logs/base-importers.log, 15 ids) and after_suite (bb92bb806b, logs/head-importers-at-bb92bb806b.log, 16 ids). One id is added and none removed; logs/head-importers-at-bb92bb806b-rerun.log returns the identical id set, and logs/stored-phase-both-arms-repeats.log shows that file passing 5 tests standalone at both revisions.",
+  "call_sites": [
+    "reckon/crew/dispatch.py:3153",
+    "reckon/crew/dispatch.py:3164",
+    "reckon/crew/dispatch.py:3282",
+    "reckon/crew/dispatch_sessions.py:1315",
+    "reckon/crew/dispatch_sessions.py:1332",
+    "reckon/crew/dispatch_sessions.py:1848",
+    "reckon/crew/dispatch_sessions.py:1849",
+    "reckon/crew/dispatch_launch.py:2403"
+  ],
+  "completed_at": "2026-11-08T21:42:54.654Z",
+  "dimension_justifications": {
+    "durability": "tests/test_a_launch_finds_its_backend_on_the_declared_path.py:167 reddens under logs/negative-control-resolving-without-the-project.log (1 failed, EXIT=1) and :72 under logs/negative-control-declared-path-arm-removed.log (3 failed, EXIT=1), but no test drives a project-layer declaration through resolve_launch_executable",
+    "evidence": "logs/head-test-at-bb92bb806b.log and both control logs reconcile with the fragment, and the suite ids I diffed match the manifest, but the manifest's suite commands at lines 20-21 are placeholders rather than the literal commands that ran",
+    "fit": "reckon/crew/dispatch_launch.py:629 follows the module's private-helper idiom and its names (search_path, declared_backend_search_path, _declared_search_path_for_backend_name) carry no plan, stage or ticket label",
+    "goal_fidelity": "reckon/crew/dispatch_launch.py:1183 adds a backend parameter to resolve_launch_executable that no production caller supplies (reckon/crew/dispatch.py:3164 and reckon/crew/dispatch_sessions.py:1332, :1849 pass only facts), so a project-layer declaration :1172 accepts is refused at composition",
+    "reuse": "reckon/crew/dispatch_launch.py:708 extends launch_search_path rather than adding a second PATH composer, and the by-name fallback at :643 delegates to :608 instead of re-parsing; the search over reckon for another declared-path owner found only reckon/crew/watch_unit.py:579, which composes the watcher's own PATH and is untouched",
+    "scope_discipline": "git diff --name-status 600cba4d68 5631154f78 touches only reckon/crew/dispatch_launch.py, tests/test_a_launch_finds_its_backend_on_the_declared_path.py and docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-launch-finds-its-backend-on-the-declared-path.html"
+  },
+  "dispatched_at": "2026-11-08T21:32:47Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": 1183,
+      "severity": "blocking",
+      "text": "resolve_launch_executable gained a `backend` parameter that no production caller passes \u2014 reckon/crew/dispatch.py:3164 and reckon/crew/dispatch_sessions.py:1332 and :1849 all call it with only `facts` \u2014 so the composed-plan resolution still reads the host layer by name at :1229 and a project-layer-only declaration that preflight accepts at :1172 is refused when the plan is built; the evidence fragment's claim at docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-launch-finds-its-backend-on-the-declared-path.html:27 that \"the plan resolution ... pass[es] their project-resolved entry through\" is contradicted by those call sites, and no test covers the composition path with a project layer"
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": 757,
+      "severity": "non-blocking",
+      "text": "_persisted_worker_environment composes the worker PATH through launch_search_path with the backend name alone, so a project-layer search_path never reaches the worker's own PATH; the composed environment carries the directory only for a host-layer declaration, which is the case the plan measured and tests/test_a_launch_finds_its_backend_on_the_declared_path.py:88 exercises"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T191436869159-a-launch-finds-its-backend-on-the-declared-path/manifest.md",
+      "line": 20,
+      "severity": "non-blocking",
+      "text": "the manifest's baseline_suite and after_suite `command` values end in \"<52 importer test files under the base extraction>\" and \"<53 importer test files in the worktree, resolved over its own tree>\", which are descriptions rather than the literal commands the contract requires, so neither arm can be re-run as recorded"
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read both commits against 600cba4d68: bb92bb806b changes declared_backend_search_path to take the resolved mapping, adds the by-name fallback, threads the entry through launch_search_path, preflight, resolve_launch_executable and assert_routable_backends_resolvable, and adds two tests; 5631154f78 corrects the fragment's gate table to cite the arms at 600cba4d68 and bb92bb806b with their real id differences",
+    "done_when": "the done_when names the node test, the flight-layer key, the regenerated JSON schema, the importer population and ruff; logs/head-test-at-bb92bb806b.log records 6 passed EXIT=0, the key sits at reckon/schema/flight.yaml:403 and reckon/_flight_schema.py:355 with the JSON regenerated, both control logs carry EXIT=1 with the named case red, and the two importer arms are recorded and reconcile with the ids I diffed (one added, none removed)",
+    "goal": "the node goal is that a backend command absent from the launching PATH resolves through the flight layer's declaration; reckon/crew/dispatch_launch.py:608 now reads search_path from the backend entry its caller holds, and :1172 preflight, :1576 the watcher check and :1213 the plan rewrite all resolve through it, so the host-layer case the plan measured is met while the project-layer extension reaches only preflight in production",
+    "manifest": "read in full; it records the checkpoint, both suite arms with revision, command, exit status and ids, both control logs and a literal tests line, but its baseline_suite and after_suite command fields carry angle-bracket descriptions in place of the file list, so those arms are not re-runnable as written",
+    "write_paths": "git diff --name-status 600cba4d68 5631154f78 lists exactly three files \u2014 reckon/crew/dispatch_launch.py, tests/test_a_launch_finds_its_backend_on_the_declared_path.py and the evidence fragment \u2014 every one inside the six declared write paths, with the two commits splitting into code at bb92bb806b and evidence at 5631154f78"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a backend command absent from the launching PATH resolves through the flight layer's declaration; reckon/crew/dispatch_launch.py:608 now reads search_path from the backend entry its caller holds, and :1172 preflight, :1576 the watcher check and :1213 the plan rewrite all resolve through it, so the host-layer case the plan measured is met while the project-layer extension reaches only preflight in production.\nVERDICT done_when: the done_when names the node test, the flight-layer key, the regenerated JSON schema, the importer population and ruff; logs/head-test-at-bb92bb806b.log records 6 passed EXIT=0, the key is present at reckon/schema/flight.yaml:403 and reckon/_flight_schema.py:355 with docs/_shared/flight.schema.json regenerated, both control logs carry EXIT=1 with the named case red, and logs/base-importers.log (9 failed, 6 errors, 759 passed) and logs/head-importers-at-bb92bb806b.log (10 failed, 6 errors, 764 passed) record the two importer arms whose id sets I diffed to one added and none removed.\nVERDICT write_paths: git diff --name-status 600cba4d68 5631154f78 lists exactly three files, reckon/crew/dispatch_launch.py, tests/test_a_launch_finds_its_backend_on_the_declared_path.py and the evidence fragment, every one inside the six declared write paths, with the two commits splitting into code at bb92bb806b and evidence at 5631154f78.\nVERDICT manifest: read in full; it records the checkpoint, both suite arms with revision, command, exit status and ids, both control logs and a literal tests line, but its baseline_suite and after_suite command fields carry angle-bracket descriptions in place of the file list, so those arms are not re-runnable as written.\nVERDICT diff: read both commits against 600cba4d68; bb92bb806b changes declared_backend_search_path to take the resolved mapping, adds the by-name fallback, threads the entry through launch_search_path, preflight, resolve_launch_executable and assert_routable_backends_resolvable, and adds two tests, while 5631154f78 corrects the fragment's gate table to cite the arms at 600cba4d68 and bb92bb806b with their real id differences.\nCALL_SITES: reckon/crew/dispatch.py:3153, reckon/crew/dispatch.py:3164, reckon/crew/dispatch.py:3282, reckon/crew/dispatch_sessions.py:1315, reckon/crew/dispatch_sessions.py:1332, reckon/crew/dispatch_sessions.py:1848, reckon/crew/dispatch_sessions.py:1849, reckon/crew/dispatch_launch.py:2403\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:1183 adds a backend parameter to resolve_launch_executable that no production caller supplies, since reckon/crew/dispatch.py:3164 and reckon/crew/dispatch_sessions.py:1332 and :1849 pass only facts, so a project-layer declaration :1172 accepts is refused at composition.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/head-test-at-bb92bb806b.log and both control logs reconcile with the fragment and the suite ids I diffed match, but the manifest's suite commands at lines 20-21 are placeholders rather than the literal commands that ran.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status 600cba4d68 5631154f78 touches only reckon/crew/dispatch_launch.py, tests/test_a_launch_finds_its_backend_on_the_declared_path.py and docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-launch-finds-its-backend-on-the-declared-path.html.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_launch_finds_its_backend_on_the_declared_path.py:167 reddens under logs/negative-control-resolving-without-the-project.log and :72 under logs/negative-control-declared-path-arm-removed.log, but no test drives a project-layer declaration through resolve_launch_executable.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/dispatch_launch.py:629 follows the module's private-helper idiom and its names carry no plan, stage or ticket label.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/dispatch_launch.py:708 extends launch_search_path rather than adding a second PATH composer, the fallback at :643 delegates to :608, and the search over reckon for another declared-path owner found only reckon/crew/watch_unit.py:579, which is untouched.\nFINDING reckon/crew/dispatch_launch.py:1183 blocking: resolve_launch_executable gained a backend parameter that no production caller passes (reckon/crew/dispatch.py:3164, reckon/crew/dispatch_sessions.py:1332 and :1849 pass only facts), so the composed-plan resolution still reads the host layer by name at :1229 and a project-layer-only declaration preflight accepts at :1172 is refused when the plan is built, contradicting the fragment's claim at docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-launch-finds-its-backend-on-the-declared-path.html:27 and leaving the previous blocking finding repaired on only one of the two resolution paths.\nFINDING reckon/crew/dispatch_launch.py:757 non-blocking: _persisted_worker_environment composes the worker PATH through launch_search_path with the backend name alone, so a project-layer search_path never reaches the worker's own PATH and the composed environment carries the directory only for a host-layer declaration.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T191436869159-a-launch-finds-its-backend-on-the-declared-path/manifest.md:20 non-blocking: baseline_suite and after_suite command values end in angle-bracket descriptions of the test files rather than the literal commands, so neither arm can be re-run as recorded.\n",
+  "review_run_id": "r-20261108T213151677264-review-of-a-launch-finds-its-backend-on-the-declared-path-5631154f7864",
+  "reviewed_base_sha": "600cba4d6801348bdaac5523b4db0b99c7ad4501",
+  "reviewed_head_sha": "5631154f786425cd3227f35ef46c9f6b26b1953a",
+  "reviewed_run_id": "r-20261108T191436869159-a-launch-finds-its-backend-on-the-declared-path",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 15,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T21:53:25.231383+00:00",
+  "total": 101
+}
