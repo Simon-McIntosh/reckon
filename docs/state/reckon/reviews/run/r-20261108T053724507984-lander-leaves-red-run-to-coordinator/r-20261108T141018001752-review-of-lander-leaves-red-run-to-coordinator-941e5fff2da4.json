@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run records no baseline_suite or after_suite arm in its manifest (both null), so no failure id is derived from a pair it never ran; the gates it does carry, gate-final.log at 941e5fff (133 passed, 0 failed, EXIT=0) and promotion-arm.log (24 passed, EXIT=0), name no failing id, and the increment's own added case passes at the head and fails only when the rule is reverted (negative-control-shared-writer.log, 1 failed, EXIT=1)",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:_land_deliveries",
+    "reckon/crew/recovery_review_acceptance.py:accept_clean_review"
+  ],
+  "completed_at": "2026-11-08T14:26:52.681Z",
+  "dispatched_at": "2026-11-08T14:16:52Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_acceptance.py",
+      "line": "65",
+      "severity": "non-blocking",
+      "text": "non-blocking: the module is outside this node's declared write paths (reckon/crew/queue_landing.py alone), so the promotion-side half of the consolidation is fenced work taken on the prior review's instruction; the diff is right and the declaration is what needs extending, together with tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py and tests/test_the_lander_measures_the_population.py, or the next promotion refuses on scope alone."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read 50210cdb..941e5fff commit by commit; the single commit 941e5fff deletes 41 lines from reckon/crew/queue_landing.py, moves the open-disposition filter into reckon/crew/recovery_review_acceptance.py:65 and reads dispositions from the stored record at :155, adds one case to tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:668, repoints the monkeypatch at tests/test_the_lander_measures_the_population.py:93, and adds 12 lines to the evidence fragment.",
+    "done_when": "the node's measure is its red-suite test file with one negative control per refusing arm; the manifest records gate-final.log at 941e5fff as 133 passed EXIT=0 and negative-control-shared-writer.log as 1 failed EXIT=1 with recovery_review_acceptance.py reverted, so the rule this increment moved is asserted by a run that reddens when it is put back.",
+    "goal": "the increment consolidates the exemption rule into the one writer both paths call; reckon/crew/recovery_review_acceptance.py:65 filters on a finding that is still open and reckon/crew/queue_landing.py:1917 now calls that shared writer, with the duplicate that stood at queue_landing.py:1286 deleted.",
+    "manifest": "read; status complete, commits 16b38e57, f1627c3c, 37acfb17, 50210cdb and 941e5fff, test_logs names gate-final.log (133 passed, EXIT=0 at 941e5fff), promotion-arm.log (24 passed, EXIT=0) and negative-control-shared-writer.log (1 failed, EXIT=1), negative_control_log carries the bare path, and all six rubric lines are present.",
+    "write_paths": "the node declares only reckon/crew/queue_landing.py; this increment also writes reckon/crew/recovery_review_acceptance.py:65 and appends to tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:668 while repointing tests/test_the_lander_measures_the_population.py:93, and all of them are disclosed under outside_scope rather than left silent."
+  },
+  "justifications": {
+    "durability": "reinstating the 37acfb17 body of record_landed_exemptions reddens tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:700, and the assertion reads the fold back from the store at :692 rather than from the mapping handed to the writer.",
+    "evidence": "negative-control-shared-writer.log records tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py::test_the_shared_exemption_writer_skips_a_finding_that_is_already_answered failing at line 700 with EXIT=1 once recovery_review_acceptance.py is reverted to 37acfb17.",
+    "fit": "reckon/crew/recovery_review_acceptance.py:75 reuses findings.finding_disposition and the module's existing LANDED_NON_BLOCKING_REASON rather than restating either encoding.",
+    "goal_fidelity": "reckon/crew/queue_landing.py:1917 calls record_landed_exemptions and no _record_landed_exemptions definition survives anywhere in the tree at 941e5fff, so one implementation serves both the landing and the promotion path.",
+    "reuse": "the increment deletes the duplicate writer queue_landing.py:1286 instead of layering on it, and the only other reader of unanswered findings, reckon/crew/plan_review.py:2175, keys the plan-review responses store, not the run-review disposition store the shared writer owns.",
+    "scope_discipline": "reckon/crew/recovery_review_acceptance.py:65 and the two test files are outside the node's declared write path reckon/crew/queue_landing.py, disclosed only in the manifest's outside_scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the increment consolidates the exemption rule into the one writer both paths call; reckon/crew/recovery_review_acceptance.py:65 filters on a finding that is still open and reckon/crew/queue_landing.py:1917 now calls that shared writer, with the duplicate that stood at queue_landing.py:1286 deleted.\nVERDICT done_when: the node's measure is its red-suite test file with one negative control per refusing arm; the manifest records gate-final.log at 941e5fff as 133 passed EXIT=0 and negative-control-shared-writer.log as 1 failed EXIT=1 with recovery_review_acceptance.py reverted, so the rule this increment moved is asserted by a run that reddens when it is put back.\nVERDICT write_paths: the node declares only reckon/crew/queue_landing.py; this increment also writes reckon/crew/recovery_review_acceptance.py:65 and appends to tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:668 while repointing tests/test_the_lander_measures_the_population.py:93, and all of them are disclosed under outside_scope rather than left silent.\nVERDICT manifest: read; status complete, commits 16b38e57, f1627c3c, 37acfb17, 50210cdb and 941e5fff, test_logs names gate-final.log (133 passed, EXIT=0 at 941e5fff), promotion-arm.log (24 passed, EXIT=0) and negative-control-shared-writer.log (1 failed, EXIT=1), negative_control_log carries the bare path, and all six rubric lines are present.\nVERDICT diff: read 50210cdb..941e5fff commit by commit; the single commit 941e5fff deletes 41 lines from reckon/crew/queue_landing.py, moves the open-disposition filter into reckon/crew/recovery_review_acceptance.py:65 and reads dispositions from the stored record at :155, adds one case to tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:668, repoints the monkeypatch at tests/test_the_lander_measures_the_population.py:93, and adds 12 lines to the evidence fragment.\nCALL_SITES: reckon/crew/queue_landing.py:_land_deliveries, reckon/crew/recovery_review_acceptance.py:accept_clean_review\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_landing.py:1917 calls record_landed_exemptions and no _record_landed_exemptions definition survives anywhere in the tree at 941e5fff, so one implementation serves both the landing and the promotion path.\nSCORE evidence: 18\nJUSTIFICATION evidence: negative-control-shared-writer.log records tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py::test_the_shared_exemption_writer_skips_a_finding_that_is_already_answered failing at line 700 with EXIT=1 once recovery_review_acceptance.py is reverted to 37acfb17.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: reckon/crew/recovery_review_acceptance.py:65 and the two test files are outside the node's declared write path reckon/crew/queue_landing.py, disclosed only in the manifest's outside_scope.\nSCORE durability: 17\nJUSTIFICATION durability: reinstating the 37acfb17 body of record_landed_exemptions reddens tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:700, and the assertion reads the fold back from the store at :692 rather than from the mapping handed to the writer.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/recovery_review_acceptance.py:75 reuses findings.finding_disposition and the module's existing LANDED_NON_BLOCKING_REASON rather than restating either encoding.\nSCORE reuse: 20\nJUSTIFICATION reuse: the increment deletes the duplicate writer queue_landing.py:1286 instead of layering on it, and the only other reader of unanswered findings, reckon/crew/plan_review.py:2175, keys the plan-review responses store, not the run-review disposition store the shared writer owns.\nFINDING reckon/crew/recovery_review_acceptance.py:65 non-blocking: the module is outside this node's declared write paths (reckon/crew/queue_landing.py alone), so the promotion-side half of the consolidation is fenced work taken on the prior review's instruction; the diff is right and the declaration is what needs extending, together with tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py and tests/test_the_lander_measures_the_population.py, or the next promotion refuses on scope alone.\n",
+  "review_run_id": "r-20261108T141018001752-review-of-lander-leaves-red-run-to-coordinator-941e5fff2da4",
+  "reviewed_base_sha": "50210cdbf9efbb48b626f2937b7c8a062cd74015",
+  "reviewed_head_sha": "941e5fff2da42bc29f242605de8248c2ee0e4f33",
+  "reviewed_run_id": "r-20261108T053724507984-lander-leaves-red-run-to-coordinator",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T14:50:17.082255+00:00",
+  "total": 105
+}
