@@ -1,0 +1,200 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T05:10:28.082Z",
+  "dispatched_at": "2026-11-08T05:00:21Z",
+  "findings": [
+    {
+      "anchor": "plan.html:188",
+      "id": "reasoning-1",
+      "reason": "a node built to this brief adds a second claim-disposition reader beside one that already does this and still leaves the reproduction unfixed, because the miss lies elsewhere (a claim taken between the pass's read and the launch, or a candidate path set wider than `_declared_scope_paths`).",
+      "text": "\u00a735 says the pre-launch check \"did not hold the request first. It reads live runs' claims, and the holder here had stopped\", and makes its first deliverable \"the pre-launch check reads a stopped run's claim through the same `ClaimDisposition` the dispatcher uses in `reckon/crew/node.py`\"; but `_live_claim_detail` (`reckon/crew/queue_admission.py:1156`) already judges every live pointer through `_claim_disposition_of` \u2192 `claim_disposition` (`reckon/crew/node.py:1586`), which returns `binding=True` precisely for a stopped run whose worktree holds unlanded commits (`node.py:1635-1651`) \u2014 the same reason string the discarded pointer at `~/.cache/reckon-evidence/stranded-starting-on-scope-conflict-2026-11-08/discard.json` carries (\"has stopped but its worktree still holds 6 commit(s) beyond its base that main cannot reach\"), so the cited evidence shows that claim binding through that very function",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:188",
+      "id": "reasoning-2",
+      "reason": "a worker following the brief calls a description builder and leaves the pointer exactly in `starting`, which is the defect the section exists to remove.",
+      "text": "\u00a735's second change says a `ScopeConflict` raised by the launch \"returns the request to phase `queued`, held on that claim, in the same pass, through `_refusal_hold` (near line 1247)\"; `_refusal_hold` (`reckon/crew/queue_admission.py:1245-1287`) is a pure formatter taking `(caught, live, *, moment)` and returning a verdict row \u2014 it writes no phase \u2014 while the phase is actually restored by `_request_claim_restored_on_refusal` (`reckon/crew/dispatch.py:1449-1460`) and `_record_queued_failure`/`_restore_queued` (`queue_admission.py:1684-1750`), neither of which the section names",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:188",
+      "id": "done_when-1",
+      "reason": "an arm that is already green at the base revision measures nothing, so the node cannot show that its change is what holds the request; the done-when needs an arm the base fails (for example a holder that appears between the pass's read and the launch, or a collision the declared-path comparison misses).",
+      "text": "the first case's arm (\"a request whose path a stopped run with an unlanded commit holds is held `held-on-claim` before launch, naming the holder, and no launch is attempted\") passes on today's code for the reason above, and its declared negative control (\"reading only live runs' claims before launch lets the first case launch\") does not describe a state today's code can reach, since the current read already covers stopped-but-loaded runs",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:22",
+      "id": "wiring-1",
+      "reason": "the same omission was raised and acted on for \u00a732, \u00a733 and \u00a734, and it recurs now that \u00a735 has been added; the declared waits are the only ordering the queue reads.",
+      "text": "\u00a714's `plan-section-depends-on` entry lists \u00a76, \u00a713, \u00a715, \u00a718\u2013\u00a734 but not `s35`, while \u00a714's first sentence says the drain begins \"Once every other section has landed\" and \u00a735 rewrites the admission path the drain runs on, so the whole-plan drain may be dispatched before the section it depends on has landed",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:22",
+      "id": "wiring-2",
+      "reason": "the plan's own collision rule for co-writing sections is a declared wait, and without one the launch order is left to rank rather than to the plan.",
+      "text": "`s35` has no `plan-section-depends-on` entry at all, while \u00a729 and \u00a731 are both `implementable` and both name `reckon/crew/queue_admission.py` in their write paths, and \u00a735 writes that same module, so the queue may launch three nodes onto one file in the same pass",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "f25840b30426a48498348b9f2b504c2fca957cb9",
+  "plan_fingerprint": "3b9f21b463f402f009bd0f2c23da7363eea881bd0448630050b0b2ff3c7c48cd",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 287,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "carried",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "section": "s35",
+      "sections": [
+        "s35"
+      ],
+      "when": "2026-11-08T06:21:07.297753+00:00"
+    },
+    {
+      "action": "carried",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "section": "s35",
+      "sections": [
+        "s35"
+      ],
+      "when": "2026-11-08T06:21:28.945362+00:00"
+    },
+    {
+      "action": "carried",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "section": "_document",
+      "sections": [
+        "_document"
+      ],
+      "when": "2026-11-08T06:21:48.902372+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "the \u00a714 drain starts once every other section has landed, which its readiness already checks against the declarations; a queued \u00a735 still counts as not landed",
+      "when": "2026-11-08T06:21:58.017843+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "wiring-2",
+      "reason": "nodes writing the same module are serialised by write-path claims: admission holds a request whose paths a live run holds, so \u00a729, \u00a731 and \u00a735 cannot run onto queue_admission.py together",
+      "when": "2026-11-08T06:22:04.972052+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "carried",
+      "by": "",
+      "reason": "",
+      "section": "_document",
+      "sections": [
+        "_document"
+      ],
+      "when": "2026-11-08T06:21:48.902372+00:00"
+    },
+    "reasoning-1": {
+      "action": "carried",
+      "by": "",
+      "reason": "",
+      "section": "s35",
+      "sections": [
+        "s35"
+      ],
+      "when": "2026-11-08T06:21:07.297753+00:00"
+    },
+    "reasoning-2": {
+      "action": "carried",
+      "by": "",
+      "reason": "",
+      "section": "s35",
+      "sections": [
+        "s35"
+      ],
+      "when": "2026-11-08T06:21:28.945362+00:00"
+    },
+    "wiring-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "the \u00a714 drain starts once every other section has landed, which its readiness already checks against the declarations; a queued \u00a735 still counts as not landed",
+      "when": "2026-11-08T06:21:58.017843+00:00"
+    },
+    "wiring-2": {
+      "action": "declined",
+      "by": "",
+      "reason": "nodes writing the same module are serialised by write-path claims: admission holds a request whose paths a live run holds, so \u00a729, \u00a731 and \u00a735 cannot run onto queue_admission.py together",
+      "when": "2026-11-08T06:22:04.972052+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-queue-holds-the-whole-plan.v287.json",
+  "review_run_id": "r-20261108T045517659123-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "c8356b5f2e77c982c926d98a67dd39517c70700c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `node.py:1647` (inside `claim_disposition`), `queue_admission.py:1556` `_stamp_failure`, `:1577` `_requeue_admitted_failures`, `:1247` `_refusal_hold` (defined at 1245), `:4697` the pre-launch `_live_claim_detail` call, and `recovery_liveness.py:740` `_stranded_launch` all resolve; `_stranded_launch` does return `False` when no attempt start is recorded, exactly as \u00a735 says.",
+    "done_when": "a finding \u2014 \u00a735's first arm can pass on the unfixed code, so it does not discriminate the change it is meant to measure.",
+    "evidence_paths": "pass \u2014 the gate output goes under the run directory and the cited reproduction record `~/.cache/reckon-evidence/stranded-starting-on-scope-conflict-2026-11-08/` exists and is openable (`claim.json`, `classification.json`, `discard.json`).",
+    "naming": "pass \u2014 the new test name describes the behaviour, and no plan label, stage name, ticket number or changelog prose reaches a symbol or a comment.",
+    "reasoning": "a finding \u2014 \u00a735 names as its first deliverable a behaviour the code already has, and names `_refusal_hold` as the mechanism that restores the request's phase, which it cannot do.",
+    "single_goal": "pass \u2014 \u00a735 carries one goal, \"a launch refused on a claim goes back to the queue\"; its two changes are two arms of that one mechanism, covered by one test file and one done-when.",
+    "wiring": "a finding \u2014 the new `s35` is declared `implementable` but appears neither in \u00a714's drain list (plan.html:22) nor in `plan-section-depends-on` at all, although \u00a729 and \u00a731 write the same module."
+  },
+  "section_digests": {
+    "_document": "a8acec0150ae43e4ea5ba2d16b89ace70265c93bbe5c91d54a93b773b180820d",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "5cf5ffce08aa5567c1bacc4682131c122ab49241a6b6867d3f8a859b9aeb336e",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "b2f3a4dc4441527ebac138fcd2583e79959e677a2bb235937905ef5260c68abe",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s16": "3baae65f9838c420131b091c23c8e0495b371ceb323b379111c27677117bfa36",
+    "s17": "e8d19190fe8ad7ac0ada9570da1e1403020d996fade35345888d232283a712f3",
+    "s18": "c41a5f40b44fad7c9170e75afe458887ecf383dfbdfbd87f44b1aba18db385ce",
+    "s19": "3bd989d1975e3410388984d6b187e73537eb6741a9325640197d88ec68579fac",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s20": "1650ed742b05d1b8454fbb0792d83df930c357b4929ce75b0b82b8574b007375",
+    "s21": "92ae2c978f0293fbe8f09066288ab258d7d810c4bedc3ce5fe964f064ca7310e",
+    "s22": "47e2cfd2937f003b333a5627f777e7bc72cb16eaf677da44f2683b7c2cbe138b",
+    "s23": "8b0cff55659bab7a4f30061f3adc4d4e822c8679c7c659a592a131c825a356a8",
+    "s24": "e41f5feee9ab0bd1cb7371a93fa8f654ccd277325b302e34421d3b0ea907d869",
+    "s25": "d156187078ac0ab4d87d1398fe13f74eee443a0f2e48ed45f963ef238d8737d9",
+    "s26": "abf23ffa47584798ae7c0303cda18d5e3ded7f690e2e692a13f35b2c021f2813",
+    "s27": "272f482e0766b56080b610bdbf7ac48bc9ddfa2ed1cfb8c8a85cd9ecd5b32d93",
+    "s28": "cd767c148ee02023bec11cd941361b5cc37e14d542a4c6a132a48261b3b2497b",
+    "s29": "e7851807f93e49d39fd9789aa3dd5638ecc35016f60f53bc0c4fe3413a6bcf20",
+    "s3": "afea9aff41cb2215f28079810dcc13a5df1c6eb744cbd74c37b09ed3114da92a",
+    "s30": "b3148b61a2b1805ec38f8705fedffdb786ccee3a47f4a8bebcd794ce6b0983cf",
+    "s31": "23ef7a8f162555218fc698e3569bcef26b43435845dbb6c5af88193a0e76166e",
+    "s32": "04cecab62796d354c65abbea09c54c3d37a9155ab0d83b7da53e5c481a8cf8c6",
+    "s33": "9db5479d0d5cb815819bdb4c45cebe9064b8b2b85c07514b9bd6689e07590ac3",
+    "s34": "28ec67c9ff9af2e77a8ceca28cfe58dda22acf33e78752ecdc0c93437ec47ddd",
+    "s35": "53659cabcb1f264ddcdacc4c1d9271f132812f7e63527176f2a850f9317197fb",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "a00c22d22d70c8a2ed3e7b08d58ef99957f2613d76b12181c91bcbb2a3517ade",
+    "s6": "a81480c94db3372e03fb8862f58fcb5017c6a0d5c4471ceecbf3c71a6850ce93",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "0baa02deb68c4c0f5702a20bc5b40684841e6b87295760a1f835f27d114094ef",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T06:20:37.799290+00:00",
+  "total": null
+}
