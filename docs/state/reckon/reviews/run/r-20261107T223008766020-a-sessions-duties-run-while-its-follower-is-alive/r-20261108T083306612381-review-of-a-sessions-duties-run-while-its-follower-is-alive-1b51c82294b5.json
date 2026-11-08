@@ -1,0 +1,87 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the source manifest\u2019s completed baseline_suite and after_suite logs: both record 1 passed and EXIT=0, with zero FAILED IDs; this docs-only increment did not change code or tests. Those arms predate the figure-only commits and do not independently test the new drawing.",
+  "assertion_analysis": [],
+  "assertion_analysis_note": "The two incremental commits add no test assertions; the recorded figure checks would fail on missing expected labels, invalid XML or incorrect canvas dimensions, but their checking implementation is not committed in this diff.",
+  "call_sites": [
+    "reckon/evidence.py:687 compose_landed_record (fragment composition)",
+    "reckon/serve.py:2693 Handler._send_evidence_record (serves composed HTML)",
+    "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive.html:30 img (loads the SVG)"
+  ],
+  "completed_at": "2026-11-08T08:48:22Z",
+  "dispatched_at": "2026-11-08T08:36:08Z",
+  "findings": [],
+  "item_verdicts": {
+    "diff": "Read feabf82a1535882f3db5c20ca4fe96fe645bc315 (SVG redraw) and 1b51c82294b5da07bc61a957d62e5872d4c5ec0a (caption correction) separately against 8d82950debd6fd48aa8f9f3756be2b2be2dbe283; no product source, tests or executable definitions changed.",
+    "done_when": "resume-2-advice.txt:1 requires a 1400 px render and visual inspection; figure_gate.log records the exact head, 1400x720 render, 10/10 labels and EXIT=0, corroborated by this review\u2019s independent render.",
+    "goal": "prompt.txt:38 asks to find and repair starved session duties; resume-2-advice.txt:1 narrows this repair to the figure, and the new docs/figures/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive/sweep-timeline.svg supplies the requested labeled rows, event legend and seconds axis.",
+    "manifest": "manifest.md names both new commits and the figure receipt; its baseline_suite and after_suite resolve to repair_base.log and repair_head.log, each completed with 1 passed, EXIT=0 and no failure IDs.",
+    "write_paths": "prompt.txt:77-84 declares the fragment and figures directory; commits feabf82a1535882f3db5c20ca4fe96fe645bc315 and 1b51c82294b5da07bc61a957d62e5872d4c5ec0a change exactly the two documentation paths authorized for this incremental review."
+  },
+  "justifications": {
+    "durability": "docs/figures/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive/sweep-timeline.svg:48 embeds glyph paths and figure_gate.log records label/XML/bounds checks, but neither incremental commit adds a persistent regression assertion that would fail if labels or event positions regressed.",
+    "evidence": "figure_gate.log:1 identifies the reviewed head and ends EXIT=0; independent base/head object renders corroborate the readable head, although the prior label-loss defect did not reproduce through this review\u2019s converter.",
+    "fit": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive.html:30 retains a project-absolute image path and the revised docs/figures/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive/sweep-timeline.svg:4 uses the 31.1 cm by 16 cm slide canvas, grey intervals, one green subject and one frameless legend without clipping or overlapping labels.",
+    "goal_fidelity": "docs/figures/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive/sweep-timeline.svg:28 now draws the measured sweep intervals with labeled session/sweep rows, a seconds axis and the six requested event meanings, satisfying the figure-only repair advice.",
+    "reuse": "docs/figures/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive/sweep-timeline.svg:1 is a static artifact and docs/evidence/fragments/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive.html:32 is caption prose; neither commit adds a function, class or module that could duplicate an existing capability.",
+    "scope_discipline": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive.html:32 only corrects the caption and docs/figures/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive/sweep-timeline.svg:1 replaces the drawing, with no changes beyond the two declared artifact paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 asks to find and repair starved session duties; resume-2-advice.txt:1 narrows this repair to the figure, and the new docs/figures/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive/sweep-timeline.svg supplies the requested labeled rows, event legend and seconds axis.\nVERDICT done_when: resume-2-advice.txt:1 requires a 1400 px render and visual inspection; figure_gate.log records the exact head, 1400x720 render, 10/10 labels and EXIT=0, corroborated by this review\u2019s independent render.\nVERDICT write_paths: prompt.txt:77-84 declares the fragment and figures directory; commits feabf82a1535882f3db5c20ca4fe96fe645bc315 and 1b51c82294b5da07bc61a957d62e5872d4c5ec0a change exactly the two documentation paths authorized for this incremental review.\nVERDICT manifest: manifest.md names both new commits and the figure receipt; its baseline_suite and after_suite resolve to repair_base.log and repair_head.log, each completed with 1 passed, EXIT=0 and no failure IDs.\nVERDICT diff: Read feabf82a1535882f3db5c20ca4fe96fe645bc315 (SVG redraw) and 1b51c82294b5da07bc61a957d62e5872d4c5ec0a (caption correction) separately against 8d82950debd6fd48aa8f9f3756be2b2be2dbe283; no product source, tests or executable definitions changed.\nCALL_SITES: reckon/evidence.py:687 compose_landed_record (fragment composition), reckon/serve.py:2693 Handler._send_evidence_record (serves composed HTML), docs/evidence/fragments/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive.html:30 img (loads the SVG)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: docs/figures/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive/sweep-timeline.svg:28 now draws the measured sweep intervals with labeled session/sweep rows, a seconds axis and the six requested event meanings, satisfying the figure-only repair advice.\nSCORE evidence: 19\nJUSTIFICATION evidence: figure_gate.log:1 identifies the reviewed head and ends EXIT=0; independent base/head object renders corroborate the readable head, although the prior label-loss defect did not reproduce through this review\u2019s converter.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: docs/evidence/fragments/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive.html:32 only corrects the caption and docs/figures/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive/sweep-timeline.svg:1 replaces the drawing, with no changes beyond the two declared artifact paths.\nSCORE durability: 16\nJUSTIFICATION durability: docs/figures/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive/sweep-timeline.svg:48 embeds glyph paths and figure_gate.log records label/XML/bounds checks, but neither incremental commit adds a persistent regression assertion that would fail if labels or event positions regressed.\nSCORE fit: 20\nJUSTIFICATION fit: docs/evidence/fragments/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive.html:30 retains a project-absolute image path and the revised docs/figures/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive/sweep-timeline.svg:4 uses the 31.1 cm by 16 cm slide canvas, grey intervals, one green subject and one frameless legend without clipping or overlapping labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: docs/figures/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive/sweep-timeline.svg:1 is a static artifact and docs/evidence/fragments/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive.html:32 is caption prose; neither commit adds a function, class or module that could duplicate an existing capability.\n",
+  "review_run_id": "r-20261108T083306612381-review-of-a-sessions-duties-run-while-its-follower-is-alive-1b51c82294b5",
+  "review_scope": [
+    "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive.html",
+    "docs/figures/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive/sweep-timeline.svg"
+  ],
+  "reviewed_base_sha": "8d82950debd6fd48aa8f9f3756be2b2be2dbe283",
+  "reviewed_commits": [
+    "feabf82a1535882f3db5c20ca4fe96fe645bc315",
+    "1b51c82294b5da07bc61a957d62e5872d4c5ec0a"
+  ],
+  "reviewed_head_sha": "1b51c82294b5da07bc61a957d62e5872d4c5ec0a",
+  "reviewed_run_id": "r-20261107T223008766020-a-sessions-duties-run-while-its-follower-is-alive",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_sessions_duties_run_while_its_follower_is_alive.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T223008766020-a-sessions-duties-run-while-its-follower-is-alive/repair_head.log",
+      "observed_failure_ids": [],
+      "observed_summary": "1 passed in 25.31s",
+      "revision": "8d82950debd6fd48aa8f9f3756be2b2be2dbe283"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_sessions_duties_run_while_its_follower_is_alive.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T223008766020-a-sessions-duties-run-while-its-follower-is-alive/repair_base.log",
+      "observed_failure_ids": [],
+      "observed_summary": "1 passed in 9.89s",
+      "revision": "3aec564ad491f6d9d6dde4606786f2a68bc78231"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T10:04:17.438112+00:00",
+  "total": 115,
+  "visual_review": {
+    "base_render": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T083306612381-review-of-a-sessions-duties-run-while-its-follower-is-alive-1b51c82294b5/base.png",
+    "head_render": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T083306612381-review-of-a-sessions-duties-run-while-its-follower-is-alive-1b51c82294b5/head.png",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T083306612381-review-of-a-sessions-duties-run-while-its-follower-is-alive-1b51c82294b5/render.log",
+    "previous_finding_scope": "This incremental review assesses only the figure repair and caption; prior text findings were disposed per resume-2-advice.txt and are not reopened.",
+    "result": "Head labels, legend, units and all event marks are readable at 1400x720 with no text collision or clipping; timing agrees with repair_timing_replay.json. The old SVG also rendered labels through this converter, so the earlier missing-label defect is not independently reproduced by this rendering path."
+  }
+}
