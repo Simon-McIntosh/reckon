@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: gate-base-run1.log records 6 failed (the six new test ids) and gate-head-run6.log records 0; the after-arm set minus the base-arm set is empty.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:398 _arrange_dispatch_follower",
+    "reckon/crew_follow_commands.py:649 _hand_off_from_follower",
+    "reckon/crew/dispatch.py:4045 re-export"
+  ],
+  "completed_at": "2026-11-08T04:26:33.292Z",
+  "dispatched_at": "2026-11-08T04:16:31Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/ask-a-host-only-for-its-own-session.html",
+      "line": "73",
+      "severity": "blocking",
+      "text": "blocking: the section's done_when names seven negative controls and the run directory holds three, so the controls for refusing a calling-session hand-off, placing the guard in the ask alone, testing the session-wide attachment, and restoring the reproduction path with the check removed were never applied and the fragment's \"each executed and logged\" reads as complete coverage of a measure that is a third run, not seven."
+    },
+    {
+      "file": "docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/ask-a-host-only-for-its-own-session.html",
+      "line": "90",
+      "severity": "non-blocking",
+      "text": "non-blocking: the regression arm records 10 failures at head against 4 at base over the re-run ids, and two of the added ones (test_arm_lock_is_never_held_by_a_follower.py::test_stubborn_orphan_cannot_hold_arm_lock_past_bound, test_a_crashed_producer_is_restarted.py::test_a_steady_run_resets_the_delay_and_crash_count) are called environment contention with no re-run log showing either passes at head in a quiet tree."
+    },
+    {
+      "file": "tests/test_a_resume_rearms_its_follower.py",
+      "line": "352",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion compares the request line to exactly {\"project\", \"session\"}, and every line now also carries owner_checked, so the landed change turns this existing test red; the node reports it under outside_scope and its repair is to compare the two fields and assert owner_checked is True."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the three commits against base e958551af: 4f3d4889 changes dispatch_watch.py (+35/-11, the guard, the mark and the census predicate), d8c872ed adds the fragment, 73e58d1c updates the fragment's figure; the 300-line test file arrives with the fix commit.",
+    "done_when": "the done_when names the new test file with six cases and seven negative controls; gate-base-run1.log and gate-head-run6.log show the six cases fail at e958551af and pass at head, but only three of the seven declared controls exist as logs under the run directory (negative-control-ask-predicate-always-false.log, negative-control-mark-off.log, negative-control-ownership-check-dropped.log).",
+    "goal": "the goal is to make a host be asked to follow only its own session; reckon/crew/dispatch_watch.py:836 refuses a pair that is not _calling_session() and :843 writes owner_checked: true, and :783 answers the ask from _session_host_child_pid, so all three deliverables of the section's paragraph are present.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T023048681852-ask-a-host-only-for-its-own-session/manifest.md; status complete, commits 4f3d4889, d8c872ed and 73e58d1c, tests \"6 passed in 29.09s EXIT=0\", and both suite arms carry revision, command, exit status and failure ids.",
+    "write_paths": "the manifest declares reckon/crew/dispatch_watch.py, tests/test_a_host_follows_only_its_own_session.py and the evidence fragment; git diff --stat e958551af..73e58d1c shows exactly those three files and nothing else."
+  },
+  "justifications": {
+    "durability": "each of the six cases fails at base and the three logged mutations redden exactly the cases they name, but the unrun controls leave the hand-off-only placement, the session-wide-attachment predicate and the restored reproduction path with no mutation showing they redden.",
+    "evidence": "the six cases are measured at both arms in gate-base-run1.log (6 failed) and gate-head-run6.log (6 passed), but four of the seven negative controls the done_when enumerates were never applied, and the regression arm records two head-only failures attributed to contention with no re-run to show it.",
+    "fit": "reckon/crew/dispatch_watch.py:783 now composes the same _session_host_child_pid predicate _rearm_session_follower already uses at :813, and the added names describe the behaviour with no plan or stage label.",
+    "goal_fidelity": "reckon/crew/dispatch_watch.py:836 stops the foreign pair and :843 marks every written line, and :783 replaces the session-wide attachment with _session_host_child_pid, matching the section's three named changes without adding a fourth.",
+    "reuse": "the change adds no new census reader -- it reuses _session_host_child_pid (reckon/crew/dispatch_watch.py:695) and _session_host_record_path, and a search of reckon/ for a second owner of the request-line ownership check found only _rearm_session_follower's own comparison at :804.",
+    "scope_discipline": "git diff --stat e958551af..73e58d1c lists only reckon/crew/dispatch_watch.py, tests/test_a_host_follows_only_its_own_session.py and the declared evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make a host be asked to follow only its own session; reckon/crew/dispatch_watch.py:836 refuses a pair that is not _calling_session() and :843 writes owner_checked: true, and :783 answers the ask from _session_host_child_pid, so all three deliverables of the section's paragraph are present.\nVERDICT done_when: the done_when names the new test file with six cases and seven negative controls; gate-base-run1.log and gate-head-run6.log show the six cases fail at e958551af and pass at head, but only three of the seven declared controls exist as logs under the run directory (negative-control-ask-predicate-always-false.log, negative-control-mark-off.log, negative-control-ownership-check-dropped.log).\nVERDICT write_paths: the manifest declares reckon/crew/dispatch_watch.py, tests/test_a_host_follows_only_its_own_session.py and the evidence fragment; git diff --stat e958551af..73e58d1c shows exactly those three files and nothing else.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T023048681852-ask-a-host-only-for-its-own-session/manifest.md; status complete, commits 4f3d4889, d8c872ed and 73e58d1c, tests \"6 passed in 29.09s EXIT=0\", and both suite arms carry revision, command, exit status and failure ids.\nVERDICT diff: read the three commits against base e958551af: 4f3d4889 changes dispatch_watch.py (+35/-11, the guard, the mark and the census predicate), d8c872ed adds the fragment, 73e58d1c updates the fragment's figure; the 300-line test file arrives with the fix commit.\nCALL_SITES: reckon/crew/dispatch.py:398 _arrange_dispatch_follower, reckon/crew_follow_commands.py:649 _hand_off_from_follower, reckon/crew/dispatch.py:4045 re-export\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_watch.py:836 stops the foreign pair and :843 marks every written line, and :783 replaces the session-wide attachment with _session_host_child_pid, matching the section's three named changes without adding a fourth.\nSCORE evidence: 12\nJUSTIFICATION evidence: the six cases are measured at both arms in gate-base-run1.log (6 failed) and gate-head-run6.log (6 passed), but four of the seven negative controls the done_when enumerates were never applied, and the regression arm records two head-only failures attributed to contention with no re-run to show it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat e958551af..73e58d1c lists only reckon/crew/dispatch_watch.py, tests/test_a_host_follows_only_its_own_session.py and the declared evidence fragment.\nSCORE durability: 16\nJUSTIFICATION durability: each of the six cases fails at base and the three logged mutations redden exactly the cases they name, but the unrun controls leave the hand-off-only placement, the session-wide-attachment predicate and the restored reproduction path with no mutation showing they redden.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/dispatch_watch.py:783 now composes the same _session_host_child_pid predicate _rearm_session_follower already uses at :813, and the added names describe the behaviour with no plan or stage label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no new census reader -- it reuses _session_host_child_pid (reckon/crew/dispatch_watch.py:695) and _session_host_record_path, and a search of reckon/ for a second owner of the request-line ownership check found only _rearm_session_follower's own comparison at :804.\nFINDING docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/ask-a-host-only-for-its-own-session.html:73 blocking: the section's done_when names seven negative controls and the run directory holds three, so the controls for refusing a calling-session hand-off, placing the guard in the ask alone, testing the session-wide attachment, and restoring the reproduction path with the check removed were never applied and the fragment's \"each executed and logged\" reads as complete coverage of a measure that is a third run, not seven.\nFINDING docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/ask-a-host-only-for-its-own-session.html:90 non-blocking: the regression arm records 10 failures at head against 4 at base over the re-run ids, and two of the added ones (test_arm_lock_is_never_held_by_a_follower.py::test_stubborn_orphan_cannot_hold_arm_lock_past_bound, test_a_crashed_producer_is_restarted.py::test_a_steady_run_resets_the_delay_and_crash_count) are called environment contention with no re-run log showing either passes at head in a quiet tree.\nFINDING tests/test_a_resume_rearms_its_follower.py:352 non-blocking: the assertion compares the request line to exactly {\"project\", \"session\"}, and every line now also carries owner_checked, so the landed change turns this existing test red; the node reports it under outside_scope and its repair is to compare the two fields and assert owner_checked is True.",
+  "review_run_id": "r-20261108T041009239234-review-of-ask-a-host-only-for-its-own-session-73e58d1c300e",
+  "reviewed_base_sha": "e958551afb7dc0971eea6d0f64fadf1879466242",
+  "reviewed_head_sha": "73e58d1c300edd4e14a3e38cdcab5d852e84bb25",
+  "reviewed_run_id": "r-20261108T023048681852-ask-a-host-only-for-its-own-session",
+  "scores": {
+    "durability": 16,
+    "evidence": 12,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T04:40:05.573363+00:00",
+  "total": 106
+}
