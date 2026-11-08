@@ -168,7 +168,9 @@ def _arguments(
     return arguments
 
 
-def _invoke(arguments: list[str], runner: subprocess.Popen[str], project: str, session: str):
+def _invoke(
+    arguments: list[str], runner: subprocess.Popen[str], project: str, session: str
+):
     _register_watcher(project, runner.pid)
     _release_follower(project, session)
     return CliRunner().invoke(cli_module.main, arguments)
