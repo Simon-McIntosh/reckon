@@ -61,6 +61,26 @@
       "note": "\u00a713 now lists the launcher-dies-before-the-supervisor-pid-is-recorded interval as a constraint with its own case.",
       "reason": "",
       "when": "2026-11-08T22:16:46.977676+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "9192ec62fa945c1d4eb3e47bb8f64fe62ff6f70f",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a713 now requires the supervisor's pid to be recorded on the reservation at spawn, before _confirm_supervisor_survived's wait, so no interval has a live, unrecorded supervisor.",
+      "reason": "",
+      "when": "2026-11-08T22:16:53.602565+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "9192ec62fa945c1d4eb3e47bb8f64fe62ff6f70f",
+      "commit_basis": "edit",
+      "finding": "reasoning-2",
+      "note": "\u00a713 now frees an in-harness launch's reservation by its run reaching a terminal phase, since it starts no supervisor and its dispatching process outlives the launch, with a case for a finished in-harness launch.",
+      "reason": "",
+      "when": "2026-11-08T22:17:00.841648+00:00"
     }
   ],
   "responses": {
@@ -72,6 +92,24 @@
       "note": "\u00a713 now lists the launcher-dies-before-the-supervisor-pid-is-recorded interval as a constraint with its own case.",
       "reason": "",
       "when": "2026-11-08T22:16:46.977676+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "9192ec62fa945c1d4eb3e47bb8f64fe62ff6f70f",
+      "commit_basis": "edit",
+      "note": "\u00a713 now requires the supervisor's pid to be recorded on the reservation at spawn, before _confirm_supervisor_survived's wait, so no interval has a live, unrecorded supervisor.",
+      "reason": "",
+      "when": "2026-11-08T22:16:53.602565+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "9192ec62fa945c1d4eb3e47bb8f64fe62ff6f70f",
+      "commit_basis": "edit",
+      "note": "\u00a713 now frees an in-harness launch's reservation by its run reaching a terminal phase, since it starts no supervisor and its dispatching process outlives the launch, with a case for a finished in-harness launch.",
+      "reason": "",
+      "when": "2026-11-08T22:17:00.841648+00:00"
     },
     "wiring-1": {
       "action": "acted",
