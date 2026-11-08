@@ -1,13 +1,12 @@
-# ruff: noqa: I001
 from __future__ import annotations
 
 import os
 import shutil
 import subprocess
 from collections.abc import Callable, Iterable, Mapping
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-
 
 
 def process_alive(pid: Any) -> bool | None:
@@ -297,6 +296,104 @@ def _session_process_pids(session_id: str) -> list[int]:
     return found
 
 
+# Which instrument answered a liveness read, named rather than collapsed into a
+# boolean. A caller that must say how a worker was found — whether the pid it
+# records is the process it read, or that pid is a scheduler client's — needs
+# the reading to carry the arm it came from. The boolean is derived from these
+# arms in one place below, so the two can never disagree.
+LIVENESS_RECORDED_PID = "recorded-pid"
+LIVENESS_SESSION_WALK = "session-walk"
+LIVENESS_PLACED = "placed"
+LIVENESS_DEAD = "dead"
+LIVENESS_UNKNOWN = "unknown"
+
+
+@dataclass(frozen=True)
+class LivenessReading:
+    """One liveness read of a run record, carrying the arm it was taken from.
+
+    ``alive`` is the same answer :func:`record_process_alive` has always given.
+    ``pid`` is filled only for the recorded-pid arm, where the pid this host
+    probed is the worker's own. The session-walk and placed arms deliberately
+    leave it None: the first found the worker through a session id and never
+    read its pid, and the second's recorded pid names the scheduler client.
+    """
+
+    arm: str
+    alive: bool | None
+    pid: int | None = None
+    session_id: str = ""
+    job_id: str = ""
+
+    def as_dict(self) -> dict[str, Any]:
+        """Return the stable report shape for a caller that emits JSON."""
+        return {
+            "arm": self.arm,
+            "alive": self.alive,
+            "pid": self.pid,
+            "session_id": self.session_id,
+            "job_id": self.job_id,
+        }
+
+
+def record_process_liveness(
+    record: Mapping[str, Any] | None,
+    alive: Callable[[Any], bool | None] | None = None,
+    job_alive: Callable[[Mapping[str, Any] | None], bool | None] | None = None,
+    match_start_time: bool = True,
+) -> LivenessReading:
+    """Read a run record's liveness once, naming the arm that answered.
+
+    The order of the questions is the one :func:`record_process_alive` has
+    always asked — the placed run's scheduler job, then the recorded pid, then
+    the session walk for a spawned worker whose recorded pids are all dead — and
+    that function now takes its boolean from this reading rather than repeating
+    the decision. A caller that has to say *how* it found the worker reads this
+    directly; a caller that only needs yes, no or unknown keeps the boolean.
+
+    The session-walk arm is only reached when the pid probe did not read alive,
+    so a live pid never costs the walk. A dead pid with no session hit is the
+    dead arm, and a pid that could not be read at all is unknown — the same
+    distinction the boolean encodes, kept here rather than lost.
+    """
+    if not record:
+        return LivenessReading(LIVENESS_UNKNOWN, None)
+    placed = (placement_job_alive if job_alive is None else job_alive)(record)
+    if placed is not None:
+        return LivenessReading(
+            LIVENESS_PLACED if placed else LIVENESS_DEAD,
+            placed,
+            job_id=str(record.get("job_id") or ""),
+        )
+    probe = process_alive if alive is None else alive
+    pid = record.get("pid")
+    running = probe(pid)
+    # The reuse check reads the process table, which is the only thing that can
+    # say whether the pid still names the registered process. A caller that
+    # substitutes its own probe owns the whole read — its probe answers for
+    # liveness and there is nothing left for a second lookup to decide — so the
+    # check is skipped when the real primitive is the one that answered.
+    if running is True and match_start_time and probe is process_alive:
+        expected = record.get("pid_start_time")
+        if expected is not None:
+            actual = _process_start_time(pid)
+            if actual is not None:
+                running = actual == expected
+    if running is not True and record.get("launch") == "cli":
+        session_id = str(record.get("session_id") or "").strip()
+        if session_id and _session_process_pids(session_id):
+            return LivenessReading(LIVENESS_SESSION_WALK, True, session_id=session_id)
+    if running is True:
+        try:
+            worker_pid = int(pid)
+        except (TypeError, ValueError):
+            worker_pid = None
+        return LivenessReading(LIVENESS_RECORDED_PID, True, pid=worker_pid)
+    if running is False:
+        return LivenessReading(LIVENESS_DEAD, False)
+    return LivenessReading(LIVENESS_UNKNOWN, None)
+
+
 def record_process_alive(
     record: Mapping[str, Any] | None,
     alive: Callable[[Any], bool | None] | None = None,
@@ -351,33 +448,12 @@ def record_process_alive(
     already proved alive never reaches that walk, so a live run costs nothing
     extra.
     """
-    if not record:
-        return None
-    placed = (placement_job_alive if job_alive is None else job_alive)(record)
-    if placed is not None:
-        return placed
-    probe = process_alive if alive is None else alive
-    pid = record.get("pid")
-    running = probe(pid)
-    # The reuse check reads the process table, which is the only thing that can
-    # say whether the pid still names the registered process. A caller that
-    # substitutes its own probe owns the whole read — its probe answers for
-    # liveness and there is nothing left for a second lookup to decide — so the
-    # check is skipped when the real primitive is the one that answered. The
-    # callers that pass this module's own ``process_alive`` through still get
-    # the check on every read they make, and ``alive=None`` resolves to that
-    # same function, so the default path is covered by the same identity.
-    if running is True and match_start_time and probe is process_alive:
-        expected = record.get("pid_start_time")
-        if expected is not None:
-            actual = _process_start_time(pid)
-            if actual is not None:
-                running = actual == expected
-    if running is not True and record.get("launch") == "cli":
-        session_id = str(record.get("session_id") or "").strip()
-        if session_id and _session_process_pids(session_id):
-            running = True
-    return running
+    return record_process_liveness(
+        record,
+        alive=alive,
+        job_alive=job_alive,
+        match_start_time=match_start_time,
+    ).alive
 
 
 def _process_stat_fields(pid: Any) -> list[str]:
