@@ -3455,6 +3455,7 @@ def _land_a_promoted_run(
         run_id=run_id,
         release=release,
         checkout=Path(repository_value) if repository_value else None,
+        after_merge=True,
     )
     if recorded is not None:
         report["promotion"] = {**promoted, "record": recorded}
