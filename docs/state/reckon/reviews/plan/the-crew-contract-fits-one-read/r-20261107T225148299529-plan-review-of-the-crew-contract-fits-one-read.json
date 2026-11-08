@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-07T23:57:02.624Z",
+  "dispatched_at": "2026-11-07T23:48:10Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-crew-contract-fits-one-read/r-20261107T225148299529-plan-review-of-the-crew-contract-fits-one-read/plan.html:106",
+      "id": "wiring-1",
+      "reason": "without a declared ordering the plan tells its own coordinator to run two nodes over the same three files in either order, and the loss is silent in `coordinator-reference.md`.",
+      "text": "f-tccfor-006 declares \u00a76 \"independent of \u00a72 to \u00a74\" while \u00a76's declared write paths (`skills/reckon-build/SKILL.md`, `.../references/sprint-orchestration.md`, `.../references/coordinator-reference.md`) are exactly the files \u00a73 rewrites to a 4,000/12,000-word ceiling; no depends-on, gate or ordering sentence relates \u00a76 to \u00a73, whereas \u00a75 \u2014 which had the same overlap \u2014 carries \"This section runs before \u00a73\". A coordinator reading the followup dispatches both, and \u00a73's merge-or-delete rewrite drops \u00a76's reworded sentence from `coordinator-reference.md` with nothing to catch it.",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-crew-contract-fits-one-read/r-20261107T225148299529-plan-review-of-the-crew-contract-fits-one-read/plan.html:106",
+      "id": "wiring-2",
+      "reason": "dropping it leaves the roadmap as the plan's single schedule; keeping it leaves a duplicate that must be resolved by hand on landing.",
+      "text": "the new followup f-tccfor-006 schedules \u00a76 as a followup, which is the pattern this plan already retired: f-tccfor-001's own outcome at `plan.html:104` records \"Moved into \u00a74 as an implementable section, because the roadmap schedules sections and never followups\", and `skills/reckon-build/SKILL.md:438-440` states the same rule (\"becomes a plan section \u2026 and never a followup\"). \u00a76 already has an `implementable` declaration at `plan.html:24`, so the followup is a second scheduling authority that goes stale the moment \u00a76 lands.",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-crew-contract-fits-one-read/r-20261107T225148299529-plan-review-of-the-crew-contract-fits-one-read/plan.html:82",
+      "id": "done_when-1",
+      "reason": "the unmeasured file is the one a coordinator composing a delegation by hand reads, which is exactly the reader the contradiction misleads.",
+      "text": "\u00a76's deliverable rewrites the mirrored sentence in three skill files, but the done-when measures only the composed prompt, and the only test that reaches the skill mirrors (`test_skill_contract_parity.py`) covers `LIMIT_SKILL_FILES` = `SKILL.md` and `references/sprint-orchestration.md` only (`tests/test_skill_contract_parity.py:128-131`). `references/coordinator-reference.md:805` is therefore in the deliverable and in no measure, so \u00a76 can close green with that file still carrying the unqualified sentence.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-crew-contract-fits-one-read/r-20261107T225148299529-plan-review-of-the-crew-contract-fits-one-read/plan.html:82",
+      "id": "done_when-2",
+      "reason": "one clause naming a brief prompt that may land turns an assertion that fails on the first non-landing brief the node happens to compose into a measure the node can satisfy and a reader can re-run.",
+      "text": "the done-when requires the closure block on \"a composed brief prompt\", but the composer emits `closure_authority_contract` only when `can_land` is true (`reckon/crew/prompts.py:756`, `:775`), so a brief node whose fence withholds repository paths receives an empty block and no such assertion can hold for it; the measure does not say which brief composition it means.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "ef57a8ccc9f24e4097aa4840cbbecde94c2751dd",
+  "plan_fingerprint": "16986a39e642de0f14666e88bc4131e4eb15557361621a26a0d1f6c5b775180b",
+  "plan_slug": "the-crew-contract-fits-one-read",
+  "plan_version": 41,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T225148299529-plan-review-of-the-crew-contract-fits-one-read",
+  "reviewed_blob_sha": "fba5bf73ee7f3a8b8e921e60a68758c5ce68501b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/prompts.py:248/:251`, `reckon/crew/reports.py:126`, `crew repair --status`, both cited run ids, the three skill-file sentences and the `test_skill_contract_parity.py` anchors all resolve at 66085219.",
+    "done_when": "a finding \u2014 \u00a76's measure asserts over the composed prompt and the two parity-tested skill files but nothing measures `skills/reckon-build/references/coordinator-reference.md`, which the deliverable names as a write path.",
+    "evidence_paths": "pass \u2014 \u00a76 names no scratchpad, node-local or session-temporary path; its gate is the repository's own tests read from the node manifest.",
+    "naming": "pass \u2014 \u00a76 introduces no symbol, filename or comment carrying a plan label or ticket number; the run ids it quotes are evidence citations, not code names.",
+    "reasoning": "pass \u2014 the stated root cause is the one the evidence shows (both cited runs quote the contradiction in their own manifests, and `MANIFEST_CHECK_CONTRACT` says the opposite of `CLOSURE_AUTHORITY_CONTRACT`), the mechanism produces the done-when, and the caller that composes the contract into the prompt is `reckon/crew/prompts.py:775`.",
+    "single_goal": "pass \u2014 \u00a76 carries one deliverable, one contract sentence and the mirrors that must agree with it; prompts.py, three skill files and one test are the surface of that single change, not a second goal.",
+    "wiring": "a finding \u2014 \u00a76 writes `skills/reckon-build/SKILL.md` and two files under `skills/reckon-build/references/`, which \u00a73 rewrites wholesale, and no depends-on, gate or ordering exists between them while f-tccfor-006 calls \u00a76 \"independent of \u00a72 to \u00a74\"."
+  },
+  "section_digests": {
+    "_document": "eed908f7842ee0b1ac7d733be7bef7e0450e0d1ceb43abca174831d31cdad7d5",
+    "s1": "e03f606afdb78e6b308ef1299a7b868ec09052b4842de46205b30106103e5991",
+    "s2": "698a2a8583161b33608967bafc3c61641856bd4c995bb3e303796723932345e7",
+    "s3": "55c86e04c5aae2cb268f9567ce641cae99945fa16a350c250d4170d30ed1c947",
+    "s4": "bc54d1886f4d3949bffdaf93118a6be518f17b34653992dc9521ee8e03739257",
+    "s5": "95d4a0d36eb30c97a5b87808054674881dfdefa98686eb6381ce45c0fe2e23dc",
+    "s6": "f76dbdac83e54840efe9e947dc97f09d69d1819e99a8b024258f994ae29ef249"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T00:12:59.969557+00:00",
+  "total": null
+}
