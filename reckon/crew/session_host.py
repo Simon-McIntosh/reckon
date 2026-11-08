@@ -352,11 +352,20 @@ def live_work_run(project: str, session: str) -> str | None:
     """
     from reckon.crew import runs as runs_module
     from reckon.crew import station_subscriber
+    from reckon.crew.dispatch_launch import LAUNCH_FAILED_PHASE
 
     try:
         pointers = runs_module._list_live_records(project=project)
     except OSError:
         return None
+    # A launch record says a worker was never spawned, so it is a queue
+    # placement rather than work a pane could show. Admission requeues it; a
+    # pane opened over it would watch nothing until the retry lands.
+    pointers = [
+        pointer
+        for pointer in pointers
+        if str(pointer.get("phase") or "") != LAUNCH_FAILED_PHASE
+    ]
     if not station_subscriber.population_has_live_work(pointers, session):
         return None
     return _naming_run(pointers, session)
@@ -598,13 +607,43 @@ class SessionHost:
         sessions = self._owned_sessions()
         if not sessions:
             return
-        for project in self._owned_projects(sessions):
+        for project in self._live_projects():
             for session in sessions:
                 if (project, session) in self._children:
                     continue
                 if self._live_view(project, session) is None:
                     continue
                 self._start_follower(project, session, owner_checked=True)
+
+    def _live_projects(self) -> list[str]:
+        """Every project that holds a run, with no judgement applied to a pair.
+
+        This collects names only. Whether a pair owes a pane is asked of
+        ``live_work_run`` -- the judgement the follower settles by, reached
+        through the injected seam -- so the scan composes no terminal set of
+        its own.
+
+        A ``launch-failed`` pointer is the one exclusion, and it is not a
+        phase judgement: that record says a worker was never spawned, so it
+        names a queue placement rather than work a pane could show. Left in,
+        it makes the pair live to every reader and adopts a follower over a
+        run that has no process behind it, which admission is about to
+        requeue.
+        """
+        from reckon.crew import runs as runs_module
+
+        try:
+            pointers = runs_module._list_live_records()
+        except OSError:
+            return []
+        projects: set[str] = set()
+        for pointer in pointers:
+            if not isinstance(pointer, Mapping):
+                continue
+            project = str(pointer.get("project") or "")
+            if project:
+                projects.add(project)
+        return sorted(projects)
 
     def _previous_record(self) -> Mapping[str, Any]:
         """The census this host's predecessor wrote, read before writing ours."""
@@ -630,41 +669,6 @@ class SessionHost:
             if session and session not in sessions:
                 sessions.append(session)
         return sessions
-
-    def _owned_projects(self, sessions: Sequence[str]) -> list[str]:
-        """Every project a run one of these sessions still owes lives in.
-
-        The projects a session names are the pointers' own field, so they are
-        read from the same live pointers the live-work judgement reads rather
-        than from a project list kept elsewhere. A terminal pointer owes no
-        pane, and neither does a launch that never spawned a worker: it has
-        nothing to follow and admission requeues it.
-        """
-        from reckon.crew import node as node_module
-        from reckon.crew import runs as runs_module
-        from reckon.crew.dispatch_launch import LAUNCH_FAILED_PHASE
-
-        try:
-            pointers = runs_module._list_live_records()
-        except OSError:
-            return []
-        projects: set[str] = set()
-        for pointer in pointers:
-            if not isinstance(pointer, Mapping):
-                continue
-            phase = str(pointer.get("phase") or "")
-            if (
-                phase in node_module._TERMINAL_RUN_PHASES
-                or phase == LAUNCH_FAILED_PHASE
-            ):
-                continue
-            owner = str(pointer.get("session") or "")
-            if owner and owner not in sessions:
-                continue
-            project = str(pointer.get("project") or "")
-            if project:
-                projects.add(project)
-        return sorted(projects)
 
     def _foreign_live_follower(
         self, project: str, session: str, *, pid: int | None

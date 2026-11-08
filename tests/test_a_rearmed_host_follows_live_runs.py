@@ -366,13 +366,6 @@ def test_terminal_and_foreign_pointers_start_no_follower(
     _write_pointer(LAUNCH_FAILED_RUN, phase="launch-failed")
     _write_pointer(FOREIGN_RUN, session=FOREIGN_SESSION)
 
-    assert session_host.live_work_run(PROJECT, OWNER_SESSION) == LAUNCH_FAILED_RUN, (
-        "the control must read the launch-failed pointer as live work"
-    )
-    assert session_host.live_work_run(PROJECT, FOREIGN_SESSION) == FOREIGN_RUN, (
-        "the control must read the foreign pointer as its own session's work"
-    )
-
     harness.start()
     record = _await_record(harness)
 
@@ -380,6 +373,20 @@ def test_terminal_and_foreign_pointers_start_no_follower(
     assert harness.followed() == [], "a terminal or foreign run must start nothing"
     assert record["children"] == []
     assert record["waiting_for_dispatch"] is True
+
+    # The controls: the scan's own source sees this project, and the judgement
+    # the scan asks reads the owner's surviving pointer as work only after the
+    # launch record is set aside. Without them the empty child list above would
+    # read the same as a host that never found the project.
+    assert runs._list_live_records(project=PROJECT), (
+        "the scan's source must see this project's pointers"
+    )
+    assert session_host.live_work_run(PROJECT, OWNER_SESSION) is None, (
+        "a launch record must not be judged as work"
+    )
+    assert session_host.live_work_run(PROJECT, FOREIGN_SESSION) == FOREIGN_RUN, (
+        "the same judgement must still name another session's working run"
+    )
 
 
 def test_a_host_with_no_live_run_waits_for_dispatch(harness: HostHarness) -> None:
