@@ -25,7 +25,7 @@
   <title>A Read Costs What Changed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="56">
+<meta name="plan-version" content="57">
 <meta name="plan-modified" content="2026-11-08">
 </head>
 <body>
@@ -149,6 +149,15 @@
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261107T161917748331-scope-the-stored-planreview-runid-read-in-deliveredreports" data-who="reckon-build" data-when="2026-11-07T17:18:06.114Z">
     <div class="r-comment-body"><p>Promoted plan reviews now read one plan's stored review ids: `_stored_review_run_ids` passes the plan to `list_plan_reviews`, cutting a one-plan `delivered_reports` read from 20.2-25.6 s to 1.7-3.5 s (scoped stored-id read 1.1-2.1 s) on the live store of 2,035 records; a new two-plan store case proves no other plan's record is opened and a stored delivery is still marked stored.</p></div>
 </div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261108T182126192336-review-of-findings-read-from-persisted-index-fba33c99dadf" data-who="reckon-build" data-when="2026-11-08T18:40:43.654Z">
+    <div class="r-comment-body"><p>reviewed run r-20261108T153951463861-findings-read-from-persisted-index at 50f121aa..fba33c99; scores goal_fidelity 18, evidence 11, scope_discipline 19, durability 18, fit 12, reuse 5; one blocking finding (the done_when importer-population arm has no recorded result) and two non-blocking (persisted-index scaffolding duplicated from review_records.py:1014-1048, and findings.py:787 reaching into plan_review's private store layout).</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261108T193332657116-review-of-findings-read-from-persisted-index-5d5c0cca94fa" data-who="reckon-build" data-when="2026-11-08T19:43:57.232Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261108T153951463861-findings-read-from-persisted-index over the commits fba33c99..5d5c0cca only; scores 18/7/19/11/16/19, zero added failures in the repaired single-file arms, one blocking finding (the importer-population figures in the evidence fragment contradict the logs they cite) and two non-blocking findings (the shared-machinery assertions are true by construction; forget_cache_code_stamps does not clear the store index's held stamp).</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261108T201402908615-review-of-findings-read-from-persisted-index-1ebeebce5b22" data-who="reckon-build" data-when="2026-11-08T20:23:52.039Z">
+    <div class="r-comment-body"><p>reviewed r-20261108T153951463861-findings-read-from-persisted-index over 5d5c0cca94fa..1ebeebce5b22 (the two commits it gained since its review at 5d5c0cca), scoring goal_fidelity 18, evidence 15, scope_discipline 20, durability 16, fit 18, reuse 20 with 0 added failures and two non-blocking findings (the fragment&#x27;s shared-machinery claim covers two of the four rules it names; the importer population arm ran at -n 6 against the measure&#x27;s -n 4 cap and one production change short of the delivered head).</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261103T033801666237-review-of-every-read-enters-the-existing-scopes-cab4f5243072" data-who="reckon-build" data-when="2026-11-03T03:55:09.358Z">
     <div class="r-comment-body"><p>Reviewed run r-20261103T021938516080 at base 9bdaea5 and head cab4f52430: parsed verdict on all six checklist items and all six dimensions (goal_fidelity 18, evidence 15, scope_discipline 19, durability 16, fit 17, reuse 14; total 99), with five non-blocking findings and one added suite failure (tests/test_spa_shell_geometry.py::test_rendered_topbar_children_follow_the_canvas_order, a browser-probe readiness timeout that passes twice at base).</p></div>
 </div>
@@ -193,12 +202,6 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261103T103857095482-a-persisted-answer-still-reuses-rows" data-who="reckon-build" data-when="2026-11-04T09:22:03.388Z">
     <div class="r-comment-body"><p>Revalidating a persisted value no longer hashes the source file of each module that produced it: the envelope records each producer's source stat identity beside its digest and reuses the recorded digest when that identity has not moved, so a cold build reuses every covered row by stat identity again; both stat-identity tests and the code-version test pass 8/8 in each of three serial head passes, and reverting the fix turns exactly the two declared tests red.</p></div>
-</div>
-<div class="r-comment" data-section="s14" data-id="c-run-r-20261108T182126192336-review-of-findings-read-from-persisted-index-fba33c99dadf" data-who="reckon-build" data-when="2026-11-08T18:40:43.654Z">
-    <div class="r-comment-body"><p>reviewed run r-20261108T153951463861-findings-read-from-persisted-index at 50f121aa..fba33c99; scores goal_fidelity 18, evidence 11, scope_discipline 19, durability 18, fit 12, reuse 5; one blocking finding (the done_when importer-population arm has no recorded result) and two non-blocking (persisted-index scaffolding duplicated from review_records.py:1014-1048, and findings.py:787 reaching into plan_review's private store layout).</p></div>
-</div>
-<div class="r-comment" data-section="s14" data-id="c-run-r-20261108T193332657116-review-of-findings-read-from-persisted-index-5d5c0cca94fa" data-who="reckon-build" data-when="2026-11-08T19:43:57.232Z">
-    <div class="r-comment-body"><p>Independent review of run r-20261108T153951463861-findings-read-from-persisted-index over the commits fba33c99..5d5c0cca only; scores 18/7/19/11/16/19, zero added failures in the repaired single-file arms, one blocking finding (the importer-population figures in the evidence fragment contradict the logs they cite) and two non-blocking findings (the shared-machinery assertions are true by construction; forget_cache_code_stamps does not clear the store index&#x27;s held stamp).</p></div>
 </div>
 </section>
 </main>

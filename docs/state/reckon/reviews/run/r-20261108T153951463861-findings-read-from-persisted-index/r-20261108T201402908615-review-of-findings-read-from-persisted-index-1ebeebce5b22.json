@@ -1,0 +1,72 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/promotion.py:1809",
+    "reckon/crew/promotion_checks.py:2533",
+    "reckon/crew/plan_review.py:3598",
+    "reckon/crew_dispatch_commands.py:2967",
+    "reckon/crew/plan_review.py:5127",
+    "reckon/mcp_views.py:4462"
+  ],
+  "checklist": {
+    "call_sites": "answered",
+    "diff": "answered",
+    "done_when": "answered",
+    "goal": "answered",
+    "manifest": "answered",
+    "write_paths": "answered"
+  },
+  "completed_at": "2026-11-08T20:23:52.039Z",
+  "dispatched_at": "2026-11-08T20:15:25Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-read-costs-what-changed/findings-read-from-persisted-index.html",
+      "line": 97,
+      "severity": "non-blocking",
+      "text": "The note says the fourteenth case 'fails if any of them restates the stamp, the path, the document read or the write'. The case at tests/test_findings_are_read_from_a_write_time_index.py:415 holds only the stamp and the path, plus the absence of the two _note_findings_index wrappers; nothing replaces read_cache_document or write_cache_document with a sentinel, so findings.py could restate either and the case would stay green. Restating the document read is not harmless: a copy that swallows a different exception set makes one cache rebuild where the other trusts a half-written file, which is the drift the case exists to catch. The claim covers two of the four rules it names."
+    },
+    {
+      "file": "docs/evidence/fragments/a-read-costs-what-changed/findings-read-from-persisted-index.html",
+      "line": 116,
+      "severity": "non-blocking",
+      "text": "The importer-population arm was run under '-n 6' (logs/importer-population-base.log and -head.log header commands), while the plan's \u00a714 done-when caps the arm at '-n 4'. The one id the head arm adds, test_overdue_review_duty_reports_age_without_a_dispatch_command, is a wall-clock age assertion that read 'review overdue by 51m 2s' against a '50m' expectation, which is exactly the class the concurrency cap protects. The arm also ran at a1e64678, one production change short of the delivered head 1ebeebce (review_records.forget_cache_code_stamps gained a clear at 14723e72). The serial rerun passes at both arms and the added id is not attributable to the change, so the conclusion stands, but the recorded population is not the arm the measure names."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_findings_are_read_from_a_write_time_index.py:428 replaces cache_code_stamp with a sentinel, so findings.py:475 returning a locally recomputed digest would miss it and redden the case, which logs/negative-control-restated-digest.log shows it does.",
+    "evidence": "The population table at docs/evidence/fragments/a-read-costs-what-changed/findings-read-from-persisted-index.html:120 now states 770/39 and 773/37, which is what the cited logs record and what an id-by-id comparison over their FAILED lines confirms.",
+    "fit": "reckon/crew/review_records.py:1042 names the rule by what it does and follows the module's existing docstring style, and the new test name describes the property rather than a plan item.",
+    "goal_fidelity": "reckon/crew/review_records.py:1020 and :1055 give both caches one stamp and one path, which is the duplication the prior review named, and no behaviour of the index changed.",
+    "reuse": "reckon/crew/review_records.py:1067 is now the one owner of read_cache_document and :1081 of write_cache_document, and both indexes call them, so the capability the previous review scored at 5 has a single implementation.",
+    "scope_discipline": "git diff --stat 5d5c0cca..1ebeebce names review_records.py, the node test and the evidence fragment, all three inside the node's declared write paths."
+  },
+  "plan": "a-read-costs-what-changed",
+  "project": "reckon",
+  "review_run_id": "r-20261108T201402908615-review-of-findings-read-from-persisted-index-1ebeebce5b22",
+  "reviewed_base_sha": "5d5c0cca94fa48d2da020fb62f41406b092fe619",
+  "reviewed_head_sha": "1ebeebce5b224a4f32ec540d0872f8688132bb6c",
+  "reviewed_run_id": "r-20261108T153951463861-findings-read-from-persisted-index",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "section": "s14",
+  "status": "parsed",
+  "subject": "code",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T20:31:28.270792+00:00",
+  "total": 107,
+  "verdicts": {
+    "call_sites": "Read at the reviewed head: reckon/crew/promotion.py:1809 calls store_committed_review, reckon/crew/promotion_checks.py:2533 stores a code review, reckon/crew/plan_review.py:3598 and reckon/crew_dispatch_commands.py:2967 call record_response, and reckon/crew/plan_review.py:5127 and reckon/mcp_views.py:4462 call findings_by_path.",
+    "diff": "Read commit by commit over 5d5c0cca..1ebeebce: 14723e72 replaces the self-comparing shared-machinery assertions with sentinel monkeypatches and makes forget_cache_code_stamps clear the store index's held stamp; 1ebeebce corrects the fragment's population table to the logged 770/39 and 773/37, states the added id's age-assertion mechanism, and rewrites the shared-machinery control description.",
+    "done_when": "The \u00a714 done-when's six index cases run 14 passed at 1ebeebce and 13 passed at the repair base, three controls are red (logs/negative-control-index-deleted.log, -restated-digest.log, -reverted-machinery.log), and the population is now recorded as 770/39 at the base and 773/37 at the head, which matches the retained logs id for id; ruff check and ruff format --check were re-run here on review_records.py and the node test and both exit 0.",
+    "goal": "The reviewed increment repairs the three findings of the previous review: review_records.py:1020 makes cache_code_stamp the single owner of the stamp for both indexes, findings.py:475 and findings.py:490 delegate to it, and plan_review.py:2350 and :5433 call findings.note_record_written directly.",
+    "manifest": "Read; it records status complete, the two gate logs at fba33c99 (13 passed) and 1ebeebce (14 passed), three red controls, the importer population with its per-id delta, and an outside_scope entry for tests/test_findings_are_indexed_by_path.py.",
+    "write_paths": "The node declares findings.py, review_records.py, plan_review.py, the node test and the evidence fragment; the three gained commits 14723e72 and 1ebeebce touch review_records.py, the test and the fragment, all inside that set."
+  }
+}
