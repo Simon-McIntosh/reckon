@@ -1883,11 +1883,16 @@ def classify_pointer(
             detail = (
                 f"the worker manifest reports it is still working: {manifest_status}"
             )
-        else:
+        elif alive is False:
             detail = (
                 f"the worker manifest reports it was still working "
                 f"({manifest_status}) when the process ended; the run is not "
                 "reported dead"
+            )
+        else:
+            detail = (
+                f"the worker manifest reports it is still working: {manifest_status}; "
+                "worker process liveness is unknown"
             )
         action = f"reckon crew observe --run {run_id}"
     elif alive is False and _commits_beyond_base(record):
