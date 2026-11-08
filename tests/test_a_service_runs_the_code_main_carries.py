@@ -19,7 +19,6 @@ from __future__ import annotations
 import json
 import signal
 import time
-from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -189,7 +188,9 @@ def _install(monkeypatch, home, checkout: FakeCheckout) -> FakeProcesses:
     table = FakeProcesses(checkout)
     monkeypatch.setattr(fleet_supervisor, "signal_worker", table.signal)
     monkeypatch.setattr(
-        fleet_supervisor, "process_runs_service", lambda pid, name, argv: table.is_alive(pid)
+        fleet_supervisor,
+        "process_runs_service",
+        lambda pid, name, argv: table.is_alive(pid),
     )
     monkeypatch.setattr(
         fleet_supervisor, "lock_held", lambda name, runtime: table.lock_held()
@@ -242,7 +243,9 @@ def test_a_service_on_the_checkouts_code_is_adopted(home, monkeypatch) -> None:
     assert checkout.trust_reads == 0, "the trust probe was spent on a matching stamp"
 
 
-def test_an_untrusted_checkout_leaves_the_service_running(home, monkeypatch, capsys) -> None:
+def test_an_untrusted_checkout_leaves_the_service_running(
+    home, monkeypatch, capsys
+) -> None:
     """A checkout that may not be loaded is no reason to disturb a running copy."""
     checkout = FakeCheckout(
         "stamp-new", trusted=False, detail="tracked files differ from HEAD"
@@ -278,8 +281,16 @@ def test_a_service_that_ignores_sigterm_is_killed_after_the_bound(
 
     assert table.sigterms() == [pid]
     assert table.sigkills() == [pid], "the copy that ignored SIGTERM was never killed"
-    term_times = [at for at_pid, sig, at in table.signals if at_pid == pid and sig == signal.SIGTERM]
-    kill_times = [at for at_pid, sig, at in table.signals if at_pid == pid and sig == signal.SIGKILL]
+    term_times = [
+        at
+        for at_pid, sig, at in table.signals
+        if at_pid == pid and sig == signal.SIGTERM
+    ]
+    kill_times = [
+        at
+        for at_pid, sig, at in table.signals
+        if at_pid == pid and sig == signal.SIGKILL
+    ]
     assert kill_times[0] - term_times[0] >= STOP_GRACE_SECONDS, (
         "the copy was killed before its grace had run out"
     )
