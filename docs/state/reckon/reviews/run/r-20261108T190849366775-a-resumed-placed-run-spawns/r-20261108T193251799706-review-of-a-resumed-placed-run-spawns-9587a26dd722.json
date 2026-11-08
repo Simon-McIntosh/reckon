@@ -1,0 +1,72 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:2091 _prepare_attempt_records",
+    "reckon/crew/dispatch_launch.py:2561 launcher call of _prepare_attempt_records",
+    "reckon/crew/dispatch.py:3369 dispatch call of _prepare_attempt_records",
+    "reckon/crew/dispatch_launch.py:2961 _supervisor_spawn_worker",
+    "reckon/crew/dispatch_launch.py:4032 supervisor call of _supervisor_spawn_worker"
+  ],
+  "completed_at": "2026-11-08T19:50:59.424Z",
+  "dispatched_at": "2026-11-08T19:38:57Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": 2040,
+      "severity": "non-blocking",
+      "text": "When retired receipts answer at all, the predicate returns before consulting the pointer pid or the in-flight attempt marker, so during the window in which a launch has retired the previous receipts, written attempt.json for its own attempt, and not yet written worker.json (a window the startup watch can hold for its whole length), a second concurrent launch for the same placed run reads the older, ended attempt and is admitted, spawning two workers in one worktree; comparing attempt.json's attempt against the newest receipt number would distinguish an in-flight attempt from a replaced one."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": 1998,
+      "severity": "non-blocking",
+      "text": "The newest-attempt rule that the done_when makes central has no case with two receipt numbers, so a regression that picked the lowest receipt, or any receipt, instead of max would keep all five tests green while an older ended attempt stood in for a newer live one and let a second worker spawn."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": 1967,
+      "severity": "non-blocking",
+      "text": "The receipt pattern, enumeration and JSON decode duplicate reckon/crew/resumption.py:1005 _attempt_worker_records and :1038 _read_record rather than extending them, so the run directory now has two readers of the same attempt receipts that can drift on how a receipt is named or read."
+    },
+    {
+      "file": "tests/test_a_resumed_placed_run_spawns.py",
+      "line": 60,
+      "severity": "non-blocking",
+      "text": "The real-home guard compares only the top-level entry names of the operator's crew home, so a leaked write into an existing subdirectory such as runs/ or live/ leaves the listing unchanged and the case the done_when requires would pass while the real crew home had been written to."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read both commits against base e8fa945150: 486097d6bb adds the receipt helper and reworks the placed-unknown arm plus 299 lines of test, and 9587a26dd7 adds only the evidence fragment.",
+    "done_when": "The done_when asks for a reproduction plus five named cases through the two guards; tests/test_a_resumed_placed_run_spawns.py:220-331 carries all five, and the manifest's gate logs record 5 passed at the head and 3 of them failing at the base.",
+    "goal": "The node's goal is that a resumed placed run spawns once its previous attempt has ended; reckon/crew/dispatch_launch.py:2036-2044 implements exactly that predicate for the placed-unknown arm shared by both launch guards.",
+    "manifest": "The manifest states status complete, names commits 486097d6bb and 9587a26dd7, and records each gate's revision, tree, command, result and EXIT code; I reopened every named log and each matches the manifest.",
+    "write_paths": "The declared paths are reckon/crew/dispatch_launch.py, tests/test_a_resumed_placed_run_spawns.py, the evidence fragment and the figures directory; the diff's three files are all declared, and the figures directory was declared but left unused."
+  },
+  "justifications": {
+    "durability": "tests/test_a_resumed_placed_run_spawns.py:211 and :233 redden at the base and under the restored predicate, but no case carries two attempt receipt numbers, so the 'highest N' selection at reckon/crew/dispatch_launch.py:1998 could regress to the lowest or any receipt undetected.",
+    "evidence": "The manifest records reproduction (repro-defect.log), a base arm at e8fa945150 with the new test copied in (3 failed, 2 passed, EXIT=1), a head arm at 486097d6bb (5 passed, EXIT=0), the three-file population at both arms (16 passed / 3 failed 13 passed), and a negative control (3 failed, 2 passed, EXIT=1), each log headed by its revision and tree and ended by a bare EXIT= line.",
+    "fit": "reckon/crew/dispatch_launch.py:1970 follows the module-private helper and docstring idiom of its neighbours (_record_holds_a_worker at :1949) and ruff check/format add no finding on either staged source file beyond two pre-existing ones at :1152 and :2744.",
+    "goal_fidelity": "reckon/crew/dispatch_launch.py:2036-2044 makes the placed-unknown arm read the newest retired attempt receipts through _retired_attempt_ended, so a resume whose previous attempt has an exit receipt or a dead worker receipt proceeds while a live or unreadable one still refuses.",
+    "reuse": "reckon/crew/dispatch_launch.py:1967-2009 re-enumerates and re-decodes attempt receipts that reckon/crew/resumption.py:1005 (_attempt_worker_records, with _read_record at :1038) already owns, though no existing owner answers the composed question of whether the newest retired attempt ended.",
+    "scope_discipline": "git diff e8fa945150..9587a26dd7 touches only reckon/crew/dispatch_launch.py:1966-2044, tests/test_a_resumed_placed_run_spawns.py and docs/evidence/fragments/a-run-has-one-live-worker/a-resumed-placed-run-spawns.html, all inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a resumed placed run spawns once its previous attempt has ended; reckon/crew/dispatch_launch.py:2036-2044 reads the newest retired attempt receipts in the placed-unknown arm shared by both launch guards.\nVERDICT done_when: the done_when asks for a reproduction plus five cases through the two guards; tests/test_a_resumed_placed_run_spawns.py:220-331 carries all five and the gate logs record 5 passed at the head and 3 failing at the base.\nVERDICT write_paths: the manifest declares reckon/crew/dispatch_launch.py, the new test, the evidence fragment and a figures directory; git diff e8fa945150..9587a26dd7 changes exactly the first three and nothing outside them.\nVERDICT manifest: read; it records commits 486097d6bb and 9587a26dd7 and every gate's revision, tree, command, result and EXIT code, and each log I reopened matches it.\nVERDICT diff: read both commits against the base; 486097d6bb adds the receipt helper and reworks the placed-unknown arm with 299 test lines, and 9587a26dd7 adds only the evidence fragment.\nCALL_SITES: reckon/crew/dispatch_launch.py:2091 _prepare_attempt_records, reckon/crew/dispatch_launch.py:2561, reckon/crew/dispatch.py:3369, reckon/crew/dispatch_launch.py:2961 _supervisor_spawn_worker, reckon/crew/dispatch_launch.py:4032\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:2036-2044 lets an exit receipt or a dead worker receipt through while a live or unreadable retired receipt still refuses, which is the goal stated in one clause.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's log paths each open to a header naming revision, tree and command and a bare EXIT= line, including the base arm at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T190849366775-a-resumed-placed-run-spawns/gate-baseline-suite.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff e8fa945150..9587a26dd7 is inside the declared write paths.\nSCORE durability: 13\nJUSTIFICATION durability: three cases redden at the base and under the restored predicate, but reckon/crew/dispatch_launch.py:1998's newest-receipt rule has no case with two attempt numbers.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/dispatch_launch.py:1970 matches the module-private helper idiom of _record_holds_a_worker at :1949 and ruff adds no finding on the staged sources.\nSCORE reuse: 12\nJUSTIFICATION reuse: reckon/crew/dispatch_launch.py:1967-2009 re-enumerates and re-decodes attempt receipts that reckon/crew/resumption.py:1005 already owns.\nFINDING reckon/crew/dispatch_launch.py:2040 non-blocking: the retired branch returns before consulting the pointer pid or the in-flight attempt marker, so a second concurrent launch during a launch's startup window is admitted and two workers can run in one worktree.\nFINDING reckon/crew/dispatch_launch.py:1998 non-blocking: the newest-attempt rule has no two-number case, so a regression to the lowest or any receipt would keep the suite green while an older ended attempt stood in for a newer live one.\nFINDING reckon/crew/dispatch_launch.py:1967 non-blocking: the receipt pattern, enumeration and JSON decode duplicate reckon/crew/resumption.py:1005 rather than extending it, leaving two readers of the same receipts free to drift.\nFINDING tests/test_a_resumed_placed_run_spawns.py:60 non-blocking: the real-home guard compares only top-level entry names, so a leak into an existing subdirectory such as runs/ passes the case it exists to catch.\n",
+  "review_run_id": "r-20261108T193251799706-review-of-a-resumed-placed-run-spawns-9587a26dd722",
+  "reviewed_base_sha": "e8fa945150961d75913e2cb23a412d80c9fc00fc",
+  "reviewed_head_sha": "9587a26dd7222f46f0fdc40eaca186d22bec1f41",
+  "reviewed_run_id": "r-20261108T190849366775-a-resumed-placed-run-spawns",
+  "scores": {
+    "durability": 13,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 12,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T20:00:13.314769+00:00",
+  "total": 100
+}
