@@ -1,0 +1,81 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T19:30:08.157Z",
+  "dispatched_at": "2026-11-08T19:20:13Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-review-is-kept-as-a-committed-record.html:202",
+      "id": "wiring-1",
+      "reason": "every sibling section in this plan reaches dispatch through a followup, which is how the earlier \u00a718, \u00a719 and \u00a724 wiring findings were answered; without one \u00a725 sits implementable and undeliverable.",
+      "text": "\u00a725 is declared implementable but nothing dispatches it, so the section cannot be built unless a followup naming it is written.",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-review-is-kept-as-a-committed-record.html:203",
+      "id": "single_goal-1",
+      "reason": "one node cannot be closed on one verdict when half of it can land and the other half be refused, and the gate proves neither mechanism on its own.",
+      "text": "\u00a725 carries two independent changes: a promotion-gate record-selection preference and a `crew repair --review` path allowance, in different modules, with separate done-when cases and separate negative controls.",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-review-is-kept-as-a-committed-record.html:203",
+      "id": "reasoning-1",
+      "reason": "a worker following the write paths must either stop out of scope or override the selection inside the gate, which is exactly the classifier/gate divergence `select_review_for_head`'s own docstring exists to prevent.",
+      "text": "the first deliverable, \"the promotion gate's lookup takes a parsed, complete record over an incomplete one\", is implemented by `select_review_for_head` (`reckon/crew/recovery_review_subject.py:113`) through `read_review` (`reckon/crew/review.py:3552`) into `_select_stored_record` (`reckon/crew/review_records.py:414-458`), which returns the first head-matching file in sorted order and is the rule that picked the incomplete record; the section's declared write paths are `reckon/crew/promotion_checks.py`, `reckon/crew/review.py` and the new test, and none of them owns that rule.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "3ef50c511696caf0126fac29f619c8c106c9f39a",
+  "plan_fingerprint": "26b733d9ff1744f3e82bdd22fccfbe33a8831b969fd522bdd2694f09c1b14e5a",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 184,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T191906319843-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "030f80b6b1e707e057b0c2dfd7284b7bccb9c424",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_unreviewed_refusal` is at `reckon/crew/promotion_checks.py:1405`; the repair refusal text is at `reckon/crew/review.py:3312`; the committed location `docs/state/<project>/reviews/run/<run>/` matches `COMMITTED_REVIEWS_DIRNAME = \"reviews\"` and `COMMITTED_RUN_DIRNAME = \"run\"` in `reckon/crew/review.py`.",
+    "done_when": "pass \u2014 \u00a725's done-when names three cases and two falsifiable negative controls (a newest-regardless lookup and the current directory check), and the repair case asserts the post-state (\"the record reads superseded afterwards\").",
+    "evidence_paths": "pass \u2014 the gate and negative-control logs go \"under the run directory\", matching \u00a721\u2013\u00a723's convention and the dispatch contract, not a scratchpad.",
+    "naming": "pass \u2014 the new test file name and the deliverables' symbols describe the mechanism, and the run ids in the Why are cited evidence rather than names carried into code.",
+    "reasoning": "a finding \u2014 the root cause matches the cited code path, but the mechanism \u00a725 asks for is owned by a module outside the section's declared write paths.",
+    "single_goal": "a finding \u2014 \u00a725's deliverable carries two independent mechanisms in two different modules, each with its own defect, its own done-when case and its own negative control.",
+    "wiring": "a finding \u2014 \u00a725 is declared `implementable` in `plan-section-declarations` and carries `data-status=\"implementable\"`, but no followup dispatches it: the only open followups are `f-erkc-013` (\u00a79) and `f-erikacr-022` (\u00a722), and no followup body or prompt in the snapshot names \u00a725."
+  },
+  "section_digests": {
+    "_document": "b9799113bdb5f4a30760b0c94f07447e547b0ecfc35522d0f4087f434a2f2244",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s10": "8e08c7c8a99206f9db453d65cb98c9c40f69e4c07325e55c639d885f927f0ae3",
+    "s11": "a8a04a9908b25d410e85f68b11504ae3940e469acc04fa4ac25e8ebb8373a2d0",
+    "s12": "bb85d80dcb9e0286d21a8ca6acd3af79e736c64c84b5ac85569fc6ce2c73863b",
+    "s13": "18a2d10f1e3c66be8277b7b4ef2922db7611cded7589553da5347b9a1ee5cd0f",
+    "s14": "90fd381b5f80417031410428331e779266feb4e517d89e5237d29cbe1c5e4700",
+    "s15": "72f678eb5f0bc62870da1cc4637f6db55365548aa9b52f46884cc0b3551a6ae7",
+    "s16": "7a5788c2a3fa1a2f0029d46feab7c3ed8a6b2a35c6ca9788fbe9911d5ab9cb56",
+    "s17": "86a993485a8a8461fd1e5e336bf8623e585cd4540daa1e5b5e78af2a0c172ce5",
+    "s18": "c89ae3a282a47cc0790b201cd56e732fc633876a1f1bd4dea1ae9521bd21574a",
+    "s19": "1ae8ba274c5965e60610446e8b60f06c93772468c117cf677c3fe8e2efeff862",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s20": "c4d6ffe26d4b44f9ab15c017f5c0524d7dd00fbe4c8d2d2f707923425bb50092",
+    "s21": "931b2870fb36b75949015af97ccfe184a222d06e1a7706463e9da0e5dc06b1e7",
+    "s22": "6574cd53cba003ceaa5bf39f4e436b0016f15f4822a35435ffa2791a99917430",
+    "s23": "50771e5200ab695fbcae4380ab62d0a12265b1413e3b62377a00690284da83c2",
+    "s24": "2df4de303f66f49436244e31cc063817e1355c92015249b533072887c94bf476",
+    "s25": "d96ac2d346ba21c7976721402cf40bd6bac37fbe9f863b5272545c9227b48ae5",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "d292be9ad6a414aacd3a2fe40d7730c79ce5dc8f1983898056f5916b02ca2ed0",
+    "s9": "85877b77c395ca8a1482bef5887cfc72cbf6109174dba2c01265aa015a906d73"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T20:06:36.834007+00:00",
+  "total": null
+}
