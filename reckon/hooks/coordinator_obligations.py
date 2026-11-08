@@ -447,16 +447,28 @@ def _session_from_followers(
     registration still counts as this session's: the name it registered under
     is the identity the session used, and whether delivery is live is the
     follower's own reported state, not this hook's question.
+
+    The harness session's own registration wins over descent. A host can hold
+    another session's follower, whose arming process still descends from this
+    harness, so reading descent first would adopt that other session whenever
+    its registration sorts earlier. Descent is the fallback for a harness
+    session that names no registration of its own.
     """
     module = snapshot_module()
 
+    registrations: list[tuple[str, Any]] = []
     for row in module.read_followers(project):
         record = row.get("session")
         if not isinstance(record, str) or not record:
             continue
-        if harness_session and record == harness_session:
-            return record
-        follower_record = row.get("follower") or {}
+        registrations.append((record, row.get("follower") or {}))
+
+    if harness_session:
+        for record, _ in registrations:
+            if record == harness_session:
+                return record
+
+    for record, follower_record in registrations:
         if not isinstance(follower_record, dict):
             continue
         try:
