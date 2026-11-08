@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/obligations.py:1377",
+    "reckon/crew/obligations.py:2128",
+    "reckon/crew/obligations.py:2159",
+    "reckon/crew/obligations.py:2205",
+    "reckon/crew/obligation_snapshot.py:1323",
+    "reckon/crew/obligation_snapshot.py:1437",
+    "reckon/crew/station_subscriber.py:145"
+  ],
+  "completed_at": "2026-11-08T02:18:50Z",
+  "dispatched_at": "2026-11-08T02:07:16Z",
+  "findings": [
+    {
+      "file": "tests/test_a_review_duty_reads_its_run_review_once.py",
+      "line": "207",
+      "severity": "blocking",
+      "text": "blocking: replacing the required zero store-file stats with a bound of LIVE_RUNS allows an unchanged pass to stat the store, so the gate no longer asserts the source brief's quantitative measure."
+    },
+    {
+      "file": "docs/research/monitor-storage-load-rca.html",
+      "line": "389",
+      "severity": "blocking",
+      "text": "blocking: the documented 68.106 s live second pass exceeds the under-5-s done-when, and logs/live-final-head.log confirms 68.105 s at the reviewed head."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "b166d7113a2d0f837a96cc417c0e461f6504820c revalidates indexed record identities and adds a same-path rewrite test, while f4002db9353a3ba16c07a1a735c2ead1d36b4bd1 records later timing in docs/research/monitor-storage-load-rca.html.",
+    "done_when": "the source brief.md requires zero store-file stats and a live second pass under 5 s; tests/test_a_review_duty_reads_its_run_review_once.py:207 permits stats and logs/live-final-head.log records 68.105 s.",
+    "goal": "the source brief.md asks for indexed per-run review reads with unchanged selection; reckon/crew/review_records.py:1429 now detects a same-path rewrite, while the measured live cost remains above target.",
+    "manifest": "the source manifest.md records the repair-base focused failure, four passing final-head focused tests, matched 15-test importer arms, and the 68.105 s final live second pass.",
+    "write_paths": "the source manifest.md declares the four changed paths in the 4058ef42efd9dfec66242df59e74d9227ab45191..f4002db9353a3ba16c07a1a735c2ead1d36b4bd1 diff, and each is within its grant."
+  },
+  "justifications": {
+    "durability": "tests/test_a_review_duty_reads_its_run_review_once.py:258-263 fail on the 4058ef42 baseline when a same-path rewrite leaves selection stale, while the bounded-stat assertion at line 207 cannot catch a regression to nonzero stats.",
+    "evidence": "logs/review-repair-baseline-suite.log fails the new rewrite test and logs/review-repair-final-suite.log passes it, but tests/test_a_review_duty_reads_its_run_review_once.py:207 no longer asserts zero store-file stats.",
+    "fit": "reckon/crew/review_records.py:1443 uses file_memo.file_signature for the repository's existing stat identity, and the changed definitions introduce no forbidden source name.",
+    "goal_fidelity": "reckon/crew/review_records.py:1443 repairs same-path invalidation, but docs/research/monitor-storage-load-rca.html:389 records 68.106 s against the source brief's under-5-s goal.",
+    "reuse": "the capability search found the existing index owner at reckon/crew/review_records.py:1318 and stat identity owner at reckon/file_memo.py:273, both extended by the change at reckon/crew/review_records.py:1443.",
+    "scope_discipline": "the two commits change only the four granted paths named in the source manifest.md."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source brief.md asks for indexed per-run review reads with unchanged selection; reckon/crew/review_records.py:1429 now detects a same-path rewrite, while the measured live cost remains above target.\nVERDICT done_when: the source brief.md requires zero store-file stats and a live second pass under 5 s; tests/test_a_review_duty_reads_its_run_review_once.py:207 permits stats and logs/live-final-head.log records 68.105 s.\nVERDICT write_paths: the source manifest.md declares the four changed paths in the 4058ef42efd9dfec66242df59e74d9227ab45191..f4002db9353a3ba16c07a1a735c2ead1d36b4bd1 diff, and each is within its grant.\nVERDICT manifest: the source manifest.md records the repair-base focused failure, four passing final-head focused tests, matched 15-test importer arms, and the 68.105 s final live second pass.\nVERDICT diff: b166d7113a2d0f837a96cc417c0e461f6504820c revalidates indexed record identities and adds a same-path rewrite test, while f4002db9353a3ba16c07a1a735c2ead1d36b4bd1 records later timing in docs/research/monitor-storage-load-rca.html.\nCALL_SITES: reckon/crew/obligations.py:1377, reckon/crew/obligations.py:2128, reckon/crew/obligations.py:2159, reckon/crew/obligations.py:2205, reckon/crew/obligation_snapshot.py:1323, reckon/crew/obligation_snapshot.py:1437, reckon/crew/station_subscriber.py:145\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/crew/review_records.py:1443 repairs same-path invalidation, but docs/research/monitor-storage-load-rca.html:389 records 68.106 s against the source brief's under-5-s goal.\nSCORE evidence: 12\nJUSTIFICATION evidence: logs/review-repair-baseline-suite.log fails the new rewrite test and logs/review-repair-final-suite.log passes it, but tests/test_a_review_duty_reads_its_run_review_once.py:207 no longer asserts zero store-file stats.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits change only the four granted paths named in the source manifest.md.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_review_duty_reads_its_run_review_once.py:258-263 fail on the 4058ef42 baseline when a same-path rewrite leaves selection stale, while the bounded-stat assertion at line 207 cannot catch a regression to nonzero stats.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/review_records.py:1443 uses file_memo.file_signature for the repository's existing stat identity, and the changed definitions introduce no forbidden source name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search found the existing index owner at reckon/crew/review_records.py:1318 and stat identity owner at reckon/file_memo.py:273, both extended by the change at reckon/crew/review_records.py:1443.\nFINDING tests/test_a_review_duty_reads_its_run_review_once.py:207 blocking: replacing the required zero store-file stats with a bound of LIVE_RUNS allows an unchanged pass to stat the store, so the gate no longer asserts the source brief's quantitative measure.\nFINDING docs/research/monitor-storage-load-rca.html:389 blocking: the documented 68.106 s live second pass exceeds the under-5-s done-when, and logs/live-final-head.log confirms 68.105 s at the reviewed head.\n",
+  "review_run_id": "r-20261108T020146400649-review-of-a-review-duty-reads-its-run-review-once-f4002db9353a",
+  "reviewed_base_sha": "4058ef42efd9dfec66242df59e74d9227ab45191",
+  "reviewed_head_sha": "f4002db9353a3ba16c07a1a735c2ead1d36b4bd1",
+  "reviewed_run_id": "r-20261107T222649494833-a-review-duty-reads-its-run-review-once",
+  "scores": {
+    "durability": 18,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 13,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T02:30:13.073557+00:00",
+  "total": 101
+}
