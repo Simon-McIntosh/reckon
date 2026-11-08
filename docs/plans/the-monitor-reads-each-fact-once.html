@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="102">
+<meta name="plan-version" content="103">
 <meta name="plan-modified" content="2026-11-08">
 </head>
 <body>
@@ -449,11 +449,7 @@ separates are: a sweep that is never requested for the session; a sweep that is 
 raises before its review or repair pass; a pass that refuses silently; and a sweep held in
 flight. Ticks of four to sixteen minutes on the loaded node, measured 7 November, make
 requests rare under any of them.</p>
-<p>One cause has since been measured. reckon-0f profiled its own follower while its review
-reflex stalled and found every py-spy sample walking other projects' events files; commit
-<code>ad3e2764bd</code> makes those reads incremental. The worker first confirms whether the
-starvation still reproduces on a main that carries <code>ad3e2764bd</code>, and investigates the
-remaining candidates only if it does.</p>
+<p>The cause, measured by this section's worker on 8 November (run <code>r-20261107T223008766020</code>): <code>SweepBeat.request</code> drops a due request that arrives while that session's sweep is already in flight, and never replays it. A run that settles during a sweep is not swept again until some later change requests one, so its review and repair wait with the follower alive. On main, which already carries <code>ad3e2764bd</code>, a synthetic starved duty still reproduced with the unchanged class. The repair replays a request that arrived during a pass once that pass ends. reckon-0f's finding that its follower spent its samples walking other projects' events files (fixed in <code>ad3e2764bd</code>) is a separate follower-side cost: <code>resumption.sweep</code>'s only caller is the station's <code>SweepBeat</code>.</p>
 <p><strong>Deliverable.</strong> One investigation that reproduces a starved duty from a
 recorded instance and names its cause, followed by the repair of that cause. The worker first
 records, for one live session whose follower is alive, when its sweep was last requested,
@@ -499,7 +495,7 @@ instead of promising the cadence. It carries no dispatch command of its own, so 
 stays the single dispatcher of a run's review.</p>
 <p><strong>Done when</strong> a new
 <code>tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py</code>
-shows four things on a synthetic crew home:</p>
+shows each of the following on a synthetic crew home:</p>
 <ul>
 <li>a delivered run whose newest review carries an open blocking finding yields a row that is
 not <code>promotable-stale</code> and whose command is not <code>crew complete</code>;</li>
