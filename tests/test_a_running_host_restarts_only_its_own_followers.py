@@ -227,7 +227,9 @@ class HandArmed:
 class Host:
     """A running session host and everything a case reads about it."""
 
-    def __init__(self, tmp_path: Path, *, session: str = CURRENT_SESSION) -> None:
+    def __init__(
+        self, tmp_path: Path, *, session: str | None = CURRENT_SESSION
+    ) -> None:
         self.tmp_path = tmp_path
         self.session = session
         self.marker = tmp_path / "children.txt"
@@ -251,10 +253,15 @@ class Host:
         environ["RECKON_SESSION_HOST_BACKOFF"] = BACKOFF_SECONDS
         environ["FAKE_FOLLOWER_MARKER"] = str(self.marker)
         environ["XDG_RUNTIME_DIR"] = str(self.tmp_path / "run")
-        # The session this host serves, read the way the host reads it.
-        environ["CLAUDE_CODE_SESSION_ID"] = self.session
+        # The session this host serves, read the way the host reads it. A host
+        # started with no session is one no harness can name.
         environ.pop("CODEX_SESSION_ID", None)
         environ.pop("CODEX_THREAD_ID", None)
+        environ.pop("CLAUDE_PID", None)
+        if self.session is None:
+            environ.pop("CLAUDE_CODE_SESSION_ID", None)
+        else:
+            environ["CLAUDE_CODE_SESSION_ID"] = self.session
         return environ
 
     def start(self) -> None:
@@ -353,6 +360,13 @@ class Host:
 
     def stderr_text(self) -> str:
         return self.stderr.read_text(encoding="utf-8") if self.stderr.exists() else ""
+
+    def pid_for(self, project: str, session: str) -> int | None:
+        """The pid the census names for one pair."""
+        for entry in self.record()["children"]:
+            if (entry["project"], entry["session"]) == (project, session):
+                return entry["pid"]
+        return None
 
     def drop_lines(self) -> list[str]:
         return [line for line in self.stderr_text().splitlines() if "dropped" in line]
@@ -528,3 +542,95 @@ def test_a_pair_held_by_another_owners_host_is_followed_here(
         host.stop()
         other_owner.end()
         foreign_host.end()
+
+
+def test_a_marked_restart_does_not_defer_to_another_owners_host(
+    tmp_path: Path, home: Path
+) -> None:
+    """A marked child's restart is the owner's, whatever holds the pair.
+
+    The pair carries the writing side's mark, so it is the owner's even though
+    the live duplicate holding it was started by another owner's host. The
+    killed child must come back rather than defer to that duplicate for as long
+    as it lives.
+    """
+    host = Host(tmp_path)
+    host.start()
+    other_owner = Stub()
+    foreign_host = Stub()
+    try:
+        host.write_host_record(
+            foreign_host.pid, _start_time(foreign_host.pid), other_owner
+        )
+        host.arm(
+            "delta",
+            EARLIER_SESSION,
+            parent={
+                "pid": foreign_host.pid,
+                "start_time": _start_time(foreign_host.pid),
+            },
+        )
+        host.request("delta", EARLIER_SESSION, owner_checked=True)
+        _wait_for(
+            lambda: len(host.child_pids()) == 1,
+            timeout=START_BOUND,
+            description="the marked pair's child",
+        )
+        first = host.child_pids()[0]
+        os.kill(first, signal.SIGKILL)
+        _wait_for(
+            lambda: len(host.child_pids()) >= 2,
+            timeout=RESTART_BOUND,
+            description="the marked pair's restarted child beside a duplicate",
+        )
+        assert host.child_pids()[1] != first, host.child_pids()
+    finally:
+        host.stop()
+        other_owner.end()
+        foreign_host.end()
+
+
+def test_a_host_that_cannot_name_its_session_keeps_only_marked_children(
+    tmp_path: Path, home: Path
+) -> None:
+    """No session resolvable: a mark still vouches, an unmarked pair does not.
+
+    The host's environment names no session, so it can vouch for nothing it has
+    no mark for. An unmarked child is dropped when it exits; a marked one is
+    restarted through the same supervision path, so the reader that finds no
+    restart beside the first pair finds one for the second.
+    """
+    host = Host(tmp_path, session=None)
+    host.start()
+    try:
+        host.request("alpha", "a-session-nobody-names")
+        host.request("beta", "a-marked-session", owner_checked=True)
+        _wait_for(
+            lambda: len(host.child_pids()) == 2,
+            timeout=START_BOUND,
+            description="both children started",
+        )
+        unmarked = host.pid_for("alpha", "a-session-nobody-names")
+        marked = host.pid_for("beta", "a-marked-session")
+        assert unmarked and marked, host.record()["children"]
+        os.kill(unmarked, signal.SIGKILL)
+        _wait_for(
+            host.drop_lines,
+            timeout=RESTART_BOUND,
+            description="the host to log the dropped unmarked child",
+        )
+        time.sleep(1.0)
+        assert sorted(host.child_pids()) == sorted([unmarked, marked]), (
+            host.child_pids()
+        )
+        assert _process_alive(marked), "the marked child was signalled"
+        assert str(unmarked) in host.drop_lines()[0], host.drop_lines()
+        os.kill(marked, signal.SIGKILL)
+        _wait_for(
+            lambda: len(host.child_pids()) >= 3,
+            timeout=RESTART_BOUND,
+            description="the marked pair restarted",
+        )
+        assert len(set(host.child_pids())) == 3, host.child_pids()
+    finally:
+        host.stop()

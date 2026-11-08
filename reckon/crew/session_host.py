@@ -709,12 +709,10 @@ class SessionHost:
         if owner_checked:
             return True
         current = self._current_session()
-        if not current:
-            # No harness names this host's session, so no pair can be told
-            # apart from it. A host with nothing to compare keeps following
-            # what it was asked for rather than dropping every child.
-            return True
-        return session == current
+        # A host that cannot name its session can vouch for nothing it has no
+        # mark for: it restarts only what the writing side's guard marked, and
+        # never a child of unknown ownership.
+        return bool(current) and session == current
 
     def _same_owner(self, owner: Mapping[str, Any]) -> bool:
         """Whether a recorded owner identity is the one this host serves."""
@@ -886,7 +884,12 @@ class SessionHost:
                 if now < child.next_attempt:
                     continue
                 child.next_attempt = None
-                if self._foreign_live_follower(child.project, child.session, pid=None):
+                if self._foreign_live_follower(
+                    child.project,
+                    child.session,
+                    pid=None,
+                    owner_checked=child.owner_checked,
+                ):
                     child.next_attempt = now + max(
                         child.delay, _poll_seconds(self._environ)
                     )
