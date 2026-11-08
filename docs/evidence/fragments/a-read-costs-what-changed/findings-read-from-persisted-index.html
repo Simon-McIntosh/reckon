@@ -37,6 +37,17 @@
   against its finding, which the reader did not surface before; the disposition
   it already carried is a different question and is unchanged.</p>
 
+  <p>The node-local cache itself is not new, and the pieces this index needs were
+  already in the store's index beside it: the stamp of the sources whose content
+  fixes what an entry means, the cache path a key derives, the tolerant document
+  read, and the atomic write that treats a failed cache write as no cache. Those
+  four now live once, in <code>review_records</code>, and the findings index
+  calls them — a second copy of a rule a third module has already implemented is
+  where two readers silently start disagreeing about one document. The writer
+  hook follows the same shape: the refusal to fail a write that has already
+  landed sits inside <code>findings.note_record_written</code>, so both callers
+  call it rather than each wrapping it in its own except clause.</p>
+
   <h3 id="findings-read-from-persisted-index-measured">Measured</h3>
 
   <p>The live store, <code>findings_by_path("reckon")</code> for one dispatch's
@@ -82,8 +93,12 @@
   opening another; and a moved source digest rebuilds every entry. A further
   three cases hold each writer to leaving the next read nothing to open, and
   their control withholds the hook and shows the same read opening exactly one
-  record.</p>
+  record. A fourteenth case holds the three modules to one implementation of the
+  cache's four shared rules: it fails if any of them restates the stamp, the
+  path, the document read or the write, or if either writer regrows a wrapper
+  around the hook.</p>
 
   <p>Negative control: deleting the persisted index before the fresh read makes
-  that first case open both records and fail.</p>
+  that first case open both records and fail; reverting the shared-cache
+  refactor makes the fourteenth case fail on the missing shared stamp.</p>
 </section>
