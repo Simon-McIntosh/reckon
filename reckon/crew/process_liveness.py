@@ -245,18 +245,17 @@ def placement_job_alive(
     queue and answers False, whatever the scheduler calls it — including the
     empty answer of a successful query that named no job, which is how an
     ordinary completion is reported and must not fall through to the pid. A
-    record carrying no placement, or one whose scheduler could not be queried at
-    all, answers None so the pid probe decides as it always has.
+    record carrying no placement answers None so the pid probe decides as it
+    always has; one whose scheduler could not be queried at all also answers
+    None, and :func:`record_process_liveness` reads that as placed with liveness
+    unknown rather than as a licence to probe the client's pid.
 
     ``runner`` is the caller's own scheduler query, handed in the way ``alive``
     is so a test reaches this without a scheduler on the host.
     """
-    if not record:
+    if not _record_is_placed(record):
         return None
-    placement = record.get("placement")
-    if not isinstance(placement, Mapping) or not placement:
-        return None
-    state = scheduler_job_state(placement, record.get("job_id"), runner)
+    state = scheduler_job_state(record["placement"], record.get("job_id"), runner)
     if state is None:
         return None
     return state.casefold() in _JOB_LIVE_STATES
@@ -450,9 +449,12 @@ def record_process_alive(
     A placed run is charged to a scheduler job rather than to the coordinator's
     own login slice, so its recorded pid names the scheduler client rather than
     the worker and a local process-table read answers a different question. The
-    job is asked first, and the pid probe is the fallback for a record carrying
-    no placement or a scheduler that cannot be queried — which keeps an
-    unplaced run answering exactly as it always has.
+    job is asked first and is the only question a placed record is asked: a job
+    the scheduler reports in flight answers True, a job it reports gone answers
+    False, and a scheduler that cannot be queried at all answers None rather
+    than falling through to the pid, which would name the client. The pid probe
+    is the fallback for a record carrying no placement, so an unplaced run
+    answers exactly as it always has.
 
     ``alive`` is the caller's own probe. A module that keeps the primitive
     bound under its own name — so a test can substitute liveness for that

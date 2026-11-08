@@ -66,12 +66,13 @@ def test_the_job_is_asked_through_a_scheduler_query() -> None:
     assert argv == ["squeue", "-h", "-j", "1274056", "-o", "%T"]
 
 
-def test_a_scheduler_reckon_cannot_query_falls_through_to_the_pid() -> None:
+def test_a_scheduler_reckon_cannot_query_leaves_a_placed_run_unknown() -> None:
     record = {"pid": 4242, "placement": {"scheduler": "nomad"}, "job_id": "x"}
-    # Neither a scheduler state nor a placement reckon can translate: the pid
-    # probe decides, which is what keeps an unqueryable placement from being
-    # read as a stopped job.
-    assert runs.record_process_alive(record, alive=lambda _pid: True) is True
+    # Neither a scheduler state nor a placement reckon can translate. The pid
+    # this record holds names the scheduler client, so probing it would report
+    # on a process that is not the worker: the read stays unknown either way.
+    assert runs.record_process_alive(record, alive=lambda _pid: True) is None
+    assert runs.record_process_alive(record, alive=lambda _pid: False) is None
 
 
 def test_an_unplaced_record_reads_the_pid_as_before() -> None:
@@ -105,8 +106,8 @@ def test_a_successful_empty_answer_reports_the_job_gone() -> None:
     )
 
 
-def test_a_query_that_could_not_be_run_falls_through_to_the_pid() -> None:
-    """The other half: a failed query is not a verdict, so the pid decides."""
+def test_a_query_that_could_not_be_run_is_not_a_verdict_about_the_pid() -> None:
+    """A failed query is not a verdict, and a placed run has no other question."""
     record = {"pid": 4242, "placement": PLACEMENT, "job_id": "1274056"}
     assert (
         runs.record_process_alive(
@@ -114,7 +115,7 @@ def test_a_query_that_could_not_be_run_falls_through_to_the_pid() -> None:
             alive=lambda _pid: True,
             job_alive=lambda rec: runs.placement_job_alive(rec, _runner(None)),
         )
-        is True
+        is None
     )
 
 
