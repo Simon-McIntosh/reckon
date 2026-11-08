@@ -1,0 +1,14 @@
+<section id="a-source-file-is-shared-by-default-reproduction">
+  <h3>Shared-root claim reproduction; implementation awaits write-fence clarification</h3>
+  <p>At source revision <code>b0708be48a046eb6c3371fa2f73021470bdcb153</code>,
+  the new temporary-repository checks report <strong>3 failed, 7 passed in 63.41s</strong>.
+  A second dispatch on <code>pkg/source.py</code> under a declared shared root raises
+  <code>ScopeConflict</code>; admission records <code>held-on-claim</code> for a queued
+  co-claim. An explicit shared file also bypasses the declared exclusive pattern
+  <code>docs/plans/*.html</code>. Directory, legacy-default and explicit-list controls pass.</p>
+  <p>The new test is durable; no product source or project declaration changed.
+  Admission and queue edit currently skip shared files before comparing the peer's
+  directory claim. Preserving directory exclusivity requires changing those comparison
+  blocks, but both modules appear in this node's write grants and its concurrent-path
+  prohibition. Clarification is required before implementing those changes.</p>
+</section>
