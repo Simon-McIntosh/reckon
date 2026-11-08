@@ -415,25 +415,27 @@ def test_foreign_gate_hold_keeps_waiter_waiting(
     assert launched == []
 
 
-def test_readiness_recheck_uses_project_section_verdict(
+def test_readiness_recheck_uses_named_section_declarations(
     projects: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     first, _ = projects
     from reckon.crew import plan_review
 
-    calls: list[str] = []
-    real = plan_review.project_section_readiness
-
-    def observed(project: str, docs_dir: Path) -> dict:
-        calls.append(project)
-        return real(project, docs_dir)
-
-    monkeypatch.setattr(plan_review, "project_section_readiness", observed)
     fixtures._declare_wait_refs(first, section="s2", refs=["plan-a#s1"])
-    _queue(first, _node("waiting", "s2"), run_ids={"waiting": "r-waiting"})
-    calls.clear()
-    _admit()
-    assert calls.count(fixtures.PROJECT) == 1
+    stored = _queue(first, _node("waiting", "s2"), run_ids={"waiting": "r-waiting"})
+    assert stored["r-waiting"]["phase"] == queue_admission.AWAITING_UPSTREAM_PHASE
+    monkeypatch.setattr(
+        plan_review,
+        "project_section_readiness",
+        lambda *_: pytest.fail("admission entered whole-project readiness"),
+    )
+    result, launched = _admit()
+    assert launched == []
+    assert (
+        runs.read_pointer("r-waiting")["phase"]
+        == queue_admission.AWAITING_UPSTREAM_PHASE
+    )
+    assert result["promoted_upstream"] == []
 
 
 def test_scoped_decision_holds_only_its_section(

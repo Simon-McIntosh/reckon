@@ -101,16 +101,23 @@ def _queue(repository: Path) -> dict:
     )
 
 
-def _builds(monkeypatch: pytest.MonkeyPatch) -> list[Path]:
-    """Count every roadmap build, through the one function that derives one."""
-    counted: list[Path] = []
-    original = plan_review.project_section_readiness
+def _builds(monkeypatch: pytest.MonkeyPatch) -> list[tuple[str, int]]:
+    """Count bounded verdicts and refuse whole-project readiness."""
+    counted: list[tuple[str, int]] = []
+    original = plan_review.section_readiness_rows
 
-    def counting(project: str, docs_dir: Path) -> dict[str, Any]:
-        counted.append(1)
-        return original(project, docs_dir)
+    def counting(
+        project: str, docs_dir: Path, plan: str, *, refs: Any = ()
+    ) -> tuple[dict, dict]:
+        counted.append((plan, (docs_dir / "plans" / f"{plan}.html").stat().st_mtime_ns))
+        return original(project, docs_dir, plan, refs=refs)
 
-    monkeypatch.setattr(plan_review, "project_section_readiness", counting)
+    monkeypatch.setattr(plan_review, "section_readiness_rows", counting)
+    monkeypatch.setattr(
+        plan_review,
+        "project_section_readiness",
+        lambda *_: pytest.fail("admission entered whole-project readiness"),
+    )
     return counted
 
 
@@ -132,7 +139,7 @@ def _advance_mtime(path: Path) -> None:
 def test_a_pass_launching_three_requests_builds_the_readiness_once(
     pass_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Three launches in one project derive that project's roadmap once."""
+    """Three launches on one plan share its bounded verdict."""
     stored = _queue(pass_repo)
     assert [stored[f"r-{section}"]["phase"] for section in SECTIONS] == [
         queue_admission.QUEUED_PHASE
@@ -173,6 +180,7 @@ def test_a_plan_touched_between_two_launches_forces_a_rebuild(
     assert sorted(result["launched"]) == ["r-s1", "r-s2", "r-s3"], result
     assert len(recorded) == 3
     assert len(builds) == 2, builds
+    assert builds[0] != builds[1], builds
 
 
 def test_a_direct_dispatch_outside_a_pass_builds_its_own(
@@ -183,6 +191,7 @@ def test_a_direct_dispatch_outside_a_pass_builds_its_own(
     builds = _builds(monkeypatch)
     _admit()
     assert len(builds) == 1, builds
+    pass_reads = len(builds)
 
     with pytest.raises(LaneHeld):
         dispatch_module.dispatch(
@@ -201,10 +210,9 @@ def test_a_direct_dispatch_outside_a_pass_builds_its_own(
             ),
         )
 
-    # The pass built once; this dispatch adds no whole-project build of its own,
-    # reading only its own plan and the plans its waits name. What it must not
-    # do is read the pass's cache.
-    assert len(builds) == 1, builds
+    # A direct dispatch reads its own bounded verdict after the pass cache ends.
+    assert len(builds) > pass_reads, builds
+    assert all(plan == PLAN for plan, _identity in builds)
 
 
 def test_the_launches_read_the_waits_an_uncached_computation_gives(

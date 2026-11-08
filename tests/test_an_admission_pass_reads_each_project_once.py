@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import _plan_html, metadata_index
+from reckon import _plan_html, mcp_discovery, metadata_index
 from reckon.crew import plan_review, queue_admission, queue_landing, runs
 from reckon.crew.dispatch import TaskNode, plan_dispatch
 from tests import test_a_queued_request_waits_on_its_dependencies as fixtures
@@ -173,12 +173,12 @@ def _pass(
     return [runs.read_pointer(request["run_id"])["phase"] for request in requests]
 
 
-def test_one_pass_reads_the_project_once(
+def test_one_pass_reads_named_plans_without_project_discovery(
     project: Path,
     monkeypatch: pytest.MonkeyPatch,
     counts: Counts,
 ) -> None:
-    """Case one: one readiness read, and at most one parse per plan."""
+    """One pass derives the base phases from named plans without discovery."""
 
     requests = _requests(project)
     builds = 0
@@ -192,9 +192,15 @@ def test_one_pass_reads_the_project_once(
     counts.reset()
     with monkeypatch.context() as patch:
         patch.setattr(plan_review, "project_section_readiness", counting)
-        _pass(monkeypatch, requests)
-    assert builds == 1, f"project readiness derived {builds} times"
+        patch.setattr(
+            mcp_discovery,
+            "_discover_project",
+            lambda *_: pytest.fail("admission entered project discovery"),
+        )
+        phases = _pass(monkeypatch, requests)
+    assert builds == 0, f"project readiness derived {builds} times"
     assert counts.read_state <= READ_STATE_BUDGET, counts.read_state
+    assert phases == _phases_under_base_read(monkeypatch, _requests(project))
 
 
 def _base_per_ref_read(
