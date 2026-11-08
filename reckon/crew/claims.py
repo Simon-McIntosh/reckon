@@ -16,6 +16,13 @@ from dataclasses import dataclass
 from typing import Any
 
 from reckon.crew.node import CrewError, unintegrated_claim_work
+from reckon.crew.process_liveness import (
+    LIVENESS_DEAD,
+    LIVENESS_PLACED,
+    LIVENESS_RECORDED_PID,
+    LIVENESS_SESSION_WALK,
+    record_process_liveness,
+)
 from reckon.crew.runs import (
     _write_json,
     pointer_path,
@@ -103,7 +110,7 @@ def widen_claim(
     added: list[str] = []
 
     def amend(pointer: dict[str, Any]) -> dict[str, Any]:
-        if record_process_alive(pointer) is True and not self_widen:
+        if record_process_liveness(pointer).alive is True and not self_widen:
             raise ClaimAmendmentRefusedError(
                 run_id, "its worker is still running; wait for that process to exit"
             )
@@ -136,6 +143,71 @@ def widen_claim(
         return pointer
 
     return _mutate_pointer(run_id, amend), added
+
+
+# The field a worker's fence is built from when its attempt is launched. A
+# widen rewrites exactly this, and the fence reads it once at launch, so a
+# worker already running cannot pick up a path added underneath it.
+WIDEN_FENCE_FIELD = "node.write_paths"
+
+
+def widen_takes_effect(pointer: Mapping[str, Any]) -> str:
+    """Say when the paths a widen just added take effect, and from which field.
+
+    A running worker's mounts are fixed when its sandbox starts, so a widened
+    claim reaches it only on its next attempt. The result of a widen used to
+    list the added paths and say nothing about this, so a coordinator read ``ok``
+    as a fence that had already moved. The sentence here names the arm the
+    request's liveness reading came from, so it states what the run's records
+    actually support:
+
+    * a worker read alive by its recorded pid is named with that pid;
+    * a worker found only by the session walk is named by its session and never
+      with a pid, because no pid this host read is the worker's;
+    * a placed run's live worker is its scheduler job, and the recorded pid is
+      the scheduler client's, never presented as the worker's;
+    * a proven death says the next resume or launch mounts the paths;
+    * an unreadable liveness says only that it could not be read on this host,
+      and never claims a next launch will mount them.
+
+    Every arm ends by naming the field the fence is built from, so a reader
+    knows what the widen changed.
+    """
+    reading = record_process_liveness(pointer)
+    attempt = pointer.get("attempt")
+    numbered = f"attempt {attempt}" if isinstance(attempt, int) else ""
+    if reading.arm == LIVENESS_RECORDED_PID:
+        subject = f"worker {numbered}".strip() if numbered else "the run's worker"
+        body = (
+            f"{subject} is alive as pid {reading.pid}, so its mounts are "
+            "unchanged and the added paths apply from the next attempt"
+        )
+    elif reading.arm == LIVENESS_SESSION_WALK:
+        named = f" ({numbered})" if numbered else ""
+        body = (
+            f"a worker of this run was found by its session id "
+            f"{reading.session_id!r}{named} and no pid is named for it, so its "
+            "mounts are unchanged and the added paths apply from the next attempt"
+        )
+    elif reading.arm == LIVENESS_PLACED:
+        job = f" {reading.job_id}" if reading.job_id else ""
+        body = (
+            f"the scheduler job{job} this placed run is charged to is still in "
+            "the system; the recorded pid names the scheduler client rather than "
+            "the worker, and its mounts are unchanged, so the added paths apply "
+            "from the next attempt"
+        )
+    elif reading.arm == LIVENESS_DEAD:
+        body = (
+            "no worker of this run is alive on this host, so the next resume or "
+            "launch mounts the added paths"
+        )
+    else:
+        body = (
+            "the worker's liveness could not be read on this host, so it is not "
+            "known when the added paths take effect"
+        )
+    return f"{body}. The fence is built from {WIDEN_FENCE_FIELD} at launch."
 
 
 def _record_grant(

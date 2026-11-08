@@ -1680,7 +1680,11 @@ def crew_widen(run_id, write_paths, pretty, project=None, reason=""):
         raise click.ClickException(
             "a self-widen requires --reason, which is recorded with the grant"
         )
-    from reckon.crew.claims import ClaimAmendmentRefusedError, widen_claim
+    from reckon.crew.claims import (
+        ClaimAmendmentRefusedError,
+        widen_claim,
+        widen_takes_effect,
+    )
     from reckon.crew.dispatch_claims import declared_write_grants
 
     try:
@@ -1703,6 +1707,7 @@ def crew_widen(run_id, write_paths, pretty, project=None, reason=""):
             "folded_disposition": _widen_folded_disposition(updated),
             "self_widen": self_widen,
             "added": added,
+            "takes_effect": widen_takes_effect(updated),
             "write_paths": [
                 str(path)
                 for path in (updated.get("node") or {}).get("write_paths") or ()
