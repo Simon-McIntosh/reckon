@@ -22,9 +22,11 @@ from tests.helpers.git import git as _git
 
 PROJECT = "reckon"
 LEDGER_PATH = Path("docs") / "state" / PROJECT / "crew.json"
+RUN_RECORD_PATH = Path("docs") / "state" / PROJECT / "runs" / "r-one.json"
 OPENED_AT = "2026-10-03T05:00:00Z"
 CLOSED_AT = "2026-10-03T05:10:00Z"
 HOLD_ID = "hold-alpha-20261003050000"
+RETIRED_KEY = "follow_on_paths"
 
 
 @pytest.fixture()
@@ -70,6 +72,37 @@ def repository(tmp_path):
     _git(root, "add", "--", "docs")
     _git(root, "commit", "-q", "-m", "chore: seed a promoted run")
     return root
+
+
+@pytest.fixture()
+def retired_record(repository: Path) -> Path:
+    """The committed tree, plus one run record still carrying the retired key.
+
+    The record is one of the aggregate's own ``runs`` rows, seeded with its own
+    file beside it. ``record_hold_checks`` hands the run-file writer only the
+    aggregate's rows, so a record held solely as a file is never visited and a
+    case built on one would pass on a tree that never rewrote anything. Two
+    roster members are seeded so a case can retire one.
+    """
+    path = repository / LEDGER_PATH
+    envelope = json.loads(path.read_text(encoding="utf-8"))
+    envelope["data"]["members"] = [{"id": "m-one"}, {"id": "m-two"}]
+    # Both copies of the run carry the retired key, as a row promoted before the
+    # rename does in both places: the reader maps each on the way in, so the two
+    # agree, and only the re-encode on the way out differs from what is on disk.
+    row = dict(envelope["data"]["runs"][0])
+    row.pop("outside_scope_paths", None)
+    row[RETIRED_KEY] = []
+    envelope["data"]["runs"][0] = row
+    path.write_text(
+        json.dumps(envelope, sort_keys=True, indent=2) + "\n", encoding="utf-8"
+    )
+    target = ledger.run_path(PROJECT, "r-one", repository)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(ledger.serialize_run(row), encoding="utf-8")
+    _git(repository, "add", "--", "docs")
+    _git(repository, "commit", "-q", "-m", "chore: seed a row carrying the retired key")
+    return repository
 
 
 def _committed_ledger(repository: Path) -> dict:
@@ -162,3 +195,78 @@ def test_a_hold_check_makes_no_commit_while_a_merge_is_in_progress(
     assert "merge in progress" in capsys.readouterr().err
     assert LEDGER_PATH.as_posix() in _git(repository, "status", "--porcelain")
     assert [item["hold_id"] for item in ledger.holds(PROJECT, repository)] == [HOLD_ID]
+
+
+def test_opening_a_hold_commits_the_run_record_it_rewrote(home, retired_record) -> None:
+    result = ledger.record_hold_checks(
+        PROJECT,
+        [{"backend": "alpha", "held": True}],
+        checked_at=OPENED_AT,
+        root=retired_record,
+    )
+
+    assert [item["action"] for item in result["outcomes"]] == ["opened"]
+    assert _git(retired_record, "status", "--porcelain") == ""
+    committed_files = _git(
+        retired_record, "show", "--name-only", "--format="
+    ).splitlines()
+    assert RUN_RECORD_PATH.as_posix() in committed_files
+    rewritten = json.loads(
+        _git(retired_record, "show", f"HEAD:{RUN_RECORD_PATH.as_posix()}")
+    )
+    assert RETIRED_KEY not in rewritten
+    assert rewritten["outside_scope_paths"] == []
+
+
+def test_a_committing_write_commits_the_run_record_it_rewrote(
+    home, retired_record
+) -> None:
+    data, version = ledger.load_aggregate(PROJECT, retired_record)
+    assert isinstance(version, int)
+
+    returned = ledger.write(
+        PROJECT,
+        {
+            "members": [{"id": "m-two"}],
+            "runs": data["runs"],
+            "holds": data["holds"],
+        },
+        version,
+        retired_record,
+        allow_member_removal=True,
+        commit=True,
+    )
+
+    assert isinstance(returned, int)
+    assert returned > version
+    assert _git(retired_record, "status", "--porcelain") == ""
+    committed_files = _git(
+        retired_record, "show", "--name-only", "--format="
+    ).splitlines()
+    assert RUN_RECORD_PATH.as_posix() in committed_files
+    assert _git(retired_record, "log", "-1", "--format=%s") == (
+        "chore(roster): retire m-one"
+    )
+
+
+def test_a_hold_check_that_changes_no_hold_commits_nothing(
+    home, retired_record
+) -> None:
+    ledger.record_hold_checks(
+        PROJECT,
+        [{"backend": "alpha", "held": True}],
+        checked_at=OPENED_AT,
+        root=retired_record,
+    )
+    head = _git(retired_record, "rev-parse", "HEAD")
+
+    result = ledger.record_hold_checks(
+        PROJECT,
+        [{"backend": "alpha", "held": True}],
+        checked_at=CLOSED_AT,
+        root=retired_record,
+    )
+
+    assert [item["action"] for item in result["outcomes"]] == ["unchanged"]
+    assert _git(retired_record, "rev-parse", "HEAD") == head
+    assert _git(retired_record, "status", "--porcelain") == ""

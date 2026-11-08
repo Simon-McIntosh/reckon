@@ -2081,6 +2081,34 @@ def write(
     allow_member_removal: bool = False,
     commit: bool = False,
 ) -> int:
+    """Write the ledger, returning the version it advanced to.
+
+    The refusals, the read-modify-write order and the per-run rewrites are
+    documented at :func:`_write_state`, which performs the write. This is the
+    public entry point, and it withholds the set of files the write rewrote:
+    a caller that must commit them alongside its own subject calls
+    :func:`_write_state` directly.
+    """
+    version, _rewritten = _write_state(
+        project,
+        data,
+        expected_version,
+        root,
+        allow_member_removal=allow_member_removal,
+        commit=commit,
+    )
+    return version
+
+
+def _write_state(
+    project: str,
+    data: Mapping[str, Any],
+    expected_version: int,
+    root: str | Path | None = None,
+    *,
+    allow_member_removal: bool = False,
+    commit: bool = False,
+) -> tuple[int, list[Path]]:
     """Write the ledger, refusing a stale expected version.
 
     Pairing every write with the version it read is what makes two concurrent
@@ -2148,6 +2176,14 @@ def write(
     checkout to commit into would have seen anyway. A committed write drops at least
     one member: a write that changes nothing has nothing to commit, and says so
     rather than leaving an empty commit behind.
+
+    The return is the version written plus every file this write changed: the
+    aggregate envelope first, then each per-run file :func:`_keep_run_files_
+    identical` re-encoded. A committing call stages the whole set under its one
+    subject, so a row that still carries a retired key cannot be left rewritten
+    in the tree for whichever session next notices it; a caller committing under
+    a subject of its own — a hold transition — receives the same set back and
+    stages it with its own.
     """
     path = ledger_path(project, root)
     # The lock spans the read, the version check, the per-run file writes and
@@ -2257,6 +2293,7 @@ def write(
             # disagreement the order above exists to avoid.
             _restore_run_files(snapshots)
             raise
+        rewritten = [path, *(target for target, _prior in snapshots)]
         if commit and obstruction is None:
             _commit_state_write(
                 project,
@@ -2265,10 +2302,10 @@ def write(
                     "Commit the project roster immediately so this roster change "
                     "cannot ride an unrelated later change."
                 ),
-                path,
+                rewritten,
                 "roster",
             )
-    return version
+    return version, rewritten
 
 
 # ── The roster ──────────────────────────────────────────────────────────────
@@ -3532,9 +3569,10 @@ def record_hold_checks(
     for _attempt in range(max(1, attempts)):
         # The aggregate's own rows, never :func:`load`'s union: a hold is a fact
         # about the aggregate alone, and writing the union back would carry every
-        # per-run file's row into it. The writer refuses that fold, and reading
-        # the aggregate here is also what leaves its run rows byte-identical
-        # across a hold transition.
+        # per-run file's row into it. The writer refuses that fold. A row the
+        # aggregate holds whose file still spells a retired key is re-encoded
+        # into that file by the write, so the paths it returns are committed
+        # with the transition rather than left rewritten in the tree.
         data, version = _load_aggregate(project, root)
         history = [dict(item) for item in data["holds"]]
         changed = False
@@ -3593,7 +3631,7 @@ def record_hold_checks(
             }
         data["holds"] = history
         try:
-            new_version = write(project, data, version, root)
+            new_version, rewritten = _write_state(project, data, version, root)
         except LedgerError as exc:
             last = exc
             _retry_backoff(_attempt)
@@ -3613,7 +3651,7 @@ def record_hold_checks(
                     "Commit the hold transition immediately so this hold record "
                     "cannot ride an unrelated later change."
                 ),
-                path,
+                rewritten,
                 "hold",
             )
         except LedgerError as exc:
