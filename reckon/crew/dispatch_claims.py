@@ -56,6 +56,7 @@ from reckon.crew.routing import (
     resolve_scope_repository,
 )
 from reckon.crew.runs import (
+    _exclusive_write_pattern,
     _expanded_scope_paths,
     _pointer_lock,
     _process_start_time,
@@ -1937,11 +1938,8 @@ def _raise_repository_scope_conflict(
                 absolute.as_posix(), claim.absolute_path.as_posix()
             ):
                 continue
-            # A file this project declares shareable admits a second claimant
-            # editing a different region: worktrees isolate the in-flight work
-            # and merging is the orchestrator's job, so a whole-file refusal
-            # serialises nodes that do not actually collide. Only the exact
-            # named file is shareable; a directory claim is a different path.
+            # Worktrees isolate concurrent edits to one shared file. A
+            # containing directory claim remains a different, exclusive path.
             if candidate in shared_files and candidate == claim.path:
                 continue
             if not claim.binding:
@@ -2032,6 +2030,9 @@ def _raise_repository_scope_conflict(
                 )
                 refusal.project = claim.project
                 message = str(refusal)
+                exclusive = _exclusive_write_pattern(shared_files, candidate)
+                if exclusive:
+                    message = f"{message}; exclusive pattern {exclusive!r}"
                 if racing_winner_refusal:
                     message = f"{message}; {racing_winner_refusal}"
                 if claim.project != project:
@@ -2047,6 +2048,9 @@ def _raise_repository_scope_conflict(
             )
             refusal.project = claim.project
             message = str(refusal)
+            exclusive = _exclusive_write_pattern(shared_files, candidate)
+            if exclusive:
+                message = f"{message}; exclusive pattern {exclusive!r}"
             if claim.project != project:
                 message = f"{message} in project {claim.project!r}"
             if racing_winner_refusal:
