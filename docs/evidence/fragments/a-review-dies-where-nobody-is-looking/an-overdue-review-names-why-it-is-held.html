@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-review-dies-where-nobody-is-looking">
+  <meta name="plan-title" content="An overdue review names the refusal that holds it">
+  <meta name="plan-summary" content="An overdue review-missing duty told the coordinator to inspect the armed follower, which was healthy: the reflex's own dispatch rule declines because the run's newest review still carries a blocking finding with no disposition, and that refusal names the dispose command that lifts it. The duty now reads the refusal through the dispatch's own predicate once the reflex's window has passed.">
+  <meta name="plan-evidence-for" content="a-review-dies-where-nobody-is-looking">
+  <meta name="plan-recorded-at" content="2026-11-08">
+  <meta name="plan-verdict" content="passed">
+  <title>An overdue review names the refusal that holds it | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>An overdue review names the refusal that holds it</h1>
+
+    <section id="an-overdue-review-names-why-it-is-held-defect">
+      <h2>The defect</h2>
+      <p>When a delivered run's review had not been dispatched past the armed
+        follower's sweep window, <code>_reflex_review_command</code> printed
+        <em>inspect the follower's review pass</em>. The follower was usually healthy.
+        <code>dispatch_review_for_run</code> declined first, in
+        <code>_open_review_refusal</code>: the run's newest stored review still carried a
+        blocking finding with no disposition, so a fresh round would repeat it. That
+        refusal already names the blocking finding and both <code>crew dispose</code>
+        commands that lift it, and the duty never asked for it.</p>
+      <p>Reproduced on the base tree with the new test module copied in. The first case
+        <code>FAILED</code> because the duty carried no refusal and still printed the
+        follower text:</p>
+      <pre><code>assert 'inspect the... review pass' not in 'review over... review pass'
+E   "inspect the follower's review pass" is contained here:
+E     's review; inspect the follower's review pass
+1 failed, 1 passed</code></pre>
+    </section>
+
+    <section id="an-overdue-review-names-why-it-is-held-changes">
+      <h2>What changed</h2>
+      <ol>
+        <li><code>reckon/crew/recovery_review_dispatch.py</code>:
+          <code>review_dispatch_refusal(record)</code> is the read-only form of the predicate
+          <code>dispatch_review_for_run</code> applies before it composes anything — the same
+          <code>_open_review_refusal</code>, called with <code>dry_run=True</code> so a reporting
+          reader cannot write a refusal onto a live pointer.</li>
+        <li><code>reckon/crew/obligations.py</code>: <code>_reflex_open_refusal</code> answers
+          <code>None</code> inside the reflex's window and, once past it, asks
+          <code>review_dispatch_refusal</code>. A held review sets the duty's
+          <code>reason</code> to the refusal's own text and its <code>next_command</code> to the
+          first undisposed finding's <code>crew dispose</code> pair, built by the same
+          <code>_finding_dispose_commands</code> the refusal renders. Nothing refuses → the
+          duty reads exactly as before, including the reflex-owner fields.</li>
+        <li>New <code>tests/test_an_overdue_review_names_why_it_is_held.py</code>: two cases on a
+          synthesised repository, a temporary crew home and an armed follower whose review
+          window has passed. Case one asserts the dispose pair, the absence of the follower text,
+          and that the duty's reason equals what <code>dispatch_review_for_run</code> returns for
+          the same record, so the two cannot name different reasons. Case two has nothing refusing
+          and asserts today's text.</li>
+      </ol>
+    </section>
+
+    <section id="an-overdue-review-names-why-it-is-held-evidence">
+      <h2>Evidence</h2>
+      <table>
+        <thead><tr><th>Arm</th><th>Revision</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Gate: the two new cases</td>
+            <td>base <code>8c72a9ab8e</code> (scratch tree, head test module copied in)</td>
+            <td><strong>1 failed, 1 passed</strong> in 2.07s, exit 1 — the held-review case fails
+              on the stale follower text quoted above; the no-refusal control passes.</td>
+          </tr>
+          <tr>
+            <td>Same gate</td>
+            <td>head <code>21553c80c9</code></td>
+            <td><strong>2 passed</strong> in 3.50s, exit 0.</td>
+          </tr>
+          <tr>
+            <td>Declared mutation: <code>held = None</code>, the refusal read dropped</td>
+            <td>head <code>21553c80c9</code> plus that mutation</td>
+            <td><strong>1 failed, 1 passed</strong>, exit 1 — the held-review case fails with
+              <code>assert 'inspect the... review pass' not in 'review over... review pass'</code>,
+              so the mutation moves only the naming the case asserts.</td>
+          </tr>
+          <tr>
+            <td>Importers of <code>reckon.crew.obligations</code> (75 files at base, 76 at head,
+              <code>-n 4</code>)</td>
+            <td>base <code>8c72a9ab8e</code></td>
+            <td><strong>38 failed, 416 passed</strong> in 293.55s, exit 1.</td>
+          </tr>
+          <tr>
+            <td>Same importer suite</td>
+            <td>head <code>21553c80c9</code></td>
+            <td><strong>37 failed, 419 passed</strong> in 374.00s, exit 1 — <strong>no failure id
+              added</strong>; the head arm's failing set is a strict subset of the base's.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The importer failures are pre-existing in this environment and identical across both
+        arms, so the measure is the delta, which is zero added. One base failure disappears at
+        head through timing rather than through this change: in
+        <code>test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py</code> the
+        case asserts the literal <code>"50m"</code> while the duty prints an age derived from the
+        wall clock, and the base arm caught it at <code>51m 20s</code>. That is the date-derived
+        literal the repo warns against and is outside this node's write scope.</p>
+    </section>
+
+    <section id="an-overdue-review-names-why-it-is-held-repair">
+      <h2>Repair round</h2>
+      <p>The review asked for the read-only claim to be held by a test rather than by the
+        idiom. Case one now snapshots the run's live pointer bytes before the obligations
+        derivation, reads the duty, and asserts the pointer is byte-identical afterwards: a
+        duty that merely reports a held review must not record the refusal it reports.</p>
+      <p>The declared control is <code>dry_run=False</code> inside
+        <code>review_dispatch_refusal</code>, which is the write the read-only form exists to
+        avoid. With that mutation the new assertion reddens and names what the write introduced:
+        <code>AssertionError: the obligations read rewrote the run's live pointer; it now also
+        carries ['review_dispatch']</code>. The no-refusal control still passes, so the mutation
+        moves only the writing. No production code changed: the assertion passed against the
+        existing <code>dry_run=True</code>.</p>
+    </section>
+
+    <section id="an-overdue-review-names-why-it-is-held-provenance">
+      <h2>Provenance</h2>
+      <table>
+        <thead><tr><th>Item</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Base revision</td><td><code>8c72a9ab8e9621d24eb169caf76ff96e79b1bcce</code></td></tr>
+          <tr><td>Head commit</td><td><code>21553c80c96b646e2b0e86d979224004132d2821</code></td></tr>
+          <tr><td>Gate logs</td><td><code>gate-base.log</code>, <code>gate-head.log</code> in the run directory; the scratch-tree arm is headed by its revision, tree, module as imported and resolved working directory, and each log ends with a bare <code>EXIT=</code> line</td></tr>
+          <tr><td>Importer arm logs</td><td><code>base-arm.log</code>, <code>head-arm.log</code>, with the failure sets in <code>base-failures.txt</code> and <code>head-failures.txt</code></td></tr>
+          <tr><td>Control log</td><td><code>negative-control.log</code> in the run directory, headed by the declared mutation</td></tr>
+          <tr><td>Repair control log</td><td><code>negative-control-dry-run.log</code> in the run directory, headed by the <code>dry_run=False</code> mutation</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>

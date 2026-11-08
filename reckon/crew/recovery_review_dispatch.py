@@ -2491,6 +2491,18 @@ def _open_review_refusal(
     return None
 
 
+def review_dispatch_refusal(record: Mapping[str, Any]) -> dict[str, Any] | None:
+    """The refusal :func:`dispatch_review_for_run` would return, read without writing.
+
+    A reader that reports why a review has not started asks the question the
+    dispatch asks before it composes anything, so a change to the refusal
+    reaches the report too rather than leaving a copy of the rule to drift. The
+    dispatch itself records a refusal on the run it acted for; a reader that
+    only reports must not write, so this form leaves the record untouched.
+    """
+    return _open_review_refusal(record, dry_run=True)
+
+
 def _resume_superseded_refusal(
     record: Mapping[str, Any], *, dry_run: bool
 ) -> dict[str, Any] | None:
