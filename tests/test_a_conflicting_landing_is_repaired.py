@@ -275,6 +275,7 @@ def test_conflicting_delivery_opens_repair_then_lands(deliveries, monkeypatch, r
     assert git(second["origin"], "rev-parse", "main") == git(
         repository, "rev-parse", "main"
     )
+    assert git(second["origin"], "merge-base", repaired, "main") == repaired
     assert_clean(repository)
 
 
