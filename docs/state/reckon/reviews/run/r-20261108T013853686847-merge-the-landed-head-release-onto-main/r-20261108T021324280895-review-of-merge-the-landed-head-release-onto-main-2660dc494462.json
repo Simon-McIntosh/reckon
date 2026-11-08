@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:3453",
+    "reckon/crew/promotion.py:1207",
+    "reckon/crew/promotion.py:1847",
+    "reckon/crew/promotion.py:2091",
+    "reckon/crew/promotion_records.py:192"
+  ],
+  "completed_at": "2026-11-08T02:36:00.776Z",
+  "dispatched_at": "2026-11-08T02:21:06Z",
+  "findings": [
+    {
+      "file": "tests/test_a_landed_head_releases_its_worktree.py",
+      "line": 130,
+      "severity": "non-blocking",
+      "text": "No assertion covers pending_landing.clear_pending on the landing path: the node's own negative-control.log shows that dropping that call from _land_a_promoted_run turns no test red (1 failed is the release-judgement half alone), so a future conflict resolution that silently drops the base's half would pass this gate; a post-landing assertion that no pending-landing record remains after _complete_land would have covered it inside this node's own test file. Fold into tests/test_a_landed_head_releases_its_worktree.py, where the landing is already exercised."
+    },
+    {
+      "file": "docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/merge-the-landed-head-release-onto-main.html",
+      "line": 21,
+      "severity": "non-blocking",
+      "text": "The fragment states the merged file differs from the reviewed head by eight lines, which are exactly the pending_landing import, the clear call and the blank lines around them; the actual difference is 10 added lines and includes the write_pending block in crew_complete (7 of them, at reck-run-commands line 3218), so the enumeration omits half of what the merge carried and a reader checking the stated count against `git diff bea6a6bf6c 2660dc4944` gets 10."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T013853686847-merge-the-landed-head-release-onto-main/manifest.md",
+      "line": 19,
+      "severity": "non-blocking",
+      "text": "The artifacts line states the merge diff is 4 files and 285 insertions; `git diff --numstat b92b48de1a 2660dc4944` reports 5 files and 360 insertions, the difference being the node's own 75-line fragment committed after the figure was taken, so the record's one quantitative shape claim does not reconcile with the tree it describes."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against base b92b48de1a: the sole commit is the merge itself, 5 files and 360 insertions with 8 deletions; promotion_release.py threads integration_repo and integration_commit into _inspect_workspace and _worktree_audit, crew_run_commands.py keeps the base's pending_landing write and clear beside the reviewed head's judged release, and the test file adds three landing cases.",
+    "done_when": "The done_when requires a two-parent --no-ff merge, both sides kept with nothing else moved, the named test file and every test file importing reckon.crew.pending_landing green at the head, and no new ruff findings on the staged paths; the manifest's head-arm.log (3 passed, EXIT=0), head-pending-landing.log (4 passed, EXIT=0), base-arm.log (1 failed, 2 passed, EXIT=1) and negative-control.log (1 failed, 6 passed, EXIT=1) each name their revision and command and end in EXIT=, and my own ruff run over the landed blobs reports the single PERF403 at reckon/crew/promotion_release.py:893 with the test file clean and all three files formatted.",
+    "goal": "The node's goal is to merge reviewed head bea6a6bf6c750baf67d30fd4322d4235cd215b23 into base b92b48de1ae24c79dcd04edac0eede115caea861 and resolve its conflict in reckon/crew_run_commands.py; 2660dc4944 is a merge commit whose two parents are exactly those revisions, and `git diff bea6a6bf6c 2660dc4944 -- reckon/crew_run_commands.py` adds only the base's pending_landing write and clear with no deletion, so both sides are kept and the goal is met.",
+    "manifest": "The manifest records status complete, all four arms with their log paths, the negative control's two halves and the fact that the clear_pending half turned nothing red; it also states the merge resolution was verified by diffing the resolved file against each parent, which my own parent-wise diff reproduces; its artifacts line carries stale diff figures (see the findings).",
+    "write_paths": "The declared write paths are reckon/crew_run_commands.py, reckon/crew/promotion_release.py, tests/test_a_landed_head_releases_its_worktree.py and the two evidence fragments; `git diff --name-status b92b48de1a 2660dc4944` lists exactly those five files and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to merge reviewed head bea6a6bf6c750baf67d30fd4322d4235cd215b23 into base b92b48de1ae24c79dcd04edac0eede115caea861 and resolve its conflict in reckon/crew_run_commands.py; 2660dc4944 is a merge commit whose parents are exactly those two revisions and `git diff bea6a6bf6c 2660dc4944 -- reckon/crew_run_commands.py` adds only the base's pending_landing write and clear (10 added lines, none deleted), so both sides are kept.\nVERDICT done_when: the done_when requires a two-parent --no-ff merge, both sides kept with nothing else moved, the named test file and every test file importing reckon.crew.pending_landing green at the head, and no new ruff findings; head-arm.log records 3 passed EXIT=0, head-pending-landing.log 4 passed EXIT=0, base-arm.log 1 failed 2 passed EXIT=1, and my own ruff run over the landed blobs reports only the one PERF403 at reckon/crew/promotion_release.py:893.\nVERDICT write_paths: the declared write paths name reckon/crew_run_commands.py, reckon/crew/promotion_release.py, tests/test_a_landed_head_releases_its_worktree.py and the two evidence fragments; `git diff --name-status b92b48de1a 2660dc4944` lists exactly those five files and nothing else.\nVERDICT manifest: read; it states status complete with all four arms and their log paths, names the negative control's unguarded half in outside_scope, and states the resolution was verified against each parent, which my own parent-wise diff reproduces; its artifacts line's diff figures are stale (see findings).\nVERDICT diff: read commit by commit against base b92b48de1a; the sole commit is the merge itself, 5 files and 360 insertions against 8 deletions, threading integration_repo and integration_commit into _inspect_workspace and _worktree_audit and keeping pending_landing.clear_pending beside the reviewed head's judged release.\nCALL_SITES: reckon/crew_run_commands.py:3453, reckon/crew/promotion.py:1207, reckon/crew/promotion.py:1847, reckon/crew/promotion.py:2091, reckon/crew/promotion_records.py:192\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:3218 and :3470 in 2660dc4944 carry both the base's pending_landing calls and the reviewed head's judged release, and `git diff bea6a6bf6c 2660dc4944` shows no other change.\nSCORE evidence: 17\nJUSTIFICATION evidence: the run directory's base-arm.log ends `1 failed, 2 passed` and head-arm.log `3 passed`, both with EXIT= lines, matching the manifest's baseline_suite and after_suite.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --name-status b92b48de1a 2660dc4944` lists only the five declared paths.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_landed_head_releases_its_worktree.py:133 reddens at the base revision and under the node's own mutation, but nothing fails if pending_landing.clear_pending is dropped from reckon/crew_run_commands.py:3453.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/promotion_release.py:396 threads the new keyword-only parameters with defaults, matching the surrounding keyword-only style at reckon/crew/promotion_release.py:343.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change extends the existing owners reckon/crew/routing.py:793 _inspect_workspace and reckon/crew/promotion_records.py:908 _worktree_audit rather than adding a second judgement path; a search for integration_repo over reckon/ found no prior owner.\nFINDING tests/test_a_landed_head_releases_its_worktree.py:130 non-blocking: no assertion covers pending_landing.clear_pending on the landing path, so a future resolution dropping the base's half passes this gate.\nFINDING docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/merge-the-landed-head-release-onto-main.html:21 non-blocking: the fragment claims an eight-line difference from the reviewed head; the real difference is 10 lines and includes the write_pending block in crew_complete.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T013853686847-merge-the-landed-head-release-onto-main/manifest.md:19 non-blocking: the artifacts line states the merge diff is 4 files and 285 insertions; it is 5 files and 360 insertions, the missing file being the node's own fragment.",
+  "review_run_id": "r-20261108T021324280895-review-of-merge-the-landed-head-release-onto-main-2660dc494462",
+  "reviewed_base_sha": "b92b48de1ae24c79dcd04edac0eede115caea861",
+  "reviewed_head_sha": "2660dc494462099a3bdb96990e72f2a57fb81a75",
+  "reviewed_run_id": "r-20261108T013853686847-merge-the-landed-head-release-onto-main",
+  "scores": {
+    "durability": 14,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T02:36:00Z",
+  "total": 108
+}
