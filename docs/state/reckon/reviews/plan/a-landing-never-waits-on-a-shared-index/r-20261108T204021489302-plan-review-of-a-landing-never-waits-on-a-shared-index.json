@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T20:49:09.568Z",
+  "dispatched_at": "2026-11-08T20:41:44Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-landing-never-waits-on-a-shared-index.html:85",
+      "id": "done_when-1",
+      "reason": "the dedupe is the property that makes the log usable, and with no case exercising a second read the node can close having measured none of it; adding \"a second read appends no line\" to case one costs one assertion and makes the stated property falsifiable.",
+      "text": "the deliverable requires that \"the first time each lag is seen\" the reader appends one line, but none of the three cases reads the view twice: case one asserts \"the log holds one line\" after a single read, so an implementation that appends on every obligations read \u2014 the view is derived on every coordinator turn \u2014 passes the gate while growing the log without bound and burying the one line a later reader is meant to match to a writer",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-never-waits-on-a-shared-index.html:85",
+      "id": "reasoning-1",
+      "reason": "the gate as written passes an implementation that cannot tell a stale index from a deliberate untracking, and the section tells the reader the restore \"touches neither the working tree nor other entries\" without saying it can also undo an intended index change; one clause (skip a path that is ignored, or state the ambiguity in the duty text and add a fourth case) makes the condition mean what the section says it means.",
+      "text": "the detector's condition (index lacks a path HEAD carries while the file is on disk) is exactly the shape `git rm --cached <path>` leaves behind when a path is deliberately untracked and kept, and the section's third case covers only the opposite shape (deletion with the file also removed); a session following the offered `git reset -q -- <paths>` would re-stage a path it had just chosen to untrack, so the duty can be wrong and its remedy actively reverses an intended change",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "3ede2f7e2f77e1d3565eb5989560c501f450781c",
+  "plan_fingerprint": "e71eb22aa5f56bebf88cfa613b8d834eb372f8b819afd85c49e6da0e91b56ab6",
+  "plan_slug": "a-landing-never-waits-on-a-shared-index",
+  "plan_version": 17,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T204021489302-plan-review-of-a-landing-never-waits-on-a-shared-index",
+  "reviewed_blob_sha": "6e94dc5d875a64177badad29ce1f02e6746d4050",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `e741b27a9d`, `2754cbd2dc` (which deletes 179 lines of the cited fragment) and `55c6b25d56` all resolve in the repository and the fragment is back on disk; `_restore_landing_writes` is at `reckon/crew/promotion_scope.py:1754` and `_restore_tracked_landing_write` at `:1913` (inside the cited 1754\u20131930), the `git commit --only` at `:2511` (inside the cited 2505\u20132518), and `git read-tree` at `reckon/crew/routing.py:1599` inside `_save_and_release_worktree` (defined at `:1452`); the only loose anchor is `land_merge`'s `git merge --ff-only`, at `reckon/crew/merge.py:765` rather than \"near line 749\", but 749 is the docstring of the `step` function that calls it at 765, so the citation still lands a reader in the right place.",
+    "done_when": "a finding \u2014 the deliverable's \"first time each lag is seen\" dedupe is measured by no case: case one reads the view once and asserts one line, so an implementation that appends on every read passes the whole gate.",
+    "evidence_paths": "pass \u2014 the gate logs go \"under the run directory\" and the detector's own log \"under the crew home\", both durable paths a later reader can open; no session scratchpad or node-local temporary path is named.",
+    "naming": "pass \u2014 the named test `tests/test_a_landing_leaves_the_index_at_head.py` and the described duty read by mechanism, with no plan label, stage name, ticket number or version tag in the file name or the symbols the section asks for.",
+    "reasoning": "a finding \u2014 the section's cited evidence supports its root cause (an unidentified writer left the index lacking a path HEAD and the working tree both held) and the detector does run on a real path, since the obligations view is derived for every coordinator session; but the condition it reads is purely structural, so a path a session deliberately untracked with `git rm --cached` while keeping the file is indistinguishable from a stale index, and the duty's own remedy would re-stage it.",
+    "single_goal": "pass \u2014 \u00a76 carries one deliverable, making a stale main-checkout index visible as a duty, and the log line is that duty's own record of when the lag was seen rather than an independently closable second deliverable.",
+    "wiring": "pass \u2014 \u00a76 is declared `implementable` in `plan-section-declarations`, its followup `f-alnw-003` names `/reckon-build a-landing-never-waits-on-a-shared-index \u00a76`, and the only section it could depend on (\u00a75) is declared `done` with its commits on main, so nothing \u00a76 consumes is missing or misdirected."
+  },
+  "section_digests": {
+    "_document": "cc5ca7856f4fcf61b4d842ceea96ce6a3114449a77e550ded22924ad6e2a1bbb",
+    "s1": "704da057b1e86cedb79ae983e9f7504afd9303eac87bb25b9d4aa38717913746",
+    "s2": "a72539aa82cfb965c54c35d223b2606608ed39bc8269f82d2e7427267b4636af",
+    "s3": "58b92de94f7a15cbe2a66cb37ebc307ca1d8306003ca55ca38ac6fd12e6266c8",
+    "s4": "f9e5f60efd976441ef227da76beb3f9309fccd0d2f99eee0fc98924588b241aa",
+    "s5": "41308d89a4ece7829b6313c98047025055c9c8dc56e754dc8ccf0501af52b1b3",
+    "s6": "9264215f313dd3e8e153785c982a5dd70ff9f4f769bfbeafcb0e154383885114"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T20:57:24.206702+00:00",
+  "total": null
+}
