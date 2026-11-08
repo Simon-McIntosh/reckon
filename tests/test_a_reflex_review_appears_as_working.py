@@ -113,7 +113,8 @@ def test_a_sweep_review_reaches_its_session_on_the_next_publish(
         assert own.poll() == []
         active.tick(now=moment + timedelta(seconds=2))
         assert own.poll() == []
-        assert len(dispatched) == 1
+        assert sum(bool(row.get("dispatched")) for row in dispatched) == 1
+        assert len(launched) == 1
 
 
 def test_an_existing_working_run_is_inventory_on_station_start(
