@@ -24,7 +24,7 @@
 <meta name="plan-sprint" content="S22">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
 <meta name="plan-impl" content="0.96">
-<meta name="plan-version" content="173">
+<meta name="plan-version" content="174">
 <meta name="plan-modified" content="2026-11-08">
 <meta name="plan-section-depends-on" content="{&quot;s21&quot;:[&quot;a-dispatch-returns-without-its-worker#s20&quot;]}">
 </head>
@@ -1305,7 +1305,10 @@
     <div class="r-comment-body"><p>Independent review of r-20261108T191235309637-a-review-that-never-launched-is-not-running over the commits it gained since its first review (18fee6711e..bf7ffe6b50b4, three commits), scoring goal_fidelity 19, evidence 14, scope_discipline 20, durability 13, fit 18, reuse 20 with zero added failures and two non-blocking findings: the claim-dating arm is unasserted because every fixture sets created_at to the claim instant, and the importer-population arm was measured at b8ede121eb, two commits before the reviewed head.</p></div>
 </div>
 <div class="r-comment" data-section="s19" data-id="c-run-r-20261108T210724159726-review-of-a-review-that-never-launched-is-not-running-85d520ca1837" data-who="reckon-build" data-when="2026-11-08T21:13:21.761Z">
-    <div class="r-comment-body"><p>Review of a-review-that-never-launched-is-not-running&#x27;s last two commits (ddaf69ccc6, 85d520ca18) stored parsed at reviewed_base_sha bf7ffe6b50 and reviewed_head_sha 85d520ca18: goal_fidelity 19, evidence 19, scope_discipline 20, durability 19, fit 20, reuse 20, added_failure_count 0, one non-blocking finding.</p></div>
+    <div class="r-comment-body"><p>Review of a-review-that-never-launched-is-not-running's last two commits (ddaf69ccc6, 85d520ca18) stored parsed at reviewed_base_sha bf7ffe6b50 and reviewed_head_sha 85d520ca18: goal_fidelity 19, evidence 19, scope_discipline 20, durability 19, fit 20, reuse 20, added_failure_count 0, one non-blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s19" data-id="c-run-r-20261108T191235309637-a-review-that-never-launched-is-not-running" data-who="reckon-build" data-when="2026-11-08T21:04:21Z">
+    <div class="r-comment-body"><p>§19 — a cli review pointer in `starting` with no attempt clock (no `attempt_started_at`, no attempt record) is dated from the run&#x27;s `claim.json` field `claim_registered_at`, falling back to the pointer&#x27;s `created_at`; past the 900 s stranded-launch bound it reads back through `_stranded_launch` as `launch-failed`, naming its launcher host and the span held. A young launch, an in-harness pointer, and a pointer with no date at all read as they did before. The claim read delegates to the launch module&#x27;s own reader rather than duplicating it, and the claim arm is exercised alone by a case whose pointer creation is inside the bound. Gate: six cases pass at the delivered head; the importer population re-measured at that head (96 files) carries the same 7 failing ids as the base arm, so zero added.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260923T092804965136-review-of-dispatch-lifetime-probe" data-who="reckon-ship" data-when="2026-09-23T10:41:42.645Z">
     <div class="r-comment-body"><p>independent review delivered and read by the coordinator</p></div>
