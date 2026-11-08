@@ -24,6 +24,11 @@
     <p>Landed (reviewed head <code>d7fb8d9199</code>, run <code>r-20261108T092818929205</code>). Files under the declared shared roots admit concurrent claims unless they match a declared exclusive pattern; plan HTML, cumulative evidence, generated state, figure directories and lock files stay exclusive, and directory claims stay exclusive. 14 focused tests; the base control fails the shared cases. The coordinator measured the 38 test files that reach the claim checks or assert a scope refusal at base and head: identical 10 failing ids, 594 then 608 passed.</p>
   </section>
 
+  <section id="a-conflicting-landing-is-repaired" data-evidence-origin="append">
+    <h2>§3 — a landing that conflicts sends its run back for a merge repair</h2>
+    <p>Landed (reviewed head <code>d6cb4e5aa8</code>, run <code>r-20261108T093343768873</code>). A landing refused on a real merge conflict records a <code>merge-conflict</code> outcome naming the paths and opens a repair round; an already-promoted run is never promoted twice, and its repaired head is finished by the merge alone through the pending-landing path, after its fresh gate is validated. Four cases pass; reversing the gate validation fails both repair cases, and seven invalid gate captures are refused.</p>
+  </section>
+
 </main>
 </body>
 </html>
