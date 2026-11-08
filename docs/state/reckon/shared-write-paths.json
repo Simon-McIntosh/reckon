@@ -1,37 +1,81 @@
 {
-  "project": "reckon",
-  "paths": [
-    {
-      "path": "reckon/mcp.py",
-      "reason": "The tool surfaces left here (read_plan, roadmap, crew, audit and the registration block) are separate handlers, so two nodes extending different ops still edit disjoint regions."
-    },
-    {
-      "path": "reckon/roadmap.py",
-      "reason": "Derived roadmap facts and the surfaces that read them are extended by independent nodes at separate points in the module."
-    },
-    {
-      "path": "reckon/mcp_views.py",
-      "reason": "Each MCP view lands in its own function, so two nodes extending different views edit disjoint regions of one module."
-    },
-    {
-      "path": "reckon/doccheck.py",
-      "reason": "Independent checks are added at separate call sites in this module, and a node repairing one check rarely touches another."
-    },
-    {
-      "path": "reckon/_store.py",
-      "reason": "Plan-store readers and writers are separate functions, so appends and reads land in different regions of this module."
-    },
-    {
-      "path": "reckon/crew/ticker.py",
-      "reason": "The counter rows, cell formatting and rendering are separate functions that independent nodes extend at separate points."
-    },
-    {
-      "path": "reckon/crew/routing.py",
-      "reason": "Dispatch identity, worktree gc and plan-review gating each add a separate function to this module, so a whole-file claim serialises work that does not collide."
-    },
-    {
-      "path": "reckon/flight.py",
-      "reason": "Backend routing, lane-window pacing and lane-document probing each add or change a separate function in this module, so a whole-file claim serialises work that does not collide."
-    }
-  ]
+ "project": "reckon",
+ "paths": [
+  {
+   "path": "reckon/mcp.py",
+   "reason": "The tool surfaces left here (read_plan, roadmap, crew, audit and the registration block) are separate handlers, so two nodes extending different ops still edit disjoint regions."
+  },
+  {
+   "path": "reckon/roadmap.py",
+   "reason": "Derived roadmap facts and the surfaces that read them are extended by independent nodes at separate points in the module."
+  },
+  {
+   "path": "reckon/mcp_views.py",
+   "reason": "Each MCP view lands in its own function, so two nodes extending different views edit disjoint regions of one module."
+  },
+  {
+   "path": "reckon/doccheck.py",
+   "reason": "Independent checks are added at separate call sites in this module, and a node repairing one check rarely touches another."
+  },
+  {
+   "path": "reckon/_store.py",
+   "reason": "Plan-store readers and writers are separate functions, so appends and reads land in different regions of this module."
+  },
+  {
+   "path": "reckon/crew/ticker.py",
+   "reason": "The counter rows, cell formatting and rendering are separate functions that independent nodes extend at separate points."
+  },
+  {
+   "path": "reckon/crew/routing.py",
+   "reason": "Dispatch identity, worktree gc and plan-review gating each add a separate function to this module, so a whole-file claim serialises work that does not collide."
+  },
+  {
+   "path": "reckon/flight.py",
+   "reason": "Backend routing, lane-window pacing and lane-document probing each add or change a separate function in this module, so a whole-file claim serialises work that does not collide."
+  },
+  {
+   "path": "reckon/crew/queue_admission.py",
+   "reason": "Admission stages (release, launch, land, trust) are separate functions; on 2026-11-07/08 four to six queued sections waited on one claim here while each edited a different stage. Workers run in isolated worktrees and crew merge refuses a textual conflict, so concurrent edits meet at the merge, not at dispatch."
+  },
+  {
+   "path": "reckon/crew/obligations.py",
+   "reason": "Each obligation kind is derived in its own function; the review-duty, held-worktree and promotable-row repairs of S27 edited disjoint regions but serialised on this claim. Workers run in isolated worktrees and crew merge refuses a textual conflict, so concurrent edits meet at the merge, not at dispatch."
+  },
+  {
+   "path": "reckon/crew/obligation_snapshot.py",
+   "reason": "Snapshot assembly and per-session payload derivation are separate functions extended by independent nodes. Workers run in isolated worktrees and crew merge refuses a textual conflict, so concurrent edits meet at the merge, not at dispatch."
+  },
+  {
+   "path": "reckon/crew/resumption.py",
+   "reason": "Resume planning and the sweep's passes are separate functions; S27's sweep repair waited behind an unrelated resume change on this claim. Workers run in isolated worktrees and crew merge refuses a textual conflict, so concurrent edits meet at the merge, not at dispatch."
+  },
+  {
+   "path": "reckon/crew/dispatch.py",
+   "reason": "Dispatch preflights, queueing and launch hand-off are separate functions; four nodes were held behind one claim here on 2026-11-07. Workers run in isolated worktrees and crew merge refuses a textual conflict, so concurrent edits meet at the merge, not at dispatch."
+  },
+  {
+   "path": "reckon/crew/promotion.py",
+   "reason": "Promotion guards and the discard path are separate functions; unrelated repairs to each were serialised behind one claim. Workers run in isolated worktrees and crew merge refuses a textual conflict, so concurrent edits meet at the merge, not at dispatch."
+  },
+  {
+   "path": "reckon/crew/station.py",
+   "reason": "The station's tick stages, beat and sweep scheduler are separate classes and functions edited by independent S27 nodes. Workers run in isolated worktrees and crew merge refuses a textual conflict, so concurrent edits meet at the merge, not at dispatch."
+  },
+  {
+   "path": "reckon/crew/recovery_classification.py",
+   "reason": "Each classification branch is its own clause; the process-ended note and the queued-failure remedy were repaired by separate nodes. Workers run in isolated worktrees and crew merge refuses a textual conflict, so concurrent edits meet at the merge, not at dispatch."
+  },
+  {
+   "path": "reckon/crew/recovery_review_dispatch.py",
+   "reason": "Text-review and figure-review dispatch are separate functions; holding them exclusive blocked an unrelated transition repair. Workers run in isolated worktrees and crew merge refuses a textual conflict, so concurrent edits meet at the merge, not at dispatch."
+  },
+  {
+   "path": "reckon/crew/dispatch_sessions.py",
+   "reason": "Observe, resume and session-capture paths are separate functions extended by independent nodes. Workers run in isolated worktrees and crew merge refuses a textual conflict, so concurrent edits meet at the merge, not at dispatch."
+  },
+  {
+   "path": "reckon/crew/runs.py",
+   "reason": "Pointer readers, accessors and listing helpers are separate functions; the live-pointer slimming touched accessors while others touched listings. Workers run in isolated worktrees and crew merge refuses a textual conflict, so concurrent edits meet at the merge, not at dispatch."
+  }
+ ]
 }
