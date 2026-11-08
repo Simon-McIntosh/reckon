@@ -2072,12 +2072,21 @@ def classify_pointer(
         # the clause adds what that arm cannot, that not even an end was
         # recorded, because here there was nothing to record one from.
         classification = "launch-failed"
+        age = _stranded_launch_age_seconds(record, now_seconds=moment)
+        host = str(record.get("launcher_host") or "").strip()
+        # The host and the age are what a coordinator acts on: a review
+        # dispatched on another machine and never started is composed again
+        # there, and the span says whether it stalled at once or later.
+        held = f"{age:.0f}s" if age is not None else "an unrecorded span"
+        where = f" on {host}" if host else ""
         detail = (
-            "a stranded launch: the pointer has held the pre-spawn phase "
-            f"{str(record.get('phase') or '')!r} for more than "
-            f"{STRANDED_LAUNCH_BOUND_SECONDS}s with no worker record, stream or "
-            "launch log in its run directory, so the launch was cut off before "
-            "it spawned and nothing recorded an end"
+            "a stranded launch: the pointer"
+            f"{where} has held the pre-spawn phase "
+            f"{str(record.get('phase') or '')!r} for {held} since its launch clock "
+            f"began, past the {STRANDED_LAUNCH_BOUND_SECONDS}s bound, with no "
+            "worker record, "
+            "stream or launch log in its run directory, so the launch was cut off "
+            "before it spawned and nothing recorded an end"
         )
         action = (
             f"compose run {run_id} again; the pointer holds a claim no run "
@@ -2570,6 +2579,7 @@ from .recovery_liveness import (  # noqa: E402
     _run_stream_mtime,
     _run_stream_quiet_seconds,
     _stranded_launch,
+    _stranded_launch_age_seconds,
     _wait_observation_defect,
     _worker_launched_after_manifest,
     _worker_record_liveness,
