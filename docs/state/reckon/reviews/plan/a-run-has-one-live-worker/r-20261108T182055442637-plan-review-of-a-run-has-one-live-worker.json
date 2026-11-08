@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T18:30:21.620Z",
+  "dispatched_at": "2026-11-08T18:22:16Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-run-has-one-live-worker/r-20261108T182055442637-plan-review-of-a-run-has-one-live-worker/plan.html:161",
+      "id": "reasoning-1",
+      "reason": "the section's whole claim is that the two guards \"answer alike\", and a literal implementation of this wording makes them answer differently and fails the case the same paragraph adds.",
+      "text": "the Deliverable says the predicate \"reads the newest retired attempt below the current `attempt.json` number\", but that bound is only correct for `_supervisor_spawn_worker`: `_prepare_attempt_records` takes its refusal at `reckon/crew/dispatch_launch.py:2031`, before it writes `attempt.json` for the new attempt (`:2041`), and its caller derives the new number as pointer attempt + 1 (`reckon/crew/dispatch_launch.py:2497-2507`), so at that site `attempt.json` still names the attempt being replaced and \"below\" excludes exactly the `attempt-N-exit.json` that proves it ended; the section's own fifth case \u2014 a run carrying only `attempt-N-exit.json` and no canonical worker record \u2014 would be refused as written.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-run-has-one-live-worker/r-20261108T182055442637-plan-review-of-a-run-has-one-live-worker/plan.html:161",
+      "id": "done_when-1",
+      "reason": "the fifth case is stated in full and named again in the negative control, so a builder implements five cases regardless; only the count sentence misdescribes the deliverable.",
+      "text": "\"The new test then shows four cases through `_supervisor_spawn_worker`'s guard\" introduces five bullets, and the fifth is explicitly driven through `_prepare_attempt_records` rather than through that guard.",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "f305f8c8e5762af85446b68d774a5be2d20c9f3e",
+  "plan_fingerprint": "0da0e18f399cc0505a6b4409e5a7486598f6c549dfaf0ebefa1db4fb81899504",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 74,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T182055442637-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "b8fac45672dedc26a18924c07a92ac6822c5d53b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_launch_refused_by` (`reckon/crew/dispatch_launch.py:1965`) is real and is called by both named guards (`:2031` in `_prepare_attempt_records`, `:2901` in `_supervisor_spawn_worker`), `_worker_record_liveness` (`reckon/crew/recovery_liveness.py:285`) reads only the canonical `worker.json` as the Why states, `runs.record_process_alive` resolves (`reckon/crew/runs.py:4507` re-export), `attempt.json` is `ATTEMPT_RECORD_NAME` (`dispatch_launch.py:1825`), and the retired receipt names the section cites are written where it says (`_attempt_artifact_path` `:1886`, exit receipt on a spawn refusal `:3998-4003`); s12 cites no line numbers that could rot.",
+    "done_when": "a finding \u2014 the done-when's case count (\"four cases\") disagrees with the five bullets it introduces, the fifth being driven through a different guard.",
+    "evidence_paths": "pass \u2014 the gate logs sit under the crew run directory, the reproduction is a temporary crew home, and the new test is a committed path (`tests/test_a_resumed_placed_run_spawns.py`); nothing lands in a scratchpad.",
+    "naming": "pass \u2014 the section names no new symbol after a plan item, a ticket or a version, and its prose carries no changelog framing beyond the mechanism.",
+    "reasoning": "a finding \u2014 the retired-receipt rule is expressed against an `attempt.json` number that names the replaced attempt at one call site and the new attempt at the other, so it cannot be both guards' rule as written.",
+    "single_goal": "pass \u2014 one deliverable in one module plus its test: the shared predicate `_launch_refused_by` learns to read the retired attempt receipts, and `tests/test_a_resumed_placed_run_spawns.py` measures it.",
+    "wiring": "pass \u2014 s12 declares no depends-on or gates of its own and needs none: it repairs the predicate \u00a711 landed (f4aa6c7dc6, ancestor of main) in `reckon/crew/dispatch_launch.py`, where both guards already live; the driving followup f-arolw-012 is `open`, invokes `\u00a712`, and names the section the lead is implementing."
+  },
+  "section_digests": {
+    "_document": "71a9b6cffba76324c48c01238ab452adb1024408f1e6459f42b36262f29f1bff",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s10": "6dc41ff672ef42b279e0d66e033f19c8c35deb5c39f0efeb637f11ccedd3f7d4",
+    "s11": "beb7d054249b6e83a0d555fe9051398e9d5fb537152e967098b323eb4c3c0122",
+    "s12": "a6679fd1e0373d5682d2fe756e39a2ac2b99045b9171c7e14002d94b489c38a5",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "c8fe2a5a6c5765bc70ba45627cc9f5778b225a5e1deff2cc1bb1e0e08214362a",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "63bd79fcdd7baf06c8cc0bbc04ef21beec3605a6fdb13eed90b3ad410f8516e7",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b",
+    "s8": "1615d40635864933b3396d3d4ae7b0f94361ec3a105caa540ba761ad95bd24fe",
+    "s9": "1a571813cf821821012487f1bc0e7a9bb360370e7b12b6440683c365dba25774"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T18:38:14.595207+00:00",
+  "total": null
+}
