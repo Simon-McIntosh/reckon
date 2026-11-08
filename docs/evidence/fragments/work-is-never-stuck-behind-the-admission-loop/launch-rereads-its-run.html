@@ -50,23 +50,26 @@
         <td><code>3ab23a6</code> + pass-start decision</td>
         <td>1 failed, 2 deselected, <code>EXIT=1</code> &mdash; launched and
         overwrote the delivered manifest</td></tr>
-      <tr><td>wide gate, head</td>
-        <td><code>1f3501e</code>, worktree</td>
-        <td>444 passed, 22 failed, <code>EXIT=1</code></td></tr>
+      <tr><td>wide gate, head (final revision)</td>
+        <td><code>3ab23a6</code>, worktree</td>
+        <td>445 passed, 21 failed, <code>EXIT=1</code></td></tr>
       <tr><td>wide gate, base</td>
         <td><code>defc472</code>, extraction</td>
         <td>443 passed, 22 failed, 1 error, <code>EXIT=1</code></td></tr>
-      <tr><td>the head-only failure id, isolated at head</td>
+      <tr><td>a differing id from an earlier head arm, isolated</td>
         <td><code>3ab23a6</code>, worktree</td>
         <td>8 passed, <code>EXIT=0</code></td></tr>
     </tbody>
   </table>
 
-  <p>The two wide arms hold the same 22 failure ids but for one id on each side:
-  <code>test_a_recorded_stall_reaches_its_session_once_until_it_clears</code> at
-  head and <code>test_the_log_is_trimmed_within_its_size_bound</code> at base.
-  The head-only id passes in isolation at the head revision (8 passed), and the
-  base arm's single error is a fixture directory collision
-  (<code>FileExistsError</code> under the pytest basetemp), so neither is this
-  node's change.</p>
+  <p>Every one of the head arm's 21 failure ids fails at the base revision too,
+  so the files importing the module add no failure. The base arm carries one id
+  the head arm does not, <code>test_the_log_is_trimmed_within_its_size_bound</code>,
+  which is its known base-only id under parallel load. An earlier head arm
+  differed the other way on
+  <code>test_a_recorded_stall_reaches_its_session_once_until_it_clears</code>,
+  and that file passes in isolation at the head revision (8 passed), so the
+  difference is the load, not the change. The base arm's single error is a
+  fixture directory collision (<code>FileExistsError</code> under the pytest
+  basetemp).</p>
 </section>
