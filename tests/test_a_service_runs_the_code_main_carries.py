@@ -72,7 +72,11 @@ class FakeProcesses:
         self._next_pid = 90000
 
     def add_copy(
-        self, stamp: str, *, ignores_sigterm: bool = False, station_lease: bool = False
+        self,
+        stamp: str,
+        *,
+        ignores_sigterm: bool = False,
+        station_lease: bool = False,
     ) -> int:
         """Register a copy already running on ``stamp``, and return its pid."""
         self._next_pid += 1
@@ -167,14 +171,16 @@ def _seed_record(home, pid: int, stamp: str | None) -> None:
     )
 
 
-def _manager(home, checkout: FakeCheckout) -> fleet_supervisor.DeclaredServices:
+def _manager(
+    home, checkout: FakeCheckout, *, stop_grace: float = STOP_GRACE_SECONDS
+) -> fleet_supervisor.DeclaredServices:
     return fleet_supervisor.DeclaredServices(
         home.runtime,
         home.env,
         clock=lambda: 0.0,
         code_stamp=checkout.code_stamp,
         checkout_trust=checkout.trust,
-        stop_grace=STOP_GRACE_SECONDS,
+        stop_grace=stop_grace,
     )
 
 
@@ -287,7 +293,11 @@ def test_a_lease_holding_service_is_started_again_on_the_new_code(
     """The replacement takes the lease only once the old copy has exited."""
     checkout = FakeCheckout("stamp-new", trusted=True)
     table = _install(monkeypatch, home, checkout)
-    pid = table.add_copy("stamp-old", station_lease=True)
+    # The copy holds the station's writer lease and does not end on SIGTERM, so it
+    # is the live holder until the supervisor has killed it: a replacement
+    # started in that window is refused exactly as the station refuses one
+    # beside a live holder.
+    pid = table.add_copy("stamp-old", station_lease=True, ignores_sigterm=True)
     _seed_record(home, pid, "stamp-old")
 
     _manager(home, checkout).reload()
