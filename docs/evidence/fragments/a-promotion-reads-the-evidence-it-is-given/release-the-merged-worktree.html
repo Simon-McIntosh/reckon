@@ -1,0 +1,82 @@
+<section id="release-the-merged-worktree-landing">
+  <h2>A merge releases the worktree it landed</h2>
+
+  <p><strong>What changed.</strong> A run promoted with <code>crew complete</code> has its
+  live pointer deleted and its worktree left held, because the head is not on the primary
+  branch yet. <code>crew merge --head</code> then landed and pushed that head, but
+  <code>reckon/crew/merge.py</code> had no release step, so the tree stayed a
+  <code>worktree-held</code> obligation until a hand <code>crew gc --run … --apply</code>.
+  The merge now calls <code>release_landed_worktrees</code> once the push is confirmed. It
+  reads the held set from <code>obligations._held_worktree_records</code> — the one join of
+  Git's worktree registry to the ledger rows, through <code>record_names_worktree</code>,
+  rather than a second derivation kept in the merge — and releases each tree with the
+  promotion's own release path, judged against the merge commit the landing wrote. A tree
+  is offered only when its <code>HEAD</code> is the reviewed head or a commit beneath it, so
+  a tree carrying work no reader has is reported withheld and left in place. A tree whose
+  ledger row carries a <code>worktree_retention</code> — kept as the working directory of a
+  recoverable session — is withheld too, with the retention named: the release reads that
+  field the way the promotion's own release does, because the tree is the only copy that
+  session can be resumed from. The merge
+  result carries <code>release.released</code> and <code>release.withheld</code>, naming
+  each tree. A refusal before the push — a conflict, a failed check — reaches the call with
+  nothing released, because the call sits after the confirmed push. The release itself can
+  never refuse the landing it follows: the whole step is guarded, so an exception raised in
+  it — the project lookup and the revision reads that precede the inner guards, or the
+  release step itself — is recorded as a release that was not judged and the merge still
+  returns its success, rather than reporting a landed merge as a refused land. That defect
+  was reproduced before it was repaired: with the call unguarded, the fifth case exited 1
+  with <code>Error: RuntimeError</code> after the branch had moved and the push was
+  confirmed.
+  <code>merge.land</code> passes <code>release=False</code>: <code>crew complete --land</code>
+  makes its own release after the merge and reports it, and releasing twice would report the
+  path as the tree is removed rather than the outcome.</p>
+
+  <h3 id="release-the-merged-worktree-measured">Measured</h3>
+
+  <p>Gate: <code>tests/test_a_merge_releases_its_worktree.py</code>, run as
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_a_merge_releases_its_worktree.py</code> at each arm's own revision. Every case
+  goes through the real CLIs — <code>crew complete</code> and then a separate
+  <code>crew merge --head</code> — over a temporary repository, a bare origin, a registered
+  checkout and a linked worker worktree named for its session and node id. Each log names
+  its revision, tree and command on the header lines and ends in <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base, the new cases copied in</td>
+        <td><code>1b3663ce4f</code></td>
+        <td><strong>4 failed, 1 passed</strong>, exit 1 — the promoted run's tree is still on
+        disk after the merge, the merge result carries no release block, a retained tree
+        is removed rather than kept, and the release seam the fifth case injects does not
+        exist</td></tr>
+      <tr><td>head</td>
+        <td><code>0acd27136f</code></td>
+        <td><strong>5 passed</strong>, exit 0</td></tr>
+      <tr><td>negative control: the merge-side release removed</td>
+        <td>mutated head</td>
+        <td><strong>2 failed, 1 passed</strong>, exit 1 — the first case's tree is held</td></tr>
+      <tr><td>negative control: the retention argument dropped</td>
+        <td>mutated head</td>
+        <td><strong>1 failed, 3 passed</strong>, exit 1 — the retained tree is released</td></tr>
+      <tr><td>negative control: the post-push release guard removed</td>
+        <td>mutated head</td>
+        <td><strong>1 failed, 4 passed</strong>, exit 1 — the raising release refuses a
+        landed merge</td></tr>
+    </tbody>
+  </table>
+
+  <p>The third case is the release's placement rather than its predicate: a head that
+  conflicts is refused by <code>merge-tree</code> before the branch moves and before any
+  push, and the tree it would have freed is still on disk afterwards. The retention defect
+  was reproduced before it was repaired: with the retention dropped, the fourth case
+  reported the retained tree inside <code>release.released</code> and the tree was gone.</p>
+
+  <h3 id="release-the-merged-worktree-evidence">Evidence</h3>
+  <ul>
+    <li><code>1b3663ce4fd1f45393fac81a3289ecae7c6ec4b0</code> — dispatch base, the scratch
+    export the base arm ran in, with the new test copied in.</li>
+    <li><code>0acd27136f</code> — the head the arms ran at: <code>reckon/crew/merge.py</code>
+    +129/−1, <code>tests/test_a_merge_releases_its_worktree.py</code> +272.</li>
+  </ul>
+</section>
