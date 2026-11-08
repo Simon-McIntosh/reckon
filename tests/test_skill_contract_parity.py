@@ -128,6 +128,7 @@ def _narrowed_prohibition() -> str:
 LIMIT_SKILL_FILES = (
     ROOT / "skills" / "reckon-build" / "SKILL.md",
     ROOT / "skills" / "reckon-build" / "references" / "sprint-orchestration.md",
+    ROOT / "skills" / "reckon-build" / "references" / "coordinator-reference.md",
 )
 
 

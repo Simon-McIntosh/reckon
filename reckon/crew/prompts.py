@@ -248,9 +248,12 @@ BRIEF_LANDING_CONTRACT = (
 CLOSURE_AUTHORITY_CONTRACT = (
     "CONTRACT — WHO CLOSES THE NODE\n"
     "  A worker does not close its own node: it must not resolve its own\n"
-    "  driving followup and must not set a terminal status, because only the\n"
-    "  coordinator observes the other nodes — a worker knows its node landed,\n"
-    "  not whether the section closed."
+    "  driving followup, must not set the plan's terminal status, and must not\n"
+    "  move its section's declaration, because only the coordinator observes\n"
+    "  the other nodes — a worker knows its node landed, not whether the\n"
+    "  section closed. The manifest's `status:` line is the worker's own\n"
+    "  verdict: write it `complete`, `blocked` or `failed` when you finish,\n"
+    "  which reports your node and never closes the plan."
 )
 
 # The write-time manifest check, placed where the worker still holds the pen.

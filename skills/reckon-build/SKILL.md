@@ -432,9 +432,12 @@ reads as an idle session rather than as one blocked on its own check.
 
 Close the section when its deliverable is in the tree, not when its last sliver
 promoted. A worker does not close its own node: it must not resolve its own
-driving followup and must not set a terminal status, because only the
-coordinator observes the other nodes — a worker knows its node landed, not
-whether the section closed. Re-triage open followups after every landing beat;
+driving followup, must not set the plan's terminal status, and must not move
+its section's declaration, because only the coordinator observes the other
+nodes — a worker knows its node landed, not whether the section closed. The
+manifest's `status:` line is the worker's own verdict: write it `complete`,
+`blocked` or `failed` when you finish, which reports your node and never
+closes the plan. Re-triage open followups after every landing beat;
 manifest `outside_scope` entries enter the same triage loop as open plan
 followups. Folding is the default: work found beyond a node becomes a plan
 section, or an instruction in the next dispatch's prompt, and never a followup.

@@ -16,6 +16,11 @@ mid-wait is resumable.
 
 from __future__ import annotations
 
+import re
+from dataclasses import replace
+
+import pytest
+
 from reckon.crew.node import (
     NEEDS_HELP_MARKER,
     TaskNode,
@@ -360,7 +365,7 @@ def test_readonly_role_receives_the_narrowed_ban_and_no_landing_clause():
 CLOSURE_HEADER = "CONTRACT — WHO CLOSES THE NODE"
 CLOSURE_NO_SELF_CLOSE = "does not close its own node"
 CLOSURE_FOLLOWUP_LIMIT = "must not resolve its own driving followup"
-CLOSURE_TERMINAL_LIMIT = "must not set a terminal status"
+CLOSURE_TERMINAL_LIMIT = "must not set the plan's terminal status"
 CLOSURE_REASON = "only the coordinator observes the other nodes"
 CLOSURE_KNOWS_OWN_NODE = (
     "a worker knows its node landed, not whether the section closed"
@@ -424,3 +429,86 @@ def test_closure_limits_are_a_pure_removable_insertion(monkeypatch):
     before = _prompt(role="implement")
 
     assert after.replace(CLOSURE_AUTHORITY_CONTRACT, "", 1) == before
+
+
+# ── The closure contract says whose status each status is ────────────────────
+#
+# The limits above say what a worker may not close. These say whose status is
+# which: the plan's terminal status, its section's declaration and the driving
+# followup, and the manifest's `status:` line is the worker's own verdict. A
+# worker reading only the unqualified ban left its manifest at in-progress and
+# its run surfaced as unfinished.
+
+CLOSURE_DECLARATION_LIMIT = "must not move its section's declaration"
+CLOSURE_PLAN_STATUS_LIMIT = "must not set the plan's terminal status"
+MANIFEST_STATUS_VERDICT = "The manifest's `status:` line is the worker's own verdict"
+MANIFEST_STATUS_VOCABULARY = ("`complete`", "`blocked`", "`failed`")
+TERMINAL_STATUS = "terminal status"
+PLAN_POSSESSIVE = "the plan's "
+SECTION_POSSESSIVE = "the section's "
+
+
+def _closure_block(prompt: str) -> str:
+    """The closure block alone, flattened: the text a worker reads about
+    closing, bounded by the next contract that follows it."""
+    flat = _flat(prompt)
+    return flat[flat.index(CLOSURE_HEADER) :].split("FENCE —", 1)[0]
+
+
+def _brief_prompt() -> str:
+    """A brief composition with can_land true, which is the only brief shape
+    that carries the closure block: a brief node still lands its own record."""
+    return compose_prompt(
+        node=replace(_node(), plan="", section=""),
+        project="proj",
+        worktree="/repo/worktrees/lifetime-run",
+        working_directory="/repo/worktrees/lifetime-run",
+        manifest_path="/state/runs/lifetime-run/manifest.md",
+        time_budget="20m",
+        needs_help_after_failures=2,
+        can_write_worktree=True,
+        brief="probe the closure contract",
+    )
+
+
+@pytest.mark.parametrize(
+    "compose", [_prompt, _brief_prompt], ids=["implement", "brief"]
+)
+def test_the_closure_block_names_the_plans_status_and_the_manifests(compose):
+    block = _closure_block(compose())
+
+    assert CLOSURE_NO_SELF_CLOSE in block
+    assert CLOSURE_FOLLOWUP_LIMIT in block
+    assert CLOSURE_PLAN_STATUS_LIMIT in block
+    assert CLOSURE_DECLARATION_LIMIT in block
+    assert MANIFEST_STATUS_VERDICT in block
+    for verdict in MANIFEST_STATUS_VOCABULARY:
+        assert verdict in block
+
+
+@pytest.mark.parametrize(
+    "compose", [_prompt, _brief_prompt], ids=["implement", "brief"]
+)
+def test_no_prompt_sentence_forbids_a_terminal_status_without_the_plan(compose):
+    """Every mention of a terminal status names whose status it is.
+
+    Proximity of the words "plan" or "section" anywhere in the sentence is not
+    proof: the ban's own reason clause ends "... not whether the section
+    closed", so a sentence-level test passes on exactly the unqualified wording
+    it exists to catch. The qualifier is read immediately before each mention
+    instead, and the unqualified literal is refused outright.
+    """
+    flat = _flat(compose())
+
+    assert "must not set a terminal status" not in flat, (
+        "the unqualified ban is back: read literally it covers the manifest's "
+        "own status line, which the same prompt requires the worker to set"
+    )
+    starts = [match.start() for match in re.finditer(TERMINAL_STATUS, flat)]
+    assert starts, "no terminal status is named at all"
+    unqualified = [
+        flat[max(0, start - 24) : start + len(TERMINAL_STATUS)]
+        for start in starts
+        if not flat[:start].endswith((PLAN_POSSESSIVE, SECTION_POSSESSIVE))
+    ]
+    assert unqualified == [], unqualified

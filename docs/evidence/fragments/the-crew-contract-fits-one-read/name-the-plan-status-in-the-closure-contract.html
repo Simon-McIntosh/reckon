@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="the-crew-contract-fits-one-read">
+  <meta name="plan-title" content="The crew contract fits one read">
+  <meta name="plan-evidence-for" content="reckon:the-crew-contract-fits-one-read">
+  <meta name="plan-verifies" content="reckon:the-crew-contract-fits-one-read#s6">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-08">
+  <title>The closure contract names the plan's status | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="name-the-plan-status-in-the-closure-contract-block">
+  <h2>The closure contract names whose status is whose</h2>
+
+  <p id="name-the-plan-status-in-the-closure-contract-what-changed"><strong>What changed.</strong>
+  <code>CLOSURE_AUTHORITY_CONTRACT</code> in <code>reckon/crew/prompts.py</code>
+  told a worker it "must not set a terminal status" without saying whose. Read
+  literally the ban covered the manifest's own <code>status:</code> line, which
+  the same prompt's MANIFEST block requires the worker to set. The block now
+  names what the worker may not close &mdash; its driving followup, the plan's
+  terminal status and its section's declaration &mdash; and states in the same
+  block that the manifest's <code>status:</code> line is the worker's own
+  verdict, written <code>complete</code>, <code>blocked</code> or
+  <code>failed</code> when it finishes. The three skill mirrors
+  (<code>skills/reckon-build/SKILL.md</code>,
+  <code>references/sprint-orchestration.md</code> and
+  <code>references/coordinator-reference.md</code>) carry the same sentence, and
+  <code>LIMIT_SKILL_FILES</code> in <code>tests/test_skill_contract_parity.py</code>
+  now measures the coordinator reference against the prompt, so no one of the
+  three can drift alone. <code>CLOSURE_TERMINAL_LIMIT</code> and the
+  byte-identical <code>PLAN_PROMPT_SNAPSHOT</code> moved with the wording.</p>
+
+  <p id="name-the-plan-status-in-the-closure-contract-reproduced"><strong>The defect reproduced before the repair.</strong>
+  Composing both carriers that carry the closure block &mdash; an implement
+  prompt and a brief prompt with <code>can_land</code> true &mdash; the block
+  read "must not resolve its own driving followup and must not set a terminal
+  status", and neither composition named the plan's status nor told the worker
+  to write its manifest status. The probe reported
+  <code>unqualified True in both,
+  the plan's terminal status False, manifest-status sentence False</code>. After
+  the change the same probe reports <code>unqualified False,
+  the plan's terminal status True, section declaration True, manifest verdict
+  True, status vocabulary True</code> in both carriers.</p>
+
+  <p id="name-the-plan-status-in-the-closure-contract-negative-control"><strong>The negative control.</strong>
+  Restoring the unqualified "must not set a terminal status" in the constant and
+  running the armed command turned it red: <code>7 failed, 61 passed</code>,
+  <code>EXIT=1</code>, naming
+  <code>test_the_closure_block_names_the_plans_status_and_the_manifests[implement]</code>,
+  <code>...[brief]</code>,
+  <code>test_landing_capable_roles_carry_the_two_closure_limits</code>, the three
+  <code>test_paths_carry_the_closure_limits_from_the_prompt</code> mirrors and
+  the plan-prompt snapshot. The head arm fails none of them.</p>
+
+  <p id="name-the-plan-status-in-the-closure-contract-measured"><strong>Measured.</strong>
+  Armed command, resolved over each arm's own tree:
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_brief_prompt.py tests/test_crew_prompts.py
+  tests/test_skill_contract_parity.py</code>. Baseline at
+  <code>c8a0e5cd0a</code> is <code>63 passed in 9.80s</code>, <code>EXIT=0</code>;
+  the head at <code>02912c7d7e</code> is <code>68 passed in 7.81s</code>,
+  <code>EXIT=0</code>. The five added passes are the four new closure-verdict
+  cases and the third parity mirror. <code>ruff check</code> and
+  <code>ruff format --check</code> add no finding on the staged paths: the two
+  findings either arm reports (<code>S608</code> in
+  <code>reckon/crew/prompts.py</code>, <code>PLC0207</code> in
+  <code>tests/test_brief_prompt.py</code>) are present identically at the base
+  revision.</p>
+</section>
+
+<section id="name-the-plan-status-in-the-closure-contract-repair">
+  <h2>The unqualified-status check now fires on the wording it guards</h2>
+
+  <p id="name-the-plan-status-in-the-closure-contract-repair-finding"><strong>The finding.</strong>
+  The assertion added above split the prompt into sentences and excluded any
+  sentence containing "section". The unqualified ban's own reason clause ends
+  "not whether the section closed", so that exclusion matched the exact
+  wording the assertion existed to catch: on the reverted contract it returned
+  no offenders and passed. The earlier negative-control log recorded seven
+  failing ids and did not include this one, which is the finding's own
+  evidence.</p>
+
+  <p id="name-the-plan-status-in-the-closure-contract-repair-change"><strong>The repair.</strong>
+  The assertion now refuses the unqualified literal outright and reads the
+  qualifier immediately before each mention of a terminal status, requiring
+  <code>the plan's</code> or <code>the section's</code>. Proximity of the words
+  anywhere in a sentence is no longer accepted as proof of ownership.</p>
+
+  <p id="name-the-plan-status-in-the-closure-contract-repair-control"><strong>The control.</strong>
+  With the repaired assertion in place and the contract wording reverted to the
+  unqualified ban, <code>pytest -k terminal_status</code> reports
+  <code>2 failed, 27 deselected</code>, <code>EXIT=1</code>, naming
+  <code>test_no_prompt_sentence_forbids_a_terminal_status_without_the_plan[implement]</code>
+  and <code>[brief]</code> — the same check that passed with no offenders
+  before the repair. With the wording restored, the same selection is
+  <code>2 passed</code>.</p>
+
+  <p id="name-the-plan-status-in-the-closure-contract-repair-measured"><strong>Measured.</strong>
+  Armed command unchanged, resolved over each arm's own tree. The repair's base
+  at <code>cf6ccc8837</code> is <code>68 passed in 9.47s</code>,
+  <code>EXIT=0</code>; its head at <code>80bd3ae414</code> is
+  <code>68 passed in 10.38s</code>, <code>EXIT=0</code>. <code>ruff check</code>
+  and <code>ruff format --check</code> still report only the two findings
+  present at the base revision, so the repair adds none.</p>
+</section>
+</main>
+</body>
+</html>

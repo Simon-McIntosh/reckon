@@ -316,9 +316,12 @@ CONTRACT — LANDING YOUR RECORD
 
 CONTRACT — WHO CLOSES THE NODE
   A worker does not close its own node: it must not resolve its own
-  driving followup and must not set a terminal status, because only the
-  coordinator observes the other nodes — a worker knows its node landed,
-  not whether the section closed.
+  driving followup, must not set the plan's terminal status, and must not
+  move its section's declaration, because only the coordinator observes
+  the other nodes — a worker knows its node landed, not whether the
+  section closed. The manifest's `status:` line is the worker's own
+  verdict: write it `complete`, `blocked` or `failed` when you finish,
+  which reports your node and never closes the plan.
 
 FENCE — SCOPE (exclusive write paths; nothing outside them)
   reckon/crew/prompts.py
