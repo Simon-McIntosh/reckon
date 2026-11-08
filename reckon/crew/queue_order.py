@@ -22,17 +22,13 @@ _PRIORITY_KEYS: dict[
 
 def _named_plan_signature(docs_dir: Path, slugs: set[str]) -> tuple[Any, ...]:
     """The named plans' file identities, including absent files."""
+    from reckon import file_memo
+
     signature: list[tuple[str, tuple[int, int, int, int, int] | None]] = []
     for slug in sorted(slugs):
         try:
             stat = (docs_dir / "plans" / f"{slug}.html").stat()
-            identity = (
-                stat.st_dev,
-                stat.st_ino,
-                stat.st_size,
-                stat.st_mtime_ns,
-                stat.st_ctime_ns,
-            )
+            identity = file_memo.signature_from_stat(stat)
         except OSError:
             identity = None
         signature.append((slug, identity))

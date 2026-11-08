@@ -896,7 +896,14 @@ def _checkout_code_is_trusted() -> bool:
     if remembered is not None:
         return remembered
     verdict = checkout_trust.moved_checkout_is_trustworthy(root)
-    if not verdict.dirty and stamp != checkout_trust.IDENTITY_UNKNOWN:
+    if (
+        not verdict.dirty
+        and stamp != checkout_trust.IDENTITY_UNKNOWN
+        and not isinstance(
+            verdict.detail,
+            (checkout_trust.ImportProbeTimedOut, checkout_trust.ImportProofPending),
+        )
+    ):
         _TRUSTED_CODE_STAMPS.clear()
         _TRUSTED_CODE_STAMPS[key] = verdict.trusted
     return verdict.trusted
@@ -2741,17 +2748,13 @@ def _readiness_file_identities(
     docs_dir: Path, inventory: Mapping[str, Any]
 ) -> tuple[tuple[str, tuple[int, int, int, int, int] | None], ...]:
     """Stat identities of precisely the plan files that supplied a verdict."""
+    from reckon import file_memo
+
     identities = []
     for slug in sorted(inventory):
         try:
             stat = (docs_dir / "plans" / f"{slug}.html").stat()
-            identity = (
-                stat.st_dev,
-                stat.st_ino,
-                stat.st_size,
-                stat.st_mtime_ns,
-                stat.st_ctime_ns,
-            )
+            identity = file_memo.signature_from_stat(stat)
         except OSError:
             identity = None
         identities.append((slug, identity))

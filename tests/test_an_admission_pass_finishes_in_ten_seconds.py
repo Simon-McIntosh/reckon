@@ -9,8 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from reckon import checkout_trust, mcp_discovery, roadmap, serve
-from reckon.crew import plan_review, queue_admission, runs
+from reckon import checkout_trust, file_memo, mcp_discovery, roadmap, serve
+from reckon.crew import plan_review, queue_admission, queue_order, runs
 from tests import test_a_queued_request_waits_on_its_dependencies as fixtures
 
 
@@ -195,3 +195,56 @@ def test_code_stamp_is_probed_once(
     stamp["value"] = "changed-stamp"
     assert not queue_admission._checkout_code_is_trusted()
     assert probes == [tmp_path, tmp_path]
+
+
+@pytest.mark.parametrize(
+    "refusal",
+    [
+        checkout_trust.ImportProbeTimedOut("proof timed out"),
+        checkout_trust.ImportProofPending("proof pending"),
+    ],
+)
+def test_transient_trust_refusal_retries_same_stamp(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, refusal: str
+) -> None:
+    probes: list[Path] = []
+    queue_admission._TRUSTED_CODE_STAMPS.clear()
+    monkeypatch.setattr(queue_admission, "_source_root", lambda: tmp_path)
+    monkeypatch.setattr(queue_admission, "_admit_code_stamp", lambda: "same-stamp")
+    monkeypatch.setattr(
+        checkout_trust, "tracked_reckon_tree_is_dirty", lambda _: (False, "")
+    )
+    monkeypatch.setattr(checkout_trust, "published_reload_image", lambda _: False)
+
+    def probe(root: Path) -> tuple[bool, str]:
+        probes.append(root)
+        return (False, refusal) if len(probes) == 1 else (True, "")
+
+    monkeypatch.setattr(checkout_trust, "_probe_imports", probe)
+    assert not queue_admission._checkout_code_is_trusted()
+    assert queue_admission._checkout_code_is_trusted()
+    assert queue_admission._checkout_code_is_trusted()
+    assert probes == [tmp_path, tmp_path]
+
+
+def test_named_file_identities_use_shared_signature(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    plans = tmp_path / "plans"
+    plans.mkdir()
+    (plans / "example.html").write_text("<html></html>", encoding="utf-8")
+    observed = []
+    signature = file_memo.signature_from_stat
+
+    def record(stat: os.stat_result) -> tuple[int, int, int, int, int]:
+        observed.append(stat)
+        return signature(stat)
+
+    monkeypatch.setattr(file_memo, "signature_from_stat", record)
+    expected = (("example", signature((plans / "example.html").stat())),)
+    assert (
+        queue_admission._readiness_file_identities(tmp_path, {"example": {}})
+        == expected
+    )
+    assert queue_order._named_plan_signature(tmp_path, {"example"}) == expected
+    assert len(observed) == 2
