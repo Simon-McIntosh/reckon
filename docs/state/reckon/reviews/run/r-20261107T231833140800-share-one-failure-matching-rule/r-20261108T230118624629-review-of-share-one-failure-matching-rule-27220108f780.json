@@ -1,0 +1,213 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_independence": "Expected flags, membership, counts, qualified identities and unmatched sets are fixture expectations independent of the implementation. HEAD_ID appears both as an input log ID and expected output spelling, but removal of filtering, path discrimination or key normalization makes the paired empty/refusal or different-file assertions fail; no regression assertion relies only on echoed supplied data. The candidate commit echo itself is not counted as a separate durability guard.",
+  "assertion_reviews": [
+    {
+      "assertion": "assert result[\"verdict\"] == \"matched\"",
+      "failure_condition": "Exact set subtraction admits the already-covered control instead of raising; treating different qualified files as identical prevents the independent matched verdict and added HEAD_ID result.",
+      "file": "tests/test_every_failure_comparison_shares_one_rule.py",
+      "line": 71
+    },
+    {
+      "assertion": "assert result[\"added_failure_ids\"] == [HEAD_ID]",
+      "failure_condition": "Exact set subtraction admits the already-covered control instead of raising; treating different qualified files as identical prevents the independent matched verdict and added HEAD_ID result.",
+      "file": "tests/test_every_failure_comparison_shares_one_rule.py",
+      "line": 72
+    },
+    {
+      "assertion": "assert ledger.added_failure_ids(_arm([reference]), _arm([HEAD_ID])) == expected",
+      "failure_condition": "Exact subtraction reports HEAD_ID for bare test_x; matching only final names wrongly removes HEAD_ID for OTHER_ID.",
+      "file": "tests/test_every_failure_comparison_shares_one_rule.py",
+      "line": 79
+    },
+    {
+      "assertion": "assert bool(missing) == (reference == OTHER_ID)",
+      "failure_condition": "Exact membership rejects bare attribution; leaf-only matching accepts the different-file attribution or loses the required missing-field diagnostic.",
+      "file": "tests/test_every_failure_comparison_shares_one_rule.py",
+      "line": 89
+    },
+    {
+      "assertion": "assert \"not in after_suite.failure_ids\" in missing[0]",
+      "failure_condition": "Exact membership rejects bare attribution; leaf-only matching accepts the different-file attribution or loses the required missing-field diagnostic.",
+      "file": "tests/test_every_failure_comparison_shares_one_rule.py",
+      "line": 91
+    },
+    {
+      "assertion": "assert ledger.new_failure_attribution(\n        _arm([]), _arm([HEAD_ID]), {\"test_x\": \"b\" * 40}\n    ) == {HEAD_ID: \"b\" * 40}",
+      "failure_condition": "Exact-key attribution drops a bare key or retains that bare key instead of the measured qualified key; ignoring baseline coverage attributes a pre-existing failure; dropping path identity accepts OTHER_ID.",
+      "file": "tests/test_every_failure_comparison_shares_one_rule.py",
+      "line": 95
+    },
+    {
+      "assertion": "assert (\n        ledger.new_failure_attribution(\n            _arm([\"test_x\"]), _arm([HEAD_ID]), {\"test_x\": \"b\" * 40}\n        )\n        == {}\n    )",
+      "failure_condition": "Exact-key attribution drops a bare key or retains that bare key instead of the measured qualified key; ignoring baseline coverage attributes a pre-existing failure; dropping path identity accepts OTHER_ID.",
+      "file": "tests/test_every_failure_comparison_shares_one_rule.py",
+      "line": 98
+    },
+    {
+      "assertion": "assert (\n        ledger.new_failure_attribution(_arm([]), _arm([HEAD_ID]), {OTHER_ID: \"b\" * 40})\n        == {}\n    )",
+      "failure_condition": "Exact-key attribution drops a bare key or retains that bare key instead of the measured qualified key; ignoring baseline coverage attributes a pre-existing failure; dropping path identity accepts OTHER_ID.",
+      "file": "tests/test_every_failure_comparison_shares_one_rule.py",
+      "line": 104
+    },
+    {
+      "assertion": "assert result.unreadable == \"\"",
+      "failure_condition": "Exact identity isolates the bare-covered failure; path-insensitive matching suppresses a distinct-file failure; unreadable arms would violate the independent empty-unreadable expectation.",
+      "file": "tests/test_every_failure_comparison_shares_one_rule.py",
+      "line": 134
+    },
+    {
+      "assertion": "assert sorted(result.isolated) == expected",
+      "failure_condition": "Exact identity isolates the bare-covered failure; path-insensitive matching suppresses a distinct-file failure; unreadable arms would violate the independent empty-unreadable expectation.",
+      "file": "tests/test_every_failure_comparison_shares_one_rule.py",
+      "line": 135
+    },
+    {
+      "assertion": "assert review.added_failures_from_gate_logs(_log([reference]), _log([HEAD_ID])) == (\n        len(expected),\n        expected,\n    )",
+      "failure_condition": "Raw log-ID subtraction counts a bare-covered failure, or path-insensitive matching erases a different-file addition, changing the expected count and IDs.",
+      "file": "tests/test_every_failure_comparison_shares_one_rule.py",
+      "line": 142
+    },
+    {
+      "assertion": "assert review._retires_id(f\"Retire `{reference}`.\", HEAD_ID) is expected",
+      "failure_condition": "Reinstating exact equality prevents bare-name retirement; ignoring qualified paths retires a different-file test.",
+      "file": "tests/test_every_failure_comparison_shares_one_rule.py",
+      "line": 152
+    },
+    {
+      "assertion": "assert review._retires_id(f\"Retire `{token}`.\", HEAD_ID, (scratch,)) is True",
+      "failure_condition": "Dropping arm-directory canonicalisation makes the first assertion false; accepting arbitrary prefixes without a recorded directory makes the second false.",
+      "file": "tests/test_every_failure_comparison_shares_one_rule.py",
+      "line": 160
+    },
+    {
+      "assertion": "assert review._retires_id(f\"Retire `{token}`.\", HEAD_ID) is False",
+      "failure_condition": "Dropping arm-directory canonicalisation makes the first assertion false; accepting arbitrary prefixes without a recorded directory makes the second false.",
+      "file": "tests/test_every_failure_comparison_shares_one_rule.py",
+      "line": 161
+    },
+    {
+      "assertion": "assert (finding in result[\"findings\"]) is overlap",
+      "failure_condition": "Exact intersection misses bare/qualified overlap, while treating unrelated names as overlapping emits the finding in the negative case.",
+      "file": "tests/test_every_failure_comparison_shares_one_rule.py",
+      "line": 183
+    },
+    {
+      "assertion": "assert result.matched_base == {\"test_x\", \"tests/c.py::test_y\"}",
+      "failure_condition": "Removing reverse matching loses tests/c.py::test_y and test_y; relaxing path or parameter identity includes OTHER_ID or test_z[1] and removes them from the independent unmatched expectations.",
+      "file": "tests/test_every_failure_comparison_shares_one_rule.py",
+      "line": 191
+    },
+    {
+      "assertion": "assert result.matched_head == {HEAD_ID, \"test_y\"}",
+      "failure_condition": "Removing reverse matching loses tests/c.py::test_y and test_y; relaxing path or parameter identity includes OTHER_ID or test_z[1] and removes them from the independent unmatched expectations.",
+      "file": "tests/test_every_failure_comparison_shares_one_rule.py",
+      "line": 192
+    },
+    {
+      "assertion": "assert result.unmatched_base == {\"test_z[1]\", OTHER_ID}",
+      "failure_condition": "Removing reverse matching loses tests/c.py::test_y and test_y; relaxing path or parameter identity includes OTHER_ID or test_z[1] and removes them from the independent unmatched expectations.",
+      "file": "tests/test_every_failure_comparison_shares_one_rule.py",
+      "line": 193
+    },
+    {
+      "assertion": "assert result.unmatched_head == {\"tests/d.py::test_z[2]\"}",
+      "failure_condition": "Removing reverse matching loses tests/c.py::test_y and test_y; relaxing path or parameter identity includes OTHER_ID or test_z[1] and removes them from the independent unmatched expectations.",
+      "file": "tests/test_every_failure_comparison_shares_one_rule.py",
+      "line": 194
+    },
+    {
+      "assertion": "assert review.failure_ids_covered(base, heads) == expected",
+      "failure_condition": "Failing to remove a head parameter suffix prevents bare coverage; stripping the base suffix erases the distinct second parameter; making coverage symmetric erases the qualified-base/bare-head addition.",
+      "file": "tests/test_every_failure_comparison_shares_one_rule.py",
+      "line": 208
+    }
+  ],
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/crew/promotion_checks.py:2466",
+    "reckon/crew/promotion_records.py:788",
+    "reckon/crew/promotion_records.py:792",
+    "reckon/crew/queue_landing.py:1089",
+    "reckon/crew/reports.py:2677",
+    "reckon/crew/reports.py:2685",
+    "reckon/crew/review.py:2821",
+    "reckon/crew/review.py:2841",
+    "reckon/crew/promotion_evidence.py:1265"
+  ],
+  "completed_at": "2026-11-08T23:13:25Z",
+  "dispatched_at": "2026-11-08T23:05:23Z",
+  "evidence_logs": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T231833140800-share-one-failure-matching-rule/after-suite.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T231833140800-share-one-failure-matching-rule/baseline-suite.log",
+    "negative_control": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T231833140800-share-one-failure-matching-rule/negative-control.log"
+  },
+  "evidence_note": "Focused armed pair: 10 failed, 12 passed at base; 22 passed at implementation revision 29fcc7e70f0805c5fd4859f251425984391ff275; later two commits change only the fragment. Negative control: 3 failed, 19 passed. Positive control for the failure-ID reader is the ten known failures in the base log; no added IDs is measured, not inferred from missing logs.",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/share-one-failure-matching-rule.html",
+      "line": "28",
+      "severity": "non-blocking",
+      "text": "non-blocking: The committed fragment says both importer arms lack completed summaries and the delta is unmeasured, whereas the later source manifest and coordinator logs record completed arms and a measured delta; readers of the fragment alone see obsolete evidence, although resume-2-advice.txt explicitly required preserving this head and making only a manifest update."
+    }
+  ],
+  "importer_comparison": {
+    "authorization": [
+      "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T231833140800-share-one-failure-matching-rule/resume-1-advice.txt",
+      "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T231833140800-share-one-failure-matching-rule/resume-2-advice.txt"
+    ],
+    "base_failure_count": 97,
+    "base_log": "/home/ITER/mcintos/.cache/reckon-evidence/promotion-evidence-s5-importers/base-arm.log",
+    "head_failure_count": 82,
+    "head_log": "/home/ITER/mcintos/.cache/reckon-evidence/promotion-evidence-s5-importers/head-arm.log",
+    "interpretation": "One raw addition is attributed by the source manifest and resume advice to elapsed fixture age; the separate head run passes. This broader importer result is distinct from added_failure_count derived from the armed suite pair.",
+    "isolated_head_log": "/home/ITER/mcintos/.cache/reckon-evidence/promotion-evidence-s5-importers/added-id-alone-at-head.log",
+    "isolated_head_result": "7 passed in 5.84s; EXIT=0",
+    "raw_added_ids": [
+      "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py::test_overdue_review_duty_reports_age_without_a_dispatch_command"
+    ],
+    "resolved_count": 16
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 9 production call site(s)",
+    "diff": "Read 14ea8393c72827f1cf2fbd54dd0e19853ea8a957, 29fcc7e70f0805c5fd4859f251425984391ff275, 2a0989e911678031df3f77051e5694b490442bc5 and 27220108f7803b49c05f2782c3ab95dd76c299d9 individually against base 3f1805b1505950734cc9e7f48e57ff545fa87384; the production changes centralize identity matching and preserve scratch-directory canonicalisation, with one stale fragment statement noted below.",
+    "done_when": "Plan section s5 and source prompt FENCE EVIDENCE are covered by baseline-suite.log (10 failed, 12 passed), after-suite.log (22 passed), negative-control.log (3 failed, 19 passed), and the completed coordinator importer logs; resume-1-advice.txt explicitly authorizes six workers and resume-2-advice.txt preserves the head while recording the replacement evidence.",
+    "goal": "The source prompt goal is to make every failure-id comparison share one matching rule; reckon/crew/review.py:2087 owns the shared mechanism reached by all six designated sites.",
+    "manifest": "The source manifest records four delivered commits, the focused suite pair and mutation log, and the later completed importer comparison with 97 base and 82 head failing IDs and one raw added wall-clock failure supported by a separate seven-pass head log.",
+    "write_paths": "The source manifest orientation_write_paths grants the five production modules, new test, and landing fragment; all seven paths in the four-commit diff are inside those grants."
+  },
+  "justifications": {
+    "durability": "tests/test_every_failure_comparison_shares_one_rule.py:66 refuses a covered control and :160 requires recorded-directory retirement, both redden under the recorded mutations, and the remaining independent expected outcomes at :77-208 fail on the corresponding equality, qualification, direction or parameter regressions.",
+    "evidence": "The source run baseline-suite.log, after-suite.log and negative-control.log contain completed summaries and exit receipts, and the coordinator base-arm.log/head-arm.log support the importer delta, although docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/share-one-failure-matching-rule.html:28 still reports that delta as unmeasured.",
+    "fit": "reckon/crew/review.py:2087-2136 extends the existing review identity owner with a typed NamedTuple and shared helper, ledger.py:580 follows local-import idioms, and the changed source names and comments describe mechanisms without prohibited plan labels.",
+    "goal_fidelity": "reckon/crew/promotion_checks.py:2149, reckon/ledger.py:590, reckon/crew/landing_measure.py:679, reckon/crew/review.py:2423 and :2787 reuse coverage while reckon/crew/reports.py:2677 uses the required two-way overlap result.",
+    "reuse": "Capability searches for failure/test matching, coverage, overlap and final-segment comparisons across reckon locate the existing owner at reckon/crew/review.py:2056 and its consumer at promotion_evidence.py:1213; the new helper, FailureIdMatch and failure_ids_match extend that owner rather than duplicating it, while test _arm and _log are local synthetic fixtures.",
+    "scope_discipline": "All seven changed paths listed in the source manifest changed_paths fit orientation_write_paths, and the four commits contain only shared matching, regression coverage and the granted landing evidence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt goal is to make every failure-id comparison share one matching rule; reckon/crew/review.py:2087 owns the shared mechanism reached by all six designated sites.\nVERDICT done_when: Plan section s5 and source prompt FENCE EVIDENCE are covered by baseline-suite.log (10 failed, 12 passed), after-suite.log (22 passed), negative-control.log (3 failed, 19 passed), and the completed coordinator importer logs; resume-1-advice.txt explicitly authorizes six workers and resume-2-advice.txt preserves the head while recording the replacement evidence.\nVERDICT write_paths: The source manifest orientation_write_paths grants the five production modules, new test, and landing fragment; all seven paths in the four-commit diff are inside those grants.\nVERDICT manifest: The source manifest records four delivered commits, the focused suite pair and mutation log, and the later completed importer comparison with 97 base and 82 head failing IDs and one raw added wall-clock failure supported by a separate seven-pass head log.\nVERDICT diff: Read 14ea8393c72827f1cf2fbd54dd0e19853ea8a957, 29fcc7e70f0805c5fd4859f251425984391ff275, 2a0989e911678031df3f77051e5694b490442bc5 and 27220108f7803b49c05f2782c3ab95dd76c299d9 individually against base 3f1805b1505950734cc9e7f48e57ff545fa87384; the production changes centralize identity matching and preserve scratch-directory canonicalisation, with one stale fragment statement noted below.\nCALL_SITES: reckon/crew/promotion_checks.py:2466, reckon/crew/promotion_records.py:788, reckon/crew/promotion_records.py:792, reckon/crew/queue_landing.py:1089, reckon/crew/reports.py:2677, reckon/crew/reports.py:2685, reckon/crew/review.py:2821, reckon/crew/review.py:2841, reckon/crew/promotion_evidence.py:1265\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_checks.py:2149, reckon/ledger.py:590, reckon/crew/landing_measure.py:679, reckon/crew/review.py:2423 and :2787 reuse coverage while reckon/crew/reports.py:2677 uses the required two-way overlap result.\nSCORE evidence: 19\nJUSTIFICATION evidence: The source run baseline-suite.log, after-suite.log and negative-control.log contain completed summaries and exit receipts, and the coordinator base-arm.log/head-arm.log support the importer delta, although docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/share-one-failure-matching-rule.html:28 still reports that delta as unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: All seven changed paths listed in the source manifest changed_paths fit orientation_write_paths, and the four commits contain only shared matching, regression coverage and the granted landing evidence.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_every_failure_comparison_shares_one_rule.py:66 refuses a covered control and :160 requires recorded-directory retirement, both redden under the recorded mutations, and the remaining independent expected outcomes at :77-208 fail on the corresponding equality, qualification, direction or parameter regressions.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/review.py:2087-2136 extends the existing review identity owner with a typed NamedTuple and shared helper, ledger.py:580 follows local-import idioms, and the changed source names and comments describe mechanisms without prohibited plan labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for failure/test matching, coverage, overlap and final-segment comparisons across reckon locate the existing owner at reckon/crew/review.py:2056 and its consumer at promotion_evidence.py:1213; the new helper, FailureIdMatch and failure_ids_match extend that owner rather than duplicating it, while test _arm and _log are local synthetic fixtures.\nFINDING docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/share-one-failure-matching-rule.html:28 non-blocking: The committed fragment says both importer arms lack completed summaries and the delta is unmeasured, whereas the later source manifest and coordinator logs record completed arms and a measured delta; readers of the fragment alone see obsolete evidence, although resume-2-advice.txt explicitly required preserving this head and making only a manifest update.\n",
+  "recommended_non_blocking_disposition": {
+    "disposition": "exempted",
+    "reason": "The later explicit resume advice requires a manifest-only correction preserving the reviewed head; latest manifest and evidence logs provide the accurate measured state."
+  },
+  "review_run_id": "r-20261108T230118624629-review-of-share-one-failure-matching-rule-27220108f780",
+  "reviewed_base_sha": "3f1805b1505950734cc9e7f48e57ff545fa87384",
+  "reviewed_head_sha": "27220108f7803b49c05f2782c3ab95dd76c299d9",
+  "reviewed_run_id": "r-20261107T231833140800-share-one-failure-matching-rule",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T23:21:54.257847+00:00",
+  "total": 119
+}
