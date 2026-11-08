@@ -1,0 +1,65 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own suite pair: baseline_suite (8ad90651f6) failed 3 ids at the base arm and after_suite (b7bda19d37) failed none, so the reviewed pair adds no failure. The reviewer's independent arm over tests/test_lane_change_reads_the_worktree.py, a file the reviewed run did not run, is 7 passed at 8ad90651f6 and 5 failed at 30a7167c3b; see reviewer_added_failures and the blocking finding.",
+  "completed_at": "2026-11-08T10:22:22.340Z",
+  "dispatched_at": "2026-11-08T10:08:53Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_sessions.py",
+      "line": 2229,
+      "severity": "blocking",
+      "summary": "The change adds a second module-level _worktree_git_read at 2229 beside the existing one at 1471 with a different signature (str instead of (CompletedProcess, error)). Module import binds the later definition, so _inherited_worktree_reading at 1492 unpacks a str into (result, error) and raises ValueError: too many values to unpack for any worktree that exists. Measured at the reviewed head: 5 of 7 tests in tests/test_lane_change_reads_the_worktree.py fail, against 7 passed at base 8ad90651f6. Production reach is the lane-change prompt at dispatch_sessions.py:1610, re-exported by reckon/crew/dispatch.py:4007."
+    },
+    {
+      "file": "reckon/crew/dispatch_sessions.py",
+      "line": 2249,
+      "severity": "non-blocking",
+      "summary": "_preserve_stopped_worktree re-implements worktree residue capture that reckon/crew/routing.py:_save_and_release_worktree at 1452 already owns (git diff HEAD plus the tracked and untracked name lists written into the run directory) without extending, wrapping or naming that owner; the two implementations now differ silently in flags and in failure behaviour."
+    },
+    {
+      "file": "reckon/crew/dispatch_sessions.py",
+      "line": 2198,
+      "severity": "non-blocking",
+      "summary": "The section requires the saved diff's path in both the result crew stop prints and the attempt's exit record. The landed change carries it on the run's record and its detail only; the exit record is composed by reckon/crew/dispatch_launch.py:_supervisor_exit_record at 3001, which is outside this node's write fence and is declared under outside_scope rather than delivered, so that half of the deliverable still needs a node that owns that module."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Production call sites checked: reckon/crew_run_commands.py:2487 (crew stop calls terminate), reckon/crew/dispatch_sessions.py:1610 (_lane_prompt calls _inherited_worktree_reading, which is the path the duplicate helper breaks), reckon/crew/dispatch.py:4007 (re-export of _inherited_worktree_reading).",
+    "diff": "Read commit by commit against 8ad90651f6: b4ade2d7e7 adds the mechanism, b7bda19d37 is a formatting-only follow-up, 30a7167c3b adds the landing fragment; 460 insertions over three files, all inside the declared scope, with the duplicate _worktree_git_read at 2229 alongside the pre-existing one at 1471.",
+    "done_when": "The done_when names three cases over a temporary repository and crew home with a live stand-in worker; tests/test_a_stop_keeps_the_attempts_uncommitted_work.py implements exactly those three, its head log logs/head.log records 3 passed EXIT=0, and its base arm logs/base.log records the same 3 ids failing EXIT=1.",
+    "goal": "The goal is that a stop keeps the attempt's uncommitted work rather than leaving it in the worktree unrecorded; reckon/crew/dispatch_sessions.py:2097 calls _preserve_stopped_worktree before any signal and the three reported states (saved, clean, unreadable) match the goal, but the exit-record half the plan's deliverable names is not written.",
+    "manifest": "The reviewed manifest records status complete, the three commits, the head and base logs, the negative control, and an outside_scope entry for the exit record; its population claim (28 passed, 1 failed, 1 skipped) is reproducible from logs/population.log but its six-file population excludes the test file that covers the edited module's other helper.",
+    "write_paths": "The declared write paths are reckon/crew/dispatch_sessions.py, tests/test_a_stop_keeps_the_attempts_uncommitted_work.py and the evidence fragment directory; all three changed paths in the diff are inside them and nothing else was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a stop keeps the attempt's uncommitted work; reckon/crew/dispatch_sessions.py:2097 reads the worktree before the signal and reports saved, clean or unreadable, though the exit-record half of the plan's deliverable is absent.\nVERDICT done_when: the done_when's three cases are implemented in tests/test_a_stop_keeps_the_attempts_uncommitted_work.py and its result is recorded, 3 passed EXIT=0 at head and the same 3 ids failing EXIT=1 at base.\nVERDICT write_paths: read the declared paths and compared them with the diff; all three changed paths are inside the declared scope and nothing outside it was touched.\nVERDICT manifest: read; it records status complete, three commits, head and base logs, the negative control, and names the exit-record surface under outside_scope.\nVERDICT diff: read commit by commit against 8ad90651f6; the mechanism lands in b4ade2d7e7 and the same commit adds a second _worktree_git_read at line 2229 that shadows the definition at 1471.\nCALL_SITES: reckon/crew_run_commands.py:2487, reckon/crew/dispatch_sessions.py:1610, reckon/crew/dispatch.py:4007\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_sessions.py:2097 preserves the tree before signalling, but the path is never written to the attempt's exit record that reckon/crew/dispatch_launch.py:3001 composes.\nSCORE evidence: 12\nJUSTIFICATION evidence: logs/head.log records 3 passed EXIT=0 and logs/base.log reproduces 3 failures EXIT=1, but the population at logs/population.log excludes tests/test_lane_change_reads_the_worktree.py, which fails in five places at the head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/dispatch_sessions.py, the new test file and the assigned evidence fragment, all inside the declared write paths.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_stop_keeps_the_attempts_uncommitted_work.py:191 asserts '+attempt work' and the absence of 'deleted file mode', which reddens if the read is moved after the signal, but nothing in the change guards the module's own helper that the duplicate definition breaks.\nSCORE fit: 14\nJUSTIFICATION fit: the new helpers follow the module's comment and naming idiom, but reckon/crew/dispatch_sessions.py:2229 redefines a name the same file already defines at 1471, which is the module's own convention broken.\nSCORE reuse: 3\nJUSTIFICATION reuse: reckon/crew/dispatch_sessions.py:2229 duplicates the helper at 1471 and 2249 re-implements the residue capture owned by reckon/crew/routing.py:_save_and_release_worktree at 1452, extending neither.\nFINDING reckon/crew/dispatch_sessions.py:2229 blocking: the added _worktree_git_read shadows the definition at 1471, so _inherited_worktree_reading at 1492 raises ValueError: too many values to unpack. I would put back the single definition at 1471 and the five tests in tests/test_lane_change_reads_the_worktree.py pass again; 7 passed at base, 5 failed at the reviewed head.\nFINDING reckon/crew/dispatch_sessions.py:2249 non-blocking: _preserve_stopped_worktree re-implements the residue capture that reckon/crew/routing.py:_save_and_release_worktree at 1452 owns, without extending or wrapping it.\nFINDING reckon/crew/dispatch_sessions.py:2198 non-blocking: the saved diff's path reaches the result and the run record but not the attempt's exit record, which the section names as a deliverable and which reckon/crew/dispatch_launch.py:3001 owns outside this node's fence.\n",
+  "review_run_id": "r-20261108T100331906546-review-of-save-a-stopped-attempts-uncommitted-work-30a7167c3b5e",
+  "reviewed_base_sha": "8ad90651f6697606b66434ecc17c85c099025ddb",
+  "reviewed_head_sha": "30a7167c3b5eb29e106e5a44c252158b03243e9a",
+  "reviewed_run_id": "r-20261108T044348877264-save-a-stopped-attempts-uncommitted-work",
+  "reviewer_added_failures": {
+    "base_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T100331906546-review-of-save-a-stopped-attempts-uncommitted-work-30a7167c3b5e/lane-change-at-base.log",
+    "count": 5,
+    "head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T100331906546-review-of-save-a-stopped-attempts-uncommitted-work-30a7167c3b5e/lane-change-at-head.log",
+    "ids": [
+      "tests/test_lane_change_reads_the_worktree.py::test_fresh_start_names_an_uncommitted_file_and_requires_a_checkpoint",
+      "tests/test_lane_change_reads_the_worktree.py::test_clean_worktree_is_stated_affirmatively",
+      "tests/test_lane_change_reads_the_worktree.py::test_advice_is_unchanged_and_distinct_from_the_reading",
+      "tests/test_lane_change_reads_the_worktree.py::test_reading_states_when_it_was_taken",
+      "tests/test_lane_change_reads_the_worktree.py::test_reading_reports_head_and_a_different_recorded_base"
+    ]
+  },
+  "scores": {
+    "durability": 14,
+    "evidence": 12,
+    "fit": 14,
+    "goal_fidelity": 14,
+    "reuse": 3,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T10:31:00.623910+00:00",
+  "total": 76
+}
