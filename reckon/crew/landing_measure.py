@@ -52,6 +52,7 @@ from typing import Any
 
 from reckon.clones import changed_paths
 from reckon.crew.dispatch_launch import worker_scratch_root
+from reckon.crew.review import failure_ids_covered
 
 #: How many times an added id is re-run alone at each revision.
 REPEATS = 3
@@ -675,10 +676,10 @@ def measure_run(
             break
     added_base = {*suite_base.failure_ids, *population_base.failure_ids}
     added_head = [*suite_head.failure_ids, *population_head.failure_ids]
-    added: list[str] = []
-    for test_id in added_head:
-        if test_id not in added_base and test_id not in added:
-            added.append(test_id)
+    uncovered = failure_ids_covered(added_base, added_head)
+    added = list(
+        dict.fromkeys(test_id for test_id in added_head if test_id in uncovered)
+    )
     isolated: dict[str, dict[str, list[bool]]] = {}
 
     def narrowed(test_id: str, arm_tree: Path, arm: str, n: int) -> tuple[bool, str]:

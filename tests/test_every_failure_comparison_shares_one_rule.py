@@ -56,7 +56,11 @@ def test_control_admission_counts_only_uncovered_failures(
 
     def admit():
         return promotion_checks._require_declared_negative_control(
-            "matching-fixture", record, gate="passed", manifest=manifest
+            "matching-fixture",
+            record,
+            gate="passed",
+            manifest=manifest,
+            manifest_path=str(tmp_path / "manifest.md"),
         )
 
     if reference == "test_x":
@@ -105,7 +109,7 @@ def test_bare_attribution_is_stored_under_the_added_qualified_id() -> None:
 
 @pytest.mark.parametrize("reference, expected", [("test_x", []), (OTHER_ID, [HEAD_ID])])
 def test_landing_measure_isolates_only_uncovered_failures(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, reference: str, expected: list[str]
+    tmp_path: Path, reference: str, expected: list[str]
 ) -> None:
     base_tree = tmp_path / "base"
     head_tree = tmp_path / "head"

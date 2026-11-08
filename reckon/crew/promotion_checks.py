@@ -2143,7 +2143,11 @@ def _require_declared_negative_control(
         reference_ids: set[str] | None = head_ids
     else:
         reference_ids = baseline_ids
-    added = [] if reference_ids is None else sorted(control_ids - reference_ids)
+    added = (
+        []
+        if reference_ids is None
+        else sorted(review_module.failure_ids_covered(reference_ids, control_ids))
+    )
     recorded_exit = _recorded_exit_status(text)
     run_failed = _control_run_shows_a_failure(text, recorded_exit)
     check["control_exit_status"] = recorded_exit
