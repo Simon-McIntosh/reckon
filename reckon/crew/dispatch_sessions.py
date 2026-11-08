@@ -1468,8 +1468,14 @@ def _recorded_task_node(record: Mapping[str, Any]) -> TaskNode:
     )
 
 
+# How long one read-only git query inside a worktree may take. A handoff
+# reading must not block a lane change, so it takes this default; a stop saves
+# the tree's uncommitted work to disk and can afford the longer budget below.
+_WORKTREE_GIT_READ_SECONDS = 10.0
+
+
 def _worktree_git_read(
-    worktree: Path, *arguments: str
+    worktree: Path, *arguments: str, timeout: float = _WORKTREE_GIT_READ_SECONDS
 ) -> tuple[subprocess.CompletedProcess[str] | None, str | None]:
     """Run one bounded, read-only git query inside an inherited worktree."""
     try:
@@ -1479,7 +1485,7 @@ def _worktree_git_read(
             capture_output=True,
             text=True,
             check=False,
-            timeout=10,
+            timeout=timeout,
         )
     except (OSError, UnicodeError, subprocess.TimeoutExpired) as exc:
         return None, str(exc)
@@ -2212,6 +2218,12 @@ _STOP_SETTLE_POLL_SECONDS = 0.02
 # attempt cannot overwrite what an earlier one left behind.
 _STOPPED_ATTEMPT_DIFF_NAME = "stopped-attempt-{number}.diff"
 
+# The stop reads the tree to keep the work in it, so it waits longer than a
+# handoff reading: shared storage that stalls for more than the default ten
+# seconds is exactly when an uncommitted diff is worth saving, and a read that
+# gave up there would report the tree unreadable and keep nothing.
+_STOP_WORKTREE_GIT_TIMEOUT_SECONDS = 60.0
+
 
 def _stopped_attempt_diff_path(run_directory: Path, attempt: int) -> Path:
     """The first free ``stopped-attempt-<n>.diff`` at or above ``attempt``."""
@@ -2258,10 +2270,21 @@ def _preserve_stopped_worktree(
     except (TypeError, ValueError):
         attempt = 1
     diff_result, diff_error = _worktree_git_read(
-        tree, "diff", "HEAD", "--binary", "--no-ext-diff", "--no-renames", "--"
+        tree,
+        "diff",
+        "HEAD",
+        "--binary",
+        "--no-ext-diff",
+        "--no-renames",
+        "--",
+        timeout=_STOP_WORKTREE_GIT_TIMEOUT_SECONDS,
     )
     listed, listed_error = _worktree_git_read(
-        tree, "ls-files", "--others", "--exclude-standard"
+        tree,
+        "ls-files",
+        "--others",
+        "--exclude-standard",
+        timeout=_STOP_WORKTREE_GIT_TIMEOUT_SECONDS,
     )
     if diff_error or listed_error or diff_result is None or listed is None:
         reason = diff_error or listed_error or "git returned no reading"

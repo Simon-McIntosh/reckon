@@ -17,6 +17,7 @@ the work in it. That is the declared negative control.
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -25,7 +26,7 @@ from pathlib import Path
 import pytest
 
 from reckon import _store, crew
-from reckon.crew import runs
+from reckon.crew import dispatch_sessions, runs
 from reckon.crew.dispatch_sessions import terminate
 from reckon.crew.process_liveness import _process_start_time
 from reckon.crew.process_signal import RUN_ID_ENV
@@ -186,6 +187,34 @@ def _run_directory(run_id: str) -> Path:
     return runs.run_dir(run_id)
 
 
+# A read that outlasts the handoff budget but not the stop's. Shared storage
+# that stalls for over ten seconds is exactly when an uncommitted diff is worth
+# waiting for.
+_SLOW_READ_SECONDS = 11.0
+
+
+def _slow_git(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Put a ``git`` on PATH whose diff answer arrives after the slow delay.
+
+    The tree is real, so waiting produces a real diff; only the delivery of the
+    ``diff`` answer is delayed, which is what a stalled shared filesystem looks
+    like to a bounded read.
+    """
+    real_git = shutil.which("git")
+    assert real_git
+    bin_directory = tmp_path / "slow-bin"
+    bin_directory.mkdir()
+    shim = bin_directory / "git"
+    shim.write_text(
+        "#!/bin/sh\n"
+        f'if [ "$1" = "diff" ]; then sleep {_SLOW_READ_SECONDS}; fi\n'
+        f'exec {real_git} "$@"\n',
+        encoding="utf-8",
+    )
+    shim.chmod(0o755)
+    monkeypatch.setenv("PATH", f"{bin_directory}{os.pathsep}{os.environ['PATH']}")
+
+
 def test_a_dirty_tree_is_saved_before_the_signal(home: Path, tmp_path: Path) -> None:
     """The attempt's uncommitted work is in the run directory before the stop."""
     run_id = _unique_run_id()
@@ -278,5 +307,47 @@ def test_an_unreadable_worktree_is_named_and_the_run_still_ends(
         assert "the stop proceeded" in work["detail"]
         assert "the stop proceeded" in result["detail"]
         assert not list(_run_directory(run_id).glob("stopped-attempt-*.diff"))
+    finally:
+        _reap(child)
+
+
+def test_a_slow_read_within_the_stop_budget_still_saves_the_work(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A read slower than the handoff budget keeps the work; the default does not.
+
+    The stop reads the tree to keep what is in it, so it waits longer than a
+    lane handoff may: shared storage stalling past the handoff's ten seconds is
+    when an uncommitted diff is worth waiting for. Reading the same tree on the
+    default budget is the control — it gives up and keeps nothing.
+    """
+    run_id = _unique_run_id()
+    repository = _repository(tmp_path)
+    (repository / "tracked.txt").write_text(
+        "original\nattempt work\n", encoding="utf-8"
+    )
+    child = _start_stand_in(
+        repository, run_id=run_id, home=home, tmp_path=tmp_path, deletes=None
+    )
+    try:
+        _park(_live_record(run_id, repository, child))
+        _slow_git(tmp_path, monkeypatch)
+
+        result = terminate(run_id)
+
+        assert child.poll() is not None
+        work = result["stopped_attempt_work"]
+        assert work["state"] == "saved"
+        assert "+attempt work" in Path(work["path"]).read_text(encoding="utf-8")
+
+        # Control: the same slow tree on the handoff's own budget is unreadable.
+        monkeypatch.setattr(
+            dispatch_sessions, "_STOP_WORKTREE_GIT_TIMEOUT_SECONDS", 10.0
+        )
+        control = dispatch_sessions._preserve_stopped_worktree(
+            _run_directory(run_id), {"worktree": str(repository), "attempt": 1}
+        )
+        assert control["state"] == "unreadable"
+        assert "timed out" in control["detail"]
     finally:
         _reap(child)
