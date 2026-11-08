@@ -1,0 +1,68 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T18:08:12.611Z",
+  "dispatched_at": "2026-11-08T17:58:20Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1032",
+      "id": "reasoning-1",
+      "reason": "without reckon/_flight_schema.py in the write paths the node either blocks on scope or lands a feature whose declared value is silently ignored, and the done-when's temp-flight-layer case is the only place that would notice.",
+      "text": "\u00a720's deliverable declares the backend search path \"in the host flight layer\", but the flight layer is validated by FlightConfig.model_validate (reckon/flight.py:1417) against ConfiguredBaseModel with extra=\"ignore\" (reckon/_flight_schema.py:38-46) and BackendConfig (:348) declares no such key, so a path the node writes into a layer is discarded without error; the write paths name only reckon/crew/dispatch_launch.py, reckon/_backends.py and the new test, leaving the node fenced out of the one file that makes the declaration take effect",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1028",
+      "id": "reasoning-2",
+      "reason": "the node must either add a cli branch to the in-harness sentence, a second change the deliverable's mechanism does not describe and the gate cannot confirm, or drop the absolute claim and state what a young cli pointer reads as.",
+      "text": "\u00a719's deliverable states a cli pointer \"is never reported as an in-harness run\", but its stated mechanism only dates the pointer so _stranded_launch can fire past the bound; below the bound _stranded_launch returns False and a same-host pointer is reported through the in-harness sentence (\u00a719's done-when case 2 asks only that such a pointer \"is not\" launch-failed, which both readings satisfy)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "5ee29c1c1caa3d7ad5163ddb15a497a20b1763b9",
+  "plan_fingerprint": "018504338f9f44c736c9f163d10c56a904539da00a7c53545039df81bd45b7ed",
+  "plan_slug": "a-dispatch-returns-without-its-worker",
+  "plan_version": 165,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T175711585209-plan-review-of-a-dispatch-returns-without-its-worker",
+  "reviewed_blob_sha": "288f7f06ffae9433fa9aa605a6ec2e357d303b19",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor these two units name resolves at HEAD: _stranded_launch at reckon/crew/recovery_liveness.py:746 with STRANDED_LAUNCH_BOUND_SECONDS = 900 at :68; the classification arm at reckon/crew/recovery_classification.py:2065 above the in-harness sentence at :2148; tests/test_a_run_stuck_before_launch_is_reported.py present; preflight_launch_command at reckon/crew/dispatch_launch.py:1061 and launch_search_path at :608; reckon/_backends.py present (3,260 lines) and imported by dispatch_launch.py as `_backends`.",
+    "done_when": "pass on the measures this scope changed \u2014 \u00a719 declares a three-case gate with a stated base reading and a named negative control, and \u00a720's three assertions plus its declared-path-removal control each fail if the mechanism is absent; \u00a719's second case cannot discriminate the reading it leaves unspecified, which is recorded as the reasoning finding below rather than double-counted here.",
+    "evidence_paths": "pass \u2014 neither unit sends evidence to a scratchpad or node-local temporary path; \u00a719 asks for the base-revision reading to be shown in the gate log the dispatch contract places under the run directory, and the tests are temporary-crew-home and temporary-flight-layer fixtures inside the repository's test tree.",
+    "naming": "pass \u2014 the two new test filenames name the behaviour (a_review_that_never_launched_is_not_running, a_launch_finds_its_backend_on_the_declared_path), and no plan label, ticket number or version tag is carried into a symbol or comment these units add.",
+    "reasoning": "a finding \u2014 \u00a720 requires a backend search path \"declared once in the host flight layer\" but its write paths omit the flight schema, and the schema validates with extra=\"ignore\" so an undeclared key is dropped silently; \u00a719's deliverable also claims a cli pointer is \"never reported as an in-harness run\" while its own mechanism leaves a younger-than-bound cli pointer reaching that sentence.",
+    "single_goal": "pass \u2014 \u00a719 carries one deliverable (date the undatable cli pointer so _stranded_launch can read it) and \u00a720 one (resolve a backend command through the launching PATH then a declared path), each closed by one verdict.",
+    "wiring": "pass \u2014 neither changed unit declares a relationship, and the two filesets do not collide: \u00a720 writes reckon/crew/dispatch_launch.py and reckon/_backends.py while the supervisor extraction in \u00a717 owns reckon/crew/dispatch.py, and \u00a719's reckon/crew/recovery_liveness.py plus reckon/crew/recovery_classification.py are touched by no other implementable section."
+  },
+  "section_digests": {
+    "_document": "9951f3e67801ab912f6adc1031b28cc3316d13b1c8a5d8a58c33ccb5294bd3a4",
+    "s1": "e28838b990406106b728a03b1ce4d69905073033be3fbe16e2adec3322ccb41c",
+    "s10": "e0dad3fb234ab0708520137693f2171fd162f14f568d4b2869b4c71edc0efac0",
+    "s11": "c6b91fa66c01d6a9c4559aab10c088c049ede69554509210d53e1320ff55e7fd",
+    "s12": "06d045128a1a1f7a3d660e692c5d22b6d99cc3f1d9900b353c62ac8bfd3d60d7",
+    "s13": "ef8cd63a45cd947493184ee0e6449ec77593c6d63b58e49bc53238a950b5eaee",
+    "s14": "defc27c7ad0a511d1d46f705963f70f7e81c3191dd1c6d99c5a17c443abf908a",
+    "s15": "69ab8a4cf40c7cd5f8d8bc43e78f0e061d4659cd2a47f435f049183d9514fee6",
+    "s16": "1336f961b97041db0650d8602be3a96c2c59934a8d4873beb798369d9c5f927f",
+    "s17": "88d9571bb685887322a3326dcc28b4564790835781000548808ff28a2f4a41c4",
+    "s18": "74bce0c984fecfcbfa0463cb56ac1208fa8643d81d778787e2426ea1659e6c59",
+    "s19": "3cc6c2e0446aad150eec76b743402503092d5040c1d4a5f1516dc2d8cf7df805",
+    "s2": "4a27b5dea20b1d3354fb4c55104e868cf43416f93c5e221d90a6f07f7dd74114",
+    "s20": "f2877ca37a613d60d36b9eb86086abec130d836f082515c38cca91c488db76a1",
+    "s3": "825a19937c51e9c0642eb9f634ccf4d61bdbd31335debd0a28807c04739fc31a",
+    "s4": "3c9553df00b4b52978a7b856a781f44cfbc9040b5369476acbfbd26c1401d109",
+    "s5": "902423914229fd3034527b5d329e757e05b7e2e5368f41a9832f90bee29f1e43",
+    "s6": "bf0a39b8c4fdfbb05246451d1868e014a84296c86dfe7d6090e7343db3dbd70b",
+    "s7": "3016609b879a9d7722cbebc8bff660b9e141e11eb02b98d195da3851f2340144",
+    "s8": "c93baadf650a2e67225cfb81b756692522c1ada3166037ba4f460feec98bc021",
+    "s9": "466c5aea5f624160543c791b665d76df99dcc43842ea4d5ea64071eed7aa0e00"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T18:22:59.061554+00:00",
+  "total": null
+}
