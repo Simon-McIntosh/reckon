@@ -1,0 +1,56 @@
+<section id="keep-every-field-of-a-queued-node-landing">
+  <h2>A queued node launches with every field it was dispatched with</h2>
+
+  <p><strong>What changed.</strong> A queued request stores its node as data
+  and rebuilds one at admission. <code>_node_from_pointer</code> in
+  <code>reckon/crew/queue_admission.py</code> rebuilt it field by field, and its
+  own comment said a field it did not name was a field the launched worker never
+  saw. It named neither <code>images</code> nor <code>inputs</code>,
+  <code>compares_with</code>, <code>over_fence_reason</code> or
+  <code>admission_findings</code>.
+  <code>TaskNode.as_dict()</code> in <code>reckon/crew/node.py</code> listed its
+  keys by hand in the other direction and omitted
+  <code>admission_findings</code> and <code>peer_scopes</code>, so those two
+  never reached the stored pointer at all. Every queued run lost them; a
+  composed figure review that queued behind a full lane reached its worker with
+  <span id="keep-every-field-of-a-queued-node-symptom">no rendered picture to
+  judge</span>.
+
+  <p><strong>Both directions read the dataclass's own field list.</strong>
+  <code>as_dict()</code> serialises every field <code>TaskNode</code> declares,
+  copied into JSON-ready data so a reader cannot mutate the node it came from.
+  <code>_node_from_pointer</code> iterates <code>fields(TaskNode)</code> and
+  rebuilds each field from the stored value. No field is named in a second list
+  that can drift from the dataclass, and a field added to <code>TaskNode</code>
+  later is carried without a second edit.
+
+  <p><strong>The two deliberate rewrites remain.</strong> A manifest path or a
+  write path a previous dispatch defaulted into the queued run's own directory
+  is still dropped, so the launched run derives those defaults afresh from its
+  own id; every path outside that directory is carried unchanged. A field the
+  stored node lacks takes the dataclass default rather than raising, which is
+  what lets a request stored before a field existed launch after it is added.
+
+  <p><strong>The measure.</strong> The defect was reproduced first in a
+  temporary crew home: a node carrying <code>images</code>, <code>inputs</code>
+  and <code>compares_with</code> was rebuilt through
+  <code>_node_from_pointer</code> from its own <code>as_dict()</code>, and the
+  rebuilt node carried <span id="keep-every-field-of-a-queued-node-repro">none
+  of them</span>. After the change the same replay loses nothing.
+  <code>tests/test_a_queued_node_keeps_every_field.py</code> shows four cases:
+  the rebuilt node equals the dispatched one in every declared field except the
+  two rewritten paths; run-directory paths are dropped while foreign ones are
+  kept; a field the stored node lacks takes its default; and the operator's real
+  crew home is left untouched. Both copies are deep: mutating a nested entry of
+  <code>as_dict()["admission_findings"]</code> leaves the node unchanged, and
+  mutating one on the rebuilt node leaves the stored pointer unchanged, so
+  neither the serialised node nor the pointer record can be reached through the
+  other. Four negative controls were applied and logged: naming the fields by
+  hand again without <code>images</code> fails the first case, carrying the
+  run-directory manifest path fails the second, and making either copy shallow
+  again fails the first case on its copy assertion. The gate passes at the head
+  with no failures against the dispatch base. The two test files that call
+  <code>_node_from_pointer</code> carry 14 failures at both the base and the
+  head, identically at each — <code>validate_node</code> refusing a node with no
+  manifest path — so they add none, but they do not pass either.
+</section>
