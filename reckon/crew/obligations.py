@@ -737,6 +737,45 @@ def _reflex_review_command(
     )
 
 
+def _reflex_open_refusal(
+    project: str, pointer: Mapping[str, Any], *, age: int
+) -> dict[str, str] | None:
+    """The refusal the reflex's own dispatch rule would return, once overdue.
+
+    Inside the window the reflex has not yet been given its chance, so the duty
+    still promises its next sweep. Past it, the dispatch predicate decides
+    whether any sweep can start the review at all: a run whose newest review
+    still owes an answer is refused on every sweep, and the duty must name that
+    refusal and the dispose command that lifts it rather than send the
+    coordinator to inspect a follower with nothing wrong with it.
+
+    The question is asked of :func:`review_dispatch_refusal`, the read-only form
+    of the predicate the dispatch applies, so the duty and the dispatch cannot
+    name different reasons for one held review.
+    """
+    if age <= _reflex_review_window_seconds():
+        return None
+    report = recovery_review_dispatch.review_dispatch_refusal(pointer)
+    if not isinstance(report, Mapping) or not report.get("refused"):
+        return None
+    reason = str(report.get("reason") or "")
+    indices = [
+        index
+        for index in report.get("undisposed_findings") or ()
+        if isinstance(index, int)
+    ]
+    run_id = str(pointer.get("run_id") or "")
+    if not indices or not run_id or not reason:
+        return {"reason": reason, "next_command": reason}
+    fold, exempt = recovery_review_dispatch._finding_dispose_commands(
+        project, run_id, indices[0]
+    )
+    return {
+        "reason": reason,
+        "next_command": f"dispose the blocking finding with `{fold}` or `{exempt}`",
+    }
+
+
 def _in_flight_review(
     pointer: Mapping[str, Any], pointers: Sequence[Mapping[str, Any]]
 ) -> str:
@@ -1889,9 +1928,17 @@ def _review_duty_item(
             # compose this review, the duty names that reflex and the window
             # its cadence promises, as a field beside the words so a reader
             # deciding whether to act reads the same figure the text quotes.
-            item["next_command"] = _reflex_review_command(project, pointer, age=age)
-            item["review_owner"] = "reflex"
-            item["reflex_window_seconds"] = _reflex_review_window_seconds()
+            # A reflex already refused is not a wait, so once its window has
+            # passed the duty carries the refusal's own reason and the dispose
+            # command that lifts it instead of a follower to inspect.
+            held = _reflex_open_refusal(project, pointer, age=age)
+            if held is not None:
+                item["reason"] = held["reason"]
+                item["next_command"] = held["next_command"]
+            else:
+                item["next_command"] = _reflex_review_command(project, pointer, age=age)
+                item["review_owner"] = "reflex"
+                item["reflex_window_seconds"] = _reflex_review_window_seconds()
     return item
 
 
