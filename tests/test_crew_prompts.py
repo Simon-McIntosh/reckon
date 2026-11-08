@@ -16,6 +16,7 @@ mid-wait is resumable.
 
 from __future__ import annotations
 
+import re
 from dataclasses import replace
 
 import pytest
@@ -442,6 +443,9 @@ CLOSURE_DECLARATION_LIMIT = "must not move its section's declaration"
 CLOSURE_PLAN_STATUS_LIMIT = "must not set the plan's terminal status"
 MANIFEST_STATUS_VERDICT = "The manifest's `status:` line is the worker's own verdict"
 MANIFEST_STATUS_VOCABULARY = ("`complete`", "`blocked`", "`failed`")
+TERMINAL_STATUS = "terminal status"
+PLAN_POSSESSIVE = "the plan's "
+SECTION_POSSESSIVE = "the section's "
 
 
 def _closure_block(prompt: str) -> str:
@@ -486,13 +490,25 @@ def test_the_closure_block_names_the_plans_status_and_the_manifests(compose):
     "compose", [_prompt, _brief_prompt], ids=["implement", "brief"]
 )
 def test_no_prompt_sentence_forbids_a_terminal_status_without_the_plan(compose):
+    """Every mention of a terminal status names whose status it is.
+
+    Proximity of the words "plan" or "section" anywhere in the sentence is not
+    proof: the ban's own reason clause ends "... not whether the section
+    closed", so a sentence-level test passes on exactly the unqualified wording
+    it exists to catch. The qualifier is read immediately before each mention
+    instead, and the unqualified literal is refused outright.
+    """
     flat = _flat(compose())
 
-    offenders = [
-        sentence
-        for sentence in flat.split(".")
-        if "terminal status" in sentence
-        and "plan" not in sentence
-        and "section" not in sentence
+    assert "must not set a terminal status" not in flat, (
+        "the unqualified ban is back: read literally it covers the manifest's "
+        "own status line, which the same prompt requires the worker to set"
+    )
+    starts = [match.start() for match in re.finditer(TERMINAL_STATUS, flat)]
+    assert starts, "no terminal status is named at all"
+    unqualified = [
+        flat[max(0, start - 24) : start + len(TERMINAL_STATUS)]
+        for start in starts
+        if not flat[:start].endswith((PLAN_POSSESSIVE, SECTION_POSSESSIVE))
     ]
-    assert offenders == [], offenders
+    assert unqualified == [], unqualified
