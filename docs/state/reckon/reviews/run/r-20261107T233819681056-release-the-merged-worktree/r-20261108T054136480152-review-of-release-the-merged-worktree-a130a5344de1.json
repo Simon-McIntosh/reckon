@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T06:09:32.433Z",
+  "dispatched_at": "2026-11-08T05:50:04Z",
+  "findings": [
+    {
+      "file": "reckon/crew/merge.py",
+      "line": 800,
+      "severity": "non-blocking",
+      "text": "The post-push release call sits outside any try, while release_landed_worktrees's own docstring promises nothing here can fail a landing: repository_projects(repo) at reckon/crew/merge.py:835 and the two leading _rev_parse calls are outside the inner guards, so an exception there propagates after the branch has moved and the push has been confirmed, and crew_run_commands.py:337 reports a landed merge as a refused land."
+    },
+    {
+      "file": "reckon/crew/merge.py",
+      "line": 883,
+      "severity": "non-blocking",
+      "text": "The retention is read from whichever ledger row _held_worktree_records matched to the tree, and that join admits a row onto a tree by node id or by the path its retention carries; a row dispatched for one node while retaining a different tree therefore withholds the node-named tree under the other tree's retention, so a tree that could have been released stays held."
+    },
+    {
+      "file": "docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/release-the-merged-worktree.html",
+      "line": 46,
+      "severity": "non-blocking",
+      "text": "The evidence table's head row names revision 0003872562, but the gate log it links (head-arm.log) ran at a130a5344de1 and the manifest's after_suite records that revision, so the fragment states a head the cited log did not run at."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew_run_commands.py:329 calls merge.land_merge for crew merge --head with release defaulting True and emits the whole report; reckon/crew_run_commands.py:3430 is crew complete --land, which calls merge_module.land (merging with release=False) and then promotion_release._release_after_promotion so the tree is reported released exactly once.",
+    "diff": "Read commit by commit against 1b3663ce4f: dbafecdb06 adds release_landed_worktrees and its post-push call plus the four-case test, d89d95d340 sorts imports, 66a2823528 adds the 60-line evidence fragment, 0003872562 passes worktree_retention through the release and names it on the withheld entry, a130a5344d records that repair in the fragment.",
+    "done_when": "The plan's done_when names three cases in tests/test_a_merge_releases_its_worktree.py; all three exist there (plus a fourth retained-tree case added after the earlier review), and base-arm.log reads '3 failed, 1 passed' EXIT=1 while head-arm.log reads '4 passed' EXIT=0.",
+    "goal": "The node's goal is that crew merge releases the worktree its landed head leaves behind, and that a tree carrying work the head does not is kept; reckon/crew/merge.py:800 calls release_landed_worktrees(repo, landed, head=head_sha) after the confirmed push and reports release.released and release.withheld.",
+    "manifest": "The manifest reads status complete, records the gate command, both arm logs with their EXIT lines, the retention negative control with its 1-failed result, and the five commits.",
+    "write_paths": "The diff touches exactly reckon/crew/merge.py, tests/test_a_merge_releases_its_worktree.py and docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/release-the-merged-worktree.html, all three inside the dispatch's declared orientation write paths; no plan file was edited."
+  },
+  "justifications": {
+    "durability": "tests/test_a_merge_releases_its_worktree.py:180 asserts the reported release against filesystem state (not run['worktree'].exists()), and the recorded negative controls show the assertions redden when the release is removed and when the retention argument is dropped.",
+    "evidence": "Both arms are on disk and both negative controls are red, but the fragment's table names revision 0003872562 as the head row at docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/release-the-merged-worktree.html:46 while the head-arm.log it cites ran at a130a5344de1.",
+    "fit": "reckon/crew/merge.py:804-820 follows the module's docstring-plus-local-import idiom, reuses _rev_parse and _is_ancestor, and introduces no plan, section or ticket label in a symbol, comment or path.",
+    "goal_fidelity": "reckon/crew/merge.py:800 releases after the push is confirmed and the result names each released and withheld tree, matching the plan's deliverable; the worked tree is withheld rather than freed when its HEAD carries commits the reviewed head lacks, and a retention is honoured.",
+    "reuse": "The added code reads the existing join obligations._held_worktree_records and the existing release path promotion_release._release_run_workspace, adding only the landed-head predicate and the result summary; no owner for a landed-commit-keyed release exists.",
+    "scope_discipline": "Every path in the diff is one of the three declared write paths, and the fourth test case answers the retention finding the earlier review of this run raised rather than adding work the goal does not imply."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261108T054136480152-review-of-release-the-merged-worktree-a130a5344de1",
+  "reviewed_base_sha": "1b3663ce4fd1f45393fac81a3289ecae7c6ec4b0",
+  "reviewed_head_sha": "a130a5344de1e91bb5adaddd01d48bd8d0a3b42f",
+  "reviewed_run_id": "r-20261107T233819681056-release-the-merged-worktree",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T06:21:26.821582+00:00",
+  "total": 114
+}
