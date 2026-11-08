@@ -17,13 +17,16 @@ running, because its liveness belongs to the calling harness.
 
 A launch that left no claim behind is dated from the pointer's creation, and a
 claim naming another run is refused by the reader that owns it, so a foreign
-claim cannot date this pointer.
+claim cannot date this pointer. A claim older than the bound beside a pointer
+created inside it shows the claim is read at all: the creation fallback would
+report that pointer as running, so the claim is the only thing that can
+classify it.
 
 The cases run against a temporary crew home, so the operator's live pointers
 and run directories are never read or written.
 
-The declared negative control removes the claim-and-creation fallback from the
-dating; both dated cases then read as running.
+The declared negative control removes the claim read from the dating; the case
+whose pointer creation is inside the bound then reads as running.
 """
 
 from __future__ import annotations
@@ -44,11 +47,11 @@ classification_module = importlib.import_module("reckon.crew.recovery_classifica
 # The declared mutation, verbatim: the string a promotion audit compares the red
 # log against.
 DECLARED_MUTATION = (
-    "removing the claim-and-creation fallback from the dating makes the first "
-    "case read as running"
+    "_claim_registered_seconds returning None makes the claim-arm case read as "
+    "not-launch-failed"
 )
 
-MUTATION_ENV = "RECKON_NEVER_LAUNCHED_FALLBACK_NEGATIVE_CONTROL"
+MUTATION_ENV = "RECKON_NEVER_LAUNCHED_CLAIM_ARM_NEGATIVE_CONTROL"
 
 PROJECT = "never-launched-fixture"
 SESSION = "never-launched-session"
@@ -56,6 +59,7 @@ STALE_RUN_ID = "r-never-launched-stale"
 YOUNG_RUN_ID = "r-never-launched-young"
 IN_HARNESS_RUN_ID = "r-never-launched-in-harness"
 CREATION_RUN_ID = "r-never-launched-creation"
+CLAIM_ARM_RUN_ID = "r-never-launched-claim-arm"
 FOREIGN_CLAIM_RUN_ID = "r-never-launched-foreign-claim"
 LAUNCHER_HOST = "98dci4-clu-2068"
 
@@ -73,11 +77,11 @@ def _isolated_crew_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
     if os.environ.get(MUTATION_ENV) == "1":
-        # The declared mutation: a launch with no attempt clock is left undated,
-        # exactly as the base revision reads it.
+        # The declared mutation: the claim arm is removed, so a launch whose
+        # pointer was written inside the bound can only be dated by creation.
         monkeypatch.setattr(
             recovery_liveness,
-            "_claim_or_creation_seconds",
+            "_claim_registered_seconds",
             lambda record: None,
         )
     return config_home
@@ -166,6 +170,25 @@ def test_a_stale_review_with_no_attempt_clock_is_a_launch_failure() -> None:
     assert row["recovery_classification"] == "launch-failed"
     assert "stranded launch" in row["detail"]
     assert LAUNCHER_HOST in row["detail"]
+
+
+def test_a_stale_claim_dates_a_pointer_created_inside_the_bound() -> None:
+    """The claim arm is the only thing that can classify this pointer.
+
+    The claim is older than the bound while the pointer was created inside it,
+    so the creation fallback alone would report this launch as running. Reading
+    the claim is what makes it a launch failure.
+    """
+    _never_launched_pointer(
+        CLAIM_ARM_RUN_ID,
+        claimed_seconds_ago=STALE_SECONDS,
+        created_seconds_ago=YOUNG_SECONDS,
+    )
+
+    row = _row(CLAIM_ARM_RUN_ID)
+
+    assert row["classification"] == "launch-failed"
+    assert "stranded launch" in row["detail"]
 
 
 def test_a_young_review_with_no_attempt_clock_still_reads_as_running() -> None:
