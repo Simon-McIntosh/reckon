@@ -40,6 +40,16 @@
     <p>Landed: run <code>r-20261108T074214362719</code>, reviewed head <code>8ba3da17bf</code>, release <code>408c8520f9</code>; review 20 on every dimension. The process-ended note is reserved for a recorded process that has exited (<code>alive is False</code>); a fresh launch whose liveness is not yet known is worded as unknown. Test: 3 cases; the base control fails only the unknown-liveness case; 241 tests in 27 importer files add no failure.</p>
   </section>
 
+  <section id="a-sessions-duties-run-while-its-follower-is-alive" data-evidence-origin="append">
+    <h2>§14 — a session&#x27;s duties run while its follower is alive</h2>
+    <p>Landed with reviewed head <code>1b51c82294</code> (run <code>r-20261107T223008766020</code>). Cause: <code>SweepBeat.request</code> dropped a due request arriving while that session's sweep was in flight and never replayed it. The repair replays it after the pass. The test drives real review dispatch and repair resume: 1 passed at head; the unchanged scheduler fails. The historical instance's request and start stamps were never recorded by the station, so the evidence gives the bounds its transitions allow and exact stamps from a controlled replay. The timeline figure shows the replayed sweep dispatching the review and resuming the repair.</p>
+  </section>
+
+  <section id="a-reflex-review-appears-as-working" data-evidence-origin="append">
+    <h2>§16 — a review the reflex launches appears as working</h2>
+    <p>Landed with reviewed head <code>c8ed3c2c10</code> (run <code>r-20261108T075245093160</code>, review 20 on every dimension). Cause: the station's inventory seeding copied a review first observed already working into its known set at working, suppressing its transition. The station now supplies a dispatched baseline for newly working arrivals once a fleet image exists; startup inventory stays silent. Test: one working row per reflex-dispatched review, none at base, no duplicates.</p>
+  </section>
+
 </main>
 </body>
 </html>

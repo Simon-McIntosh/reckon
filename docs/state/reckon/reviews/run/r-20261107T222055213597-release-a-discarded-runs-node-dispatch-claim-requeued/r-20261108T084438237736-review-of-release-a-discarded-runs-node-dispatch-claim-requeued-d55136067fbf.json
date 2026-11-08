@@ -1,0 +1,91 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "fails if the discarded run's claim file survives the discard; the base arm and the control-skip mutation both redden it",
+      "file": "tests/test_a_discard_releases_its_dispatch_claim.py",
+      "line": 71
+    },
+    {
+      "failure_condition": "raises CrewError if the node is still claimed by the discarded run, so a dispatch of the same node is refused",
+      "file": "tests/test_a_discard_releases_its_dispatch_claim.py",
+      "line": 72
+    },
+    {
+      "failure_condition": "fails if the new dispatch had to displace a stale claim instead of taking a released path",
+      "file": "tests/test_a_discard_releases_its_dispatch_claim.py",
+      "line": 73
+    },
+    {
+      "failure_condition": "fails if the result omits the released claim path, e.g. if the helper returns nothing",
+      "file": "tests/test_a_discard_releases_its_dispatch_claim.py",
+      "line": 75
+    },
+    {
+      "failure_condition": "fails if a claim naming another run is unlinked; the control-any mutation reddens it",
+      "file": "tests/test_a_discard_releases_its_dispatch_claim.py",
+      "line": 86
+    },
+    {
+      "failure_condition": "fails if the other run's claim is gone or has been overwritten, since the dispatch must still be refused naming other-run",
+      "file": "tests/test_a_discard_releases_its_dispatch_claim.py",
+      "line": 88
+    },
+    {
+      "failure_condition": "compares the claim record to the run id the test itself supplied; it guards the claim mechanism rather than the release, so it cannot redden on a release defect \u2014 noted, not a defect in this change",
+      "file": "tests/test_a_discard_releases_its_dispatch_claim.py (comparison note)",
+      "line": 74
+    }
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2499 crew_discard",
+    "reckon/crew/queue_edit.py:501 _drop (crew_module.discard)",
+    "reckon/mcp_crew_actions.py:305 _verb_callback(crew_discard)"
+  ],
+  "completed_at": "2026-11-08T09:07:21.822Z",
+  "dispatched_at": "2026-11-08T08:57:48Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "2072",
+      "severity": "non-blocking",
+      "text": "The claim is released at :2072 before _remove_discarded_worktree runs at :2073, so a redispatch of the same node can take the freed claim while the discarded run's worktree is still being audited and removed underneath it; evaluating the removal first would close the window, which today only exists because the release is ordered inside the same result literal."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Verified the three production paths that reach promotion.discard: reckon/crew_run_commands.py:2499 crew_discard, reckon/crew/queue_edit.py:501 drop, reckon/mcp_crew_actions.py:305 verb callback.",
+    "diff": "Read commit by commit: 32d44a6471 adds the release helper and its call plus the two-case test; 2c3b19e7e2 adds the five-line evidence fragment; d55136067f adds only a trailing newline to the test.",
+    "done_when": "The plan's two cases are tests/test_a_discard_releases_its_dispatch_claim.py:64 and :79; logs/after-suite.log ends 2 passed EXIT=0 at d55136067f, logs/baseline-suite.log fails :71 at 0ef9f68, and logs/negative-control.log records both mutations failing their own case with EXIT=1, while the plan's importer clause is only partly met (five discard-neighbouring files, 26 passed, not the whole importing set).",
+    "goal": "plan docs/plans/a-reexec-never-orphans-a-dispatch.html:46 asks discard to release the claim its run holds through _NodeDispatchClaim.release() and leave another run's claim standing; reckon/crew/promotion.py:2072 calls the new _release_discarded_dispatch_claim, which filters on the recorded run_id at :2096 and unlinks at :2098.",
+    "manifest": "Read; it names commits 32d44a6471, 2c3b19e7e2 and d55136067f, four gate logs, the base/after suite JSON with completed:true, and states honestly under outside_scope that the wide importer arms did not complete.",
+    "write_paths": "manifest.md:3 declares promotion.py, the new test, and the evidence fragment; git diff 0ef9f68246fa..d55136067fbf changes exactly reckon/crew/promotion.py, tests/test_a_discard_releases_its_dispatch_claim.py and docs/evidence/fragments/a-reexec-never-orphans-a-dispatch/release-a-discarded-runs-node-dispatch-claim-requeued.html, all three inside that declaration."
+  },
+  "justifications": {
+    "durability": "tests/test_a_discard_releases_its_dispatch_claim.py:71 reddens when the release is skipped (control-skip) and :86 reddens when any claim for the node is released (control-any), so both guards name a code change that turns them red.",
+    "evidence": "logs/baseline-suite.log reddens tests/test_a_discard_releases_its_dispatch_claim.py:71 at the base revision and logs/negative-control.log carries two distinct mutations each failing its own case, but the plan's importer clause is answered by only five of the importing files (logs/importer-head-discard.log, 26 passed) with the 120-file and 8-file arms abandoned.",
+    "fit": "reckon/crew/promotion.py:2077-2100 follows the module's own idiom: a private helper with a mechanism docstring, a lazy in-function import at :2088 as in _release_waiters_of_a_discard at :2103, and no plan or ticket label in any name or comment.",
+    "goal_fidelity": "reckon/crew/promotion.py:2094-2098 unlinks only the claim whose record names the discarded run, which is what docs/plans/a-reexec-never-orphans-a-dispatch.html:46 requires, and it leaves the case at :2073 ordering the release before the worktree audit.",
+    "reuse": "The new helper reuses the claim lifecycle's own owners \u2014 dispatch_claims._read_node_dispatch_claim at :2095 and _NodeDispatchClaim.release() at :2098 \u2014 and a search of reckon/ for an existing claim-file enumerator (only NODE_DISPATCH_CLAIM_DIRECTORY imported at reckon/crew/dispatch.py:3641 for path derivation, no glob or iterdir in dispatch_claims) found no owner to extend.",
+    "scope_discipline": "All three paths in git diff 0ef9f68246fa..d55136067fbf are among manifest.md:3's declared write paths, and no unrelated file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: plan docs/plans/a-reexec-never-orphans-a-dispatch.html:46 asks discard to release the claim its run holds through _NodeDispatchClaim.release() and leave another run's claim standing; reckon/crew/promotion.py:2072 calls the new _release_discarded_dispatch_claim, which filters on the recorded run_id at :2096 and unlinks at :2098.\nVERDICT done_when: The plan's two cases are tests/test_a_discard_releases_its_dispatch_claim.py:64 and :79; logs/after-suite.log ends 2 passed EXIT=0 at d55136067f, logs/baseline-suite.log fails :71 at 0ef9f68, and logs/negative-control.log records both mutations failing their own case with EXIT=1, while the plan's importer clause is only partly met (five discard-neighbouring files, 26 passed, not the whole importing set).\nVERDICT write_paths: manifest.md:3 declares promotion.py, the new test, and the evidence fragment; git diff 0ef9f68246fa..d55136067fbf changes exactly reckon/crew/promotion.py, tests/test_a_discard_releases_its_dispatch_claim.py and docs/evidence/fragments/a-reexec-never-orphans-a-dispatch/release-a-discarded-runs-node-dispatch-claim-requeued.html, all three inside that declaration.\nVERDICT manifest: Read; it names commits 32d44a6471, 2c3b19e7e2 and d55136067f, four gate logs, the base/after suite JSON with completed:true, and states honestly under outside_scope that the wide importer arms did not complete.\nVERDICT diff: Read commit by commit: 32d44a6471 adds the release helper and its call plus the two-case test; 2c3b19e7e2 adds the five-line evidence fragment; d55136067f adds only a trailing newline to the test.\nCALL_SITES: reckon/crew_run_commands.py:2499 crew_discard, reckon/crew/queue_edit.py:501 _drop (crew_module.discard), reckon/mcp_crew_actions.py:305 _verb_callback(crew_discard)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:2094-2098 unlinks only the claim whose record names the discarded run, which is what docs/plans/a-reexec-never-orphans-a-dispatch.html:46 requires, and it leaves the case at :2073 ordering the release before the worktree audit.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/baseline-suite.log reddens tests/test_a_discard_releases_its_dispatch_claim.py:71 at the base revision and logs/negative-control.log carries two distinct mutations each failing its own case, but the plan's importer clause is answered by only five of the importing files (logs/importer-head-discard.log, 26 passed) with the 120-file and 8-file arms abandoned.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: All three paths in git diff 0ef9f68246fa..d55136067fbf are among manifest.md:3's declared write paths, and no unrelated file is touched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_discard_releases_its_dispatch_claim.py:71 reddens when the release is skipped (control-skip) and :86 reddens when any claim for the node is released (control-any), so both guards name a code change that turns them red.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/promotion.py:2077-2100 follows the module's own idiom: a private helper with a mechanism docstring, a lazy in-function import at :2088 as in _release_waiters_of_a_discard at :2103, and no plan or ticket label in any name or comment.\nSCORE reuse: 19\nJUSTIFICATION reuse: The new helper reuses the claim lifecycle's own owners \u2014 dispatch_claims._read_node_dispatch_claim at :2095 and _NodeDispatchClaim.release() at :2098 \u2014 and a search of reckon/ for an existing claim-file enumerator (only NODE_DISPATCH_CLAIM_DIRECTORY imported at reckon/crew/dispatch.py:3641 for path derivation, no glob or iterdir in dispatch_claims) found no owner to extend.\nFINDING reckon/crew/promotion.py:2072 non-blocking: The claim is released at :2072 before _remove_discarded_worktree runs at :2073, so a redispatch of the same node can take the freed claim while the discarded run's worktree is still being audited and removed underneath it; evaluating the removal first would close the window, which today only exists because the release is ordered inside the same result literal.\n",
+  "review_run_id": "r-20261108T084438237736-review-of-release-a-discarded-runs-node-dispatch-claim-requeued-d55136067fbf",
+  "reviewed_base_sha": "0ef9f68246fa0a4e721faf8664dadc7729114c61",
+  "reviewed_head_sha": "d55136067fbf2b07d5fff1e3663acf8f92860156",
+  "reviewed_run_id": "r-20261107T222055213597-release-a-discarded-runs-node-dispatch-claim-requeued",
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T09:20:00Z",
+  "total": 110
+}
