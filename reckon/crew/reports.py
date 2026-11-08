@@ -983,12 +983,36 @@ def _refuse_joined_list_separator(field: str, value: Any, *, path: str | None) -
 
 
 def _coerce_commit_identifiers(value: Any) -> Any:
-    """Type commit identifiers without interpreting their spelling as numbers."""
+    """Type commit identifiers without interpreting their spelling as numbers.
+
+    An item made only of hex commit ids separated by whitespace is several
+    identifiers written on one line (``commits: 461641d1f d50a237c7``) and is
+    split into them. Read whole, that line named one commit that resolves to
+    nothing, and a merge citing it was refused. An item carrying anything else,
+    such as a commit id followed by its subject, is kept as written.
+    """
     if isinstance(value, str):
         text = value.strip()
         if text.startswith("[") and text.endswith("]"):
-            return _split_bracketed_list(text)
-    return _coerce_list_field(value)
+            return _split_on_whitespace(_split_bracketed_list(text))
+    return _split_on_whitespace(_coerce_list_field(value))
+
+
+_COMMIT_ID = re.compile(r"[0-9a-fA-F]{7,40}")
+
+
+def _split_on_whitespace(value: Any) -> Any:
+    """Split an item made only of whitespace-separated commit ids into them."""
+    if not isinstance(value, list):
+        return value
+    split: list[Any] = []
+    for item in value:
+        tokens = item.split() if isinstance(item, str) else []
+        if len(tokens) > 1 and all(_COMMIT_ID.fullmatch(token) for token in tokens):
+            split.extend(tokens)
+        else:
+            split.append(item)
+    return split
 
 
 def _typed_suite_observation(value: Any) -> SuiteObservation | str | None:
