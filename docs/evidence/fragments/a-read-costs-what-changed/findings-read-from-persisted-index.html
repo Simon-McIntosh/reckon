@@ -101,4 +101,31 @@
   <p>Negative control: deleting the persisted index before the fresh read makes
   that first case open both records and fail; reverting the shared-cache
   refactor makes the fourteenth case fail on the missing shared stamp.</p>
+
+  <h3 id="findings-read-from-persisted-index-importers">The importer population</h3>
+
+  <p>The change reaches three modules other tests import, so the whole
+  population was run on both sides: the 97 test files under <code>tests/</code>
+  that import <code>reckon.crew.findings</code>,
+  <code>reckon.crew.review_records</code> or <code>reckon.crew.plan_review</code>,
+  at the repair base and at the head, each with a per-test timeout under
+  <code>-n 6</code>.</p>
+
+  <table id="findings-read-from-persisted-index-importers-table">
+    <caption>The same 97-file population over each tree. The base arm runs an
+    archive of the base revision, which carries no <code>.git</code>, so its
+    failures are a superset: the comparison that matters is what the head arm
+    adds.</caption>
+    <thead><tr><th>arm</th><th>passed</th><th>failed</th><th>added over base</th></tr></thead>
+    <tbody>
+      <tr><td>base (fba33c99)</td><td>730</td><td>40</td><td>—</td></tr>
+      <tr><td>head (a1e64678)</td><td>735</td><td>36</td><td>0</td></tr>
+    </tbody>
+  </table>
+
+  <p>The head arm's 36 failing ids are a strict subset of the base arm's 40:
+  nothing in this population fails here that did not already fail at the base.
+  Logs:
+  <code>logs/importer-population-base.log</code> and
+  <code>logs/importer-population-head.log</code>.</p>
 </section>
