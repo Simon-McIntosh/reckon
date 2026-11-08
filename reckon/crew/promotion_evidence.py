@@ -1343,9 +1343,14 @@ def _require_verdict_matches_exit_status(
     reports — both arms declaring their runs complete — measures zero added
     against that base, so its passing verdict is the delta verdict and not a
     contradiction. The admission is read from the run's records by
-    ``_zero_added_against_a_red_base``; everything else refuses, naming both
-    the verdict and the status, and naming the arm whose withheld completion is
-    what the admission turned on when there is one.
+    ``_red_base_uncovered_ids``, and only the empty set — a comparison that was
+    made and left nothing uncovered — is admitted. Everything else refuses,
+    naming both the verdict and the status. When the comparison was made and
+    left ids uncovered, the refusal names them, at most twenty with a count of
+    the rest, so a reader sees which head failures the baseline does not
+    account for. When no comparison could be made, the refusal names the arm
+    whose withheld completion is what the admission turned on, when there is
+    one, and gives the red-base rule instead of an id list.
     """
     if verdict != "passed" or not isinstance(gate_check, Mapping):
         return
