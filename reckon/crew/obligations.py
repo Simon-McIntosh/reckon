@@ -1629,26 +1629,6 @@ def _review_duty_item(
             item["reason"] += f"; remedy: {remedy}"
         return item
 
-    if (
-        _review_tier_for_duty(row, pointer, head=resumed_head, tree=_tree)
-        == review_tiers.NONE
-    ):
-        item = _live_item(
-            row,
-            kind="promotable-stale" if age > grace else "review-ready",
-            now=now,
-        )
-        item["review_tier"] = review_tiers.NONE
-        item["next_command"] = recovery_classification._promotion_command(
-            str(row.get("run_id") or ""),
-            pointer,
-            list(row.get("manifest_commits") or []),
-        )
-        item["reason"] = (
-            "the run changes no runtime source, so its review tier is none; no "
-            "review is owed and the merged-head gate checks it instead"
-        )
-        return item
     head, tree = resumed_head, _tree
     try:
         review, reviewed_head = _selected_review(
@@ -1656,23 +1636,18 @@ def _review_duty_item(
         )
     except (OSError, ValueError):
         review, reviewed_head = None, ""
-    item = _live_item(row, kind=_classification_kind(), now=now)
-    refused = _refused_delivered_review(pointer)
-    if refused:
-        item["kind"] = "review-refused"
-        item["reason"] = refused["reason"]
-        item["record"] = refused["record"]
-        item["next_command"] = refused["next_command"]
-        return item
-    if head:
-        item["head"] = head
-    if review is not None and recovery._review_is_complete(review):
+    tier = _review_tier_for_duty(row, pointer, head=head, tree=tree)
+    if review is not None:
         blocking = recovery_review_dispatch._undisposed_blocking_findings(review)
         if blocking:
+            item = _live_item(row, kind="repair-owed", now=now)
+            if head:
+                item["head"] = head
+            if tier == review_tiers.NONE:
+                item["review_tier"] = tier
             repair = pointer.get(recovery_review_dispatch.REPAIR_DISPATCH_FIELD)
             repair = repair if isinstance(repair, Mapping) else {}
             status = str(repair.get("status") or "")
-            item["kind"] = "repair-owed"
             item["reason"] = (
                 f"the newest review has {len(blocking)} open blocking finding(s); "
                 + (
@@ -1698,6 +1673,34 @@ def _review_duty_item(
                     f"reckon crew observe --run {run_id}"
                 )
             return item
+    if tier == review_tiers.NONE:
+        item = _live_item(
+            row,
+            kind="promotable-stale" if age > grace else "review-ready",
+            now=now,
+        )
+        item["review_tier"] = review_tiers.NONE
+        item["next_command"] = recovery_classification._promotion_command(
+            str(row.get("run_id") or ""),
+            pointer,
+            list(row.get("manifest_commits") or []),
+        )
+        item["reason"] = (
+            "the run changes no runtime source, so its review tier is none; no "
+            "review is owed and the merged-head gate checks it instead"
+        )
+        return item
+    item = _live_item(row, kind=_classification_kind(), now=now)
+    refused = _refused_delivered_review(pointer)
+    if refused:
+        item["kind"] = "review-refused"
+        item["reason"] = refused["reason"]
+        item["record"] = refused["record"]
+        item["next_command"] = refused["next_command"]
+        return item
+    if head:
+        item["head"] = head
+    if review is not None and recovery._review_is_complete(review):
         item["kind"] = "promotable-stale" if age > grace else "review-ready"
     else:
         superseded = bool(reviewed_head) and not recovery.same_revision(

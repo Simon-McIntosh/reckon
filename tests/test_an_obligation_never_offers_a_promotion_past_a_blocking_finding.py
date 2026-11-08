@@ -123,6 +123,30 @@ def test_open_blocking_finding_owes_repair_instead_of_promotion(
     assert "repair" in row["kind"], row
 
 
+def test_manually_reviewed_docs_change_with_open_finding_owes_repair(
+    home: tuple[Path, str],
+) -> None:
+    root, base = home
+    path = root / "docs" / "evidence" / "fixture.html"
+    path.parent.mkdir(parents=True)
+    path.write_text("<p>reviewed change</p>\n", encoding="utf-8")
+    git(root, "add", "docs/evidence/fixture.html")
+    git(root, "commit", "-q", "-m", "docs: add fixture")
+    head = git(root, "rev-parse", "HEAD")
+    run_id = "r-reviewed-docs"
+    pointer = _delivered((root, head), run_id)
+    pointer["base_sha"] = base
+    pointer["node"]["write_paths"] = ["docs/evidence/fixture.html"]
+    runs._write_json(runs.pointer_path(run_id), pointer)
+    _review(run_id, head, findings=[FINDING])
+
+    row = _row(run_id)
+
+    assert row["review_tier"] == "none", row
+    assert row["kind"] == "repair-owed", row
+    assert "crew complete" not in row["next_command"], row
+
+
 def test_advice_hold_names_the_reviewed_runs_resume(home: tuple[Path, str]) -> None:
     run_id = "r-advice-held"
     pointer = _delivered(home, run_id)
