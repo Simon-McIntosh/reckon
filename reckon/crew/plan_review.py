@@ -5741,9 +5741,23 @@ def section_readiness_rows(
     caller asked about a section on a plan outside this set can tell the
     difference between "not ready" and "not read".
     """
+    from reckon.roadmap import section_readiness_rows as _rows_for
+
+    inventory = _readiness_inventory(project, docs_dir, plan, refs=refs)
+    rows = _rows_for(project, inventory, docs_dir=docs_dir)
+    return rows, {str(item["slug"]): item for item in inventory}
+
+
+def _readiness_inventory(
+    project: str,
+    docs_dir: Path,
+    plan: str,
+    *,
+    refs: Iterable[str] = (),
+) -> list[dict[str, Any]]:
+    """Read one plan and the plans its declared or extra waits name."""
     from reckon import _plan_html
     from reckon._schema import parse_plan_ref, section_depends_on
-    from reckon.roadmap import section_readiness_rows as _rows_for
 
     slugs: list[str] = [plan]
 
@@ -5771,13 +5785,11 @@ def section_readiness_rows(
         if parsed is not None:
             add(parsed.slug)
 
-    inventory = [
+    return [
         item
         for slug in slugs
         if (item := _plan_inventory_item(project, docs_dir, slug)) is not None
     ]
-    rows = _rows_for(project, inventory, docs_dir=docs_dir)
-    return rows, {str(item["slug"]): item for item in inventory}
 
 
 def _readiness_by_slug(project: str, docs_dir: Path) -> dict[str, str]:
