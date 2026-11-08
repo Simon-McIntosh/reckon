@@ -186,7 +186,7 @@ def _stored_field_value(spec: Any, value: Any) -> Any:
     if spec.default_factory is not MISSING:
         empty = spec.default_factory()
         if isinstance(empty, list):
-            return [item for item in (value or ())]
+            return list(value or ())
         if isinstance(empty, dict):
             return dict(value or {})
     if spec.type == "str":

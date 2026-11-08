@@ -828,7 +828,9 @@ class TaskNode:
         never sees. The field list is the dataclass's own: a field added to
         ``TaskNode`` is carried without a second list to keep in step with it.
         """
-        return {spec.name: _json_ready(getattr(self, spec.name)) for spec in fields(self)}
+        return {
+            spec.name: _json_ready(getattr(self, spec.name)) for spec in fields(self)
+        }
 
 
 def normalize_section(value: str) -> str:
