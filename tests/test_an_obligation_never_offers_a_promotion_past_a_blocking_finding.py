@@ -271,11 +271,26 @@ def test_answered_finding_projects_current_hold_when_classification_clears(
 
 def test_admission_held_row_names_only_its_run(home: tuple[Path, str]) -> None:
     run_id = "r-held-own"
+    foreign_run = "r-foreign-review"
+    runs._write_json(
+        runs.pointer_path(foreign_run),
+        {
+            "run_id": foreign_run,
+            "project": PROJECT,
+            "session": "other-session",
+            "phase": "working",
+            "process_alive": True,
+        },
+    )
     pointer = {
         "run_id": run_id,
         "project": PROJECT,
         "session": SESSION,
         "phase": "held",
+        "failure": (
+            f"UnreconciledRuns: {foreign_run} holds a review; "
+            f"reckon crew complete --run {foreign_run}"
+        ),
         "queue_hold": {
             "started_at": (NOW - timedelta(hours=25)).isoformat(),
             "reason": "admission allowance pending",
@@ -286,5 +301,5 @@ def test_admission_held_row_names_only_its_run(home: tuple[Path, str]) -> None:
     row = _row(run_id)
 
     assert row["run_id"] == run_id, row
-    assert run_id in row["next_command"], row
-    assert "r-answered" not in row["next_command"], row
+    assert row["next_command"] == f"reckon crew queue release --run {run_id}", row
+    assert foreign_run not in row["next_command"], row
