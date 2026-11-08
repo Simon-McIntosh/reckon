@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="320">
+<meta name="plan-version" content="322">
 <meta name="plan-modified" content="2026-11-08">
 </head>
 <body>
@@ -638,6 +638,9 @@
 <div class="r-comment" data-section="s34" data-id="c-run-r-20261105T110511704085-classifying-the-live-set-reads-it-once" data-who="reckon-build" data-when="2026-11-05T13:14:24Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/classifying-the-live-set-reads-it-once.html#classifying-the-live-set-reads-it-once-measure — 50 classifications match the base reading with at most one live-set read; the per-pointer control makes 710 reads and fails.</p></div>
 </div>
+<div class="r-comment" data-section="s35" data-id="c-run-r-20261108T053410406881-queue-hold-skips-the-admission-pass" data-who="reckon-build" data-when="2026-11-08T12:05:06.246Z">
+    <div class="r-comment-body"><p>queue_edit.hold and queue_edit.release take no admission lock: each writes its one request under that request's pointer lock, so a hold applies in 0.503 s while a pass holds the admission lock (it had still not returned after 3 s at the base revision), and queue_admission._launch_reread_refusal refuses a launch whose request the pass read as queued and which has since been held, recording refused-before-launch with the hold reason; gate tests/test_a_queue_hold_does_not_wait_for_the_pass.py 3 passed at head, each of the two negative controls failing exactly its own case, and the importer arms add zero failures against the base revision.</p></div>
+</div>
 <div class="r-comment" data-section="s36" data-id="c-run-r-20261106T171536810712-review-of-the-lander-skips-a-run-landed-elsewhere-61b9147844e5" data-who="reckon-build" data-when="2026-11-06T17:25:05Z">
     <div class="r-comment-body"><p>Parsed independent review of ad4269927f577138e8e4e1adebc10637383333ee..61b9147844e5815a780f79ae233c7b56ae1c32b0 stored at both granted paths with six scores, zero added failure ids, and two blocking findings; both records pass crew check --review.</p></div>
 </div>
@@ -661,6 +664,9 @@
 </div>
 <div class="r-comment" data-section="s39" data-id="c-run-r-20261108T104745074252-review-of-lander-leaves-red-run-to-coordinator-f1627c3c88b0" data-who="reckon-build" data-when="2026-11-08T11:11:30.155Z">
     <div class="r-comment-body"><p>Review of admission-loop §39: one blocking finding (record_landed_exemptions overwrites a coordinator's folded disposition with exempted on the next pass), reuse scored 5 for duplicating promotion_checks' failure-id readers.</p></div>
+</div>
+<div class="r-comment" data-section="s39" data-id="c-run-r-20261108T121949009158-review-of-lander-leaves-red-run-to-coordinator-50210cdbf9ef" data-who="reckon-build" data-when="2026-11-08T12:33:35.443Z">
+    <div class="r-comment-body"><p>The review of run r-20261108T053724507984-lander-leaves-red-run-to-coordinator at 50210cdbf9ef is stored parsed with all six dimensions scored (goal_fidelity 18, evidence 18, scope_discipline 14, durability 17, fit 17, reuse 5; total 89), reviewed_base_sha f1627c3c88b0fd45b0b6aa56bdf518bffb704900, reviewed_head_sha 50210cdbf9efbb48b626f2937b7c8a062cd74015, added_failure_count 0 with an empty added_failure_ids, and one non-blocking finding: the repair&#x27;s `_record_landed_exemptions` duplicates `recovery_review_acceptance.record_landed_exemptions` and its open-finding branch is unreachable behind `_undisposed_finding_guard`. The prior review&#x27;s blocking finding (a landing overwrote a coordinator&#x27;s `folded:&lt;node&gt;`) is answered: the increment writes nothing for a disposed finding, and reverting it reddens the new case in `negative-control-fold.log`.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261028T234015324511-review-of-a-launch-reuses-what-queue-time-proved-0baeb0d40d78" data-who="reckon-build" data-when="2026-10-29T00:55:31.433Z">
     <div class="r-comment-body"><p>review of r-20261028T222907809727-a-launch-reuses-what-queue-time-proved at head 0baeb0d40d780256c17223fe67396b938c5723f0 scores goal_fidelity 13, evidence 11, scope_discipline 20, durability 13, fit 18, reuse 19, with added_failure_count 0; one blocking finding (the digest short-circuit at reckon/crew/routing.py:2789 skips the unanswered-findings refusal, so a launch passes a plan a fresh direct dispatch refuses).</p></div>
@@ -708,7 +714,7 @@
     <div class="r-comment-body"><p>Review of promotion-releases-waiters-any-spelling at c6f99d6429..4a74e9bc40 scores goal_fidelity 14, evidence 18, scope_discipline 20, durability 15, fit 19, reuse 20 with 0 added failures and two non-blocking findings: the fragment cites the gate at c6f99d6429 while its log header records c84e9f6ab0, and the importer-population requirement rests on a five-file arm because the 169-file arm stopped at 66%; the diff is documentation only because the release behaviour already landed at d675c26964 and is guarded by a test that reddens at the pre-fix tree.</p></div>
 </div>
 <div class="r-comment" data-section="s46" data-id="c-run-r-20261108T054941274164-promotion-releases-waiters-any-spelling" data-who="reckon-build" data-when="2026-11-08T10:58:58.878Z">
-    <div class="r-comment-body"><p>A promotion releases its section&#x27;s waiters by project, plan slug and ledger.normalize_section of the section, so plan#§8 releases a waiter on plan#s8 and the reverse; the focused gate passes 7 cases at c6f99d6429 (EXIT=0) against the pre-fix tree&#x27;s 4 failed / 3 passed (EXIT=1), four source mutations each redden their prescribed case, and the release-path importer arm passes 49 tests.</p></div>
+    <div class="r-comment-body"><p>A promotion releases its section's waiters by project, plan slug and ledger.normalize_section of the section, so plan#§8 releases a waiter on plan#s8 and the reverse; the focused gate passes 7 cases at c6f99d6429 (EXIT=0) against the pre-fix tree's 4 failed / 3 passed (EXIT=1), four source mutations each redden their prescribed case, and the release-path importer arm passes 49 tests.</p></div>
 </div>
 <div class="r-comment" data-section="s47" data-id="c-run-r-20261106T125108579712-review-of-read-only-one-plans-reviews-when-judging-its-coverage-9c2cfffa2783" data-who="reckon-build" data-when="2026-11-06T13:07:30.398Z">
     <div class="r-comment-body"><p>Reviewed b04ed13ddd78cfd59e076479a665128bf0d515b4..9c2cfffa2783dbc962a73bedbc1d741d705f90b7 and scored all six dimensions (goal_fidelity 19, evidence 13, scope_discipline 18, durability 15, fit 16, reuse 12) in a parsed record carrying 0 added failures and four non-blocking findings — the reuse duplication of `_candidate_paths`, the untested pass-cache key, the filter moving from a record's own `plan_slug` to its path, and a live arm that measures 27.2 s against the base tree's 26.6 s so the section's latency bound is met by both arms.</p></div>
