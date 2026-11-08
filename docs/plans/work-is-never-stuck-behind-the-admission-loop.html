@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="309">
+<meta name="plan-version" content="310">
 <meta name="plan-modified" content="2026-11-08">
 </head>
 <body>
@@ -539,6 +539,9 @@
 <div class="r-comment" data-section="s23" data-id="c-run-r-20261104T101242125460-review-of-replay-the-two-oversizednode-routing-refusals-9099948928f7" data-who="reckon-build" data-when="2026-11-04T10:28:18.268Z">
     <div class="r-comment-body"><p>review of replay-the-two-oversizednode-routing-refusals at 9099948928 stored parsed: goal_fidelity 18, evidence 14, scope_discipline 20, durability 15, fit 18, reuse 20; zero added failures, two non-blocking findings</p></div>
 </div>
+<div class="r-comment" data-section="s23" data-id="c-run-r-20261108T052434073237-oversized-node-reserved-lane-reproduced" data-who="reckon-build" data-when="2026-11-08T06:53:51.131Z">
+    <div class="r-comment-body"><p>§23 reproduced — the replay exited 1 because the dispatcher&#x27;s 5 s pick bound cut the 02:34:43Z attempt off (timeout in pick:capability, 0 of 3 rows); it now runs its picks under an explicit 120 s replay budget and records the production figure, and measure is 2 of 2 attempts reproduced with EXIT=0 at 6431 ms and 7764 ms elapsed.</p></div>
+</div>
 <div class="r-comment" data-section="s24" data-id="c-run-r-20261103T073615423342-a-request-that-never-launched-holds-no-claim-another-landing" data-who="reckon-build" data-when="2026-11-03T10:07:53.207Z">
     <div class="r-comment-body"><p>A landing is admitted past a peer claim held by a request in a waiting phase (queued, awaiting-upstream, blocked-upstream, held): promotion_scope's accept-path walk consults node.claim_disposition for it, names the walked-past claim under waiting_request_claims, and leaves the request's pointer untouched. Gate 11 passed EXIT=0; base arm 5 passed EXIT=0; negative control (claim_disposition bypassed) 4 failed EXIT=1.</p></div>
 </div>
@@ -607,6 +610,9 @@
 </div>
 <div class="r-comment" data-section="s31" data-id="c-run-r-20261106T133824275010-review-of-a-promoted-run-never-reenters-the-queue-962761558e71" data-who="reckon-build" data-when="2026-11-06T13:49:32Z">
     <div class="r-comment-body"><p>Parsed independent review stored under the reviewed run; six scores are 19, 19, 20, 18, 19 and 20, with two non-blocking exempted assertion findings and zero added importer failures.</p></div>
+</div>
+<div class="r-comment" data-section="s32" data-id="c-unwait-s32" data-who="reckon-build" data-when="2026-11-08T07:00:00Z">
+    <div class="r-comment-body"><p>§32's waits removed on 8 November, when the lead moved §32 to reckon-be's S27 coordination for dispatch on codex. §28 and §30 are done, so those waits ordered nothing. §31 writes reckon/crew/queue_admission.py like §32 but produces nothing §32 consumes, so that wait only serialised the file; the dispatch scope check now does that, holding whichever launches second on the other's claim. §32's 5 November request was a codex request left awaiting-upstream, which is never launched.</p></div>
 </div>
 <div class="r-comment" data-section="s33" data-id="c-run-r-20261105T152146447294-review-of-a-claim-hold-reads-its-holder-again-78d0cdc27324" data-who="reckon-build" data-when="2026-11-05T15:33:47.392Z">
     <div class="r-comment-body"><p>Independent review of r-20261105T110404174692-a-claim-hold-reads-its-holder-again at b1f77637dd48a7ff4766ffffac8dd74a830b7969..78d0cdc273243abc3a81628f72f85058998ea53e: status parsed, six scores (total 110), zero added failure ids, two non-blocking findings.</p></div>
@@ -712,9 +718,6 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261029T145111134871-review-of-a-delivered-run-reaches-a-landing-verdict-c12609ed2938" data-who="reckon-build" data-when="2026-10-29T15:00:19.489Z">
     <div class="r-comment-body"><p>§8 reviewed at c12609ed29 against base c97238c9: goal met, evidence reproducible, 0 added failures, two non-blocking findings (a tautological ledger assertion at the new test's line 260, and a surviving raw commit-entry reader at promotion_scope.py:1253).</p></div>
-</div>
-<div class="r-comment" data-section="s32" data-id="c-unwait-s32" data-who="reckon-build" data-when="2026-11-08T07:00:00Z">
-    <div class="r-comment-body"><p>§32's waits removed on 8 November, when the lead moved §32 to reckon-be's S27 coordination for dispatch on codex. §28 and §30 are done, so those waits ordered nothing. §31 writes reckon/crew/queue_admission.py like §32 but produces nothing §32 consumes, so that wait only serialised the file; the dispatch scope check now does that, holding whichever launches second on the other's claim. §32's 5 November request was a codex request left awaiting-upstream, which is never launched.</p></div>
 </div>
 </section>
 </main>
