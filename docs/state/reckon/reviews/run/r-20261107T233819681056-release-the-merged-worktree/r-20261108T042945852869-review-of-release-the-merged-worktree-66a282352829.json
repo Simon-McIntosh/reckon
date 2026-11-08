@@ -1,0 +1,48 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T04:47:36.140Z",
+  "dispatched_at": "2026-11-08T04:35:24Z",
+  "findings": [
+    {
+      "file": "reckon/crew/merge.py",
+      "id": "fc22f3b8606",
+      "line": 879,
+      "severity": "non-blocking",
+      "text": "The merge releases a held tree by calling _release_run_workspace(release_record, integration_repo=..., integration_commit=...) without the retention argument that promotion passes from record['worktree_retention'] (reckon/crew/promotion_release.py:381), so a tree whose ledger row records worktree-retention ('retained as the working directory of recoverable session') is released rather than withheld when a merged head is later landed."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew_run_commands.py:329 calls merge.land_merge for crew merge --head with release defaulting True and emits the whole report; reckon/crew/merge.py:846 (land) passes release=False so crew complete --land reports its own post-merge release exactly once.",
+    "diff": "Read commit by commit against 1b3663ce4f: dbafecdb06 adds release_landed_worktrees and its call, d89d95d340 is a no-behaviour import/format sort, 66a2823528 adds only the 60-line evidence fragment.",
+    "done_when": "The done_when names three cases in tests/test_a_merge_releases_its_worktree.py; all three exist there and the base arm log records 2 failed / 1 passed while the head arm records 3 passed, EXIT=0.",
+    "goal": "The node's goal is that crew merge releases the worktree its landed head leaves behind; reckon/crew/merge.py:800 calls release_landed_worktrees(repo, landed, head=head_sha) after the confirmed push and reports release.released/release.withheld.",
+    "manifest": "The manifest states status complete, records the gate command and both arm logs with their EXIT lines, names the negative control log and its 2-failure red result, and records the three commits.",
+    "write_paths": "The plan declares reckon/crew/merge.py and tests/test_a_merge_releases_its_worktree.py; the diff changes exactly those two plus the landing evidence fragment, which the dispatch's own orientation_write_paths declares. No file outside the declared scope was touched."
+  },
+  "justifications": {
+    "durability": "The base arm's KeyError on report['release'] at tests/test_a_merge_releases_its_worktree.py:167 and the withheld-case failure show the added assertions redden when the release is absent, and the negative control removes the release to the same 2 failures.",
+    "evidence": "The three-case gate exists and both arms are on disk: base-arm.log ends '2 failed, 1 passed' EXIT=1 and head-arm.log ends '3 passed' EXIT=0.",
+    "fit": "reckon/crew/merge.py:804-816 follows the module's docstring-plus-local-import idiom and reuses _rev_parse and _is_ancestor rather than shelling out again.",
+    "goal_fidelity": "reckon/crew/merge.py:800-801 releases after the push is confirmed and the result names each tree, matching the plan's deliverable.",
+    "reuse": "The new code reads the existing join obligations._held_worktree_records and the existing release path promotion_release._release_run_workspace, adding only the merge-commit predicate and the result summary; no existing owner performs a release keyed on the landed commit.",
+    "scope_discipline": "The only third file in the diff, docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/release-the-merged-worktree.html, is the landing record and is inside the dispatch's declared orientation write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261108T042945852869-review-of-release-the-merged-worktree-66a282352829",
+  "reviewed_base_sha": "1b3663ce4fd1f45393fac81a3289ecae7c6ec4b0",
+  "reviewed_head_sha": "66a28235282945adf713ba5a9361aa7625c0ba30",
+  "reviewed_run_id": "r-20261107T233819681056-release-the-merged-worktree",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T05:03:49.290703+00:00",
+  "total": 112
+}
