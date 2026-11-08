@@ -102,6 +102,31 @@ def test_a_departed_failed_launch_is_not_requeued(
     ]
 
 
+def test_a_launch_failure_for_a_queued_run_is_restored_by_the_pass(
+    admit_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    run_id = "r-queued-failure"
+    runs.queue_dispatch(_queue(admit_repo, node_id="queued", run_id=run_id))
+
+    def fail(_pointer, **_kwargs):
+        raise RuntimeError("launch did not survive")
+
+    monkeypatch.setattr(queue_admission, "_launch_queued", fail)
+    _, resolve = _config_for()
+    result = queue_admission.admit_once(config_for=resolve)
+
+    restored = runs.read_pointer(run_id)
+    assert restored["phase"] == "queued"
+    assert restored["failure"] == "RuntimeError: launch did not survive"
+    assert restored["failure_attempts"] == 1
+    assert restored["node"]["id"] == "queued"
+    assert not [
+        row
+        for row in result["verdicts"]
+        if "writeback refused" in row.get("detail", "")
+    ]
+
+
 def test_a_launch_failure_still_in_the_queue_is_restored(admit_repo: Path) -> None:
     run_id = "r-still-queued"
     request = _queue(admit_repo, node_id="queued", run_id=run_id)
