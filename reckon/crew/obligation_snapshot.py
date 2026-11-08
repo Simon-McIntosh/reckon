@@ -1458,11 +1458,34 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
             # derivation's own helper, from the same ordering, which is what
             # keeps this payload equal to the derivation field for field.
             if row.get("session_refusal"):
+                # A refusal a live or queued plan review already answers is a
+                # wait the session cannot shorten, not a duty, and the slice
+                # has to read it exactly as the derivation does: the compose
+                # command would only queue a duplicate review.
+                awaited = module._plan_review_this_request_awaits(
+                    row, list(state.pointers.values()), session
+                )
+                if not awaited:
+                    items.append(
+                        module._live_item(
+                            row,
+                            kind=module.QUEUED_AWAITING_SESSION_DUTY_KIND,
+                            now=state.now,
+                        )
+                    )
+                    continue
+                if queued_placements is None:
+                    queued_placements = module.queue_admission.queued_placements(
+                        list(state.pointers.values()), now=state.now
+                    )
                 items.append(
-                    module._live_item(
+                    module._queued_item(
                         row,
-                        kind=module.QUEUED_AWAITING_SESSION_DUTY_KIND,
+                        placements=queued_placements,
                         now=state.now,
+                        verdicts=verdicts,
+                        pointer=pointer,
+                        awaited_review=awaited,
                     )
                 )
                 continue
