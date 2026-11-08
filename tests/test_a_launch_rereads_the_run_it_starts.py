@@ -184,25 +184,24 @@ def _stubbed_launch(recorded: list):
 def _after_the_pass_reads_the_queue(
     monkeypatch: pytest.MonkeyPatch, change: Callable[[], None]
 ) -> list[int]:
-    """Write ``change`` once the pass holds its opening read of the queue.
+    """Write ``change`` once the pass reaches its launch decision.
 
-    The pass ranks what its first read returned and launches from that list, so
-    the change lands exactly in the window the re-read exists for: the request
-    about to be launched has already been read as queued.
+    The pass ranks what its first read returned and decides each request's
+    launch later, so this is the last point at which a request can still have
+    moved. A change written here is visible only to a read taken here; a pass
+    that read the request's attempts when it started would already be past
+    them, which is what makes this the window the re-read exists for.
     """
-    read_live = runs.list_live
+    reread = queue_admission._launch_reread_refusal
     fired: list[int] = []
 
-    def read(*, project=None, phase=None):
-        records = read_live(project=project, phase=phase)
-        # The pass reads every live pointer once, with no phase filter, before
-        # it ranks the queued ones.
-        if phase is None and not fired:
+    def re_read(pointer):
+        if not fired:
             fired.append(1)
             change()
-        return records
+        return reread(pointer)
 
-    monkeypatch.setattr(runs, "list_live", read)
+    monkeypatch.setattr(queue_admission, "_launch_reread_refusal", re_read)
     return fired
 
 
@@ -265,20 +264,26 @@ def test_a_request_whose_attempt_already_resulted_is_not_launched(
     crew_checkout: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _, resolve = _config_for()
-    manifest = _delivered_manifest(RUN_ID)
+    manifest = runs.run_dir(RUN_ID) / "manifest.md"
     runs.queue_dispatch(
         _queued_request(crew_checkout, run_id=RUN_ID, manifest_path=str(manifest))
     )
-    before = manifest.read_text(encoding="utf-8")
+    delivered: list[str] = []
     recorded: list = []
-    fired = _after_the_pass_reads_the_queue(monkeypatch, lambda: None)
+
+    def deliver() -> None:
+        _delivered_manifest(RUN_ID)
+        delivered.append(manifest.read_text(encoding="utf-8"))
+
+    fired = _after_the_pass_reads_the_queue(monkeypatch, deliver)
 
     result = queue_admission.admit_once(
         config_for=resolve, launcher=_launcher(recorded, manifest=manifest)
     )
 
     assert fired, "the change was never written after the pass read the queue"
-    assert manifest.read_text(encoding="utf-8") == before, (
+    assert delivered, "the attempt's result was never written after the read"
+    assert manifest.read_text(encoding="utf-8") == delivered[0], (
         f"a launch overwrote the delivered manifest; launcher ran {recorded!r}"
     )
     assert recorded == []

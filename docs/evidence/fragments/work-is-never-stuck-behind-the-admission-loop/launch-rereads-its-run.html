@@ -1,0 +1,75 @@
+<section id="launch-rereads-its-run-landing">
+  <h2>A launch re-reads the run it starts</h2>
+
+  <p><strong>What changed.</strong> A pass ranks the queued pointers it read at
+  its start and then works through them, so a request can move while the pass is
+  busy with the others. <code>_launch_reread_refusal</code>
+  (<code>reckon/crew/queue_admission.py</code>) re-reads the request's live
+  pointer and the run's <code>attempt-*-exit.json</code> records under
+  <code>runs._pointer_lock</code> immediately before the launch, and refuses a
+  request whose pointer is gone or whose attempt already exited with a recorded
+  result, writing a <code>refused-before-launch</code> verdict that names the
+  reason. A launch-failure attempt reached no model, so the queue's own retry
+  still follows it.</p>
+
+  <p><strong>What this node changed.</strong> The guard itself landed at
+  <code>4a8f690d9d</code>. Its two refusal cases did not measure the window they
+  name. The attempt-resulted case wrote the exit record and the delivered
+  manifest before the pass began and handed its after-read hook a no-op, so a
+  guard that read attempts once at pass start passed the case. Both refusal cases
+  fired their change from inside the pass's opening read of the live set, which
+  a pass-start read would still have seen. Each case now writes its change when
+  the pass reaches its launch decision for the request &mdash; the last point at
+  which the request can still have moved &mdash; and the attempt case asserts the
+  delivered manifest is byte-identical afterwards.</p>
+
+  <h3 id="launch-rereads-its-run-arms">Measured</h3>
+
+  <p>Three cases over a temporary crew home with stubbed launches, and three
+  mutations of the guard. Every arm is a log whose header names its revision,
+  tree and command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table id="launch-rereads-its-run-table">
+    <caption>The wide gate is every test file importing
+    <code>reckon.crew.queue_admission</code> (68 files), run
+    <code>-n 8</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>node gate</td>
+        <td><code>3ab23a6</code>, worktree</td>
+        <td>3 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>mutation: pointer re-read removed</td>
+        <td><code>3ab23a6</code> + helper substitution</td>
+        <td>1 failed, 2 deselected, <code>EXIT=1</code> &mdash; the pointer case
+        launches</td></tr>
+      <tr><td>mutation: attempt read removed</td>
+        <td><code>3ab23a6</code> + helper substitution</td>
+        <td>1 failed, 2 deselected, <code>EXIT=1</code> &mdash; launched and
+        overwrote the delivered manifest</td></tr>
+      <tr><td>mutation: attempt read at the pass's opening read</td>
+        <td><code>3ab23a6</code> + pass-start decision</td>
+        <td>1 failed, 2 deselected, <code>EXIT=1</code> &mdash; launched and
+        overwrote the delivered manifest</td></tr>
+      <tr><td>wide gate, head (final revision)</td>
+        <td><code>3ab23a6</code>, worktree</td>
+        <td>445 passed, 21 failed, <code>EXIT=1</code></td></tr>
+      <tr><td>wide gate, base</td>
+        <td><code>defc472</code>, extraction</td>
+        <td>443 passed, 22 failed, 1 error, <code>EXIT=1</code></td></tr>
+      <tr><td>a differing id from an earlier head arm, isolated</td>
+        <td><code>3ab23a6</code>, worktree</td>
+        <td>8 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>Every one of the head arm's 21 failure ids fails at the base revision too,
+  so the files importing the module add no failure. The base arm carries one id
+  the head arm does not, <code>test_the_log_is_trimmed_within_its_size_bound</code>,
+  which is its known base-only id under parallel load. An earlier head arm
+  differed the other way on
+  <code>test_a_recorded_stall_reaches_its_session_once_until_it_clears</code>,
+  and that file passes in isolation at the head revision (8 passed), so the
+  difference is the load, not the change. The base arm's single error is a
+  fixture directory collision (<code>FileExistsError</code> under the pytest
+  basetemp).</p>
+</section>
