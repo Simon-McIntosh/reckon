@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/mcp_views.py:4573",
+    "reckon/hooks/coordinator_obligations.py:193",
+    "reckon/crew/obligation_snapshot.py:1324",
+    "reckon/crew/obligation_snapshot.py:1487"
+  ],
+  "completed_at": "2026-11-08T23:21:39.759Z",
+  "dispatched_at": "2026-11-08T23:12:24Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": 1487,
+      "severity": "non-blocking",
+      "text": "the published snapshot's per-session payload extends only sub-floor, held-worktree and unreadable-record items, so the index-lag notice added at reckon/crew/obligations.py:2946 never reaches the prompt-path checklist the hook reads; a session sees it only through the MCP/CLI obligations view or the inline stop derivation, so the hook's new index-lags-head vocabulary entry is unexercised on the snapshot path."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 2508,
+      "severity": "non-blocking",
+      "text": "_read_only_git duplicates reckon/velocity.py:163 run_git rather than extending it: the git -C argv, byte capture, check=False and 180 s timeout are identical, and the only addition is GIT_OPTIONAL_LOCKS=0, which belongs on the owner as an env parameter so the capability keeps one implementation."
+    },
+    {
+      "file": "tests/test_a_landing_leaves_the_index_at_head.py",
+      "line": 135,
+      "severity": "non-blocking",
+      "text": "the assertion compares the log record's head with the notice row's head, and both are produced by the same _index_lag_paths call, so a detector that reported a wrong HEAD would satisfy it; comparing against the checkout's own git rev-parse HEAD would make it independent."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "read reckon/mcp_views.py:4573, reckon/hooks/coordinator_obligations.py:193 and reckon/crew/obligation_snapshot.py:1324-1487.",
+    "diff": "read all four commits against bb23ab6e: obligations.py adds the detector, notice and log; the hook mirrors the non-blocking kind; the test file adds five cases; the evidence fragment records the landing.",
+    "done_when": "the done_when names tests/test_a_landing_leaves_the_index_at_head.py with four cases, a one-line log on a second read, a logged negative control, untouched real crew home, no added importer failure and clean ruff; the manifest records each and the logs bear them out.",
+    "goal": "the node goal is to surface a main-checkout index lacking a path HEAD and the working tree both hold as a notice with the path-limited restore; reckon/crew/obligations.py:2604-2649 derives it and :2946 appends it to the obligations view.",
+    "manifest": "read; it records gate 5 passed EXIT=0, base arm 5 failed, negative control 1 failed, and importer arms 37 failed / 455 passed against 37 failed / 450 passed with identical failure ids.",
+    "write_paths": "read the manifest's declared paths and the resume advice that added the hook; every path in the diff is inside that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_landing_leaves_the_index_at_head.py:101-143 fails when the detector is dropped (logs/negative-control.log EXIT=1) and its final assertion re-reads the index through git, though :135 compares the log's head to the notice's head rather than to the checkout's HEAD.",
+    "evidence": "logs/gate-head.log ends EXIT=0 with 5 passed at 8922d86027, logs/base-arm.log ends EXIT=1 with 5 failed, and logs/importers-base.log and logs/importers-head-rerun.log carry the same 37 failure ids.",
+    "fit": "reckon/crew/obligations.py:275 and :283 name the kind and its files by mechanism and match the module's existing duty-kind vocabulary, with no plan or ticket identifiers.",
+    "goal_fidelity": "reckon/crew/obligations.py:2604-2649 builds the notice and :2946 appends it to the obligations view, but reckon/crew/obligation_snapshot.py:1487 never adds it to the published snapshot the prompt hook reads.",
+    "reuse": "reckon/crew/obligations.py:2508 re-implements reckon/velocity.py:163 run_git (same git -C, capture, check=False, timeout=180) rather than extending it with the env parameter it needs.",
+    "scope_discipline": "all four changed paths sit inside the granted scope, the hook having been added to the write paths in the resume advice before it was edited."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to surface a main-checkout index that lacks a path HEAD and the working tree both hold as a notice with the path-limited restore; reckon/crew/obligations.py:2604-2649 derives that notice and :2946 appends it to the obligations view.\nVERDICT done_when: the done_when names tests/test_a_landing_leaves_the_index_at_head.py with four cases, a second read leaving the log at one line, an ignored untracked path raising nothing, a logged negative control, an untouched real crew home, no added importer failure and clean ruff; tests/test_a_landing_leaves_the_index_at_head.py:101-175 asserts each and the run's logs bear them out.\nVERDICT write_paths: read the manifest's orientation paths and the resume advice that added the hook; reckon/crew/obligations.py, reckon/hooks/coordinator_obligations.py, tests/test_a_landing_leaves_the_index_at_head.py and the evidence fragment are the diff's four paths and all sit inside that granted scope.\nVERDICT manifest: read; it records gate 5 passed EXIT=0, base arm 5 failed, negative control 1 failed, and importer arms 37 failed / 455 passed against 37 failed / 450 passed with identical failure ids.\nVERDICT diff: read all four commits against bb23ab6e; obligations.py adds the detector, notice and once-per-lag log, the hook mirrors the non-blocking kind, the test file adds five cases, and the evidence fragment records the landing.\nCALL_SITES: reckon/mcp_views.py:4573, reckon/hooks/coordinator_obligations.py:193, reckon/crew/obligation_snapshot.py:1324, reckon/crew/obligation_snapshot.py:1487\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:2946 appends the notice to the obligations view, but reckon/crew/obligation_snapshot.py:1487 never adds it to the published snapshot the prompt hook reads.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/gate-head.log ends EXIT=0 with 5 passed and logs/base-arm.log ends EXIT=1 with 5 failed, while logs/importers-head-rerun.log and logs/importers-base.log carry the same 37 failure ids.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: all four changed paths are inside the granted scope in the reviewed run's prompt.txt, the hook having been added before it was edited.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_landing_leaves_the_index_at_head.py:143 re-reads the index through git after the view and :135 compares the log's head to the notice's head rather than to HEAD.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/obligations.py:275 declares INDEX_LAG_DUTY_KIND beside the module's other duty kinds and the comments state the mechanism, with no plan or ticket identifier.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/obligations.py:2508 duplicates reckon/velocity.py:163 run_git's argv, byte capture and timeout instead of extending the owner with the env setting it needs.\nFINDING reckon/crew/obligation_snapshot.py:1487 non-blocking: the published snapshot's per-session payload never adds the index-lag notice, so the prompt-path checklist omits it and a session sees it only through the MCP/CLI view or the inline stop derivation.\nFINDING reckon/crew/obligations.py:2508 non-blocking: _read_only_git re-implements reckon/velocity.py:163 run_git rather than extending it, forking a capability the repository already owns.\nFINDING tests/test_a_landing_leaves_the_index_at_head.py:135 non-blocking: record[\"head\"] == row[\"head\"] compares two values from the same _index_lag_paths call and never the checkout's actual HEAD.\n",
+  "review_run_id": "r-20261108T231137934018-review-of-a-main-checkout-index-that-lags-head-is-surfaced-5f4590af6619",
+  "reviewed_base_sha": "bb23ab6e26a40b663a20e878cb3ea9f8095d31d7",
+  "reviewed_head_sha": "5f4590af661932ace4aef4109a0dea543c8e4790",
+  "reviewed_run_id": "r-20261108T221135803822-a-main-checkout-index-that-lags-head-is-surfaced",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 5,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T23:27:03.597457+00:00",
+  "total": 92
+}
