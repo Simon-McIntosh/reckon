@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="295">
+<meta name="plan-version" content="296">
 <meta name="plan-modified" content="2026-11-08">
 </head>
 <body>
@@ -689,6 +689,9 @@
 </div>
 <div class="r-comment" data-section="s35" data-id="c-run-r-20261108T104808334081-review-of-return-a-claim-refused-launch-to-the-queue-233e7a36ae09" data-who="reckon-build" data-when="2026-11-08T11:04:49.713Z">
     <div class="r-comment-body"><p>Reviewed run r-20261108T080751574147-return-a-claim-refused-launch-to-the-queue at head 233e7a36ae against base 4cf29efd26, the revision of its prior review: the delta repairs both findings that review raised — the duplicated queued write-back now delegates to _restore_queued with a hold argument, and a ScopeConflict raised by the metered-rebind relaunch returns the rebound request to phase queued on its claim — producing a parsed record scoring goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 17 and reuse 19, zero added failures, and one non-blocking finding (a dead failure assignment at reckon/crew/queue_admission.py:4932).</p></div>
+</div>
+<div class="r-comment" data-section="s35" data-id="c-run-r-20261108T080751574147-return-a-claim-refused-launch-to-the-queue" data-who="reckon-build" data-when="2026-11-08T11:43:31Z">
+    <div class="r-comment-body"><p>A launch refused on a claim now returns its request to phase queued, held on the named claim, instead of leaving the pointer in phase starting, on both the first launch and the metered-rebind relaunch; the queued write-back is owned once by _restore_queued. Reproduced first at base b0708be48a (pointer left starting, EXIT=1); 6 cases pass at head 233e7a36ae (6 passed, EXIT=0) against 2 failed and 4 passed in the base arm.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20261023-s4-review" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
     <div class="r-comment-body"><p>Content and design reviews on 2026-10-23, for the author before §4 is dispatched: the priority order stated here (critical path, then ROI, then the active sprint) differs from the roadmap's own key, <code>_priority_key</code> in <code>reckon/roadmap_ranking.py</code>, which puts sprint position before ROI, and that key and its signal vocabulary are what §4 should reuse; during the transition <code>_dispatch_lane_allowance</code> in <code>reckon/crew/dispatch_plan.py</code> still holds requests on the router's per-session figure.</p></div>
