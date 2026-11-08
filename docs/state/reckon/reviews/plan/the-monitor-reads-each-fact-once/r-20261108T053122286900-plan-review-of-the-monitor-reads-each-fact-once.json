@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T05:47:03.685Z",
+  "dispatched_at": "2026-11-08T05:35:12Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:514",
+      "id": "reasoning-1",
+      "reason": "a worker implementing the Deliverable as written produces five of the six required behaviours and then fails its own gate on the sixth, so it must either invent the mitigation clause or report a blocked node.",
+      "text": "the added sixth bullet measures that \"a queued run whose pointer `failure` records an admission refusal that has since been resolved ... yields a row stating the run's current hold, not the refusal's command\", but \u00a715's Deliverable (lines 492\u2013499) declares no clause producing it: its four clauses cover the blocking-finding classification, the repair's state, \"Every row's command names the row's own run\", the in-flight review row, and the overdue wording \u2014 and none retires a stale admission refusal whose subject is now answered, which is neither a run-id mixup nor a promotion offer",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:492",
+      "id": "reasoning-2",
+      "reason": "a repair placed where the Deliverable points (`obligations.py`) would never run, because the classifier's reading outranks it, and the node would close with a green test only if the worker guessed the module the plan omits.",
+      "text": "the Deliverable opens \"The obligations derivation classifies ...\", but the row the sixth bullet measures is not built there: a `queued-awaiting-session` row is emitted from `row[\"session_refusal\"]` (`reckon/crew/obligations.py:2488`), which `reckon/crew/recovery_classification.py:1343` fills from `_queued_failure_remedy` (:220), and `obligations.py:897` returns `None` as soon as `session_refusal` is set, stating \"The classifier has already read this refusal ... it outranks this reading\"; the section's only file citation is `obligations.py` near line 690, which is the cadence wording, so nothing tells the worker the stale-refusal remedy lives in `recovery_classification._queued_failure_remedy` and is reached through `classify`",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "e2effeda8053a4d31f6c358cb484b0ba38930242",
+  "plan_fingerprint": "e266e95d8235fdff82aa36c769197c93231cc20cff488c75421e09bc5957d493",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 102,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T053122286900-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "8639a6983c42c92124179b437aafa47b405c1462",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/obligations.py` near line 690 resolves to `_reflex_review_window_seconds` at :691, whose f-string at :718 emits the cited \"expected within about {window} s (the follower's sweep cadence)\" with `DEFAULT_SWEEP_SECONDS` = 120; the cited instances `r-20261107T170819813156-refuse-a-second-launch-beside-a-live-worker`, `r-20261107T205044504786-icm-sheet-tidy`, `r-20261107T220731416832-review-of-icm-sheet-tidy-4c6e1f3d6531` and `r-20261107T174547094075-save-a-stopped-attempts-uncommitted-work` each resolve under `~/.config/reckon/crew/runs/`.",
+    "done_when": "pass on the live plan \u2014 the snapshot introduces six bullets with \"shows four things on a synthetic crew home\" (\u00a715), but HEAD already reads \"shows each of the following\", and that is the only difference between the snapshot's \u00a715 and the live \u00a715; the count defect is already repaired, so it is recorded here rather than raised as a finding.",
+    "evidence_paths": "pass \u2014 the gate names `tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py` in the repository and a synthetic crew home, with no scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 the added bullet is prose and the test file is named for the behaviour it measures; no plan labels, stage names, ticket numbers or changelog prose.",
+    "reasoning": "a finding \u2014 the added bullet measures a queued-run refusal remedy that \u00a715's Deliverable declares no clause for, and whose code path sits in `reckon/crew/recovery_classification.py`, a module the section never names.",
+    "single_goal": "pass \u2014 six bullets, but one deliverable (the obligation row tells the truth about what is owed) closed by one test file and one verdict; the fifth bullet's second module is answered by the `reasoning` finding below rather than by splitting the node.",
+    "wiring": "pass \u2014 \u00a715 declares no `depends-on` and needs none: its repairs are local to the obligation pipeline, and \u00a714 hands it the wording seam explicitly (\"The obligation's wording is \u00a715's\", \u00a714), so no relationship is missing or misdirected."
+  },
+  "section_digests": {
+    "_document": "daa1a9bcc4d34705ad32ec58d8bf0b2122b24f6a3e32fa53c2379d66d542eeb8",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "3b11fe0cd53015121e6d566c554c6c77b13236b3700a90279e77a6bc755ea0a3",
+    "s14": "1295ddbb2475ed10e54e5db9b2c6e2f72acf760aee85c04638f2c35e0fb8cfbb",
+    "s15": "c50a6d7a52edc1d9edbbb30d0ea3f781693143db33f1f5591b67f17c1c33be7d",
+    "s16": "65cd8e559a7a5ebf018bc9fe50a07bb0954f67405ab6f17c7377c38ccd363aa7",
+    "s17": "1dee50822a308fa4eeea0a45fd3cdaf6de52d9a1d74a91c2b9c7605d179da2ad",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T06:24:17.448707+00:00",
+  "total": null
+}
