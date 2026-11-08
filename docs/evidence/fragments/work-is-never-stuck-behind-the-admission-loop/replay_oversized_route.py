@@ -36,6 +36,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -48,6 +49,23 @@ SECTION = "s6"
 SESSION = "404513fc-8e68-4a0f-8060-29ac9ff3d5fd"
 #: The context estimate both pick-timing rows carry.
 ESTIMATED_CONTEXT = 234021
+
+#: The stage budget the replay's pick runs under, in seconds.
+#:
+#: A live dispatch bounds its pick, and the bound is a limit on how long the
+#: dispatcher waits rather than an input the picker weighs. It is 5.0 s
+#: (``reckon.crew.dispatch_picker.PICKER_DISPATCH_TIMEOUT_SECONDS``). A bound that
+#: fires does not reproduce a refusal: it replaces the picker's own answer with
+#: the dispatcher's ``timeout`` fallback. A replay process pays cold read costs a
+#: dispatcher does not -- the first candidate scan in a fresh thread walks the
+#: docs tree, and the node it runs on is shared -- so the same answer that
+#: arrived inside 5.0 s there can exceed it here. Measured on this node, the
+#: 02:34:43Z attempt's cold path took 7.7 s and its warm path 1.8 to 4.0 s.
+#:
+#: So the replay lifts the bound, records both the production figure and the one
+#: it used, and prints each attempt's elapsed time beside its answer, which is
+#: what makes the lifted bound visible rather than hidden.
+REPLAY_STAGE_BUDGET_SECONDS = 120.0
 
 #: The three layers inside this repository, and the revision each was read at.
 CONFIG_LAYERS = {
@@ -857,9 +875,10 @@ def replay(attempt: dict[str, Any], config: dict[str, Any], repo: Path, view: di
     ).as_dict()
 
 
-def report(attempt, selection) -> tuple[list[str], bool]:
+def report(attempt, selection, elapsed_ms: float) -> tuple[list[str], bool]:
     """One attempt's replay beside the row that recorded it."""
     lines = [f"=== {attempt['label']}  {attempt['started_at']}"]
+    lines.append(f"  elapsed: {elapsed_ms:.0f} ms")
     lane = attempt.get("named_lane")
     lines.append(
         "offer surface: "
@@ -983,27 +1002,63 @@ def main(argv: list[str] | None = None) -> int:
 
     section_attempt_count("reckon", PLAN, SECTION, None)
 
-    failures = 0
-    for attempt in ATTEMPTS:
-        selection = replay(attempt, config, repo, budget_view(config, utilisation=None))
-        block, ok = report(attempt, selection)
-        lines.extend(block)
-        lines.append("")
-        failures += 0 if ok else 1
+    from reckon.crew import dispatch_picker
 
+    production_budget = dispatch_picker.PICKER_DISPATCH_TIMEOUT_SECONDS
     lines.append(
-        "=== attempt-1, a fresh window reading at 72% instead of an absent one"
+        f"pick-stage-bound: replay {REPLAY_STAGE_BUDGET_SECONDS:g}s, "
+        f"production {production_budget:g}s"
     )
-    selection = replay(ATTEMPTS[0], config, repo, budget_view(config, utilisation=72.0))
-    rows = _exclusion_rows(selection.get("excluded") or [])
-    same = rows == [tuple(row) for row in ATTEMPTS[0]["recorded"]]
-    lines.append(f"  exclusion set: {'identical to the record' if same else 'DIFFERS'}")
     lines.append(
-        "  the record does not discriminate between an absent reading and one at or"
-        " past the ceiling: both withhold the reserved lanes on the same term"
+        "  the dispatcher's bound limits how long it waits; it is not an input the"
+        " picker"
     )
-    failures += 0 if same else 1
+    lines.append(
+        "  weighs, and a bound that fires replaces a refusal with the dispatcher's"
+        " timeout."
+    )
+    lines.append(
+        "  The replay lifts it so a cold read this process pays is not read as a"
+        " routing answer;"
+    )
+    lines.append("  each attempt's elapsed time is printed beside its answer.")
     lines.append("")
+
+    failures = 0
+    try:
+        dispatch_picker.PICKER_DISPATCH_TIMEOUT_SECONDS = REPLAY_STAGE_BUDGET_SECONDS
+        for attempt in ATTEMPTS:
+            moment = time.perf_counter()
+            selection = replay(
+                attempt, config, repo, budget_view(config, utilisation=None)
+            )
+            block, ok = report(
+                attempt, selection, (time.perf_counter() - moment) * 1000
+            )
+            lines.extend(block)
+            lines.append("")
+            failures += 0 if ok else 1
+
+        lines.append(
+            "=== attempt-1, a fresh window reading at 72% instead of an absent one"
+        )
+        selection = replay(
+            ATTEMPTS[0], config, repo, budget_view(config, utilisation=72.0)
+        )
+        rows = _exclusion_rows(selection.get("excluded") or [])
+        same = rows == [tuple(row) for row in ATTEMPTS[0]["recorded"]]
+        lines.append(
+            f"  exclusion set: {'identical to the record' if same else 'DIFFERS'}"
+        )
+        lines.append(
+            "  the record does not discriminate between an absent reading and one"
+            " at or past the ceiling: both withhold the reserved lanes on the same"
+            " term"
+        )
+        failures += 0 if same else 1
+        lines.append("")
+    finally:
+        dispatch_picker.PICKER_DISPATCH_TIMEOUT_SECONDS = production_budget
 
     lines.append(
         "inputs that decided each refusal: the node's declared capability against"

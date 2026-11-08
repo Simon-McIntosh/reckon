@@ -1,0 +1,124 @@
+<article class="r-evidence" data-node="oversized-node-reserved-lane-reproduced">
+<h3>Why an oversized node did not reach the reserved lane, reproduced</h3>
+
+<p id="oversized-node-reserved-lane-reproduced-landing">The two recorded
+refusals reproduce, and the replay that reproduces them exits
+<code>EXIT=0</code>. The claim was not true of the script as committed: run on
+this node it exited 1, because the 02:34:43Z attempt's pick was cut off by the
+dispatcher's stage bound before it answered. The pick never disagreed with the
+record — it did not finish. The fix is a replay-side stage budget, and the
+evidence below separates what the refusal rests on from what it does not.</p>
+
+<h4 id="oversized-node-reserved-lane-reproduced-defect">The defect that was reproduced first</h4>
+
+<p id="oversized-node-reserved-lane-reproduced-before">Before the change, on a
+cold process in this worktree:</p>
+<pre><code>=== attempt-4  2026-11-03T02:34:43.640120+00:00
+  answer: action=fallback decision_source=None fallback_reason=timeout in pick:capability
+  recorded rows: 3   replayed rows: 0
+  exclusion set: DIFFERS
+  outcome: DIFFERS
+replayed: 2 attempts, refusals NOT reproduced
+EXIT=1</code></pre>
+
+<p id="oversized-node-reserved-lane-reproduced-cause">A dispatcher bounds its
+pick with <code>PICKER_DISPATCH_TIMEOUT_SECONDS = 5.0</code>
+(<code>reckon/crew/dispatch_picker.py:46</code>, waited on at
+<code>dispatch_picker.py:590</code>), and a bound that fires replaces the
+picker's own answer with the dispatcher's
+<code>timeout</code> fallback (<code>dispatch_picker.py:655–661</code>). The
+bound is a limit on how long the dispatcher waits, not an input the picker
+weighs. Measured here, the 02:29:07Z attempt's path takes 6431 ms and the
+02:34:43Z attempt's 7764 ms on a cold process — both past 5.0 s, so the earlier
+claim that both reproduced could only have held on a process whose read caches
+were already warm. The replay now lifts the bound to
+<code>REPLAY_STAGE_BUDGET_SECONDS</code> (120 s), records both figures in its
+log, and prints each attempt's elapsed time beside its answer, so the lift is
+visible rather than hidden. No routing or competence verdict is stubbed on
+either path: the candidate scan runs
+<code>reckon.crew.picker.snapshot.candidates</code> unchanged.</p>
+
+<h4 id="oversized-node-reserved-lane-reproduced-inputs">Which inputs decided each refusal</h4>
+
+<p id="oversized-node-reserved-lane-reproduced-recorded">Recorded, not
+reconstructed: the node definition (the coordinator's dispatch command line),
+the plan section and its declared capability
+(<code>a-read-costs-what-changed</code> s6 declares
+<code>reasoning="deep"</code>), the context estimate (234021 in both rows), and
+the flight configuration, reconstructed from <code>shipped</code> and
+<code>project</code> at <code>9bdaea5ab6</code> and the host layer at
+<code>dotfiles@2892816</code>; <code>--check-config</code> re-resolves those
+layers and exits 2 on disagreement, and it matched. <em>Conditional on a
+reconstructed input:</em> the budget window reading. A pick-timing row keeps
+each reason code and the context estimate and nothing of the verdict behind the
+reason, so every attribution resting on the window percentage is conditional.
+The replay runs both branches — an absent reading and a fresh reading at 72% —
+and both produce the recorded rows unchanged, so the refusal does not depend on
+which one it was. Not decisive: the lane document, which feeds worker slots and
+congestion and is read by no exclusion. Never reached: the serving probe, since
+every candidate carried a reason before it.</p>
+
+<h4 id="oversized-node-reserved-lane-reproduced-withheld">The path that withheld codex, and the absent local lane</h4>
+
+<p id="oversized-node-reserved-lane-reproduced-codepath">The withholding term
+is the lane-window term of the reserved-lane policy,
+<code>reckon/crew/picker/snapshot.py:1259</code>, reached from the candidate
+loop at <code>snapshot.py:1748</code>. The node declares
+<code>reasoning: deep</code> and the codex policy's floor is
+<code>reasoning: [deep]</code>, so the tier term
+(<code>snapshot.py:1300</code>) withheld nothing; the reason on the row is the
+window term, which withholds when the lane's window percentage is absent or at
+or past the 60% ceiling (<code>snapshot.py:1315</code>,
+<code>snapshot.py:1320</code>). claude was withheld on the same term. That the
+refusal carries it establishes no lift governed either group at either
+moment (a lift releases the term at <code>snapshot.py:1310</code>).</p>
+
+<p id="oversized-node-reserved-lane-reproduced-locallane">The local lane was
+absent from the later attempt because that dispatch named a lane. The fourth
+attempt's command carried <code>--backend codex</code>, which reaches
+<code>lane_model_selection</code> (<code>reckon/crew/dispatch_picker.py:1061</code>,
+called from <code>reckon/crew_dispatch_commands.py:1604</code>) and asks the
+picker with the configuration narrowed by
+<code>_config_within_lane(config, "codex")</code>
+(<code>dispatch_picker.py:979</code>). Only that lane's backends remain
+candidates, so clive, claude and native could not appear as rows whatever the
+window reading was: the local lane was never offered.</p>
+
+<h4 id="oversized-node-reserved-lane-reproduced-route">What would have to change for the node to reach codex</h4>
+
+<p id="oversized-node-reserved-lane-reproduced-waiver">The oversize waiver
+(<code>snapshot.py:1896–1899</code>) is the one place that may override the
+reserved-lane policy, and on this configuration it can never fire. It requires
+every unreserved candidate to be excluded on context fit alone; the unreserved
+population includes the native backend, whose reason is
+<code>in-harness-backend</code> (<code>snapshot.py:1668</code>) and never a
+context fit, so the <code>all(...)</code> cannot hold. The attempt's own set
+carries an independent second blocker: clive's third reason is
+<code>competence</code>, not <code>context-fit</code>, which fails the same
+test on its own. Either fact is sufficient.</p>
+
+<p id="oversized-node-reserved-lane-reproduced-reroute">The dispatch reroute
+could not have moved it either. <code>_reroute_oversized_request</code>
+(<code>reckon/crew/dispatch.py:633</code>) chooses through
+<code>widest_fitting_candidate</code> (<code>snapshot.py:612</code>), which
+admits only candidates carrying no reasons
+(<code>snapshot.py:639–644</code>); codex carries
+<code>reserved-lane</code>, so it is never selectable there. The candidate scan
+itself needs no widening: <code>_reserved_lane_exclusion</code> withholds on a
+policy rule rather than a measurement, and the waiver is already the one place
+allowed to override it. So the change is in the waiver: judge the unreserved
+population as the lanes a dispatch could actually launch the node on — an
+in-harness backend cannot be launched, so it is not evidence that an ordinary
+lane could run the work — and read a competence refusal for the same window
+shortfall as a context exclusion, since one shortfall is reported as two codes
+depending on which verdict measured it.</p>
+
+<p id="oversized-node-reserved-lane-reproduced-measure">Measure: 2 of 2
+recorded attempts reproduce, the first to its eleven exclusion rows in the
+picker's own order and the second to its three codex
+<code>reserved-lane</code> rows, both reading <code>action: refuse</code>,
+<code>decision_source: refused</code>,
+<code>fallback_reason: no-eligible-candidates; default-backend-ineligible</code>,
+exiting <code>EXIT=0</code>. The log is
+<code>logs/replay.log</code> in the run directory.</p>
+</article>
