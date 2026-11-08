@@ -22,8 +22,6 @@ from reckon import _plan_html, evidence, ledger
 from reckon import mcp as mcp_module
 from reckon.cli import main
 
-APPEND_MARK = f'{evidence.APPEND_ORIGIN_ATTRIBUTE}="{evidence.APPEND_ORIGIN_VALUE}"'
-
 PROJECT = "sample"
 PLAN = "demo-plan"
 TITLE = "Demo plan"
