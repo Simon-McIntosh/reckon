@@ -1,0 +1,68 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:3351 the subscriber delivery constructs _StationRegistration and hands it to stream_events",
+    "reckon/crew_follow_commands.py:3075 stream_events builds the reloader the per-wait hook polls",
+    "reckon/crew_follow_commands.py:1806 _follow_watch_lines invokes on_poll between rows",
+    "reckon/crew/follower_reload.py:469 _FollowerReloader.poll calls registration.prepare_reexec before the exec",
+    "reckon/crew/follower_reload.py:525 _FollowerReloader.poll calls registration.cancel_reexec when the exec is refused"
+  ],
+  "completed_at": "2026-11-08T05:12:21.112Z",
+  "dispatched_at": "2026-11-08T04:57:21Z",
+  "findings": [
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "162",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added _StationRegistration.prepare_reexec/cancel_reexec delegation is exercised only by not raising; the moved-checkout case asserts a recorded exec and a non-empty subscriber.registered list, so replacing either method body with `pass` leaves all five cases green and the claim's hand-over across an exec unobserved."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T032830784659-a-follower-runs-current-code/logs/negative-control-1.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the control's header names revision 48d3aba14c plus the mutation, but the traceback and assertions it quotes (tests/test_a_follower_runs_current_code.py:198/228, the delivery-driven cases) were only committed two minutes later at fc55b06902, so a reader checking out the named revision finds the builder-driven tests there and cannot reproduce the log."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read both commits against 48d3aba1: fc55b06902 adds the claim hand-over methods, tightens one docstring and rewrites the test file to drive crew_follow's subscriber branch; d117af1bad changes only the evidence fragment.",
+    "done_when": "The done_when names tests/test_a_follower_runs_current_code.py with four cases and two controls; the window makes those four cases enter the delivery itself at tests/test_a_follower_runs_current_code.py:135, and logs/negative-control-1.log now shows the delivery-site mutation failing four cases with the moved case recording no exec.",
+    "goal": "The node's goal is that a station-subscriber follower re-executes onto its source checkout's code when that code moves; the window keeps that delivery in reckon/crew_follow_commands.py:3075 and repairs the claim hand-over it exposed at reckon/crew_follow_commands.py:162.",
+    "manifest": "Read; it names commits fc55b06902 and d117af1bad, states the armed command, records baseline_suite 10 passed EXIT=0 and after_suite 15 passed EXIT=0, and names both control logs on disk.",
+    "write_paths": "The source run's declared paths are reckon/crew_follow_commands.py, tests/test_follower_freshness.py, tests/test_a_follower_runs_current_code.py, the evidence fragment and its figure directory; git diff 48d3aba1..d117af1ba touches three files, all inside that grant."
+  },
+  "justifications": {
+    "durability": "logs/negative-control-1.log:9-30 shows the delivery-site mutation failing test_a_moved_checkout_re_executes_the_subscriber with execed=[], but the added delegation at reckon/crew_follow_commands.py:162 is asserted only by non-erroring, so a no-op delegation would survive all five cases.",
+    "evidence": "logs/after-suite.log ends 15 passed EXIT=0 at fc55b06902 against logs/baseline-suite.log 10 passed EXIT=0 at 1b3663ce and logs/base-new-test-behavioural.log 4 failed EXIT=1, and both failure counts are zero on the two suite arms, so added_failure_count is 0 read from the logs rather than the manifest's claim.",
+    "fit": "reckon/crew_follow_commands.py:162 follows the held/acquire/release delegation idiom directly above it in _StationRegistration, and no plan, stage or ticket identifier appears in the new methods, docstrings, comments or the two commit subjects.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:3351-3366 now runs the observed subscriber path end to end, so the reload that keeps a chart pane's wording current is the one production builds and polls.",
+    "reuse": "a capability search over reckon/ for exec hand-over found follower_registration._FollowerRegistration.prepare_reexec/cancel_reexec as the owner and the addition delegates to it rather than adding a second mechanism, and no other reload builder exists.",
+    "scope_discipline": "git diff 48d3aba1..d117af1ba changes only the evidence fragment, reckon/crew_follow_commands.py and the new test file, and nothing in the diff serves a purpose outside the section's deliverable."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that a station-subscriber follower re-executes onto its source checkout's code when that code moves; the window keeps that delivery in reckon/crew_follow_commands.py:3075 and repairs the claim hand-over it exposed at reckon/crew_follow_commands.py:162.\nVERDICT done_when: The done_when names tests/test_a_follower_runs_current_code.py with four cases and two controls; the window makes those four cases enter the delivery itself at tests/test_a_follower_runs_current_code.py:135, and logs/negative-control-1.log now shows the delivery-site mutation failing four cases with the moved case recording no exec.\nVERDICT write_paths: The source run's declared paths are reckon/crew_follow_commands.py, tests/test_follower_freshness.py, tests/test_a_follower_runs_current_code.py, the evidence fragment and its figure directory; git diff 48d3aba1..d117af1ba touches three files, all inside that grant.\nVERDICT manifest: Read; it names commits fc55b06902 and d117af1bad, states the armed command, records baseline_suite 10 passed EXIT=0 and after_suite 15 passed EXIT=0, and names both control logs on disk.\nVERDICT diff: Read both commits against 48d3aba1: fc55b06902 adds the claim hand-over methods, tightens one docstring and rewrites the test file to drive crew_follow's subscriber branch; d117af1bad changes only the evidence fragment.\nCALL_SITES: reckon/crew_follow_commands.py:3351, reckon/crew_follow_commands.py:3075, reckon/crew_follow_commands.py:1806, reckon/crew/follower_reload.py:469, reckon/crew/follower_reload.py:525\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:3351-3366 now runs the observed subscriber path end to end, so the reload that keeps a pane's wording current is the one production builds and polls.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/after-suite.log ends 15 passed EXIT=0 at fc55b06902 against logs/baseline-suite.log 10 passed EXIT=0 at 1b3663ce and logs/base-new-test-behavioural.log 4 failed EXIT=1, so added_failure_count is 0 read from the logs rather than from the manifest.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 48d3aba1..d117af1ba changes only the evidence fragment, reckon/crew_follow_commands.py and the new test file, all inside the declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: logs/negative-control-1.log:9-30 shows the delivery-site mutation failing the moved-checkout case with execed=[], but the added delegation at reckon/crew_follow_commands.py:162 is asserted only by non-erroring, so a no-op delegation would survive all five cases.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew_follow_commands.py:162 follows the held/acquire/release delegation idiom directly above it and carries no plan, stage or ticket identifier.\nSCORE reuse: 19\nJUSTIFICATION reuse: follower_registration._FollowerRegistration.prepare_reexec is the owner and the addition delegates to it rather than adding a second hand-over mechanism.\nFINDING reckon/crew_follow_commands.py:162 non-blocking: the added _StationRegistration.prepare_reexec/cancel_reexec delegation is exercised only by not raising, so replacing either body with `pass` leaves all five cases green.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T032830784659-a-follower-runs-current-code/logs/negative-control-1.log:1 non-blocking: the control's header names revision 48d3aba14c plus the mutation, but the delivery-driven assertions it quotes were committed at fc55b06902 two minutes later, so a reader at the named revision cannot reproduce the log.",
+  "review_run_id": "r-20261108T045330011272-review-of-a-follower-runs-current-code-d117af1baddc",
+  "reviewed_base_sha": "48d3aba14c4db3b6e8c2a6212f769951639179cb",
+  "reviewed_head_sha": "d117af1baddc0e552f5b45a6a8c74223775c7f73",
+  "reviewed_run_id": "r-20261108T032830784659-a-follower-runs-current-code",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T05:24:46.251393+00:00",
+  "total": 111,
+  "verdicts": {
+    "diff": "Read both commits against 48d3aba1: fc55b06902 adds the _StationRegistration rendering of prepare_reexec/cancel_reexec at reckon/crew_follow_commands.py:162, tightens the _follower_reloader_for docstring at reckon/crew_follow_commands.py:2829, and rewrites the test file to drive crew_follow's subscriber branch with a stubbed subscriber; d117af1bad changes only the evidence fragment, adding the arms table, both controls and the measured population.",
+    "done_when": "The done_when names tests/test_a_follower_runs_current_code.py with four cases and two controls; the window makes those four cases enter the delivery itself at tests/test_a_follower_runs_current_code.py:135, and logs/negative-control-1.log now shows the delivery-site mutation failing four cases with the moved case recording no exec, so the measure the section asked for is asserted rather than described.",
+    "goal": "The node's goal is that a station-subscriber follower re-executes onto its source checkout's code when that code moves; the window keeps that delivery in reckon/crew_follow_commands.py:3075 and repairs the claim hand-over it exposed at reckon/crew_follow_commands.py:162.",
+    "manifest": "Read; it names commits fc55b06902 and d117af1bad, states the armed command, records baseline_suite 10 passed EXIT=0 and after_suite 15 passed EXIT=0, and names both control logs and the six test logs on disk.",
+    "write_paths": "The source run's declared paths are reckon/crew_follow_commands.py, tests/test_follower_freshness.py, tests/test_a_follower_runs_current_code.py, the evidence fragment and its figure directory; git diff 48d3aba1..d117af1ba touches three files, all inside that grant and all three named in this review's goal."
+  }
+}
