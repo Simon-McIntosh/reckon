@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-title" content="The stubborn-producer arming test gives its stop room to run">
+  <meta name="plan-summary" content="The stubborn-orphan arming case now bounds arming for the stop child's interpreter start rather than leaving it the tail of a two-second budget, so the stop request is delivered and observed while arming still ends with exit 3 naming the bound.">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s64">
+  <meta name="plan-recorded-at" content="2026-11-08">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="tests,load,arming,evidence">
+  <title>The stubborn-producer arming test gives its stop room to run | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-arming-test-gives-its-stop-room" data-reckon="landed" data-when="2026-11-08">
+  <h2 id="the-arming-test-gives-its-stop-room-title">The stubborn-producer arming test gives its stop room to run</h2>
+  <p id="the-arming-test-gives-its-stop-room-why"><strong>Cause.</strong> The case set
+  <code>ARM_BOUND=2</code>, so <code>_stop_watch_producer_within</code> in
+  <code>reckon/crew/dispatch_watch.py</code> handed the stop child only the remainder
+  of that budget. The child starts a fresh interpreter and imports
+  <code>reckon.crew.recovery</code> before it can signal. Timed on the fleet node at
+  load average 54 to 71, that start alone took <strong>1.75, 2.17, 2.32, 2.46, 2.46,
+  2.78, 3.35, 3.38, 4.01</strong> s over ten runs &mdash; against a remainder of about
+  1.9 s, so <code>subprocess.run</code> killed the child before it reached
+  <code>unwatch</code>. Arming then exited 3 naming its own bound, correctly, while the
+  marker the test asserts had never been written. Product behaviour is sound: the bound
+  did what it promises, and the test asserted a delivery that bound never guaranteed.</p>
+  <p id="the-arming-test-gives-its-stop-room-change"><strong>Change.</strong> Test only,
+  <code>tests/test_arm_lock_is_never_held_by_a_follower.py</code>. The arming bound is
+  now <code>STOP_CHILD_ARM_BOUND_SECONDS = 12</code>, sized so the stop child can start,
+  signal and finish; the <code>communicate</code> timeout is derived from it
+  (<code>ARM_OUTPUT_SECONDS = STOP_CHILD_ARM_BOUND_SECONDS * 2</code>) rather than being
+  a separate literal; and <code>term-seen</code> is read through a bounded wait whose
+  failure message is still "the stop request must reach the producer". Given that room
+  the child reaches <code>unwatch</code>, which signals the producer and then reports its
+  own seat bound, so the assertion that arming names a bound accepts whichever bound
+  ended the attempt instead of pinning the product's two-second figure. Both claims
+  stand: arming ends with exit 3 naming a bound, and the stop request reaches the
+  producer.</p>
+  <p id="the-arming-test-gives-its-stop-room-reproduction"><strong>Reproduction at the
+  base.</strong> <code>7db6cd8de4</code>, the case alone 10 times with the 19-file
+  importer population of <code>reckon.crew.dispatch_watch</code> beside it at
+  <code>-n 6</code>: <strong>10 of 10 failed</strong>, every one at line 205,
+  <em>the stop request must reach the producer</em>. A poller over <code>/proc</code>
+  recorded the marker's first appearance against every ARM process's exit: in all ten
+  the marker appeared <strong>after</strong> the last ARM process had gone, by 0.8 to
+  2.9 s, so it came from the fixture teardown's terminate and never from a stop child.
+  No base run reached the signal.</p>
+  <p id="the-arming-test-gives-its-stop-room-measure"><strong>Measure.</strong> At the
+  head, the same 10-of-20 protocol under the same population, load average 64 to 71:
+  <strong>20 of 20 passed</strong>. In all 20 the poller saw the marker written
+  <strong>before</strong> arming exited, by 2.2 to 3.0 s &mdash; the stop was delivered
+  while arming was still waiting, which is the claim the base runs could not show. Suite
+  arms over the node's own test file: base <code>7db6cd8de4</code> 1 failed and 4
+  passed, <code>EXIT=1</code>; head 5 passed, <code>EXIT=0</code>. Ruff check and
+  <code>ruff format --check</code> add no findings on the staged path.</p>
+  <p id="the-arming-test-gives-its-stop-room-control"><strong>Negative control.</strong>
+  Declared mutation: restore the two-second bound and the immediate term-seen assertion,
+  and at least one of 20 loaded runs fails. Applied on an extraction of the head and run
+  20 times under the same load: <strong>20 of 20 failed</strong> at the term-seen
+  assertion, <code>EXIT=1</code>. The head arm fails none of them.</p>
+</article>
+</body>
+</html>
