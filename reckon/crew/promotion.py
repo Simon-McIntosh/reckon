@@ -138,10 +138,12 @@ from reckon.crew.runs import (
     _write_json,
     capture_run_session,
     crew_home,
+    dispatch_field,
     drain,
     list_live,
     pointer_path,
     process_alive,
+    read_dispatch_detail,
     read_pointer,
     record_process_alive,
     run_dir,
@@ -298,6 +300,7 @@ def complete(
     # another host for the whole span, before either store is written.
     with _pointer_lock(run_id), _promotion_host_lease(run_id):
         record = _read_pointer_or_rebuild(run_id, root=root)
+        record = {**record, **read_dispatch_detail(record)}
         # A dispatch whose launch was refused leaves a run that names no
         # project: the refusal removed the pointer or never let it carry a
         # project, and the run directory it left behind holds no supervisor
@@ -944,7 +947,7 @@ def _pointer_awaits_shadow_pick(run_id: str) -> bool:
         pointer = read_pointer(run_id)
     except CrewError:
         return False
-    return pointer.get("picker_selection") is None
+    return dispatch_field(pointer, "picker_selection") is None
 
 
 def _shadow_pick_deadline(run_id: str) -> float | None:
@@ -1123,6 +1126,7 @@ def _complete_locked(
     """
     if record is None:
         record = read_pointer(run_id)
+    record = {**record, **read_dispatch_detail(record)}
     project = str(record.get("project") or "")
     node = record.get("node") or {}
     shadow = _is_shadow(record)
@@ -1538,7 +1542,10 @@ def _complete_locked(
         budget_fallback=record.get("budget_fallback"),
         lineage=record.get("lineage"),
         shadow_patch=shadow_patch,
-        unreconciled_override=record.get("unreconciled_override"),
+        # Read through the accessor: the pointer carries only a path to the
+        # dispatch-time detail file, and a pointer written before the move
+        # still carries the value inline.
+        unreconciled_override=dispatch_field(record, "unreconciled_override"),
         orchestrator_lane_override=record.get("orchestrator_lane_override"),
         gate_check=gate_check,
         require_gate_check=require_gate_check,
@@ -1551,6 +1558,14 @@ def _complete_locked(
         clone_matches=clone_matches,
         promoted_by=promoted_by,
     )
+    # The picker's answer rides the dispatch-time detail file once it has moved
+    # off the pointer, so the row reads it through the accessor. An answer the
+    # record carried inline is the same value through the same call.
+    selection = dispatch_field(record, "picker_selection")
+    if selection is not None:
+        run["picker_selection"] = (
+            dict(selection) if isinstance(selection, Mapping) else selection
+        )
     # A hold and the dispatch that went past it are both known only here: the
     # advisory pick lands after dispatch returns, so the run's route mode was
     # recorded before the answer existed. A row carrying a holding answer is

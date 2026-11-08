@@ -194,6 +194,7 @@ from reckon.crew.runs import (
     QueueFull as QueueFull,
     queue_dispatch as queue_dispatch,
     read_pointer as read_pointer,
+    read_dispatch_detail as read_dispatch_detail,
     record_process_alive as record_process_alive,
     record_stacked_dispatch as record_stacked_dispatch,
     reports_dir as reports_dir,
@@ -1772,19 +1773,15 @@ def dispatch(
         route = resolution.route
 
     dispatch_options = dict(dispatch_options or {})
+    dispatch_options.pop("picker_selection", None)
     dispatch_options.setdefault("route", route or resolution.route)
     if context_fit_fallback is not None:
         dispatch_options["route_fallback"] = context_fit_fallback
-    if not admission_launch:
-        if picker_selection is not None:
-            dispatch_options["picker_selection"] = dict(
-                held_selection or picker_selection
-            )
-        if caller_named_route:
-            dispatch_options["named_route"] = {
-                "backend": resolution.backend,
-                "set_by": lane_origin or "dispatch",
-            }
+    if not admission_launch and caller_named_route:
+        dispatch_options["named_route"] = {
+            "backend": resolution.backend,
+            "set_by": lane_origin or "dispatch",
+        }
 
     _workspace_roots(repo_root)
     candidate_scope = (
@@ -3561,7 +3558,7 @@ def dispatch(
             )
             record["picker_selection"] = selection
             _attach_shadow_picker_selection(run_id, selection)
-    return record
+    return {**record, **read_dispatch_detail(record)}
 
 
 from .dispatch_accounting import (  # noqa: E402

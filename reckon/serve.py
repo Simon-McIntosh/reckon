@@ -652,8 +652,10 @@ def _read_log_tail(path: Path, *, byte_limit: int = CREW_LOG_TAIL_BYTES) -> list
 
 def _stream_is_terminal(pointer: dict, lines: list[str]) -> bool:
     """Recognise a terminal event using the recorded backend dialect."""
+    from reckon.crew.runs import dispatch_field
+
     dialect = str(pointer.get("dialect") or "")
-    argv = pointer.get("argv") or []
+    argv = dispatch_field(pointer, "argv") or []
     command = dialect or (str(argv[0]) if isinstance(argv, list) and argv else "")
     if not command:
         return False

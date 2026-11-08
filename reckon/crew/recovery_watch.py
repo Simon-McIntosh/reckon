@@ -1364,7 +1364,7 @@ def _admitted_from(pointer: Mapping[str, Any]) -> str:
     named = str(pointer.get("admitted_from") or "")
     if named:
         return named
-    request = pointer.get("admit_request")
+    request = runs.dispatch_field(pointer, "admit_request")
     if isinstance(request, Mapping):
         return str(request.get("run_id") or "")
     return ""

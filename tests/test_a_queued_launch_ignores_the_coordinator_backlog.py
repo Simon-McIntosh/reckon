@@ -205,7 +205,7 @@ def test_an_admission_launch_waives_its_coordinator_backlog(
 
     assert result["launched"] == ["r-queued"], json.dumps(result, default=str)
     pointer = runs.read_pointer("r-queued")
-    waiver = pointer["unreconciled_override"]
+    waiver = runs.dispatch_field(pointer, "unreconciled_override")
     assert waiver["requested"] is True
     assert waiver["source"] == "admission-launch"
     assert [row["run_id"] for row in waiver["waived_runs"]] == ["r-delivered"]
@@ -238,4 +238,7 @@ def test_a_request_with_no_backlog_records_no_waiver(admit_repo: Path) -> None:
     result = queue_admission.admit_once(config_for=resolve, launcher=_launcher([]))
 
     assert result["launched"] == ["r-clean"], json.dumps(result, default=str)
-    assert runs.read_pointer("r-clean")["unreconciled_override"] is None
+    assert (
+        runs.dispatch_field(runs.read_pointer("r-clean"), "unreconciled_override")
+        is None
+    )
