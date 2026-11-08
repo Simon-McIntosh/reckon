@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the source manifest's baseline_suite (repair-baseline-suite-at-dispatch-base.log, 3 passed, EXIT=0) and after_suite (repair-after-suite.log, 9 passed, EXIT=0) both record zero failures at their revisions, so no failing id is added by the reviewed run; the delta itself is docs-only and changes no test.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/evidence.py:compose_landed_record",
+    "reckon/crew/reports.py:_fragment_plan_of"
+  ],
+  "completed_at": "2026-11-08T06:34:58.468Z",
+  "dispatched_at": "2026-11-08T06:24:37Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/ask-a-host-only-for-its-own-session.html",
+      "line": "76",
+      "severity": "non-blocking",
+      "text": "non-blocking: the sentence still reads 'at head d10ea7ba', which was the head when the controls ran but is not the node's head; reckon/crew/dispatch_watch.py is byte-identical between d10ea7ba and 3ecaeb83, so the measurement transfers and the wording is loose rather than wrong."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read 3ecaeb83 against 95f7dde6: 9 insertions and 5 deletions in one fragment, replacing a uniform 'each run against' claim with six pytest controls plus the repro-script control.",
+    "done_when": "the source done_when enumerates seven negative controls and both suite arms; the delta makes the fragment's description of those controls match the logs, whose command headers are six pytest runs on tests/test_a_host_follows_only_its_own_session.py and one run of repro_foreign_follow_request.py.",
+    "goal": "the source node's goal is to make a host be asked to follow only its own session; the only commit gained since the last review, 3ecaeb83, is a docs correction at docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/ask-a-host-only-for-its-own-session.html:73-79 that names the right instrument for the reproduction-path control.",
+    "manifest": "read the source manifest.md; it records status complete, both suite arms at EXIT=0 with zero failures, and negative_control_note stating the reproduction-path control exits 0 by design, which the corrected preamble now says in the document itself.",
+    "write_paths": "read the fragment path in the source dispatch's scope fence; git diff --name-only 95f7dde6..3ecaeb83 returns only docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/ask-a-host-only-for-its-own-session.html, with reckon/crew/dispatch_watch.py unchanged since d10ea7ba."
+  },
+  "justifications": {
+    "durability": "no assertion guards the corrected prose; tests/test_composed_record_takes_fragment_bodies.py exercises composition over its own fixtures, so reverting this paragraph at docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/ask-a-host-only-for-its-own-session.html:73 would leave every test green.",
+    "evidence": "each of the seven log headers bears a '# command:' line matching the new split: six read 'pytest -q tests/test_a_host_follows_only_its_own_session.py' and negative-control-reproduction-path.log:3 reads the repro script, whose body prints the written request line and ends EXIT=0.",
+    "fit": "the edit keeps the surrounding paragraph and list idiom and adds no symbol, comment label or plan/ticket identifier.",
+    "goal_fidelity": "the delta replaces the preamble at docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/ask-a-host-only-for-its-own-session.html:73-79 that claimed one instrument for all seven controls with the six test-file/pytest controls and the seventh running repro_foreign_follow_request.py, which is exactly how the plan's \u00a73 done_when enumerates them.",
+    "reuse": "the delta adds no definition at all, only prose, so it cannot fork a capability the repository already owns.",
+    "scope_discipline": "git diff --stat 95f7dde6..3ecaeb83 lists one file, docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/ask-a-host-only-for-its-own-session.html, inside the fragment path the source dispatch's scope fence grants."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the gained commit 3ecaeb83 corrects docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/ask-a-host-only-for-its-own-session.html:73-79 so the reproduction control is named with its own instrument, serving the goal of a host asked to follow only its own session by keeping its evidence truthful.\nVERDICT done_when: the done_when's seven controls are now described as six pytest cases plus the reproduction path, and each log header confirms that split (six '# command:' lines naming tests/test_a_host_follows_only_its_own_session.py, negative-control-reproduction-path.log:3 naming repro_foreign_follow_request.py).\nVERDICT write_paths: the diff touches only docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/ask-a-host-only-for-its-own-session.html, inside the fragment path the source dispatch's scope fence grants; reckon/crew/dispatch_watch.py is unchanged between d10ea7ba and 3ecaeb83.\nVERDICT manifest: the source manifest.md records status complete, both suite arms EXIT=0 with zero failures, and a negative_control_note that the reproduction-path control exits 0 by design, which the corrected preamble now states in the document.\nVERDICT diff: 3ecaeb83 against 95f7dde6 is 9 insertions and 5 deletions in one fragment, replacing the uniform claim with the six-plus-one split and adding the reason the seventh's exit is 0.\nCALL_SITES: reckon/evidence.py:compose_landed_record, reckon/crew/reports.py:_fragment_plan_of\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/ask-a-host-only-for-its-own-session.html:73-79 now names the repro script for the seventh control, matching the plan's own enumeration of it.\nSCORE evidence: 19\nJUSTIFICATION evidence: the four-controls' logs each carry a '# command:' line at negative-control-*.log:3 matching the new split, and negative-control-reproduction-path.log:8 prints the request line it reports.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 95f7dde6..3ecaeb83 lists one file, docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/ask-a-host-only-for-its-own-session.html, inside the granted fragment path.\nSCORE durability: 12\nJUSTIFICATION durability: no test asserts this paragraph; tests/test_composed_record_takes_fragment_bodies.py composes its own fixtures, so reverting docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/ask-a-host-only-for-its-own-session.html:73 would stay green.\nSCORE fit: 19\nJUSTIFICATION fit: the edit keeps the surrounding prose-and-list form at docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/ask-a-host-only-for-its-own-session.html:83-95 and introduces no banned name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds prose only, no definition, so no capability could be forked.\nFINDING docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/ask-a-host-only-for-its-own-session.html:76 non-blocking: 'at head d10ea7ba' reads as the node's head though it was only the head when the controls ran; dispatch_watch.py is identical to 3ecaeb83, so the measurement transfers and only the wording is loose.",
+  "review_run_id": "r-20261108T055725104305-review-of-ask-a-host-only-for-its-own-session-3ecaeb83e59f",
+  "reviewed_base_sha": "95f7dde6670e4e36360c93bf6264ce223814da69",
+  "reviewed_head_sha": "3ecaeb83e59fff1cb71e79299e229b9e58fd26c6",
+  "reviewed_run_id": "r-20261108T023048681852-ask-a-host-only-for-its-own-session",
+  "scores": {
+    "durability": 12,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T06:45:06.943361+00:00",
+  "total": 110
+}
