@@ -1,0 +1,69 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T23:41:31.846Z",
+  "dispatched_at": "2026-11-08T23:34:46Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:238",
+      "id": "wiring-1",
+      "reason": "the followup is the one text a build node reads before the section, and it omits the file that holds one of the two re-derivation sites the section exists to close.",
+      "text": "`f-arolw-013` lists `reckon/crew/dispatch.py`, `reckon/crew/dispatch_launch.py`, `reckon/crew/resumption.py` and the test, but \u00a713's write paths add `reckon/crew/dispatch_sessions.py`, where the constraint \"A door launches the attempt it reserved\" requires `record_resumption` to take its number from the reservation instead of re-deriving the pointer's plus one; a node reading the followup alone, as the hand-off intends, would leave that second site re-deriving and keep the window open",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:165",
+      "id": "done_when-1",
+      "reason": "the section's own \"No reservation is freed by comparing the pointer with its key\" rule would pass the gate with no test standing behind it, so the hazard that rule names could regress unmeasured.",
+      "text": "the case asserting that a resume \"launches exactly the reserved attempt, and once its launch has written the pointer, with its supervisor alive, a further launch is still refused\" holds two assertions, but the only control named for it (\"launching the pointer's attempt plus one after reserving fails the launched-attempt case\") reddens the attempt number alone, so nothing logged shows that freeing a reservation by comparing the pointer with its key is refused, which is exactly the branch the same bullet forbids",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:165",
+      "id": "reasoning-1",
+      "reason": "the stated location and the stated key source cannot both hold at that point in the function, so the section's most load-bearing constraint is unbuildable as written without an ordering decision it does not make.",
+      "text": "\"Before the tree\" says the reservation and its in-flight refusal come beside \u00a710's pre-worktree live-worker check, but inside `dispatch` (reckon/crew/dispatch.py:1538) the check runs at :2534 while the attempt the reservation must be keyed on cannot be computed until the ledger read at :2692 and the `attempt = int(previous_attempt) + 1` block at :2743, so a node placing the reservation where the section says must either hoist the ledger read and its shadow-lineage guards above the check or derive the key twice \u2014 and deriving it twice is the two-session-key defect the same section's \"One holder, one key\" constraint exists to prevent",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "cb1b92d1c2e6c76d0605ea228f2fdf5ca1ee594e",
+  "plan_fingerprint": "d215a6bd37da9131c13b65121cba97794021d800cd8a4f493b9ece80a7bd1926",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 101,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T233342453962-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "cfb965d36a37a7f8167bdf634d8f02e9093595b0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 checked in the tree: `claim_next_attempt` at reckon/crew/resumption.py:389 claiming `record[\"attempt\"] + 1` at :398; `_claim_may_be_reclaimed` at :366 with its age arm at :386; `LAUNCH_WINDOW_SECONDS = 120` at reckon/crew/recovery_vocabulary.py:55; `_retired_attempt_ended` at reckon/crew/dispatch_launch.py:2072 in flight-unaware form; `SUPERVISOR_SURVIVAL_SECONDS = 2.0` at :2313 with `_confirm_supervisor_survived` at :2371; `supervised_launch` at :2640 deriving `record[\"attempt\"] + 1`; `record_resumption` at reckon/crew/dispatch_sessions.py:2422 recording `record[\"attempt\"] + 1`, the two re-derivation sites the section names; `admit_once` at reckon/crew/queue_admission.py:4810 calling `dispatch(...)` in-process at :432; `_refuse_a_live_worker_before_the_worktree` at reckon/crew/dispatch.py:2534 (\u00a710's check) ahead of `_create_worktree` at :2834 and `_prepare_attempt_records` at :3438; \u00a712's landing commit 9587a26dd7 resolving; and tests/test_a_concurrent_launch_is_refused.py absent from the tree, so \"the new test\" names a file a node must create.",
+    "done_when": "a finding \u2014 the \u00a713 case \"a resume that wins the reservation launches exactly the reserved attempt, and once its launch has written the pointer \u2026 a further launch is still refused\" carries two assertions and only one named negative control.",
+    "evidence_paths": "pass \u2014 \u00a713 keeps its gate logs under the run directory (\"Every log under the run directory starts with its revision and the literal command and ends in a bare EXIT= line\"), not in a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 the section prescribes no symbol, file or comment name, and the one path it creates is named by the behaviour it measures (`test_a_concurrent_launch_is_refused.py`), carrying no plan label, ticket number or version tag.",
+    "reasoning": "a finding \u2014 the \"Before the tree\" constraint places the reservation beside \u00a710's pre-worktree live-worker check at reckon/crew/dispatch.py:2534, but the key it must carry, the last committed attempt plus one, is derived from `committed_runs`, which that function reads at :2692.",
+    "single_goal": "pass \u2014 \u00a713 has one deliverable: a launch of an existing run id is refused while another launch of that run is in flight, carried by one mechanism, the reservation.",
+    "wiring": "a finding \u2014 the open followup that invokes \u00a713 (`f-arolw-013`) names three source write paths while \u00a713 now names four, omitting `reckon/crew/dispatch_sessions.py`."
+  },
+  "section_digests": {
+    "_document": "eeade309f31284b9ed0684d845f9e7ae9f528f9713bcf3e0b9a1f727559e9483",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s10": "6dc41ff672ef42b279e0d66e033f19c8c35deb5c39f0efeb637f11ccedd3f7d4",
+    "s11": "beb7d054249b6e83a0d555fe9051398e9d5fb537152e967098b323eb4c3c0122",
+    "s12": "84e2cc4249fe87aae0d3fc8134f2e4808ab95216a81db6b06c7e82eec1df1031",
+    "s13": "d27d8e41006257c7edddc11ae0e8c05fedf30e288cc97a0e4722081288ef5ef8",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "3a58d93f403c56db20efa76febfb2e44549d3805ff296517c27f63bc01055fb8",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "63bd79fcdd7baf06c8cc0bbc04ef21beec3605a6fdb13eed90b3ad410f8516e7",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b",
+    "s8": "1615d40635864933b3396d3d4ae7b0f94361ec3a105caa540ba761ad95bd24fe",
+    "s9": "1a571813cf821821012487f1bc0e7a9bb360370e7b12b6440683c365dba25774"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T23:46:58.683633+00:00",
+  "total": null
+}
