@@ -143,7 +143,7 @@ def test_manually_reviewed_docs_change_with_open_finding_owes_repair(
     row = _row(run_id)
 
     assert row["review_tier"] == "none", row
-    assert row["kind"] == "repair-owed", row
+    assert row["kind"] == "repair-owed", f"{row['kind']}: {row['next_command']}"
     assert "crew complete" not in row["next_command"], row
 
 
