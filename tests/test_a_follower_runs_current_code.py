@@ -125,6 +125,47 @@ class _Subscriber:
 
 
 @pytest.fixture()
+def claims(monkeypatch):
+    """A stub claim in place of the follower registration a pane takes.
+
+    The station registration wraps the same claim the producer path takes, and
+    the hand-over across a replacement belongs to that claim rather than to the
+    wrapper. Counting here is what shows the wrapper performs it, rather than
+    merely not raising.
+    """
+    made: list = []
+
+    class _Claim:
+        def __init__(self, project, session, *, delivery="unknown", scope=None):
+            self.project = project
+            self.session = session
+            self.held = False
+            self.prepared = 0
+            self.cancelled = 0
+            self.released: list = []
+            made.append(self)
+
+        def acquire(self) -> bool:
+            self.held = True
+            return True
+
+        def release(self, reason=None) -> None:
+            self.released.append(reason)
+            self.held = False
+
+        def prepare_reexec(self) -> None:
+            self.prepared += 1
+
+        def cancel_reexec(self) -> None:
+            self.cancelled += 1
+
+    monkeypatch.setattr(
+        "reckon.crew.follower_registration._FollowerRegistration", _Claim
+    )
+    return made
+
+
+@pytest.fixture()
 def delivery(monkeypatch):
     """Enter the follower's subscriber delivery with a stubbed subscriber.
 
@@ -144,6 +185,8 @@ def delivery(monkeypatch):
         lambda *args, **kwargs: False,
     )
     sweeps = {"count": 1}
+    # The session the pane delivers for; a session-less pane takes no claim.
+    state = {"session": "session-a"}
     # Set by the caller to read the identity reads already made when the loop
     # is entered, so a case can separate the arming read from the sweeps'.
     probe: list = [list]
@@ -160,7 +203,7 @@ def delivery(monkeypatch):
     def run() -> None:
         crew_follow.callback(
             project="proj",
-            session="session-a",
+            session=state["session"],
             observe_sessions=(),
             run_ids=(),
             attention=False,
@@ -172,11 +215,13 @@ def delivery(monkeypatch):
             no_color=True,
         )
 
-    return SimpleNamespace(run=run, sweeps=sweeps, subscriber=subscriber, probe=probe)
+    return SimpleNamespace(
+        run=run, sweeps=sweeps, subscriber=subscriber, probe=probe, state=state
+    )
 
 
 def test_a_moved_checkout_re_executes_the_subscriber(
-    identity, reexec, monkeypatch, delivery
+    identity, reexec, monkeypatch, delivery, claims
 ) -> None:
     """The identity the subscriber reads is its checkout's, and it acts on it.
 
@@ -195,6 +240,30 @@ def test_a_moved_checkout_re_executes_the_subscriber(
 
     assert len(reexec.execed) == 1, "a moved checkout re-executes the subscriber"
     assert delivery.subscriber.registered, "the pane held its own registration"
+    assert [claim.prepared for claim in claims] == [1], (
+        "the session's claim is handed across the replacement"
+    )
+    assert [claim.cancelled for claim in claims] == [1], (
+        "a refused replacement hands the claim back"
+    )
+
+
+def test_a_session_less_pane_hands_no_claim_across(
+    identity, reexec, monkeypatch, delivery, claims
+) -> None:
+    """A pane delivering for no session holds no claim, so it carries none.
+
+    The claim names a session to contend for, and a pane that names none takes
+    nothing. It still reloads; it simply has nothing to hand over.
+    """
+    monkeypatch.setenv(_FOLLOWER_SOURCE_ROOT_ENV, str(identity.checkout))
+    identity.values[identity.checkout] = [IMPORTED, MOVED]
+    delivery.state["session"] = None
+
+    delivery.run()
+
+    assert claims == [], "no claim is taken for a session-less pane"
+    assert len(reexec.execed) == 1, "the pane still reloads onto the pane's own code"
 
 
 def test_a_matching_stamp_leaves_the_subscriber_running(identity, reexec, delivery):
