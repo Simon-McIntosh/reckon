@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="723">
+<meta name="plan-version" content="724">
 <meta name="plan-modified" content="2026-11-08">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1408,6 +1408,12 @@ Both cases run under the file's existing temporary crew home.</li>
 <div class="r-comment" data-section="s115" data-id="c-run-r-20261107T140627034163-review-of-the-session-pane-prints-one-row-when-a-run-the-session-owns-e294112a8232" data-who="reckon-build" data-when="2026-11-07T14:29:07.855Z">
     <div class="r-comment-body"><p>§115 review at base a35f01e5 to head e294112a: parsed review record with scores goal_fidelity 19, evidence 14, scope_discipline 19, durability 15, fit 19, reuse 20 (total 106), added_failure_count 0 with no added failure ids, and three non-blocking findings — the base-arm log is truncated short of its summary while the manifest declares it complete, the new baseline short-circuit in RowPolicy._is_own_start is untested, and two assertions restate the to_state the test itself supplied.</p></div>
 </div>
+<div class="r-comment" data-section="s116" data-id="c-run-r-20261108T052459250103-review-of-confirm-which-reloadinprogress-arm-marks-a-78minute-snapshot-a35f01e53f6e" data-who="reckon-build" data-when="2026-11-08T05:39:26Z">
+    <div class="r-comment-body"><p>Both assigned records carry a parsed claims review of the report at a35f01e53f6ef4c50ce97d0fdc9fb38484821f07: two hook claims reproduced, the live census changed, and the report's original summary agrees with its table.</p></div>
+</div>
+<div class="r-comment" data-section="s116" data-id="c-run-r-20261107T132158964537-confirm-which-reloadinprogress-arm-marks-a-78minute-snapshot" data-who="reckon-build" data-when="2026-11-07T13:52:02.205Z">
+    <div class="r-comment-body"><p>The STALE_CODE arm of reload_in_progress (reckon/crew/obligation_snapshot.py:881-882) carries no age bound and is the source of a 78-minute-old snapshot reading &quot;producer reloading&quot;; the repair is to bound that arm by PRODUCER_RELOAD_WINDOW_SECONDS, with a second section for the publisher&#x27;s live-only session list.</p></div>
+</div>
 <div class="r-comment" data-section="s117" data-id="c-run-r-20261107T221828538080-review-of-pane-shows-work-in-flight-7dc1ca45a4b6" data-who="reckon-build" data-when="2026-11-07T23:29:28.805Z">
     <div class="r-comment-body"><p>Reviewed r-20261107T175523420546-pane-shows-work-in-flight at head 7dc1ca45a4b6f202f9ab765a1012959a1c911479 against base 8cc3363d7340d4136ae87079d87c02124d96faea: scores goal_fidelity 11, evidence 17, scope_discipline 16, durability 18, fit 17, reuse 14 (total 93); 0 added failures over the reviewed run's own gate pair (head 487 passed EXIT=0, base 481 passed EXIT=0); three non-blocking findings — InFlightLine.emit has no production caller so nothing reaches the pane yet, IN_FLIGHT_PHASES restates FLEET_WORKING_STATES, and the test hand-writes the live view's row keys.</p></div>
 </div>
@@ -2433,9 +2439,6 @@ Both cases run under the file's existing temporary crew home.</li>
 </div>
 <div class="r-comment" data-section="s99" data-id="c-run-r-20261105T131501961323-reland-the-reviewed-change-that-keeps-a-neverlaunched" data-who="reckon-build" data-when="2026-11-05T14:36:18.629Z">
     <div class="r-comment-body"><p>Re-landed the reviewed parked-request budget fix unchanged on base cd5edbd573 (patch byte-identical to git diff 98d07499d1 918894481d); elapsed now charges from launch, a never-launched pointer reports no elapsed/overrun and carries waiting_seconds (declared in LIVE_CLASSIFICATION_FIELDS); gate 23 passed at head effb92dc47 against 16 passed at base, importers 86 passed both sides, declared negative control EXIT=1 with the awaiting-upstream case failing on the overrun assertion.</p></div>
-</div>
-<div class="r-comment" data-section="s116" data-id="c-run-r-20261108T052459250103-review-of-confirm-which-reloadinprogress-arm-marks-a-78minute-snapshot-a35f01e53f6e" data-who="reckon-build" data-when="2026-11-08T05:39:26Z">
-    <div class="r-comment-body"><p>Both assigned records carry a parsed claims review of the report at a35f01e53f6ef4c50ce97d0fdc9fb38484821f07: two hook claims reproduced, the live census changed, and the report&#x27;s original summary agrees with its table.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
