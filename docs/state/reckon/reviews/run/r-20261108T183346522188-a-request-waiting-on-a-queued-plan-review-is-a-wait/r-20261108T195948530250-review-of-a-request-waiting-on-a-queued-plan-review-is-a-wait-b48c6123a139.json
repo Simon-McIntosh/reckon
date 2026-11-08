@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T20:12:05.759Z",
+  "dispatched_at": "2026-11-08T20:02:35Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 1287,
+      "severity": "non-blocking",
+      "summary": "_plan_review_this_request_awaits still duplicates _standing_plan_review's live plan-review scan; the reuse finding remains unrepaired despite the manifest's acted claim.",
+      "text": "non-blocking: _plan_review_this_request_awaits still re-implements the live plan-review scan the repository already owns at reckon/crew/recovery_review_dispatch.py:2060 (_standing_plan_review): it loops the live pointers matching node.id against PLAN_REVIEW_NODE_PREFIX + plan, adding only a session filter and an injected pointer list. The manifest records 'acted [dimension-reuse]: 5bc4b6be99', but that commit consolidated the queued-kind decision between the two producers and removed the re-spelled refusal constant; it did not extend the owner with a session-filtered, pointer-list-accepting variant, so the duplication the earlier review named is unchanged."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 1301,
+      "severity": "non-blocking",
+      "summary": "The one-builder invariant is guarded only by an uncommitted scratch script; no test fails if a producer regains its own queued-kind branch.",
+      "text": "non-blocking: the invariant this commit introduces \u2014 that a queued row's kind is decided in one builder and nowhere else \u2014 has no committed test. Its only control is a scratch script at /tmp/reckon-crew-scratch/r-20261108T183346522188-.../reuse-check.py, recorded in logs/reuse-check-{head,reverted}.log, which will not survive the run. A producer that regains its own queued-kind branch leaves the five behavioural cases green, so the consolidation can decay silently; a structural test over the two producers belongs in tests/test_a_request_waiting_on_a_queued_plan_review_is_a_wait.py."
+    }
+  ],
+  "justifications": {
+    "durability": "The stamp reading at reckon/crew/obligations.py:1278 is exercised by tests/test_a_request_waiting_on_a_queued_plan_review_is_a_wait.py:78-79 and would redden the two run-queued cases if it stopped resolving, but the consolidation itself at obligations.py:1301 has no committed assertion that fails when a producer regains its own branch.",
+    "evidence": "The head arm is real and independently re-run (5 passed) and the base arm is recorded at b0a56e1db1, but the done-when's importer clause is still met over 15 of 103 files (manifest.md spec_deviation) and the one-builder control is a scratch script under /tmp rather than a committed check.",
+    "fit": "The new builder at reckon/crew/obligations.py:1301 follows the surrounding _queued_item/_live_item idiom, and the refusal class is now taken from reckon/crew/node.py's PlanReviewMissingError.__name__ rather than a literal, which removes the earlier duplicate spelling from this module.",
+    "goal_fidelity": "reckon/crew/obligations.py:2718 and reckon/crew/obligation_snapshot.py:1472 both build the queued row through the single builder, which keeps the run-queued reading with review_run_id when a session-owned review is live and the queued-awaiting-session duty otherwise.",
+    "reuse": "The consolidation extends the existing row builders, but reckon/crew/obligations.py:1287 still carries its own live plan-review scan beside the owner at reckon/crew/recovery_review_dispatch.py:2060 rather than extending it.",
+    "scope_discipline": "git diff --stat b0a56e1db1 b48c6123a139 lists only reckon/crew/obligations.py, reckon/crew/obligation_snapshot.py and docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-request-waiting-on-a-queued-plan-review-is-a-wait.html, all inside the declared paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261108T195948530250-review-of-a-request-waiting-on-a-queued-plan-review-is-a-wait-b48c6123a139",
+  "reviewed_base_sha": "b0a56e1db1d08a5283cd2124ccdd4fb5b61ed90d",
+  "reviewed_head_sha": "b48c6123a1398ae84772f20d8e1eed737b7da50a",
+  "reviewed_run_id": "r-20261108T183346522188-a-request-waiting-on-a-queued-plan-review-is-a-wait",
+  "scores": {
+    "durability": 13,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 10,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T20:21:27.918845+00:00",
+  "total": 93,
+  "verdicts": {
+    "call_sites": "Production entries confirmed at head: reckon/mcp_views.py:4573 calls obligations(); reckon/crew/station_obligations.py:189 and :270 call obligation_snapshot.payload_for(); reckon/crew/obligation_snapshot.py:1621 calls payload_for inside the publisher; reckon/hooks/coordinator_obligations.py:878 renders the payload it reads.",
+    "diff": "Read commit by commit from b0a56e1db1: 5bc4b6be99 replaces both producers' copies of the queued-kind branch with reckon/crew/obligations.py:1301 _queued_row_item and reads the refusal through recovery_classification._stamped_refusal_class, and b48c6123a1 extends the evidence fragment's landing paragraph; 5 insertions, 29 deletions outside the added builder.",
+    "done_when": "The done_when names tests/test_a_request_waiting_on_a_queued_plan_review_is_a_wait.py with both negative controls red, no failure added by importers of the two modules, and ruff clean; the manifest records 5 passed at head and at the base repair revision (logs/repair-after-suite.log:5, logs/repair-baseline-suite.log:5, EXIT=0 each), the two round-one controls at 1 failed/4 passed EXIT=1, a 15-of-103 importer surface with zero failure delta, and ruff clean on both staged modules, which this review re-verified with ruff check --no-cache (All checks passed) and ruff format --check (2 files already formatted).",
+    "goal": "The node goal is to list a queued request whose plan review is already live or queued as a wait in both the obligations reading and the obligation snapshot; the gained commits read both producers through reckon/crew/obligations.py:1301 _queued_row_item, and the head arm shows the derivation and the published snapshot each naming review_run_id (tests/test_a_request_waiting_on_a_queued_plan_review_is_a_wait.py:175-203, 5 passed at b48c6123a139 re-run by this review).",
+    "manifest": "Read; it states status complete, commits ccb435686b, b0a56e1db1, 5bc4b6be99, b48c6123a1, the gate command and its logs, the structural reuse check, and a spec_deviation disclosing that the exhaustive importer arm was not completed past 15 files.",
+    "write_paths": "The declared write paths are reckon/crew/obligations.py, reckon/crew/obligation_snapshot.py, the node test, the evidence fragment and the figures directory; the diff b0a56e1db1..b48c6123a139 touches only the two modules and the evidence fragment, all inside the fence, and git diff --stat shows no other path."
+  }
+}
