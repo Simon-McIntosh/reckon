@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T19:29:01.756Z",
+  "dispatched_at": "2026-11-08T19:18:51Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-reads-only-its-runs-changes.html:43",
+      "id": "done_when-1",
+      "reason": "a worker closing the node on a three-item list can drop the fourth assertion, which is the only one proving the second `--merges` pass classifies a conflict-resolved runtime path as runtime source.",
+      "text": "the done-when opens with \"It asserts three things\" and then states four assertions, the fourth being \"The conflict-resolved runtime path stays in the delta, and with it `changes_runtime_source` is True\", which is the assertion the previous review round added to answer the conflicted-merge fixture",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-reads-only-its-runs-changes.html:43",
+      "id": "reasoning-1",
+      "reason": "the ref the caller passes decides whether main's commits are excluded at all, so a caller passing a local `main` that is behind `origin/main` reproduces the oversize bug the section repairs, and the done-when's temp-repo fixture cannot catch it because the test constructs the ref it is given.",
+      "text": "`own_changed_paths` takes `integration_ref` as a required keyword, but \u00a73 never says where `review_head_move` gets it; `reckon/crew/recovery_review_dispatch.py` contains no integration-ref concept, \u00a71's evidence frames the run's own commits as `origin/main...HEAD`, and the only precedent cited (`reckon/crew/node.py:1576`) defaults the name to `main`",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-reads-only-its-runs-changes.html:43",
+      "id": "reasoning-2",
+      "reason": "the mechanism it illustrates is sound and still observable per commit (`git show --cc --name-only 14c9d487fb` names `reckon/crew/queue_landing.py`), and the node's fixture is built from scratch rather than from this commit.",
+      "text": "the illustration \"on `14c9d487fb` \u2026 the first pass is empty and the combined diff names that path\" was true while the merge was unlanded, but `14c9d487fb` is now an ancestor of `origin/main`, so against today's refs `git rev-list --merges 14c9d487fb ^origin/main ^941e5fff2d` returns nothing and both passes are empty",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "dda767944d064ad35018beb7985fd57abadcef10",
+  "plan_fingerprint": "9003973c59a56f9412f6d6266c0bcb211f83b40e6bbe85d776ab584b3069a91a",
+  "plan_slug": "a-review-reads-only-its-runs-changes",
+  "plan_version": 10,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T191738731010-plan-review-of-a-review-reads-only-its-runs-changes",
+  "reviewed_blob_sha": "ff24d721f474de620bba6b81438d698f78343a65",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor in \u00a73 resolves: `_changed_paths_between` 937, `_changed_figure_paths` 966 (call at 971), `_review_delivered_paths` 1015 (call at 1039), `review_head_move` 1062 with the two-dot diff at 1091, `changed_paths` clones.py:629, the `rev-list HEAD ^integration_ref ^base_sha` rule node.py:1576, `_mentioned_repository_files` routing.py:3279, `touches_delivered_work` at 1096/1101/1206/1220, and the cited evidence note exists on disk; the extensionless evidence href resolves as `.html`.",
+    "done_when": "a finding \u2014 \u00a73's done-when says \"It asserts three things\" and then lists four assertions, the fourth being the conflict-resolved runtime path that the previous review round asked for.",
+    "evidence_paths": "pass \u2014 the fixture is a repository built under the test's own temp tree and the gate logs are placed under the run directory; nothing claimed on a scratchpad path.",
+    "naming": "pass \u2014 `own_changed_paths` and the test filename name the behaviour, with no plan label, stage name or ticket number.",
+    "reasoning": "a finding \u2014 the helper's `integration_ref` argument is required, but \u00a73 never says what the `review_head_move` caller passes, and the module that would call it has no notion of an integration ref at all while \u00a71's measurement is framed against `origin/main...HEAD`.",
+    "single_goal": "pass \u2014 one deliverable (a shared `own_changed_paths` helper plus its two call sites), with the test as its measure.",
+    "wiring": "pass \u2014 \u00a73's open followup f-arroirc-002 carries `/reckon-build a-review-reads-only-its-runs-changes \u00a73`, s2 is declared done at the declaration meta and in its section element, and `plan-after` names the plan this one follows."
+  },
+  "section_digests": {
+    "_document": "321e3bc99119a27697d635d34e1d4b9f33d7ce216f1a7a760d22bc147ba1ccc0",
+    "s1": "3af442a13134b7c46db2d98609970c3d9e560ca12eb3deabbed535c7f74c5dca",
+    "s2": "a324bc121acb85a70e9fdcb6ec0c99aab489197974b83551dbf447fc023b56e3",
+    "s3": "d4fdd7f0e63dbeb8b1d98bae14bb241654b1beb748005eea2ad813dfe368daa9"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T20:03:01.418586+00:00",
+  "total": null
+}
