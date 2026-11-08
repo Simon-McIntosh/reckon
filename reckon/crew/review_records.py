@@ -414,6 +414,25 @@ def _note_malformed_record(
     )
 
 
+def _record_reads_complete(record: Mapping[str, Any]) -> bool:
+    """Whether a stored record carries every measure its rubric demands.
+
+    The completeness rule has one owner, the recovery reader's
+    :func:`_review_is_complete`, and it is imported at call time because that
+    module reads this store and a module-level edge would close a cycle.
+
+    The same read-time total derivation :func:`read_review` applies is applied
+    first, so a record whose six scores were stored without a total is judged
+    complete exactly as the gate will later read it.
+    """
+    from reckon.crew.recovery_review_subject import _review_is_complete
+
+    candidate = record
+    if not _review._has_integer_total(candidate):
+        candidate = _review._derive_landed_total(candidate)
+    return _review_is_complete(candidate)
+
+
 def _select_stored_record(
     paths: Iterable[Path],
     reviewed_head_sha: str | None,
@@ -426,13 +445,19 @@ def _select_stored_record(
     Every candidate file is read once. A named head keeps only a record whose
     normalised head carries it — a stored record's head is compared to the named
     one as a prefix in either direction, so a short sha names its full record
-    and a full sha names its short preservation copy. Without a named head the
-    newest file is returned. A file that cannot be read or does not parse — a
-    record a review worker is composing by hand can be met mid-write — is
-    skipped and named to the caller, because a truncated file would otherwise
-    read as "this run has no review". ``(None, None)`` means no readable record
-    among the candidates; the caller decides whether that settles the search or
-    falls through to another tree.
+    and a full sha names its short preservation copy. Among the records at that
+    head a complete one is preferred over an incomplete one, whichever is
+    newer: a re-review that finished its scoring is the evidence the gate needs,
+    and the file order that names the review runs says nothing about whether a
+    run measured anything. Where no complete record sits at the head, the first
+    head-matching record is returned, so an incomplete review is still read and
+    the gate still refuses on it rather than reporting that no review exists.
+    Without a named head the newest file is returned. A file that cannot be read
+    or does not parse — a record a review worker is composing by hand can be met
+    mid-write — is skipped and named to the caller, because a truncated file
+    would otherwise read as "this run has no review". ``(None, None)`` means no
+    readable record among the candidates; the caller decides whether that
+    settles the search or falls through to another tree.
     """
     records: list[tuple[Path, Any, int]] = []
     for path in paths:
@@ -451,14 +476,18 @@ def _select_stored_record(
         path, record, _mtime_ns = max(records, key=lambda item: item[2])
         return path, record
     named = reviewed_head_sha.strip().lower()
+    first_match: tuple[Path, Any] | None = None
     for path, record, _mtime_ns in records:
         _, _, carried_head, stored_head = _review.carried_revision_pair(record)
         if not carried_head or not stored_head:
             continue
         actual = stored_head.lower()
         if actual.startswith(named) or named.startswith(actual):
-            return path, record
-    return None, None
+            if _record_reads_complete(record):
+                return path, record
+            if first_match is None:
+                first_match = (path, record)
+    return first_match if first_match is not None else (None, None)
 
 
 def _record_with_merged_answers(
