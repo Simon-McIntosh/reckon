@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="319">
+<meta name="plan-version" content="320">
 <meta name="plan-modified" content="2026-11-08">
 </head>
 <body>
@@ -618,7 +618,7 @@
     <div class="r-comment-body"><p>Parsed independent review stored under the reviewed run; six scores are 19, 19, 20, 18, 19 and 20, with two non-blocking exempted assertion findings and zero added importer failures.</p></div>
 </div>
 <div class="r-comment" data-section="s31" data-id="c-run-r-20261108T120909548613-review-of-promoted-run-never-requeues-9b42a2c54fd4" data-who="reckon-build" data-when="2026-11-08T12:25:55.018Z">
-    <div class="r-comment-body"><p>Reviewed r-20261108T053045610320-promoted-run-never-requeues at head 9b42a2c54fd48c8222d0b230b4712431966cb1e2 against base e7e18cdc8716d35613f1a191a059578a199096c7. The node&#x27;s net diff is one evidence fragment: the guard §31 asks for (_require_live_writeback, reckon/crew/queue_admission.py:1632) and its regression file already exist at base, and the worker verified them rather than reimplementing. Two non-blocking findings: the fragment overstates the failing-file count (six recorded, eight in the head log) and it duplicates a landing record already present at base.</p></div>
+    <div class="r-comment-body"><p>Reviewed r-20261108T053045610320-promoted-run-never-requeues at head 9b42a2c54fd48c8222d0b230b4712431966cb1e2 against base e7e18cdc8716d35613f1a191a059578a199096c7. The node's net diff is one evidence fragment: the guard §31 asks for (_require_live_writeback, reckon/crew/queue_admission.py:1632) and its regression file already exist at base, and the worker verified them rather than reimplementing. Two non-blocking findings: the fragment overstates the failing-file count (six recorded, eight in the head log) and it duplicates a landing record already present at base.</p></div>
 </div>
 <div class="r-comment" data-section="s32" data-id="c-unwait-s32" data-who="reckon-build" data-when="2026-11-08T07:00:00Z">
     <div class="r-comment-body"><p>§32's waits removed on 8 November, when the lead moved §32 to reckon-be's S27 coordination for dispatch on codex. §28 and §30 are done, so those waits ordered nothing. §31 writes reckon/crew/queue_admission.py like §32 but produces nothing §32 consumes, so that wait only serialised the file; the dispatch scope check now does that, holding whichever launches second on the other's claim. §32's 5 November request was a codex request left awaiting-upstream, which is never launched.</p></div>
@@ -706,6 +706,9 @@
 </div>
 <div class="r-comment" data-section="s46" data-id="c-run-r-20261108T111021145844-review-of-promotion-releases-waiters-any-spelling-4a74e9bc403e" data-who="reckon-build" data-when="2026-11-08T11:24:34.044Z">
     <div class="r-comment-body"><p>Review of promotion-releases-waiters-any-spelling at c6f99d6429..4a74e9bc40 scores goal_fidelity 14, evidence 18, scope_discipline 20, durability 15, fit 19, reuse 20 with 0 added failures and two non-blocking findings: the fragment cites the gate at c6f99d6429 while its log header records c84e9f6ab0, and the importer-population requirement rests on a five-file arm because the 169-file arm stopped at 66%; the diff is documentation only because the release behaviour already landed at d675c26964 and is guarded by a test that reddens at the pre-fix tree.</p></div>
+</div>
+<div class="r-comment" data-section="s46" data-id="c-run-r-20261108T054941274164-promotion-releases-waiters-any-spelling" data-who="reckon-build" data-when="2026-11-08T10:58:58.878Z">
+    <div class="r-comment-body"><p>A promotion releases its section&#x27;s waiters by project, plan slug and ledger.normalize_section of the section, so plan#§8 releases a waiter on plan#s8 and the reverse; the focused gate passes 7 cases at c6f99d6429 (EXIT=0) against the pre-fix tree&#x27;s 4 failed / 3 passed (EXIT=1), four source mutations each redden their prescribed case, and the release-path importer arm passes 49 tests.</p></div>
 </div>
 <div class="r-comment" data-section="s47" data-id="c-run-r-20261106T125108579712-review-of-read-only-one-plans-reviews-when-judging-its-coverage-9c2cfffa2783" data-who="reckon-build" data-when="2026-11-06T13:07:30.398Z">
     <div class="r-comment-body"><p>Reviewed b04ed13ddd78cfd59e076479a665128bf0d515b4..9c2cfffa2783dbc962a73bedbc1d741d705f90b7 and scored all six dimensions (goal_fidelity 19, evidence 13, scope_discipline 18, durability 15, fit 16, reuse 12) in a parsed record carrying 0 added failures and four non-blocking findings — the reuse duplication of `_candidate_paths`, the untested pass-cache key, the filter moving from a record's own `plan_slug` to its path, and a live arm that measures 27.2 s against the base tree's 26.6 s so the section's latency bound is met by both arms.</p></div>
