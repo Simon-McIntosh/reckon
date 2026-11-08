@@ -1,0 +1,78 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/plan_review.py:2350",
+    "reckon/crew/plan_review.py:5433",
+    "reckon/crew/review_records.py:298",
+    "reckon/crew/promotion.py:1809",
+    "reckon/mcp_views.py:4462",
+    "reckon/crew/plan_review.py:5127"
+  ],
+  "checklist": {
+    "call_sites": "answered",
+    "diff": "answered",
+    "done_when": "answered",
+    "goal": "answered",
+    "manifest": "answered",
+    "write_paths": "answered"
+  },
+  "completed_at": "2026-11-08T19:43:57.232Z",
+  "dispatched_at": "2026-11-08T19:34:57Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-read-costs-what-changed/findings-read-from-persisted-index.html",
+      "line": 121,
+      "severity": "blocking",
+      "text": "The importer-population record does not match the logs it cites. The table states base 730 passed / 40 failed and head 735 passed / 36 failed at logs/importer-population-base.log and logs/importer-population-head.log, but those files (written 2026-11-08T20:16:53 and 20:21:12, both before the manifest's 20:23:47) record 39 failed / 770 passed and 37 failed / 773 passed. The id comparison on the retained logs also disagrees with line 138: the head adds one id and drops three, not four, and 36 of its 37 failing ids also fail at the base (not 35 of 36). The conclusion that the single added id is a pytest-timeout under parallel load still holds, but no retained log supports the numbers beside it, so the population clause of the done-when cannot be checked from the delivered record."
+    },
+    {
+      "file": "tests/test_findings_are_read_from_a_write_time_index.py",
+      "line": 425,
+      "severity": "non-blocking",
+      "text": "The shared-machinery assertions are true by construction and would not redden on the regression they name. findings._index_code_stamp() now returns review_records.cache_code_stamp(_index_sources()) and findings._index_cache_path() returns review_records.cache_document_path(...), so lines 425-430 and 432-435 compare one implementation with itself; reinstating a verbatim duplicate in findings.py (same hashlib digest over the same sources) leaves every value assertion green. Only the two hasattr checks at lines 439-440 detect a restated wrapper, and only by name. The recorded red control passes for the same weak reason: with the refactor reverted the module attribute is absent, so the test raises AttributeError rather than observing duplicated logic."
+    },
+    {
+      "file": "reckon/crew/review_records.py",
+      "line": 1043,
+      "severity": "non-blocking",
+      "text": "forget_cache_code_stamps() clears only _CACHE_CODE_STAMPS, while _index_code_stamp() keeps its own _INDEX_CODE_STAMP memo at line 1099 that the function leaves populated, so its docstring ('as a newly started process has none') is not what the code does: a caller that forgets the stamps to simulate a cold process still gets the store index's held digest. The findings test fixture now depends on this function for exactly that reset (tests/test_findings_are_read_from_a_write_time_index.py:72,116,312)."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_findings_are_read_from_a_write_time_index.py:425 compares findings._index_code_stamp() with a call to the function it now delegates to, so a verbatim duplicate of that logic would keep it green.",
+    "evidence": "docs/evidence/fragments/a-read-costs-what-changed/findings-read-from-persisted-index.html:121 states 730/40 and 735/36 while the cited logs record 770/39 and 773/37.",
+    "fit": "reckon/crew/review_records.py:1043 documents a full stamp reset that its body does not perform, leaving _INDEX_CODE_STAMP at line 1099 populated.",
+    "goal_fidelity": "review_records.py:1020 is now the single implementation of the stamp and findings.py:472 delegates to it, which is the duplication the prior review named.",
+    "reuse": "reckon/crew/review_records.py:1020 and :1048 now own the stamp and path rules, and the two per-module writer wrappers are deleted, so the capability the prior review flagged as duplicated has one owner.",
+    "scope_discipline": "git diff --stat fba33c99..5d5c0cca lists only the five declared write paths and no other file."
+  },
+  "plan": "a-read-costs-what-changed",
+  "project": "reckon",
+  "review_run_id": "r-20261108T193332657116-review-of-findings-read-from-persisted-index-5d5c0cca94fa",
+  "reviewed_base_sha": "fba33c99dadf1e801c98a44f754e84b193ab995d",
+  "reviewed_head_sha": "5d5c0cca94fa48d2da020fb62f41406b092fe619",
+  "reviewed_run_id": "r-20261108T153951463861-findings-read-from-persisted-index",
+  "scores": {
+    "durability": 11,
+    "evidence": 7,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "section": "s14",
+  "status": "parsed",
+  "subject": "code",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T19:57:43.586856+00:00",
+  "total": 90,
+  "verdicts": {
+    "call_sites": "Read the production callers the changed hooks reach: plan_review.py:2350 (record_response), plan_review.py:5433 (store_code_review), review_records.py:298 (store_committed_review, called from promotion.py:1809), and the readers findings.py callers use at mcp_views.py:4462 and plan_review.py:5127; none depends on the removed wrappers or on the old per-module stamp.",
+    "diff": "Read commit by commit against fba33c99: 6bf2a62e moves the four cache rules into review_records and deletes the two writer wrappers, cec726aa adds the fourteenth case, a1e64678/9f70ba4d/5d5c0cca are the evidence fragment and its correction, and every hunk stays inside the declared paths.",
+    "done_when": "The plan's \u00a714 done-when asks for the six index cases, a red control, sub-2 s live reads, no added failure over the importer population, and ruff clean; the repaired gate records 13 passed at fba33c99 and 14 passed at 5d5c0cca with a red reverted-machinery control, and ruff check plus ruff format --check are clean on the three source paths (the test path is absent from this review checkout, so it was read at the reviewed head and its formatting was checked there). The population arm is the clause in doubt: its recorded figures do not match the cited logs.",
+    "goal": "The reviewed increment repairs the reuse finding and records the importer population: review_records.py:1020 makes cache_code_stamp the single owner of the stamp, findings.py:472 and findings.py:485 call it and cache_document_path, and plan_review.py:2350 and :5433 call findings.note_record_written directly instead of keeping per-module wrappers.",
+    "manifest": "Read; it records status complete, nine commits, the repair gate at both arms, the population arms with their figures and logs, the serial re-run of the delta id, and a per-dimension rubric self-check.",
+    "write_paths": "The manifest declares findings.py, review_records.py, plan_review.py, the test and the evidence fragment; git diff --stat fba33c99..5d5c0cca names exactly those five paths and nothing else."
+  }
+}
