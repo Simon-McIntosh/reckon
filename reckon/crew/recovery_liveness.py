@@ -15,9 +15,12 @@ from reckon.crew.node import (
     LOG_STALE_AFTER_SECONDS,
 )
 from reckon.crew.process_liveness import (
+    LIVENESS_DEAD,
+    LIVENESS_PLACED,
     LIVENESS_RECORDED_PID,
     LIVENESS_UNKNOWN,
     LivenessReading,
+    placement_job_alive,
     record_process_liveness,
 )
 from reckon.crew.reports import (
@@ -1292,9 +1295,22 @@ def live_worker_reading(record: Mapping[str, Any]) -> LivenessReading:
 
     A reading that is not alive carries no worker to name: the run is dead,
     unknown, or was launched on a machine that cannot be shown to be this one.
+    A placed run is answered by its scheduler job alone. Its recorded pid names
+    the scheduler client, so the pid probe is never consulted for it, and a
+    scheduler that cannot answer leaves the arm placed with liveness unknown
+    rather than letting the client's pid stand in for the worker.
     """
     if not _launched_on_this_host(record):
         return LivenessReading(LIVENESS_UNKNOWN, None)
+    placement = record.get("placement")
+    if isinstance(placement, Mapping) and placement:
+        job_id = str(record.get("job_id") or "")
+        placed = placement_job_alive(record)
+        if placed is None:
+            return LivenessReading(LIVENESS_PLACED, None, job_id=job_id)
+        return LivenessReading(
+            LIVENESS_PLACED if placed else LIVENESS_DEAD, placed, job_id=job_id
+        )
     # The pointer arm is taken only where the record carries a pid, as
     # :func:`live_worker_pid` has always required: the arm it reports says how
     # that pid read, not whether a pid was written at all.
@@ -1323,18 +1339,34 @@ def live_worker_pid(record: Mapping[str, Any]) -> int | None:
     :func:`local_liveness` answers *whether* the run's process lives; a
     refusal that stops a resume over a living worker is checkable only if it
     also says *which* process, because the reader who receives it can then ask
-    the process table the same question. The pid comes from
-    :func:`live_worker_reading`, which keeps the arm the answer was taken from:
-    only the arms that read a pid this host probed as the worker's own carry
-    one, so a run found by its session, or placed on a scheduler job, names no
-    process here rather than a number that belongs to something else. A pid is
-    meaningful only on the machine that issued it, so a record that cannot be
-    shown to be this host's names nothing here.
+    the process table the same question. This composes the same two reads in
+    the same order — the pointer's pid, then the worker record the supervisor
+    writes beside the stream, which is where a run whose supervisor exited
+    ahead of its worker keeps the process that still runs it — and returns
+    which of them answered. A pid is meaningful only on the machine that
+    issued it, so a record that cannot be shown to be this host's names
+    nothing here. None means no pid answered: either the run is not alive, or
+    its liveness came from a stored answer that carries no process to name.
+
+    A caller that must say *how* the worker was found reads
+    :func:`live_worker_reading` instead, which keeps the arm. This keeps its
+    own answers so every existing caller, such as the lift refusal that names
+    a pid, reads exactly what it read before.
     """
-    reading = live_worker_reading(record)
-    if reading.alive is not True:
+    if not _launched_on_this_host(record):
         return None
-    return reading.pid
+    pointer_pid = _int_or_none(record.get("pid"))
+    if pointer_pid is not None and runs.record_process_alive(record) is True:
+        return pointer_pid
+    worker_pid = _worker_record_pid(record)
+    if worker_pid is not None and _worker_record_liveness(record) is True:
+        return worker_pid
+    if _worker_record(record) is not None:
+        # The same environment reach ``local_liveness`` uses, named here so a
+        # refusal that stops a resume over a reparented worker can point at the
+        # process it found rather than at a pid the table no longer holds.
+        return _env_scan_run_pid(record)
+    return None
 
 
 def _env_scan_run_pid(record: Mapping[str, Any]) -> int | None:

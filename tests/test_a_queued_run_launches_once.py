@@ -24,7 +24,7 @@ from pathlib import Path
 import pytest
 
 from reckon.crew import dispatch_launch as dispatch_launch_module
-from reckon.crew import process_liveness, runs
+from reckon.crew import recovery_liveness, runs
 from reckon.crew.node import CrewError
 from reckon.crew.recovery_liveness import _reading_host
 
@@ -236,7 +236,7 @@ def test_a_placed_runs_scheduler_client_pid_is_not_named_as_the_worker(
 ) -> None:
     """A placed run's recorded pid is the client's, so the refusal names the job."""
     client = _live_child()
-    monkeypatch.setattr(process_liveness, "placement_job_alive", lambda record: True)
+    monkeypatch.setattr(recovery_liveness, "placement_job_alive", lambda record: True)
     try:
         _rewrite_pointer(
             pid=client.pid,
@@ -247,6 +247,34 @@ def test_a_placed_runs_scheduler_client_pid_is_not_named_as_the_worker(
         with pytest.raises(CrewError) as refused:
             dispatch_launch_module._supervisor_spawn_worker(_spec(queued_run))
         assert str(refused.value) == _spawn_refusal(f"job {JOB_ID}")
+        assert f"pid {client.pid}" not in str(refused.value), refused.value
+    finally:
+        _stop(client)
+
+
+def test_a_placed_run_whose_scheduler_cannot_answer_names_no_pid(
+    queued_run: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An unanswerable scheduler leaves liveness unknown, never the client's pid.
+
+    The recorded pid of a placed run names the scheduler client, so a fallback
+    to the pid probe would report a live process that is not the worker. The
+    refusal says the run is placed and that its liveness is unknown.
+    """
+    client = _live_child()
+    monkeypatch.setattr(recovery_liveness, "placement_job_alive", lambda record: None)
+    try:
+        _rewrite_pointer(
+            pid=client.pid,
+            job_id=JOB_ID,
+            placement={"partition": "betelgeuse", "nodes": 1},
+        )
+        _write_worker_record(queued_run, _dead_pid())
+        with pytest.raises(CrewError) as refused:
+            dispatch_launch_module._supervisor_spawn_worker(_spec(queued_run))
+        assert str(refused.value) == _spawn_refusal(
+            f"placed on job {JOB_ID}, liveness unknown"
+        )
         assert f"pid {client.pid}" not in str(refused.value), refused.value
     finally:
         _stop(client)

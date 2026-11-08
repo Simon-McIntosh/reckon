@@ -52,7 +52,7 @@ from reckon.crew.routing import (
     _repository_tree_snapshot,
     signal_worker,
 )
-from reckon.crew.process_liveness import LivenessReading
+from reckon.crew.process_liveness import LIVENESS_PLACED, LivenessReading
 from reckon.crew.process_signal import _run_uses_step, signal_pending_step_client
 from reckon.crew.runs import (
     _mutate_pointer,
@@ -1911,15 +1911,33 @@ def _live_worker_naming(reading: LivenessReading) -> str:
     session id it was started with and never read a pid, and a placed run's
     recorded pid belongs to the scheduler client: naming either of those as a
     pid sends a reader to a process that is not working the run, so each names
-    the thing that was actually found instead.
+    the thing that was actually found instead. A placed run whose scheduler
+    could not be asked has no liveness to report and says so, because the only
+    pid the record holds is the client's.
     """
+    if reading.arm == LIVENESS_PLACED:
+        job = f"job {reading.job_id}" if reading.job_id else "a scheduler job"
+        if reading.alive is None:
+            return f"placed on {job}, liveness unknown"
+        return job
     if reading.pid is not None:
         return f"pid {reading.pid}"
-    if reading.job_id:
-        return f"job {reading.job_id}"
     if reading.session_id:
         return f"session {reading.session_id}"
     return "an unrecorded process"
+
+
+def _launch_refused_by(reading: LivenessReading) -> bool:
+    """Whether this reading is reason enough to refuse a second launch.
+
+    An alive reading always is. So is a placed run whose scheduler could not be
+    queried: the record's only pid is the scheduler client's, so the pid probe
+    cannot show the worker is gone, and a second worker beside a live one
+    rewrites the same manifest from its own partial view.
+    """
+    if reading.alive is True:
+        return True
+    return reading.arm == LIVENESS_PLACED and reading.alive is None
 
 
 def _prepare_attempt_records(
@@ -1965,7 +1983,7 @@ def _prepare_attempt_records(
     except CrewError:
         record = {}
     holder = live_worker_reading(record)
-    if holder.alive is True:
+    if _launch_refused_by(holder):
         raise CrewError(
             f"run {run_id!r} still has a live worker "
             f"({_live_worker_naming(holder)}): a launch "
@@ -2832,7 +2850,7 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
     # launch, so the pointer's own pid is dropped and the read answers from the
     # run's worker record and its session instead.
     holder = live_worker_reading(_without_this_supervisor(record))
-    if holder.alive is True:
+    if _launch_refused_by(holder):
         raise CrewError(
             f"run {run_id!r} still has a live worker "
             f"({_live_worker_naming(holder)}): a launch that started now would "
