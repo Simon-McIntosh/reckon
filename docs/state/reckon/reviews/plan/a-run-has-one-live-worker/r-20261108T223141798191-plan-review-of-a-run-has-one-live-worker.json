@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T22:38:17.292Z",
+  "dispatched_at": "2026-11-08T22:32:50Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:165",
+      "id": "reasoning-1",
+      "reason": "the build node would pick one of two observables that fail in opposite directions, and only a stated rule (a live observation recorded on the reservation at acquire time, freed when it later disappears) plus a case for the never-observed session makes the constraint implementable and testable.",
+      "text": "\u00a713's in-harness constraint frees a reservation \"when the session its launch was attached to has ended\", but nothing on disk records a session's end: the only session-liveness store is the session-host census, whose `live_census` drops a host once its owner process dies and whose per-child entries carry `settled_at` but no end (reckon/crew/session_host.py:272-305, 520-545), while reckon's own reading states that for an in-harness run \"liveness belongs to the calling harness, so it is reported as running until a manifest appears\" (reckon/crew/recovery_classification.py:2157); absence of a record is equally true of a session that never had a host (a `-p` session, or one without the reckon-crew-host plugin), so freed-on-absence would release a live in-harness launch's reservation and reinstate the two-worker race this section exists to close, and freed-only-on-a-positive-stop would leave a killed in-harness launch in such a session stranded \u2014 the defect the arm was added to repair; the case list exercises only the ended direction, so the gate cannot tell which observable the node implemented",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:165",
+      "id": "done_when-1",
+      "reason": "without that control the terminal-phase arm of the freeing rule is unmeasured, so a gate could pass while the arm that keeps a finished in-harness run launchable does not fire.",
+      "text": "the case \"a finished in-harness launch of an existing run id leaves the run launchable\" is reddened by no listed negative control: the control that used to cover it (freeing an in-harness reservation by the dispatching process's liveness) was replaced by the ended-session control, and a mutation that frees an in-harness reservation on session end only \u2014 never on a terminal phase \u2014 passes every named control while reddening this case",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "286681556f68cd5951c368009c1b2fb7d4d71233",
+  "plan_fingerprint": "dd20c91e74791bb0a23b67d6b353e3f247195dd71f26b081adb483738d995010",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 95,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T223141798191-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "c0265c496c9617d1d234b63b2f90b03f87060733",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_refuse_a_live_worker_before_the_worktree` (dispatch.py:2531) precedes `_create_worktree` (dispatch.py:2834), `claim_next_attempt` (resumption.py:389, numbering at 398), `_claim_may_be_reclaimed` (resumption.py:366), `_retired_attempt_ended` (dispatch_launch.py:2072), `_confirm_supervisor_survived` (2371), `_supervisor_spawn_worker` (3030) and LAUNCH_WINDOW_SECONDS = 120 (recovery_vocabulary.py:55) all resolve at this head.",
+    "done_when": "a finding \u2014 the finished-in-harness bullet is the one case in \u00a713's list with no declared negative control, because the ended-session control replaced the control that used to redden it.",
+    "evidence_paths": "pass \u2014 the gate log, the armed suite log and the real-home listing all sit under the run directory, not a scratch or node-local path.",
+    "naming": "pass \u2014 the new test is named `test_a_concurrent_launch_is_refused.py` by what it does, and no plan label or ticket number reaches a symbol or comment.",
+    "reasoning": "a finding \u2014 the freed-on-session-end arm of the in-harness constraint names an observable the code does not record, and no case distinguishes a session that ended from one that was never observed.",
+    "single_goal": "pass \u2014 \u00a713 carries one deliverable, a reservation that one of two racing doors holds for the attempt it launches.",
+    "wiring": "pass \u2014 \u00a713 declares no section wait because its only upstream (\u00a712, landed 9587a26dd7) is done, and its followup f-arolw-013 names all four write paths, the new test included."
+  },
+  "section_digests": {
+    "_document": "eeade309f31284b9ed0684d845f9e7ae9f528f9713bcf3e0b9a1f727559e9483",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s10": "6dc41ff672ef42b279e0d66e033f19c8c35deb5c39f0efeb637f11ccedd3f7d4",
+    "s11": "beb7d054249b6e83a0d555fe9051398e9d5fb537152e967098b323eb4c3c0122",
+    "s12": "84e2cc4249fe87aae0d3fc8134f2e4808ab95216a81db6b06c7e82eec1df1031",
+    "s13": "c42400b5172cd6a2f7ccd9079e8e531c2a0551b95456f97d892423ae9b1d1054",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "3a58d93f403c56db20efa76febfb2e44549d3805ff296517c27f63bc01055fb8",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "63bd79fcdd7baf06c8cc0bbc04ef21beec3605a6fdb13eed90b3ad410f8516e7",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b",
+    "s8": "1615d40635864933b3396d3d4ae7b0f94361ec3a105caa540ba761ad95bd24fe",
+    "s9": "1a571813cf821821012487f1bc0e7a9bb360370e7b12b6440683c365dba25774"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T22:43:12.727707+00:00",
+  "total": null
+}
