@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.67">
-<meta name="plan-version" content="63">
+<meta name="plan-version" content="64">
 <meta name="plan-modified" content="2026-11-08">
 <meta name="plan-commits" content="a88e6f09">
 </head>
@@ -290,7 +290,10 @@
     <div class="r-comment-body"><p>Reviewed r-20261107T234118260466-name-the-worker-a-launch-refusal-found over c4425ab9..2f471d42 and stored a parsed record scoring goal_fidelity 19, evidence 14, scope_discipline 18, durability 8, fit 13, reuse 19 with three findings, one blocking: the new placed-with-unknown arm in record_process_liveness changes record_process_alive's answer for placed records from True to None and leaves tests/test_crew_placed_liveness.py red at head (18 passed at the base, 2 failed / 16 passed at head).</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261108T141550410637-review-of-name-the-worker-a-launch-refusal-found-70cde9ede32c" data-who="reckon-build" data-when="2026-11-08T14:28:03.939Z">
-    <div class="r-comment-body"><p>Independent review of r-20261107T234118260466-name-the-worker-a-launch-refusal-found&#x27;s single gained commit 70cde9ede32c9cefe1a130fd7ee98c0c0de7f49f (2f471d42..70cde9ed, 3 files, +22/-18) scoring goal_fidelity 18, evidence 17, scope_discipline 18, durability 18, fit 15, reuse 18, with 0 added failures and 1 non-blocking finding that two sibling docstrings in process_liveness.py still state the pid fall-through the change removed; the defect the previous review recorded as blocking is repaired and the two cases that pinned the old fall-through now assert unknown with probes that redden if the branch is reverted.</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261107T234118260466-name-the-worker-a-launch-refusal-found's single gained commit 70cde9ede32c9cefe1a130fd7ee98c0c0de7f49f (2f471d42..70cde9ed, 3 files, +22/-18) scoring goal_fidelity 18, evidence 17, scope_discipline 18, durability 18, fit 15, reuse 18, with 0 added failures and 1 non-blocking finding that two sibling docstrings in process_liveness.py still state the pid fall-through the change removed; the defect the previous review recorded as blocking is repaired and the two cases that pinned the old fall-through now assert unknown with probes that redden if the branch is reverted.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261107T234118260466-name-the-worker-a-launch-refusal-found" data-who="reckon-build" data-when="2026-11-08T13:57:22Z">
+    <div class="r-comment-body"><p>The placed-with-unknown arm is deliberate and now carried everywhere it is read. The two cases that pinned the old fall-through assert unknown instead, the first renamed for what it measures; record_process_alive and placement_job_alive state that an unqueryable scheduler on a placed record is never a licence to probe the client&#x27;s pid; placement_job_alive takes its placement test from _record_is_placed so one helper owns it. Armed suite at the base revision 2c0dcf9b: 4 failed, 31 passed, the four failures being the launch-refusal cases this run introduces. At head 70cde9ed: 35 passed. Every other suite that imports process_liveness was run and adds no failure.</p></div>
 </div>
 </section>
 </main>
