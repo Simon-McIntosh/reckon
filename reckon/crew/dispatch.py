@@ -472,6 +472,47 @@ def _answer_existing_node_run(
     return held
 
 
+def _refuse_a_live_worker_before_the_worktree(run_id: str) -> None:
+    """Refuse a dispatch of a run id whose worker this host still sees running.
+
+    A dispatch on a non-local lane, and an admitted launch, are not answered by
+    the existing-run branch: it answers only a queued request or a run on the
+    lane that queues. Both therefore reach worktree creation, and this
+    dispatch's own claim overwrites the live pointer before it gets there. The
+    worker's tree then reads as a disposable leftover — its pointer no longer
+    names it — so it is released and re-cut from a newer base, and the running
+    worker is left writing into a tree its fence no longer covers.
+
+    The holder is read through the composition a launch uses, ``live_worker_pid``
+    and its companion reading narrowed by the same refusal predicate, so a
+    dispatch and a launch cannot disagree about whether a run is held. The read
+    is taken before this dispatch writes anything of its own: no claim, no run
+    directory and no tree, so a refused dispatch leaves the run as it found it.
+    A run id with no live pointer has never launched here and is not refused.
+    """
+    from reckon.crew.dispatch_launch import _launch_refused_by, _live_worker_refusal
+    from reckon.crew.recovery_liveness import live_worker_reading
+
+    try:
+        record = read_pointer(run_id)
+    except CrewError:
+        return
+    holder = live_worker_reading(record)
+    if not _launch_refused_by(record, holder):
+        return
+    attempt = record.get("attempt")
+    attempt_text = f"attempt {attempt} " if isinstance(attempt, int) else ""
+    raise CrewError(
+        _live_worker_refusal(
+            run_id,
+            holder,
+            f"{attempt_text}still holds this run, and cutting its worktree again "
+            "would leave it writing into a tree no fence covers; observe or stop "
+            "it before dispatching again",
+        )
+    )
+
+
 def _session_older_admissible_request(
     *,
     session: str,
@@ -2471,6 +2512,11 @@ def dispatch(
         _refuse_against_the_bookend_reserve(
             config=config, role=node.role, pace_record=pace_record
         )
+
+    # A run id that already has a live worker is refused here, before this
+    # dispatch writes a claim, a run directory or a worktree: every one of those
+    # would overwrite or release something the running worker holds.
+    _refuse_a_live_worker_before_the_worktree(run_id)
 
     directory = run_dir(run_id)
     # A brief is authority text, so its durable copy is taken with the run's id
