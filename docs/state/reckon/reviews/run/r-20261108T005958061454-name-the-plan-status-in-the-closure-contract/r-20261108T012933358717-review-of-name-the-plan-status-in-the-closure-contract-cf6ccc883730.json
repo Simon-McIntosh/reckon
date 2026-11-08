@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/prompts.py:778",
+    "reckon/crew/dispatch_claims.py:1213"
+  ],
+  "completed_at": "2026-11-08T01:43:01.979Z",
+  "dispatched_at": "2026-11-08T01:34:28Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_prompts.py",
+      "line": 496,
+      "severity": "blocking",
+      "text": "test_no_prompt_sentence_forbids_a_terminal_status_without_the_plan excludes any sentence containing 'section', and the reverted wording's own reason clause ('not whether the section closed') satisfies that exclusion, so the assertion returns an empty offenders list on exactly the regression it was added to catch; the run's own negative-control log confirms it, listing 7 failing ids and not this test. The plan's section 6 Done when names this assertion as the negative control's target, so that clause of the measure is unasserted."
+    },
+    {
+      "file": "tests/test_crew_prompts.py",
+      "line": 447,
+      "severity": "non-blocking",
+      "text": "_closure_block re-implements the flattened-block-up-to-the-next-FENCE shape already held by _time_fence_block at tests/test_crew_prompts.py:76; one parameterised helper would serve both, though neither is currently general."
+    },
+    {
+      "file": "docs/evidence/fragments/the-crew-contract-fits-one-read/name-the-plan-status-in-the-closure-contract.html",
+      "line": 54,
+      "severity": "non-blocking",
+      "text": "The negative-control paragraph lists the 7 failing ids and calls the reddened test the 'plan-status assertion' without recording that the second assertion the Done when names did not redden, so a reader of the fragment alone cannot see that a declared clause of the measure is unmet."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit: 02912c7d7e rewrites CLOSURE_AUTHORITY_CONTRACT in reckon/crew/prompts.py:248 and its three skill mirrors, moves CLOSURE_TERMINAL_LIMIT and PLAN_PROMPT_SNAPSHOT, and adds two parametrised tests; cf6ccc8837 adds only the 81-line evidence fragment.",
+    "done_when": "The Done when of section 6 names two composed-prompt cases and a negative control failing the second assertion; tests/test_crew_prompts.py:473 and :488 supply both cases parametrised over implement and brief, and the negative-control log at logs/negative-control.log reddens 7 ids, none of them :488, so one clause of the measure is not asserted.",
+    "goal": "The node goal is to make the closure contract name the plan's status as the coordinator's and the manifest status as the worker's; reckon/crew/prompts.py:248 CLOSURE_AUTHORITY_CONTRACT now reads 'must not set the plan's terminal status' and 'The manifest's `status:` line is the worker's own verdict: write it `complete`, `blocked` or `failed`', and both halves are present.",
+    "manifest": "Read; it states the armed command, records baseline 63 passed EXIT=0 at c8a0e5cd0a and head 68 passed EXIT=0 at 02912c7d7e, names all five logs including the negative control, and its landing line matches the diff.",
+    "write_paths": "Read the declared scope from the source run's prompt.txt (nine paths) and the manifest's changed_paths; all nine paths in the diff c8a0e5cd0a..cf6ccc8837 fall inside it, including the evidence fragment added by the second commit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the closure contract name the plan's status as the coordinator's and the manifest status as the worker's; reckon/crew/prompts.py:248 now carries both halves and all three skill mirrors were reworded to match.\nVERDICT done_when: the Done when of docs/plans/the-crew-contract-fits-one-read.html section 6 asks for two composed-prompt cases plus a negative control that fails the second assertion; tests/test_crew_prompts.py:473 and tests/test_crew_prompts.py:488 supply the cases, and logs/negative-control.log reddens 7 ids without including tests/test_crew_prompts.py:488.\nVERDICT write_paths: read the nine declared paths from the source run's prompt.txt and the manifest's changed_paths; every path in the diff c8a0e5cd0a..cf6ccc8837 is inside them, the evidence fragment included.\nVERDICT manifest: read; it names the armed command, both arms with their revisions and EXIT lines, all five logs, and a landing line that matches the diff.\nVERDICT diff: read commit by commit against c8a0e5cd0a; 02912c7d7e rewrites reckon/crew/prompts.py:248 and three skill mirrors plus three test files, cf6ccc8837 adds only the evidence fragment.\nCALL_SITES: reckon/crew/prompts.py:778, reckon/crew/dispatch_claims.py:1213\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/prompts.py:248 names the plan's terminal status, the section's declaration and the manifest's `status:` verdict in one block, mirrored at skills/reckon-build/references/coordinator-reference.md:802 and skills/reckon-build/SKILL.md:432.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/baseline-suite.log (63 passed, EXIT=0, revision c8a0e5cd0a) and logs/head-suite.log (68 passed, EXIT=0, revision 02912c7d7e) are recorded, but logs/negative-control.log does not redden the assertion the Done when names, so the gate does not assert that clause.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in c8a0e5cd0a..cf6ccc8837 lies inside the nine declared write paths, and cf6ccc8837 changes only docs/evidence/fragments/the-crew-contract-fits-one-read/name-the-plan-status-in-the-closure-contract.html.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_crew_prompts.py:473 does redden on reinstating the unqualified ban, but tests/test_crew_prompts.py:496 excludes any sentence containing 'section' and the reverted reason clause contains it, so that assertion holds whatever the code does.\nSCORE fit: 19\nJUSTIFICATION fit: the new constants follow the CLOSURE_* module constants already at tests/test_crew_prompts.py:364-371 and the helpers follow _prompt and _prompt_readonly at tests/test_crew_prompts.py:61 and :240.\nSCORE reuse: 16\nJUSTIFICATION reuse: tests/test_crew_prompts.py:447 _closure_block re-implements the flattened-block-to-the-next-FENCE shape of _time_fence_block at tests/test_crew_prompts.py:76, though no general owner exists to extend.\nFINDING tests/test_crew_prompts.py:496 blocking: test_no_prompt_sentence_forbids_a_terminal_status_without_the_plan excludes sentences containing 'section', which the reverted wording's reason clause satisfies, so it passes on the regression it was added to catch and the negative-control log lists 7 failing ids without it.\nFINDING tests/test_crew_prompts.py:447 non-blocking: _closure_block duplicates the extraction shape of _time_fence_block at tests/test_crew_prompts.py:76 instead of parameterising one helper.\nFINDING docs/evidence/fragments/the-crew-contract-fits-one-read/name-the-plan-status-in-the-closure-contract.html:54 non-blocking: the negative-control paragraph lists the 7 failing ids without recording that the second assertion the Done when names did not redden, so the fragment reads as if the declared measure were fully met.\n",
+  "review_run_id": "r-20261108T012933358717-review-of-name-the-plan-status-in-the-closure-contract-cf6ccc883730",
+  "reviewed_base_sha": "c8a0e5cd0a3811038323676fa16d9cbef7220406",
+  "reviewed_head_sha": "cf6ccc88373085d0ac5025ab49e51557b4a46b9d",
+  "reviewed_run_id": "r-20261108T005958061454-name-the-plan-status-in-the-closure-contract",
+  "scores": {
+    "durability": 13,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T02:07:47.035831+00:00",
+  "total": 102
+}
