@@ -1,0 +1,57 @@
+<section id="promoted-run-never-requeues-landing">
+  <h2>A promoted run never re-enters the queue</h2>
+
+  <p><strong>What changed.</strong> The guard the section asks for is already in
+  <code>reckon/crew/queue_admission.py</code> at the base revision:
+  <code>_require_live_writeback</code> reads the run's promotion record through
+  <code>runs._promoted_record_project</code> before it looks at pointer presence,
+  and raises <code>_PointerWritebackError</code> when either fact says the
+  request has departed. Both write-backs pass through it under the pointer lock
+  &mdash; <code>_restore_queued</code> and the failed-launch requeue, which now
+  writes through <code>_writeback_pointer</code>.</p>
+
+  <p>This node verified that behaviour rather than reimplementing it, and added
+  the one case the existing test file did not exercise: a launch failure for a
+  request that is <em>still queued</em>, driven through
+  <code>queue_admission.admit_once</code> rather than by calling the restore
+  helper directly. The pass's own route is the one the field record names &mdash;
+  a refused launch stamps <code>failure</code>, <code>failure_at</code>,
+  <code>failure_attempts</code> and <code>failure_guard</code> on the pointer in
+  place &mdash; so the positive control now measures that route end to end.</p>
+
+  <h3 id="promoted-run-never-requeues-arms">Measured</h3>
+
+  <p>Six cases over a temporary crew home: a launch failure after promotion with
+  the pointer left in place and with it removed (both refuse, verdict names the
+  promotion); the requeue of a failed launch whose pointer was removed and whose
+  pointer was replaced by a promotion (both write nothing); a launch failure for
+  a queued run driven through a pass (restored, phase <code>queued</code>,
+  <code>failure_attempts</code> 1); and the direct-helper restore as before.</p>
+
+  <table id="promoted-run-never-requeues-table">
+    <caption>Every arm is a log whose first line names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>node test file</td>
+        <td><code>e7e18cdc</code>, worktree</td>
+        <td>6 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control: promotion check deleted from
+        <code>_require_live_writeback</code></td>
+        <td><code>e7e18cdc</code> + mutation</td>
+        <td>3 failed, 3 passed, <code>EXIT=1</code> &mdash;
+        <code>test_a_launch_failure_after_promotion_is_not_written_back</code>
+        both arms and
+        <code>test_a_departed_failed_launch_is_not_requeued[promoted]</code></td></tr>
+      <tr><td>wide gate, head (68 files importing the module)</td>
+        <td><code>e7e18cdc</code> + this node's test, worktree</td>
+        <td>446 passed, 21 failed, <code>EXIT=1</code>. The 21 ids sit in six
+        files that are byte-identical to the base revision
+        (<code>git diff</code> 0 bytes), so the node adds no failure: the only
+        file it changes is its own test file.</td></tr>
+      <tr><td>ruff check and format on the staged path</td>
+        <td><code>e7e18cdc</code>, worktree</td>
+        <td>All checks passed, already formatted</td></tr>
+    </tbody>
+  </table>
+</section>
