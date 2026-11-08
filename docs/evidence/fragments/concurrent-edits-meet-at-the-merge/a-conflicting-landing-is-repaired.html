@@ -1,7 +1,17 @@
-<section id="a-conflicting-landing-is-repaired-checkpoint">
-  <h3>Merge repair checkpoint: delivery remains blocked</h3>
-  <p>The base reproduction passed independent function edits and failed both conflict-repair cases: 1 passed, 2 failed. Manual completion removed the live pointer before the conflict refusal; automatic landing retained the pointer but opened no repair.</p>
-  <p>The partial implementation pins conflict paths and the primary revision, preserves the live run through manual preflight, writes merge-repair advice before resuming the worker, and shares a repository landing lock across preflight, promotion and merge.</p>
-  <p>The latest node gate still reports 1 passed, 2 failed. Both conflicting cases now open a repair round and accept a head merging primary, but their subsequent promotion creates a new conflict in <code>docs/plans/plan-a.html</code>. The merge refuses it without writing conflict markers. The required two-failure stop rule ended this attempt; the implementation is not ready for promotion.</p>
-  <p>The related base arm reports 395 passed, 3 failed. No head regression arm ran after the stop. Durable receipts and logs are named in the worker manifest.</p>
+<section id="a-conflicting-landing-is-repaired-results">
+  <h3>Conflicting landings return for merge repair</h3>
+  <p>A real conflict records the file and pinned primary revision, persists repair advice, and resumes the delivery worker. A promoted run keeps its promotion record and its pending landing. The repaired head finishes through the existing merge lander, with no second promotion or plan write.</p>
+  <table>
+    <thead><tr><th>Temporary repository and bare remote case</th><th>Verified result</th></tr></thead>
+    <tbody>
+      <tr><td>Different functions in the same file</td><td>Both deliveries land, preserving both results.</td></tr>
+      <tr><td>Manual landing meets the same-line conflict</td><td>The promotion stands; the conflict opens a repair round; merge-only completion lands the repaired head.</td></tr>
+      <tr><td>Promotion is interrupted before its merge</td><td>The automatic pending-landing pass opens the repair and finishes the delivered head without another promotion.</td></tr>
+      <tr><td>Automatic landing detects an unpromoted conflict</td><td>The original run receives its pinned conflict outcome and repair round.</td></tr>
+    </tbody>
+  </table>
+  <p>Each repaired landing checks the bare remote ancestry and resulting source, the absence of conflict markers, unchanged plan and promotion-record bytes, and exactly one additional integration commit along the primary's first-parent history.</p>
+  <p>Node gate: <strong>4 passed in 160.62s (0:02:40)</strong>. Negative control at the original base: <strong>3 failed, 1 passed in 92.62s (0:01:32)</strong>; the independent edit case passes there while the three repair cases fail.</p>
+  <p>Importer base arms: 3 failed, 395 passed in 607.67s (0:10:07); 57 passed in 20.12s. Combined head arm: 3 failed, 452 passed in 730.38s (0:12:10). <strong>Zero added failure IDs</strong> across 33 importer files. Ruff lint and format checks pass on all six Python paths.</p>
+  <p>The pending-landing module was added to the write scope by coordinator adjudication. The first attempt's blocker was resolved by retaining the original promotion and finishing the repaired delivery through pending landing. Detailed commands, receipts and failure identities are preserved in the worker manifest and run logs.</p>
 </section>
