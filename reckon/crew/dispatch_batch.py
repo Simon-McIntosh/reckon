@@ -516,6 +516,7 @@ def _queue_batch(
     """
     from reckon.crew import queue_admission
     from reckon.crew.dispatch import queue_requests as queue_one
+    from reckon.crew.dispatch_admission import node_context_fit_finding
     from reckon.crew.runs import new_run_id, read_pointer, run_dir
 
     root = Path(repo_root).expanduser().resolve()
@@ -575,6 +576,22 @@ def _queue_batch(
             node.manifest_path = node.manifest_path or str(
                 run_dir(run_id) / "manifest.md"
             )
+            # A request larger than its lane fits in the queue and is refused
+            # at the launch that first tries it, where the refusal costs the
+            # queue position and reaches nobody. It is measured here instead,
+            # before `queue_one` writes a pointer, so the row that comes back
+            # names the estimate and the window the entry could not meet.
+            work_repository = plans.read(project, node.plan).repo_root
+            fit = node_context_fit_finding(
+                node,
+                project=project,
+                repository=work_repository,
+                config=config,
+                backend=backend,
+            )
+            if fit is not None:
+                refuse(index, entry, str(fit["detail"]))
+                continue
             # The batch stays inside the per-section readiness read: queuing
             # each entry through the project-wide view would build every plan
             # in the project once per entry, which is what the batch exists to
@@ -584,7 +601,7 @@ def _queue_batch(
                 [node],
                 project=project,
                 session=str(entry.get("session") or session),
-                repo_root=plans.read(project, node.plan).repo_root,
+                repo_root=work_repository,
                 config=config,
                 backend_name=backend,
                 launch_kind=launch_kind,

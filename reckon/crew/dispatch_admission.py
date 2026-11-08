@@ -1841,6 +1841,7 @@ def _resolved_write_paths(
 # node from a claim it never made.
 INPUTS_PROPERTY = "inputs"
 COMPARES_WITH_PROPERTY = "compares-with"
+CONTEXT_FIT_PROPERTY = "context-fit"
 
 # An admission check judging a node's declaration reports one of two outcomes.
 # A refusal stops the dispatch; a warning records the gap and admits the node.
@@ -1933,6 +1934,125 @@ def node_measurement_finding(
             "against; state the measurement or reference in --compares-with, or "
             "declare `none-exists: <the search that established it>`"
         ),
+    }
+
+
+_CONTEXT_FIT_LANE_KEYS = ("local_backend", "default_backend")
+
+
+def _request_lane(config: Mapping[str, Any], backend: str = "") -> str:
+    """The lane a request resolves for, named as the queue writer resolves it:
+    the caller's own choice first, then the two configuration defaults."""
+    named = str(backend or "").strip()
+    if named:
+        return named
+    for key in _CONTEXT_FIT_LANE_KEYS:
+        value = str(config.get(key) or "").strip()
+        if value:
+            return value
+    return ""
+
+
+class _QueuedLane:
+    """What the router's context-fit verdict reads off a resolved dispatch.
+
+    The verdict is the same measurement a launch charges a node against, and
+    reproducing its window arithmetic beside it would let the two disagree
+    about which lane's boundary gates a request. At queue time the resolution
+    does not exist yet — no worktree, no process, no routing outcome — so this
+    carries the four fields the verdict reads and nothing else.
+    """
+
+    def __init__(
+        self,
+        *,
+        backend: str,
+        backend_settings: Mapping[str, Any],
+        node: TaskNode,
+        authority: Mapping[str, Any] | None,
+    ) -> None:
+        self.backend = backend
+        self.backend_settings = backend_settings
+        self.node = node
+        self.authority = authority
+
+
+def _queued_authority(project: str, repository: str | Path) -> dict[str, Any] | None:
+    """The write authority a queued request's estimate is measured under.
+
+    A landing fragment the dispatch grants a node is not an input, and the
+    census only knows the grant when it is handed the authority, so an estimate
+    taken without one can refuse a request its own launch would admit. A project
+    whose authority cannot be resolved is left to the checks that own that
+    refusal: this one measures size, and says nothing when it has no tree to
+    measure against.
+    """
+    if not project:
+        return None
+    from reckon.crew.routing import resolve_dispatch_authority
+
+    try:
+        return resolve_dispatch_authority(project, repository)
+    except (CrewError, OSError):
+        return None
+
+
+def node_context_fit_finding(
+    node: TaskNode,
+    *,
+    project: str,
+    repository: str | Path,
+    config: Mapping[str, Any],
+    backend: str = "",
+) -> dict[str, Any] | None:
+    """Report a node whose own inputs cannot fit the lane it is resolved for.
+
+    A request that is too large for its lane fits in the queue and fails at the
+    launch that first tries it, which is where the loss is paid: the entry is
+    stored, the coordinator is told it was accepted, and the refusal arrives
+    later on a pointer nobody is watching. Measuring it here costs the same
+    estimate a launch makes and refuses it before a pointer exists.
+
+    The estimate and the window both come from the router's own verdict, so a
+    lane whose declared window or recorded boundary is malformed refuses by the
+    reader that weighs it rather than reading as unbounded here. A lane
+    declaring neither is unbounded, and nothing gates it. A path declared a
+    regenerate path is not read, so it pays the flat reference cost rather than
+    the size of the record it replaces — which is the difference between a
+    node that rewrites a large generated file and one that loads it.
+    """
+    from reckon.crew.routing import _context_fit_verdict, _context_refusal_detail
+
+    lane = _request_lane(config, backend)
+    if not lane:
+        # The queue writer refuses a request naming no lane; that is its
+        # finding to report, not a context verdict about an empty window.
+        return None
+    backends = config.get("backends")
+    settings = backends.get(lane) if isinstance(backends, Mapping) else None
+    if not isinstance(settings, Mapping):
+        return None
+    root = Path(str(repository)).expanduser()
+    verdict = _context_fit_verdict(
+        resolution=_QueuedLane(
+            backend=lane,
+            backend_settings=settings,
+            node=node,
+            authority=_queued_authority(project, root),
+        ),
+        repo=root,
+    )
+    if verdict is None or verdict.get("allowed"):
+        return None
+    return {
+        "property": CONTEXT_FIT_PROPERTY,
+        "severity": ADMISSION_REFUSAL,
+        "detail": (
+            f"{_context_refusal_detail(verdict)}; the request is resolved for "
+            f"lane {lane!r}, and it is refused before any pointer is written"
+        ),
+        "estimated_tokens": int(verdict.get("estimated_tokens") or 0),
+        "window_tokens": int(verdict.get("window_tokens") or 0),
     }
 
 
