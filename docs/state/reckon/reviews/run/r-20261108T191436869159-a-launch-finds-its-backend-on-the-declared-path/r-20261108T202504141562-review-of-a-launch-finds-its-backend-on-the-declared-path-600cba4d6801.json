@@ -1,0 +1,81 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_stop_before_spawn_spawns_nothing.py::test_a_group_stop_after_the_spawn_is_recorded_as_that_stops_exit"
+  ],
+  "added_failures_note": "Derived by set difference of the FAILED/ERROR ids in the reviewed run's own gate logs: base-importers.log (15 ids) and head-importers-at-600cba4d68.log (14 ids). One id is added and two are removed. The added id passes and fails on repeated single-file runs at the same head revision (flaky-stop-before-spawn-head.log fails it, flaky-stop-before-spawn-head-repeat.log run 1 passes and run 2 fails)",
+  "call_sites": [
+    "reckon/crew/dispatch.py:3153",
+    "reckon/crew/dispatch.py:3164",
+    "reckon/crew/dispatch.py:3282",
+    "reckon/crew/dispatch_sessions.py:1315",
+    "reckon/crew/dispatch_sessions.py:1332",
+    "reckon/crew/dispatch_sessions.py:1848",
+    "reckon/crew/dispatch_sessions.py:1849",
+    "reckon/crew/watch_unit.py:590",
+    "reckon/crew/runs.py:4389",
+    "reckon/crew/recovery_watch.py:2909"
+  ],
+  "completed_at": "2026-11-08T20:37:43.979Z",
+  "dimension_justifications": {
+    "durability": "tests/test_a_launch_finds_its_backend_on_the_declared_path.py:78 asserts the resolved path against the fixture directory and the negative control log shows 2 failed once launch_search_path's declared arm is removed, but no test declares search_path in a project layer, which is why the blocking defect at dispatch_launch.py:623 is unguarded",
+    "evidence": "logs/head-importers-at-600cba4d68.log records 8 failed and 6 errors at 600cba4d68 against the base's 9 and 6, and the committed evidence fragment at docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-launch-finds-its-backend-on-the-declared-path.html:40 instead cites the pre-commit arm and states zero added ids",
+    "fit": "reckon/crew/dispatch_launch.py:608 follows the module's helper idiom and names the mechanism (search_path, declared_backend_search_path, backend_name) with no plan, stage or ticket label anywhere in the diff",
+    "goal_fidelity": "reckon/crew/dispatch_launch.py:623 resolves the flight layers with no project, so a search_path declared in a project's own backends block is invisible and the command still refuses there",
+    "reuse": "reckon/crew/dispatch_launch.py:623 calls the flight layer's own resolver rather than re-merging layers, and launch_search_path extends the existing PATH composer, but re-resolves a backend mapping the caller already holds",
+    "scope_discipline": "git diff --name-status dda767944d 600cba4d68 touches only the six fenced files, and the evidence fragment is a new file with zero deleted lines so no peer record was overwritten"
+  },
+  "dispatched_at": "2026-11-08T20:26:00Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": 623,
+      "severity": "blocking",
+      "text": "declared_backend_search_path() resolves the flight layers with flight.resolve() and no project, so a backends.<name>.search_path declared in a project's own layer (docs/state/<project>/flight.yaml) is never read; the feature silently misses exactly the layer whose backends this deployment declares, and preflight_launch_command and assert_routable_backends_resolvable both already hold the project-resolved backend mapping and discard it"
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": 3282,
+      "severity": "non-blocking",
+      "text": "reckon/crew/dispatch.py calls _persisted_worker_environment({}, facts=dispatch_host) without backend_name, so the persisted directive PATH omits the declared backend directories while _supervisor_spec's launch PATH now carries them; the two records of one dispatch disagree and the file is outside this node's write paths"
+    },
+    {
+      "file": "docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-launch-finds-its-backend-on-the-declared-path.html",
+      "line": 40,
+      "severity": "non-blocking",
+      "text": "The committed evidence fragment's gate table cites logs/head-importers.log (the uncommitted-worktree arm, whose 15 ids are identical to the base) and states 'zero added ids', but the arm at the landed revision is logs/head-importers-at-600cba4d68.log, which has one added id and two removed; the landed evidence claims a result the landed arm contradicts"
+    },
+    {
+      "file": "reckon/flight.py",
+      "line": 2349,
+      "severity": "non-blocking",
+      "text": "flight.py's availability report still locates a backend command with bare shutil.which(command) against the process PATH, so a backend resolvable only through the newly declared search_path reports command_found false and detail \"'<command>' is not on PATH\" while a launch now resolves it; the change makes the two views of the same backend disagree"
+    }
+  ],
+  "item_verdicts": {
+    "diff": "pass read commit by commit against dda767944d across the five files, which add the search_path slot, declared_backend_search_path, the backend_name threading through launch_search_path, _persisted_worker_environment, preflight_launch_command, resolve_launch_executable, assert_routable_backends_resolvable and _supervisor_spec, the two-path refusal text, the regenerated schema pair, the four-test file and the evidence fragment; the declared path is appended last so an inherited entry still wins",
+    "done_when": "pass the done_when names the node test, the flight-layer key, the regenerated JSON schema, the importer population and ruff; logs/after-node-test.log records 4 passed EXIT=0 at 600cba4d68, the key is present in reckon/schema/flight.yaml:403 and reckon/_flight_schema.py:355 and :440, docs/_shared/flight.schema.json gains the same field, and both arms of the importer population are recorded with commands, exit codes and ids in logs/base-importers.log and logs/head-importers-at-600cba4d68.log",
+    "goal": "pass the goal is to resolve a backend command against a search path declared in the flight layer; reckon/crew/dispatch_launch.py:633 launch_search_path appends declared_backend_search_path(backend_name) after every inherited entry and :1149 preflight_launch_command resolves through it, so a command absent from the launching PATH is found, demonstrated by tests/test_a_launch_finds_its_backend_on_the_declared_path.py:78 against a PATH of /usr/bin:/bin and by the negative control where the arm removed turns that case red",
+    "manifest": "pass read in full; it states the drift at its checkpoint line, records both suite arms with revision, command, exit status and failure ids, declares the negative control log at logs/negative-control-declared-path-arm-removed.log, and its tests line is the literal gate command",
+    "write_paths": "pass the manifest declares six paths and git diff --name-status dda767944d 600cba4d68 lists exactly those six, with no seventh path added or modified"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: pass the landed change resolves a backend command through a search path the flight layer declares; reckon/crew/dispatch_launch.py:633 launch_search_path appends declared_backend_search_path(backend_name) after every inherited entry, and :1149 preflight_launch_command and :1189 resolve_launch_executable resolve through it, with the declared arm removed turning the first case red.\nVERDICT done_when: pass logs/after-node-test.log records 4 passed EXIT=0 at 600cba4d68 for tests/test_a_launch_finds_its_backend_on_the_declared_path.py, the key is declared at reckon/schema/flight.yaml:403 and reckon/_flight_schema.py:355, docs/_shared/flight.schema.json gains the same field, and both importer arms are recorded in logs/base-importers.log and logs/head-importers-at-600cba4d68.log.\nVERDICT write_paths: pass the six declared paths are exactly the six files git diff --name-status dda767944d 600cba4d68 reports, and no seventh path is touched.\nVERDICT manifest: pass read in full; it records both suite arms with revision, command, exit status and failure ids, names its negative control log, and states its working-tree drift at the checkpoint line.\nVERDICT diff: pass read commit by commit against dda767944d; the search_path slot, the helper, the backend_name threading and the two-path refusal are inside the declared scope and the generated schema pair is regenerated rather than hand-edited.\nCALL_SITES: reckon/crew/dispatch.py:3153, reckon/crew/dispatch.py:3164, reckon/crew/dispatch.py:3282, reckon/crew/dispatch_sessions.py:1315, reckon/crew/dispatch_sessions.py:1332, reckon/crew/dispatch_sessions.py:1848, reckon/crew/dispatch_sessions.py:1849, reckon/crew/watch_unit.py:590, reckon/crew/runs.py:4389, reckon/crew/recovery_watch.py:2909\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:623 resolves the flight layers with no project, so a search_path declared in a project's own backends block is invisible.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/head-importers-at-600cba4d68.log records 8 failed and 6 errors at the landed revision, while the committed evidence fragment cites the pre-commit arm and claims zero added ids.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --name-status dda767944d 600cba4d68 touches only the six fenced files.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_launch_finds_its_backend_on_the_declared_path.py:78 reddens under the recorded negative control, but no test declares search_path in a project layer.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/dispatch_launch.py:608 follows the module's helper idiom and carries no plan, stage or ticket label.\nSCORE reuse: 17\nJUSTIFICATION reuse: reckon/crew/dispatch_launch.py:623 calls the flight layer's own resolver instead of re-merging layers, but re-derives a backend mapping the caller already holds.\nFINDING reckon/crew/dispatch_launch.py:623 blocking: declared_backend_search_path() calls flight.resolve() with no project, so a search_path declared under backends.<name> in a project's own flight layer is never read and preflight still refuses that backend, and the two callers that already hold the project-resolved backend mapping discard it.\nFINDING reckon/crew/dispatch.py:3282 non-blocking: _persisted_worker_environment is called without backend_name, so the persisted directive PATH omits the declared directories the launch PATH now carries, and the file is outside this node's write paths.\nFINDING docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-launch-finds-its-backend-on-the-declared-path.html:40 non-blocking: the gate table cites logs/head-importers.log and states zero added ids, while the arm at the landed revision has one added id and two removed.\nFINDING reckon/flight.py:2349 non-blocking: availability probing still locates a backend command with bare shutil.which(command), so a backend resolvable only through the declared search path reports command_found false while a launch resolves it.\n",
+  "review_run_id": "r-20261108T202504141562-review-of-a-launch-finds-its-backend-on-the-declared-path-600cba4d6801",
+  "reviewed_base_sha": "dda767944d064ad35018beb7985fd57abadcef10",
+  "reviewed_commit": "600cba4d6801348bdaac5523b4db0b99c7ad4501",
+  "reviewed_head_sha": "600cba4d6801348bdaac5523b4db0b99c7ad4501",
+  "reviewed_run_id": "r-20261108T191436869159-a-launch-finds-its-backend-on-the-declared-path",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 15,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T20:47:33.741291+00:00",
+  "total": 100
+}

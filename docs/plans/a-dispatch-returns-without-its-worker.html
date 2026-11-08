@@ -24,7 +24,7 @@
 <meta name="plan-sprint" content="S22">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
 <meta name="plan-impl" content="0.96">
-<meta name="plan-version" content="167">
+<meta name="plan-version" content="168">
 <meta name="plan-modified" content="2026-11-08">
 </head>
 <body>
@@ -1293,6 +1293,9 @@
 <div class="r-comment" data-section="s18" data-id="c-20261005-s18-overrides" data-who="s22-coord" data-when="2026-10-05T02:20:30Z">
     <div class="r-comment-body"><p><strong>Overrides settled by the design review of 2026-10-05 (duplicate_owner).</strong> <code>_fleet_record_path</code> also honours <code>RECKON_FLEET_RECORD</code> (an explicit record file; <code>reckon/crew/dispatch.py</code>, about line 9640) and <code>XDG_STATE_HOME</code>. Neither is read by <code>fleet_supervisor.state_directory</code>, and two test files set the former. Both overrides are retained, moved into the owner: <code>fleet_supervisor</code> resolves the record path honouring <code>RECKON_FLEET_RECORD</code>, then <code>FLEET_STATE_DIR</code>, then <code>XDG_STATE_HOME</code>, and dispatch and <code>fleet_node</code> both call that one function. The test covers each override.</p></div>
 </div>
+<div class="r-comment" data-section="s19" data-id="c-run-r-20261108T200010378603-review-of-a-review-that-never-launched-is-not-running-18fee6711e2e" data-who="reckon-build" data-when="2026-11-08T20:11:39.745Z">
+    <div class="r-comment-body"><p>§19 review of run r-20261108T191235309637-a-review-that-never-launched-is-not-running at base 90f6910399 / head 18fee6711e: parsed record, six dimensions scored 18/18/20/14/16/5, zero added failures, four non-blocking findings (misleading "past the bound" span in the launch-failed detail, a duplicated claim reader, an unexercised creation-fallback branch, and an age variable named `started`). The node's own gate passes and its base arm is genuine; nothing blocks the change from landing.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260923T092804965136-review-of-dispatch-lifetime-probe" data-who="reckon-ship" data-when="2026-09-23T10:41:42.645Z">
     <div class="r-comment-body"><p>independent review delivered and read by the coordinator</p></div>
 </div>
@@ -1434,8 +1437,8 @@
 <div class="r-comment" data-section="s9" data-id="c-20260928T1650-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T14:50:00Z">
     <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T133546218925-s21-audit-dispatch).</p><ul><li><b>Done, with passing tests:</b> §3 (5 passed), §5 (6 passed) and §7 (2 passed).</li><li><b>§9: superseded, now declared done.</b> The work landed under a-crew-process-ends-with-its-owner as <code>c4684acf</code>, and <code>tests/test_discard_releases_a_clean_worktree.py</code> reports 4 passed. The test name this section gives, test_discard_removes_an_empty_worktree.py, was never created.</li><li><b>§10: partly done.</b> test_dispatch_spawns_through_the_fleet.py reports 6 passed and test_fleet_supervisor.py 14 passed; the on-node half remains.</li><li><b>Still open:</b> §2 is partly done (its probe is opt-in), §6 has no asserting test, and §8's cap is still enforced.</li><li><b>Stale wording:</b> §4's skill paths are corrected to reckon-build. §8 still says "reckon-ship contract"; read it as reckon-build.</li></ul></div>
 </div>
-<div class="r-comment" data-section="s19" data-id="c-run-r-20261108T200010378603-review-of-a-review-that-never-launched-is-not-running-18fee6711e2e" data-who="reckon-build" data-when="2026-11-08T20:11:39.745Z">
-    <div class="r-comment-body"><p>§19 review of run r-20261108T191235309637-a-review-that-never-launched-is-not-running at base 90f6910399 / head 18fee6711e: parsed record, six dimensions scored 18/18/20/14/16/5, zero added failures, four non-blocking findings (misleading &quot;past the bound&quot; span in the launch-failed detail, a duplicated claim reader, an unexercised creation-fallback branch, and an age variable named `started`). The node&#x27;s own gate passes and its base arm is genuine; nothing blocks the change from landing.</p></div>
+<div class="r-comment" data-section="s20" data-id="c-run-r-20261108T202504141562-review-of-a-launch-finds-its-backend-on-the-declared-path-600cba4d6801" data-who="reckon-build" data-when="2026-11-08T20:37:43.979Z">
+    <div class="r-comment-body"><p>§20 review of 600cba4d68 — parsed, six dimensions scored (goal_fidelity 15, evidence 14, scope_discipline 19, durability 16, fit 19, reuse 17), one added failure id from the two arms&#x27; logs, one blocking finding (the declared search path is resolved without the project layer) and three non-blocking findings.</p></div>
 </div>
 </section>
 </main>
