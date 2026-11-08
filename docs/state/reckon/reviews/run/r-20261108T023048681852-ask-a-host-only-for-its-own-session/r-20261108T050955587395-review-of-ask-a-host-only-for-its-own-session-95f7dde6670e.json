@@ -1,0 +1,55 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: repair-baseline-suite.log at 73e58d1c records 1 failed (tests/test_a_resume_rearms_its_follower.py::test_a_resume_asks_its_session_host_and_the_host_rearms_the_pair) and repair-after-suite.log at 95f7dde records 0; the after-arm set minus the base-arm set is empty.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch_watch.py:_ask_session_host",
+    "reckon/crew/dispatch_watch.py:_hand_off_to_waiting_host"
+  ],
+  "completed_at": "2026-11-08T05:26:57.296Z",
+  "dispatched_at": "2026-11-08T05:18:09Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/ask-a-host-only-for-its-own-session.html",
+      "line": "76",
+      "severity": "non-blocking",
+      "text": "non-blocking: the preamble says all seven controls were 'each run against tests/test_a_host_follows_only_its_own_session.py', but the reproduction-path control's own log (negative-control-reproduction-path.log:4) ran repro_foreign_follow_request.py, so the doc claims a uniformity that one of its own logs contradicts; it is worth recording because the same control's bullet already explains its EXIT=0."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read both commits against 73e58d1c: d10ea7ba replaces the exact-line assertion at tests/test_a_resume_rearms_its_follower.py:353 with field comparisons plus 'owner_checked is True', and 95f7dde rewrites the fragment's control list from three to seven.",
+    "done_when": "the done_when names all seven negative controls and both suite arms; the fragment now records seven, and every quoted count matches its log's own summary line (e.g. negative-control-guard-in-the-ask-alone.log '1 failed, 5 passed').",
+    "goal": "the node's goal is to make a host be asked to follow only its own session; the gained commits d10ea7ba and 95f7dde complete the evidence for that guard and repair the resume test the mark broke, leaving the guard itself as landed.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T023048681852-ask-a-host-only-for-its-own-session/manifest.md; status complete, both arms carry revision, command, exit_status, completed and failure ids, and the repair's control log ends EXIT=1 on the reverted fragment.",
+    "write_paths": "the repair round's write scope at resume-1-advice.txt:15 includes tests/test_a_resume_rearms_its_follower.py and the fragment; git diff --stat 73e58d1c..95f7dde shows exactly those two files and nothing else."
+  },
+  "justifications": {
+    "durability": "removing the owner_checked mark from reckon/crew/dispatch_watch.py's writer makes tests/test_a_resume_rearms_its_follower.py:358 raise KeyError and red, and repair-baseline-suite.log shows that test failing at 73e58d1c against 9 passed at head.",
+    "evidence": "each of the seven controls the section declares now has a log whose summary matches the fragment's quoted count, e.g. negative-control-session-wide-attachment.log '3 failed, 3 passed' for cases 2, 3 and 6, and repair-negative-control-fragment-controls.log shows the reverted fragment FAIL with EXIT=1.",
+    "fit": "the added assertion at tests/test_a_resume_rearms_its_follower.py:355-358 uses the same field-compare-plus-mark idiom as tests/test_a_host_follows_only_its_own_session.py:213 and carries no plan or stage label.",
+    "goal_fidelity": "the commits gained since 73e58d1c complete the guard's evidence and repair the test the mark broke, at docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/ask-a-host-only-for-its-own-session.html:73 and tests/test_a_resume_rearms_its_follower.py:353-358.",
+    "reuse": "the change adds no mechanism; it asserts the owner_checked mark reckon/crew/dispatch_watch.py:843 already writes, and a search of tests/ and reckon/ at 95f7dde for owner_checked found only that writer and the three existing assertions.",
+    "scope_discipline": "git diff --stat 73e58d1c..95f7dde lists only tests/test_a_resume_rearms_its_follower.py and the declared evidence fragment, both inside the repair round's granted write scope at resume-1-advice.txt:15."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make a host be asked to follow only its own session; the commits gained since the last review complete the evidence for that guard and repair the resume test the mark broke, leaving the guard itself as landed. VERDICT done_when: the done_when names all seven negative controls and both suite arms; the fragment at docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/ask-a-host-only-for-its-own-session.html:73 records all seven and each quoted count matches its log's own summary line. VERDICT write_paths: the repair round's granted scope at resume-1-advice.txt:15 includes tests/test_a_resume_rearms_its_follower.py and the fragment; git diff --stat 73e58d1c..95f7dde shows exactly those two files. VERDICT manifest: read; status complete, both suite arms carry revision, command, exit_status, completed and failure ids, and repair-negative-control-fragment-controls.log ends EXIT=1 on the reverted fragment. VERDICT diff: read both commits against 73e58d1c: d10ea7ba replaces the exact-line assertion at tests/test_a_resume_rearms_its_follower.py:353 with field comparisons plus owner_checked is True, and 95f7dde rewrites the fragment's control list from three to seven. CALL_SITES: reckon/crew/dispatch_watch.py:_ask_session_host, reckon/crew/dispatch_watch.py:_hand_off_to_waiting_host SCORE goal_fidelity: 18 SCORE evidence: 19 SCORE scope_discipline: 20 SCORE durability: 18 SCORE fit: 19 SCORE reuse: 20 FINDING docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/ask-a-host-only-for-its-own-session.html:76 non-blocking: the preamble says all seven controls were each run against tests/test_a_host_follows_only_its_own_session.py, but the reproduction-path control's log at line 4 ran repro_foreign_follow_request.py, so the doc claims a uniformity one of its own logs contradicts.",
+  "review_run_id": "r-20261108T050955587395-review-of-ask-a-host-only-for-its-own-session-95f7dde6670e",
+  "reviewed_base_sha": "73e58d1c300edd4e14a3e38cdcab5d852e84bb25",
+  "reviewed_head_sha": "95f7dde6670e4e36360c93bf6264ce223814da69",
+  "reviewed_run_id": "r-20261108T023048681852-ask-a-host-only-for-its-own-session",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T05:40:59.716797+00:00",
+  "total": 114
+}
