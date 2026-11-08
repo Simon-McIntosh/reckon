@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-run-has-one-live-worker">
+  <meta name="plan-evidence-for" content="a-run-has-one-live-worker">
+  <title>A relaunch never touches a live tree | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <h1>A relaunch never touches a live tree</h1>
+      <p class="lead">A dispatch on a non-local lane, or an admitted launch, is not answered by the existing-run branch, so it reached
+        worktree creation. This dispatch's own claim overwrote the live pointer first, the worker's tree read as a disposable
+        leftover, and it was released and re-cut from a newer base. A dispatch of a run id whose worker this host still sees
+        running is now refused before the claim, the run directory or the tree is touched.</p>
+    </header>
+
+    <section id="a-relaunch-never-touches-a-live-tree-defect">
+      <h2>The defect, reproduced</h2>
+      <p>The reproduction builds a temporary crew home and repository, lays down a live stand-in worker holding a worktree, advances the
+        repository by one commit, then dispatches the same run id on a non-local lane. A recorder wrapped around
+        <code>_create_worktree</code> captured the tree's state either side of the call, so the ordering is shown on its own and not
+        inferred from a later refusal:</p>
+      <pre><code>tree-creator observed     {'before_head': 'b0ebdbd18fe5…', 'before_note': True,
+                           'after_head': '4ce47efa0775…',  'after_note': False}
+stand-in file present     False
+stand-in tree exists      False</code></pre>
+      <p>The worker's head moved from <code>b0ebdbd18fe5</code> to the newer base <code>4ce47efa0775</code> and its own file was gone at the
+        moment of creation — the tree it had been writing into was released and re-cut. The dispatch then hit a later refusal and the
+        unwind removed the replacement tree as well, leaving the live worker with no tree at all. The reproduction is
+        <code>reproduce-relaunch-rebuild.py</code> and its output is <code>repro-live-tree-defect.log</code>.</p>
+    </section>
+
+    <section id="a-relaunch-never-touches-a-live-tree-change">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/crew/dispatch.py</code> gains <code>_refuse_a_live_worker_before_the_worktree</code>. It reads the run's live
+          pointer and takes the holder through the composition a launch uses — <code>live_worker_reading</code>, which carries the arm
+          that found the worker it names, narrowed by the same <code>_launch_refused_by</code> predicate
+          <code>_prepare_attempt_records</code> refuses a second launch with — so a dispatch and a launch cannot disagree about whether
+          a run is held. A run id with no live pointer has never launched here and is not refused; a placed record that has never
+          launched is not refused either, because the predicate already answers that.</li>
+        <li>The refusal is raised immediately after budget and before <code>directory = run_dir(run_id)</code>, which is the first write
+          this dispatch makes. Nothing of the refused dispatch exists afterwards: no claim, no brief copy, no run directory, no tree.
+          The local-lane answer through <code>_answer_existing_node_run</code> is unchanged, because it returns before this point.</li>
+        <li>The refusal names the attempt and the worker the reading found, so the reader can check the same process:
+          <code>run 'r-held-run' still has a live worker (pid 1234): attempt 2 still holds this run, …</code></li>
+      </ul>
+    </section>
+
+    <section id="a-relaunch-never-touches-a-live-tree-gate">
+      <h2>The gate</h2>
+      <p><code>tests/test_a_relaunch_never_touches_a_live_tree.py</code> runs the three cases §10 asks for, on a temporary crew home and
+        repository, with the stand-in's file git-ignored so the tree reads clean and <code>_create_worktree</code>'s own disposable-tree
+        rule can release it — which is exactly what a real worker's fence mounts look like.</p>
+      <ul>
+        <li><strong>Live worker, non-local lane.</strong> The dispatch is refused with this section's text, and afterwards the tree's head is
+          the stand-in's own, its ignored file is intact and <code>git status</code> is clean, the pointer's bytes are unchanged, and the
+          run directory listing and the operator's own crew home are untouched.</li>
+        <li><strong>Worker proven dead.</strong> The dispatch proceeds as today: the returned record carries the run id, the tree is cut at
+          the newer base and the stand-in's file is gone with it.</li>
+        <li><strong>Spy on the tree creator.</strong> With a live worker and <code>_create_worktree</code> replaced by a recorder that raises; the
+          dispatch is refused with this section's text and the recorder's call list is empty.</li>
+      </ul>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>Base revision <code>2754cbd2dc</code>, the new test copied in</td><td>2 failed, 1 passed, <code>EXIT=1</code></td><td><code>base-arm.log</code></td></tr>
+          <tr><td>Head revision <code>04cdce8990</code>, the armed suite command</td><td>3 passed, <code>EXIT=0</code></td><td><code>after-arm.log</code></td></tr>
+          <tr><td>Declared negative control, the check moved after <code>_create_worktree</code></td><td>2 failed, 1 passed, <code>EXIT=1</code></td><td><code>negative-control.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>The base arm fails the live-worker case with <code>DID NOT RAISE CrewError</code> — the dispatch went through and rebuilt the tree — and the
+        spy case with <code>the worktree was created over a live worker</code>. The dead-worker case passes at the base, as it must: it pins
+        behaviour that already worked. The negative control reproduces both failures from the head revision, so the check, not some other
+        guard, is what the two cases rest on; removing the check alone would not be a control, because the launch refusal in
+        <code>_prepare_attempt_records</code> still stops the second worker after the tree has been rebuilt.</p>
+      <p>A related dispatch suite (<code>tests/test_dispatch_guard_consults_liveness.py</code>,
+        <code>tests/test_a_run_not_yet_launched_is_not_refused.py</code>, <code>tests/test_concurrent_dispatch_of_one_node.py</code>,
+        <code>tests/test_dispatch_launch_is_not_its_own_conflict.py</code>, <code>tests/test_a_redispatch_keeps_the_queued_identity.py</code>,
+        <code>tests/test_a_queued_dispatch_is_accepted.py</code>, <code>tests/test_a_discard_releases_its_dispatch_claim.py</code> and
+        <code>tests/test_crew_dispatch_guard.py</code>) reports 50 passed and one failure,
+        <code>test_occupied_project_reuses_the_watcher_armed_by_the_first_dispatch</code>, which fails identically at the base revision —
+        a pre-existing failure, not a delta from this change.</p>
+      <p><code>ruff check</code> and <code>ruff format --check</code> add no findings on the two staged paths.</p>
+      <ul id="a-relaunch-never-touches-a-live-tree-evidence">
+        <li>reproduction: <code>repro-live-tree-defect.log</code> (head moved, stand-in file gone, tree released under a live worker)</li>
+        <li>base arm: <code>base-arm.log</code> (revision 2754cbd2dc, 2 failed, 1 passed, EXIT=1)</li>
+        <li>head arm: <code>after-arm.log</code> (revision 04cdce8990, 3 passed, EXIT=0)</li>
+        <li>negative control: <code>negative-control.log</code> (2 failed, 1 passed, EXIT=1)</li>
+        <li>related dispatch suite: <code>related-suite.log</code> (50 passed, 1 pre-existing failure, EXIT=1)</li>
+      </ul>
+      <p>Logs live under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T181800262689-a-relaunch-never-touches-a-live-tree/</code>;
+        each begins with its revision, its tree and the literal command it ran, and ends in a bare <code>EXIT=</code> line.</p>
+    </section>
+  </main>
+</body>
+</html>
