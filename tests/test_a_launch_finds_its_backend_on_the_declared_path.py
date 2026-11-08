@@ -11,6 +11,7 @@ path is refused, and the refusal names both.
 
 from __future__ import annotations
 
+import importlib
 import os
 from pathlib import Path
 from types import SimpleNamespace
@@ -171,10 +172,7 @@ def _write_project_layer(tmp_path: Path, search_path: list[str]) -> Path:
     layer = state / "flight.yaml"
     entries = "".join(f"      - {entry}\n" for entry in search_path)
     layer.write_text(
-        "version: 1\n"
-        "backends:\n"
-        f"  {BACKEND}:\n"
-        "    search_path:\n" + entries,
+        f"version: 1\nbackends:\n  {BACKEND}:\n    search_path:\n" + entries,
         encoding="utf-8",
     )
     return layer
@@ -217,6 +215,55 @@ def test_resolving_without_the_project_misses_the_declaration(
     with pytest.raises(dispatch_launch.LaunchResolutionError) as refused:
         dispatch_launch.preflight_launch_command(
             BACKEND, host_backend, fence=False, facts=_facts()
+        )
+
+    assert str(bindir) not in str(refused.value)
+
+
+def _composed_plan(checkout: Path) -> object:
+    """A plan as composition builds it: a backend name, not a resolved entry."""
+    plan = importlib.import_module("reckon._backends").LaunchPlan
+    return plan(
+        backend=BACKEND,
+        dialect="codex",
+        argv=[COMMAND],
+        cwd=str(checkout),
+        stdin_text="",
+        environment={"PATH": os.pathsep.join(["/usr/bin", "/bin"])},
+        final_message_path=None,
+        resumed_session=None,
+    )
+
+
+def test_a_composed_plan_resolves_a_project_layer_declaration(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Composition holds only the plan, and still resolves the declared path."""
+    bindir = tmp_path / "project-backend-bin"
+    bindir.mkdir()
+    _write_stub(bindir)
+    monkeypatch.setenv("RECKON_FLIGHT_CONFIG", str(_write_host_layer(tmp_path)))
+    _write_project_layer(tmp_path, [str(bindir)])
+
+    resolved = dispatch_launch.resolve_launch_executable(
+        _composed_plan(tmp_path / "checkout"), facts=_facts()
+    )
+
+    assert resolved.argv == [str(bindir / COMMAND)]
+
+
+def test_a_composed_plan_without_the_project_layer_refuses(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Control: the same plan and host layer alone find no declared directory."""
+    bindir = tmp_path / "project-backend-bin"
+    bindir.mkdir()
+    _write_stub(bindir)
+    monkeypatch.setenv("RECKON_FLIGHT_CONFIG", str(_write_host_layer(tmp_path)))
+
+    with pytest.raises(dispatch_launch.LaunchResolutionError) as refused:
+        dispatch_launch.resolve_launch_executable(
+            _composed_plan(tmp_path / "checkout"), facts=_facts()
         )
 
     assert str(bindir) not in str(refused.value)

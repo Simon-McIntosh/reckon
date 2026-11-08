@@ -626,21 +626,53 @@ def declared_backend_search_path(backend: Mapping[str, Any] | None) -> list[str]
     return declared
 
 
-def _declared_search_path_for_backend_name(backend_name: str | None) -> list[str]:
-    """Read one backend's declared search path by name from the flight layer.
+def _declared_search_path_for_backend_name(
+    backend_name: str | None, *, checkout: str | Path | None = None
+) -> list[str]:
+    """Read one backend's declared search path by name from the flight layers.
 
-    A launch path that holds no resolved backend entry — a plan built earlier
-    and carried by name — reads the host layer's declaration here. Callers
-    holding a project-resolved entry pass it to
-    :func:`declared_backend_search_path` instead, so a project layer's
-    declaration is never missed.
+    A composed plan carries its backend by name, so a launch resolving from one
+    reads the declaration from the layers rather than from an entry it no longer
+    holds. The host layer is read first, then every project layer the given
+    checkout supplies — every project layer the host registers when no checkout
+    is offered. A directory declared by any of them is returned, in declaration
+    order, so a declaration made only in a project layer still reaches a launch
+    composed from a plan.
+
+    Reading every project layer rather than one is what the name leaves open:
+    composition is not told which project the run belongs to, and a declaration
+    only widens where a command may be found, never narrows it.
     """
     if not backend_name:
         return []
     from reckon import flight
 
-    backends = flight.resolve().config.get("backends") or {}
-    return declared_backend_search_path(backends.get(str(backend_name)) or {})
+    layers = [flight.resolve().config, *_project_layer_configs(checkout)]
+    declared = [
+        directory
+        for layer in layers
+        for directory in declared_backend_search_path(
+            (layer.get("backends") or {}).get(str(backend_name)) or {}
+        )
+    ]
+    return list(dict.fromkeys(declared))
+
+
+def _project_layer_configs(
+    checkout: str | Path | None,
+) -> list[Mapping[str, Any]]:
+    """Project flight layers reachable from a checkout, or from the registry."""
+    from reckon import flight
+
+    if checkout is not None:
+        state = Path(checkout).expanduser() / "docs" / "state"
+        paths = sorted(state.glob("*/flight.yaml")) if state.is_dir() else []
+    else:
+        paths = [
+            docs / "state" / project / "flight.yaml"
+            for project, docs in sorted(flight.mounted_project_docs().items())
+        ]
+    return [flight.read_layer_file(path) for path in paths]
 
 
 def launch_search_path(
@@ -650,6 +682,7 @@ def launch_search_path(
     fenced: bool = False,
     backend: Mapping[str, Any] | None = None,
     backend_name: str | None = None,
+    checkout: str | Path | None = None,
 ) -> str:
     """Return the effective worker PATH for one launch.
 
@@ -675,7 +708,8 @@ def launch_search_path(
     entry, so a launcher whose environment omits an installed backend's
     directory still searches the one the flight layer declares, and an
     inherited directory that already carries the command wins. A caller holding
-    only a backend name passes ``backend_name`` and the host layer is read.
+    only a backend name passes ``backend_name``, and the declaration is read by
+    name from the host layer and from the project layers ``checkout`` supplies.
     """
     from reckon.shim_lookup import holds_shim
 
@@ -707,7 +741,7 @@ def launch_search_path(
     declared = (
         declared_backend_search_path(backend)
         if backend is not None
-        else _declared_search_path_for_backend_name(backend_name)
+        else _declared_search_path_for_backend_name(backend_name, checkout=checkout)
     )
     declared_entries = [
         entry
@@ -1205,9 +1239,12 @@ def resolve_launch_executable(
 
     ``environment`` is the overlay the launch will run with; absent, the launch's
     own environment is used, which is what every construction site passes.
-    ``backend`` is the resolved backend entry when the caller holds one, so a
-    project layer's declared search path applies; without it the declaration is
-    read from the host layer by the plan's backend name.
+    ``backend`` is the resolved backend entry when the caller holds one, so the
+    declaration is read exactly; without it — the shape every construction site
+    calls with — the declaration is read by the plan's backend name from the
+    host layer and from the project layers the plan's working directory
+    supplies, so a path a project layer declares still resolves here rather than
+    being refused after the pre-flight accepted it.
     """
     selected_environment = plan.environment if environment is None else environment
     searched = launch_search_path(
@@ -1215,6 +1252,7 @@ def resolve_launch_executable(
         facts=facts,
         backend=backend,
         backend_name=plan.backend,
+        checkout=plan.cwd,
     )
     element = harness_command_index(plan.argv)
     binary = str(plan.argv[element]) if element < len(plan.argv) else ""
@@ -1226,7 +1264,9 @@ def resolve_launch_executable(
                 searched,
                 declared_backend_search_path(backend)
                 if backend is not None
-                else _declared_search_path_for_backend_name(plan.backend),
+                else _declared_search_path_for_backend_name(
+                    plan.backend, checkout=plan.cwd
+                ),
             )
         )
     # Absolute, not canonical: a launcher installed as ``bin/codex`` symlinked
