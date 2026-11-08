@@ -1,0 +1,128 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from source baseline_suite and after_suite logs and cross-checked against receipt failure IDs; zero added failures.",
+  "assertion_analysis": [
+    {
+      "fails_if": "Sweep skips or duplicates a dispatched launch, or returns a refusal instead of a dispatched receipt.",
+      "lines": "78-79"
+    },
+    {
+      "fails_if": "Real review dispatch loses the source session or emits a non-review pointer.",
+      "lines": "82-83"
+    },
+    {
+      "fails_if": "An event is published before the post-dispatch tick; both polls are independently required to equal the literal empty list.",
+      "lines": "87"
+    },
+    {
+      "fails_if": "Classifier fails to classify the synthetic working worker; this is a fixture precondition, not proof of event publication.",
+      "lines": "97"
+    },
+    {
+      "fails_if": "Restoring the original recorded_fleet drops the working event; recorded base negative control shows 0 != 1.",
+      "lines": "98-101"
+    },
+    {
+      "fails_if": "The working event uses the wrong baseline or is emitted as inventory rather than a transition.",
+      "lines": "102-103"
+    },
+    {
+      "fails_if": "The subscriber suppresses the event, attaches it to the wrong source or review, or loses its in-review presentation; the expected source identity comes from the independent source pointer.",
+      "lines": "106-111"
+    },
+    {
+      "fails_if": "The station or subscriber leaks the owner review event to a different session.",
+      "lines": "112"
+    },
+    {
+      "fails_if": "The subscriber repeats the delivered event without another publication.",
+      "lines": "113"
+    },
+    {
+      "fails_if": "A quiet station tick regenerates a launch already recorded in its fleet image.",
+      "lines": "115"
+    },
+    {
+      "fails_if": "Sweep idempotency produces a second dispatched receipt or worker launch.",
+      "lines": "116-117"
+    },
+    {
+      "fails_if": "The existing working pointer is not classified working; this checks the control is populated.",
+      "lines": "142"
+    },
+    {
+      "fails_if": "Removing the raw-is-None inventory distinction causes the startup working run to generate an event.",
+      "lines": "143"
+    }
+  ],
+  "assertion_independence": "No vacuous same-input equality found. State and pointer assertions test classifier/dispatch preconditions; durability rests on independent persisted-event count, subscriber delivery and startup silence. Reinstating the recorded defect leaves the phase input unchanged and reddens line 98.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/station.py:472 Station.tick",
+    "reckon/crew/station.py:480 recovery.fleet_transitions",
+    "reckon/crew/station_subscriber.py:569 StationSubscriber.poll"
+  ],
+  "completed_at": "2026-11-08T09:01:00Z",
+  "dispatched_at": "2026-11-08T08:50:41Z",
+  "findings": [],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_reflex_review_appears_as_working.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T075245093160-a-reflex-review-appears-as-working/head-suite.log",
+      "revision": "3a37d8624312e1f150864cd17f76704ac24a95fb"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_reflex_review_appears_as_working.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 1,
+      "failure_ids": [
+        "tests/test_a_reflex_review_appears_as_working.py::test_a_sweep_review_reaches_its_session_on_the_next_publish"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T075245093160-a-reflex-review-appears-as-working/base-suite.log",
+      "revision": "3189bf2bb67125527123085a26ab933fa7777b22"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read 57f325ecfba62333c1d3cbc1e22e47828f1e5c47, 3a37d8624312e1f150864cd17f76704ac24a95fb and c8ed3c2c1034528da05b3f3fd5a9565af5d248f3 against 3189bf2bb67125527123085a26ab933fa7777b22; they add the regression, extend StationStore.recorded_fleet and record evidence without unrelated source changes.",
+    "done_when": "The source node done_when requires a reproduced failure, one-publish owner delivery and matched importer/lint deltas; base-suite.log fails at tests/test_a_reflex_review_appears_as_working.py:98 with zero rows, head-suite.log records 2 passed, and matched importer logs record 139 passed plus that failure versus 140 passed.",
+    "goal": "The source node goal in its live pointer is to find and repair the missing reflex-review working row; reckon/crew/station_store.py:1119 now seeds the missing launch baseline consumed by Station.tick.",
+    "manifest": "The source manifest.md names three resolved commits, complete baseline_suite and after_suite receipts, negative control and the supplementary importer failure, whose matched replacement passed all 140 tests.",
+    "write_paths": "The source live pointer and manifest declare station_store.py, station_subscriber.py, the regression file and evidence paths; the three changed paths all fall within that declaration."
+  },
+  "justifications": {
+    "durability": "Reinstating the original recorded_fleet implementation makes tests/test_a_reflex_review_appears_as_working.py:98 fail with zero rows as the base log demonstrates, while lines 104-117 protect subscriber delivery and duplicate suppression and line 143 protects startup silence.",
+    "evidence": "tests/test_a_reflex_review_appears_as_working.py:98 measures exactly one owner-addressed working event after the next tick, with base-suite.log recording zero and head-suite.log recording 2 passed, plus matched importer and Ruff receipts.",
+    "fit": "reckon/crew/station_store.py:1119 extends the existing stored-fleet accessor using its JSON and classification idiom, adds no prohibited source names, and both changed Python paths pass the recorded Ruff checks.",
+    "goal_fidelity": "reckon/crew/station_store.py:1128 supplies a dispatched baseline only for newly working arrivals after a stored project image, enabling the existing fold to publish the missing launch while preserving initial inventory.",
+    "reuse": "Capability searches for fleet transitions, inventory and launch baselines identified reckon/crew/recovery_watch.py:2017 as the fold owner, which Station.tick:480 continues to call; the change extends the store owner and the new tests reuse tests/test_scoring_dispatches_its_review.py:66 rather than duplicating its dispatch fixture.",
+    "scope_discipline": "The complete diff changes only reckon/crew/station_store.py, tests/test_a_reflex_review_appears_as_working.py and the explicitly granted evidence fragment, all supporting the source goal."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node goal in its live pointer is to find and repair the missing reflex-review working row; reckon/crew/station_store.py:1119 now seeds the missing launch baseline consumed by Station.tick.\nVERDICT done_when: The source node done_when requires a reproduced failure, one-publish owner delivery and matched importer/lint deltas; base-suite.log fails at tests/test_a_reflex_review_appears_as_working.py:98 with zero rows, head-suite.log records 2 passed, and matched importer logs record 139 passed plus that failure versus 140 passed.\nVERDICT write_paths: The source live pointer and manifest declare station_store.py, station_subscriber.py, the regression file and evidence paths; the three changed paths all fall within that declaration.\nVERDICT manifest: The source manifest.md names three resolved commits, complete baseline_suite and after_suite receipts, negative control and the supplementary importer failure, whose matched replacement passed all 140 tests.\nVERDICT diff: Read 57f325ecfba62333c1d3cbc1e22e47828f1e5c47, 3a37d8624312e1f150864cd17f76704ac24a95fb and c8ed3c2c1034528da05b3f3fd5a9565af5d248f3 against 3189bf2bb67125527123085a26ab933fa7777b22; they add the regression, extend StationStore.recorded_fleet and record evidence without unrelated source changes.\nCALL_SITES: reckon/crew/station.py:472 Station.tick, reckon/crew/station.py:480 recovery.fleet_transitions, reckon/crew/station_subscriber.py:569 StationSubscriber.poll\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/station_store.py:1128 supplies a dispatched baseline only for newly working arrivals after a stored project image, enabling the existing fold to publish the missing launch while preserving initial inventory.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_a_reflex_review_appears_as_working.py:98 measures exactly one owner-addressed working event after the next tick, with base-suite.log recording zero and head-suite.log recording 2 passed, plus matched importer and Ruff receipts.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The complete diff changes only reckon/crew/station_store.py, tests/test_a_reflex_review_appears_as_working.py and the explicitly granted evidence fragment, all supporting the source goal.\nSCORE durability: 20\nJUSTIFICATION durability: Reinstating the original recorded_fleet implementation makes tests/test_a_reflex_review_appears_as_working.py:98 fail with zero rows as the base log demonstrates, while lines 104-117 protect subscriber delivery and duplicate suppression and line 143 protects startup silence.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/station_store.py:1119 extends the existing stored-fleet accessor using its JSON and classification idiom, adds no prohibited source names, and both changed Python paths pass the recorded Ruff checks.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for fleet transitions, inventory and launch baselines identified reckon/crew/recovery_watch.py:2017 as the fold owner, which Station.tick:480 continues to call; the change extends the store owner and the new tests reuse tests/test_scoring_dispatches_its_review.py:66 rather than duplicating its dispatch fixture.\n",
+  "review_run_id": "r-20261108T084813136556-review-of-a-reflex-review-appears-as-working-c8ed3c2c1034",
+  "reviewed_base_sha": "3189bf2bb67125527123085a26ab933fa7777b22",
+  "reviewed_head_sha": "c8ed3c2c1034528da05b3f3fd5a9565af5d248f3",
+  "reviewed_run_id": "r-20261108T075245093160-a-reflex-review-appears-as-working",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T09:59:18.342938+00:00",
+  "total": 120
+}
