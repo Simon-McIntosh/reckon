@@ -796,8 +796,19 @@ def land_merge(
     if release:
         # Only a landed and pushed head frees the trees it leaves behind, so a
         # refusal above — a conflict, a failed check, an outstanding push —
-        # reaches here with nothing released.
-        report["release"] = release_landed_worktrees(repo, landed, head=head_sha)
+        # reaches here with nothing released. The release itself can never undo
+        # the landing it follows: the branch has moved and the push is
+        # confirmed, so a release that raises is recorded as not judged and the
+        # merge still returns its success.
+        try:
+            report["release"] = release_landed_worktrees(repo, landed, head=head_sha)
+        except Exception as exc:  # noqa: BLE001 - a failed release is not a failed merge
+            report["release"] = {
+                "judged": False,
+                "released": [],
+                "withheld": [],
+                "failed": f"the release step raised: {exc}",
+            }
     return report
 
 
@@ -831,7 +842,7 @@ def release_landed_worktrees(
     from reckon.crew import obligations, promotion_release
     from reckon.crew.routing import repository_projects
 
-    result: dict[str, list] = {"released": [], "withheld": []}
+    result: dict[str, object] = {"judged": True, "released": [], "withheld": []}
     names = tuple(projects) if projects is not None else repository_projects(repo)
     if not names:
         return result

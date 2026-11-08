@@ -240,3 +240,33 @@ def test_a_retained_worktree_is_withheld_and_its_retention_named(
     assert entry["retention"]["session_id"] == "session-b", entry
     assert "session-b" in entry["reason"], entry
     assert run["worktree"].is_dir()
+
+
+def test_a_release_that_raises_does_not_refuse_the_landing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The branch has moved and the push is confirmed; the release cannot undo it.
+
+    A release step that raises after the push must leave the landing standing:
+    the merge succeeds, and the result records the release as not judged rather
+    than reporting a landed merge as a refused one.
+    """
+    run = _promoted_run(tmp_path, monkeypatch)
+    from reckon.crew import merge as merge_module
+
+    def _raise(*_args: object, **_kwargs: object) -> dict:
+        raise RuntimeError("the held-tree reader is unavailable")
+
+    monkeypatch.setattr(merge_module, "release_landed_worktrees", _raise)
+
+    result = _merge(run)
+
+    assert result.exit_code == 0, result.output
+    report = json.loads(result.output)
+    assert report["pushed"] is True, report
+    landed = _git(run["repository"], "rev-parse", "main")
+    assert _git(run["origin"], "rev-parse", "main") == landed
+    release = report["release"]
+    assert release["judged"] is False, release
+    assert "the held-tree reader is unavailable" in release["failed"], release
+    assert release["released"] == [], release
