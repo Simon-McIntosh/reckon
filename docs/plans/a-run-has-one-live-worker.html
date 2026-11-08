@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.67">
-<meta name="plan-version" content="59">
+<meta name="plan-version" content="60">
 <meta name="plan-modified" content="2026-11-08">
 <meta name="plan-commits" content="a88e6f09">
 </head>
@@ -269,7 +269,7 @@
     <div class="r-comment-body"><p>Review of r-20261108T044348877264-save-a-stopped-attempts-uncommitted-work at head a9660c0e27 (base 70cd51950d): the stop's own 60-second worktree read budget is implemented against the module's single _worktree_git_read and guarded by a fourth case whose control is red (logs/negative-control-timeout.log, 1 failed 3 passed, EXIT=1); scores goal_fidelity 19, evidence 14, scope_discipline 20, durability 18, fit 18, reuse 20; three non-blocking findings, all in the evidence fragment's citations of its own logs.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261108T044348877264-save-a-stopped-attempts-uncommitted-work" data-who="reckon-build" data-when="2026-11-08T12:03:54Z">
-    <div class="r-comment-body"><p>reckon:a-run-has-one-live-worker#s7 — crew stop reads the worktree before it signals anything and keeps the attempt&#x27;s uncommitted changes as stopped-attempt-&lt;n&gt;.diff in the run directory, reporting saved-with-path, clean-so-nothing-written, or unreadable-and-named while the stop proceeds; the capture calls the module&#x27;s single _worktree_git_read with the stop&#x27;s own 60-second read budget, and the armed head gate is 4 passed at 2b30715669.</p></div>
+    <div class="r-comment-body"><p>reckon:a-run-has-one-live-worker#s7 — crew stop reads the worktree before it signals anything and keeps the attempt's uncommitted changes as stopped-attempt-&lt;n&gt;.diff in the run directory, reporting saved-with-path, clean-so-nothing-written, or unreadable-and-named while the stop proceeds; the capture calls the module's single _worktree_git_read with the stop's own 60-second read budget, and the armed head gate is 4 passed at 2b30715669.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261108T042326387978-review-of-say-when-a-widen-takes-effect-a6af9bf4d9d2" data-who="reckon-build" data-when="2026-11-08T04:38:55.657Z">
     <div class="r-comment-body"><p>Independent review of r-20261107T222608798462-say-when-a-widen-takes-effect at head a6af9bf4d9d2 against base 1b3663ce4fd1: goal_fidelity 19, evidence 18, scope_discipline 19, durability 16, fit 18, reuse 20; three non-blocking findings (placed-run arm untested, unused LivenessReading.as_dict, a two-sided equality in the fence-field case); no blocking defect.</p></div>
@@ -282,6 +282,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261108T102817960752-review-of-name-the-worker-a-launch-refusal-found-c4425ab9ffda" data-who="reckon-build" data-when="2026-11-08T10:45:12.802Z">
     <div class="r-comment-body"><p>Independent review of the two commits gained since the prior review record (2b14765, c4425ab9) scored goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 19, reuse 6 with added_failure_count 0, both prior findings repaired, and two non-blocking findings recorded: the placed-arm resolution is duplicated beside record_process_liveness and the placed-with-unknown refusal still calls that worker live.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-s10-reckon-instance-coverage-once" data-who="" data-when="">
+    <div class="r-comment-body"><p>A second instance, in reckon, inside one admission pass (10:44:30Z to 11:08:19Z). Run <code>r-20261103T034032348719-a-pass-computes-coverage-once</code> carries two dispatch claims. <code>attempt-1-worker.json</code> records a claim at 10:50:29Z and a launch at 10:52:08Z (pid 2004857). <code>attempt-2-worker.json</code> records a claim at 10:53:40Z and a launch at 10:56:31Z (pid 2040287). The second launch's <code>supervisor.json</code> records <code>attempt: 1</code>, <code>attempt_kind: dispatch</code>. Attempt 1 then found every write path read-only and wrote a <code>blocked</code> manifest at 11:03Z. The coordinator had run <code>crew queue release --session</code> on four held requests in that window, so a release and the pass's own launch are both candidates for the two dispatches.</p></div>
 </div>
 </section>
 </main>

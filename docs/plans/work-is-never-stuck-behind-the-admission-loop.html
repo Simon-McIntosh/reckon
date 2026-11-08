@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="323">
+<meta name="plan-version" content="324">
 <meta name="plan-modified" content="2026-11-08">
 </head>
 <body>
@@ -409,6 +409,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-s37-double-launch-coverage-once" data-who="" data-when="">
     <div class="r-comment-body"><p>Another instance, measured on 8 November. Run <code>r-20261103T034032348719-a-pass-computes-coverage-once</code> launched twice inside one admission pass (10:44:30Z to 11:08:19Z, launch stage 1,333 s). <code>attempt-1-worker.json</code> records 10:52:08Z and <code>attempt-2-worker.json</code> records 10:56:31Z, so attempt 1 was alive when attempt 2 launched. The second launch recreated the worktree, which left attempt 1's read-write bind sitting on a tree that no longer existed. Attempt 1 then found every write path read-only (EROFS) and wrote a <code>blocked</code> manifest at 11:03Z. That blocker comes from the double launch, not from the fence.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-s37-double-launch-correction" data-who="" data-when="">
+    <div class="r-comment-body"><p>Correction to <code>c-s37-double-launch-coverage-once</code>: this section does not cover that instance. The launch-time pointer and attempt re-read has been on main since <code>4a8f690d9d</code> (5 November), and this section's run changed only its test and fragment. The double launch of <code>a-pass-computes-coverage-once</code> had two separate dispatch claims, registered at 10:50:29Z and 10:53:40Z, and the second launch's <code>supervisor.json</code> recorded itself as attempt 1. The second launcher did not see the first attempt. The investigation is <code>a-run-has-one-live-worker</code> §10.</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261029T155223893067-review-of-a-landing-measure-is-bounded-by-what-it-measures-35f4d6af36d0" data-who="reckon-build" data-when="2026-10-29T16:00:54.656Z">
     <div class="r-comment-body"><p>Independent review of r-20261028T230039168008-a-landing-measure-is-bounded-by-what-it-measures at 35f4d6af36 against base 1ed6b58d0e: parsed, total 95/120 (goal_fidelity 19, evidence 17, scope_discipline 20, durability 16, fit 18, reuse 5), added_failure_count 0, four non-blocking findings — two self-referential assertions in the new test and two reuse/cost notes on queue_landing — and no blocking finding.</p></div>
