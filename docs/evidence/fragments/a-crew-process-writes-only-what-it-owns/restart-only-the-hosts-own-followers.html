@@ -8,11 +8,11 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="a-crew-process-writes-only-what-it-owns">
   <meta name="plan-title" content="A running host restarts only its own session's followers">
-  <meta name="plan-summary" content="A host restarts an exited child only when its census entry carries the ownership mark or names the owner's current session; an unmarked child for another session is dropped and logged, and the deferral rule ignores a live follower started by another owner's host.">
+  <meta name="plan-summary" content="A host restarts an exited child only when its census entry carries the ownership mark or names the owner's current session; an unmarked child is dropped and logged, the deferral rule ignores a live follower started by another owner's host, and a host that cannot name its session keeps only marked children.">
   <meta name="plan-evidence-for" content="reckon:a-crew-process-writes-only-what-it-owns">
   <meta name="plan-verifies" content="reckon:a-crew-process-writes-only-what-it-owns#s6">
   <meta name="plan-recorded-at" content="2026-11-08">
-  <meta name="plan-verdict" content="passed">
+  <meta name="plan-verdict" content="blocked">
   <meta name="plan-tags" content="crew,session-host,follower,ownership,restart">
   <title>A running host restarts only its own session's followers &mdash; evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -37,28 +37,27 @@
 
     <section id="restart-only-the-hosts-own-followers-head">
       <h2>The head arm</h2>
-      <p>The new test file shows all five cases: an unmarked child for another
-        session is dropped and the drop logged with project, session and pid; a
-        marked child for an earlier session of the same owner restarts; a child
-        for the owner&rsquo;s current session restarts whether or not marked; a
-        running unmarked foreign child is not signalled; and a pair held by a
-        follower whose parent is another owner&rsquo;s host is followed here,
-        while one held by this host&rsquo;s own follower or by a hand-armed one
-        with no host parent is left alone.</p>
-      <p><strong>5 passed in 57.78 s, EXIT=0</strong> at
-        <code>aebf721d7e</code>; the same file copied into a
-        <code>git archive</code> tree of the dispatch base reads
-        <strong>2 failed, 3 passed, EXIT=1</strong>, failing exactly the first
-        and fifth cases. Related files importing
-        <code>reckon.crew.session_host</code> or covering
-        <code>plugins/crew-host</code> carry the same eight ambient failure ids
-        at base and at head: zero added.</p>
+      <p>Seven cases now: an unmarked child for another session is dropped and
+        the drop logged with project, session and pid; a marked child for an
+        earlier session of the same owner restarts; a child for the owner&rsquo;s
+        current session restarts whether or not marked; a running unmarked
+        foreign child is not signalled; a pair held by a follower whose parent is
+        another owner&rsquo;s host is followed here, while one held by this
+        host&rsquo;s own follower or by a hand-armed one with no host parent is
+        left alone; a marked restart does not defer to another owner&rsquo;s
+        duplicate; and a host that cannot name its session drops an unmarked
+        child while restarting a marked one.</p>
+      <p><strong>7 passed in 52.14 s, EXIT=0</strong> at
+        <code>be2df92b79</code> with the armed command; the same file copied into
+        a <code>git archive</code> tree of the dispatch base reads
+        <strong>4 failed, 3 passed, EXIT=1</strong> (<code>gate-base-arm.log</code>).</p>
     </section>
 
     <section id="restart-only-the-hosts-own-followers-controls">
       <h2>Negative controls</h2>
       <p>Each declared mutation was applied to
-        <code>reckon/crew/session_host.py</code> and the named case run:</p>
+        <code>reckon/crew/session_host.py</code> at <code>be2df92b79</code> and
+        the named case run; every one fails its case:</p>
       <ul>
         <li>restarting regardless of the mark &rarr; first case fails
           (<code>negative-control-1-ignore-mark.log</code>);</li>
@@ -72,6 +71,21 @@
         <li>signalling the running foreign child &rarr; fourth case fails
           (<code>negative-control-5-signal-running.log</code>).</li>
       </ul>
+    </section>
+
+    <section id="restart-only-the-hosts-own-followers-blocked">
+      <h2>Why this node is blocked</h2>
+      <p>The requested rule &mdash; a host that cannot name its session restarts
+        only marked children, never an unmarked one &mdash; is implemented and
+        its case passes. It also changes seven existing host tests and one more,
+        which drive a host whose session resolves to nothing and then expect an
+        unmarked child to restart. Against the base tree with the same stripped
+        environment, the related set reads <strong>8 failed, 65 passed</strong>
+        and at the head <strong>16 failed, 57 passed</strong> &mdash; the same
+        eight ambient ids plus the eight ids listed in the manifest&rsquo;s
+        <code>blocked</code> line. Zero added failures in those files and this
+        rule cannot both hold without editing them, which is outside this
+        node&rsquo;s write scope.</p>
     </section>
   </main>
 </body>
