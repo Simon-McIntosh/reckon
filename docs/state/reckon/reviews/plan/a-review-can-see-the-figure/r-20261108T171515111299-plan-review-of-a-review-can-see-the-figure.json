@@ -1,0 +1,79 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T17:22:22.184Z",
+  "dispatched_at": "2026-11-08T17:16:16Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:325",
+      "id": "reasoning-1",
+      "reason": "a node dispatched to \u00a723 would find the mechanism already present and tests already asserting it, so the section as written sends a worker to re-implement a landed fix.",
+      "text": "\u00a723's Why states in the present tense that `_node_from_pointer` \"does not carry the node's `images`\", but at the reviewed revision it rebuilds the node from `fields(TaskNode)` (`reckon/crew/queue_admission.py:198-242`) and `TaskNode.as_dict()` enumerates the same field list (`reckon/crew/node.py:824`), with `tests/test_a_queued_node_keeps_every_field.py:86` already asserting `rebuilt.images == [\"docs/figures/x/one.png\"]`; the repair is commit `786ae4bd99` (\"carry every node field through the queued launch\", 2026-11-08 14:20Z), which is reachable from the reviewed head and landed 78 minutes before plan commit `9ba84fe11d` (15:38Z) filed \u00a723 as implementable",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:325",
+      "id": "done_when-1",
+      "reason": "a control that cannot be applied to the implementation measures nothing, so even after the section is retargeted the node could not show its guard fires as written.",
+      "text": "\u00a723's negative control is \"dropping `images` from `_node_from_pointer` makes the case fail\", but the rebuild names no field individually: it iterates the dataclass field list, so `images` cannot be dropped from it, and the case \u00a723 asks for already passes at the reviewed revision without any change",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:377",
+      "id": "wiring-1",
+      "reason": "the plan's dispatch chain reaches \u00a720 only, so a section declared implementable is left off the chain and waits indefinitely behind an external dependency it does not share.",
+      "text": "the plan's single open followup `f-arcstf-009` recommends `/reckon-build a-review-can-see-the-figure \u00a720`, which is held on `imas-ambix:a-tool-call-carries-no-model-markup#s3`, while \u00a723 is declared `implementable` with no followup naming it and no depends-on edge of its own",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "9ba84fe11d7fe6b1c68012b3d5460e276b06c1ee",
+  "plan_fingerprint": "c1d3f9546f535c657e84e6f33a315570243be3ea717d1caa706551b66e1a4379",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 138,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T171515111299-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "fac8f408289c65bdf1352a007786132aee9f96b4",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_CodexDialect.argv` (`reckon/_backends.py:1295`, with `-i` at 1329) and `_node_from_pointer` (`reckon/crew/queue_admission.py:198`) both resolve; the \"near line 178\" hint points 20 lines above the function but the function is named, so the anchor resolves by name.",
+    "done_when": "a finding \u2014 \u00a723's declared negative control (\"dropping images from `_node_from_pointer`\") cannot be applied to the implementation at the reviewed revision.",
+    "evidence_paths": "pass \u2014 \u00a723's gate is an in-repository test file and its logs are required under the run directory; `_document` adds no scratchpad path.",
+    "naming": "pass \u2014 \u00a723's proposed test path and the prose carry no stage labels, ticket numbers or version tags into code.",
+    "reasoning": "a finding \u2014 \u00a723's stated root cause is no longer the state of the code it describes: the queued rebuild already carries `images`, repaired before \u00a723 was filed.",
+    "single_goal": "pass \u2014 \u00a723 names one deliverable (carry the node's `images` through `_node_from_pointer`) with one measure.",
+    "wiring": "a finding \u2014 the newly declared section \u00a723 has no followup carrying its invocation, while the only open followup `f-arcstf-009` (line 377) recommends \u00a720, which is held on `imas-ambix:a-tool-call-carries-no-model-markup#s3`."
+  },
+  "section_digests": {
+    "_document": "52700b00f7963d960870500619b2133c774d6f77d64445daa53f26952257ddec",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s10": "aee314dbe26192cd678dc467a9b229b8cb46873cacefcd4ce369fcbe469a1e37",
+    "s11": "22d519df0a82a0edfb23ceef10d63c14a08f3d8d656ce95a4cd03e5049d4e228",
+    "s12": "234f9999257c9e64bf69518cdf0b98e319850465374deeac091e90b1ed118647",
+    "s13": "d2f0977c2749f5e1d4e28f3962e8b01a182615a0a75edb530e5e4fde18d9a123",
+    "s14": "f06507899a512533562b6d0b348e9b18bec6d1667d6e619d05352d7ce535eb7c",
+    "s15": "18683ff3a4d13534aa9e29ac4a495e86d07a452b032538d3ae4b7a47d2a9966b",
+    "s16": "a1648c89c8b99c37facb6da9eb6deca43ba8418449557c78627654670ea39fa1",
+    "s17": "c856114a206af086b77fc4d7b867a4cf4dbafd15fdce96f7d52c4a2a36c1e544",
+    "s18": "d6fb6505577d6af2a722c58e82e85d9efd01bb5ce9b4d5fa6408d237ab731651",
+    "s19": "43a12c4fa79a496156abb38028fc5f1c3ea4245ebaaea0e2f007f25079c44f2d",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s20": "ab2db294a1f747ecd69c0027b85fc38e86bf9e2aead12af975002255af4af1b5",
+    "s21": "c9ed658bd81ee95aca671c4c50b6f524c6200537628625fad8284c60c56925f0",
+    "s22": "c459fe692437be93f44bffcad0813f9f98189d953074b617c388d7375ba98df2",
+    "s23": "30eaa8240d92bb5c2483fd1bf90d172ec8d8b1ee1bcb4be519a3c31b60e00c41",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "ce9705dbaad70ab2b3a9425eead9900cc284deb7f1d5ecacb553d3745679b3d7",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b",
+    "s9": "b62ffeb55dd71d5f62b49f372e069f227a57c7caec9c6c3b45f81a945d284e11"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T17:33:33.576553+00:00",
+  "total": null
+}
