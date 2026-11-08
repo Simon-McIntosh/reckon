@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-refusal-comes-before-the-work">
+  <meta name="plan-verifies" content="reckon:a-refusal-comes-before-the-work#s5">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-08">
+  <title>A dry run applies the real call's write-path fence | reckon</title>
+  <link rel="stylesheet" href="/reckon/_shared/foundation.css">
+  <link rel="stylesheet" href="/reckon/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="fence-a-dry-runs-write-paths-landing">
+  <h2>A dry run applies the real call&rsquo;s write-path fence</h2>
+  <p>At the dispatch base the preview and the launch disagreed about one call. A
+  <code>crew dispatch --dry-run</code> naming a write path under a temporary home&rsquo;s
+  <code>~/.cache</code> answered <code>"ok": true</code> and listed the path on the node, while the
+  same dispatch without <code>--dry-run</code> refused it with &ldquo;write path &hellip; resolves
+  outside the authorised work repository&rdquo;. The condition the reproduction named is
+  <code>repo is None</code>: the dry-run branch handed <code>plan_dispatch</code> the caller&rsquo;s
+  <code>--repo</code> unchanged, and the authority block that calls
+  <code>_require_write_paths_in_authority</code> sits inside <code>if verdict.ok and repo is not
+  None</code>. With no <code>--repo</code>, the fence never ran. Giving the preview a
+  <code>--repo</code> made it refuse correctly, and the launch resolves the project&rsquo;s
+  registered mount in <code>dispatch()</code> before it reaches <code>plan_dispatch</code>, which is
+  why the two diverged only on the omitted flag.</p>
+  <p>The repair resolves the mount in the dry-run branch on the launch&rsquo;s own rule
+  (<code>resolve_project_repository(project, repo)</code>) before calling
+  <code>plan_dispatch</code>, so the fence runs and the preview reaches the launch&rsquo;s
+  verdict. A project with no registered mount now refuses the preview with the same sentence the
+  launch gives, rather than previewing a dispatch the launch cannot honour.</p>
+
+  <table>
+    <caption>Suite arms over the node&rsquo;s test file, run with the armed command.</caption>
+    <thead><tr><th>Arm</th><th>Revision / tree</th><th>Result</th><th>Log</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>base</td>
+        <td><code>0326581c4a</code>, <code>git archive</code> extraction with this node&rsquo;s new test copied in</td>
+        <td>1 failed, 1 passed, EXIT=1</td>
+        <td><code>base-arm.log</code> (run directory)</td>
+      </tr>
+      <tr>
+        <td>head</td>
+        <td><code>6b91f231ae</code>, the worktree</td>
+        <td>2 passed, EXIT=0</td>
+        <td><code>after-arm.log</code> (run directory)</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>The base arm is the reproduction, and its failure traceback carries both halves of it: the
+  preview&rsquo;s payload with <code>"ok": true</code> and the outside path in
+  <code>write_paths</code>, printed beside the launch&rsquo;s refusal detail the same test collected
+  from the comparison arm. It fails only
+  <code>test_a_dry_run_without_repo_refuses_a_write_path_outside_the_repository</code> and passes
+  <code>test_a_dry_run_accepts_a_write_path_inside_the_repository</code>, so the base arm shows the
+  fence is absent for the outside path and present for the inside one.</p>
+  <p>The declared negative control restores the condition the reproduction named &mdash; the
+  caller&rsquo;s value passed through unresolved &mdash; and the head then reports the same single
+  failing id with EXIT=1 (<code>negative-control.log</code>), the preview again answering
+  <code>"ok": true</code> for the path under <code>~/.cache</code>.</p>
+  <p>Ruff reports no findings and ruff format reports no reformatting on
+  <code>reckon/crew_dispatch_commands.py</code> and
+  <code>tests/test_a_dry_run_fences_write_paths.py</code>.</p>
+</section>
+</main>
+</body>
+</html>
