@@ -66,7 +66,9 @@ def _state(comments: dict | None = None) -> dict:
             "capability": deepcopy(CAPABILITY),
             "attempts": 0,
             "status": (
-                "done" if section_id in ("delivery", "verification") else "implementable"
+                "done"
+                if section_id in ("delivery", "verification")
+                else "implementable"
             ),
             "links": [],
         }
@@ -82,7 +84,9 @@ def _state(comments: dict | None = None) -> dict:
         "version": 0,
         "section_declarations": {
             section_id: (
-                "done" if section_id in ("delivery", "verification") else "implementable"
+                "done"
+                if section_id in ("delivery", "verification")
+                else "implementable"
             )
             for section_id in _HEADINGS
         },
@@ -196,12 +200,16 @@ def _soup(text: str) -> BeautifulSoup:
 def _rewritten_record(checkout: Path) -> Path:
     """A record an earlier synthesis wrote, with appends and legacy sections."""
     _synthesize(checkout)
-    assert _append(
-        checkout, "x-appended", "<p>Appended evidence from an earlier landing.</p>"
-    )["ok"] is True
-    assert _append(checkout, "x-dropped", "<p>Evidence a later run supersedes.</p>")[
-        "ok"
-    ] is True
+    assert (
+        _append(
+            checkout, "x-appended", "<p>Appended evidence from an earlier landing.</p>"
+        )["ok"]
+        is True
+    )
+    assert (
+        _append(checkout, "x-dropped", "<p>Evidence a later run supersedes.</p>")["ok"]
+        is True
+    )
     _insert_sections(
         checkout,
         '<section id="legacy-anchor"><h2>Legacy anchor</h2>'
@@ -321,7 +329,9 @@ def test_an_append_on_a_plan_section_id_is_refused(checkout: Path) -> None:
     )
 
 
-def test_an_append_on_an_id_only_a_ledger_run_renders_is_refused(checkout: Path) -> None:
+def test_an_append_on_an_id_only_a_ledger_run_renders_is_refused(
+    checkout: Path,
+) -> None:
     _synthesize(checkout)
     ledger.append_run(
         PROJECT,
@@ -340,7 +350,9 @@ def test_the_synthesis_and_the_refusal_read_one_renderable_set(
 ) -> None:
     # A key no plan section and no run carries: the append is allowed, and the
     # synthesis carries the section without rendering a section of its own.
-    assert _append(checkout, "comment-only-beat", "<p>Early evidence.</p>")["ok"] is True
+    assert (
+        _append(checkout, "comment-only-beat", "<p>Early evidence.</p>")["ok"] is True
+    )
     result = _synthesize(checkout)
     carried = _section(result.path.read_text(encoding="utf-8"), "comment-only-beat")
     assert carried.get(evidence.APPEND_ORIGIN_ATTRIBUTE) == evidence.APPEND_ORIGIN_VALUE

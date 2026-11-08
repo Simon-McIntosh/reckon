@@ -92,8 +92,10 @@ def _section_element_id(key: str) -> str:
 
 def _element_section_key(element_id: str) -> str:
     """The rendered section key an existing record's element id addresses."""
-    return _PLAN_LEVEL_KEY if element_id == _OUTCOME_SECTION_ID else _section_key(
-        element_id
+    return (
+        _PLAN_LEVEL_KEY
+        if element_id == _OUTCOME_SECTION_ID
+        else _section_key(element_id)
     )
 
 
@@ -133,10 +135,7 @@ def _evidence_anchor_sets(
         if isinstance(section, Mapping)
     }
     reserved = (
-        set(rendered)
-        | set(labels)
-        | declared
-        | {_OUTCOME_SECTION_ID, _PLAN_LEVEL_KEY}
+        set(rendered) | set(labels) | declared | {_OUTCOME_SECTION_ID, _PLAN_LEVEL_KEY}
     )
     return rendered, reserved
 

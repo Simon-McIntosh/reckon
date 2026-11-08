@@ -1216,9 +1216,9 @@ def _evidence_section_html(request: dict[str, str]) -> str:
     _refuse_forged_body_structure(body, subject="append_evidence body")
 
     anchor = escape(request["anchor"], quote=True)
+    origin = f'{evidence.APPEND_ORIGIN_ATTRIBUTE}="{evidence.APPEND_ORIGIN_VALUE}"'
     parts = [
-        f'  <section id="{anchor}" '
-        f'{evidence.APPEND_ORIGIN_ATTRIBUTE}="{evidence.APPEND_ORIGIN_VALUE}">',
+        f'  <section id="{anchor}" {origin}>',
         f"    <h2>{escape(request['title'])}</h2>",
     ]
     if body.strip():
@@ -1286,8 +1286,7 @@ def _reserved_evidence_anchors(
         records = ledger.runs(project, root=docs_dir.parent, plan=plan_slug)
     except ledger.LedgerError as exc:
         raise OpError(
-            f"append_evidence cannot read the run ledger for project "
-            f"{project!r}: {exc}"
+            f"append_evidence cannot read the run ledger for project {project!r}: {exc}"
         ) from exc
     _rendered, reserved = evidence._evidence_anchor_sets(
         plan_state, records, plan_source
