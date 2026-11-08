@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T19:38:31.263Z",
+  "dispatched_at": "2026-11-08T19:25:29Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 1255,
+      "severity": "non-blocking",
+      "summary": "_plan_review_this_request_awaits duplicates _standing_plan_review's live plan-review scan instead of extending it with a session filter.",
+      "text": "non-blocking: _plan_review_this_request_awaits duplicates the live plan-review scan the repository already owns at reckon/crew/recovery_review_dispatch.py:2060 (_standing_plan_review), looping list_live and matching node.id against PLAN_REVIEW_NODE_PREFIX + plan; it does not extend that owner even though obligations.py already imports supersedes_head from the same module. It adds only a session filter, which could be a parameter on the owner."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 1252,
+      "severity": "non-blocking",
+      "summary": "PLAN_REVIEW_MISSING_REFUSAL re-spells the exception class name owned by reckon/crew/node.py instead of referencing the class.",
+      "text": "non-blocking: PLAN_REVIEW_MISSING_REFUSAL re-spells the exception class name owned by reckon/crew/node.py (PlanReviewMissingError) as a literal string, while recovery_classification.py:329 spells the same name again; obligations.py already imports from reckon.crew.node, so type(run).__name__ or the class name would keep one owner. The rename hazard is guarded by tests/test_a_request_waiting_on_a_queued_plan_review_is_a_wait.py:80, which derives the stamped name from the class."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T183346522188-a-request-waiting-on-a-queued-plan-review-is-a-wait/manifest.md",
+      "line": 24,
+      "severity": "non-blocking",
+      "summary": "The importer-regression arm covers 15 surface files rather than the done-when's 103 importers; the excluded 88 are unmeasured.",
+      "text": "non-blocking: the done-when requires that importers of reckon.crew.obligations and reckon.crew.obligation_snapshot add no failure against the base, run one arm at a time with at most -n 4. The worker ran 15 surface files (24 failed, 75 passed at both base and head, failure-id sets identical), not the 103-file importer set, and this node changes shared helpers (_queued_item, DUTY_ROW_FIELDS) reached by many importers. The gap is disclosed under spec_deviation and is answered by the surface arm's zero delta; completing the exhaustive set belongs in a follow-up node."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_request_waiting_on_a_queued_plan_review_is_a_wait.py:177 asserts run-queued and :178 asserts the review run id, both of which redden when the producer edit is reverted, as the recorded controls show; the negative cases at :186 and :204 redden if the change over-applies.",
+    "evidence": "The manifest's after_gate (5 passed, EXIT=0 at ccb435686b) is real and the two controls at logs/negative-control-derivation.log and logs/negative-control-snapshot.log redden exactly one case each, but the importer clause is met over 15 of the done-when's 103 files (manifest.md:24).",
+    "fit": "reckon/crew/obligations.py:1255 repeats a class name reckon/crew/node.py owns, but the helper, naming and docstrings otherwise follow the module's adjacent _queued_item idiom at obligations.py:1172.",
+    "goal_fidelity": "reckon/crew/obligations.py:2669-2681 and reckon/crew/obligation_snapshot.py:1461-1481 both read the request as run-queued naming the review, and keep the duty when no session-owned review exists.",
+    "reuse": "The scan at reckon/crew/obligations.py:1255-1295 re-implements the live plan-review lookup owned by reckon/crew/recovery_review_dispatch.py:2060 (_standing_plan_review) rather than extending it with a session filter.",
+    "scope_discipline": "The diff against 695f684b3f6e changes only the four declared paths; the declared figures directory is unused and nothing outside the fence was touched."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261108T192203792239-review-of-a-request-waiting-on-a-queued-plan-review-is-a-wait-b0a56e1db1d0",
+  "reviewed_base_sha": "695f684b3f6ef747f74d436236ca6c9014fd304e",
+  "reviewed_head_sha": "b0a56e1db1d08a5283cd2124ccdd4fb5b61ed90d",
+  "reviewed_run_id": "r-20261108T183346522188-a-request-waiting-on-a-queued-plan-review-is-a-wait",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T19:46:43.153120+00:00",
+  "total": 90,
+  "verdicts": {
+    "call_sites": "Production entry points verified: reckon/mcp_views.py:4573 calls obligations(); reckon/crew/obligation_snapshot.py:1621 and reckon/crew/station_obligations.py:189,270 call payload_for(); reckon/hooks/coordinator_obligations.py reads the published snapshot.",
+    "diff": "Read commit by commit from 695f684b3f6e: ccb435686b adds the wait reading to both producers plus the test, b0a56e1db1 adds the evidence fragment; 352 insertions across four files, no deletions outside the two replaced call sites.",
+    "done_when": "The done-when names tests/test_a_request_waiting_on_a_queued_plan_review_is_a_wait.py, both negative controls logged, no added failures in importers, and ruff clean; the manifest records 5 passed, two red controls (1 failed/4 passed, EXIT=1 each), a 15-file importer surface with a zero failure delta, and clean ruff.",
+    "goal": "The node goal is to list a queued request whose plan review is already live or queued as a wait in both the obligations reading and the snapshot; reckon/crew/obligations.py:2669 and reckon/crew/obligation_snapshot.py:1461 both branch on the awaited review and build the row through _queued_item with review_run_id and a wait: command.",
+    "manifest": "Read; it states status complete, commits ccb435686b and b0a56e1db1, the gate command and its logs, both controls, and a spec_deviation disclosing that the exhaustive importer arm was not completed.",
+    "write_paths": "The declared write paths are reckon/crew/obligations.py, reckon/crew/obligation_snapshot.py, tests/test_a_request_waiting_on_a_queued_plan_review_is_a_wait.py, the evidence fragment and the figures directory; the diff at b0a56e1db1 touches only the first four."
+  }
+}
