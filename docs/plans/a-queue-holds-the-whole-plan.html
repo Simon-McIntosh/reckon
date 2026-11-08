@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="297">
+<meta name="plan-version" content="298">
 <meta name="plan-modified" content="2026-11-08">
 </head>
 <body>
@@ -693,6 +693,12 @@
 <div class="r-comment" data-section="s35" data-id="c-run-r-20261108T080751574147-return-a-claim-refused-launch-to-the-queue" data-who="reckon-build" data-when="2026-11-08T11:43:31Z">
     <div class="r-comment-body"><p>A launch refused on a claim now returns its request to phase queued, held on the named claim, instead of leaving the pointer in phase starting, on both the first launch and the metered-rebind relaunch; the queued write-back is owned once by _restore_queued. Reproduced first at base b0708be48a (pointer left starting, EXIT=1); 6 cases pass at head 233e7a36ae (6 passed, EXIT=0) against 2 failed and 4 passed in the base arm.</p></div>
 </div>
+<div class="r-comment" data-section="s36" data-id="c-run-r-20261108T143541672807-review-of-keep-every-field-of-a-queued-node-c7a070b538b3" data-who="reckon-build" data-when="2026-11-08T14:50:47.470Z">
+    <div class="r-comment-body"><p>Review of r-20261108T082456646701-keep-every-field-of-a-queued-node at c7a070b538b3ff865ab2327a664ca43da73c88a0 (base 6b2a7764146e8ae0e746f92dd7c164ebc1702b39): parsed, scores goal_fidelity 19, evidence 13, scope_discipline 17, durability 19, fit 17, reuse 18, added failures 0; one unmet done_when clause and two copy-semantics defects recorded as non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s36" data-id="c-run-r-20261108T160140997034-review-of-keep-every-field-of-a-queued-node-2e4ad2fa8747" data-who="reckon-build" data-when="2026-11-08T16:14:52.686Z">
+    <div class="r-comment-body"><p>review only, no code landed; verdict is SCORE goal_fidelity 19, evidence 15, scope_discipline 19, durability 18, fit 18, reuse 16 with added_failure_count 0, and three non-blocking findings (dispatch.py:347 unmet done-when caller clause, node.py:748 duplicate copy mechanism, test_a_queued_node_keeps_every_field.py:137 assertions that pass on a dropped value)</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-20261023-s4-review" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
     <div class="r-comment-body"><p>Content and design reviews on 2026-10-23, for the author before §4 is dispatched: the priority order stated here (critical path, then ROI, then the active sprint) differs from the roadmap's own key, <code>_priority_key</code> in <code>reckon/roadmap_ranking.py</code>, which puts sprint position before ROI, and that key and its signal vocabulary are what §4 should reuse; during the transition <code>_dispatch_lane_allowance</code> in <code>reckon/crew/dispatch_plan.py</code> still holds requests on the router's per-session figure.</p></div>
 </div>
@@ -836,9 +842,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261026T221905269639-drain-lists-unloaded" data-who="reckon-build" data-when="2026-10-27T00:05:11Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/a-queue-holds-the-whole-plan/drain-lists-unloaded.html — matched six-file delta: 1 landing failure and 60 passed at source-reverted base, 61 passed at repaired head; both answering-commit inverse controls failed the landing assertion.</p></div>
-</div>
-<div class="r-comment" data-section="s36" data-id="c-run-r-20261108T143541672807-review-of-keep-every-field-of-a-queued-node-c7a070b538b3" data-who="reckon-build" data-when="2026-11-08T14:50:47.470Z">
-    <div class="r-comment-body"><p>Review of r-20261108T082456646701-keep-every-field-of-a-queued-node at c7a070b538b3ff865ab2327a664ca43da73c88a0 (base 6b2a7764146e8ae0e746f92dd7c164ebc1702b39): parsed, scores goal_fidelity 19, evidence 13, scope_discipline 17, durability 19, fit 17, reuse 18, added failures 0; one unmet done_when clause and two copy-semantics defects recorded as non-blocking findings.</p></div>
 </div>
 </section>
 </main>
