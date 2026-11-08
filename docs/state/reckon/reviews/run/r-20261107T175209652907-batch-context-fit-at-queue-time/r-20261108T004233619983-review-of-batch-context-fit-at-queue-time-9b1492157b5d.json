@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T01:04:38.451Z",
+  "dispatched_at": "2026-11-08T00:44:55Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_admission.py",
+      "line": 1996,
+      "severity": "non-blocking",
+      "text": "_queued_authority returns None on CrewError or OSError and node_context_fit_finding then measures anyway with authority=None, so a landing fragment the dispatch grants is charged as a load and an entry its own launch would admit can be refused at queue time; the docstring's claim that an unresolvable authority is left to the checks that own that refusal is not what the code does."
+    },
+    {
+      "file": "reckon/crew/dispatch_admission.py",
+      "line": 1943,
+      "severity": "non-blocking",
+      "text": "_request_lane restates the queue writer's lane-precedence expression at reckon/crew/dispatch.py:313-315 instead of extending it, so a future change to how a request resolves its lane would be measured under one rule here and stored under another."
+    },
+    {
+      "file": "reckon/crew/dispatch_admission.py",
+      "line": 1956,
+      "severity": "non-blocking",
+      "text": "_QueuedLane is an undeclared structural stand-in for DispatchPlan passed to a parameter annotated DispatchPlan; a field the fit verdict later reads but this class does not carry raises inside _queue_batch rather than failing where the stand-in is built."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew_dispatch_commands.py:1131 (crew dispatch --batch calls queue_batch), reckon/crew/dispatch_batch.py:486 queue_batch, reckon/crew/dispatch_batch.py:583 _queue_batch calling node_context_fit_finding, reckon/crew/dispatch.py:313-315 queue_requests whose lane precedence the new helper repeats",
+    "diff": "read both commits against base 85719ba435 - feat(crew) adds node_context_fit_finding and the _queue_batch call site, docs(evidence) adds the fragment; 362 insertions across four files, nothing outside the declared scope.",
+    "done_when": "the done_when names tests/test_a_batch_entry_fits_its_window_when_queued.py with three arms, a negative control, the importing-file set and ruff; all four were run, the arms are logged, the control is red, and I re-ran the test file green, so the gate asserts the measure.",
+    "goal": "the node's goal is to judge a batch entry's context fit at queue time; reckon/crew/dispatch_batch.py:579-592 calls node_context_fit_finding before queue_one, so an oversized entry is refused in its own row with no pointer written, and the plan's single queued dispatch at reckon/crew/dispatch.py:313 is not wired and is declared so in the evidence fragment.",
+    "manifest": "read; it records status complete, commits 58417bcb83 and 9b1492157b, the four changed paths, the literal gate command with head-arm-2 and base-arm logs, added failures 0, and an attributed retry that I confirmed cannot reach _queue_batch.",
+    "write_paths": "the plan section declares reckon/crew/dispatch_admission.py, reckon/crew/dispatch_batch.py and the new test; the diff touches exactly those plus its own evidence fragment, and the worker recorded that the dispatch's own fence omitted the test file rather than hiding the write."
+  },
+  "justifications": {
+    "durability": "the negative control reddens tests/test_a_batch_entry_fits_its_window_when_queued.py:145 when the check is removed, and the refusal arm pins an estimate the test derives from the 1,600,000-byte file it wrote rather than echoing a value it passed in.",
+    "evidence": "head-arm-2.log records 1 failed 359 passed EXIT=1 against base-arm.log's 1 failed 356 passed on the same pre-existing id tests/test_structural_invariants.py::test_only_the_shared_parser_calls_fromisoformat, and I re-ran the named test file green at head.",
+    "fit": [
+      "reckon/crew/dispatch_admission.py:2000 matches node_measurement_finding's property/severity/detail shape and the module's lazy-import idiom and carries no plan label; the undeclared stand-in at line 1956 is the weak spot."
+    ],
+    "goal_fidelity": "reckon/crew/dispatch_batch.py:583 places the check before queue_one writes a pointer, which is the batch half of the deliverable; the single queued dispatch the plan also names is unreachable from the check and is disclosed in the evidence fragment the node committed.",
+    "reuse": "routing._context_fit_verdict and routing._context_refusal_detail are called as they stand, so the window and the refusal text have one owner, but reckon/crew/dispatch_admission.py:1943 repeats the lane precedence whose owner is the queue writer at reckon/crew/dispatch.py:313-315.",
+    "scope_discipline": "the diff is confined to the four declared paths and the unwired single-dispatch path was left untouched, but tests/test_a_batch_entry_fits_its_window_when_queued.py lies outside the dispatch's own FENCE SCOPE list, which named only the two modules and the fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to judge a batch entry's context fit at queue time; reckon/crew/dispatch_batch.py:579-592 calls node_context_fit_finding before queue_one, so an oversized entry is refused in its own row with no pointer written, and the plan's single queued dispatch at reckon/crew/dispatch.py:313 is not wired and is declared so in the evidence fragment.\nVERDICT done_when: the done_when names tests/test_a_batch_entry_fits_its_window_when_queued.py with three arms, a negative control, the importing-file set and ruff; all four were run, the arms are logged, the control is red, and I re-ran the test file green, so the gate asserts the measure.\nVERDICT write_paths: the plan section declares reckon/crew/dispatch_admission.py, reckon/crew/dispatch_batch.py and the new test; the diff touches exactly those plus its own evidence fragment, and the worker recorded that the dispatch's own fence omitted the test file rather than hiding the write.\nVERDICT manifest: read; it records status complete, commits 58417bcb83 and 9b1492157b, the four changed paths, the literal gate command with head-arm-2 and base-arm logs, added failures 0, and an attributed retry that I confirmed cannot reach _queue_batch.\nVERDICT diff: read both commits against base 85719ba435 - feat(crew) adds node_context_fit_finding and the _queue_batch call site, docs(evidence) adds the fragment; 362 insertions across four files, nothing outside the declared scope.\nCALL_SITES: reckon/crew_dispatch_commands.py:1131 (crew dispatch --batch calls queue_batch), reckon/crew/dispatch_batch.py:486 queue_batch, reckon/crew/dispatch_batch.py:583 _queue_batch calling node_context_fit_finding, reckon/crew/dispatch.py:313-315 queue_requests whose lane precedence the new helper repeats\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_batch.py:583 places the check before queue_one writes a pointer, which is the batch half of the deliverable; the single queued dispatch the plan also names is unreachable from the check and is disclosed in the evidence fragment the node committed.\nSCORE evidence: 18\nJUSTIFICATION evidence: head-arm-2.log records 1 failed 359 passed EXIT=1 against base-arm.log's 1 failed 356 passed on the same pre-existing id tests/test_structural_invariants.py::test_only_the_shared_parser_calls_fromisoformat, and I re-ran the named test file green at head.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: the diff is confined to the four declared paths and the unwired single-dispatch path was left untouched, but tests/test_a_batch_entry_fits_its_window_when_queued.py lies outside the dispatch's own FENCE SCOPE list, which named only the two modules and the fragment.\nSCORE durability: 18\nJUSTIFICATION durability: the negative control reddens tests/test_a_batch_entry_fits_its_window_when_queued.py:145 when the check is removed, and the refusal arm pins an estimate the test derives from the 1,600,000-byte file it wrote rather than echoing a value it passed in.\nSCORE fit: 16\nJUSTIFICATION fit: (\"reckon/crew/dispatch_admission.py:2000 matches node_measurement_finding's property/severity/detail shape and the module's lazy-import idiom and carries no plan label; the undeclared stand-in at line 1956 is the weak spot.\",)\nSCORE reuse: 12\nJUSTIFICATION reuse: routing._context_fit_verdict and routing._context_refusal_detail are called as they stand, so the window and the refusal text have one owner, but reckon/crew/dispatch_admission.py:1943 repeats the lane precedence whose owner is the queue writer at reckon/crew/dispatch.py:313-315.\nFINDING reckon/crew/dispatch_admission.py:1996 non-blocking: _queued_authority returns None on CrewError or OSError and node_context_fit_finding then measures anyway with authority=None, so a landing fragment the dispatch grants is charged as a load and an entry its own launch would admit can be refused at queue time; the docstring's claim that an unresolvable authority is left to the checks that own that refusal is not what the code does.\nFINDING reckon/crew/dispatch_admission.py:1943 non-blocking: _request_lane restates the queue writer's lane-precedence expression at reckon/crew/dispatch.py:313-315 instead of extending it, so a future change to how a request resolves its lane would be measured under one rule here and stored under another.\nFINDING reckon/crew/dispatch_admission.py:1956 non-blocking: _QueuedLane is an undeclared structural stand-in for DispatchPlan passed to a parameter annotated DispatchPlan; a field the fit verdict later reads but this class does not carry raises inside _queue_batch rather than failing where the stand-in is built.\n",
+  "review_run_id": "r-20261108T004233619983-review-of-batch-context-fit-at-queue-time-9b1492157b5d",
+  "reviewed_base_sha": "85719ba435bf530406cda0bb833049f269948fe5",
+  "reviewed_head_sha": "9b1492157b5d3eaa759c0fb13eb56feceb93bd6d",
+  "reviewed_run_id": "r-20261107T175209652907-batch-context-fit-at-queue-time",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 12,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T01:14:02.022475+00:00",
+  "total": 96
+}
