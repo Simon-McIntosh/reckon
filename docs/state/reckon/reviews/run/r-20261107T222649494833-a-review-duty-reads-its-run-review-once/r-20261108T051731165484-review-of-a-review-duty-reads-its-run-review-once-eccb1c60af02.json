@@ -1,0 +1,52 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-08T05:28:52Z",
+  "dispatched_at": "2026-11-08T05:19:20Z",
+  "findings": [
+    {
+      "file": "docs/research/monitor-storage-load-rca.html",
+      "line": "390",
+      "severity": "blocking",
+      "text": "blocking: the new final-head measurement is 68.105 s for the second live payload pass, still above the source brief.md under-5-s done-when; the documentation accurately exposes this unmet gate."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Commit eccb1c60af021a2dd5783036f89a1908bc2152e1 changes only docs/research/monitor-storage-load-rca.html:390-405, adding the final timing and the rewrite-detection limitation.",
+    "done_when": "The source brief.md requires a live second pass under 5 s and matched tests; logs/live-final-head.log records 68.105 s, and logs/armed-head-coord.log records four passes.",
+    "goal": "The source brief.md asks for a steady publish that reads only changed review entries; docs/research/monitor-storage-load-rca.html:390 records a 68.105 s second pass, above its 5 s target.",
+    "manifest": "The source manifest.md names the RCA commit, the 68.105 s live result, the base and head suite receipts, and the remaining performance bound.",
+    "write_paths": "The source manifest.md grants docs/research/monitor-storage-load-rca.html, the sole path in the f4002db9353a3ba16c07a1a735c2ead1d36b4bd1..eccb1c60af021a2dd5783036f89a1908bc2152e1 diff."
+  },
+  "justifications": {
+    "durability": "The new statements at docs/research/monitor-storage-load-rca.html:390-405 add no test assertion; existing code tests do not fail if the reported timing text regresses.",
+    "evidence": "docs/research/monitor-storage-load-rca.html:390 matches logs/live-final-head.log, but that log demonstrates failure of the source brief.md timing gate.",
+    "fit": "docs/research/monitor-storage-load-rca.html:390 extends the existing timing table and lines 393-409 follow its evidence-first prose.",
+    "goal_fidelity": "docs/research/monitor-storage-load-rca.html:390 accurately records the live result, which remains above the source brief.md five second target.",
+    "reuse": "The diff at docs/research/monitor-storage-load-rca.html:390-405 adds no function, class or module, so it cannot duplicate a repository capability.",
+    "scope_discipline": "The only changed path, docs/research/monitor-storage-load-rca.html, is in the source manifest.md write_paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source brief.md asks for a steady publish that reads only changed review entries; docs/research/monitor-storage-load-rca.html:390 records a 68.105 s second pass, above its 5 s target.\nVERDICT done_when: The source brief.md requires a live second pass under 5 s and matched tests; logs/live-final-head.log records 68.105 s, and logs/armed-head-coord.log records four passes.\nVERDICT write_paths: The source manifest.md grants docs/research/monitor-storage-load-rca.html, the sole path in the f4002db9353a3ba16c07a1a735c2ead1d36b4bd1..eccb1c60af021a2dd5783036f89a1908bc2152e1 diff.\nVERDICT manifest: The source manifest.md names the RCA commit, the 68.105 s live result, the base and head suite receipts, and the remaining performance bound.\nVERDICT diff: Commit eccb1c60af021a2dd5783036f89a1908bc2152e1 changes only docs/research/monitor-storage-load-rca.html:390-405, adding the final timing and the rewrite-detection limitation.\nCALL_SITES: none\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: docs/research/monitor-storage-load-rca.html:390 accurately records the live result, which remains above the source brief.md five second target.\nSCORE evidence: 13\nJUSTIFICATION evidence: docs/research/monitor-storage-load-rca.html:390 matches logs/live-final-head.log, but that log demonstrates failure of the source brief.md timing gate.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The only changed path, docs/research/monitor-storage-load-rca.html, is in the source manifest.md write_paths.\nSCORE durability: 5\nJUSTIFICATION durability: The new statements at docs/research/monitor-storage-load-rca.html:390-405 add no test assertion; existing code tests do not fail if the reported timing text regresses.\nSCORE fit: 20\nJUSTIFICATION fit: docs/research/monitor-storage-load-rca.html:390 extends the existing timing table and lines 393-409 follow its evidence-first prose.\nSCORE reuse: 20\nJUSTIFICATION reuse: The diff at docs/research/monitor-storage-load-rca.html:390-405 adds no function, class or module, so it cannot duplicate a repository capability.\nFINDING docs/research/monitor-storage-load-rca.html:390 blocking: the new final-head measurement is 68.105 s for the second live payload pass, still above the source brief.md under-5-s done-when; the documentation accurately exposes this unmet gate.\n",
+  "review_run_id": "r-20261108T051731165484-review-of-a-review-duty-reads-its-run-review-once-eccb1c60af02",
+  "reviewed_base_sha": "f4002db9353a3ba16c07a1a735c2ead1d36b4bd1",
+  "reviewed_head_sha": "eccb1c60af021a2dd5783036f89a1908bc2152e1",
+  "reviewed_run_id": "r-20261107T222649494833-a-review-duty-reads-its-run-review-once",
+  "scores": {
+    "durability": 5,
+    "evidence": 13,
+    "fit": 20,
+    "goal_fidelity": 13,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T05:39:50.357178+00:00",
+  "total": 91
+}
