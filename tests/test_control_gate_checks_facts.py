@@ -141,20 +141,34 @@ def test_a_control_whose_wording_matches_but_exited_zero_is_refused(
     assert DECLARATION in message
 
 
-def test_a_control_log_with_no_exit_record_is_refused(tmp_path: Path) -> None:
-    """A fact nothing recorded is unknown, never inferred from a failing count."""
+def test_a_control_log_with_no_exit_record_is_admitted_on_the_runners_output(
+    tmp_path: Path,
+) -> None:
+    """The runner's own FAILED list and summary state the failure no capture line did."""
+    control = _gate(
+        tmp_path,
+        log_text=(
+            f"{DECLARATION}\n"
+            f"FAILED {ADDED_FAILURE} - AssertionError: no refusal\n"
+            "1 failed, 4 passed in 0.21s\n"
+        ),
+    )
+
+    assert control["verdict"] == "matched"
+    assert control["control_run_failed"] is True
+    assert control["control_exit_status"] is None
+    assert control["added_failure_ids"] == [ADDED_FAILURE]
+
+
+def test_a_control_log_with_neither_an_exit_record_nor_runner_failure_is_refused(
+    tmp_path: Path,
+) -> None:
+    """A log that states the run failed nowhere records nothing to admit."""
     with pytest.raises(CrewError) as refusal:
-        _gate(
-            tmp_path,
-            log_text=(
-                f"{DECLARATION}\n"
-                f"FAILED {ADDED_FAILURE} - AssertionError: no refusal\n"
-                "1 failed, 4 passed in 0.21s\n"
-            ),
-        )
+        _gate(tmp_path, log_text=f"{DECLARATION}\n1 passed in 0.21s\n")
 
     message = str(refusal.value)
-    assert "records no EXIT status" in message
+    assert "reports no failure" in message
     assert DECLARATION in message
 
 

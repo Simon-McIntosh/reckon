@@ -2043,8 +2043,12 @@ def _require_declared_negative_control(
     of logs is the positive and negative control of one measurement.
 
     The log is judged on two facts about the run it captured, not on how it is
-    worded: the run's terminal record exited non-zero, and the log names at
-    least one failing test id the head arm does not fail. The head arm is the
+    worded: the run failed, and the log names at least one failing test id the
+    head arm does not fail. The failure is the runner's own record, so a
+    terminal ``EXIT=<n>`` line is one way the log shows it and not the only one:
+    a pytest ``FAILED <id>`` list beside its ``N failed`` summary shows the same
+    fact when no capture line was appended. A log that records neither refuses.
+    The head arm is the
     run's own after measurement, so a control that reddens a case written
     before the repair is admitted even though the baseline, taken over the
     unfixed tree, fails that case too; the baseline comparison decides only
@@ -2141,7 +2145,9 @@ def _require_declared_negative_control(
         reference_ids = baseline_ids
     added = [] if reference_ids is None else sorted(control_ids - reference_ids)
     recorded_exit = _recorded_exit_status(text)
+    run_failed = _control_run_shows_a_failure(text, recorded_exit)
     check["control_exit_status"] = recorded_exit
+    check["control_run_failed"] = run_failed
     check["control_failure_ids"] = sorted(control_ids)
     if baseline_ids is not None:
         check["baseline_failure_ids"] = sorted(baseline_ids)
@@ -2155,16 +2161,20 @@ def _require_declared_negative_control(
         check["comparison_arm"] = "after_suite"
     check["added_failure_ids"] = added
     # Both facts have to come from something only the run could have written: a
-    # log with no EXIT record says nothing about whether its command failed,
-    # and one naming no failing test id says nothing about what broke. Neither
-    # is inferred — a failing count and a repeated declaration together are
-    # exactly the shape the removed wording rule could not tell from a
-    # measurement — so an unrecorded fact refuses the declaration rather than
-    # admitting it.
-    if recorded_exit is None:
-        unexplained = "it records no EXIT status, so whether its run failed is unknown"
-    elif recorded_exit == 0:
-        unexplained = "it records EXIT=0, so its run did not fail"
+    # run that reports no failure in either its capture status or its runner's
+    # own output says nothing about whether it failed, and one naming no failing
+    # test id says nothing about what broke. Neither is inferred — a repeated
+    # declaration beside either is exactly the shape the removed wording rule
+    # could not tell from a measurement — so an unrecorded fact refuses the
+    # declaration rather than admitting it.
+    if not run_failed:
+        if recorded_exit == 0:
+            unexplained = "it records EXIT=0, so its run did not fail"
+        else:
+            unexplained = (
+                "it records no EXIT status and its runner output reports no "
+                "failure, so whether its run failed is unknown"
+            )
     elif not control_ids:
         unexplained = "it names no failing test id, so what broke is unknown"
     elif reference_ids is None:
@@ -3031,6 +3041,7 @@ def _delivered_review_payloads_for_commit(
 
 from reckon.crew.promotion_evidence import (
     _committed_scope,
+    _control_run_shows_a_failure,
     _manifest_text,
     _presented_commits_without_a_declaration,
     _recorded_exit_status,

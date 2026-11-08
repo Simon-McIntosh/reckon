@@ -1011,6 +1011,12 @@ _RUNNER_SUMMARY = re.compile(
 )
 
 
+# A runner's own summary naming a nonzero failure or error count. The count is
+# what makes it a failure statement; "0 failed" is a green run's summary and is
+# deliberately not matched.
+_RUNNER_FAILURE_SUMMARY = re.compile(r"\b[1-9]\d*\s+(?:failed|errors?)\b")
+
+
 _UNEXECUTED_EXIT_CODES = frozenset({126, 127})
 
 
@@ -1057,6 +1063,39 @@ def _recorded_exit_status(log_text: str) -> int | None:
         match = _EXIT_RECORD.fullmatch(line)
         return int(match.group(1)) if match else None
     return None
+
+
+def _runner_reports_a_failed_run(log_text: str) -> bool:
+    """Whether the test runner's own output in the log states that it failed.
+
+    A capture convention appends a terminal ``EXIT=<n>`` line, but a capture
+    that appends none leaves the shell's status unrecorded. The runner writes
+    its own result either way: a nonzero count of failures or errors in its
+    summary, or the list of ids it failed. Either is output only a run that
+    executed and failed could produce, so it answers the same question the
+    shell's status answers — did the run fail — without the status line. The
+    identity of what failed is read separately from the ids, so a summary count
+    here never stands in for one.
+    """
+    if review_module.gate_log_failure_ids(log_text):
+        return True
+    return _RUNNER_FAILURE_SUMMARY.search(log_text) is not None
+
+
+def _control_run_shows_a_failure(log_text: str, recorded: int | None) -> bool:
+    """Whether a declared mutation's log shows its run failed.
+
+    Two independent records answer this, and either suffices. A terminal
+    ``EXIT=<n>`` line is read first, because the shell wrote it only by
+    returning from the command: a nonzero status is the shell stating the run
+    failed, and ``EXIT=0`` is the shell stating it did not, so a status that is
+    present always decides and is never overridden by text. When no status line
+    was written, the runner's own output decides (``_runner_reports_a_failed_run``).
+    A log that records neither states nothing, so it is not admitted.
+    """
+    if recorded is not None:
+        return recorded != 0
+    return _runner_reports_a_failed_run(log_text)
 
 
 def _require_gate_log_agrees(

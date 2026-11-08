@@ -17,8 +17,10 @@ manifest that records no readable head arm, which is the only case where it is
 the best evidence available.
 
 Cases (d) and (e) hold the two facts the admission has always required and must
-keep: a log whose capture exited zero is refused, and a log with no exit record
-is refused.
+keep: a log whose capture exited zero is refused, and a log whose run is
+unrecorded — neither a capture exit line nor the runner's own failure output —
+is refused. A log with no capture exit line but with the runner's ``FAILED``
+list and ``N failed`` summary states the failure itself and is admitted.
 
 Completion is asked as a literal ``True``, never as a truthy stand-in, because
 an arm that omits the key or carries null reads as complete while saying
@@ -227,18 +229,37 @@ def test_a_control_log_whose_run_exited_zero_is_refused(tmp_path: Path) -> None:
     assert "EXIT=0" in message
 
 
-def test_a_control_log_with_no_exit_record_is_refused(tmp_path: Path) -> None:
-    """(e) A fact nothing recorded is unknown, never inferred from the failing count."""
+def test_a_control_log_with_no_exit_record_is_admitted_on_the_runners_output(
+    tmp_path: Path,
+) -> None:
+    """(e) The runner's FAILED list and summary show the failure no capture line did."""
+    control = _gate(
+        tmp_path,
+        log_text=_red_log(PASSED_CASE, exit_line=""),
+        baseline=_arm([], revision="1111111"),
+        after=_arm([], revision="2222222"),
+    )
+
+    assert control["verdict"] == "matched"
+    assert control["control_run_failed"] is True
+    assert control["control_exit_status"] is None
+    assert control["added_failure_ids"] == [PASSED_CASE]
+
+
+def test_a_control_log_with_neither_an_exit_record_nor_runner_failure_is_refused(
+    tmp_path: Path,
+) -> None:
+    """(e2) A log that never states its run failed records nothing to admit."""
     with pytest.raises(CrewError) as refusal:
         _gate(
             tmp_path,
-            log_text=_red_log(PASSED_CASE, exit_line=""),
+            log_text=f"{DECLARATION}\n5 passed in 0.19s\n",
             baseline=_arm([], revision="1111111"),
             after=_arm([], revision="2222222"),
         )
 
     message = str(refusal.value)
-    assert "records no EXIT status" in message
+    assert "reports no failure" in message
 
 
 def test_an_after_suite_without_a_completed_key_leaves_the_decision_to_the_baseline(
