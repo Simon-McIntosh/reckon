@@ -53,19 +53,20 @@
     <code>EXIT=&lt;code&gt;</code>.</caption>
     <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
     <tbody>
-      <tr><td>head, <code>tests/test_a_resynthesis_keeps_appended_anchors.py</code>
-        in the dispatch worktree</td>
-        <td><code>cc2060b728</code></td>
-        <td>11 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>head, the armed gate: the new test file plus the two
+        <code>append_evidence</code> importers it widens</td>
+        <td><code>99e11e1abf</code></td>
+        <td>26 passed, <code>EXIT=0</code></td></tr>
       <tr><td>base, the same test file copied into a scratch tree of the
         dispatch base</td>
         <td><code>088c13da18</code></td>
-        <td>11 failed, <code>EXIT=1</code> &mdash; the whole file, because none
-        of the behaviour exists at the base</td></tr>
+        <td>11 failed, 15 passed, <code>EXIT=1</code> &mdash; the new file red
+        because none of the behaviour exists at the base, the fifteen existing
+        importer cases green</td></tr>
       <tr><td>negative control: <code>_carried_sections</code> replaced with an
         empty result, so nothing is carried</td>
-        <td><code>cc2060b728</code> + mutation</td>
-        <td>8 failed, 3 passed, <code>EXIT=1</code> &mdash; including
+        <td><code>99e11e1abf</code> + mutation</td>
+        <td>8 failed, 18 passed, <code>EXIT=1</code> &mdash; including
         <code>test_a_marked_append_is_carried_with_its_text</code>, which is
         the case the control exists to lose</td></tr>
     </tbody>
