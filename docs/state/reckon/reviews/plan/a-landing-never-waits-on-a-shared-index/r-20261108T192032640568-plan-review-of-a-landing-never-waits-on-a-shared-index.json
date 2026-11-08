@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T19:31:24.909Z",
+  "dispatched_at": "2026-11-08T19:22:16Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-landing-never-waits-on-a-shared-index.html:85",
+      "id": "reasoning-1",
+      "reason": "the candidate set is aimed at writers that cannot produce the observed effect, so the node investigates the wrong mechanism and its repair does not reach the defect.",
+      "text": "the deliverable names three steps to reproduce the stale index \u2014 a merge through `land_merge`, a promotion commit through `_commit_landing_writes`, a state write through `edit_plan` \u2014 but each can only affect the paths it names: `land_merge` lands with `git merge --ff-only` (`reckon/crew/merge.py:749`), which writes the index for the fast-forwarded paths, `_commit_landing_writes` commits with `git commit --only -- <targets>` (`reckon/crew/promotion_scope.py:2505-2518`) and its rollback restores or `git rm --cached`s only its own `targets` (`:1754-1930`), and the one call in the tree that replaces an index wholesale, `git read-tree <head>` (`reckon/crew/routing.py:1541`, `:1599`), runs in the worker's worktree, not the main checkout \u2014 so a worker following this deliverable records six clean readings and reaches the escape clause by default, without ever testing the writer that actually dropped the entry",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-never-waits-on-a-shared-index.html:85",
+      "id": "done_when-1",
+      "reason": "a done-when with no arm for an outcome the same section explicitly permits leaves the worker unable to close either way, so the section would be re-dispatched or promoted on an unanswered gate.",
+      "text": "the done-when is stated for the repaired branch only, while the deliverable's own escape clause says \"If the cause sits outside these write paths, it records the cause and proposes the repair as a plan section instead\"; on that branch `git diff --cached --name-only HEAD` after each step cannot be made empty, the negative control (\"restoring the writer's current behaviour makes the plain commit delete the landed file\") has no writer to restore to a faultier behaviour, and the node has no arm under which it can be closed",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-never-waits-on-a-shared-index.html:85",
+      "id": "done_when-2",
+      "reason": "the red log then shows a per-step index assertion rather than the deletion the control claims to demonstrate, so the control does not show the mechanism the plan is about.",
+      "text": "the negative control's observable is unreachable inside the test as specified: the first assertion requires `git diff --cached --name-only HEAD` to be empty after every step, so restoring the culprit writer's behaviour reddens that assertion at the culprit's own step and the later plain `git commit` that is supposed to delete the landed file never runs",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-never-waits-on-a-shared-index.html:23",
+      "id": "wiring-1",
+      "reason": "the open followup is the plan's own dispatch instruction, so the plan would send a worker to rebuild work that is already landed.",
+      "text": "`plan-section-declarations` still reads `\"s5\":\"implementable\"` and followup f-alnw-002 is still `open` with the prompt `/reckon-build a-landing-never-waits-on-a-shared-index \u00a75`, while \u00a75 has landed in three commits (`aa8ab137ba` `fix(crew): wait out a held index lock in the landing commit and its rollback`, `5568106b93`, `25cb21c400`) and the new test `tests/test_a_promotion_commit_survives_a_held_index_lock.py` is on the branch",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "5f6d4b3013e877a5b2600acc43672030e288f205",
+  "plan_fingerprint": "d38cfd421be6f07a2b0ff9ade14eaa2fd5844c7ec1b2bcecb10239301f307f59",
+  "plan_slug": "a-landing-never-waits-on-a-shared-index",
+  "plan_version": 15,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T192032640568-plan-review-of-a-landing-never-waits-on-a-shared-index",
+  "reviewed_blob_sha": "611b0487695b829af76e88b066e5d12d2814952b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `e741b27a9d`, `2754cbd2dc` and `55c6b25d56` all resolve as commits, `reckon.crew.merge.land_merge` (`merge.py:691`), `promotion_scope._commit_landing_writes` (`promotion_scope.py:2391`) and the `edit_plan` tool (`reckon/mcp_edit_plan.py:1475`) all resolve, and the cited fragment directory exists.",
+    "done_when": "a finding \u2014 \u00a76's done-when is stated unconditionally, while the same section's deliverable allows the cause to sit outside the named write paths.",
+    "evidence_paths": "pass \u2014 the investigation's readings land at `docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-landing-leaves-the-index-at-head.html` under the repository's evidence tree, not a scratchpad.",
+    "naming": "pass \u2014 \u00a76's new test and evidence paths are named for the mechanism (`test_a_landing_leaves_the_index_at_head.py`), with no plan label, ticket number or version tag.",
+    "reasoning": "a finding \u2014 the three steps \u00a76 names as candidates each touch only their own paths, so none of them can drop an unrelated path from the checkout's index; the plan's own evidence (six clean path-scoped commits between the fast-forward and the deletion) is consistent with that, and the deliverable's candidate set is therefore aimed away from the mechanism.",
+    "single_goal": "pass \u2014 \u00a76 carries one goal, an investigation that names and repairs the writer which leaves the checkout's index short of HEAD.",
+    "wiring": "a finding \u2014 the plan declares s5 `implementable` and keeps followup f-alnw-002 open recommending `/reckon-build \u2026 \u00a75`, while \u00a75 has landed (`aa8ab137ba`, `5568106b93`, `25cb21c400`)."
+  },
+  "section_digests": {
+    "_document": "cc5ca7856f4fcf61b4d842ceea96ce6a3114449a77e550ded22924ad6e2a1bbb",
+    "s1": "704da057b1e86cedb79ae983e9f7504afd9303eac87bb25b9d4aa38717913746",
+    "s2": "a72539aa82cfb965c54c35d223b2606608ed39bc8269f82d2e7427267b4636af",
+    "s3": "58b92de94f7a15cbe2a66cb37ebc307ca1d8306003ca55ca38ac6fd12e6266c8",
+    "s4": "f9e5f60efd976441ef227da76beb3f9309fccd0d2f99eee0fc98924588b241aa",
+    "s5": "41308d89a4ece7829b6313c98047025055c9c8dc56e754dc8ccf0501af52b1b3",
+    "s6": "29639dd86b2dc0f24e06be43c04bf54b35e3a1fbe5db1554c1c9da52ba1f1f74"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T20:10:55.236200+00:00",
+  "total": null
+}
