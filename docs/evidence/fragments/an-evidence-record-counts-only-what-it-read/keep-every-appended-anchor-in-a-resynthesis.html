@@ -1,0 +1,89 @@
+<section id="keep-every-appended-anchor-in-a-resynthesis-landing">
+  <h2>A re-synthesis carries every appended anchor and names each loss</h2>
+
+  <p><strong>What changed.</strong> An evidence append writes an anchored
+  section into a plan's landed record, and a link in the plan points at that
+  <em>anchor</em>. A synthesis rewrites the record from the plan's comments and
+  the run ledger, so every anchor it did not render used to disappear: the
+  section was gone and the link it backed pointed at nothing, with no line
+  saying so. <code>synthesize_landed_record</code> in
+  <code>reckon/evidence.py</code> now reads the record it is about to overwrite,
+  classifies each top-level section, and writes the survivors into the new
+  document.</p>
+
+  <p><strong>One function decides which ids the record can render.</strong>
+  <code>_evidence_anchor_sets</code> derives two sets of element ids from the
+  plan, the ledger runs and the plan source, normalising every spelling through
+  <code>_section_key</code> so <code>s5.1</code> and <code>s5-1</code> name one
+  section: the <em>rendered</em> set, the keys this synthesis will write a
+  section for, and the <em>reserved</em> set, the rendered keys plus every
+  declared plan section, every labelled section and the plan-level
+  <code>outcome</code> id. The synthesis carries by the first set; the
+  <code>append_evidence</code> refusal reads the second. Both are the same
+  function's output, so a record the synthesis would overwrite and an anchor an
+  append may not take cannot drift apart.</p>
+
+  <p><strong>Four outcomes, each named.</strong> An appended section — marked
+  <code>data-evidence-origin="append"</code> when it is written — is
+  <em>carried</em> verbatim into the new record unless a run now renders its id,
+  in which case it is <em>dropped</em> and the rendered section replaces it. An
+  unmarked section on a rendered id is <em>replaced</em>: the synthesis owns
+  that id and says so. An unmarked section outside the reserved set is
+  <em>carried</em>, because nothing else will ever write it back. An unmarked
+  section on a reserved-but-unrendered id is <em>retired</em> — dropping it is
+  the synthesis doing its job, and the tag says so rather than staying silent.
+  <code>EvidenceSynthesisResult.lost_anchors</code> carries the tag and the
+  anchor for every classification except a clean carry, and
+  <code>reckon evidence synthesize</code> prints one line per entry.</p>
+
+  <p><strong>The refusal closes the other half.</strong>
+  <code>_apply_evidence_appends</code> in <code>reckon/_store.py</code> now
+  resolves the plan and its ledger runs and refuses any anchor whose
+  <code>_section_key</code> is in the reserved set, before a byte is written.
+  Previously an append could take the id a ledger run already rendered, and the
+  next synthesis silently discarded it. The path helper
+  <code>_evidence_record_path</code> moved into <code>evidence.py</code> as its
+  sole owner, so the write and the refuse read one record path.</p>
+
+  <h3 id="keep-every-appended-anchor-in-a-resynthesis-arms">Measured</h3>
+
+  <table id="keep-every-appended-anchor-in-a-resynthesis-arms-table">
+    <caption>Each arm is a log whose first lines name its revision, tree and
+    the literal command, and whose last line reads
+    <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>head, <code>tests/test_a_resynthesis_keeps_appended_anchors.py</code>
+        in the dispatch worktree</td>
+        <td><code>cc2060b728</code></td>
+        <td>11 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>base, the same test file copied into a scratch tree of the
+        dispatch base</td>
+        <td><code>088c13da18</code></td>
+        <td>11 failed, <code>EXIT=1</code> &mdash; the whole file, because none
+        of the behaviour exists at the base</td></tr>
+      <tr><td>negative control: <code>_carried_sections</code> replaced with an
+        empty result, so nothing is carried</td>
+        <td><code>cc2060b728</code> + mutation</td>
+        <td>8 failed, 3 passed, <code>EXIT=1</code> &mdash; including
+        <code>test_a_marked_append_is_carried_with_its_text</code>, which is
+        the case the control exists to lose</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>What the cases hold.</strong> A marked append survives a
+  re-synthesis with its text and its mark; the record writes each section once;
+  a marked anchor a later run now renders is dropped and named; an unmarked
+  section on a rendered id is replaced and an unmarked one outside the reserved
+  set is carried; a declared, unrendered plan section is retired rather than
+  kept; an append on a plan section id (<code>s4</code>, and
+  <code>s5.1</code> spelling the plan's <code>s5-1</code>) is refused; an append
+  on an id only a ledger run renders is refused; and one test drives a key from
+  appendable to rendered to refused, so the two sets are shown to be one.</p>
+
+  <p><strong>Not done here.</strong> The carry re-series carried markup through
+  BeautifulSoup, so attribute quoting and whitespace inside a carried section
+  are normalised, not preserved byte for byte; the section and its text are.
+  The project's ruff backlog is untouched: the four staged paths add no findings
+  and no new unformatted hunk against the base.</p>
+</section>
