@@ -3298,7 +3298,9 @@ def section_readiness_rows(
 
     with roadmap_build_scope(resolve_coordinators=False):
         return section_verdicts_by_plan(
-            build_roadmap(project, list(inventory), [], docs_dir=docs_dir)
+            build_roadmap(
+                project, list(inventory), [], docs_dir=docs_dir, include_attempts=False
+            )
         )
 
 
@@ -3508,6 +3510,7 @@ def build_roadmap(
     review: dict[str, Any] | None = None,
     docs_dir: Path | str | None = None,
     now: datetime | None = None,
+    include_attempts: bool = True,
 ) -> dict[str, Any]:
     """Return pending work, execution paths, progress, blockers, and wiring findings.
 
@@ -3535,6 +3538,7 @@ def build_roadmap(
             review=review,
             docs_dir=docs_dir,
             now=now,
+            include_attempts=include_attempts,
         )
     scope = _BUILT_ROADMAP.get()
     if scope is not None:
@@ -3554,6 +3558,7 @@ def _build_roadmap(
     review: dict[str, Any] | None,
     docs_dir: Path | str | None,
     now: datetime | None = None,
+    include_attempts: bool = True,
 ) -> dict[str, Any]:
 
     artifacts: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -3622,10 +3627,14 @@ def _build_roadmap(
         scope_claims, pointers
     )
     held_paths_by_section = _held_paths_by_section(scope_claims, section_runs)
-    attempts_by_plan = section_attempts_by_plan(
-        project,
-        root=resolved_docs.parent if resolved_docs is not None else None,
-        pointers=runs._list_live_records(project=project),
+    attempts_by_plan = (
+        section_attempts_by_plan(
+            project,
+            root=resolved_docs.parent if resolved_docs is not None else None,
+            pointers=runs._list_live_records(project=project),
+        )
+        if include_attempts
+        else {}
     )
     findings: list[dict[str, Any]] = []
     dependency_rows: dict[str, list[dict[str, Any]]] = defaultdict(list)

@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import checkout_trust, mcp_discovery, serve
+from reckon import checkout_trust, mcp_discovery, roadmap, serve
 from reckon.crew import plan_review, queue_admission, runs
 from tests import test_a_queued_request_waits_on_its_dependencies as fixtures
 
@@ -144,6 +144,20 @@ def test_queued_placements_never_walks_project_discovery(
     ]
     assert len(queue_admission.queued_placements(pointers, now=now)) == 40
     assert counts == {"fresh": 0, "walk": 0}
+
+
+def test_bounded_section_verdict_skips_ledger_attempts(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def attempts(*args: object, **kwargs: object) -> None:
+        raise AssertionError("bounded verdict loaded ledger attempts")
+
+    monkeypatch.setattr(roadmap, "section_attempts_by_plan", attempts)
+    rows, inventory = plan_review.section_readiness_rows(
+        "proj", project / "docs", "work-0"
+    )
+    assert set(inventory) == {"work-0", "upstream-0"}
+    assert "s1" in rows["work-0"]["sections"]
 
 
 def test_code_stamp_is_probed_once(
