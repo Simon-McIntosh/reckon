@@ -1,0 +1,50 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest's baseline_suite is at 18fee6711e with one failure id (tests/test_a_review_that_never_launched_is_not_running.py::test_a_claim_that_does_not_name_its_run_does_not_date_this_pointer, the node's own new case) and its after_suite is at 5e81fc0c65 with none, so differencing the arms gives zero added; the importer population records the same seven failure ids in logs/importers_base.log and logs/importers_head.log.",
+  "call_sites": [
+    "reckon/crew/query.py:446",
+    "reckon/crew/directory.py:294",
+    "reckon/crew/forgotten_runs.py:94",
+    "reckon/crew/queue_landing.py:1503",
+    "reckon/crew/obligations.py:898",
+    "reckon/crew/promotion.py:388",
+    "reckon/crew/recovery_review_acceptance.py:600"
+  ],
+  "completed_at": "2026-11-08T20:44:58.900Z",
+  "dispatched_at": "2026-11-08T20:36:57Z",
+  "findings": [
+    {
+      "file": "tests/test_a_review_that_never_launched_is_not_running.py",
+      "line": 161,
+      "severity": "non-blocking",
+      "text": "the stale case leaves `created_seconds_ago` unset, so `created_at` is written at the claim instant (lines 110-111) and a regression that makes `_claim_registered_seconds` return None would still date the pointer from its creation and stay green \u2014 no case pairs an old claim with a young creation, so the claim arm the repair rewrote is exercised by no assertion."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T191235309637-a-review-that-never-launched-is-not-running/logs/importers_head.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the importer-population arm is stamped b8ede121eb, which is two commits before the reviewed head and predates the change to both source modules, so the done-when's \"add no failure against the base revision\" clause is not measured on the delivered code."
+    }
+  ],
+  "node": "review-of-a-review-that-never-launched-is-not-running-bf7ffe6b50b4",
+  "node:reviewed": "a-review-that-never-launched-is-not-running",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a719 asks that a cli pointer in `starting` with no attempt clock be dated from its claim and then from its creation, and past the 900 s bound be reported through `_stranded_launch` as launch-failed naming its launcher host; the delta keeps that dating intact at reckon/crew/recovery_liveness.py:770-807 and only moves the claim read onto its owner.\nVERDICT done_when: the done-when's five cases, the red/green arm pair, the importer population and the ruff delta are all recorded in the manifest; I read logs/repair_head_gate.log (5 passed, EXIT=0 at 5e81fc0c65) and logs/repair_base_gate.log (1 failed, 4 passed, EXIT=1 at 18fee6711e) and re-ran the named test at bf7ffe6b50 for 5 passed in 3.98s, but the importer-population arm in logs/importers_head.log:1 ran at b8ede121eb, which predates both repair commits.\nVERDICT write_paths: `git diff --name-only 18fee6711e..bf7ffe6b50b4` returns four paths \u2014 reckon/crew/recovery_liveness.py, reckon/crew/recovery_classification.py, tests/test_a_review_that_never_launched_is_not_running.py and the evidence fragment \u2014 every one inside the four paths this dispatch declares.\nVERDICT manifest: read the reviewed run's manifest.md \u2014 status complete, commits ba9460680e/b8ede121eb/18fee6711e/afb30d8989/5e81fc0c65/bf7ffe6b50, baseline_suite at 18fee6711e with one failure id and after_suite at 5e81fc0c65 with none, negative_control_log naming logs/repair_base_gate.log.\nVERDICT diff: read all three commits against 18fee6711e \u2014 afb30d8989 replaces the local claim.json parse in recovery_liveness.py with a call to dispatch_launch._claim_registration_for_worker and rewrites the stranded detail, 5e81fc0c65 tightens the ownership case to write a claim carrying no run id, and bf7ffe6b50 appends seven lines to the evidence fragment.\nCALL_SITES: reckon/crew/query.py:446, reckon/crew/directory.py:294, reckon/crew/forgotten_runs.py:94, reckon/crew/queue_landing.py:1503, reckon/crew/obligations.py:898, reckon/crew/promotion.py:388, reckon/crew/recovery_review_acceptance.py:600\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_liveness.py:784-795 keeps the claim-then-creation order and confines the fallback to `launch == \"cli\"`, and reckon/crew/recovery_classification.py:2085-2088 now states the held span as time since the launch clock began rather than as an excess past the bound.\nSCORE evidence: 14\nJUSTIFICATION evidence: the node's own arms are recorded at the right revisions in logs/repair_head_gate.log and logs/repair_base_gate.log and I reproduced 5 passed at bf7ffe6b50, but the importer-population clause of the done-when is measured only at b8ede121eb in logs/importers_head.log:1, a revision without the repair commits.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in `git diff --stat 18fee6711e..bf7ffe6b50b4` is one of the four this dispatch declares, and the evidence fragment change is a seven-line append rather than a rewrite.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_a_review_that_never_launched_is_not_running.py:195 and :207 are real guards that redden when the creation fallback is removed or the claim read stops validating its run, but the claim-dating arm itself is unasserted because line 161 leaves `created_seconds_ago` defaulted to the claim instant at lines 110-111.\nSCORE fit: 18\nJUSTIFICATION fit: the edit follows the module's private-function and docstring idiom, reckon/crew/recovery_liveness.py:842's `started`-for-a-duration name is renamed to `age` at line 846, and the lazy import at line 762 is justified because reckon/crew/dispatch_launch.py:47 imports reckon.crew.recovery which imports this module at module scope.\nSCORE reuse: 20\nJUSTIFICATION reuse: the duplicated claim reader is deleted and reckon/crew/recovery_liveness.py:761 calls reckon/crew/dispatch_launch.py:4181 `_claim_registration_for_worker`, which owns the read and enforces exact run-id equality at line 4187.\nFINDING tests/test_a_review_that_never_launched_is_not_running.py:161 non-blocking: the stale case leaves `created_seconds_ago` unset, so `created_at` is written at the claim instant (lines 110-111) and a regression that makes `_claim_registered_seconds` return None would still date the pointer from its creation and stay green \u2014 no case pairs an old claim with a young creation, so the claim arm the repair rewrote is exercised by no assertion.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T191235309637-a-review-that-never-launched-is-not-running/logs/importers_head.log:1 non-blocking: the importer-population arm is stamped b8ede121eb, which is two commits before the reviewed head and predates the change to both source modules, so the done-when's \"add no failure against the base revision\" clause is not measured on the delivered code.\n",
+  "review_run_id": "r-20261108T203443984153-review-of-a-review-that-never-launched-is-not-running-bf7ffe6b50b4",
+  "reviewed_base_sha": "18fee6711e2e4c6770dfc0dc13ea36e73830e33e",
+  "reviewed_head_sha": "bf7ffe6b50b41c0fb334f0f839069bba81740415",
+  "reviewed_run_id": "r-20261108T191235309637-a-review-that-never-launched-is-not-running",
+  "scores": {
+    "durability": 13,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T21:00:45.867318+00:00",
+  "total": 104
+}
