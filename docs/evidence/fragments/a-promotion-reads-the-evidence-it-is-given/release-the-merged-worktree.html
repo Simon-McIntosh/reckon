@@ -12,7 +12,11 @@
   rather than a second derivation kept in the merge — and releases each tree with the
   promotion's own release path, judged against the merge commit the landing wrote. A tree
   is offered only when its <code>HEAD</code> is the reviewed head or a commit beneath it, so
-  a tree carrying work no reader has is reported withheld and left in place. The merge
+  a tree carrying work no reader has is reported withheld and left in place. A tree whose
+  ledger row carries a <code>worktree_retention</code> — kept as the working directory of a
+  recoverable session — is withheld too, with the retention named: the release reads that
+  field the way the promotion's own release does, because the tree is the only copy that
+  session can be resumed from. The merge
   result carries <code>release.released</code> and <code>release.withheld</code>, naming
   each tree. A refusal before the push — a conflict, a failed check — reaches the call with
   nothing released, because the call sits after the confirmed push.
@@ -35,26 +39,32 @@
     <tbody>
       <tr><td>base, the new cases copied in</td>
         <td><code>1b3663ce4f</code></td>
-        <td><strong>2 failed, 1 passed</strong>, exit 1 — the promoted run's tree is still on
-        disk after the merge, and the merge result carries no release block</td></tr>
+        <td><strong>3 failed, 1 passed</strong>, exit 1 — the promoted run's tree is still on
+        disk after the merge, the merge result carries no release block, and a retained
+        tree is removed rather than kept</td></tr>
       <tr><td>head</td>
-        <td><code>d89d95d340</code></td>
-        <td><strong>3 passed</strong>, exit 0</td></tr>
+        <td><code>0003872562</code></td>
+        <td><strong>4 passed</strong>, exit 0</td></tr>
       <tr><td>negative control: the merge-side release removed</td>
         <td>mutated head</td>
         <td><strong>2 failed, 1 passed</strong>, exit 1 — the first case's tree is held</td></tr>
+      <tr><td>negative control: the retention argument dropped</td>
+        <td>mutated head</td>
+        <td><strong>1 failed, 3 passed</strong>, exit 1 — the retained tree is released</td></tr>
     </tbody>
   </table>
 
   <p>The third case is the release's placement rather than its predicate: a head that
   conflicts is refused by <code>merge-tree</code> before the branch moves and before any
-  push, and the tree it would have freed is still on disk afterwards.</p>
+  push, and the tree it would have freed is still on disk afterwards. The retention defect
+  was reproduced before it was repaired: with the retention dropped, the fourth case
+  reported the retained tree inside <code>release.released</code> and the tree was gone.</p>
 
   <h3 id="release-the-merged-worktree-evidence">Evidence</h3>
   <ul>
     <li><code>1b3663ce4fd1f45393fac81a3289ecae7c6ec4b0</code> — dispatch base, the scratch
     export the base arm ran in, with the new test copied in.</li>
-    <li><code>d89d95d340</code> — the head: <code>reckon/crew/merge.py</code> +112/−1,
-    <code>tests/test_a_merge_releases_its_worktree.py</code> +205.</li>
+    <li><code>0003872562</code> — the head: <code>reckon/crew/merge.py</code> +118/−1,
+    <code>tests/test_a_merge_releases_its_worktree.py</code> +242.</li>
   </ul>
 </section>
