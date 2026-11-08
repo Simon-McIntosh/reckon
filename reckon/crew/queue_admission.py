@@ -1686,18 +1686,29 @@ def _restore_queued(
     *,
     moment: datetime | None = None,
     guard: Mapping[str, Any] | None = None,
+    hold: Mapping[str, Any] | None = None,
 ) -> None:
     """Write a launched request back as one queued pointer carrying the failure.
 
     The restored pointer carries the same bounded back-off as a failure
     annotated in place. A discarded, promoted or removed request is never
     restored; the write checks departure under the pointer lock.
+
+    A ``hold`` names a refusal that is not a failed attempt — a claim taken in
+    the window between the pre-launch check and the launch. The request is then
+    restored carrying that hold and no failure, so the next pass launches the
+    request as soon as the claim it waits on is released rather than waiting out
+    a retry back-off.
     """
     if _discarded_since(snapshot):
         return
     restored = copy.deepcopy(dict(snapshot))
     restored["phase"] = "queued"
-    _stamp_failure(restored, failure, moment=moment or _now(), guard=guard)
+    if hold is None:
+        _stamp_failure(restored, failure, moment=moment or _now(), guard=guard)
+    else:
+        restored[RECORDED_HOLD_FIELD] = dict(hold)
+        restored["reason"] = str(hold.get("reason") or "")
     for key in (
         "pid",
         "pid_start_time",
@@ -1717,7 +1728,7 @@ def _restore_queued(
         _write_pointer(run_id, restored)
 
 
-def _restore_refused_launch_to_queue(
+def _return_claim_refusal_to_queue(
     snapshot: Mapping[str, Any],
     caught: ScopeConflict,
     *,
@@ -1735,31 +1746,13 @@ def _restore_refused_launch_to_queue(
     launch to clean up.
     """
     run_id = str(snapshot["run_id"])
-    if _discarded_since(snapshot):
-        return run_id, None
-    restored = copy.deepcopy(dict(snapshot))
-    restored["phase"] = "queued"
-    for key in (
-        "pid",
-        "pid_start_time",
-        "worktree",
-        "log_path",
-        "stderr_path",
-        "prompt_path",
-        "admitted_at",
-    ):
-        restored.pop(key, None)
-    hold = _refusal_hold(caught, live, moment=moment)
-    if hold is not None:
-        restored[RECORDED_HOLD_FIELD] = hold
-        restored["reason"] = str(hold.get("reason") or "")
     try:
-        with runs._pointer_lock(run_id):
-            _require_live_writeback(snapshot)
-            current = runs.read_pointer(run_id)
-            if _retain_launched_record(current, restored):
-                return run_id, None
-            _write_pointer(run_id, restored)
+        _restore_queued(
+            snapshot,
+            f"{type(caught).__name__}: {caught}",
+            moment=moment,
+            hold=_refusal_hold(caught, live, moment=moment),
+        )
     except _PointerWritebackError as exc:
         return run_id, str(exc)
     return run_id, None
@@ -4927,6 +4920,16 @@ def admit_once(
                             readiness_cache=readiness_cache,
                         )
                         record = _require_launched_record(candidate)
+                    except ScopeConflict as rebind_refusal:
+                        # The rebind launch publishes the rebound request's
+                        # pointer before it checks claims, so a claim taken in
+                        # that window refuses it in phase ``starting`` exactly
+                        # as the first launch would have been. Same hold, same
+                        # restore: the rebound request goes back to the queue
+                        # rather than being left starting behind a failure.
+                        caught = rebind_refusal
+                        hold_only = True
+                        failure = f"{type(rebind_refusal).__name__}: {rebind_refusal}"
                     except (BudgetHold, LaneHeld, LanePaused) as fallback_hold:
                         caught = fallback_hold
                         hold_only = True
@@ -4972,7 +4975,7 @@ def admit_once(
                         guard=_dependency_guard(pointer, config_for),
                     )
                 elif record is None and isinstance(caught, ScopeConflict):
-                    reported_id, restore_error = _restore_refused_launch_to_queue(
+                    reported_id, restore_error = _return_claim_refusal_to_queue(
                         snapshot, caught, live=live, moment=_now()
                     )
                 # The launch outcome is settled here: either the run's own

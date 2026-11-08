@@ -27,6 +27,7 @@ from typing import Any
 import pytest
 
 from reckon.crew import queue_admission, runs
+from reckon.crew.dispatch_admission import BudgetHold
 from reckon.crew.node import ScopeConflict, TaskNode
 from tests.helpers.git import git as _git
 from tests.test_a_queued_run_is_admitted import (  # noqa: F401 - fixture
@@ -88,7 +89,9 @@ def _stopped_holder(repository: Path, tmp_path: Path) -> str:
     return head
 
 
-def _queue_request(repository: Path) -> None:
+def _queue_request(
+    repository: Path, *, backend: str = "clive", metered: bool = False
+) -> None:
     node = TaskNode(
         id="queued",
         goal="write the claimed path",
@@ -107,9 +110,10 @@ def _queue_request(repository: Path) -> None:
             "session": SESSION,
             "repo": str(repository),
             "node": node.as_dict(),
-            "backend": "clive",
+            "backend": backend,
             "launch": "cli",
-            "local": True,
+            "local": backend == "clive",
+            "picker_selection": {"action": "route"} if metered else {},
             "phase": "queued",
             "queued_at": joined,
             "created_at": joined,
@@ -155,6 +159,48 @@ class _ClaimTakenAtLaunch:
 
     def __call__(self, pointer: dict[str, Any], **_: Any) -> dict[str, Any]:
         self.attempted.append(str(pointer["run_id"]))
+
+        def starting(current: dict[str, Any]) -> dict[str, Any]:
+            current["phase"] = "starting"
+            return current
+
+        runs._mutate_pointer(str(pointer["run_id"]), starting)
+        raise ScopeConflict(
+            run_id=HOLDER_ID,
+            node_id=HOLDER_ID,
+            candidate_path=self.claimed,
+            claimed_path=self.claimed,
+        )
+
+
+class _MeteredHoldThenClaim:
+    """Hold the metered lane, then refuse the rebound launch on a claim.
+
+    The first launch meets a spent metered window, so admission rebinds the
+    request onto the local lane, and a claim taken since the pre-launch check
+    refuses the rebind in the same way it would refuse the first launch.
+    """
+
+    def __init__(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        *,
+        claimed: str,
+        refuse_rebind: bool = True,
+    ) -> None:
+        self.claimed = claimed
+        self.refuse_rebind = refuse_rebind
+        self.calls: list[str] = []
+        monkeypatch.setattr(queue_admission, "_launch_queued", self)
+
+    def __call__(self, pointer: dict[str, Any], **_: Any) -> dict[str, Any]:
+        self.calls.append(str(pointer["run_id"]))
+        if len(self.calls) == 1:
+            raise BudgetHold(
+                {"backend": "codex", "reason": "the metered window is spent"}
+            )
+        if not self.refuse_rebind:
+            return {"run_id": pointer["run_id"], "phase": "starting"}
 
         def starting(current: dict[str, Any]) -> dict[str, Any]:
             current["phase"] = "starting"
@@ -236,6 +282,45 @@ def test_the_request_launches_once_the_holders_commits_reach_main(
     assert launched.attempted == [REQUEST_ID]
     assert result["launched"] == [REQUEST_ID]
     assert _verdicts(result)[REQUEST_ID]["verdict"] == "launched"
+
+
+def test_a_claim_taken_in_the_rebind_window_returns_the_rebound_request_to_the_queue(
+    admit_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A spent metered window and a claim taken at the rebind coincide."""
+    _, resolve = _config_for()
+    _queue_request(admit_repo, backend="codex", metered=True)
+    launch = _MeteredHoldThenClaim(monkeypatch, claimed=CLAIMED)
+
+    result = queue_admission.admit_once(config_for=resolve)
+
+    assert launch.calls == [REQUEST_ID, REQUEST_ID], launch.calls
+    assert result["launched"] == []
+    pointer = runs.read_pointer(REQUEST_ID)
+    assert pointer["phase"] == "queued", pointer
+    assert pointer["backend"] == "clive", pointer
+    assert pointer.get("route_fallback"), "the rebind is kept on the request"
+    assert not pointer.get("failure")
+    hold = queue_admission.recorded_pass_hold(pointer)
+    assert hold["verdict"] == "refused-scope-conflict", hold
+    assert hold["holder"]["run_id"] == HOLDER_ID, hold
+
+
+def test_a_spent_metered_window_without_a_claim_launches_the_rebound_request(
+    admit_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Control: the same rebind launches when no claim refuses it."""
+    _, resolve = _config_for()
+    _queue_request(admit_repo, backend="codex", metered=True)
+    launch = _MeteredHoldThenClaim(monkeypatch, claimed=CLAIMED, refuse_rebind=False)
+
+    result = queue_admission.admit_once(config_for=resolve)
+
+    assert launch.calls == [REQUEST_ID, REQUEST_ID], launch.calls
+    assert result["launched"] == [REQUEST_ID]
+    pointer = runs.read_pointer(REQUEST_ID)
+    assert pointer["backend"] == "clive", pointer
+    assert pointer.get("route_fallback"), pointer
 
 
 def test_the_real_crew_home_is_untouched(
