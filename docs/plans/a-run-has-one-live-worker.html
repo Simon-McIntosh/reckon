@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.67">
-<meta name="plan-version" content="84">
+<meta name="plan-version" content="85">
 <meta name="plan-modified" content="2026-11-08">
 <meta name="plan-commits" content="a88e6f09">
 </head>
@@ -248,6 +248,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261108T202400377179-review-of-a-relaunch-never-touches-a-live-tree-7f24f669e0a2" data-who="reckon-build" data-when="2026-11-08T20:37:13.413Z">
     <div class="r-comment-body"><p>10, reviewed commits c767dc9647 (fix) and 7f24f669e0 (evidence) on top of the previously reviewed abd5eca8 — the guard now refuses a live pointer that exists but cannot be read, the live-worker case asserts the clause unique to this refusal, and both control logs were read: 113/120 total (goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 19, reuse 20), no blocking findings, one non-blocking (UnicodeDecodeError escapes the new except clause)</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261108T181800262689-a-relaunch-never-touches-a-live-tree" data-who="reckon-build" data-when="2026-11-08T20:23:20Z">
+    <div class="r-comment-body"><p>10 landed - a dispatch of a run id whose worker this host still sees running is refused before its claim, run directory or worktree is touched, and a pointer that exists but cannot be read refuses rather than skipping the check; four cases pass at head c767dc9647, three fail at base 2754cbd2dc, three fail with the check moved after tree creation and the unreadable-pointer case fails alone when the read failure is swallowed</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261108T155744132588-review-of-a-run-not-yet-launched-is-not-refused-aaa5ea90e3f5" data-who="reckon-build" data-when="2026-11-08T16:11:26.648Z">
     <div class="r-comment-body"><p>review of r-20261108T153239733330-a-run-not-yet-launched-is-not-refused at aaa5ea90e3f5 stored parsed with scores goal_fidelity 19, evidence 16, scope_discipline 20, durability 16, fit 18, reuse 4, added_failure_count 0, and four findings (one blocking: the superseded expectation in tests/test_a_queued_run_launches_once.py:255).</p></div>
