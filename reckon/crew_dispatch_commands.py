@@ -1939,6 +1939,15 @@ def crew_dispatch(
         if held_picker_selection is not None:
             local = True
         try:
+            # The launch resolves the project's registered mount before it hands
+            # the repository to plan_dispatch, and the preview must reach the
+            # same verdict. Passing the caller's ``None`` through skipped the
+            # write-path authority block, whose fence is guarded by a repository
+            # being present, so the preview answered ok for a path the launch
+            # refuses. Resolve it here, on the same rule the launch uses.
+            from reckon.crew.dispatch import resolve_project_repository
+
+            repo = resolve_project_repository(project, repo)
             resolution = crew_module.plan_dispatch(
                 node=node,
                 config=config,
