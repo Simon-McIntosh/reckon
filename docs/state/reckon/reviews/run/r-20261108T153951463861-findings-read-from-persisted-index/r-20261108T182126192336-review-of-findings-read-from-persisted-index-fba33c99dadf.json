@@ -1,0 +1,77 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/plan_review.py:_open_findings_for",
+    "reckon/mcp_views.py:4462",
+    "reckon/crew/promotion.py:1809",
+    "reckon/crew_dispatch_commands.py:2967",
+    "reckon/crew/plan_review.py:3595",
+    "reckon/crew/plan_review.py:4757"
+  ],
+  "checklist": {
+    "call_sites": "answered",
+    "diff": "answered",
+    "done_when": "answered",
+    "goal": "answered",
+    "manifest": "answered",
+    "write_paths": "answered"
+  },
+  "completed_at": "2026-11-08T18:40:43.654Z",
+  "dispatched_at": "2026-11-08T18:24:18Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": 5429,
+      "severity": "blocking",
+      "text": "The done_when requires the importer population of reckon.crew.findings, reckon.crew.review_records and reckon.crew.plan_review to add no failure against the base revision, and no result is recorded: the head gate ran four named test files and logs/importer-suite-head.log is zero bytes, while 80 test files import plan_review, which is the module this hook line changes."
+    },
+    {
+      "file": "reckon/crew/findings.py",
+      "line": 480,
+      "severity": "non-blocking",
+      "text": "The persisted-index scaffolding added here duplicates what review_records.py already owns at review_records.py:1014 (_index_sources), :1024 (the _INDEX_CODE_STAMP memo, whose comment is copied verbatim) and :1040 (_index_cache_path); the addition neither extends nor generalises that owner, so a fix to one index's staleness rule does not reach the other."
+    },
+    {
+      "file": "reckon/crew/findings.py",
+      "line": 787,
+      "severity": "non-blocking",
+      "text": "The code-review root is read by naming plan_review's private _code_review_store_dir and CODE_REVIEW_FILE_PREFIX, replacing the public list_code_reviews call whose docstring gave the reason for preferring it; behaviour is equivalent today, but findings.py now carries its own copy of that store layout."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_findings_are_read_from_a_write_time_index.py:389 withholds note_record_written and asserts the same read opens exactly one record, so reinstating the regression reddens the control.",
+    "evidence": "logs/gate-head.log records 41 passed with a red control and three sub-2 s timings under load, while the importer-population arm has a zero-byte log at logs/importer-suite-head.log.",
+    "fit": "findings.py:787 reaches into plan_review._code_review_store_dir and CODE_REVIEW_FILE_PREFIX, replacing the public list_code_reviews that owned the store layout.",
+    "goal_fidelity": "findings.py:964 answers from a persisted document covering both roots, and review_records.py:296, plan_review.py:2348 and plan_review.py:5429 are the three writer hooks the plan named.",
+    "reuse": "findings.py:480 and findings.py:498 re-implement review_records.py:1024 and review_records.py:1040 without extending review_records.",
+    "scope_discipline": "git diff --stat 50f121aa..fba33c99 names only the five declared write paths, and the added response row field is what done_when case two reads back."
+  },
+  "plan": "a-read-costs-what-changed",
+  "project": "reckon",
+  "review_run_id": "r-20261108T182126192336-review-of-findings-read-from-persisted-index-fba33c99dadf",
+  "reviewed_base_sha": "50f121aa09f116819f4bdb02d122c5682cfd4a68",
+  "reviewed_head_sha": "fba33c99dadf1e801c98a44f754e84b193ab995d",
+  "reviewed_run_id": "r-20261108T153951463861-findings-read-from-persisted-index",
+  "scores": {
+    "durability": 18,
+    "evidence": 11,
+    "fit": 12,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "section": "s14",
+  "status": "parsed",
+  "subject": "code",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T18:48:36.320367+00:00",
+  "total": 83,
+  "verdicts": {
+    "diff": "Read commit by commit against the base: 45476b9efe adds the persisted index and the thirteen-case test, 64d92d8a5a adds the parent-listing cache, 5bf2be09ac adds the evidence fragment and its timings, and every hunk stays inside the five declared paths.",
+    "done_when": "The done_when asks for six cases plus writer controls in tests/test_findings_are_read_from_a_write_time_index.py, a red index-deleted control, three sub-2 s fresh-process reads with load logged, the importer population adding no failure, and ruff clean; the gate records 41 passed at head against 28 at base with the control red and timings 1.069/1.281/1.871 s at load 88.4/86.4/81.5, while the importer arm has a zero-byte log.",
+    "goal": "The goal is to persist the findings index in the node-local cache, have the three record writers update it, and read it in findings_by_path; findings.py:964 now answers from _indexed_rows, which loads and persists that document, and both roots are indexed (committed tree at findings.py:740, code-review store at findings.py:798).",
+    "manifest": "Read; it records status complete, four commits, the six cases plus three writer cases and their withheld-hook controls, the red negative control, the 41-vs-28 gate pair and the delivered-head timings, and is silent on the importer-population arm and on the ruff clause of its own done_when.",
+    "write_paths": "The manifest declares findings.py, review_records.py, plan_review.py, the new test and the evidence fragment; git diff --stat 50f121aa..fba33c99 names exactly those five paths and nothing else."
+  }
+}
