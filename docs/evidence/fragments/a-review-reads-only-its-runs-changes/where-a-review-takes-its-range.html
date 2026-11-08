@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-review-reads-only-its-runs-changes">
+  <meta name="plan-evidence-for" content="reckon:a-review-reads-only-its-runs-changes">
+  <meta name="plan-verifies" content="reckon:a-review-reads-only-its-runs-changes#s2">
+  <meta name="plan-recorded-at" content="2026-11-08">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,review,context-estimate,git-range">
+  <title>Where a review takes its range — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="where-a-review-takes-its-range-landing" data-node="where-a-review-takes-its-range" data-reckon="landed" data-when="2026-11-08">
+
+<section>
+<h3 id="where-a-review-takes-its-range-cause">The cause, in one sentence</h3>
+<p>A stored review's commit delta is taken as the two-dot git range
+<code>&lt;reviewed_head&gt;..&lt;head&gt;</code>, which after a mid-run merge of the
+integration branch also contains every commit main gained since the reviewed head;
+the composer writes that whole path list into the review node's <code>goal</code>,
+and the context census charges each named path a flat 4,000 tokens, so the review
+is refused as <code>context-window-exceeded</code> for changes its run never made.</p>
+</section>
+
+<section>
+<h3 id="where-a-review-takes-its-range-site">The range site the composer reaches</h3>
+<p>The chain, with anchors at <code>edc04fd259fa</code> (this node's worktree base):</p>
+<ol>
+<li><code>review_head_move</code> — <code>reckon/crew/recovery_review_dispatch.py:1062</code>,
+at <code>:1091</code> calls <code>_changed_paths_between(tree, reviewed_head, head)</code>.
+Its result becomes <code>move["paths"]</code>.</li>
+<li><code>_changed_paths_between</code> — <code>reckon/crew/recovery_review_dispatch.py:937</code>,
+runs <code>git diff --name-only &lt;older&gt;..&lt;newer&gt;</code>: the two-dot form, which for
+a head that merged the integration branch returns main's changes as well.</li>
+<li><code>_review_dispatch_fields</code> — <code>reckon/crew/recovery_review_subject.py:737</code>,
+at <code>:1011</code> appends <code>", ".join(delta["paths"])</code> to the review node's
+<code>goal</code> under &ldquo;covering only the commits it gained since it was reviewed&rdquo;.</li>
+<li><code>_mentioned_repository_files</code> — <code>reckon/crew/routing.py:3279</code>,
+scans that <code>goal</code> and <code>done_when</code> for repository paths;
+<code>_context_file_inputs</code> (<code>:3313</code>) charges each mention
+<code>_REFERENCE_COST_TOKENS</code> = 4,000 (<code>:75</code>), and
+<code>_context_fit_verdict</code> (<code>:3583</code>) refuses at <code>:3658</code>.</li>
+</ol>
+<p>The delivered-diff reader <code>_review_delivered_paths</code>
+(<code>recovery_review_dispatch.py:1015</code>, diff at <code>:1039</code>) also diffs
+two-dot, but on the <em>stored record's own</em> base/head pair — the pair the review
+actually read. That range is correct and must not gain the integration exclusion.</p>
+<p>A second site takes a range off the dispatch base and is reached by the same
+composer: <code>_changed_figure_paths</code> (<code>recovery_review_dispatch.py:966</code>,
+diff at <code>:971</code>) diffs <code>base_sha..head</code>, so after a merge a figure
+review is scoped to main's figures too. It needs the same rule.</p>
+<p>One site already expresses the rule the repair needs, for commits rather than
+paths: <code>unintegrated_claim_work</code> (<code>reckon/crew/node.py:1575</code>) runs
+<code>git rev-list HEAD ^&lt;integration_ref&gt; ^&lt;base_sha&gt;</code>.</p>
+</section>
+
+<section>
+<h3 id="where-a-review-takes-its-range-reproduction">The §1 run, composed without dispatching</h3>
+<p>Run <code>r-20261106T134041653278-stop-only-its-own-run-when-a-run-record-is-damaged</code>:
+dispatch base <code>fc5a7fb2b293</code>, stored review at head <code>e72db497aa74</code>,
+run head <code>c0b6b46d3cc9</code>, with <code>fc7f245289</code> merging
+<code>origin/main</code> in between. The review was composed through
+<code>review_head_move</code> and <code>_review_dispatch_fields(write=False)</code>;
+the estimate is <code>context_census</code>'s own two terms.</p>
+
+<table>
+<thead>
+<tr><th>quantity</th><th>current range (<code>e72db497..HEAD</code>)</th><th>run's own commits since the review</th><th>whole run vs integration (<code>origin/main...HEAD</code>)</th></tr>
+</thead>
+<tbody>
+<tr><td>range</td><td>two-dot range from the reviewed head</td><td><code>rev-list --no-merges HEAD ^origin/main ^e72db497</code> (3 commits)</td><td><code>merge-base(origin/main, HEAD)..HEAD</code></td></tr>
+<tr><td>changed files</td><td>156</td><td>2</td><td>6</td></tr>
+<tr><td>diff size</td><td>156 files, 122,032 insertions, 257 deletions</td><td>2 files, 18 insertions, 2 deletions</td><td>6 files, 320 insertions, 21 deletions</td></tr>
+<tr><td>paths named in the review's <code>goal</code></td><td>156</td><td>2</td><td>6</td></tr>
+<tr><td>standing instruction chain</td><td colspan="3">50,392 tokens (identical in all three)</td></tr>
+<tr><td>file-token term</td><td>624,000</td><td>8,000</td><td>24,000</td></tr>
+<tr><td><strong>context estimate</strong></td><td><strong>674,392</strong></td><td><strong>58,392</strong></td><td><strong>74,392</strong></td></tr>
+<tr><td>verdict against the 230,144-token window</td><td>refused</td><td>admitted</td><td>admitted</td></tr>
+<tr><td><code>changes_runtime_source</code></td><td><code>True</code> (main's <code>reckon/*.py</code>)</td><td><code>False</code></td><td><code>True</code></td></tr>
+</tbody>
+</table>
+
+<p>The recorded refusal is <code>670392</code> tokens over
+<code>refusal-traces/review-of-stop-only-its-own-run-when-a-run-record-is-damaged-c0b6b46d3cc9-0c8c306e274c9867.json</code>,
+with 155 paths, recorded 2026-11-07T21:29:54Z: 155&nbsp;&times;&nbsp;4,000 + 50,392 =
+670,392. The recomposition today names 156 paths because one further run commit
+(<code>c0b6b46d</code>, its evidence fragment) landed afterwards; 156&nbsp;&times;&nbsp;4,000
++ 50,392 = 674,392, so the arithmetic reconciles to the token.</p>
+
+<p>The second recorded instance has the same shape, not a different one:
+<code>refusal-traces/review-of-lander-leaves-red-run-to-coordinator-14c9d487fb26-575d89e1921191a5.json</code>
+records 734,392 tokens over 171 paths at 2026-11-08T15:13:31Z, and that run's stored
+reviews end at head <code>941e5fff2da4</code> before the merge <code>14c9d487fb</code>.
+So the plan's open question — where a <em>first</em> review's named paths come from —
+is answered by there being no such site: with no stored review,
+<code>review_head_move</code> returns <code>{}</code>, <code>delta</code> is
+<code>None</code>, and the goal names no paths at all. Every oversized review is a
+<em>delta</em> review whose reviewed head predates a merge. Both recorded refusals are
+that case.</p>
+</section>
+
+<section>
+<h3 id="where-a-review-takes-its-range-control">Negative control</h3>
+<p>Today's 156 named paths are <strong>not</strong> a subset of the run's own six
+changed files: 154 of the 156 are paths the run never touched
+(<code>docs/plans/*.html</code>, <code>docs/state/reckon/...</code>, main's
+<code>reckon/crew/*.py</code>). After the proposed change the two named delta paths
+are both members of the run's own changed set, and the whole-run rule
+(<code>origin/main...HEAD</code>) likewise names only members of it. The same
+comparison is run over the two sets in
+<code>logs/compose-review-fixed.log</code>, which prints
+<code>NEGATIVE CONTROL: ... False</code> and <code>after the fix: ... True</code>.</p>
+<p>A second control is behavioural rather than set-theoretic: under the current
+range <code>changes_runtime_source</code> is <code>True</code> because main's runtime
+modules are in the diff, so the run is forced into a light re-review; under the run's
+own delta it is <code>False</code> (a test and an evidence fragment), so the stored
+review is carried forward and no review is composed at all.</p>
+</section>
+
+<section>
+<h3 id="where-a-review-takes-its-range-repair">The repair, in the form a plan section takes</h3>
+<p><strong>Goal.</strong> A review's delta between the head a stored review read and
+the run's head is taken from the run's own commits, so a mid-run merge never puts the
+integration branch's changes into a review's scope or its context estimate.</p>
+<p><strong>Deliverable.</strong> One shared helper beside the existing two-dot
+helper — <code>own_changed_paths(tree, older, tip, *, integration_ref)</code> in
+<code>reckon/clones.py</code> next to <code>changed_paths</code> (<code>clones.py:629</code>)
+— returning the paths changed by commits reachable from <code>tip</code> but from
+neither <code>older</code> nor <code>integration_ref</code>, which is the
+<code>node.py:1575</code> rule expressed as paths. Union the per-commit diffs of
+<code>rev-list --no-merges tip ^integration_ref ^older</code> and add any path a merge
+commit in that set shows in its combined diff, so a conflict resolution the run wrote
+is not lost. <code>review_head_move</code> (<code>recovery_review_dispatch.py:1091</code>)
+and <code>_changed_figure_paths</code> (<code>:971</code>) call it;
+<code>_review_delivered_paths</code> (<code>:1039</code>) keeps its two-dot diff and
+<code>clones.changed_paths</code> keeps its signature, because the landing measure's
+base arm genuinely needs the dispatch-base range.</p>
+<p><strong>Should the incremental review path serve this case?</strong> It already
+does, and the correction is what lets it: <code>review_head_move</code> is the
+incremental path (<code>review_tier</code> LIGHT, <code>delta_base</code>), and with
+the corrected paths this run classifies <code>changes_runtime_source = False</code>,
+so <code>carry_review_forward</code> carries the stored review to the merge head
+without composing one. No second mechanism is needed.</p>
+<p><strong>Test.</strong> A temporary repository with a dispatch base, a run commit, a
+stored review record, a merge of the integration branch carrying many unrelated
+files, and a further run commit: assert <code>review_head_move(record)["paths"]</code>
+names only the run's own paths, that <code>changes_runtime_source</code> is
+<code>False</code> for a test-and-evidence delta, and that the composed goal names no
+integration-branch path. Assert the estimate for the composed node is under the
+window.</p>
+<p><strong>Negative control.</strong> Restore the two-dot call in
+<code>review_head_move</code> and the test fails on the path set and on the runtime
+classification, not merely on the count.</p>
+<p><strong>Write paths.</strong> <code>reckon/clones.py</code>,
+<code>reckon/crew/recovery_review_dispatch.py</code>,
+<code>tests/test_a_review_reads_only_its_runs_changes.py</code>.</p>
+</section>
+
+<section>
+<h3 id="where-a-review-takes-its-range-limit">What this note did not do</h3>
+<p>It edits no product source and no plan. It composed the review through the real
+functions with <code>write=False</code>, so no run directory or brief was created,
+and dispatched nothing. The estimate is the census's own two terms
+(<code>_standing_context_input</code> + <code>_context_file_inputs</code>) rather than
+a full dispatch's fit verdict, so the window comparison is the one the refusal itself
+used (230,144 tokens). Commands and their logs are under the run directory
+<code>logs/compose-review.log</code>, <code>logs/compose-review-fixed.log</code> and
+<code>logs/git-ranges.log</code>.</p>
+</section>
+
+</article>
+</body>
+</html>
