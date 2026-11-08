@@ -1,0 +1,36 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Differenced from the reviewed run's own arms in its manifest: baseline_suite (8c72a9ab8e) records one failure id, tests/test_an_overdue_review_names_why_it_is_held.py::test_an_overdue_review_names_the_undisposed_finding (the node's own new case, red at base by design), and after_suite (e84f80cfb8) records none, so zero are added. I re-derived the importer population independently rather than trusting the prose: sort -u over logs/base-failures.txt (38 ids) and logs/head-failures.txt (37 ids), comm -13 head base returns nothing and comm -23 base head returns one id, tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py::test_overdue_review_duty_reports_age_without_a_dispatch_command (the clock-derived literal the manifest records under outside_scope). Both sides are non-empty, so the zero is measured and not an empty-file result.",
+  "call_sites": [],
+  "completed_at": "2026-11-08T22:56:05.335Z",
+  "dispatched_at": "2026-11-08T22:50:17Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-review-dies-where-nobody-is-looking/an-overdue-review-names-why-it-is-held.html",
+      "line": 136,
+      "severity": "non-blocking",
+      "text": "The Provenance row cites negative-control-dry-run.log as the repair control, but that log's header names '# rev: 21553c80c96b646e2b0e86d979224004132d2821 (head commit) with the mutation applied to the working tree'. The assertion the mutation reddens (tests/test_an_overdue_review_names_why_it_is_held.py:174) does not exist at 21553c80c9 or at b8c955d032; it lands only at e84f80cfb8. A reader who checks out the revision the log names and applies the mutation gets a green run, so the red this fragment relies on cannot be reproduced from the record it cites; the header should name the working-tree state that became e84f80cfb8."
+    }
+  ],
+  "node": "review-of-an-overdue-review-names-why-it-is-held-e84f80cfb88c",
+  "node:reviewed": "an-overdue-review-names-why-it-is-held",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is plan \u00a712 \u2014 an overdue review-missing duty names the refusal that holds it and its crew dispose remedy; this delta commit e84f80cfb8 adds no production behaviour and instead holds the read-only claim the goal rests on, so it serves the goal's invariant at tests/test_an_overdue_review_names_why_it_is_held.py:167-178.\nVERDICT done_when: the plan's done-when names the new test file, two cases, the drop-the-refusal-read control and the importer arm; the manifest records baseline_suite (8c72a9ab8e) 1 failed / 1 passed at logs/gate-base.log and after_suite (e84f80cfb8) 2 passed at logs/gate-head.log, which records 2 passed in 3.13s and a bare EXIT=0, and the importer arms in base-failures.txt / head-failures.txt.\nVERDICT write_paths: the node's goal scopes this review to docs/evidence/fragments/a-review-dies-where-nobody-is-looking/an-overdue-review-names-* and tests/test_an_overdue_review_names_why_it_is_held.py; `git diff --stat b8c955d032..e84f80cfb8` returns exactly those two files, 27 insertions and no deletions.\nVERDICT manifest: read; it records commits 21553c80c9, b8c955d0, e84f80cfb8 over base 8c72a9ab8e, after_suite exit 0 with zero failures at e84f80cfb8, negative_control_log naming logs/negative-control-dry-run.log, and a checkpoint stating production code was unchanged in the repair round.\nVERDICT diff: read commit by commit against b8c955d032 \u2014 e84f80cfb8 adds 11 lines to the first case (pointer bytes snapshotted at tests/test_an_overdue_review_names_why_it_is_held.py:167 and :169, asserted equal at :174) and 16 lines to the evidence fragment (a Repair round section at line 112 and a provenance row at line 136); no production file appears in the diff.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the delta adds the guard the prior review asked for at tests/test_an_overdue_review_names_why_it_is_held.py:174 rather than changing behaviour, which holds the goal's read-only invariant without touching reckon/crew/obligations.py or recovery_review_dispatch.py.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/gate-head.log records the gate command, 2 passed and a bare EXIT=0 at rev e84f80cfb8, and logs/negative-control-dry-run.log records 1 failed / 1 passed with EXIT=1 naming the same assertion at tests/test_an_overdue_review_names_why_it_is_held.py:174.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --name-only b8c955d032..e84f80cfb8` returns only the two declared paths, and the fragment change is a splice of one new section plus one table row rather than a rewrite of the file.\nSCORE durability: 19\nJUSTIFICATION durability: the assertion at tests/test_an_overdue_review_names_why_it_is_held.py:174 compares two independent filesystem reads taken on either side of obligations(), so it is not a value compared against itself, and reinstating the regression (dry_run=False) reddens it as logs/negative-control-dry-run.log shows.\nSCORE fit: 18\nJUSTIFICATION fit: the comment at tests/test_an_overdue_review_names_why_it_is_held.py:171-173 states the mechanism rather than the history, and the new fragment section at docs/evidence/fragments/a-review-dies-where-nobody-is-looking/an-overdue-review-names-why-it-is-held.html:112 follows the cumulative evidence-document shape of the surrounding sections.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no definition at all; it reuses runs.pointer_path at tests/test_an_overdue_review_names_why_it_is_held.py:164, and a search of tests/ and reckon/crew for an existing live-pointer-invariance assertion found none, so there is no owner that this forks.\nFINDING docs/evidence/fragments/a-review-dies-where-nobody-is-looking/an-overdue-review-names-why-it-is-held.html:136 non-blocking: the cited control log's header names rev 21553c80c9, which does not contain the assertion the mutation reddens, so the red is not reproducible from the record as recorded.\n",
+  "review_run_id": "r-20261108T224856386457-review-of-an-overdue-review-names-why-it-is-held-e84f80cfb88c",
+  "reviewed_base_sha": "b8c955d03263747ceb28ebcf2804714d484d663b",
+  "reviewed_head_sha": "e84f80cfb88ccaf16500cee7230ea2d2a42a19bb",
+  "reviewed_run_id": "r-20261108T215213943440-an-overdue-review-names-why-it-is-held",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T23:03:05.172130+00:00",
+  "total": 114
+}
