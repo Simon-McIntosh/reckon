@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:admit_until_stopped",
+    "reckon/crew_run_commands.py:4505",
+    "reckon/crew/dispatch.py:533"
+  ],
+  "completed_at": "2026-11-08T11:04:49.713Z",
+  "dispatched_at": "2026-11-08T10:53:10Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "4932",
+      "severity": "non-blocking",
+      "text": "the failure string is assigned for the rebind ScopeConflict and never read on that path, because the refusal branch reports through str(caught) at :5041 and _record_queued_failure is skipped whenever hold_only is set, so the assignment is dead and a reader must trace the branch to learn that."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s): admit_until_stopped, the crew admit command and dispatch.py's _record_queued_failure, whose signature the hold parameter leaves unchanged.",
+    "diff": "read commit by commit since the prior review at 4cf29efd26; efd1126ec0 catches the rebind relaunch's ScopeConflict at reckon/crew/queue_admission.py:4923 and folds the duplicate write-back into a hold parameter on _restore_queued at :1683, and 233e7a36ae adds the two evidence paragraphs to the fragment, with no hunk outside the declared paths.",
+    "done_when": "section 35's done-when names the reproduction, three cases, two negative controls, a base-arm delta with EXIT-terminated logs and ruff adding no findings; the reviewed run's baseline-suite.log records 2 failed and 4 passed at b0708be48a (EXIT=1) and after-suite.log records 6 passed at 233e7a36ae (EXIT=0), three negative-control logs each name a failing id the head arm does not fail, and my ruff check of the head files adds no finding over the same check of the base files.",
+    "goal": "the node goal is to make a launch refused on a claim go back to the queue; at head 233e7a36 both the first launch and the metered-rebind relaunch are caught at reckon/crew/queue_admission.py:4923 and written back through _return_claim_refusal_to_queue at :1731, which restores phase queued via _restore_queued.",
+    "manifest": "read; status complete, commits abfb16b441, 4cf29efd26, efd1126ec0 and 233e7a36ae, baseline_suite and after_suite each carrying revision, literal command, exit_status and completed, and six test_logs each starting with its revision and command and ending in a bare EXIT= line.",
+    "write_paths": "the node declared reckon/crew/queue_admission.py, tests/test_a_claim_refused_launch_returns_to_the_queue.py, the evidence fragment and a figures directory; the delta since the prior review (4cf29efd26..233e7a36ae) changes exactly the module, the test and docs/evidence/fragments/a-queue-holds-the-whole-plan/return-a-claim-refused-launch-to-the-queue.html, all inside that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_claim_refused_launch_returns_to_the_queue.py:300 fails with assert 'starting' == 'queued' when the rebind clause is disabled (negative-control-rebind-refusal-without-restore.log, EXIT=1) and its positive control at :309 shows the identical rebind launching without a claim, although the assertions at :306 and :319 read back values the test itself supplied rather than an independent source.",
+    "evidence": "baseline-suite.log and after-suite.log each carry their revision, literal command and a bare EXIT= line and negative-control-rebind-refusal-without-restore.log reddens the new case, but the manifest records no ruff run so the done-when's ruff half rests on my own check of the head files against the base files.",
+    "fit": "the new clause and the hold argument on _restore_queued at reckon/crew/queue_admission.py:1683 follow the neighbouring restore idiom and add no plan or ticket identifier, but the failure assignment at :4932 is never read on the ScopeConflict path.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:4923-4934 catches the relaunch's ScopeConflict and :4976-4980 restores the rebound snapshot to phase queued carrying its claim hold, so no refused launch of either kind leaves a starting pointer.",
+    "reuse": "_return_claim_refusal_to_queue at reckon/crew/queue_admission.py:1731 delegates to the owner _restore_queued instead of re-implementing it, and the duplicated pop list, discard check and locked write the prior review named are gone.",
+    "scope_discipline": "the delta between 4cf29efd26 and 233e7a36ae touches only reckon/crew/queue_admission.py, tests/test_a_claim_refused_launch_returns_to_the_queue.py and the evidence fragment, all among the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make a launch refused on a claim go back to the queue; at head 233e7a36 both the first launch and the metered-rebind relaunch are caught at reckon/crew/queue_admission.py:4923 and written back through _return_claim_refusal_to_queue at :1731, which restores phase queued via _restore_queued.\nVERDICT done_when: section 35's done-when names the reproduction, three cases, two negative controls, a base-arm delta with EXIT-terminated logs and ruff adding no findings; the reviewed run's baseline-suite.log records 2 failed and 4 passed at b0708be48a (EXIT=1) and after-suite.log records 6 passed at 233e7a36ae (EXIT=0), three negative-control logs each name a failing id the head arm does not fail, and my ruff check of the head files adds no finding over the same check of the base files.\nVERDICT write_paths: the node declared reckon/crew/queue_admission.py, tests/test_a_claim_refused_launch_returns_to_the_queue.py, the evidence fragment and a figures directory; the delta since the prior review (4cf29efd26..233e7a36ae) changes exactly the module, the test and docs/evidence/fragments/a-queue-holds-the-whole-plan/return-a-claim-refused-launch-to-the-queue.html, all inside that scope.\nVERDICT manifest: read; status complete, commits abfb16b441, 4cf29efd26, efd1126ec0 and 233e7a36ae, baseline_suite and after_suite each carrying revision, literal command, exit_status and completed, and six test_logs each starting with its revision and command and ending in a bare EXIT= line.\nVERDICT diff: read commit by commit since the prior review at 4cf29efd26; efd1126ec0 catches the rebind relaunch's ScopeConflict at reckon/crew/queue_admission.py:4923 and folds the duplicate write-back into a hold parameter on _restore_queued at :1683, and 233e7a36ae adds the two evidence paragraphs to the fragment, with no hunk outside the declared paths.\nCALL_SITES: reckon/crew/queue_admission.py:admit_until_stopped, reckon/crew_run_commands.py:4505, reckon/crew/dispatch.py:533\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:4923-4934 catches the relaunch's ScopeConflict and :4976-4980 restores the rebound snapshot to phase queued carrying its claim hold, so no refused launch of either kind leaves a starting pointer.\nSCORE evidence: 18\nJUSTIFICATION evidence: baseline-suite.log and after-suite.log each carry their revision, literal command and a bare EXIT= line and negative-control-rebind-refusal-without-restore.log reddens the new case, but the manifest records no ruff run so the done-when's ruff half rests on my own check of the head files against the base files.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the delta between 4cf29efd26 and 233e7a36ae touches only reckon/crew/queue_admission.py, tests/test_a_claim_refused_launch_returns_to_the_queue.py and the evidence fragment, all among the node's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_claim_refused_launch_returns_to_the_queue.py:300 fails with assert 'starting' == 'queued' when the rebind clause is disabled (negative-control-rebind-refusal-without-restore.log, EXIT=1) and its positive control at :309 shows the identical rebind launching without a claim, although the assertions at :306 and :319 read back values the test itself supplied rather than an independent source.\nSCORE fit: 17\nJUSTIFICATION fit: the new clause and the hold argument on _restore_queued at reckon/crew/queue_admission.py:1683 follow the neighbouring restore idiom and add no plan or ticket identifier, but the failure assignment at :4932 is never read on the ScopeConflict path.\nSCORE reuse: 19\nJUSTIFICATION reuse: _return_claim_refusal_to_queue at reckon/crew/queue_admission.py:1731 delegates to the owner _restore_queued instead of re-implementing it, and the duplicated pop list, discard check and locked write the prior review named are gone.\nFINDING reckon/crew/queue_admission.py:4932 non-blocking: the failure string is assigned for the rebind ScopeConflict and never read on that path, because the refusal branch reports through str(caught) at :5041 and _record_queued_failure is skipped whenever hold_only is set, so the assignment is dead and a reader must trace the branch to learn that.\n",
+  "review_checks": [],
+  "review_run_id": "r-20261108T104808334081-review-of-return-a-claim-refused-launch-to-the-queue-233e7a36ae09",
+  "reviewed_base_sha": "4cf29efd26a66a829b46a354f65f1ea9d820798b",
+  "reviewed_head_sha": "233e7a36ae09c4179a4bf2286276f77d2ce1213d",
+  "reviewed_run_id": "r-20261108T080751574147-return-a-claim-refused-launch-to-the-queue",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T11:28:18.200472+00:00",
+  "total": 112
+}
