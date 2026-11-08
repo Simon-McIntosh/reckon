@@ -70,15 +70,43 @@ census_children: []</code></pre>
         <code>e958551af</code> in a <code>git archive</code> scratch tree with
         the new test copied in. The base arm fails every case, so each case
         measures the change rather than the harness.</p>
-      <p><strong>Negative controls</strong>, each executed and logged, one
-        declared mutation at a time, each failing only ids the head arm passes:</p>
+      <p><strong>Negative controls</strong> &mdash; all seven the section
+        declares, each applied alone to
+        <code>reckon/crew/dispatch_watch.py</code> at head
+        <code>d10ea7ba</code>, each run against
+        <code>tests/test_a_host_follows_only_its_own_session.py</code>, and each
+        logged under the run directory by the
+        <code>negative-control-&lt;name&gt;.log</code> named beside it. Every
+        one fails only ids the head arm passes:</p>
       <ul>
-        <li>ask predicate always <code>False</code>: cases 2 and 3 fail
+        <li>ask predicate always <code>False</code>
+          (<code>negative-control-ask-predicate-always-false.log</code>): cases
+          2 and 3 fail (<strong>2 failed, 4 passed, EXIT=1</strong>);</li>
+        <li>a hand-off naming the calling session refused
+          (<code>negative-control-handoff-refused.log</code>): case 5 fails
+          (<strong>1 failed, 5 passed, EXIT=1</strong>);</li>
+        <li><code>owner_checked</code> left off the request line
+          (<code>negative-control-mark-off.log</code>): cases 2 and 5 fail
           (<strong>2 failed, 4 passed, EXIT=1</strong>);</li>
-        <li><code>owner_checked</code> left off the request line: cases 2 and 5
-          fail (<strong>2 failed, 4 passed, EXIT=1</strong>);</li>
-        <li>ownership check dropped: cases 1 and 4 fail
-          (<strong>2 failed, 4 passed, EXIT=1</strong>).</li>
+        <li>ownership check dropped
+          (<code>negative-control-ownership-check-dropped.log</code>): cases 1
+          and 4 fail &mdash; an ask and a hand-off for another session each
+          write a request (<strong>2 failed, 4 passed, EXIT=1</strong>);</li>
+        <li>the guard placed in the ask alone
+          (<code>negative-control-guard-in-the-ask-alone.log</code>): the
+          hand-off bypasses it, so case 4 fails
+          (<strong>1 failed, 5 passed, EXIT=1</strong>);</li>
+        <li>the ask answered from the session-wide attachment
+          (<code>negative-control-session-wide-attachment.log</code>): case 6
+          fails, and cases 2 and 3 with it because no census child ever arrives
+          (<strong>3 failed, 3 passed, EXIT=1</strong>);</li>
+        <li>the reproduction's path restored with the check removed
+          (<code>negative-control-reproduction-path.log</code>): the request is
+          written again naming the other session's pair
+          (<code>{"project": "proj", "session": "another-sessions-run",
+          "owner_checked": true}</code>), so the defect returns
+          (<strong>EXIT=0</strong> for the instrument, which measures the
+          request line's own content).</li>
       </ul>
       <p><strong>Regression</strong> over the test files importing
         <code>reckon.crew.dispatch_watch</code> (19 files, one arm at a time,
