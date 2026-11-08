@@ -22,12 +22,12 @@
   <meta name="plan-depends-on" content="a-crew-process-ends-with-its-owner">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-section-depends-on" content="{&quot;s7&quot;: [&quot;a-run-has-one-live-worker#s6&quot;], &quot;s9&quot;: [&quot;a-run-has-one-live-worker#s8&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>A Run Has One Live Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.67">
-<meta name="plan-version" content="56">
+<meta name="plan-version" content="57">
 <meta name="plan-modified" content="2026-11-08">
 <meta name="plan-commits" content="a88e6f09">
 </head>
@@ -128,7 +128,7 @@
 <p>Negative controls: composing the message at one site only fails the parity case; dropping the repair-round lookup fails the first case; leaving the in-motion site on its own sentence fails the fifth case. The armed suite command passes at the head, judged by delta against the dispatch base with the new test copied into the base tree, including every test file that matches the present sentence.</p>
 
     <h2 id="s7">§7 — Stopping a live attempt keeps its uncommitted work</h2>
-<section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> In <code>r-20261107T052438443051-line-arm-screen-rows</code>, <code>crew stop</code> ended a repair round mid-turn. Its uncommitted edit stayed in the worktree with no record of whose it was, and the next attempt committed it as its own. In edge-window-settle the coordinator saved the diff by hand (<code>~/.cache/power_convertor-filter-review/edge-window-settle-uncommitted.diff</code>) before stopping. <code>terminate</code> (<code>reckon/crew/dispatch_sessions.py</code> near line 2069) records the stopped state and nothing about the tree.</p>
 <p><strong>Deliverable.</strong> Before it signals, <code>terminate</code> writes the worktree&#x27;s uncommitted changes to <code>stopped-attempt-&lt;n&gt;.diff</code> in the run directory: tracked changes as <code>git diff HEAD</code>, plus the names of untracked files. The path goes in the result <code>crew stop</code> prints, and in the attempt&#x27;s exit record. A clean tree writes no file and says so. A worktree that cannot be read is named in the result, and the stop still proceeds.</p>
 <p>Write paths: <code>reckon/crew/dispatch_sessions.py</code> and the new test <code>tests/test_a_stop_keeps_the_attempts_uncommitted_work.py</code>. §7 waits on §6, which also writes <code>dispatch_sessions.py</code>.</p>
