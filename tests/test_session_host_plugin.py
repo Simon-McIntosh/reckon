@@ -1,15 +1,17 @@
-"""The session host plugin monitor waits silently until its first request.
+"""The session host plugin monitor hands the host its FIFO at once.
 
-The entry point is a shell script Claude Code starts once per session. These
-tests drive it in a temporary checkout whose ``.venv/bin/reckon`` is a recording
-stub, so nothing on the machine is touched and the exec target is observable.
+The entry point is a shell script Claude Code starts once per session. It does
+not wait for a request before starting the host: it names the owner, opens the
+FIFO and execs the host, which reads its owner's session and follows the live
+runs that session already owns. These tests drive it in a temporary checkout
+whose ``.venv/bin/reckon`` is a recording stub, so nothing on the machine is
+touched and the exec target is observable.
 """
 
 from __future__ import annotations
 
 import json
 import os
-import select
 import shutil
 import signal
 import subprocess
@@ -156,39 +158,44 @@ def test_plugin_directory_loads_without_errors() -> None:
     assert entry.get("errors", []) == [], entry.get("errors")
 
 
-def test_waits_silently_on_a_fifo_named_for_its_owner(tmp_path: Path) -> None:
-    root = _checkout(tmp_path)
-    owner = _start_owner()
-    try:
-        proc, runtime, _ = _launch(root, tmp_path, owner.pid)
-        try:
-            fifo = _fifo(runtime, owner.pid, _proc_start(owner.pid))
-            assert _await(fifo.exists), f"FIFO never appeared at {fifo}"
-            assert fifo.is_fifo()
+def test_execs_the_host_at_once_holding_the_fifo_open(tmp_path: Path) -> None:
+    """The entry point starts the host with no request written to its FIFO.
 
-            # Stays silent while it waits: nothing on stdout, process still alive.
-            assert select.select([proc.stdout], [], [], 0.5)[0] == []
-            assert proc.poll() is None
-        finally:
-            _stop(proc)
-    finally:
-        _stop(owner)
-
-
-def test_first_request_line_becomes_the_host_command(tmp_path: Path) -> None:
+    Nothing is written to the FIFO here: the stub's record appearing is the
+    host starting on the entry point's own initiative. The descriptor it
+    inherited resolves to the FIFO the entry point named, so the open end is
+    held for whatever request arrives next.
+    """
     root = _checkout(tmp_path)
     owner = _start_owner()
     try:
         proc, runtime, record = _launch(root, tmp_path, owner.pid)
         try:
-            start = _proc_start(owner.pid)
-            fifo = _fifo(runtime, owner.pid, start)
-            assert _await(fifo.exists), f"FIFO never appeared at {fifo}"
+            fifo = _fifo(runtime, owner.pid, _proc_start(owner.pid))
+            assert _await(record.exists), "the entry point waited for a request"
+            assert fifo.is_fifo(), "the entry point did not create its FIFO"
+            proc.wait(timeout=5)
+            assert proc.returncode == 0
+        finally:
+            _stop(proc)
 
-            line = "dispatch the follow"
-            with open(fifo, "w") as fh:
-                fh.write(line + "\n")
+        lines = record.read_text().splitlines()
+        fd_target = next(
+            (ln[len("fd:") :] for ln in lines if ln.startswith("fd:")), None
+        )
+        assert fd_target is not None, "the inherited FIFO descriptor was not open"
+        assert Path(fd_target) == fifo
+    finally:
+        _stop(owner)
 
+
+def test_passes_no_first_request_to_the_host(tmp_path: Path) -> None:
+    """No ``--first-request`` reaches the host: it reads the FIFO itself."""
+    root = _checkout(tmp_path)
+    owner = _start_owner()
+    try:
+        proc, _runtime, record = _launch(root, tmp_path, owner.pid)
+        try:
             assert _await(record.exists), "the recording stub never ran"
             proc.wait(timeout=5)
             assert proc.returncode == 0
@@ -197,77 +204,95 @@ def test_first_request_line_becomes_the_host_command(tmp_path: Path) -> None:
 
         lines = record.read_text().splitlines()
         args = [ln[len("arg:") :] for ln in lines if ln.startswith("arg:")]
-        fd_target = next(
-            (ln[len("fd:") :] for ln in lines if ln.startswith("fd:")), None
+
+        assert args[:2] == ["crew", "host"]
+        assert "--first-request" not in args, (
+            "the entry point handed the host a request it had read first"
         )
+    finally:
+        _stop(owner)
+
+
+def test_exits_without_starting_a_host_when_its_owner_is_gone(
+    tmp_path: Path,
+) -> None:
+    """A monitor armed for a dead owner starts nothing and leaves no FIFO."""
+    root = _checkout(tmp_path)
+    owner = _start_owner()
+    os.kill(owner.pid, signal.SIGKILL)
+    owner.wait(timeout=5)
+    try:
+        proc, runtime, record = _launch(root, tmp_path, owner.pid)
+        try:
+            assert proc.wait(timeout=8) == 0
+            assert proc.stdout.read() == b""
+        finally:
+            _stop(proc)
+
+        assert not record.exists(), "the entry point started a host for a dead owner"
+        assert not _fifo(runtime, owner.pid, "0").exists()
+    finally:
+        _stop(owner)
+
+
+def test_hands_the_owner_pair_to_the_command_it_execs(tmp_path: Path) -> None:
+    """The host is told which owner it lives for and which descriptor to read.
+
+    The host removes the FIFO named from that same owner pair when it stops, so
+    both values must reach it: a host told the wrong pair would leave the
+    session's real FIFO behind.
+    """
+    root = _checkout(tmp_path)
+    owner = _start_owner()
+    try:
+        proc, _runtime, record = _launch(root, tmp_path, owner.pid)
+        try:
+            start = _proc_start(owner.pid)
+            assert _await(record.exists), "the recording stub never ran"
+            proc.wait(timeout=5)
+            assert proc.returncode == 0
+        finally:
+            _stop(proc)
+
+        lines = record.read_text().splitlines()
+        args = [ln[len("arg:") :] for ln in lines if ln.startswith("arg:")]
 
         assert args[:2] == ["crew", "host"]
         assert _value(args, "--owner-pid") == str(owner.pid)
         assert _value(args, "--owner-start") == start
         assert _value(args, "--fd") == "3"
-        assert _value(args, "--first-request") == line
-        assert fd_target is not None, "the inherited FIFO descriptor was not open"
-        assert Path(fd_target) == fifo
     finally:
         _stop(owner)
 
 
-def test_exits_within_one_interval_after_its_owner_exits(tmp_path: Path) -> None:
-    root = _checkout(tmp_path)
-    owner = _start_owner()
-    proc, runtime, _ = _launch(root, tmp_path, owner.pid)
-    try:
-        fifo = _fifo(runtime, owner.pid, _proc_start(owner.pid))
-        assert _await(fifo.exists), f"FIFO never appeared at {fifo}"
+def test_hands_the_fifo_it_created_to_the_command_it_execs(
+    tmp_path: Path,
+) -> None:
+    """The command inherits the FIFO the entry point created, still in place.
 
-        os.kill(owner.pid, signal.SIGKILL)
-        owner.wait(timeout=5)
-
-        # One wait interval is one second here; allow generous slack for a slow
-        # timeout fenced by the process start and the exec.
-        assert proc.wait(timeout=8) == 0
-        assert proc.stdout.read() == b""
-    finally:
-        _stop(proc)
-        _stop(owner)
-
-
-def test_a_signal_removes_its_fifo(tmp_path: Path) -> None:
-    """A waiting entry point removes its FIFO when it is signalled.
-
-    Claude Code stops a monitor at session end, and the entry point's own wait
-    loop reaches its removal only when the owner is gone. Without a trap the
-    signal ends the shell before that line, so a session that never dispatched
-    leaves its FIFO behind with no entry point alive.
+    The entry point's wait loop used to remove its FIFO itself. With the loop
+    gone, the host owns the file from the moment of the exec, so the descriptor
+    must name that same path and the file must outlive the hand-off for the
+    host to remove it on its own stop.
     """
     root = _checkout(tmp_path)
     owner = _start_owner()
-    proc, runtime, _ = _launch(root, tmp_path, owner.pid)
     try:
-        fifo = _fifo(runtime, owner.pid, _proc_start(owner.pid))
-        assert _await(fifo.exists), f"FIFO never appeared at {fifo}"
+        proc, runtime, record = _launch(root, tmp_path, owner.pid)
+        try:
+            fifo = _fifo(runtime, owner.pid, _proc_start(owner.pid))
+            assert _await(record.exists), "the recording stub never ran"
+            proc.wait(timeout=5)
+            assert proc.returncode == 0
+        finally:
+            _stop(proc)
 
-        proc.send_signal(signal.SIGTERM)
-        assert proc.wait(timeout=8) == 0
-        assert not fifo.exists(), "the entry point left its FIFO behind on TERM"
+        lines = record.read_text().splitlines()
+        fd_target = next(
+            (ln[len("fd:") :] for ln in lines if ln.startswith("fd:")), None
+        )
+        assert fd_target is not None, "the inherited FIFO descriptor was not open"
+        assert Path(fd_target) == fifo
+        assert fifo.exists(), "the entry point removed a FIFO it had handed over"
     finally:
-        _stop(proc)
-        _stop(owner)
-
-
-def test_removes_its_fifo_when_its_owner_exits(tmp_path: Path) -> None:
-    root = _checkout(tmp_path)
-    owner = _start_owner()
-    proc, runtime, _ = _launch(root, tmp_path, owner.pid)
-    try:
-        fifo = _fifo(runtime, owner.pid, _proc_start(owner.pid))
-        assert _await(fifo.exists), f"FIFO never appeared at {fifo}"
-
-        os.kill(owner.pid, signal.SIGKILL)
-        owner.wait(timeout=5)
-
-        assert proc.wait(timeout=8) == 0
-        assert not fifo.exists(), "the entry point left its FIFO behind"
-    finally:
-        _stop(proc)
         _stop(owner)

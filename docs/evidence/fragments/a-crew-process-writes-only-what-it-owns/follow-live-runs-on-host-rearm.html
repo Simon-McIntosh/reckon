@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-writes-only-what-it-owns">
+  <meta name="plan-title" content="A re-armed host follows its session's live runs at once">
+  <meta name="plan-summary" content="The plugin entry point execs the host at once with the FIFO descriptor and no first request; the host reads its owner's session on start and follows the live runs it already owns, marking its adoptions and naming a host with nothing to follow.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-writes-only-what-it-owns">
+  <meta name="plan-verifies" content="reckon:a-crew-process-writes-only-what-it-owns#s5">
+  <meta name="plan-recorded-at" content="2026-11-08">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,session-host,follower,plugin,rearm">
+  <title>A re-armed host follows its session's live runs at once &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A re-armed host follows its session's live runs at once</h1>
+
+    <section id="follow-live-runs-on-host-rearm-repro">
+      <h2>The defect, reproduced first</h2>
+      <p>A re-armed plugin entry point waited on its FIFO for a first request
+        before it exec&rsquo;d <code>reckon crew host</code>, and a follow
+        request only arrives with a dispatch. A session with live runs and no new
+        dispatch therefore showed an empty pane until somebody wrote a request
+        line by hand.</p>
+      <p>The reproduction is the base arm of the node&rsquo;s own gate: the new
+        test file copied into a <code>git archive</code> tree of the dispatch
+        base <code>e5179a465f</code>, run with the armed command. Six of its
+        eight cases fail there, each on the absent start-up scan or the entry
+        point&rsquo;s wait &mdash; <strong>6 failed, 9 passed in 103.45 s,
+        EXIT=1</strong>. The two that pass are the FIFO-removal cases the
+        section states pass at the base by design. Log:
+        <code>gate-base.log</code>.</p>
+    </section>
+
+    <section id="follow-live-runs-on-host-rearm-changes">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>plugins/crew-host/bin/crew-host</code>: names the owner,
+          creates and opens the FIFO, and execs <code>reckon crew host</code>
+          with <code>--owner-pid</code>, <code>--owner-start</code> and
+          <code>--fd 3</code> &mdash; no <code>--first-request</code>. The wait
+          loop and its interval variable are gone; removal of the FIFO is the
+          host&rsquo;s, on a signal and on its owner&rsquo;s end alike.</li>
+        <li><code>reckon/crew/session_host.py</code>: <code>parse_request</code>
+          returns the request&rsquo;s <code>owner_checked</code> mark, which is
+          the only route from a request line into a child entry.
+          <code>adopt_live_work</code> runs at the start of
+          <code>supervise</code>, before the record is written. It follows a
+          run for the owner&rsquo;s current session and for every earlier
+          session the predecessor&rsquo;s census names with the mark, asking
+          <code>live_work_run</code> for each session and project pair through
+          the <code>_live_view</code> seam the follower settles by, so the scan
+          composes no terminal set of its own. <code>_live_projects</code>
+          collects project names only, and <code>live_work_run</code> keeps only
+          the naming of the run that brought a pair back.
+          <code>SessionHost.record()</code> carries
+          <code>owner_checked</code> on marked children and a
+          <code>waiting_for_dispatch</code> field, true while the start-up scan
+          found nothing and false once a child starts.</li>
+        <li><code>reckon/crew/station_subscriber.py</code>:
+          <code>live_work_populations</code> sets a
+          <code>launch-failed</code> pointer aside before it reads the
+          population. That function is the one statement of which runs owe a
+          pane, so the follower settling a pair, the station's reading and a
+          host on start now answer alike; a launch record names a queue
+          placement rather than a worker, so it owes no pane until the retry
+          lands.</li>
+        <li><code>tests/test_session_host_plugin.py</code>: the four tests that
+          asserted the wait are rewritten. Two assert that the entry point execs
+          at once and passes no first request; two assert that it hands the
+          command its owner pair and the FIFO descriptor it created, still in
+          place. The owner-exit case now asserts the entry point starts nothing
+          for an owner that is already gone.</li>
+        <li><code>tests/test_a_rearmed_host_follows_live_runs.py</code>: eight
+          cases against the real <code>reckon crew host</code>, a temporary crew
+          home and a stub follower command.</li>
+      </ul>
+    </section>
+
+    <section id="follow-live-runs-on-host-rearm-evidence">
+      <h2>Evidence</h2>
+      <p><strong>Gate</strong> &mdash;
+        <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+        tests/test_a_rearmed_host_follows_live_runs.py
+        tests/test_session_host_plugin.py</code>:
+        <strong>15 passed in 37.66 s, EXIT=0</strong> at
+        <code>480a03a25b</code>. The base arm runs the rewritten plugin
+        tests against the base archive&rsquo;s own script, from that tree&rsquo;s
+        root: <strong>4 failed, 3 passed in 41.88 s, EXIT=1</strong> at
+        <code>e5179a465f</code>, the four being
+        <code>test_execs_the_host_at_once_holding_the_fifo_open</code>,
+        <code>test_passes_no_first_request_to_the_host</code>,
+        <code>test_hands_the_owner_pair_to_the_command_it_execs</code> and
+        <code>test_hands_the_fifo_it_created_to_the_command_it_execs</code>:
+        the base script waits on its FIFO, so the recording stub never runs.
+        Logs: <code>gate-after.log</code>, <code>gate-base.log</code>.</p>
+      <p><strong>Negative controls</strong> &mdash; eight, each applied alone to
+        <code>reckon/crew/session_host.py</code> at head and restored
+        afterwards, logged in one file under the run directory
+        (<code>negative-controls.log</code>), each failing the case the
+        section names (<strong>1 failed, EXIT=1</strong> per section):</p>
+      <ul>
+        <li>the mark dropped from what <code>parse_request</code> returns:
+          the child-entry case fails;</li>
+        <li>unmarked previous children admitted: the earlier-session case
+          starts a follower for the foreign pair and fails;</li>
+        <li>the <code>_remove_fifo</code> call dropped from
+          <code>SessionHost.stop</code>: the signalled-host case fails;</li>
+        <li>only the current session matched: the earlier-session case
+          starts no follower;</li>
+        <li>the start-up scan skipped: the first case starts no follower;</li>
+        <li>the launch record not set aside: the third case starts a
+          follower;</li>
+        <li>the session ignored in the work judgement: the third case
+          starts a follower for another session&rsquo;s run;</li>
+        <li><code>session_id</code> filtered instead of <code>session</code>:
+          the first case starts no follower.</li>
+      </ul>
+      <p><strong>Regression</strong> over the neighbouring host tests
+        (<code>tests/test_session_host.py</code>,
+        <code>tests/test_a_settled_follower_rearms_while_its_session_owns_work.py</code>,
+        <code>tests/test_no_test_reaches_the_live_session_host.py</code>) at
+        head: <strong>24 passed in 73.60 s, EXIT=0</strong>. Log:
+        <code>neighbouring-tests.log</code>.</p>
+      <p><strong>Station and follower tests</strong> over the seven files that
+        import <code>station_subscriber</code>, run as one batch:
+        <strong>60 passed in 89.63 s, EXIT=0</strong> at head
+        (<code>station-combo-head.log</code>). The batch carried one failure earlier in the
+        node&rsquo;s work &mdash;
+        <code>test_failed_reexec_reports_once_and_keeps_the_registration</code>,
+        which breaks only the batch and passes when run alone. An earlier run
+        recorded that failure at revision <code>bae7b6ab8d</code> with the moved
+        judgement already in its working tree, so
+        <code>station-tests.log</code> measures the batch with the change
+        present: it is not an arm for the state before the commit, and it also
+        shows the failure is not deterministically absent with the change in
+        place. What the record supports is the pairing at head: reverting the
+        shared-rule commit&rsquo;s two files and re-running the same batch
+        reproduces the failure exactly &mdash; <strong>1 failed, 59 passed in
+        61.11 s, EXIT=1</strong>, the same assertion at
+        <code>tests/test_follower_freshness.py:318</code>
+        (<code>station-combo-answering-reverted.log</code>) &mdash; and
+        restoring them clears it. So the change is associated with the batch
+        passing at head; it does not make the batch deterministically clean, and
+        the earlier claim in this record that the failure predates the work is
+        withdrawn as unsupported.</p>
+      <p><strong>Lint:</strong> <code>ruff check</code> and
+        <code>ruff format --check</code> over the three staged Python paths.
+        Delta against the base revision&rsquo;s own copies is zero findings: one
+        <code>PLW1510</code> in
+        <code>tests/test_session_host_plugin.py</code> is present at the base
+        and unchanged here, formatting is clean, and the entry point parses. <code>bash -n</code> over the entry point reports no error. Log:
+        <code>lint.log</code>.</p>
+      <p><strong>Scope boundary:</strong> this node makes a re-armed host follow
+        its own session&rsquo;s live work and carries the ownership mark a
+        restart decision reads. A running host that already holds a foreign
+        child is the restart section&rsquo;s to end.</p>
+    </section>
+
+    <section id="follow-live-runs-on-host-rearm-landing">
+      <h2>Landing</h2>
+      <p><code>landing: docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/follow-live-runs-on-host-rearm.html</code></p>
+    </section>
+  </main>
+</body>
+</html>

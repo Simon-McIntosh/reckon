@@ -198,18 +198,45 @@ class _Child:
     # to the host -- an admission, a resume, a delivery still owing its review
     # -- is otherwise indistinguishable from a restart of a failed child.
     rearmed_for: str | None = None
+    # Set when the request that asked for this pair passed the ownership guard
+    # on the writing side. Only a mark travels from a request line into the
+    # census, so a later host adopting its predecessor's record can tell the
+    # owner's own pairs from a foreign one that host kept.
+    owner_checked: bool = False
 
     @property
     def key(self) -> tuple[str, str]:
         return (self.project, self.session)
 
 
-def parse_request(line: str) -> tuple[str, str] | None:
-    """Read one request line into its project and session, or None.
+def _child_entry(child: _Child) -> dict[str, Any]:
+    """One child's census entry.
+
+    The ownership mark is written only when it was earned, so an entry an older
+    host reads keeps the shape it already carries and nothing records a pair as
+    the owner's on no evidence.
+    """
+    entry: dict[str, Any] = {
+        "project": child.project,
+        "session": child.session,
+        "pid": child.pid,
+        "settled_at": child.settled_at,
+        "rearmed_for": child.rearmed_for,
+    }
+    if child.owner_checked:
+        entry["owner_checked"] = True
+    return entry
+
+
+def parse_request(line: str) -> tuple[str, str, bool] | None:
+    """Read one request line into its project, session and ownership mark, or None.
 
     A line the host cannot act on is skipped rather than ending the reader: the
     stream is shared with whatever the plugin later writes, and one malformed
-    line must not take every follower down.
+    line must not take every follower down. The mark is the writing side's
+    statement that the pair is the calling session's own; it is the only route
+    by which a request line's ownership reaches the child entry the census
+    writes, and a line without it names a pair nothing has vouched for.
     """
     text = line.strip()
     if not text:
@@ -224,7 +251,7 @@ def parse_request(line: str) -> tuple[str, str] | None:
     session = str(payload.get("session") or "").strip()
     if not project or not session:
         return None
-    return project, session
+    return project, session, payload.get("owner_checked") is True
 
 
 def owner_alive(owner: Mapping[str, Any]) -> bool:
@@ -415,6 +442,11 @@ class SessionHost:
         self._clock = clock
         self._now = now
         self._children: dict[tuple[str, str], _Child] = {}
+        # Whether the host holds no pair to follow. It is set by the start-up
+        # scan and cleared when a child starts, so a reader can name a live
+        # host with nothing to follow rather than inferring it from an empty
+        # child list, which a host that has simply not been asked looks like too.
+        self._waiting_for_dispatch = True
         self._stopping = False
         self._stopped = False
         self._stopped_at: float | None = None
@@ -444,21 +476,20 @@ class SessionHost:
         It runs no follower, so it holds nothing, but it is the only record
         that its session is still attended: a host that dropped it would leave
         an idle coordinator invisible to every reader of the fleet.
+
+        ``waiting_for_dispatch`` names a live host whose start-up scan found
+        nothing to follow, which an empty child list cannot say on its own: a
+        host that has simply not been asked yet has one too.
         """
         payload: dict[str, Any] = {
             "pid": os.getpid(),
             "owner": dict(self._owner),
             "children": [
-                {
-                    "project": child.project,
-                    "session": child.session,
-                    "pid": child.pid,
-                    "settled_at": child.settled_at,
-                    "rearmed_for": child.rearmed_for,
-                }
+                _child_entry(child)
                 for child in sorted(self._children.values(), key=lambda c: c.key)
                 if child.pid is not None or child.settled
             ],
+            "waiting_for_dispatch": self._waiting_for_dispatch,
             "updated_at": self._now(),
         }
         if self._stopped:
@@ -493,16 +524,31 @@ class SessionHost:
         parsed = parse_request(line)
         if parsed is None:
             return
-        project, session = parsed
-        key = (project, session)
-        existing = self._children.get(key)
+        project, session, owner_checked = parsed
+        existing = self._children.get((project, session))
         if existing is not None and not existing.settled:
             # A pair already followed changes nothing on a second request, but
             # the request is remembered: it names work a dispatch has just
             # published, and if this same child settles before that run is
             # delivered the pair must be re-armed rather than left idle.
             existing.wanted = True
+            if owner_checked:
+                existing.owner_checked = True
             return
+        self._start_follower(project, session, owner_checked=owner_checked)
+
+    def _start_follower(
+        self, project: str, session: str, *, owner_checked: bool
+    ) -> None:
+        """Run a follower for one pair, deferring to one this host did not start.
+
+        The start-up scan adopts a pair through this same path, so an adopted
+        follower and a requested one are indistinguishable in the census except
+        for the mark, which the scan sets because it adopts only pairs the
+        owner's own sessions name.
+        """
+        key = (project, session)
+        existing = self._children.get(key)
         if existing is not None:
             del self._children[key]
         if self._foreign_live_follower(project, session, pid=None):
@@ -512,7 +558,9 @@ class SessionHost:
             # host's own follower once that one exits. A Monitor-armed follower
             # ends at twenty-nine minutes, and without this the pair would go
             # unwatched until the next dispatch re-requested it.
-            deferred = _Child(project=project, session=session)
+            deferred = _Child(
+                project=project, session=session, owner_checked=owner_checked
+            )
             deferred.delay = _initial_backoff(self._environ)
             deferred.next_attempt = self._clock() + max(
                 deferred.delay, _poll_seconds(self._environ)
@@ -520,7 +568,7 @@ class SessionHost:
             self._children[key] = deferred
             self._write_record()
             return
-        child = _Child(project=project, session=session)
+        child = _Child(project=project, session=session, owner_checked=owner_checked)
         child.delay = _initial_backoff(self._environ)
         pid = self._spawn(child)
         if pid is None:
@@ -528,7 +576,90 @@ class SessionHost:
         child.pid = pid
         child.started_at = self._clock()
         self._children[key] = child
+        self._waiting_for_dispatch = False
         self._write_record()
+
+    # -- start-up -----------------------------------------------------------
+
+    def adopt_live_work(self) -> None:
+        """Follow the live work this owner's sessions already own.
+
+        A re-armed host has no request to start it -- a request only arrives
+        with a dispatch -- so a session with live runs and no new dispatch
+        showed an empty pane indefinitely. The host asks the judgement it
+        already holds of whether a pair owes a pane, so a run it adopts is one
+        the follower would not settle on.
+
+        The sessions are this process's own and every earlier one the previous
+        census names with the ownership mark. The mark is what tells the
+        owner's own sessions apart from a foreign pair a host kept wrongly, so
+        an unmarked entry is never adopted.
+        """
+        sessions = self._owned_sessions()
+        if not sessions:
+            return
+        for project in self._live_projects():
+            for session in sessions:
+                if (project, session) in self._children:
+                    continue
+                if self._live_view(project, session) is None:
+                    continue
+                self._start_follower(project, session, owner_checked=True)
+
+    def _live_projects(self) -> list[str]:
+        """Every project that holds a run, with no judgement applied to a pair.
+
+        This collects names only. Whether a pair owes a pane is asked of
+        ``live_work_run`` -- the judgement the follower settles by, reached
+        through the injected seam -- so the scan composes no terminal set of
+        its own.
+
+        A ``launch-failed`` pointer is the one exclusion, and it is not a
+        phase judgement: that record says a worker was never spawned, so it
+        names a queue placement rather than work a pane could show. Left in,
+        it makes the pair live to every reader and adopts a follower over a
+        run that has no process behind it, which admission is about to
+        requeue.
+        """
+        from reckon.crew import runs as runs_module
+
+        try:
+            pointers = runs_module._list_live_records()
+        except OSError:
+            return []
+        projects: set[str] = set()
+        for pointer in pointers:
+            if not isinstance(pointer, Mapping):
+                continue
+            project = str(pointer.get("project") or "")
+            if project:
+                projects.add(project)
+        return sorted(projects)
+
+    def _previous_record(self) -> Mapping[str, Any]:
+        """The census this host's predecessor wrote, read before writing ours."""
+        try:
+            payload = json.loads(self._record_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {}
+        return payload if isinstance(payload, Mapping) else {}
+
+    def _owned_sessions(self) -> list[str]:
+        """This owner's current session and every earlier one it kept marked."""
+        from reckon.crew.dispatch_watch import _calling_session
+
+        current = _calling_session()
+        sessions = [current] if current else []
+        children = self._previous_record().get("children")
+        if not isinstance(children, Sequence):
+            return sessions
+        for entry in children:
+            if not isinstance(entry, Mapping) or entry.get("owner_checked") is not True:
+                continue
+            session = str(entry.get("session") or "")
+            if session and session not in sessions:
+                sessions.append(session)
+        return sessions
 
     def _foreign_live_follower(
         self, project: str, session: str, *, pid: int | None
@@ -650,6 +781,7 @@ class SessionHost:
                 child.wanted = False
                 child.started_at = now
                 child.settled_at = None
+                self._waiting_for_dispatch = False
         self._write_record()
 
     def _poll_exit(self, child: _Child) -> int | None:
@@ -749,6 +881,11 @@ class SessionHost:
         the two orders are indistinguishable; handling it before the loop keeps
         it ahead of whatever the descriptor delivers next.
         """
+        # A host is re-armed by a monitor that expired, not by a request, so it
+        # starts by following whatever its owner's sessions already own. The
+        # scan reads the predecessor's census, so it runs before the write below
+        # replaces it.
+        self.adopt_live_work()
         self._write_record(force=True)
         if first_request:
             self.handle(first_request)
