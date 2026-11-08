@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 import subprocess
 from collections.abc import Iterable, Mapping, MutableMapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from pathlib import Path
 from typing import Any
 
@@ -745,6 +745,19 @@ def placement_query_undeclared(
 # ── Node definition and the task contract ───────────────────────────────────
 
 
+def _json_ready(value: Any) -> Any:
+    """Return one node field value copied into JSON-ready data.
+
+    The collections are copied rather than shared so a reader of the serialised
+    node cannot mutate the node it came from.
+    """
+    if isinstance(value, list):
+        return list(value)
+    if isinstance(value, dict):
+        return {key: _json_ready(item) for key, item in value.items()}
+    return value
+
+
 @dataclass
 class TaskNode:
     """One dispatchable unit of work, before it is judged well-formed.
@@ -808,32 +821,14 @@ class TaskNode:
                 claimed.append(path)
 
     def as_dict(self) -> dict[str, Any]:
-        """Return the node as sorted JSON-ready data."""
-        return {
-            "anchor_paths": list(self.anchor_paths),
-            "brief": self.brief,
-            "after": list(self.after),
-            "brief_path": self.brief_path,
-            "brief_sha256": self.brief_sha256,
-            "compares_with": self.compares_with,
-            "done_when": self.done_when,
-            "goal": self.goal,
-            "id": self.id,
-            "images": list(self.images),
-            "inputs": list(self.inputs),
-            "manifest_path": self.manifest_path,
-            "over_fence_reason": self.over_fence_reason,
-            "estimated_hours": self.estimated_hours,
-            "negative_control": self.negative_control,
-            "plan": self.plan,
-            "regenerate_paths": list(self.regenerate_paths),
-            "requires_decisions": list(self.requires_decisions),
-            "role": self.role,
-            "section": self.section,
-            "spec_level": self.spec_level,
-            "time_budget": self.time_budget,
-            "write_paths": list(self.write_paths),
-        }
+        """Return the node as JSON-ready data, carrying every declared field.
+
+        The queued dispatch path stores this dict and rebuilds the node from it
+        at launch, so a field this method omits is a field the launched worker
+        never sees. The field list is the dataclass's own: a field added to
+        ``TaskNode`` is carried without a second list to keep in step with it.
+        """
+        return {spec.name: _json_ready(getattr(self, spec.name)) for spec in fields(self)}
 
 
 def normalize_section(value: str) -> str:

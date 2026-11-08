@@ -26,6 +26,7 @@ import time
 from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager, nullcontext
 from contextvars import ContextVar
+from dataclasses import MISSING, fields
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -175,47 +176,69 @@ def _inside_run_directory(value: str, directory: Path) -> bool:
     return path.resolve().is_relative_to(directory.resolve())
 
 
+def _stored_field_value(spec: Any, value: Any) -> Any:
+    """Return one stored field value in the shape ``TaskNode`` declares for it.
+
+    The stored node is JSON, so a declared collection arrives as a list or a
+    dict and a declared text field as a string; the copy keeps the rebuilt node
+    from aliasing the pointer record it was read out of.
+    """
+    if spec.default_factory is not MISSING:
+        empty = spec.default_factory()
+        if isinstance(empty, list):
+            return [item for item in (value or ())]
+        if isinstance(empty, dict):
+            return dict(value or {})
+    if spec.type == "str":
+        return str(value)
+    return value
+
+
 def _node_from_pointer(pointer: Mapping[str, Any]) -> TaskNode:
-    node = dict(pointer.get("node") or {})
-    # A manifest path or write path a previous dispatch defaulted into the
-    # queued run's own directory is dropped here, so the launched run's plan
-    # derives those defaults afresh from its own id. Every other path — a
-    # ``--manifest`` the coordinator named elsewhere, a declared write path, the
-    # brief the run reads — is carried over unchanged.
+    """Rebuild a queued request's node from the pointer it was stored as.
+
+    Every field ``TaskNode`` declares is carried, read from the dataclass's own
+    field list. The queued launch never carries the built node, so a field this
+    rebuild does not name is a field the launched worker never sees, and a list
+    written by hand drifts from the dataclass the first time a field is added.
+    A field the stored node lacks takes the dataclass default.
+
+    Two deliberate rewrites remain: a manifest path or a write path a previous
+    dispatch defaulted into the queued run's own directory is dropped, so the
+    launched run's plan derives those defaults afresh from its own id. Every
+    other path — a ``--manifest`` the coordinator named elsewhere, a declared
+    write path, the brief the run reads — is carried over unchanged.
+    """
+    stored = dict(pointer.get("node") or {})
     queued_dir = runs.run_dir(str(pointer["run_id"]))
-    manifest_path = str(node.get("manifest_path") or "")
+    manifest_path = str(stored.get("manifest_path") or "")
     if _inside_run_directory(manifest_path, queued_dir):
         manifest_path = ""
-    return TaskNode(
-        id=str(node["id"]),
-        goal=str(node.get("goal") or ""),
-        plan=str(node.get("plan") or ""),
-        section=str(node.get("section") or ""),
-        after=list(node.get("after") or ()),
-        brief=str(node.get("brief") or ""),
-        brief_sha256=str(node.get("brief_sha256") or ""),
-        brief_path=str(node.get("brief_path") or ""),
-        role=str(node.get("role") or "implement"),
-        spec_level=str(node.get("spec_level") or ""),
-        done_when=str(node.get("done_when") or ""),
-        write_paths=[
+    rewritten: dict[str, Any] = {
+        "manifest_path": manifest_path,
+        "write_paths": [
             str(path)
-            for path in (node.get("write_paths") or ())
+            for path in (stored.get("write_paths") or ())
             if not _inside_run_directory(str(path), queued_dir)
         ],
-        # The rebuild is field by field, so a field it does not name is a field
-        # the launched worker never sees. A regenerated path is a write path
-        # charged its own way, and an anchor is the opposite of a write path,
-        # so both are carried rather than re-derived from the write scope.
-        regenerate_paths=[str(path) for path in (node.get("regenerate_paths") or ())],
-        anchor_paths=[str(path) for path in (node.get("anchor_paths") or ())],
-        time_budget=str(node.get("time_budget") or ""),
-        manifest_path=manifest_path,
-        negative_control=str(node.get("negative_control") or ""),
-        estimated_hours=node.get("estimated_hours"),
-        requires_decisions=list(node.get("requires_decisions") or ()),
-        peer_scopes=dict(node.get("peer_scopes") or {}),
-    )
+    }
+
+    values: dict[str, Any] = {}
+    for spec in fields(TaskNode):
+        if spec.name in rewritten:
+            values[spec.name] = rewritten[spec.name]
+            continue
+        stored_value = stored.get(spec.name)
+        if stored_value is None:
+            continue
+        value = _stored_field_value(spec, stored_value)
+        # An empty string is a stored field that was never filled, so a field
+        # whose dataclass default is a non-empty string keeps that default
+        # rather than being launched with nothing where the default belongs.
+        if value == "" and spec.default_factory is MISSING and spec.default:
+            continue
+        values[spec.name] = value
+    return TaskNode(**values)
 
 
 def _resolve_lane_config(
