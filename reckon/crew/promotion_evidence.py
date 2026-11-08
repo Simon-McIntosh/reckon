@@ -1210,18 +1210,18 @@ def _head_arm_log_failure_ids(gate_check: Mapping[str, Any] | None) -> set[str] 
     return review_module.gate_log_failure_ids(log_text)
 
 
-def _zero_added_against_a_red_base(
+def _red_base_uncovered_ids(
     record: Mapping[str, Any], gate_check: Mapping[str, Any] | None
-) -> bool:
-    """Whether the run's own manifest shows a red base the head did not worsen.
+) -> set[str] | None:
+    """The head failure ids the run's red baseline does not cover, or ``None``.
 
     A gate is judged here by its delta against its base, so a nonzero exit
     beside a passing verdict is admitted only when the manifest records a
     baseline observation that is itself red — a nonzero exit status — whose
-    recorded failure ids include every id the head arm's log reports, and when
-    both arms declare their runs complete. That is zero added against a red
-    base, which is what the passing verdict then states; anything less is
-    refused by the caller.
+    recorded failure ids cover every id the head arm's log reports, and when
+    both arms declare their runs complete. The covering is asked once, of the
+    review module's ``failure_ids_covered``: a manifest records a bare test
+    name where a gate log writes the qualified id, and the two are one test.
 
     The head ids are read from the cited gate log's own ``FAILED``/``ERROR``
     lines, never from the manifest's ``after_suite`` list: the manifest is the
@@ -1234,34 +1234,48 @@ def _zero_added_against_a_red_base(
     condition is asked of the run's own records, never inferred: a manifest
     that records no arm, an arm that does not declare completion, a baseline
     with no readable status or no readable list of failure ids, and a head log
-    that cannot be read each leave the delta unmeasured, and an unmeasured
-    delta cannot license the pair.
+    that cannot be read each leave the delta unmeasured and report ``None``.
+    The empty set means the comparison was made and found nothing uncovered,
+    which is a different fact from a comparison that could not be made.
     """
     manifest = _fresh_manifest(record)
     if manifest is None:
-        return False
+        return None
     baseline = manifest.get("baseline_suite")
     after = manifest.get("after_suite")
     if not isinstance(baseline, Mapping) or not isinstance(after, Mapping):
-        return False
+        return None
     for arm in (baseline, after):
         if arm.get("completed") is not True:
-            return False
+            return None
     base_exit = baseline.get("exit_status")
     if isinstance(base_exit, bool) or not isinstance(base_exit, int) or base_exit == 0:
-        return False
+        return None
     base_ids = baseline.get("failure_ids")
     if not isinstance(base_ids, list) or any(
         not isinstance(test_id, str) or not test_id.strip() for test_id in base_ids
     ):
-        return False
-    canonical_base = {
+        return None
+    canonical_base = [
         review_module.canonical_node_id(test_id.strip()) for test_id in base_ids
-    }
+    ]
     head_ids = _head_arm_log_failure_ids(gate_check)
     if head_ids is None:
-        return False
-    return head_ids <= canonical_base
+        return None
+    return review_module.failure_ids_covered(canonical_base, head_ids)
+
+
+def _zero_added_against_a_red_base(
+    record: Mapping[str, Any], gate_check: Mapping[str, Any] | None
+) -> bool:
+    """Whether the run's own manifest shows a red base the head did not worsen.
+
+    The delta is measured by ``_red_base_uncovered_ids``; only a comparison
+    that was made and left nothing uncovered is zero added against a red base.
+    ``None`` is an unmeasured delta, and an unmeasured delta cannot license a
+    passing verdict, so it reads as refused here exactly as it does today.
+    """
+    return _red_base_uncovered_ids(record, gate_check) == set()
 
 
 def _arm_without_completion(manifest: Mapping[str, Any] | None) -> str | None:
@@ -1282,6 +1296,29 @@ def _arm_without_completion(manifest: Mapping[str, Any] | None) -> str | None:
         if observation.get("completed") is not True:
             return name
     return None
+
+
+_UNCOVERED_IDS_SHOWN = 20
+
+
+def _uncovered_ids_clause(uncovered: set[str] | None) -> str:
+    """Name the head ids a red baseline does not cover, for the refusal.
+
+    A refusal that says the baseline did not cover the head, without naming
+    what was left uncovered, sends the reader back to the log to find the same
+    ids. At most a screenful is listed and the rest counted, so a head that
+    failed hundreds of tests still produces a refusal a reader can act on.
+    """
+    if not uncovered:
+        return ""
+    ordered = sorted(uncovered)
+    shown = ", ".join(repr(test_id) for test_id in ordered[:_UNCOVERED_IDS_SHOWN])
+    remainder = len(ordered) - _UNCOVERED_IDS_SHOWN
+    rest = f" and {remainder} more" if remainder > 0 else ""
+    return (
+        f", and the head arm's log reports {len(ordered)} failure id(s) the "
+        f"baseline arm's failure_ids do not cover: {shown}{rest}"
+    )
 
 
 def _require_verdict_matches_exit_status(
@@ -1315,7 +1352,8 @@ def _require_verdict_matches_exit_status(
     asserted = gate_check.get("exit_status")
     if isinstance(asserted, bool) or not isinstance(asserted, int) or asserted == 0:
         return
-    if _zero_added_against_a_red_base(record, gate_check):
+    uncovered = _red_base_uncovered_ids(record, gate_check)
+    if uncovered == set():
         return
     incomplete = _arm_without_completion(_fresh_manifest(record))
     withheld = (
@@ -1327,12 +1365,13 @@ def _require_verdict_matches_exit_status(
             "line and its list of failures is not the set it measured"
         )
     )
+    named = _uncovered_ids_clause(uncovered)
     raise CrewError(
         f"run {run_id!r} asserts gate 'passed' beside exit status {asserted}: a "
         "passed verdict states the check succeeded and a nonzero exit status "
         "states it did not, so the row would record two contradictory readings "
         f"of one run. Found: gate 'passed' with a nonzero exit status, "
-        f"'{asserted}'{withheld}. Re-promote with the verdict the evidence "
+        f"'{asserted}'{withheld}{named}. Re-promote with the verdict the evidence "
         "shows, or — when the base this check measures against is itself red, "
         "the head adds no failure to it, and both suite arms record "
         "completed: true — the passing verdict states the zero added against "
