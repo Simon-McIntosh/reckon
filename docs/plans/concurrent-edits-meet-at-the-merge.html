@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;concurrent-edits-meet-at-the-merge#s2&quot;,&quot;concurrent-edits-meet-at-the-merge#s3&quot;],&quot;s5&quot;:[&quot;concurrent-edits-meet-at-the-merge#s2&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
   <title>Concurrent Edits Meet At The Merge | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-modified" content="2026-11-08">
 </head>
 <body>
@@ -60,7 +60,7 @@
     exclusivity is kept only for paths a merge cannot reconcile.</p>
 
     <h2 id="s2">§2 — A source or test file is shared unless it is declared exclusive</h2>
-    <section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> The project's write-sharing declaration gains a default. A file
     path under a declared shared root (for reckon, <code>reckon/</code>, <code>tests/</code>,
     <code>scripts/</code> and <code>skills/</code>) admits concurrent claims unless it matches a
@@ -171,6 +171,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261108T092818929205-a-source-file-is-shared-by-default" data-who="reckon-build" data-when="2026-11-08T11:44:14Z">
     <div class="r-comment-body"><p>Shared-root file claims and exclusive-pattern refusals implemented with directory protection; focused head contract 14 passed, initial control 3 failed/7 passed, ruff 0 added findings. Importer source-base arm interrupted at 99 percent, so full regression comparison remains required.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-11-08T14:00:00Z">
+    <div class="r-comment-body"><p>§2 landed: source and test files are shared by default. <a href="/reckon/evidence/archive/concurrent-edits-meet-at-the-merge-landed.html#a-source-file-is-shared-by-default">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261108T121946539589-review-of-a-conflicting-landing-is-repaired-9f88e600fbd4" data-who="reckon-build" data-when="2026-11-08T12:33:40Z">
     <div class="r-comment-body"><p>Parsed independent review stored at the revision-specific declared path; all six dimensions scored, zero added failures, one blocking finding requiring fresh revision-bound repair gate verification before landing.</p></div>
