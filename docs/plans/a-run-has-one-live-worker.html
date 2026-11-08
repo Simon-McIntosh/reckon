@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.67">
-<meta name="plan-version" content="75">
+<meta name="plan-version" content="76">
 <meta name="plan-modified" content="2026-11-08">
 <meta name="plan-commits" content="a88e6f09">
 </head>
@@ -322,6 +322,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261107T234118260466-name-the-worker-a-launch-refusal-found" data-who="reckon-build" data-when="2026-11-08T13:57:22Z">
     <div class="r-comment-body"><p>The placed-with-unknown arm is deliberate and now carried everywhere it is read. The two cases that pinned the old fall-through assert unknown instead, the first renamed for what it measures; record_process_alive and placement_job_alive state that an unqueryable scheduler on a placed record is never a licence to probe the client's pid; placement_job_alive takes its placement test from _record_is_placed so one helper owns it. Armed suite at the base revision 2c0dcf9b: 4 failed, 31 passed, the four failures being the launch-refusal cases this run introduces. At head 70cde9ed: 35 passed. Every other suite that imports process_liveness was run and adds no failure.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261108T184843683290-review-of-a-relaunch-never-touches-a-live-tree-abd5eca84c63" data-who="reckon-build" data-when="2026-11-08T19:05:57.765Z">
+    <div class="r-comment-body"><p>review of r-20261108T181800262689-a-relaunch-never-touches-a-live-tree at abd5eca84c scored goal_fidelity 18, evidence 18, scope_discipline 20, durability 17, fit 19, reuse 20 — the guard refuses before the first write and the gate reddens at the base and under the declared mutation; three non-blocking findings (a shared-prefix text assertion, a bare except that also swallows a corrupt pointer, and the inherited placed-unknown predicate that §12 fixes) and nothing blocking</p></div>
 </div>
 </section>
 </main>
