@@ -636,6 +636,76 @@ def changed_paths(tree: Path, base_sha: str, tip: str) -> list[str]:
     return [line for line in result.stdout.decode().splitlines() if line.strip()]
 
 
+def _diff_names(tree: Path, revision: str, *, combined: bool) -> list[str] | None:
+    """The paths one revision's diff names, or None when git cannot show it."""
+    args = ["show", "--name-only", "--format="]
+    if combined:
+        args.insert(1, "--cc")
+    result = run_git(tree, *args, revision)
+    if result.returncode:
+        return None
+    return [line for line in result.stdout.decode().splitlines() if line.strip()]
+
+
+def own_changed_paths(
+    tree: Path,
+    older: str,
+    tip: str,
+    *,
+    integration_ref: str,
+) -> list[str] | None:
+    """The paths a run's own commits change, excluding its base and integration.
+
+    A run's own commits are those reachable from ``tip`` but from neither
+    ``older`` nor ``integration_ref`` — the rule
+    :func:`reckon.crew.node.unintegrated_claim_work` already applies to commits,
+    expressed as the paths they touch. ``integration_ref`` is a remote-tracking
+    ref, never a local branch: a local branch can lag the integration branch,
+    and a range taken against it readmits the commits the integration branch
+    already carries. The run's own delta after a merge therefore names the work
+    it wrote rather than everything the merge brought with it.
+
+    ``--no-merges`` drops the run-owned merge commit itself, so a second pass
+    walks the merges and keeps each path their combined diff names — a conflict
+    resolution the run wrote, which no non-merge commit in the range carries.
+
+    ``None`` means the history cannot be compared — no remote, or a missing
+    ref — and the caller must read it as an unshown delta rather than as an
+    empty one.
+    """
+    if not older or not tip or not integration_ref:
+        return None
+    excluded = (f"^{integration_ref}", f"^{older}")
+    try:
+        direct = run_git(tree, "rev-list", "--no-merges", tip, *excluded)
+        if direct.returncode:
+            return None
+        merges = run_git(tree, "rev-list", "--merges", tip, *excluded)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if merges.returncode:
+        return None
+    paths: list[str] = []
+    seen: set[str] = set()
+    for revision in direct.stdout.decode().split():
+        named = _diff_names(tree, revision, combined=False)
+        if named is None:
+            return None
+        for path in named:
+            if path not in seen:
+                seen.add(path)
+                paths.append(path)
+    for revision in merges.stdout.decode().split():
+        named = _diff_names(tree, revision, combined=True)
+        if named is None:
+            return None
+        for path in named:
+            if path not in seen:
+                seen.add(path)
+                paths.append(path)
+    return paths
+
+
 def promotion_clone_matches(
     tree: Path,
     *,
