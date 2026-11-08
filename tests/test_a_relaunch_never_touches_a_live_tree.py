@@ -219,6 +219,7 @@ def test_a_live_worker_refuses_the_dispatch_before_its_tree_is_touched(
             _dispatch(repo, tmp_path / "manifests" / "held.md")
 
         assert "still has a live worker" in str(refusal.value)
+        assert "cutting its worktree again" in str(refusal.value)
         assert RUN_ID in str(refusal.value)
         assert f"pid {process.pid}" in str(refusal.value)
         assert "attempt 2" in str(refusal.value)
@@ -231,6 +232,31 @@ def test_a_live_worker_refuses_the_dispatch_before_its_tree_is_touched(
     finally:
         process.terminate()
         process.wait()
+
+
+def test_an_unreadable_pointer_refuses_rather_than_skipping_the_check(
+    context: tuple[Path, Path], tmp_path: Path
+) -> None:
+    """A record that cannot be read says nothing, so silence is not permission."""
+    _config_home, repo = context
+    tree, stand_in_head, note = _stand_in_tree(repo)
+    pointer = runs_module.pointer_path(RUN_ID)
+    pointer.parent.mkdir(parents=True, exist_ok=True)
+    pointer.write_text("{ not a record\n", encoding="utf-8")
+    _advance_head(repo)
+
+    with pytest.raises(crew.CrewError) as refusal:
+        _dispatch(repo, tmp_path / "manifests" / "corrupt.md")
+
+    assert "cannot be read" in str(refusal.value)
+    assert RUN_ID in str(refusal.value)
+    assert "not valid JSON" in str(refusal.value)
+    assert _git(tree, "rev-parse", "HEAD") == stand_in_head
+    assert note.read_text(encoding="utf-8") == "in progress\n"
+    assert _git(tree, "status", "--porcelain") == ""
+    assert pointer.read_text(encoding="utf-8") == "{ not a record\n"
+    assert not runs_module.run_dir(RUN_ID).exists()
+    _assert_the_real_crew_home_is_untouched(tmp_path)
 
 
 def test_a_worker_proven_dead_lets_the_dispatch_proceed(

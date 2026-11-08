@@ -489,14 +489,29 @@ def _refuse_a_live_worker_before_the_worktree(run_id: str) -> None:
     is taken before this dispatch writes anything of its own: no claim, no run
     directory and no tree, so a refused dispatch leaves the run as it found it.
     A run id with no live pointer has never launched here and is not refused.
+    A pointer that exists and cannot be read is refused rather than skipped: an
+    unreadable record says nothing about whether its worker is still running,
+    and proceeding on that silence would rebuild exactly the tree this check
+    exists to keep.
     """
     from reckon.crew.dispatch_launch import _launch_refused_by, _live_worker_refusal
     from reckon.crew.recovery_liveness import live_worker_reading
 
+    path = pointer_path(run_id)
+    if not path.exists():
+        return
     try:
         record = read_pointer(run_id)
-    except CrewError:
-        return
+    except (CrewError, OSError) as exc:
+        if not path.exists():
+            # It went away between the check and the read: no live run.
+            return
+        raise CrewError(
+            f"run {run_id!r} cannot be dispatched: its live pointer at {path} "
+            f"cannot be read ({exc}), so whether a worker still holds this run "
+            "is unknown, and a relaunch could cut a tree beneath a live worker; "
+            "inspect or remove that pointer before dispatching again"
+        ) from exc
     holder = live_worker_reading(record)
     if not _launch_refused_by(record, holder):
         return
