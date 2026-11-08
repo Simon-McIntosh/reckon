@@ -86,6 +86,7 @@ def project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
         ("commit", "-q", "-m", "chore: seed fixture"),
     ):
         _git(repo, *args)
+    _git(repo, "update-ref", "refs/remotes/origin/main", "HEAD")
     base_sha = _git(repo, "rev-parse", "HEAD")
     figure_path = repo / FIGURE
     figure_path.parent.mkdir(parents=True)
