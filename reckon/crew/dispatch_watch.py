@@ -752,8 +752,8 @@ def _ask_session_host(
     than spelled at each caller, so a caller that needs only the write -- the
     follower handing over -- shares the one place the line is written. A caller
     that must see the host act on it hands in its own reading of the answer:
-    dispatch asks whether the session reads as attached, and the re-arm asks
-    whether this host now runs a child for the pair. Without a host, or when the
+    dispatch asks whether this host now runs a child for the pair, and the
+    re-arm asks the same of its own host. Without a host, or when the
     answer does not hold within the producer bound, this reports False and the
     caller falls back exactly as it does with no host at all.
     """
@@ -770,15 +770,17 @@ def _ask_session_host(
 def _ask_session_host_for_follower(project: str, session: str | None) -> bool:
     """Ask this session's host to follow the project, returning whether it did.
 
-    The answer is the session reading as attached -- the fact that matters,
-    since the host attaching a follower is what makes the finished run reach the
-    session. Without a host, or when it does not attach within the caller's
-    bound, this reports False and the caller admits exactly as it does today.
+    The answer is this host's own live child for the pair, which is what makes
+    the finished run reach the session: a session attached through another
+    host's follower, or through one a coordinator armed by hand, shows nothing
+    of an ask this host did not serve. Without a host, or when it does not
+    attach within the caller's bound, this reports False and the caller admits
+    exactly as it does today.
     """
     return _ask_session_host(
         project,
         session,
-        lambda: bool(watch_state(project, session=session)["session_attached"]),
+        lambda: _session_host_child_pid(project, session) is not None,
     )
 
 
@@ -821,16 +823,27 @@ def _request_host_follower(project: str, session: str | None) -> bool:
     The request is one JSON line naming the project and the session, written to
     the host's FIFO through the same non-blocking write the fleet spawn uses, so
     a FIFO with no reader means no host and falls back at once rather than
-    stalling. This is the write alone; a caller that must see the host attach
-    composes it with its own wait, and a caller that is itself the follower
-    handing over only needs the request delivered before it exits.
+    stalling. The FIFO belongs to the calling process's host, so a pair named
+    for any other session would be followed by a host that does not own it: the
+    request is written only when the pair is this process's own session, and
+    its ``owner_checked`` mark records that the guard passed for the host that
+    reads the line. This is the write alone; a caller that must see the host
+    attach composes it with its own wait, and a caller that is itself the
+    follower handing over only needs the request delivered before it exits.
     """
     if not session:
+        return False
+    if session != _calling_session():
         return False
     fifo = _session_host_fifo()
     if fifo is None:
         return False
-    line = json.dumps({"project": project, "session": session}).encode("utf-8") + b"\n"
+    line = (
+        json.dumps(
+            {"project": project, "session": session, "owner_checked": True}
+        ).encode("utf-8")
+        + b"\n"
+    )
     try:
         # A deadline already in the past asks ``_write_fleet_request`` for a
         # single attempt: no reader on the FIFO is a fallback, not a wait.

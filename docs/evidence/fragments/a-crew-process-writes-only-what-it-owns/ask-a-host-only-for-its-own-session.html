@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-writes-only-what-it-owns">
+  <meta name="plan-title" content="A host is asked to follow only its own session">
+  <meta name="plan-summary" content="A follow request is written only when the pair it names is the calling process's own session, every line it writes carries owner_checked, and the ask reports this host's own child rather than a session-wide attachment.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-writes-only-what-it-owns">
+  <meta name="plan-verifies" content="reckon:a-crew-process-writes-only-what-it-owns#s3">
+  <meta name="plan-recorded-at" content="2026-11-08">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,session-host,follower,dispatch">
+  <title>A host is asked to follow only its own session &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A host is asked to follow only its own session</h1>
+
+    <section id="ask-a-host-only-for-its-own-session-repro">
+      <h2>The defect, reproduced first</h2>
+      <p>A follow request line is written to the FIFO owned by the Claude process
+        issuing it (<code>_session_host_fifo</code>), while the line itself names
+        whatever session the caller hands it. A process reading as
+        <code>calling-session</code> asking for <code>another-sessions-run</code>,
+        with its own census holding no child, wrote:</p>
+      <pre><code>request_lines_written: ['{"project": "proj", "session": "another-sessions-run"}']
+ask_answered: True
+census_children: []</code></pre>
+      <p>So the request reached the calling process's host naming another
+        session's pair, and the ask reported success because the pair read as
+        attached somewhere. The real path is a recovery review dispatch: it
+        passes the reviewed run's session to <code>dispatch</code>
+        (<code>reckon/crew/recovery_review_dispatch.py</code>), which need not be
+        the session issuing it, and <code>_arrange_dispatch_follower</code>
+        then asks that host for the pair. Log:
+        <code>repro-foreign-follow-request.log</code>.</p>
+    </section>
+
+    <section id="ask-a-host-only-for-its-own-session-changes">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/crew/dispatch_watch.py</code>:
+          <code>_request_host_follower</code> writes nothing when the pair it is
+          given is not <code>_calling_session()</code>, and every line it does
+          write carries <code>"owner_checked": true</code>. Both writers of a
+          request go through it, so the guard holds for the ask and for the
+          follower's hand-off alike.</li>
+        <li><code>_ask_session_host_for_follower</code> answers from
+          <code>_session_host_child_pid</code> &mdash; this host's own census
+          &mdash; instead of the session-wide attachment, so another host's
+          follower no longer reads as delivery this host serves.</li>
+        <li><code>tests/test_a_host_follows_only_its_own_session.py</code>: six
+          cases over a temporary crew home, a stub host on the session-host FIFO
+          and the caller's census.</li>
+      </ul>
+    </section>
+
+    <section id="ask-a-host-only-for-its-own-session-evidence">
+      <h2>Evidence</h2>
+      <p><strong>Gate</strong> &mdash;
+        <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+        tests/test_a_host_follows_only_its_own_session.py</code>:
+        <strong>6 passed in 29.09 s, EXIT=0</strong> at head, and
+        <strong>6 failed in 34.08 s, EXIT=1</strong> at the dispatch base
+        <code>e958551af</code> in a <code>git archive</code> scratch tree with
+        the new test copied in. The base arm fails every case, so each case
+        measures the change rather than the harness.</p>
+      <p><strong>Negative controls</strong> &mdash; all seven the section
+        declares, each applied alone to
+        <code>reckon/crew/dispatch_watch.py</code> at head
+        <code>d10ea7ba</code>, and each logged under the run directory by the
+        <code>negative-control-&lt;name&gt;.log</code> named beside it. Six run
+        against
+        <code>tests/test_a_host_follows_only_its_own_session.py</code>; the
+        seventh, the reproduction's path restored with the check removed, runs
+        <code>repro_foreign_follow_request.py</code>, the instrument that
+        recorded the defect before the repair. Every one fails only ids the head
+        arm passes, except that last, which reports the request line it
+        observes:</p>
+      <ul>
+        <li>ask predicate always <code>False</code>
+          (<code>negative-control-ask-predicate-always-false.log</code>): cases
+          2 and 3 fail (<strong>2 failed, 4 passed, EXIT=1</strong>);</li>
+        <li>a hand-off naming the calling session refused
+          (<code>negative-control-handoff-refused.log</code>): case 5 fails
+          (<strong>1 failed, 5 passed, EXIT=1</strong>);</li>
+        <li><code>owner_checked</code> left off the request line
+          (<code>negative-control-mark-off.log</code>): cases 2 and 5 fail
+          (<strong>2 failed, 4 passed, EXIT=1</strong>);</li>
+        <li>ownership check dropped
+          (<code>negative-control-ownership-check-dropped.log</code>): cases 1
+          and 4 fail &mdash; an ask and a hand-off for another session each
+          write a request (<strong>2 failed, 4 passed, EXIT=1</strong>);</li>
+        <li>the guard placed in the ask alone
+          (<code>negative-control-guard-in-the-ask-alone.log</code>): the
+          hand-off bypasses it, so case 4 fails
+          (<strong>1 failed, 5 passed, EXIT=1</strong>);</li>
+        <li>the ask answered from the session-wide attachment
+          (<code>negative-control-session-wide-attachment.log</code>): case 6
+          fails, and cases 2 and 3 with it because no census child ever arrives
+          (<strong>3 failed, 3 passed, EXIT=1</strong>);</li>
+        <li>the reproduction's path restored with the check removed
+          (<code>negative-control-reproduction-path.log</code>): the request is
+          written again naming the other session's pair
+          (<code>{"project": "proj", "session": "another-sessions-run",
+          "owner_checked": true}</code>), so the defect returns
+          (<strong>EXIT=0</strong> for the instrument, which measures the
+          request line's own content).</li>
+      </ul>
+      <p><strong>Regression</strong> over the test files importing
+        <code>reckon.crew.dispatch_watch</code> (19 files, one arm at a time,
+        <code>-n 4</code>): head <strong>10 failed, 118 passed, EXIT=1</strong>.
+        The same seven node ids re-run serially at the base and at head give
+        base <strong>4 failed, 6 passed</strong> and head
+        <strong>6 failed, 4 passed</strong>; the failures shared by both arms
+        are subprocess timing tests (<code>/tmp/39486-fleet</code> reload-tree
+        collision, crash-backoff windows) that read as environment contention,
+        not as this change. One added failure is real and is outside this
+        node's write scope:
+        <code>tests/test_a_resume_rearms_its_follower.py::test_a_resume_asks_its_session_host_and_the_host_rearms_the_pair</code>
+        asserts the request line equals exactly
+        <code>{"project", "session"}</code>, and the line now also carries the
+        required <code>owner_checked</code> mark. Its repair is an assertion
+        update in that file.</p>
+      <p><strong>Scope boundary:</strong> this node composes and guards the
+        request line. A host that already holds a child it should not is the
+        host-side restart decision's to end, which reads the
+        <code>owner_checked</code> mark this node now writes.</p>
+      <p><strong>Lint:</strong> <code>ruff check</code> and
+        <code>ruff format --check</code> over the two staged paths add no
+        findings.</p>
+    </section>
+
+    <section id="ask-a-host-only-for-its-own-session-landing">
+      <h2>Landing line</h2>
+      <p><code>landing: docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/ask-a-host-only-for-its-own-session.html</code></p>
+    </section>
+  </main>
+</body>
+</html>

@@ -349,7 +349,13 @@ def test_a_resume_asks_its_session_host_and_the_host_rearms_the_pair(
 
     assert launched == [4242], "the resume still launches its worker"
     assert host.lines, "the resume must send the host a follow request"
-    assert json.loads(host.lines[0]) == {"project": PROJECT, "session": SESSION}
+    request = json.loads(host.lines[0])
+    assert request["project"] == PROJECT
+    assert request["session"] == SESSION
+    # The line records that the writer checked the pair against the session it
+    # runs under before asking its host, so a host can tell a checked request
+    # from one it was never asked to honour.
+    assert request["owner_checked"] is True
     assert len(host.lines) == 1, "one resume asks once"
     assert child_pid is not None, "the stub host must have re-armed a child"
     assert result["follower_rearmed"] is True
