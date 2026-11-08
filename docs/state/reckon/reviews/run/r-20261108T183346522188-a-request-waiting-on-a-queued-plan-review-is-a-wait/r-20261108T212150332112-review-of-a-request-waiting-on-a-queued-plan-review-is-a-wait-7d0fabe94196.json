@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T21:28:51.261Z",
+  "dispatched_at": "2026-11-08T21:22:45Z",
+  "findings": [
+    {
+      "file": "logs/negative-control-malformed-pointer.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "summary": "The negative-control log header names no revision for the mutated tree.",
+      "text": "non-blocking: the mutation log's header records an empty revision ('# revision:  tree: /tmp/reckon-crew-scratch/.../ctrl-no-skip mutation: reader-no-skip'), so the control cannot be reconciled to the revision its mutated tree was built from. The manifest's negative_control_note and the traceback identify the reverted code exactly (node = pointer.get(\"node\") or {} at the pre-fix line), so the control's verdict is still readable, but the log itself names no revision as the record contract asks."
+    },
+    {
+      "file": "tests/test_a_request_waiting_on_a_queued_plan_review_is_a_wait.py",
+      "line": 330,
+      "severity": "non-blocking",
+      "summary": "The case tests the shared reader directly, one layer below the obligations reading the advice named.",
+      "text": "non-blocking: the added case drives recovery_review_dispatch._standing_plan_review with a hand-built pointer list rather than the obligations reading that raised, so it covers the guard but not the delegation at reckon/crew/obligations.py:1288 the repair advice named ('asserting the reading still lists the other request'). A regression in how obligations hands pointers to the reader would not redden this case; the separate one-builder case guards that the delegation is used, so the gap is narrow."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_request_waiting_on_a_queued_plan_review_is_a_wait.py:337 asserts the reader returns REVIEW_RUN_ID from a set carrying a non-mapping member, which fails both on the pre-fix code and on a skip-everything implementation, and the recorded control (logs/negative-control-malformed-pointer.log:6-8) reinstates node = pointer.get(\"node\") or {} and reddens exactly that case (1 failed, 7 passed, EXIT=1).",
+    "evidence": "The gate is recorded at both arms (logs/repair3-after-suite.log:4 '8 passed', logs/repair3-baseline-suite.log:4 '7 passed') and the importer arms agree 24-to-24 set-identically, but the done_when's importer clause is measured over 15 of 103 importing files (manifest.md:27) and the malformed-pointer control's own header names no revision (logs/negative-control-malformed-pointer.log:1).",
+    "fit": "The guard at reckon/crew/recovery_review_dispatch.py:2084-2086 follows the module's own idiom (the same isinstance pattern appears at recovery_review_dispatch.py:86,94,144), Mapping is already imported at recovery_review_dispatch.py:17, and the test name and comments name the mechanism with no plan or stage identifiers.",
+    "goal_fidelity": "reckon/crew/recovery_review_dispatch.py:2085 now skips a pointer whose node is not a Mapping, so the reading obligations.py:1288 performs can no longer be raised out of listing everything else by one malformed pointer, which is the whole of the gained change.",
+    "reuse": "The change adds no new mechanism: it repairs the guard inside the one shared reader reckon/crew/recovery_review_dispatch.py:2060 that the prior review required the obligations derivation to delegate to, so nothing is forked.",
+    "scope_discipline": "git show --stat 7d0fabe941 touches only tests/test_a_request_waiting_on_a_queued_plan_review_is_a_wait.py and reckon/crew/recovery_review_dispatch.py, the latter outside the node's declared write paths though named by the coordinator's repair advice (resume-3-advice.txt item 1) and disclosed at manifest.md's outside_scope."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261108T212150332112-review-of-a-request-waiting-on-a-queued-plan-review-is-a-wait-7d0fabe94196",
+  "reviewed_base_sha": "f8c2cc64603b5f5dd43da1b4a6680145058f2f1a",
+  "reviewed_head_sha": "7d0fabe9419656b652dde8c73d414d7637958ef6",
+  "reviewed_run_id": "r-20261108T183346522188-a-request-waiting-on-a-queued-plan-review-is-a-wait",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T21:35:18.457045+00:00",
+  "total": 108,
+  "verdicts": {
+    "call_sites": "Production entries confirmed at head: reckon/crew/obligations.py:1288 delegates to the reader with pointers=list(live_pointers); reckon/crew/plan_review.py:3779 and reckon/crew/recovery_review_dispatch.py:2127,2150 call _standing_plan_review; reckon/crew/recovery.py:253 re-exports it; list_live at reckon/crew/runs.py:1108 filters non-dict pointers at runs.py:1098, so the added guard protects the caller-supplied path the delegation uses.",
+    "diff": "Read commit by commit from f8c2cc6460: one commit, 7d0fabe941, +60/-2 across two files \u2014 the two-line isinstance(node, Mapping) guard and a docstring paragraph in recovery_review_dispatch.py:2074-2088, and a malformed-pointer fixture plus case in the node test.",
+    "done_when": "The done_when requires the node test with both negative controls failing and logged, adding no importer failure against the base, and ruff clean; for this diff the manifest records 8 passed at 7d0fabe941 (logs/repair3-after-suite.log:4, EXIT=0) against 7 passed at f8c2cc6460 (logs/repair3-baseline-suite.log:4, EXIT=0), four controls each reddening its own cases, and importer arms at the same base pair with 24 failed / 75 passed on each and a set-identical failure list \u2014 but the importer clause still covers 15 of the 103 importing files, as manifest.md:27 discloses.",
+    "goal": "The source node's goal is to list a queued request whose plan review is already live or queued as a wait in both producers; the reviewed diff (f8c2cc6460..7d0fabe941) restores the non-mapping skip in the shared reader that obligations.py:1288 delegates to, so the goal's behaviour survives a malformed live pointer and tests/test_a_request_waiting_on_a_queued_plan_review_is_a_wait.py:309-337 drives the reader over a pointer set holding one.",
+    "manifest": "Read; it states status complete, commits ccb435686b through 7d0fabe941, the gate command with its 8-passed after log and 7-passed baseline log, four control logs, the importer arms re-run this round at f8c2cc6460/7d0fabe941, the reuse edit with before/after line counts, and a spec_deviation disclosing that the importer arm covered 15 of 103 files.",
+    "write_paths": "The source node's declared paths are reckon/crew/obligations.py, reckon/crew/obligation_snapshot.py, the node test and the evidence fragment; the reviewed diff touches exactly reckon/crew/recovery_review_dispatch.py and tests/test_a_request_waiting_on_a_queued_plan_review_is_a_wait.py, and the one file outside the fence is the reader the coordinator's resume-3-advice.txt repair item (1) names explicitly and manifest.md's outside_scope paragraph discloses."
+  }
+}
