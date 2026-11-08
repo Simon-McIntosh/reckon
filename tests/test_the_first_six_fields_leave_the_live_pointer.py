@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import ast
 import json
+from copy import deepcopy
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -229,6 +230,20 @@ def test_the_accessor_answers_for_both_pointer_shapes(
     repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A moved field reads the same from a new-shape and an old-shape pointer."""
+    expected = {}
+    split_detail = runs_module._split_dispatch_detail
+
+    def capture_dispatch_values(path, payload):
+        expected.update(
+            {
+                field: deepcopy(payload[field])
+                for field in DETAIL_FIELDS
+                if field in payload
+            }
+        )
+        return split_detail(path, payload)
+
+    monkeypatch.setattr(runs_module, "_split_dispatch_detail", capture_dispatch_values)
     record = _dispatch_one(repository, tmp_path, "detail-shapes", monkeypatch)
     run_id = str(record["run_id"])
     queue_admission._stamp_admission(
@@ -238,9 +253,9 @@ def test_the_accessor_answers_for_both_pointer_shapes(
     # The new shape: the pointer names the detail file and carries none of it.
     new_pointer = read_pointer(run_id)
     assert "dispatch_detail" in new_pointer
-    stored = json.loads(
-        runs_module.dispatch_detail_path(run_id).read_text(encoding="utf-8")
-    )
+    assert set(expected) == set(DETAIL_FIELDS)
+    assert expected["picker_selection"]["backend"] == "native"
+    assert expected["admit_request"] == {"run_id": run_id, "project": PROJECT}
     with monkeypatch.context() as patch:
         patch.setattr(
             runs_module,
@@ -248,7 +263,7 @@ def test_the_accessor_answers_for_both_pointer_shapes(
             lambda _run_id: tmp_path / "not-the-stored-detail.json",
         )
         for field in DETAIL_FIELDS:
-            assert runs_module.dispatch_field(new_pointer, field) == stored[field], (
+            assert runs_module.dispatch_field(new_pointer, field) == expected[field], (
                 field
             )
 
