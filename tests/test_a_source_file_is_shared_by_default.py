@@ -176,3 +176,57 @@ def test_admission_keeps_a_directory_claim_exclusive(repository: Path) -> None:
 
     assert hold is not None
     assert owner["run_id"] in str(hold)
+
+
+def test_queue_edits_admit_an_exact_shared_file_claim(repository: Path) -> None:
+    _dispatch(repository, "owner", SOURCE)
+    request = _queue(repository, node_id="joiner", run_id="r-joiner")
+
+    assert queue_edit._live_claim_conflict(_node("joiner", SOURCE), request) is None
+
+
+def test_exclusive_patterns_are_reported_by_both_queue_checks(repository: Path) -> None:
+    path = "docs/plans/x.html"
+    _dispatch(repository, "owner", path)
+    request = _queue(repository, node_id="joiner", run_id="r-joiner")
+    request["node"]["write_paths"] = [path]
+    shared = runs._shared_write_paths(PROJECT, repository)
+
+    hold = queue_admission._live_claim_hold(
+        request, runs.list_live(project=PROJECT), dispositions={}, shared_files=shared
+    )
+    refusal = queue_edit._live_claim_conflict(_node("joiner", path), request)
+
+    assert hold is not None and EXCLUSIVE in hold
+    assert refusal is not None and EXCLUSIVE in str(refusal)
+
+
+def test_root_membership_respects_file_and_directory_boundaries(
+    repository: Path,
+) -> None:
+    (repository / "pkg/extensionless").write_text("file\n")
+    (repository / "pkg/directory.py").mkdir()
+    shared = runs._shared_write_paths(PROJECT, repository)
+
+    assert SOURCE in shared
+    assert "pkg/extensionless" in shared
+    assert "pkg/future.py" in shared
+    assert "pkg" not in shared
+    assert "pkg/future-directory" not in shared
+    assert "pkg/directory.py" not in shared
+    assert "pkg-other/source.py" not in shared
+    assert "../outside.py" not in shared
+
+
+def test_an_exclusive_pattern_overrides_a_shared_root(repository: Path) -> None:
+    declaration = repository / "docs/state" / PROJECT / "shared-write-paths.json"
+    declaration.write_text(
+        json.dumps({"shared_roots": ["pkg/"], "exclusive_patterns": ["pkg/private/"]})
+    )
+    shared = runs._shared_write_paths(PROJECT, repository)
+
+    assert SOURCE in shared
+    assert "pkg/private/source.py" not in shared
+    assert (
+        runs._exclusive_write_pattern(shared, "pkg/private/source.py") == "pkg/private/"
+    )
