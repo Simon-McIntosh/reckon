@@ -1,0 +1,42 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "differenced from the reviewed run's own arms: baseline_suite (8c72a9ab8e) records 1 failure id (tests/test_an_overdue_review_names_why_it_is_held.py::test_an_overdue_review_names_the_undisposed_finding, the node's own new case) and after_suite (21553c80c9) records none, so zero are added. I re-derived the importer population myself rather than trusting the manifest's prose: sort+comm over logs/base-failures.txt (38 ids) and logs/head-failures.txt (37 ids) returns no id present in head and absent from base, the counts being non-zero on both sides so the zero is a measured one and not an empty-file result. The one id that disappears between the arms is the clock-derived literal the reviewed manifest records under outside_scope.",
+  "call_sites": [
+    "reckon/crew/obligations.py:1934",
+    "reckon/crew/obligations.py:2791",
+    "reckon/crew/obligation_snapshot.py:1451",
+    "reckon/crew/station_subscriber.py:145",
+    "reckon/hooks/coordinator_obligations.py:792"
+  ],
+  "completed_at": "2026-11-08T22:29:31.329Z",
+  "dispatched_at": "2026-11-08T22:20:50Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": 2503,
+      "severity": "non-blocking",
+      "text": "review_dispatch_refusal's docstring promises that a reader which only reports must not write, but no assertion in tests/test_an_overdue_review_names_why_it_is_held.py checks the pointer after the duty is derived; the property rests entirely on the operand dry_run=True at this line. Changing it to False would make every obligations() derivation stamp a refusal record onto a live run's pointer, and the gate would stay green, so the invariant the new public function exists to provide is unguarded."
+    }
+  ],
+  "node": "review-of-an-overdue-review-names-why-it-is-held-b8c955d03263",
+  "node:reviewed": "an-overdue-review-names-why-it-is-held",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the overdue review duty name the refusal that holds the review and its dispose command; reckon/crew/obligations.py:740-776 (_reflex_open_refusal) asks recovery_review_dispatch.review_dispatch_refusal(pointer) once the reflex window has passed, and reckon/crew/obligations.py:1934-1941 puts that refusal's reason and the fold/exempt pair on the review-missing duty, leaving the follower text in place when nothing refuses.\nVERDICT done_when: the done-when names tests/test_an_overdue_review_names_why_it_is_held.py with both cases, the logged negative control and the importer delta; logs/gate-head.log records 2 passed EXIT=0 at 21553c80c9, logs/gate-base.log records 1 failed 1 passed EXIT=1 on the very assertion that reproduces the defect, logs/negative-control.log records the declared mutation red EXIT=1, and the importer arms at logs/base-arm.log (38 failed, 416 passed) and logs/head-arm.log (37 failed, 419 passed) give zero added failure ids.\nVERDICT write_paths: `git diff --name-only 8c72a9ab8e..b8c955d032` returns exactly reckon/crew/obligations.py, reckon/crew/recovery_review_dispatch.py, tests/test_an_overdue_review_names_why_it_is_held.py and docs/evidence/fragments/a-review-dies-where-nobody-is-looking/an-overdue-review-names-why-it-is-held.html, every one inside the four paths the reviewed dispatch declares.\nVERDICT manifest: read the reviewed run's manifest.md - status complete, commits 21553c80c9 and b8c955d032 over base 8c72a9ab8e, baseline_suite one failure id against an after_suite of none, negative_control_log naming logs/negative-control.log, and an outside_scope entry that records the clock-derived \"50m\" literal in a neighbouring test rather than triaging it.\nVERDICT diff: read both commits against 8c72a9ab8e - 21553c80c9 adds _reflex_open_refusal and rewires the overdue branch at obligations.py:1931-1941 plus review_dispatch_refusal as a dry_run wrapper over _open_review_refusal at recovery_review_dispatch.py:2494-2503, and b8c955d032 adds the 126-line evidence fragment; nothing else changed.\nCALL_SITES: reckon/crew/obligations.py:1934, reckon/crew/obligations.py:2791, reckon/crew/obligation_snapshot.py:1451, reckon/crew/station_subscriber.py:145, reckon/hooks/coordinator_obligations.py:792\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:1934-1941 replaces the follower text with the refusal's own reason and dispose pair exactly when a refusal exists, and the no-refusal arm at line 1939 keeps today's text, so both halves of the goal hold.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/gate-base.log:27 reproduces the defect verbatim (\"inspect the follower's review pass\" still in the command, FAILED, EXIT=1) while logs/gate-head.log:5-6 records 2 passed EXIT=0, so the gate measures the done_when's own cases rather than a proxy.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all four paths in `git diff --stat 8c72a9ab8e..b8c955d032` are declared write paths, the granted docs/figures directory is correctly left empty because the done-when names no figure, and no plan or index state is touched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_an_overdue_review_names_why_it_is_held.py:172 reddens the moment the refusal read is dropped (logs/negative-control.log proves it) and line 188 reddens on any drift from what dispatch_review_for_run returns, but nothing asserts that review_dispatch_refusal leaves the pointer unwritten, so the dry_run operand at reckon/crew/recovery_review_dispatch.py:2503 is unguarded.\nSCORE fit: 18\nJUSTIFICATION fit: obligations.py:663-669 already reads the same two recovery_review_dispatch private helpers, so the new code follows the file's own idiom and ruff reports no findings on the three staged Python paths, but the test module's docstring at tests/test_an_overdue_review_names_why_it_is_held.py:4-9 narrates the previous behaviour (\"the duty used to send...\") where the repository asks comments to state mechanism.\nSCORE reuse: 18\nJUSTIFICATION reuse: review_dispatch_refusal is a delegation to the owner at reckon/crew/recovery_review_dispatch.py:2414 rather than a copy of the rule, but the remedy sentence at obligations.py:774-775 repeats the identical rendering already carried at obligations.py:673-675 in the same module, so two duty paths can drift in phrasing.\nFINDING reckon/crew/recovery_review_dispatch.py:2503 non-blocking: review_dispatch_refusal's docstring promises that a reader which only reports must not write, but no assertion in tests/test_an_overdue_review_names_why_it_is_held.py checks the pointer after the duty is derived; the property rests entirely on the operand dry_run=True at this line. Changing it to False would make every obligations() derivation stamp a refusal record onto a live run's pointer, and the gate would stay green, so the invariant the new public function exists to provide is unguarded.\n",
+  "review_run_id": "r-20261108T221753876249-review-of-an-overdue-review-names-why-it-is-held-b8c955d03263",
+  "reviewed_base_sha": "8c72a9ab8e9621d24eb169caf76ff96e79b1bcce",
+  "reviewed_head_sha": "b8c955d03263747ceb28ebcf2804714d484d663b",
+  "reviewed_run_id": "r-20261108T215213943440-an-overdue-review-names-why-it-is-held",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T22:37:52.656032+00:00",
+  "total": 112
+}
