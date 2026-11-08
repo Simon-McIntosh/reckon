@@ -1,0 +1,34 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T22:49:49.456Z",
+  "dispatched_at": "2026-11-08T22:42:16Z",
+  "findings": [],
+  "plan_commit": "94606d8d3d2c39fe22ffdf030c57051f7aedaf1d",
+  "plan_fingerprint": "eef9852bebefae6f431c2c4c06f00aabde39be434617f7d078aca6dcec7e0c8e",
+  "plan_slug": "a-review-reads-only-its-runs-changes",
+  "plan_version": 14,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T224040235576-plan-review-of-a-review-reads-only-its-runs-changes",
+  "reviewed_blob_sha": "431f56e773e65b7403402b63feb74906c66d6f91",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor in s3 resolves as cited: `changed_paths` at `reckon/clones.py:629`, the `rev-list` at `reckon/crew/node.py:1662`, `review_head_move` at `recovery_review_dispatch.py:1091`, `_changed_figure_paths` at 971, `_review_delivered_paths` at 1039, `_owed_review_tiers` at `queue_landing.py:141-156`, `_mentioned_repository_files` at `routing.py:3279`, `touches_delivered_work` at 1206/1220, commit `14c9d487fb` (whose combined diff names `reckon/crew/queue_landing.py`), and the evidence fragment, which is present and carries the cited 674,392 / 156-path measurement.",
+    "done_when": "pass \u2014 the done-when names two fixtures with three negative controls and a fail-safe variant, each of which can fail against a correct implementation: restoring the two-dot call fails the path set and the False classification, a lagging local `main` as `integration_ref` puts integration paths back, and a first pass without the merge pass drops the conflict-resolved path. Each control names the fixture it runs on, so no assertion stands without a control.",
+    "evidence_paths": "pass \u2014 the test run's logs go \"under the run directory\", the durable crew run directory, and the section's own evidence is a committed fragment under `docs/evidence/fragments/`; no scratchpad or node-local path is named.",
+    "naming": "pass \u2014 the new symbol `own_changed_paths` names the mechanism, the test file is named for the behaviour, and no plan label, stage name, ticket number or changelog prose appears in any declared symbol, filename or write path.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited evidence (the evidence fragment names `review_head_move` as the range site and measures 674,392 tokens over 156 paths against 58,392 over the run's own 2); the stated mechanism \u2014 `rev-list --no-merges tip ^integration_ref ^older` unioned with the combined diffs of `rev-list --merges` \u2014 produces the done-when's path set and classification, including the conflict-resolution case the second fixture asserts; and the mechanism runs on the real code path, with the consumer of `review_head_move` (`carry_review_forward`, whose decline carries `move[\"paths\"]` into `_review_dispatch_fields(record, delta=...)` and thence the composed goal) and the consumer of `_changed_figure_paths` (`_owed_review_tiers`, named in the section) both reachable from production code.",
+    "single_goal": "pass \u2014 s3 carries one deliverable (one helper in `reckon/clones.py`) with its two call sites and one test file; the figure-path and head-move changes are two consumers of the same helper, not two deliverables.",
+    "wiring": "pass \u2014 s3 declares no dependency it needs left undeclared: its upstream \u00a72 is declared `done`, the driving followup f-arroirc-002 is open with `data-recommends-skill=\"/reckon-build a-review-reads-only-its-runs-changes \u00a73\"`, matching the section's `implementable` declaration, and `plan-after` resolves to a file that exists."
+  },
+  "section_digests": {
+    "_document": "321e3bc99119a27697d635d34e1d4b9f33d7ce216f1a7a760d22bc147ba1ccc0",
+    "s1": "3af442a13134b7c46db2d98609970c3d9e560ca12eb3deabbed535c7f74c5dca",
+    "s2": "a324bc121acb85a70e9fdcb6ec0c99aab489197974b83551dbf447fc023b56e3",
+    "s3": "fd286e3922349929bbc6c1624ccd5a6e0e30e3400bbf66eea600e31d93b5dc36"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T22:56:21.206397+00:00",
+  "total": null
+}
