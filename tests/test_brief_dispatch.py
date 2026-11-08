@@ -134,6 +134,11 @@ def _cli_arguments(
         arguments += ["--plan", plan]
     if section is not None:
         arguments += ["--section", section]
+    # A brief run names no plan section, so the dispatch owes an owner for the
+    # product change it makes. These fixtures are brief-only runs, and the flag
+    # is recorded rather than resolved, so a plan dispatch carrying it too
+    # changes nothing.
+    arguments += ["--plan-link", BRIEF_OWNER_PLAN]
     arguments += [
         "--role",
         "implement",
@@ -171,6 +176,11 @@ def _payload(result) -> dict:
 
 
 DONE_WHEN = "the gate command pytest exits 0 and prints the measured bound"
+
+# The owner a brief-only dispatch names for its product change. The fixtures
+# change no plan, and the value is recorded on the run rather than resolved at
+# dispatch, so it exists only to discharge the owner the dispatch now asks for.
+BRIEF_OWNER_PLAN = "brief-fixture-plan"
 
 
 def test_a_brief_dispatch_dry_run_resolves_without_a_plan(
