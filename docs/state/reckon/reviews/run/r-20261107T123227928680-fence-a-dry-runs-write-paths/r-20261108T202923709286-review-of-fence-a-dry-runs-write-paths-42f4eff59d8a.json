@@ -1,0 +1,63 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:crew_dispatch",
+    "reckon/crew/dispatch_plan.py:plan_dispatch",
+    "reckon/crew/dispatch_admission.py:_require_write_paths_in_authority"
+  ],
+  "completed_at": "2026-11-08T20:40:32.824Z",
+  "dispatched_at": "2026-11-08T20:32:37Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-refusal-comes-before-the-work/fence-a-dry-runs-write-paths.html",
+      "line": 36,
+      "severity": "non-blocking",
+      "text": "The fragment states that a project with no registered mount now refuses the preview with the same sentence the launch gives, but no test asserts that branch: the added no---repo case runs against a fixture that writes mounts.json, so the CrewError path resolve_project_repository raises on a missing mount is unguarded."
+    },
+    {
+      "file": "tests/test_a_dry_run_fences_write_paths.py",
+      "line": 184,
+      "severity": "non-blocking",
+      "text": "The plan's Done when asks that the test files importing reckon.crew.dispatch_plan or reckon.crew_dispatch_commands add no failure against the base revision (88 files under tests/), but both arms ran only this new file, so the wider population the plan names is unmeasured."
+    },
+    {
+      "file": "base-arm.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The done_when asks the reproduction to record the ok dry run beside the refused real call in the gate log; the base-arm log carries the preview's ok payload and the failing assertion text but not the launch's refusal sentence, because the assertion at tests/test_a_dry_run_fences_write_paths.py:230 fails before the two refusals are compared."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_dry_run_fences_write_paths.py:236 fails when the resolution is removed, as negative-control.log demonstrates, though :264 guards only the pre-existing --repo path.",
+    "evidence": "after-arm.log records 2 passed EXIT=0 and negative-control.log reddens the same id with EXIT=1, but the plan's import-population clause was never measured.",
+    "fit": "the added local import at reckon/crew_dispatch_commands.py:1949 matches the same resolution the module already performs at :733 and :1727.",
+    "goal_fidelity": "reckon/crew_dispatch_commands.py:1950 resolves the project mount on the dry-run branch, so the fence at reckon/crew/dispatch_plan.py:880 now runs and the preview reaches the launch's refusal.",
+    "reuse": "the change calls the existing owner reckon/crew/dispatch_sections.py:92 resolve_project_repository rather than adding a resolver of its own.",
+    "scope_discipline": "the diff touches only reckon/crew_dispatch_commands.py, tests/test_a_dry_run_fences_write_paths.py and the granted evidence fragment."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261108T202923709286-review-of-fence-a-dry-runs-write-paths-42f4eff59d8a",
+  "reviewed_base_sha": "0326581c4a6741c93b7ae413551cc9e349be6f5f",
+  "reviewed_head_sha": "42f4eff59d8abdf39cc3f83751d7e8b9fc0624a7",
+  "reviewed_run_id": "r-20261107T123227928680-fence-a-dry-runs-write-paths",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T20:52:57.315945+00:00",
+  "total": 109,
+  "verdicts": {
+    "diff": "read commit by commit against 0326581c4a: 626e293f5d adds the mount resolution, 6b91f231ae reformats the test, 42f4eff59d adds the evidence fragment; 353 insertions, 9 lines of production change.",
+    "done_when": "the done_when names three things in tests/test_a_dry_run_fences_write_paths.py plus suite arms over the node's own test file; the head arm records 2 passed EXIT=0 and the base arm 1 failed / 1 passed EXIT=1.",
+    "goal": "the node goal is a dispatch dry run refusing a write path outside the repository with the real call's refusal, and reckon/crew_dispatch_commands.py:1950 now mirrors the launch by resolving the project mount before plan_dispatch.",
+    "manifest": "read; it claims complete, names the three commits and the three gate logs, and reports 2 passed at head against 1 failed / 1 passed at base.",
+    "write_paths": "read the manifest's declared paths against the diff: crew_dispatch_commands.py, the new test and the evidence fragment are all declared or granted; dispatch_plan.py is declared and untouched."
+  }
+}
