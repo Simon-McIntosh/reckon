@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T00:04:48.650Z",
+  "dispatched_at": "2026-11-07T23:52:15Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:62",
+      "id": "reasoning-1",
+      "reason": "the worker has to choose one of two contradictory rules on `handle`, and whichever it picks contradicts a sentence in the plan it is implementing.",
+      "text": "\u00a76's Deliverable says a host \"starts or restarts a child only when its entry carries `owner_checked: true` ... or when its session is the owner's current session\", which covers the spawn `SessionHost.handle` (`reckon/crew/session_host.py:523-531`) makes for a request line; but \u00a75 says the host \"then serves its FIFO as today\" and \"A first request, when one is given, is served as today\", and \u00a75's own Why documents nova-4a writing `{\"project\":\"nova\",\"session\":\"<id>\", ...}` to the FIFO by hand \u2014 a line that carries no mark and, for an earlier session of the same owner or any other session, is not the owner's current session. Two sections therefore give opposite instructions for the same path, and a \u00a76 worker following its Deliverable silently disables the operator's documented re-arm motion that \u00a75 says still works",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:62",
+      "id": "evidence_paths-1",
+      "reason": "adding the one sentence the sibling sections carry makes the \u00a76 gate readable and its lint obligation explicit, which the node's promotion depends on.",
+      "text": "\u00a76's done-when names \"the gate log\" and \"Negative controls, each logged\" but omits the convention \u00a72-\u00a75 all state: every log under the run directory, starting with its revision and the literal command, ending in a bare `EXIT=` line, plus \"Ruff adds no findings on the staged paths\" \u2014 promotion reads the exit status from that `EXIT=` line and a log without it leaves the \u00a76 gate unreadable",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:62",
+      "id": "done_when-1",
+      "reason": "the case still fails at the base revision on its other two assertions, so the redundant one costs a sentence, not a mechanism.",
+      "text": "\u00a76's first case asserts the dropped child \"is absent from the next `session-hosts` record\", but `SessionHost.record()` (`reckon/crew/session_host.py:451-461`) already filters to children with a non-null pid or a settled marker, so a child that merely is not restarted (pid None, not settled) is absent at the base revision too; only the \"not restarted\" and \"drop logged\" assertions discriminate, and the case's discriminating power rests on them alone",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "88d9bfbeed1076267f93acd225ac63bc3c01abed",
+  "plan_fingerprint": "6f1210b794429d1122bb3713a51f8928d03dced3e33016b360d2f7348999466b",
+  "plan_slug": "a-crew-process-writes-only-what-it-owns",
+  "plan_version": 15,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261107T225510997870-plan-review-of-a-crew-process-writes-only-what-it-owns",
+  "reviewed_blob_sha": "3d5e759639c3091f08da6fcd24e0efb8ed33dad4",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited file exists and every cited symbol resolves at the snapshot: `_arrange_dispatch_follower` at `reckon/crew/dispatch.py:379` (the plan's \"near line 398\" is the `session_delivery = \"host\"` assignment), `_hand_off_from_follower` at `reckon/crew_follow_commands.py:628`, `_request_host_follower` at `reckon/crew/dispatch_watch.py:818`, `parent_pid` at `reckon/crew/follower_registration.py:402`; the line offsets in `reckon/crew/session_host.py` (\"near line 512\" for `tick`, actually 585) are approximate but every symbol named resolves.",
+    "done_when": "pass \u2014 \u00a76's five cases each carry a measure and three declared negative controls name the mutation that reddens them; \u00a73's six cases and seven controls are coherent, and control 1 (`an ask predicate that always answers False fails the third case`) does fire, because `reckon/crew/dispatch.py:398-406` falls through to `_session_host_runs_follower`, which reads the same own-host census and returns False when no registration names a pid.",
+    "evidence_paths": "a finding \u2014 \u00a76's done-when omits the evidence convention every other section states (logs under the run directory starting with the revision and the literal command and ending in `EXIT=`, and \"Ruff adds no findings on the staged paths\"), so a \u00a76 worker's gate log and lint obligation are unstated.",
+    "naming": "pass \u2014 \u00a76 and \u00a75 name mechanisms (`owner_checked`, `waiting_for_dispatch`, `_foreign_live_follower`, `parent_pid`) rather than ticket or stage identifiers, and the host and session pids in the Why are evidence, not symbols.",
+    "reasoning": "a finding \u2014 \u00a76's rule for what a host may start contradicts \u00a75's statement that the host \"serves its FIFO as today\" for a request line that carries no mark.",
+    "single_goal": "pass \u2014 \u00a76 carries one deliverable (a host starts or restarts only children marked `owner_checked: true` or of its current session) in `reckon/crew/session_host.py`; the \"clearing host 69000\" paragraph is stated as another session's operation, not this node's work.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `s5\u2192s3` and `s6\u2192s5`; both resolve to sections that exist and are `implementable`, `s6` is declared in `plan-section-declarations`, and the followup's `Build \u00a72 to \u00a76` body matches that \u00a76 waits on \u00a75 for the `owner_checked` mark and for `reckon/crew/session_host.py`, which \u00a75 also writes."
+  },
+  "section_digests": {
+    "_document": "9603432af4f7b5bbb5297a7d3de6a82224e72420b1d6e255e6198052ad6cf21d",
+    "s1": "38e026f18d1b42b1d79978e1ed1cf6179e085908a249e5762f39a683dcc8123f",
+    "s2": "f11be171c26248fbc871d99510f0013c9dfc0a181d247f07861e86dc0d156f40",
+    "s3": "56ff71f47c37ed3c14aadfcbebb6d71b53e5a14b0c9333c997c4ecd0cb4987b9",
+    "s4": "e88fcf79ec58d8305f36e37d69846c8e0a1a10f1b73fc6c167c25b700165e123",
+    "s5": "d2137141581052e01b8d36787a07250708e3526629746a86490cc802627b465b",
+    "s6": "da307b7701914661f74bb866fedc1865af907d6ed914057e6d57939c6fadd963"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T00:29:55.633597+00:00",
+  "total": null
+}
