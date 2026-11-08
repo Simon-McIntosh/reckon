@@ -184,25 +184,24 @@ def _stubbed_launch(recorded: list):
 def _after_the_pass_reads_the_queue(
     monkeypatch: pytest.MonkeyPatch, change: Callable[[], None]
 ) -> list[int]:
-    """Write ``change`` once the pass holds its opening read of the queue.
+    """Write ``change`` once the pass reaches its launch decision.
 
-    The pass ranks what its first read returned and launches from that list, so
-    the change lands exactly in the window the re-read exists for: the request
-    about to be launched has already been read as queued.
+    The pass ranks what its first read returned and decides each request's
+    launch later, so this is the last point at which a request can still have
+    moved. A change written here is visible only to a read taken here; a pass
+    that read the request's attempts when it started would already be past
+    them, which is what makes this the window the re-read exists for.
     """
-    read_live = runs.list_live
+    reread = queue_admission._launch_reread_refusal
     fired: list[int] = []
 
-    def read(*, project=None, phase=None):
-        records = read_live(project=project, phase=phase)
-        # The pass reads every live pointer once, with no phase filter, before
-        # it ranks the queued ones.
-        if phase is None and not fired:
+    def re_read(pointer):
+        if not fired:
             fired.append(1)
             change()
-        return records
+        return reread(pointer)
 
-    monkeypatch.setattr(runs, "list_live", read)
+    monkeypatch.setattr(queue_admission, "_launch_reread_refusal", re_read)
     return fired
 
 
