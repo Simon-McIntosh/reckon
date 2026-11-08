@@ -5679,6 +5679,7 @@ def _plan_inventory_item(
     plan the way it reports any plan it does not find.
     """
     from reckon import _plan_html
+    from reckon._schema import decision_sections, section_depends_on
     from reckon.serve import _read_readiness_state, edge_row
 
     path = docs_dir / "plans" / f"{slug}.html"
@@ -5686,6 +5687,7 @@ def _plan_inventory_item(
         return None
     rec = _plan_html.parse_meta(path)
     gates, decisions, followups, declarations = _read_readiness_state(path)
+    text = _plan_html.read_state_and_text_file(path)[1]
     item: dict[str, Any] = {
         "slug": slug,
         "project": project,
@@ -5713,6 +5715,8 @@ def _plan_inventory_item(
         "blockers": list(rec.get("blockers") or []),
         "gates": gates,
         "section_declarations": declarations,
+        "section_depends_on": section_depends_on(text) or {},
+        "decision_sections": decision_sections(text) or {},
         **edge_row(rec),
     }
     if rec.get("north_star"):

@@ -153,10 +153,12 @@ def test_bounded_section_verdict_skips_ledger_attempts(
         raise AssertionError("bounded verdict loaded ledger attempts")
 
     monkeypatch.setattr(roadmap, "section_attempts_by_plan", attempts)
+    monkeypatch.setattr(roadmap, "sprint_liveness", attempts)
     rows, inventory = plan_review.section_readiness_rows(
         "proj", project / "docs", "work-0"
     )
     assert set(inventory) == {"work-0", "upstream-0"}
+    assert inventory["work-0"]["section_depends_on"]["s1"] == ["upstream-0#s1"]
     assert "s1" in rows["work-0"]["sections"]
 
 
