@@ -118,7 +118,10 @@ def _only_this_session(view_run: str | None) -> Callable[[str, str], str | None]
 
 
 def _request(host: StubHost) -> None:
-    host.handle(json.dumps({"project": PROJECT, "session": SESSION}))
+    """The owner dispatches the pair, so its request carries the ownership mark."""
+    host.handle(
+        json.dumps({"project": PROJECT, "session": SESSION, "owner_checked": True})
+    )
 
 
 def _settled_over_a_run(tmp_path: Path, run_id: str) -> StubHost:
@@ -157,6 +160,7 @@ def test_a_child_settled_over_a_working_run_is_spawned_again(tmp_path: Path) -> 
             "pid": child.pid,
             "settled_at": None,
             "rearmed_for": WORKING_RUN,
+            "owner_checked": True,
         }
     ], "the census the fleet reads must carry the run that re-armed the pair"
 

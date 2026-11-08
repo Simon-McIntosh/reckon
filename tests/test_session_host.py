@@ -247,9 +247,16 @@ class HostHarness:
             env=self.env(),
         )
 
-    def request(self, project: str, session: str) -> None:
+    def request(
+        self, project: str, session: str, *, owner_checked: bool = False
+    ) -> None:
         assert self.process is not None and self.process.stdin is not None
-        line = json.dumps({"project": project, "session": session}) + "\n"
+        line = (
+            json.dumps(
+                {"project": project, "session": session, "owner_checked": owner_checked}
+            )
+            + "\n"
+        )
         self.process.stdin.write(line.encode())
         self.process.stdin.flush()
 
@@ -336,7 +343,7 @@ def test_a_second_project_or_session_gets_its_own_child(host: HostHarness) -> No
 
 
 def test_a_killed_child_is_restarted(host: HostHarness) -> None:
-    host.request("alpha", "sess")
+    host.request("alpha", "sess", owner_checked=True)
     _wait_for(
         lambda: len(host.child_pids()) >= 1, timeout=START_BOUND, description="a child"
     )

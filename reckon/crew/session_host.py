@@ -305,6 +305,41 @@ def live_census(environ: Mapping[str, str] | None = None) -> list[dict[str, Any]
     return records
 
 
+def host_owner(
+    pid: int, environ: Mapping[str, str] | None = None
+) -> Mapping[str, Any] | None:
+    """The owner a session host named by ``pid`` records itself under, or None.
+
+    A follower's registration names the process that armed it in ``parent_pid``.
+    A host is usually that process, and which owner a host serves decides
+    whether its follower is following this session's pane. One reader of the
+    census records answers it, beside :func:`live_census`, so a caller that only
+    needs a pid's owner does not walk the records with a spelling of its own.
+
+    A record whose host has written its final census is skipped: a host that
+    stopped took its children with it, so its owner no longer describes anything
+    that could hold a pair.
+    """
+    try:
+        paths = sorted(_state_dir(environ).glob(f"*{RECORD_SUFFIX}"))
+    except OSError:
+        return None
+    for path in paths:
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(payload, Mapping):
+            continue
+        if payload.get("stopped_at") is not None:
+            continue
+        if payload.get("pid") != pid:
+            continue
+        owner = payload.get("owner")
+        return dict(owner) if isinstance(owner, Mapping) else None
+    return None
+
+
 def default_owner() -> dict[str, Any]:
     """Resolve the owner as the parent process, the way a follower does."""
     pid = os.getppid()
@@ -414,6 +449,12 @@ class SessionHost:
     pair's registration -- a coordinator who armed one by hand is never
     contended with. A child already running is never stopped because another
     follower appeared.
+
+    Only the owner's pairs are restarted: a pair the writing side's ownership
+    guard marked, or one naming the session this host process serves. A child
+    kept for another session is left to run until it exits, and dropped then,
+    so a host that once served a foreign request stops duplicating the owning
+    session's follower.
     """
 
     def __init__(
@@ -551,7 +592,9 @@ class SessionHost:
         existing = self._children.get(key)
         if existing is not None:
             del self._children[key]
-        if self._foreign_live_follower(project, session, pid=None):
+        if self._foreign_live_follower(
+            project, session, pid=None, owner_checked=owner_checked
+        ):
             # A live follower this host did not start owns the pair -- a
             # coordinator armed one by hand. The pair is wanted but deferred:
             # record it with no pid and a retry due, so tick() starts this
@@ -599,7 +642,9 @@ class SessionHost:
         if not sessions:
             return
         for project in self._live_projects():
-            for session in sessions:
+            for session, marked in sessions:
+                if not self._pair_is_owners(session, owner_checked=marked):
+                    continue
                 if (project, session) in self._children:
                     continue
                 if self._live_view(project, session) is None:
@@ -644,12 +689,46 @@ class SessionHost:
             return {}
         return payload if isinstance(payload, Mapping) else {}
 
-    def _owned_sessions(self) -> list[str]:
-        """This owner's current session and every earlier one it kept marked."""
+    def _current_session(self) -> str:
+        """The crew session this host process serves, or "" outside a harness."""
         from reckon.crew.dispatch_watch import _calling_session
 
-        current = _calling_session()
-        sessions = [current] if current else []
+        return _calling_session()
+
+    def _pair_is_owners(self, session: str, *, owner_checked: bool) -> bool:
+        """Whether this host may follow the pair on its owner's behalf.
+
+        A pair is the owner's when the request that asked for it passed the
+        ownership guard on the writing side, and the mark travelled with it, or
+        when it names the session this host process itself serves. The mark is
+        what keeps an earlier session of the same owner followed across a
+        ``/clear``, which changes the session id but not the process; the
+        current-session arm keeps a pair asked for by hand, which carries no
+        mark, from being refused.
+        """
+        if owner_checked:
+            return True
+        current = self._current_session()
+        # A host that cannot name its session can vouch for nothing it has no
+        # mark for: it restarts only what the writing side's guard marked, and
+        # never a child of unknown ownership.
+        return bool(current) and session == current
+
+    def _same_owner(self, owner: Mapping[str, Any]) -> bool:
+        """Whether a recorded owner identity is the one this host serves."""
+        return owner.get("pid") == self._owner["pid"] and str(
+            owner.get("start_time") or ""
+        ) == (self._owner["start_time"] or "")
+
+    def _owned_sessions(self) -> list[tuple[str, bool]]:
+        """This owner's current session and every earlier one it kept marked.
+
+        Each session carries whether the predecessor's census marked it, so the
+        one ownership rule answers for both: an earlier session is the owner's
+        only because a request that passed the guard marked it.
+        """
+        current = self._current_session()
+        sessions = [(current, False)] if current else []
         children = self._previous_record().get("children")
         if not isinstance(children, Sequence):
             return sessions
@@ -657,21 +736,42 @@ class SessionHost:
             if not isinstance(entry, Mapping) or entry.get("owner_checked") is not True:
                 continue
             session = str(entry.get("session") or "")
-            if session and session not in sessions:
-                sessions.append(session)
+            if session and all(session != known for known, _mark in sessions):
+                sessions.append((session, True))
         return sessions
 
     def _foreign_live_follower(
-        self, project: str, session: str, *, pid: int | None
+        self,
+        project: str,
+        session: str,
+        *,
+        pid: int | None,
+        owner_checked: bool = False,
     ) -> bool:
-        """Whether a live follower this host did not start holds the pair."""
+        """Whether a live follower this host may defer to holds the pair.
+
+        A follower started by another owner's host is not following this
+        session's pane, however live its registration reads: it prints to a
+        pane its host was given for a different owner. So it does not hold the
+        pair for this owner, and this host runs its own child. A follower this
+        host started, or one armed by hand with no host parent, still holds it
+        -- a coordinator who armed one by hand is never contended with.
+        """
         try:
             state = follower_state(project, session)
         except (OSError, ValueError):
             return False
         if not state.get("live"):
             return False
-        return state.get("follower", {}).get("pid") != pid
+        follower = state.get("follower", {})
+        if follower.get("pid") == pid:
+            return False
+        parent_pid = follower.get("parent_pid")
+        if isinstance(parent_pid, int) and parent_pid > 1:
+            holder = host_owner(parent_pid, self._environ)
+            if holder is not None and not self._same_owner(holder):
+                return not self._pair_is_owners(session, owner_checked=owner_checked)
+        return True
 
     def _spawn(self, child: _Child) -> int | None:
         """Fork one follower, inheriting this host's stdout and the death signal."""
@@ -720,6 +820,22 @@ class SessionHost:
             if child.pid is not None:
                 status = self._poll_exit(child)
                 if status is not None:
+                    if not self._pair_is_owners(
+                        child.session, owner_checked=child.owner_checked
+                    ):
+                        # A host that once served a foreign request keeps its
+                        # child for as long as it lives, restarting it on every
+                        # backoff. The pair belongs to another owner's pane, so
+                        # the exited child is dropped rather than restarted, and
+                        # the next census omits it. A child still running is
+                        # left alone: its exit is where this host lets go.
+                        dropped = child.pid
+                        del self._children[child.key]
+                        _log(
+                            f"dropped follower for {child.project}/{child.session} "
+                            f"(pid {dropped}): not this owner's"
+                        )
+                        continue
                     if _settled_status(status):
                         # The child reached the end of its session's work: it
                         # printed its idle line and left. It is not restarted on
@@ -768,7 +884,12 @@ class SessionHost:
                 if now < child.next_attempt:
                     continue
                 child.next_attempt = None
-                if self._foreign_live_follower(child.project, child.session, pid=None):
+                if self._foreign_live_follower(
+                    child.project,
+                    child.session,
+                    pid=None,
+                    owner_checked=child.owner_checked,
+                ):
                     child.next_attempt = now + max(
                         child.delay, _poll_seconds(self._environ)
                     )
