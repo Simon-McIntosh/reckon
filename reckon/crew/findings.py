@@ -398,30 +398,30 @@ def _directory_signatures(
     }
 
 
-def _review_directories(committed: Path) -> list[Path]:
-    """The directories the committed tree files. One per reviewed run or plan.
+def _review_parents(committed: Path) -> list[Path]:
+    """The two directories the committed tree files its review directories under."""
+    return [committed / dirname for dirname in (_RUN_DIRNAME, _PLAN_DIRNAME)]
 
-    The listing of each top-level directory is memoised on its own identity, so
-    a call re-lists the run or plan directories only when one of them appeared
-    or vanished rather than on every read.
+
+def _list_child_directories(parent: Path) -> list[Path]:
+    """The review directories one parent holds, by name order.
+
+    One stat per child is the cost of a fresh listing, so this is paid only for
+    a parent whose own signature moved — a review directory that appeared or
+    vanished — rather than on every read.
     """
+    try:
+        return sorted(child for child in parent.iterdir() if child.is_dir())
+    except OSError:
+        return []
+
+
+def _review_directories(parents: Iterable[Path]) -> list[Path]:
+    """The directories the committed tree files. One per reviewed run or plan."""
     directories: list[Path] = []
-    for dirname in (_RUN_DIRNAME, _PLAN_DIRNAME):
-        parent = committed / dirname
-
-        def list_children(target: Path = parent) -> tuple[Path, ...]:
-            try:
-                return tuple(
-                    sorted(child for child in target.iterdir() if child.is_dir())
-                )
-            except OSError:
-                return ()
-
-        if not parent.is_dir():
-            continue
-        directories.extend(
-            file_memo.memoized("findings_review_directories", parent, list_children)
-        )
+    for parent in parents:
+        if parent.is_dir():
+            directories.extend(_list_child_directories(parent))
     return directories
 
 
@@ -597,7 +597,44 @@ def _load_persisted_index(key: tuple[str, str, str]) -> dict[str, Any] | None:
             return None
         directories[str(name)] = entry
     code = _directory_state(document.get("code"))
-    return {"key": list(key), "directories": directories, "code": code, "dirty": False}
+    parents = _parents_state(document.get("parents"))
+    if parents is None:
+        return None
+    return {
+        "key": list(key),
+        "directories": directories,
+        "parents": parents,
+        "code": code,
+        "dirty": False,
+    }
+
+
+def _parents_state(raw: Any) -> dict[str, dict[str, Any]] | None:
+    """The review-directory listings read back from a document.
+
+    Each parent carries its own stat identity beside the directories it held, so
+    a reader that finds the parent unchanged reuses that listing rather than
+    paying one stat per child directory — the cost a store of thousands of
+    reviews otherwise pays on every fresh process.
+    """
+    if raw is None:
+        return {}
+    if not isinstance(raw, Mapping):
+        return None
+    held: dict[str, dict[str, Any]] = {}
+    for name, entry in raw.items():
+        if not isinstance(entry, Mapping):
+            return None
+        children = entry.get("directories")
+        if not isinstance(children, list) or not all(
+            isinstance(child, str) for child in children
+        ):
+            return None
+        held[str(name)] = {
+            "signature": _signature_tuple(entry.get("signature")),
+            "directories": list(children),
+        }
+    return held
 
 
 def _persist_index(key: tuple[str, str, str], state: Mapping[str, Any]) -> None:
@@ -616,6 +653,15 @@ def _persist_index(key: tuple[str, str, str], state: Mapping[str, Any]) -> None:
         "version": _INDEX_VERSION,
         "code_stamp": stamp,
         "key": list(key),
+        "parents": {
+            name: {
+                "signature": (
+                    list(entry["signature"]) if entry["signature"] is not None else None
+                ),
+                "directories": entry["directories"],
+            }
+            for name, entry in state.get("parents", {}).items()
+        },
         "directories": {
             name: _directory_document(entry)
             for name, entry in state["directories"].items()
@@ -659,6 +705,38 @@ def _directory_entry(
     return records
 
 
+def _committed_directories(state: dict[str, Any], committed: Path) -> list[Path]:
+    """The review directories the committed tree files, listing only what moved.
+
+    A listing costs one stat per child directory, which a store of thousands of
+    reviews cannot pay on every fresh process. Each parent's own stat identity is
+    therefore kept beside the directories it held: while that identity is
+    unchanged no review directory can have appeared or vanished, and the listing
+    the index already holds is the whole set. A parent that moved is listed
+    again, which is how a newly committed review's directory is found.
+    """
+    held_parents = state.setdefault("parents", {})
+    directories: list[Path] = []
+    for parent in _review_parents(committed):
+        signature = _directory_signature(parent)
+        entry = held_parents.get(str(parent))
+        if (
+            entry is not None
+            and signature is not None
+            and entry["signature"] == signature
+        ):
+            directories.extend(Path(name) for name in entry["directories"])
+            continue
+        children = _list_child_directories(parent)
+        held_parents[str(parent)] = {
+            "signature": signature,
+            "directories": [str(child) for child in children],
+        }
+        directories.extend(children)
+        state["dirty"] = True
+    return directories
+
+
 def _committed_rows(
     state: dict[str, Any], committed: Path, root_path: Path | None
 ) -> tuple[list[dict[str, Any]], int]:
@@ -671,7 +749,7 @@ def _committed_rows(
     index holds and the tree no longer files leaves with its rows.
     """
     held = state["directories"]
-    directories = _review_directories(committed)
+    directories = _committed_directories(state, committed)
     signatures = _directory_signatures(directories)
 
     stale: list[Path] = []
@@ -758,7 +836,13 @@ def _index_for(key: tuple[str, str, str]) -> dict[str, Any]:
         return index
     index = _load_persisted_index(key)
     if index is None:
-        index = {"key": list(key), "directories": {}, "code": None, "dirty": True}
+        index = {
+            "key": list(key),
+            "parents": {},
+            "directories": {},
+            "code": None,
+            "dirty": True,
+        }
     with _INDEX_LOCK:
         _INDEXES[key] = index
         while len(_INDEXES) > _MAX_INDEXES:
