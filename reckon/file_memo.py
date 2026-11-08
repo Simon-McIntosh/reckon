@@ -436,6 +436,28 @@ def memoized[T](
     return value
 
 
+def memoized_key[T](kind: str, key: Hashable, compute: Callable[[], T]) -> T:
+    """Memoise a derivation whose caller already carries its complete change key.
+
+    Use the same bounded LRU and lock as file-backed parses. The computation
+    stays outside the lock, and callers receive copies so a changed duty cannot
+    alter the value a later reader receives.
+    """
+    cache_key = (kind, "key", key)
+    with _LOCK:
+        entry = _CACHE.get(cache_key)
+        if entry is not None:
+            _CACHE.move_to_end(cache_key)
+            return copy.deepcopy(entry[1])  # type: ignore[return-value]
+    value = compute()
+    with _LOCK:
+        _CACHE[cache_key] = ("key", copy.deepcopy(value))
+        _CACHE.move_to_end(cache_key)
+        while len(_CACHE) > _MAX_ENTRIES:
+            _CACHE.popitem(last=False)
+    return value
+
+
 def clear() -> None:
     """Drop every memoised parse."""
 

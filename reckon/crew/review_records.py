@@ -32,6 +32,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from reckon import file_memo
+
 
 # A disposition or an answer is written back to whichever copy of a record the
 # reader selected, and a promotion commits one copy of that record: the one a
@@ -1422,6 +1424,41 @@ def _store_index(directory: Path) -> dict[str, list[dict[str, Any]]]:
     :func:`_store_indexes`, which owns it for both indexes.
     """
     return _store_indexes(directory)[0]
+
+
+def review_entries_signature(project: str, reviewed_run_id: str) -> tuple[Any, ...]:
+    """The current identities of one reviewed run's indexed record files.
+
+    The index updates after an atomic store write moves the directory. Another
+    run's new record leaves this run's key unchanged. A same-path rewrite does
+    not move the directory, so each indexed file is stat'ed without reading its
+    contents; a changed file then changes this run's key. The committed
+    directory is included because promotion can replace staging as the source.
+    """
+    directory = _review.review_store_root() / project
+    entries = _store_index(directory).get(reviewed_run_id) or []
+    current_entries = []
+    for entry in entries:
+        try:
+            signature = file_memo.file_signature(entry["path"])
+        except OSError:
+            signature = None
+        current_entries.append((entry["name"], signature))
+    committed = _review.committed_review_root(project)
+    run_directory = (
+        committed / _review.COMMITTED_RUN_DIRNAME / reviewed_run_id
+        if committed is not None
+        else None
+    )
+    committed_identity = (
+        _store_directory_identity(run_directory) if run_directory is not None else None
+    )
+    return (
+        str(directory),
+        tuple(sorted(current_entries)),
+        str(run_directory or ""),
+        committed_identity,
+    )
 
 
 def _review_run_index(directory: Path) -> dict[str, list[dict[str, Any]]]:

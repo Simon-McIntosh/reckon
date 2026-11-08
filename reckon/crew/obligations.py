@@ -21,7 +21,6 @@ from __future__ import annotations
 import json
 import re
 import shlex
-import threading
 from collections.abc import Iterable, Mapping, Sequence
 from contextvars import ContextVar
 from datetime import UTC, datetime, timedelta
@@ -38,6 +37,7 @@ from reckon.crew import (
     recovery_review_dispatch,
     review_dispositions,
     review_lifecycle,
+    review_records,
     runs,
 )
 from reckon.crew import review as review_module
@@ -802,8 +802,30 @@ def _refused_delivered_review(pointer: Mapping[str, Any]) -> dict[str, str] | No
     if not reviewer:
         return None
     directory = review_module.run_review_record_directory(runs.run_dir(reviewed_run_id))
+    declared = tuple((reviewer.get("node") or {}).get("write_paths") or ())
+    record_signatures = []
+    for name in declared:
+        path = Path(str(name))
+        if path.parent != directory:
+            continue
+        try:
+            signature = file_memo.file_signature(path)
+        except OSError:
+            signature = None
+        record_signatures.append((str(path), signature))
+    return file_memo.memoized_key(
+        "obligation_delivered_review",
+        (reviewed_run_id, review_run_id, declared, tuple(record_signatures)),
+        lambda: _refused_delivered_review_read(reviewed_run_id, directory, declared),
+    )
+
+
+def _refused_delivered_review_read(
+    reviewed_run_id: str, directory: Path, declared_paths: tuple[Any, ...]
+) -> dict[str, str] | None:
+    """Validate the review files a reviewer declared for this run."""
     refused = None
-    for declared in (reviewer.get("node") or {}).get("write_paths") or ():
+    for declared in declared_paths:
         path = Path(str(declared))
         if path.parent != directory or not path.is_file():
             continue
@@ -1343,33 +1365,22 @@ def _queued_review_run_fields(
     return fields
 
 
-#: Per-run derivations a steady-state publish would otherwise rebuild on every
-#: tick. Each entry is keyed on the inputs its computation actually reads, so a
-#: run whose pointer, head, manifest, plan or ledger moves recomputes while
-#: every other run is served the answer it reached last time.
-_CACHE_LOCK = threading.Lock()
-_CACHE_LIMIT = 8192
-_REVIEW_TIER_CACHE: dict[tuple[Any, str], str] = {}
-_HELD_RECORDS_CACHE: dict[tuple[Any, ...], dict[Path, Mapping[str, Any]]] = {}
-
-
-def _cached(cache: dict[Any, Any], key: Any, compute: Any) -> Any:
-    """Return ``cache[key]``, computing and storing it on the plan a steady tick.
-
-    The computation runs outside the lock: it may read a plan or a git object,
-    and holding the lock across that would serialise every session's slice
-    behind the slowest reader. Two ticks racing on one key may therefore both
-    compute it, which costs a duplicate read and never a wrong answer.
-    """
-    with _CACHE_LOCK:
-        if key in cache:
-            return cache[key]
-    value = compute()
-    with _CACHE_LOCK:
-        if len(cache) >= _CACHE_LIMIT:
-            cache.clear()
-        cache[key] = value
-    return value
+def _selected_review(
+    project: str, run_id: str, head: str, *, tree: Path | None
+) -> tuple[dict[str, Any] | None, str]:
+    """Select one run's review again only when its indexed entries move."""
+    key = (
+        project,
+        run_id,
+        head,
+        str(tree or ""),
+        review_records.review_entries_signature(project, run_id),
+    )
+    return file_memo.memoized_key(
+        "obligation_review_selection",
+        key,
+        lambda: recovery.select_review_for_head(project, run_id, head, tree=tree),
+    )
 
 
 def _plan_state_signature(record: Mapping[str, Any]) -> tuple[Any, ...] | None:
@@ -1451,9 +1462,7 @@ def _review_tier_key(
 
 def _clear_cached_obligation_inputs() -> None:
     """Drop every memoised per-run derivation, so the next read recomputes."""
-    with _CACHE_LOCK:
-        _REVIEW_TIER_CACHE.clear()
-        _HELD_RECORDS_CACHE.clear()
+    file_memo.clear()
 
 
 def _review_tier_for_duty(
@@ -1482,7 +1491,9 @@ def _review_tier_for_duty(
     key = _review_tier_key(row, pointer, head=head, tree=tree)
     if key is None:
         return _resolve_review_tier(row, pointer)
-    return _cached(_REVIEW_TIER_CACHE, key, lambda: _resolve_review_tier(row, pointer))
+    return file_memo.memoized_key(
+        "obligation_review_tier", key, lambda: _resolve_review_tier(row, pointer)
+    )
 
 
 def _resolve_review_tier(row: Mapping[str, Any], pointer: Mapping[str, Any]) -> str:
@@ -1623,7 +1634,7 @@ def _review_duty_item(
         return item
     head, tree = resumed_head, _tree
     try:
-        review, reviewed_head = recovery.select_review_for_head(
+        review, reviewed_head = _selected_review(
             project, str(row.get("run_id") or ""), head, tree=tree
         )
     except (OSError, ValueError):
@@ -1904,11 +1915,12 @@ def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
     if key[2] is None:
         with file_memo.read_only_region():
             return _held_worktree_records_read(project, repository)
-    return _cached(
-        _HELD_RECORDS_CACHE,
+    held = file_memo.memoized_key(
+        "obligation_held_records",
         key,
         lambda: _held_records_read_uncached(project, repository),
     )
+    return {path: record for path, record in held.items() if path.is_dir()}
 
 
 def _held_records_read_uncached(
@@ -1923,9 +1935,9 @@ def _held_records_signature(project: str, repository: Path) -> tuple[Any, ...] |
     """The files a held-worktree derivation reads, as one change token.
 
     The records come from the merged ledger, the registered worktrees and the
-    live pointer directory, so all three carry a signature: the ledger file's
-    stat identity, git's worktree registry, and the live directory. A tick
-    whose three are unchanged would read the same records, so it is served the
+    live worktree claims, so all three carry a signature: the ledger file's
+    stat identity, git's worktree registry, and the worktree paths named by
+    live pointers. A tick whose three are unchanged would read the same records, so it is served the
     ones the previous tick read instead of walking the ledger and running git
     again. ``None`` means one of them could not be stat'ed, so the caller reads
     fresh rather than risk a stale answer.
@@ -1936,10 +1948,13 @@ def _held_records_signature(project: str, repository: Path) -> tuple[Any, ...] |
     except OSError:
         return None
     registry_signature = _worktree_registry_signature(repository)
-    try:
-        live_signature = file_memo.file_signature(runs.live_dir())
-    except OSError:
-        return None
+    live_signature = tuple(
+        sorted(
+            (str(pointer.get("run_id") or ""), str(pointer.get("worktree") or ""))
+            for pointer in _live_pointers(project)
+            if pointer.get("worktree")
+        )
+    )
     return (ledger_signature, registry_signature, live_signature)
 
 
@@ -2108,11 +2123,17 @@ def stored_review_for_run(
     """
     head, tree = recovery._review_head_and_tree(pointer)
     if not head:
-        return (
-            recovery.newest_review_for_headless_run(project, run_id, reclaimed=False),
-            "",
+        return file_memo.memoized_key(
+            "obligation_headless_review",
+            (project, run_id, review_records.review_entries_signature(project, run_id)),
+            lambda: (
+                recovery.newest_review_for_headless_run(
+                    project, run_id, reclaimed=False
+                ),
+                "",
+            ),
         )
-    return recovery.select_review_for_head(project, run_id, head, tree=tree)
+    return _selected_review(project, run_id, head, tree=tree)
 
 
 def _review_is_hot(
@@ -2133,9 +2154,14 @@ def _review_is_hot(
     superseding this one, read from the store's own rows so a by-head selection
     cannot hide a later round.
     """
-    later = [
-        other for _path, other in review_module.stored_records_for_run(project, run_id)
-    ]
+    later = file_memo.memoized_key(
+        "obligation_review_rounds",
+        (project, run_id, review_records.review_entries_signature(project, run_id)),
+        lambda: [
+            other
+            for _path, other in review_module.stored_records_for_run(project, run_id)
+        ],
+    )
     return review_lifecycle.is_hot(
         record,
         run_closed=run_id in closed,
@@ -2176,7 +2202,13 @@ def _sub_floor_items_by_session(
         run_id = str(pointer.get("run_id") or "")
         if not run_id:
             continue
-        if review_module.read_review(project, run_id) is None:
+        signature = review_records.review_entries_signature(project, run_id)
+        newest = file_memo.memoized_key(
+            "obligation_review_presence",
+            (project, run_id, signature),
+            lambda run_id=run_id: review_module.read_review(project, run_id),
+        )
+        if newest is None:
             # A run with no stored review owes no dimension duty, and the head
             # is consulted only to choose between reviews that exist, so
             # resolving it here would launch one git process per live run per
