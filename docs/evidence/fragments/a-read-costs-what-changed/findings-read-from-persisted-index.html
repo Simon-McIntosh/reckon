@@ -1,0 +1,81 @@
+<section id="findings-read-from-persisted-index-landing">
+  <h2>A dispatch reads findings from an index kept at write time</h2>
+
+  <p><strong>What changed.</strong>
+  <code>reckon/crew/findings.py</code> no longer derives the finding rows of a
+  project inside the process that reads them. It persists them to the node-local
+  cache directory <code>review_records.node_local_cache_dir</code> already uses
+  for its own store index — never the tracked tree — under a document stamped
+  with the digest of the four modules that fix how a row is derived
+  (<code>findings.py</code>, <code>review.py</code>,
+  <code>review_records.py</code> and <code>runs.py</code>). A fresh process
+  starts from that document.</p>
+
+  <p>Two levels of stat identity decide what is reused. A review directory whose
+  own identity is unchanged is trusted whole: no listing, no record read, one
+  stat. A directory that moved is rescanned record by record against each
+  record's identity, which is what carries the rows of every other record
+  forward and reads only the one that changed. The two parents —
+  <code>reviews/run/</code> and <code>reviews/plan/</code> — are cached the same
+  way, so a store of thousands of review directories is not re-listed by each
+  dispatch. Two subtrees are covered: the committed reviews tree, and the
+  crew-home store the code reviews live in, which
+  <code>list_code_reviews</code> previously read whole on every call.</p>
+
+  <p>The three writers that change a record refresh the entry they wrote:
+  <code>review_records.store_committed_review</code>,
+  <code>plan_review.record_response</code> (on the committed copy it rewrites)
+  and <code>plan_review.store_code_review</code>. The entry's directory is left
+  with no trusted signature — a concurrent write could land between the writer's
+  read and its directory stat, and a signature recorded then would make a later
+  reader trust an entry missing that write — so the next reader rescans that one
+  directory, finds every record's identity unchanged and opens nothing. A writer
+  never creates the document a reader builds: an index covering part of a store
+  would look trustworthy everywhere it was silent.</p>
+
+  <p>Each row now also carries <code>response</code>, the answer recorded
+  against its finding, which the reader did not surface before; the disposition
+  it already carried is a different question and is unchanged.</p>
+
+  <h3 id="findings-read-from-persisted-index-measured">Measured</h3>
+
+  <p>The live store, <code>findings_by_path("reckon")</code> for one dispatch's
+  write paths, each figure from a separate process (module and working
+  directory as imported: this worktree). Load average is logged beside each
+  figure because it moves the number more than anything else on this node.</p>
+
+  <table id="findings-read-from-persisted-index-timings">
+    <caption>Wall time of one fresh-process <code>findings_by_path</code> over
+    5,503 records and 11,804 rows in 2,550 review directories.</caption>
+    <thead><tr><th>arm</th><th>wall time</th><th>load average</th></tr></thead>
+    <tbody>
+      <tr><td>index deleted (control)</td><td>56.30 s</td><td>70.4</td></tr>
+      <tr><td>index current, run 1</td><td>0.81 s</td><td>68.5</td></tr>
+      <tr><td>index current, run 2</td><td>0.90 s</td><td>69.4</td></tr>
+      <tr><td>index current, run 3</td><td>1.62 s</td><td>69.6</td></tr>
+    </tbody>
+  </table>
+
+  <p>The material saved is the record parsing and the child-directory listing:
+  before the parent listing was cached, a fresh process spent 1.82 s of its
+  2.7–3.0 s in re-listing 2,550 review directories, against 0.20 s to load the
+  16.6 MB document and 0.26 s to stat every directory.</p>
+
+  <h3 id="findings-read-from-persisted-index-check">The check</h3>
+
+  <p><code>tests/test_findings_are_read_from_a_write_time_index.py</code> holds
+  the six facts the section names against a temporary crew home, checkout and
+  code-review store, with the node-local cache redirected and the operator's own
+  cache asserted untouched: a fresh process opens no record; an answer recorded
+  through <code>record_response</code> comes back on its row without opening
+  another record; a record committed by promotion is returned by the next read;
+  a record written into a directory behind the index's back is returned; a code
+  review stored through <code>store_code_review</code> is returned without
+  opening another; and a moved source digest rebuilds every entry. A further
+  three cases hold each writer to leaving the next read nothing to open, and
+  their control withholds the hook and shows the same read opening exactly one
+  record.</p>
+
+  <p>Negative control: deleting the persisted index before the fresh read makes
+  that first case open both records and fail.</p>
+</section>
