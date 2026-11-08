@@ -1,0 +1,76 @@
+<section id="cover-commits-beneath-a-presented-head-landing">
+  <h2>A presented head covers the commits beneath it</h2>
+
+  <p><strong>What changed.</strong> A promotion's shortfall report compared the presented
+  commits with the manifest's declared commits as exact sets, so a coordinator who cited
+  the head of a complete delivery was told the commits beneath it were missing. The
+  out-of-scope boundary check runs against what is presented, and a run's work is the span
+  its head sits on, not only the head itself. In
+  <code>reckon/crew/promotion_evidence.py</code>, <code>_commits_a_presentation_covers</code>
+  is the one function that reads the arms: a presented commit covers itself and every
+  commit in <code>base..it</code>, read with <code>git rev-list</code> in the run's own
+  tree, and a manifest commit is short only when nothing presented covers it. With
+  <code>--commit a b c</code> each of the three contributes its own ancestors above the
+  base, so no single presented head has to be chosen. A base that does not resolve, or a
+  range git cannot enumerate, leaves that commit covering only itself rather than claiming
+  coverage the repository did not confirm. A presented commit the manifest does not declare
+  still reports nothing, because that is the coordinator declining the worker's revision and
+  the presented list is the one that resolves. <code>promotion.py</code> only carries the
+  record this returns, and <code>_require_commits_beyond_base</code> is unchanged: it
+  already refuses a presented commit that is not above the base.</p>
+
+  <p>The defect was reproduced before it was repaired. Against the dispatch base, with the
+  new test file copied into a scratch export, the first case fails: a manifest declaring
+  five commits, promoted by naming only the fifth, reports the four ancestors as missing
+  (<code>presented_commits_subset_of_manifest</code>, <code>presented: 1</code>,
+  <code>declared: 5</code>). Two further cases fail there for the mirror reason — the old
+  exact-set rule also names commits the presentation does cover.</p>
+
+  <h3 id="cover-commits-beneath-a-presented-head-measured">Measured</h3>
+
+  <p>Gate: <code>tests/test_a_presented_head_covers_its_ancestors.py</code>, run as
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_a_presented_head_covers_its_ancestors.py</code> at each arm's own revision.
+  Every case drives <code>promotion._require_gate_evidence</code> over a temporary
+  repository built commit by commit, with branches where the case needs them. Each log
+  names its revision, tree and command on the header lines and ends in
+  <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base, the new test copied in</td>
+        <td><code>57b2c01772</code></td>
+        <td><strong>3 failed, 2 passed</strong>, exit 1 — a cited head does not cover its
+        ancestors, an off-branch commit is bundled with a covered one, and two presented
+        branches are reported short of their own ancestors</td></tr>
+      <tr><td>head</td>
+        <td><code>1da7bf8590</code></td>
+        <td><strong>5 passed</strong>, exit 0</td></tr>
+      <tr><td>negative control: each commit required by sha, as before</td>
+        <td>mutated head</td>
+        <td><strong>3 failed, 2 passed</strong>, exit 1 — the first case fails, the head
+        covering the four beneath it</td></tr>
+    </tbody>
+  </table>
+
+  <p>No added failures elsewhere. The test files importing
+  <code>promotion_evidence</code> or reaching the predicate through
+  <code>promotion</code> — including <code>tests/test_a_short_commit_list_is_reported.py</code>
+  — ran 30 passed at both arms, and the files naming
+  <code>_require_gate_evidence</code> or <code>commit_list_shortfall</code>
+  (<code>tests/test_crew_promotion_scope.py</code>,
+  <code>tests/test_control_gate_repairs.py</code>,
+  <code>tests/test_promotion_blank_worktree_sites.py</code>) ran 38 passed at both arms.
+  <code>ruff check</code> and <code>ruff format --check</code> add no findings on the two
+  staged paths.</p>
+
+  <h3 id="cover-commits-beneath-a-presented-head-evidence">Evidence</h3>
+  <ul>
+    <li><code>57b2c017725e2d65fdd4c9dbe6f7fb874a64c9fa</code> — dispatch base, and the
+    scratch export the base arm ran in with the new test copied into it.</li>
+    <li><code>1da7bf8590e58f6992ae756fba6f3665e20a390a</code> — the head the arms ran at:
+    <code>reckon/crew/promotion_evidence.py</code> +90/−34,
+    <code>tests/test_a_presented_head_covers_its_ancestors.py</code> +176.</li>
+  </ul>
+</section>
