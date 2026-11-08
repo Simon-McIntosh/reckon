@@ -12,14 +12,16 @@ from __future__ import annotations
 
 import ast
 import json
+import os
 from copy import deepcopy
+from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
 from reckon import _plan_html, crew, ledger
-from reckon.crew import queue_admission
+from reckon.crew import paid_lanes, queue_admission
 from reckon.crew import runs as runs_module
 from reckon.crew.runs import pointer_path, read_pointer
 from tests.helpers.git import git as _git
@@ -166,18 +168,65 @@ def test_a_dispatch_keeps_its_detail_in_the_run_directory(
     repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """All six moved fields land in one file, and the pointer only names it."""
-    record = _dispatch_one(repository, tmp_path, "detail-moves", monkeypatch)
+    lane_path = tmp_path.parent / "l"
+    quota_path = tmp_path.parent / "q"
+    lane_path.write_text(
+        json.dumps(
+            {
+                "observed_at": datetime.now(UTC).replace(microsecond=0).isoformat(),
+                "headroom": 3,
+                "mean_context": 1000,
+                "binding_observed": False,
+            }
+        ),
+        encoding="utf-8",
+    )
+    quota_path.write_text(json.dumps({"accounts": []}), encoding="utf-8")
+    real_documents = {
+        Path(os.environ.get(name) or default).expanduser().absolute()
+        for name, default in (
+            (paid_lanes.LOCAL_LANE_DOCUMENT_ENV, paid_lanes.LOCAL_LANE_DOCUMENT_PATH),
+            (paid_lanes.DOCUMENT_ENV, paid_lanes.DEFAULT_DOCUMENT_PATH),
+        )
+    }
+    touched_real_documents: list[str] = []
+    opened_test_documents: set[Path] = set()
+    original_open = Path.open
+
+    def isolated_open(path: Path, *args, **kwargs):
+        resolved = path.expanduser().absolute()
+        if resolved in real_documents:
+            touched_real_documents.append(str(resolved))
+            raise OSError(f"test must not open real document {resolved}")
+        if resolved in {lane_path, quota_path}:
+            opened_test_documents.add(resolved)
+        return original_open(path, *args, **kwargs)
+
+    with monkeypatch.context() as isolated:
+        isolated.setenv(paid_lanes.LOCAL_LANE_DOCUMENT_ENV, str(lane_path))
+        isolated.setenv(paid_lanes.DOCUMENT_ENV, str(quota_path))
+        isolated.setitem(
+            DISPATCH_CONFIG["backends"]["native"], "lane_document", str(lane_path)
+        )
+        isolated.setattr(Path, "open", isolated_open)
+        assert paid_lanes.local_lane_path() == lane_path
+        assert paid_lanes.document_path() == quota_path
+        record = _dispatch_one(repository, tmp_path.parent, "detail-moves", monkeypatch)
     run_id = str(record["run_id"])
     # A queued launch records the request it was admitted from on its pointer;
     # that write goes through the same path as every other pointer write.
     queue_admission._stamp_admission(
         run_id, {"run_id": run_id, "project": PROJECT}, admitted_at="now"
     )
+    assert lane_path in opened_test_documents
+    assert not touched_real_documents, touched_real_documents
 
     text = pointer_path(run_id).read_text(encoding="utf-8")
     pointer_bytes = len(text.encode("utf-8"))
     print(f"test_dispatch_pointer_bytes={pointer_bytes}")
     pointer = json.loads(text)
+    assert pointer["lane_reading"]["headroom"] == 3
+    assert pointer["pace"]["group"] is None
     assert pointer_bytes < 12 * 1024, sorted(
         ((name, len(json.dumps(value))) for name, value in pointer.items()),
         key=lambda item: item[1],
