@@ -1,0 +1,46 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T15:22:39.989Z",
+  "dispatched_at": "2026-11-08T15:12:11Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/follow-live-runs-on-host-rearm.html",
+      "line": 138,
+      "severity": "non-blocking",
+      "text": "The fragment cites station-tests.log as 'the failing arm at bae7b6ab8d', but that log's own header reads '# revision: bae7b6ab8db87dd75a00744cd097b51d7885d04b (working tree carries the moved judgement)' \u2014 the hard case this review's predecessor turned on. The arm is therefore bae7b6ab8d with the launch-record rule already present in the working tree, not the pre-commit state the sentence reads as; taken literally the citation shows the batch failing with the rule in place, which is the opposite of the sentence's claim. The claim itself survives on the two clean arms (station-combo-head.log at a clean 6c83e9f27f tree, 60 passed EXIT=0; station-combo-answering-reverted.log with 480a03a25b's session_host.py and station_subscriber.py reverted, 1 failed, 59 passed EXIT=1), so the citation should be corrected to describe the working-tree state or dropped."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T034846688854-follow-live-runs-on-host-rearm/manifest.md",
+      "line": 33,
+      "severity": "non-blocking",
+      "text": "The manifest's outside_scope still says 'population_has_live_work in reckon/crew/station_subscriber.py ... so the exclusion is made in this node's own judgement rather than by changing the shared rule', and rubric.scope_discipline says 'five staged paths'. Both deny the change commit 480a03a25b actually makes: it moves the launch-record exclusion into station_subscriber.live_work_populations, and changed_paths on the same manifest now lists reckon/crew/station_subscriber.py. A reader comparing the record to the diff finds the manifest denying the change it carries. This is the same defect the previous review recorded at this line; the gained commit did not address it."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "none: the gained commit touches an evidence fragment only, and no runtime code can reach it.",
+    "diff": "read the one gained commit 48719901cb against base 6c83e9f27f; it rewrites one paragraph of the station-and-follower section, 16 insertions and 7 deletions in one declared file.",
+    "done_when": "read the done_when from dispatch-detail.json; the manifest records gate-repair-after.log as 15 passed EXIT=0 at 48719901cb and gate-base.log as 4 failed, 3 passed EXIT=1 at the dispatch base e5179a465f, which is the base arm the done_when names.",
+    "goal": "read the node goal 'make a re-armed host follow its session's live runs at once' from dispatch-detail.json; the gained commit changes no code, so it corrects the evidence record for that goal rather than advancing it.",
+    "manifest": "read the source manifest; it reports complete with both armed-suite arms, but its outside_scope and rubric.scope_discipline still deny the station_subscriber.py change the diff carries.",
+    "write_paths": "read the declared write paths; the single changed file docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/follow-live-runs-on-host-rearm.html is inside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal 'make a re-armed host follow its session's live runs at once'; the gained commit is docs-only and corrects the record of that work rather than advancing it.\nVERDICT done_when: read the done_when and the manifest's gate logs; gate-base.log records 4 failed, 3 passed EXIT=1 at the dispatch base e5179a465f and gate-repair-after.log records 15 passed EXIT=0 at head, which is the pair the measure names.\nVERDICT write_paths: read the declared write paths; the single changed path docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/follow-live-runs-on-host-rearm.html is inside them.\nVERDICT manifest: read; it reports complete with the armed suite green both sides, but its outside_scope denies the station_subscriber.py change the diff carries.\nVERDICT diff: read commit 48719901cb against base 6c83e9f27f; one file, 16 insertions and 7 deletions, replacing a pre-existing attribution with a paired control.\nCALL_SITES: none\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the only code paths reaching the node's goal are plugins/crew-host/bin/crew-host and reckon/crew/session_host.py, unchanged by the gained docs-only commit 48719901cb.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests are not re-run; station-combo-head.log (60 passed EXIT=0) and station-combo-answering-reverted.log (1 failed, 59 passed EXIT=1) log the paired arms, while the third cited arm at follow-live-runs-on-host-rearm.html:138 is mis-described.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/follow-live-runs-on-host-rearm.html, one of the node's declared write paths, and adds nothing else.\nSCORE durability: 16\nJUSTIFICATION durability: the gained commit adds no assertion; the claim it records is guarded by the reversible arm in station-combo-answering-reverted.log, which reddens when 480a03a25b's session_host.py and station_subscriber.py are put back.\nSCORE fit: 16\nJUSTIFICATION fit: the paragraph at follow-live-runs-on-host-rearm.html:130 follows the surrounding evidence-fragment prose and the commit 48719901cb carries a conventional subject with a body.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module; a search over reckon/crew/ and docs/evidence/fragments/ for a competing evidence-record mechanism found none that this paragraph duplicates.\nFINDING docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/follow-live-runs-on-host-rearm.html:138 non-blocking: the log cited as 'the failing arm at bae7b6ab8d' states its working tree carries the moved judgement, so the citation does not show the pre-commit arm the sentence reads as.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T034846688854-follow-live-runs-on-host-rearm/manifest.md:33 non-blocking: outside_scope and rubric.scope_discipline still deny the station_subscriber.py change that changed_paths and commit 480a03a25b carry.",
+  "review_run_id": "r-20261108T145527889703-review-of-follow-live-runs-on-host-rearm-48719901cb37",
+  "reviewed_base_sha": "6c83e9f27f5c58d9cefb2090ea3ea192e35dcb55",
+  "reviewed_head_sha": "48719901cb37d583d18359bd6c720fe9eda1d548",
+  "reviewed_run_id": "r-20261108T034846688854-follow-live-runs-on-host-rearm",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T15:33:45.105786+00:00",
+  "total": 103
+}
