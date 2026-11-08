@@ -1,0 +1,63 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_run_commands.py:3277",
+    "reckon/crew_run_commands.py:3447",
+    "reckon/crew/promotion_records.py:192",
+    "reckon/crew/promotion.py:1207",
+    "reckon/crew/promotion.py:1847"
+  ],
+  "completed_at": "2026-11-08T01:16:48.360Z",
+  "dispatched_at": "2026-11-08T00:49:08Z",
+  "findings": [
+    {
+      "file": "tests/test_a_landed_head_releases_its_worktree.py",
+      "line": "154",
+      "severity": "non-blocking",
+      "text": "non-blocking: the third case (a worktree holding a commit beyond the reviewed head) is refused by the pre-landing worktree guard in reckon/crew_run_commands.py:3395-3413 before any release judgement runs, and it passes in the base arm (logs/base-arm.log: 1 failed, 2 passed), so it cannot redden if this change regresses and adds no durability for it."
+    },
+    {
+      "file": "reckon/crew/promotion_release.py",
+      "line": "893",
+      "severity": "non-blocking",
+      "text": "non-blocking: the node's done_when requires ruff check and ruff format --check to add no findings on the staged paths, and neither the manifest nor any log under the run directory records a ruff result; re-measured here on an extraction of the reviewed head (logs/ruff-on-reviewed-head.log in review run r-20261108T004445640143-review-of-release-a-landed-heads-worktree-local-bea6a6bf6c75), the only finding on the staged paths is this pre-existing PERF403 (identical at the base revision, line 867) and the three files are format-clean, so the clause holds but the run does not show it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "two commits from 088c13da184c7b478537ee1381536cdea8175d41 to bea6a6bf6c750baf67d30fd4322d4235cd215b23 change exactly four files (+285/-8): promotion_release.py threads integration_repo and integration_commit into _inspect_workspace and the audit, crew_run_commands.py passes the landing's repository and merge commit and reads the branch from that checkout, a new three-case test file, and the landing evidence fragment.",
+    "done_when": "the done_when at prompt.txt:124 requires the three cases and both negative controls in tests/test_a_landed_head_releases_its_worktree.py, the defect reproduced first, base and after arms at the run's armed command with every log headed by revision and command and ending EXIT=, plus ruff clean on the staged paths; logs/base-arm.log records 1 failed 2 passed at 088c13da18, logs/head-arm.log 3 passed at bea6a6bf6c, logs/negative-control.log both mutations red, but no log or manifest line records the ruff clause.",
+    "goal": "the source prompt's GOAL asks that a landed head release its worktree in the landing receipt; reckon/crew_run_commands.py:3447-3453 passes the checkout the merge advanced and the commit merge.land returned into the release, and tests/test_a_landed_head_releases_its_worktree.py:133-152 lands a run whose recorded checkout was left behind and shows its tree released.",
+    "manifest": "the source manifest.md records commits 621b97659b and bea6a6bf6c, base_suite completed with failure id test_a_recorded_observer_checkout_still_releases_the_worktree and after_suite completed with no failures, the negative control log, and outside_scope for the pre-existing worktree-release failure; it records no ruff result.",
+    "write_paths": "the source manifest.md grants reckon/crew/promotion_release.py, reckon/crew_run_commands.py, tests/test_a_landed_head_releases_its_worktree.py, the landing fragment and a figures directory; the diff changes the first four and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_landed_head_releases_its_worktree.py:133 reddens when the release judges against the recorded checkout's HEAD (recorded-head mutation), but the case at line 154 passes in the base arm because the pre-landing guard refuses it first, so it guards nothing about this change.",
+    "evidence": "logs/base-arm.log records 1 failed 2 passed at 088c13da18 with the observer case red, logs/head-arm.log records 3 passed at bea6a6bf6c, and logs/negative-control.log records both mutations red with ids the head arm does not fail; the done_when's ruff clause is nowhere recorded.",
+    "fit": "reckon/crew/promotion_release.py:404-410 passes the existing _inspect_workspace repo and revision parameters rather than adding a second classification path, the comments state the mechanism, and no added name carries a plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew_run_commands.py:3452-3453 threads the landing's repository and merge commit through _release_after_promotion, and tests/test_a_landed_head_releases_its_worktree.py:133-152 lands an observer-recorded run and asserts its worktree is gone with the remote equal to the local branch.",
+    "reuse": "the capability search found _inspect_workspace at reckon/crew/routing.py:793 as the owner of worktree judgement and _worktree_audit and _release_worktree_whole in the same module as the audit and removal owners; the change passes the landing's checkout and commit through those owners and duplicates none of them.",
+    "scope_discipline": "the four paths in the 088c13da18..bea6a6bf6c diff all occur in the source manifest.md write_paths list, and no path outside that list changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source prompt's GOAL asks that a landed head release its worktree in the landing receipt; reckon/crew_run_commands.py:3447-3453 passes the checkout the merge advanced and the commit merge.land returned into the release, and tests/test_a_landed_head_releases_its_worktree.py:133-152 lands a run whose recorded checkout was left behind and shows its tree released.\nVERDICT done_when: prompt.txt:124 requires the three cases and both negative controls in tests/test_a_landed_head_releases_its_worktree.py, the defect reproduced first, base and after arms at the armed command with every log headed by revision and command and ending EXIT=, plus ruff clean on the staged paths; logs/base-arm.log records 1 failed 2 passed, logs/head-arm.log 3 passed, logs/negative-control.log both mutations red, but no log or manifest line records the ruff clause.\nVERDICT write_paths: the source manifest.md grants reckon/crew/promotion_release.py, reckon/crew_run_commands.py, tests/test_a_landed_head_releases_its_worktree.py, the landing fragment and a figures directory; the diff changes the first four and nothing else.\nVERDICT manifest: the source manifest.md records commits 621b97659b and bea6a6bf6c, a completed base_suite with failure id test_a_recorded_observer_checkout_still_releases_the_worktree and a completed after_suite with none, the negative control log, and outside_scope for the pre-existing worktree-release failure; it records no ruff result.\nVERDICT diff: two commits from 088c13da184c7b478537ee1381536cdea8175d41 to bea6a6bf6c750baf67d30fd4322d4235cd215b23 change four files (+285/-8), threading the landing's checkout and merge commit into the release and its audit, reading the branch from that checkout, adding a three-case test file and the landing fragment.\nCALL_SITES: reckon/crew_run_commands.py:3277, reckon/crew_run_commands.py:3447, reckon/crew/promotion_records.py:192, reckon/crew/promotion.py:1207, reckon/crew/promotion.py:1847\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:3452-3453 threads the landing's repository and merge commit through _release_after_promotion, and tests/test_a_landed_head_releases_its_worktree.py:133-152 lands an observer-recorded run and asserts its worktree is gone with the remote equal to the local branch.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/base-arm.log records 1 failed 2 passed at 088c13da18 with the observer case red, logs/head-arm.log records 3 passed at bea6a6bf6c, and logs/negative-control.log records both mutations red with ids the head arm does not fail; the done_when's ruff clause is nowhere recorded.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the four paths in the 088c13da18..bea6a6bf6c diff all occur in the source manifest.md write_paths list, and no path outside that list changed.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_landed_head_releases_its_worktree.py:133 reddens when the release judges against the recorded checkout's HEAD, but the case at line 154 passes in the base arm because the pre-landing guard refuses it first, so it guards nothing about this change.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/promotion_release.py:404-410 passes the existing _inspect_workspace repo and revision parameters rather than adding a second classification path, and no added name carries a plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search found _inspect_workspace at reckon/crew/routing.py:793 as the owner of worktree judgement and _worktree_audit and _release_worktree_whole in the same module as the audit and removal owners, and the change passes the landing's checkout and commit through those owners rather than duplicating them.\nFINDING tests/test_a_landed_head_releases_its_worktree.py:154 non-blocking: the third case is refused by the pre-landing worktree guard in reckon/crew_run_commands.py:3395-3413 before any release judgement runs and passes in the base arm, so it cannot redden if this change regresses.\nFINDING reckon/crew/promotion_release.py:893 non-blocking: the node's done_when requires ruff check and ruff format --check to add no findings on the staged paths, and neither the manifest nor any log under the run directory records a ruff result; re-measured here on an extraction of the reviewed head (logs/ruff-on-reviewed-head.log in review run r-20261108T004445640143-review-of-release-a-landed-heads-worktree-local-bea6a6bf6c75), the only finding on the staged paths is this pre-existing PERF403 (identical at the base revision, line 867) and the three files are format-clean, so the clause holds but the run does not show it.\n",
+  "review_run_id": "r-20261108T004445640143-review-of-release-a-landed-heads-worktree-local-bea6a6bf6c75",
+  "reviewed_base_sha": "088c13da184c7b478537ee1381536cdea8175d41",
+  "reviewed_head_sha": "bea6a6bf6c750baf67d30fd4322d4235cd215b23",
+  "reviewed_run_id": "r-20261108T000029815283-release-a-landed-heads-worktree-local",
+  "rubric": "text",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T01:25:13.593969+00:00",
+  "total": 110
+}
