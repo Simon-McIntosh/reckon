@@ -756,6 +756,46 @@ def _foreign_repository(revision: str, *, exclude: Path) -> Path | None:
     return None
 
 
+def _commits_a_presentation_covers(
+    tree: Path,
+    base: str,
+    presented: Iterable[str],
+) -> set[str]:
+    """The commits one presentation speaks for.
+
+    A presentation names the tip of the run's work, not every commit in it: a
+    coordinator who has read the log cites the head, and the commits beneath it
+    are the run's own work too because each of them is in ``base..head``. So a
+    presented commit covers itself and every commit reachable from it but not
+    from the base, and a manifest commit is only short when no presented commit
+    covers it. Reading the presentation as an exact list instead reported a
+    shortfall against a complete delivery whose head had been cited.
+
+    A base that does not resolve, or a range git cannot enumerate is an
+    unmeasured citation rather than a short one: an unmeasured range leaves the
+    commit covering only itself, which never claims coverage the repository did
+    not confirm.
+    """
+    covered = set(presented)
+    canonical_base = _commit_canonical_id(tree, base) if base else None
+    if canonical_base is None:
+        return covered
+    for commit in sorted(covered):
+        result = subprocess.run(
+            ["git", "rev-list", f"{canonical_base}..{commit}"],
+            cwd=tree,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode:
+            continue
+        covered.update(
+            line.strip() for line in result.stdout.splitlines() if line.strip()
+        )
+    return covered
+
+
 def _require_gate_evidence(
     run_id: str,
     record: Mapping[str, Any],
@@ -786,20 +826,22 @@ def _require_gate_evidence(
 
     The other half of the same silence is a presentation that is short
     of the manifest's list, and it is the warn half of refuse-or-warn: a
-    passing promotion whose presented commits are a strict subset of the
-    manifest's declared commits is reported — naming how many were presented,
-    how many the manifest declared, and which revisions are missing — and never
-    refused. The out-of-scope boundary check runs against the commits a
+    passing promotion whose presented commits do not cover the manifest's
+    declared commits is reported — naming how many were presented, how many the
+    manifest declared, and which revisions are outside the covered set — and
+    never refused. The out-of-scope boundary check runs against the commits a
     promotion presents, so an incomplete presentation silently narrows that
-    check. Only the strict-subset direction is reported: a presented commit the
-    manifest does not declare is the coordinator having declined the worker's
-    revision, where the presented list is the one that resolves, so reporting
-    it would name the list that resolves and recreate the confusion the counts
-    cause. Only declared commits that resolve in the run's repository are
-    compared, so a manifest quoting a revision that resolves nowhere is neither
-    counted nor named as missing — it is not authoritative. The report is a
-    returned value, never an exception: a shortfall must not turn a passing
-    promotion into a failed one.
+    check. A presented commit covers itself and every commit in ``base..it``,
+    because a run's work is the span its head sits on and not only the head
+    itself: citing the tip of a delivery is a full presentation of it. A
+    presented commit the manifest does not declare is the coordinator having
+    declined the worker's revision, where the presented list is the one that
+    resolves, so that shape is not reported: reporting it would name the list
+    that resolves and recreate the confusion the counts cause. Only declared
+    commits that resolve in the run's repository are compared, so a manifest
+    quoting a revision that resolves nowhere is neither counted nor named as
+    missing — it is not authoritative. The report is a returned value, never an
+    exception: a shortfall must not turn a passing promotion into a failed one.
 
     A presented citation is the other half of that split and is refused rather
     than reported: the presented list is what the boundary check and the ledger
@@ -901,27 +943,41 @@ def _require_gate_evidence(
             for candidate in presented
             if (canonical := _commit_canonical_id(tree, candidate)) is not None
         }
-        # A strict subset is the only shape reported. Equality is a full
-        # presentation; a superset, or a presented commit outside the declared
-        # list, is the coordinator declining the worker's revision, where the
-        # presented list resolves and the manifest's does not.
-        if resolving_presented and resolving_presented < resolving_declared:
-            missing = sorted(resolving_declared - resolving_presented)
-            return {
-                "kind": "presented_commits_subset_of_manifest",
-                "presented": len(presented),
-                "declared": len(resolving_declared),
-                "missing": missing,
-                "message": (
-                    f"run {run_id!r} has a passing gate presenting "
-                    f"{len(presented)} commit(s) of the {len(resolving_declared)} "
-                    f"its manifest declares; missing: {', '.join(missing)}. The "
-                    "out-of-scope boundary check runs against the presented "
-                    "commits, so an incomplete presentation narrows it. This is "
-                    "a report, not a refusal — present the full list, or the "
-                    "boundary check may not cover the node's work"
-                ),
-            }
+        # A manifest commit is short only when nothing the presentation names
+        # covers it. Each presented commit covers itself and every commit in
+        # base..it, so a coordinator citing the head of a five-commit delivery
+        # covers the four beneath it and reports nothing. Equality is a full
+        # presentation; a presented commit outside the declared list is the
+        # coordinator declining the worker's revision, where the presented list
+        # is the one that resolves, so that shape stays silent rather than
+        # naming the commits the declined revision left behind.
+        covered = _commits_a_presentation_covers(
+            tree,
+            str(record.get("base_sha") or "").strip(),
+            resolving_presented,
+        )
+        presented_declines = bool(resolving_presented - resolving_declared)
+        if resolving_presented and not presented_declines:
+            missing = sorted(resolving_declared - covered)
+            if missing:
+                return {
+                    "kind": "presented_commits_subset_of_manifest",
+                    "presented": len(presented),
+                    "declared": len(resolving_declared),
+                    "missing": missing,
+                    "message": (
+                        f"run {run_id!r} has a passing gate presenting "
+                        f"{len(presented)} commit(s) of the "
+                        f"{len(resolving_declared)} its manifest declares, and "
+                        "neither the presented commits nor their ancestors "
+                        f"above the base cover: {', '.join(missing)}. The "
+                        "out-of-scope boundary check runs against the presented "
+                        "commits, so an incomplete presentation narrows it. This "
+                        "is a report, not a refusal — present a commit covering "
+                        "the rest, or the boundary check may not cover the "
+                        "node's work"
+                    ),
+                }
         return None
 
     # An identifier a record cites must resolve in the store that owns it, and
