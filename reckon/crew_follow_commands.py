@@ -159,6 +159,21 @@ class _StationRegistration:
     def held(self) -> bool:
         return True if self._claim is None else self._claim.held
 
+    def prepare_reexec(self) -> None:
+        """Carry the session's claim across a replacement of this image.
+
+        The claim is the follower registration the producer path takes, so it
+        crosses the exec exactly as it does there. A session-less pane holds no
+        claim and has nothing to carry.
+        """
+        if self._claim is not None:
+            self._claim.prepare_reexec()
+
+    def cancel_reexec(self) -> None:
+        """Undo that hand-over when the replacement was refused."""
+        if self._claim is not None:
+            self._claim.cancel_reexec()
+
     def acquire(self) -> bool:
         """Take the session's claim, writing the pane's row only while held."""
         if self._claim is None:
@@ -2821,15 +2836,11 @@ def _follower_reloader_for(
 ):
     """The reloader a follower polls between its rows, whichever it reads.
 
-    Both deliveries need one, and for one reason: a follower renders its own
-    rows. A stream follower composes them from the producer's records, and a
-    station subscriber composes them from the station's rows, so a subscriber
-    that never reloads keeps the wording of the image it was armed with long
-    after the source changed it.
-
-    The caller hands this to the per-wait hook and never to a signal timer: a
-    replacement is well defined only at a record boundary, where no row is
-    half-drawn and no reader position is mid-advance.
+    It is the same object for both deliveries, because a follower renders its
+    own rows: a stream follower composes them from the producer's records and a
+    station subscriber composes them from the station's rows. The caller polls
+    it through the per-wait hook at a record boundary and never through a signal
+    timer, which would re-execute with a row half-drawn.
     """
     return _FollowerReloader(
         project,

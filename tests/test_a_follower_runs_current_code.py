@@ -4,9 +4,10 @@ A subscriber to a station renders every row with its own code: the station
 commits rows, and ``station_subscriber`` composes the sentences the pane prints.
 So a long-lived subscriber keeps the wording of the image it was armed with,
 including a remedy the source has since removed, unless it replaces its own
-image when the checkout moves. These cases pin that path: the reloader the
-subscriber polls, the stamp it compares against, the trust check it refuses on,
-and the cadence that keeps the identity read off every sweep.
+image when the checkout moves. These cases enter that delivery — the follower's
+own subscriber path, with a stubbed subscriber and a recorded exec — so what
+they observe is the reloader that path builds and polls through its per-wait
+hook, not one a test assembles beside it.
 """
 
 from __future__ import annotations
@@ -14,6 +15,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 
@@ -22,7 +24,7 @@ from reckon.crew import follower_reload, runs
 from reckon.crew_follow_commands import (
     _FOLLOWER_IMAGE_COMMIT_ENV,
     _FOLLOWER_SOURCE_ROOT_ENV,
-    _follower_reloader_for,
+    crew_follow,
 )
 
 # Two identities a checkout can report. ``IMPORTED`` is what the tree this
@@ -30,6 +32,16 @@ from reckon.crew_follow_commands import (
 # already running; ``MOVED`` is a source checkout that has moved on.
 IMPORTED = "a" * 40
 MOVED = "b" * 40
+SWEEPS = 100
+
+
+@pytest.fixture(autouse=True)
+def isolated_home(tmp_path, monkeypatch) -> Path:
+    """A crew home of this test's own, so no run is registered anywhere real."""
+    home = tmp_path / "config"
+    home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    return home
 
 
 @pytest.fixture()
@@ -43,12 +55,18 @@ def identity(monkeypatch, tmp_path):
     checkout = tmp_path / "checkout"
     checkout.mkdir()
     reads: list[Path] = []
-    values: dict[Path, str] = {}
+    values: dict[Path, Any] = {}
 
     def read(root):
         root = Path(root)
         reads.append(root)
-        return values.get(root, IMPORTED)
+        queued = values.get(root, IMPORTED)
+        if isinstance(queued, list):
+            # A list names the identity a checkout reports on each successive
+            # read, so a case can move the checkout between the arming read and
+            # the sweep that compares against it.
+            return queued.pop(0) if len(queued) > 1 else queued[0]
+        return queued
 
     monkeypatch.setattr(checkout_trust, "_committed_reload_tree", read)
     monkeypatch.setattr(checkout_trust, "_head_identity", lambda root: None)
@@ -80,36 +98,85 @@ def reexec(monkeypatch, tmp_path):
     return SimpleNamespace(execed=execed, materialized=materialized, image=image)
 
 
-class _Registration:
-    """Stands in for the follower's delivery registration across a reload."""
+class _Subscriber:
+    """A station subscriber stubbed to the shape the delivery reads.
+
+    The delivery reads the pane's place from its cursor path, takes the
+    session's claim through its registration, and reads and appends its memory;
+    a station itself is not needed to exercise any of that.
+    """
 
     def __init__(self) -> None:
-        self.prepared = 0
-        self.cancelled = 0
+        self.path = SimpleNamespace(reported={}, lift_groups=set())
+        self.history: list[dict] = []
+        self.persist = False
+        self.registered: list[dict] = []
+        self.detached = 0
+        self.store = SimpleNamespace(close=lambda: None)
 
-    def prepare_reexec(self) -> None:
-        self.prepared += 1
+    def register(self, **kwargs) -> None:
+        self.registered.append(kwargs)
 
-    def cancel_reexec(self) -> None:
-        self.cancelled += 1
+    def detach(self) -> None:
+        self.detached += 1
 
-
-def _import_root() -> Path:
-    """The checkout this process imports ``reckon`` from."""
-    return Path(runs.__file__).resolve().parents[2]
+    def append_history(self, **kwargs) -> None:
+        self.history.append(kwargs)
 
 
-def _subscriber_reloader(registration=None):
-    """The reloader the station-subscriber arm of the follower polls.
+@pytest.fixture()
+def delivery(monkeypatch):
+    """Enter the follower's subscriber delivery with a stubbed subscriber.
 
-    Built through the same call the subscriber's delivery makes, so a delivery
-    that stopped building one fails here rather than only in production.
+    ``_follow_watch_lines`` is replaced by a stub that hands the delivery's own
+    per-wait hook the checkpoint it would hand a live loop, once per sweep and
+    then returns. Everything above that hook is the production path: the
+    subscriber is detected, the reloader is built at its delivery site, and the
+    exec it decides on is recorded.
     """
-    return _follower_reloader_for("proj", registration or _Registration())
+    subscriber = _Subscriber()
+    monkeypatch.setattr(
+        "reckon.crew_follow_commands._station_subscriber_for",
+        lambda *args, **kwargs: subscriber,
+    )
+    monkeypatch.setattr(
+        "reckon.crew_follow_commands._hand_off_from_follower",
+        lambda *args, **kwargs: False,
+    )
+    sweeps = {"count": 1}
+    # Set by the caller to read the identity reads already made when the loop
+    # is entered, so a case can separate the arming read from the sweeps'.
+    probe: list = [list]
+
+    def fake_follow(project, **kwargs):
+        sweeps.setdefault("reads_at_arm", len(probe[0]()))
+        on_poll = kwargs["on_poll"]
+        for _ in range(sweeps["count"]):
+            on_poll({"reported": {}, "offset": 0})
+        return iter(())
+
+    monkeypatch.setattr("reckon.crew_follow_commands._follow_watch_lines", fake_follow)
+
+    def run() -> None:
+        crew_follow.callback(
+            project="proj",
+            session="session-a",
+            observe_sessions=(),
+            run_ids=(),
+            attention=False,
+            json_output=False,
+            pretty=False,
+            lifetime=None,
+            width=0,
+            theme=None,
+            no_color=True,
+        )
+
+    return SimpleNamespace(run=run, sweeps=sweeps, subscriber=subscriber, probe=probe)
 
 
 def test_a_moved_checkout_re_executes_the_subscriber(
-    identity, reexec, monkeypatch
+    identity, reexec, monkeypatch, delivery
 ) -> None:
     """The identity the subscriber reads is its checkout's, and it acts on it.
 
@@ -119,30 +186,28 @@ def test_a_moved_checkout_re_executes_the_subscriber(
     the reload is what makes its rows current.
     """
     monkeypatch.setenv(_FOLLOWER_SOURCE_ROOT_ENV, str(identity.checkout))
-    registration = _Registration()
-    reloader = _subscriber_reloader(registration)
-    assert reloader is not None, "the subscriber's delivery builds a reloader"
+    # The checkout moves between the delivery arming its image and its first
+    # sweep, which is the whole situation: the subscriber is long-lived and the
+    # source changed under it.
+    identity.values[identity.checkout] = [IMPORTED, MOVED]
 
-    # The checkout moves after the pane is armed, which is the whole situation:
-    # the subscriber is long-lived and the source changed under it.
-    identity.values[identity.checkout] = MOVED
-    reloader.poll({"reported": {}, "offset": 12})
+    delivery.run()
 
     assert len(reexec.execed) == 1, "a moved checkout re-executes the subscriber"
-    assert registration.prepared == 1
-    assert registration.cancelled == 1, "a refused exec hands the registration back"
+    assert delivery.subscriber.registered, "the pane held its own registration"
 
 
-def test_a_matching_stamp_leaves_the_subscriber_running(identity, reexec) -> None:
+def test_a_matching_stamp_leaves_the_subscriber_running(identity, reexec, delivery):
     """A checkout whose stamp matches the running image owes no replacement."""
-    reloader = _subscriber_reloader()
-    reloader.poll({"reported": {}, "offset": 12})
+    delivery.run()
 
     assert reexec.execed == [], "a matching stamp re-executes nothing"
     assert reexec.materialized == [], "and materialises no replacement image"
 
 
-def test_an_untrusted_checkout_is_not_executed(identity, reexec, monkeypatch) -> None:
+def test_an_untrusted_checkout_is_not_executed(
+    identity, reexec, monkeypatch, delivery
+) -> None:
     """The trust check is what keeps a moved-but-untrusted checkout out.
 
     A checkout that cannot prove it loads is deferred: the subscriber keeps the
@@ -154,17 +219,15 @@ def test_an_untrusted_checkout_is_not_executed(identity, reexec, monkeypatch) ->
         "reckon_imports",
         lambda root: (False, "the checkout is not trusted"),
     )
-    reloader = _subscriber_reloader()
-
-    identity.values[identity.checkout] = MOVED
-    reloader.poll({"reported": {}, "offset": 12})
+    identity.values[identity.checkout] = [IMPORTED, MOVED]
+    delivery.run()
 
     assert reexec.execed == [], "an untrusted checkout is never executed"
     assert reexec.materialized, "the moved checkout was still compared, and refused"
 
 
 def test_a_reload_tree_compares_against_its_named_checkout(
-    identity, reexec, monkeypatch
+    identity, reexec, monkeypatch, delivery
 ) -> None:
     """A follower running from a reload tree reads the checkout it came from.
 
@@ -178,10 +241,7 @@ def test_a_reload_tree_compares_against_its_named_checkout(
     monkeypatch.setenv(_FOLLOWER_SOURCE_ROOT_ENV, str(identity.checkout))
     identity.values[identity.checkout] = MOVED
 
-    reloader = _subscriber_reloader()
-    assert reloader.source_root == identity.checkout.resolve()
-
-    reloader.poll({"reported": {}, "offset": 12})
+    delivery.run()
 
     resolved_reads = [path.resolve() for path in identity.reads]
     assert identity.checkout.resolve() in resolved_reads, "the checkout was read"
@@ -193,7 +253,7 @@ def test_a_reload_tree_compares_against_its_named_checkout(
 
 
 def test_identity_is_read_once_per_interval_over_a_hundred_sweeps(
-    identity, reexec, monkeypatch
+    identity, reexec, monkeypatch, delivery
 ) -> None:
     """A hundred sweeps read the checkout's identity three times, not a hundred.
 
@@ -203,20 +263,27 @@ def test_identity_is_read_once_per_interval_over_a_hundred_sweeps(
     into a fresh read every sweep reads a hundred times; neither can report
     three.
     """
-    sweeps = 100
-    step = runs.FOLLOWER_FRESHNESS_SECONDS * 3 / sweeps
-    clock = SimpleNamespace(monotonic=lambda: next(moments))
-    moments = iter(index * step for index in range(sweeps))
-
-    reloader = _subscriber_reloader()
-    monkeypatch.setattr(follower_reload, "time", clock)
+    step = runs.FOLLOWER_FRESHNESS_SECONDS * 3 / SWEEPS
+    moments = iter(index * step for index in range(SWEEPS))
+    monkeypatch.setattr(
+        follower_reload, "time", SimpleNamespace(monotonic=lambda: next(moments))
+    )
+    delivery.sweeps["count"] = SWEEPS
+    delivery.probe[0] = lambda: identity.reads
     identity.reads.clear()
 
-    for _ in range(sweeps):
-        reloader.poll({"reported": {}, "offset": 12})
+    delivery.run()
 
     assert reexec.execed == [], "a matching stamp never reloads"
-    assert len(identity.reads) == 3, (
-        f"the checkout's identity was read {len(identity.reads)} times over "
-        f"{sweeps} sweeps spanning three intervals"
+    armed = delivery.sweeps["reads_at_arm"]
+    swept = len(identity.reads) - armed
+    assert armed == 1, "the delivery reads the identity once as it arms its image"
+    assert swept == 3, (
+        f"the sweeps read the checkout's identity {swept} times over {SWEEPS} "
+        "sweeps spanning three intervals"
     )
+
+
+def _import_root() -> Path:
+    """The checkout this process imports ``reckon`` from."""
+    return Path(runs.__file__).resolve().parents[2]
