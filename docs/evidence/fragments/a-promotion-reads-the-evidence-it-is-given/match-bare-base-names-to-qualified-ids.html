@@ -1,0 +1,78 @@
+<section id="match-bare-base-names-to-qualified-ids-landing">
+  <h2>A red base matches a bare test name to the qualified id it names</h2>
+
+  <p><strong>What changed.</strong> The red-base admission compared failure ids verbatim. A
+  manifest records <code>baseline_suite.failure_ids</code> with the bare test name a worker
+  copied from a summary line (<code>test_charge</code>), while the head arm's gate log writes
+  the node id (<code>tests/x.py::test_charge</code>). One test therefore read as two, the
+  head's ids were not covered, and a run that added no failure at all was refused as having
+  added one. The matching rule now lives beside <code>canonical_node_id</code>, as
+  <code>review.failure_ids_covered(base_ids, head_ids)</code>, which returns the head ids the
+  base does not cover: a bare base name covers a head id whose final <code>::</code> segment,
+  with a trailing parameter bracket removed, equals it; a bracketed bare name such as
+  <code>test_charge[1]</code> covers only that parametrisation; and a qualified id covers
+  only itself, so <code>tests/other.py::test_charge</code> never covers
+  <code>tests/x.py::test_charge</code>. <code>canonical_node_id</code> is unchanged.
+  <code>promotion_evidence._red_base_uncovered_ids</code> is the one function that reads the
+  arms and calls the predicate, returning the uncovered head ids or <code>None</code> when no
+  comparison could be made; <code>_zero_added_against_a_red_base</code> keeps its boolean and
+  admits only a comparison that was made and left nothing uncovered. The refusal beside a
+  passing verdict names the uncovered ids, at most twenty plus a count of the rest, and keeps
+  the arm-completion clause when no comparison could be made.</p>
+
+  <h3 id="match-bare-base-names-to-qualified-ids-measured">Measured</h3>
+
+  <p>Gate: <code>tests/test_a_red_base_matches_bare_names.py</code>, run as
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_a_red_base_matches_bare_names.py</code> at each arm's own revision. The delta arm
+  widens to the five test files that touch the changed surface
+  (<code>_zero_added_against_a_red_base</code>, <code>_red_base_uncovered_ids</code>,
+  <code>_require_verdict_matches_exit_status</code>, <code>canonical_node_id</code>,
+  <code>gate_log_failure_ids</code>), with the new test copied into the base tree so both
+  arms run one file set. Each log names its revision, tree and literal command on the header
+  lines and ends in a bare <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base, the new test copied in</td>
+        <td><code>3bca1c369f</code></td>
+        <td><strong>8 failed, 26 passed</strong>, exit 1 — all eight are the new file's cases;
+        the four pre-existing files (including
+        <code>test_a_ctest_id_names_its_test.py</code> and
+        <code>test_a_ctest_gate_is_read_at_promotion.py</code>) pass</td></tr>
+      <tr><td>head</td>
+        <td><code>f86c28394e</code></td>
+        <td><strong>34 passed</strong>, exit 0 — zero added failures against the base arm</td></tr>
+      <tr><td>negative control: ids compared exactly</td>
+        <td>mutated head</td>
+        <td><strong>1 failed</strong>, exit 1 — the bare-to-qualified case</td></tr>
+      <tr><td>negative control: brackets stripped from both sides</td>
+        <td>mutated head</td>
+        <td><strong>1 failed</strong>, exit 1 — the bracketed-bare-name case</td></tr>
+    </tbody>
+  </table>
+
+  <p>The six cases the gate shows: bare base names admit the qualified head ids naming the
+  same tests; a head id the base lacks is refused and named; a qualified id from another file
+  does not cover the same test name; a bare name covers both parametrisations of one test;
+  a bare <code>test_charge[1]</code> does not cover <code>tests/x.py::test_charge[2]</code>
+  and is refused naming it, while it does cover
+  <code>tests/x.py::test_charge[1]</code>; and a head arm without
+  <code>completed: true</code> is refused with the arm-completion clause and no id list.
+  <code>ruff check</code> and <code>ruff format --check</code> report nothing on the staged
+  paths.</p>
+
+  <h3 id="match-bare-base-names-to-qualified-ids-paths">Changed paths</h3>
+
+  <ul>
+    <li><code>reckon/crew/review.py</code> — <code>failure_ids_covered</code>, the shared
+      name rule, beside an unchanged <code>canonical_node_id</code>.</li>
+    <li><code>reckon/crew/promotion_evidence.py</code> —
+      <code>_red_base_uncovered_ids</code> reads the arms and reports the uncovered head ids
+      or <code>None</code>; <code>_zero_added_against_a_red_base</code> keeps its boolean;
+      the verdict refusal names the uncovered ids.</li>
+    <li><code>tests/test_a_red_base_matches_bare_names.py</code> — the six cases and the
+      predicate's direct check, with the two negative controls applied against it.</li>
+  </ul>
+</section>
