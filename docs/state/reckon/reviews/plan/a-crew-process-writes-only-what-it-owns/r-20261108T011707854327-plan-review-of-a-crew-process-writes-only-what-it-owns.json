@@ -1,0 +1,84 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T01:33:52.795Z",
+  "dispatched_at": "2026-11-08T01:25:19Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/session_host.py:312",
+      "id": "duplicate_owner-1",
+      "reason": "it replaces a parallel predicate with a two-line seed of existing state and removes a behavioural divergence the plan's own done-when cannot see.",
+      "text": "\u00a75 proposes a new start-up scan over `runs.list_live` filtered by `session` and by a locally-composed terminal set (`_TERMINAL_RUN_PHASES` plus `launch-failed`), but `live_work_run` (session_host.py:312) already answers \"does this pair owe a pane\" from the same live pointers and states it is \"the same judgement the follower settles by\", delegating to `population_has_live_work` (reckon/crew/station_subscriber.py:250), which its own docstring calls \"the one statement of which runs owe a pane\"; `SessionHost._live_view` (session_host.py:406) is already the injected seam for it, and `tick` (session_host.py:623-630) already re-arms a settled pair by asking it at line 629. The new scan is therefore a second owner of the same judgement, and it diverges: `population_has_live_work` counts a delivered run whose review is not yet stored as live work, while the plan's `_TERMINAL_RUN_PHASES` union does not, so a re-armed host would stay empty for a session whose only work is a delivered run awaiting review \u2014 the exact failure \u00a75 exists to fix, narrowed rather than closed. The extension is to seed `self._children` with the owner's pairs and let the existing `_live_view` decide, retiring the scan.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "tests/test_hold_check_leaves_the_tree_clean.py:71",
+      "id": "reuse_search-1",
+      "reason": "the honest change is to add the retired-key case to the existing test (its fixtures and `_committed_ledger` helper already do the work), which deletes a whole test module from the plan and puts the regression beside the guard it breaks.",
+      "text": "`tests/test_hold_check_leaves_the_tree_clean.py` already exists and asserts \u00a72's headline invariant (\"the tree is clean when the call returns\", module docstring line 1-9, asserted at lines 109 and 132) for both opening and closing a hold; its fixture simply seeds no run row carrying the retired `follow_on_paths` key, which is the one condition \u00a71 shows produces the leak. \u00a72 invents `tests/test_a_hold_commits_what_it_rewrote.py` without citing that file, so the invariant now has two owners and the older one keeps passing for the reason it always did.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/session_host.py:245",
+      "id": "duplicate_owner-2",
+      "reason": "the plan should add the by-pid lookup beside `live_census` and route \u00a76 (and, as they are touched, the two existing readers) through it, so the record's shape and liveness rule have one owner rather than three spellings that can drift.",
+      "text": "\u00a76 needs the `session-hosts` record whose owner differs from a follower's `parent_pid`, and proposes reading it inside `reckon/crew/session_host.py`; `live_census` (session_host.py:245) already enumerates every live host record with its `pid`, `owner` and `children`, and is the module's stated reader for them (\"A record is the only place a session with nothing in flight is named\"). Two further ad-hoc readers already exist, each re-spelling the record path \u2014 `_session_host_record_path` (reckon/crew/dispatch_watch.py:689-692, read by `_session_host_child_pid` at 695) and `_live_session_host_pid` (reckon/hooks/coordinator_obligations.py:405-407) \u2014 so \u00a76 would make four, each re-implementing the live-owner filter and the path spelling.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/session_host.py:585",
+      "id": "deep_module-1",
+      "reason": "one predicate (a method taking project, session and the child or request entry, consumed by handle/tick/start-up/`_foreign_live_follower`) collapses four independent rules into one, shortens \u00a75 and \u00a76, and lets their six and five negative controls shrink to the predicate's own.",
+      "text": "the plan's central concept, that a pair is the host's to serve, is expressed as an untyped `owner_checked: true` boolean threaded from the request line (\u00a73 `_request_host_follower`) through `parse_request` (\u00a75, session_host.py:207), into `SessionHost.record()`'s child entries (\u00a75, session_host.py:440), and then re-interpreted independently by three separate predicates: \u00a75's start-up scan skips unmarked entries, \u00a76's `tick` (session_host.py:585) drops unmarked foreign children, and \u00a76's `_foreign_live_follower` (session_host.py:533) adds a third rule based on the follower's `parent_pid`; \u00a73's `_rearm_session_follower` (dispatch_watch.py:785) keeps a fourth copy of the `_calling_session()` comparison. Nothing names the decision once, so each site can answer differently and the plan has to add a negative control per site rather than one.",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/ledger.py:2075",
+      "id": "thin_wrapper-1",
+      "reason": "an out-parameter on a public writer is new signature surface (see interface_budget) added to relay two values the same function already holds; the plan should say which internal carries them instead.",
+      "text": "`write` gains a keyword-only `changed_paths` list to hand `record_hold_checks` the paths `_keep_run_files_identical` already returned as `snapshots` (ledger.py:1967, called at 2242); the parameter carries no behaviour, and the plan does not say why the row files cannot be committed at the point their paths are known \u2014 either by `write`'s own commit branch (which already has them in hand) or by making `_keep_run_files_identical`'s caller return both the version and the paths from one internal function with `write` keeping its `int`.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "a-crew-process-writes-only-what-it-owns#s2",
+      "id": "interface_budget-1",
+      "reason": "the rule asks each section to account for its own surface in its text; \u00a72's parameter is removable by the internal-value route thin_wrapper names, and \u00a75 can say why the record field and the widened return are both needed rather than one carrying the mark alone.",
+      "text": "the supplied week's figures are public_definitions 2377, cli_options 468, mcp_views 15, refusal_families 23; \u00a72 adds a keyword-only `changed_paths` to the public `write` and \u00a75 adds a `waiting_for_dispatch` field to the `session-hosts` record and changes the public `parse_request` return from `tuple[str, str] | None` (session_host.py:207) to a richer shape \u2014 three additions across two of the four families, and no section states what it retires or merges, or that nothing can be.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "4c93220d2c99db75b6644ed68cb8bd9338953460",
+  "plan_fingerprint": "a7a7526cf3f7a87f29bbed5a56f6a255cec4b07f4426c05f613d139185de5911",
+  "plan_slug": "a-crew-process-writes-only-what-it-owns",
+  "plan_version": 17,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T011707854327-plan-review-of-a-crew-process-writes-only-what-it-owns",
+  "reviewed_blob_sha": "e109fca9af3c2d14109f65e83870a9941112105b",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the ownership rule (\"is this pair the host's?\") is re-derived at six sites (\u00a73 `_request_host_follower`, \u00a75 parse_request, \u00a75 record(), \u00a75 start-up scan, \u00a76 tick, \u00a76 `_foreign_live_follower`) behind no single function, so one boolean is threaded through two data shapes instead of one predicate being named.",
+    "duplicate_owner": "a finding \u2014 \u00a75 re-implements the live-work judgement owned by live_work_run/population_has_live_work, and \u00a76 adds a fourth reader of session-hosts records rather than extending live_census.",
+    "interface_budget": "a finding \u2014 public_definitions 2377, cli_options 468, mcp_views 15, refusal_families 23; \u00a72 adds a keyword-only parameter to the public `write`, \u00a75 adds a `waiting_for_dispatch` record field and widens the public `parse_request` return, and no section names what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the search stopped inside the files the plan edits; it did not find live_work_run/population_has_live_work (reckon/crew/session_host.py:312, reckon/crew/station_subscriber.py:250) for \u00a75, or the existing hold-tree-clean test (tests/test_hold_check_leaves_the_tree_clean.py:71) for \u00a72.",
+    "thin_wrapper": "a finding \u2014 `write` gains a keyword-only `changed_paths` out-parameter that only relays the `snapshots` it already computed to one caller, without saying why the commit cannot be made where the paths are known."
+  },
+  "section_digests": {
+    "_document": "9603432af4f7b5bbb5297a7d3de6a82224e72420b1d6e255e6198052ad6cf21d",
+    "s1": "38e026f18d1b42b1d79978e1ed1cf6179e085908a249e5762f39a683dcc8123f",
+    "s2": "f11be171c26248fbc871d99510f0013c9dfc0a181d247f07861e86dc0d156f40",
+    "s3": "56ff71f47c37ed3c14aadfcbebb6d71b53e5a14b0c9333c997c4ecd0cb4987b9",
+    "s4": "e88fcf79ec58d8305f36e37d69846c8e0a1a10f1b73fc6c167c25b700165e123",
+    "s5": "d2137141581052e01b8d36787a07250708e3526629746a86490cc802627b465b",
+    "s6": "abd7ab5f2b313de22d3680e41a20c9065348f149b7825e64f6029971ed61d3ce"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T01:50:53.427329+00:00",
+  "total": null
+}
