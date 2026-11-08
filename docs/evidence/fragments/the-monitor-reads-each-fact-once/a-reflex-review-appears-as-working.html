@@ -1,0 +1,18 @@
+<section id="a-reflex-review-appears-as-working" data-node="a-reflex-review-appears-as-working">
+  <h3 id="a-reflex-review-appears-as-working-result">A sweep-dispatched review publishes its launch</h3>
+  <p>The station first observes a review after its worker has entered <code>working</code> when the sweep dispatches between publications. <code>Station.tick</code> adopted every unknown run's current verdict as inventory before calling <code>recovery.fleet_transitions</code>, suppressing this launch. On unchanged product source, the reproduced instance reported <code>review classified working; working transition rows=0; rows=[]</code>.</p>
+  <p><code>StationStore.recorded_fleet</code> now supplies a <code>dispatched</code> baseline for a newly working run once that project's fleet image exists. The existing transition fold then publishes its launch using the stored classifications, without another crew-home read. A project's first observation remains inventory. No change to the review dispatcher was needed.</p>
+  <p>The regression uses a synthetic crew home, the real <code>resumption.sweep</code> and <code>recovery_review_dispatch.dispatch_review_for_run</code>, a stub worker launcher, and the real station tick and subscriber. The first publication after dispatch yields exactly one <code>dispatched → working</code> row addressed to the owning session. Its subscriber presents the review launch under the reviewed run as <code>in review</code>, following the existing pane policy. A peer session receives zero rows; repeated polls and a quiet publication add zero duplicate launches. A working run already present at station startup emits zero transition rows.</p>
+  <table id="a-reflex-review-appears-as-working-measure">
+    <thead><tr><th>Measure</th><th>Base product source</th><th>Repaired product source</th></tr></thead>
+    <tbody>
+      <tr><td>Working rows for the sweep's review within one publish</td><td>0</td><td>1</td></tr>
+      <tr><td>Focused regression file</td><td>1 failed, 1 passed</td><td>2 passed</td></tr>
+      <tr><td>Matched store-importer population, 20 files</td><td>1 failed, 139 passed</td><td>140 passed; 0 added failures</td></tr>
+      <tr><td>Ruff check findings on changed Python paths</td><td>0</td><td>0</td></tr>
+      <tr><td>Files failing Ruff format check</td><td>0</td><td>0</td></tr>
+    </tbody>
+  </table>
+  <p>Base source is <code>3189bf2bb67125527123085a26ab933fa7777b22</code>, with the final added regression copied into its extraction for the negative control. The matched importer arms use node-local extractions, identical regression bytes and the same project virtual environment. Their logs record the imported module path and resolved working directory; source hashes and storage-layout caveats are retained in the run manifest and receipts. The sole base failure is the added missing-transition regression.</p>
+  <p>The regression and repair were committed as <code>57f325ecfba62333c1d3cbc1e22e47828f1e5c47</code> and <code>3a37d8624312e1f150864cd17f76704ac24a95fb</code>. Gate logs are retained under the run directory <code>r-20261108T075245093160-a-reflex-review-appears-as-working</code>: <code>base-suite.log</code>, <code>head-suite.log</code>, <code>base-importers.log</code>, <code>head-matched-importers.log</code>, and the four Ruff logs. The worker supplies this fragment for coordinator review; it does not change the plan's section declaration or close the plan.</p>
+</section>
