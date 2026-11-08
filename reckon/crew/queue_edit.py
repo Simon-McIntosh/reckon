@@ -189,11 +189,19 @@ def _contract_findings(
         if lane
         else {}
     )
+    # The execution override is a decision the request's dispatch already
+    # recorded (``--allow-execution-mismatch``), so the edit judges the request
+    # under it rather than refusing a request that was legitimately stored.
     verdict = validate_node(
         node,
         locked_decisions=tuple(options.get("locked_decisions") or ()),
         budget_ceiling=resolved_time_ceiling(config),
         execution_capable=effective_backend.get("execution_capable"),
+        override=bool(
+            options.get("execution_override")
+            or options.get("allow_execution_mismatch")
+            or (record.get("execution_fit") or {}).get("override")
+        ),
         repository=str(record.get("repo") or "") or None,
     )
     return list(verdict.findings)

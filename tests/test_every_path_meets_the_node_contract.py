@@ -391,3 +391,69 @@ def test_an_execution_override_dispatches_and_records_the_label(
     }
     persisted = json.loads(runs.pointer_path(record["run_id"]).read_text())
     assert persisted["execution_fit"] == record["execution_fit"]
+
+
+# ── a queued request keeps the execution override its dispatch recorded ─────
+
+
+def _queued_record(
+    repository: Path, *, allow_execution_mismatch: bool
+) -> tuple[object, dict]:
+    """A request as a dispatch that passed the override would have stored it."""
+    from reckon.crew.node import TaskNode
+
+    node = TaskNode(
+        id="queued-override",
+        goal="Verify one runtime route the batch example exercises.",
+        plan=PLAN,
+        section="s1",
+        role="review",
+        spec_level="exact",
+        done_when=EXECUTION_DONE_WHEN,
+        write_paths=["src/module.py"],
+        time_budget="20m",
+        manifest_path=str(repository / "manifest.md"),
+    )
+    record = {
+        "run_id": "r-queued-override",
+        "project": PROJECT,
+        "repo": str(repository),
+        "backend": LANE,
+        "node": node.as_dict(),
+        "dispatch_options": {"allow_execution_mismatch": allow_execution_mismatch},
+    }
+    return node, record
+
+
+def test_an_edit_keeps_the_overridden_requests_measure(
+    crew_home: Path, repository: Path
+) -> None:
+    """A request stored with the override is not refused by every edit."""
+    from reckon.crew import queue_edit
+
+    node, record = _queued_record(repository, allow_execution_mismatch=True)
+
+    findings = queue_edit._contract_findings(node, record)
+
+    assert not [
+        finding
+        for finding in findings
+        if EXECUTION_DETAIL in str(finding.get("detail") or "")
+    ], findings
+
+
+def test_an_edit_refuses_a_request_that_recorded_no_override(
+    crew_home: Path, repository: Path
+) -> None:
+    """The control: the same measure without the recorded override is refused."""
+    from reckon.crew import queue_edit
+
+    node, record = _queued_record(repository, allow_execution_mismatch=False)
+
+    findings = queue_edit._contract_findings(node, record)
+
+    assert [
+        finding
+        for finding in findings
+        if EXECUTION_DETAIL in str(finding.get("detail") or "")
+    ], findings
