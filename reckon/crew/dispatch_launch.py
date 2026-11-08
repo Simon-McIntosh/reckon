@@ -52,7 +52,11 @@ from reckon.crew.routing import (
     _repository_tree_snapshot,
     signal_worker,
 )
-from reckon.crew.process_liveness import LIVENESS_PLACED, LivenessReading
+from reckon.crew.process_liveness import (
+    LIVENESS_PLACED,
+    LivenessReading,
+    record_process_alive,
+)
 from reckon.crew.process_signal import _run_uses_step, signal_pending_step_client
 from reckon.crew.runs import (
     _mutate_pointer,
@@ -1942,17 +1946,76 @@ def _live_worker_refusal(
     return f"run {run_id!r} {head} ({_live_worker_naming(reading)}): {consequence}"
 
 
-def _launch_refused_by(reading: LivenessReading) -> bool:
+def _record_run_directory(record: Mapping[str, Any]) -> Path | None:
+    """The directory holding a run's records, from its id or its log path."""
+    run_id = str(record.get("run_id") or "")
+    if run_id:
+        return run_dir(run_id)
+    log_path = str(record.get("log_path") or "")
+    return Path(log_path).parent if log_path else None
+
+
+def _record_holds_a_worker(record: Mapping[str, Any]) -> bool:
+    """Whether the record carries anything that says a worker was launched.
+
+    The three things a launch leaves behind: the pointer's pid, the run's own
+    worker record, and an attempt receipt filed under the run directory. A
+    record with none of them has never launched, so the only liveness a placed
+    record can offer it is the scheduler's silence.
+    """
+    if record.get("pid") is not None:
+        return True
+    directory = _record_run_directory(record)
+    if directory is None:
+        return False
+    if (directory / WORKER_RECORD_NAME).exists():
+        return True
+    return any(directory.glob("attempt-*-worker.json")) or any(
+        directory.glob("attempt-*-exit.json")
+    )
+
+
+def _worker_record_shown_gone(record: Mapping[str, Any]) -> bool:
+    """Whether the run's worker record names a pid this host probes as dead.
+
+    The worker record names the worker itself, not the scheduler client the
+    pointer carries, so its pid is the one a local probe can settle. An
+    unreadable record, one naming no pid, or a pid the probe cannot answer for
+    has not shown the worker gone and is not treated as if it had.
+    """
+    directory = _record_run_directory(record)
+    if directory is None:
+        return False
+    try:
+        worker = json.loads(
+            (directory / WORKER_RECORD_NAME).read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return False
+    if not isinstance(worker, Mapping):
+        return False
+    return record_process_alive(worker) is False
+
+
+def _launch_refused_by(record: Mapping[str, Any], reading: LivenessReading) -> bool:
     """Whether this reading is reason enough to refuse a second launch.
 
-    An alive reading always is. So is a placed run whose scheduler could not be
-    queried: the record's only pid is the scheduler client's, so the pid probe
-    cannot show the worker is gone, and a second worker beside a live one
-    rewrites the same manifest from its own partial view.
+    An alive reading always is. A placed run whose scheduler could not be
+    queried refuses only when the record holds a recorded worker that nothing
+    has shown to be gone: the pointer's pid names the scheduler client, so the
+    local probe cannot answer for the worker, and a second worker beside a live
+    one rewrites the same manifest from its own partial view. A record with no
+    pointer pid, no worker record and no attempt receipt has never launched and
+    is let through; so is one whose worker record names a pid this host probes
+    dead, because that record names the worker itself.
     """
     if reading.alive is True:
         return True
-    return reading.arm == LIVENESS_PLACED and reading.alive is None
+    if reading.arm == LIVENESS_PLACED and reading.alive is None:
+        if not _record_holds_a_worker(record):
+            return False
+        return not _worker_record_shown_gone(record)
+    return False
 
 
 def _prepare_attempt_records(
@@ -1998,7 +2061,7 @@ def _prepare_attempt_records(
     except CrewError:
         record = {}
     holder = live_worker_reading(record)
-    if _launch_refused_by(holder):
+    if _launch_refused_by(record, holder):
         raise CrewError(
             _live_worker_refusal(
                 run_id,
@@ -2866,8 +2929,9 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
     # it straight after the spawn. Asking about that pid would refuse every
     # launch, so the pointer's own pid is dropped and the read answers from the
     # run's worker record and its session instead.
-    holder = live_worker_reading(_without_this_supervisor(record))
-    if _launch_refused_by(holder):
+    prior = _without_this_supervisor(record)
+    holder = live_worker_reading(prior)
+    if _launch_refused_by(prior, holder):
         raise CrewError(
             _live_worker_refusal(
                 run_id,
