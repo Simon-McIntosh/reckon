@@ -2074,10 +2074,16 @@ def _standing_plan_review(
     already holding the live pointer set hand it over rather than have it read
     again, so the review a view names comes from the same reading as the row
     that names it.
+
+    A pointer whose ``node`` is not a mapping is skipped rather than read: this
+    runs inside every session's obligations reading, and one malformed pointer
+    on disk must not raise the reader out of listing everything else.
     """
     live = list_live(project=project) if pointers is None else pointers
     for pointer in live:
-        node = pointer.get("node") or {}
+        node = pointer.get("node")
+        if not isinstance(node, Mapping):
+            continue
         if node.get("id") != f"{PLAN_REVIEW_NODE_PREFIX}{plan_slug}":
             continue
         if session and str(pointer.get("session") or "") != session:

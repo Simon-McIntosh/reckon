@@ -25,7 +25,7 @@ from typing import Any
 
 import pytest
 
-from reckon.crew import obligation_snapshot, plan_review, runs
+from reckon.crew import obligation_snapshot, plan_review, recovery_review_dispatch, runs
 from reckon.crew.node import PlanReviewMissingError
 from tests.helpers.git import git as _git
 
@@ -36,6 +36,7 @@ SESSION = "coordinator-session"
 PLAN = "fixture-plan"
 REQUEST_RUN_ID = "r-queued-request-refused"
 REVIEW_RUN_ID = "r-plan-review-queued"
+MALFORMED_RUN_ID = "r-malformed-pointer"
 OBSERVED_AT = datetime(2026, 11, 8, 12, 0, tzinfo=UTC)
 
 
@@ -122,6 +123,26 @@ def _write_queued_plan_review(*, session: str = SESSION) -> None:
                 "time_budget": "20m",
                 "write_paths": [],
             },
+        },
+    )
+
+
+def _write_malformed_pointer() -> None:
+    """A live pointer whose node is not a mapping, as a truncated write leaves it.
+
+    The obligations reading runs in every session's stop hook, so one such
+    pointer on disk must not raise the reader out of listing the rest.
+    """
+    runs._write_json(
+        runs.pointer_path(MALFORMED_RUN_ID),
+        {
+            "run_id": MALFORMED_RUN_ID,
+            "project": PROJECT,
+            "session": SESSION,
+            "phase": "queued",
+            "queued_at": "2026-11-08T11:30:00+00:00",
+            "reason": "waiting for a local lane slot",
+            "node": "a truncated write",
         },
     )
 
@@ -283,3 +304,34 @@ def test_both_producers_build_an_awaited_row_through_the_one_builder(
     assert derived["kind"] == "one-builder", derived
     assert published["kind"] == "one-builder", published
     assert _built_by_one_builder(builder_calls) == 2, builder_calls
+
+
+def test_a_malformed_pointer_does_not_hide_the_request(repository: Path) -> None:
+    """One unreadable pointer is skipped, and the review is still found.
+
+    The reader is driven with the same live pointer set the producers hand it,
+    one member of which has a ``node`` that is not a mapping — the shape a
+    truncated write leaves on disk. It runs inside every session's stop hook, so
+    a pointer it cannot read must be stepped over rather than raised over, and
+    the review the request was waiting on must still be named.
+    """
+    _write_queued_plan_review()
+
+    malformed = {
+        "run_id": MALFORMED_RUN_ID,
+        "project": PROJECT,
+        "session": SESSION,
+        "phase": "queued",
+        "node": "a truncated write",
+    }
+    live = list(obligations_module.runs.list_live(project=PROJECT))
+    assert {str(pointer.get("run_id") or "") for pointer in live} == {REVIEW_RUN_ID}
+
+    found = recovery_review_dispatch._standing_plan_review(
+        PROJECT,
+        PLAN,
+        session=SESSION,
+        pointers=[malformed, *live],
+    )
+
+    assert found == REVIEW_RUN_ID, found
