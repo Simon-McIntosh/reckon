@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="317">
+<meta name="plan-version" content="318">
 <meta name="plan-modified" content="2026-11-08">
 </head>
 <body>
@@ -671,6 +671,9 @@
 <div class="r-comment" data-section="s40" data-id="c-run-r-20261108T104436189713-review-of-lander-reads-figure-review-through-owner-bf5a8b626a0b" data-who="reckon-build" data-when="2026-11-08T11:16:29.385Z">
     <div class="r-comment-body"><p>independent review of run r-20261108T054133639807-lander-reads-figure-review-through-owner at base 83d5443524 / head bf5a8b626a; all six dimensions scored (goal_fidelity 18, evidence 18, scope_discipline 14, durability 18, fit 19, reuse 18); two non-blocking findings (the unreadable-figure check runs only after the newest read answers None, reckon/crew/queue_landing.py:187; one test assertion renamed outside the declared write paths); added_failure_count 0</p></div>
 </div>
+<div class="r-comment" data-section="s40" data-id="c-run-r-20261108T054133639807-lander-reads-figure-review-through-owner" data-who="reckon-build" data-when="2026-11-08T10:32:44.734Z">
+    <div class="r-comment-body"><p>§40 delivered — the lander reads the figure tier through promotion_checks._newest_figure_review, raises an unparsable record as its own condition and records it under unreadable_reviews, judges the tier incomplete while a blocking finding stays undisposed (holding the run with the finding named under review_findings), files the awaiting tier under awaiting_tier rather than review_tier, and records a raising read in review_read_error with stale_head left a revision; gate 17 passed EXIT=0 at head 39c5048862, population 98 passed at head against 93 at base, negative control 3 failed EXIT=1.</p></div>
+</div>
 <div class="r-comment" data-section="s41" data-id="c-run-r-20261106T060242162049-review-of-queue-ranking-and-readiness-build-no-coordinators-3be0d57a8add" data-who="reckon-build" data-when="2026-11-06T06:13:40Z">
     <div class="r-comment-body"><p>Parsed review of 7a8098ad231c211417b6073f296a8fef4fbd551a..3be0d57a8addb6ad18576868be9da05afd97a2f3 scores all six dimensions; one blocking finding records the missing sub-60-second live admit verdict. Record: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261105T214831970273-queue-ranking-and-readiness-build-no-coordinators/review-records/r-20261105T214831970273-queue-ranking-and-readiness-build-no-coordinators.at-3be0d57a8addb6ad18576868be9da05afd97a2f3.json</p></div>
 </div>
@@ -681,7 +684,7 @@
     <div class="r-comment-body"><p>Independent review of r-20261108T054448547073-service-runs-mains-code at head 36bb5227d64512ed620faade03b1160e16fb121c against base a45a33f80bbcb472a58a2e30519037b425938026: parsed record, all six dimensions scored 0..20 (goal_fidelity 18, evidence 17, scope_discipline 15, durability 16, fit 18, reuse 19), added_failure_count 0 derived from logs/importer-base.log (7 failure ids) against logs/importer-head2.log (5 failure ids), three non-blocking findings and no blocking one; the record is stored under review-records/ in the reviewed run's directory.</p></div>
 </div>
 <div class="r-comment" data-section="s42" data-id="c-run-r-20261108T054448547073-service-runs-mains-code" data-who="reckon-build" data-when="2026-11-08T10:50:33.868Z">
-    <div class="r-comment-body"><p>A declared service now records the code stamp of the checkout that started it beside its pid and, on reload, a running copy whose stamp differs from a trusted checkout is stopped (SIGTERM, then SIGKILL after the grace, waiting for the old pid to exit) and started again on current code with both stamps logged; an untrusted checkout leaves the copy running and logs why, and the supervisor&#x27;s own move check now records that refusal too. Gate tests/test_a_service_runs_the_code_main_carries.py: 6 passed, EXIT=0; six mutation controls caught, none survived; importer population adds 0 failure ids against base a45a33f8.</p></div>
+    <div class="r-comment-body"><p>A declared service now records the code stamp of the checkout that started it beside its pid and, on reload, a running copy whose stamp differs from a trusted checkout is stopped (SIGTERM, then SIGKILL after the grace, waiting for the old pid to exit) and started again on current code with both stamps logged; an untrusted checkout leaves the copy running and logs why, and the supervisor's own move check now records that refusal too. Gate tests/test_a_service_runs_the_code_main_carries.py: 6 passed, EXIT=0; six mutation controls caught, none survived; importer population adds 0 failure ids against base a45a33f8.</p></div>
 </div>
 <div class="r-comment" data-section="s43" data-id="c-run-r-20261106T091124747862-review-of-the-bounded-readiness-read-builds-no-coordinators-9fdb1d8021b6" data-who="reckon-build" data-when="2026-11-06T09:30:20.122Z">
     <div class="r-comment-body"><p>Reviewed 9fdb1d8021 against 5816b1619a: roadmap.section_readiness_rows now enters roadmap_build_scope(resolve_coordinators=False), so the bounded per-plan readiness read resolves no plan coordinator; the node test's first arm is red at base and at the negative control and green at head, and two non-blocking findings record a narrowed importer population and an absence assertion with no in-suite positive control.</p></div>
