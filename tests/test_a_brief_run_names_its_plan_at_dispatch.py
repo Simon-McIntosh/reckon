@@ -550,8 +550,12 @@ def test_a_recorded_discharge_is_read_at_the_same_inputs_as_a_given_one() -> Non
 
     The dispatch helps a run land without being asked twice, so the value it
     records must discharge the owner at landing exactly where a landing flag
-    would. This keeps both readings on the one predicate: recorded and given are
-    the same fact by the time the split is asked.
+    would. This keeps both readings on the one rule: recorded and given are the
+    same fact by the time the split is asked.
+
+    The accepted discharge is also what landing hands the ledger row, so the
+    return value is asserted rather than ignored — a refusal that stops refusing
+    while returning nothing records a brief landing with no plan owner at all.
     """
     from reckon.crew.promotion_checks import _require_brief_owner
 
@@ -561,15 +565,36 @@ def test_a_recorded_discharge_is_read_at_the_same_inputs_as_a_given_one() -> Non
         "plan_link": "some-plan",
     }
 
+    assert _require_brief_owner(
+        "recorded",
+        record,
+        plan_link="",
+        unplanned_reason="",
+    ) == {"plan_link": "some-plan", "unplanned_reason": ""}
+
+    # A landing flag is an operator correcting the link, so it wins.
+    assert _require_brief_owner(
+        "recorded",
+        record,
+        plan_link="landing-plan",
+        unplanned_reason="",
+    ) == {"plan_link": "landing-plan", "unplanned_reason": ""}
+
+    # A run the rule never asked for records nothing, so a stray flag given to
+    # it cannot reach the row as an owner it never had.
     assert (
         _require_brief_owner(
-            "recorded",
-            record,
+            "plan-run",
+            {
+                "node": {"brief": BRIEF_TEXT, "plan": "some-plan:1.2"},
+                "role": "implement",
+            },
             plan_link="",
             unplanned_reason="",
         )
         is None
     )
+
     with pytest.raises(crew.CrewError):
         _require_brief_owner(
             "recorded",

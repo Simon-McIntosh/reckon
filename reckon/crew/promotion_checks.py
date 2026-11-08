@@ -31,7 +31,7 @@ from reckon.crew.node import (
     NEGATIVE_CONTROL_NONE,
     CrewError,
     is_test_path,
-    missing_brief_discharge,
+    brief_owner_state,
     negative_control_is_none,
     negative_control_reason,
     role_may_write_repository_paths,
@@ -1773,7 +1773,7 @@ def _require_brief_owner(
     *,
     plan_link: str,
     unplanned_reason: str,
-) -> None:
+) -> dict[str, Any] | None:
     """Refuse an implement-role brief run that names no owner for its change.
 
     A brief run has no plan section to move, so nothing joins a product change
@@ -1784,9 +1784,14 @@ def _require_brief_owner(
     plan run records its owner through the plan itself. Both discharges name the
     flag a reader would pass, so the refusal is answered in one word of work.
 
-    Which runs owe the owner is :func:`reckon.crew.node.missing_brief_discharge`,
-    the same fact the dispatch refusal reads, so the two cannot disagree about
-    it; only the sentence each states differs.
+    Which runs owe the owner is :func:`reckon.crew.node.brief_owner_state`, the
+    same rule the dispatch refusal reads, so the two cannot disagree about it;
+    only the sentence each states differs.
+
+    The returned block is the discharge the row records. A run the rule never
+    asked for — no brief, a named plan, a role that executes no section —
+    records nothing, while a brief implementing run records the flag supplied at
+    landing or the value its dispatch already stored.
     """
     node = record.get("node") or {}
     # A flag given here is an operator correcting the link at landing, so it
@@ -1798,20 +1803,23 @@ def _require_brief_owner(
         str(unplanned_reason).strip()
         or str(record.get("unplanned_reason") or "").strip()
     )
-    owed_by = missing_brief_discharge(
+    applies, owed_by = brief_owner_state(
         brief=node.get("brief") or "",
         plan=node.get("plan") or "",
         role=record.get("role") or "",
         plan_link=link,
         unplanned_reason=reason,
     )
-    if owed_by is not None:
+    if owed_by:
         raise CrewError(
             f"implement-role brief run {run_id!r} names neither a plan link nor "
             "an unplanned reason; pass --plan-link <slug> naming the plan whose "
             "product it changed, or --unplanned-reason <text> stating why it "
             "changed no plan"
         )
+    if not applies:
+        return None
+    return {"plan_link": link, "unplanned_reason": reason}
 
 
 def _require_impl_moved(

@@ -1199,36 +1199,41 @@ def gate_population_finding(
 BRIEF_PLAN_OWNER_FIELD = "brief-plan-owner"
 
 
-def missing_brief_discharge(
+def brief_owner_state(
     *,
     brief: str,
     plan: str,
     role: str,
     plan_link: str,
     unplanned_reason: str,
-) -> str | None:
-    """Name the executable role a brief run holds when it owes a plan owner.
+) -> tuple[bool, str]:
+    """Return whether a brief run owes a plan owner, and the role that owes it.
 
     A brief implementing run has no plan section to move, so nothing joins its
     product change to a plan unless the run itself names that owner, as a plan
-    link or as an unplanned reason. This returns the role when an owner is owed
-    and neither discharge is given, and ``None`` for a run with no brief, a run
-    that names a plan, a role that executes no section, and a run that names
-    either discharge.
+    link or as an unplanned reason. The first value says whether the rule asks
+    this run for an owner at all — false for a run with no brief, a run that
+    names a plan, and a role that executes no section — and the second names the
+    executing role when an owner is owed and no discharge was given, empty when
+    one was.
 
-    The dispatch refusal and the landing refusal both read this one fact, so
-    they cannot come to disagree about which runs owe an owner.
+    Two values rather than one because the callers need different facts from the
+    same rule: the dispatch refusal only asks whether an owner is owed, while
+    landing also records the discharge it accepted, and a discharge the rule
+    never asked for must not be written to the row. The dispatch refusal and the
+    landing refusal read this one rule, so they cannot come to disagree about
+    which runs owe an owner.
     """
     if not str(brief or "").strip():
-        return None
+        return False, ""
     if str(plan or "").strip():
-        return None
+        return False, ""
     executable = str(role or "").strip()
     if executable not in EXECUTABLE_SECTION_ROLES:
-        return None
+        return False, ""
     if str(plan_link or "").strip() or str(unplanned_reason or "").strip():
-        return None
-    return executable
+        return True, ""
+    return True, executable
 
 
 def brief_plan_owner_finding(
@@ -1248,14 +1253,14 @@ def brief_plan_owner_finding(
     plan section is briefed plan work, and the plan it names is its owner. None
     of them needs either flag.
     """
-    role = missing_brief_discharge(
+    role = brief_owner_state(
         brief=node.brief,
         plan=node.plan,
         role=node.role,
         plan_link=plan_link,
         unplanned_reason=unplanned_reason,
-    )
-    if role is None:
+    )[1]
+    if not role:
         return None
     return {
         "property": BRIEF_PLAN_OWNER_FIELD,
