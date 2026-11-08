@@ -269,7 +269,8 @@ def test_a_placed_run_whose_scheduler_cannot_answer_names_no_pid(
             job_id=JOB_ID,
             placement={"partition": "betelgeuse", "nodes": 1},
         )
-        _write_worker_record(queued_run, _dead_pid())
+        # The pointer's pid is the whole record here: it names the scheduler
+        # client, and there is no worker record for a local probe to settle.
         with pytest.raises(CrewError) as refused:
             dispatch_launch_module._supervisor_spawn_worker(_spec(queued_run))
         assert str(refused.value) == _spawn_refusal(
