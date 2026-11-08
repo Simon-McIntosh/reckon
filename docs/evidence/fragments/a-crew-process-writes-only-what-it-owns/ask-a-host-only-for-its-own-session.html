@@ -73,11 +73,15 @@ census_children: []</code></pre>
       <p><strong>Negative controls</strong> &mdash; all seven the section
         declares, each applied alone to
         <code>reckon/crew/dispatch_watch.py</code> at head
-        <code>d10ea7ba</code>, each run against
-        <code>tests/test_a_host_follows_only_its_own_session.py</code>, and each
-        logged under the run directory by the
-        <code>negative-control-&lt;name&gt;.log</code> named beside it. Every
-        one fails only ids the head arm passes:</p>
+        <code>d10ea7ba</code>, and each logged under the run directory by the
+        <code>negative-control-&lt;name&gt;.log</code> named beside it. Six run
+        against
+        <code>tests/test_a_host_follows_only_its_own_session.py</code>; the
+        seventh, the reproduction's path restored with the check removed, runs
+        <code>repro_foreign_follow_request.py</code>, the instrument that
+        recorded the defect before the repair. Every one fails only ids the head
+        arm passes, except that last, which reports the request line it
+        observes:</p>
       <ul>
         <li>ask predicate always <code>False</code>
           (<code>negative-control-ask-predicate-always-false.log</code>): cases
