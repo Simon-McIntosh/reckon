@@ -25,7 +25,7 @@
       <td>3 failed, 19 passed; exit 1. Both control-arm cases and the
       scratch-directory case fail.</td></tr>
       <tr><td>Importer population, base and head</td>
-      <td>Baseline importer attempts expired at 1200 seconds and 1800 seconds without a summary. The head importer arm was not started under the two-failure stop rule; the delta remains unmeasured.</td></tr>
+      <td>Base: no completed summary; outer bound expired; head: no completed summary; outer bound expired; FAILED-id delta unmeasured. Each arm ran once with six workers and a 120-second per-test timeout.</td></tr>
       <tr><td>Ruff check and format delta</td><td>Zero added findings.
       Each arm has the same three lint findings and one unformatted file,
       <code>reckon/crew/promotion_checks.py</code>.</td></tr>
@@ -41,7 +41,7 @@
   -p no:cacheprovider -q tests/test_every_failure_comparison_shares_one_rule.py</code>.
   Logs, arm receipts, the importer census and the exact mutation driver are in
   run <code>r-20261107T231833140800-share-one-failure-matching-rule</code>.
-  An initial importer arm expired after 1200 seconds without a summary and was repeated with a bound sized from observed throughput. The first focused baseline attempt exposed four test-helper calls missing
+  An initial importer arm expired after 1200 seconds without a summary and was repeated with a bound sized from observed throughput. The resumed comparison uses the same 485 importer files in both arms, at the dispatch base with the new test copied in and at the delivered head. Shared 120-second timeouts: unmeasured. The first focused baseline attempt exposed four test-helper calls missing
   <code>manifest_path</code>; that scaffolding was corrected before the recorded
   baseline above. Its original log remains available. Integration and merged-head
   verification belong to the coordinator and its independent test node.</p>
