@@ -1,0 +1,51 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T05:03:11.593Z",
+  "dispatched_at": "2026-11-08T04:50:37Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T180130198796-keep-every-appended-anchor-in-a-resynthesis/manifest.md",
+      "line": 8,
+      "severity": "non-blocking",
+      "text": "non-blocking: changed_paths names five paths and omits tests/test_an_appended_record_claims_no_counts.py and tests/test_edit_plan_append_evidence.py, the two importer files the gained commits change under the reopen grant in reopened.json, so a coordinator auditing the node's scope from this line cannot see half of what the reopening wrote."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T180130198796-keep-every-appended-anchor-in-a-resynthesis/manifest.md",
+      "line": 7,
+      "severity": "non-blocking",
+      "text": "non-blocking: the commits line lists the four original shas and neither 99e11e1abf nor 47cc98e562, so the record names none of the commits this review covers and a reader cannot tell the reviewed range from the manifest alone."
+    },
+    {
+      "file": "docs/evidence/fragments/an-evidence-record-counts-only-what-it-read/keep-every-appended-anchor-in-a-resynthesis.html",
+      "line": 60,
+      "severity": "non-blocking",
+      "text": "non-blocking: the base row still reads 'the same test file copied into a scratch tree of the dispatch base' while the arm actually ran all three files, as its own result cell (11 failed, 15 passed) and base-arm.log's command header show, so the fragment describes an arm other than the one it reports."
+    },
+    {
+      "file": "tests/test_edit_plan_append_evidence.py",
+      "line": 165,
+      "severity": "non-blocking",
+      "text": "non-blocking: text.index('id=\"first-beat\"') compares a substring position rather than the section element's, so the 'lands inside main' guarantee would also be satisfied by any earlier occurrence of that string in the record; the parsed section lookup the same file adds at _section_ids would hold the guarantee the assertion states."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a re-synthesis carries every appended anchor and names each loss, and the two commits gained since 0f32c192 keep that landed behaviour's evidence honest by repairing the two importer test files the append-origin mark broke and restating the fragment's arm table.\nVERDICT done_when: the section's done-when names tests/test_a_resynthesis_keeps_appended_anchors.py with nine cases and seven named controls, and the manifest records the widened three-file gate at 99e11e1abf (26 passed, head-arm.log) against its base arm at 088c13da (11 failed, 15 passed, base-arm.log); I re-ran the two repaired files at head and got 15 passed in 9.8 s, matching the importer half of both arms.\nVERDICT write_paths: the declared paths are reckon/evidence.py, reckon/_store.py, reckon/project_maintenance_commands.py, tests/test_a_resynthesis_keeps_appended_anchors.py and the fragment; the gained diff touches those last two plus tests/test_an_appended_record_claims_no_counts.py and tests/test_edit_plan_append_evidence.py, which reopened.json grants, and nothing outside them.\nVERDICT manifest: read; it records both arms with their logs, the declared negative control, landing and per-dimension rubric lines, and it answers all four findings its earlier review raised, but its commits and changed_paths lines do not name the two commits or the two importer files the reopening wrote.\nVERDICT diff: read commit by commit 0f32c192..47cc98e562; 99e11e1abf replaces five literal '<section id=\"...\">' matches in three test files with parsed-id reads and drops three 'anchor in json.dumps(result)' assertions, and 47cc98e562 rewrites the fragment's arm table to the widened gate's figures, which I reconciled against base-arm.log and negative-control.log.\nCALL_SITES: reckon/_store.py:1221 _apply_evidence_appends, reckon/evidence.py:143 _record_sections\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_store.py:1219-1221 writes the data-evidence-origin mark the tests in this diff now parse around rather than match literally, and the fragment at docs/evidence/fragments/an-evidence-record-counts-only-what-it-read/keep-every-appended-anchor-in-a-resynthesis.html:53-70 reports the arms that measure it.\nSCORE evidence: 17\nJUSTIFICATION evidence: the manifest's baseline_suite failure_ids match base-arm.log's eleven FAILED ids exactly and after_suite records 26 passed at 99e11e1abf, whose only successor is the nine-line docs-only fragment edit in 47cc98e562, so the exercised code is the reviewed head.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff --stat 0f32c192..47cc98e562 lists four files, each inside the declared write paths or the reopen grant in reopened.json, and the reworked assertions state the same guarantee the literals did.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_edit_plan_append_evidence.py:161-186 and :343 now fail if an anchor is lost, duplicated or reordered, where the previous '<section id=\"...\">' literals could only match the one markup shape, and tests/test_a_resynthesis_keeps_appended_anchors.py:326-380 loses three non-independent 'anchor in json.dumps(result)' assertions; no new test was added, so the diff strengthens existing guards rather than adding one.\nSCORE fit: 16\nJUSTIFICATION fit: tests/test_edit_plan_append_evidence.py:126-128 and tests/test_an_appended_record_claims_no_counts.py:154 follow the per-file BeautifulSoup helper idiom already at tests/test_a_resynthesis_keeps_appended_anchors.py:191-197, introduce no plan or ticket identifier, and ruff check with ruff format --check --no-cache report nothing on the three touched test files.\nSCORE reuse: 16\nJUSTIFICATION reuse: the new _section_ids re-reads a record's section ids that reckon/evidence.py:143 _record_sections already returns, but a test judging that record must not take its oracle from the code under test, so the local parse is the right choice; the score is held below 20 because the same read is spelled two ways in one diff, a helper in tests/test_edit_plan_append_evidence.py:126 and an inline comprehension in tests/test_an_appended_record_claims_no_counts.py:154.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T180130198796-keep-every-appended-anchor-in-a-resynthesis/manifest.md:8 non-blocking: changed_paths names five paths and omits tests/test_an_appended_record_claims_no_counts.py and tests/test_edit_plan_append_evidence.py, the two importer files the gained commits change under the reopen grant in reopened.json, so a coordinator auditing the node's scope from this line cannot see half of what the reopening wrote.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T180130198796-keep-every-appended-anchor-in-a-resynthesis/manifest.md:7 non-blocking: the commits line lists the four original shas and neither 99e11e1abf nor 47cc98e562, so the record names none of the commits this review covers and a reader cannot tell the reviewed range from the manifest alone.\nFINDING docs/evidence/fragments/an-evidence-record-counts-only-what-it-read/keep-every-appended-anchor-in-a-resynthesis.html:60 non-blocking: the base row still reads 'the same test file copied into a scratch tree of the dispatch base' while the arm actually ran all three files, as its own result cell (11 failed, 15 passed) and base-arm.log's command header show, so the fragment describes an arm other than the one it reports.\nFINDING tests/test_edit_plan_append_evidence.py:165 non-blocking: text.index('id=\"first-beat\"') compares a substring position rather than the section element's, so the 'lands inside main' guarantee would also be satisfied by any earlier occurrence of that string in the record; the parsed section lookup the same file adds at _section_ids would hold the guarantee the assertion states.\n",
+  "review_run_id": "r-20261108T044549395809-review-of-keep-every-appended-anchor-in-a-resynthesis-47cc98e56230",
+  "reviewed_base_sha": "0f32c19228db1cc5a8917efe2677190e958906a1",
+  "reviewed_head_sha": "47cc98e562307bf371edaa70100f9e4923e6c8f8",
+  "reviewed_run_id": "r-20261107T180130198796-keep-every-appended-anchor-in-a-resynthesis",
+  "rubric": "code",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T05:19:27.731262+00:00",
+  "total": 103
+}
