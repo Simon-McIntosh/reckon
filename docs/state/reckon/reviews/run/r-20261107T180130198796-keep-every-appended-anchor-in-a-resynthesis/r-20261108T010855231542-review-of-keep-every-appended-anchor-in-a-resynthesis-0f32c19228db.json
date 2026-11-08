@@ -1,0 +1,51 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T01:28:22.829Z",
+  "dispatched_at": "2026-11-08T01:18:22Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T180130198796-keep-every-appended-anchor-in-a-resynthesis/manifest.md",
+      "line": 28,
+      "severity": "non-blocking",
+      "text": "rubric.tests and the checkpoint say the seven negative controls the section names are present and green, but the test file carries one control and the run log records one mutation; the other six are ordinary assertions, so the recorded evidence is overstated."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T180130198796-keep-every-appended-anchor-in-a-resynthesis/manifest.md",
+      "line": 18,
+      "severity": "non-blocking",
+      "text": "baseline_suite.command carries `<scratch>` placeholders instead of the absolute paths that ran, the shape the delivery contract refuses because promotion fills a receipt from this line."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T180130198796-keep-every-appended-anchor-in-a-resynthesis/manifest.md",
+      "line": 19,
+      "severity": "non-blocking",
+      "text": "the done_when asks that the test files importing reckon.evidence or reckon._store add no failure against the base, and both arms run only the new test file, leaving tests/test_edit_plan_append_evidence.py and tests/test_evidence_synthesis.py unmeasured."
+    },
+    {
+      "file": "tests/test_a_resynthesis_keeps_appended_anchors.py",
+      "line": 326,
+      "severity": "non-blocking",
+      "text": "`assert anchor in json.dumps(result)` compares the anchor the test passed in against a refusal message the code builds from that same anchor, so it holds for any refusal; the guard is carried by the `ok is False` on the line above."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to carry every appended anchor through a re-synthesis and name each loss; reckon/evidence.py:763 classifies each top-level section of the existing record and the marked ones are carried rather than dropped.\nVERDICT done_when: the done_when names tests/test_a_resynthesis_keeps_appended_anchors.py with nine cases; the file at head carries all nine plus a command case and an executed control, and the manifest records 11 passed EXIT=0 at cc2060b728 and 11 failed EXIT=1 at 088c13da.\nVERDICT write_paths: the manifest declares six paths; the diff writes five of them (reckon/evidence.py, reckon/_store.py, reckon/project_maintenance_commands.py, tests/test_a_resynthesis_keeps_appended_anchors.py, the evidence fragment) and nothing outside them.\nVERDICT manifest: read; it records both arms with logs, the one declared mutation, landing, changed paths and rubric lines, but rubric.tests overstates the seven negative controls as present while one is executed.\nVERDICT diff: read commit by commit against 088c13da; four commits add the mark, the rendered/reserved sets, the carry and its four tags, the append refusal and the moved record-path owner, with the test and the landing fragment.\nCALL_SITES: reckon/_store.py:1701 _write_state_locked -> _apply_evidence_appends, reckon/_store.py:1204 _landed_record_shell -> evidence._render_document, reckon/project_maintenance_commands.py:1479 synthesize_evidence -> synthesize_landed_record\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/evidence.py:851-861 reads the existing record, splits it into carried and lost sections, and reckon/project_maintenance_commands.py:1486 prints each lost anchor with its tag.\nSCORE evidence: 14\nJUSTIFICATION evidence: the head arm at tests/test_a_resynthesis_keeps_appended_anchors.py:1-397 passes 11/11 and the base arm fails 11/11, but only one of the seven controls the done_when names was executed and no arm covers the existing suite files that exercise the changed append path.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in `git diff --stat 088c13da 0f32c192` is inside the six declared write paths, and the unused figures path was left unwritten.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_resynthesis_keeps_appended_anchors.py:150 asserts the carried section's mark, which fails if `_evidence_section_html` stops writing data-evidence-origin, and the executed control at :386-397 reddens when the carry is removed.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/evidence.py:78-132 follows the module's existing private-helper and `_section_key` idiom and introduces no plan, stage or ticket identifier.\nSCORE reuse: 18\nJUSTIFICATION reuse: the record-path owner was moved to reckon/evidence.py:102 rather than duplicated, and a search over reckon/ for a top-level record-section reader found only `_plan_html.plan_headings`, which reads authored headings rather than a record's section markup.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T180130198796-keep-every-appended-anchor-in-a-resynthesis/manifest.md:28 non-blocking: rubric.tests and the checkpoint say the seven negative controls the section names are present and green, but the test file carries one control and the run log records one mutation; the other six are ordinary assertions, so the recorded evidence is overstated.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T180130198796-keep-every-appended-anchor-in-a-resynthesis/manifest.md:18 non-blocking: baseline_suite.command carries `<scratch>` placeholders instead of the absolute paths that ran, the shape the delivery contract refuses because promotion fills a receipt from this line.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T180130198796-keep-every-appended-anchor-in-a-resynthesis/manifest.md:19 non-blocking: the done_when asks that the test files importing reckon.evidence or reckon._store add no failure against the base, and both arms run only the new test file, leaving tests/test_edit_plan_append_evidence.py and tests/test_evidence_synthesis.py \u2014 which exercise the changed append and render paths \u2014 unmeasured.\nFINDING tests/test_a_resynthesis_keeps_appended_anchors.py:326 non-blocking: `assert anchor in json.dumps(result)` compares the anchor the test passed in against a refusal message the code builds from that same anchor, so it holds for any refusal; the guard is carried by the `ok is False` on the line above.\n",
+  "review_run_id": "r-20261108T010855231542-review-of-keep-every-appended-anchor-in-a-resynthesis-0f32c19228db",
+  "reviewed_base_sha": "088c13da184c7b478537ee1381536cdea8175d41",
+  "reviewed_head_sha": "0f32c19228db1cc5a8917efe2677190e958906a1",
+  "reviewed_run_id": "r-20261107T180130198796-keep-every-appended-anchor-in-a-resynthesis",
+  "rubric": "code",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T01:55:56.864121+00:00",
+  "total": 105
+}
