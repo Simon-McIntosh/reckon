@@ -18,22 +18,21 @@ cache it reports on. An intended deletion and a path untracked and then ignored
 are both silent, because the file is gone in the first and the checkout ignores
 it in the second.</p>
 
-<p id="a-main-checkout-index-that-lags-head-is-surfaced-state"><strong>State:
-blocked on one line outside this node's write scope.</strong> The notice is
-declared non-blocking in the derivation's vocabulary
-(<code>obligations.NON_BLOCKING_DUTY_KINDS</code>), but the prompt hook keeps its
-own copy of that vocabulary in
-<code>reckon/hooks/coordinator_obligations.py</code> and the two are held
-together by
-<code>tests/test_queued_work_shows_where_held_work_shows.py::test_a_queued_run_never_holds_a_coordinator_stop_open</code>.
-The hook's <code>_NON_BLOCKING_KINDS</code> must gain
-<code>"index-lags-head"</code> before the derivation's claim holds. Until it
-does, that test is the one failure this change adds to the importers arm.</p>
+<p id="a-main-checkout-index-that-lags-head-is-surfaced-notice">The row belongs
+to the project rather than to any run, so every session working that project
+reads the same notice, and it is a notice rather than a duty: the kind is
+declared in <code>obligations.NON_BLOCKING_DUTY_KINDS</code> and in the prompt
+hook's own copy of that vocabulary
+(<code>reckon/hooks/coordinator_obligations.py</code>, which cannot import the
+derivation on the snapshot's read path), so it is listed without holding a
+coordinator stop open. The two copies are held together by
+<code>tests/test_queued_work_shows_where_held_work_shows.py::test_a_queued_run_never_holds_a_coordinator_stop_open</code>.</p>
 
 <table id="a-main-checkout-index-that-lags-head-is-surfaced-arms">
   <caption>Each log names its revision, tree, the module as imported and the
   command on its header lines, and ends in a bare
-  <code>EXIT=&lt;code&gt;</code>.</caption>
+  <code>EXIT=&lt;code&gt;</code>. Both importer arms ran one at a time, at
+  <code>-n 4</code>.</caption>
   <thead><tr><th>arm</th><th>result</th><th>log</th></tr></thead>
   <tbody>
     <tr><td>gate, this node's test file at the head revision</td>
@@ -44,28 +43,37 @@ does, that test is the one failure this change adds to the importers arm.</p>
       <td>1 failed (<code>test_a_lagging_index_is_a_notice_naming_the_restore</code>),
       the index still lacking the path; <code>EXIT=1</code></td>
       <td><code>negative-control.log</code></td></tr>
-    <tr><td>importers of <code>reckon.crew.obligations</code>, head revision</td>
-      <td>38 failed, 454 passed; <code>EXIT=1</code></td>
-      <td><code>importers-head.raw</code></td></tr>
-    <tr><td>importers, base <code>obligations.py</code> substituted</td>
-      <td>42 failed, 450 passed; <code>EXIT=1</code> (37 pre-existing, plus the
-      five of the new test file collected against the base module)</td>
+    <tr><td>importers of <code>reckon.crew.obligations</code> at the head
+      revision, 82 files</td>
+      <td>37 failed, 455 passed; <code>EXIT=1</code></td>
+      <td><code>importers-head-rerun.log</code></td></tr>
+    <tr><td>importers at the base revision, 81 files (the new test does not
+      exist there)</td>
+      <td>37 failed, 450 passed; <code>EXIT=1</code></td>
       <td><code>importers-base.log</code></td></tr>
+    <tr><td>first head run of the same arm</td>
+      <td>38 failed, 454 passed; <code>EXIT=1</code></td>
+      <td><code>importers-head.log</code></td></tr>
   </tbody>
 </table>
 
-<p id="a-main-checkout-index-that-lags-head-is-surfaced-delta">Excluding the new
-test file's own five failures from the base arm, the added failure is exactly
-one: <code>test_a_queued_run_never_holds_a_coordinator_stop_open</code>, the
-guard that keeps the derivation's and the hook's vocabularies together. No
-other importer failure differs between the arms. Ruff check and
-<code>ruff format --check</code> report no finding on the two changed paths; the
-base revision of <code>reckon/crew/obligations.py</code> carried one ruff check
-finding and was format-clean.</p>
+<p id="a-main-checkout-index-that-lags-head-is-surfaced-delta">The head and base
+failure identities are the same set: no importer test is added by this change.
+The first head run carried one extra id,
+<code>test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py::test_overdue_review_duty_reports_age_without_a_dispatch_command</code>,
+which asserts the fixture's backdated age renders as <code>50m</code> and read
+<code>51m 16s</code> because more than a minute passed between the fixture's
+write and the read under a loaded four-worker run. It passes alone and did not
+recur in the rerun, and it is recorded in the manifest as outside this node's
+scope. Ruff check and <code>ruff format --check</code> add no finding on the
+three changed Python paths: the base revision of
+<code>reckon/crew/obligations.py</code> carried one check finding, and
+<code>reckon/hooks/coordinator_obligations.py</code> carries the same two
+pre-existing <code>S105</code> findings at both revisions.</p>
 
-<p id="a-main-checkout-index-that-lags-head-is-surfaced-commits">Commit
-<code>86ce945f6a</code> adds <code>reckon/crew/obligations.py</code> and
-<code>tests/test_a_landing_leaves_the_index_at_head.py</code>. Logs and the run
-manifest are under
+<p id="a-main-checkout-index-that-lags-head-is-surfaced-commits">Commits
+<code>86ce945f6aa3751b42eebe11c418b3cf54d69fa3</code> (the notice and its test)
+and <code>8922d86027271228aba5b8587edd0a3ad758ba66</code> (the hook's mirrored
+vocabulary). Logs and the run manifest are under
 <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T221135803822-a-main-checkout-index-that-lags-head-is-surfaced</code>.</p>
 </article>
