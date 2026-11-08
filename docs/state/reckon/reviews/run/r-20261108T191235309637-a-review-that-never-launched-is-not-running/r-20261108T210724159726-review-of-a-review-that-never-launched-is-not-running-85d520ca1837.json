@@ -1,0 +1,42 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest's baseline_suite is at 18fee6711e with one failure id (tests/test_a_review_that_never_launched_is_not_running.py::test_a_claim_that_does_not_name_its_run_does_not_date_this_pointer, the node's own ownership case) and its after_suite is at ddaf69ccc6 with none, so differencing the arms gives zero added; the importer population records the same seven ids in logs/importers_base.log and logs/repair2_importers_head.log (compared by diff: identical), and I reproduced 6 passed at the delivered head 85d520ca18.",
+  "call_sites": [
+    "reckon/crew/directory.py:294",
+    "reckon/crew/promotion.py:388",
+    "reckon/crew/queue_landing.py:1503",
+    "reckon/crew/station_subscriber.py:139",
+    "reckon/serve.py:901"
+  ],
+  "completed_at": "2026-11-08T21:13:21.761Z",
+  "dispatched_at": "2026-11-08T21:08:23Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-review-that-never-launched-is-not-running.html",
+      "line": 63,
+      "severity": "non-blocking",
+      "text": "the fragment says the importer population was re-measured \"at the delivered head\", but logs/repair2_importers_head.log:1 is stamped ddaf69ccc6, one commit before the delivered head 85d520ca18; the trailing commit is docs-only so the measurement is unaffected, but the revision named in the prose is not the head the review read."
+    }
+  ],
+  "node": "review-of-a-review-that-never-launched-is-not-running-85d520ca1837",
+  "node:reviewed": "a-review-that-never-launched-is-not-running",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a719's goal is to date a starting cli pointer with no attempt clock from claim.json claim_registered_at and then from created_at, reading as launch-failed past the 900 s bound; the delta leaves that dating intact at reckon/crew/recovery_liveness.py:771-786 and adds the case that makes the claim arm load-bearing at tests/test_a_review_that_never_launched_is_not_running.py:175.\nVERDICT done_when: the done-when asks for the named cases to pass, the negative control logged red, the importer population to add no failure, and ruff clean; logs/repair2_head_gate.log records 6 passed EXIT=0 at ddaf69ccc6, logs/repair_negative_control.log records the claim-arm case FAILED with -launch-failed/+running EXIT=1, logs/repair2_importers_head.log carries the same seven ids as logs/importers_base.log, and I reproduced 6 passed in 2.75s plus ruff check and ruff format --check clean at 85d520ca18.\nVERDICT write_paths: `git diff --name-only bf7ffe6b50..85d520ca18` returns exactly tests/test_a_review_that_never_launched_is_not_running.py and docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-review-that-never-launched-is-not-running.html, both inside the five paths the reviewed dispatch declares.\nVERDICT manifest: read the reviewed run's manifest.md \u2014 status complete, commits through 85d520ca18, baseline_suite at 18fee6711e with one failure id and after_suite at ddaf69ccc6 with none, negative_control_log naming logs/repair_negative_control.log, and the two prior-review dimensions it addresses are named in evidence_inputs.\nVERDICT diff: read both commits against bf7ffe6b50 \u2014 ddaf69ccc6 adds test_a_stale_claim_dates_a_pointer_created_inside_the_bound and moves the declared mutation from _claim_or_creation_seconds to _claim_registered_seconds (tests/test_a_review_that_never_launched_is_not_running.py:49-55, :84-90, :175-192), and 85d520ca18 updates the fragment's figures to repair2_base_gate.log, repair2_head_gate.log and repair2_importers_head.log.\nCALL_SITES: reckon/crew/directory.py:294, reckon/crew/promotion.py:388, reckon/crew/queue_landing.py:1503, reckon/crew/station_subscriber.py:139, reckon/serve.py:901\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_review_that_never_launched_is_not_running.py:175-190 pairs a stale claim with a young creation so the claim arm at reckon/crew/recovery_liveness.py:781-783 is the only path that can classify the pointer, which is what the node goal and the prior reuse finding required.\nSCORE evidence: 19\nJUSTIFICATION evidence: every figure in docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-review-that-never-launched-is-not-running.html:62-65 reconciles with logs/repair2_head_gate.log, logs/repair2_base_gate.log and logs/repair2_importers_head.log, and the red negative control is on disk; the one defect is that the importer arm is stamped ddaf69ccc6 rather than the delivered head 85d520ca18.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the window's two changed paths are the listed write paths, and the fragment edit is a four-line figure refresh plus one paragraph rather than a rewrite.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_review_that_never_launched_is_not_running.py:190 reddens under the declared mutation exactly as logs/repair_negative_control.log records (- launch-failed / + running), so the claim arm cannot be removed without a failure; the remaining unasserted surface is the detail wording, not the mechanism.\nSCORE fit: 20\nJUSTIFICATION fit: the new case follows the file's module-docstring and private-helper idiom at tests/test_a_review_that_never_launched_is_not_running.py:99-160, and no name carries a plan, ticket or stage identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the window adds no production definition; the claim read remains delegated at reckon/crew/recovery_liveness.py:766 to dispatch_launch._claim_registration_for_worker, which owns and validates it.\nFINDING docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-review-that-never-launched-is-not-running.html:63 non-blocking: the fragment says the importer population was re-measured \"at the delivered head\", but logs/repair2_importers_head.log:1 is stamped ddaf69ccc6, one commit before the delivered head 85d520ca18; the trailing commit is docs-only so the measurement is unaffected, but the revision named in the prose is not the head the review read.\n",
+  "review_run_id": "r-20261108T210724159726-review-of-a-review-that-never-launched-is-not-running-85d520ca1837",
+  "reviewed_base_sha": "bf7ffe6b50b41c0fb334f0f839069bba81740415",
+  "reviewed_head_sha": "85d520ca18372c6e3945052d00c4ceeab521f784",
+  "reviewed_run_id": "r-20261108T191235309637-a-review-that-never-launched-is-not-running",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T21:19:47.614511+00:00",
+  "total": 117
+}
