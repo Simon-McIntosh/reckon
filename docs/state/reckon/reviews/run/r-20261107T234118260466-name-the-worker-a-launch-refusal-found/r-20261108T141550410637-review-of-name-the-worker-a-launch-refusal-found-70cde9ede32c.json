@@ -1,0 +1,35 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T14:28:03.939Z",
+  "dispatched_at": "2026-11-08T14:18:09Z",
+  "findings": [
+    {
+      "file": "reckon/crew/process_liveness.py",
+      "line": 199,
+      "severity": "non-blocking",
+      "text": "The docstring of _scheduler_state_argv (reckon/crew/process_liveness.py:196-200) and of _scheduler_query_argv (:74-77) still state that a scheduler question that cannot be asked 'falls through to the pid probe'. Since :387, a placed record whose scheduler cannot be queried returns LIVENESS_PLACED with alive None and never reaches the pid probe, so two docstrings in the module whose contract this commit set out to align now state the behaviour it removed. The added <li> in docs/evidence/fragments/a-run-has-one-live-worker/name-the-worker-a-launch-refusal-found.html claims 'the next reader finds one contract rather than three', which these two sites contradict."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that both launch refusals name the worker they found, never a dead pid; the gained commit 70cde9ed rewrites no refusal text and instead carries the placed-unknown contract the earlier commits put in reckon/crew/process_liveness.py:387 into the three docstrings that reach it (:243-256, :366-380, :452-458), so the refusal's unknown arm is documented wherever it is read.\nVERDICT done_when: the section's done-when names tests/test_a_queued_run_launches_once.py, the reproduced defect, logged negative controls and ruff; the run's armed command adds tests/test_crew_placed_liveness.py and its gate logs record the measure \u2014 logs/01-baseline-suite.log reads '4 failed, 31 passed in 23.32s' with EXIT=1 at 2c0dcf9b, logs/06-after-suite-repair.log reads '35 passed in 32.01s' with EXIT=0 at 70cde9ed.\nVERDICT write_paths: the run's declared paths (manifest orientation_write_paths) are reckon/crew/recovery_liveness.py, reckon/crew/dispatch_launch.py, tests/test_a_queued_run_launches_once.py, docs/evidence/fragments/a-run-has-one-live-worker/name-the-worker-a-launch-refusal-found.html, docs/figures/a-run-has-one-live-worker/, reckon/crew/process_liveness.py and tests/test_crew_placed_liveness.py; the gained commit touches the fragment, process_liveness.py and test_crew_placed_liveness.py, all three inside that set.\nVERDICT manifest: read at head 70cde9ed; status complete, the checkpoint names this repair round, seven commits and seven changed paths are recorded, baseline_suite and after_suite are JSON carrying revision, literal command, exit status, log path and failure ids, negative_control_log points at logs/nc5-contract-not-carried.log, and eleven rubric lines are present \u2014 but no ruff result is recorded although the source done-when asks that ruff add no findings on the source run's staged paths, so this review ran it itself.\nVERDICT diff: read commit by commit from 2f471d42 to 70cde9ed; one commit, three files, +22 -18 \u2014 the evidence fragment gains one <li> and deletes nothing, process_liveness.py changes only docstrings at :243-256, :366-380 and :452-458 and makes placement_job_alive take its placement test from _record_is_placed at :255, and tests/test_crew_placed_liveness.py renames two cases and retargets them from True to None at :69-78 and :109-118.\nCALL_SITES: reckon/crew/dispatch_launch.py:_prepare_attempt_records, reckon/crew/dispatch_launch.py:_supervisor_spawn_worker, reckon/crew/dispatch_launch.py:_placement_job_alive, reckon/crew/claims.py:113, reckon/crew/resumption.py:1288, reckon/crew/promotion_checks.py:345, reckon/crew/watch_unit.py:65, reckon/crew/gate_watch.py:218\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: process_liveness.py:366-380 now states in the owner's own docstring that a placed record is answered by its scheduler job alone, which is the contract the refusal at dispatch_launch.py:1930 words as 'cannot read whether its worker is live'.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/01-baseline-suite.log and logs/06-after-suite-repair.log each open with their revision, tree, module path and cwd, carry the literal command, end in a bare EXIT line, and the file list now includes tests/test_crew_placed_liveness.py, closing the omission the previous review found.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the 2f471d42..70cde9ed diff (process_liveness.py, tests/test_crew_placed_liveness.py, the evidence fragment) is inside the run's declared write paths and no plan, index or peer path is touched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_crew_placed_liveness.py:74 asserts None with a probe that answers True, so deleting the placed-with-unknown branch at process_liveness.py:387 makes the recorded-pid arm return True and reddens it; :118 does the same through the scheduler-query arm.\nSCORE fit: 15\nJUSTIFICATION fit: the commit follows the module's docstring voice and introduces no plan or ticket identifier, but process_liveness.py:199 and :75 still say an unaskable query 'falls through to the pid probe', the behaviour this same module now refuses.\nSCORE reuse: 18\nJUSTIFICATION reuse: placement_job_alive at process_liveness.py:255 now reads _record_is_placed (:221) instead of restating the placement test, removing the duplication the previous review named, though the same test is still spelled inline at dispatch_launch.py:168, flight.py:1337 and dispatch_admission.py:1752.\nFINDING reckon/crew/process_liveness.py:199 non-blocking: The docstring of _scheduler_state_argv (reckon/crew/process_liveness.py:196-200) and of _scheduler_query_argv (:74-77) still state that a scheduler question that cannot be asked 'falls through to the pid probe'. Since :387, a placed record whose scheduler cannot be queried returns LIVENESS_PLACED with alive None and never reaches the pid probe, so two docstrings in the module whose contract this commit set out to align now state the behaviour it removed. The added <li> in docs/evidence/fragments/a-run-has-one-live-worker/name-the-worker-a-launch-refusal-found.html claims 'the next reader finds one contract rather than three', which these two sites contradict.\n",
+  "review_run_id": "r-20261108T141550410637-review-of-name-the-worker-a-launch-refusal-found-70cde9ede32c",
+  "reviewed_base_sha": "2f471d42eaae09a7380ed0a124429860efbbcbb7",
+  "reviewed_commits": [
+    "70cde9ede32c9cefe1a130fd7ee98c0c0de7f49f"
+  ],
+  "reviewed_head_sha": "70cde9ede32c9cefe1a130fd7ee98c0c0de7f49f",
+  "reviewed_run_id": "r-20261107T234118260466-name-the-worker-a-launch-refusal-found",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T14:43:40.562534+00:00",
+  "total": 104
+}
