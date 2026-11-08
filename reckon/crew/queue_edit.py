@@ -588,14 +588,19 @@ def hold(
     reason: str = "",
     project: str | None = None,
 ) -> dict[str, Any]:
-    """Pause waiting requests without losing their brief, waits or priority."""
-    from reckon.crew.queue_admission import _admit_lock
+    """Pause waiting requests without losing their brief, waits or priority.
 
-    with _admit_lock():
-        ids = _selected_requests(run_id, plan, session, project, release=False)
-        changed = [
-            _change_hold(identifier, release=False, reason=reason) for identifier in ids
-        ]
+    A hold changes one pointer through that pointer's own lock, as a
+    reprioritise does, and never takes the admission lock: a pass can hold that
+    lock for its whole length, and a steering verb that waited on it would be
+    unusable exactly when a coordinator needs to shrink the queue the pass is
+    working through. The launch re-reads the request's phase before it starts
+    the run, so a request held while a pass is deciding is not launched by it.
+    """
+    ids = _selected_requests(run_id, plan, session, project, release=False)
+    changed = [
+        _change_hold(identifier, release=False, reason=reason) for identifier in ids
+    ]
     return {"held": changed, "count": len(changed)}
 
 
@@ -607,12 +612,14 @@ def release(
     reason: str = "",
     project: str | None = None,
 ) -> dict[str, Any]:
-    """Restore held requests to their previous phase and paused starvation age."""
-    from reckon.crew.queue_admission import _admit_lock
+    """Restore held requests to their previous phase and paused starvation age.
 
-    with _admit_lock():
-        ids = _selected_requests(run_id, plan, session, project, release=True)
-        changed = [
-            _change_hold(identifier, release=True, reason=reason) for identifier in ids
-        ]
+    Like a hold, a release writes only the pointer it changes and takes no
+    admission lock, so a coordinator can return work to the queue while a pass
+    runs.
+    """
+    ids = _selected_requests(run_id, plan, session, project, release=True)
+    changed = [
+        _change_hold(identifier, release=True, reason=reason) for identifier in ids
+    ]
     return {"released": changed, "count": len(changed)}
