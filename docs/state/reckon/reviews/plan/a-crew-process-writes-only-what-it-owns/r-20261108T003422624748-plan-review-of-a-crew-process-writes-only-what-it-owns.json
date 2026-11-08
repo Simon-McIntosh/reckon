@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T00:59:17.356Z",
+  "dispatched_at": "2026-11-08T00:45:01Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:62",
+      "id": "reasoning-1",
+      "reason": "a worker can read this two ways (apply the parent answer in both callers, or in the restart path only) and case 5 does not name which caller it drives, so the plan does not settle a control flow the whole Why depends on.",
+      "text": "the Deliverable says \"The first start is unchanged: a request line served by `SessionHost.handle` (near line 523) ... starts its child as it does today\", while the same Deliverable states that `_foreign_live_follower` now answers \"the pair is not followed\" when the live follower's `parent_pid` is another owner's host \u2014 and `handle` calls that function (reckon/crew/session_host.py:508) and today defers rather than spawning when it answers True, so the change silently rewrites the first start for exactly the pair the section exists to reclaim",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:62",
+      "id": "done_when-1",
+      "reason": "without a control on case 4 an implementation that drops the foreign child by killing it \u2014 the natural way to free the pair \u2014 passes the four other cases, and the plan's own rule that a running child is left to run would not be shown to hold.",
+      "text": "of the five cases, only three carry a negative control (`restarting regardless of the mark` \u2192 case 1, `dropping on the mark alone` \u2192 case 3, `deferring to every live follower` \u2192 case 5); case 4, \"an unmarked child for another session that is still running is not signalled\", passes unchanged at the base revision and case 2 passes there too, and neither has a logged control, so neither is shown to measure anything (the sibling \u00a75 declares its base-passing case and gives its removal test a control)",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:62",
+      "id": "anchors_resolve-1",
+      "reason": "every function resolves by name in the same file, so no worker is sent to the wrong method; only the hedged line numbers are stale.",
+      "text": "`SessionHost.tick` is cited \"near line 512\" but is at `reckon/crew/session_host.py:585` (512 lands inside `handle`'s deferred-request branch), and `_foreign_live_follower` is given as \"near line 460\" and, ten clauses later in the same paragraph, \"near line 533\" (actual 533); the drift is uniform across the file, whose siblings cite `record()` at 368 (actual 440) and `supervise` at 667 (actual 735)",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html:62",
+      "id": "anchors_resolve-2",
+      "reason": "the section's mechanism does not rest on the record's present content, but a verifier who opens the citation to check the premise finds the opposite of what the plan asserts, so the capture that supports it should be named.",
+      "text": "the Why states \"Its record, `session-hosts/68551-241698294.json`, lists children for both 6f111d4a and 404513fc\", but that live record now lists one child (6f111d4a) and the capture cited for the measurement does not contain host 69000's record at all",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "e1c82ff8fdf3e6120c55cf8e9ac1c6fc710f1d13",
+  "plan_fingerprint": "3c51e32618d601540c78d5a9c3f4f8b2387768f394ab75d6e7c618300f9defe6",
+  "plan_slug": "a-crew-process-writes-only-what-it-owns",
+  "plan_version": 16,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T003422624748-plan-review-of-a-crew-process-writes-only-what-it-owns",
+  "reviewed_blob_sha": "32cc8c7ffa4ed64157f5e7839744f2ccf88c173f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "two findings \u2014 `SessionHost.tick` is cited \"near line 512\" but sits at `reckon/crew/session_host.py:585`, and `_foreign_live_follower` carries two different line numbers (460 and 533) in one paragraph; separately, the record the Why quotes no longer carries the children it is said to list.",
+    "done_when": "a finding \u2014 \u00a76 states five cases but three negative controls; cases 2 and 4 carry none, and case 4 (an unmarked foreign child that is still running is not signalled) holds at the base revision, so nothing shows it can fire.",
+    "evidence_paths": "pass \u2014 the done-when keeps every log \"under the run directory\" with its revision, the literal command first and a bare `EXIT=` last, judges the armed suite by delta against the dispatch base with the new test copied into the base tree, and the Why's capture `~/.cache/reckon-follower-ownership/2026-11-07T2140Z-a1-holds-404513fc-follower.txt` exists on disk.",
+    "naming": "pass \u2014 `owner_checked`, `parent_pid` and `waiting_for_dispatch` name mechanisms; no plan label, stage name, ticket number or version tag appears in \u00a76's symbols, paths or prose.",
+    "reasoning": "a finding \u2014 the stated root cause matches `tick`'s backoff restart and the mechanism runs on the production path (`SessionHost.tick`, called from `supervise` at `reckon/crew/session_host.py:784`), but the sentence \"The first start is unchanged ... starts its child as it does today\" is contradicted by the section's own `_foreign_live_follower` change, which alters what `SessionHost.handle` does with a foreign-held pair.",
+    "single_goal": "pass \u2014 one goal, \"a running host restarts only its own session's followers\", reached in `reckon/crew/session_host.py` plus one new test file; the `parent_pid` answer in `_foreign_live_follower` is the same goal's premise, and the five cases close on one verdict.",
+    "wiring": "pass \u2014 `plan-section-depends-on` (plan.html:23) declares `s6: [\"a-crew-process-writes-only-what-it-owns#s5\"]`, which is the node that carries the `owner_checked` mark into the child entries \u00a76 restarts from; \u00a76's other premise, \u00a73's guard on request lines, reaches it through s5's own declared dependency on s3, and no relationship points at a wrong or missing node."
+  },
+  "section_digests": {
+    "_document": "9603432af4f7b5bbb5297a7d3de6a82224e72420b1d6e255e6198052ad6cf21d",
+    "s1": "38e026f18d1b42b1d79978e1ed1cf6179e085908a249e5762f39a683dcc8123f",
+    "s2": "f11be171c26248fbc871d99510f0013c9dfc0a181d247f07861e86dc0d156f40",
+    "s3": "56ff71f47c37ed3c14aadfcbebb6d71b53e5a14b0c9333c997c4ecd0cb4987b9",
+    "s4": "e88fcf79ec58d8305f36e37d69846c8e0a1a10f1b73fc6c167c25b700165e123",
+    "s5": "d2137141581052e01b8d36787a07250708e3526629746a86490cc802627b465b",
+    "s6": "839e30261524be4e2f792ada8876f2955e1752b818a5912f6bdc53abe3dadf33"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T01:12:06.666781+00:00",
+  "total": null
+}
