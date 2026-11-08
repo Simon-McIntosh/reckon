@@ -7,10 +7,12 @@ command that knows the commit it wrote — so it is also the command that frees
 every tree standing exactly at that commit, judged against the merge commit
 rather than against a checkout's ``HEAD``.
 
-Three cases pin the release: a promoted run landed separately is released and
+Four cases pin the release: a promoted run landed separately is released and
 named in the merge result; a tree carrying a commit the merged head lacks is
 withheld, because releasing it would delete work no reader has; and a merge
-refused before it pushes releases nothing.
+refused before it pushes releases nothing; and a tree a ledger row retains as a
+recoverable session's working directory is withheld, because it is the only
+copy of the work that session can be resumed from.
 """
 
 from __future__ import annotations
@@ -22,6 +24,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
+from reckon import ledger
 from reckon.crew.runs import _write_json, pointer_path
 from tests.helpers.git import git as _git
 from tests.helpers.landing_repository import (
@@ -39,6 +42,7 @@ def _promoted_run(
     monkeypatch: pytest.MonkeyPatch,
     *,
     commit_beyond_the_head: bool = False,
+    retention_session: str = "",
 ) -> dict:
     """A run promoted with ``crew complete`` whose tree is left held.
 
@@ -129,6 +133,16 @@ def _promoted_run(
         ],
     )
     assert result.exit_code == 0, result.output
+    if retention_session:
+        # A tree kept as the working directory of a single recoverable session
+        # is named by the row's retention as well as by its node id, and it is
+        # the one tree a release must never take.
+        row = ledger.read_document(ledger.run_path(PROJECT, run_id, repository))
+        row["worktree_retention"] = {
+            "worktree": str(worktree),
+            "session_id": retention_session,
+        }
+        ledger.write_run_file(PROJECT, row, repository)
     return run
 
 
@@ -202,4 +216,27 @@ def test_a_merge_refused_before_it_pushes_releases_nothing(
 
     assert result.exit_code != 0, result.output
     assert _git(run["origin"], "rev-parse", "main") == origin_before
+    assert run["worktree"].is_dir()
+
+
+def test_a_retained_worktree_is_withheld_and_its_retention_named(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A tree kept for a recoverable session survives the landed-head release.
+
+    The promotion's own release withholds a retained tree, and the merge reads
+    the same retention off the same record field, so a tree that is the only
+    copy of a session's work is named rather than removed.
+    """
+    run = _promoted_run(tmp_path, monkeypatch, retention_session="session-b")
+
+    result = _merge(run)
+
+    assert result.exit_code == 0, result.output
+    report = json.loads(result.output)
+    assert str(run["worktree"].resolve()) not in report["release"]["released"], report
+    entries = {entry["worktree"]: entry for entry in report["release"]["withheld"]}
+    entry = entries[str(run["worktree"].resolve())]
+    assert entry["retention"]["session_id"] == "session-b", entry
+    assert "session-b" in entry["reason"], entry
     assert run["worktree"].is_dir()

@@ -35,7 +35,7 @@ import os
 import re
 import subprocess
 import time
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 
 # The repository's own pre-push guard refuses a line-anchored ``co-authored-by``
@@ -876,8 +876,14 @@ def release_landed_worktrees(
                 release_record = {**record, "worktree": str(worktree)}
                 if not str(release_record.get("repo") or "").strip():
                     release_record["repo"] = str(checkout)
+                # A tree a row keeps as a recoverable session's working
+                # directory is the only copy that session can be resumed from,
+                # so the retention the promotion's own release reads is read
+                # here from the same field rather than dropped.
+                retention = release_record.get("worktree_retention")
                 release = promotion_release._release_run_workspace(
                     release_record,
+                    retention if isinstance(retention, Mapping) else None,
                     integration_repo=Path(repo),
                     integration_commit=landed,
                 )
@@ -889,16 +895,16 @@ def release_landed_worktrees(
             if release.get("worktree_released"):
                 result["released"].append(str(worktree))
             else:
-                result["withheld"].append(
-                    {
-                        "project": project,
-                        "worktree": str(worktree),
-                        "reason": str(
-                            release.get("worktree_withheld")
-                            or "the release withheld it"
-                        ),
-                    }
-                )
+                entry = {
+                    "project": project,
+                    "worktree": str(worktree),
+                    "reason": str(
+                        release.get("worktree_withheld") or "the release withheld it"
+                    ),
+                }
+                if isinstance(release.get("worktree_retention"), Mapping):
+                    entry["retention"] = dict(release["worktree_retention"])
+                result["withheld"].append(entry)
     return result
 
 
