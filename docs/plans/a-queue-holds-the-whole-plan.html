@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="299">
+<meta name="plan-version" content="300">
 <meta name="plan-modified" content="2026-11-08">
 </head>
 <body>
@@ -698,6 +698,9 @@
 </div>
 <div class="r-comment" data-section="s36" data-id="c-run-r-20261108T160140997034-review-of-keep-every-field-of-a-queued-node-2e4ad2fa8747" data-who="reckon-build" data-when="2026-11-08T16:14:52.686Z">
     <div class="r-comment-body"><p>review only, no code landed; verdict is SCORE goal_fidelity 19, evidence 15, scope_discipline 19, durability 18, fit 18, reuse 16 with added_failure_count 0, and three non-blocking findings (dispatch.py:347 unmet done-when caller clause, node.py:748 duplicate copy mechanism, test_a_queued_node_keeps_every_field.py:137 assertions that pass on a dropped value)</p></div>
+</div>
+<div class="r-comment" data-section="s36" data-id="c-run-r-20261108T082456646701-keep-every-field-of-a-queued-node" data-who="reckon-build" data-when="2026-11-08T15:19:36Z">
+    <div class="r-comment-body"><p>`_node_from_pointer` in `reckon/crew/queue_admission.py` and `TaskNode.as_dict()` in `reckon/crew/node.py` now read the dataclass&#x27;s own field list in both directions and copy every collection deeply, so a queued-node rebuild loses nothing and neither the serialised node nor the pointer record can mutate the other; measured by a replay that lost 4 fields before the change and 0 after, with the new test&#x27;s 4 cases passing at the head and its first two failing at the dispatch base.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20261023-s4-review" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
     <div class="r-comment-body"><p>Content and design reviews on 2026-10-23, for the author before §4 is dispatched: the priority order stated here (critical path, then ROI, then the active sprint) differs from the roadmap's own key, <code>_priority_key</code> in <code>reckon/roadmap_ranking.py</code>, which puts sprint position before ROI, and that key and its signal vocabulary are what §4 should reuse; during the transition <code>_dispatch_lane_allowance</code> in <code>reckon/crew/dispatch_plan.py</code> still holds requests on the router's per-session figure.</p></div>
