@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:3351 the subscriber delivery constructs _StationRegistration and hands it to stream_events",
+    "reckon/crew_follow_commands.py:3075 stream_events builds the reloader the per-wait hook polls",
+    "reckon/crew_follow_commands.py:162 _StationRegistration.prepare_reexec delegates the hand-over to the claim it wraps",
+    "reckon/crew_follow_commands.py:172 _StationRegistration.cancel_reexec delegates the hand-back to the claim it wraps",
+    "reckon/crew/follower_reload.py:469 _FollowerReloader.poll calls registration.prepare_reexec before the exec",
+    "reckon/crew/follower_reload.py:525 _FollowerReloader.poll calls registration.cancel_reexec when the exec is refused"
+  ],
+  "completed_at": "2026-11-08T06:41:13.028Z",
+  "dispatched_at": "2026-11-08T06:29:33Z",
+  "findings": [],
+  "item_verdicts": {
+    "diff": "Read both commits against d117af1bad: 0f27458310 adds a stub-claim fixture and two cases to tests/test_a_follower_runs_current_code.py, asserting one prepare_reexec, one cancel_reexec and no claim for a session-less pane; a603635aca changes only the evidence fragment, updating both arms and adding the third control.",
+    "done_when": "The done_when requires tests/test_a_follower_runs_current_code.py to show the four cases with two controls; logs/after-suite.log ends 16 passed EXIT=0 at 0f27458310, logs/base-new-test-behavioural.log ends 5 failed EXIT=1 against the base tree, and logs/negative-control-3.log shows the newly added prepare_reexec delegation failing exactly one case.",
+    "goal": "The node's goal is that a station-subscriber follower re-executes onto its source checkout's code when that code moves; the gained commits add no delivery code, and they supply the observation of the claim hand-over that delivery performs at reckon/crew_follow_commands.py:162-175.",
+    "manifest": "Read; it names commits 0f27458310 and a603635aca, records baseline_suite 0 failures at 1b3663ce and after_suite 0 failures at 0f27458310, and points negative_control_log at logs/negative-control-1.log (5 failed, EXIT=1).",
+    "write_paths": "The source run's declared paths are reckon/crew_follow_commands.py, tests/test_follower_freshness.py, tests/test_a_follower_runs_current_code.py, the evidence fragment and its figure directory; git diff d117af1bad..a603635aca touches only the test file and the evidence fragment, both inside that grant."
+  },
+  "justifications": {
+    "durability": "logs/negative-control-3.log:4-13 shows replacing _StationRegistration.prepare_reexec's body with pass reddening test_a_moved_checkout_re_executes_the_subscriber with assert [0] == [1] at tests/test_a_follower_runs_current_code.py:243; the cancel_reexec assertion at :246 and the session-less absence at :267 would redden if their delegation or the session guard were removed, though neither is covered by a logged control.",
+    "evidence": "logs/after-suite.log ends '16 passed' with EXIT=0 and logs/baseline-suite.log ends '10 passed' with EXIT=0, so both arms that promotion compares carry zero failures read from the logs; the fragment's arms table at docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-follower-runs-current-code.html:34-36 quotes those same figures.",
+    "fit": "tests/test_a_follower_runs_current_code.py:127-166 follows the file's own fixture idiom (monkeypatch on a private symbol, SimpleNamespace delivery handle) and no plan, stage or ticket identifier appears in the new symbols, docstrings or commit subjects.",
+    "goal_fidelity": "tests/test_a_follower_runs_current_code.py:243 and :246 now observe the hand-over on the claim _StationRegistration wraps at reckon/crew_follow_commands.py:162, which was the one part of the delivery the prior review found unobserved.",
+    "reuse": "the added double is a test stub at the claim seam, not a production mechanism; the capability search over tests/ and reckon/:357 found prepare_reexec/cancel_reexec owned by reckon/crew/follower_registration.py:417-431 and delegated to, and the only other stub is the function-local Registration at tests/test_follower_freshness.py:303 which drives _FollowerReloader directly rather than the station wrapper, a different seam.",
+    "scope_discipline": "git diff --stat d117af1bad..a603635aca reports only tests/test_a_follower_runs_current_code.py (72 added) and the evidence fragment (15 added, 9 deleted), and neither path departs the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that a station-subscriber follower re-executes onto its source checkout's code when that code moves; the gained commits add no delivery code, and they supply the observation of the claim hand-over that delivery performs at reckon/crew_follow_commands.py:162-175.\nVERDICT done_when: The done_when requires tests/test_a_follower_runs_current_code.py to show the four cases with two controls; logs/after-suite.log ends 16 passed EXIT=0 at 0f27458310, logs/base-new-test-behavioural.log ends 5 failed EXIT=1 against the base tree, and logs/negative-control-3.log shows the newly added prepare_reexec delegation failing exactly one case.\nVERDICT write_paths: The source run's declared paths are reckon/crew_follow_commands.py, tests/test_follower_freshness.py, tests/test_a_follower_runs_current_code.py, the evidence fragment and its figure directory; git diff d117af1bad..a603635aca touches only the test file and the evidence fragment, both inside that grant.\nVERDICT manifest: Read; it names commits 0f27458310 and a603635aca, records baseline_suite 0 failures at 1b3663ce and after_suite 0 failures at 0f27458310, and points negative_control_log at logs/negative-control-1.log (5 failed, EXIT=1).\nVERDICT diff: Read both commits against d117af1bad: 0f27458310 adds a stub-claim fixture and two cases to tests/test_a_follower_runs_current_code.py, asserting one prepare_reexec, one cancel_reexec and no claim for a session-less pane; a603635aca changes only the evidence fragment, updating both arms and adding the third control.\nCALL_SITES: reckon/crew_follow_commands.py:3351, reckon/crew_follow_commands.py:3075, reckon/crew_follow_commands.py:162, reckon/crew_follow_commands.py:172, reckon/crew/follower_reload.py:469, reckon/crew/follower_reload.py:525\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_follower_runs_current_code.py:243 and :246 now observe the hand-over on the claim _StationRegistration wraps at reckon/crew_follow_commands.py:162, which was the one part of the delivery the prior review found unobserved.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/after-suite.log ends '16 passed' with EXIT=0 and logs/baseline-suite.log ends '10 passed' with EXIT=0, so both arms that promotion compares carry zero failures read from the logs, and the fragment's arms table quotes the same figures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat d117af1bad..a603635aca reports only tests/test_a_follower_runs_current_code.py and the evidence fragment, both inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: logs/negative-control-3.log:4-13 shows replacing _StationRegistration.prepare_reexec's body with pass reddening the moved case at tests/test_a_follower_runs_current_code.py:243, and the cancel and session-less assertions would redden if their delegation or session guard were removed, though neither has a logged control.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_a_follower_runs_current_code.py:127-166 follows the file's own fixture idiom and no plan, stage or ticket identifier appears in the new symbols, docstrings or commit subjects.\nSCORE reuse: 18\nJUSTIFICATION reuse: the added double is a test stub at the claim seam; prepare_reexec/cancel_reexec are owned by reckon/crew/follower_registration.py:417-431 and delegated to, and the only other stub at tests/test_follower_freshness.py:303 drives _FollowerReloader directly rather than the station wrapper.\n",
+  "review_run_id": "r-20261108T055719329686-review-of-a-follower-runs-current-code-a603635aca90",
+  "reviewed_base_sha": "d117af1baddc0e552f5b45a6a8c74223775c7f73",
+  "reviewed_head_sha": "a603635aca904f99e1c49570c764f20811ce7b93",
+  "reviewed_run_id": "r-20261108T032830784659-a-follower-runs-current-code",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T06:49:30.694218+00:00",
+  "total": 113,
+  "verdicts": {
+    "diff": "Read both commits against d117af1bad: 0f27458310 adds a stub-claim fixture and two cases to tests/test_a_follower_runs_current_code.py, asserting one prepare_reexec, one cancel_reexec and no claim for a session-less pane; a603635aca changes only the evidence fragment, updating both arms and adding the third control.",
+    "done_when": "The done_when requires tests/test_a_follower_runs_current_code.py to show the four cases with two controls; logs/after-suite.log ends 16 passed EXIT=0 at 0f27458310, logs/base-new-test-behavioural.log ends 5 failed EXIT=1 against the base tree, and logs/negative-control-3.log shows the newly added prepare_reexec delegation failing exactly one case.",
+    "goal": "The node's goal is that a station-subscriber follower re-executes onto its source checkout's code when that code moves; the gained commits add no delivery code, and they supply the observation of the claim hand-over that delivery performs at reckon/crew_follow_commands.py:162-175.",
+    "manifest": "Read; it names commits 0f27458310 and a603635aca, records baseline_suite 0 failures at 1b3663ce and after_suite 0 failures at 0f27458310, and points negative_control_log at logs/negative-control-1.log (5 failed, EXIT=1).",
+    "write_paths": "The source run's declared paths are reckon/crew_follow_commands.py, tests/test_follower_freshness.py, tests/test_a_follower_runs_current_code.py, the evidence fragment and its figure directory; git diff d117af1bad..a603635aca touches only the test file and the evidence fragment, both inside that grant."
+  }
+}
