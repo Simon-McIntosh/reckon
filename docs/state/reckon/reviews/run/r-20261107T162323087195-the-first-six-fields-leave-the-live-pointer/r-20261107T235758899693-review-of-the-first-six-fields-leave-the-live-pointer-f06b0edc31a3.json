@@ -1,0 +1,85 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/crew/dispatch.py:3561",
+    "reckon/crew/dispatch_launch.py:267",
+    "reckon/crew/dispatch_sessions.py:934",
+    "reckon/crew/promotion.py:303",
+    "reckon/crew/queue_admission.py:372",
+    "reckon/crew/recovery_stream.py:534",
+    "reckon/crew/recovery_watch.py:1367",
+    "reckon/run_record.py:187",
+    "reckon/serve.py:658"
+  ],
+  "completed_at": "2026-11-08T00:16:27Z",
+  "dispatched_at": "2026-11-08T00:02:39Z",
+  "findings": [
+    {
+      "file": "tests/test_the_first_six_fields_leave_the_live_pointer.py",
+      "line": "251",
+      "severity": "blocking",
+      "text": "Expected field values come from the same sidecar as dispatch_field, so corrupted values pass the assertion and presence checks."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T162323087195-the-first-six-fields-leave-the-live-pointer/manifest.md",
+      "line": "15",
+      "severity": "blocking",
+      "text": "The required ruff check and format-check results are absent from the gate record."
+    },
+    {
+      "disposition": "folded",
+      "disposition_target": "the-first-six-fields-leave-the-live-pointer",
+      "file": "tests/test_shadow_pick_off_critical_path.py",
+      "line": "209",
+      "severity": "non-blocking",
+      "text": "Both sides derive picker selection from the same accessor; an incorrect shared value passes."
+    },
+    {
+      "disposition": "folded",
+      "disposition_target": "the-first-six-fields-leave-the-live-pointer",
+      "file": "tests/test_the_first_six_fields_leave_the_live_pointer.py",
+      "line": "225",
+      "severity": "non-blocking",
+      "text": "The AST scan catches only variables named pointer and misses direct reads under aliases."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 9 production call site(s)",
+    "diff": "commits b8217ec4861f79db67522ac9d2d9c3ba735477c9, 991a8c68f1fa3c3a2ff82526454509c0495c0b6b, c8f64d4d425dea037022bf2c390fe121baa1ed66, and f06b0edc31a30c27015b01b6ebc5afb056463ec2 add the sidecar accessor, migrate readers and tests, correct recorded-path lookup, and update the evidence fragment.",
+    "done_when": "source manifest.md:19-21 and its baseline-suite.log and after-suite-landed.log record 14 and 19 passes with zero failures, and final-negative-control.log fails the old-shape test; no recorded ruff check or format-check result covers the declared lint measure.",
+    "goal": "reckon/crew/runs.py:166-221 moves six fields to dispatch-detail.json and resolves both slim and old pointers, while tests/test_the_first_six_fields_leave_the_live_pointer.py:176 measures a 12193-byte CLI pointer.",
+    "manifest": "source manifest.md:15-22 names the final head gate, baseline gate, negative control, pointer size, and zero added failures, but omits the required ruff receipts.",
+    "write_paths": "source manifest.md:3 declares 17 paths and the four-commit diff from 34b2cb6c9eb5af5505cdc26819b9e9314adb8199 to f06b0edc31a30c27015b01b6ebc5afb056463ec2 changes 16, all declared."
+  },
+  "justifications": {
+    "durability": "tests/test_the_first_six_fields_leave_the_live_pointer.py:265-268 has a proven red old-pointer control, but lines 190-192 and 250-253 accept corrupted sidecar field values because presence and equality to the same file are the only checks for several fields.",
+    "evidence": "source manifest.md:19-21 cites readable 14-pass base, 19-pass head, 12193-byte pointer, and red fallback logs, but its tests and test_logs fields at lines 15-16 contain no ruff gate required by done_when.",
+    "fit": "reckon/crew/runs.py:166-221 follows the module's atomic JSON write and compatibility-accessor style and adds no plan-labelled source name.",
+    "goal_fidelity": "reckon/crew/runs.py:175-221 removes all six fields from new pointer writes and reads the recorded sidecar path with inline fallback.",
+    "reuse": "a capability search of base reckon/crew found pointer JSON writes in reckon/crew/runs.py and no existing six-field detail accessor, so the addition at reckon/crew/runs.py:152-221 extends that owner.",
+    "scope_discipline": "the 16 paths in the diff from 34b2cb6c9eb5af5505cdc26819b9e9314adb8199 to f06b0edc31a30c27015b01b6ebc5afb056463ec2 all occur in source manifest.md:3."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: reckon/crew/runs.py:166-221 moves six fields to dispatch-detail.json and resolves both slim and old pointers, while tests/test_the_first_six_fields_leave_the_live_pointer.py:176 measures a 12193-byte CLI pointer.\nVERDICT done_when: source manifest.md:19-21 and its baseline-suite.log and after-suite-landed.log record 14 and 19 passes with zero failures, and final-negative-control.log fails the old-shape test; no recorded ruff check or format-check result covers the declared lint measure.\nVERDICT write_paths: source manifest.md:3 declares 17 paths and the four-commit diff from 34b2cb6c9eb5af5505cdc26819b9e9314adb8199 to f06b0edc31a30c27015b01b6ebc5afb056463ec2 changes 16, all declared.\nVERDICT manifest: source manifest.md:15-22 names the final head gate, baseline gate, negative control, pointer size, and zero added failures, but omits the required ruff receipts.\nVERDICT diff: commits b8217ec4861f79db67522ac9d2d9c3ba735477c9, 991a8c68f1fa3c3a2ff82526454509c0495c0b6b, c8f64d4d425dea037022bf2c390fe121baa1ed66, and f06b0edc31a30c27015b01b6ebc5afb056463ec2 add the sidecar accessor, migrate readers and tests, correct recorded-path lookup, and update the evidence fragment.\nCALL_SITES: reckon/crew/dispatch.py:3561, reckon/crew/dispatch_launch.py:267, reckon/crew/dispatch_sessions.py:934, reckon/crew/promotion.py:303, reckon/crew/queue_admission.py:372, reckon/crew/recovery_stream.py:534, reckon/crew/recovery_watch.py:1367, reckon/run_record.py:187, reckon/serve.py:658\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:175-221 removes all six fields from new pointer writes and reads the recorded sidecar path with inline fallback.\nSCORE evidence: 13\nJUSTIFICATION evidence: source manifest.md:19-21 cites readable 14-pass base, 19-pass head, 12193-byte pointer, and red fallback logs, but its tests and test_logs fields at lines 15-16 contain no ruff gate required by done_when.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the 16 paths in the diff from 34b2cb6c9eb5af5505cdc26819b9e9314adb8199 to f06b0edc31a30c27015b01b6ebc5afb056463ec2 all occur in source manifest.md:3.\nSCORE durability: 12\nJUSTIFICATION durability: tests/test_the_first_six_fields_leave_the_live_pointer.py:265-268 has a proven red old-pointer control, but lines 190-192 and 250-253 accept corrupted sidecar field values because presence and equality to the same file are the only checks for several fields.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/runs.py:166-221 follows the module's atomic JSON write and compatibility-accessor style and adds no plan-labelled source name.\nSCORE reuse: 20\nJUSTIFICATION reuse: a capability search of base reckon/crew found pointer JSON writes in reckon/crew/runs.py and no existing six-field detail accessor, so the addition at reckon/crew/runs.py:152-221 extends that owner.\nFINDING tests/test_the_first_six_fields_leave_the_live_pointer.py:251 blocking: the expected value comes from the same detail file read by dispatch_field, so replacing a stored admit_request, competence, or peer_scopes value with null leaves this equality and the presence checks green; assert independent expected payload values for all six fields.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T162323087195-the-first-six-fields-leave-the-live-pointer/manifest.md:15 blocking: done_when requires ruff check and ruff format --check to add no finding, but the manifest names only pytest commands and no lint or format receipt, so that measure is unproved.\nFINDING tests/test_shadow_pick_off_critical_path.py:209 non-blocking: the ledger selection is compared with selection read through the same accessor, so a wrong picker value shared by both sides stays green; folded into node the-first-six-fields-leave-the-live-pointer for an independent expected value.\nFINDING tests/test_the_first_six_fields_leave_the_live_pointer.py:225 non-blocking: the AST assertion detects only a variable literally named pointer, so reintroducing record.get(\"argv\") at a live-reader call site would pass; folded into node the-first-six-fields-leave-the-live-pointer for alias-aware coverage.\nASSERTION tests/test_a_queued_launch_ignores_the_coordinator_backlog.py:208-211: the waiver checks fail if request, source, or waived-run id changes; line 244 fails if an absent waiver becomes present.\nASSERTION tests/test_a_redispatch_keeps_the_queued_identity.py:163: the argv check fails if redispatch loses the independent LAUNCHED_ARGV constant.\nASSERTION tests/test_shadow_pick_off_critical_path.py:150: the backend check fails if the explicit local pick is lost; lines 201 and 207 fail if detached selection lacks an allowed action or latency; line 209 moves with the accessor value and is a finding.\nASSERTION tests/test_the_protected_set_is_declared.py:200-204: the sealed and kept argv windows fail if the declared protection flags change.\nASSERTION tests/test_the_first_six_fields_leave_the_live_pointer.py:180,185-192: the size check fails above 12287 bytes, the path and file checks fail if the sidecar is absent or outside its run, and field absence/presence checks fail if any moved key stays inline or is omitted from the sidecar; they do not verify the stored values.\nASSERTION tests/test_the_first_six_fields_leave_the_live_pointer.py:225: the AST assertion fails for a direct read of a moved key from a variable literally named pointer using get, pop, setdefault, or subscript, and misses aliases.\nASSERTION tests/test_the_first_six_fields_leave_the_live_pointer.py:240,251,263,265-268: the new-shape key check fails without a sidecar path, line 251 fails if the accessor ignores the recorded path but moves with corrupted stored values, the old-shape fixture check fails if a sidecar unexpectedly exists, and the static inline strings fail without fallback as the negative-control log demonstrates.\nASSERTION tests/test_the_first_six_fields_leave_the_live_pointer.py:298,303-304: promotion checks fail if the pointer retains the picker inline or if the promoted row omits or changes the static picker and override values.\nASSERTION tests/test_the_first_six_fields_leave_the_live_pointer.py:333-365: the pointer absence and static picker, argv, settings, terminal-command, and observed-command checks fail if the tested runtime readers ignore the sidecar; the raised exception proves the observation path executes.",
+  "review_run_id": "r-20261107T235758899693-review-of-the-first-six-fields-leave-the-live-pointer-f06b0edc31a3",
+  "reviewed_base_sha": "34b2cb6c9eb5af5505cdc26819b9e9314adb8199",
+  "reviewed_head_sha": "f06b0edc31a30c27015b01b6ebc5afb056463ec2",
+  "reviewed_run_id": "r-20261107T162323087195-the-first-six-fields-leave-the-live-pointer",
+  "scores": {
+    "durability": 12,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T00:57:35.187107+00:00",
+  "total": 101
+}
