@@ -15,6 +15,7 @@ import pytest
 
 import reckon.crew.dispatch_watch as dispatch_watch_module
 from reckon.crew import runs
+from reckon.crew.recovery_watch import UNWATCH_SEAT_WAIT_SECONDS
 
 PROJECT = "arm-lock-sample"
 SESSION = "lock-reader"
@@ -56,13 +57,34 @@ except m.CrewError as exc:
 """
 
 
-def _wait(predicate, *, seconds=15):
+# The stop child starts a fresh interpreter and imports reckon.crew.recovery
+# before it can signal the producer, and it gets only what remains of this bound
+# after arming's own start. That start has been measured at 1.75-4.01 s, and on
+# a loaded node a spike has taken it past 12 s, so the bound carries margin well
+# beyond the measured cost: a bound shorter than the start leaves the child no
+# room to signal, and arming then ends by killing it without ever delivering the
+# stop this test claims to observe.
+STOP_CHILD_ARM_BOUND_SECONDS = 40
+# Arming may spend its whole bound blocked on the stop child, so the pipe read
+# must outlast the bound rather than race it.
+ARM_OUTPUT_SECONDS = STOP_CHILD_ARM_BOUND_SECONDS * 2
+# Arming returns only after the child has had its chance to signal, so this
+# covers the producer's own write of the marker rather than the signal itself.
+STOP_SIGNAL_GRACE_SECONDS = 5
+
+
+def _wait(
+    predicate,
+    *,
+    seconds=15,
+    message="temporary process did not reach its expected state",
+):
     deadline = time.monotonic() + seconds
     while time.monotonic() < deadline:
         if predicate():
             return
         time.sleep(0.02)
-    raise AssertionError("temporary process did not reach its expected state")
+    raise AssertionError(message)
 
 
 def _probe(lock):
@@ -191,18 +213,30 @@ def test_stubborn_orphan_cannot_hold_arm_lock_past_bound(processes):
     home, spawn, _ = processes
     producer = spawn(PRODUCER, extra={"STUBBORN_PRODUCER": "yes"})
     _wait((home / "ready").exists)
-    arm = spawn(ARM, extra={"ARM_BOUND": "2"})
+    arm = spawn(ARM, extra={"ARM_BOUND": str(STOP_CHILD_ARM_BOUND_SECONDS)})
     (home / "go").touch()
     try:
-        stdout, stderr = arm.communicate(timeout=8)
+        stdout, stderr = arm.communicate(timeout=ARM_OUTPUT_SECONDS)
     except subprocess.TimeoutExpired:
         lock = runs.watch_stream_path(PROJECT).with_suffix(".arm.lock")
         pytest.fail(
             f"arming exceeded its bound; pid={arm.pid} fdinfo={_fds(arm.pid, lock)}"
         )
     assert arm.returncode == 3, (stdout, stderr)
-    assert "release" in stdout and "2s" in stdout
-    assert (home / "term-seen").exists(), "the stop request must reach the producer"
+    assert "release" in stdout
+    # Only two bounds can end the attempt, and the message must name one of
+    # them: unwatch gives up at its own seat wait once the stop child reaches
+    # it, or arming's bound expires first when the child cannot start in time.
+    # Naming any other duration would not say which bound it gave up at.
+    assert (
+        f"within {STOP_CHILD_ARM_BOUND_SECONDS:g}s; arming stopped" in stdout
+        or f"beyond {UNWATCH_SEAT_WAIT_SECONDS:g}s" in stdout
+    ), stdout
+    _wait(
+        (home / "term-seen").exists,
+        seconds=STOP_SIGNAL_GRACE_SECONDS,
+        message="the stop request must reach the producer",
+    )
     assert producer.poll() is None, "the test producer must ignore the stop signal"
     assert _probe(runs.watch_stream_path(PROJECT).with_suffix(".arm.lock")) == 0
 
