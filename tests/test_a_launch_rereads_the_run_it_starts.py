@@ -265,20 +265,26 @@ def test_a_request_whose_attempt_already_resulted_is_not_launched(
     crew_checkout: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _, resolve = _config_for()
-    manifest = _delivered_manifest(RUN_ID)
+    manifest = runs.run_dir(RUN_ID) / "manifest.md"
     runs.queue_dispatch(
         _queued_request(crew_checkout, run_id=RUN_ID, manifest_path=str(manifest))
     )
-    before = manifest.read_text(encoding="utf-8")
+    delivered: list[str] = []
     recorded: list = []
-    fired = _after_the_pass_reads_the_queue(monkeypatch, lambda: None)
+
+    def deliver() -> None:
+        _delivered_manifest(RUN_ID)
+        delivered.append(manifest.read_text(encoding="utf-8"))
+
+    fired = _after_the_pass_reads_the_queue(monkeypatch, deliver)
 
     result = queue_admission.admit_once(
         config_for=resolve, launcher=_launcher(recorded, manifest=manifest)
     )
 
     assert fired, "the change was never written after the pass read the queue"
-    assert manifest.read_text(encoding="utf-8") == before, (
+    assert delivered, "the attempt's result was never written after the read"
+    assert manifest.read_text(encoding="utf-8") == delivered[0], (
         f"a launch overwrote the delivered manifest; launcher ran {recorded!r}"
     )
     assert recorded == []
