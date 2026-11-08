@@ -412,29 +412,40 @@ def test_without_the_writer_hook_the_same_read_opens_one_record(
     )
 
 
-def test_the_persisted_cache_machinery_is_shared_rather_than_restated() -> None:
-    """One stamp, one path and one document read serve every node-local cache.
+def test_the_persisted_cache_machinery_is_shared_rather_than_restated(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Both indexes take their stamp and their path from the one implementation.
 
-    Three modules keep a disposable index in the node-local cache. Each of the
-    four pieces — the stamp of the sources whose content fixes what an entry
-    means, the path, the document read and the atomic write — is the same
-    question in all three, so a copy per module is three places for one rule to
-    drift, and the failure is silent: a document written by one copy is trusted
-    by another that spells the rule differently.
+    An assertion that compares one module's figure with the same module's
+    figure cannot see a restatement: a copy that spells the rule identically
+    agrees with its original for as long as nobody edits either. So the shared
+    function is replaced with a sentinel only it could return, and each index's
+    own stamp and path are then asked to follow it. A module carrying its own
+    copy of the digest or the path computation keeps answering from its copy and
+    fails here, which is the drift this holds against.
     """
-    assert findings_module._index_code_stamp() == review_records.cache_code_stamp(
-        findings_module._index_sources()
+    monkeypatch.setattr(review_records, "cache_code_stamp", lambda _sources: "sentinel")
+    review_records.forget_cache_code_stamps()
+    assert findings_module._index_code_stamp() == "sentinel"
+    assert review_records._index_code_stamp() == "sentinel"
+
+    cache_dir = tmp_path / "cache"
+    monkeypatch.setattr(
+        review_records,
+        "cache_document_path",
+        lambda project, kind, key: cache_dir / f"{project}-{kind}-{len(key)}.json",
     )
-    assert findings_module._index_cache_path(
-        ("proj", "store", "root")
-    ) == review_records.cache_document_path("proj", "findings-index", "store\x00root")
-    store = Path("/nonexistent-store")
-    assert review_records._index_cache_path(
-        store
-    ) == review_records.cache_document_path(
-        store.name, "store-index", str(store.resolve())
+    assert findings_module._index_cache_path(("proj", "store", "root")) == (
+        cache_dir / "proj-findings-index-10.json"
     )
+    assert review_records._index_cache_path(Path("/nonexistent-store")) == (
+        cache_dir / "nonexistent-store-store-index-18.json"
+    )
+
     # The writer hook is the one implementation, not a per-module wrapper around
     # it: a wrapper is where a module quietly stops refreshing the index.
     assert not hasattr(review_records, "_note_findings_index")
     assert not hasattr(plan_review, "_note_findings_index")
+    # The sentinel must not outlive the case: the next process reads a real one.
+    review_records.forget_cache_code_stamps()

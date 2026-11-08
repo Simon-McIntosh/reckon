@@ -1041,8 +1041,15 @@ def cache_code_stamp(sources: Iterable[Path]) -> str:
 
 
 def forget_cache_code_stamps() -> None:
-    """Drop the stamps this process holds, as a newly started process has none."""
+    """Drop the stamps this process holds, as a newly started process has none.
+
+    Both memos go: the shared one every cache files under, and this store's own
+    held stamp, which is consulted before the sources are read. Clearing only
+    the first would leave a caller that pinned the store's stamp — or that
+    edited a source under test — still answering with the value it held.
+    """
     _CACHE_CODE_STAMPS.clear()
+    _INDEX_CODE_STAMP.clear()
 
 
 def cache_document_path(project: str, kind: str, key: str) -> Path:
