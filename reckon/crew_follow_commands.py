@@ -2811,6 +2811,35 @@ def crew_host(
     )
 
 
+def _follower_reloader_for(
+    project: str,
+    registration,
+    *,
+    deadline: float | None = None,
+    owner: tuple[int, str] | None = None,
+    color: bool = False,
+):
+    """The reloader a follower polls between its rows, whichever it reads.
+
+    Both deliveries need one, and for one reason: a follower renders its own
+    rows. A stream follower composes them from the producer's records, and a
+    station subscriber composes them from the station's rows, so a subscriber
+    that never reloads keeps the wording of the image it was armed with long
+    after the source changed it.
+
+    The caller hands this to the per-wait hook and never to a signal timer: a
+    replacement is well defined only at a record boundary, where no row is
+    half-drawn and no reader position is mid-advance.
+    """
+    return _FollowerReloader(
+        project,
+        registration,
+        deadline=deadline,
+        owner=owner,
+        color=color,
+    )
+
+
 @crew.command(name="follow")
 @click.option("--project", required=True, help="Project whose watch stream to follow.")
 @click.option(
@@ -3025,21 +3054,19 @@ def crew_follow(
         }
 
     def stream_events(registration):
-        # A subscriber reads the station's rows rather than a producer's stream
-        # file, so it has nothing to reload onto: the station is the process
-        # that carries new code. Building a reloader here would materialise its
-        # tree under the crew home on the delivery path, which is exactly what
-        # the subscriber exists to avoid.
-        reloader = (
-            None
-            if subscriber is not None
-            else _FollowerReloader(
-                project,
-                registration,
-                deadline=deadline_epoch,
-                owner=owner,
-                color=getattr(grid, "color", False),
-            )
+        # A subscriber renders every row with its own code: the station commits
+        # rows, and ``station_subscriber`` composes the sentences this process
+        # prints. A long-lived subscriber therefore keeps whatever wording it
+        # started with, including a remedy the source has since removed, so it
+        # reloads exactly as a stream follower does. The check reaches it
+        # through this per-wait hook at a row boundary and never through a
+        # signal timer, which would re-execute away from one.
+        reloader = _follower_reloader_for(
+            project,
+            registration,
+            deadline=deadline_epoch,
+            owner=owner,
+            color=getattr(grid, "color", False),
         )
 
         def poll(checkpoint) -> None:
