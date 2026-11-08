@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T22:51:30.349Z",
+  "dispatched_at": "2026-11-08T22:43:27Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-queued-request-is-checked-when-queued.html:71",
+      "id": "anchors_resolve-1",
+      "reason": "a node grepping for the symbol the plan names finds nothing and must guess that `_PlanRead` is meant before it can start.",
+      "text": "\u00a79 cites `BatchPlanRead.write_paths`, but no `BatchPlanRead` exists anywhere in the repository; the class is `_PlanRead` (reckon/crew/dispatch_batch.py:242), and its `write_paths` at lines 290\u2013312 is the method the citation actually resolves to",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queued-request-is-checked-when-queued.html:71",
+      "id": "reasoning-1",
+      "reason": "a node implementing the refusal at the obvious queue-time caller cannot produce the sentence the done-when requires, so it would either drop half the deliverable or re-read the plan for it.",
+      "text": "the deliverable requires the refusal to name \"the sentence it came from\", but the only caller `_build_entry` (reckon/crew/dispatch_batch.py:393) receives the returned path list and never the sentence, which exists only as a local inside `write_paths`; the plan names neither that caller nor that the check must therefore live inside the function",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queued-request-is-checked-when-queued.html:13",
+      "id": "reasoning-2",
+      "reason": "the plan understates its own cost by the whole of its newest section, and a coordinator sizing the sprint from that figure plans work that is not in it.",
+      "text": "`plan-effort-hours` is 6.25 while the nine section records sum to 7.0 (0.25 + 0.75 + 1.0 + 1.0 + 1.0 + 0.5 + 1.0 + 0.75 + 0.75), so adding \u00a79 at 0.75 left the declaration exactly one section short",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "",
+  "plan_fingerprint": "aad6df839946cecba0f116468c9d5d1952746e3aac0733697b09b9687e0a1851",
+  "plan_slug": "a-queued-request-is-checked-when-queued",
+  "plan_version": 32,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T224228576814-plan-review-of-a-queued-request-is-checked-when-queued",
+  "reviewed_blob_sha": "4d9582a0cee149414d0198bd567ef454f51c34d2",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a79's other anchors resolve (`_PATH_TOKEN` is at reckon/crew/dispatch_batch.py:64 and `write_paths` at :290\u2013312 as cited), but the class it names, `BatchPlanRead`, does not exist.",
+    "done_when": "pass \u2014 \u00a79's first case fails today (the derived path loses its leading slash) and its third case queues a path that resolves nowhere today, and both negative controls are declared as concrete mutations of the code the node writes (`_PATH_TOKEN` unpatched; the queue-time check dropped).",
+    "evidence_paths": "pass \u2014 \u00a79's gate logs go \"under the run directory\", a durable path in the run's own directory rather than a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 \u00a79's prose introduces no plan label, stage name, ticket number or version tag as a symbol; plan `filter-recommendation-claims` \u00a710 appears only as the evidence's own account, and the code it names (`_PATH_TOKEN`, `write_paths`) carries no tracker reference.",
+    "reasoning": "a finding \u2014 the root cause is corroborated against the code and the cited run's own record, and each mechanism produces its done-when, but the deliverable's queue-time refusal names no caller while the sentence it must quote exists only inside `write_paths`.",
+    "single_goal": "pass \u2014 \u00a79 carries one deliverable on one function's contract, that a derived write path faithfully represents what the section names; the queue-time refusal is that same contract applied to a path the derivation cannot resolve, in one file and one test with one verdict.",
+    "wiring": "pass \u2014 \u00a79 needs no upstream wait, and none is missing: the two sections it shares `reckon/crew/dispatch_batch.py` with (\u00a76's manifest-path default at line 581, \u00a77's context-fit check at line 589) are already landed in the tree, so \u00a79 builds on the file as it stands."
+  },
+  "section_digests": {
+    "_document": "dc0778b70305290eb82b220c54c30c010d72c866444928b7a9c153adb03d6138",
+    "s1": "196da1e620e2e482d27bdd207b57d91dc82c799811a9f88189e2350ff4eeb51a",
+    "s2": "f0bb78f495e184d08f264ee0c8670552bf2417dc09e1fccec557d64974b999ef",
+    "s3": "f288d709dea574f288a4293a730c4c2c68204ee12bcbcc8ecb597365aea1936f",
+    "s4": "214c26ee307b26a9189e695057c758aa5f11833093fa7379f62bdba78c540705",
+    "s5": "14904131688ef295e846a5981db7f3012be401c872b746a8e4d5525277b7f620",
+    "s6": "9fd7213f2d6f0bab3f756ca0963129a03ad23ecf38500889a8fd09f89dec519f",
+    "s7": "9cdc0ebe3f5b4c4e29eacad9d848fe245df8e9c203d99007e35b473f5e076eab",
+    "s8": "0ae33ba25630ebb0909eb1a884f0b117344496b64ed6bd0a7efa1604e189fd80",
+    "s9": "e63657536e39eaf9d7ece6da6f00112e09afc4c05edcd99568454aae4b2aaed6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T23:01:31.482561+00:00",
+  "total": null
+}
