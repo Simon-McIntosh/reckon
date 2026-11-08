@@ -49,7 +49,49 @@
   "plan_slug": "a-run-has-one-live-worker",
   "plan_version": 80,
   "project": "reckon",
-  "responses": {},
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "8fb64e22c1a82fa3a13c66098404c71e29dc14df",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a713 now counts an attempt in flight only while its attempt claim is held, as _claim_may_be_reclaimed already decides, so a launcher killed inside the window frees the run after LAUNCH_WINDOW_SECONDS; a case covers it.",
+      "reason": "",
+      "when": "2026-11-08T20:31:28.018536+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "8fb64e22c1a82fa3a13c66098404c71e29dc14df",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a713 now makes every launch of an existing run id, dispatch included, reserve its attempt through claim_next_attempt, so two doors cannot prepare one attempt; the spawn guard's exemption is for the attempt its own launch claimed, and a case has two doors racing for one attempt.",
+      "reason": "",
+      "when": "2026-11-08T20:31:33.331894+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "8fb64e22c1a82fa3a13c66098404c71e29dc14df",
+      "commit_basis": "edit",
+      "note": "\u00a713 now makes every launch of an existing run id, dispatch included, reserve its attempt through claim_next_attempt, so two doors cannot prepare one attempt; the spawn guard's exemption is for the attempt its own launch claimed, and a case has two doors racing for one attempt.",
+      "reason": "",
+      "when": "2026-11-08T20:31:33.331894+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "8fb64e22c1a82fa3a13c66098404c71e29dc14df",
+      "commit_basis": "edit",
+      "note": "\u00a713 now counts an attempt in flight only while its attempt claim is held, as _claim_may_be_reclaimed already decides, so a launcher killed inside the window frees the run after LAUNCH_WINDOW_SECONDS; a case covers it.",
+      "reason": "",
+      "when": "2026-11-08T20:31:28.018536+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-run-has-one-live-worker/r-20261108T201024729688-plan-review-of-a-run-has-one-live-worker.json",
   "review_run_id": "r-20261108T201024729688-plan-review-of-a-run-has-one-live-worker",
   "reviewed_blob_sha": "f79bf9b19fbc99d658b56b9cac3a5c1d4558c255",
   "rubric": "content",
