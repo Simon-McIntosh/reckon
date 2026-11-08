@@ -13,28 +13,34 @@
   <p id="a-follower-runs-current-code-proof"><code>tests/test_a_follower_runs_current_code.py</code>
   enters <code>crew_follow</code>'s subscriber branch itself, with a stubbed subscriber and a stubbed
   per-wait loop, so the reloader under test is the one that delivery builds and polls. It shows the
-  four required cases: a moved-and-trusted checkout re-executes (one recorded <code>os.execve</code>);
+  four required cases, and two more: a moved-and-trusted checkout re-executes (one recorded <code>os.execve</code>);
   a matching stamp and an untrusted checkout do not; a follower running from a reload tree reads the
   checkout its carried environment names rather than the tree it imports from, and materialises the
   replacement from that checkout; and over 100 sweeps spanning three <code>checked_at</code>
   intervals with a matching stamp the sweeps read the checkout's identity exactly 3 times (the delivery
-  reads it once more as it arms its image).</p>
+  reads it once more as it arms its image). The claim hand-over is observed, not merely
+  not-raised: against a stub claim the moved-checkout case records one
+  <code>prepare_reexec</code> before the exec and one <code>cancel_reexec</code> when the replacement is
+  refused, and a session-less pane takes no claim and so calls neither while still reloading.</p>
 
   <table id="a-follower-runs-current-code-arms">
     <thead><tr><th>arm</th><th>command</th><th>result</th></tr></thead>
     <tbody>
       <tr><td>base 1b3663ce</td><td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_follower_freshness.py</code></td><td>10 passed, EXIT=0</td></tr>
-      <tr><td>head fc55b069</td><td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_follower_runs_current_code.py tests/test_follower_freshness.py</code></td><td>15 passed, EXIT=0</td></tr>
-      <tr><td>new file at base</td><td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_follower_runs_current_code.py</code>, against the unmodified base tree</td><td>4 failed, EXIT=1</td></tr>
+      <tr><td>head 0f274583</td><td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_follower_runs_current_code.py tests/test_follower_freshness.py</code></td><td>16 passed, EXIT=0</td></tr>
+      <tr><td>new file at base</td><td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_follower_runs_current_code.py</code>, against the unmodified base tree</td><td>5 failed, EXIT=1</td></tr>
     </tbody>
   </table>
 
-  <p id="a-follower-runs-current-code-controls">Two negative controls, each applied and logged under the
-  run directory's <code>logs/</code>. Restoring <code>reloader = None</code> at the subscriber delivery
-  site makes four cases fail including the stale-stamp case, which records no exec
-  (<code>negative-control-1.log</code>: 4 failed, EXIT=1). Dropping the trust check in
+  <p id="a-follower-runs-current-code-controls">Three negative controls, each applied at the head above
+  and logged under the run directory's <code>logs/</code>. Restoring <code>reloader = None</code> at the
+  subscriber delivery site makes five cases fail including the stale-stamp case, which records no exec
+  (<code>negative-control-1.log</code>: 5 failed, EXIT=1). Dropping the trust check in
   <code>reckon/crew/follower_reload.py</code>'s poll makes the untrusted case re-execute
-  (<code>negative-control-2.log</code>: 1 failed, EXIT=1, and only that case fails).</p>
+  (<code>negative-control-2.log</code>: 1 failed, EXIT=1, and only that case fails). Replacing
+  <code>_StationRegistration.prepare_reexec</code>'s body with <code>pass</code> fails the moved-checkout
+  case, so the hand-over the tests count is the one the wrapper performs
+  (<code>negative-control-3.log</code>: 1 failed, EXIT=1).</p>
 
   <p id="a-follower-runs-current-code-population">The population of test files importing
   <code>reckon.crew_follow_commands</code> or <code>reckon.crew.follower_reload</code> was measured by the
