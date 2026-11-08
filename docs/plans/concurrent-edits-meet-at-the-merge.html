@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;concurrent-edits-meet-at-the-merge#s2&quot;,&quot;concurrent-edits-meet-at-the-merge#s3&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
   <title>Concurrent Edits Meet At The Merge | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="3">
 <meta name="plan-modified" content="2026-11-08">
 </head>
 <body>
@@ -92,14 +92,18 @@
     <code>reckon.crew.queue_edit</code> add no failure against base, run one arm at a time with at
     most <code>-n 4</code>; a test that asserts the old exclusive default for a shared-root path is
     updated to the new contract and named in the manifest. Ruff adds no findings on the staged
-    paths. Write paths: <code>reckon/crew/runs.py</code>, the five calling modules where the call
-    site must change, <code>docs/state/reckon/shared-write-paths.json</code>, and the new test.</p>
+    paths. Write paths: <code>reckon/crew/runs.py</code>, the four modules that call it (<code>dispatch_claims.py</code>, <code>promotion_scope.py</code>,
+    <code>queue_admission.py</code> and <code>queue_edit.py</code>; <code>dispatch.py</code> and <code>promotion.py</code> only
+    re-export the symbol), <code>docs/state/reckon/shared-write-paths.json</code>, and the new test.</p>
 
     <h2 id="s3">§3 — A landing that conflicts sends its run back for a merge repair</h2>
     <section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
     <p><strong>Deliverable.</strong> Once two runs may edit one file, the second to land can meet a
-    real conflict. Today <code>crew merge</code> refuses such a head and nothing follows, so the run
-    sits delivered and unlanded until a coordinator notices. After this section, a landing refused
+    real conflict. Today <code>crew merge</code> refuses such a head; the lander
+    (<code>queue_landing._merge_conflicts</code>, near <code>reckon/crew/queue_landing.py:1554</code>) records an
+    <code>admission_landing</code> refusal naming the conflicted paths and appends an obligation row, but
+    no repair round opens and no outcome names the conflict, so the run sits delivered and unlanded
+    until a coordinator acts. After this section, a landing refused
     because <code>refusing_conflicts</code> named paths, whether by <code>crew complete --land</code>
     or by the admit service's lander, records a <code>merge-conflict</code> outcome on the run
     naming the conflicted paths and the main revision it met, and opens a repair round through
@@ -137,10 +141,17 @@
     after a merge repair, or is still open.</p>
     <p><strong>Done when</strong> the evidence fragment
     <code>docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html</code>
-    records both windows' counts, with the commands that produced them logged under the run
-    directory, and shows <code>held-on-claim</code> verdicts on shared-root file paths at zero in
-    the window after. Every concurrent pair is accounted for, and any pair left with conflict
+    records both windows' counts, with the commands that produced them logged in the measuring
+    run's own directory, whose path the fragment cites. The after window must hold at least five
+    pairs of runs with concurrent claims on one shared-root file, and shows
+    <code>held-on-claim</code> verdicts on shared-root file paths at zero. Negative control: the
+    before window shows such verdicts above zero. A window with fewer than five concurrent pairs is
+    reported as unmeasured and re-taken later, never as a pass. Every concurrent pair is accounted for, and any pair left with conflict
     markers or an unlanded head with no repair round fails the measure.</p>
+
+    <h2 id="s5">§5 — A fragments-directory claim never blocks a sibling node</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> On 8 November run <code>r-20261108T052434073237-oversized-node-reserved-lane-reproduced</code> claimed the whole <code>docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop</code> directory, so every other node of that plan was refused at dispatch, and admission-loop §32 had to be dispatched on its brief alone. §2 keeps directory claims exclusive, so this blocker survives §2.</p><p><strong>Deliverable.</strong> A claim on a plan's evidence-fragments directory is narrowed to the fragment files a node names or writes, and dispatch's default fragment path for a node is its own file, <code>docs/evidence/fragments/&lt;plan&gt;/&lt;node&gt;.html</code>. Two nodes of one plan never conflict on the fragments directory; two claims on the same fragment file still do.</p><p><strong>Done when</strong> a new <code>tests/test_a_fragment_claim_never_blocks_a_sibling.py</code> shows with a temporary repository and crew home: a live run whose claim names a plan's fragments directory does not refuse a second node of that plan whose fragment is a different file; two nodes naming the same fragment file are refused. Negative control: at the base revision the first case is refused. The test files importing <code>reckon.crew.dispatch_claims</code> or <code>reckon.crew.runs</code> add no failure against base, one arm at a time with at most <code>-n 4</code>; ruff adds no findings on the staged paths.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
