@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T21:08:58.603Z",
+  "dispatched_at": "2026-11-08T21:00:50Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-landing-never-waits-on-a-shared-index.html:85",
+      "id": "done_when-1",
+      "reason": "the negative case must assert the notice's absence, or a detector that fires unconditionally passes the branch that exists to prove it does not.",
+      "text": "case two (\"with an index matching HEAD, no duty appears\") uses \"duty\", while the deliverable says the view raises \"a notice, not a blocking duty\" and cases one and three use \"notice\"; an implementation that emitted the notice on every clean index would still satisfy \"no duty appears\", so the one case meant to show the detector stays quiet does not test the artifact the section adds",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-never-waits-on-a-shared-index.html:83",
+      "id": "reasoning-1",
+      "reason": "a coordinator closing the section against its heading will believe a stale index can no longer be produced and may retire the detector's duty as redundant, when nothing in the section changes what causes the staleness.",
+      "text": "the heading \"A landing leaves the checkout's index at the commit it made\" asserts an outcome of landings, but the section explicitly does not chase the writer, never changes the index itself, and delivers only a notice, so the heading promises a cured invariant where the deliverable is a detector; \u00a75's heading carries its delivered property and this sibling's does not",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-never-waits-on-a-shared-index.html:85",
+      "id": "anchors_resolve-1",
+      "reason": "the second call also runs on a worktree with a scratch `GIT_INDEX_FILE`, so it neither touches the main checkout's index nor weakens the exclusion; only the count is wrong.",
+      "text": "the \"Why the writer is not chased\" paragraph calls `routing.py` near line 1599 \"the one wholesale `git read-tree` in reckon\", but `reckon/crew/routing.py:1541` runs a second `git read-tree` in the same function, so a reader grepping for the cited call finds two and cannot tell which the argument excluded",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-landing-never-waits-on-a-shared-index.html:85",
+      "id": "reasoning-2",
+      "reason": "the section declines to name any writer and its deliverable is the detector, which is the same work whichever candidate wrote the index; the slip costs the reader confidence in the exclusion, not a node a different path.",
+      "text": "the paragraph headed \"The candidates do not fit\" lists `land_merge` with the fact that it \"fast-forwards with `git merge --ff-only` \u2026 which writes the index\", a fact that makes it a live candidate rather than an excluded one, and the same paragraph's own evidence (a fast-forward at 19:13:24 that updated the index) is what it cites",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "",
+  "plan_fingerprint": "6ec9f4ba0ad2dfa1464e55e1de93c1703c2a050999b869f37b1b71c93a74210b",
+  "plan_slug": "a-landing-never-waits-on-a-shared-index",
+  "plan_version": 18,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T205950751815-plan-review-of-a-landing-never-waits-on-a-shared-index",
+  "reviewed_blob_sha": "864deeafed9e670222922082f5a141638d9d5bae",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the cited commits, the fragment path, the merge call, the commit/restore line ranges and the read-tree site all resolve, but the claim that reckon has \"the one wholesale `git read-tree`\" does not: `reckon/crew/routing.py:1541` is a second one.",
+    "done_when": "a finding \u2014 the clean-index case asserts \"no duty appears\" while the deliverable introduces a notice, not a duty, so the negative case does not falsify the artifact the section adds.",
+    "evidence_paths": "pass \u2014 the gate logs go under the run directory and the once-per-lag log under the crew home, both durable paths, and the test names a temporary crew home rather than a scratchpad.",
+    "naming": "pass \u2014 the test filename names the mechanism, and no plan label, stage name or ticket number enters a symbol or comment the section asks for.",
+    "reasoning": "a finding \u2014 the section heading states that a landing leaves the checkout's index at the commit it made, but the deliverable only detects a stale index and never changes what a landing does.",
+    "single_goal": "pass \u2014 one deliverable, the stale-index notice; the once-per-lag log line is dedup for that same notice, not a second closeable item.",
+    "wiring": "pass \u2014 s6 declares no dependency it needs, the open followup f-alnw-003 names \u00a76 and its body matches what s6 asks for, and no relationship points elsewhere."
+  },
+  "section_digests": {
+    "_document": "cc5ca7856f4fcf61b4d842ceea96ce6a3114449a77e550ded22924ad6e2a1bbb",
+    "s1": "704da057b1e86cedb79ae983e9f7504afd9303eac87bb25b9d4aa38717913746",
+    "s2": "a72539aa82cfb965c54c35d223b2606608ed39bc8269f82d2e7427267b4636af",
+    "s3": "58b92de94f7a15cbe2a66cb37ebc307ca1d8306003ca55ca38ac6fd12e6266c8",
+    "s4": "f9e5f60efd976441ef227da76beb3f9309fccd0d2f99eee0fc98924588b241aa",
+    "s5": "41308d89a4ece7829b6313c98047025055c9c8dc56e754dc8ccf0501af52b1b3",
+    "s6": "1ee5ff40351870773277e4c4356db3c1bdfa9ac78ce1e9d27a2aeb3f86253fb8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T21:25:28.228727+00:00",
+  "total": null
+}
