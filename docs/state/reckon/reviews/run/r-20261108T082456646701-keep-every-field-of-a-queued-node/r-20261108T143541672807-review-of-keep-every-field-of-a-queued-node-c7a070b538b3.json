@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T14:50:47.470Z",
+  "dispatched_at": "2026-11-08T14:39:34Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": 347,
+      "severity": "non-blocking",
+      "text": "validate_node refuses a node that names no manifest path, and that refusal is what fails 14 tests across tests/test_a_named_anchor_is_not_preloaded.py and tests/test_queue_dag_waits.py at the dispatch base and identically at the head (logs/baseline-callers.log vs logs/callers-of-the-rebuild.log, 14 FAILED ids each, delta 0). Section 36's done_when states those two files pass at the head, and the reviewed manifest records outside_scope: none, so a reader is told a condition held that does not; reproduced on current main too, so it is pre-existing and outside this node's write scope, but the coordinator must not write the done_when back as met."
+    },
+    {
+      "file": "reckon/crew/node.py",
+      "line": 748,
+      "severity": "non-blocking",
+      "text": "_json_ready's docstring promises 'The collections are copied rather than shared so a reader of the serialised node cannot mutate the node it came from', but a list is copied shallowly, so the dicts inside admission_findings - a field this change newly serialises - are shared with the node; mutating as_dict()['admission_findings'][0]['detail'] on a real TaskNode changed the node's own list, so the stated guarantee is false for the one field that carries nested data."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": 179,
+      "severity": "non-blocking",
+      "text": "_stored_field_value copies a stored list shallowly, so the rebuilt node's admission_findings entries alias the pointer dict they were read from; the same defect as node.py:748 in the reverse direction, and no added assertion fails if either copy is removed."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a queued node launch with every field it was dispatched with; reckon/crew/queue_admission.py:197 rebuilds from fields(TaskNode) and reckon/crew/node.py:832 serialises every declared field, and the replay at the head reports LOST FIELDS: [] where the dispatch base lost images, inputs, compares_with and admission_findings.\nVERDICT done_when: section 36's done_when names the new test plus two caller files passing at the head; the new test's four cases pass at c7a070b538 (logs/after-suite.log, re-run here at the head, 4 passed) and two fail at the base arm, but the caller clause is unmet - logs/callers-of-the-rebuild.log shows 14 failures at the head, the same ids as logs/baseline-callers.log.\nVERDICT write_paths: the dispatch declared reckon/crew/queue_admission.py, reckon/crew/node.py and tests/test_a_queued_node_keeps_every_field.py; the diff touches exactly those plus docs/evidence/fragments/a-queue-holds-the-whole-plan/keep-every-field-of-a-queued-node.html, which the worker's own orientation fence carried (manifest.md:3) and which is its landing record.\nVERDICT manifest: read; it records three commits with head c7a070b538b3ff865ab2327a664ca43da73c88a0, the literal gate command, baseline_suite exit 1 with 2 ids and after_suite exit 0, both negative controls red, measurement_module and measurement_cwd, and outside_scope: none.\nVERDICT diff: read all three commits against 6b2a7764146e8ae0e746f92dd7c164ebc1702b39 - node.py:823 replaces the hand-written key list with fields(self), queue_admission.py:197 iterates fields(TaskNode) with the two run-directory rewrites kept, the test adds four cases, and the evidence fragment records the landing.\nCALL_SITES: reckon/crew/dispatch.py:243, reckon/crew/dispatch_claims.py:898, reckon/crew/queue_admission.py:389, reckon/crew/queue_admission.py:1538, reckon/crew/queue_admission.py:3800, reckon/crew/queue_admission.py:4121, reckon/crew/queue_admission.py:4401, reckon/crew/queue_edit.py:103, reckon/crew/dispatch_picker.py:1411\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:197 now rebuilds every field TaskNode declares and reckon/crew/node.py:832 serialises every one, which is what logs/repro-after-fix.log measures as LOST FIELDS: [].\nSCORE evidence: 13\nJUSTIFICATION evidence: logs/after-suite.log records 4 passed at the head and logs/baseline-suite.log 2 failed at the base arm, but logs/callers-of-the-rebuild.log records 14 failures where section 36's done_when states those files pass at the head.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in the diff is inside the worker's declared fence, but the evidence fragment is a fourth path beyond the three the dispatch named, carrying a landing record the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_queued_node_keeps_every_field.py:72 would redden if as_dict() dropped a field and :84 if the rebuild dropped one, and both mutations were applied and logged red at logs/negative-control-hand-named-without-images.log and logs/negative-control-keeps-run-directory-manifest.log.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/node.py:748 follows the module's helper idiom and the diff carries no forbidden name, though its docstring asserts a copy guarantee the code does not provide for admission_findings.\nSCORE reuse: 18\nJUSTIFICATION reuse: no owner of dataclass-to-JSON serialisation exists in reckon - no asdict or fields() based serialiser was found in a search of reckon/ - so both helpers are new capability, though the stdlib dataclasses.asdict would also serve node.py:748.\nFINDING reckon/crew/dispatch.py:347 non-blocking: validate_node refuses a node naming no manifest path, failing 14 tests in the two caller files section 36's done_when names as passing at the head.\nFINDING reckon/crew/node.py:748 non-blocking: _json_ready's docstring promises copied collections but a list is copied shallowly, so admission_findings entries stay shared with the node.\nFINDING reckon/crew/queue_admission.py:179 non-blocking: _stored_field_value copies a stored list shallowly, so the rebuilt node aliases the pointer's admission_findings entries.\n",
+  "review_run_id": "r-20261108T143541672807-review-of-keep-every-field-of-a-queued-node-c7a070b538b3",
+  "reviewed_base_sha": "6b2a7764146e8ae0e746f92dd7c164ebc1702b39",
+  "reviewed_head_sha": "c7a070b538b3ff865ab2327a664ca43da73c88a0",
+  "reviewed_run_id": "r-20261108T082456646701-keep-every-field-of-a-queued-node",
+  "scores": {
+    "durability": 19,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T15:03:49.727861+00:00",
+  "total": 103
+}
