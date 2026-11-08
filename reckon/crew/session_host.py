@@ -709,7 +709,12 @@ class SessionHost:
         if owner_checked:
             return True
         current = self._current_session()
-        return bool(current) and session == current
+        if not current:
+            # No harness names this host's session, so no pair can be told
+            # apart from it. A host with nothing to compare keeps following
+            # what it was asked for rather than dropping every child.
+            return True
+        return session == current
 
     def _same_owner(self, owner: Mapping[str, Any]) -> bool:
         """Whether a recorded owner identity is the one this host serves."""
