@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T21:25:13.312Z",
+  "dispatched_at": "2026-11-08T21:15:53Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-reads-only-its-runs-changes.html:43",
+      "id": "done_when-1",
+      "reason": "the fixture description must name at least one runtime source path on the integration branch, or the control silently degenerates to a single path-set assertion and the runtime-classification regression goes unmeasured.",
+      "text": "the fixture's integration branch \"carries many unrelated files\" with no runtime source among them, while the first negative control asserts that restoring the two-dot call \"fails the test on the path set and on the runtime classification\"; with the run's own delta being a test and an evidence fragment, a two-dot range over an integration branch of only non-runtime files still classifies `changes_runtime_source` False, so that half of the control holds on both arms",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-reads-only-its-runs-changes.html:43",
+      "id": "anchors_resolve-1",
+      "reason": "the section names the rule in words and one grep for `rev-list` in that file finds it, so a worker is not sent to wrong code; the same offset is also written as a precise `node.py:1575` in the cited evidence note, so it is worth correcting when the section is next edited.",
+      "text": "\"this is the rule `reckon/crew/node.py` already applies to commits (near line 1575)\" does not resolve: line 1575 falls inside `repository_identity`'s docstring, the rule's function `unintegrated_claim_work` is defined at reckon/crew/node.py:1621, and the `git rev-list HEAD ^<integration_ref> ^<base_sha>` call is at reckon/crew/node.py:1662",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-review-reads-only-its-runs-changes.html:43",
+      "id": "reasoning-1",
+      "reason": "the section would otherwise introduce a silent one-way degradation in a caller it names without stating the fallback or asserting it, and the no-remote fixture variant it adds checks only `own_changed_paths` and the carry-forward, so that degradation passes \u00a73's own gate.",
+      "text": "\u00a73 makes `_changed_figure_paths` (reckon/crew/recovery_review_dispatch.py:966) call the new helper, and specifies that the helper returns `None` when the integration ref cannot be resolved, but states the `None` consequence only for `review_head_move` (\"no review is carried forward\", which is accurate at recovery_review_dispatch.py:1092 where `{}` falls through to a full compose); `_changed_figure_paths` turns `None` into an empty list at recovery_review_dispatch.py:972-973, so after the change a checkout whose primary-branch remote-tracking ref does not resolve dispatches no figure review at all, where today its `base_sha..head` two-dot diff needs no integration ref and does dispatch one",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "24a8797d6cc6afd426016a1d6ebd3ecf1344e1f3",
+  "plan_fingerprint": "b99dd676b2abc3ec02418e662596a724cd912d24f90d5b8d0bdbdf12fac19a7a",
+  "plan_slug": "a-review-reads-only-its-runs-changes",
+  "plan_version": 12,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T211445288781-plan-review-of-a-review-reads-only-its-runs-changes",
+  "reviewed_blob_sha": "cbe810a9e3159731726344bf46ddd7412cb690f9",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the `reckon/crew/node.py` anchor \"near line 1575\" resolves to a docstring inside `repository_identity`, not to the rule it names.",
+    "done_when": "a finding \u2014 \u00a73's fixture is specified as \"a merge of an integration branch that carries many unrelated files\" while the first negative control claims the two-dot restore fails \"on the runtime classification\", which that fixture need not produce.",
+    "evidence_paths": "pass \u2014 the gate evidence is the new test file's own logs \"under the run directory\" (a durable crew run directory), the investigation evidence note sits at docs/evidence/fragments/a-review-reads-only-its-runs-changes/where-a-review-takes-its-range.html, and nothing is written to a node-local temporary path.",
+    "naming": "pass \u2014 `own_changed_paths` and the retained `changed_paths` name the mechanism, `tests/test_a_review_reads_only_its_runs_changes.py` follows the repository's descriptive test-file convention, and no ticket number, stage label or changelog prose reaches a symbol or a comment.",
+    "reasoning": "a finding \u2014 the section states what `review_head_move` does when the integration ref cannot be resolved but leaves the second caller it changes, `_changed_figure_paths`, unstated, where the same `None` becomes a silent loss of every figure review.",
+    "single_goal": "pass \u2014 one deliverable (the `own_changed_paths` helper), its two call sites and one test file; the four assertions all measure the single behaviour the section names.",
+    "wiring": "pass \u2014 \u00a73 is declared `implementable` at plan.html:42, the open followup `f-arroirc-002` (plan.html:53) recommends `/reckon-build a-review-reads-only-its-runs-changes \u00a73`, its two upstream sections s1 and s2 are declared done, and the one relationship the plan declares (`plan-after: work-is-never-stuck-behind-the-admission-loop`) resolves to a plan that exists under docs/plans/."
+  },
+  "section_digests": {
+    "_document": "321e3bc99119a27697d635d34e1d4b9f33d7ce216f1a7a760d22bc147ba1ccc0",
+    "s1": "3af442a13134b7c46db2d98609970c3d9e560ca12eb3deabbed535c7f74c5dca",
+    "s2": "a324bc121acb85a70e9fdcb6ec0c99aab489197974b83551dbf447fc023b56e3",
+    "s3": "9d30385528eae2a9e04ea784f8c8cf6424d2be256c11e1b7f0cc90c0a2a378fd"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T21:50:44.402698+00:00",
+  "total": null
+}
