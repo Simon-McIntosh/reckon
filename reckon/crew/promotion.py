@@ -2065,8 +2065,39 @@ def discard(run_id: str, *, allowed_phases: Sequence[str] = ()) -> dict[str, Any
             # discard record just written and blocks them, instead of leaving
             # them waiting until the next admission pass reports them stuck.
             "released": _release_waiters_of_a_discard(run_id),
+            # A dispatch that took a claim and was cut off before it spawned
+            # leaves the claim behind, and it holds the node against every
+            # later dispatch for as long as its holder lives. The run this
+            # discard removed is the claim's own, so the claim goes with it.
+            "dispatch_claim_released": _release_discarded_dispatch_claim(run_id),
             **_remove_discarded_worktree(record),
         }
+
+
+def _release_discarded_dispatch_claim(run_id: str) -> list[str]:
+    """Unlink the node dispatch claim that names the run a discard removed.
+
+    A deliberate discard is not a stale claim, so the claim is given up through
+    its own release path rather than displaced to a ``.reclaimed-`` sibling.
+    Only a claim recording this run as its holder is released; a claim naming
+    another run guards a dispatch this discard never touched and is left
+    standing. The claims are identified by the run they record, not by the node
+    the discarded pointer names, so a claim another run has since taken over
+    that node is not mistaken for this run's.
+    """
+    from reckon.crew import dispatch_claims
+
+    released: list[str] = []
+    claims_dir = crew_home() / dispatch_claims.NODE_DISPATCH_CLAIM_DIRECTORY
+    if not claims_dir.is_dir():
+        return released
+    for path in sorted(claims_dir.glob("*.json")):
+        holder = dispatch_claims._read_node_dispatch_claim(path)
+        if str(holder.get("run_id") or "") != run_id:
+            continue
+        dispatch_claims._NodeDispatchClaim(path, run_id).release()
+        released.append(str(path))
+    return released
 
 
 def _release_waiters_of_a_discard(run_id: str) -> dict[str, Any]:
