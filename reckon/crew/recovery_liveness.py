@@ -743,6 +743,73 @@ def _resumed_launch_is_stranded(
     return now_seconds - started > STRANDED_LAUNCH_BOUND_SECONDS
 
 
+# The run directory's record of the moment the run's dispatch claim was
+# registered. A cli dispatch writes it at the run id's own moment, before the
+# worktree is cut and before any attempt exists, so it is the only statement a
+# launch that never spawned anything makes about when it began.
+CLAIM_RECORD_NAME = "claim.json"
+
+
+def _claim_registered_seconds(record: Mapping[str, Any]) -> float | None:
+    """When the run's dispatch claim was registered, or None when nothing records it.
+
+    The claim is written beside the pointer before the launch composes anything
+    else, and a launch refused anywhere after that point removes both. So a
+    claim left in the run directory is a launch that was admitted and then
+    stopped before its supervisor existed, and the instant it names is the
+    earliest moment the run can be dated from.
+    """
+    run_id = str(record.get("run_id") or "")
+    try:
+        payload = json.loads(
+            (_run_directory(record) / CLAIM_RECORD_NAME).read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return None
+    if not isinstance(payload, Mapping):
+        return None
+    if run_id and payload.get("run_id") not in (None, run_id):
+        return None
+    registered = parse_utc(str(payload.get("claim_registered_at") or ""))
+    return registered.timestamp() if registered is not None else None
+
+
+def _claim_or_creation_seconds(record: Mapping[str, Any]) -> float | None:
+    """When a launch with no attempt clock began, or None when nothing dates it.
+
+    The attempt clock is the launch's own statement of when it began, and it is
+    the reading whenever it exists. A cli launch cut off between composing its
+    pointer and spawning its supervisor writes neither an attempt record nor an
+    attempt claim, so it holds no attempt clock at all and would read as one in
+    flight forever. Such a launch is still dated: first from the claim its
+    dispatch registered in the run directory, and failing that from the pointer's
+    own ``created_at``, and a run holding neither is left undated.
+    """
+    claimed = _claim_registered_seconds(record)
+    if claimed is not None:
+        return claimed
+    created = parse_utc(str(record.get("created_at") or ""))
+    return created.timestamp() if created is not None else None
+
+
+def _stranded_launch_age_seconds(
+    record: Mapping[str, Any], *, now_seconds: float
+) -> float | None:
+    """Seconds since the launch clock began, or None when the run holds no clock.
+
+    The clock is the current attempt's own start where a caller recorded one.
+    A cli pointer that recorded no attempt start is dated from its claim or its
+    creation, because a launch with nothing to spawn would otherwise never age
+    and would be held as in flight for as long as its pointer lives.
+    """
+    started = _attempt_started_seconds(record)
+    if started is None and str(record.get("launch") or "") == "cli":
+        started = _claim_or_creation_seconds(record)
+    if started is None:
+        return None
+    return now_seconds - started
+
+
 def _stranded_launch(record: Mapping[str, Any], *, now_seconds: float) -> bool:
     """Whether a launch that recorded nothing stopped happening past the bound.
 
@@ -757,8 +824,9 @@ def _stranded_launch(record: Mapping[str, Any], *, now_seconds: float) -> bool:
     holds it forever.
 
     The clock is the current attempt's own start, which the launch composes on
-    the pointer before spawning anything. A pointer naming no start has no
-    launch clock to read and is left as one in flight.
+    the pointer before spawning anything, and failing that the claim or creation
+    instant a cli launch leaves behind. A pointer holding no clock at all has
+    nothing to age it and is left as one in flight.
     """
     if str(record.get("phase") or "") not in _PRE_SPAWN_PHASES:
         return False
@@ -771,10 +839,10 @@ def _stranded_launch(record: Mapping[str, Any], *, now_seconds: float) -> bool:
     stderr_path = str(record.get("stderr_path") or "").strip()
     if stderr_path and Path(stderr_path).exists():
         return False
-    started = _attempt_started_seconds(record)
+    started = _stranded_launch_age_seconds(record, now_seconds=now_seconds)
     if started is None:
         return False
-    return now_seconds - started > STRANDED_LAUNCH_BOUND_SECONDS
+    return started > STRANDED_LAUNCH_BOUND_SECONDS
 
 
 def _run_stream_quiet_seconds(
