@@ -1,0 +1,136 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The reviewed run's baseline_suite at 3aec564ad491f6d9d6dde4606786f2a68bc78231 and after_suite at 8d82950debd6fd48aa8f9f3756be2b2be2dbe283 both completed with one pass, EXIT=0, and no failure IDs; matched station logs each record 12 passes and no failure IDs.",
+  "assertion_analysis": [
+    {
+      "fails_if": "the station never requests the first sweep",
+      "file": "tests/test_a_sessions_duties_run_while_its_follower_is_alive.py",
+      "line": 179
+    },
+    {
+      "fails_if": "the second requested sweep starts before the active one is released",
+      "file": "tests/test_a_sessions_duties_run_while_its_follower_is_alive.py",
+      "line": 204
+    },
+    {
+      "fails_if": "a sweep thread remains alive after release",
+      "file": "tests/test_a_sessions_duties_run_while_its_follower_is_alive.py",
+      "line": 209
+    },
+    {
+      "fails_if": "the pending request is dropped or replayed more than once",
+      "file": "tests/test_a_sessions_duties_run_while_its_follower_is_alive.py",
+      "line": 210
+    },
+    {
+      "fails_if": "a review is dispatched during the first pass before the source is delivered",
+      "file": "tests/test_a_sessions_duties_run_while_its_follower_is_alive.py",
+      "line": 213
+    },
+    {
+      "fails_if": "the review dispatcher does not store a dispatched status on the source pointer",
+      "file": "tests/test_a_sessions_duties_run_while_its_follower_is_alive.py",
+      "line": 214
+    },
+    {
+      "fails_if": "the recovery report omits the dispatched review run id; its expected id is read from another production receipt and both could be wrong together",
+      "file": "tests/test_a_sessions_duties_run_while_its_follower_is_alive.py",
+      "line": 215
+    },
+    {
+      "fails_if": "the dispatched review run pointer is absent or has the wrong role",
+      "file": "tests/test_a_sessions_duties_run_while_its_follower_is_alive.py",
+      "line": 217
+    },
+    {
+      "fails_if": "the repair path does not record a resumed status",
+      "file": "tests/test_a_sessions_duties_run_while_its_follower_is_alive.py",
+      "line": 218
+    },
+    {
+      "fails_if": "the repair path records no round id",
+      "file": "tests/test_a_sessions_duties_run_while_its_follower_is_alive.py",
+      "line": 219
+    },
+    {
+      "fails_if": "the repair advice omits the independently supplied blocking finding",
+      "file": "tests/test_a_sessions_duties_run_while_its_follower_is_alive.py",
+      "line": 221
+    },
+    {
+      "fails_if": "the review and repair paths together invoke the launcher fewer or more than twice",
+      "file": "tests/test_a_sessions_duties_run_while_its_follower_is_alive.py",
+      "line": 222
+    },
+    {
+      "fails_if": "the first sweep begins before its request or after the second request",
+      "file": "tests/test_a_sessions_duties_run_while_its_follower_is_alive.py",
+      "line": 223
+    },
+    {
+      "fails_if": "the second sweep begins before the first finishes or the second request arrives after the first finishes",
+      "file": "tests/test_a_sessions_duties_run_while_its_follower_is_alive.py",
+      "line": 224
+    },
+    {
+      "fails_if": "the second sweep finish timestamp precedes its start timestamp",
+      "file": "tests/test_a_sessions_duties_run_while_its_follower_is_alive.py",
+      "line": 225
+    }
+  ],
+  "call_sites": [
+    "reckon/crew/station.py:549 Station.tick -> SweepBeat.request",
+    "reckon/crew/station.py:266 SweepBeat._run -> resumption.sweep",
+    "reckon/crew/resumption.py:2420 dispatch_awaiting_reviews"
+  ],
+  "completed_at": "2026-11-08T06:50:56Z",
+  "dispatched_at": "2026-11-08T06:39:59Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive.html",
+      "line": "10",
+      "severity": "blocking",
+      "text": "blocking: the live incident's sweep request and start times were never retained, so the controlled replay cannot supply the historical live-session timing the plan's done_when explicitly requires."
+    },
+    {
+      "file": "tests/test_a_sessions_duties_run_while_its_follower_is_alive.py",
+      "line": "210",
+      "severity": "blocking",
+      "text": "blocking: the unchanged-scheduler negative control fails on the number of sweep calls before checking review_dispatch or repair_dispatch, so its recorded failure does not show both required duties absent."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "commit 24f0b1afc8a85f705fba89c1fc9c477639b99da6 replaces simulated duty recorders with real dispatch assertions in the test; commit 8d82950debd6fd48aa8f9f3756be2b2be2dbe283 adds controlled timing evidence and a rendered timeline in the fragment and SVG.",
+    "done_when": "prompt.txt:122 requires live-session request, start, finish and duty results plus a negative control showing both duties absent; repair_head.log records one pass at head and repair_scheduler_negative.log fails at the sweep-count assertion before checking duty absence.",
+    "goal": "prompt.txt:38 asks for the cause and its repair; tests/test_a_sessions_duties_run_while_its_follower_is_alive.py:209-221 now exercises real duty dispatch, while the live timing required to establish the recorded instance remains missing in the evidence fragment at line 10.",
+    "manifest": "manifest.md records the two follow-up commits, the base and head suite arms, the matched 12-test logs, and the scheduler and dispatcher controls, with zero failure IDs in the completed suite arms.",
+    "write_paths": "prompt.txt:77-84 declares the test, fragment and figures directory; both commits from 3aec564ad491f6d9d6dde4606786f2a68bc78231 to 8d82950debd6fd48aa8f9f3756be2b2be2dbe283 change only those paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_sessions_duties_run_while_its_follower_is_alive.py:210 reddens when the pending sweep is dropped, and lines 213-221 redden when real review or repair dispatch is removed, as repair_scheduler_negative.log and repair_test_commit_control.log show.",
+    "evidence": "repair_base.log and repair_head.log record completed one-pass suite arms and matched_head.log names the correct head, but repair_scheduler_negative.log:110 fails before it reads either duty result.",
+    "fit": "tests/test_a_sessions_duties_run_while_its_follower_is_alive.py:135 follows the surrounding fixture isolation idiom, and the new SVG renders with readable labels and no clipped text.",
+    "goal_fidelity": "tests/test_a_sessions_duties_run_while_its_follower_is_alive.py:213-221 proves review dispatch and repair resume, while docs/evidence/fragments/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive.html:10 admits the live request and start times are unavailable.",
+    "reuse": "the capability search found only private local git setup in tests/test_review_repair_runs_without_the_coordinator.py:81-109 and the shared home fixture in tests/conftest.py:1539; the added test helpers assemble a distinct two-run sweep scenario rather than a new production mechanism.",
+    "scope_discipline": "the commits at 24f0b1afc8a85f705fba89c1fc9c477639b99da6 and 8d82950debd6fd48aa8f9f3756be2b2be2dbe283 change only the declared test, fragment and figure paths in prompt.txt:77-84."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 asks for the cause and its repair; tests/test_a_sessions_duties_run_while_its_follower_is_alive.py:209-221 now exercises real duty dispatch, while the live timing required to establish the recorded instance remains missing in the evidence fragment at line 10.\nVERDICT done_when: prompt.txt:122 requires live-session request, start, finish and duty results plus a negative control showing both duties absent; repair_head.log records one pass at head and repair_scheduler_negative.log fails at the sweep-count assertion before checking duty absence.\nVERDICT write_paths: prompt.txt:77-84 declares the test, fragment and figures directory; both commits from 3aec564ad491f6d9d6dde4606786f2a68bc78231 to 8d82950debd6fd48aa8f9f3756be2b2be2dbe283 change only those paths.\nVERDICT manifest: manifest.md records the two follow-up commits, the base and head suite arms, the matched 12-test logs, and the scheduler and dispatcher controls, with zero failure IDs in the completed suite arms.\nVERDICT diff: commit 24f0b1afc8a85f705fba89c1fc9c477639b99da6 replaces simulated duty recorders with real dispatch assertions in the test; commit 8d82950debd6fd48aa8f9f3756be2b2be2dbe283 adds controlled timing evidence and a rendered timeline in the fragment and SVG.\nCALL_SITES: reckon/crew/station.py:549 Station.tick -> SweepBeat.request, reckon/crew/station.py:266 SweepBeat._run -> resumption.sweep, reckon/crew/resumption.py:2420 dispatch_awaiting_reviews\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: tests/test_a_sessions_duties_run_while_its_follower_is_alive.py:213-221 proves review dispatch and repair resume, while docs/evidence/fragments/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive.html:10 admits the live request and start times are unavailable.\nSCORE evidence: 15\nJUSTIFICATION evidence: repair_base.log and repair_head.log record completed one-pass suite arms and matched_head.log names the correct head, but repair_scheduler_negative.log:110 fails before it reads either duty result.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the commits at 24f0b1afc8a85f705fba89c1fc9c477639b99da6 and 8d82950debd6fd48aa8f9f3756be2b2be2dbe283 change only the declared test, fragment and figure paths in prompt.txt:77-84.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_sessions_duties_run_while_its_follower_is_alive.py:210 reddens when the pending sweep is dropped, and lines 213-221 redden when real review or repair dispatch is removed, as repair_scheduler_negative.log and repair_test_commit_control.log show.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_a_sessions_duties_run_while_its_follower_is_alive.py:135 follows the surrounding fixture isolation idiom, and the new SVG renders with readable labels and no clipped text.\nSCORE reuse: 19\nJUSTIFICATION reuse: the capability search found only private local git setup in tests/test_review_repair_runs_without_the_coordinator.py:81-109 and the shared home fixture in tests/conftest.py:1539; the added test helpers assemble a distinct two-run sweep scenario rather than a new production mechanism.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive.html:10 blocking: the live incident's sweep request and start times were never retained, so the controlled replay cannot supply the historical live-session timing the plan's done_when explicitly requires.\nFINDING tests/test_a_sessions_duties_run_while_its_follower_is_alive.py:210 blocking: the unchanged-scheduler negative control fails on the number of sweep calls before checking review_dispatch or repair_dispatch, so its recorded failure does not show both required duties absent.\n",
+  "review_run_id": "r-20261108T063804754228-review-of-a-sessions-duties-run-while-its-follower-is-alive-8d82950debd6",
+  "reviewed_base_sha": "3aec564ad491f6d9d6dde4606786f2a68bc78231",
+  "reviewed_head_sha": "8d82950debd6fd48aa8f9f3756be2b2be2dbe283",
+  "reviewed_run_id": "r-20261107T223008766020-a-sessions-duties-run-while-its-follower-is-alive",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T07:21:30.685823+00:00",
+  "total": 107
+}
