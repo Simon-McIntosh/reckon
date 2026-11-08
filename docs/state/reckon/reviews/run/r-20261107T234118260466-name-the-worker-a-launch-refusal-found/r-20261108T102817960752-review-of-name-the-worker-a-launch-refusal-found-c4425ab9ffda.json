@@ -1,0 +1,42 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T10:45:12.802Z",
+  "dispatched_at": "2026-11-08T10:35:10Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_liveness.py",
+      "line": 1305,
+      "severity": "non-blocking",
+      "text": "live_worker_reading re-resolves a placed record's scheduler-job arm in its own branch (reckon/crew/recovery_liveness.py:1305-1312) instead of extending the owner of that resolution, record_process_liveness (reckon/crew/process_liveness.py:361-365), which still falls back to the pid probe when placement_job_alive answers None. The addition duplicates the owner's placed branch, and the two now answer the same record differently: a placed run whose scheduler cannot be queried reads placed-with-unknown here and alive-from-the-client-pid through every record_process_alive caller (reckon/crew/claims.py:113,176; reckon/crew/resumption.py:1288). The fork is the correct in-scope fix because the node's write paths excluded process_liveness.py, so the owner-side repair belongs to a follow-on node rather than to this one."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": 1988,
+      "severity": "non-blocking",
+      "text": "The refusal text at reckon/crew/dispatch_launch.py:1988 and :2855 still asserts \"still has a live worker\" for the placed-with-unknown arm that _launch_refused_by (dispatch_launch.py:1930) added, so the placed case reads \"(placed on job 1291586, liveness unknown)\" inside a sentence that opens by asserting the worker is live. The parenthetical contradicts the clause and reads as a wording defect in operator output."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that both launch refusals name the worker they found, never the scheduler client's pid; reckon/crew/dispatch_launch.py:1985 and :2852 resolve live_worker_reading and both word the refusal through _live_worker_naming (dispatch_launch.py:1906), whose placed arm now says \"job N\" when the job answered and \"placed on job N, liveness unknown\" when the scheduler could not be asked.\nVERDICT done_when: the done-when names tests/test_a_queued_run_launches_once.py; the head file carries six whole-text cases including the new placed-with-unknown case (tests/test_a_queued_run_launches_once.py:255-280), and the manifest records 3 passed at base against 6 passed at head, both readable in logs/01-baseline-suite.log (EXIT=0, 3 passed in 4.61s) and logs/02-after-suite.log (EXIT=0, 6 passed in 13.98s).\nVERDICT write_paths: the declared paths are reckon/crew/recovery_liveness.py, reckon/crew/dispatch_launch.py, tests/test_a_queued_run_launches_once.py plus the evidence fragment and figures directory; the two commits touch four of them (git diff --stat f58c9d2 c4425ab9: the evidence fragment, dispatch_launch.py, recovery_liveness.py, the test) and nothing outside.\nVERDICT manifest: read; status complete, commits f58c9d2/2b14765/c4425ab9, baseline_suite and after_suite recorded with their log paths and zero failures, negative_control_log naming nc1 and nc1..nc4 described, and the resumed live_worker_pid behaviour recorded under evidence_inputs.\nVERDICT diff: read commit by commit against f58c9d2; 2b14765 adds the placement branch and _launch_refused_by to dispatch_launch and recovery_liveness and restores live_worker_pid to its base-revision code, c4425ab9 touches only the evidence fragment (5 insertions, 3 deletions).\nCALL_SITES: reckon/crew/dispatch_launch.py:_prepare_attempt_records, reckon/crew/dispatch_launch.py:_supervisor_spawn_worker, reckon/crew/resumption.py:1451, reckon/crew/process_liveness.py:record_process_liveness, reckon/crew/claims.py:113\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: recovery_liveness.py:1305-1312 answers a placed record from its job alone and logs/04-head-repro.log shows the session named while the recorded pid is dead, though the placed-with-unknown refusal at dispatch_launch.py:1988 still calls that worker \"live\".\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_queued_run_launches_once.py:275 asserts the whole placed-with-unknown refusal and logs/nc4-placed-pid-fallback.log reddens exactly that case, though each negative control ran with -k deselecting the other five so \"no other case fails\" is unmeasured and nc4's header names f58c9d2 plus an uncommitted change rather than the committed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the two-commit diff is one of the manifest's declared write paths, and live_worker_pid in recovery_liveness.py:1275 is byte-for-byte its base-revision text, removing the out-of-goal resumption.py behaviour change the prior review found.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_queued_run_launches_once.py:275 fails if the placement branch is dropped (logs/nc4) and :279 fails if the client's pid is named, both independent of the value the test supplied, while the live_worker_pid restore is guarded only by the unchanged 10-test tests/test_resume_refuses_a_live_worker.py (logs/03-resume-guard.log).\nSCORE fit: 19\nJUSTIFICATION fit: _launch_refused_by (dispatch_launch.py:1930) and the extended _live_worker_naming (dispatch_launch.py:1906) are private helpers beside their two call sites with mechanism-naming docstrings and no plan, ticket or stage identifier in any added name, comment or commit subject.\nSCORE reuse: 6\nJUSTIFICATION reuse: recovery_liveness.py:1305-1312 duplicates the placed-arm resolution that record_process_liveness (process_liveness.py:361-365) already owns, and the two owners now disagree rather than the addition extending the existing one.\nFINDING reckon/crew/recovery_liveness.py:1305 non-blocking: live_worker_reading re-resolves the placed arm instead of extending record_process_liveness (process_liveness.py:361-365), whose pid fallback still answers a placed run with an unqueryable scheduler as alive from the client's pid for every record_process_alive caller (claims.py:113,176; resumption.py:1288); the fork was the only in-scope repair because the node's write paths excluded process_liveness.py, so the owner-side fix belongs to a follow-on node.\nFINDING reckon/crew/dispatch_launch.py:1988 non-blocking: the refusal sentence still opens \"still has a live worker\" for the placed-with-unknown arm _launch_refused_by admits, so operator output reads \"still has a live worker (placed on job 1291586, liveness unknown)\", a clause contradicting its own parenthetical.\n",
+  "review_run_id": "r-20261108T102817960752-review-of-name-the-worker-a-launch-refusal-found-c4425ab9ffda",
+  "reviewed_base_sha": "f58c9d20460f4c8dc18c117112604a66ed1f9edb",
+  "reviewed_commits": [
+    "2b147652afdf3b297d82e61ede3c5196256ff26a",
+    "c4425ab9ffda5d9b10e928a9c4168dbdaea21229"
+  ],
+  "reviewed_head_sha": "c4425ab9ffda5d9b10e928a9c4168dbdaea21229",
+  "reviewed_run_id": "r-20261107T234118260466-name-the-worker-a-launch-refusal-found",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 6,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T11:01:26.548488+00:00",
+  "total": 100
+}
