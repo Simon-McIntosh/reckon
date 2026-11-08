@@ -2267,9 +2267,7 @@ def _preserve_stopped_worktree(
             "state": "no-worktree",
             "worktree": None,
             "path": None,
-            "detail": (
-                "the run records no worktree, so no uncommitted work was saved"
-            ),
+            "detail": "the run records no worktree, so no uncommitted work was saved",
         }
     tree = Path(worktree)
     try:

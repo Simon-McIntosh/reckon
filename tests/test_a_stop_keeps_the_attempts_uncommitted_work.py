@@ -186,9 +186,7 @@ def _run_directory(run_id: str) -> Path:
     return runs.run_dir(run_id)
 
 
-def test_a_dirty_tree_is_saved_before_the_signal(
-    home: Path, tmp_path: Path
-) -> None:
+def test_a_dirty_tree_is_saved_before_the_signal(home: Path, tmp_path: Path) -> None:
     """The attempt's uncommitted work is in the run directory before the stop."""
     run_id = _unique_run_id()
     repository = _repository(tmp_path)
@@ -224,9 +222,7 @@ def test_a_dirty_tree_is_saved_before_the_signal(
         # The path is in the result the command prints and in the record read
         # back from disk, so neither has to be opened to find the work.
         assert str(saved) in result["detail"]
-        assert runs.read_pointer(run_id)["stopped_attempt_work"]["path"] == str(
-            saved
-        )
+        assert runs.read_pointer(run_id)["stopped_attempt_work"]["path"] == str(saved)
         operator = _operator_crew_home()
         assert not (operator / "live" / f"{run_id}.json").exists()
         assert not (operator / "runs" / run_id).exists()
@@ -234,9 +230,7 @@ def test_a_dirty_tree_is_saved_before_the_signal(
         _reap(child)
 
 
-def test_a_clean_tree_writes_no_diff_and_says_so(
-    home: Path, tmp_path: Path
-) -> None:
+def test_a_clean_tree_writes_no_diff_and_says_so(home: Path, tmp_path: Path) -> None:
     """Nothing to keep writes no file, and the result says the tree was clean."""
     run_id = _unique_run_id()
     repository = _repository(tmp_path)
