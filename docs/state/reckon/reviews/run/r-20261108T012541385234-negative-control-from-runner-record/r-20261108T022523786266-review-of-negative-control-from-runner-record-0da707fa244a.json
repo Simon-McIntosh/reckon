@@ -1,0 +1,65 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T02:49:02.753Z",
+  "dispatched_at": "2026-11-08T02:34:21Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_evidence.py",
+      "line": "1082",
+      "severity": "non-blocking",
+      "text": "non-blocking: the `_RUNNER_FAILURE_SUMMARY` branch can never change a verdict. Admission past promotion_checks.py:2157 (`elif not control_ids`) requires a non-empty `control_ids`, which is the same `review_module.gate_log_failure_ids` call the preceding line already returned truthy for, so `_runner_reports_a_failed_run` returns True at line 1080 and the `N failed` summary regex is never what admits a log. Both this function's docstring and the dispatch prompt in reckon/crew/prompts.py:311 name the summary as a second record that decides, and no test passes a summary-only log, so a regression in the regex would go unnoticed."
+    },
+    {
+      "file": "manifest.md",
+      "line": "18",
+      "severity": "non-blocking",
+      "text": "non-blocking: the arm pair is not one population. `after_suite` cites gate.log for the single new test file while `baseline_suite` cites gate-base.log for the four importer files, so the two fields do not measure the same suite at base and head; the head arm that does cover the importer population is gate-head.log (20 passed), recorded only under test_logs and artifacts, and its own header line 1 names revision 7f41f27119 with an uncommitted working tree rather than head 0da707fa24. A reader taking the suite fields as a base/head pair reads two different suites as one."
+    },
+    {
+      "file": "tests/test_control_gate_checks_facts.py",
+      "line": "144",
+      "severity": "non-blocking",
+      "text": "non-blocking: three changed paths lie outside the dispatch's exclusive write scope \u2014 this file, tests/test_control_is_compared_with_the_head_arm.py and reckon/crew/prompts.py \u2014 and only the last is named by the plan's own write-paths clause. The two legacy test edits are required: each asserted the retired refusal and would fail at head without the update. The worker disclosed all three under outside_scope and blockers, and the self-widen was refused by a read-only crew lock directory, so the coordinator must widen the three paths before promotion."
+    },
+    {
+      "file": "tests/test_a_negative_control_is_read_from_the_runner.py",
+      "line": "139",
+      "severity": "non-blocking",
+      "text": "non-blocking: `assert _control_run_shows_a_failure(f\"...EXIT=1\\n\", 1) is True` passes the same fact twice \u2014 the status is handed to the function as an argument and restates what the log text already says \u2014 and it still passes under the declared mutation, so it survives the regression the test exists to catch. Line 138 carries this test's durability; line 139 only re-asserts that `recorded != 0`."
+    }
+  ],
+  "justifications": {
+    "durability": "Removing the runner-record branch reddens exactly the three cases it protects \u2014 promotion_evidence.py:1080's guard, the runner-red admission at tests/test_a_negative_control_is_read_from_the_runner.py:91 and the head-arm refusal at :116 \u2014 but the `N failed` summary branch at promotion_evidence.py:1082 has no test that can redden on it.",
+    "evidence": "gate.log records 5 passed EXIT=0 and negative-control.log records 3 failed 2 passed EXIT=1, but the manifest's after_suite cites gate.log for one file against a baseline_suite of four files, and the two legacy test edits have no named log at all.",
+    "fit": "reckon/crew/promotion_evidence.py:1085 sits beside `_recorded_exit_status` at :1044 and follows the module's mechanism-comment idiom, with no plan, sprint or ticket label in any added symbol or docstring.",
+    "goal_fidelity": "reckon/crew/promotion_checks.py:2148 replaces the EXIT-gated refusal with `_control_run_shows_a_failure`, so a runner-written red log with FAILED ids and no capture line is admitted while the id-identity and arm-comparison refusals are untouched.",
+    "reuse": "reckon/crew/promotion_evidence.py:1080 routes the failure decision through `review_module.gate_log_failure_ids`, the repository's single format-aware log reader, and extends `_require_declared_negative_control` rather than forking a second control gate; only the `_RUNNER_FAILURE_SUMMARY` regex at :1017 restates a shape `_RUNNER_SUMMARY` at :1009 already matches.",
+    "scope_discipline": "reckon/crew/prompts.py:302, tests/test_control_gate_checks_facts.py:144 and tests/test_control_is_compared_with_the_head_arm.py:229 all changed outside the dispatch's declared write paths, disclosed but not widened."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261108T022523786266-review-of-negative-control-from-runner-record-0da707fa244a",
+  "reviewed_base_sha": "7f41f27119b349046e1591f412cbf60de2bb5036",
+  "reviewed_head_sha": "0da707fa244a78bc2387bc86c708ef8c5209ccd7",
+  "reviewed_run_id": "r-20261108T012541385234-negative-control-from-runner-record",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T03:14:24.627754+00:00",
+  "total": 96,
+  "verdicts": {
+    "call_sites": "reckon/crew/promotion_checks.py:2452 calls _require_declared_negative_control, which reaches the new reader at :2148; reckon/crew/promotion.py:2390 imports the check into the promotion path; reckon/crew/prompts.py:369 and :806 carry the contract sentence into every composed implement prompt.",
+    "diff": "Read commit by commit over 7f41f27119..0da707fa24: 8901431b8a carries the reader, the gate, the prompt contract and the three test edits, 0da707fa24 adds only the 77-line evidence fragment; nothing in either commit is unrelated to \u00a72.",
+    "done_when": "The done_when names tests/test_a_negative_control_is_read_from_the_runner.py; gate.log records 5 passed EXIT=0 at head 0da707fa24, and the importer clause is covered by gate-head.log 20 passed against gate-base.log 15 passed, 0 added failures.",
+    "goal": "The node's goal is to admit a negative control on the runner's own record; reckon/crew/promotion_checks.py:2148 now takes the failure from `_control_run_shows_a_failure` instead of requiring a terminal EXIT line, and the four cases \u00a72 names \u2014 runner-written red log admitted, bare EXIT=1 refused, id the head arm also fails refused, composed prompt naming the contract \u2014 are each asserted and green.",
+    "manifest": "Read; it states status complete, names its four gate logs, records baseline_suite and after_suite as completed with zero failures, and its own rubric self-checks are filled \u2014 but its suite fields pair two different populations (finding at manifest.md:18).",
+    "write_paths": "The manifest's declared paths list promotion_checks.py, promotion_evidence.py, the new test and the evidence fragment; the diff also carries reckon/crew/prompts.py, tests/test_control_gate_checks_facts.py and tests/test_control_is_compared_with_the_head_arm.py, all three outside that list and disclosed under outside_scope."
+  }
+}
