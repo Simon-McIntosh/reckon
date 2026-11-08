@@ -1,0 +1,71 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:914",
+    "reckon/hooks/coordinator_obligations.py:1281",
+    "reckon/hooks/coordinator_obligations.py:1582",
+    "reckon/hooks/install.py:60"
+  ],
+  "completed_at": "2026-11-08T04:06:09.190Z",
+  "dispatched_at": "2026-11-08T03:53:14Z",
+  "findings": [
+    {
+      "file": "tests/test_the_obligations_hook_reads_its_own_session.py",
+      "line": "74",
+      "severity": "non-blocking",
+      "text": "_armed_parent_pid returns a registration's own parent_pid and that same value is passed as the hook's claude_pid, so _descends_from resolves by self-equality and the ancestry walk the done_when describes is never traversed; a descent check that ignored ancestry would leave the fallback case green."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T023439772442-report-only-the-hooks-own-session/logs/importing-tests-at-head.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "the run is labelled at head in the manifest and the evidence fragment, but its header names revision 0ae9e71d32 and carries no module line, so a reader cannot tie the 72 passed / 1 failed importer result to the head content."
+    },
+    {
+      "file": "tests/test_the_obligations_hook_reads_its_own_session.py",
+      "line": "112",
+      "severity": "non-blocking",
+      "text": "the fixture layer duplicates the sibling hook test module's scaffolding rather than extending it, so a change to how a temporary crew home or a blocked run is assembled has to be made in two places or the two modules drift."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified four production call sites reaching the change.",
+    "diff": "read commit by commit against 0ae9e71d32; three files, all in scope.",
+    "done_when": "read; the three cases and the negative control exist and the base arm reddens two of them.",
+    "goal": "read; the landed change resolves the harness session's own registration before any descending one.",
+    "manifest": "read; status complete with both suite arms and the negative control.",
+    "write_paths": "read; every path in the diff is inside the granted set."
+  },
+  "justifications": {
+    "durability": "tests/test_the_obligations_hook_reads_its_own_session.py:165 reddens under the declared descent-first mutation and :180 reddens at base, so both guards fail on the regression they name.",
+    "evidence": "logs/baseline-suite.log reddens the two new cases at 0ae9e71d32 with the foreign session's block decision, and logs/after-suite.log records 3 passed EXIT=0 at 9f8587f3d8, though logs/importing-tests-at-head.log:1 names 0ae9e71d32 for a head-labelled run.",
+    "fit": "reckon/hooks/coordinator_obligations.py:439-480 keeps the surrounding loop and docstring idiom and introduces no plan-labelled or versioned name.",
+    "goal_fidelity": "reckon/hooks/coordinator_obligations.py:465 scans every collected registration for the harness session id before the descent walk at :471, and both hook modes reach it through locate_session at :927.",
+    "reuse": "the hook change extends its existing owner in place, while tests/test_the_obligations_hook_reads_its_own_session.py:68-140 re-implements scaffolding tests/test_obligations_hook_reads_the_snapshot.py:112-190 already owns.",
+    "scope_discipline": "git diff 0ae9e71d32..9f8587f3d8 changes only reckon/hooks/coordinator_obligations.py, tests/test_the_obligations_hook_reads_its_own_session.py and the declared evidence fragment, all inside the granted set."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the obligations hooks report only their own session; reckon/hooks/coordinator_obligations.py:439 _session_from_followers now collects every registration and returns the harness session's own before any descending one, so both hook modes, through locate_session at :914 and its callers _prompt at :1294 and _stop at :1596, resolve the invoking session.\nVERDICT done_when: the done_when names tests/test_the_obligations_hook_reads_its_own_session.py with three cases and one negative control; the file carries exactly those three cases at :147, :171 and :184, the base arm reddens two of them with the foreign session's block decision in stdout (logs/baseline-suite.log), the head arm is 3 passed EXIT=0 (logs/after-suite.log), and the declared descent-first mutation reddens the first case with 'aaa-session-b' == 'harness-session-a' (logs/negative-control-descent-before-exact-scan.log).\nVERDICT write_paths: the node was fenced to reckon/hooks/coordinator_obligations.py, tests/test_the_obligations_hook_reads_its_own_session.py, the evidence fragment and a figure directory; the diff 0ae9e71d32..9f8587f3d8 touches the first three and nothing else, and the figure path is unemitted.\nVERDICT manifest: read at status complete; it records the head gate command and its 3-passed result, the base arm's 2 failed / 1 passed in a scratch tree of 0ae9e71d32, the negative control, a pre-existing importer failure reproduced at base, commits and changed_paths, and rubric lines for seven dimensions.\nVERDICT diff: read commit by commit against 0ae9e71d32; one commit (9f8587f3d8) over three files, +216/-3: the two-phase scan at coordinator_obligations.py:457-480 with its docstring paragraph, the 196-line test module, and the five-line evidence fragment.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:914 locate_session, reckon/hooks/coordinator_obligations.py:1281 _prompt, reckon/hooks/coordinator_obligations.py:1582 _stop, reckon/hooks/install.py:60 (the script installed as the UserPromptSubmit and Stop hook)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/hooks/coordinator_obligations.py:465 scans every collected registration for the harness session id before the descent walk at :471, and both hook modes reach it through locate_session at :927.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/baseline-suite.log reddens the two new cases at 0ae9e71d32 with the foreign session's block decision as their message, and logs/after-suite.log records 3 passed EXIT=0 at 9f8587f3d8, but logs/importing-tests-at-head.log:1 names revision 0ae9e71d32 for a run labelled at head, so that supplementary claim cannot be tied to the head content.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 0ae9e71d32..9f8587f3d8 changes only reckon/hooks/coordinator_obligations.py, tests/test_the_obligations_hook_reads_its_own_session.py and the declared evidence fragment, all inside the granted set, and the figure directory is untouched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_obligations_hook_reads_its_own_session.py:165 reddens when the descent-first scan is restored (logs/negative-control-descent-before-exact-scan.log reports 'aaa-session-b' == 'harness-session-a'), :180 reddens while resolution adopts the foreign session (logs/baseline-suite.log), and :196 reddens if the fallback branch is deleted, so no assertion compares a value against the variable the test passed in.\nSCORE fit: 19\nJUSTIFICATION fit: the change follows the module's own loop and docstring idiom at reckon/hooks/coordinator_obligations.py:439-480 and adds no plan label or versioned name in the hook, the test module or the commit subject, which carries a body and no attribution trailer.\nSCORE reuse: 15\nJUSTIFICATION reuse: the production change extends the existing owner in place and adds no new definition, but the new module re-implements six scaffolding helpers (_register, _armed_parent_pid, _blocked_run, _publish_snapshot, _hook, _stop_payload) that tests/test_obligations_hook_reads_the_snapshot.py:112-190 already owns privately, with no shared owner extracted.\nFINDING tests/test_the_obligations_hook_reads_its_own_session.py:74 non-blocking: _armed_parent_pid returns a registration's own parent_pid and that same value is handed in as the hook's claude_pid, so _descends_from resolves by self-equality and the ancestry walk the done_when describes as 'followed by children of the caller's host' is never traversed; the ordering defect is still caught, but a descent check that ignored ancestry entirely would leave the fallback case green.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T023439772442-report-only-the-hooks-own-session/logs/importing-tests-at-head.log:1 non-blocking: the run is labelled at head in the manifest and the evidence fragment, but its header names revision 0ae9e71d32 and carries no module line, so a reader cannot tie the 72 passed / 1 failed importer result to the code it claims to describe.\nFINDING tests/test_the_obligations_hook_reads_its_own_session.py:112 non-blocking: the fixture layer duplicates the sibling hook test module's scaffolding rather than extending it, so a change to how a temporary crew home or a blocked run is assembled has to be made in two places or the two modules drift.\n",
+  "review_run_id": "r-20261108T034732957345-review-of-report-only-the-hooks-own-session-9f8587f3d841",
+  "reviewed_base_sha": "0ae9e71d320a4acafbc38cd7b1b5fa7c56748299",
+  "reviewed_head_sha": "9f8587f3d841e3fedef90be1884abdb8bde34005",
+  "reviewed_run_id": "r-20261108T023439772442-report-only-the-hooks-own-session",
+  "reviewer": {
+    "backend": "sonnet",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T04:21:33.821694+00:00",
+  "total": 110
+}
