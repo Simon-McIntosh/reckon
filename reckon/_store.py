@@ -1182,11 +1182,6 @@ def _collapse_authored_section(html_text: str, request: dict[str, str]) -> str:
     )
 
 
-def _evidence_record_path(docs_dir: Path, plan_slug: str) -> Path:
-    """The cumulative landing record one plan's evidence appends land in."""
-    return docs_dir / "evidence" / "archive" / f"{plan_slug}-landed.html"
-
-
 def _evidence_plan_title(project: str, plan_slug: str, root: str | Path | None) -> str:
     """The title an op-created landing record names, from the plan it documents."""
     state, _ = read_plan(project, plan_slug, root)
@@ -1215,11 +1210,17 @@ def _evidence_section_html(request: dict[str, str]) -> str:
     """One anchored section element carrying an append's authored content."""
     from html import escape
 
+    from reckon import evidence
+
     body = request["body"]
     _refuse_forged_body_structure(body, subject="append_evidence body")
 
     anchor = escape(request["anchor"], quote=True)
-    parts = [f'  <section id="{anchor}">', f"    <h2>{escape(request['title'])}</h2>"]
+    origin = f'{evidence.APPEND_ORIGIN_ATTRIBUTE}="{evidence.APPEND_ORIGIN_VALUE}"'
+    parts = [
+        f'  <section id="{anchor}" {origin}>',
+        f"    <h2>{escape(request['title'])}</h2>",
+    ]
     if body.strip():
         parts.append("    " + body.strip())
     parts.append("  </section>")
@@ -1244,11 +1245,63 @@ def _append_evidence_to_text(html_text: str, request: dict[str, str]) -> str:
     return html_text[: boundary.start()] + fragment + html_text[boundary.start() :]
 
 
+def _reserved_evidence_anchors(
+    docs_dir: Path,
+    project: str,
+    plan_slug: str,
+    plan_state: dict | None,
+    plan_source: str | None,
+) -> set[str]:
+    """The section keys an evidence append may not take on one plan.
+
+    A written record renders a section for every plan comment key and every
+    ledger run's section, and may render one later for any id the plan
+    declares. An appended anchor on any of them is written now and overwritten
+    by the next synthesis, so it is refused before the append. The set itself
+    is the record renderer's, read through the same function the synthesis
+    reads, so the two cannot disagree about which ids the record owns.
+
+    A caller that already holds the plan it is writing passes it, because the
+    document being written is the one the anchors must be judged against; a
+    caller passing neither falls back to the plan on disk.
+    """
+    from reckon import evidence, ledger
+
+    if plan_state is None or plan_source is None:
+        from reckon import _plan_html
+        from reckon.resources import resolve_resource
+
+        resource = resolve_resource(
+            docs_dir,
+            project,
+            plan_slug,
+            artifact_type="plan",
+            include_archived=False,
+        )
+        if resource is None:
+            return {evidence._OUTCOME_SECTION_ID, evidence._PLAN_LEVEL_KEY}
+        plan_state = _plan_html.parse_plan(resource.path)
+        plan_source = resource.path.read_text(encoding="utf-8")
+    try:
+        records = ledger.runs(project, root=docs_dir.parent, plan=plan_slug)
+    except ledger.LedgerError as exc:
+        raise OpError(
+            f"append_evidence cannot read the run ledger for project {project!r}: {exc}"
+        ) from exc
+    _rendered, reserved = evidence._evidence_anchor_sets(
+        plan_state, records, plan_source
+    )
+    return reserved
+
+
 def _apply_evidence_appends(
     docs_dir: Path,
     project: str,
     requests: list[dict[str, str]],
     root: str | Path | None,
+    *,
+    plan_state: dict | None = None,
+    plan_source: str | None = None,
 ) -> list[Path]:
     """Append each request to its own record, all records or none.
 
@@ -1260,12 +1313,39 @@ def _apply_evidence_appends(
     writer's append interleaves with this batch instead of being overwritten by
     it. The locks are taken in sorted path order so two overlapping batches
     cannot deadlock.
+
+    An anchor the record renders, or may render once a comment or a run lands
+    on its plan section, is refused before any record is written: the next
+    synthesis would overwrite the section sitting there and the link to it
+    would stop resolving.
     """
+    from reckon import evidence
+
+    working_slug = str((plan_state or {}).get("slug") or "")
     grouped: dict[Path, list[dict[str, str]]] = {}
+    reserved: dict[str, set[str]] = {}
     for request in requests:
-        grouped.setdefault(_evidence_record_path(docs_dir, request["plan"]), []).append(
-            request
-        )
+        plan_slug = request["plan"]
+        if plan_slug not in reserved:
+            owned = plan_slug == working_slug
+            reserved[plan_slug] = _reserved_evidence_anchors(
+                docs_dir,
+                project,
+                plan_slug,
+                plan_state if owned else None,
+                plan_source if owned else None,
+            )
+        anchor = request["anchor"]
+        key = evidence._section_key(anchor)
+        if key in reserved[plan_slug]:
+            raise OpError(
+                f"evidence anchor {anchor!r} addresses section {key!r}, which the "
+                "landed record renders; an appended anchor cannot take a "
+                "section's id"
+            )
+        grouped.setdefault(
+            evidence._evidence_record_path(docs_dir, plan_slug), []
+        ).append(request)
 
     planned: list[tuple[Path, str]] = []
     written: list[Path] = []
@@ -1618,7 +1698,14 @@ def _write_state_locked(
     if evidence_appends:
         if docs_dir is None:
             raise OpError(f"append_evidence: no docs dir for project {project!r}")
-        _apply_evidence_appends(docs_dir, project, evidence_appends, root)
+        _apply_evidence_appends(
+            docs_dir,
+            project,
+            evidence_appends,
+            root,
+            plan_state=dict(new_data, slug=slug),
+            plan_source=source_text,
+        )
     successor_moves = (
         _carry_section_moves(new_data, source_text, resolved_moves, slug)
         if resolved_moves

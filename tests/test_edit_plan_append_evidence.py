@@ -8,6 +8,7 @@ from copy import deepcopy
 from pathlib import Path
 
 import pytest
+from bs4 import BeautifulSoup
 from click.testing import CliRunner
 
 from reckon import _plan_html, _store
@@ -122,6 +123,11 @@ def _record_path(checkout: Path) -> Path:
     return checkout / "docs" / "evidence" / "archive" / f"{PLAN}-landed.html"
 
 
+def _section_ids(text: str) -> list[str]:
+    """Every section id the record carries, in document order."""
+    return [tag["id"] for tag in BeautifulSoup(text, "html.parser").find_all("section")]
+
+
 def _seed_record(checkout: Path, slug: str, extra: str = "") -> Path:
     """Write a landing record for one plan slug as a prior writer left it."""
     record = checkout / "docs" / "evidence" / "archive" / f"{slug}-landed.html"
@@ -152,11 +158,11 @@ def test_append_evidence_creates_the_record_with_the_required_meta(plan) -> None
     text = record.read_text(encoding="utf-8")
     assert '<meta name="reckon-type" content="evidence">' in text
     assert f'<meta name="plan-evidence-for" content="{PLAN}">' in text
-    assert '<section id="first-beat">' in text
+    assert _section_ids(text) == ["first-beat"]
     assert "<h2>The first beat</h2>" in text
     assert "<p>What landed first.</p>" in text
     # The section lands inside main, before its closing tag.
-    assert text.index('<section id="first-beat">') < text.index("</main>")
+    assert text.index('id="first-beat"') < text.index("</main>")
 
 
 def test_append_evidence_lands_beside_an_existing_anchor(plan) -> None:
@@ -171,13 +177,13 @@ def test_append_evidence_lands_beside_an_existing_anchor(plan) -> None:
 
     assert second["ok"] is True, second
     text = _record_path(checkout).read_text(encoding="utf-8")
-    first_at = text.index('<section id="first-beat">')
-    second_at = text.index('<section id="second-beat">')
+    first_at = text.index('id="first-beat"')
+    second_at = text.index('id="second-beat"')
     assert first_at < second_at < text.index("</main>")
     # A second writer's append does not overwrite the first.
     assert "<p>One.</p>" in text
     assert "<p>Two.</p>" in text
-    assert text.count("<section id=") == 2
+    assert _section_ids(text) == ["first-beat", "second-beat"]
 
 
 def test_append_evidence_refuses_a_duplicate_anchor_naming_it(plan) -> None:
@@ -239,11 +245,9 @@ def test_append_evidence_batch_appends_both_anchors_to_one_record(plan) -> None:
 
     assert result["ok"] is True, result
     text = _record_path(checkout).read_text(encoding="utf-8")
-    assert '<section id="first-beat">' in text
-    assert '<section id="second-beat">' in text
+    assert _section_ids(text) == ["first-beat", "second-beat"]
     assert "<p>One.</p>" in text
     assert "<p>Two.</p>" in text
-    assert text.count("<section id=") == 2
 
 
 def test_append_evidence_batch_refuses_a_repeated_anchor_untouched(plan) -> None:
@@ -335,6 +339,8 @@ def test_concurrent_appends_to_one_record_both_land(
                 future.result(timeout=10)
 
         text = record.read_text(encoding="utf-8")
-        assert '<section id="beat-left">' in text, (round_index, text)
-        assert '<section id="beat-right">' in text, (round_index, text)
-        assert text.count("<section id=") == 2, (round_index, text)
+        # Which writer lands first is a race; both landing is the guarantee.
+        assert sorted(_section_ids(text)) == ["beat-left", "beat-right"], (
+            round_index,
+            text,
+        )

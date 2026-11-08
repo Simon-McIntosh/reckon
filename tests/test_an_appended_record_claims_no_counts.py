@@ -13,6 +13,7 @@ from copy import deepcopy
 from pathlib import Path
 
 import pytest
+from bs4 import BeautifulSoup
 from click.testing import CliRunner
 
 from reckon import _plan_html, _store, evidence, ledger
@@ -150,7 +151,8 @@ def test_an_appended_record_states_no_counts_and_no_verdict(checkout: Path) -> N
         assert sentence not in body, text
     assert 'name="plan-verdict"' not in text
     # The append's own anchor still lands in the frame it created.
-    assert '<section id="first-beat">' in text
+    ids = [tag["id"] for tag in BeautifulSoup(text, "html.parser").find_all("section")]
+    assert ids == ["first-beat"]
 
 
 def test_an_appended_record_still_names_its_plan_for_the_audit(

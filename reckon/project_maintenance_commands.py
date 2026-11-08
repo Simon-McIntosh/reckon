@@ -1483,6 +1483,8 @@ def synthesize_evidence(project, plan_slug, checkout_path):
         f"Synthesized {result.path} from {result.runs} run(s), "
         f"{result.comments} comment(s), and {result.commits} commit(s)."
     )
+    for tag, anchor in result.lost_anchors:
+        click.echo(f"  {tag}: {anchor}")
 
 
 
