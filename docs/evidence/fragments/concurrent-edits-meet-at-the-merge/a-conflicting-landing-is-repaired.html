@@ -1,0 +1,30 @@
+<section id="a-conflicting-landing-is-repaired-results">
+  <h3>Conflicting landings return for merge repair</h3>
+  <p>A real conflict records the file and pinned primary revision, persists repair advice, and resumes the delivery worker. A promoted run keeps its promotion record and its pending landing. The repaired head finishes through the existing merge lander, with no second promotion or plan write.</p>
+  <table>
+    <thead><tr><th>Temporary repository and bare remote case</th><th>Verified result</th></tr></thead>
+    <tbody>
+      <tr><td>Different functions in the same file</td><td>Both deliveries land, preserving both results.</td></tr>
+      <tr><td>Manual landing meets the same-line conflict</td><td>The promotion stands; the conflict opens a repair round; merge-only completion lands the repaired head.</td></tr>
+      <tr><td>Promotion is interrupted before its merge</td><td>The automatic pending-landing pass opens the repair and finishes the delivered head without another promotion.</td></tr>
+      <tr><td>Automatic landing detects an unpromoted conflict</td><td>The original run receives its pinned conflict outcome and repair round.</td></tr>
+    </tbody>
+  </table>
+  <p>Each repaired landing checks the bare remote ancestry and resulting source, the absence of conflict markers, unchanged plan and promotion-record bytes, and exactly one additional integration commit along the primary's first-parent history.</p>
+  <p>Original delivery node gate: <strong>4 passed in 160.62s (0:02:40)</strong>. Negative control at the original base: <strong>3 failed, 1 passed in 92.62s (0:01:32)</strong>; the independent edit case passes there while the three repair cases fail.</p>
+  <p>Original delivery importer base arms: 3 failed, 395 passed in 607.67s (0:10:07); 57 passed in 20.12s. Combined head arm: 3 failed, 452 passed in 730.38s (0:12:10). <strong>Zero added failure IDs</strong> across 33 importer files. Ruff lint and format checks pass on all six Python paths.</p>
+  <p>The pending-landing module was added to the write scope by coordinator adjudication. The first attempt's blocker was resolved by retaining the original promotion and finishing the repaired delivery through pending landing. Detailed commands, receipts and failure identities are preserved in the worker manifest and run logs.</p>
+  <h4 id="a-conflicting-landing-is-repaired-repair-gate">A repair gate belongs to the repaired head</h4>
+  <p>Pending landing now reads the fresh repair manifest and requires a readable capture with a terminal passing status, matching command and a revision that resolves to the repaired head. Missing, unreadable, failed, stale, unbound, unfinished and command-mismatched evidence returns <code>repair-gate-refused</code>. The pending record and worker pointer remain open, and neither the remote, original promotion nor plan changes. Manual completion also refuses an explicitly failed gate verdict.</p>
+  <p>Both manual completion and the automatic pending-landing pass exercise all seven evidence refusals before supplying an actual successful gate at the repaired revision. The accepted repair then reaches the bare remote through the existing merge lander, retaining the original promotion and plan bytes.</p>
+  <table>
+    <thead><tr><th>Repair verification</th><th>Measured result</th></tr></thead>
+    <tbody>
+      <tr><td>Exact node command at repair base</td><td>4 passed in 72.42s (0:01:12)</td></tr>
+      <tr><td>Exact node command at repaired head</td><td>4 passed in 71.72s (0:01:11)</td></tr>
+      <tr><td>Answering commit reversed in a temporary extraction</td><td>2 failed, 2 passed in 54.36s; both repair routes incorrectly finish the missing-gate delivery.</td></tr>
+      <tr><td>Direct guard probe with a known passing control</td><td>One capture accepted; seven invalid evidence shapes refused.</td></tr>
+    </tbody>
+  </table>
+  <p>The answering commit is <code>50952cce955e8fce34738138b6ed0beee7e4ddf8</code>. Ruff lint and formatting pass on the three Python paths changed by this repair. The manifest records the exact commands, revision-bound suite receipts, reverse-commit control and individual refusal receipts.</p>
+</section>
