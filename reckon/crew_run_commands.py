@@ -3211,6 +3211,8 @@ def crew_complete(
         )
         return
     if pointer.get("pending_landing_repair"):
+        if gate != "passed":
+            raise click.ClickException("a merge repair requires a passing repair gate")
         if not land:
             raise click.ClickException(
                 "this run is already promoted; finish its pending landing with --land"

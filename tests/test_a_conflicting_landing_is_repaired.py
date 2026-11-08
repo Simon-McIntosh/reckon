@@ -30,7 +30,7 @@ from tests.helpers.landing_repository import (
 )
 
 
-def _complete_land(run):
+def _complete_land(run, *extra):
     citations = []
     if run.get("authored_head"):
         citations = ["--commit", run["head"]]
@@ -40,6 +40,7 @@ def _complete_land(run):
         *citations,
         "--waive-unreviewed-promotion",
         "The fixture tests merge conflicts rather than independent review.",
+        *extra,
     )
 
 
@@ -174,7 +175,11 @@ def deliver_repair_gate(run, *, evidence="passed"):
     if evidence == "failed":
         command = "git diff --exit-code HEAD^ HEAD"
     checked = subprocess.run(
-        command, shell=True, cwd=run["worktree"], capture_output=True, text=True
+        command.split(),
+        cwd=run["worktree"],
+        capture_output=True,
+        text=True,
+        check=False,
     )
     assert checked.returncode == (1 if evidence == "failed" else 0)
     revision = run["authored_head"] if evidence == "stale" else run["head"]
@@ -250,6 +255,7 @@ def test_conflicting_delivery_opens_repair_then_lands(deliveries, monkeypatch, r
         repository / "docs" / "state" / PROJECT / "runs" / (second["run_id"] + ".json")
     )
     plan_before, promotion_before = plan.read_bytes(), ledger.read_bytes()
+    remote_before = git(second["origin"], "rev-parse", "main")
     # Resolve a real worker merge, including all primary files it brings in.
     worktree = second["worktree"]
     worker_merge = subprocess.run(
@@ -276,6 +282,7 @@ def test_conflicting_delivery_opens_repair_then_lands(deliveries, monkeypatch, r
     repaired = git(worktree, "rev-parse", "HEAD")
     second["authored_head"] = second["head"]
     second["head"] = repaired
+    refusals = []
     for evidence in (
         "missing",
         "missing-log",
@@ -294,15 +301,21 @@ def test_conflicting_delivery_opens_repair_then_lands(deliveries, monkeypatch, r
             row = queue_landing.land_once()["interrupted_landings"][0]
         assert row["status"] == "repair-gate-refused", (evidence, row)
         assert "gate" in row["error"], row
+        refusals.append({"evidence": evidence, **row})
         assert pending_path.is_file()
         assert runs.pointer_path(second["run_id"]).is_file()
-        assert git(second["origin"], "rev-parse", "main") == primary
+        assert git(second["origin"], "rev-parse", "main") == remote_before
         assert ledger.read_bytes() == promotion_before
         assert plan.read_bytes() == plan_before
         assert len(resumed) == 1
         assert_clean(repository)
     deliver_repair_gate(second)
     if route == "manual":
+        refused = _complete_land(second, "--gate", "failed")
+        assert refused.exit_code != 0, refused.output
+        assert "passing repair gate" in refused.output
+        assert pending_path.is_file()
+        assert git(second["origin"], "rev-parse", "main") == remote_before
         result = _complete_land(second)
         assert result.exit_code == 0, result.output
         finished = json.loads(result.output)["pending_landings"][0]
@@ -329,6 +342,11 @@ def test_conflicting_delivery_opens_repair_then_lands(deliveries, monkeypatch, r
     )
     assert git(second["origin"], "merge-base", repaired, "main") == repaired
     assert_clean(repository)
+    (worktree.parent / f"repair-gate-refusals-{route}.json").write_text(
+        json.dumps(
+            {"repaired_head": repaired, "refusals": refusals, "landed": finished}
+        )
+    )
 
 
 def test_unpromoted_automatic_conflict_opens_repair(deliveries, monkeypatch):

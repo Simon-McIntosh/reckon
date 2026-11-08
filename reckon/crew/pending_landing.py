@@ -138,7 +138,48 @@ def _delivered_repair(
         merge._is_ancestor(repository, parent, head) for parent in (original, primary)
     ):
         return ""
+    _require_repair_gate(pointer, head, repository)
     return head
+
+
+def _require_repair_gate(
+    pointer: Mapping[str, Any], head: str, repository: Path
+) -> None:
+    """Require the fresh repair manifest's passing capture for this exact head."""
+    from reckon import ledger
+    from reckon.crew.promotion_evidence import (
+        _commit_canonical_id,
+        _recorded_exit_status,
+    )
+    from reckon.crew.promotion_records import (
+        _command_from_gate_log,
+        _default_gate_evidence_from_manifest,
+        _normalized_command,
+    )
+    from reckon.crew.reports import _GATE_LOG_REVISION
+
+    check, _commits = _default_gate_evidence_from_manifest(
+        pointer, verdict="passed", gate_check=None, commits=()
+    )
+    missing = ledger.gate_check_missing_fields(check)
+    if missing:
+        raise runs.CrewError("repair gate is missing " + ", ".join(missing))
+    if check["exit_status"] != 0:
+        raise runs.CrewError("repair gate did not pass")
+    try:
+        text = Path(check["log_path"]).read_text(encoding="utf-8")
+    except (KeyError, OSError, UnicodeError) as exc:
+        raise runs.CrewError("repair gate requires a readable captured log") from exc
+    if _recorded_exit_status(text) != 0:
+        raise runs.CrewError("repair gate log must end with EXIT=0")
+    if _normalized_command(_command_from_gate_log(text)) != _normalized_command(
+        check["command"]
+    ):
+        raise runs.CrewError("repair gate command does not match its captured log")
+    first_line = next((line for line in text.splitlines() if line.strip()), "")
+    revisions = (match.group(1) for match in _GATE_LOG_REVISION.finditer(first_line))
+    if not any(_commit_canonical_id(repository, rev) == head for rev in revisions):
+        raise runs.CrewError(f"repair gate log must name repaired revision {head}")
 
 
 def finish_pending_landings(
@@ -196,11 +237,21 @@ def finish_pending_landings(
             continue
         repository = merge.project_repository(project)
         if conflict:
-            repaired = (
-                _delivered_repair(pointer, head, conflict, repository)
-                if pointer
-                else ""
-            )
+            try:
+                repaired = (
+                    _delivered_repair(pointer, head, conflict, repository)
+                    if pointer
+                    else ""
+                )
+            except runs.CrewError as exc:
+                results.append(
+                    {
+                        "run_id": run_id,
+                        "status": "repair-gate-refused",
+                        "error": str(exc),
+                    }
+                )
+                continue
             if not repaired:
                 from reckon.crew.recovery_repair_dispatch import dispatch_merge_repair
 
