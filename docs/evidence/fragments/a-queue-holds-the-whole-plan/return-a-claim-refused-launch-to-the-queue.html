@@ -46,4 +46,23 @@
   <p>The fourth case reads the real crew home before and after a pass and
   requires its live pointer set unchanged, so no record this node's tests write
   can escape the temporary home.</p>
+  <p id="return-a-claim-refused-launch-to-the-queue-rebind"><strong>Review
+  repair.</strong> The same defect existed one branch over: when a metered hold
+  rebinds the request onto the local lane and relaunches it, a claim taken since
+  the pre-launch check could refuse that relaunch after the rebound pointer was
+  published in <code>starting</code>, and the generic handler stamped the
+  failure in place. The rebind refusal now takes the same hold path, so the
+  rebound request returns to the queue carrying the claim. A case covers the
+  coincidence of a spent metered window and a claim in that window, with a
+  positive control showing the identical rebind launching when no claim refuses
+  it. The disabled rebind clause leaves that case in <code>starting</code>
+  (<code>negative-control-rebind-refusal-without-restore.log</code>, EXIT=1).</p>
+  <p>The queued write-back now has one owner: <code>_restore_queued</code> takes
+  the hold and skips the failure stamp for a claim refusal, so the duplicated
+  pop list, discard check and locked write are gone. At head
+  <code>efd1126ec0</code> the six cases pass with the armed command
+  (<code>after-suite.log</code>, EXIT=0); the same file copied into a scratch
+  tree of base <code>b0708be48a</code>, run from that tree's root, has 2
+  failed and 4 passed — the two claim-refusal cases (<code>baseline-suite.log</code>,
+  EXIT=1).</p>
 </section>
