@@ -43,7 +43,7 @@ refusal names the session: False</code></pre>
 
     <section id="name-the-worker-a-launch-refusal-found-the-gate">
       <h2>The gate</h2>
-      <p><code>tests/test_a_queued_run_launches_once.py</code> shows five cases, each asserting the whole refusal text rather than a prefix, against a temporary crew home:</p>
+      <p><code>tests/test_a_queued_run_launches_once.py</code> shows six cases, each asserting the whole refusal text rather than a prefix, against a temporary crew home:</p>
       <ul>
         <li>beside a live recorded pid, refused naming that pid;</li>
         <li>beside a worker found only by the session walk with the recorded pid dead, refused naming the session and not the dead pid;</li>
@@ -52,8 +52,8 @@ refusal names the session: False</code></pre>
         <li>beside a run whose worker is proven dead, the launch proceeds;</li>
         <li>a fresh dispatch refused at <code>_prepare_attempt_records</code> names the session and not the dead pid.</li>
       </ul>
-      <p>An autouse fixture asserts the operator's real crew home is untouched by every case. The armed suite ran 3 passed at the base revision and 6 passed at the head; <code>tests/test_resume_refuses_a_live_worker.py</code> passed 10 tests unchanged, guarding the worker-record and environment-mark pid wording.</p>
-      <p>Four declared mutations were applied and each reddened its named case: wording from the recorded pid alone failed the second case; removing the liveness read from <code>_supervisor_spawn_worker</code> let the second worker launch in the first case; wording the launcher's own refusal from the pid failed the fifth case; dropping the owner's placed branch so the recorded pid answers failed the scheduler-unknown case.</p>
+      <p>An autouse fixture asserts the operator's real crew home is untouched by every case. The armed suite — this file together with <code>tests/test_a_widen_says_when_it_takes_effect.py</code>, which the liveness change also reaches — ran <em>4 failed, 13 passed</em> against the base revision and <em>17 passed</em> at the head; the four base failures are the session-walk, placed-job, scheduler-unknown and fresh-dispatch cases. <code>tests/test_resume_refuses_a_live_worker.py</code> passed 10 tests unchanged, guarding the worker-record and environment-mark pid wording.</p>
+      <p>Four declared mutations were applied and each reddened its named case: wording from the recorded pid alone failed the session-walk case; removing the liveness read from <code>_supervisor_spawn_worker</code> let the second worker launch beside a live recorded pid; wording the launcher's own refusal from the pid failed the fresh-dispatch case; dropping the owner's placed branch so the recorded pid answers failed the scheduler-unknown case.</p>
     </section>
   </main>
 </body>
