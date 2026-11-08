@@ -69,7 +69,7 @@ def checkout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """
     real_cache = review_records.node_local_cache_dir(PROJECT)
     before = _snapshot(real_cache)
-    findings_module._INDEX_CODE_STAMP.clear()
+    review_records.forget_cache_code_stamps()
 
     root = tmp_path / "repo"
     (root / "docs" / "state" / PROJECT).mkdir(parents=True)
@@ -114,7 +114,7 @@ def record_reads(monkeypatch: pytest.MonkeyPatch) -> list[Path]:
 def _forget_process() -> None:
     """Drop what one process remembers, as a newly started process would."""
     findings_module._INDEXES.clear()
-    findings_module._INDEX_CODE_STAMP.clear()
+    review_records.forget_cache_code_stamps()
     file_memo.clear()
 
 
@@ -309,7 +309,7 @@ def test_a_change_to_a_row_source_invalidates_every_entry(
     stand_in = tmp_path / "row-source.py"
     stand_in.write_text("# one\n", encoding="utf-8")
     monkeypatch.setattr(findings_module, "_index_sources", lambda: (*sources, stand_in))
-    findings_module._INDEX_CODE_STAMP.clear()
+    review_records.forget_cache_code_stamps()
 
     _store_two(checkout)
     findings_module.findings_by_path(PROJECT, root=checkout)

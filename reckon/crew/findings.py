@@ -28,8 +28,6 @@ against it.
 
 from __future__ import annotations
 
-import hashlib
-import json
 import threading
 from collections.abc import Iterable, Mapping
 from concurrent.futures import ThreadPoolExecutor
@@ -470,29 +468,11 @@ def _index_sources() -> tuple[Path, ...]:
     )
 
 
-# A digest of a handful of source files is cheap next to the read it guards, but
-# not free, so it is computed once per process. A held stamp is one entry in a
-# list rather than a module scalar so the memo costs no rebinding of a module
-# global on the read path.
-_INDEX_CODE_STAMP: list[str] = []
-
-
 def _index_code_stamp() -> str:
-    """The digest a persisted index is filed under and checked against.
+    """The digest this index is filed under and checked against."""
+    from reckon.crew.review_records import cache_code_stamp
 
-    Empty when a source cannot be read, which disables the persisted index for
-    this process rather than filing one under a stamp nothing can be compared
-    with.
-    """
-    if not _INDEX_CODE_STAMP:
-        digest = hashlib.sha256()
-        try:
-            for source in _index_sources():
-                digest.update(source.read_bytes())
-        except OSError:
-            return ""
-        _INDEX_CODE_STAMP.append(digest.hexdigest())
-    return _INDEX_CODE_STAMP[0]
+    return cache_code_stamp(_index_sources())
 
 
 def _index_cache_path(key: tuple[str, str, str]) -> Path | None:
@@ -502,13 +482,14 @@ def _index_cache_path(key: tuple[str, str, str]) -> Path | None:
     name alone: a worktree or a scratch tree shares its project name with the
     main checkout and the two must never answer from one another's entries.
     """
-    from reckon.crew.review_records import node_local_cache_dir
+    from reckon.crew.review_records import cache_document_path
 
     project, committed_key, root_key = key
     if not committed_key and not root_key:
         return None
-    digest = hashlib.sha256(f"{committed_key}\0{root_key}".encode()).hexdigest()
-    return node_local_cache_dir(project) / f"findings-index-{digest[:32]}.json"
+    return cache_document_path(
+        project, "findings-index", f"{committed_key}\0{root_key}"
+    )
 
 
 def _signature_tuple(value: Any) -> tuple[int, ...] | None:
@@ -571,15 +552,14 @@ def _load_persisted_index(key: tuple[str, str, str]) -> dict[str, Any] | None:
     document gets the same answer, because a cache that cannot be read is not a
     cache.
     """
+    from reckon.crew.review_records import read_cache_document
+
     stamp = _index_code_stamp()
     path = _index_cache_path(key)
     if not stamp or path is None:
         return None
-    try:
-        document = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError, ValueError):
-        return None
-    if not isinstance(document, Mapping):
+    document = read_cache_document(path)
+    if document is None:
         return None
     if document.get("version") != _INDEX_VERSION:
         return None
@@ -668,14 +648,9 @@ def _persist_index(key: tuple[str, str, str], state: Mapping[str, Any]) -> None:
         },
         "code": _directory_document(code) if code is not None else None,
     }
-    try:
-        from reckon._store import write_json_atomically
+    from reckon.crew.review_records import write_cache_document
 
-        write_json_atomically(
-            path, document, fsync=False, mode=None, create_parents=True
-        )
-    except OSError:
-        return
+    write_cache_document(path, document)
 
 
 def _directory_entry(
@@ -886,6 +861,21 @@ def note_record_written(
 ) -> None:
     """Refresh a project's persisted findings index after a record was written.
 
+    This is the whole of the writer side: the index is a disposable cache of
+    rows derived from records, so a refresh that fails costs a later reader one
+    record read and is never a reason to fail a write that has already landed.
+    """
+    try:
+        _refresh_index_for_record(Path(path), project=project, root=root)
+    except OSError:
+        return
+
+
+def _refresh_index_for_record(
+    record_path: Path, *, project: str, root: str | Path | None
+) -> None:
+    """Rewrite this record's entry in the persisted index.
+
     The writers that change a record — the committed-store writer, an answer
     recorded on a committed record, and the code-review store — call this once
     their write has landed, so the next process to read the index does not have
@@ -908,7 +898,6 @@ def note_record_written(
     rescans that one directory and reads the record it just wrote, which is one
     file.
     """
-    record_path = Path(path)
     try:
         root_path = _scope_root(project, root)
         committed = _review.committed_review_root(project, root=root)

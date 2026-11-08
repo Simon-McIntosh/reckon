@@ -293,23 +293,10 @@ def store_committed_review(
     )
     path.parent.mkdir(parents=True, exist_ok=True)
     _review._write_record(path, stored)
-    _note_findings_index(path, project=project, root=root)
-    return path
-
-
-def _note_findings_index(path: Path, *, project: str, root: str | Path | None) -> None:
-    """Point the findings index at the record just written.
-
-    The index is a disposable cache of rows derived from records, so a failure
-    to refresh it costs a later reader one record read and is never a reason to
-    fail a write that has already landed.
-    """
     from reckon.crew.findings import note_record_written
 
-    try:
-        note_record_written(path, project=project, root=root)
-    except OSError:
-        return
+    note_record_written(path, project=project, root=root)
+    return path
 
 
 def commit_record_write(project: str, path: str | Path) -> bool:
@@ -1014,34 +1001,111 @@ def node_local_cache_dir(project: str) -> Path:
     return base / project
 
 
-# A persisted index is meaningful only to the code that would read it: a build
+# A persisted cache is meaningful only to the code that would read it: a build
 # written before the reader changed can hold facts a later reader would derive
 # differently, and the selection rules it was written under can differ too. The
-# stamp is the content identity of the two modules those facts and rules are
+# stamp is the content identity of the modules those facts and rules are
 # defined in, so it moves for an uncommitted edit as readily as for a commit.
 # The process-wide code stamp is not used here: it costs about eleven seconds on
 # a cold process, reading a whole package and asking git about the tree, which
-# is the cost this module's persisted cache exists to remove.
-# A held stamp is one entry in a list rather than a module scalar so the memo
-# costs no rebinding of a module global on the read path.
-_INDEX_CODE_STAMP: list[str] = []
+# is the cost a persisted cache exists to remove.
+#
+# Every cache on the node files itself the same way, so the stamp, the path and
+# the document read and write live here once: a reader that spells them out for
+# itself drifts from this one, and the drift is silent until a document written
+# by one is trusted by the other.
+_CACHE_CODE_STAMPS: dict[tuple[str, ...], str] = {}
+
+
+def cache_code_stamp(sources: Iterable[Path]) -> str:
+    """The content digest a persisted cache is filed under and checked against.
+
+    Each kind of cache names the modules whose content fixes what its entries
+    mean. Empty when a source cannot be read, which disables the persisted
+    cache for this process rather than filing one under a stamp nothing can be
+    compared with.
+    """
+    names = tuple(str(source) for source in sources)
+    held = _CACHE_CODE_STAMPS.get(names)
+    if held is not None:
+        return held
+    digest = hashlib.sha256()
+    try:
+        for source in names:
+            digest.update(Path(source).read_bytes())
+    except OSError:
+        return ""
+    stamp = digest.hexdigest()
+    _CACHE_CODE_STAMPS[names] = stamp
+    return stamp
+
+
+def forget_cache_code_stamps() -> None:
+    """Drop the stamps this process holds, as a newly started process has none."""
+    _CACHE_CODE_STAMPS.clear()
+
+
+def cache_document_path(project: str, kind: str, key: str) -> Path:
+    """The node-local file one cache document is persisted in.
+
+    ``key`` names the thing the document is about — a store directory, a pair
+    of directories and a checkout — rather than the project alone, because a
+    worktree's or a scratch tree's store shares its project name with the main
+    checkout and the two must never answer from one another's entries.
+    """
+    digest = hashlib.sha256(key.encode("utf-8")).hexdigest()[:32]
+    return node_local_cache_dir(project) / f"{kind}-{digest}.json"
+
+
+def read_cache_document(path: Path) -> dict[str, Any] | None:
+    """One cache document as another process left it, or ``None`` when unusable.
+
+    A missing, half-written or malformed document is not a cache, so the caller
+    builds from scratch; every caller makes the same reading rather than each
+    wrapping ``json.loads`` in its own except clause.
+    """
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return document if isinstance(document, dict) else None
+
+
+def write_cache_document(path: Path, document: Mapping[str, Any]) -> None:
+    """Write one cache document where this node's processes can start from it.
+
+    A disposable cache: an unwritable directory, a full disk or a reader that
+    arrives mid-write costs a later process a from-scratch build rather than
+    the cache, so a write that fails is not an error the caller reports.
+    """
+    try:
+        from reckon._store import write_json_atomically
+
+        write_json_atomically(
+            path, document, fsync=False, mode=None, create_parents=True
+        )
+    except OSError:
+        return
 
 
 def _index_sources() -> tuple[Path, ...]:
-    """The modules whose content fixes what a persisted index means."""
+    """The modules whose content fixes what this store's index means."""
     return (Path(__file__).resolve(), Path(_review.__file__).resolve())
 
 
+# The stamp this store's index is filed under, held per process. A held value
+# is consulted before the sources are read, so a caller can pin one — the state
+# a document written by other code presents — without a source read.
+_INDEX_CODE_STAMP: list[str] = []
+
+
 def _index_code_stamp() -> str:
-    """The stamp a persisted index is filed under and checked against."""
+    """The stamp this store's persisted index is filed under."""
     if not _INDEX_CODE_STAMP:
-        digest = hashlib.sha256()
-        try:
-            for source in _index_sources():
-                digest.update(source.read_bytes())
-        except OSError:
+        stamp = cache_code_stamp(_index_sources())
+        if not stamp:
             return ""
-        _INDEX_CODE_STAMP.append(digest.hexdigest())
+        _INDEX_CODE_STAMP.append(stamp)
     return _INDEX_CODE_STAMP[0]
 
 
@@ -1054,14 +1118,8 @@ def _resolved(directory: Path) -> str:
 
 
 def _index_cache_path(directory: Path) -> Path:
-    """The node-local file one store directory's index is persisted in.
-
-    The store's own directory keys the file, not the project, because a
-    worktree's or a scratch tree's store shares its project name with the main
-    store and the two must never answer from one another's entries.
-    """
-    digest = hashlib.sha256(_resolved(directory).encode("utf-8")).hexdigest()[:32]
-    return node_local_cache_dir(directory.name) / f"store-index-{digest}.json"
+    """The node-local file one store directory's index is persisted in."""
+    return cache_document_path(directory.name, "store-index", _resolved(directory))
 
 
 def _stat_identity(info: os.stat_result) -> tuple[int, int, int]:
@@ -1259,19 +1317,9 @@ def _persist_store_entries(directory: Path, entries: list[dict[str, Any]]) -> No
     """
     if not _resolved(directory):
         return
-    document = _persisted_index_document(directory, entries)
-    try:
-        from reckon._store import write_json_atomically
-
-        write_json_atomically(
-            _index_cache_path(directory),
-            document,
-            fsync=False,
-            mode=None,
-            create_parents=True,
-        )
-    except OSError:
-        return
+    write_cache_document(
+        _index_cache_path(directory), _persisted_index_document(directory, entries)
+    )
 
 
 def _entry_from_persisted(directory: Path, raw: Any) -> dict[str, Any] | None:
@@ -1311,11 +1359,8 @@ def _load_persisted_entries(directory: Path) -> list[dict[str, Any]] | None:
     store = _resolved(directory)
     if not store:
         return None
-    try:
-        document = json.loads(_index_cache_path(directory).read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError, ValueError):
-        return None
-    if not isinstance(document, Mapping):
+    document = read_cache_document(_index_cache_path(directory))
+    if document is None:
         return None
     if str(document.get("code_stamp") or "") != _index_code_stamp():
         return None

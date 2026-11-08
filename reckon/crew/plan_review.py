@@ -2345,7 +2345,9 @@ def record_response(
             committed, updated, indent=2, sort_keys=True, fsync=False, mode=None
         )
         _commit_record_write(str(updated.get("project") or ""), committed)
-        _note_findings_index(committed, project=str(updated.get("project") or ""))
+        from reckon.crew.findings import note_record_written
+
+        note_record_written(committed, project=str(updated.get("project") or ""))
         return committed
     return store_plan_review(updated, base_dir=base_dir)
 
@@ -5426,23 +5428,10 @@ def store_code_review(
     write_json_atomically(
         path, stored, indent=2, sort_keys=True, fsync=False, mode=None
     )
-    _note_findings_index(path, project=project)
-    return path
-
-
-def _note_findings_index(path: Path, *, project: str) -> None:
-    """Point the findings index at the record just written.
-
-    The index is a disposable cache of rows derived from records, so a failure
-    to refresh it costs a later reader one record read and is never a reason to
-    fail a code-review write that has already landed.
-    """
     from reckon.crew.findings import note_record_written
 
-    try:
-        note_record_written(path, project=project)
-    except OSError:
-        return
+    note_record_written(path, project=project)
+    return path
 
 
 def list_code_reviews(
