@@ -1,0 +1,77 @@
+<section id="negative-control-from-runner-record-landing">
+  <h2>A negative control is admitted on the runner's own record</h2>
+
+  <p><strong>What changed.</strong> The control-evidence reader admitted a
+  declared mutation's log only when a terminal <code>EXIT=&lt;n&gt;</code> line
+  was present and non-zero. A log written without the fleet's capture
+  convention — pytest's <code>FAILED &lt;id&gt;</code> list beside its
+  <code>N failed</code> summary, and no appended status — therefore recorded the
+  run's failure in the runner's own words and was still refused. The reader now
+  takes the failure from either record: the shell's status decides when a
+  capture line is present (and <code>EXIT=0</code> is never overridden by text),
+  and otherwise the runner's failure output decides. Nothing else about the
+  admission moved. The identity requirement is unchanged — the control must name
+  at least one failing test id the head arm does not fail — so a bare
+  <code>EXIT=1</code> with no runner output is still refused, a log naming no
+  failing id is still refused, and a log whose only failing id also fails at
+  head is still refused.</p>
+
+  <p><strong>Where the decision lives.</strong>
+  <code>_control_run_shows_a_failure</code> in
+  <code>reckon/crew/promotion_evidence.py</code> is the single point that answers
+  <em>did this run fail</em>, from the recorded status when there is one and from
+  <code>_runner_reports_a_failed_run</code> when there is not.
+  <code>_require_declared_negative_control</code> in
+  <code>reckon/crew/promotion_checks.py</code> calls it and keeps the rest of the
+  refusal chain — ids, then the arm comparison — exactly as it was.</p>
+
+  <p><strong>The dispatch prompt states the contract.</strong>
+  <code>NEGATIVE_CONTROL_DECLARED_RULE</code> and the manifest block in
+  <code>reckon/crew/prompts.py</code> now say that a terminal
+  <code>EXIT=</code> line is one way the log shows the run failed and is not
+  required, because a worker that is not told so writes a red log it believes is
+  incomplete.</p>
+
+  <h3 id="negative-control-from-runner-record-measured">Measured</h3>
+
+  <p>The new check is <code>tests/test_a_negative_control_is_read_from_the_runner.py</code>
+  and holds four arms: a runner-written red log with no exit line is admitted; an
+  exit line with no runner output is refused for naming no failing id; a log
+  whose only failing id also fails at head is refused; and a composed implement
+  prompt for a node declaring a negative control names the contract. Two
+  pre-existing tests that encoded the retired refusal —
+  <code>tests/test_control_gate_checks_facts.py</code> and
+  <code>tests/test_control_is_compared_with_the_head_arm.py</code> — were updated
+  to assert the admission and each gained a companion case proving a log with
+  neither record is still refused.</p>
+
+  <table id="negative-control-from-runner-record-arms">
+    <caption>Every arm is a log whose first line names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>gate</td><td>HEAD of the node's worktree</td><td>5 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>importer gate, head</td><td>HEAD over the five test files importing <code>reckon.crew.promotion_evidence</code></td><td>20 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>importer gate, base</td><td>7f41f27119, the same population minus the new test</td><td>15 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control</td><td>HEAD with the runner-record branch removed, so a capture exit line is required again</td><td>3 failed, 2 passed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>Ruff check and <code>ruff format --check</code> add no finding on the staged
+  paths: the repository carries six pre-existing findings across those files and
+  the head arm reports the same six (one <code>S608</code> in
+  <code>prompts.py</code> moves line because the contract sentence was added
+  above it), and the one file needing reformatting at head,
+  <code>promotion_checks.py</code>, is the same file the base revision leaves
+  unformatted.</p>
+
+  <p><strong>Two scope notes.</strong> The plan section and the node's
+  write-paths line name the prompt module, but the dispatch's exclusive
+  FENCE — SCOPE list omitted <code>reckon/crew/prompts.py</code>; the peer that
+  held it finished before this node started, and a self-widen could not be
+  recorded because the crew lock directory is mounted read-only inside the worker
+  fence, so the four-line prompt edit was made and is reported here. The two
+  legacy control tests sit outside the same list for the same reason: the
+  plan's own no-added-failure clause cannot hold while they assert the retired
+  refusal.</p>
+</section>
