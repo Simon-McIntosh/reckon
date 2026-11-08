@@ -19,8 +19,8 @@ from reckon.crew import landing_measure, recovery, runs
 from reckon.crew.node import CrewError, is_test_path
 from reckon.crew.promotion_records import _node_test_files
 from reckon.crew.recovery_review_acceptance import (
+    LANDED_NON_BLOCKING_REASON,
     _review_accepts_promotion,
-    record_landed_exemptions,
 )
 
 _run_srun = subprocess.run
@@ -1097,16 +1097,24 @@ def _canonical_test_ids(values: Any) -> set[str]:
     }
 
 
-def _after_suite_arm(
-    manifest: Mapping[str, Any],
-) -> tuple[Mapping[str, Any] | None, str]:
+def _plain_int(value: Any) -> int | None:
+    """A recorded integer as an int, or None when the field holds anything else.
+
+    ``True`` is an ``int`` in Python, so a boolean written where a status
+    belongs would read as 1 and pass a check that only tested the type.
+    """
+    if isinstance(value, bool) or not isinstance(value, int):
+        return None
+    return value
+
+
+def _after_suite_arm(after: Any) -> tuple[Mapping[str, Any] | None, str]:
     """The run's head suite observation, and why it cannot be read when it cannot.
 
     A head arm that is absent, that does not declare its run complete, or that
     records no exit status states no gate result at all, so it is no evidence
     rather than clean evidence.
     """
-    after = manifest.get("after_suite")
     if not isinstance(after, Mapping):
         return None, (
             f"{RED_SUITE_GUARD}: the manifest records no after_suite observation "
@@ -1119,7 +1127,7 @@ def _after_suite_arm(
             "list of failures is not the set it measured"
         )
     exit_status = after.get("exit_status")
-    if isinstance(exit_status, bool) or not isinstance(exit_status, int):
+    if _plain_int(exit_status) is None:
         return None, (
             f"{RED_SUITE_GUARD}: the manifest's after_suite records no "
             "exit_status, so the run states no gate result"
@@ -1129,10 +1137,8 @@ def _after_suite_arm(
 
 def _after_suite_exit_guard(after: Mapping[str, Any]) -> str:
     """The refusal a head arm's own exit status raises, or "" when it passed."""
-    exit_status = after.get("exit_status")
-    if isinstance(exit_status, bool) or not isinstance(exit_status, int):
-        return ""
-    if exit_status == 0:
+    exit_status = _plain_int(after.get("exit_status"))
+    if exit_status in (None, 0):
         return ""
     return (
         f"{RED_SUITE_GUARD}: the manifest's after_suite exit status is "
@@ -1155,7 +1161,32 @@ def _after_suite_added_guard(
     )
 
 
-def _manifest_suite_guard(pointer: Mapping[str, Any]) -> str:
+def _suite_arms(pointer: Mapping[str, Any]) -> Mapping[str, Any]:
+    """The suite arms a delivered manifest records, read once for both readers.
+
+    The refusal reads these arms and the refusal's stamp digests them, so one
+    pass reads the manifest once: two reads could see two versions of a file a
+    coordinator is rewriting, and the refusal would then be stamped with
+    evidence it was not judged on. An arm recorded as anything other than a
+    mapping is kept here so that rewriting it releases the refusal.
+
+    A manifest recording neither arm states nothing: a run whose node armed no
+    suite pair has only the landing pass's own measurement to speak for it, and
+    promotion already refuses a gate it cannot read.
+    """
+    from reckon.crew.promotion_checks import _fresh_manifest
+
+    manifest = _fresh_manifest(pointer)
+    if manifest is None:
+        return {}
+    return {
+        name: manifest[name]
+        for name in ("baseline_suite", "after_suite")
+        if manifest.get(name) is not None
+    }
+
+
+def _manifest_suite_guard(arms: Mapping[str, Any]) -> str:
     """The refusal a run's own recorded suite pair raises, or "" when it is clean.
 
     The delivered manifest states the gate the worker ran at its base and at its
@@ -1163,24 +1194,13 @@ def _manifest_suite_guard(pointer: Mapping[str, Any]) -> str:
     back clean. An arm that cannot be read, a nonzero exit, or a failure id the
     baseline arm does not name each leave the run to its coordinator instead of
     promoting it.
-
-    A manifest that records neither arm states nothing here: a run whose node
-    armed no suite pair has only the landing pass's own measurement to speak for
-    it, and promotion already refuses a gate it cannot read.
     """
-    from reckon.crew.promotion_checks import _fresh_manifest
-
-    manifest = _fresh_manifest(pointer)
-    if manifest is None:
+    if not arms:
         return ""
-    baseline = manifest.get("baseline_suite")
-    if not isinstance(baseline, Mapping) and not isinstance(
-        manifest.get("after_suite"), Mapping
-    ):
-        return ""
-    after, unreadable = _after_suite_arm(manifest)
+    after, unreadable = _after_suite_arm(arms.get("after_suite"))
     if unreadable:
         return unreadable
+    baseline = arms.get("baseline_suite")
     return _after_suite_exit_guard(after or {}) or _after_suite_added_guard(
         after or {}, baseline if isinstance(baseline, Mapping) else None
     )
@@ -1194,8 +1214,8 @@ def _review_added_failure_guard(review: Mapping[str, Any] | None) -> str:
     """
     if not isinstance(review, Mapping):
         return ""
-    count = review.get("added_failure_count")
-    if isinstance(count, bool) or not isinstance(count, int) or count <= 0:
+    count = _plain_int(review.get("added_failure_count"))
+    if count is None or count <= 0:
         return ""
     ids = review.get("added_failure_ids")
     named = (
@@ -1239,18 +1259,16 @@ def _undisposed_finding_guard(review: Mapping[str, Any] | None) -> str:
     )
 
 
-def _red_suite_guard(
-    pointer: Mapping[str, Any], review: Mapping[str, Any] | None
-) -> str:
+def _red_suite_guard(arms: Mapping[str, Any], review: Mapping[str, Any] | None) -> str:
     """The refusal the run's own evidence raises, or "" when it may be judged."""
     return (
-        _manifest_suite_guard(pointer)
+        _manifest_suite_guard(arms)
         or _review_added_failure_guard(review)
         or _undisposed_finding_guard(review)
     )
 
 
-def _suite_evidence_stamp(review_stamp: str, pointer: Mapping[str, Any]) -> str:
+def _suite_evidence_stamp(review_stamp: str, arms: Mapping[str, Any]) -> str:
     """Extend a review stamp with the suite arms a refusal was judged on.
 
     A refusal holds while the record that made it is unchanged, and the suite
@@ -1258,20 +1276,48 @@ def _suite_evidence_stamp(review_stamp: str, pointer: Mapping[str, Any]) -> str:
     stamp, a coordinator who records the missing observation would leave the
     refusal standing over evidence that had already moved.
     """
-    from reckon.crew.plan_review import _digest
-    from reckon.crew.promotion_checks import _fresh_manifest
-
-    manifest = _fresh_manifest(pointer)
-    if manifest is None:
-        return review_stamp
-    arms = {
-        name: manifest.get(name)
-        for name in ("baseline_suite", "after_suite")
-        if isinstance(manifest.get(name), Mapping)
-    }
     if not arms:
         return review_stamp
-    return review_stamp + ":" + _digest(arms)
+    from reckon.crew.plan_review import _digest
+
+    return review_stamp + ":" + _digest(dict(arms))
+
+
+def _record_landed_exemptions(
+    project: str,
+    run_id: str,
+    review: Mapping[str, Any],
+    *,
+    reviewed_head_sha: str | None = None,
+) -> list[int]:
+    """Record the findings still unanswered when the run lands, and return them.
+
+    A run reaches this pass only once every finding it raised has been answered,
+    so the answers a coordinator already recorded are the run's record and this
+    writer must not speak over them. Writing an exemption over every
+    non-blocking finding would replace a ``folded:<node>`` with the pass's own
+    ``exempted:<reason>`` and lose the node the finding was folded into, so only
+    a finding still open is recorded here.
+    """
+    from reckon.crew import findings as findings_module
+    from reckon.crew import review_dispositions
+
+    recorded: list[int] = []
+    for index, finding in enumerate(findings_module._record_findings(review)):
+        if not str(finding.get("text") or "").strip():
+            continue
+        if findings_module.finding_disposition(review, index) != "open":
+            continue
+        review_dispositions.record_finding_disposition(
+            project,
+            run_id,
+            index,
+            kind="exempted",
+            reason=LANDED_NON_BLOCKING_REASON,
+            reviewed_head_sha=reviewed_head_sha,
+        )
+        recorded.append(index)
+    return recorded
 
 
 def _landing_beat(pointer: Mapping[str, Any], run_id: str) -> str:
@@ -1672,7 +1718,8 @@ def _land_deliveries() -> dict[str, Any]:
         review_stamp = _owed_review_stamp(reviews)
         if primary and primary != head:
             review_stamp += ":" + primary
-        review_stamp = _suite_evidence_stamp(review_stamp, pointer)
+        suite_arms = _suite_arms(pointer)
+        review_stamp = _suite_evidence_stamp(review_stamp, suite_arms)
         awaiting_tier = next((tier for tier in owed if reviews.get(tier) is None), "")
         stale_tier = stale_tier or awaiting_tier
         review = reviews.get(CODE_REVIEW_TIER)
@@ -1750,7 +1797,7 @@ def _land_deliveries() -> dict[str, Any]:
         # run itself did not come back clean on is a coordinator's decision, not
         # the admission service's. Refusing here also keeps the expensive
         # measurement off a run that cannot be promoted.
-        red_suite = _red_suite_guard(pointer, review)
+        red_suite = _red_suite_guard(suite_arms, review)
         if red_suite:
             _record_attempt(
                 run_id,
@@ -1904,7 +1951,7 @@ def _land_deliveries() -> dict[str, Any]:
         if accepted:
             landed.append(run_id)
             try:
-                record_landed_exemptions(
+                _record_landed_exemptions(
                     project, run_id, review, reviewed_head_sha=head
                 )
             except (OSError, ValueError) as exc:

@@ -27,8 +27,15 @@ from pathlib import Path
 import pytest
 
 from reckon import _plan_html
-from reckon.crew import landing_measure, obligations, queue_landing, runs
+from reckon.crew import (
+    landing_measure,
+    obligations,
+    queue_landing,
+    review_dispositions,
+    runs,
+)
 from reckon.crew import review as review_module
+from reckon.crew.findings import finding_disposition
 
 PROJECT = "landing-fixture"
 PLAN = "delivery-plan"
@@ -606,3 +613,51 @@ def test_removing_one_arm_promotes_the_case_it_refused(
     result = _promoted(delivery, monkeypatch)
 
     assert result["obligations"] == [], result
+
+
+def test_a_fold_a_coordinator_recorded_survives_the_landing(
+    delivery: dict, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A landing does not speak over the answer a coordinator already recorded.
+
+    A run reaches this pass only with every finding answered, and a fold names
+    the node the finding went to. Recording the pass's own exemption over the
+    whole review would replace that node with a reason nobody gave, so the run
+    would land carrying an account of its findings that its coordinator never
+    wrote.
+    """
+    head = str(delivery["head"])
+    _accept(
+        base=str(delivery["base"]),
+        head=head,
+        findings=(
+            "non-blocking: the helper re-derives a value it could cache",
+            "non-blocking: the docstring names the wrong caller",
+        ),
+    )
+    review_dispositions.record_finding_disposition(
+        PROJECT,
+        RUN,
+        0,
+        kind="folded",
+        node="the-follow-up-node",
+        reviewed_head_sha=head,
+    )
+    review_dispositions.record_finding_disposition(
+        PROJECT,
+        RUN,
+        1,
+        kind="exempted",
+        reason="answered by its coordinator",
+        reviewed_head_sha=head,
+    )
+
+    result = _promoted(delivery, monkeypatch)
+
+    assert result["landed"] == [RUN], result
+    stored = review_dispositions.stored_record_for_disposition(
+        PROJECT, RUN, reviewed_head_sha=head
+    )
+    assert stored is not None
+    assert finding_disposition(stored, 0) == "folded:the-follow-up-node"
+    assert finding_disposition(stored, 1) == "exempted:answered by its coordinator"
