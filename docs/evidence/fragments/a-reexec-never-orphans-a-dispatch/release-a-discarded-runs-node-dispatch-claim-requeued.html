@@ -1,0 +1,5 @@
+<section id="release-a-discarded-runs-node-dispatch-claim-requeued-landing">
+  <h2>A discard releases its run's node dispatch claim</h2>
+  <p>A dispatch takes the exclusive claim over a node's worktree path before it cuts the tree, and leaves it held while its holder process lives. A dispatch cut off between claiming and spawning leaves that claim behind, and every later dispatch of the node is refused against a run nobody is running. <code>discard</code> now finds the claim that records the run it is removing and gives it up through the claim's own <code>release()</code>, so the path is unlinked rather than moved aside as a stale claim would be. A claim naming another run guards a dispatch the discard never touched and stays in place.</p>
+  <p>The temporary-home gate passed both cases (<code>EXIT=0</code>). A control that skips the release failed the first case, and a control that releases any claim for the node failed the second; the control log records both failing ids and <code>EXIT=1</code>.</p>
+</section>
