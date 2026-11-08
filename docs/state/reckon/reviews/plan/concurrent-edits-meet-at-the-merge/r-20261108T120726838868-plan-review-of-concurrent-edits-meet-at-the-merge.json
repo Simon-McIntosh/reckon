@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T12:24:43.489Z",
+  "dispatched_at": "2026-11-08T12:13:10Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/concurrent-edits-meet-at-the-merge.html:146",
+      "id": "done_when-1",
+      "reason": "the node dispatched for \u00a74 would either report an unmeasurable before window or silently substitute a shorter one, and the plan needs a snapshot step before \u00a72 lands (or a raised retention cap named in the section) for the measure to be satisfiable at all.",
+      "text": "\u00a74's measure needs a 24-hour before-window and a 24-hour after-window from `admission-verdicts.jsonl`, but the writer trims the file to 1,048,576 bytes on every append (`trim_service_log(..., limit=ADMISSION_VERDICT_LOG_MAX_BYTES, keep=ADMISSION_VERDICT_LOG_MAX_BYTES)` at reckon/crew/queue_admission.py:2095-2100); measured today the whole file is 1,046,971 bytes and spans 2026-11-07T05:20 to 2026-11-08T12:14, about 31 hours, so by the time \u00a72 lands and the after-window closes the before-window rows are gone and the fragment can never record both windows",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/concurrent-edits-meet-at-the-merge.html:22",
+      "id": "wiring-1",
+      "reason": "without the declared wait the two sections race on one mechanism, and \u00a75's change is either lost in \u00a72's rewrite or landed twice.",
+      "text": "`plan-section-depends-on` declares only `s4: [s2, s3]`, while \u00a75 says \"\u00a72 keeps directory claims exclusive, so this blocker survives \u00a72\" and therefore edits the same claim logic \u00a72 introduces; the queue orders only what the plan declares, so \u00a75 can launch before \u00a72 and its exception will be re-encoded away by \u00a72's own implementer",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/concurrent-edits-meet-at-the-merge.html:154",
+      "id": "reasoning-1",
+      "reason": "a worker told to deliver an existing default and given no call site will spend its gate on the wrong file, or land a second mechanism beside the one that already works.",
+      "text": "\u00a75 states what must happen but names no module, function or call site, so no caller is identified; the claim check it must alter lives in `runs._raise_live_scope_conflict` / `reckon/crew/runs.py:1574` and is reached through `dispatch_claims.py`, and one of its two deliverables is already present (`_landing_fragment_paths`, reckon/crew/dispatch_claims.py:1068, already defaults a node's fragment to `docs/evidence/fragments/<plan>/<node-id>.html`), leaving the narrowing rule as the only real change",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "00bdd6702108f2fda763dca687aab8ee5e75a377",
+  "plan_fingerprint": "93a0df93003c3999786131d1a1464da661cd85ae8101ca0eb1cca58247dbfbc5",
+  "plan_slug": "concurrent-edits-meet-at-the-merge",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T120726838868-plan-review-of-concurrent-edits-meet-at-the-merge",
+  "reviewed_blob_sha": "31820e3c362d4b92e8321f6b5eedc8ad32afbb56",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the run \u00a75 cites resolves (`~/.config/reckon/crew/runs/r-20261108T052434073237-oversized-node-reserved-lane-reproduced`) and its manifest line 3 does declare the whole `docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop` directory beside its own fragment file.",
+    "done_when": "a finding \u2014 \u00a74 requires a 24-hour before-window from `~/.config/reckon/crew/admission-verdicts.jsonl`, but that log is trimmed to 1 MiB on every append (reckon/crew/queue_admission.py:101, ADMISSION_VERDICT_LOG_MAX_BYTES), so the before window is deleted before the after window closes.",
+    "evidence_paths": "pass \u2014 \u00a74's fragment path is a durable repository path and the measuring run's own directory is cited for the commands; the retention defect is recorded under done_when, not here.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket identifiers reach the new test filenames or the cited symbols.",
+    "reasoning": "a finding \u2014 \u00a75 names no module, function or caller for its change, so the worker must guess where a directory claim is narrowed; the default fragment path it lists as a deliverable already exists in `reckon/crew/dispatch_claims.py:1068` (`_landing_fragment_paths`).",
+    "single_goal": "pass \u2014 \u00a74 measures the fleet outcome of \u00a72 and \u00a73 and produces one evidence fragment; \u00a75 delivers one narrowing rule with its own test.",
+    "wiring": "a finding \u2014 \u00a75 rests on \u00a72's exclusive-directory rule and rewrites the same claim logic, but `plan-section-depends-on` declares only `s4: [s2, s3]` (docs/plans/concurrent-edits-meet-at-the-merge.html:22), so \u00a75 can be admitted before the section whose behaviour it changes."
+  },
+  "section_digests": {
+    "_document": "040335a70dff03152d2485f289c86f33d81d7076aea0b303198a1ad1a58281f3",
+    "s1": "3b65e328477dcad431890ad6e57cffb8c8385c67744b318213b4ad9eea2ee1c1",
+    "s2": "e02dadfb2a870b9e0eecdfe1d96ac4ff162f05de4b24104472afed04ff7916ba",
+    "s3": "675d18417ee1df0c38d4ff105292833f6aee25b598a13faeee5014f08a3de827",
+    "s4": "f8925c2cca1c0982e4ae162450a518217ed74ec36f64aa95543e79da5e41cc87",
+    "s5": "b663f2a03ad72a68bd120730812e5d7b0c30b6d1eea8145f80407c2137304855"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T12:43:56.505463+00:00",
+  "total": null
+}
