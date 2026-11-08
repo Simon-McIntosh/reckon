@@ -12,7 +12,9 @@ give: a lag is a notice naming the path and the path-limited restore, a clean
 index raises nothing, an intended deletion is not a lag, and a path deliberately
 untracked and ignored is not one either. The first case also pins that the log
 holds one line for the lag however many times the view is read, and that reading
-the view never repairs the index on the coordinator's behalf.
+the view never repairs the index on the coordinator's behalf. A fifth case
+publishes a snapshot and reads it back the way the stop hook does, because the
+prompt path sees only the snapshot and never the derivation.
 
 The last case asserts the real crew home is untouched, because a reader that
 wrote to the fleet's live state would make the check a monitor of the machine
@@ -29,6 +31,8 @@ from pathlib import Path
 import pytest
 
 import reckon.crew.obligations as obligations_module
+from reckon.crew import obligation_snapshot
+from reckon.hooks import coordinator_obligations as hook
 
 PROJECT = "demo"
 SESSION = "s-demo"
@@ -120,7 +124,6 @@ def test_a_lagging_index_is_a_notice_naming_the_restore(checkout: Path) -> None:
     row = rows[0]
     assert row["kind"] in obligations_module.NON_BLOCKING_DUTY_KINDS, row
     assert row["paths"] == [TRACKED], row
-    assert row["head"], row
     command = row["next_command"]
     assert "reset -q --" in command, row
     assert TRACKED in command, row
@@ -128,11 +131,17 @@ def test_a_lagging_index_is_a_notice_naming_the_restore(checkout: Path) -> None:
     # of surfacing it before one runs.
     assert "git commit" in row["reason"] and "deleted" in row["reason"], row
 
+    head = _git(checkout, "rev-parse", "HEAD").strip()
+
     lines = _log_lines()
     assert len(lines) == 1, lines
     record = json.loads(lines[0])
     assert record["paths"] == [TRACKED], record
-    assert record["head"] == row["head"], record
+    # The head is compared against the checkout's own HEAD, read by the test,
+    # not against the value the detector's call returned: a detector that read
+    # the wrong revision would otherwise satisfy its own assertion.
+    assert row["head"] == head, row
+    assert record["head"] == head, record
     assert record["at"], record
 
     # A second read reports the same notice, appends nothing, and never repairs
@@ -175,6 +184,40 @@ def test_an_untracked_ignored_path_raises_nothing(checkout: Path) -> None:
 
     assert _notice_rows(payload) == []
     assert _log_lines() == []
+
+
+def test_a_published_snapshot_carries_the_notice_to_the_prompt_path(
+    checkout: Path,
+) -> None:
+    """The stop hook reads a published snapshot, so the notice must be in it.
+
+    The prompt path loads no derivation module: it reads the session's
+    published snapshot, formats its rows and asks its own mirrored vocabulary
+    which of them hold the stop open. A notice that reached only the
+    derivation would be invisible to every session whose row arrived by
+    snapshot, which is the path production reads.
+    """
+    _git(checkout, "rm", "--cached", "-q", "--", TRACKED)
+
+    state = obligation_snapshot.fleet_state(PROJECT)
+    payload = obligation_snapshot.payload_for(state, SESSION)
+    document = obligation_snapshot.document_for(
+        payload,
+        computed_at=state.now,
+        stream_offset=0,
+        producer={"pid": os.getpid()},
+    )
+    obligation_snapshot.write_snapshot(PROJECT, SESSION, document)
+
+    published = obligation_snapshot.read_snapshot(PROJECT, SESSION)
+    assert published is not None
+    read_back = obligation_snapshot.live_payload(published)
+
+    rows = _notice_rows(read_back)
+    assert len(rows) == 1, read_back["obligations"]
+    assert rows[0]["paths"] == [TRACKED], rows[0]
+    assert hook._row_is_actionable(rows[0]) is False, rows[0]
+    assert len(_log_lines()) == 1
 
 
 def _home_entries(home: Path) -> tuple[bool, bool]:

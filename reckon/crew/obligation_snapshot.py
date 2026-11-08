@@ -1485,6 +1485,14 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
             items.append(module._live_item(row, kind=kind, now=state.now))
     items.extend(state.sub_floor.get(session, []))
     items.extend(state.held_worktrees.get(session, []))
+    # The project's main checkout is read here exactly as the derivation reads
+    # it, through the derivation's own detector rather than a second one, so a
+    # session's published payload carries the index-lag notice its stop hook
+    # would otherwise never see: the hook reads the snapshot and cannot import
+    # the derivation on that path.
+    index_lag = module._index_lag_notice(state.project, now=state.now)
+    if index_lag is not None:
+        items.append(index_lag)
     items.extend(_unreadable_record_items(state.findings))
     items, acknowledged = module._partition_acknowledged(items, state.acknowledged)
     items.sort(

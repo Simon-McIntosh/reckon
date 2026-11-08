@@ -24,7 +24,6 @@ import json
 import os
 import re
 import shlex
-import subprocess
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextvars import ContextVar
 from datetime import UTC, datetime, timedelta
@@ -63,6 +62,7 @@ from reckon.crew.routing import (
 )
 from reckon.crew.run_paths import crew_home
 from reckon.mcp_crew_actions import CREW_WRITE_ACTIONS
+from reckon.velocity import run_git
 
 CLASSIFICATION_DUTY_KINDS = {
     "scoring": "review-missing",
@@ -280,6 +280,12 @@ INDEX_LAG_DUTY_KIND = "index-lags-head"
 #: a new occurrence while the same lag read twice is not.
 INDEX_LAG_LOG_NAME = "index-lag.log"
 INDEX_LAG_SEEN_NAME = "index-lag-seen.json"
+
+#: ``git diff`` refreshes the index's stat cache and writes it back unless
+#: optional locks are disabled, and this reader must never change the index it
+#: reports on. Every git call the detector makes carries this environment, so
+#: reading the view cannot even rewrite the stat cache it reports about.
+INDEX_LAG_GIT_ENV = {"GIT_OPTIONAL_LOCKS": "0"}
 
 # The duty kinds that are listed but never hold a stop open: the work behind
 # them is already owned by a reflex that retries, so blocking would ask the
@@ -2494,27 +2500,6 @@ def recent_limit_resets(session: str) -> list[dict[str, Any]]:
     return budget_reset.recent_resets(session=session, horizon=RESET_HORIZON)
 
 
-def _read_only_git(
-    repository: Path, *args: str, stdin: bytes | None = None
-) -> subprocess.CompletedProcess:
-    """Run one git read against a checkout without letting it write the index.
-
-    ``git diff`` refreshes the index's stat cache and writes it back unless
-    optional locks are disabled, and this reader must never change the index it
-    reports on. A failed command is returned rather than raised: a checkout
-    that cannot answer raises no notice, which is the same reading as a
-    checkout whose index matches HEAD.
-    """
-    return subprocess.run(
-        ["git", "-C", str(repository), *args],
-        input=stdin,
-        capture_output=True,
-        check=False,
-        timeout=180,
-        env={**os.environ, "GIT_OPTIONAL_LOCKS": "0"},
-    )
-
-
 def _index_lag_paths(repository: Path) -> tuple[tuple[str, ...], str]:
     """The paths HEAD and the working tree hold while the index stages a delete.
 
@@ -2526,8 +2511,15 @@ def _index_lag_paths(repository: Path) -> tuple[tuple[str, ...], str]:
     certainty, which is why the finding is a notice naming the restore rather
     than a repair applied on the reader's behalf.
     """
-    staged = _read_only_git(
-        repository, "diff", "--cached", "--name-only", "--diff-filter=D", "-z", "HEAD"
+    staged = run_git(
+        repository,
+        "diff",
+        "--cached",
+        "--name-only",
+        "--diff-filter=D",
+        "-z",
+        "HEAD",
+        env=INDEX_LAG_GIT_ENV,
     )
     names = (
         [os.fsdecode(name) for name in staged.stdout.split(b"\0") if name]
@@ -2537,12 +2529,13 @@ def _index_lag_paths(repository: Path) -> tuple[tuple[str, ...], str]:
     present = [name for name in names if (repository / name).exists()]
     if not present:
         return (), ""
-    ignored_read = _read_only_git(
+    ignored_read = run_git(
         repository,
         "check-ignore",
         "-z",
         "--stdin",
-        stdin=b"\0".join(os.fsencode(name) for name in present) + b"\0",
+        input=b"\0".join(os.fsencode(name) for name in present) + b"\0",
+        env=INDEX_LAG_GIT_ENV,
     )
     if ignored_read.returncode not in (0, 1):
         return (), ""
@@ -2550,7 +2543,7 @@ def _index_lag_paths(repository: Path) -> tuple[tuple[str, ...], str]:
     paths = tuple(sorted(set(present) - ignored))
     if not paths:
         return (), ""
-    head_read = _read_only_git(repository, "rev-parse", "HEAD")
+    head_read = run_git(repository, "rev-parse", "HEAD", env=INDEX_LAG_GIT_ENV)
     head = (
         head_read.stdout.decode("utf-8", "surrogateescape").strip()
         if head_read.returncode == 0

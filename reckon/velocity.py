@@ -32,6 +32,7 @@ import concurrent.futures
 import datetime as dt
 import hashlib
 import json
+import os
 import re
 import shlex
 import sqlite3
@@ -161,15 +162,22 @@ def _epoch(value):
 
 
 def run_git(
-    repo, *args, input: bytes | None = None
+    repo, *args, input: bytes | None = None, env: dict[str, str] | None = None
 ) -> subprocess.CompletedProcess[bytes]:
-    """Run git once in byte mode, returning even a failed command's process."""
+    """Run git once in byte mode, returning even a failed command's process.
+
+    ``env`` adds entries to the invocation's environment, which is what a
+    reader that must not write the index it reports on sets
+    ``GIT_OPTIONAL_LOCKS=0`` through. A caller that passes nothing inherits the
+    process environment unchanged.
+    """
     return subprocess.run(
         ["git", "-C", str(repo), *args],
         input=input,
         capture_output=True,
         check=False,
         timeout=180,
+        env={**os.environ, **env} if env is not None else None,
     )
 
 
