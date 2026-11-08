@@ -1,0 +1,33 @@
+<article class="r-evidence" id="a-follower-runs-current-code">
+  <h2 id="a-follower-runs-current-code-title">A station subscriber re-executes onto its source checkout's code</h2>
+
+  <p id="a-follower-runs-current-code-what">A follower subscribed to a station renders every row with its own code: the
+  station commits rows and <code>station_subscriber</code> composes the sentences the pane prints. The
+  subscriber's delivery in <code>crew_follow_commands.crew_follow</code> therefore now builds the same
+  <code>_FollowerReloader</code> the stream delivery builds, reached through the per-wait hook at a row
+  boundary and never through <code>_StampPoll</code>, whose signal handler would re-execute mid-render.
+  A long-lived subscriber no longer keeps the wording of the image it was armed with.</p>
+
+  <p id="a-follower-runs-current-code-proof">`tests/test_a_follower_runs_current_code.py` shows the four
+  required cases against a temporary home and a stubbed checkout: a moved-and-trusted checkout
+  re-executes (one recorded <code>os.execve</code>); a matching stamp and an untrusted checkout do not;
+  a follower running from a reload tree reads the checkout its carried environment names rather than
+  the tree it imports from, and materialises the replacement from that checkout; and over 100 sweeps
+  spanning three <code>checked_at</code> intervals with a matching stamp the checkout's identity is read
+  exactly 3 times, so the cadence keeps the subscriber off the shared filesystem per row.</p>
+
+  <table id="a-follower-runs-current-code-arms">
+    <thead><tr><th>arm</th><th>command</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base (1b3663ce)</td><td><code>pytest -q tests/test_follower_freshness.py</code></td><td>10 passed, EXIT=0</td></tr>
+      <tr><td>head (b2f79a46)</td><td><code>pytest -q tests/test_a_follower_runs_current_code.py tests/test_follower_freshness.py</code></td><td>15 passed, EXIT=0</td></tr>
+      <tr><td>new file at base</td><td><code>pytest -q tests/test_a_follower_runs_current_code.py</code> against a tree carrying base's <code>reloader = None</code></td><td>5 failed, EXIT=1</td></tr>
+    </tbody>
+  </table>
+
+  <p id="a-follower-runs-current-code-controls">Two negative controls, each applied and logged under the
+  run directory's <code>logs/</code>. Restoring <code>reloader = None</code> on the subscriber path makes
+  the stale-stamp case record no exec (<code>negative-control-1.log</code>: 5 failed, EXIT=1). Dropping the
+  trust check in <code>reckon/crew/follower_reload.py</code>'s poll makes the untrusted case re-execute
+  (<code>negative-control-2.log</code>: 1 failed, EXIT=1, and only that case fails).</p>
+</article>
