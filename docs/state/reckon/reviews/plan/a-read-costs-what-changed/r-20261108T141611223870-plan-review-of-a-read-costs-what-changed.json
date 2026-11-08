@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T14:33:27.956Z",
+  "dispatched_at": "2026-11-08T14:20:18Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-costs-what-changed.html:109",
+      "id": "done_when-1",
+      "reason": "the section's declared coverage of the second root has no gate, so a node can pass while the dispatch cost the section exists to remove is still paid for every stored code review.",
+      "text": "the deliverable says the index \"covers both roots `findings_by_path` reads: the committed reviews tree, and the crew-home code-review store read through `list_code_reviews`\" and names `plan_review.store_code_review` as one of its three updaters, but no done-when case reads a code review's rows, and no case calls `store_code_review`; an implementer can leave `_code_review_rows` (`findings.py:413`) calling `list_code_reviews` and reading every code-review file, and still pass all four cases, the negative control and the 2 s timer \u2014 the second root is then unindexed and unmeasured",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-costs-what-changed.html:109",
+      "id": "reasoning-1",
+      "reason": "\u00a73 and \u00a76 both key their persisted memos on producer source digests exactly because an unversioned persisted answer outlives the code that made it, and \u00a714 would reintroduce that defect on the dispatch's blocking-input path.",
+      "text": "the persisted index is invalidated only by a directory's signature and each record's stat identity, with no source-digest key, while row derivation lives in `findings._record_rows`/`finding_disposition` (`findings.py:249-286`) and the nearest existing stamp, `review_records._index_sources()` (`review_records.py:1014-1024`), covers `review_records.py` and `review.py` alone; a change to how a row is derived (path scoping, disposition, finding identity) leaves every persisted entry valid and stale until that record file moves, which for a committed record may be never",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-costs-what-changed.html:109",
+      "id": "done_when-2",
+      "reason": "the repository's test rule requires every environment-resolved directory to be pointed at a temporary path and the real one asserted untouched, so the case must name that redirection or it is a test that can make another process's dispatch read test-written state.",
+      "text": "the done-when isolates a \"temporary crew home and committed tree\", but the index is written to `node_local_cache_dir` (`review_records.py:985`), which resolves through `XDG_RUNTIME_DIR` or `/tmp/<uid>-reckon` and is therefore neither the crew home nor the committed tree; the test as specified writes and reads a shared, node-wide directory outside the repository under test, and can also inherit a peer process's index for a directory whose resolved path it does not control",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "c88f4f59375df1e80e71fb09a6632392734e2cc0",
+  "plan_fingerprint": "dfac7b19dae29e6734d7b6faa9d163321b92c43e60a6a9743b5072281ebc95ba",
+  "plan_slug": "a-read-costs-what-changed",
+  "plan_version": 51,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T141611223870-plan-review-of-a-read-costs-what-changed",
+  "reviewed_blob_sha": "b12f2346c7556792c3966e8c25fc8cfc29750038",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every file, line and symbol \u00a714 cites resolves at acbf7b2fe2 (`review_records.py:168,985,1040`, `plan_review.py:2217,5389`, `recovery_review_subject.py:837`), and `findings_by_path` does read both roots as claimed.",
+    "done_when": "a finding \u2014 the four cases exercise `record_response`, `store_committed_review` and the committed tree only, never `store_code_review` or the crew-home code-review root the deliverable says the index covers.",
+    "evidence_paths": "pass \u2014 the live timings, the load average beside each figure and the control timing are all logged under the run's `logs/`.",
+    "naming": "pass \u2014 the new test name and the section's prose describe the mechanism; no plan label, ticket or version tag reaches a symbol.",
+    "reasoning": "a finding \u2014 the persisted index is given no code-version invalidation, and the stamp on the cache family it is told to reuse names neither `findings.py` nor its row derivation, so a change to `_record_rows` would serve stale rows indefinitely.",
+    "single_goal": "pass \u2014 \u00a714 is one change, the write-time findings index; the interface week count is explicitly left alone.",
+    "wiring": "pass \u2014 \u00a714 declares no section dependency it needs (\u00a711 is done, \u00a713 is descoped) and it is reachable through the open followup f-arcwc-001's plan-wide build prompt."
+  },
+  "section_digests": {
+    "_document": "090f283a2adb21268293f3f9f36bccafc5b05deb95642975aaeab367e4fd63f2",
+    "s1": "f8fb0fbbfbbc79977a59ec9d78c0d66f47803aa96db83e4d628a1dfb6b40e6c3",
+    "s10": "68fc6d75acf0741225ab448369611e4eda9f862b50d7907857c1abb24b4138e4",
+    "s11": "2a249381081ebbf2d99b7f9da3b09b1d3b87c6ada44952d6b665283e27021c40",
+    "s12": "c6c234ba14598d6a537e09000d8f5d406295ad40c3c124db34cb1b84868bb22e",
+    "s13": "5ad3b5418d98e6b0afe0d6762c6e34b89b31509e7e0c346c4b5757fc5f9bc443",
+    "s14": "1113d151770bf0ed2091b98f02f5353ff6d140ec6f0ade20ab0effc5dd53c198",
+    "s2": "7de6c2e256fca5545163c6149c674fea249ddd1a72361b49c89ef5beaa22263d",
+    "s3": "d11cdceab942c4935f32d292e26f2111b011ca4571980a6c54ef6ae23894aadb",
+    "s4": "d14b5fa9a6b6ef26da6f95b50c43aa782fdbe679ca28020a3095af71cd579417",
+    "s5": "ba22eff9814ea16ac19404864f9a2d1ec8da449b3011fba623d0d1856b2c6ecf",
+    "s6": "b0053663cc25e5e7e15595ae342d21c4c467abe74f06c8c4db86982b276898cc",
+    "s7": "2c7c6fb207a002d2bb1e223ebf1f770570f6b06942edf9ac6647253b410a67b7",
+    "s8": "9a012c065cbd8db9e5e69070d20531b84a584582cc0bf8f45fff060b7f31f464",
+    "s9": "1404fbf63401ab3bd4204175d16adb89094eaa1f1b25160e73fd2bb9c625d0b1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T14:48:37.619184+00:00",
+  "total": null
+}
