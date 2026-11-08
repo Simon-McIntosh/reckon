@@ -1,0 +1,83 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest records baseline_suite (rev 90f6910399) with 1 failure id and after_suite (rev b8ede121eb) with 0; the only baseline failure is the node's own new case, so differencing the arms gives zero added. The importer population is green by delta too: the same 7 ids fail in importers_base.log and importers_head.log.",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:2188",
+    "reckon/crew/recovery_classification.py:2065",
+    "reckon/crew/forgotten_runs.py:94",
+    "reckon/crew/directory.py:294",
+    "reckon/crew/station_subscriber.py:139",
+    "reckon/crew/queue_landing.py:1503",
+    "reckon/mcp_views.py:2043",
+    "reckon/serve.py:901"
+  ],
+  "completed_at": "2026-11-08T20:11:39.745Z",
+  "dispatched_at": "2026-11-08T20:01:04Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": 2085,
+      "severity": "non-blocking",
+      "text": "the stranded-launch detail reads \"has held the pre-spawn phase 'starting' for 1021s past the 900s bound\", but 1021 s is the total age since the launch clock began, not the excess past the bound \u2014 reproduced against a 1020 s-old pointer; a coordinator reading it over-estimates the stall by the bound itself."
+    },
+    {
+      "file": "reckon/crew/recovery_liveness.py",
+      "line": 753,
+      "severity": "non-blocking",
+      "text": "`_claim_registered_seconds` re-implements the claim read owned by reckon/crew/dispatch_launch.py:4121 `_claim_registration_for_worker`; the two differ on run-id validation (the new reader accepts a payload with no run_id), so they can disagree about the same file."
+    },
+    {
+      "file": "tests/test_a_review_that_never_launched_is_not_running.py",
+      "line": 119,
+      "severity": "non-blocking",
+      "text": "the fixture always writes claim.json and sets created_at to the claim instant, so the plan's creation-fallback branch at reckon/crew/recovery_liveness.py:802 is never asserted; confirmed a claim-less stale pointer still classifies launch-failed, so deleting that fallback leaves all three tests green."
+    },
+    {
+      "file": "reckon/crew/recovery_liveness.py",
+      "line": 842,
+      "severity": "non-blocking",
+      "text": "`started` is bound to an age in seconds and compared to STRANDED_LAUNCH_BOUND_SECONDS at line 845; the name says instant where the value is a duration."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "recovery_review_dispatch.py:2188 (read in full: the stranded arm releases the standing claim and recomposes the review) plus classify_pointer's other production consumers.",
+    "diff": "three commits read against base; source is unchanged between the gate revision b8ede121eb and the reviewed head.",
+    "done_when": "three cases plus base-arm, negative control, importer population and ruff delta; the manifest records all five and I re-ran the named test at 18fee6711e for 3 passed.",
+    "goal": "\u00a719 requires the claim-then-creation dating, the stranded-launch report with host and age, and unchanged readings below the bound and with no date; recovery_liveness.py:753-810 and recovery_classification.py:2065-2093 implement all three.",
+    "manifest": "status complete, three commits, baseline_suite 1 failure id and after_suite 0, negative_control_log named.",
+    "write_paths": "four changed files, all inside the five granted fence paths; worktree clean."
+  },
+  "justifications": {
+    "durability": "tests/test_a_review_that_never_launched_is_not_running.py:147 reddens under the declared mutation as negative_control.log records, but the creation fallback at recovery_liveness.py:802 is exercised by no assertion because every fixture writes claim.json.",
+    "evidence": "tests/test_a_review_that_never_launched_is_not_running.py:129-172 passes at the reviewed head and its base arm is genuine (both source files in base-arm-final-lnd5 hash-match 90f6910399), though importers_head.log:4 carries an unsubstituted placeholder in its command header.",
+    "fit": "the helpers follow the module's private-function and docstring idiom with no banned label, but reckon/crew/recovery_liveness.py:842 binds an age in seconds to a name reading `started`.",
+    "goal_fidelity": "reckon/crew/recovery_liveness.py:795-810 confines the claim-and-creation fallback to launch == 'cli', so the in-harness arm keeps its reading, but reckon/crew/recovery_classification.py:2085 reports the total age as though it were the excess past the bound.",
+    "reuse": "`_claim_registered_seconds` duplicates reckon/crew/dispatch_launch.py:4121 `_claim_registration_for_worker` without extending it.",
+    "scope_discipline": "all four paths in the range diff are inside the five-path fence the dispatch prompt granted, and the reviewed worktree is clean."
+  },
+  "node": "review-of-a-review-that-never-launched-is-not-running-18fee6711e2e",
+  "node:reviewed": "a-review-that-never-launched-is-not-running",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a719 asks that a cli pointer in `starting` which the attempt clock cannot date be dated from its claim, then from the pointer's creation, and past the stranded-launch bound be reported through `_stranded_launch` as never launched with its launcher host and age; reckon/crew/recovery_liveness.py:753-810 adds `_claim_registered_seconds`, `_claim_or_creation_seconds` and `_stranded_launch_age_seconds`, and reckon/crew/recovery_classification.py:2065 reaches the launch-failed arm with the host named.\nVERDICT done_when: the plan names three cases against a temporary crew home plus a base-arm reproduction, a negative control, a zero-delta importer population and a ruff delta; tests/test_a_review_that_never_launched_is_not_running.py:129-172 supplies the three cases, the manifest records base_arm.log 1 failed/2 passed and head_gate.log 3 passed, and I re-ran the named test at 18fee6711e and got 3 passed.\nVERDICT write_paths: the run's dispatch prompt fence grants five paths; the diff changes four files (reckon/crew/recovery_liveness.py, reckon/crew/recovery_classification.py, the new test, and the evidence fragment), every one inside the granted list, and `git status --porcelain` in the reviewed worktree is clean.\nVERDICT manifest: read the reviewed run's manifest.md \u2014 status complete, commits ba9460680e/b8ede121eb/18fee6711e, baseline_suite 1 failure id at 90f6910399 and after_suite 0 at b8ede121eb, negative_control_log named.\nVERDICT diff: read all three commits against base 90f6910399; ba9460680e adds the claim-dating helpers and rewires `_stranded_launch` plus the launch-failed detail, b8ede121eb narrows the test fixture, 18fee6711e adds only the 58-line evidence fragment, and source is byte-identical between b8ede121eb and the reviewed head.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:2188, reckon/crew/recovery_classification.py:2065, reckon/crew/forgotten_runs.py:94, reckon/crew/directory.py:294, reckon/crew/station_subscriber.py:139, reckon/crew/queue_landing.py:1503, reckon/mcp_views.py:2043, reckon/serve.py:901\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_liveness.py:795-810 confines the claim-and-creation fallback to `launch == \"cli\"` so the in-harness arm keeps its reading, but the delivered detail at reckon/crew/recovery_classification.py:2085 reports the total age as though it were the excess past the bound.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_review_that_never_launched_is_not_running.py:129-172 passes at the reviewed head and its base arm is genuine \u2014 I hashed the scratch tree at base-arm-final-lnd5 and both source files match 90f6910399 exactly \u2014 though importers_head.log:4 carries an unsubstituted placeholder in its command header.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all four paths in `git diff --name-only 90f6910399..18fee6711e` are inside the five-path fence the dispatch prompt granted, and the reviewed worktree is clean.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_review_that_never_launched_is_not_running.py:147 reddens under the declared mutation exactly as negative_control.log records, but every fixture writes claim.json and sets created_at to the same instant (lines 102 and 119), so the creation fallback at recovery_liveness.py:802 is exercised by no assertion.\nSCORE fit: 16\nJUSTIFICATION fit: the helpers follow the module's existing private-function and docstring idiom and carry no banned label, but reckon/crew/recovery_liveness.py:842 binds an age in seconds to a name reading `started` and compares it to a bound at line 845.\nSCORE reuse: 5\nJUSTIFICATION reuse: `_claim_registered_seconds` at reckon/crew/recovery_liveness.py:753 duplicates reckon/crew/dispatch_launch.py:4121 `_claim_registration_for_worker`, which already reads claim.json, validates the run id and returns claim_registered_at, and it extends rather than reuses that owner.\nFINDING reckon/crew/recovery_classification.py:2085 non-blocking: the stranded-launch detail reads \"has held the pre-spawn phase 'starting' for 1021s past the 900s bound\", but 1021 s is the total age since the launch clock began, not the excess past the bound \u2014 I reproduced the string against a 1020 s-old pointer and a coordinator reading it would over-estimate how long the run was stuck by the 900 s bound itself.\nFINDING reckon/crew/recovery_liveness.py:753 non-blocking: `_claim_registered_seconds` re-implements the claim read that reckon/crew/dispatch_launch.py:4121 `_claim_registration_for_worker` already owns, and the two differ on run-id validation \u2014 the new reader accepts a claim whose payload carries no run_id via `payload.get(\"run_id\") not in (None, run_id)` while the owner requires exact equality, so the two readers can disagree about the same file.\nFINDING tests/test_a_review_that_never_launched_is_not_running.py:119 non-blocking: the fixture sets created_at to the claim instant and always writes claim.json, so nothing exercises the plan's \"or, failing that, from the pointer's created_at\" branch at reckon/crew/recovery_liveness.py:802; I confirmed a claim-less stale pointer still classifies launch-failed, which means deleting that fallback would leave all three tests green.\nFINDING reckon/crew/recovery_liveness.py:842 non-blocking: `started` is bound to `_stranded_launch_age_seconds(...)`, a span in seconds, and compared to STRANDED_LAUNCH_BOUND_SECONDS at line 845, so the name says instant where the value is a duration.",
+  "review_run_id": "r-20261108T200010378603-review-of-a-review-that-never-launched-is-not-running-18fee6711e2e",
+  "reviewed_base_sha": "90f6910399e8672f0ca385dfac44d60a12872ad5",
+  "reviewed_head_sha": "18fee6711e2e4c6770dfc0dc13ea36e73830e33e",
+  "reviewed_run_id": "r-20261108T191235309637-a-review-that-never-launched-is-not-running",
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T20:08:39+00:00",
+  "total": 91
+}
