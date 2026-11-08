@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1865 crew_dispatch calls brief_plan_owner_finding",
+    "reckon/crew/promotion_checks.py:2429 _require_brief_owner",
+    "reckon/crew/promotion.py:2435 landing checks",
+    "reckon/crew/dispatch.py:2915 records plan_link and unplanned_reason on the pointer"
+  ],
+  "completed_at": "2026-11-08T14:59:22.496Z",
+  "dispatched_at": "2026-11-08T14:34:11Z",
+  "findings": [
+    {
+      "file": "tests/test_brief_dispatch.py",
+      "line": "190",
+      "severity": "blocking",
+      "text": "blocking: this pre-existing test asserts the behaviour the change removes \u2014 a brief implement dry run with no plan and neither flag resolving with exit 0 \u2014 and now fails at head; logs/importer-brief-population.log records 1 failed, 44 passed, so landing makes the suite red until the case passes --plan-link."
+    },
+    {
+      "file": "reckon/crew_dispatch_commands.py",
+      "line": "1865",
+      "severity": "non-blocking",
+      "text": "non-blocking: the refusal is evaluated after the picker selection and lane resolution, so a dispatch that can never proceed still consults the picker and reads the lane."
+    },
+    {
+      "file": "reckon/crew/node.py",
+      "line": "1202",
+      "severity": "non-blocking",
+      "text": "non-blocking: brief_plan_owner_finding restates the four-part owner predicate owned by reckon/crew/promotion_checks.py:1769 rather than sharing one helper."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T123111882809-ask-a-brief-run-for-its-plan-link-at-dispatch/manifest.md",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "non-blocking: the artifacts line quotes five ruff findings where ruff-check.log's summary reads Found 3 errors, so the figure cannot be reconciled with the log it cites."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T123111882809-ask-a-brief-run-for-its-plan-link-at-dispatch/logs/head-suite.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T123111882809-ask-a-brief-run-for-its-plan-link-at-dispatch/logs/base-suite.log"
+  },
+  "item_verdicts": {
+    "call_sites": "verified four production call sites: crew_dispatch, dispatch pointer record, _require_brief_owner and its landing caller.",
+    "diff": "three commits read: f3f428ce product and tests, 4d5a58af evidence fragment, aa134b15b1 a one-line revision correction.",
+    "done_when": "the named test file is the gate; head 11 passed at 4d5a58af, base 10 failed/1 passed at d48480ee, and it re-ran 11 passed at aa134b15b1.",
+    "goal": "the goal is to refuse an implement- or test-role brief dispatch naming neither flag; reckon/crew_dispatch_commands.py:1865 does that above the pair split.",
+    "manifest": "read; records complete, three commits, both arms completed, outside_* the reddened sibling test.",
+    "write_paths": "all six diff paths are inside the manifest's declared write paths."
+  },
+  "justifications": {
+    "durability": "seven negative controls each redden the case they name, and the round-trip assertions fail when the pointer copy is dropped.",
+    "evidence": "both arms are recorded as complete with revisions and logs, but the manifest's ruff figure contradicts ruff-check.log's summary.",
+    "fit": "reckon/crew/node.py:1202 follows the existing finding idiom and the diff carries no plan label or attribution.",
+    "goal_fidelity": "reckon/crew/node.py:1202 refuses the named case and reckon/crew_dispatch_commands.py:1865 sits above the pair split.",
+    "reuse": "reckon/crew/node.py:1202 duplicates the predicate at reckon/crew/promotion_checks.py:1769 rather than sharing it.",
+    "scope_discipline": "every changed path is inside the declared write paths and the sibling test was recorded under outside_scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to refuse an implement- or test-role brief dispatch that names neither a plan link nor an unplanned reason; reckon/crew_dispatch_commands.py:1865 calls reckon/crew/node.py:1202 brief_plan_owner_finding above the pair split, and that call refuses exactly that case.\nVERDICT done_when: the node's done_when names tests/test_a_brief_run_names_its_plan_at_dispatch.py plus both suite arms and the ruff delta; head-suite.log ends \"11 passed\" / \"EXIT=0\" at 4d5a58af, base-suite.log ends \"10 failed, 1 passed\" / \"EXIT=1\" at d48480ee, and re-running the named file at aa134b15b1 gave 11 passed.\nVERDICT write_paths: read the manifest's six declared paths; every path in the diff is inside them \u2014 the four reckon modules, the new test file, and the evidence fragment.\nVERDICT manifest: read; it records status complete, the three commits, both suite arms marked completed, and records under outside_scope the one pre-existing test this change turns red.\nVERDICT diff: read commit by commit from d48480ee to aa134b15b1; f3f428ce adds the refusal, the two CLI options, the pointer copy, the landing fallback and 485 lines of tests, 4d5a58af adds the evidence fragment, and aa134b15b1 is a one-line correction of the revision its table cites.\nCALL_SITES: reckon/crew_dispatch_commands.py:1865 (crew_dispatch calls brief_plan_owner_finding), reckon/crew/promotion_checks.py:2429 (_require_brief_owner reached from the landing check set), reckon/crew/promotion.py:2435 (imports and runs the landing checks), reckon/crew/dispatch.py:2915 (copies plan_link and unplanned_reason onto the launched pointer)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/node.py:1202 refuses a brief implement- or test-role run with no plan and neither flag, and reckon/crew_dispatch_commands.py:1865 places that refusal above the pair split so the live call, the preview and both pair arms reach it.\nSCORE evidence: 15\nJUSTIFICATION evidence: both arms in the reviewed run's manifest carry a named revision, command, log path, completed flag and failure ids, but the manifest's ruff figure at line 19 reads five findings while ruff-check.log's own summary reads \"Found 3 errors\".\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: all six changed paths in the diff are inside the declared write paths, and tests/test_brief_dispatch.py was recorded under outside_scope rather than edited.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_brief_run_names_its_plan_at_dispatch.py:214 and the six further controls at logs/negative_control_02..07 each name the case they redden, and each assertion compares a value stored by the code under test against an argument the caller supplied.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/node.py:1202 follows the dict-or-None finding shape of negative_control_finding and gate_population_finding, and the diff carries no plan label, ticket reference or author attribution.\nSCORE reuse: 13\nJUSTIFICATION reuse: reckon/crew/node.py:1202 restates the owner predicate already held by reckon/crew/promotion_checks.py:1769 (_require_brief_owner) instead of sharing it, though the plan itself requires the two to live at different layers.\nFINDING tests/test_brief_dispatch.py:190 blocking: this pre-existing test asserts the behaviour the change removes \u2014 a brief implement dry run with no plan and neither flag resolving with exit 0 \u2014 and now fails at head; logs/importer-brief-population.log records \"1 failed, 44 passed\", so the landed change makes the repository suite red until that case passes --plan-link.\nFINDING reckon/crew_dispatch_commands.py:1865 non-blocking: the refusal is evaluated after the picker selection and lane resolution, so a dispatch that can never proceed still consults the picker and reads the lane; a pure argument check could be placed before both.\nFINDING reckon/crew/node.py:1202 non-blocking: brief_plan_owner_finding restates the four-part owner predicate owned by reckon/crew/promotion_checks.py:1769 rather than calling one shared helper, so a future change to the rule has two sites to update.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T123111882809-ask-a-brief-run-for-its-plan-link-at-dispatch/manifest.md:19 non-blocking: the artifacts line quotes five ruff findings where the only ruff-check.log summary reads \"Found 3 errors\", so the recorded figure cannot be reconciled with the log it cites.",
+  "review_run_id": "r-20261108T142914066143-review-of-ask-a-brief-run-for-its-plan-link-at-dispatch-aa134b15b15d",
+  "reviewed_base_sha": "d48480ee3e75d91634fe1db961c2846d89451e8d",
+  "reviewed_head_sha": "aa134b15b15da56cf6821de47b245e66e831b67f",
+  "reviewed_run_id": "r-20261107T123111882809-ask-a-brief-run-for-its-plan-link-at-dispatch",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 13,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T15:10:18.247739+00:00",
+  "total": 100
+}
