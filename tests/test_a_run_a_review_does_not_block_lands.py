@@ -2,9 +2,13 @@
 
 The landing pass used to accept a review only when it carried no finding of any
 severity, so a review that raised two non-blocking observations left the run
-waiting for a coordinator who had nothing to add. These cases drive the pass
-itself: the review is stored, the run is delivered, and the assertions are about
-what the pass did — whether it landed, and what it wrote down when it refused.
+waiting for a coordinator who had nothing to add. The pass accepts a
+non-blocking finding only once somebody has answered it: an exemption the pass
+recorded itself was its own judgement rather than the reviewer's, so an
+undisposed finding now leaves the run to its coordinator. These cases drive the
+pass itself: the review is stored, the run is delivered, and the assertions are
+about what the pass did — whether it landed, and what it wrote down when it
+refused.
 
 Every repository, store and live pointer resolves inside a temporary
 configuration home, so nothing here reads or writes the operator's own fleet.
@@ -345,10 +349,23 @@ def _stub(calls: list[dict], *, suite_head: tuple[int, str], isolated):
     return run
 
 
-# ── arm 1: two non-blocking findings land in one pass, both exempted ─────────
+# ── arm 1: an undisposed finding leaves the run to its coordinator ──────────
 
 
-def test_two_non_blocking_findings_land_in_one_pass_and_are_recorded_exempted(
+def _dispose(head: str, indexes: tuple[int, ...]) -> None:
+    """Answer each finding the way a coordinator does, so the run may land."""
+    for index in indexes:
+        review_dispositions.record_finding_disposition(
+            PROJECT,
+            RUN,
+            index,
+            kind="exempted",
+            reason="answered by its coordinator",
+            reviewed_head_sha=head,
+        )
+
+
+def test_two_undisposed_non_blocking_findings_leave_the_run_to_its_coordinator(
     delivery, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _accept(
@@ -359,30 +376,34 @@ def test_two_non_blocking_findings_land_in_one_pass_and_are_recorded_exempted(
             "non-blocking: the docstring names two dimensions of three",
         ),
     )
-    landed = _land(monkeypatch)
+    before = _stored_record(str(delivery["head"]))
+    monkeypatch.setattr(
+        queue_landing,
+        "_land",
+        lambda run_id: pytest.fail("a run with undisposed findings was landed"),
+    )
 
     result = queue_landing.land_once()
 
-    assert result["landed"] == [RUN], result
-    assert landed == [RUN]
-    record = _stored_record(str(delivery["head"]))
-    dispositions = record["finding_dispositions"]
-    assert set(dispositions) == {"0", "1"}, dispositions
-    for entry in dispositions.values():
-        assert entry["kind"] == "exempted"
-        assert entry["reason"] == LANDED_REASON
+    assert result["landed"] == [], result
+    assert len(result["obligations"]) == 1, result
+    guard = result["obligations"][0]["guard"]
+    assert guard.startswith("red-suite:"), guard
+    assert "no disposition" in guard, guard
+    assert _stored_record(str(delivery["head"])) == before
 
 
 # ── the score sets no floor ─────────────────────────────────────────────────
 
 
-def test_a_review_scoring_92_with_two_non_blocking_findings_lands(
+def test_a_review_scoring_92_with_disposed_non_blocking_findings_lands(
     delivery, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """92 is well under the nine tenths this rule used to demand, and lands.
 
-    The reviewer scored the work and raised nothing blocking, so there is no
-    reading of the record a coordinator would add.
+    The reviewer scored the work, raised nothing blocking, and every finding it
+    did raise has been answered, so there is no reading of the record a
+    coordinator would add.
     """
     dimensions = review_module.REVIEW_DIMENSIONS
     per_dimension = {
@@ -398,6 +419,7 @@ def test_a_review_scoring_92_with_two_non_blocking_findings_lands(
         ),
         per_dimension=per_dimension,
     )
+    _dispose(str(delivery["head"]), (0, 1))
     landed = _land(monkeypatch)
 
     result = queue_landing.land_once()
@@ -442,11 +464,7 @@ def test_a_refused_landing_leaves_the_stored_record_unchanged(
     delivery, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Exemptions say a landing happened. A refused landing must not say it did."""
-    _accept(
-        base=str(delivery["base"]),
-        head=str(delivery["head"]),
-        findings=("non-blocking: the helper re-derives a value it could cache",),
-    )
+    _accept(base=str(delivery["base"]), head=str(delivery["head"]))
     before = _stored_record(str(delivery["head"]))
     monkeypatch.setattr(
         queue_landing, "_land", lambda run_id: (False, "the branch refused the merge")

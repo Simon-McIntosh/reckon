@@ -1,0 +1,77 @@
+<section id="lander-leaves-red-run-to-coordinator-landing">
+  <h2>The lander leaves a run whose own evidence is red to its coordinator</h2>
+
+  <p><strong>What changed.</strong> The admission lander promoted a delivered run
+  whose own manifest recorded an <code>after_suite</code> exit status of 1 with a
+  failure its baseline did not name, and whose review carried
+  <code>added_failure_count: 1</code> and five open findings. It recorded gate
+  <code>passed</code> and merged the red test onto the primary branch with no
+  coordinator action, because the lander judged a run on its own measurement and
+  the review's acceptance rule exempted its non-blocking findings itself.</p>
+
+  <p><code>reckon/crew/queue_landing.py</code> now reads the run's own evidence
+  before it measures anything, and records the existing <code>refused</code>
+  status with a <code>red-suite</code> guard when that evidence is red or
+  unreadable. Three arms state it. <code>_manifest_suite_guard</code> reads the
+  manifest's <code>baseline_suite</code>/<code>after_suite</code> pair:
+  <code>_after_suite_arm</code> reports an arm that is absent, that does not
+  declare <code>completed: true</code>, or that records no <code>exit_status</code>
+  as unreadable rather than clean; <code>_after_suite_exit_guard</code> refuses a
+  nonzero exit; <code>_after_suite_added_guard</code> refuses a failure id the
+  baseline does not name. <code>_review_added_failure_guard</code> refuses a
+  review recording <code>added_failure_count</code> above zero, and
+  <code>_undisposed_finding_guard</code> refuses a finding with no disposition.
+  A manifest recording neither suite arm states nothing, so a run whose node
+  armed no suite pair is judged on the pass's own measurement exactly as
+  before.</p>
+
+  <p>A refusal is judged again when the record it read changes, so the suite arms
+  now enter the refusal's review stamp through
+  <code>_suite_evidence_stamp</code>: a coordinator who records the missing
+  observation releases the refusal on the next pass rather than leaving it
+  standing over evidence that has moved. No status was added —
+  <code>obligations.py</code> already reports a refused
+  <code>admission_landing</code> as <code>landing-refused</code> naming the
+  guard, and the lander's skip path is unchanged.</p>
+
+  <p><strong>Superseded behaviour.</strong> A review carrying nothing blocking
+  used to land with its non-blocking findings exempted by the pass itself. That
+  exemption was the pass's own judgement rather than the reviewer's or a
+  coordinator's, so an undisposed finding now holds the run. Three assertions in
+  <code>tests/test_a_run_a_review_does_not_block_lands.py</code> stated the old
+  behaviour and were updated to the new contract: the undisposed case asserts the
+  refusal, and the two landing cases dispose their findings first.</p>
+
+  <h3 id="lander-leaves-red-run-to-coordinator-arms">Measured</h3>
+
+  <p>Eleven cases in <code>tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py</code>,
+  each over a temporary crew home with the suite runner and promotion stubbed:
+  the six refusing and accepting cases the section asks for, and five negative
+  controls that each remove one arm and show the same case promoting. The first
+  case also reads the obligations view and asserts the row is
+  <code>landing-refused</code> naming the reason.</p>
+
+  <table id="lander-leaves-red-run-to-coordinator-table">
+    <caption>Every arm is a log whose first lines name its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>after suite (new test file)</td>
+        <td><code>a6a0f1f</code>, worktree</td>
+        <td>11 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>importer gate (15 files importing
+        <code>reckon.crew.queue_landing</code>, plus the new test)</td>
+        <td><code>a6a0f1f</code>, worktree</td>
+        <td>131 passed, 0 failed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative controls: one per refusing arm</td>
+        <td><code>a6a0f1f</code>, in-test mutation</td>
+        <td>5 passed, each promoting once its own arm is removed,
+        <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>Ruff reports no finding on the staged paths and all three files are already
+  formatted. The importer gate has no base arm because the head arm has no
+  failure to attribute: 131 passed and nothing failed, so no failure is added
+  against the base revision.</p>
+</section>
