@@ -225,3 +225,61 @@ def test_a_plan_review_another_session_owns_does_not_clear_the_refusal(
 
     assert row["kind"] == obligations_module.QUEUED_AWAITING_SESSION_DUTY_KIND, row
     assert "review_run_id" not in row, row
+
+
+@pytest.fixture()
+def builder_calls(monkeypatch: pytest.MonkeyPatch) -> list[dict[str, Any]]:
+    """Replace the one queued-row builder both producers must go through.
+
+    A producer that decides a queued row's kind for itself never reaches it, so
+    its row comes back missing the marker below and the test can name the
+    surface that went its own way. The refusal cases are the ones a producer
+    can answer alone: each producer used to carry its own branch for a refusal
+    with no review waiting on it.
+    """
+    calls: list[dict[str, Any]] = []
+
+    def _marker(row: Any, **options: Any) -> dict[str, Any]:
+        options["row_run_id"] = str(row.get("run_id") or "")
+        calls.append(options)
+        return {
+            "kind": "one-builder",
+            "run_id": str(row.get("run_id") or ""),
+            "age_seconds": 0,
+        }
+
+    monkeypatch.setattr(obligations_module, "_queued_row_item", _marker)
+    return calls
+
+
+def _built_by_one_builder(calls: list[dict[str, Any]]) -> int:
+    return sum(1 for options in calls if options["row_run_id"] == REQUEST_RUN_ID)
+
+
+def test_both_producers_build_a_refused_row_through_the_one_builder(
+    repository: Path, builder_calls: list[dict[str, Any]]
+) -> None:
+    """Neither producer may decide a refused queued row's kind for itself."""
+    _write_queued_request()
+
+    derived = _derivation_row()
+    published = _published_snapshot_row()
+
+    assert derived["kind"] == "one-builder", derived
+    assert published["kind"] == "one-builder", published
+    assert _built_by_one_builder(builder_calls) == 2, builder_calls
+
+
+def test_both_producers_build_an_awaited_row_through_the_one_builder(
+    repository: Path, builder_calls: list[dict[str, Any]]
+) -> None:
+    """The wait case reaches the builder too, on both surfaces."""
+    _write_queued_request()
+    _write_queued_plan_review()
+
+    derived = _derivation_row()
+    published = _published_snapshot_row()
+
+    assert derived["kind"] == "one-builder", derived
+    assert published["kind"] == "one-builder", published
+    assert _built_by_one_builder(builder_calls) == 2, builder_calls

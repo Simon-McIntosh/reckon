@@ -1265,14 +1265,16 @@ def _plan_review_this_request_awaits(
 
     The refusal is read from the class the admission pass stamps at the head of
     the stored failure, through the reader that owns that stamp, rather than
-    from the sentence a remedy composes around it. The review's plan is read
-    from its node id, which is the one place a composed plan review records the
-    plan it reads; its ``node.plan`` is empty. A review another session composed
-    does not clear this one's refusal, because the recovery reading of a run is
-    its own session's business.
+    from the sentence a remedy composes around it. The review itself is looked
+    up by the reader that owns that question, the one the dispatch lock and the
+    preview already consult, so a preview, a lock and this view cannot answer
+    differently about which review stands for a plan. A review another session
+    composed does not clear this one's refusal, because the recovery reading of
+    a run is its own session's business.
     """
-    node = (pointer or {}).get("node")
-    failure = (pointer or {}).get("failure")
+    pointer = pointer or {}
+    node = pointer.get("node")
+    failure = pointer.get("failure")
     if not failure or not isinstance(node, Mapping):
         return ""
     stamped = recovery_classification._stamped_refusal_class(
@@ -1283,19 +1285,12 @@ def _plan_review_this_request_awaits(
     plan = str(node.get("plan") or "")
     if not plan:
         return ""
-    target = f"{recovery.PLAN_REVIEW_NODE_PREFIX}{plan}"
-    for candidate in live_pointers:
-        if str(candidate.get("session") or "") != session:
-            continue
-        composed = candidate.get("node")
-        if not isinstance(composed, Mapping):
-            continue
-        if str(composed.get("id") or "") != target:
-            continue
-        run_id = str(candidate.get("run_id") or "")
-        if run_id:
-            return run_id
-    return ""
+    return recovery_review_dispatch._standing_plan_review(
+        str(pointer.get("project") or ""),
+        plan,
+        session=session,
+        pointers=list(live_pointers),
+    )
 
 
 def _queued_row_item(
