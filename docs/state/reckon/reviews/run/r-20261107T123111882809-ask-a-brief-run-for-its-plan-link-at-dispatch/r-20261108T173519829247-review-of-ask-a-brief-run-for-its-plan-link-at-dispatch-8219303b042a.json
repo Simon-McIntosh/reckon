@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T17:56:39.571Z",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "folded",
+      "node": "repair-of-ask-a-brief-run-for-its-plan-link-at-dispatch-8219303b042a",
+      "recorded_at": "2026-11-08T18:24:13.299464+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-08T17:38:04Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_checks.py",
+      "line": "1775",
+      "severity": "blocking",
+      "text": "blocking: the return type is narrowed from dict[str, Any] | None to None, dropping the {\"plan_link\", \"unplanned_reason\"} value that reckon/crew/promotion.py:1500-1501 passes to ledger build_record, so every brief landing now records no plan owner; measured in a scratch extraction of each revision, tests/test_promotion_records_a_brief_runs_owner.py is 7 passed at 9cbf82e8 and 4 failed at 8219303b (test_a_plan_link_lands_on_the_row, test_an_unplanned_reason_lands_on_the_row, test_the_cli_plan_link_reaches_the_row, test_the_cli_unplanned_reason_reaches_the_row), the head failure reading assert None == 'a probe changes no plan'."
+    },
+    {
+      "file": "tests/test_a_brief_run_names_its_plan_at_dispatch.py",
+      "line": "571",
+      "severity": "blocking",
+      "text": "blocking: the added case asserts _require_brief_owner(...) is None for the recorded-discharge input, which enshrines the dropped return; restoring the discharge dict reddens this assertion, so the repair to promotion_checks.py:1775 must change this expectation with it."
+    },
+    {
+      "file": "tests/test_a_brief_run_names_its_plan_at_dispatch.py",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the manifest's armed gate runs only tests/test_a_brief_run_names_its_plan_at_dispatch.py and tests/test_brief_dispatch.py although the change reaches every test importing reckon.crew, so the fold's regression surfaced in tests/test_promotion_records_a_brief_runs_owner.py only when this review ran it; the after arm should carry the importer population the done_when names."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew_dispatch_commands.py:1868 crew_dispatch, reckon/crew/promotion_checks.py:2422 _landing_preconditions, reckon/crew/promotion.py:1500 ledger build_record, reckon/crew/node.py:1251 brief_plan_owner_finding",
+    "diff": "read commit by commit from 9cbf82e8 to 8219303b; 2d1aac02 moves the four-part owner predicate into missing_brief_discharge and narrows _require_brief_owner's return to None, and 8219303b relabels each fragment measure cell with the revision its own log records.",
+    "done_when": "the done_when requires that test files importing reckon.crew.promotion_checks, reckon.crew.node or reckon.crew_dispatch_commands add no failure against the base revision, and that clause is not met \u2014 tests/test_promotion_records_a_brief_runs_owner.py is 7 passed at 9cbf82e8 and 4 failed at 8219303b, while the manifest's armed pair covers only two other files.",
+    "goal": "the node's goal is to refuse an implement- or test-role brief dispatch that names neither a plan link nor an unplanned reason; the commits under review move that rule into reckon/crew/node.py:1202 missing_brief_discharge, which both reckon/crew/node.py:1251 and reckon/crew/promotion_checks.py:1801 read, and the refusal at reckon/crew_dispatch_commands.py:1868 is unchanged.",
+    "manifest": "read the attempt-3 manifest; it records status complete, seven commits, both armed arms with their revisions and log paths, the shared-helper negative control and one rubric line per dimension, but nothing in it covers the ledger record path the fold breaks.",
+    "write_paths": "read the five dispatched paths plus the fence's evidence fragment; both commits touch only reckon/crew/node.py, reckon/crew/promotion_checks.py, tests/test_a_brief_run_names_its_plan_at_dispatch.py and docs/evidence/fragments/a-refusal-comes-before-the-work/ask-a-brief-run-for-its-plan-link-at-dispatch.html, every one inside the fence."
+  },
+  "justifications": {
+    "cope_discipline": "git diff --stat 9cbf82e8..8219303b lists only reckon/crew/node.py, reckon/crew/promotion_checks.py, the node's own test file and the fenced evidence fragment.",
+    "euse": "reckon/crew/node.py:1202 is the sole owner of the brief-discharge predicate \u2014 a search of reckon/ for EXECUTABLE_SECTION_ROLES finds only role-set consumers at reckon/crew/promotion_checks.py:1858, reckon/evidence.py:414 and reckon/mcp_views.py:1827, none of which restates the brief/plan/discharge rule.",
+    "it": "reckon/crew/node.py:1202 sits beside the other contract findings with a mechanism docstring, reuses EXECUTABLE_SECTION_ROLES from reckon/evidence.py:382, and introduces no plan or stage identifier.",
+    "oal_fidelity": "reckon/crew/promotion_checks.py:1775 narrows _require_brief_owner to return None, so the discharge that reckon/crew/promotion.py:1500 writes onto the ledger row is now always empty.",
+    "urability": "tests/test_a_brief_run_names_its_plan_at_dispatch.py:545 genuinely reddens on a divergence between the two refusals, but the same commit leaves tests/test_promotion_records_a_brief_runs_owner.py with 4 failures and adds tests/test_a_brief_run_names_its_plan_at_dispatch.py:571 asserting the broken return is None.",
+    "vidence": "logs/armed-base-suite.log and logs/armed-head-suite.log are proper receipts for two files, but the done_when's importer clause was never measured and the omission hid four failures in tests/test_promotion_records_a_brief_runs_owner.py."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to refuse an implement- or test-role brief dispatch that names neither a plan link nor an unplanned reason; the commits under review move that rule into reckon/crew/node.py:1202 missing_brief_discharge, which both reckon/crew/node.py:1251 and reckon/crew/promotion_checks.py:1801 read, and the refusal at reckon/crew_dispatch_commands.py:1868 is unchanged.\nVERDICT done_when: the done_when requires that test files importing reckon.crew.promotion_checks, reckon.crew.node or reckon.crew_dispatch_commands add no failure against the base revision, and that clause is not met \u2014 tests/test_promotion_records_a_brief_runs_owner.py is 7 passed at 9cbf82e8 and 4 failed at 8219303b, while the manifest's armed pair covers only two other files.\nVERDICT write_paths: read the five dispatched paths plus the fence's evidence fragment; both commits touch only reckon/crew/node.py, reckon/crew/promotion_checks.py, tests/test_a_brief_run_names_its_plan_at_dispatch.py and docs/evidence/fragments/a-refusal-comes-before-the-work/ask-a-brief-run-for-its-plan-link-at-dispatch.html, every one inside the fence.\nVERDICT manifest: read the attempt-3 manifest; it records status complete, seven commits, both armed arms with their revisions and log paths, the shared-helper negative control and one rubric line per dimension, but nothing in it covers the ledger record path the fold breaks.\nVERDICT diff: read commit by commit from 9cbf82e8 to 8219303b; 2d1aac02 moves the four-part owner predicate into missing_brief_discharge and narrows _require_brief_owner's return to None, and 8219303b relabels each fragment measure cell with the revision its own log records.\nCALL_SITES: reckon/crew_dispatch_commands.py:1868 crew_dispatch, reckon/crew/promotion_checks.py:2422 _landing_preconditions, reckon/crew/promotion.py:1500 ledger build_record, reckon/crew/node.py:1251 brief_plan_owner_finding\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_checks.py:1775 narrows _require_brief_owner to return None, so the discharge that reckon/crew/promotion.py:1500 writes onto the ledger row is now always empty.\nSCORE evidence: 12\nJUSTIFICATION evidence: logs/armed-base-suite.log and logs/armed-head-suite.log are proper receipts for two files, but the done_when's importer clause was never measured and the omission hid four failures in tests/test_promotion_records_a_brief_runs_owner.py.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 9cbf82e8..8219303b lists only reckon/crew/node.py, reckon/crew/promotion_checks.py, the node's own test file and the fenced evidence fragment.\nSCORE durability: 7\nJUSTIFICATION durability: tests/test_a_brief_run_names_its_plan_at_dispatch.py:545 genuinely reddens on a divergence between the two refusals, but the same commit leaves tests/test_promotion_records_a_brief_runs_owner.py with 4 failures and adds tests/test_a_brief_run_names_its_plan_at_dispatch.py:571 asserting the broken return is None.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/node.py:1202 sits beside the other contract findings with a mechanism docstring, reuses EXECUTABLE_SECTION_ROLES from reckon/evidence.py:382, and introduces no plan or stage identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/node.py:1202 is the sole owner of the brief-discharge predicate \u2014 a search of reckon/ for EXECUTABLE_SECTION_ROLES finds only role-set consumers at reckon/crew/promotion_checks.py:1858, reckon/evidence.py:414 and reckon/mcp_views.py:1827, none of which restates the brief/plan/discharge rule.\nFINDING reckon/crew/promotion_checks.py:1775 blocking: the return type is narrowed from dict[str, Any] | None to None, dropping the {\"plan_link\", \"unplanned_reason\"} value that reckon/crew/promotion.py:1500-1501 passes to ledger build_record, so every brief landing now records no plan owner; measured in a scratch extraction of each revision, tests/test_promotion_records_a_brief_runs_owner.py is 7 passed at 9cbf82e8 and 4 failed at 8219303b (test_a_plan_link_lands_on_the_row, test_an_unplanned_reason_lands_on_the_row, test_the_cli_plan_link_reaches_the_row, test_the_cli_unplanned_reason_reaches_the_row), the head failure reading assert None == 'a probe changes no plan'.\nFINDING tests/test_a_brief_run_names_its_plan_at_dispatch.py:571 blocking: the added case asserts _require_brief_owner(...) is None for the recorded-discharge input, which enshrines the dropped return; restoring the discharge dict reddens this assertion, so the repair to promotion_checks.py:1775 must change this expectation with it.\nFINDING tests/test_a_brief_run_names_its_plan_at_dispatch.py:1 non-blocking: the manifest's armed gate runs only tests/test_a_brief_run_names_its_plan_at_dispatch.py and tests/test_brief_dispatch.py although the change reaches every test importing reckon.crew, so the fold's regression surfaced in tests/test_promotion_records_a_brief_runs_owner.py only when this review ran it; the after arm should carry the importer population the done_when names.\n",
+  "review_run_id": "r-20261108T173519829247-review-of-ask-a-brief-run-for-its-plan-link-at-dispatch-8219303b042a",
+  "reviewed_base_sha": "d48480ee3e75d91634fe1db961c2846d89451e8d",
+  "reviewed_head_sha": "8219303b042ad05b49ba832df8a07307f282cd43",
+  "reviewed_run_id": "r-20261107T123111882809-ask-a-brief-run-for-its-plan-link-at-dispatch",
+  "scores": {
+    "durability": 7,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 14,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T18:28:07.653200+00:00",
+  "total": 90
+}
