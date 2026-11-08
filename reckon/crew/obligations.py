@@ -701,7 +701,9 @@ def _reflex_review_window_seconds() -> int:
     return int(DEFAULT_SWEEP_SECONDS)
 
 
-def _reflex_review_command(project: str, pointer: Mapping[str, Any]) -> str:
+def _reflex_review_command(
+    project: str, pointer: Mapping[str, Any], *, age: int
+) -> str:
     """The duty's next action while an armed reflex owns the dispatch.
 
     Following the dispatch a missing review prints collides with the reflex's
@@ -712,6 +714,12 @@ def _reflex_review_command(project: str, pointer: Mapping[str, Any]) -> str:
     """
     session = str(pointer.get("session") or "")
     window = _reflex_review_window_seconds()
+    if age > window:
+        return (
+            f"review overdue by {age // 60}m {age % 60}s: session {session!r} "
+            "has an armed follower, but its reflex has not dispatched this "
+            "run's review; inspect the follower's review pass"
+        )
     return (
         f"the review reflex owns this dispatch: session {session!r} has an armed "
         "follower, which composes the review for this run on its next sweep — "
@@ -1589,6 +1597,15 @@ def _review_duty_item(
         # deliverable: the classifier's own reading stands.
         return _live_item(row, kind=_classification_kind(), now=now)
 
+    if (
+        classification == "scoring"
+        and row.get("review_run_id")
+        and row.get("review_run_phase") == "working"
+    ):
+        item = _live_item(row, kind="review-in-flight", now=now)
+        item["reason"] = str(row.get("detail") or "")
+        return item
+
     resumed_head, _tree = recovery._review_head_and_tree(pointer)
     if supersedes_head(pointer, resumed_head):
         return None
@@ -1612,10 +1629,51 @@ def _review_duty_item(
             item["reason"] += f"; remedy: {remedy}"
         return item
 
-    if (
-        _review_tier_for_duty(row, pointer, head=resumed_head, tree=_tree)
-        == review_tiers.NONE
-    ):
+    head, tree = resumed_head, _tree
+    try:
+        review, reviewed_head = _selected_review(
+            project, str(row.get("run_id") or ""), head, tree=tree
+        )
+    except (OSError, ValueError):
+        review, reviewed_head = None, ""
+    tier = _review_tier_for_duty(row, pointer, head=head, tree=tree)
+    if review is not None:
+        blocking = recovery_review_dispatch._undisposed_blocking_findings(review)
+        if blocking:
+            item = _live_item(row, kind="repair-owed", now=now)
+            if head:
+                item["head"] = head
+            if tier == review_tiers.NONE:
+                item["review_tier"] = tier
+            repair = pointer.get(recovery_review_dispatch.REPAIR_DISPATCH_FIELD)
+            repair = repair if isinstance(repair, Mapping) else {}
+            status = str(repair.get("status") or "")
+            item["reason"] = (
+                f"the newest review has {len(blocking)} open blocking finding(s); "
+                + (
+                    f"repair {status}: {repair.get('reason') or 'awaiting progress'}"
+                    if status
+                    else "repair not opened"
+                )
+            )
+            run_id = str(row.get("run_id") or "")
+            if status == "advice-hold":
+                item["next_command"] = (
+                    f"repair held for coordinator advice; reckon crew resume --run "
+                    f"{run_id} --advice '<advice for this repair>'"
+                )
+            elif status in {"resumed", "dispatched"}:
+                repair_run = str(repair.get("run_id") or run_id)
+                item["next_command"] = (
+                    f"repair in flight; reckon crew observe --run {repair_run}"
+                )
+            else:
+                item["next_command"] = (
+                    "the repair reflex owes this run a repair; "
+                    f"reckon crew observe --run {run_id}"
+                )
+            return item
+    if tier == review_tiers.NONE:
         item = _live_item(
             row,
             kind="promotable-stale" if age > grace else "review-ready",
@@ -1632,13 +1690,6 @@ def _review_duty_item(
             "review is owed and the merged-head gate checks it instead"
         )
         return item
-    head, tree = resumed_head, _tree
-    try:
-        review, reviewed_head = _selected_review(
-            project, str(row.get("run_id") or ""), head, tree=tree
-        )
-    except (OSError, ValueError):
-        review, reviewed_head = None, ""
     item = _live_item(row, kind=_classification_kind(), now=now)
     refused = _refused_delivered_review(pointer)
     if refused:
@@ -1700,7 +1751,7 @@ def _review_duty_item(
             # compose this review, the duty names that reflex and the window
             # its cadence promises, as a field beside the words so a reader
             # deciding whether to act reads the same figure the text quotes.
-            item["next_command"] = _reflex_review_command(project, pointer)
+            item["next_command"] = _reflex_review_command(project, pointer, age=age)
             item["review_owner"] = "reflex"
             item["reflex_window_seconds"] = _reflex_review_window_seconds()
     return item
@@ -2537,6 +2588,7 @@ def _obligations_view(
             if (
                 classification == "scoring"
                 and str(row.get("run_id") or "") in reviews_in_flight
+                and row.get("review_run_phase") != "working"
                 and not (
                     pointers.get(str(row.get("run_id") or ""))
                     and _refused_delivered_review(
