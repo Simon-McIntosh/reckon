@@ -172,14 +172,37 @@ def _contract_findings(
     so an edit is judged under the same locks the launch will be.
     """
     from reckon.crew.queue_admission import _resolve_lane_config
-    from reckon.crew.routing import resolved_time_ceiling
+    from reckon.crew.routing import resolve_role_override, resolved_time_ceiling
 
     options = record.get("dispatch_options") or {}
+    config = _resolve_lane_config(record)
     node.manifest_path = str((record.get("node") or {}).get("manifest_path") or "")
+    lane = str(
+        record.get("backend")
+        or record.get("lane")
+        or config.get("local_backend")
+        or config.get("default_backend")
+        or ""
+    )
+    effective_backend = (
+        resolve_role_override(config, node.role, node.spec_level, lane)[1]
+        if lane
+        else {}
+    )
+    # The execution override is a decision the request's dispatch already
+    # recorded (``--allow-execution-mismatch``), so the edit judges the request
+    # under it rather than refusing a request that was legitimately stored.
     verdict = validate_node(
         node,
         locked_decisions=tuple(options.get("locked_decisions") or ()),
-        budget_ceiling=resolved_time_ceiling(_resolve_lane_config(record)),
+        budget_ceiling=resolved_time_ceiling(config),
+        execution_capable=effective_backend.get("execution_capable"),
+        override=bool(
+            options.get("execution_override")
+            or options.get("allow_execution_mismatch")
+            or (record.get("execution_fit") or {}).get("override")
+        ),
+        repository=str(record.get("repo") or "") or None,
     )
     return list(verdict.findings)
 

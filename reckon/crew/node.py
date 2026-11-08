@@ -1193,13 +1193,20 @@ def validate_node(
     locked_decisions: Iterable[str] = (),
     budget_ceiling: str = "",
     execution_capable: bool | None = None,
+    override: bool = False,
+    repository: str | Path | None = None,
 ) -> NodeValidation:
-    """Judge a node against all eight properties, reporting every failure.
+    """Judge a node against every contract property, reporting every failure.
 
     Every property is reported rather than stopping at the first, because a
     caller reshaping a node wants the whole list in one pass. The verdict is
     advisory here and binding in :func:`dispatch`, which refuses to send a node
     that fails.
+
+    ``repository`` names the working tree the node will run in, so a gate
+    population that matches nothing there is caught on every path that judges a
+    node rather than only the single-dispatch one. A caller with no tree to ask
+    leaves it unset and the population question goes unasked.
     """
     findings: list[dict[str, str]] = []
     locked = set(locked_decisions)
@@ -1262,11 +1269,17 @@ def validate_node(
         )
     if execution_capable is not None:
         # The measure-versus-role comparison dispatch applies, reused so a node
-        # is judged whole before any run is created.
+        # is judged whole before any run is created. The override is the
+        # caller's declared intention to run an execution measure on a role the
+        # lane does not call execution-capable, so it is honoured here rather
+        # than compared again later.
         fit = capability.assess_execution_fit(
-            node.done_when, role=node.role, execution_capable=execution_capable
+            node.done_when,
+            role=node.role,
+            execution_capable=execution_capable,
+            override=override,
         )
-        if fit.conflict:
+        if not fit.allowed:
             fail("fully-specified", fit.refusal_detail())
 
     done_when = node.done_when.strip()
@@ -1398,6 +1411,24 @@ def validate_node(
             "no specification level is declared; pass --spec-level exact, guided "
             "or open so the run remains visible to calibration",
         )
+
+    # A node whose scope includes a test file writes a check, and a check whose
+    # author never named the mutation it must fail against is a guard that
+    # passed by not exercising anything. The trigger is the declared write path
+    # rather than the done-when prose, so the refusal rests on a structured
+    # field a dispatcher can read on every path.
+    control_finding = negative_control_finding(node)
+    if control_finding is not None:
+        findings.append(control_finding)
+
+    # The gate command is the check the brief tells the worker to run, so a
+    # population that names no file the repository holds is caught here, where
+    # it costs a refusal, rather than inside the worker, where it costs the
+    # worker's judgement about which substitute the coordinator meant.
+    if repository is not None:
+        population_finding = gate_population_finding(node, repository=Path(repository))
+        if population_finding is not None:
+            findings.append(population_finding)
 
     return NodeValidation(ok=not findings, findings=findings)
 
