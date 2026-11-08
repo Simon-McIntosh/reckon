@@ -24,7 +24,7 @@
   <title>A Queued Request Is Checked When Queued | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="30">
+<meta name="plan-version" content="31">
 <meta name="plan-modified" content="2026-11-08">
 </head>
 <body>
@@ -103,14 +103,17 @@
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261107T174751033780-batch-request-editable-in-queue" data-who="reckon-build" data-when="2026-11-07T19:02:57.501Z">
     <div class="r-comment-body"><p>§6 — _queue_batch now stores each queued batch entry's manifest path as run_dir(run_id)/manifest.md when the entry names none, so crew queue edit stores a --time-budget change on a batch-made request instead of refusing it naming independently-verifiable; tests/test_a_batch_request_can_be_edited.py: 3 passed (and 2 failed 1 passed with the path dropped).</p></div>
 </div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261108T004233619983-review-of-batch-context-fit-at-queue-time-9b1492157b5d" data-who="reckon-build" data-when="2026-11-08T01:04:38.451Z">
+    <div class="r-comment-body"><p>§7 review of r-20261107T175209652907 at head 9b1492157b - parsed record, six dimensions scored (goal_fidelity 17, evidence 18, scope_discipline 15, durability 18, fit 16, reuse 12; total 96), added failures 0, three non-blocking findings, stored under the reviewed run's review-records/ and not in any worktree</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261107T175209652907-batch-context-fit-at-queue-time" data-who="reckon-build" data-when="2026-11-08T00:26:56.429Z">
+    <div class="r-comment-body"><p>§7 — a batch entry is measured against its lane&#x27;s window before it is queued: node_context_fit_finding in dispatch_admission.py measures the estimate through the router&#x27;s own fit verdict and _queue_batch refuses an oversized entry in its row with no pointer written; gate 3 passed, arm 359 passed / 1 pre-existing failure at head against 356 passed / 1 at base, added failures 0, negative control red with the oversized entry queueing.</p></div>
+</div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261107T175329716070-admission-refusal-named-in-obligation" data-who="reckon-build" data-when="2026-11-07T19:19:30.185Z">
     <div class="r-comment-body"><p>A queued request admission refused on its node contract now yields a `queued-contract-refused` duty whose reason carries the refusal's own property names and whose next_command is `reckon crew queue edit --run &lt;id&gt;` for an editable property or `reckon crew queue drop --run &lt;id&gt;` for a plan-owned one; the refused pointer read `run-queued` / "waiting for a lane slot" before, and `tests/test_a_refused_request_names_its_refusal.py` shows 3 passed EXIT=0 at the head against 2 failed 1 passed EXIT=1 at the base.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261107T192649977167-review-of-admission-refusal-named-in-obligation-77129c667f5f" data-who="reckon-build" data-when="2026-11-07T19:44:30.519Z">
     <div class="r-comment-body"><p>Reviewed r-20261107T175329716070-admission-refusal-named-in-obligation (base aaa66d3f98 to head 77129c667f5f) as parsed at goal_fidelity 19, evidence 15, scope_discipline 14, durability 12, fit 17, reuse 16, with added_failure_count 0 (both population arms fail the same two ids) and six non-blocking findings: the test file sits outside the node's declared write paths, the editable (queue-edit) arm is untested, one assertion cannot fail on its regression, the node-contract predicate is re-spelled, the evidence fragment overstates the base arm, and head-suite.log names the base revision.</p></div>
-</div>
-<div class="r-comment" data-section="s7" data-id="c-run-r-20261108T004233619983-review-of-batch-context-fit-at-queue-time-9b1492157b5d" data-who="reckon-build" data-when="2026-11-08T01:04:38.451Z">
-    <div class="r-comment-body"><p>§7 review of r-20261107T175209652907 at head 9b1492157b - parsed record, six dimensions scored (goal_fidelity 17, evidence 18, scope_discipline 15, durability 18, fit 16, reuse 12; total 96), added failures 0, three non-blocking findings, stored under the reviewed run&#x27;s review-records/ and not in any worktree</p></div>
 </div>
 </section>
 </main>
