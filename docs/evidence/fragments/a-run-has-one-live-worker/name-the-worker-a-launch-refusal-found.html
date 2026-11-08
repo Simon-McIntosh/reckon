@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-run-has-one-live-worker">
+  <meta name="plan-evidence-for" content="a-run-has-one-live-worker">
+  <title>A launch refusal names the worker it found | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A launch refusal names the worker it found</h1>
+      <p class="lead">Both refusals that stop a second launch worded themselves from the run's recorded pid. When the worker had been found by its session that pid was dead, so the refusal sent a coordinator to a process the table no longer held. The refusals now read the arm-carrying liveness reading and name what was actually found: the pid, the session, or the scheduler job.</p>
+    </header>
+
+    <section id="name-the-worker-a-launch-refusal-found-defect">
+      <h2>The gap: a refusal worded from a pid that had gone</h2>
+      <p><code>live_worker_pid</code> in <code>reckon/crew/recovery_liveness.py</code> asked whether the pointer read alive and then returned the pointer's <em>recorded</em> pid. That answer is the worker's own only in the recorded-pid arm: the session walk reaches a worker whose recorded pid is dead, and a placed run's recorded pid names the scheduler client. Both refusals in <code>reckon/crew/dispatch_launch.py</code> — <code>_prepare_attempt_records</code> and <code>_supervisor_spawn_worker</code> — built their text from that pid.</p>
+      <p>Reproduced first, in a temporary crew home, with the recorded pointer pid 508 dead and a stand-in process 510 carrying the run's session id. The launch was refused, and the refusal named the dead pid and no session:</p>
+      <pre><code>REFUSAL: run 'r-repro-launch-refusal' still has a live worker (pid 508): a launch
+that started now would run a second worker beside it; observe or stop it before
+launching again
+refusal names the recorded dead pid: True
+refusal names the session: False</code></pre>
+      <p>§5's session-walk case asserted only the prefix <code>still has a live worker (pid </code>, so the dead pid passed it, and its remaining control was <code>assert pid &gt; 0</code>.</p>
+    </section>
+
+    <section id="name-the-worker-a-launch-refusal-found-what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/crew/recovery_liveness.py</code> gains <code>live_worker_reading</code>, a companion beside <code>live_worker_pid</code>. It composes the same reads in the same order — the pointer's pid, the supervisor's worker record, the environment mark — and returns the <code>LivenessReading</code> §8 added to <code>process_liveness.py</code>, so the arm that answered is kept: recorded pid, session walk, or placed job.</li>
+        <li><code>live_worker_pid</code> keeps its <code>int | None</code> shape and its own answers, so its existing callers — the lift refusal in <code>resumption.py</code>, which names a pid — are unchanged. Only the two launch refusals read the companion.</li>
+        <li>A placed run is answered by its scheduler job alone, in <code>record_process_liveness</code> — the reading's owner. Its recorded pid names the scheduler client, so the pid probe is never consulted for it: a scheduler that cannot answer leaves the arm placed with liveness unknown. The launch refusal then opens <em>cannot read whether its worker is live</em> rather than asserting a worker it never observed, and never names the client's pid.</li>
+        <li>Because that answer reaches every <code>record_process_alive</code> caller, the contract pinned in <code>tests/test_crew_placed_liveness.py</code> moved with it: an unqueryable scheduler on a placed record now reads unknown instead of falling through to the client's pid, and the two cases that asserted the old fall-through assert unknown, named for what they measure. The docstrings of <code>record_process_alive</code>, <code>placement_job_alive</code> and <code>record_process_liveness</code> say the same, so the next reader finds one contract rather than three.</li>
+        <li>Both refusals read <code>live_worker_reading</code> and word themselves through one helper, <code>_live_worker_naming</code>: the recorded pid, the session id, or the job id, whichever the arm that found the worker carries. Every arm that reads alive still refuses; only the wording changes in the session-walk and placed arms.</li>
+      </ul>
+    </section>
+
+    <section id="name-the-worker-a-launch-refusal-found-the-gate">
+      <h2>The gate</h2>
+      <p><code>tests/test_a_queued_run_launches_once.py</code> shows six cases, each asserting the whole refusal text rather than a prefix, against a temporary crew home:</p>
+      <ul>
+        <li>beside a live recorded pid, refused naming that pid;</li>
+        <li>beside a worker found only by the session walk with the recorded pid dead, refused naming the session and not the dead pid;</li>
+        <li>beside a placed run's live worker, refused naming the job and not the scheduler client's pid;</li>
+        <li>beside a placed run whose scheduler query answers nothing, refused as placed with liveness unknown, the whole text asserted, never naming the client's pid;</li>
+        <li>beside a run whose worker is proven dead, the launch proceeds;</li>
+        <li>a fresh dispatch refused at <code>_prepare_attempt_records</code> names the session and not the dead pid.</li>
+      </ul>
+      <p>An autouse fixture asserts the operator's real crew home is untouched by every case. The armed suite — this file together with <code>tests/test_a_widen_says_when_it_takes_effect.py</code>, which the liveness change also reaches — ran <em>4 failed, 13 passed</em> against the base revision and <em>17 passed</em> at the head; the four base failures are the session-walk, placed-job, scheduler-unknown and fresh-dispatch cases. <code>tests/test_resume_refuses_a_live_worker.py</code> passed 10 tests unchanged, guarding the worker-record and environment-mark pid wording.</p>
+      <p>Four declared mutations were applied and each reddened its named case: wording from the recorded pid alone failed the session-walk case; removing the liveness read from <code>_supervisor_spawn_worker</code> let the second worker launch beside a live recorded pid; wording the launcher's own refusal from the pid failed the fresh-dispatch case; dropping the owner's placed branch so the recorded pid answers failed the scheduler-unknown case.</p>
+    </section>
+  </main>
+</body>
+</html>

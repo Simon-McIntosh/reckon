@@ -14,6 +14,12 @@ from reckon.crew import runs
 from reckon.crew.node import (
     LOG_STALE_AFTER_SECONDS,
 )
+from reckon.crew.process_liveness import (
+    LIVENESS_RECORDED_PID,
+    LIVENESS_UNKNOWN,
+    LivenessReading,
+    record_process_liveness,
+)
 from reckon.crew.reports import (
     TERMINAL_MANIFEST_STATUSES,
     ManifestParseError,
@@ -1272,6 +1278,49 @@ def local_liveness(record: Mapping[str, Any]) -> tuple[bool | None, bool]:
     return alive, proven
 
 
+def live_worker_reading(record: Mapping[str, Any]) -> LivenessReading:
+    """The run's live worker together with the arm that found it.
+
+    :func:`live_worker_pid` answers only a pid, which is all a caller that
+    refuses *because* something holds the run needs. A refusal that names the
+    holder needs more than a number: the recorded pid is the worker's own only
+    in the recorded-pid arm. Where the session walk found the worker that pid
+    is dead, and where the run was placed it names the scheduler client, so a
+    refusal worded from it points a reader at a process that is not working
+    the run. This composes the same reads in the same order and keeps the arm
+    each answered from.
+
+    A reading that is not alive carries no worker to name: the run is dead,
+    unknown, or was launched on a machine that cannot be shown to be this one.
+    A placed run is answered by its scheduler job alone. Its recorded pid names
+    the scheduler client, so the pid probe is never consulted for it, and a
+    scheduler that cannot answer leaves the arm placed with liveness unknown
+    rather than letting the client's pid stand in for the worker.
+    """
+    if not _launched_on_this_host(record):
+        return LivenessReading(LIVENESS_UNKNOWN, None)
+    # The pointer arm is taken only where the record carries a pid, as
+    # :func:`live_worker_pid` has always required: the arm it reports says how
+    # that pid read, not whether a pid was written at all.
+    pointer_pid = _int_or_none(record.get("pid"))
+    reading = record_process_liveness(record)
+    if pointer_pid is not None and reading.alive is True:
+        return reading
+    worker_pid = _worker_record_pid(record)
+    if worker_pid is not None and _worker_record_liveness(record) is True:
+        # The supervisor's worker record names the worker itself, so this arm
+        # holds a pid exactly as the recorded-pid arm does.
+        return LivenessReading(LIVENESS_RECORDED_PID, True, pid=worker_pid)
+    if _worker_record(record) is not None:
+        # The same environment reach ``local_liveness`` uses, named here so a
+        # refusal that stops a resume over a reparented worker can point at the
+        # process it found rather than at a pid the table no longer holds.
+        env_pid = _env_scan_run_pid(record)
+        if env_pid is not None:
+            return LivenessReading(LIVENESS_RECORDED_PID, True, pid=env_pid)
+    return reading
+
+
 def live_worker_pid(record: Mapping[str, Any]) -> int | None:
     """The pid this host observes still holding the run, or None.
 
@@ -1286,6 +1335,11 @@ def live_worker_pid(record: Mapping[str, Any]) -> int | None:
     issued it, so a record that cannot be shown to be this host's names
     nothing here. None means no pid answered: either the run is not alive, or
     its liveness came from a stored answer that carries no process to name.
+
+    A caller that must say *how* the worker was found reads
+    :func:`live_worker_reading` instead, which keeps the arm. This keeps its
+    own answers so every existing caller, such as the lift refusal that names
+    a pid, reads exactly what it read before.
     """
     if not _launched_on_this_host(record):
         return None
