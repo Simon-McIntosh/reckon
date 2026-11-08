@@ -2050,6 +2050,51 @@ def canonical_node_id(node_id: str, arm_directory: str | Path | None = None) -> 
     return path + separator + segments
 
 
+_PARAMETER_BRACKET_RE = re.compile(r"\[[^\[\]]*\]$")
+
+
+def failure_ids_covered(base_ids: Iterable[str], head_ids: Iterable[str]) -> set[str]:
+    """Return the head failure ids the base ids do not cover.
+
+    The two sides are written by different commands, so they name one test in
+    different shapes. A manifest's ``baseline_suite.failure_ids`` often carries
+    a bare test name a worker copied from a summary line, while the head is a
+    gate log whose ``FAILED`` lines carry the qualified id
+    ``tests/x.py::test_charge``. Compared verbatim, one test reads as two and a
+    head that added nothing is refused as having added a failure.
+
+    One test is compared on the name the two sides share:
+
+    - A qualified id matches only itself: ``tests/x.py::test_charge`` is not
+      covered by ``tests/y.py::test_charge``, because two tests sharing a name
+      in different files are different tests.
+    - A bare base name covers a head id whose final ``::`` segment, with a
+      trailing parameter bracket removed, equals it. So ``test_charge`` covers
+      both ``tests/x.py::test_charge[1]`` and ``tests/x.py::test_charge[2]``.
+    - A bare base name that carries a bracket keeps it: ``test_charge[1]``
+      covers only that parametrisation, never ``tests/x.py::test_charge[2]``.
+
+    The bracket is only stripped from the head side, so the rule stays
+    one-directional: a bare name covers a qualified id, and a qualified id
+    never covers a different spelling of itself. Ids carrying no ``::`` on
+    either side, such as a ctest test name, compare on the whole string.
+    """
+    base = {str(test_id).strip() for test_id in base_ids if str(test_id).strip()}
+    heads = {str(test_id).strip() for test_id in head_ids if str(test_id).strip()}
+    bare_base = {test_id for test_id in base if "::" not in test_id}
+    uncovered: set[str] = set()
+    for head_id in heads:
+        if head_id in base:
+            continue
+        final_segment = head_id.rpartition("::")[2]
+        if final_segment in bare_base:
+            continue
+        if _PARAMETER_BRACKET_RE.sub("", final_segment) in bare_base:
+            continue
+        uncovered.add(head_id)
+    return uncovered
+
+
 def _pytest_failure_ids(
     log_text: str, arm_directory: str | Path | None = None
 ) -> set[str]:
