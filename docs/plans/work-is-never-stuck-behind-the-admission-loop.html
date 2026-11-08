@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="310">
+<meta name="plan-version" content="311">
 <meta name="plan-modified" content="2026-11-08">
 </head>
 <body>
@@ -540,7 +540,10 @@
     <div class="r-comment-body"><p>review of replay-the-two-oversizednode-routing-refusals at 9099948928 stored parsed: goal_fidelity 18, evidence 14, scope_discipline 20, durability 15, fit 18, reuse 20; zero added failures, two non-blocking findings</p></div>
 </div>
 <div class="r-comment" data-section="s23" data-id="c-run-r-20261108T052434073237-oversized-node-reserved-lane-reproduced" data-who="reckon-build" data-when="2026-11-08T06:53:51.131Z">
-    <div class="r-comment-body"><p>§23 reproduced — the replay exited 1 because the dispatcher&#x27;s 5 s pick bound cut the 02:34:43Z attempt off (timeout in pick:capability, 0 of 3 rows); it now runs its picks under an explicit 120 s replay budget and records the production figure, and measure is 2 of 2 attempts reproduced with EXIT=0 at 6431 ms and 7764 ms elapsed.</p></div>
+    <div class="r-comment-body"><p>§23 reproduced — the replay exited 1 because the dispatcher's 5 s pick bound cut the 02:34:43Z attempt off (timeout in pick:capability, 0 of 3 rows); it now runs its picks under an explicit 120 s replay budget and records the production figure, and measure is 2 of 2 attempts reproduced with EXIT=0 at 6431 ms and 7764 ms elapsed.</p></div>
+</div>
+<div class="r-comment" data-section="s23" data-id="c-run-r-20261108T090201831601-review-of-oversized-node-reserved-lane-reproduced-bf3f838d4a14" data-who="reckon-build" data-when="2026-11-08T09:28:21.038Z">
+    <div class="r-comment-body"><p>§23 reviewed at bf3f838d4a — the replay reproduces both recorded refusals and the pre-change arm is red; scores goal_fidelity 18, evidence 17, scope_discipline 19, durability 14, fit 17, reuse 19 (total 104/120) with three non-blocking findings, recorded under the reviewed run&#x27;s review-records directory.</p></div>
 </div>
 <div class="r-comment" data-section="s24" data-id="c-run-r-20261103T073615423342-a-request-that-never-launched-holds-no-claim-another-landing" data-who="reckon-build" data-when="2026-11-03T10:07:53.207Z">
     <div class="r-comment-body"><p>A landing is admitted past a peer claim held by a request in a waiting phase (queued, awaiting-upstream, blocked-upstream, held): promotion_scope's accept-path walk consults node.claim_disposition for it, names the walked-past claim under waiting_request_claims, and leaves the request's pointer untouched. Gate 11 passed EXIT=0; base arm 5 passed EXIT=0; negative control (claim_disposition bypassed) 4 failed EXIT=1.</p></div>
