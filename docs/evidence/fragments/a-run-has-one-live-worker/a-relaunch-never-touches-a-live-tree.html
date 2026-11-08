@@ -46,6 +46,10 @@ stand-in tree exists      False</code></pre>
           <code>_prepare_attempt_records</code> refuses a second launch with — so a dispatch and a launch cannot disagree about whether
           a run is held. A run id with no live pointer has never launched here and is not refused; a placed record that has never
           launched is not refused either, because the predicate already answers that.</li>
+        <li>A pointer that exists and cannot be read — bad JSON, a non-object, an I/O failure — refuses and names the read failure.
+          Only a missing pointer passes. Skipping the check on a read error would turn a corrupt record into permission: it says
+          nothing about whether its worker is still running, so the tree could be rebuilt underneath a live one. That is the same
+          fail-open shape the check exists to close, one level down.</li>
         <li>The refusal is raised immediately after budget and before <code>directory = run_dir(run_id)</code>, which is the first write
           this dispatch makes. Nothing of the refused dispatch exists afterwards: no claim, no brief copy, no run directory, no tree.
           The local-lane answer through <code>_answer_existing_node_run</code> is unchanged, because it returns before this point.</li>
@@ -56,13 +60,17 @@ stand-in tree exists      False</code></pre>
 
     <section id="a-relaunch-never-touches-a-live-tree-gate">
       <h2>The gate</h2>
-      <p><code>tests/test_a_relaunch_never_touches_a_live_tree.py</code> runs the three cases §10 asks for, on a temporary crew home and
+      <p><code>tests/test_a_relaunch_never_touches_a_live_tree.py</code> runs the three cases §10 asks for, plus the unreadable-pointer case, on a temporary crew home and
         repository, with the stand-in's file git-ignored so the tree reads clean and <code>_create_worktree</code>'s own disposable-tree
         rule can release it — which is exactly what a real worker's fence mounts look like.</p>
       <ul>
         <li><strong>Live worker, non-local lane.</strong> The dispatch is refused with this section's text, and afterwards the tree's head is
           the stand-in's own, its ignored file is intact and <code>git status</code> is clean, the pointer's bytes are unchanged, and the
-          run directory listing and the operator's own crew home are untouched.</li>
+          run directory listing and the operator's own crew home are untouched. It also asserts the clause unique to this refusal
+          (<code>cutting its worktree again</code>), because the prefix it shares with the launch refusal would be satisfied by that
+          other refusal alone.</li>
+        <li><strong>Unreadable pointer.</strong> A pointer holding invalid JSON, with a stand-in tree laid down, is refused naming the read
+          failure; the tree is unchanged, the pointer's bytes are unchanged and no run directory is written.</li>
         <li><strong>Worker proven dead.</strong> The dispatch proceeds as today: the returned record carries the run id, the tree is cut at
           the newer base and the stand-in's file is gone with it.</li>
         <li><strong>Spy on the tree creator.</strong> With a live worker and <code>_create_worktree</code> replaced by a recorder that raises; the
@@ -71,16 +79,19 @@ stand-in tree exists      False</code></pre>
       <table>
         <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
         <tbody>
-          <tr><td>Base revision <code>2754cbd2dc</code>, the new test copied in</td><td>2 failed, 1 passed, <code>EXIT=1</code></td><td><code>base-arm.log</code></td></tr>
-          <tr><td>Head revision <code>04cdce8990</code>, the armed suite command</td><td>3 passed, <code>EXIT=0</code></td><td><code>after-arm.log</code></td></tr>
-          <tr><td>Declared negative control, the check moved after <code>_create_worktree</code></td><td>2 failed, 1 passed, <code>EXIT=1</code></td><td><code>negative-control.log</code></td></tr>
+          <tr><td>Base revision <code>2754cbd2dc</code>, the new test copied in</td><td>3 failed, 1 passed, <code>EXIT=1</code></td><td><code>base-arm.log</code></td></tr>
+          <tr><td>Head revision <code>c767dc9647</code>, the armed suite command</td><td>4 passed, <code>EXIT=0</code></td><td><code>after-arm.log</code></td></tr>
+          <tr><td>Control, the check moved after <code>_create_worktree</code></td><td>3 failed, 1 passed, <code>EXIT=1</code></td><td><code>negative-control.log</code></td></tr>
+          <tr><td>Control, an unreadable pointer swallowed again</td><td>1 failed, 3 passed, <code>EXIT=1</code></td><td><code>negative-control-corrupt-pointer.log</code></td></tr>
         </tbody>
       </table>
-      <p>The base arm fails the live-worker case with <code>DID NOT RAISE CrewError</code> — the dispatch went through and rebuilt the tree — and the
-        spy case with <code>the worktree was created over a live worker</code>. The dead-worker case passes at the base, as it must: it pins
-        behaviour that already worked. The negative control reproduces both failures from the head revision, so the check, not some other
-        guard, is what the two cases rest on; removing the check alone would not be a control, because the launch refusal in
-        <code>_prepare_attempt_records</code> still stops the second worker after the tree has been rebuilt.</p>
+      <p>The base arm fails the live-worker case with <code>DID NOT RAISE CrewError</code> — the dispatch went through and rebuilt the tree — the
+        corrupt-pointer case for the same reason, and the spy case with <code>the worktree was created over a live worker</code>. The dead-worker
+        case passes at the base, as it must: it pins behaviour that already worked. Moving the check after <code>_create_worktree</code>
+        reproduces all three failures from the head revision, so the ordering, not merely the presence of some guard, is what they rest on;
+        removing the check alone would not be a control, because the launch refusal in <code>_prepare_attempt_records</code> still stops the
+        second worker after the tree has been rebuilt. Swallowing the read failure again fails the corrupt-pointer case alone
+        (<code>DID NOT RAISE</code>), which isolates the fold: the other three cases stay green under it.</p>
       <p>A related dispatch suite (<code>tests/test_dispatch_guard_consults_liveness.py</code>,
         <code>tests/test_a_run_not_yet_launched_is_not_refused.py</code>, <code>tests/test_concurrent_dispatch_of_one_node.py</code>,
         <code>tests/test_dispatch_launch_is_not_its_own_conflict.py</code>, <code>tests/test_a_redispatch_keeps_the_queued_identity.py</code>,
@@ -88,12 +99,15 @@ stand-in tree exists      False</code></pre>
         <code>tests/test_crew_dispatch_guard.py</code>) reports 50 passed and one failure,
         <code>test_occupied_project_reuses_the_watcher_armed_by_the_first_dispatch</code>, which fails identically at the base revision —
         a pre-existing failure, not a delta from this change.</p>
+      <p>A placed record with no readable worker at all is not this check's case: the launch refusal in
+        <code>_prepare_attempt_records</code> answers it, so this guard leaves it alone.</p>
       <p><code>ruff check</code> and <code>ruff format --check</code> add no findings on the two staged paths.</p>
       <ul id="a-relaunch-never-touches-a-live-tree-evidence">
         <li>reproduction: <code>repro-live-tree-defect.log</code> (head moved, stand-in file gone, tree released under a live worker)</li>
-        <li>base arm: <code>base-arm.log</code> (revision 2754cbd2dc, 2 failed, 1 passed, EXIT=1)</li>
-        <li>head arm: <code>after-arm.log</code> (revision 04cdce8990, 3 passed, EXIT=0)</li>
-        <li>negative control: <code>negative-control.log</code> (2 failed, 1 passed, EXIT=1)</li>
+        <li>base arm: <code>base-arm.log</code> (revision 2754cbd2dc, 3 failed, 1 passed, EXIT=1)</li>
+        <li>head arm: <code>after-arm.log</code> (revision c767dc9647, 4 passed, EXIT=0)</li>
+        <li>negative control, check moved after tree creation: <code>negative-control.log</code> (3 failed, 1 passed, EXIT=1)</li>
+        <li>negative control, unreadable pointer swallowed: <code>negative-control-corrupt-pointer.log</code> (1 failed, 3 passed, EXIT=1)</li>
         <li>related dispatch suite: <code>related-suite.log</code> (50 passed, 1 pre-existing failure, EXIT=1)</li>
       </ul>
       <p>Logs live under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T181800262689-a-relaunch-never-touches-a-live-tree/</code>;
