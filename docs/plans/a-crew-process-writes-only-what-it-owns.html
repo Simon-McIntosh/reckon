@@ -25,7 +25,7 @@
   <title>A Crew Process Writes Only What It Owns | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="40">
+<meta name="plan-version" content="41">
 <meta name="plan-modified" content="2026-11-08">
 </head>
 <body>
@@ -117,6 +117,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261108T210844829217-review-of-restart-only-the-hosts-own-followers-86eefce8f5aa" data-who="reckon-build" data-when="2026-11-08T21:21:59.517Z">
     <div class="r-comment-body"><p>review of r-20261108T173215608133-restart-only-the-hosts-own-followers over b3c2e8823c..86eefce8f5 recorded parsed at both declared paths with six scores (goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 18, reuse 20), added_failure_count 0, two non-blocking findings, and no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261108T173215608133-restart-only-the-hosts-own-followers" data-who="reckon-build" data-when="2026-11-08T21:30:19Z">
+    <div class="r-comment-body"><p>§6 landed — a host restarts an exited child only when its census entry carries the ownership mark or names the owner&#x27;s current session, drops and logs an unmarked child instead (project, session, pid), never signals a running one, no longer defers to a live follower started by another owner&#x27;s host, carries the child&#x27;s mark into the restart&#x27;s deferral call, and a host that cannot name its session keeps only marked children; the host cases that resolved no session as setup now mark the pair their request names, and the suite fixture clears CLAUDE_CODE_SESSION_ID beside CLAUDE_PID; node gate 7 passed EXIT=0 at 3e510296f5, base arm 4 failed / 3 passed / EXIT=1 at edc04fd259, the twelve related files at 8 failed / 65 passed on both arms, and the five declared mutations each still fail their named case</p></div>
 </div>
 </section>
 </main>
