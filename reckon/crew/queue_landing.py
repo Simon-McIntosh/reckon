@@ -164,23 +164,65 @@ def _review_for_tier(
 
     The code tier is read through the selection the classifier and promotion
     share, so the lander, the classifier and the gate all treat one record as
-    the evidence about a revision. The figure tier is read under its own rubric
-    from the store: the text-review selection excludes figure records by
-    design, so reading it through that selection answers with the wrong subject
-    — which is how a run owing a figure review was landed without one.
+    the evidence about a revision. The figure tier is read through the helper
+    promotion's own figure guard uses: the text-review selection excludes figure
+    records by design, so reading it through that selection answers with the
+    wrong subject, and reading it through any other reader lets the lander judge
+    a record promotion never consults.
     """
-    from reckon.crew import review as review_module
+    from reckon.crew import promotion_checks
     from reckon.crew.recovery_review_subject import select_review_for_head
 
     if tier != FIGURE_REVIEW_TIER:
         return select_review_for_head(project, run_id, head, tree=tree)
-    stored = review_module.read_review(
-        project,
-        run_id,
-        reviewed_head_sha=head,
-        rubric=review_module.FIGURE_REVIEW_RUBRIC,
-    )
-    return stored, ""
+    # The guard that refuses a promotion for a figure finding reads the newest
+    # figure record through this owner, so the lander reads the same record:
+    # judging an earlier one here would let the lander wait on, or land on,
+    # evidence promotion never consults. The owner answers ``None`` for both a
+    # run carrying no figure review and one whose record cannot be parsed, so
+    # the absence is resolved here, through the owner's own account of which
+    # files it could not read: a record nobody could parse may hold an
+    # undisposed blocking finding, and taking it for no record at all is a
+    # fail-open.
+    record = promotion_checks._newest_figure_review(project, run_id)
+    if record is not None:
+        return record, ""
+    unreadable = promotion_checks._unreadable_figure_review_records(project, run_id)
+    if unreadable:
+        raise _UnreadableFigureReviewError(unreadable)
+    return None, ""
+
+
+class _UnreadableFigureReviewError(Exception):
+    """A figure review exists for the run and could not be parsed.
+
+    It carries the owner's own account of the files it met and could not read,
+    so the awaiting record names the record rather than reporting an absence.
+    """
+
+    def __init__(self, records: Sequence[Mapping[str, str]]) -> None:
+        self.records = [dict(entry) for entry in records]
+        super().__init__(
+            "; ".join(f"{entry.get('path')}: {entry.get('error')}" for entry in records)
+        )
+
+
+def _undisposed_figure_findings(review: Mapping[str, Any] | None) -> str:
+    """Render the blocking findings a stored figure review leaves open.
+
+    The severity and the disposition are read through the one owner that
+    decides both, which is the list promotion's figure guard refuses on, so the
+    lander holds a run for exactly the findings the gate would refuse it for.
+    """
+    from reckon.crew import promotion_checks
+    from reckon.crew import repair as repair_module
+
+    if not isinstance(review, Mapping):
+        return ""
+    blocking = repair_module.blocking_findings(review)
+    if not blocking:
+        return ""
+    return promotion_checks._describe_blocking_findings(blocking)
 
 
 def _review_tier_is_complete(tier: str, review: Mapping[str, Any] | None) -> bool:
@@ -188,15 +230,23 @@ def _review_tier_is_complete(tier: str, review: Mapping[str, Any] | None) -> boo
 
     The code tier is judged by the acceptance rule the landing already applies,
     so an incomplete or finding-bearing text review is not re-judged here. A
-    figure review is not scored on the text dimensions, so it is judged by the
-    store's own delivery contract for its rubric, which is the list a reviewer
-    reads before the record was ever stored.
+    figure review is not scored on the text dimensions. It is judged by the
+    store's delivery contract for its rubric — a record met mid-write is still
+    incomplete — and by whether it leaves a blocking finding undisposed, which
+    is the predicate promotion's own figure guard uses. A figure review that
+    passes the delivery contract but still holds an open blocking finding is
+    not complete: it names a defect the figure fixes, so landing on it would
+    carry that defect to the primary branch.
     """
+    from reckon.crew import repair as repair_module
     from reckon.crew import review as review_module
 
     if tier != FIGURE_REVIEW_TIER:
         return _review_accepts_promotion(review)
-    return not review_module.review_record_refusals(review or {})
+    record = review or {}
+    return not review_module.review_record_refusals(record) and not (
+        repair_module.blocking_findings(record)
+    )
 
 
 def _owed_review_stamp(
@@ -263,6 +313,11 @@ def _awaiting_review_holds(
     detail: str,
     code_stamp: str,
     tier: str = CODE_REVIEW_TIER,
+    *,
+    stale_head: str = "",
+    read_error: str = "",
+    findings: str = "",
+    unreadable: Sequence[Mapping[str, str]] = (),
 ) -> bool:
     """Whether this head already carries this awaiting-review record."""
 
@@ -273,7 +328,11 @@ def _awaiting_review_holds(
         and recovery.same_revision(str(previous.get("head") or ""), head)
         and str(previous.get("review_state") or "") == state
         and str(previous.get("review_detail") or "") == detail
-        and str(previous.get("review_tier") or CODE_REVIEW_TIER) == tier
+        and str(previous.get("awaiting_tier") or CODE_REVIEW_TIER) == tier
+        and str(previous.get("stale_head") or "") == stale_head
+        and str(previous.get("review_read_error") or "") == read_error
+        and str(previous.get("review_findings") or "") == findings
+        and list(previous.get("unreadable_reviews") or ()) == list(unreadable)
         and bool(code_stamp)
         and str(previous.get("code_stamp") or "") == code_stamp
     )
@@ -288,20 +347,42 @@ def _record_awaiting_review(
     review_stamp: str,
     tier: str = CODE_REVIEW_TIER,
     stale_head: str = "",
+    read_error: str = "",
+    findings: str = "",
+    unreadable: Sequence[Mapping[str, str]] = (),
 ) -> None:
     """Record that this head's landing waits on one review tier.
 
     The run is not refused and not landed: it has a verdict, and the verdict
     names the tier it waits for and that tier's reflex state. Writing it once
     per head, tier and reflex state keeps a pass that runs every 30 seconds
-    from rewriting the pointer for a run whose situation has not moved. A
+    from rewriting the pointer for a run whose situation has not moved.
+
+    The tier is filed under ``awaiting_tier``, never ``review_tier``: that key
+    on the run record and the ledger holds the light, full or none sweep tier,
+    so one name would hold two vocabularies and a reader of either would have
+    to guess which it read.
+
     ``stale_head`` names a revision the tier's stored record describes instead
     of this one, so the record reports two revisions that disagree rather than
-    an absence.
+    an absence — it is a revision and never an error message, so a store read
+    that raised is recorded in ``review_read_error`` instead. ``findings``
+    names the undisposed blocking findings an existing review holds, and
+    ``unreadable`` names the figure-record files that could not be parsed: each
+    is the fact that explains the wait, kept apart from the others.
     """
     state, detail = _review_reflex_state(pointer, tier)
     if _awaiting_review_holds(
-        pointer.get("admission_landing"), head, state, detail, code_stamp, tier
+        pointer.get("admission_landing"),
+        head,
+        state,
+        detail,
+        code_stamp,
+        tier,
+        stale_head=stale_head,
+        read_error=read_error,
+        findings=findings,
+        unreadable=unreadable,
     ):
         return
 
@@ -309,7 +390,7 @@ def _record_awaiting_review(
         record["admission_landing"] = {
             "head": head,
             "status": "awaiting-review",
-            "review_tier": tier,
+            "awaiting_tier": tier,
             "review_state": state,
             "review_detail": detail,
             "code_stamp": code_stamp,
@@ -317,6 +398,14 @@ def _record_awaiting_review(
         }
         if stale_head:
             record["admission_landing"]["stale_head"] = stale_head
+        if read_error:
+            record["admission_landing"]["review_read_error"] = read_error
+        if findings:
+            record["admission_landing"]["review_findings"] = findings
+        if unreadable:
+            record["admission_landing"]["unreadable_reviews"] = [
+                dict(entry) for entry in unreadable
+            ]
         return record
 
     runs._mutate_pointer(run_id, mutation)
@@ -1463,11 +1552,17 @@ def _land_deliveries() -> dict[str, Any]:
         owed = _owed_review_tiers(pointer)
         reviews: dict[str, dict[str, Any] | None] = {}
         stale, stale_tier = "", ""
+        read_errors: dict[str, str] = {}
+        unreadable: dict[str, list[dict[str, str]]] = {}
         for tier in owed:
             try:
                 record, described = _review_for_tier(project, run_id, head, tree, tier)
+            except _UnreadableFigureReviewError as broken:
+                record, described = None, ""
+                unreadable[tier] = broken.records
             except (OSError, ValueError) as exc:
-                record, described = None, str(exc)
+                record, described = None, ""
+                read_errors[tier] = f"{type(exc).__name__}: {exc}"
             reviews[tier] = record
             if described and not stale:
                 stale, stale_tier = described, tier
@@ -1476,8 +1571,14 @@ def _land_deliveries() -> dict[str, Any]:
         review_stamp = _owed_review_stamp(reviews)
         if primary and primary != head:
             review_stamp += ":" + primary
-        awaiting_tier = next((tier for tier in owed if reviews.get(tier) is None), "")
-        stale_tier = stale_tier or awaiting_tier
+        awaiting_tier = next(
+            (
+                tier
+                for tier in owed
+                if reviews.get(tier) is None and tier not in unreadable
+            ),
+            "",
+        )
         review = reviews.get(CODE_REVIEW_TIER)
         previous = pointer.get("admission_landing")
         if isinstance(previous, Mapping) and recovery.same_revision(
@@ -1506,15 +1607,19 @@ def _land_deliveries() -> dict[str, Any]:
                 previous, code_stamp, review_stamp
             ):
                 continue
-        if stale or awaiting_tier:
+        if stale or awaiting_tier or unreadable or read_errors:
+            held_tier = stale_tier or awaiting_tier or next(iter(unreadable), "")
+            held_tier = held_tier or next(iter(read_errors), "")
             _record_awaiting_review(
                 run_id,
                 pointer,
                 head=head,
                 code_stamp=code_stamp,
                 review_stamp=review_stamp,
-                tier=stale_tier or CODE_REVIEW_TIER,
+                tier=held_tier or CODE_REVIEW_TIER,
                 stale_head=stale,
+                read_error=read_errors.get(held_tier, ""),
+                unreadable=unreadable.get(held_tier, ()),
             )
             continue
         incomplete = next(
@@ -1525,6 +1630,19 @@ def _land_deliveries() -> dict[str, Any]:
             ),
             "",
         )
+        if incomplete == FIGURE_REVIEW_TIER:
+            findings = _undisposed_figure_findings(reviews.get(incomplete))
+            if findings:
+                _record_awaiting_review(
+                    run_id,
+                    pointer,
+                    head=head,
+                    code_stamp=code_stamp,
+                    review_stamp=review_stamp,
+                    tier=incomplete,
+                    findings=findings,
+                )
+                continue
         if incomplete:
             guard = (
                 "review acceptance: a blocking finding or an incomplete record"
