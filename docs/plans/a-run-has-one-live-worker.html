@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.67">
-<meta name="plan-version" content="54">
+<meta name="plan-version" content="55">
 <meta name="plan-modified" content="2026-11-08">
 <meta name="plan-commits" content="a88e6f09">
 </head>
@@ -252,6 +252,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261108T100331906546-review-of-save-a-stopped-attempts-uncommitted-work-30a7167c3b5e" data-who="reckon-build" data-when="2026-11-08T10:22:22.340Z">
     <div class="r-comment-body"><p>reckon:a-run-has-one-live-worker#s7 — independent review of run r-20261108T044348877264-save-a-stopped-attempts-uncommitted-work at head 30a7167c3b5b: scores goal_fidelity 14, evidence 12, scope_discipline 19, durability 14, fit 14, reuse 3; one blocking finding (the added _worktree_git_read at dispatch_sessions.py:2229 shadows the definition at 1471, breaking 5 tests in tests/test_lane_change_reads_the_worktree.py at the reviewed head) and two non-blocking findings (residue-capture duplication with routing.py:_save_and_release_worktree; the exit-record half of §7 not delivered).</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261108T111355957723-review-of-save-a-stopped-attempts-uncommitted-work-70cd51950d3e" data-who="reckon-build" data-when="2026-11-08T11:31:22.648Z">
+    <div class="r-comment-body"><p>review of reckon:a-run-has-one-live-worker#s7 delta 30a7167c3b..70cd51950d — the repair fd081c7e79 removes the shadowing _worktree_git_read and routes the stopped-attempt capture through the module&#x27;s own reader, and no blocking finding remains; three non-blocking findings are recorded (evidence fragment cites the green head-after-repair.log as its negative control when the control is logs/negative-control.log; the fragment still calls b7bda19d37 the final revision; dispatch_sessions.py:1482 now bounds the stop&#x27;s git reads at 10 s where the deleted constant allowed 60 s).</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261108T042326387978-review-of-say-when-a-widen-takes-effect-a6af9bf4d9d2" data-who="reckon-build" data-when="2026-11-08T04:38:55.657Z">
     <div class="r-comment-body"><p>Independent review of r-20261107T222608798462-say-when-a-widen-takes-effect at head a6af9bf4d9d2 against base 1b3663ce4fd1: goal_fidelity 19, evidence 18, scope_discipline 19, durability 16, fit 18, reuse 20; three non-blocking findings (placed-run arm untested, unused LivenessReading.as_dict, a two-sided equality in the fence-field case); no blocking defect.</p></div>

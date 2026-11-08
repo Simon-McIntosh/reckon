@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Read from the reviewed run's own armed pair. baseline_suite (8ad90651f6, exit 1, completed) fails 3 ids, all in tests/test_a_stop_keeps_the_attempts_uncommitted_work.py, which is the defect the section exists to repair. after_suite (70cd51950d, exit 0, completed) fails none. The delta therefore adds no failure: 0 added ids.",
+  "completed_at": "2026-11-08T11:31:22.648Z",
+  "dispatched_at": "2026-11-08T11:18:33Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-run-has-one-live-worker/save-a-stopped-attempts-uncommitted-work.html",
+      "line": 29,
+      "severity": "non-blocking",
+      "summary": "The repair paragraph ends 'The same log is this round's negative control: reverting the repair restores the shadowing and the five failures with it', where 'the same log' is head-after-repair.log, which records 10 passed and EXIT=0. The control is logs/negative-control.log (5 failed, 2 passed, EXIT=1), and that is the log the node's manifest names in negative_control_log. A reader following the fragment to the named log finds no failures in it."
+    },
+    {
+      "file": "docs/evidence/fragments/a-run-has-one-live-worker/save-a-stopped-attempts-uncommitted-work.html",
+      "line": 25,
+      "severity": "non-blocking",
+      "summary": "The gate paragraph still calls b7bda19d37 'the node's final revision'; the run's final revision is now 70cd51950d and the green node gate at that revision is logs/after-suite.log (3 passed, EXIT=0). The fragment's own repair paragraph moves the head twice without amending this sentence, so the landed evidence names a superseded revision as final."
+    },
+    {
+      "file": "reckon/crew/dispatch_sessions.py",
+      "line": 1482,
+      "severity": "non-blocking",
+      "summary": "The repair deleted _STOP_WORKTREE_GIT_TIMEOUT_SECONDS (60.0, whose comment said a stop must not hang but the attempt's work is worth waiting for briefly) and now reads the tree through _worktree_git_read, whose timeout is the hardcoded timeout=10. A worktree whose storage stalls for longer than ten seconds, which is the case the deleted constant was written for, now reports 'unreadable' and its uncommitted work is not saved, where the first revision would still have kept it. The write of the diff itself remains unbounded except by the filesystem."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Production sites checked: reckon/crew_run_commands.py:2487 (crew stop calls terminate, which reaches _preserve_stopped_worktree at dispatch_sessions.py:2097), reckon/crew/dispatch_sessions.py:1610 (_lane_prompt calls _inherited_worktree_reading, the path the shadow broke and the repair restores, exercised by the green lane-change run), reckon/crew/dispatch.py:4007 and :4025 (the re-exports of _inherited_worktree_reading and _worktree_git_read; no module outside dispatch_sessions.py calls either).",
+    "diff": "Read commit by commit against 30a7167c3b. fd081c7e79 deletes the duplicate module-level _worktree_git_read and _STOP_WORKTREE_GIT_TIMEOUT_SECONDS, calls the module's existing reader at 1471 for both the diff and the untracked listing, reads the diff with routing.py's residue flags (--binary --no-ext-diff --no-renames --), and records in the docstring why routing._save_and_release_worktree cannot be called from a stop. 70cd51950d adds two paragraphs to the evidence fragment (repair, reuse) and changes no code.",
+    "done_when": "The done_when's armed command is PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_stop_keeps_the_attempts_uncommitted_work.py. logs/baseline-suite.log runs it at 8ad90651f6 in a git-archive scratch tree and records 3 failed, EXIT=1; logs/after-suite.log runs it at 70cd51950d and records 3 passed, EXIT=0. Both logs open with their revision and literal command and end in a bare EXIT= line, and the manifest's tests line is that literal command.",
+    "goal": "The goal is that crew stop saves the worktree's uncommitted diff to the run directory before it signals. The delta does not change that mechanism; it repairs a regression the mechanism introduced, and at 70cd51950d reckon/crew/dispatch_sessions.py:2097 still calls _preserve_stopped_worktree before any signal while the module now has exactly one _worktree_git_read (1471). The exit-record half of the plan's deliverable remains unwritten and is carried under the run's outside_scope.",
+    "manifest": "Read at the reviewed run's directory. It records status complete, five commits, the armed pair with revisions/commands/exit status/failure ids, the negative control with its log, a copy of the previous review's two blocking/non-blocking answers by id, and outside_scope entries for the exit record and for extracting the residue read half from routing.py.",
+    "write_paths": "The declared paths are reckon/crew/dispatch_sessions.py, tests/test_a_stop_keeps_the_attempts_uncommitted_work.py and the evidence fragment. git diff --stat 30a7167c3b..70cd51950d shows exactly two changed paths, dispatch_sessions.py (63 lines moved, 40 deleted) and the fragment (+2), both inside the fence; the test file was unchanged by this delta."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that crew stop saves the worktree's uncommitted diff before it signals; the delta repairs that mechanism rather than changing it, and dispatch_sessions.py:2097 at 70cd51950d still reads the tree before any signal.\nVERDICT done_when: the done_when names the node's test in an armed pair; logs/baseline-suite.log records 3 failed EXIT=1 at 8ad90651f6 and logs/after-suite.log records 3 passed EXIT=0 at 70cd51950d, both with the literal command the manifest's tests line carries.\nVERDICT write_paths: the diff 30a7167c3b..70cd51950d is exactly dispatch_sessions.py and the declared evidence fragment, both inside the declared write paths.\nVERDICT manifest: read; it records the five commits, the armed pair, the negative control log, and answers both prior findings by id, with the exit record under outside_scope.\nVERDICT diff: fd081c7e79 removes the shadowing reader and the 60 s stop timeout and routes both git reads through dispatch_sessions.py:1471; 70cd51950d adds two evidence paragraphs and no code.\nCALL_SITES: reckon/crew_run_commands.py:2487, reckon/crew/dispatch_sessions.py:1610, reckon/crew/dispatch.py:4007, reckon/crew/dispatch.py:4025\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_sessions.py:2097 preserves the tree before signalling and the repair leaves the stop's three reported outcomes and saved path intact, with only the exit-record half absent.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/after-suite.log is a clean armed arm at 70cd51950d, but the green lane-change arm (head-after-repair.log) names revision 30a7167c3b 'with the repair, uncommitted' rather than the committed head, and the fragment at line 29 points at that green log as the negative control.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: only reckon/crew/dispatch_sessions.py and the declared fragment at line 29 change in 30a7167c3b..70cd51950d, and no path outside the fence appears in the fragment's reuse paragraph.\nSCORE durability: 16\nJUSTIFICATION durability: the five tests in tests/test_lane_change_reads_the_worktree.py redden when fd081c7e79 is reverted (negative-control.log: 5 failed, EXIT=1), but nothing asserts the stop's new --binary/--no-ext-diff diff flags or the reduced ten-second bound at dispatch_sessions.py:1482.\nSCORE fit: 18\nJUSTIFICATION fit: the repair leaves one _worktree_git_read at reckon/crew/dispatch_sessions.py:1471 and its docstring at 2230 states the mechanism and why the routing owner is not callable, matching the module's idiom.\nSCORE reuse: 17\nJUSTIFICATION reuse: the duplicate reader is deleted rather than renamed and the diff flags are routing.py:1481's, so the residual overlap is the read half of reckon/crew/routing.py:_save_and_release_worktree, which reckons a live worktree at 1468 and is documented as uncallable from a stop.\nFINDING docs/evidence/fragments/a-run-has-one-live-worker/save-a-stopped-attempts-uncommitted-work.html:29 non-blocking: the repair paragraph calls head-after-repair.log (10 passed, EXIT=0) 'this round's negative control', where the control is logs/negative-control.log (5 failed, EXIT=1).\nFINDING docs/evidence/fragments/a-run-has-one-live-worker/save-a-stopped-attempts-uncommitted-work.html:25 non-blocking: the gate paragraph still names b7bda19d37 as 'the node's final revision', superseded by 70cd51950d.\nFINDING reckon/crew/dispatch_sessions.py:1482 non-blocking: the repair's reuse of the module reader replaces the stop's 60 s bounded read with timeout=10, so a tree whose storage stalls past ten seconds now reports unreadable and loses the work the deleted constant existed to keep.\n",
+  "review_run_id": "r-20261108T111355957723-review-of-save-a-stopped-attempts-uncommitted-work-70cd51950d3e",
+  "reviewed_base_sha": "30a7167c3b5eb29e106e5a44c252158b03243e9a",
+  "reviewed_head_sha": "70cd51950d3eb77e3c71a8209d865fb4b9777b5a",
+  "reviewed_run_id": "r-20261108T044348877264-save-a-stopped-attempts-uncommitted-work",
+  "scope_of_review": "delta only: the commits the run gained after the prior review landed at 30a7167c3b, namely fd081c7e79 (the repair) and 70cd51950d (the landing-fragment paragraph). The run's dispatch base is 8ad90651f6697606b66434ecc17c85c099025ddb.",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T12:12:13.781396+00:00",
+  "total": 103
+}
