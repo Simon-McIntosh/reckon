@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: baseline_suite (logs/review-records-importers-base.log) records failure_count 0 at bb23ab6e26a4, after_suite (logs/node-suite-after.log) records failure_count 0 at 3ab385ed6546; zero added failures from either arm",
+  "base_log_revision": "bb23ab6e26a40b663a20e878cb3ea9f8095d31d7",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/promotion.py:404",
+    "reckon/crew/promotion_checks.py:697",
+    "reckon/crew/review.py:3578",
+    "reckon/crew/review_dispositions.py:265",
+    "reckon/crew/recovery_review_dispatch.py:1258"
+  ],
+  "completed_at": "2026-11-08T22:40:49.975Z",
+  "dispatched_at": "2026-11-08T22:32:54Z",
+  "findings": [
+    {
+      "file": "tests/test_a_parsed_review_wins_over_an_incomplete_one.py",
+      "line": "47",
+      "severity": "non-blocking",
+      "text": "non-blocking: both fixtures supply a total (the complete one as sum(scores.values()), the incomplete one with no scores), so the branch that derives a total before judging completeness (reckon/crew/review_records.py:431-432) is never exercised; a record holding six scores but no total is the shape that branch exists for, and if that derivation regressed the selection would fall back to the incomplete record with nothing reddening."
+    }
+  ],
+  "head_log_revision": "3ab385ed6546cfefbb5d88b5c46fa0e82efce800",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit against bb23ab6e26a4: 3ab385ed6546 changes only reckon/crew/review_records.py and adds the test; 8269033355d3 adds the evidence fragment; the selection replaces an early first-match return with a completeness preference plus a fallback, and no other runtime path is touched.",
+    "done_when": "the done_when asks two cases over a temporary repository's committed run directory read through the sorted glob, asserted through the caller that raises CrewError with _unreviewed_refusal's message; tests/test_a_parsed_review_wins_over_an_incomplete_one.py:101-124 drives promotion_release._review_for_promotion and promotion_checks._require_review_waiver (reckon/crew/promotion_checks.py:1203) and the manifest records 2 passed EXIT=0.",
+    "goal": "the node's goal is to make the stored-review selection take a parsed complete record over an incomplete one at the same head; reckon/crew/review_records.py:417-433 adds _record_reads_complete and :478-490 prefers a record it reads complete while keeping the first head match as the fallback.",
+    "manifest": "read; it states the node gate ran 2 passed and names logs/node-suite-after.log, logs/review-records-importers-{base,after}.log and logs/negative-control-first-match.log, whose tails carry 57 passed/EXIT=0 twice and 1 failed, 1 passed/EXIT=1.",
+    "write_paths": "read the manifest's declared paths; the diff against bb23ab6e26a4 touches reckon/crew/review_records.py, tests/test_a_parsed_review_wins_over_an_incomplete_one.py and docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-parsed-review-wins-over-an-incomplete-one.html, all inside the declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_parsed_review_wins_over_an_incomplete_one.py:112 and :124 redden on the first-match selection, proven by logs/negative-control-first-match.log running the new test against the base revision (1 failed, 1 passed, EXIT=1) and by my re-run of that file at 8269033355d3 (2 passed), but the _derive_landed_total branch at reckon/crew/review_records.py:431-432 has no case that omits a total while carrying six scores.",
+    "evidence": "the manifest records the node gate at head (2 passed, EXIT=0 in logs/node-suite-after.log) and both importer arms at 57 passed (logs/review-records-importers-base.log, -after.log), though its baseline_suite line names the importer command rather than the armed template over the base tree, so a promotion reader must reconcile that arm's command with the template rather than find it already matched.",
+    "fit": "reckon/crew/review_records.py:417-433 follows the module's local-import idiom with the cycle reason in the docstring and its names describe the mechanism, and ruff check --no-cache plus ruff format --check report no findings on both changed Python files.",
+    "goal_fidelity": "reckon/crew/review_records.py:486 returns the first head-matching record the completeness rule reads complete and :490 still returns the first head match when none is, so a complete record wins at a shared head and an incomplete record alone is still selected and still refused.",
+    "reuse": "the new _record_reads_complete delegates completeness to recovery_review_subject._review_is_complete and total derivation to review._derive_landed_total/_has_integer_total, and a search of reckon/crew for an existing completeness preference at a head found only newest_delivered_review and _delivery_order (reckon/crew/review_records.py:798, :839), which order by round rather than by completeness, so no capability was forked.",
+    "scope_discipline": "the diff against bb23ab6e26a4 changes exactly reckon/crew/review_records.py, tests/test_a_parsed_review_wins_over_an_incomplete_one.py and the node's own evidence fragment, all declared in the manifest's write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the stored-review selection take a parsed complete record over an incomplete one at the same head; reckon/crew/review_records.py:417-433 adds _record_reads_complete and :478-490 prefers a record it reads complete while keeping the first head match as the fallback.\nVERDICT done_when: the done_when asks two cases over a temporary repository's committed run directory read through the sorted glob, asserted through the caller that raises CrewError with _unreviewed_refusal's message; tests/test_a_parsed_review_wins_over_an_incomplete_one.py:101-124 drives promotion_release._review_for_promotion and promotion_checks._require_review_waiver (reckon/crew/promotion_checks.py:1203) and the manifest records 2 passed EXIT=0.\nVERDICT write_paths: read the manifest's declared paths; the diff against bb23ab6e26a4 touches reckon/crew/review_records.py, tests/test_a_parsed_review_wins_over_an_incomplete_one.py and the node's evidence fragment, all inside the declared scope.\nVERDICT manifest: read; it states the node gate ran 2 passed and names logs/node-suite-after.log, logs/review-records-importers-{base,after}.log and logs/negative-control-first-match.log, whose tails carry 57 passed/EXIT=0 twice and 1 failed, 1 passed/EXIT=1.\nVERDICT diff: read commit by commit against bb23ab6e26a4: 3ab385ed6546 changes only reckon/crew/review_records.py and adds the same-named test module; 8269033355d3 adds the evidence fragment; the selection replaces an early first-match return with a completeness preference plus a fallback, and no other runtime path is touched.\nCALL_SITES: reckon/crew/promotion.py:404, reckon/crew/promotion_checks.py:697, reckon/crew/review.py:3578, reckon/crew/review_dispositions.py:265, reckon/crew/recovery_review_dispatch.py:1258\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/review_records.py:486 returns the first head-matching record the completeness rule reads complete and :490 still returns the first head match when none is, so a complete record wins at a shared head and an incomplete record alone is still selected and still refused.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest records the node gate at head (2 passed, EXIT=0 in logs/node-suite-after.log) and both importer arms at 57 passed, though its baseline_suite line names the importer command rather than the armed template over the base tree, so a promotion reader must reconcile that arm's command with the template rather than find it already matched.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff against bb23ab6e26a4 changes exactly reckon/crew/review_records.py, the node's new test module and its own evidence fragment, all declared in the manifest's write paths.\nSCORE durability: 17\nJUSTIFICATION durability: the two cases redden on the first-match selection, proven by logs/negative-control-first-match.log running the new test against the base revision (1 failed, 1 passed, EXIT=1) and by my re-run of that file at 8269033355d3 (2 passed), but the _derive_landed_total branch at reckon/crew/review_records.py:431-432 has no case that omits a total while carrying six scores.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/review_records.py:417-433 follows the module's local-import idiom with the cycle reason in the docstring and its names describe the mechanism, and ruff check --no-cache plus ruff format --check report no findings on both changed Python files.\nSCORE reuse: 19\nJUSTIFICATION reuse: the new _record_reads_complete delegates completeness to recovery_review_subject._review_is_complete and total derivation to review._derive_landed_total/_has_integer_total, and a search of reckon/crew found only newest_delivered_review and _delivery_order (reckon/crew/review_records.py:798, :839), which order by round rather than by completeness, so no capability was forked.\nFINDING tests/test_a_parsed_review_wins_over_an_incomplete_one.py:47 non-blocking: both fixtures supply a total, so the branch that derives a total before judging completeness (reckon/crew/review_records.py:431-432) is never exercised; a record holding six scores but no total is the shape that branch exists for, and if that derivation regressed the selection would fall back to the incomplete record with nothing reddening.\n",
+  "review_run_id": "r-20261108T223033265909-review-of-a-parsed-review-wins-over-an-incomplete-one-8269033355d3",
+  "reviewed_base_sha": "bb23ab6e26a40b663a20e878cb3ea9f8095d31d7",
+  "reviewed_head_sha": "8269033355d3f427f12d940e1a4cd5caf7b52501",
+  "reviewed_run_id": "r-20261108T221209911001-a-parsed-review-wins-over-an-incomplete-one",
+  "reviewer": "review-of-a-parsed-review-wins-over-an-incomplete-one-8269033355d3",
+  "reviewer_run_id": "r-20261108T223033265909-review-of-a-parsed-review-wins-over-an-incomplete-one-8269033355d3",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T22:45:46.268680+00:00",
+  "total": 112
+}
