@@ -67,6 +67,7 @@ from reckon.crew.runs import (
     pointer_path,
     process_alive,
     read_pointer,
+    record_process_alive,
     run_dir,
     scheduler_job_reason,
     scheduler_job_state,
@@ -1962,6 +1963,52 @@ def _record_holds_a_worker(record: Mapping[str, Any]) -> bool:
     )
 
 
+#: The immutable receipts a retired attempt leaves in the run directory.
+_ATTEMPT_RECEIPT_PATTERN = re.compile(r"^attempt-(\d+)-(?:worker|exit)\.json$")
+
+
+def _retired_attempt_ended(record: Mapping[str, Any]) -> bool | None:
+    """Whether the newest retired attempt is shown to have ended.
+
+    A resume retires the canonical worker and exit records into ``attempt-N-*``
+    before a launch guard runs, so while the replacement starts the only account
+    of the attempt it replaces is those receipts. An exit receipt for the newest
+    attempt is that attempt's own record that it ended. A worker receipt with no
+    exit beside it is answered by the pid it names, through the same start-tick
+    comparison :func:`runs.record_process_alive` owns, so a recycled pid is not
+    read as the retired worker.
+
+    None answers "no attempt receipts": the caller keeps the answer it gives a
+    record holding no worker record at all.
+    """
+    from reckon.crew.recovery_wait import _run_directory
+
+    directory = _run_directory(record)
+    try:
+        names = [path.name for path in directory.iterdir()]
+    except OSError:
+        return None
+    numbers = [
+        int(match.group(1))
+        for name in names
+        if (match := _ATTEMPT_RECEIPT_PATTERN.match(name))
+    ]
+    if not numbers:
+        return None
+    attempt = max(numbers)
+    if (directory / f"attempt-{attempt}-exit.json").exists():
+        return True
+    try:
+        data = json.loads(
+            (directory / f"attempt-{attempt}-worker.json").read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return False
+    if not isinstance(data, Mapping):
+        return False
+    return record_process_alive(data, process_alive) is False
+
+
 def _launch_refused_by(record: Mapping[str, Any], reading: LivenessReading) -> bool:
     """Whether this reading is reason enough to refuse a second launch.
 
@@ -1969,16 +2016,29 @@ def _launch_refused_by(record: Mapping[str, Any], reading: LivenessReading) -> b
     queried refuses only when the record holds a recorded worker that nothing
     has shown to be gone: the pointer's pid names the scheduler client, so the
     local probe cannot answer for the worker, and a second worker beside a live
-    one rewrites the same manifest from its own partial view. A record with no
-    pointer pid, no worker record and no attempt receipt has never launched and
-    is let through; so is one whose worker record names a pid this host probes
-    dead, because that record names the worker itself.
+    one rewrites the same manifest from its own partial view.
+
+    While the canonical worker record exists, that record answers: a record
+    with no pointer pid, no worker record and no attempt receipt has never
+    launched and is let through, and so is one whose worker record names a pid
+    this host probes dead. A resume retires the canonical record before this
+    read, so a launch that finds the attempt receipts and no canonical record
+    reads the newest attempt's own receipts instead: an exit receipt, or a
+    worker receipt whose pid this host probes dead, is that attempt shown to
+    have ended and the launch proceeds. A retired worker receipt whose pid is
+    alive or cannot be read still refuses.
     """
     from reckon.crew.recovery_liveness import _worker_record_liveness
+    from reckon.crew.recovery_wait import _run_directory
 
     if reading.alive is True:
         return True
     if reading.arm == LIVENESS_PLACED and reading.alive is None:
+        retired = None
+        if not (_run_directory(record) / WORKER_RECORD_NAME).exists():
+            retired = _retired_attempt_ended(record)
+        if retired is not None:
+            return not retired
         if not _record_holds_a_worker(record):
             return False
         return _worker_record_liveness(record) is not False
