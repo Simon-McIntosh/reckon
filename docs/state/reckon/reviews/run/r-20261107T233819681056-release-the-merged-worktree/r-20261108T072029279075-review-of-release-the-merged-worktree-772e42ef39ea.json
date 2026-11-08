@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T07:45:53.285Z",
+  "dispatched_at": "2026-11-08T07:30:31Z",
+  "findings": [
+    {
+      "file": "reckon/crew/merge.py",
+      "line": 806,
+      "severity": "non-blocking",
+      "text": "The not-judged result carries empty released and withheld lists beside judged:false, so a caller that reads only the two lists (as the earlier success shape allowed) sees the same empty outcome as a run with no held trees instead of a release that failed; the judged key distinguishes them, and crew_run_commands.py:329 emits the whole block rather than reading the lists."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew_run_commands.py:329 calls merge.land_merge for crew merge --head with release defaulting True and emits the whole report; reckon/crew/merge.py:970 is land(), which passes release=False so crew complete --land reports its own post-merge release exactly once and never reaches the new guard.",
+    "diff": "Read commit by commit against a130a5344de1: 881c4438a3 wraps the post-push release in a try that records judged:false and leaves the merge's success standing; 0acd2713 adds the fifth case, the judged key on the success result, and the fragment's fourth gate row and guard narrative; 772e42ef39 corrects the fragment's head row to the revision the cited log ran at.",
+    "done_when": "The plan's done_when names three cases in tests/test_a_merge_releases_its_worktree.py; five now exist there, and the run's own arms record base-arm.log '4 failed, 1 passed' EXIT=1 at 1b3663ce4f against head-arm.log '5 passed' EXIT=0 at 0acd27136f, so the gate measures the stated measure.",
+    "goal": "The node's goal is that crew merge releases the worktree its landed head leaves behind and withholds a tree the head does not carry; the reviewed head's reckon/crew/merge.py:804 calls release_landed_worktrees after the confirmed push, and the gained commits add only the guarantee that a release raising after the push cannot turn a landed merge into a refused land (reckon/crew/merge.py:802-812).",
+    "manifest": "The run's manifest reads status complete, records the gate command verbatim, both arm logs with their EXIT lines, baseline_suite 4 failed against after_suite 0 failed at 0acd27136f, and the guard negative control at negative-control-release-guard.log",
+    "write_paths": "The plan declares reckon/crew/merge.py and tests/test_a_merge_releases_its_worktree.py; the three gained commits touch exactly those two plus docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/release-the-merged-worktree.html, which the dispatch's orientation_write_paths declares. Nothing else changed."
+  },
+  "justifications": {
+    "durability": "tests/test_a_merge_releases_its_worktree.py:264 asserts exit_code 0 while the injected release raises, and negative-control-release-guard.log shows the same case failing at 881c4438a3 once the guard is removed, so the assertion reddens on the exact regression it guards.",
+    "evidence": "base-arm.log records 4 failed / 1 passed at 1b3663ce4f and head-arm.log records 5 passed at 0acd27136f, and the fragment's revised head row now names that same revision rather than the stale 0003872562, repairing the earlier review's finding at docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/release-the-merged-worktree.html:46.",
+    "fit": "reckon/crew/merge.py:805-811 follows the module's existing NoReturn-style idiom of recording a failure in the report dict with a noqa-annotated broad except, matching the inner guards at reckon/crew/merge.py:855.",
+    "goal_fidelity": "reckon/crew/merge.py:802-812 now guarantees the landed merge returns success even when the release raises, which is what the run's stated goal of a release that follows a confirmed push requires.",
+    "reuse": "The gained commits add no capability: they guard the call to the existing release_landed_worktrees at reckon/crew/merge.py:815, which itself reads obligations._held_worktree_records and promotion_release._release_run_workspace, so no repository owner is forked.",
+    "scope_discipline": "Every path in git diff a130a5344de1..772e42ef39ea is one of reckon/crew/merge.py, tests/test_a_merge_releases_its_worktree.py or the declared evidence fragment."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261108T072029279075-review-of-release-the-merged-worktree-772e42ef39ea",
+  "reviewed_base_sha": "a130a5344de1e91bb5adaddd01d48bd8d0a3b42f",
+  "reviewed_head_sha": "772e42ef39ea9b090f42edfce19c0fd5bbb482ae",
+  "reviewed_run_id": "r-20261107T233819681056-release-the-merged-worktree",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T08:10:34.405996+00:00",
+  "total": 117
+}
