@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T16:19:26.592Z",
+  "dispatched_at": "2026-11-08T16:08:01Z",
+  "findings": [
+    {
+      "file": "reckon/crew/node.py",
+      "line": "1202",
+      "severity": "non-blocking",
+      "text": "non-blocking: brief_plan_owner_finding restates the four-part owner predicate (no brief, no plan, executable role, neither flag) that reckon/crew/promotion_checks.py:1769 _require_brief_owner already owns, so the dispatch refusal and the landing refusal are two copies that can drift apart; one helper returning the missing-discharge fact, called by both, would keep them in step."
+    },
+    {
+      "file": "docs/evidence/fragments/a-refusal-comes-before-the-work/ask-a-brief-run-for-its-plan-link-at-dispatch.html",
+      "line": "6",
+      "severity": "non-blocking",
+      "text": "non-blocking: the measure table's head column is labelled 4d5a58af while the rows now carry measurements taken at aa134b15, c650859535 and 9cbf82e8, and line 15 calls base-suite.log and head-suite.log 'the gate logs' although the repair arms the manifest records are repair-base-suite.log and repair-head-suite.log; a reader reconciling the fragment against the run manifest cannot match the two by name."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified five production call sites: crew_dispatch in reckon/crew_dispatch_commands.py, the pointer record literal in reckon/crew/dispatch.py:2918, the queued launch at reckon/crew/queue_admission.py:444, _require_brief_owner at reckon/crew/promotion_checks.py:2429 reached from reckon/crew/promotion.py, and brief_plan_owner_finding's single caller.",
+    "diff": "read commit by commit against d48480ee: f3f428ce lands the CLI flags, the node finding, the launch-record keys and the landing fallback with the new test file; 4d5a58af and aa134b15 are evidence records; c650859535 repairs the sibling fixture's argv; 9cbf82e8 records that repair.",
+    "done_when": "the done_when names tests/test_a_brief_run_names_its_plan_at_dispatch.py and its eight bullets each have a named case there - the implement refusal, the test-role refusal, the link stored in dispatch_options, the landing with no flag for both a launch-at-once and a dry-run and a queued-then-admitted run, the pointer with nothing recorded refused, and both dry-run halves and the pair dispatch; the manifest's baseline_suite and after_suite record 11 passed EXIT=0 at aa134b15 and at 9cbf82e8.",
+    "goal": "the node's goal is to refuse an implement- or test-role brief dispatch that names neither a plan link nor an unplanned reason; reckon/crew_dispatch_commands.py:1868 calls reckon/crew/node.py:1202 above the pair split, and that call refuses exactly that case for the live call, the --dry-run preview and both pair arms.",
+    "manifest": "read at 9cbf82e8; it records status complete, five commits, both suite arms with revisions and log paths, the repair negative control, one finding answered by id, and one rubric line per dimension.",
+    "write_paths": "the five paths the node was dispatched with are reckon/crew_dispatch_commands.py, reckon/crew/dispatch.py, reckon/crew/node.py, reckon/crew/promotion_checks.py and tests/test_a_brief_run_names_its_plan_at_dispatch.py; the fence also named the evidence fragment and the figure directory, and the repair round's resume advice added tests/test_brief_dispatch.py; git diff --stat d48480ee..9cbf82e8 lists seven files, every one inside that set."
+  },
+  "justifications": {
+    "durability": "logs/negative_control_repair_reverted.log reverse-applies c650859535 and reddens test_a_brief_dispatch_dry_run_resolves_without_a_plan with assert 2 == 0, and dropping the keys at reckon/crew/dispatch.py:2918 or the fallback at reckon/crew/promotion_checks.py:1800 reddens the queued-then-launched and landing cases, which assert a literal 'plan-a' the code must round-trip.",
+    "evidence": "logs/repair-base-suite.log and logs/repair-head-suite.log each print their revision, tree, module.__file__, measurement cwd and a bare EXIT=0, and the original base arm at d48480ee in logs/base-suite.log is red with 10 failed at the same command.",
+    "fit": "the finding sits beside the contract findings in reckon/crew/node.py:1199 with a why-docstring in the surrounding idiom, reuses EXECUTABLE_SECTION_ROLES from reckon/evidence.py:382 rather than restating the role set, and introduces no plan or stage identifier.",
+    "goal_fidelity": "reckon/crew_dispatch_commands.py:1868 raises the refusal above `if pair_backend:` at :1895, so the live call, the --dry-run branch and both pair arms are covered, and reckon/crew/dispatch.py:2918 copies the chosen value onto the launched pointer.",
+    "reuse": "reckon/crew/node.py:1202 duplicates the owner predicate owned by reckon/crew/promotion_checks.py:1769 rather than sharing one helper, the same non-blocking finding the previous review of this run recorded and the repair did not address.",
+    "scope_discipline": "git diff --stat d48480ee..9cbf82e8 lists exactly the five dispatched paths plus the evidence fragment and the repair round's granted tests/test_brief_dispatch.py, with no plan-state meta line touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to refuse an implement- or test-role brief dispatch naming neither a plan link nor an unplanned reason; reckon/crew_dispatch_commands.py:1868 calls reckon/crew/node.py:1202 above the pair split at :1895, covering the live call, the --dry-run preview and both pair arms.\nVERDICT done_when: the done_when names tests/test_a_brief_run_names_its_plan_at_dispatch.py, whose eight bullets each have a named case, and the manifest records both arms of the armed command at 11 passed EXIT=0 (aa134b15 and 9cbf82e8).\nVERDICT write_paths: read the five dispatched paths plus the fence's evidence fragment and figure directory; git diff --stat d48480ee..9cbf82e8 lists seven files and the only addition to that set, tests/test_brief_dispatch.py, is granted by the repair round's resume advice.\nVERDICT manifest: read at 9cbf82e8; it records status complete, five commits, baseline_suite and after_suite with revisions and log paths, the repair negative control, and one answered finding by id.\nVERDICT diff: read commit by commit against d48480ee; f3f428ce lands the flags, the node finding, the launch-record keys and the landing fallback with the new test file, c650859535 repairs the sibling fixture, and the three remaining commits are evidence records.\nCALL_SITES: reckon/crew_dispatch_commands.py:1868 crew_dispatch, reckon/crew/dispatch.py:2918 dispatch pointer record, reckon/crew/queue_admission.py:444 admit launch, reckon/crew/promotion_checks.py:1800 _require_brief_owner, reckon/crew/node.py:1202 brief_plan_owner_finding\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_dispatch_commands.py:1868 refuses above the pair split and reckon/crew/dispatch.py:2918 records the value where promotion reads it, so all eight done-when bullets are reached.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/repair-base-suite.log and logs/repair-head-suite.log carry their revision, tree, module.__file__ and a bare EXIT=0, and the unchanged base arm at d48480ee is red with 10 failed in logs/base-suite.log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every file in git diff --stat d48480ee..9cbf82e8 lies inside the declared scope, with tests/test_brief_dispatch.py granted by the repair round rather than by the original fence.\nSCORE durability: 19\nJUSTIFICATION durability: logs/negative_control_repair_reverted.log shows the repair reddening test_a_brief_dispatch_dry_run_resolves_without_a_plan, and the landing cases at tests/test_a_brief_run_names_its_plan_at_dispatch.py assert a literal 'plan-a' that reckon/crew/dispatch.py:2918 and reckon/crew/promotion_checks.py:1800 must round-trip.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/node.py:1199 follows the surrounding finding idiom and reuses EXECUTABLE_SECTION_ROLES from reckon/evidence.py:382 rather than restating the role set.\nSCORE reuse: 14\nJUSTIFICATION reuse: reckon/crew/node.py:1202 duplicates the owner predicate owned by reckon/crew/promotion_checks.py:1769, the same non-blocking finding the prior review recorded and this repair did not address.\nFINDING reckon/crew/node.py:1202 non-blocking: brief_plan_owner_finding restates the four-part owner predicate already owned by reckon/crew/promotion_checks.py:1769, so the dispatch refusal and the landing refusal are two copies that can drift apart.\nFINDING docs/evidence/fragments/a-refusal-comes-before-the-work/ask-a-brief-run-for-its-plan-link-at-dispatch.html:6 non-blocking: the measure table's head column is labelled 4d5a58af while its rows carry measurements taken at aa134b15, c650859535 and 9cbf82e8, and line 15 names base-suite.log and head-suite.log as the gate logs while the repair arms are repair-base-suite.log and repair-head-suite.log.\n",
+  "review_run_id": "r-20261108T160233265931-review-of-ask-a-brief-run-for-its-plan-link-at-dispatch-9cbf82e8e96d",
+  "reviewed_base_sha": "d48480ee3e75d91634fe1db961c2846d89451e8d",
+  "reviewed_head_sha": "9cbf82e8e96dfa2d8b8d70397a42bf4ff9592cdd",
+  "reviewed_run_id": "r-20261107T123111882809-ask-a-brief-run-for-its-plan-link-at-dispatch",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T16:47:57.737213+00:00",
+  "total": 108
+}
