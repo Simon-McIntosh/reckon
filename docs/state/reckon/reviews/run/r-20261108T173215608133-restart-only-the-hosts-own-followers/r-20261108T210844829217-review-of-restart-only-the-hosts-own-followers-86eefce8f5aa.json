@@ -1,0 +1,46 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T21:21:59.517Z",
+  "dispatched_at": "2026-11-08T21:12:04Z",
+  "findings": [
+    {
+      "file": "tests/test_a_running_host_restarts_only_its_own_followers.py",
+      "line": 318,
+      "severity": "non-blocking",
+      "text": "The hand-armed setup fails the case if a follower has not registered within START_BOUND, and the run's retry_failures records exactly that failure once on a case sharing this helper; the new case at :547 inherits the same timing exposure, so a future red run may be the harness rather than the rule."
+    },
+    {
+      "file": "docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/restart-only-the-hosts-own-followers.html",
+      "line": 60,
+      "severity": "non-blocking",
+      "text": "The negative-control paragraph names be2df92b79 rather than the landed head; reckon/crew/session_host.py is byte-identical between them, but the record never states that identity, so a reader must verify it to know the controls exercised the landed code."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "pass \u2014 tick at reckon/crew/session_host.py:891 and _start_follower at :596 are the production paths, reached from the host loop at :1042 and the CLI entry at :1072.",
+    "diff": "pass \u2014 six commits read commit by commit: be2df92b79 tightens the predicate and carries the mark into the deferral with two cases, e510887925/3e510296f5 mark existing host cases and format them, dd59743def/5877cf6851/86eefce8f5 update the landing fragment; nothing outside the declared write paths.",
+    "done_when": "pass \u2014 the manifest's gate runs tests/test_a_running_host_restarts_only_its_own_followers.py; gate-head.log records 7 passed EXIT=0 at 3e510296f5, gate-base-arm.log records 4 failed/3 passed EXIT=1 at edc04fd259 with both new cases among the failures, gate-repro-before-fix.log records the defect reproducing first, and the five negative-control logs are taken at be2df92b79 whose reckon/crew/session_host.py is byte-identical to the landed head.",
+    "goal": "pass \u2014 the reviewed range closes both residual gaps the earlier review recorded: reckon/crew/session_host.py:715 makes an unresolvable-session host vouch only for marked children, and :891 carries child.owner_checked into the restart deferral, so a marked earlier-session pair no longer defers to another owner's duplicate.",
+    "manifest": "pass \u2014 read; it records status complete, the head and both arm results with their log paths, seven-case figures, five negative-control logs, the flake under retry_failures, and a rubric line per dimension; its ruff claim was re-run here and holds except the disclosed pre-existing F841 in tests/conftest.py:1057, which is present at edc04fd259.",
+    "write_paths": "pass \u2014 the run pointer's node.write_paths (base_sha edc04fd259) names all eight paths, and every file in git diff --stat b3c2e8823c..86eefce8f5 is one of them; docs/figures is declared but unused, which changes no path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the run's GOAL (make a running host restart only its own session's followers) against the reviewed range; reckon/crew/session_host.py:715 now refuses an unmarked pair when no session resolves (:715 `return bool(current) and session == current`) and :891 passes child.owner_checked into _foreign_live_follower, closing the two gaps the earlier review recorded, so the goal holds.\nVERDICT done_when: gate-head.log records 7 passed EXIT=0 at 3e510296f5; gate-base-arm.log records 4 failed, 3 passed EXIT=1 at edc04fd259 and lists test_a_marked_restart_does_not_defer_to_another_owners_host and test_a_host_that_cannot_name_its_session_keeps_only_marked_children among the four, so both added cases discriminate; gate-repro-before-fix.log shows the defect reproducing first.\nVERDICT write_paths: the run pointer's node.write_paths names all eight paths (session_host.py, the four host test files, tests/conftest.py, the fragment, docs/figures); git diff --stat b3c2e8823c..86eefce8f5 changes seven files, each inside them.\nVERDICT manifest: read; it records status complete, 7 passed at 3e510296f5, the base arm at 4 failed, five negative-control logs taken at be2df92b79, the hand-armed registration flake under retry_failures, and a rubric line per dimension.\nVERDICT diff: read all six commits against b3c2e8823c \u2014 be2df92b79 is the only production change (predicate tightening at :715, mark carried at :891) plus two cases; e510887925 and 3e510296f5 mark and reformat existing host cases; dd59743def, 5877cf6851 and 86eefce8f5 are the landing fragment.\nCALL_SITES: reckon/crew/session_host.py:816 SessionHost.tick, reckon/crew/session_host.py:563 SessionHost.handle, reckon/crew/session_host.py:1042 host loop, reckon/crew/session_host.py:1072 run() entry\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/session_host.py:715 and :891 close both residual gaps the earlier review named, leaving only the out-of-node fact that a pre-existing host keeps its old code until its owner re-arms it.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-head.log (7 passed EXIT=0 at 3e510296f5) and gate-base-arm.log (4 failed, 3 passed EXIT=1 at edc04fd259) record the delta, and the five controls at be2df92b79 exercise byte-identical production code but were not retaken at the recording commit.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat b3c2e8823c..86eefce8f5 is one of the eight write paths the run pointer declares, with no plan or index edit.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_running_host_restarts_only_its_own_followers.py:547 and :593 read real pids, drop lines and process liveness, and gate-base-arm.log shows both redden at the base; the shared hand-armed setup at :312 has a recorded registration flake.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/session_host.py:712 keeps one predicate with a mechanism comment, but the comment now describes a host with no session while that path is exactly the case the code makes strict, so the wording survives only by reading the return line.\nSCORE reuse: 20\nJUSTIFICATION reuse: the range adds no new production definition beyond altering the existing predicate and one call, and the test helper pid_for at tests/test_a_running_host_restarts_only_its_own_followers.py:364 reads the census through the existing record() accessor.\nFINDING tests/test_a_running_host_restarts_only_its_own_followers.py:318 non-blocking: the hand-armed setup fails the case if a follower has not registered within START_BOUND, and the run's retry_failures records exactly that failure once on a case sharing this helper; the new case at :547 inherits the same timing exposure, so a future red run may be the harness rather than the rule.\nFINDING docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/restart-only-the-hosts-own-followers.html:60 non-blocking: the negative-control paragraph now names be2df92b79 rather than the landed head, and while reckon/crew/session_host.py is byte-identical between them, nothing in the record states that identity holds.",
+  "review_run_id": "r-20261108T210844829217-review-of-restart-only-the-hosts-own-followers-86eefce8f5aa",
+  "reviewed_base_sha": "b3c2e8823c3f395b0f21ab86899662564c8de7fb",
+  "reviewed_head_sha": "86eefce8f5aa1106a479c243327946dd7c2bf580",
+  "reviewed_run_id": "r-20261108T173215608133-restart-only-the-hosts-own-followers",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T21:33:27.989226+00:00",
+  "total": 113
+}
