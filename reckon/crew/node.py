@@ -746,13 +746,14 @@ def placement_query_undeclared(
 
 
 def _json_ready(value: Any) -> Any:
-    """Return one node field value copied into JSON-ready data.
+    """Return one node field value as a deep copy of its JSON-ready data.
 
-    The collections are copied rather than shared so a reader of the serialised
-    node cannot mutate the node it came from.
+    Every nested list and mapping is copied as well as the outer one, so a
+    reader of the serialised node holds nothing that reaches the node's own
+    collections.
     """
     if isinstance(value, list):
-        return list(value)
+        return [_json_ready(item) for item in value]
     if isinstance(value, dict):
         return {key: _json_ready(item) for key, item in value.items()}
     return value

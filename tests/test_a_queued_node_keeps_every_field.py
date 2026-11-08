@@ -87,6 +87,19 @@ def test_a_queued_node_keeps_every_field_it_was_dispatched_with(
     assert rebuilt.inputs == ["docs/figures/x/source.svg"]
     assert rebuilt.compares_with == "docs/figures/x/other.png"
 
+    # The copy is deep, so a reader of the serialised node reaches nothing the
+    # node itself holds — including a mapping nested inside a list.
+    stored["admission_findings"][0]["detail"] = "mutated by a reader"
+    assert dispatched.admission_findings == [
+        {"property": "scoped", "detail": "declared"}
+    ]
+    stored["admission_findings"][0]["detail"] = "declared"
+
+    rebuilt.admission_findings[0]["detail"] = "mutated by a reader"
+    assert stored["admission_findings"] == [
+        {"property": "scoped", "detail": "declared"}
+    ]
+
 
 def test_run_directory_paths_are_dropped_and_foreign_ones_kept(
     queued_home: Path,

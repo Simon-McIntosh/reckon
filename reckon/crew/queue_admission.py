@@ -180,15 +180,16 @@ def _stored_field_value(spec: Any, value: Any) -> Any:
     """Return one stored field value in the shape ``TaskNode`` declares for it.
 
     The stored node is JSON, so a declared collection arrives as a list or a
-    dict and a declared text field as a string; the copy keeps the rebuilt node
-    from aliasing the pointer record it was read out of.
+    dict and a declared text field as a string. The copy is deep, so neither the
+    rebuilt node nor anything nested in it reaches the pointer record it was
+    read out of.
     """
     if spec.default_factory is not MISSING:
         empty = spec.default_factory()
         if isinstance(empty, list):
-            return list(value or ())
+            return copy.deepcopy(list(value or ()))
         if isinstance(empty, dict):
-            return dict(value or {})
+            return copy.deepcopy(dict(value or {}))
     if spec.type == "str":
         return str(value)
     return value
