@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="725">
+<meta name="plan-version" content="726">
 <meta name="plan-modified" content="2026-11-08">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1356,6 +1356,9 @@ Both cases run under the file's existing temporary crew home.</li>
 </div>
 <div class="r-comment" data-section="s107" data-id="c-run-r-20261108T055719329686-review-of-a-follower-runs-current-code-a603635aca90" data-who="reckon-build" data-when="2026-11-08T06:41:13.028Z">
     <div class="r-comment-body"><p>review attached to run r-20261108T032830784659-a-follower-runs-current-code for commits d117af1bad..a603635aca (0f27458310, a603635aca); status parsed, six dimensions scored 19/19/20/18/19/18 with no findings, added_failure_count 0 read from baseline_suite and after_suite.</p></div>
+</div>
+<div class="r-comment" data-section="s107" data-id="c-run-r-20261108T032830784659-a-follower-runs-current-code" data-who="reckon-build" data-when="2026-11-08T05:43:41Z">
+    <div class="r-comment-body"><p>§107: the station-subscriber delivery in crew_follow now builds the same _FollowerReloader the stream delivery does (via _follower_reloader_for, polled only through the per-wait hook), so a long-lived subscriber re-executes onto its source checkout&#x27;s code instead of printing the image it was armed with; tests/test_a_follower_runs_current_code.py enters that delivery with a stubbed subscriber and shows the four required cases plus the sweep cadence and the claim hand-over (head 6 passed; the same file at base behaviour 5 failed) and reads the checkout&#x27;s identity 3 times over 100 sweeps spanning three checked_at intervals; the subscriber&#x27;s station registration now carries the session&#x27;s claim across a replacement.</p></div>
 </div>
 <div class="r-comment" data-section="s109" data-id="c-run-r-20261106T180916353431-review-of-tell-a-session-without-a-follower-so-2fd1b62da7dd" data-who="reckon-build" data-when="2026-11-06T18:17:45.646Z">
     <div class="r-comment-body"><p>Review of r-20261106T172623769806-tell-a-session-without-a-follower-so at head 2fd1b62da7 against base 4dc1488f6e53 is stored parsed with six dimension scores, 0 added failures, and one non-blocking finding on the rewrite's failure path.</p></div>
