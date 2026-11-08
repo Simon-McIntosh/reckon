@@ -75,4 +75,29 @@
   staged paths and all three files are already formatted. The importer gate has
   no base arm because the head arm has no failure to attribute: 131 passed and
   nothing failed, so no failure is added against the base revision.</p>
+
+  <h3 id="lander-leaves-red-run-to-coordinator-repair">Repair: the landing no longer
+  speaks over a disposition</h3>
+
+  <p>Making a disposition mandatory before a landing exposed the consequence on
+  the other side of it. The pass recorded an exemption over every non-blocking
+  finding the review carried, and that writer replaces the entry it finds, so
+  the <code>folded:&lt;node&gt;</code> a coordinator had recorded came back as
+  <code>exempted:non-blocking, noted at landing</code> on the next pass and the
+  node the finding was folded into was lost. The pass now records an exemption
+  only for a finding still open: a run reaching the landing has already been
+  answered, so it writes nothing, and the record a coordinator wrote is the
+  record the run lands with.</p>
+
+  <p>Reverting that repair reproduces the overwrite exactly —
+  <code>folded:the-follow-up-node</code> reads back as
+  <code>exempted:non-blocking, noted at landing</code> — in
+  <code>negative-control-fold.log</code>. The same reading consolidated three
+  duplicated checks: the suite arms are read once per pass and shared by the
+  refusal and its stamp, and the three status fields go through one integer
+  predicate instead of each restating the boolean exclusion.</p>
+
+  <p>The two directories this fragment cites live beside the run, not in the
+  tree: <code>gate-repair.log</code> is the importer gate at the repair commit
+  and <code>negative-control-fold.log</code> is the reverted run above.</p>
 </section>
