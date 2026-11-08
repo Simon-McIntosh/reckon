@@ -1,0 +1,75 @@
+<section id="merge-the-landed-head-release-onto-main-landing">
+  <h2>A merge keeps the pending-landing clear beside the judged release</h2>
+
+  <p><strong>What changed.</strong> The reviewed head <code>bea6a6bf6c</code> was merged into
+  the dispatch base <code>b92b48de1a</code> with <code>git merge --no-ff</code>. The landing
+  commit is a merge commit whose two parents are exactly those revisions, and it carries
+  this fragment. The two sides edit the same lines of <code>_land_a_promoted_run</code> in
+  <code>reckon/crew_run_commands.py</code>, immediately after the merge step reports
+  <code>steps.land</code>: the dispatch base clears the pending-landing record once the
+  merge has landed (and writes it in <code>crew_complete</code> before the promotion pushes
+  anything, so a process killed between the promotion and its merge leaves a record the
+  next landing pass finishes). The reviewed head changes the release call that follows,
+  passing the checkout the merge advanced and the commit it wrote into
+  <code>promotion_release._release_after_promotion</code>, and substitutes that checkout for
+  the run's recorded <code>repo</code> in the post-merge ledger write and branch read.</p>
+
+  <p>The resolution keeps both: <code>pending_landing.clear_pending(run_id)</code> runs, then
+  the release is judged with <code>integration_repo=repository</code> and
+  <code>integration_commit=str(landed.get("commit") or "")</code>. Nothing else in the
+  conflicted file moves: the merged <code>reckon/crew_run_commands.py</code> differs from the
+  reviewed head by eight lines, which are exactly the <code>pending_landing</code> import,
+  the clear call and the blank lines around them, and differs from the dispatch base only by
+  the reviewed release judgement and its three follow-on substitutions.
+  <code>reckon/crew/promotion_release.py</code>, the reviewed head's test and its sibling
+  evidence fragment land unchanged.</p>
+
+  <h3 id="merge-the-landed-head-release-onto-main-measured">Measured</h3>
+
+  <p>Gate: <code>tests/test_a_landed_head_releases_its_worktree.py</code>, resolved from the
+  run's armed command
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_a_landed_head_releases_its_worktree.py</code>, one arm at a time. The base arm
+  ran over an extraction of revision <code>b92b48de1a</code> with the new test copied in,
+  because the test does not exist at that revision. Every log names its revision, tree and
+  the literal command on its header lines and ends in a bare
+  <code>EXIT=&lt;code&gt;</code> line.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base, the new test copied in</td>
+        <td><code>b92b48de1a</code></td>
+        <td><strong>1 failed, 2 passed</strong>, exit 1 — the observer-checkout case reports
+        the tree withheld as <code>unintegrated</code></td></tr>
+      <tr><td>head</td>
+        <td>the landing merge commit</td>
+        <td><strong>3 passed</strong>, exit 0</td></tr>
+      <tr><td>head, the test file importing <code>reckon.crew.pending_landing</code></td>
+        <td>the landing merge commit</td>
+        <td><strong>4 passed</strong>, exit 0</td></tr>
+      <tr><td>negative control: the clear dropped and the release judgement reverted to the
+        base form</td>
+        <td>mutated head</td>
+        <td><strong>1 failed, 6 passed</strong>, exit 1 —
+        <code>test_a_recorded_observer_checkout_still_releases_the_worktree</code>, which the
+        head arm passes</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>What the negative control did not show.</strong> The declared mutation's first
+  half — dropping <code>pending_landing.clear_pending(run_id)</code> from
+  <code>_land_a_promoted_run</code> — turned no test red.
+  <code>tests/test_an_interrupted_landing_is_finished_by_the_next_pass.py</code> exercises
+  <code>write_pending</code> and <code>finish_pending_landings</code>; nothing covers the
+  landing path's own clear, so a resolution that dropped it would pass this gate. The
+  resolution keeps the clear, and the gap is recorded as out-of-scope work rather than
+  repaired here, since this landing's resolution is required to change nothing beyond the
+  two sides.</p>
+
+  <p><strong>Ruff.</strong> <code>ruff check</code> reports one pre-existing finding in
+  <code>reckon/crew/promotion_release.py</code> at line 893, present unchanged at the
+  dispatch base, and none in the conflicted file or the new test;
+  <code>ruff format --check</code> reports all three staged Python paths already
+  formatted.</p>
+</section>

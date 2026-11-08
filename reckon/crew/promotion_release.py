@@ -343,6 +343,8 @@ def _release_run_workspace(
     worktree_withheld: str = "",
     keep_process: bool = False,
     gate: str = "",
+    integration_repo: Path | None = None,
+    integration_commit: str = "",
 ) -> dict[str, Any]:
     """Release a promoted run's own worktree, process, and scratch directory.
 
@@ -394,7 +396,17 @@ def _release_run_workspace(
             if claim != run_id
         ]
         shadow_record = record if _is_shadow(record) else None
-        inspected = _inspect_workspace(repo, worktree, "HEAD", claims, shadow_record)
+        # A landing advances the checkout it merges in, which is not always the
+        # checkout the run recorded: a run whose `repo` names an observer left
+        # on an older commit would be judged against a revision the landing
+        # never wrote, and its tree withheld while its head is on the branch.
+        inspected = _inspect_workspace(
+            integration_repo or repo,
+            worktree,
+            integration_commit or "HEAD",
+            claims,
+            shadow_record,
+        )
         classification = str(inspected["classification"])
         if classification not in RECLAIMABLE_CLASSES:
             result["worktree_withheld"] = WITHHELD_REASONS.get(
@@ -449,7 +461,15 @@ def _release_run_workspace(
             # that was stopped rather than only that some process was signalled.
             result["process_stopped_pid"] = int(pid)
 
-    result["worktree_audit"] = _worktree_audit(record, retention)
+    # The audit reads the checkout the release judges against, which for a
+    # landing is the one the merge advanced rather than the one the run
+    # recorded; at this point the landed commit is that checkout's HEAD.
+    audit_record = (
+        {**record, "repo": str(integration_repo)}
+        if integration_repo is not None
+        else record
+    )
+    result["worktree_audit"] = _worktree_audit(audit_record, retention)
     # The scratch directory a run owned dies with it. Both promotion and
     # discard funnel through this release step, so the removal is wired once
     # here and the two cannot disagree about whether it happens. It is removed
@@ -480,6 +500,8 @@ def _release_after_promotion(
     *,
     process_already_ended: bool = False,
     gate: str = "",
+    integration_repo: Path | None = None,
+    integration_commit: str = "",
 ) -> dict[str, Any]:
     """Release what promotion made transient, never at the cost of the ledger.
 
@@ -505,6 +527,8 @@ def _release_after_promotion(
                 ),
                 keep_process=blocked_for_resume,
                 gate=verdict,
+                integration_repo=integration_repo,
+                integration_commit=integration_commit,
             )
         except Exception as exc:  # noqa: BLE001 - cleanup must never mask promotion
             fallback = {
@@ -521,6 +545,8 @@ def _release_after_promotion(
             process_already_ended=process_already_ended,
             keep_process=blocked_for_resume,
             gate=verdict,
+            integration_repo=integration_repo,
+            integration_commit=integration_commit,
         )
     except Exception as exc:  # noqa: BLE001 - cleanup must never mask promotion
         fallback = {

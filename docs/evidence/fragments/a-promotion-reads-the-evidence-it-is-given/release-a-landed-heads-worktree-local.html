@@ -1,0 +1,70 @@
+<section id="release-a-landed-heads-worktree-local-landing">
+  <h2>A landing judges its worktree against the commit it wrote</h2>
+
+  <p><strong>What changed.</strong> <code>crew complete --land</code> released a run's
+  worktree by comparing the worker head with <code>HEAD</code> in the checkout the run
+  recorded. A run's <code>repo</code> can name a checkout the merge did not move — a linked
+  worktree detached at the commit the worker started from is the shape one coordinator
+  landing recorded — and the release then read the head as unreachable, withheld the tree
+  and exited 1 with the head already pushed. Two further reads in the same landing had the
+  same fault: the ledger write for the release staged the run's ledger file inside the
+  recorded checkout, where it does not exist, and the post-push check read the primary
+  branch there. <code>_land_a_promoted_run</code> now passes the checkout it merged in and
+  the commit <code>merge.land</code> returned into
+  <code>promotion_release._release_after_promotion</code>, so reachability, the worktree
+  audit, the ledger write and the branch read all use the revision the landing wrote. A
+  release on the merge path therefore reports the post-merge reading, and a tree whose head
+  is on the branch is released rather than withheld.</p>
+
+  <h3 id="release-a-landed-heads-worktree-local-measured">Measured</h3>
+
+  <p>Gate: <code>tests/test_a_landed_head_releases_its_worktree.py</code>, run as
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_a_landed_head_releases_its_worktree.py</code> at each arm's own revision, one
+  arm at a time. Every case goes through the real <code>crew complete --land</code> CLI over
+  a temporary repository, a bare origin, a registered checkout and a linked worker
+  worktree. Each log names its revision and tree on the header lines and ends in
+  <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base, the new cases copied in</td>
+        <td><code>088c13da18</code></td>
+        <td><strong>1 failed, 2 passed</strong>, exit 1 — the observer case reports the tree
+        withheld as <code>unintegrated</code></td></tr>
+      <tr><td>head</td>
+        <td><code>621b97659b</code></td>
+        <td><strong>3 passed</strong>, exit 0</td></tr>
+      <tr><td>negative control: the pre-merge receipt returned</td>
+        <td>mutated head</td>
+        <td><strong>2 failed</strong>, exit 1 — the reviewed-head and observer cases both
+        report withheld</td></tr>
+      <tr><td>negative control: judged against the recorded checkout's <code>HEAD</code></td>
+        <td>mutated head</td>
+        <td><strong>1 failed</strong>, exit 1 — the observer case</td></tr>
+    </tbody>
+  </table>
+
+  <p>The three cases the gate shows: a landed reviewed head releases its worktree and exits
+  0; a run recording a detached observer checkout releases its worktree the same way; and a
+  worktree holding one commit beyond the reviewed head is withheld with nothing pushed. The
+  regression arm over the landing, promotion-release and worktree-release files is 37
+  passed and 1 failed, the failure being
+  <code>test_a_worktree_release_is_whole.py::test_no_removal_site_still_deletes_with_git_worktree_remove</code>,
+  which fails identically at the base revision and names
+  <code>landing_measure.py</code>, outside this node's scope.</p>
+
+  <h3 id="release-a-landed-heads-worktree-local-paths">Changed paths</h3>
+
+  <ul>
+    <li><code>reckon/crew/promotion_release.py</code> — the release, the promotion wrapper and
+      the worktree audit take the landed checkout and commit; the audit reads the checkout the
+      release judges against.</li>
+    <li><code>reckon/crew_run_commands.py</code> — the landing passes the checkout it merged in
+      and <code>landed["commit"]</code>, and stages the release's ledger write and reads the
+      branch there rather than in the recorded checkout.</li>
+    <li><code>tests/test_a_landed_head_releases_its_worktree.py</code> — the three cases and
+      the two negative controls.</li>
+  </ul>
+</section>
