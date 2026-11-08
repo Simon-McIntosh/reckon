@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T18:32:57.910Z",
+  "dispatched_at": "2026-11-08T18:21:18Z",
+  "findings": [
+    {
+      "file": "reckon/crew/session_host.py",
+      "line": 889,
+      "severity": "non-blocking",
+      "text": "The restart path's deferral call passes pid=None but not owner_checked, so _foreign_live_follower answers with _pair_is_owners(session, owner_checked=False) for a child that reached this line only because it was the owner's: a marked child for an earlier session that exits can still defer forever to a live duplicate started by another owner's host, which is the deferral defect the section set out to close for the current session's pairs."
+    },
+    {
+      "file": "reckon/crew/session_host.py",
+      "line": 712,
+      "severity": "non-blocking",
+      "text": "_pair_is_owners returns True whenever _calling_session resolves nothing, so a host that cannot name the session it serves restarts every child it holds, including an unmarked foreign one; the goal's 'only its own session's followers' therefore does not hold for a host launched with its harness environment stripped, which is the class of host the incident's fifteen-day-old process belonged to."
+    },
+    {
+      "file": "negative-control-2-mark-only.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "All five negative-control logs name revision aebf721d7e with their mutation, but b3c2e8823c changed _pair_is_owners after they were recorded and that predicate is what the mark-only mutation exercises, so the landed predicate carries no recorded control; the five cases still pass at the landed head, so the gap is in the control record rather than in the guard."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "pass \u2014 SessionHost.tick and SessionHost.handle are the production callers reached through the host service loop at reckon/crew/session_host.py:1039.",
+    "diff": "pass \u2014 three commits read commit by commit: aebf721d7e adds host_owner, _pair_is_owners, the drop path and the parent-aware deferral; ec8194a5d2 adds the landing fragment; b3c2e8823c the no-session fallback.",
+    "done_when": "pass \u2014 the gate command in the manifest runs tests/test_a_running_host_restarts_only_its_own_followers.py, which carries the five cases the plan's done-when lists; gate-head.log shows 5 passed EXIT=0 at b3c2e8823c and gate-base-arm.log shows 2 failed, 3 passed EXIT=1 at edc04fd259, and gate-repro-before-fix.log records the defect reproducing first.",
+    "goal": "pass \u2014 the goal, make a running host restart only its own session's followers, is met for the measured case: reckon/crew/session_host.py:825 drops an unmarked foreign exited child and logs project/session/pid, :646 filters adoption through one predicate, and :767-775 makes the deferral parent-aware, with two residual gaps recorded as findings.",
+    "manifest": "pass \u2014 the reviewed run's manifest.md records status complete, the gate command and log paths, the head and base-arm results, five negative-control logs and its own rubric lines; its ruff claim has no log of its own, which I re-checked directly instead.",
+    "write_paths": "pass \u2014 the three declared write paths are reckon/crew/session_host.py, tests/test_a_running_host_restarts_only_its_own_followers.py and the evidence fragment; git diff --stat over edc04fd259..b3c2e8823c changes exactly those three files."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read NODE/GOAL from the reviewed run's prompt.txt against reckon/crew/session_host.py; the host restarts an exited child only when it is marked or names the owner's current session, drops and logs an unmarked foreign exited child, never signals a running one, and stops deferring to a foreign host's duplicate, so the goal is implemented with two residual gaps recorded as findings.\nVERDICT done_when: the plan's section 6 done-when names five cases in tests/test_a_running_host_restarts_only_its_own_followers.py; the manifest records that command, gate-head.log shows 5 passed EXIT=0 at b3c2e8823c, gate-base-arm.log shows 2 failed, 3 passed EXIT=1 at edc04fd259, and gate-repro-before-fix.log records the defect reproducing first.\nVERDICT write_paths: the manifest declares reckon/crew/session_host.py, tests/test_a_running_host_restarts_only_its_own_followers.py and the evidence fragment, and git diff --stat edc04fd259..b3c2e8823c changes exactly those three files.\nVERDICT manifest: read; it states status complete, records the head and base-arm results with their log paths, five negative-control logs, and rubric lines per dimension; its ruff claim carries no log, which I re-ran and it passes on both staged paths.\nVERDICT diff: read commit by commit against edc04fd259; aebf721d7e adds host_owner, _pair_is_owners and the tick drop path, ec8194a5d2 the landing fragment, b3c2e8823c the no-session fallback, all inside the declared scope.\nCALL_SITES: reckon/crew/session_host.py:1039 (SessionHost.tick loop), reckon/crew/session_host.py:559 (SessionHost.handle)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/session_host.py:825 drops an unmarked foreign exited child and :767-775 makes the deferral parent-aware, but :889 loses the ownership mark on the restart deferral and :712 restores the old behaviour when no session resolves.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head.log records 5 passed EXIT=0 at b3c2e8823c and gate-base-arm.log 2 failed/3 passed EXIT=1 at b3c2e8823c's base edc04fd259, while the five negative controls were logged at aebf721d7e rather than the landed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat edc04fd259..b3c2e8823c is one of the three declared write paths, with no plan or state edit.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_running_host_restarts_only_its_own_followers.py reads child pids and drop lines from real processes, and each of the five declared mutations reddens its named case in the negative-control logs.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/session_host.py:308 follows the live_census reader idiom and :698 keeps one ownership predicate, though the predicate name '_pair_is_owners' at :698 reads ambiguously.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/session_host.py:308 is a second reader of session-hosts records beside live_census at :273, which the plan directs, and no pre-existing by-pid owner lookup exists in the search over reckon/crew for owner and start_time comparisons.\nFINDING reckon/crew/session_host.py:889 non-blocking: the restart deferral omits child.owner_checked, so a marked earlier-session pair can still defer to another owner's host's duplicate.\nFINDING reckon/crew/session_host.py:712 non-blocking: an unresolvable session is treated as the owner's, so a host outside a harness keeps restarting unmarked foreign children.\nFINDING negative-control-2-mark-only.log:1 non-blocking: the negative controls were recorded at aebf721d7e, before b3c2e8823c changed the predicate the mark-only mutation exercises.\n",
+  "review_run_id": "r-20261108T181725881664-review-of-restart-only-the-hosts-own-followers-b3c2e8823c3f",
+  "reviewed_base_sha": "edc04fd259fa36e9f9d43dfb34ca94421b00004e",
+  "reviewed_head_sha": "b3c2e8823c3f395b0f21ab86899662564c8de7fb",
+  "reviewed_run_id": "r-20261108T173215608133-restart-only-the-hosts-own-followers",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T18:38:55.809806+00:00",
+  "total": 108
+}
