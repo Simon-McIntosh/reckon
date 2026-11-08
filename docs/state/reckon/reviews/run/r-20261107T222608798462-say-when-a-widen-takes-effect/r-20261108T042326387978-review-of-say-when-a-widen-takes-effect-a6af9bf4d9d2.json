@@ -1,0 +1,120 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured from the reviewed run's own arms: the base arm at 1b3663ce4fd1f45393fac81a3289ecae7c6ec4b0 failed 10 ids (all of them this node's new cases, by design) and the head arm at c559ad2e97d61d138292dde61861bef14238d19b failed none, so no failure present at head is absent at base.",
+  "assertion_analysis": [
+    {
+      "condition_to_fail": "The widen drops its liveness read, so the live worker is reported as absent and the sentence becomes the proven-death one; the base arm records this case failing for exactly that reason.",
+      "file": "tests/test_a_widen_says_when_it_takes_effect.py",
+      "line": 161
+    },
+    {
+      "condition_to_fail": "The dead arm names a next attempt instead of the next resume or launch, or stops naming the fence field.",
+      "file": "tests/test_a_widen_says_when_it_takes_effect.py",
+      "line": 176
+    },
+    {
+      "condition_to_fail": "The session-walk arm presents the recorded pid or the stand-in's pid as the worker's, which the `pid \\d` search and the stand-in exclusion both catch.",
+      "file": "tests/test_a_widen_says_when_it_takes_effect.py",
+      "line": 200
+    },
+    {
+      "condition_to_fail": "The unknown arm claims a launch or resume mounts the paths, or omits that liveness could not be read on this host.",
+      "file": "tests/test_a_widen_says_when_it_takes_effect.py",
+      "line": 214
+    },
+    {
+      "condition_to_fail": "The claim writer stops storing the added path under node.write_paths, so the literal supplied on the command line is absent from the reread pointer; this case is base-green by the plan's own design.",
+      "file": "tests/test_a_widen_says_when_it_takes_effect.py",
+      "line": 256
+    },
+    {
+      "condition_to_fail": "record_process_alive decides its boolean apart from the reading, so the monkeypatched arm no longer reaches it; the unknown arm's parametrisation is one of the declared negative control's four failures.",
+      "file": "tests/test_a_widen_says_when_it_takes_effect.py",
+      "line": 283
+    }
+  ],
+  "base_log_revision": "1b3663ce4fd1f45393fac81a3289ecae7c6ec4b0",
+  "call_site_count": 12,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1658 crew_widen (reached from reckon/cli.py:518 and reckon/mcp_crew_actions.py:301)",
+    "reckon/crew/claims.py:113 widen refusal",
+    "reckon/crew/claims.py:449 narrow and release liveness",
+    "reckon/crew/promotion.py:2031",
+    "reckon/crew/promotion_release.py:439",
+    "reckon/crew/gc.py:728",
+    "reckon/crew/follower_registration.py:693",
+    "reckon/crew/recovery_liveness.py:1242",
+    "reckon/crew/recovery_liveness.py:1293",
+    "reckon/crew/gate_watch.py:218",
+    "reckon/crew/recovery_review_acceptance.py:422",
+    "reckon/crew/node.py:1666"
+  ],
+  "completed_at": "2026-11-08T04:38:55.657Z",
+  "dispatched_at": "2026-11-08T04:26:33Z",
+  "findings": [
+    {
+      "file": "reckon/crew/claims.py",
+      "line": "192",
+      "severity": "non-blocking",
+      "text": "non-blocking: the placed-run arm of the widen sentence has no case in tests/test_a_widen_says_when_it_takes_effect.py \u2014 the plan's done_when enumerates six cases and none is placed \u2014 so a regression that named the scheduler client's pid as the worker's would go unreported by the gate."
+    },
+    {
+      "file": "reckon/crew/process_liveness.py",
+      "line": "328",
+      "severity": "non-blocking",
+      "text": "non-blocking: LivenessReading.as_dict has no caller anywhere in reckon/ or tests/, so the accessor is dead surface added with the reading."
+    },
+    {
+      "file": "tests/test_a_widen_says_when_it_takes_effect.py",
+      "line": "257",
+      "severity": "non-blocking",
+      "text": "non-blocking: `assert result[\"write_paths\"] == list(fenced)` compares two views of the same pointer write and would hold in step with a broken emit; the case's real guard is the literal assertion at line 256, and the equality adds no independent power."
+    }
+  ],
+  "head_log_revision": "c559ad2e97d61d138292dde61861bef14238d19b",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Read commit by commit: 4a10098fc5 adds LivenessReading and record_process_liveness at reckon/crew/process_liveness.py:300-395 and reduces record_process_alive (process_liveness.py:397) to consuming its .alive, adds widen_takes_effect at claims.py:154 and the takes_effect key at crew_run_commands.py:1710; c559ad2e97 keeps the fence-field case base-green; a6af9bf4d9 adds the evidence fragment with 34 insertions and no deletions.",
+    "done_when": "\u00a78's done_when asks for a reproduction through both widen paths plus six new cases; negative-control-reproduction.log records both widen outputs at the dispatch base as ok:true with every path listed and no timing word, and all six cases are present in tests/test_a_widen_says_when_it_takes_effect.py.",
+    "goal": "The plan's \u00a78 deliverable (docs/plans/a-run-has-one-live-worker.html:145) asks the widen result to carry a takes_effect field across five liveness arms; reckon/crew_run_commands.py:1710 now emits it from claims.widen_takes_effect, which words all five arms at reckon/crew/claims.py:154-212 and names WIDEN_FENCE_FIELD at claims.py:151.",
+    "manifest": "The source manifest.md:5,11-24 records status complete, the three commits, head arm 11 passed EXIT=0, base arm 10 failed 1 passed EXIT=1 and a negative control at 4 failed EXIT=1, each with its own log path, and both suite blocks carry completed:true with literal commands.",
+    "write_paths": "\u00a78 grants reckon/crew_run_commands.py, reckon/crew/claims.py, reckon/crew/process_liveness.py, the new test and the evidence fragment; the diff from 1b3663ce4fd1f45393fac81a3289ecae7c6ec4b0 to a6af9bf4d9d2747602954bcbb8403f737aacf404 touches exactly those five paths and nothing else."
+  },
+  "justifications": {
+    "durability": "The first case at tests/test_a_widen_says_when_it_takes_effect.py:154 fails if the liveness read is dropped (it is one of the base arm's failures), and the third fails if a pid is named, but the placed-run arm at claims.py:192 has no case at all, so its wording could regress unnamed.",
+    "evidence": "The manifest's tests line is the literal command and both suite logs end in bare EXIT= lines (head-suite.log 11 passed EXIT=0, base-suite.log 10 failed 1 passed EXIT=1), so added_failure_count is a measured 0 from the reviewed run's own arms rather than a claim; the reproduction log carries both widen outputs with no timing word.",
+    "fit": "The new definitions follow the surrounding style, use mechanism names with no plan or ticket labels, and pass ruff check and ruff format --check on all four changed Python paths; the only wart is an unused accessor at reckon/crew/process_liveness.py:328.",
+    "goal_fidelity": "reckon/crew/claims.py:192-201 implements the placed-run arm the plan requires and never presents the scheduler client's pid as the worker's, and every arm ends by naming node.write_paths (claims.py:212), so the field the plan says must be named is named.",
+    "reuse": "The arm-carrying reading is the first of its kind \u2014 a search over reckon/ finds no existing owner (recovery_liveness.live_worker_pid at reckon/crew/recovery_liveness.py:1275 answers a different question, a pid from the pointer and worker record) \u2014 and record_process_alive was made to consume it rather than duplicating the decision.",
+    "scope_discipline": "Every path in the base-to-head diff is one of the five the plan's write-path paragraph grants, and the only change beyond the goal's own lines is the removal of the now-stale ruff I001 suppression at reckon/crew/process_liveness.py:1, which ruff then reports clean on."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The plan's \u00a78 deliverable (docs/plans/a-run-has-one-live-worker.html:145) asks the widen result to carry a takes_effect field across five liveness arms; reckon/crew_run_commands.py:1710 now emits it from claims.widen_takes_effect, which words all five arms at reckon/crew/claims.py:154-212 and names WIDEN_FENCE_FIELD at claims.py:151.\nVERDICT done_when: \u00a78's done_when asks for a reproduction through both widen paths plus six new cases; negative-control-reproduction.log records both widen outputs at the dispatch base as ok:true with every path listed and no timing word, and all six cases are present in tests/test_a_widen_says_when_it_takes_effect.py.\nVERDICT write_paths: \u00a78 grants reckon/crew_run_commands.py, reckon/crew/claims.py, reckon/crew/process_liveness.py, the new test and the evidence fragment; the diff from 1b3663ce4fd1f45393fac81a3289ecae7c6ec4b0 to a6af9bf4d9d2747602954bcbb8403f737aacf404 touches exactly those five paths and nothing else.\nVERDICT manifest: The source manifest.md:5,11-24 records status complete, the three commits, head arm 11 passed EXIT=0, base arm 10 failed 1 passed EXIT=1 and a negative control at 4 failed EXIT=1, each with its own log path, and both suite blocks carry completed:true with literal commands.\nVERDICT diff: Read commit by commit: 4a10098fc5 adds LivenessReading and record_process_liveness at reckon/crew/process_liveness.py:300-395 and reduces record_process_alive (process_liveness.py:397) to consuming its .alive, adds widen_takes_effect at claims.py:154 and the takes_effect key at crew_run_commands.py:1710; c559ad2e97 keeps the fence-field case base-green; a6af9bf4d9 adds the evidence fragment with 34 insertions and no deletions.\nCALL_SITES: reckon/crew_run_commands.py:1658 crew_widen (reached from reckon/cli.py:518 and reckon/mcp_crew_actions.py:301), reckon/crew/claims.py:113 widen refusal, reckon/crew/claims.py:449 narrow and release liveness, reckon/crew/promotion.py:2031, reckon/crew/promotion_release.py:439, reckon/crew/gc.py:728, reckon/crew/follower_registration.py:693, reckon/crew/recovery_liveness.py:1242, reckon/crew/recovery_liveness.py:1293, reckon/crew/gate_watch.py:218, reckon/crew/recovery_review_acceptance.py:422, reckon/crew/node.py:1666\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/claims.py:192-201 implements the placed-run arm the plan requires and never presents the scheduler client's pid as the worker's, and every arm ends by naming node.write_paths (claims.py:212), so the field the plan says must be named is named.\nSCORE evidence: 18\nJUSTIFICATION evidence: The manifest's tests line is the literal command and both suite logs end in bare EXIT= lines (head-suite.log 11 passed EXIT=0, base-suite.log 10 failed 1 passed EXIT=1), so added_failure_count is a measured 0 from the reviewed run's own arms rather than a claim; the reproduction log carries both widen outputs with no timing word.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: Every path in the base-to-head diff is one of the five the plan's write-path paragraph grants, and the only change beyond the goal's own lines is the removal of the now-stale ruff I001 suppression at reckon/crew/process_liveness.py:1, which ruff then reports clean on.\nSCORE durability: 16\nJUSTIFICATION durability: The first case at tests/test_a_widen_says_when_it_takes_effect.py:154 fails if the liveness read is dropped (it is one of the base arm's failures), and the third fails if a pid is named, but the placed-run arm at claims.py:192 has no case at all, so its wording could regress unnamed.\nSCORE fit: 18\nJUSTIFICATION fit: The new definitions follow the surrounding style, use mechanism names with no plan or ticket labels, and pass ruff check and ruff format --check on all four changed Python paths; the only wart is an unused accessor at reckon/crew/process_liveness.py:328.\nSCORE reuse: 20\nJUSTIFICATION reuse: The arm-carrying reading is the first of its kind \u2014 a search over reckon/ finds no existing owner (recovery_liveness.live_worker_pid at reckon/crew/recovery_liveness.py:1275 answers a different question, a pid from the pointer and worker record) \u2014 and record_process_alive was made to consume it rather than duplicating the decision.\nFINDING reckon/crew/claims.py:192 non-blocking: the placed-run arm of the widen sentence has no case in tests/test_a_widen_says_when_it_takes_effect.py \u2014 the plan's done_when enumerates six cases and none is placed \u2014 so a regression that named the scheduler client's pid as the worker's would go unreported by the gate.\nFINDING reckon/crew/process_liveness.py:328 non-blocking: LivenessReading.as_dict has no caller anywhere in reckon/ or tests/, so the accessor is dead surface added with the reading.\nFINDING tests/test_a_widen_says_when_it_takes_effect.py:257 non-blocking: `assert result[\"write_paths\"] == list(fenced)` compares two views of the same pointer write and would hold in step with a broken emit; the case's real guard is the literal assertion at line 256, and the equality adds no independent power.\n",
+  "review_run_id": "r-20261108T042326387978-review-of-say-when-a-widen-takes-effect-a6af9bf4d9d2",
+  "reviewed_base_sha": "1b3663ce4fd1f45393fac81a3289ecae7c6ec4b0",
+  "reviewed_commits": [
+    "4a10098fc5b168b6d7633c7dc5f516198c005f6b",
+    "c559ad2e97d61d138292dde61861bef14238d19b",
+    "a6af9bf4d9d2747602954bcbb8403f737aacf404"
+  ],
+  "reviewed_head_sha": "a6af9bf4d9d2747602954bcbb8403f737aacf404",
+  "reviewed_run_id": "r-20261107T222608798462-say-when-a-widen-takes-effect",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "self_comparison_assertions": [
+    "tests/test_a_widen_says_when_it_takes_effect.py:257 compares the CLI's write_paths with a second read of the same pointer write, so the two sides move together; the independently anchored guard is line 256, which checks a literal the test supplied against that reread."
+  ],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T04:33:54Z",
+  "total": 110
+}
