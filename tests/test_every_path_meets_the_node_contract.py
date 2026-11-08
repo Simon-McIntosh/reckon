@@ -26,6 +26,11 @@ from reckon import cli as cli_module
 from reckon import crew_dispatch_commands
 from reckon.crew import dispatch_batch, runs
 
+#: Every case here drives queueing or discovery through the real rekon home, so
+#: a fixture that blocks would stall an arm instead of failing it. The bound
+#: turns a hang into a named failure the arm can report.
+pytestmark = pytest.mark.timeout(120)
+
 PROJECT = "proj"
 SESSION = "coordinator-a"
 PLAN = "plan-a"
