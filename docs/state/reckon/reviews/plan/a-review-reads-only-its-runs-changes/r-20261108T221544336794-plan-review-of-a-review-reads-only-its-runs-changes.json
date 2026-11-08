@@ -1,0 +1,51 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T22:23:10.455Z",
+  "dispatched_at": "2026-11-08T22:16:45Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-reads-only-its-runs-changes.html:43",
+      "id": "done_when-1",
+      "reason": "a worker cannot satisfy all four assertions with the fixture as described, and whichever half it abandons (the conflict-merge coverage or the False classification) silently drops the guard the other round of reviews added.",
+      "text": "\u00a73's fixture holds \"a run-owned merge whose conflict resolution edits a runtime source path\", and the done-when then requires `changes_runtime_source` to be False \"for a delta of a test and an evidence fragment\" while the fourth assertion requires the same runtime path to stay in the delta and to make `changes_runtime_source` True; one fixture yields one delta, so the two assertions cannot both hold, and the negative control \"restoring the two-dot call fails the test ... on the runtime classification\" also cannot fail when the correct delta is already classified True",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-reads-only-its-runs-changes.html:43",
+      "id": "reasoning-1",
+      "reason": "implementing \u00a73 as written makes the lander and the reflex disagree about a figure review being owed, so the lander would promote past an unanswered figure review, and the repair for that lives in a file the node is not permitted to touch.",
+      "text": "\u00a73 changes `_changed_figure_paths` to return `None` for an uncomparable history and to have the reflex \"compose a full figure review rather than an empty one\", but `_owed_review_tiers` (`reckon/crew/queue_landing.py:141-156`) consumes the same helper and its docstring states the opposite reading \u2014 \"a changed-path list git cannot produce reads as no figure review owed, which is the reflex's own reading of it ... the two must answer alike\" \u2014 and `reckon/crew/queue_landing.py` is not among the three declared write paths",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "bb23ab6e26a40b663a20e878cb3ea9f8095d31d7",
+  "plan_fingerprint": "e708baf68b27ba7648c93ff6892e11b48077bfca8ad94e0ddf735dd2eb851393",
+  "plan_slug": "a-review-reads-only-its-runs-changes",
+  "plan_version": 13,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T221544336794-plan-review-of-a-review-reads-only-its-runs-changes",
+  "reviewed_blob_sha": "b8ca2b7a42f3f6f88b6ac1fd11f423c7c6902c4e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 each anchor in s3 resolves at the revision under review: `unintegrated_claim_work` is defined at `reckon/crew/node.py:1621` with its `git rev-list HEAD ^integration_ref ^base_sha` at line 1662, `review_head_move`'s two-dot call is at `reckon/crew/recovery_review_dispatch.py:1091`, `_changed_figure_paths` at 966 with its call at 971, `_review_delivered_paths`'s two-dot call at 1039, `changed_paths` at `reckon/clones.py:629`, `_mentioned_repository_files` at `reckon/crew/routing.py:3279`, the `touches_delivered_work` terms at 1206 and 1220, the cited commit `14c9d487fb` exists and its `git show --cc --name-only` names `reckon/crew/queue_landing.py`, and the evidence note is present in HEAD.",
+    "done_when": "a finding \u2014 the four assertions in \u00a73's done-when are satisfied by one fixture that carries a run-owned merge whose conflict resolution edits a runtime source path, which makes `changes_runtime_source` True for the run's own delta and so contradicts the same done-when's second assertion that it is False for a delta of a test and an evidence fragment.",
+    "evidence_paths": "pass \u2014 the gate writes test logs \"under the run directory\" and the cited evidence note sits under `docs/evidence/fragments/`, both durable paths; no scratchpad or `/tmp` path is named.",
+    "naming": "pass \u2014 the new symbol `own_changed_paths`, `older`, `tip` and `integration_ref` are mechanism names, and the test filename `tests/test_a_review_reads_only_its_runs_changes.py` follows the repository's established 532-file `test_a_*` behaviour-sentence convention rather than importing a plan label into an otherwise unique symbol.",
+    "reasoning": "a finding \u2014 \u00a73 specifies that `_changed_figure_paths` return `None` for an uncomparable history and that this compose a full figure review, but the helper's second production caller `_owed_review_tiers` (`reckon/crew/queue_landing.py:137-157`) reads the same helper's falsy result as \"no figure review owed\" and is outside \u00a73's declared write paths.",
+    "single_goal": "pass \u2014 one deliverable (one shared `own_changed_paths` helper plus its two named call sites), with the merge second pass and the `None` fail-safe as parts of that same helper rather than separate goals.",
+    "wiring": "pass \u2014 s3 is declared `implementable` in the section declaration (line 23) and in its own `data-status`, and the open followup `f-arroirc-002` recommends exactly `/reckon-build a-review-reads-only-its-runs-changes \u00a73`; the only upstream it consumes (\u00a72's evidence note) exists in HEAD at `docs/evidence/fragments/a-review-reads-only-its-runs-changes/where-a-review-takes-its-range.html`."
+  },
+  "section_digests": {
+    "_document": "321e3bc99119a27697d635d34e1d4b9f33d7ce216f1a7a760d22bc147ba1ccc0",
+    "s1": "3af442a13134b7c46db2d98609970c3d9e560ca12eb3deabbed535c7f74c5dca",
+    "s2": "a324bc121acb85a70e9fdcb6ec0c99aab489197974b83551dbf447fc023b56e3",
+    "s3": "33252e9e222767efbbfd4621471a52e5fe5bda453e90779c49d32c2d4e59733f"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T22:27:49.312043+00:00",
+  "total": null
+}
