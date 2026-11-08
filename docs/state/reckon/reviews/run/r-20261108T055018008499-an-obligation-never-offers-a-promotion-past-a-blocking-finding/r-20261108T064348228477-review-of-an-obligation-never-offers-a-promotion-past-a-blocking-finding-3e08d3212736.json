@@ -1,0 +1,183 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "fails when the obligation derivation omits the subject row",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 108
+    },
+    {
+      "failure_condition": "fails if an open finding again yields promotable-stale",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 121
+    },
+    {
+      "failure_condition": "fails if the open-finding row again offers crew complete",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 122
+    },
+    {
+      "failure_condition": "fails if the open-finding kind stops naming repair",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 123
+    },
+    {
+      "failure_condition": "fails if both reason and action omit the advice hold",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 139
+    },
+    {
+      "failure_condition": "fails if the resume action targets an ID other than the fixture's subject",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 140
+    },
+    {
+      "failure_condition": "fails if an advice-held row offers crew complete",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 141
+    },
+    {
+      "failure_condition": "fails if the overdue review loses its review-missing kind",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 152
+    },
+    {
+      "failure_condition": "fails if the measured age falls to 120 seconds or less",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 153
+    },
+    {
+      "failure_condition": "fails if the action omits overdue",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 154
+    },
+    {
+      "failure_condition": "fails if the action omits the independently fixed 50-minute age",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 155
+    },
+    {
+      "failure_condition": "fails if the old 120-second promise returns",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 156
+    },
+    {
+      "failure_condition": "fails if the reflex-owned duty offers a dispatch command",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 157
+    },
+    {
+      "failure_condition": "fails if a working review is again labelled review-missing",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 182
+    },
+    {
+      "failure_condition": "fails if neither reason nor action names the fixture's review run ID; it does not constrain which field names it",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 183
+    },
+    {
+      "failure_condition": "fails if neither reason nor action names working; it does not constrain which field names it",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 184
+    },
+    {
+      "failure_condition": "fails if the queued row changes kind; the unchanged base already passes",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 206
+    },
+    {
+      "failure_condition": "fails if the queued action contains r-answered; the fixture does not prove that refusal was answered",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 207
+    },
+    {
+      "failure_condition": "fails if the queued action contains crew complete; the unchanged base already passes",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 208
+    },
+    {
+      "failure_condition": "fails if the derived row ID differs from the subject ID given to the fixture",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 227
+    },
+    {
+      "failure_condition": "fails if the admission-held action omits the subject ID; it can still include another ID",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 228
+    },
+    {
+      "failure_condition": "fails only if the action invents r-answered, which the admission-held fixture never supplies",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 229
+    }
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/station_subscriber.py:145 _review_duty_item",
+    "reckon/crew/obligation_snapshot.py:1441 _review_duty_item",
+    "reckon/crew/obligations.py:2597 _review_duty_item",
+    "reckon/crew/station_obligations.py:189 payload_for"
+  ],
+  "completed_at": "2026-11-08T06:56:53Z",
+  "dispatched_at": "2026-11-08T06:45:37Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "1632",
+      "severity": "blocking",
+      "text": "The no-review-tier branch returns a promotable row before _selected_review and _undisposed_blocking_findings run; a manually reviewed non-runtime change with an open blocking finding is still offered crew complete, violating the absolute goal."
+    },
+    {
+      "disposition": "folded",
+      "disposition_target": "the section's recovery_classification.py follow-on node",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": "206",
+      "severity": "non-blocking",
+      "text": "The resolved-admission-refusal case records only a stale failure string and never creates an answered finding; it passes at the unchanged base, so it cannot prove the promised current-hold transition."
+    },
+    {
+      "disposition": "folded",
+      "disposition_target": "the section's recovery_classification.py follow-on node",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": "229",
+      "severity": "non-blocking",
+      "text": "The admission-held fixture has no foreign run or refusal, so excluding r-answered is vacuous; requiring the own ID at :228 would still pass if a command also named another run."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Verified reckon/crew/station_subscriber.py:145 _review_duty_item, reckon/crew/obligation_snapshot.py:1441 _review_duty_item, reckon/crew/obligations.py:2597 _review_duty_item, reckon/crew/station_obligations.py:189 payload_for.",
+    "diff": "Read ee76b23f1af416edcb4b91602d66c5216e979795, which changes the two obligation modules and adds six tests, then 3e08d3212736626b0169dff1d4a8f16073fb6cdf, which only formats the obligation call and test imports.",
+    "done_when": "prompt.txt:131 and plan \u00a715 require six synthetic cases, a red base control and no added importer failures; node-head-final.log ends 6 passed EXIT=0, negative-control.log reproduces promotable-stale and the stale 120 s wording with 4 failed EXIT=1, and the matched importer logs each end 1 failed/70 passed on the same ID, though the queued and admission cases pass at base.",
+    "goal": "prompt.txt:38 asks that a newest open blocking review owe repair; reckon/crew/obligations.py:1670 does so for review-required tiers, but the earlier no-review-tier return at :1632 still offers promotion.",
+    "manifest": "The source manifest.md names both commits and four gate logs, but its status complete conflicts with its checkpoint, landing and blockers text saying a green importer arm remains unmet.",
+    "write_paths": "manifest.md:3 declares five paths; git diff 59c1397237285e7af8a400ec481ab4391f9c3b50..3e08d3212736626b0169dff1d4a8f16073fb6cdf changes only reckon/crew/obligations.py, reckon/crew/obligation_snapshot.py and the declared node test."
+  },
+  "justifications": {
+    "durability": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py:121-123 reddens when the ordinary open-finding branch promotes again, but no assertion drives the no-review-tier early return at reckon/crew/obligations.py:1632 and the admission test's :229 exclusion has no foreign run in its fixture.",
+    "evidence": "The negative-control.log reproduces the original promotable-stale and 120 s defects, but the two tests at tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py:206 and :229 pass on the unchanged base and do not establish the resolved-refusal or foreign-run cases.",
+    "fit": "reckon/crew/obligations.py:1670 uses the existing recovery_review_dispatch._undisposed_blocking_findings owner and the edited names carry no forbidden plan label.",
+    "goal_fidelity": "reckon/crew/obligations.py:1632 returns a promotion for a no-review-tier run before :1670 inspects its newest review's open findings.",
+    "reuse": "No production definition was added: reckon/crew/obligations.py:1670 reuses the review-disposition owner, and the local synthetic fixture follows the existing test helper pattern at tests/test_a_delivered_run_waits_for_the_reflex.py:73.",
+    "scope_discipline": "The three paths in git diff 59c1397237285e7af8a400ec481ab4391f9c3b50..3e08d3212736626b0169dff1d4a8f16073fb6cdf are all among manifest.md:3's five declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 asks that a newest open blocking review owe repair; reckon/crew/obligations.py:1670 does so for review-required tiers, but the earlier no-review-tier return at :1632 still offers promotion.\nVERDICT done_when: prompt.txt:131 and plan \u00a715 require six synthetic cases, a red base control and no added importer failures; node-head-final.log ends 6 passed EXIT=0, negative-control.log reproduces promotable-stale and the stale 120 s wording with 4 failed EXIT=1, and the matched importer logs each end 1 failed/70 passed on the same ID, though the queued and admission cases pass at base.\nVERDICT write_paths: manifest.md:3 declares five paths; git diff 59c1397237285e7af8a400ec481ab4391f9c3b50..3e08d3212736626b0169dff1d4a8f16073fb6cdf changes only reckon/crew/obligations.py, reckon/crew/obligation_snapshot.py and the declared node test.\nVERDICT manifest: The source manifest.md names both commits and four gate logs, but its status complete conflicts with its checkpoint, landing and blockers text saying a green importer arm remains unmet.\nVERDICT diff: Read ee76b23f1af416edcb4b91602d66c5216e979795, which changes the two obligation modules and adds six tests, then 3e08d3212736626b0169dff1d4a8f16073fb6cdf, which only formats the obligation call and test imports.\nCALL_SITES: reckon/crew/station_subscriber.py:145 _review_duty_item, reckon/crew/obligation_snapshot.py:1441 _review_duty_item, reckon/crew/obligations.py:2597 _review_duty_item, reckon/crew/station_obligations.py:189 payload_for\nSCORE goal_fidelity: 12\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:1632 returns a promotion for a no-review-tier run before :1670 inspects its newest review's open findings.\nSCORE evidence: 14\nJUSTIFICATION evidence: The negative-control.log reproduces the original promotable-stale and 120 s defects, but the two tests at tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py:206 and :229 pass on the unchanged base and do not establish the resolved-refusal or foreign-run cases.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The three paths in git diff 59c1397237285e7af8a400ec481ab4391f9c3b50..3e08d3212736626b0169dff1d4a8f16073fb6cdf are all among manifest.md:3's five declared write paths.\nSCORE durability: 12\nJUSTIFICATION durability: tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py:121-123 reddens when the ordinary open-finding branch promotes again, but no assertion drives the no-review-tier early return at reckon/crew/obligations.py:1632 and the admission test's :229 exclusion has no foreign run in its fixture.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/obligations.py:1670 uses the existing recovery_review_dispatch._undisposed_blocking_findings owner and the edited names carry no forbidden plan label.\nSCORE reuse: 19\nJUSTIFICATION reuse: No production definition was added: reckon/crew/obligations.py:1670 reuses the review-disposition owner, and the local synthetic fixture follows the existing test helper pattern at tests/test_a_delivered_run_waits_for_the_reflex.py:73.\nFINDING reckon/crew/obligations.py:1632 blocking: The no-review-tier branch returns a promotable row before _selected_review and _undisposed_blocking_findings run; a manually reviewed non-runtime change with an open blocking finding is still offered crew complete, violating the absolute goal.\nFINDING tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py:206 non-blocking: The resolved-admission-refusal case records only a stale failure string and never creates an answered finding; it passes at the unchanged base, so it cannot prove the promised current-hold transition.\nFINDING tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py:229 non-blocking: The admission-held fixture has no foreign run or refusal, so excluding r-answered is vacuous; requiring the own ID at :228 would still pass if a command also named another run.\n",
+  "review_run_id": "r-20261108T064348228477-review-of-an-obligation-never-offers-a-promotion-past-a-blocking-finding-3e08d3212736",
+  "reviewed_base_sha": "59c1397237285e7af8a400ec481ab4391f9c3b50",
+  "reviewed_head_sha": "3e08d3212736626b0169dff1d4a8f16073fb6cdf",
+  "reviewed_run_id": "r-20261108T055018008499-an-obligation-never-offers-a-promotion-past-a-blocking-finding",
+  "scores": {
+    "durability": 12,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 12,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T07:30:42.771923+00:00",
+  "total": 95
+}
