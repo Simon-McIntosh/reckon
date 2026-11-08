@@ -21,7 +21,7 @@ from __future__ import annotations
 import json
 import re
 import shlex
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextvars import ContextVar
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -41,7 +41,12 @@ from reckon.crew import (
     runs,
 )
 from reckon.crew import review as review_module
-from reckon.crew.node import INTERRUPTED_RUN_PHASE, CrewError, parse_duration
+from reckon.crew.node import (
+    INTERRUPTED_RUN_PHASE,
+    CrewError,
+    PlanReviewMissingError,
+    parse_duration,
+)
 from reckon.crew.query import project_run_rows, run_section_index
 from reckon.crew.recovery_classification import PRODUCER_GONE_STATUS
 from reckon.crew.recovery_review_dispatch import supersedes_head
@@ -1245,15 +1250,8 @@ def _queued_item(
     return item
 
 
-# The dispatch gate's refusal when a plan section's review is missing. The
-# admission pass stamps this class at the head of the stored failure and
-# publishes the compose command as the remedy, so a stored refusal carrying it
-# is a request waiting on a review rather than on a repair.
-PLAN_REVIEW_MISSING_REFUSAL = "PlanReviewMissingError"
-
-
 def _plan_review_this_request_awaits(
-    row: Mapping[str, Any],
+    pointer: Mapping[str, Any] | None,
     live_pointers: Iterable[Mapping[str, Any]],
     session: str,
 ) -> str:
@@ -1265,33 +1263,84 @@ def _plan_review_this_request_awaits(
     already has a review of the same plan live or queued, that review is what
     ends the refusal and the request is a wait rather than a duty.
 
-    The review's plan is read from its node id, which is the one place a
-    composed plan review records the plan it reads; its ``node.plan`` is empty.
-    A review another session composed does not clear this one's refusal, because
-    the recovery reading of a run is its own session's business.
+    The refusal is read from the class the admission pass stamps at the head of
+    the stored failure, through the reader that owns that stamp, rather than
+    from the sentence a remedy composes around it. The review's plan is read
+    from its node id, which is the one place a composed plan review records the
+    plan it reads; its ``node.plan`` is empty. A review another session composed
+    does not clear this one's refusal, because the recovery reading of a run is
+    its own session's business.
     """
-    refusal = row.get("session_refusal")
-    if not isinstance(refusal, Mapping):
+    node = (pointer or {}).get("node")
+    failure = (pointer or {}).get("failure")
+    if not failure or not isinstance(node, Mapping):
         return ""
-    detail = str(refusal.get("detail") or "")
-    if not re.search(rf"\b{PLAN_REVIEW_MISSING_REFUSAL}\b", detail):
+    stamped = recovery_classification._stamped_refusal_class(
+        queue_admission._failure_text(failure)
+    )
+    if stamped != PlanReviewMissingError.__name__:
         return ""
-    plan = str(row.get("plan") or "")
+    plan = str(node.get("plan") or "")
     if not plan:
         return ""
     target = f"{recovery.PLAN_REVIEW_NODE_PREFIX}{plan}"
-    for pointer in live_pointers:
-        if str(pointer.get("session") or "") != session:
+    for candidate in live_pointers:
+        if str(candidate.get("session") or "") != session:
             continue
-        node = pointer.get("node")
-        if not isinstance(node, Mapping):
+        composed = candidate.get("node")
+        if not isinstance(composed, Mapping):
             continue
-        if str(node.get("id") or "") != target:
+        if str(composed.get("id") or "") != target:
             continue
-        run_id = str(pointer.get("run_id") or "")
+        run_id = str(candidate.get("run_id") or "")
         if run_id:
             return run_id
     return ""
+
+
+def _queued_row_item(
+    row: Mapping[str, Any],
+    *,
+    placements: Mapping[str, Mapping[str, int]]
+    | Callable[[], Mapping[str, Mapping[str, int]]],
+    verdicts: Mapping[str, Mapping[str, Any]] | None,
+    pointer: Mapping[str, Any] | None,
+    live_pointers: Iterable[Mapping[str, Any]],
+    session: str,
+    now: datetime,
+) -> dict[str, Any]:
+    """The one reading of a queued row that both payload producers list.
+
+    A queued request is normally a wait on the lane and is built by
+    :func:`_queued_item`. Two refusals change that reading: one the session
+    must repair, which is its own duty, and a missing plan review that another
+    run is already composing, which is still a wait. Which of the three a row
+    is, is decided here and nowhere else, so the derivation and the published
+    slice cannot disagree about the same row — the snapshot is a slice of this
+    view, and a second spelling of the decision is how a slice comes to list a
+    request the view does not.
+
+    ``placements`` may be a mapping or a callable returning one, so a producer
+    that holds the ordering for a whole pass can hand it over and one that has
+    to read it per row can resolve it only for a row that needs it.
+    """
+    awaited = _plan_review_this_request_awaits(pointer, live_pointers, session)
+    if awaited:
+        ordered = placements() if callable(placements) else placements
+        return _queued_item(
+            row,
+            placements=ordered,
+            now=now,
+            verdicts=verdicts,
+            pointer=pointer,
+            awaited_review=awaited,
+        )
+    if row.get("session_refusal"):
+        return _live_item(row, kind=QUEUED_AWAITING_SESSION_DUTY_KIND, now=now)
+    ordered = placements() if callable(placements) else placements
+    return _queued_item(
+        row, placements=ordered, now=now, verdicts=verdicts, pointer=pointer
+    )
 
 
 def _published_worker_slots(session: str) -> Any:
@@ -2665,31 +2714,15 @@ def _obligations_view(
             # not the session's to fix is a missing plan review already being
             # composed: that request waits on the review, so it keeps the
             # waiting reading and names the run that ends it.
-            if row.get("session_refusal"):
-                awaited = _plan_review_this_request_awaits(row, live_pointers, session)
-                if not awaited:
-                    items.append(
-                        _live_item(row, kind=QUEUED_AWAITING_SESSION_DUTY_KIND, now=now)
-                    )
-                    continue
-                items.append(
-                    _queued_item(
-                        row,
-                        placements=placements,
-                        now=now,
-                        verdicts=verdicts,
-                        pointer=pointers.get(str(row.get("run_id") or "")),
-                        awaited_review=awaited,
-                    )
-                )
-                continue
             items.append(
-                _queued_item(
+                _queued_row_item(
                     row,
                     placements=placements,
-                    now=now,
                     verdicts=verdicts,
                     pointer=pointers.get(str(row.get("run_id") or "")),
+                    live_pointers=live_pointers,
+                    session=session,
+                    now=now,
                 )
             )
             continue
