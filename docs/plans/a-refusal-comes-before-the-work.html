@@ -25,8 +25,8 @@
   <title>A Refusal Comes Before The Work | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="4">
-<meta name="plan-modified" content="2026-11-07">
+<meta name="plan-version" content="5">
+<meta name="plan-modified" content="2026-11-08">
 </head>
 <body>
   <main class="plan-doc">
@@ -72,11 +72,14 @@
 <div class="r-comment" data-section="s2" data-id="c-s2-live-batch-refusal" data-who="coordinator" data-when="2026-11-07T06:15:00Z">
     <div class="r-comment-body"><p>Measured live on 2026-11-07. A batch of three entries for a-broken-wait-reaches-its-coordinator was stored with <code>"ok": true, "queued": 3, "refused": 0</code>. The admit pass then refused the first at launch: <code>node is not dispatchable — bounded: budget 2h exceeds the resolved fence 60m; spec-level: no specification level is declared</code>. The other two carried the same defects. All three were discarded and dispatched again with <code>time_budget</code> 60m and <code>spec_level</code> exact. Both properties are ones <code>validate_node</code> reports, so this is the case §2's first and sixth bullets measure.</p></div>
 </div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261108T101747832098-review-of-judge-every-node-contract-refusal-in-validate-node-eb0227ebf15f" data-who="reckon-build" data-when="2026-11-08T10:37:42.649Z">
+    <div class="r-comment-body"><p>Independent review of r-20261108T033423106514-judge-every-node-contract-refusal-in-validate-node at head eb0227ebf15f against base 0cf9dc522c: the two refusals and the execution override do move into validate_node and all three callers pass them, but four of the five negative controls the measure names were never run, and queue_edit._contract_findings drops the recorded execution override so an override-flagged queued request can no longer be edited. Two blocking findings; scores goal_fidelity 15, evidence 12, scope_discipline 20, durability 14, fit 18, reuse 20.</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261107T130851534020-review-of-name-every-missing-field-in-an-edit-refusal-b524a1bb203c" data-who="reckon-build" data-when="2026-11-07T13:37:03.632Z">
     <div class="r-comment-body"><p>reviewed run r-20261107T123156939520-name-every-missing-field-in-an-edit-refusal at base 708748fd78ed913a2eef8eed3fc2ebc9e87042b2 and head b524a1bb203c15ae7935bdbac6390ac896b81a6a — goal met, scores goal_fidelity 19, evidence 19, scope_discipline 20, durability 18, fit 19, reuse 19, 0 added failure ids, 2 non-blocking findings (the close guard's red arm is not demonstrated by the declared negative control; the evidence fragment's opening sentence overstates the append change), record stored under review-records/ at both declared paths</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261107T123156939520-name-every-missing-field-in-an-edit-refusal" data-who="reckon-build" data-when="2026-11-07T13:01:25.818Z">
-    <div class="r-comment-body"><p>s4 — append_evidence now reports its missing plan, anchor, title and body (and both slug-format failures) in one OpError, close reports status, outcome and by together, and a single-problem call keeps today&#x27;s exact message; base arm 3 failed / 1 passed at 708748fd78, head arm 4 passed at 94fbb3cd48.</p></div>
+    <div class="r-comment-body"><p>s4 — append_evidence now reports its missing plan, anchor, title and body (and both slug-format failures) in one OpError, close reports status, outcome and by together, and a single-problem call keeps today's exact message; base arm 3 failed / 1 passed at 708748fd78, head arm 4 passed at 94fbb3cd48.</p></div>
 </div>
 </section>
 </main>
