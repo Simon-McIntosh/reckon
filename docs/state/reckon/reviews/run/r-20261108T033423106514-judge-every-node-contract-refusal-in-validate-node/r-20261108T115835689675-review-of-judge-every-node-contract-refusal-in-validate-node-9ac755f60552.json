@@ -1,0 +1,77 @@
+{
+  "added_failure_base_revision": "eb0227ebf15f16c3f2e4ac62921bdfd550066faa",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own arms: baseline_suite (gate-base.log, eb0227eb, completed) records failure_ids ['test_an_edit_keeps_the_overridden_requests_measure'], after_suite (gate-head.log, 707977133e, completed) records none, so no failing id at head is absent from base and the added count is zero.",
+  "assertion_analysis": [
+    {
+      "condition_to_fail": "queue_edit._contract_findings stops passing the recorded override to validate_node, so an execution-fit finding appears for a request stored with --allow-execution-mismatch and the filtered list is non-empty; gate-base.log demonstrates exactly this at eb0227eb with the repaired test present.",
+      "file": "tests/test_every_path_meets_the_node_contract.py",
+      "line": "438"
+    },
+    {
+      "condition_to_fail": "the execution-fit refusal is dropped rather than overridden \u2014 validate_node stops reporting the mismatch when no override is recorded \u2014 and the control request's findings list comes back empty.",
+      "file": "tests/test_every_path_meets_the_node_contract.py",
+      "line": "455"
+    }
+  ],
+  "base_log_revision": "eb0227ebf15f16c3f2e4ac62921bdfd550066faa",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/queue_edit.py:387 (queue_edit.edit, reached by the crew queue edit command)",
+    "reckon/crew/dispatch.py:255 (_queued_request_record writes dispatch_options onto the queued pointer)",
+    "reckon/crew_dispatch_commands.py:2204 (the CLI dispatch stores every click parameter, including allow_execution_mismatch, into dispatch_options)",
+    "reckon/crew/queue_admission.py:405 (launch-side reader of the same option, the shape queue_edit now mirrors)",
+    "reckon/crew/node.py:1280 (validate_node forwards override to assess_execution_fit)"
+  ],
+  "completed_at": "2026-11-08T12:24:28.363Z",
+  "dispatched_at": "2026-11-08T12:12:15Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_edit.py",
+      "line": "203",
+      "severity": "non-blocking",
+      "text": "non-blocking: the third fallback, (record.get('execution_fit') or {}).get('override'), cannot be reached \u2014 queue_edit only edits pointers whose phase is in WAITING_PHASES (reckon/crew/queue_edit.py:47, checked at :70), and no waiting-phase record carries execution_fit, which is written only onto a launched run \u2014 so one of the three shapes is untested dead code beside the two live ones."
+    }
+  ],
+  "head_log_revision": "707977133ee22732c8b0a4ab72f3ae74dc6f796e",
+  "item_verdicts": {
+    "call_sites": "see the CALL_SITES line",
+    "diff": "Read both commits against eb0227eb: 707977133e adds the override argument to _contract_findings' validate_node call plus two tests (tests/test_every_path_meets_the_node_contract.py:421-459); 9ac755f605 adds two <h3> sections to the evidence fragment. No other file changes, no deletions.",
+    "done_when": "The plan s2 Done when's seven cases and five negative controls are all evidenced in this run's own logs: gate-head.log at revision 707977133e records '11 passed' with EXIT=0, gate-base.log at eb0227eb with the repaired test present records '1 failed, 10 passed' EXIT=1, and negative-control.log carries five mutation sections each ending '1 failed' and naming the case it reddens.",
+    "goal": "The delta's goal is to answer the two blocking findings of the previous review of this run; reckon/crew/queue_edit.py:195-207 now passes override= to validate_node, reading dispatch_options.execution_override, dispatch_options.allow_execution_mismatch and execution_fit.override, and the five negative controls the plan section's Done when names are recorded in negative-control.log, so both findings are answered.",
+    "manifest": "Read; it records status complete, four commits, both suite arms with their revisions and log paths, five per-mutation negative-control logs, ruff (checked here, clean on both changed source files), and an outside_scope entry for tests/test_execution_fit.py::test_execution_measure_requires_a_capable_role_or_recorded_override.",
+    "write_paths": "The run's fence granted the node's six paths; the diff eb0227eb..9ac755f6 touches exactly three of them \u2014 reckon/crew/queue_edit.py, tests/test_every_path_meets_the_node_contract.py and docs/evidence/fragments/a-refusal-comes-before-the-work/judge-every-node-contract-refusal-in-validate-node.html \u2014 with 93 insertions and no deletions."
+  },
+  "justifications": {
+    "durability": "tests/test_every_path_meets_the_node_contract.py:438 fails at eb0227eb per gate-base.log (the assertion is the one that reddened), so removing the override forwarding reinstates the regression and reddens the guard; :455 guards the opposite direction, that the execution-fit refusal is not simply deleted. The residual gap is that only the allow_execution_mismatch shape is exercised, not the execution_override or execution_fit branches at queue_edit.py:201 and :203.",
+    "evidence": "gate-head.log (707977133e) ends '11 passed' EXIT=0 and gate-base.log (eb0227eb, repaired test copied in) ends '1 failed, 10 passed' EXIT=1, with negative-control.log carrying five mutations each '1 failed'; the only deduction is that the head arm was measured at 707977133e rather than the reviewed head 9ac755f6, disclosed in the manifest and harmless because the later commit touches only the evidence fragment (git diff --stat shows 19 lines there and nothing else).",
+    "fit": "reckon/crew/queue_edit.py:191-194 states the mechanism in the module's own comment idiom with no plan, issue or version label, and the two head files pass 'ruff check' and 'ruff format --check' under the repository config with no findings.",
+    "goal_fidelity": "reckon/crew/queue_edit.py:200-204 forwards the recorded override, and reckon/crew_dispatch_commands.py:2204 proves the queued pointer really carries allow_execution_mismatch in dispatch_options, so the previous review's 'override not forwarded' blocking finding is answered on the production shape and not only on the test's shape.",
+    "reuse": "reckon/crew/queue_edit.py:195 passes the existing node.validate_node argument rather than adding a wrapper, and node.py:1280 forwards it to the existing assess_execution_fit; the only new production text is a key read that mirrors the existing inline reader at reckon/crew/queue_admission.py:405, where no owner function exists to extend.",
+    "scope_discipline": "git diff --stat eb0227eb 9ac755f6 lists exactly the three declared write paths, with no deletions and no file outside the grant."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the delta answers the previous review's two blocking findings; reckon/crew/queue_edit.py:195-207 now passes override= to validate_node and negative-control.log records the five mutations, so both are closed.\nVERDICT done_when: gate-head.log (707977133e) ends '11 passed' EXIT=0, gate-base.log (eb0227eb) ends '1 failed, 10 passed' EXIT=1, and negative-control.log carries five mutations each '1 failed', so the plan s2 seven cases and five negative controls are all evidenced.\nVERDICT write_paths: git diff --stat eb0227eb 9ac755f6 lists exactly reckon/crew/queue_edit.py, tests/test_every_path_meets_the_node_contract.py and the evidence fragment, all declared write paths, with no deletions.\nVERDICT manifest: read; status complete, four commits, both arms with revisions and log paths, five negative-control logs, ruff verified clean here, and one outside_scope entry.\nVERDICT diff: read commit by commit; 707977133e adds the override argument and two tests at tests/test_every_path_meets_the_node_contract.py:421-459, 9ac755f6 adds two evidence-fragment sections, nothing else.\nCALL_SITES: reckon/crew/queue_edit.py:387, reckon/crew/dispatch.py:255, reckon/crew_dispatch_commands.py:2204, reckon/crew/queue_admission.py:405, reckon/crew/node.py:1280\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_edit.py:200-204 forwards the recorded override and reckon/crew_dispatch_commands.py:2204 proves the queued pointer carries allow_execution_mismatch, so the fix holds on the production shape.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-head.log records 11 passed EXIT=0 and gate-base.log 1 failed EXIT=1 with five per-mutation logs; the head arm was measured at 707977133e rather than 9ac755f6, disclosed and touching only the fragment.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat eb0227eb 9ac755f6 lists exactly the three declared write paths with 93 insertions and no deletions.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_every_path_meets_the_node_contract.py:438 reddens at eb0227eb per gate-base.log, so reinstating the regression fails the guard; only the allow_execution_mismatch shape of queue_edit.py:201-203 is exercised.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/queue_edit.py:191-194 states the mechanism without any plan or issue label and both head files pass ruff check and ruff format --check.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/queue_edit.py:195 reuses the existing validate_node override argument and node.py:1280 its assess_execution_fit call, mirroring the inline reader at reckon/crew/queue_admission.py:405 where no owner exists.\nFINDING reckon/crew/queue_edit.py:203 non-blocking: the execution_fit.override fallback is unreachable for a waiting-phase pointer, so one of the three shapes is untested dead code.",
+  "review_run_id": "r-20261108T115835689675-review-of-judge-every-node-contract-refusal-in-validate-node-9ac755f60552",
+  "reviewed_base_sha": "eb0227ebf15f16c3f2e4ac62921bdfd550066faa",
+  "reviewed_commits": [
+    "707977133ee22732c8b0a4ab72f3ae74dc6f796e",
+    "9ac755f605525555220f175b7253420156eefa5e"
+  ],
+  "reviewed_head_sha": "9ac755f605525555220f175b7253420156eefa5e",
+  "reviewed_run_id": "r-20261108T033423106514-judge-every-node-contract-refusal-in-validate-node",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T12:30:00Z",
+  "total": 113
+}
