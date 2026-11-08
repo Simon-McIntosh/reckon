@@ -60,8 +60,11 @@ BATCH_ENTRY_FIELDS = frozenset(
 #: path when it names a directory (`src/payload.py`) or carries a source-file
 #: extension (`.py`, `.md`). Prose abbreviations such as ``e.g`` and version
 #: tags such as ``v1.2`` carry neither, so a sentence that names a file only by
-#: description ("the new test") yields no path for it.
-_PATH_TOKEN = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_./-]*")
+#: description ("the new test") yields no path for it. The optional leading
+#: slash keeps an absolute path absolute: a sentence naming a file outside the
+#: repository must derive that file's whole path, since a leading slash dropped
+#: turns it into a repository-relative path that resolves nowhere.
+_PATH_TOKEN = re.compile(r"/?[A-Za-z0-9_][A-Za-z0-9_./-]*")
 _SOURCE_EXTENSIONS = frozenset(
     {
         ".py",
@@ -300,7 +303,12 @@ class _PlanRead:
             sentence = sentence[: stop.start()]
         found: list[str] = []
         for token in _PATH_TOKEN.findall(sentence):
-            candidate = token.strip("./-")
+            # A leading ``./`` is a relative prefix and goes; a leading ``/`` is
+            # the path's own root and stays.
+            trimmed = token
+            while trimmed.startswith("./"):
+                trimmed = trimmed[2:]
+            candidate = trimmed.lstrip(".-").rstrip("./-")
             if not candidate:
                 continue
             if "/" not in candidate and (
@@ -309,6 +317,17 @@ class _PlanRead:
                 continue
             if candidate not in found:
                 found.append(candidate)
+        for candidate in found:
+            if Path(candidate).is_absolute():
+                continue
+            resolved = self.repo_root / candidate
+            if resolved.exists() or resolved.parent.is_dir():
+                continue
+            raise BatchEntryRefusedError(
+                f"{self.project}:{self.plan}#{section}: derived write path "
+                f"{candidate} is neither present under {self.repo_root} nor in a "
+                f"present directory, from the sentence: {sentence.strip()}"
+            )
         return found
 
     def section_record(self, section: str) -> Mapping[str, Any]:
