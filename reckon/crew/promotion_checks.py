@@ -1793,8 +1793,15 @@ def _require_brief_owner(
     role = str(record.get("role") or "")
     if role not in EXECUTABLE_SECTION_ROLES:
         return None
-    link = str(plan_link).strip()
-    reason = str(unplanned_reason).strip()
+    # A flag given here is an operator correcting the link at landing, so it
+    # wins; otherwise the discharge is the one the dispatch recorded, which is
+    # the whole point of recording it — the run a coordinator dispatched with a
+    # plan link lands without being asked twice for the same value.
+    link = str(plan_link).strip() or str(record.get("plan_link") or "").strip()
+    reason = (
+        str(unplanned_reason).strip()
+        or str(record.get("unplanned_reason") or "").strip()
+    )
     if link or reason:
         return {"plan_link": link, "unplanned_reason": reason}
     raise CrewError(

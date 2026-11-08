@@ -2909,6 +2909,14 @@ def dispatch(
             "due": due,
             "urgency": urgency,
             "brief": brief,
+            # The owner a brief implementing run named when it was dispatched.
+            # Landing refuses to promote such a run without one of the two
+            # discharges, so the value chosen at dispatch is carried onto the
+            # pointer promotion reads rather than asked for again after the
+            # work is done. A run that needed neither records the empty value
+            # the dispatch was given, and landing falls back to its own flags.
+            "plan_link": dispatch_options.get("plan_link"),
+            "unplanned_reason": dispatch_options.get("unplanned_reason"),
             "role": node.role,
             "backend": backend_name,
             # The lane and model key the resolved backend serves, written beside

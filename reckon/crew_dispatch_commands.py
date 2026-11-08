@@ -1156,6 +1156,26 @@ def _queue_dispatch_batch(
 @click.option("--project", required=False, help="Project owning the plan.")
 @click.option("--plan", "plan_slug", default="", help="Plan slug the node serves.")
 @click.option(
+    "--plan-link",
+    default="",
+    metavar="SLUG",
+    help=(
+        "Name the plan whose product a brief implement- or test-role run "
+        "changes. Required for such a dispatch unless --unplanned-reason is "
+        "given, and recorded on the run so landing needs no flag of its own."
+    ),
+)
+@click.option(
+    "--unplanned-reason",
+    default="",
+    metavar="TEXT",
+    help=(
+        "State why a brief implement- or test-role run changes no plan. "
+        "Required for such a dispatch unless --plan-link is given, and recorded "
+        "on the run so landing needs no flag of its own."
+    ),
+)
+@click.option(
     "--brief",
     "brief_path",
     default="",
@@ -1468,6 +1488,8 @@ def crew_dispatch(
     batch_path,
     project,
     plan_slug,
+    plan_link,
+    unplanned_reason,
     brief_path,
     section,
     after_requests,
@@ -1560,7 +1582,7 @@ def crew_dispatch(
         TmpHeadroomError,
         resolve_dispatch_route,
     )
-    from reckon.crew.node import PlanReviewMissingError
+    from reckon.crew.node import PlanReviewMissingError, brief_plan_owner_finding
 
     base_config = None
     try:
@@ -1842,6 +1864,33 @@ def crew_dispatch(
             refusal = _with_resolved_overrides(refusal, override_resolution)
         _emit(refusal, pretty)
         raise click.exceptions.Exit(5)
+
+    brief_owner_finding = brief_plan_owner_finding(
+        node, plan_link=plan_link, unplanned_reason=unplanned_reason
+    )
+    if brief_owner_finding is not None:
+        # Asked here, above the pair split, so a paired dispatch, the live call
+        # and the preview all reach the same refusal before any of them
+        # resolves a request. The two flags are the landing discharge's own, so
+        # a coordinator answering this refusal at dispatch is answering the one
+        # it would otherwise meet after the work is done.
+        validation = crew_module.NodeValidation(
+            ok=False, findings=[brief_owner_finding]
+        )
+        detail = _validation_detail(validation)
+        refusal = {
+            "ok": False,
+            "error": "contract-validation" if dry_run else "not-dispatchable",
+            "detail": detail,
+            **validation.as_dict(),
+        }
+        if dry_run:
+            refusal["dry_run"] = True
+            refusal = _with_resolved_overrides(refusal, override_resolution)
+        _emit(refusal, pretty)
+        if not dry_run:
+            click.echo(f"Error: {detail}", err=True)
+        raise click.exceptions.Exit(2)
 
     if pair_backend:
         # A paired dispatch is one request resolving into two arms, so it never

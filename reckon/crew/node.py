@@ -9,6 +9,7 @@ from typing import Any
 
 from reckon import capability, ledger
 from reckon.crew.refusals import format_refusal
+from reckon.evidence import EXECUTABLE_SECTION_ROLES
 
 # The eight properties of the task-definition contract, in the order a reader of
 # the plan meets them. Order is part of the contract: a node that is not scoped
@@ -1183,6 +1184,54 @@ def gate_population_finding(
             + ("that pattern" if len(missing) == 1 else "those patterns")
             + "; name a population the repository has, or add the path to the "
             "node's write paths when this node creates it"
+        ),
+    }
+
+
+# ── A brief run names the plan whose product it changes ─────────────────────
+
+# The finding name for a brief implementing dispatch that names no owner. This
+# judges the call a coordinator made rather than a property of the node, so it
+# is composed here beside the other findings but is not one of the contract
+# properties and is called by the dispatch entry alone: the production callers
+# that re-dispatch, re-resolve or re-lane an existing run have no owner left to
+# choose, and must neither refuse it nor invent a value for it.
+BRIEF_PLAN_OWNER_FIELD = "brief-plan-owner"
+
+
+def brief_plan_owner_finding(
+    node: TaskNode,
+    *,
+    plan_link: str = "",
+    unplanned_reason: str = "",
+) -> dict[str, str] | None:
+    """Compose the dispatch refusal for a brief run that names no plan owner.
+
+    A brief implementing run has no plan section to move, so nothing joins its
+    product change to a plan unless the dispatch says so. Landing refuses to
+    promote one without either a plan link or an unplanned reason, and meeting
+    that refusal after the work is done costs the coordinator the whole node,
+    so the same two flags are asked for at the call that dispatches it. A plan
+    run and a non-executable role name their owner elsewhere; a brief beside a
+    plan section is briefed plan work, and the plan it names is its owner. None
+    of them needs either flag.
+    """
+    if not str(node.brief or "").strip():
+        return None
+    if str(node.plan or "").strip():
+        return None
+    role = str(node.role or "").strip()
+    if role not in EXECUTABLE_SECTION_ROLES:
+        return None
+    if str(plan_link).strip() or str(unplanned_reason).strip():
+        return None
+    return {
+        "property": BRIEF_PLAN_OWNER_FIELD,
+        "detail": (
+            f"this {role}-role brief dispatch names neither a plan link nor an "
+            "unplanned reason; pass --plan-link <slug> naming the plan whose "
+            "product it changes, or --unplanned-reason <text> stating why it "
+            "changes no plan"
         ),
     }
 
