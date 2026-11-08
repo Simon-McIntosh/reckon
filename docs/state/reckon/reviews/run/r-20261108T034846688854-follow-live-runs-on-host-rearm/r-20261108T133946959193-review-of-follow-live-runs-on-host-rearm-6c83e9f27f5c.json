@@ -1,0 +1,49 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T14:06:30.707Z",
+  "dispatched_at": "2026-11-08T13:43:55Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/follow-live-runs-on-host-rearm.html",
+      "line": 134,
+      "severity": "blocking",
+      "text": "The fragment states that test_failed_reexec_reports_once_and_keeps_the_registration 'fails identically with the parent revision's station_subscriber.py restored' and is therefore pre-existing. No arm demonstrating that is recorded anywhere in the run directory: station-tests.log (whose header names bae7b6ab with 'working tree carries the moved judgement', not the landed head) carries one arm only, and it fails. Two controls the reviewer ran contradict the attribution. The same seven-file command run in a scratch extraction of the node's own dispatch base e5179a465f, at e5179a465f with PYTHONPATH at that tree, gives '60 passed in 83.16s' EXIT=0; the same command at the reviewer's worktree head 5aeae11b4c, which does not contain any commit of this run, gives '60 passed in 136.43s'. The failure therefore exists only inside this run's lineage, and the coordinator's instruction that the station and follower tests importing station_subscriber 'must add no failure' is not met. Logs: /tmp/reckon-crew-scratch/r-20261108T133946959193-review-of-follow-live-runs-on-host-rearm-6c83e9f27f5c/station-combo-base.log and station-combo-main.log."
+    },
+    {
+      "file": "reckon/crew/session_host.py",
+      "line": 362,
+      "severity": "non-blocking",
+      "text": "live_work_run asks population_has_live_work (which sets launch records aside) and then hands the UNFILTERED pointers to _naming_run. Because launch-failed is not in node._TERMINAL_RUN_PHASES, _naming_run's first branch ('phase not in _TERMINAL_RUN_PHASES' => return run_id) treats a launch record as in-flight work, so when a pair holds both a launch-failed pointer and a working run the census field rearmed_for (session_host.py:766) can name the queue placement as the run that brought the pair back. Before commit 480a03a2 the local filter in live_work_run removed that pointer before naming, so this delta introduced the path; it contradicts the rule the same commit establishes that a launch record is 'not work a pane could show'. The follower decision is unaffected, only the recorded name is wrong, and no test covers a pair holding both pointers."
+    },
+    {
+      "file": "reckon/crew/session_host.py",
+      "line": 617,
+      "severity": "non-blocking",
+      "text": "The _live_projects docstring still says 'A launch-failed pointer is the one exclusion' and explains an exclusion the function does not perform and, after 480a03a2, one that no longer exists anywhere in this module. Commit 480a03a2's stated purpose was that the rule be stated once and that 'the docstrings follow'; the module now contradicts the shared rule at the one place a reader looks to find it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T034846688854-follow-live-runs-on-host-rearm/manifest.md",
+      "line": 33,
+      "severity": "non-blocking",
+      "text": "outside_scope and rubric.scope_discipline (line 37, 'five staged paths ... a shared-rule defect in another node's file is recorded under outside_scope rather than fixed there') still describe the round-two stance that the shared rule was deliberately not changed. Commit 480a03a2 changes reckon/crew/station_subscriber.py, which the coordinator granted in resume-2-advice.txt; the record was not updated to say so, so a reader comparing the manifest to the diff finds the manifest denying the change it carries."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261108T133946959193-review-of-follow-live-runs-on-host-rearm-6c83e9f27f5c",
+  "reviewed_base_sha": "bae7b6ab8db87dd75a00744cd097b51d7885d04b",
+  "reviewed_head_sha": "6c83e9f27f5c58d9cefb2090ea3ea192e35dcb55",
+  "reviewed_run_id": "r-20261108T034846688854-follow-live-runs-on-host-rearm",
+  "scores": {
+    "durability": 17,
+    "evidence": 10,
+    "fit": 15,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T14:26:11.372319+00:00",
+  "total": 98
+}

@@ -1,0 +1,131 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T13:29:22.310Z",
+  "dispatched_at": "2026-11-08T13:17:04Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-costs-what-changed.html:109",
+      "id": "reasoning-1",
+      "reason": "the write sites and the write-path list must name `review_records.store_committed_review` (or its promotion caller) and `record_response`, or the index is stale by construction on the only store it indexes.",
+      "text": "the section hooks the wrong writers: `store_code_review` (`plan_review.py:5389`) writes `code_review_path(...)`, a `code-<neighbourhood>.json` in the crew-home store; `store_plan_review` (`:719`) writes through `_target_path(...)`, the same staging root; `store_portfolio_review` (`:6127`) likewise. None of the three writes the committed reviews tree the index covers \u2014 that tree is written at promotion through `store_committed_review` (`reckon/crew/review_records.py:168`, called from `reckon/crew/promotion.py:1809`) and rewritten in place by `record_response` (`plan_review.py:2338-2348`), and `review_records.py` and `promotion.py` are not in the section's write paths \u2014 so a worker building it as written adds index updates that never fire for the records a dispatch reads, and the whole saving falls back to the mismatch rebuild the section exists to remove",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-costs-what-changed.html:109",
+      "id": "reasoning-2",
+      "reason": "the section must name the index's path and add its writer to the write paths, and must say whether it covers the code-review store too, or the worker has to invent both.",
+      "text": "one index is placed \"beside the committed review store\" while its named updaters write a second store: committed plan-review records live in the tracked tree `docs/state/<project>/reviews/plan/<slug>/*.json` (1,995 files in 126 plan directories on this checkout, all in `git ls-files`), where a mutable index is untracked dirt in the shared checkout and in every worker worktree and readable by any broad `git add docs/\u2026`, whereas the project's existing persisted store index for the sibling store is node-local by construction (`review_records._index_cache_path` \u2192 `node_local_cache_dir(directory.name)`, `review_records.py:1040-1048`); and the code-review half of `findings_by_path` reads yet another root, the crew home, through `list_code_reviews` (`findings.py:399-410`), which no index beside the committed store can cover",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-costs-what-changed.html:109",
+      "id": "done_when-1",
+      "reason": "without a case that answers a finding on an indexed record and reads again, the section's own bar can pass while its most consequential stale-read path is unguarded, and the fix (validity per file stat identity, not per directory) belongs in the deliverable.",
+      "text": "the three cases and their control never cover an in-place rewrite of a record the index already holds: a committed record is rewritten in place, keeping its name and inode, whenever a finding is answered (`plan_review.record_response`, `plan_review.py:2338-2348`; the checkout currently shows ten such records modified), and `_open_findings_for` filters rows on `row.get(\"disposition\") == \"open\"` (`plan_review.py:5129-5135`), so rows served from a stale entry would report an answered finding as open to the next dispatch",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "244734161c36b17df7ee892ca7c1b1223267bd85",
+  "plan_fingerprint": "8e74d66bd0e52dd83165ec8fd284c38ee5b9434511c835983438625be6d6af45",
+  "plan_slug": "a-read-costs-what-changed",
+  "plan_version": 50,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "c88f4f59375df1e80e71fb09a6632392734e2cc0",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a714 now names store_committed_review (called at promotion) and record_response as the committed-tree writers, with review_records.py in its write paths",
+      "reason": "",
+      "when": "2026-11-08T14:17:41.950209+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "c88f4f59375df1e80e71fb09a6632392734e2cc0",
+      "commit_basis": "edit",
+      "finding": "reasoning-2",
+      "note": "\u00a714 keeps the index in review_records' node-local cache (node_local_cache_dir, _index_cache_path), never in the tracked tree, and covers both the committed tree and the crew-home code-review store",
+      "reason": "",
+      "when": "2026-11-08T14:17:54.427369+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "c88f4f59375df1e80e71fb09a6632392734e2cc0",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a714 adds a case: answering a finding through record_response and reading again returns it answered; validity is per record stat identity",
+      "reason": "",
+      "when": "2026-11-08T14:18:04.862727+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "c88f4f59375df1e80e71fb09a6632392734e2cc0",
+      "commit_basis": "edit",
+      "note": "\u00a714 adds a case: answering a finding through record_response and reading again returns it answered; validity is per record stat identity",
+      "reason": "",
+      "when": "2026-11-08T14:18:04.862727+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "c88f4f59375df1e80e71fb09a6632392734e2cc0",
+      "commit_basis": "edit",
+      "note": "\u00a714 now names store_committed_review (called at promotion) and record_response as the committed-tree writers, with review_records.py in its write paths",
+      "reason": "",
+      "when": "2026-11-08T14:17:41.950209+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "c88f4f59375df1e80e71fb09a6632392734e2cc0",
+      "commit_basis": "edit",
+      "note": "\u00a714 keeps the index in review_records' node-local cache (node_local_cache_dir, _index_cache_path), never in the tracked tree, and covers both the committed tree and the crew-home code-review store",
+      "reason": "",
+      "when": "2026-11-08T14:17:54.427369+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-read-costs-what-changed/r-20261108T130813719418-plan-review-of-a-read-costs-what-changed.json",
+  "review_run_id": "r-20261108T130813719418-plan-review-of-a-read-costs-what-changed",
+  "reviewed_blob_sha": "a5d13352c35d0f54aa97dbe91825b16915e16d48",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `findings.findings_by_path` (`reckon/crew/findings.py:483`), `reckon/file_memo.py`, `store_code_review` (`plan_review.py:5389`), `store_plan_review` (`:719`), `store_portfolio_review` (`:6127`) and `recovery_review_subject.py` near line 836 (the design-rubric gate at `:831-839`, whose `current_week_interface_counts` has no other production caller, `grep` over `reckon/` and `tests/` returning only `recovery_review_subject.py:839`) all resolve.",
+    "done_when": "a finding \u2014 the three cases never rewrite an indexed record in place, which is how an already-stored finding is answered (`record_response`, `reckon/crew/plan_review.py:2338-2348`), so the stale-row defect cannot be caught by the declared cases or their control.",
+    "evidence_paths": "pass \u2014 every timing and the load average are declared under the run's `logs/`, and the live-store control is a named figure, so both land on a path a later reader can open.",
+    "naming": "pass \u2014 the new test and the index are named by mechanism, and no plan label, stage name or ticket number reaches them.",
+    "reasoning": "a finding \u2014 the section indexes the committed review tree (`_indexed_rows` walks `_review.committed_review_root`, `findings.py:455`) but names as its updaters three sites that write the crew-home staging store, and leaves the tree's real writers out of its write paths.",
+    "single_goal": "pass \u2014 one deliverable, the on-disk findings index; the preceding timing is the measurement the deliverable rests on, not a second change, and the interface week count is now explicitly out of it.",
+    "wiring": "pass \u2014 \u00a714 needs no `plan-section-depends-on` entry because \u00a711, the index it extends, is already `done`, and no relationship in the plan points at \u00a714."
+  },
+  "section_digests": {
+    "_document": "090f283a2adb21268293f3f9f36bccafc5b05deb95642975aaeab367e4fd63f2",
+    "s1": "f8fb0fbbfbbc79977a59ec9d78c0d66f47803aa96db83e4d628a1dfb6b40e6c3",
+    "s10": "68fc6d75acf0741225ab448369611e4eda9f862b50d7907857c1abb24b4138e4",
+    "s11": "2a249381081ebbf2d99b7f9da3b09b1d3b87c6ada44952d6b665283e27021c40",
+    "s12": "c6c234ba14598d6a537e09000d8f5d406295ad40c3c124db34cb1b84868bb22e",
+    "s13": "5ad3b5418d98e6b0afe0d6762c6e34b89b31509e7e0c346c4b5757fc5f9bc443",
+    "s14": "d661d629231631d2c6ce999c66d00078f191818c9dd0293fc3d5ae2a77ce2375",
+    "s2": "7de6c2e256fca5545163c6149c674fea249ddd1a72361b49c89ef5beaa22263d",
+    "s3": "d11cdceab942c4935f32d292e26f2111b011ca4571980a6c54ef6ae23894aadb",
+    "s4": "d14b5fa9a6b6ef26da6f95b50c43aa782fdbe679ca28020a3095af71cd579417",
+    "s5": "ba22eff9814ea16ac19404864f9a2d1ec8da449b3011fba623d0d1856b2c6ecf",
+    "s6": "b0053663cc25e5e7e15595ae342d21c4c467abe74f06c8c4db86982b276898cc",
+    "s7": "2c7c6fb207a002d2bb1e223ebf1f770570f6b06942edf9ac6647253b410a67b7",
+    "s8": "9a012c065cbd8db9e5e69070d20531b84a584582cc0bf8f45fff060b7f31f464",
+    "s9": "1404fbf63401ab3bd4204175d16adb89094eaa1f1b25160e73fd2bb9c625d0b1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T13:52:18.054447+00:00",
+  "total": null
+}

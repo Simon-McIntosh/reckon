@@ -1,6 +1,7 @@
 # ruff: noqa: I001, PLC0414
 from __future__ import annotations
 import fcntl as fcntl
+import fnmatch as fnmatch
 import hashlib as hashlib
 import inspect as inspect
 import json as json
@@ -23,7 +24,7 @@ from contextlib import contextmanager as contextmanager, suppress as suppress
 from dataclasses import dataclass as dataclass, field as field
 from datetime import UTC as UTC, datetime as datetime, timedelta as timedelta
 from pathlib import Path as Path
-from typing import Any as Any
+from typing import Any as Any, Self as Self
 from reckon import __version__ as __version__
 from reckon._store import (
     _config_home as _config_home,
@@ -1539,16 +1540,67 @@ def _project_derivations(project: str, repo: Path) -> dict[str, list[str]]:
 SHARED_WRITE_PATHS_FILENAME = "shared-write-paths.json"
 
 
-def _shared_write_paths(project: str | None, repo: Path) -> frozenset[str]:
-    """Return the files this project declares safe for concurrent live claims.
+class _SharedWritePaths(frozenset[str]):
+    """Exact shared files plus file membership under declared repository roots."""
 
-    A project may list repository-relative files in
-    ``docs/state/<project>/shared-write-paths.json`` whose concurrent editors
-    work in different functions often enough that refusing the second claimant
-    costs more than it protects. Each entry names one file and why it is
-    shareable. Only the named file is shareable: a directory that merely
-    contains it stays exclusive. An absent, unreadable or malformed list
-    declares nothing, so the refusal is a whole-file refusal as before.
+    def __new__(
+        cls,
+        paths: Iterable[str],
+        *,
+        repo: Path,
+        roots: Iterable[str] = (),
+        exclusive_patterns: Iterable[str] = (),
+    ) -> Self:
+        policy = super().__new__(cls, paths)
+        policy.repo = repo
+        policy.roots = tuple(roots)
+        policy.exclusive_patterns = tuple(exclusive_patterns)
+        return policy
+
+    def exclusive_pattern(self, path: str) -> str:
+        """The declared pattern that keeps this repository-relative path exclusive."""
+        for pattern in self.exclusive_patterns:
+            if (
+                pattern.endswith("/") and _scope_contains(pattern.rstrip("/"), path)
+            ) or fnmatch.fnmatchcase(path, pattern):
+                return pattern
+        return ""
+
+    def __contains__(self, path: object) -> bool:
+        if not isinstance(path, str):
+            return False
+        normalized = _repository_relative_scope(path, self.repo)
+        if normalized is None or self.exclusive_pattern(normalized):
+            return False
+        absolute = self.repo / normalized
+        if absolute.is_dir():
+            return False
+        if super().__contains__(normalized):
+            return True
+        if not any(_scope_contains(root, normalized) for root in self.roots):
+            return False
+        # An absent suffixless path names a directory, matching dispatch's
+        # directory-claim interpretation; existing extensionless files are files.
+        return absolute.is_file() or (
+            not absolute.exists()
+            and any(character.isalpha() for character in absolute.suffix)
+        )
+
+
+def _exclusive_write_pattern(shared: frozenset[str], path: str) -> str:
+    """Name an exclusive declaration without requiring one on legacy projects."""
+    return (
+        shared.exclusive_pattern(path) if isinstance(shared, _SharedWritePaths) else ""
+    )
+
+
+def _shared_write_paths(project: str | None, repo: Path) -> frozenset[str]:
+    """Read the project's one file-sharing policy for every claim comparison.
+
+    ``paths`` retains explicit file sharing. ``shared_roots`` makes files below
+    repository-relative roots shareable, with ``exclusive_patterns`` taking
+    precedence over both declarations. Directory claims remain exclusive.
+    Missing or malformed declarations share nothing.
     """
     if not project:
         return frozenset()
@@ -1557,18 +1609,40 @@ def _shared_write_paths(project: str | None, repo: Path) -> frozenset[str]:
         raw = json.loads(manifest.read_text())
     except (OSError, json.JSONDecodeError):
         return frozenset()
-    entries = raw.get("paths") if isinstance(raw, Mapping) else raw
-    if not entries:
+    entries = raw.get("paths", []) if isinstance(raw, Mapping) else raw
+    if not isinstance(entries, list):
         return frozenset()
-    shared: set[str] = set()
-    for entry in entries:
-        path = entry.get("path") if isinstance(entry, Mapping) else entry
-        if not isinstance(path, str) or not path.strip():
-            continue
-        normalized = _repository_relative_scope(path, repo)
-        if normalized is not None:
-            shared.add(normalized)
-    return frozenset(shared)
+
+    def normalized_paths(values: Any) -> list[str]:
+        if not isinstance(values, list):
+            return []
+        normalized = []
+        for entry in values:
+            path = entry.get("path") if isinstance(entry, Mapping) else entry
+            if isinstance(path, str) and path.strip():
+                relative = _repository_relative_scope(path, repo)
+                if relative is not None:
+                    normalized.append(relative)
+        return normalized
+
+    roots = (
+        normalized_paths(raw.get("shared_roots", []))
+        if isinstance(raw, Mapping)
+        else []
+    )
+    patterns = raw.get("exclusive_patterns", []) if isinstance(raw, Mapping) else []
+    if not isinstance(patterns, list):
+        patterns = []
+    return _SharedWritePaths(
+        normalized_paths(entries),
+        repo=repo.resolve(),
+        roots=roots,
+        exclusive_patterns=(
+            pattern
+            for pattern in patterns
+            if isinstance(pattern, str) and pattern.strip()
+        ),
+    )
 
 
 def _raise_live_scope_conflict(

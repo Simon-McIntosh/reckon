@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-blocks" content="crew-state-stays-bounded">
   <meta name="plan-section-depends-on" content="{&quot;s6&quot;:[&quot;the-monitor-reads-each-fact-once#s5&quot;],&quot;s7&quot;:[&quot;the-monitor-reads-each-fact-once#s6&quot;],&quot;s8&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s9&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s10&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;,&quot;the-monitor-reads-each-fact-once#s8&quot;],&quot;s12&quot;:[&quot;the-monitor-reads-each-fact-once#s8&quot;,&quot;the-monitor-reads-each-fact-once#s9&quot;,&quot;the-monitor-reads-each-fact-once#s10&quot;,&quot;the-monitor-reads-each-fact-once#s11&quot;,&quot;the-monitor-reads-each-fact-once#s13&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="113">
+<meta name="plan-version" content="125">
 <meta name="plan-modified" content="2026-11-08">
 </head>
 <body>
@@ -422,7 +422,7 @@ importing the changed modules show no added failure against base in matched arms
 ruff format --check on the staged paths add no finding.</p>
 
     <h2 id="s14">§14 — A session&#x27;s duties run while its follower is alive</h2>
-<section data-reckon="section" data-id="s14" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s14" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> reckon-e0 reported this on 7 November, and reckon-0f confirmed it
 in their own session. Follower pid 3427403 had been alive in state R for 6 h 43 m and was
 still streaming rows, yet:</p>
@@ -474,7 +474,7 @@ paths.</p>
 
 
     <h2 id="s15">§15 — An obligation never offers a promotion past an open blocking finding</h2>
-<section data-reckon="section" data-id="s15" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s15" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> reckon-e0 reported this on 7 November. While §14's starvation held,
 the obligations row for <code>r-20261107T170819813156-refuse-a-second-launch-beside-a-live-worker</code>
 read <code>promotable-stale</code>. It offered
@@ -530,7 +530,7 @@ staged paths.</p>
 
 
     <h2 id="s16">§16 — A review the reflex launches appears as working</h2>
-<section data-reckon="section" data-id="s16" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s16" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> nova-4a reported on 7 November, relayed by reckon-e0, that when the review reflex dispatches a review, the follower emits no <code>new → working</code> row for it. The session pane shows nothing until the review delivers, so a coordinator reads a running review as a stuck reflex.</p>
 <p><strong>Deliverable.</strong> A review the reflex dispatches produces the same <code>new → working</code> transition row on its session's follower as a review the coordinator dispatches by hand.</p>
 <p><strong>Done when</strong> a new <code>tests/test_a_reflex_review_appears_as_working.py</code> shows, on a synthetic crew home with the station's publish path, that a review dispatched through <code>recovery_review_dispatch.dispatch_review_for_run</code> by a sweep yields a <code>working</code> transition row on the owning session's stream within one publish. Negative control: the same test at the base revision shows no such row. The test files importing the changed modules add no failure against base in matched arms, and ruff check and ruff format --check add no finding on the staged paths.</p>
@@ -540,6 +540,10 @@ staged paths.</p>
 <p><strong>Why.</strong> nova-4a reported on 7 November, relayed by reckon-e0, a "process ended / not reported dead" note on freshly launched implement runs whose workers were alive and writing. A note that calls a live worker ended sends a coordinator to resume or redispatch a run that is working.</p>
 <p><strong>Deliverable.</strong> The process-ended note is raised only when the run's recorded worker process is gone. A launch whose worker process is alive, including one whose process record is still being written, never carries it.</p>
 <p><strong>Done when</strong> a new <code>tests/test_a_live_worker_is_never_noted_ended.py</code> shows, on a synthetic crew home, that a freshly launched run whose worker process is alive carries no process-ended note, and that a run whose recorded worker process has exited does carry it. Negative control: the same test at the base revision raises the note for the live launch. The test files importing the changed modules add no failure against base in matched arms, and ruff check and ruff format --check add no finding on the staged paths.</p>
+
+    <h2 id="s18">§18 — A re-delivery is reviewed and a stranded review launch is reaped</h2>
+<section data-reckon="section" data-id="s18" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> §14 landed the replay of a sweep request that arrives mid-sweep, but on 8 November reckon-e0 and nova-4a measured two cases it does not cover. First, a run that delivers again after a hand resume or a repair-round resume gets no review from the reflex: reckon-e0 dispatched about six such re-deliveries by hand, and nova-4a's <code>r-20261108T055840490522-icm-sheet-tile</code> had been resumed twice and recorded as handed-off by <code>crew drain</code> before it delivered at 12:20Z with no review 14 minutes later. Second, review runs the coordinator dispatched stranded at launch in phase <code>starting</code>, with <code>prompt.txt</code> written and no pid, worker record or stream, for 27 to 36 minutes (<code>r-20261108T064314545240</code>, <code>r-20261108T094331878854</code>, <code>r-20261108T113731894029</code>, and this session's <code>r-20261108T094346087889</code> for admission-loop §32). The stranded-launch reaper of a-reexec-never-orphans-a-dispatch §4 reaps such a launch after 900 s only when it carries an attempt start, so these were left alone until discarded by hand.</p><p><strong>Deliverable.</strong> The review reflex reviews every delivery whose head has no stored or in-flight review, whatever resumes or drain dispositions came before it; and a launch left in <code>starting</code> with no worker record past the reaper's bound is reaped and its request re-dispatched, whether or not it carries an attempt start.</p><p><strong>Done when</strong> a new <code>tests/test_a_redelivery_is_reviewed_and_a_stranded_launch_is_reaped.py</code> shows on a synthetic crew home: a run resumed twice, marked handed-off by drain, then delivered with a new head gets its review dispatched by the next sweep; a review launch in <code>starting</code> with a written prompt, no pid, no worker record and no attempt start, older than the bound, is reaped and its review re-dispatched once. Negative control: at the base revision the re-delivery gets no review and the stranded launch is left in place. The test files importing the changed modules add no failure against base, one arm at a time with at most <code>-n 4</code>; ruff adds no findings on the staged paths.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -610,8 +614,47 @@ staged paths.</p>
 <div class="r-comment" data-section="s14" data-id="c-run-r-20261108T064037551492-review-of-a-sessions-duties-run-while-its-follower-is-alive-8d82950debd6-figure" data-who="reckon-build" data-when="2026-11-08T06:50:47Z">
     <div class="r-comment-body"><p>Parsed read-only figure review records six rubric verdicts and one blocking finding: the rendered timeline has no visible labels or time scale.</p></div>
 </div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261108T083306612381-review-of-a-sessions-duties-run-while-its-follower-is-alive-1b51c82294b5" data-who="reckon-build" data-when="2026-11-08T08:48:22Z">
+    <div class="r-comment-body"><p>Independent incremental review of 8d82950debd6fd48aa8f9f3756be2b2be2dbe283 to 1b51c82294b5da07bc61a957d62e5872d4c5ec0a stores six scores, zero added failures and no new findings; visual head checked at 1400x720.</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261108T083654168484-review-of-a-sessions-duties-run-while-its-follower-is-alive-1b51c82294b5-figure" data-who="reckon-build" data-when="2026-11-08T08:52:03Z">
+    <div class="r-comment-body"><p>Parsed independent figure review of base fdfcd7d77a7347a068604e52f00696e3c338eb15 and head 1b51c82294b5da07bc61a957d62e5872d4c5ec0a records 6/6 passing rubric items and zero findings; no repository edits or commits in this read-only node.</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261107T223008766020-a-sessions-duties-run-while-its-follower-is-alive" data-who="reckon-build" data-when="2026-11-08T07:58:36Z">
+    <div class="r-comment-body"><p>A due request arriving during an in-flight session sweep is replayed; the timed pass records one review dispatch and one repair resume, the focused head has 1 passed, the unchanged scheduler has 1 failed, and the redrawn timeline renders at 1400x720 with 10/10 labels visible and no overlap.</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-close-s14" data-who="reckon-build" data-when="2026-11-08T10:40:00Z">
+    <div class="r-comment-body"><p>§14 landed (reviewed head <code>1b51c82294</code>): a sweep request that arrives mid-sweep is replayed, so review and repair duties no longer wait for an unrelated trigger. <a href="/reckon/evidence/archive/the-monitor-reads-each-fact-once-landed.html#a-sessions-duties-run-while-its-follower-is-alive">evidence</a></p></div>
+</div>
 <div class="r-comment" data-section="s15" data-id="c-run-r-20261108T064348228477-review-of-an-obligation-never-offers-a-promotion-past-a-blocking-finding-3e08d3212736" data-who="reckon-build" data-when="2026-11-08T06:56:53Z">
     <div class="r-comment-body"><p>Stored a parsed review of base 59c1397237285e7af8a400ec481ab4391f9c3b50 through head 3e08d3212736626b0169dff1d4a8f16073fb6cdf with scores 12, 14, 20, 12, 18, 19 and one blocking finding; promotion must wait for repair.</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261108T084455253568-review-of-an-obligation-never-offers-a-promotion-past-a-blocking-finding-43c67c44272b" data-who="reckon-build" data-when="2026-11-08T09:00:29Z">
+    <div class="r-comment-body"><p>Incremental review at 43c67c44272bc393c43692df639f0d47f92ae3ae repairs the prior blocking finding; scores 20/18/20/19/20/20, zero new findings, zero added failures; separate classifier work remains outside this node.</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261108T055018008499-an-obligation-never-offers-a-promotion-past-a-blocking-finding" data-who="reckon-build" data-when="2026-11-08T08:19:49Z">
+    <div class="r-comment-body"><p>Open blocking findings now outrank every promotion tier; the committed node suite is 7 passed, and matched importer arms are 1 failed and 72 passed on both sides with zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-node1-s15" data-who="reckon-build" data-when="2026-11-08T10:40:00Z">
+    <div class="r-comment-body"><p>First §15 node landed (reviewed head <code>43c67c4427</code>): open blocking findings outrank every promotion tier, an overdue review duty is worded with its age and no dispatch command, and an in-flight review is named instead of review-missing. The resolved-refusal row, built in <code>recovery_classification._queued_failure_remedy</code>, remains for the second node; §15 stays open.</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261108T123724504437-review-of-a-resolved-refusal-row-states-the-current-hold-177ce1a24c84" data-who="reckon-build" data-when="2026-11-08T12:58:52Z">
+    <div class="r-comment-body"><p>Independent review of defc4723b9e3a2f8ef7b080ae00184809b93d508 through 177ce1a24c84f5b20255eae5038bc956dade1422 is parsed: all six dimensions score 20/20; no findings; zero added failures from recorded node gate logs, independently corroborated by matched importer logs.</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261108T105928549254-a-resolved-refusal-row-states-the-current-hold" data-who="reckon-build" data-when="2026-11-08T12:30:54Z">
+    <div class="r-comment-body"><p>Answered review refusals now yield the current pass_hold verdict and lane reason without an obsolete answer command, while unanswered findings retain their command; derived and snapshot rows agree in both node cases (2 passed in 2.97s). Matched 124-file importer arms at -n 4: base 8 failed, 899 passed, 17 warnings in 348.89s (0:05:48); head 7 failed, 900 passed, 17 warnings in 741.13s (0:12:21); 0 added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-close-s15" data-who="reckon-build" data-when="2026-11-08T14:00:00Z">
+    <div class="r-comment-body"><p>§15 complete: both nodes landed. <a href="/reckon/evidence/archive/the-monitor-reads-each-fact-once-landed.html#an-obligation-never-offers-a-promotion-past-a-blocking-finding">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-run-r-20261108T084813136556-review-of-a-reflex-review-appears-as-working-c8ed3c2c1034" data-who="reckon-build" data-when="2026-11-08T09:01:00Z">
+    <div class="r-comment-body"><p>Reviewed base 3189bf2bb67125527123085a26ab933fa7777b22 through head c8ed3c2c1034528da05b3f3fd5a9565af5d248f3; all six dimensions scored 20/20, no findings, zero added failures, both records parsed.</p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-run-r-20261108T075245093160-a-reflex-review-appears-as-working" data-who="reckon-build" data-when="2026-11-08T08:38:01Z">
+    <div class="r-comment-body"><p>A review dispatched by the station sweep now produces exactly 1 dispatched-to-working row for its owning session within 1 publish (base 0); focused head 2 passed; matched store-importer population 140 passed versus base 139 passed and the added regression failing, with 0 added failures; Ruff check and format add 0 findings.</p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-close-s16" data-who="reckon-build" data-when="2026-11-08T10:40:00Z">
+    <div class="r-comment-body"><p>§16 landed (reviewed head <code>c8ed3c2c10</code>): a review the reflex dispatches now shows as working in its session's pane. <a href="/reckon/evidence/archive/the-monitor-reads-each-fact-once-landed.html#a-reflex-review-appears-as-working">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s17" data-id="c-run-r-20261108T082942947249-review-of-a-live-worker-is-never-noted-as-ended-8ba3da17bfde" data-who="reckon-build" data-when="2026-11-08T08:42:46Z">
     <div class="r-comment-body"><p>Independent review of 3189bf2bb67125527123085a26ab933fa7777b22..8ba3da17bfdeb9bf314d2e2da16c7af6d1813fa8 records all six scores as 20, all six checklist items, 0 added failures from source gate logs, and no findings; two durable records validated successfully.</p></div>

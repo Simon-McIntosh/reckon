@@ -73,6 +73,19 @@ class MergeError(Exception):
     """A landing refused with nothing written to the checkout's index or tree."""
 
 
+class MergeConflictError(MergeError):
+    """A real merge conflict, pinned to the primary revision it met."""
+
+    def __init__(self, paths: list[str], base: str, head: str) -> None:
+        self.paths = paths
+        self.base = base
+        self.head = head
+        super().__init__(
+            f"the head conflicts with primary {base}; nothing was written: "
+            + ", ".join(paths)
+        )
+
+
 class MergePushOutstandingError(MergeError):
     """The merge landed and only the push is outstanding.
 
@@ -240,7 +253,11 @@ def _merge_tree(repo: Path, base: str, head: str) -> tuple[str, list[str]]:
     if not lines:
         raise MergeError("merge-tree produced no tree")
     tree = lines[0].strip()
-    conflicts = [line.strip() for line in lines[1:] if line.strip()]
+    conflicts = []
+    for line in lines[1:]:
+        if not line.strip():
+            break
+        conflicts.append(line.strip())
     return tree, conflicts
 
 
@@ -537,9 +554,7 @@ def build_merge_commit(
     tree, conflicts = _merge_tree(repo, base, head)
     refusing = refusing_conflicts(conflicts)
     if refusing:
-        raise MergeError(
-            "the head conflicts; nothing was written: " + ", ".join(refusing)
-        )
+        raise MergeConflictError(refusing, base, head)
     return _commit_tree(repo, tree, [base, head], message)
 
 

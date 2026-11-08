@@ -1,0 +1,65 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's gate arms: logs/importers_head_exit.log completes at 21 failed / 446 passed (EXIT=1) and its 21 ids are the head set; logs/failing_files_serial.log is the only base-side arm and is incomplete (EXIT=124, no summary), so it cannot be differenced. The count is zero because the reviewed node's product-source diff against base is empty (git diff e7e18cdc87..9b42a2c54f names only the evidence fragment), so no test importing reckon.crew.queue_admission can change result.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:4908",
+    "reckon/crew/dispatch.py:533",
+    "reckon/crew/queue_admission.py:1746",
+    "reckon/crew/queue_admission.py:1611"
+  ],
+  "completed_at": "2026-11-08T12:25:55.018Z",
+  "dispatched_at": "2026-11-08T12:12:02Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/promoted-run-never-requeues.html",
+      "line": "51",
+      "severity": "non-blocking",
+      "text": "the table says all 21 failing ids sit in six files, but logs/importers_head_exit.log lists them across eight distinct files and only six were rerun in logs/failing_files_serial.log, so two files the claim covers were never checked byte-identical; the conclusion holds because the product-source diff against base is empty."
+    },
+    {
+      "file": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/promoted-run-never-requeues.html",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "a second landing record for the same guard already recorded at base by a-promoted-run-never-reenters-the-queue.html (commit 962761558e); it neither cites nor supersedes it, leaving two records of one guard whose measured importer figures disagree."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/queue_admission.py:4908 and reckon/crew/dispatch.py:533 reach _record_queued_failure, reckon/crew/queue_admission.py:1611 reaches _writeback_pointer, and reckon/crew/queue_admission.py:1746 reaches _restore_queued; every route passes _require_live_writeback.",
+    "diff": "read all four commits against base e7e18cdc87; 9c7ebef380 adds 25 test lines and 8c5e6ceb5a reverts them, 0068c2eafe adds the fragment and 9b42a2c54f rewrites it, leaving a net single-file 63-insertion docs diff.",
+    "done_when": "the section's done_when names tests/test_a_promoted_run_never_reenters_the_queue.py with three behaviours and a control deleting the promotion check; logs/node_gate.log records 5 passed EXIT=0 and logs/negative_control_removed_promotion_check.log records 3 failed / 2 passed EXIT=1.",
+    "goal": "the node goal is \"Keep a promoted run from re-entering the queue\"; reckon/crew/queue_admission.py:1632 (_require_live_writeback) already enforces it at the base revision, and the net diff changes only the evidence fragment, so the landed change records a guard landed earlier rather than delivering one.",
+    "manifest": "read .../r-20261108T053045610320-promoted-run-never-requeues/manifest.md; status complete, four commits, five passing cases, a 3-failed negative control, and the reverted pass-level test recorded under outside_scope.",
+    "write_paths": "the dispatch record declares write_paths [\"reckon/crew/queue_admission.py\"] and the run FENCE at prompt.txt:80-83 adds the evidence fragment and figures directory; the diff names exactly the fragment, inside them."
+  },
+  "justifications": {
+    "durability": "the diff adds no assertion after 8c5e6ceb5a reverted the test addition; durability rests on the base test file, which logs/negative_control_removed_promotion_check.log shows reddening 3 of 5 cases when the check at reckon/crew/queue_admission.py:1645 is deleted.",
+    "evidence": "logs/node_gate.log and logs/negative_control_removed_promotion_check.log carry revision/tree/module/cwd headers and bare EXIT lines, but logs/failing_files_serial.log ends EXIT=124 incomplete and the fragment at line 51 mis-states the failing-file count.",
+    "fit": "the fragment follows the structure of docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-claim-hold-reads-its-holder-again.html and carries no plan, sprint or ticket label.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:1632 refuses a promoted write-back at base, so the goal's behaviour is present while the node's diff adds no code and no test.",
+    "reuse": "no production definition is added and the guard extends reckon/crew/queue_admission.py:1632; the only duplication is the evidence record itself, at line 3 of the fragment.",
+    "scope_discipline": "the diff is one file inside prompt.txt:80-83, but it is a second landing record for a section already recorded at base by docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-promoted-run-never-reenters-the-queue.html."
+  },
+  "node": "review-of-promoted-run-never-requeues-9b42a2c54fd4",
+  "node:reviewed": "promoted-run-never-requeues",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"Keep a promoted run from re-entering the queue\"; reckon/crew/queue_admission.py:1632 (_require_live_writeback) already enforces it at the base revision and the node's net diff changes only docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/promoted-run-never-requeues.html, so the landed change records a guard landed earlier rather than delivering one.\nVERDICT done_when: the section's done_when names tests/test_a_promoted_run_never_reenters_the_queue.py with three behaviours and a negative control that deletes the promotion check; the manifest's gate log logs/node_gate.log records \"5 passed in 21.40s / EXIT=0\" and logs/negative_control_removed_promotion_check.log records the mutated tree at \"3 failed, 2 passed / EXIT=1\", so the gate asserts the measure rather than merely claiming it.\nVERDICT write_paths: the dispatch record declares write_paths [\"reckon/crew/queue_admission.py\"] and the run's own FENCE at prompt.txt:80-83 adds the evidence fragment and the figures directory; git diff e7e18cdc87..9b42a2c54f names exactly one file, docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/promoted-run-never-requeues.html, which is inside the fence.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T053045610320-promoted-run-never-requeues/manifest.md; it reads status complete, names commits 9b42a2c54f 8c5e6ceb5a 0068c2eafe 9c7ebef380, claims five passing cases and a 3-failed negative control, and records under outside_scope the pass-level test it added and then reverted for want of a declared test path.\nVERDICT diff: read all four commits against base e7e18cdc87: 9c7ebef380 adds 25 lines to tests/test_a_promoted_run_never_reenters_the_queue.py, 8c5e6ceb5a reverts them, 0068c2eafe adds the 57-line evidence fragment and 9b42a2c54f rewrites it to 68 lines; the net diff is that one fragment, 63 insertions and no product-source change.\nCALL_SITES: reckon/crew/queue_admission.py:4908, reckon/crew/dispatch.py:533, reckon/crew/queue_admission.py:1746, reckon/crew/queue_admission.py:1611\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:1632 refuses a promoted write-back at the base revision, so the behaviour the goal names is present but the node's own diff adds no code and no test (git diff e7e18cdc87..9b42a2c54f is the fragment alone).\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/node_gate.log and logs/negative_control_removed_promotion_check.log each open with a revision/tree/module/cwd/command header and close with a bare EXIT line, but the base-side arm logs/failing_files_serial.log ends \"EXIT=124\" incomplete and the fragment at line 51 mis-states its failing-file count as six against the eight the head log lists.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: the diff is one file inside the fence at prompt.txt:80-83, but that file is a second landing record for a section already recorded by docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-promoted-run-never-reenters-the-queue.html at the base revision, which the goal does not imply.\nSCORE durability: 15\nJUSTIFICATION durability: the diff adds no assertion, because the test addition in 9c7ebef380 was reverted in 8c5e6ceb5a, so durability rests on tests/test_a_promoted_run_never_reenters_the_queue.py as it stands at base, which the negative control does show reddening (3 of 5 cases) when the promotion check at reckon/crew/queue_admission.py:1645 is deleted.\nSCORE fit: 17\nJUSTIFICATION fit: the fragment's section/id/h2/\"What changed\"/table shape matches the neighbouring docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-claim-hold-reads-its-holder-again.html, and it introduces no plan, sprint or ticket label in any path, id or symbol.\nSCORE reuse: 18\nJUSTIFICATION reuse: the change adds no production definition, and the guard it documents extends the existing owner reckon/crew/queue_admission.py:1632 rather than forking it; the one duplication is documentary, at docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/promoted-run-never-requeues.html:3.\nFINDING docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/promoted-run-never-requeues.html:51 non-blocking: the table says all 21 failing ids sit in \"six files\", but logs/importers_head_exit.log lists them across eight distinct files, and only six were rerun in logs/failing_files_serial.log, so two files the claim covers were never checked byte-identical; the conclusion still holds because the node's product-source diff against base is empty, but the recorded support overstates what was measured.\nFINDING docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/promoted-run-never-requeues.html:1 non-blocking: this fragment is a second landing record for the same guard that docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-promoted-run-never-reenters-the-queue.html already records at base (commit 962761558e), and it neither cites nor supersedes it, so the evidence directory now carries two records of one guard whose measured figures disagree (21 failing importer tests here against 3 there).",
+  "review_run_id": "r-20261108T120909548613-review-of-promoted-run-never-requeues-9b42a2c54fd4",
+  "reviewed_base_sha": "e7e18cdc8716d35613f1a191a059578a199096c7",
+  "reviewed_head_sha": "9b42a2c54fd48c8222d0b230b4712431966cb1e2",
+  "reviewed_run_id": "r-20261108T053045610320-promoted-run-never-requeues",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 13,
+    "reuse": 18,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T12:21:47+00:00",
+  "total": 93
+}

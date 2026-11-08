@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:admit_once",
+    "reckon/crew/queue_admission.py:admit_until_stopped",
+    "reckon/crew_run_commands.py:4505"
+  ],
+  "completed_at": "2026-11-08T10:21:55.533Z",
+  "dispatched_at": "2026-11-08T10:09:18Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "1720",
+      "severity": "non-blocking",
+      "text": "non-blocking: _restore_refused_launch_to_queue re-implements the request write-back that _restore_queued (line 1683) owns \u2014 the seven-key pop list, the discard check and the locked _require_live_writeback/_retain_launched_record/_write_pointer sequence \u2014 so the two restore paths can drift; _restore_queued should take the hold and skip _stamp_failure rather than be copied."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "4935",
+      "severity": "non-blocking",
+      "text": "non-blocking: a ScopeConflict raised by the local-fallback relaunch inside the `except BudgetHold` branch is caught by the generic `except Exception as fallback_error`, leaving hold_only False so _record_queued_failure stamps the failure onto the pointer while it is still in phase starting \u2014 the shape this node repairs \u2014 whenever a metered hold and a claim taken in the rebind window coincide."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit; abfb16b441 adds _restore_refused_launch_to_queue and the ScopeConflict branch in admit_once plus a 257-line test, and 4cf29efd26 adds the 49-line evidence fragment, with no change outside the declared paths.",
+    "done_when": "section 35's done-when names the reproduction first, three cases in tests/test_a_claim_refused_launch_returns_to_the_queue.py, two logged negative controls, a base-arm delta, EXIT-terminated logs and ruff; the manifest records the reproduction (reproduction-before.log, EXIT=1), the head arm (4 passed, EXIT=0) and the base arm (1 failed, 3 passed, EXIT=1), and the fragment cites all three, but no ruff run is recorded; I ran `ruff check --no-cache` and `ruff format --check` on the two staged paths myself and both reported clean (EXIT=0).",
+    "goal": "the goal is to make a launch refused on a claim go back to the queue; reckon/crew/queue_admission.py:4938-4945 catches ScopeConflict from the launch and reckon/crew/queue_admission.py:1720-1766 writes the request back as a phase-queued pointer carrying the refusal hold, so the delivered change does exactly that.",
+    "manifest": "read; status complete, commits abfb16b441 and 4cf29efd26, test_logs naming the reproduction, base-arm, head-arm and both negative-control logs, baseline_suite reading 1 failed (test_a_claim_taken_at_launch_returns_the_request_to_the_queue) and after_suite reading 0 failed, and a rubric line per dimension.",
+    "write_paths": "the node declared reckon/crew/queue_admission.py, tests/test_a_claim_refused_launch_returns_to_the_queue.py, an evidence fragment and a figures directory; the diff between b0708be48a and 4cf29efd26 touches only the module, the test and docs/evidence/fragments/a-queue-holds-the-whole-plan/return-a-claim-refused-launch-to-the-queue.html, all inside that scope, and the figures directory is unused."
+  },
+  "justifications": {
+    "durability": "tests/test_a_claim_refused_launch_returns_to_the_queue.py:211 fails at the base revision and under the phase-restore control (assert 'starting' == 'queued'), and line 187 fails under the live-claims-only control, so each guard reddens on the regression it names.",
+    "evidence": "baseline-suite.log and after-suite.log each carry their revision, literal command and a bare EXIT= line, and the base arm records module and cwd, but the done-when's ruff half is evidenced by no log in the manifest and had to be re-run by me.",
+    "fit": "the new helper in reckon/crew/queue_admission.py:1720 follows the neighbouring _restore_queued docstring and pointer-lock idiom and adds no plan or ticket identifier, though the `failure` assignment at line 4945 is written and then only read through `str(caught)` at line 5053.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:4974 restores the refused pointer to phase queued with the _refusal_hold record, and the pass reports verdict held-on-claim at line 5039 rather than failed, which is the goal exactly.",
+    "reuse": "reckon/crew/queue_admission.py:1720 duplicates the queued write-back skeleton owned by _restore_queued at line 1683 instead of extending it, although it does reuse _refusal_hold, _record_pass_hold, _discarded_since, _require_live_writeback and _retain_launched_record.",
+    "scope_discipline": "the three files in `git diff --stat b0708be48a 4cf29efd26` are all inside the four declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make a launch refused on a claim go back to the queue; reckon/crew/queue_admission.py:4938-4945 catches ScopeConflict from the launch and reckon/crew/queue_admission.py:1720-1766 writes the request back as a phase-queued pointer carrying the refusal hold, so the delivered change does exactly that.\nVERDICT done_when: section 35's done-when names the reproduction first, three cases in tests/test_a_claim_refused_launch_returns_to_the_queue.py, two logged negative controls, a base-arm delta, EXIT-terminated logs and ruff; the manifest records the reproduction (reproduction-before.log, EXIT=1), the head arm (4 passed, EXIT=0) and the base arm (1 failed, 3 passed, EXIT=1), and the fragment cites all three, but no ruff run is recorded; I ran `ruff check --no-cache` and `ruff format --check` on the two staged paths myself and both reported clean (EXIT=0).\nVERDICT write_paths: the node declared reckon/crew/queue_admission.py, tests/test_a_claim_refused_launch_returns_to_the_queue.py, an evidence fragment and a figures directory; the diff between b0708be48a and 4cf29efd26 touches only the module, the test and docs/evidence/fragments/a-queue-holds-the-whole-plan/return-a-claim-refused-launch-to-the-queue.html, all inside that scope, and the figures directory is unused.\nVERDICT manifest: read; status complete, commits abfb16b441 and 4cf29efd26, test_logs naming the reproduction, base-arm, head-arm and both negative-control logs, baseline_suite reading 1 failed (test_a_claim_taken_at_launch_returns_the_request_to_the_queue) and after_suite reading 0 failed, and a rubric line per dimension.\nVERDICT diff: read commit by commit; abfb16b441 adds _restore_refused_launch_to_queue and the ScopeConflict branch in admit_once plus a 257-line test, and 4cf29efd26 adds the 49-line evidence fragment, with no change outside the declared paths.\nCALL_SITES: reckon/crew/queue_admission.py:admit_once, reckon/crew/queue_admission.py:admit_until_stopped, reckon/crew_run_commands.py:4505\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:4974 restores the refused pointer to phase queued with the _refusal_hold record, and the pass reports verdict held-on-claim at line 5039 rather than failed, which is the goal exactly.\nSCORE evidence: 18\nJUSTIFICATION evidence: baseline-suite.log and after-suite.log each carry their revision, literal command and a bare EXIT= line, and the base arm records module and cwd, but the done-when's ruff half is evidenced by no log in the manifest and had to be re-run by me.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three files in `git diff --stat b0708be48a 4cf29efd26` are all inside the four declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_claim_refused_launch_returns_to_the_queue.py:211 fails at the base revision and under the phase-restore control (assert 'starting' == 'queued'), and line 187 fails under the live-claims-only control, so each guard reddens on the regression it names.\nSCORE fit: 17\nJUSTIFICATION fit: the new helper in reckon/crew/queue_admission.py:1720 follows the neighbouring _restore_queued docstring and pointer-lock idiom and adds no plan or ticket identifier, though the `failure` assignment at line 4945 is written and then only read through `str(caught)` at line 5053.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/queue_admission.py:1720 duplicates the queued write-back skeleton owned by _restore_queued at line 1683 instead of extending it, although it does reuse _refusal_hold, _record_pass_hold, _discarded_since, _require_live_writeback and _retain_launched_record.\nFINDING reckon/crew/queue_admission.py:1720 non-blocking: _restore_refused_launch_to_queue re-implements the request write-back that _restore_queued (line 1683) owns \u2014 the seven-key pop list, the discard check and the locked _require_live_writeback/_retain_launched_record/_write_pointer sequence \u2014 so the two restore paths can drift; _restore_queued should take the hold and skip _stamp_failure rather than be copied.\nFINDING reckon/crew/queue_admission.py:4935 non-blocking: a ScopeConflict raised by the local-fallback relaunch inside the `except BudgetHold` branch is caught by the generic `except Exception as fallback_error`, leaving hold_only False so _record_queued_failure stamps the failure onto the pointer while it is still in phase starting \u2014 the shape this node repairs \u2014 whenever a metered hold and a claim taken in the rebind window coincide.",
+  "review_run_id": "r-20261108T100622194172-review-of-return-a-claim-refused-launch-to-the-queue-4cf29efd26a6",
+  "reviewed_base_sha": "b0708be48a046eb6c3371fa2f73021470bdcb153",
+  "reviewed_head_sha": "4cf29efd26a66a829b46a354f65f1ea9d820798b",
+  "reviewed_run_id": "r-20261108T080751574147-return-a-claim-refused-launch-to-the-queue",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T10:38:56.113203+00:00",
+  "total": 97
+}

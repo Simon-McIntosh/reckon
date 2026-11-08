@@ -1,0 +1,44 @@
+<section id="a-sessions-duties-run-while-its-follower-is-alive-landing">
+  <h2>A changed session keeps its next sweep</h2>
+
+  <p>The live session <code>a337e0e6-c34c-4497-878a-bc42ce1b7cf6</code>
+  held a follower on its compute host (pid <code>3427403</code>). Its source run
+  exited at 18:16:14Z and the station published the completed run at
+  18:24:16Z. A recovery report finished at 18:24:06Z: its review pass returned
+  two dispatches for other runs in that session and its repair pass returned
+  zero. The new run's review brief appeared at 19:00:00Z. That retained report
+  has no request or start field, and its writer slot is shared across sessions;
+  its exact request and start cannot be reconstructed from these records. The
+  report alone therefore cannot establish when that sweep read this run.</p>
+
+  <p>A controlled replay records the missing timing directly. At
+  06:15:39.455090Z it requested the first sweep, which started at
+  06:15:40.155606Z. After that sweep's real duty pass, a second tick requested
+  a sweep at 06:15:40.270499Z while the first was held in later work. The first
+  finished at 06:15:41.639391Z; the pending sweep started at
+  06:15:41.639413Z and finished at 06:15:54.759945Z. The replay's source run
+  with a complete manifest received a real review run, recorded as
+  <code>review_dispatch.status=dispatched</code>. The other source run's stored
+  review carried an open blocking finding on <code>module.py</code>; the real
+  repair path resumed that reviewed run with the finding in its advice and
+  recorded <code>repair_dispatch.status=resumed</code> and the round id. The
+  first pass returned no review dispatch; the next returned one. The timestamp,
+  review and repair receipts are together in
+  <code>repair_timing_replay.json</code> in the run directory.</p>
+
+  <figure>
+    <img src="/reckon/figures/the-monitor-reads-each-fact-once/a-sessions-duties-run-while-its-follower-is-alive/sweep-timeline.svg" alt="The second request arrives while the first sweep runs; the next sweep starts when it finishes, then resumes the repair and dispatches the review.">
+    <figcaption>The two requests and the real duty outcomes in the controlled
+    replay, UTC on 2026-11-08. Grey lines show the sweep intervals; the green
+    triangle marks the replayed request. A diamond and circle mark the repair
+    resume and review dispatch on the replayed sweep.</figcaption>
+  </figure>
+
+  <p>The original scheduler dropped the second request when the first sweep was
+  still in flight. The changed <code>SweepBeat</code> retains one pending request
+  per session and starts its pass after the active one finishes. The test now
+  calls the real <code>resumption.sweep</code> and review and repair dispatch
+  functions in an isolated crew home. It asserts the durable review run pointer,
+  repair round, advice and two launcher calls. The focused gate passes, and
+  the unchanged station reflex file adds zero failures in 12 matched tests.</p>
+</section>

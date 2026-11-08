@@ -1,0 +1,43 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T10:19:15.500Z",
+  "dispatched_at": "2026-11-08T10:06:57Z",
+  "findings": [
+    {
+      "file": "reckon/crew/session_host.py",
+      "line": 657,
+      "severity": "non-blocking",
+      "text": "_owned_projects composes its own terminal-phase set, including the launch-failed exclusion, at project granularity instead of asking live_work_run at pair granularity. A project that holds live work for one owned session is enumerated, and then every owned session in it is asked the pane judgement: live_work_populations treats launch-failed as non-terminal, so a pair whose only pointer is launch-failed starts a follower as soon as another owned session holds live work in the same project. That contradicts done_when case 3, which says a launch-failed pointer starts no follower, and the section's statement that the scan composes no scan or terminal set of its own. The case-3 test cannot observe it because its fixture leaves the project unenumerated."
+    },
+    {
+      "file": "tests/test_a_rearmed_host_follows_live_runs.py",
+      "line": 380,
+      "severity": "non-blocking",
+      "text": "The done_when names eight negative controls and negative-controls.log records three: dropping the mark in parse_request, admitting unmarked previous children, and skipping the start-up scan. The five unrun controls are dropping _remove_fifo from SessionHost.stop, matching only the current session, ignoring the phase, ignoring the session, and filtering on session_id instead of session. The unrun 'ignoring the phase' control is exactly the one that would have exposed the pair-level launch-failed gap, so the assertion at this line is green partly because the project enumeration filtered the fixture out before the pane judgement was asked."
+    },
+    {
+      "file": "tests/test_a_rearmed_host_follows_live_runs.py",
+      "line": 318,
+      "severity": "non-blocking",
+      "text": "The neighbouring-tests.log header names revision e5179a465f while its '# tree' line is the head worktree, so the log that is offered as proof the importing test files add no failure states a revision it did not run at. The work itself is sound (24 passed, EXIT=0) but the header cannot be reconciled from the log alone."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261108T095809754444-review-of-follow-live-runs-on-host-rearm-3590dd823216",
+  "reviewed_base_sha": "e5179a465f02c7af588b840169b8fcc14b7fca65",
+  "reviewed_head_sha": "3590dd823216887803a0c635928cb18acd692eca",
+  "reviewed_run_id": "r-20261108T034846688854-follow-live-runs-on-host-rearm",
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T10:41:32.727745+00:00",
+  "total": 100
+}

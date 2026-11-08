@@ -19,12 +19,12 @@
   <meta name="plan-sprint" content="S27">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
-  <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;concurrent-edits-meet-at-the-merge#s2&quot;,&quot;concurrent-edits-meet-at-the-merge#s3&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;concurrent-edits-meet-at-the-merge#s2&quot;,&quot;concurrent-edits-meet-at-the-merge#s3&quot;],&quot;s5&quot;:[&quot;concurrent-edits-meet-at-the-merge#s2&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
   <title>Concurrent Edits Meet At The Merge | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="10">
 <meta name="plan-modified" content="2026-11-08">
 </head>
 <body>
@@ -60,7 +60,7 @@
     exclusivity is kept only for paths a merge cannot reconcile.</p>
 
     <h2 id="s2">§2 — A source or test file is shared unless it is declared exclusive</h2>
-    <section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> The project's write-sharing declaration gains a default. A file
     path under a declared shared root (for reckon, <code>reckon/</code>, <code>tests/</code>,
     <code>scripts/</code> and <code>skills/</code>) admits concurrent claims unless it matches a
@@ -92,14 +92,18 @@
     <code>reckon.crew.queue_edit</code> add no failure against base, run one arm at a time with at
     most <code>-n 4</code>; a test that asserts the old exclusive default for a shared-root path is
     updated to the new contract and named in the manifest. Ruff adds no findings on the staged
-    paths. Write paths: <code>reckon/crew/runs.py</code>, the five calling modules where the call
-    site must change, <code>docs/state/reckon/shared-write-paths.json</code>, and the new test.</p>
+    paths. Write paths: <code>reckon/crew/runs.py</code>, the four modules that call it (<code>dispatch_claims.py</code>, <code>promotion_scope.py</code>,
+    <code>queue_admission.py</code> and <code>queue_edit.py</code>; <code>dispatch.py</code> and <code>promotion.py</code> only
+    re-export the symbol), <code>docs/state/reckon/shared-write-paths.json</code>, and the new test.</p>
 
     <h2 id="s3">§3 — A landing that conflicts sends its run back for a merge repair</h2>
     <section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
     <p><strong>Deliverable.</strong> Once two runs may edit one file, the second to land can meet a
-    real conflict. Today <code>crew merge</code> refuses such a head and nothing follows, so the run
-    sits delivered and unlanded until a coordinator notices. After this section, a landing refused
+    real conflict. Today <code>crew merge</code> refuses such a head; the lander
+    (<code>queue_landing._merge_conflicts</code>, near <code>reckon/crew/queue_landing.py:1554</code>) records an
+    <code>admission_landing</code> refusal naming the conflicted paths and appends an obligation row, but
+    no repair round opens and no outcome names the conflict, so the run sits delivered and unlanded
+    until a coordinator acts. After this section, a landing refused
     because <code>refusing_conflicts</code> named paths, whether by <code>crew complete --land</code>
     or by the admit service's lander, records a <code>merge-conflict</code> outcome on the run
     naming the conflicted paths and the main revision it met, and opens a repair round through
@@ -129,18 +133,29 @@
     <h2 id="s4">§4 — Parallel nodes on one module land, measured on the fleet</h2>
     <section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p><strong>Deliverable.</strong> A measurement once §2 and §3 are on main and the admit service
-    has reloaded onto them. It reads the admission verdict rows in
-    <code>~/.config/reckon/crew/admission-verdicts.jsonl</code> for a 24-hour window before §2
-    landed and one after, and counts <code>held-on-claim</code> verdicts on file claims, split by
+    has reloaded onto them. The writer trims <code>~/.config/reckon/crew/admission-verdicts.jsonl</code> to 1 MiB on every
+    append (<code>reckon/crew/queue_admission.py</code> near lines 2095–2100), so it holds about a day. The
+    before window is the snapshot copied on 8 November before §2 landed,
+    <code>~/.cache/reckon-claims/admission-verdicts-before-shared-default.jsonl</code> (212 passes from
+    2026-11-07T05:38Z to 2026-11-08T12:33Z, 296 held-on-claim verdicts; its last hours already include the
+    interim shared list of commit <code>5cf29445c8</code>). The after window is a copy of the live log spanning
+    at least 12 hours after the admit service reloads onto §2 and §3. The measure reads both copies, and counts <code>held-on-claim</code> verdicts on file claims, split by
     whether the claimed path is under a shared root. It also lists every pair of runs that held
     concurrent claims on one file in the window after, and whether each landed cleanly, landed
     after a merge repair, or is still open.</p>
     <p><strong>Done when</strong> the evidence fragment
     <code>docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html</code>
-    records both windows' counts, with the commands that produced them logged under the run
-    directory, and shows <code>held-on-claim</code> verdicts on shared-root file paths at zero in
-    the window after. Every concurrent pair is accounted for, and any pair left with conflict
+    records both windows' counts, with the commands that produced them logged in the measuring
+    run's own directory, whose path the fragment cites. The after window must hold at least five
+    pairs of runs with concurrent claims on one shared-root file, and shows
+    <code>held-on-claim</code> verdicts on shared-root file paths at zero. Negative control: the
+    before window shows such verdicts above zero. A window with fewer than five concurrent pairs is
+    reported as unmeasured and re-taken later, never as a pass. Every concurrent pair is accounted for, and any pair left with conflict
     markers or an unlanded head with no repair round fails the measure.</p>
+
+    <h2 id="s5">§5 — A fragments-directory claim never blocks a sibling node</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> On 8 November run <code>r-20261108T052434073237-oversized-node-reserved-lane-reproduced</code> claimed the whole <code>docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop</code> directory, so every other node of that plan was refused at dispatch, and admission-loop §32 had to be dispatched on its brief alone. §2 keeps directory claims exclusive, so this blocker survives §2.</p><p><strong>Deliverable.</strong> Dispatch already defaults a node's fragment to its own file (<code>dispatch_claims._landing_fragment_paths</code>, near <code>reckon/crew/dispatch_claims.py:1068</code>), so the remaining change is in the conflict check itself, <code>runs._raise_live_scope_conflict</code> (near <code>reckon/crew/runs.py:1574</code>), reached through <code>dispatch_claims</code>: a claim on a plan's evidence-fragments directory is compared as the fragment files its node names or writes, not as the whole directory. Two nodes of one plan never conflict on the fragments directory; two claims on the same fragment file still do.</p><p><strong>Done when</strong> a new <code>tests/test_a_fragment_claim_never_blocks_a_sibling.py</code> shows with a temporary repository and crew home: a live run whose claim names a plan's fragments directory does not refuse a second node of that plan whose fragment is a different file; two nodes naming the same fragment file are refused. Negative control: at the base revision the first case is refused. The test files importing <code>reckon.crew.dispatch_claims</code> or <code>reckon.crew.runs</code> add no failure against base, one arm at a time with at most <code>-n 4</code>; ruff adds no findings on the staged paths.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -150,6 +165,23 @@
     <pre class="r-fu-prompt">/reckon-build concurrent-edits-meet-at-the-merge §2</pre>
     </article>
 </section>
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261108T123713881297-review-of-a-source-file-is-shared-by-default-d7fb8d91992a" data-who="reckon-build" data-when="2026-11-08T12:59:46Z">
+    <div class="r-comment-body"><p>Independent review stores all six scores and exact source revision; focused added-failure count is zero, with one blocking incomplete-importer finding.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261108T092818929205-a-source-file-is-shared-by-default" data-who="reckon-build" data-when="2026-11-08T11:44:14Z">
+    <div class="r-comment-body"><p>Shared-root file claims and exclusive-pattern refusals implemented with directory protection; focused head contract 14 passed, initial control 3 failed/7 passed, ruff 0 added findings. Importer source-base arm interrupted at 99 percent, so full regression comparison remains required.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-11-08T14:00:00Z">
+    <div class="r-comment-body"><p>§2 landed: source and test files are shared by default. <a href="/reckon/evidence/archive/concurrent-edits-meet-at-the-merge-landed.html#a-source-file-is-shared-by-default">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261108T121946539589-review-of-a-conflicting-landing-is-repaired-9f88e600fbd4" data-who="reckon-build" data-when="2026-11-08T12:33:40Z">
+    <div class="r-comment-body"><p>Parsed independent review stored at the revision-specific declared path; all six dimensions scored, zero added failures, one blocking finding requiring fresh revision-bound repair gate verification before landing.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261108T093343768873-a-conflicting-landing-is-repaired" data-who="reckon-build" data-when="2026-11-08T13:27:07Z">
+    <div class="r-comment-body"><p>Revision-bound repair gate validation refuses seven invalid evidence shapes through both pending-landing routes, retaining the original promotion and pending record. Exact repair base/head: 4 passed each; reversed answering commit: 2 failed/2 passed. Evidence: /reckon/evidence/fragments/concurrent-edits-meet-at-the-merge/a-conflicting-landing-is-repaired.html#a-conflicting-landing-is-repaired-repair-gate.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>

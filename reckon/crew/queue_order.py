@@ -6,6 +6,7 @@ import logging
 from collections import Counter, defaultdict, deque
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 from reckon._timestamps import parse_utc
@@ -15,21 +16,31 @@ from reckon.roadmap_ranking import leading_signal, section_ranking_key
 STARVATION_AGE_SECONDS = 30 * 60
 _LOGGER = logging.getLogger(__name__)
 _PRIORITY_KEYS: dict[
-    tuple[str, str], tuple[dict[str, Any], dict[str, tuple[Any, ...]]]
+    tuple[str, str], tuple[tuple[Any, ...], dict[str, tuple[Any, ...]]]
 ] = {}
+
+
+def _named_plan_signature(docs_dir: Path, slugs: set[str]) -> tuple[Any, ...]:
+    """The named plans' file identities, including absent files."""
+    from reckon import file_memo
+
+    signature: list[tuple[str, tuple[int, int, int, int, int] | None]] = []
+    for slug in sorted(slugs):
+        try:
+            stat = (docs_dir / "plans" / f"{slug}.html").stat()
+            identity = file_memo.signature_from_stat(stat)
+        except OSError:
+            identity = None
+        signature.append((slug, identity))
+    return tuple(signature)
 
 
 def _roadmap_priority_keys(
     queued_pointers: Sequence[Mapping[str, Any]],
 ) -> dict[int, tuple[Any, ...]]:
-    """Resolve section signals from each project's roadmap once per ordering."""
-    from reckon import serve
-    from reckon.mcp_discovery import (
-        _discover_project,
-        _discovery_state_root,
-        _docs_dir_for_project,
-        _inventory_row,
-    )
+    """Resolve section signals from queued plans, without project discovery."""
+    from reckon.crew.plan_review import _plan_inventory_item
+    from reckon.mcp_discovery import _docs_dir_for_project
     from reckon.roadmap import build_roadmap, roadmap_build_scope
 
     keys: dict[int, tuple[Any, ...]] = {}
@@ -42,29 +53,34 @@ def _roadmap_priority_keys(
         try:
             docs_dir = _docs_dir_for_project(project, None)
             cache_key = (project, str(docs_dir.resolve())) if docs_dir else None
-            discovered_result = None
-            if cache_key is not None:
-                _, discovered_result = serve._fresh_discovery(
-                    cache_key, docs_dir, project, _discovery_state_root(None)
-                )
+            slugs = {
+                str(pointer.get("plan") or "")
+                for pointer in queued_pointers
+                if str(pointer.get("project") or "") == project and pointer.get("plan")
+            }
+            signature = _named_plan_signature(docs_dir, slugs) if docs_dir else ()
             cached = _PRIORITY_KEYS.get(cache_key) if cache_key else None
-            if cached is not None and cached[0] is discovered_result:
+            if cached is not None and cached[0] == signature:
                 project_keys = cached[1]
             else:
-                with roadmap_build_scope(resolve_coordinators=False) as scope:
-                    discovered = _discover_project(project, None)
-                    report = scope.built
-                    if report is None:
-                        report = build_roadmap(
-                            project,
-                            [
-                                _inventory_row(item)
-                                for item in discovered.get("inventory", ())
-                            ],
-                            list(discovered.get("sprints") or ()),
-                            active_sprint_id=discovered.get("active_sprint_id"),
-                            docs_dir=docs_dir,
-                        )
+                inventory = (
+                    [
+                        item
+                        for slug in sorted(slugs)
+                        if (item := _plan_inventory_item(project, docs_dir, slug))
+                        is not None
+                    ]
+                    if docs_dir
+                    else []
+                )
+                with roadmap_build_scope(resolve_coordinators=False):
+                    report = build_roadmap(
+                        project,
+                        inventory,
+                        [],
+                        docs_dir=docs_dir,
+                        include_attempts=False,
+                    )
                 sprint_order = {
                     str(row["ref"]): int(row["order"]) - 1
                     for row in report.get("sprints") or ()
@@ -79,11 +95,7 @@ def _roadmap_priority_keys(
                     if row.get("ref")
                 }
                 if cache_key is not None:
-                    _, discovered_result = serve._fresh_discovery(
-                        cache_key, docs_dir, project, _discovery_state_root(None)
-                    )
-                    if discovered_result is not None:
-                        _PRIORITY_KEYS[cache_key] = (discovered_result, project_keys)
+                    _PRIORITY_KEYS[cache_key] = (signature, project_keys)
         except Exception as exc:  # noqa: BLE001 - an unreadable roadmap yields no invented key
             _LOGGER.debug("roadmap priority unavailable for %s: %s", project, exc)
             continue

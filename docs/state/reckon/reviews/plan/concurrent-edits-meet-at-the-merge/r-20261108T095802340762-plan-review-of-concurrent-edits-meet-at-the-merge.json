@@ -1,0 +1,175 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T10:13:52.740Z",
+  "dispatched_at": "2026-11-08T10:03:44Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/concurrent-edits-meet-at-the-merge.html:141",
+      "id": "done_when-1",
+      "reason": "a worker dispatched an hour after \u00a72 lands will observe almost no after-window traffic and report zero, so the node must be told a volume floor (or a before/after ratio) that can fail.",
+      "text": "the after-window measure is \"held-on-claim verdicts on shared-root file paths at zero\", an assertion that is satisfied by an empty or near-empty window, and the section declares no minimum volume of concurrent file claims and no negative control, so a glance at a quiet fleet reads as a pass",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/concurrent-edits-meet-at-the-merge.html:53",
+      "id": "reasoning-1",
+      "reason": "\u00a72 as written fixes four of the five instances it argues from and leaves the fifth in place, so either the declaration must cover per-fragment sharing with directory claims, or the plan must say bullet five is out of scope.",
+      "text": "\u00a71 cites a run claiming a plan's whole docs/evidence/fragments/<plan> directory as one of five blockers, but \u00a72 makes docs/evidence/fragments/ neither a shared root nor an exclusive pattern and keeps every directory claim exclusive, so that cited blocker survives the plan's own remedy",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/concurrent-edits-meet-at-the-merge.html:101",
+      "id": "reasoning-2",
+      "reason": "the worker must extend an existing refusal branch rather than add a detection path, and recovery_repair_dispatch.dispatch_repair_for_run composes only from a finding-bearing review record, so \u00a73 needs to name the new non-review source it is adding.",
+      "text": "\u00a73 states that crew merge refuses a conflicting head \"and nothing follows, so the run sits delivered and unlanded\", but reckon/crew/queue_landing.py:1554 already detects the conflict through _merge_conflicts, records an admission_landing refusal naming the paths on the run and appends an obligation row; what is actually missing is the repair round and a merge-conflict outcome",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/concurrent-edits-meet-at-the-merge.html:96",
+      "id": "anchors_resolve-1",
+      "reason": "\u00a71 already enumerates the four modules by name and a grep settles it, so the count costs a turn rather than sending the node to the wrong mechanism.",
+      "text": "\u00a72's write paths say \"the five calling modules where the call site must change\", but only four modules call runs._shared_write_paths (dispatch_claims.py x2, promotion_scope.py x2, queue_admission.py x2, queue_edit.py x1); dispatch.py:180 and promotion.py:136 only re-export the symbol",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/concurrent-edits-meet-at-the-merge.html:141",
+      "id": "evidence_paths-1",
+      "reason": "the fragment itself sits on a durable docs/evidence path and the run directory is durable too, so this is a precision gap in the brief rather than a lost record.",
+      "text": "the commands that produced \u00a74's counts are described as \"logged under the run directory\", which names no run and therefore no path a later reader can open",
+      "type": "evidence_paths",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "fb63597d13a93e9cb0be5fe8c55f3332b28fb857",
+  "plan_fingerprint": "6359f39555bf5e49da3ce42cb090f985a3f64085d181a143416c228aee5942ad",
+  "plan_slug": "concurrent-edits-meet-at-the-merge",
+  "plan_version": 1,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "fb63597d13a93e9cb0be5fe8c55f3332b28fb857",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a74's done-when now requires the after window to hold at least five pairs of runs with concurrent claims on one shared-root file, and a negative control: the before window must show held-on-claim verdicts on shared-root paths above zero; a quiet window is reported as unmeasured, not as a pass",
+      "reason": "",
+      "when": "2026-11-08T10:57:14.818052+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "fb63597d13a93e9cb0be5fe8c55f3332b28fb857",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "a new \u00a75 covers the fifth cited blocker: a claim on a plan's evidence-fragments directory is narrowed to the fragment files a node writes, so it never blocks a sibling node of that plan; \u00a72's done-when is unchanged",
+      "reason": "",
+      "when": "2026-11-08T10:57:28.799950+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "fb63597d13a93e9cb0be5fe8c55f3332b28fb857",
+      "commit_basis": "edit",
+      "finding": "reasoning-2",
+      "note": "\u00a73's Deliverable now states what exists (queue_landing._merge_conflicts records an admission_landing refusal naming the paths and an obligation row) and what is missing (the merge-conflict outcome and the repair round); the done-when is unchanged",
+      "reason": "",
+      "when": "2026-11-08T10:57:38.350760+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "fb63597d13a93e9cb0be5fe8c55f3332b28fb857",
+      "commit_basis": "edit",
+      "finding": "anchors_resolve-1",
+      "note": "\u00a72 now names the four calling modules (dispatch_claims, promotion_scope, queue_admission, queue_edit); dispatch.py and promotion.py only re-export the symbol",
+      "reason": "",
+      "when": "2026-11-08T10:57:47.682694+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "fb63597d13a93e9cb0be5fe8c55f3332b28fb857",
+      "commit_basis": "edit",
+      "finding": "evidence_paths-1",
+      "note": "\u00a74 now says the commands are logged in the measuring run's own directory, whose path the fragment cites",
+      "reason": "",
+      "when": "2026-11-08T10:57:57.563788+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "fb63597d13a93e9cb0be5fe8c55f3332b28fb857",
+      "commit_basis": "edit",
+      "note": "\u00a72 now names the four calling modules (dispatch_claims, promotion_scope, queue_admission, queue_edit); dispatch.py and promotion.py only re-export the symbol",
+      "reason": "",
+      "when": "2026-11-08T10:57:47.682694+00:00"
+    },
+    "done_when-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "fb63597d13a93e9cb0be5fe8c55f3332b28fb857",
+      "commit_basis": "edit",
+      "note": "\u00a74's done-when now requires the after window to hold at least five pairs of runs with concurrent claims on one shared-root file, and a negative control: the before window must show held-on-claim verdicts on shared-root paths above zero; a quiet window is reported as unmeasured, not as a pass",
+      "reason": "",
+      "when": "2026-11-08T10:57:14.818052+00:00"
+    },
+    "evidence_paths-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "fb63597d13a93e9cb0be5fe8c55f3332b28fb857",
+      "commit_basis": "edit",
+      "note": "\u00a74 now says the commands are logged in the measuring run's own directory, whose path the fragment cites",
+      "reason": "",
+      "when": "2026-11-08T10:57:57.563788+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "fb63597d13a93e9cb0be5fe8c55f3332b28fb857",
+      "commit_basis": "edit",
+      "note": "a new \u00a75 covers the fifth cited blocker: a claim on a plan's evidence-fragments directory is narrowed to the fragment files a node writes, so it never blocks a sibling node of that plan; \u00a72's done-when is unchanged",
+      "reason": "",
+      "when": "2026-11-08T10:57:28.799950+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "fb63597d13a93e9cb0be5fe8c55f3332b28fb857",
+      "commit_basis": "edit",
+      "note": "\u00a73's Deliverable now states what exists (queue_landing._merge_conflicts records an admission_landing refusal naming the paths and an obligation row) and what is missing (the merge-conflict outcome and the repair round); the done-when is unchanged",
+      "reason": "",
+      "when": "2026-11-08T10:57:38.350760+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/concurrent-edits-meet-at-the-merge/r-20261108T095802340762-plan-review-of-concurrent-edits-meet-at-the-merge.json",
+  "review_run_id": "r-20261108T095802340762-plan-review-of-concurrent-edits-meet-at-the-merge",
+  "reviewed_blob_sha": "b1dc518f0eb6765865319c208af1dfb1924d7be1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a72 names \"the five calling modules\" where only four call runs._shared_write_paths; every file, symbol and commit the plan cites otherwise resolves, including commit 5cf29445c8, merge.refusing_conflicts and the held-on-claim verdict.",
+    "done_when": "a finding \u2014 \u00a74's done-when can pass on an empty measurement, because its measure is a zero with no volume floor. \u00a72 and \u00a73 each name a base-revision negative control and are measurable.",
+    "evidence_paths": "a finding \u2014 \u00a74 writes its counts to a durable docs/evidence/fragments path but places the producing commands \"under the run directory\" without naming a run.",
+    "naming": "pass \u2014 the new test filenames and the merge-conflict outcome name describe the mechanism, and no plan label, stage name or ticket number reaches a symbol.",
+    "reasoning": "a finding \u2014 \u00a71's directory-claim pain is left unfixed by \u00a72's own rules, and \u00a73's premise that \"nothing follows\" a refused merge is contradicted by the admit lander's existing refusal record.",
+    "single_goal": "pass \u2014 each of \u00a72, \u00a73 and \u00a74 states one deliverable (one shared-by-default rule, one repair round on a conflicting landing, one measurement).",
+    "wiring": "pass \u2014 plan-section-depends-on resolves s4 to s2 and s3, both of which exist; s2 and s3 declare no dependency and their fixtures can be built by direct calls in a temporary repository, so neither needs the other."
+  },
+  "section_digests": {
+    "_document": "430e304dbd6a6c4459c3da43fe5ee2246e137e45f4fe353d7a76493a25e0b717",
+    "s1": "3b65e328477dcad431890ad6e57cffb8c8385c67744b318213b4ad9eea2ee1c1",
+    "s2": "181415a7e4d1e39948ac4b2b662227e82c7b5260f8f9309525d4fb1d5300b6c8",
+    "s3": "47348dbdb15ecb37f90376f5af97b3c005baaf184960a609bd73fab930022d3b",
+    "s4": "e71c378d81439eda83de9c88f4526b76d010796276b4591d8d2a1681b447c78a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T10:55:15.700305+00:00",
+  "total": null
+}

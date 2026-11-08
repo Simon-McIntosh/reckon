@@ -1,0 +1,70 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Read from the reviewed run's own armed pair in its manifest and logs. baseline_suite runs tests/test_a_stop_keeps_the_attempts_uncommitted_work.py at dispatch base 8ad90651f6697606b66434ecc17c85c099025ddb in a git-archive scratch tree with this round's test copied in: logs/baseline-suite.log, '4 failed in 6.77s', EXIT=1, completed. after_suite runs the same literal command at 2b30715669 in the node worktree: logs/after-suite.log, '4 passed in 30.60s', EXIT=0, completed. The delta therefore adds no failing id; the four baseline ids are all in the node's own test file and are the defect the section repairs.",
+  "completed_at": "2026-11-08T12:35:15.999Z",
+  "dispatched_at": "2026-11-08T12:24:42Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "evidence-fragment wording that names the wrong log or revision; the logs themselves record the measured results and the code is unaffected",
+      "recorded_at": "2026-11-08T13:11:20.059687+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "evidence-fragment wording that names the wrong log or revision; the logs themselves record the measured results and the code is unaffected",
+      "recorded_at": "2026-11-08T13:11:35.833609+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "evidence-fragment wording that names the wrong log or revision; the logs themselves record the measured results and the code is unaffected",
+      "recorded_at": "2026-11-08T13:11:49.508311+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-run-has-one-live-worker/save-a-stopped-attempts-uncommitted-work.html",
+      "line": 25,
+      "severity": "non-blocking",
+      "summary": "The gate paragraph now says 'at the node's final revision 10dac3d174: 4 passed, EXIT=0', but no green log exists at that revision: logs/after-suite.log, which records 4 passed, names 2b30715669, and the only log whose header names 10dac3d174 is logs/negative-control-timeout.log, which is the mutated arm reading '1 failed, 3 passed'. The two revisions carry identical code (git diff --stat 10dac3d174 a9660c0e27 over dispatch_sessions.py and the test file is empty), so the substance holds, but the record does not reconcile with the log it rests on where the prior review asked it to."
+    },
+    {
+      "file": "docs/evidence/fragments/a-run-has-one-live-worker/save-a-stopped-attempts-uncommitted-work.html",
+      "line": 29,
+      "severity": "non-blocking",
+      "summary": "The sentence now reads 'The same two files at the repaired head: 10 passed (head-after-repair.log reversing the repair) \u2014 the parenthetical attaches 'reversing the repair' to head-after-repair.log, which is the repaired arm (10 passed, EXIT=0). The reversing arm is logs/negative-control.log, as the next sentence correctly says, so the fragment names both logs for one role and contradicts itself inside one paragraph."
+    },
+    {
+      "file": "docs/evidence/fragments/a-run-has-one-live-worker/save-a-stopped-attempts-uncommitted-work.html",
+      "line": 26,
+      "severity": "non-blocking",
+      "summary": "The base paragraph now claims the test copied into the dispatch-base tree 'fails all four cases (EXIT=1)' and then points the reader at logs/base.log, which records '3 failed in 4.74s' at 8ad90651f6 because it was taken in the earlier round, before the fourth case existed. The four-case base arm is logs/baseline-suite.log ('4 failed in 6.77s'); a reader following the fragment's own pointer counts three."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit. 10dac3d174 adds _WORKTREE_GIT_READ_SECONDS (10.0) as the timeout default on _worktree_git_read and a 60-second _STOP_WORKTREE_GIT_TIMEOUT_SECONDS passed by both reads in _preserve_stopped_worktree, plus a fourth test case with a PATH shim whose git diff sleeps eleven seconds; 2b30715669 and a9660c0e27 edit only the fragment (the timeout paragraph, the gate revision and the four-case base count). No behaviour outside the stop's worktree read changes.",
+    "done_when": "The done_when asserts that every case and negative control of the section passes in tests/test_a_stop_keeps_the_attempts_uncommitted_work.py, with an armed base arm in a scratch tree. logs/baseline-suite.log runs the armed command at 8ad90651f6 with this round's test copied in and records 4 failed, EXIT=1; logs/after-suite.log runs it at 2b30715669 in the node worktree and records 4 passed, EXIT=0; both open with revision, tree, literal command and imported module and end in a bare EXIT= line. The section's negative controls are logs/negative-control.log (5 failed, 2 passed, EXIT=1, repair reverted) and logs/negative-control-timeout.log (1 failed, 3 passed, EXIT=1, stop budget not passed). ruff check clean is claimed on both staged paths and not re-run here.",
+    "goal": "The goal is that crew stop saves the worktree's uncommitted diff to the run directory before it signals. The delta leaves that mechanism where the prior review found it and repairs the budget regression the sharing introduced: reckon/crew/dispatch_sessions.py:2103 still calls _preserve_stopped_worktree before any signal, and at a9660c0e27 the two reads in _preserve_stopped_worktree (2272, 2282) pass timeout=_STOP_WORKTREE_GIT_TIMEOUT_SECONDS (60) instead of inheriting the handoff's ten seconds.",
+    "manifest": "Read at the reviewed run's directory: status complete, eight commits, changed_paths naming the three in-scope files, and armed baseline_suite/after_suite objects with revision, literal command, exit_status, log_path, completed and failure ids. It records the two negative controls with their log paths, names the fourth case's control, and records the exit-record half under outside_scope.",
+    "write_paths": "The declared paths are reckon/crew/dispatch_sessions.py, tests/test_a_stop_keeps_the_attempts_uncommitted_work.py and docs/evidence/fragments/a-run-has-one-live-worker/save-a-stopped-attempts-uncommitted-work.html. git diff --stat 70cd51950d a9660c0e27 lists exactly those three paths (31 and 73 lines added, 7 in the fragment), so every changed path is inside the fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that crew stop saves the worktree's uncommitted diff before it signals; the delta keeps that mechanism and repairs its read budget, with dispatch_sessions.py:2103 calling _preserve_stopped_worktree before any signal and both reads at 2272 and 2282 now passing the stop's own 60-second timeout.\nVERDICT done_when: the done_when's armed command is PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_stop_keeps_the_attempts_uncommitted_work.py; logs/baseline-suite.log records 4 failed, EXIT=1 at 8ad90651f6 in a scratch tree, logs/after-suite.log records 4 passed, EXIT=0 at 2b30715669, and both logs and both negative controls carry their revision, literal command and a bare EXIT= line.\nVERDICT write_paths: every path in git diff --stat 70cd51950d a9660c0e27 is one of the three declared paths in the manifest.\nVERDICT manifest: read; it records status complete, the armed pair with revisions and log paths, both negative controls, and the exit-record half under outside_scope.\nVERDICT diff: read commit by commit; 10dac3d174 adds a timeout parameter to the module's single _worktree_git_read and a stop-specific constant with a fourth case and its control, and the two later commits edit only the evidence fragment.\nCALL_SITES: reckon/crew/dispatch_sessions.py:2103 (terminate calls _preserve_stopped_worktree), reckon/crew/dispatch_sessions.py:1517-1527 (_inherited_worktree_reading's three reads keep the ten-second default), reckon/crew/dispatch.py:4025 (re-exports _worktree_git_read)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_sessions.py:2272 and 2282 pass _STOP_WORKTREE_GIT_TIMEOUT_SECONDS (60.0) on both reads, which is the regression the prior review named at line 1482, so the stop keeps the work it is there to keep.\nSCORE evidence: 14\nJUSTIFICATION evidence: the armed pair in logs/baseline-suite.log and logs/after-suite.log is real and reconciled, but the fragment at line 25 names a gate revision no green log records and line 26 points at logs/base.log, which shows three failures where the paragraph claims four.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 70cd51950d a9660c0e27 touches only reckon/crew/dispatch_sessions.py, tests/test_a_stop_keeps_the_attempts_uncommitted_work.py and the evidence fragment, all declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the fourth case at tests/test_a_stop_keeps_the_attempts_uncommitted_work.py:314 fails when the stop is left on the handoff default, as logs/negative-control-timeout.log records with 1 failed and 3 passed at EXIT=1, so the guard is shown to fire.\nSCORE fit: 18\nJUSTIFICATION fit: the added constant and parameter follow the module's existing _worktree_git_read idiom at reckon/crew/dispatch_sessions.py:1477 and carry no plan label or ticket reference.\nSCORE reuse: 20\nJUSTIFICATION reuse: 10dac3d174 extends the module's single reader with a timeout parameter rather than adding a second read path; the duplicate reader the prior review found was removed in fd081c7e79 and the only remaining duplication is the release's residue capture, recorded under outside_scope.\nFINDING docs/evidence/fragments/a-run-has-one-live-worker/save-a-stopped-attempts-uncommitted-work.html:25 non-blocking: the gate paragraph cites revision 10dac3d174 for '4 passed', but the green log logs/after-suite.log names 2b30715669 and the only log at 10dac3d174 is the mutated control reading 1 failed, 3 passed.\nFINDING docs/evidence/fragments/a-run-has-one-live-worker/save-a-stopped-attempts-uncommitted-work.html:29 non-blocking: the parenthetical attaches 'reversing the repair' to head-after-repair.log, which is the repaired arm of 10 passes, while the reversing arm is logs/negative-control.log named in the next sentence.\nFINDING docs/evidence/fragments/a-run-has-one-live-worker/save-a-stopped-attempts-uncommitted-work.html:26 non-blocking: the paragraph claims the base arm fails all four cases but points at logs/base.log, which records 3 failed at 8ad90651f6 from the earlier round; the four-case base arm is logs/baseline-suite.log.",
+  "review_run_id": "r-20261108T121338819543-review-of-save-a-stopped-attempts-uncommitted-work-a9660c0e27b1",
+  "reviewed_base_sha": "70cd51950d3eb77e3c71a8209d865fb4b9777b5a",
+  "reviewed_head_sha": "a9660c0e27b1bee02ae17a8b7e1f819915af35dc",
+  "reviewed_run_id": "r-20261108T044348877264-save-a-stopped-attempts-uncommitted-work",
+  "scope_of_review": "delta only: the commits the run gained after the prior review landed at 70cd51950d, namely 10dac3d174 (the stop's own worktree read budget), 2b30715669 and a9660c0e27 (two landing-fragment corrections). The run's dispatch base is 8ad90651f6697606b66434ecc17c85c099025ddb.",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T13:09:53.488810+00:00",
+  "total": 109
+}

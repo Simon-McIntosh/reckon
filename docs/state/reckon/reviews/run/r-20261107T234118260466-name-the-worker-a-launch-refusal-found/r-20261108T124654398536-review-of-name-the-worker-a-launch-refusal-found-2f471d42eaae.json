@@ -1,0 +1,73 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T13:16:06.041Z",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "folded",
+      "node": "repair-of-name-the-worker-a-launch-refusal-found-2f471d42eaae",
+      "recorded_at": "2026-11-08T14:20:11.189131+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-08T13:05:12Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-name-the-worker-a-launch-refusal-found-2f471d42eaae",
+      "recorded_at": "2026-11-08T14:13:00.311841+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "repair-of-name-the-worker-a-launch-refusal-found-2f471d42eaae",
+      "recorded_at": "2026-11-08T14:14:02.740768+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "repair-of-name-the-worker-a-launch-refusal-found-2f471d42eaae",
+      "recorded_at": "2026-11-08T14:14:26.105980+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/process_liveness.py",
+      "line": 388,
+      "severity": "blocking",
+      "text": "The new placed-with-unknown arm in record_process_liveness changes record_process_alive's answer for a placed record whose scheduler cannot be queried from True (the pid fallback) to None, and the change was not propagated. Two existing tests assert the old contract and now fail at head: tests/test_crew_placed_liveness.py:74 (test_a_scheduler_reckon_cannot_query_falls_through_to_the_pid, 'assert None is True') and :111 (test_a_query_that_could_not_be_run_falls_through_to_the_pid). Measured by this review: the same file is 18 passed at the reviewed base c4425ab9 and 2 failed, 16 passed at head 2f471d42. The armed gate omitted this file, so the run's own suite pair records zero added failures while the repository suite gained two. The same answer reaches every record_process_alive caller, changing verdicts with no test for them, for example the widen claim at reckon/crew/claims.py:113 ('alive is True'), the resume refusal at reckon/crew/resumption.py:1288 and the promotion check at reckon/crew/promotion_checks.py:345 ('is not True'). Either repair the owner's fallback so the old contract holds, or update tests/test_crew_placed_liveness.py and the documented record_process_alive contract in the same change; a node cannot land with two red tests."
+    },
+    {
+      "file": "reckon/crew/process_liveness.py",
+      "line": 454,
+      "severity": "non-blocking",
+      "text": "record_process_alive's docstring still states that the job is asked first and 'the pid probe is the fallback for a record carrying no placement or a scheduler that cannot be queried' (reckon/crew/process_liveness.py:453-455). The new branch at :388 makes that false for a placed record: an unqueryable scheduler now yields LIVENESS_PLACED with alive None and never reaches the pid probe. The function every caller reads now documents the behaviour the change removed."
+    },
+    {
+      "file": "reckon/crew/process_liveness.py",
+      "line": 221,
+      "severity": "non-blocking",
+      "text": "_record_is_placed (reckon/crew/process_liveness.py:221) restates the placement test that placement_job_alive performs inline at :256-257 (isinstance(placement, Mapping) and bool(placement)), so one fact is spelled twice in the same module and the two can drift. The predicate should be the single owner and placement_job_alive should read it."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that both launch refusals name the worker they found, never a dead pid; at head reckon/crew/dispatch_launch.py:2003 and :2872 both word the refusal through _live_worker_refusal (dispatch_launch.py:1930), which opens 'cannot read whether its worker is live' for the placed-with-unknown arm and 'still has a live worker' otherwise, and _live_worker_naming (dispatch_launch.py:1906) names the job or 'placed on job N, liveness unknown' rather than the scheduler client's pid.\nVERDICT done_when: the done-when named tests/test_a_queued_run_launches_once.py plus the resume guard and ruff; the manifest's baseline_suite and after_suite record both arms with literal commands and log paths, and logs/01-baseline-suite.log reads '4 failed, 13 passed' EXIT=1 at 2c0dcf9b while logs/02-after-suite.log reads '17 passed' EXIT=0 at 2f471d42, though the armed file list excluded tests/test_crew_placed_liveness.py, which covers the modified function and is red at head.\nVERDICT write_paths: the declared paths are reckon/crew/recovery_liveness.py, reckon/crew/process_liveness.py (added by the resume advice), reckon/crew/dispatch_launch.py, tests/test_a_queued_run_launches_once.py, tests/test_a_widen_says_when_it_takes_effect.py plus the evidence fragment and figures; the three gained commits touch the fragment, dispatch_launch.py, process_liveness.py, recovery_liveness.py and the queued-run test, all inside that set, and none touches the widen test.\nVERDICT manifest: read; status complete, the six commits and five changed paths recorded, both arms with their log paths and zero after-arm failures, four negative controls described, and the placard owner's placed branch named as the arm that answers; test_logs is a single comma-separated line rather than one path per line as the source done-when asks, which the manifest parser accepts as a list.\nVERDICT diff: read commit by commit against c4425ab9; 4c1a679 adds _record_is_placed and the placed-with-unknown branch to process_liveness.py, deletes the duplicate placed branch from live_worker_reading (recovery_liveness.py), adds _live_worker_refusal and rewires both refusal sites (dispatch_launch.py) and updates the two placed cases' monkeypatch target and expected head (tests/test_a_queued_run_launches_once.py); 1b22279 and 2f471d42 touch only the evidence fragment, correcting the owner description, the six-case count and the two arms' figures.\nCALL_SITES: reckon/crew/dispatch_launch.py:_prepare_attempt_records, reckon/crew/dispatch_launch.py:_supervisor_spawn_worker, reckon/crew/recovery_liveness.py:live_worker_reading, reckon/crew/process_liveness.py:record_process_alive, reckon/crew/claims.py:113, reckon/crew/resumption.py:1288, reckon/crew/promotion_checks.py:345\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: dispatch_launch.py:2003 and :2872 both interpolate _live_worker_refusal, and the placed-with-unknown refusal at :1930-1943 no longer asserts a live worker it never observed.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/01-baseline-suite.log and logs/02-after-suite.log carry revision headers, literal commands, module path and cwd with bare EXIT lines, but the armed file set omitted tests/test_crew_placed_liveness.py, the file that covers process_liveness.py's modified function, so the recorded zero added failures is a property of the selection rather than of the change.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: all five paths in the three-commit diff are inside the declared scope after the resume advice added process_liveness.py, and no peer, plan or index path is touched.\nSCORE durability: 8\nJUSTIFICATION durability: tests/test_a_queued_run_launches_once.py:275 fails if the owner's placed branch is dropped (logs/nc4) and :279 fails if the client pid is named, but no assertion guards the owner's changed boolean for its other callers, and tests/test_crew_placed_liveness.py:74 and :111 still assert the removed fallback and are red at head.\nSCORE fit: 13\nJUSTIFICATION fit: _live_worker_refusal (dispatch_launch.py:1930) and _record_is_placed (process_liveness.py:221) are private, mechanism-named helpers with no plan or ticket identifier, but record_process_alive's docstring at process_liveness.py:453-455 still documents the pid fallback the change removed.\nSCORE reuse: 19\nJUSTIFICATION reuse: the duplicate placed-arm resolution was deleted from recovery_liveness.py:1299-1307 and the change now extends record_process_liveness (process_liveness.py:388), the owner of that capability, though _record_is_placed restates placement_job_alive's inline placement test at :256-257.\nFINDING reckon/crew/process_liveness.py:388 blocking: the placed-with-unknown arm turns record_process_alive's answer for a placed record with an unqueryable scheduler from True to None and the change was not propagated - tests/test_crew_placed_liveness.py:74 and :111 assert the old fallback (18 passed at base c4425ab9, 2 failed and 16 passed at head 2f471d42) and the callers that read the boolean (claims.py:113, resumption.py:1288, promotion_checks.py:345) acquire a new verdict with no test; either keep the owner's fallback or update that file and the documented contract in the same change.\nFINDING reckon/crew/process_liveness.py:454 non-blocking: record_process_alive's docstring still promises the pid probe as the fallback for a scheduler that cannot be queried, which the new branch at :388 makes false for placed records.\nFINDING reckon/crew/process_liveness.py:221 non-blocking: _record_is_placed restates the placement test placement_job_alive makes inline at :256-257, so the fact is spelled twice in one module and can drift.\n",
+  "review_run_id": "r-20261108T124654398536-review-of-name-the-worker-a-launch-refusal-found-2f471d42eaae",
+  "reviewed_base_sha": "c4425ab9ffda5d9b10e928a9c4168dbdaea21229",
+  "reviewed_commits": [
+    "4c1a67921731972df96035c17f229acebc354950",
+    "1b22279cadec1f541c48074b7246a05bf43ae659",
+    "2f471d42eaae09a7380ed0a124429860efbbcbb7"
+  ],
+  "reviewed_head_sha": "2f471d42eaae09a7380ed0a124429860efbbcbb7",
+  "reviewed_run_id": "r-20261107T234118260466-name-the-worker-a-launch-refusal-found",
+  "scores": {
+    "durability": 8,
+    "evidence": 14,
+    "fit": 13,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T13:37:48.349464+00:00",
+  "total": 91
+}

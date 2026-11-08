@@ -1432,7 +1432,11 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
             )
             continue
         if classification in module.REVIEW_CLASSIFICATION_KINDS:
-            if classification == "scoring" and run_id in in_flight:
+            if (
+                classification == "scoring"
+                and run_id in in_flight
+                and row.get("review_run_phase") != "working"
+            ):
                 continue
             duty = module._review_duty_item(
                 state.project,
@@ -1472,6 +1476,7 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
                     placements=queued_placements,
                     now=state.now,
                     verdicts=verdicts,
+                    pointer=pointer,
                 )
             )
             continue

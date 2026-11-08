@@ -1,0 +1,210 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Focused contract pair only; the full required importer delta is unknown. Coordinator 38-file supplement independently has identical ten failing IDs at base and head.",
+  "assertion_audit": [
+    {
+      "fails_if": "Dispatch reuses a run ID, drops a claimant, or rejects the second shared-root dispatch; restoring the exclusive default fails before these assertions.",
+      "file": "tests/test_a_source_file_is_shared_by_default.py",
+      "lines": [
+        84,
+        90
+      ]
+    },
+    {
+      "fails_if": "Admission holds the shared-root request, omits its launch result, or leaves its pointer queued; restoring root-unaware membership produces held-on-claim.",
+      "file": "tests/test_a_source_file_is_shared_by_default.py",
+      "lines": [
+        108,
+        109,
+        110
+      ]
+    },
+    {
+      "fails_if": "The exclusive refusal names another owner or omits the configured pattern; removing exclusive precedence fails the surrounding raises context.",
+      "file": "tests/test_a_source_file_is_shared_by_default.py",
+      "lines": [
+        121,
+        122
+      ]
+    },
+    {
+      "fails_if": "A directory or no-roots refusal names another run; admitting those overlaps fails the surrounding raises contexts.",
+      "file": "tests/test_a_source_file_is_shared_by_default.py",
+      "lines": [
+        136,
+        146
+      ]
+    },
+    {
+      "fails_if": "Legacy explicit sharing refuses the second dispatch or yields no run ID.",
+      "file": "tests/test_a_source_file_is_shared_by_default.py",
+      "lines": [
+        152
+      ]
+    },
+    {
+      "fails_if": "Queue edit skips the directory holder or identifies the wrong holder; restoring its broad shared-path skip makes refusal None.",
+      "file": "tests/test_a_source_file_is_shared_by_default.py",
+      "lines": [
+        161,
+        162
+      ]
+    },
+    {
+      "fails_if": "Admission skips the directory holder or fails to name it; restoring its broad shared-path skip makes hold None.",
+      "file": "tests/test_a_source_file_is_shared_by_default.py",
+      "lines": [
+        177,
+        178
+      ]
+    },
+    {
+      "fails_if": "Queue edit rejects an exact shared-root co-claim; restoring root-unaware membership returns a conflict.",
+      "file": "tests/test_a_source_file_is_shared_by_default.py",
+      "lines": [
+        185
+      ]
+    },
+    {
+      "fails_if": "Either queue guard admits an exclusive collision or omits its configured pattern from the refusal.",
+      "file": "tests/test_a_source_file_is_shared_by_default.py",
+      "lines": [
+        200,
+        201
+      ]
+    },
+    {
+      "fails_if": "Root membership fails for an existing source, existing extensionless file, future file or root-only declaration.",
+      "file": "tests/test_a_source_file_is_shared_by_default.py",
+      "lines": [
+        211,
+        212,
+        213,
+        228
+      ]
+    },
+    {
+      "fails_if": "Membership allows a root directory, absent suffixless directory, existing dotted directory, sibling root or escaping path.",
+      "file": "tests/test_a_source_file_is_shared_by_default.py",
+      "lines": [
+        214,
+        215,
+        216,
+        217,
+        218
+      ]
+    },
+    {
+      "fails_if": "Root membership overrides the private subtree exclusion or the diagnostic returns a different or absent exclusive pattern.",
+      "file": "tests/test_a_source_file_is_shared_by_default.py",
+      "lines": [
+        229,
+        230
+      ]
+    }
+  ],
+  "assertion_independence": "No tautological added assertion found: configuration values are checked against separately computed decisions or messages, claimant identities come from independent dispatch outputs, and membership checks contain positive and negative controls.",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/dispatch_claims.py:_raise_repository_scope_conflict",
+    "reckon/crew/dispatch_claims.py:refuse_widen_scope_conflicts",
+    "reckon/crew/promotion_scope.py:_accepted_scope_exceptions",
+    "reckon/crew/promotion_scope.py:_repository_tree_boundary_violations",
+    "reckon/crew/queue_admission.py:_claim_collision",
+    "reckon/crew/queue_admission.py:_live_claim_detail",
+    "reckon/crew/queue_edit.py:_live_claim_conflict"
+  ],
+  "completed_at": "2026-11-08T12:59:46Z",
+  "dimension_dispositions": {
+    "evidence": {
+      "kind": "exempted",
+      "reason": "see finding 0's disposition: claims-population arms replace the interrupted whole-importer arm",
+      "recorded_at": "2026-11-08T13:37:39.950442+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-08T12:39:03Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "coordinator decision: the change alters one function, runs._shared_write_paths, and its four callers' claim checks; the coordinator measured every test file that reaches those names or asserts a scope refusal (38 files, logs/claims-population-files.txt) at base and head with identical failure ids and 14 added passes. A full 675-file importer arm costs about 2.5 h of load on the saturated fleet node; claims plan \u00a74 measures held-on-claim verdicts and concurrent landings on the live fleet as the backstop for a missed case",
+      "recorded_at": "2026-11-08T13:37:34.448868+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/concurrent-edits-meet-at-the-merge/a-source-file-is-shared-by-default.html",
+      "line": "23",
+      "severity": "blocking",
+      "text": "blocking: The required importer base/head comparison remains unmeasured: importers-base.log is interrupted with completed=false and no full head arm exists; the coordinator supplement selects 38 files by claim-related text and omits most of the recorded 675 importer files plus the six dynamic importer files, so its zero added failures cannot establish prompt.txt:136's exact measure."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "Read all five commits from b0708be48a046eb6c3371fa2f73021470bdcb153 through d7fb8d91992a732a1d8ecb6f90c7aae614ed18e1; tests precede the source repair and the final evidence fragment explicitly preserves the incomplete importer result.",
+    "done_when": "Source prompt.txt:136 requires focused tests, a base negative control, importer-wide zero added failures and lint; the focused and lint logs satisfy their parts, but the completed 38-file supplement does not cover the declared importer population.",
+    "goal": "The source prompt.txt:38 requires shared-root file co-claims with exclusive-pattern precedence; reckon/crew/runs.py:1569 and both queue comparison changes implement that behavior.",
+    "manifest": "Source manifest.md records 14 focused passes, three base-control failures and an interrupted importer arm, while its appended coordinator note supplies a narrower completed comparison without completing the original importer measure.",
+    "write_paths": "Source prompt.txt:80-89 grants the five crew modules, sharing declaration, new test and evidence fragment; all eight changed paths stay inside those grants."
+  },
+  "justifications": {
+    "durability": "tests/test_a_source_file_is_shared_by_default.py:80-232 asserts independent dispatch, queue, refusal and boundary outcomes that redden under the corresponding rollback, with three observed failures in negative-control.log, but no added direct widen or promotion regression test.",
+    "evidence": "contract-head.log records 14 passes and negative-control.log records three reproducible failures, but source manifest.md and the evidence fragment at line 23 leave the importer-wide base/head requirement incomplete despite the narrower coordinator logs.",
+    "fit": "reckon/crew/runs.py:1543 retains the existing membership interface and path-normalization helpers, queue callers retain their existing flow, and the changed source and tests introduce no forbidden names or comments.",
+    "goal_fidelity": "reckon/crew/runs.py:1543-1645 extends the shared-path owner with roots and exclusive precedence, and queue_admission.py:1079 and queue_edit.py:240 preserve directory overlap refusals.",
+    "reuse": "The capability search found the existing owner runs.py:_shared_write_paths and normalization/containment helpers, which the additions extend; domain_rules.py:64 owns a different basename-aware domain-rule matcher and no other shared-root policy owner was found.",
+    "scope_discipline": "All eight paths changed by the five commits are among source prompt.txt:80-89 grants, and the queue module edits are limited to claim comparison and refusal messages."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt.txt:38 requires shared-root file co-claims with exclusive-pattern precedence; reckon/crew/runs.py:1569 and both queue comparison changes implement that behavior.\nVERDICT done_when: Source prompt.txt:136 requires focused tests, a base negative control, importer-wide zero added failures and lint; the focused and lint logs satisfy their parts, but the completed 38-file supplement does not cover the declared importer population.\nVERDICT write_paths: Source prompt.txt:80-89 grants the five crew modules, sharing declaration, new test and evidence fragment; all eight changed paths stay inside those grants.\nVERDICT manifest: Source manifest.md records 14 focused passes, three base-control failures and an interrupted importer arm, while its appended coordinator note supplies a narrower completed comparison without completing the original importer measure.\nVERDICT diff: Read all five commits from b0708be48a046eb6c3371fa2f73021470bdcb153 through d7fb8d91992a732a1d8ecb6f90c7aae614ed18e1; tests precede the source repair and the final evidence fragment explicitly preserves the incomplete importer result.\nCALL_SITES: reckon/crew/dispatch_claims.py:_raise_repository_scope_conflict, reckon/crew/dispatch_claims.py:refuse_widen_scope_conflicts, reckon/crew/promotion_scope.py:_accepted_scope_exceptions, reckon/crew/promotion_scope.py:_repository_tree_boundary_violations, reckon/crew/queue_admission.py:_claim_collision, reckon/crew/queue_admission.py:_live_claim_detail, reckon/crew/queue_edit.py:_live_claim_conflict\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:1543-1645 extends the shared-path owner with roots and exclusive precedence, and queue_admission.py:1079 and queue_edit.py:240 preserve directory overlap refusals.\nSCORE evidence: 13\nJUSTIFICATION evidence: contract-head.log records 14 passes and negative-control.log records three reproducible failures, but source manifest.md and the evidence fragment at line 23 leave the importer-wide base/head requirement incomplete despite the narrower coordinator logs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: All eight paths changed by the five commits are among source prompt.txt:80-89 grants, and the queue module edits are limited to claim comparison and refusal messages.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_source_file_is_shared_by_default.py:80-232 asserts independent dispatch, queue, refusal and boundary outcomes that redden under the corresponding rollback, with three observed failures in negative-control.log, but no added direct widen or promotion regression test.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/runs.py:1543 retains the existing membership interface and path-normalization helpers, queue callers retain their existing flow, and the changed source and tests introduce no forbidden names or comments.\nSCORE reuse: 20\nJUSTIFICATION reuse: The capability search found the existing owner runs.py:_shared_write_paths and normalization/containment helpers, which the additions extend; domain_rules.py:64 owns a different basename-aware domain-rule matcher and no other shared-root policy owner was found.\nFINDING docs/evidence/fragments/concurrent-edits-meet-at-the-merge/a-source-file-is-shared-by-default.html:23 blocking: The required importer base/head comparison remains unmeasured: importers-base.log is interrupted with completed=false and no full head arm exists; the coordinator supplement selects 38 files by claim-related text and omits most of the recorded 675 importer files plus the six dynamic importer files, so its zero added failures cannot establish prompt.txt:136's exact measure.\n",
+  "review_run_id": "r-20261108T123713881297-review-of-a-source-file-is-shared-by-default-d7fb8d91992a",
+  "reviewed_base_sha": "b0708be48a046eb6c3371fa2f73021470bdcb153",
+  "reviewed_commits": [
+    "57572b5b6a5cb89988772610ad90a40c4a225381",
+    "25da728606f8e0a7e606a29aec40fcdf0d927187",
+    "0b28ace43f95878e1ca437fe9d9f9a05a9aee6e5",
+    "ac8a1a32898146e8848ed48cb67be001fda2170a",
+    "d7fb8d91992a732a1d8ecb6f90c7aae614ed18e1"
+  ],
+  "reviewed_head_sha": "d7fb8d91992a732a1d8ecb6f90c7aae614ed18e1",
+  "reviewed_run_id": "r-20261108T092818929205-a-source-file-is-shared-by-default",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_delta_source": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_source_file_is_shared_by_default.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T092818929205-a-source-file-is-shared-by-default/contract-head.log",
+      "revision": "ac8a1a32898146e8848ed48cb67be001fda2170a"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_source_file_is_shared_by_default.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 3,
+      "failure_ids": [
+        "tests/test_a_source_file_is_shared_by_default.py::test_two_dispatches_share_a_file_under_a_declared_root",
+        "tests/test_a_source_file_is_shared_by_default.py::test_a_queued_file_claim_is_admitted",
+        "tests/test_a_source_file_is_shared_by_default.py::test_an_exclusive_pattern_is_named_in_the_refusal"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T092818929205-a-source-file-is-shared-by-default/negative-control.log",
+      "revision": "b0708be48a046eb6c3371fa2f73021470bdcb153"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T13:36:41.490240+00:00",
+  "total": 111
+}

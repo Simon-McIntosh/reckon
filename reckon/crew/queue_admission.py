@@ -16,6 +16,7 @@ from __future__ import annotations
 import contextlib
 import copy
 import fcntl
+import hashlib
 import json
 import os
 import subprocess
@@ -296,19 +297,19 @@ def _launch_reread_refusal(pointer: Mapping[str, Any]) -> str | None:
 
     A pass ranks the queued pointers it read at its start and then works
     through the queue, so a request can move while the pass is busy with the
-    others: a coordinator may promote, discard or stop it, and a supervisor may
-    end an attempt of it that already ran. Launching from the pass's opening
-    read would then start a second attempt on a request that no longer waits,
-    overwriting an attempt's manifest, so the pointer and the run's attempt
-    records are re-read together here, under the same per-run lock every
-    pointer writer takes.
+    others: a coordinator may hold, promote, discard or stop it, and a
+    supervisor may end an attempt of it that already ran. Launching from the
+    pass's opening read would then start a second attempt on a request that no
+    longer waits, overwriting an attempt's manifest, so the pointer and the
+    run's attempt records are re-read together here, under the same per-run
+    lock every pointer writer takes.
     """
     run_id = str(pointer.get("run_id") or "")
     if not run_id:
         return None
     with runs._pointer_lock(run_id):
         try:
-            runs.pointer_path(run_id).read_text(encoding="utf-8")
+            text = runs.pointer_path(run_id).read_text(encoding="utf-8")
         except FileNotFoundError:
             return (
                 "the request's live pointer was removed while the pass waited on "
@@ -316,6 +317,21 @@ def _launch_reread_refusal(pointer: Mapping[str, Any]) -> str | None:
             )
         except OSError as exc:
             return f"the request's live pointer cannot be read: {exc}"
+        try:
+            current = json.loads(text)
+        except ValueError:
+            current = None
+        phase = str(current.get("phase") or "") if isinstance(current, Mapping) else ""
+        if phase == HELD_PHASE:
+            hold = current.get("queue_hold")
+            reason = (
+                str(hold.get("reason") or "").strip()
+                if isinstance(hold, Mapping)
+                else ""
+            )
+            return "the request was held while the pass waited on it" + (
+                f": {reason}" if reason else ""
+            )
         return _attempt_with_a_result(run_id)
 
 
@@ -886,7 +902,30 @@ def _checkout_code_is_trusted() -> bool:
     """
     from reckon import checkout_trust
 
-    return checkout_trust.moved_checkout_is_trustworthy(_source_root()).trusted
+    stamp = _admit_code_stamp()
+    root = _source_root()
+    dirty, _detail = checkout_trust.tracked_reckon_tree_is_dirty(root)
+    if dirty:
+        return False
+    key = (str(root), stamp)
+    remembered = _TRUSTED_CODE_STAMPS.get(key)
+    if remembered is not None:
+        return remembered
+    verdict = checkout_trust.moved_checkout_is_trustworthy(root)
+    if (
+        not verdict.dirty
+        and stamp != checkout_trust.IDENTITY_UNKNOWN
+        and not isinstance(
+            verdict.detail,
+            (checkout_trust.ImportProbeTimedOut, checkout_trust.ImportProofPending),
+        )
+    ):
+        _TRUSTED_CODE_STAMPS.clear()
+        _TRUSTED_CODE_STAMPS[key] = verdict.trusted
+    return verdict.trusted
+
+
+_TRUSTED_CODE_STAMPS: dict[tuple[str, str], bool] = {}
 
 
 def _reexec_into_current_code() -> None:
@@ -1076,8 +1115,11 @@ def _claim_collision(
         (
             path
             for path in ours
-            if path not in shared_files
-            and any(runs._scopes_overlap(path, claim) for claim in theirs)
+            if any(
+                runs._scopes_overlap(path, claim)
+                and not (path == claim and path in shared_files)
+                for claim in theirs
+            )
         ),
         None,
     )
@@ -1209,8 +1251,10 @@ def _live_claim_detail(
             continue
         disposition, collision, holder = fresh
         holder_run = str(other.get("run_id") or "unknown")
+        exclusive = runs._exclusive_write_pattern(shared_files, collision)
+        pattern_reason = f"; exclusive pattern {exclusive!r}" if exclusive else ""
         return {
-            "reason": f"run {holder_run!r} holds {collision!r}: {disposition.reason}",
+            "reason": f"run {holder_run!r} holds {collision!r}: {disposition.reason}{pattern_reason}",
             "holder": {
                 "run_id": holder_run,
                 "node": str((holder.get("node") or {}).get("id") or ""),
@@ -1686,18 +1730,29 @@ def _restore_queued(
     *,
     moment: datetime | None = None,
     guard: Mapping[str, Any] | None = None,
+    hold: Mapping[str, Any] | None = None,
 ) -> None:
     """Write a launched request back as one queued pointer carrying the failure.
 
     The restored pointer carries the same bounded back-off as a failure
     annotated in place. A discarded, promoted or removed request is never
     restored; the write checks departure under the pointer lock.
+
+    A ``hold`` names a refusal that is not a failed attempt — a claim taken in
+    the window between the pre-launch check and the launch. The request is then
+    restored carrying that hold and no failure, so the next pass launches the
+    request as soon as the claim it waits on is released rather than waiting out
+    a retry back-off.
     """
     if _discarded_since(snapshot):
         return
     restored = copy.deepcopy(dict(snapshot))
     restored["phase"] = "queued"
-    _stamp_failure(restored, failure, moment=moment or _now(), guard=guard)
+    if hold is None:
+        _stamp_failure(restored, failure, moment=moment or _now(), guard=guard)
+    else:
+        restored[RECORDED_HOLD_FIELD] = dict(hold)
+        restored["reason"] = str(hold.get("reason") or "")
     for key in (
         "pid",
         "pid_start_time",
@@ -1715,6 +1770,36 @@ def _restore_queued(
         if _retain_launched_record(current, restored):
             restored = current
         _write_pointer(run_id, restored)
+
+
+def _return_claim_refusal_to_queue(
+    snapshot: Mapping[str, Any],
+    caught: ScopeConflict,
+    *,
+    live: Sequence[Mapping[str, Any]],
+    moment: datetime,
+) -> tuple[str, str | None]:
+    """Return a launch refused on a claim to the queue, held on that claim.
+
+    A claim taken between the pre-launch check and the launch refuses the
+    launch once its pointer has been published in phase ``starting``. The
+    refusal is a hold, not a failed attempt: the request goes back to
+    ``queued`` carrying the claim that must settle, and the next pass launches
+    it once that claim is released. Left as a failure the starting pointer
+    would stay behind with no worker, which the reaper does not read as a
+    launch to clean up.
+    """
+    run_id = str(snapshot["run_id"])
+    try:
+        _restore_queued(
+            snapshot,
+            f"{type(caught).__name__}: {caught}",
+            moment=moment,
+            hold=_refusal_hold(caught, live, moment=moment),
+        )
+    except _PointerWritebackError as exc:
+        return run_id, str(exc)
+    return run_id, None
 
 
 def _record_queued_failure(
@@ -2042,6 +2127,7 @@ def _pass_verdict_record(
         "started_at": result.get("started_at"),
         "ended_at": result.get("ended_at"),
         "release_seconds": result.get("release_seconds"),
+        "waits_seconds": result.get("waits_seconds"),
         "launch_seconds": result.get("launch_seconds"),
         "land_seconds": result.get("land_seconds"),
         "lane": lane,
@@ -2632,36 +2718,53 @@ def _readiness_rows(
     cache: dict[str, Any],
     plan: str = "",
     refs: Iterable[str] = (),
+    *,
+    inventory_only: bool = False,
 ) -> tuple[Mapping[str, Mapping[str, Any]], Mapping[str, Mapping[str, Any]]]:
-    """Read the roadmap section verdicts and inventory a request judges by.
+    """Read only the plans a request and its declared waits name.
 
-    ``cache`` is the pass's own, so a pass that launches several requests in
-    one project derives that project's roadmap once. The entry is keyed by the
-    project, its docs directory and :func:`_plan_tree_fingerprint` inside a
-    project-wide pass. A bounded read outside the pass also keys on the plan
-    and refs asked about. A plan edited or a landing merged while the pass
-    runs misses either cache entry.
-
-    ``plan`` names the plan a dispatch is judging. Outside an admission pass
-    that read covers the plan and the plans its waits name, through
-    :func:`reckon.crew.plan_review.section_readiness_rows`, rather than the
-    whole project. Inside a pass the pass has already built the project once
-    and shares it, so the whole-project read is the one that answers.
+    A pass reuses each bounded result while its contributing files keep their
+    stat identities. An edit between requests or passes invalidates that result
+    without walking every plan in the project.
     """
-    fingerprint = _plan_tree_fingerprint(docs_dir)
-    scope = (project, str(docs_dir or ""))
-    if not _READINESS_PASS_ACTIVE.get():
-        scope += (plan, ",".join(sorted(str(ref) for ref in refs)))
-    key = "|".join((*scope, *(str(part) for part in fingerprint)))
+    refs = tuple(refs)
+    bounded_read = _BOUNDED_READ.get() or _READINESS_PASS_ACTIVE.get() or inventory_only
+    key = (
+        project,
+        str(docs_dir or ""),
+        plan if bounded_read else "",
+        tuple(sorted(map(str, refs))) if bounded_read else (),
+        inventory_only,
+    )
     cached = cache.get(key)
-    if cached is not None:
-        return cached
-    if (
-        plan
-        and docs_dir is not None
-        and _BOUNDED_READ.get()
-        and not _READINESS_PASS_ACTIVE.get()
-    ):
+    if cached is not None and docs_dir is not None:
+        rows, inventory, identities = cached
+        current = (
+            _readiness_file_identities(Path(docs_dir), inventory)
+            if bounded_read
+            else _plan_tree_fingerprint(docs_dir)
+        )
+        if identities == current:
+            return rows, inventory
+    if inventory_only and plan and docs_dir is not None:
+        from reckon.crew.plan_review import _readiness_inventory
+
+        try:
+            inventory = {
+                str(item["slug"]): item
+                for item in _readiness_inventory(
+                    project, Path(docs_dir), plan, refs=refs
+                )
+            }
+        except Exception:  # noqa: BLE001 - unreadable plan gives no ready wait
+            return {}, {}
+        cache[key] = (
+            {},
+            inventory,
+            _readiness_file_identities(Path(docs_dir), inventory),
+        )
+        return {}, inventory
+    if plan and docs_dir is not None and bounded_read:
         try:
             from reckon.crew.plan_review import section_readiness_rows
 
@@ -2670,9 +2773,15 @@ def _readiness_rows(
             )
         except Exception:  # noqa: BLE001 - the project read below carries it
             bounded, bounded_inventory = {}, {}
-        if plan in bounded:
-            cache[key] = (bounded, bounded_inventory)
-            return cache[key]
+        if plan in bounded or plan in bounded_inventory or _READINESS_PASS_ACTIVE.get():
+            cache[key] = (
+                bounded,
+                bounded_inventory,
+                _readiness_file_identities(Path(docs_dir), bounded_inventory),
+            )
+            return bounded, bounded_inventory
+    if _READINESS_PASS_ACTIVE.get():
+        return {}, {}
     rows: dict[str, Mapping[str, Any] | Any] = {}
     inventory: dict[str, Mapping[str, Any] | Any] = {}
     try:
@@ -2680,8 +2789,7 @@ def _readiness_rows(
         from reckon.mcp_discovery import _discover_project, _inventory_row
 
         if not project:
-            cache[key] = ({}, {})
-            return cache[key]
+            return {}, {}
         discovered = _discover_project(project, None)
         items = [_inventory_row(item) for item in discovered.get("inventory", [])]
         for item in items:
@@ -2694,8 +2802,26 @@ def _readiness_rows(
         rows = project_section_readiness(project, Path(docs_dir))
     except Exception:  # noqa: BLE001 - an unbuildable roadmap holds every wait
         rows, inventory = {}, {}
-    cache[key] = (rows, inventory)
+    if not bounded_read and docs_dir is not None:
+        cache[key] = (rows, inventory, _plan_tree_fingerprint(docs_dir))
     return rows, inventory
+
+
+def _readiness_file_identities(
+    docs_dir: Path, inventory: Mapping[str, Any]
+) -> tuple[tuple[str, tuple[int, int, int, int, int] | None], ...]:
+    """Stat identities of precisely the plan files that supplied a verdict."""
+    from reckon import file_memo
+
+    identities = []
+    for slug in sorted(inventory):
+        try:
+            stat = (docs_dir / "plans" / f"{slug}.html").stat()
+            identity = file_memo.signature_from_stat(stat)
+        except OSError:
+            identity = None
+        identities.append((slug, identity))
+    return tuple(identities)
 
 
 def _persisted_plan_states(project: str, docs_dir: Path) -> Mapping[str, Any]:
@@ -3293,9 +3419,10 @@ def _ref_state(
         )
         if target_docs is None:
             return PENDING
-        rows, inventory = _readiness_rows(
-            target_project, target_docs, cache, parsed.slug
-        )
+        if target_project != project or parsed.slug not in inventory:
+            rows, inventory = _readiness_rows(
+                target_project, target_docs, cache, parsed.slug
+            )
     slug, section = parsed.slug, normalize_section(parsed.stage or "")
     if section and (slug, section) in dead_sections:
         return ABANDONED
@@ -3381,11 +3508,16 @@ def resolve_waits(
     refs = section_waits_for(pointer)
     if not refs:
         return QUEUED_PHASE
+    inventory_only = not any(
+        ref.startswith((GATE_REF_PREFIX, "readiness:")) for ref in refs
+    )
     rows, inventory = _readiness_rows(
         str(pointer.get("project") or "") or _project_of_docs_dir(docs_dir),
         docs_dir,
         cache,
         str(dict(pointer.get("node") or {}).get("plan") or pointer.get("plan") or ""),
+        refs,
+        inventory_only=inventory_only,
     )
     issues: list[str] = []
     owner_project = str(pointer.get("project") or "") or _project_of_docs_dir(docs_dir)
@@ -4007,6 +4139,180 @@ def _move_pointer(run_id: str, phase: str) -> bool:
     return True
 
 
+#: The plan evidence one admission pass has read, keyed by the plan text and the
+#: stored reviews that judgment reads. A pass judges the review gate for every
+#: request it considers, and each judgment re-read the same plan four times. The
+#: pass holds the answer while neither the plan nor its review store has moved.
+_PLAN_REVIEW_PASS: ContextVar[dict[tuple[Any, ...], _PlanReviewRecord] | None] = (
+    ContextVar("queue_admission_plan_review_pass", default=None)
+)
+
+
+@contextmanager
+def plan_review_pass() -> Iterator[None]:
+    """Read each plan's review evidence once for the length of one pass.
+
+    Entered by an admission pass, which judges the review gate for every request
+    it considers. Outside such a pass each judgment reads the plan itself, so a
+    direct dispatch and a coordinator's own read always see the plan as it is
+    now.
+    """
+
+    token = _PLAN_REVIEW_PASS.set({})
+    try:
+        yield
+    finally:
+        _PLAN_REVIEW_PASS.reset(token)
+
+
+class _PlanReviewRecord:
+    """What one pass read once about one plan's review evidence.
+
+    The coverage, the section digests and the parsed plan state are read when
+    the record is built. The document-contract verdict reads a review snapshot
+    of its own, so it is taken only when a request actually needs it and held
+    from then on: a plan whose document unit no request reads costs no snapshot
+    read at all. The dispatch gate's answer is memoized here too, keyed by the
+    section a request builds and by whether the request is exempt from the gate,
+    because those are the whole of what the gate's verdict turns on for one
+    plan.
+    """
+
+    def __init__(
+        self,
+        *,
+        project: str,
+        plan_slug: str,
+        path: Path,
+        records: Sequence[Mapping[str, Any]],
+        uncovered: set[str],
+        changes: Mapping[str, float | None],
+        digests: Mapping[str, str],
+        state: Mapping[str, Any],
+    ) -> None:
+        self.project = project
+        self.plan_slug = plan_slug
+        self.path = path
+        self.records = records
+        self.uncovered = uncovered
+        self.changes = changes
+        self.digests = digests
+        self.state = state
+        self.gate: dict[tuple[str, bool], str | None] = {}
+        self._document_is_contract: bool | None = None
+
+    def documents_change_is_contract(self) -> bool:
+        """Whether the plan's document unit changed in the text a node reads."""
+        if self._document_is_contract is None:
+            from reckon.crew import routing
+
+            self._document_is_contract = routing._document_change_is_contract(
+                self.project, self.plan_slug, plan=self.path, records=self.records
+            )
+        return self._document_is_contract
+
+    def gate_owed(
+        self,
+        node: TaskNode,
+        *,
+        repo: str,
+        options: Mapping[str, Any],
+    ) -> str | None:
+        """The dispatch gate's verdict, read once per section and exemption.
+
+        The gate's verdict turns on the plan and on the units the request reads,
+        and the queue holds one request per node, so a key carrying the
+        request's own identity would never be reused. Keyed on the section it
+        builds and on whether the request is exempt from the gate at all, two
+        implement requests on one section share one read while a review
+        request's exempt verdict is never handed to a building one.
+        """
+        from reckon.crew import routing
+
+        key = (str(node.section or ""), routing._plan_review_exempt(node))
+        if key not in self.gate:
+            self.gate[key] = _dispatch_gate_owed(
+                node, project=self.project, repo=repo, options=options
+            )
+        return self.gate[key]
+
+
+def _plan_text_digest(path: Path) -> str:
+    """The content identity of one plan file, or ``""`` when it is unreadable."""
+    try:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError:
+        return ""
+
+
+def _stored_review_key(project: str, plan_slug: str) -> tuple[tuple[str, ...], ...]:
+    """The identities and digests of the stored reviews a plan's judgment reads."""
+    from reckon.crew import plan_review
+
+    entries: list[tuple[str, ...]] = []
+    for record in plan_review.list_plan_reviews(project, plan_slug):
+        digests = record.get("section_digests") or {}
+        entries.append(
+            (
+                plan_review._plan_review_identity(record)
+                or str(record.get("review_path") or ""),
+                str(record.get("plan_version") or ""),
+                str(record.get("plan_fingerprint") or ""),
+                str(record.get("reviewed_blob_sha") or ""),
+                str(record.get("status") or ""),
+                hashlib.sha256(
+                    json.dumps(digests, sort_keys=True, default=str).encode("utf-8")
+                ).hexdigest(),
+            )
+        )
+    return tuple(sorted(entries))
+
+
+def _build_plan_review_record(
+    path: Path, *, project: str, plan_slug: str
+) -> _PlanReviewRecord:
+    """Read one plan's review coverage, digests and state for a pass."""
+    from reckon import _plan_html as plan_html
+    from reckon.crew import plan_review
+
+    records, uncovered, changes = plan_review.review_coverage(
+        project, plan_slug, plan=path
+    )
+    return _PlanReviewRecord(
+        project=project,
+        plan_slug=plan_slug,
+        path=path,
+        records=records,
+        uncovered=uncovered,
+        changes=changes,
+        digests=plan_review._section_digests(path),
+        state=plan_html.read_state_file(path),
+    )
+
+
+def _plan_review_record(
+    path: Path, *, project: str, plan_slug: str
+) -> _PlanReviewRecord:
+    """The plan's review evidence for this pass, read once and reused.
+
+    Outside a pass nothing is held, so the record is built for this caller
+    alone. Inside one it is keyed by the plan's content and by the stored
+    reviews it reads: a plan edited, a review stored or a review rewritten
+    during the pass changes the key, so the next decision on that plan is taken
+    against what the plan and its store say now rather than against a reading
+    the pass has outlived.
+    """
+    cache = _PLAN_REVIEW_PASS.get()
+    if cache is None:
+        return _build_plan_review_record(path, project=project, plan_slug=plan_slug)
+    key = (str(path), _plan_text_digest(path), _stored_review_key(project, plan_slug))
+    record = cache.get(key)
+    if record is None:
+        record = _build_plan_review_record(path, project=project, plan_slug=plan_slug)
+        cache[key] = record
+    return record
+
+
 def _dispatch_gate_owed(
     node: TaskNode,
     *,
@@ -4066,7 +4372,6 @@ def _plan_review_owed(
     Only the enforced mode holds, exactly as the dispatch gate does; under the
     shipped report-only default the launch proceeds.
     """
-    from reckon import _plan_html as plan_html
     from reckon import flight
     from reckon.crew import plan_review, routing
 
@@ -4086,47 +4391,49 @@ def _plan_review_owed(
         # coordinator has answered the review question for that dispatch.
         return None
     contract = pointer.get(REVIEW_CONTRACT_KEY)
+    path = Path(repo) / "docs" / "plans" / f"{node.plan}.html"
     if not isinstance(contract, Mapping) or not _contract_is_current(contract, node):
         # A request queued by a writer that records no contract is judged by the
         # dispatch gate itself, which is what admission asked before requests
         # carried their own: it holds on every unit the request reads. Narrowing
         # that to the request's own contract needs the digests taken at queue
         # time, so a pointer without them keeps the wider hold rather than
-        # holding nothing.
-        return _dispatch_gate_owed(node, project=project, repo=repo, options=options)
+        # holding nothing. The gate's answer is read through the same per-plan
+        # record, so a pass that holds several such requests over one plan asks
+        # the gate once.
+        try:
+            evidence = _plan_review_record(path, project=project, plan_slug=node.plan)
+        except Exception:  # noqa: BLE001 - an unreadable plan answers through the gate
+            return _dispatch_gate_owed(
+                node, project=project, repo=repo, options=options
+            )
+        return evidence.gate_owed(node, repo=repo, options=options)
     try:
-        path = Path(repo) / "docs" / "plans" / f"{node.plan}.html"
-        records, uncovered, changes = plan_review.review_coverage(
-            project, node.plan, plan=path
-        )
+        evidence = _plan_review_record(path, project=project, plan_slug=node.plan)
         units = plan_review_units(node.section)
-        if not any(unit not in uncovered for unit in units):
+        if not any(unit not in evidence.uncovered for unit in units):
             # No stored review covers a single unit this request reads — the
             # plan is unreviewed, or every review is incomplete — so there is no
             # reviewed text to compare against and the request is owed the
             # review the dispatch gate asks for. Answering here with the gate's
             # own verdict is what keeps a queued request and a fresh dispatch
             # from disagreeing.
-            return _dispatch_gate_owed(
-                node, project=project, repo=repo, options=options
-            )
-        digests = plan_review._section_digests(path)
+            return evidence.gate_owed(node, repo=repo, options=options)
+        digests = evidence.digests
         moved: list[str] = []
         unit = str(contract.get("section") or "")
         if (
             unit
-            and unit in uncovered
+            and unit in evidence.uncovered
             and str(digests.get(unit) or "") != str(contract.get("section_digest"))
         ):
             moved.append(unit)
-        state = plan_html.read_state_file(path)
+        state = evidence.state
         if (
-            plan_review.DOCUMENT_UNIT in uncovered
+            plan_review.DOCUMENT_UNIT in evidence.uncovered
             and routing._contract_digest(state)
             != str(contract.get("document_digest") or "")
-            and routing._document_change_is_contract(
-                project, node.plan, plan=path, records=records
-            )
+            and evidence.documents_change_is_contract()
         ):
             moved.append(plan_review.DOCUMENT_UNIT)
     except Exception:  # noqa: BLE001 - an unreadable plan holds nothing
@@ -4137,7 +4444,7 @@ def _plan_review_owed(
         f"plan {node.plan!r} in project {project!r} changed after this request "
         "was queued and no stored review covers the new text; "
         f"uncovered units: {', '.join(sorted(moved))}; "
-        f"{routing._uncovered_change_detail(moved, changes)}"
+        f"{routing._uncovered_change_detail(moved, evidence.changes)}"
         "the request waits until a review of that text is stored; "
         f"compose one with `{plan_review.review_invocation(project, node.plan)}`"
     )
@@ -4517,6 +4824,7 @@ def admit_once(
         _admit_lock() if lock else nullcontext(),
         readiness_pass(),
         review_read_pass(),
+        plan_review_pass(),
     ):
         result["requeued"] = _requeue_admitted_failures(
             runs.list_live(phase=LAUNCH_FAILED_PHASE), verdicts=result["verdicts"]
@@ -4527,10 +4835,12 @@ def admit_once(
         # to ``blocked-upstream`` the moment one is closed as abandoned or
         # failed, with no coordinator turn in between. This is what lets a
         # batch queued in one call launch in dependency order.
+        waits_started = time.monotonic()
         upstream = advance_waiting_requests(live)
         result["released_plan_review"] = _release_plan_review_holds(
             live, config_for=config_for
         )
+        result["waits_seconds"] = round(time.monotonic() - waits_started, 3)
         result["promoted_upstream"] = upstream["promoted"]
         result["blocked_upstream"] = upstream["blocked"]
         result["upstream_obligations"] = upstream["obligations"]
@@ -4879,6 +5189,16 @@ def admit_once(
                             readiness_cache=readiness_cache,
                         )
                         record = _require_launched_record(candidate)
+                    except ScopeConflict as rebind_refusal:
+                        # The rebind launch publishes the rebound request's
+                        # pointer before it checks claims, so a claim taken in
+                        # that window refuses it in phase ``starting`` exactly
+                        # as the first launch would have been. Same hold, same
+                        # restore: the rebound request goes back to the queue
+                        # rather than being left starting behind a failure.
+                        caught = rebind_refusal
+                        hold_only = True
+                        failure = f"{type(rebind_refusal).__name__}: {rebind_refusal}"
                     except (BudgetHold, LaneHeld, LanePaused) as fallback_hold:
                         caught = fallback_hold
                         hold_only = True
@@ -4887,6 +5207,18 @@ def admit_once(
                     except Exception as fallback_error:  # noqa: BLE001 - restore the waiting request
                         caught = fallback_error
                         failure = f"{type(fallback_error).__name__}: {fallback_error}"
+            except ScopeConflict as exc:
+                # A claim can be taken in the window between the pre-launch
+                # check and the launch, and the launch then refuses the request
+                # after publishing its pointer in phase ``starting``. That is a
+                # hold, not a failed attempt: it names the claim that must
+                # settle, and the request keeps its place in the queue until it
+                # does. Recording it as a failure would leave the starting
+                # pointer behind, where no reaper reads it as a launch to clean
+                # up and no pass re-queues it.
+                caught = exc
+                hold_only = True
+                failure = f"{type(exc).__name__}: {exc}"
             except CompetenceLimit as exc:
                 # A context-fit refusal is a fact about the lane that was
                 # asked, not about the request alone: another lane's window may
@@ -4910,6 +5242,10 @@ def admit_once(
                         failure,
                         moment=_now(),
                         guard=_dependency_guard(pointer, config_for),
+                    )
+                elif record is None and isinstance(caught, ScopeConflict):
+                    reported_id, restore_error = _return_claim_refusal_to_queue(
+                        snapshot, caught, live=live, moment=_now()
                     )
                 # The launch outcome is settled here: either the run's own
                 # pointer names the node, or the request has been written back.
@@ -4961,11 +5297,23 @@ def admit_once(
                     _report_queued_failure(pointer)
                 key = (
                     "held"
-                    if isinstance(caught, (BudgetHold, LaneHeld, LanePaused))
+                    if isinstance(
+                        caught, (BudgetHold, LaneHeld, LanePaused, ScopeConflict)
+                    )
                     else "failed"
                 )
                 detail_key = "hold_detail" if key == "held" else "failure_detail"
-                if caught is not None and isinstance(
+                if isinstance(caught, ScopeConflict):
+                    verdicts.append(
+                        _verdict_row(
+                            pointer,
+                            allowance=allowance,
+                            allowance_source=allowance_source,
+                            verdict="held-on-claim",
+                            detail=str(caught),
+                        )
+                    )
+                elif caught is not None and isinstance(
                     caught, (BudgetHold, LaneHeld, LanePaused)
                 ):
                     verdicts.append(
@@ -5261,16 +5609,20 @@ def _record_stage_timings(
 ) -> None:
     """Record the pass's start, end and per-stage seconds on its verdict row.
 
-    Release, launch and land are measured apart because they are held by
-    different things — a lane slot, a merge, a suite — and a row that reported
-    one duration would not tell a reader which of them stalled. ``land_seconds``
-    is the duration of the landing action the row reports: the pass itself
-    never waits for it.
+    Release, waits, launch and land are measured apart because they are held by
+    different things — a lane slot, a plan's wait resolution and review holds, a
+    merge, a suite — and a row that reported one duration would not tell a
+    reader which of them stalled. The pass reports the wait stage from its own
+    clock, so no time.sleep or plan read there is charged to ``launch_seconds``,
+    which then covers only launch decisions and launches. ``land_seconds`` is
+    the duration of the landing action the row reports: the pass itself never
+    waits for it.
     """
     result["started_at"] = started_at
     result["ended_at"] = _utc_now()
     result["release_seconds"] = round(released - started, 3)
-    result["launch_seconds"] = round(ended - released, 3)
+    waits = float(result.get("waits_seconds") or 0.0)
+    result["launch_seconds"] = round(max(0.0, ended - released - waits), 3)
     result["land_seconds"] = round(float(landing.get("seconds") or 0.0), 3)
 
 

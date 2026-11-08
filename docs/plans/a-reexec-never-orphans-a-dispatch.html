@@ -24,7 +24,7 @@
   <title>A Re-exec Never Orphans A Dispatch | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="25">
+<meta name="plan-version" content="26">
 <meta name="plan-modified" content="2026-11-08">
 </head>
 <body>
@@ -101,14 +101,17 @@
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261106T180357375578-record-a-perexec-identity-on-each-node-dispatch-claim" data-who="reckon-build" data-when="2026-11-06T18:30:14Z">
     <div class="r-comment-body"><p>Per-exec identity makes a same-pid re-exec claim reclaimable; 3/3 scoped cases pass, 3/3 negative controls fail, and the only importer failure reproduces with base source.</p></div>
 </div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261107T222055213597-release-a-discarded-runs-node-dispatch-claim-requeued" data-who="reckon-build" data-when="2026-11-08T08:00:50.105Z">
+    <div class="r-comment-body"><p>A discard releases the node dispatch claim its run holds, through the claim's own release path, and leaves a claim naming another run standing; gate 2/2 pass, base arm fails the case the change fixes, both declared controls fail their own case.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261108T084438237736-review-of-release-a-discarded-runs-node-dispatch-claim-requeued-d55136067fbf" data-who="reckon-build" data-when="2026-11-08T09:07:21.822Z">
+    <div class="r-comment-body"><p>Review of release-a-discarded-runs-node-dispatch-claim-requeued at head d55136067fbf; verdict parsed, six dimensions scored 19/14/20/19/19/19, one non-blocking finding (claim released before the worktree release audit in promotion.discard), added_failure_count 0 against base 0ef9f68246fa.</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261106T184512012685-review-of-list-a-run-stuck-before-launch-as-a-launchfailure-duty-b846274ba7ae" data-who="reckon-build" data-when="2026-11-06T18:55:23.955Z">
     <div class="r-comment-body"><p>an independent review of run r-20261106T180357392086 scores all six dimensions (19/18/19/18/18/20, total 112) at base d98b74b531..head b846274ba7, finds no added failures between the reviewed run's own baseline and after arms, and records two non-blocking findings</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261106T180357392086-list-a-run-stuck-before-launch-as-a-launchfailure-duty" data-who="reckon-build" data-when="2026-11-06T18:41:46.277Z">
     <div class="r-comment-body"><p>obligations.py maps the launch-failed recovery word to a duty kind, so a run whose launch was cut off before it spawned a worker reaches its coordinator with the classifier's own next command; head gate 3 passed, base arm 2 failed reproduces the absence, each control fails only its own case</p></div>
-</div>
-<div class="r-comment" data-section="s3" data-id="c-run-r-20261107T222055213597-release-a-discarded-runs-node-dispatch-claim-requeued" data-who="reckon-build" data-when="2026-11-08T08:00:50.105Z">
-    <div class="r-comment-body"><p>A discard releases the node dispatch claim its run holds, through the claim&#x27;s own release path, and leaves a claim naming another run standing; gate 2/2 pass, base arm fails the case the change fixes, both declared controls fail their own case.</p></div>
 </div>
 </section>
 </main>

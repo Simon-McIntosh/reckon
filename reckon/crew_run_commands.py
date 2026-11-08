@@ -3210,6 +3210,23 @@ def crew_complete(
             pretty,
         )
         return
+    if pointer.get("pending_landing_repair"):
+        if gate != "passed":
+            raise click.ClickException("a merge repair requires a passing repair gate")
+        if not land:
+            raise click.ClickException(
+                "this run is already promoted; finish its pending landing with --land"
+            )
+        from reckon.crew import pending_landing
+
+        finished = pending_landing.finish_pending_landings(only_run=run_id)
+        ok = any(row.get("status") == "finished" for row in finished)
+        _emit_crew_result(
+            {"ok": ok, "run_id": run_id, "pending_landings": finished}, pretty
+        )
+        if not ok:
+            raise click.exceptions.Exit(1)
+        return
     if candidate:
         from reckon.crew import merge as merge_module
         from reckon.crew import queue_landing
@@ -3229,7 +3246,9 @@ def crew_complete(
         # finds and finishes, instead of a run that reads as landed.
         from reckon.crew import pending_landing
 
-        pending_landing.write_pending(run_id, str(project or ""))
+        pending_landing.write_pending(
+            run_id, str(pointer.get("project") or project or ""), pointer=pointer
+        )
     try:
         result = crew_module.complete(
             run_id,
@@ -3434,6 +3453,26 @@ def _land_a_promoted_run(
             body=body,
             **({"candidate": candidate} if candidate else {}),
         )
+    except merge_module.MergeConflictError as exc:
+        from reckon.crew.recovery_repair_dispatch import dispatch_merge_repair
+
+        repair = dispatch_merge_repair(
+            {**record, **(pointer or {})},
+            head=exc.head,
+            primary=exc.base,
+            paths=exc.paths,
+            promoted=True,
+        )
+        report["steps"]["land"] = {
+            "ok": False,
+            "error": str(exc),
+            "outcome": "merge-conflict",
+            "paths": exc.paths,
+            "main_revision": exc.base,
+            "repair": repair,
+        }
+        report["worktree_released"] = False
+        return report, 1
     except merge_module.MergePushOutstandingError as exc:
         report["steps"]["land"] = {
             "ok": True,

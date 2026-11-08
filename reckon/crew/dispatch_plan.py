@@ -40,8 +40,6 @@ from reckon.crew.node import (
     TaskNode,
     UnreconciledRuns,
     done_when_warnings,
-    gate_population_finding,
-    negative_control_finding,
     normalize_section,
     parse_duration,
     role_may_write_repository_paths,
@@ -841,42 +839,13 @@ def plan_dispatch(
         override=execution_override,
     )
     verdict = validate_node(
-        node, locked_decisions=locked_decisions, budget_ceiling=budget_ceiling
+        node,
+        locked_decisions=locked_decisions,
+        budget_ceiling=budget_ceiling,
+        execution_capable=backend.get("execution_capable"),
+        override=execution_override,
+        repository=Path(repo).resolve() if repo is not None else None,
     )
-    # A node whose scope includes a test file writes a check, and a check whose
-    # author never named the mutation it must fail against is a guard that
-    # passed by not exercising anything. The trigger is the declared write path
-    # rather than the done-when prose, so the refusal rests on a structured
-    # field the dispatcher can read.
-    control_finding = negative_control_finding(node)
-    if control_finding is not None:
-        verdict = NodeValidation(
-            ok=False, findings=[*verdict.findings, control_finding]
-        )
-    # The gate command is the check the brief tells the worker to run, so a
-    # population that names no file the repository holds is caught here, where
-    # it costs a refusal, rather than inside the worker, where it costs the
-    # worker's judgement about which substitute the coordinator meant. A
-    # caller that named no repository has no store to ask and is left alone.
-    if repo is not None:
-        population_finding = gate_population_finding(
-            node, repository=Path(repo).resolve()
-        )
-        if population_finding is not None:
-            verdict = NodeValidation(
-                ok=False, findings=[*verdict.findings, population_finding]
-            )
-    if not execution_fit.allowed:
-        verdict = NodeValidation(
-            ok=False,
-            findings=[
-                *verdict.findings,
-                {
-                    "property": "fully-specified",
-                    "detail": execution_fit.refusal_detail(),
-                },
-            ],
-        )
     # Judged on the scope the node itself declares, before the shared landing
     # paths are appended to it below. The three of those are dispatch's own
     # bookkeeping -- every node on a plan carries them -- so counting them as

@@ -217,6 +217,27 @@ def _unreconciled_runs_remedy(text: str) -> dict[str, str] | None:
     return None
 
 
+def _plan_review_remedy_is_answered(command: str) -> bool:
+    """Read the named finding's answer before repeating a stored refusal."""
+    from reckon.crew import plan_review
+
+    try:
+        words = shlex.split(command)
+        if words[:3] != ["reckon", "crew", "review"]:
+            return False
+        project, plan, finding = (
+            words[words.index(option) + 1]
+            for option in ("--project", "--plan", "--answer")
+        )
+        for review in reversed(plan_review.list_plan_reviews(project, plan)):
+            if finding in plan_review.finding_ids(review):
+                return finding not in plan_review.unanswered_findings(review)
+    except (ValueError, IndexError, OSError, CrewError):
+        # An unreadable answer is no evidence that the duty has been cleared.
+        return False
+    return False
+
+
 def _queued_failure_remedy(record: Mapping[str, Any]) -> dict[str, str] | None:
     """The remedy for a queued request the session itself must unblock.
 
@@ -304,6 +325,11 @@ def _queued_failure_remedy(record: Mapping[str, Any]) -> dict[str, str] | None:
     else:
         command = _remedy_command_stated_by(text)
         if command is None:
+            return None
+        if (
+            refusal_class == "PlanReviewMissingError"
+            and _plan_review_remedy_is_answered(command)
+        ):
             return None
         detail = f"the queued launch was refused: {text}"
     return {"detail": detail, "next_command": command}

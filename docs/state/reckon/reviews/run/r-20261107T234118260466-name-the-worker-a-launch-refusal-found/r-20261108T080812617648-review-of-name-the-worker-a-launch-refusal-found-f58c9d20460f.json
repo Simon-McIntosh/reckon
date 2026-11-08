@@ -1,0 +1,41 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T09:38:26.378Z",
+  "dispatched_at": "2026-11-08T09:25:39Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": 1906,
+      "severity": "non-blocking",
+      "text": "_live_worker_naming names \"pid <recorded>\" whenever the reading carries a pid, and record_process_liveness (reckon/crew/process_liveness.py:245) falls back to the recorded pid when placement_job_alive answers None, so a placed run whose scheduler cannot be queried is refused naming the scheduler client's pid as the worker's - the case s9 says must never happen - and tests/test_a_queued_run_launches_once.py:236 covers only a queryable live job."
+    },
+    {
+      "file": "reckon/crew/recovery_liveness.py",
+      "line": 1335,
+      "severity": "non-blocking",
+      "text": "live_worker_pid now returns None in the session-walk and placed arms, which silently drops the \" (pid N)\" clause from the lift refusal at reckon/crew/resumption.py:1451 - a user-visible behaviour change outside the two launch refusals the goal names, asserted by no test, and recorded only under the manifest's evidence_inputs."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the launch refusal name the worker it found, never a dead pid; reckon/crew/dispatch_launch.py:1947 and reckon/crew/dispatch_launch.py:2813 now word both refusals through _live_worker_naming (dispatch_launch.py:1906), which names the pid, job or session the answering arm carries, and the head reproduction (run logs/04-head-repro.log) names the session while the base reproduction (logs/00-defect-repro.log) named the dead pid 508.\nVERDICT done_when: s9's done-when names tests/test_a_queued_run_launches_once.py; the head file carries the five whole-text cases in the plan's order (tests/test_a_queued_run_launches_once.py:193-301) and the manifest records 3 passed at base against 5 passed at head, both readable in logs/01-baseline-suite.log and logs/02-after-suite.log.\nVERDICT write_paths: declared paths are reckon/crew/recovery_liveness.py, reckon/crew/dispatch_launch.py, tests/test_a_queued_run_launches_once.py plus the evidence fragment and figures directory; the diff touches exactly four of them and nothing outside.\nVERDICT manifest: read; status complete, commits f58c9d2, baseline_suite and after_suite recorded with their log paths and zero failures, three negative controls named, and the resumption.py behaviour change disclosed under evidence_inputs.\nVERDICT diff: read against base 2c0dcf9b in one commit f58c9d2; four files, +293/-62, adding live_worker_reading and _live_worker_naming, rewriting the launch tests to whole-text assertions, and adding the evidence fragment.\nCALL_SITES: reckon/crew/dispatch_launch.py:supervised_launch, reckon/crew/dispatch.py:dispatch, reckon/crew/dispatch_launch.py:_run_supervision, reckon/crew/resumption.py:1451, reckon/crew/recovery.py:127\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: dispatch_launch.py:1947 and :2813 both interpolate _live_worker_naming(holder) instead of a bare holder pid, and logs/04-head-repro.log shows the refusal naming the session after logs/00-defect-repro.log named the dead pid 508.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_queued_run_launches_once.py:203,225,247 assert the whole refusal text and each negative-control log (logs/nc1, nc2, nc3) reddens its named case by DID NOT RAISE or whole-text mismatch, though each ran with -k deselecting the other four cases so the manifest's \"and no other\" is unmeasured.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the four diff paths are all inside the declared write paths, but changing live_worker_pid's return value (recovery_liveness.py:1335) also changes the lift refusal word at resumption.py:1451, which lies outside the goal's two sites and is covered by no test.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_queued_run_launches_once.py:225 fails if the refusal is worded from the recorded pid (logs/nc1) and :201 fails if the spawn liveness read is removed (logs/nc2), so the assertions bind to the defect rather than to values the test itself supplied.\nSCORE fit: 19\nJUSTIFICATION fit: _live_worker_naming (dispatch_launch.py:1906) is a private helper beside its two call sites with a mechanism-naming docstring, and live_worker_reading (recovery_liveness.py:1281) returns the existing LivenessReading rather than a new type.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends process_liveness.py:312 LivenessReading and :339 record_process_liveness rather than re-implementing the liveness composition, and a search over reckon/crew for an existing refusal-naming helper found none.\nFINDING reckon/crew/dispatch_launch.py:1906 non-blocking: _live_worker_naming names \"pid <recorded>\" whenever the reading carries a pid, and record_process_liveness (reckon/crew/process_liveness.py:245) falls back to the recorded pid when placement_job_alive answers None, so a placed run whose scheduler cannot be queried is refused naming the scheduler client's pid as the worker's - the case s9 says must never happen - and tests/test_a_queued_run_launches_once.py:236 covers only a queryable live job.\nFINDING reckon/crew/recovery_liveness.py:1335 non-blocking: live_worker_pid now returns None in the session-walk and placed arms, which silently drops the \" (pid N)\" clause from the lift refusal at reckon/crew/resumption.py:1451 - a user-visible behaviour change outside the two launch refusals the goal names, asserted by no test, and recorded only under the manifest's evidence_inputs.\n",
+  "review_run_id": "r-20261108T080812617648-review-of-name-the-worker-a-launch-refusal-found-f58c9d20460f",
+  "reviewed_base_sha": "2c0dcf9b582981cd31c331105f3e1400eb207b2b",
+  "reviewed_commits": [
+    "f58c9d20460f4c8dc18c117112604a66ed1f9edb"
+  ],
+  "reviewed_head_sha": "f58c9d20460f4c8dc18c117112604a66ed1f9edb",
+  "reviewed_run_id": "r-20261107T234118260466-name-the-worker-a-launch-refusal-found",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T09:59:56.044276+00:00",
+  "total": 111
+}

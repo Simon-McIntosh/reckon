@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-08T10:40:42.254Z",
+  "dispatched_at": "2026-11-08T10:26:02Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "the-arming-test-gives-its-stop-room",
+      "recorded_at": "2026-11-08T11:09:40.770795+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_arm_lock_is_never_held_by_a_follower.py",
+      "line": "229",
+      "severity": "non-blocking",
+      "text": "non-blocking: the stdout check was weakened from the exact `2s` bound to a generic `\\b\\d+(?:\\.\\d+)?s\\b` regex, so a regression that prints an unrelated or hardcoded duration (for example the module default 30s instead of the patched 12s) would still pass, and the claim that the message names the bound that ended the attempt is no longer verified."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read both commits against 7db6cd8de4; d57a215750 changes only the test (bound 2 to 12 s, communicate timeout derived, bounded term-seen wait, generic bound-shaped stdout assertion) and 14dc017165 adds only the 70-line landing fragment.",
+    "done_when": "the done_when asks for 10 base runs with at least one failure, 20 of 20 head solo runs under the same population, and a logged negative control of at least 1 of 20 failing; the run's base-arm/run01..10.log record 10 of 10 failed at line 205, head-arm/run01..20.log record 20 of 20 `1 passed`, and negative-control/run01..20.log record 20 of 20 failed.",
+    "goal": "the node goal is that the stubborn-producer arming test keeps both its claims under load by giving the stop child time to signal; tests/test_arm_lock_is_never_held_by_a_follower.py:65 raises that arm bound to 12 s and its :230 bounded wait keeps the delivery claim.",
+    "manifest": "read at the reviewed run directory; it reports base 10/10 red, head 20/20 green, a 20/20 red negative control, suite arms base 1 failed/4 passed EXIT=1 and head 5 passed EXIT=0, and those claims match suite-base.log and suite-head.log on disk.",
+    "write_paths": "the declared paths are tests/test_arm_lock_is_never_held_by_a_follower.py plus the landing fragment and figure directories; the two-commit diff touches exactly the test file and docs/evidence/fragments/the-suite-is-green-at-head/the-arming-test-gives-its-stop-room.html."
+  },
+  "justifications": {
+    "durability": "the negative control restores the two-second bound and the immediate assertion at tests/test_arm_lock_is_never_held_by_a_follower.py:65 and the term-seen wait reddens 20 of 20, but the control mutates both halves at once so the record does not isolate which half carries the repair.",
+    "evidence": "base-arm/run01..10.log show the pre-change failure at tests/test_arm_lock_is_never_held_by_a_follower.py:205, head-arm/run01..20.log show 20 consecutive passes, and negative-control/run01..20.log show 20 red, each log opening with its revision, tree and command and closing with EXIT=.",
+    "fit": "the new constants at tests/test_arm_lock_is_never_held_by_a_follower.py:65-71 are named by what they measure, extend the file's existing `_wait` helper rather than adding one, and `ruff check` and `ruff format --check` pass on the staged path.",
+    "goal_fidelity": "tests/test_arm_lock_is_never_held_by_a_follower.py:65 sizes the bound for the measured 1.75-4.01 s interpreter start and :230 keeps the delivery assertion, so both claims survive the change.",
+    "reuse": "the diff adds no new function, class or module and reuses the existing `_wait` at tests/test_arm_lock_is_never_held_by_a_follower.py:74 by adding a message parameter, so no repository capability is duplicated.",
+    "scope_discipline": "the two commits touch only the test file and docs/evidence/fragments/the-suite-is-green-at-head/the-arming-test-gives-its-stop-room.html, both inside the declared write paths, with no product source changed."
+  },
+  "project": "reckon",
+  "raw_text": "\nVERDICT goal: the node goal is that the stubborn-producer arming test keeps both its claims under load by giving the stop child time to signal; tests/test_arm_lock_is_never_held_by_a_follower.py:65 raises that arm bound to 12 s and its :230 bounded wait keeps the delivery claim.\nVERDICT done_when: the done_when asks for 10 base runs with at least one failure, 20 of 20 head solo runs under the same population, and a logged negative control of at least 1 of 20 failing; the run's base-arm/run01..10.log record 10 of 10 failed at line 205, head-arm/run01..20.log record 20 of 20 `1 passed`, and negative-control/run01..20.log record 20 of 20 failed.\nVERDICT write_paths: the declared paths are tests/test_arm_lock_is_never_held_by_a_follower.py plus the landing fragment and figure directories; the two-commit diff touches exactly the test file and docs/evidence/fragments/the-suite-is-green-at-head/the-arming-test-gives-its-stop-room.html.\nVERDICT manifest: read at the reviewed run directory; it reports base 10/10 red, head 20/20 green, a 20/20 red negative control, suite arms base 1 failed/4 passed EXIT=1 and head 5 passed EXIT=0, and those claims match suite-base.log and suite-head.log on disk.\nVERDICT diff: read both commits against 7db6cd8de4; d57a215750 changes only the test (bound 2 to 12 s, communicate timeout derived, bounded term-seen wait, generic bound-shaped stdout assertion) and 14dc017165 adds only the 70-line landing fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_arm_lock_is_never_held_by_a_follower.py:65 sizes the bound for the measured 1.75-4.01 s interpreter start and :230 keeps the delivery assertion, so both claims survive the change.\nSCORE evidence: 19\nJUSTIFICATION evidence: base-arm/run01..10.log show the pre-change failure at tests/test_arm_lock_is_never_held_by_a_follower.py:205, head-arm/run01..20.log show 20 consecutive passes, and negative-control/run01..20.log show 20 red, each log opening with its revision, tree and command and closing with EXIT=.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits touch only the test file and docs/evidence/fragments/the-suite-is-green-at-head/the-arming-test-gives-its-stop-room.html, both inside the declared write paths, with no product source changed.\nSCORE durability: 17\nJUSTIFICATION durability: the negative control restores the two-second bound and the immediate assertion at tests/test_arm_lock_is_never_held_by_a_follower.py:65 and the term-seen wait reddens 20 of 20, but the control mutates both halves at once so the record does not isolate which half carries the repair.\nSCORE fit: 19\nJUSTIFICATION fit: the new constants at tests/test_arm_lock_is_never_held_by_a_follower.py:65-71 are named by what they measure, extend the file's existing `_wait` helper rather than adding one, and `ruff check` and `ruff format --check` pass on the staged path.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no new function, class or module and reuses the existing `_wait` at tests/test_arm_lock_is_never_held_by_a_follower.py:74 by adding a message parameter, so no repository capability is duplicated.\nFINDING tests/test_arm_lock_is_never_held_by_a_follower.py:229 non-blocking: the stdout check was weakened from the exact `2s` bound to a generic `\\b\\d+(?:\\.\\d+)?s\\b` regex, so a regression that prints an unrelated or hardcoded duration (for example the module default 30s instead of the patched 12s) would still pass, and the claim that the message names the bound that ended the attempt is no longer verified.\n",
+  "review_run_id": "r-20261108T102042247205-review-of-the-arming-test-gives-its-stop-room-14dc01716545",
+  "reviewed_base_sha": "7db6cd8de4339603eff165dbcb859bd6f7618919",
+  "reviewed_head_sha": "14dc01716545fac83ca08b8230506b3b663d971b",
+  "reviewed_run_id": "r-20261108T084456846026-the-arming-test-gives-its-stop-room",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T10:56:34.514740+00:00",
+  "total": 113
+}

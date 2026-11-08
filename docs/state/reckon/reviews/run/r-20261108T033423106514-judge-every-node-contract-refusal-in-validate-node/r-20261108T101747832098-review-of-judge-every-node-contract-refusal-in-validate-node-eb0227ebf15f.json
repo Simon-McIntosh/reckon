@@ -1,0 +1,119 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite (gate-base.log, 0cf9dc52) records 8 failure ids, after_suite (gate-head.log, eb0227ebf1) records 0, so no failing id at head is absent from base.",
+  "assertion_analysis": [
+    {
+      "condition_to_fail": "The batch path stops judging the compound goal, so the entry queues and refused == 1 becomes refused == 0.",
+      "file": "tests/test_every_path_meets_the_node_contract.py",
+      "line": "252"
+    },
+    {
+      "condition_to_fail": "The refusal detail changes or the finding is dropped, leaving 'split it into one node per deliverable' out of the row reason.",
+      "file": "tests/test_every_path_meets_the_node_contract.py",
+      "line": "256"
+    },
+    {
+      "condition_to_fail": "negative_control_finding stops being called from validate_node, so the entry queues and no pointer-equality holds.",
+      "file": "tests/test_every_path_meets_the_node_contract.py",
+      "line": "273"
+    },
+    {
+      "condition_to_fail": "The gate-population branch is skipped or the repository argument is not forwarded, which negative-control.log demonstrates reddening.",
+      "file": "tests/test_every_path_meets_the_node_contract.py",
+      "line": "288"
+    },
+    {
+      "condition_to_fail": "execution_capable is not threaded into validate_node on the batch path, so an incapable role with an execution measure queues.",
+      "file": "tests/test_every_path_meets_the_node_contract.py",
+      "line": "301"
+    },
+    {
+      "condition_to_fail": "The dry-run path stops reporting the same finding as the batch path, so the two paths carry two contracts.",
+      "file": "tests/test_every_path_meets_the_node_contract.py",
+      "line": "337"
+    },
+    {
+      "condition_to_fail": "validate_node refuses the override because it compares fit.conflict instead of fit.allowed, so the dispatch exits non-zero or execution_fit.status is not 'overridden'.",
+      "file": "tests/test_every_path_meets_the_node_contract.py",
+      "line": "384"
+    }
+  ],
+  "base_log_revision": "0cf9dc522c7a003b870dc5a4df4e0b1d6ab8a125",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_plan.py:841 (plan_dispatch)",
+    "reckon/crew/dispatch.py:339 (queue_requests, reached by dispatch_batch.queue_batch)",
+    "reckon/crew/queue_edit.py:192 (_contract_findings, reached by crew queue edit)"
+  ],
+  "completed_at": "2026-11-08T10:37:42.649Z",
+  "dispatched_at": "2026-11-08T10:22:50Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-judge-every-node-contract-refusal-in-validate-node-eb0227ebf15f",
+      "recorded_at": "2026-11-08T12:15:00.760118+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "repair-of-judge-every-node-contract-refusal-in-validate-node-eb0227ebf15f",
+      "recorded_at": "2026-11-08T12:15:26.087670+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_every_path_meets_the_node_contract.py",
+      "line": "243",
+      "severity": "blocking",
+      "text": "blocking: only one of the five negative controls the plan s2 Done when names was ever run (removing the gate-population block); the mutations for skipping validate_node on the batch path, for the negative-control refusal, for omitting execution_capable, and for dropping the override were never applied, so four of the seven cases are asserted green without a demonstration that they redden, and the measure as written is unmet."
+    },
+    {
+      "file": "reckon/crew/queue_edit.py",
+      "line": "192",
+      "severity": "blocking",
+      "text": "blocking: _contract_findings now passes execution_capable to validate_node but not the request's recorded execution override (dispatch_options.execution_override, written at reckon/crew/dispatch.py:3984), so a queued request stored with --allow-execution-mismatch is refused by every crew queue edit; the plan s2 requires that the override keeps working, and before this change queue_edit performed no execution-fit check at all."
+    }
+  ],
+  "head_log_revision": "eb0227ebf15f16c3f2e4ac62921bdfd550066faa",
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "Read both commits against base 0cf9dc52: b9fd18a621 moves the two refusals and the execution-override handling into validate_node (reckon/crew/node.py:1415-1431, :1269-1279), retires plan_dispatch's duplicates (reckon/crew/dispatch_plan.py:841-848), and wires queue_requests (reckon/crew/dispatch.py:339-345) and queue_edit._contract_findings (reckon/crew/queue_edit.py:192-197); eb0227ebf1 adds a 120 s per-case timeout marker at tests/test_every_path_meets_the_node_contract.py:32.",
+    "done_when": "The measure (plan s2 Done when, restated at the run prompt line 132) requires seven cases plus FIVE negative controls in tests/test_every_path_meets_the_node_contract.py; the seven cases exist and pass at head (9 passed, EXIT=0), but only one of the five declared mutations was ever run, so the measure as written is not met.",
+    "goal": "The node goal is to make validate_node carry the negative-control and gate-population refusals for every dispatch path; reckon/crew/node.py:1415-1431 now appends negative_control_finding and, when a repository is given, gate_population_finding, and all three production callers pass them through.",
+    "manifest": "The reviewed manifest.md records status complete, two commits, the head arm (9 passed, EXIT=0) and base arm (8 failed / 1 passed, EXIT=1) with log paths, one negative-control log, ruff unmentioned, and an outside_scope entry for a pre-existing failure.",
+    "write_paths": "The run's fence granted six paths; the base-to-head diff touches exactly reckon/crew/node.py, reckon/crew/dispatch.py, reckon/crew/dispatch_plan.py, reckon/crew/queue_edit.py, tests/test_every_path_meets_the_node_contract.py and docs/evidence/fragments/a-refusal-comes-before-the-work/judge-every-node-contract-refusal-in-validate-node.html, all inside the grant."
+  },
+  "justifications": {
+    "durability": "tests/test_every_path_meets_the_node_contract.py:276-289 fails when the gate-population refusal is removed, which negative-control.log shows reddening two ids, but the equivalent mutation for the negative-control, execution-fit and override refusals was never applied, so three guards rest on the base arm alone.",
+    "evidence": "The head arm is green and its log is recorded (gate-head.log, 9 passed, EXIT=0) and the base arm is red for the right cases, but four of the five negative controls the measure names were never run (the stream and negative-control.log hold one mutation only), and ruff is required by the measure yet recorded nowhere.",
+    "fit": "reckon/crew/node.py:1193-1209 keeps the module's docstring idiom and names the new parameters repository and override, describing the mechanism with no plan, issue or version label anywhere in the diff.",
+    "goal_fidelity": "reckon/crew/node.py:1415-1431 and :1269-1279 do carry both refusals and the override on all three callers, but reckon/crew/queue_edit.py:192-197 forwards execution_capable without the recorded execution_override, so the override does not keep working on that path and the goal's 'every dispatch path' is not fully met.",
+    "reuse": "reckon/crew/node.py:1415 calls the existing negative_control_finding (:1054) and gate_population_finding (:1145) owners rather than re-implementing them and deletes plan_dispatch's copies; the role overlay uses the existing routing.resolve_role_override, and no new capability is forked.",
+    "scope_discipline": "git diff --name-only 0cf9dc52 eb0227ebf1 lists six files and every one is a declared write path; the second commit's only change is a pytestmark line inside the granted test file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to make validate_node carry the negative-control and gate-population refusals for every dispatch path; reckon/crew/node.py:1415-1431 now appends negative_control_finding and, when a repository is given, gate_population_finding, and all three production callers pass them through.\nVERDICT done_when: The measure (plan s2 Done when) requires seven cases plus FIVE negative controls in tests/test_every_path_meets_the_node_contract.py; the seven cases exist and pass at head (9 passed, EXIT=0), but only one of the five declared mutations was ever run, so the measure as written is not met.\nVERDICT write_paths: The run's fence granted six paths; the base-to-head diff touches exactly those declared paths.\nVERDICT manifest: The reviewed manifest.md records status complete, two commits, the head arm (9 passed, EXIT=0) and base arm (8 failed / 1 passed, EXIT=1) with log paths, one negative-control log, ruff unmentioned, and an outside_scope entry for a pre-existing failure.\nVERDICT diff: Read both commits against base 0cf9dc52; five source/test files plus one evidence fragment, all inside the grant, moving both refusals into the shared judge and wiring the three callers.\nCALL_SITES: reckon/crew/dispatch_plan.py:841, reckon/crew/dispatch.py:339, reckon/crew/queue_edit.py:192\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/queue_edit.py:192-197 forwards execution_capable without the recorded execution override, so the plan's 'every dispatch path' is not fully met.\nSCORE evidence: 12\nJUSTIFICATION evidence: gate-head.log records 9 passed EXIT=0 and gate-base.log 8 failed EXIT=1, but four of five named negative controls were never run and ruff is unrecorded.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 0cf9dc52 eb0227ebf1 lists six files, every one a declared write path.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_every_path_meets_the_node_contract.py:276-289 reddens under the one applied mutation, but the equivalent mutation for three other guards was never applied.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/node.py:1193-1209 keeps the module's docstring idiom and introduces no forbidden name.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/node.py:1415 calls the existing negative_control_finding and gate_population_finding owners rather than re-implementing them.\nFINDING tests/test_every_path_meets_the_node_contract.py:243 blocking: only one of the five declared negative controls was run, so four guards are green without a demonstration that they redden.\nFINDING reckon/crew/queue_edit.py:192 blocking: the recorded execution override is not forwarded, so an override-flagged queued request is refused by crew queue edit.",
+  "review_run_id": "r-20261108T101747832098-review-of-judge-every-node-contract-refusal-in-validate-node-eb0227ebf15f",
+  "reviewed_base_sha": "0cf9dc522c7a003b870dc5a4df4e0b1d6ab8a125",
+  "reviewed_commits": [
+    "b9fd18a62122ab6b91deafd9ee808069e0dacca0",
+    "eb0227ebf15f16c3f2e4ac62921bdfd550066faa"
+  ],
+  "reviewed_head_sha": "eb0227ebf15f16c3f2e4ac62921bdfd550066faa",
+  "reviewed_run_id": "r-20261108T033423106514-judge-every-node-contract-refusal-in-validate-node",
+  "scores": {
+    "durability": 14,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T10:40:00Z",
+  "total": 99
+}

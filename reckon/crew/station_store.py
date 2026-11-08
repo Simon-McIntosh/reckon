@@ -1117,9 +1117,26 @@ class StationStore:
         return next_id
 
     def recorded_fleet(self, project: str) -> dict[str, dict[str, Any]]:
-        """The last fleet image committed beside this project's event rows."""
+        """The committed fleet plus launch baselines for newly working runs.
+
+        A project's first observation is inventory. Once its fleet image
+        exists, a newly observed working run has started since that image:
+        seed it as dispatched so the transition fold emits its launch rather
+        than adopting its working verdict as inventory. This uses the stored
+        classifications from this tick, without another crew-home read.
+        """
         raw = self.station_value(f"fleet:{project}")
-        return json.loads(raw) if raw else {}
+        if raw is None:
+            return {}
+        known = json.loads(raw)
+        for run_id, snapshot in self.classifications().items():
+            if (
+                run_id not in known
+                and snapshot.get("project") == project
+                and snapshot.get("state") == "working"
+            ):
+                known[run_id] = {**snapshot, "state": "dispatched"}
+        return known
 
     def recorded_projects(self) -> set[str]:
         """Projects whose previous tick can still contain a departure."""

@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run records no baseline_suite or after_suite arm in its manifest; its own head gate (gate-head.log) reports 131 passed with EXIT=0 and the repair gate (gate-repair.log) 132 passed with EXIT=0, so no failing test is added against a base the run did not measure",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:_land_deliveries",
+    "reckon/crew/recovery_review_acceptance.py:accept_clean_review"
+  ],
+  "completed_at": "2026-11-08T12:33:35.443Z",
+  "dispatched_at": "2026-11-08T12:25:51Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "line": "1286",
+      "severity": "non-blocking",
+      "text": "non-blocking: _record_landed_exemptions is a second implementation of recovery_review_acceptance.record_landed_exemptions:125 \u2014 same loop, same writer, same reason constant, a different filter \u2014 so the two paths now disagree by construction, and its open-finding branch is unreachable at the landing because _undisposed_finding_guard (reckon/crew/queue_landing.py:1230) already refuses any run carrying an open finding with text; the defect was answered by writing nothing, which deleting the call at line 1954 would have stated outright, while the promotion path at recovery_review_acceptance.py:343 still overwrites a fold."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read the two commits against f1627c3c; 37acfb17 consolidates the suite arms into one read and adds the open-only exemption writer, 50210cdb adds 25 lines to the fragment recording the repair and the reproduction, and nothing else in the tree moves.",
+    "done_when": "the repair round's measure is a regression case on the disposition; tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:618 stores a fold and an exemption, lands the run, and reads both back off the stored record, and the manifest records gate-repair.log as 132 passed with EXIT=0 at 37acfb17.",
+    "goal": "the repaired node keeps the disposition a coordinator recorded on a landed run; reckon/crew/queue_landing.py:1286 writes an exemption only for a finding still open, and queue_landing.py:1954 calls that writer in place of recovery_review_acceptance.record_landed_exemptions, so a folded:node survives the pass.",
+    "manifest": "read; status complete, commits 16b38e57, f1627c3c, 37acfb17 and 50210cdb, test_logs names gate-head.log (131 passed, EXIT=0), gate-repair.log (132 passed, EXIT=0) and negative-control-fold.log (1 failed, EXIT=1), negative_control_log carries the bare fold-log path, and all six rubric lines are present.",
+    "write_paths": "the node declares reckon/crew/queue_landing.py; the increment also writes tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py, tests/test_the_lander_measures_the_population.py and the evidence fragment, and the manifest names the first three under outside_scope rather than leaving them silent."
+  },
+  "justifications": {
+    "durability": "reinstating recovery_review_acceptance.record_landed_exemptions at reckon/crew/queue_landing.py:1954 makes tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:662 redden, which negative-control-fold.log shows.",
+    "evidence": "the manifest records gate-repair.log at 37acfb17 as 132 passed EXIT=0 and negative-control-fold.log as 1 failed EXIT=1 with the reinstated writer.",
+    "fit": "reckon/crew/queue_landing.py:1100 follows the module's existing shape, and the writer reuses LANDED_NON_BLOCKING_REASON and findings.finding_disposition rather than restating either.",
+    "goal_fidelity": "reckon/crew/queue_landing.py:1954 replaces the call the review found overwriting a fold, and tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:618 proves folded:the-follow-up-node reads back unchanged.",
+    "reuse": "reckon/crew/queue_landing.py:1286 duplicates recovery_review_acceptance.record_landed_exemptions:125, the module this file imported the writer from until this commit, rather than extending the owner.",
+    "scope_discipline": "reckon/crew/queue_landing.py is the declared path, but tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py and tests/test_the_lander_measures_the_population.py are outside the fence and only the manifest's outside_scope discloses them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the repaired node keeps the disposition a coordinator recorded on a landed run; reckon/crew/queue_landing.py:1286 writes an exemption only for a finding still open, and reckon/crew/queue_landing.py:1954 calls that writer in place of recovery_review_acceptance.record_landed_exemptions, so a folded:node survives the pass.\nVERDICT done_when: the repair round's measure is a regression case on the disposition; tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:618 stores a fold and an exemption, lands the run, and reads both back off the stored record, and the manifest records gate-repair.log as 132 passed with EXIT=0 at 37acfb17.\nVERDICT write_paths: the node declares reckon/crew/queue_landing.py; the increment also writes tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py, tests/test_the_lander_measures_the_population.py and the evidence fragment, and the manifest names the first three under outside_scope rather than leaving them silent.\nVERDICT manifest: read; status complete, commits 16b38e57, f1627c3c, 37acfb17 and 50210cdb, test_logs names gate-head.log (131 passed, EXIT=0), gate-repair.log (132 passed, EXIT=0) and negative-control-fold.log (1 failed, EXIT=1), negative_control_log carries the bare fold-log path, and all six rubric lines are present.\nVERDICT diff: read the two commits against f1627c3c; 37acfb17 consolidates the suite arms into one read and adds the open-only exemption writer, 50210cdb adds 25 lines to the fragment recording the repair and the reproduction, and nothing else in the tree moves.\nCALL_SITES: reckon/crew/queue_landing.py:_land_deliveries, reckon/crew/recovery_review_acceptance.py:accept_clean_review\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/queue_landing.py:1954 replaces the call the review found overwriting a fold, and tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:618 proves folded:the-follow-up-node reads back unchanged.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest records gate-repair.log at 37acfb17 as 132 passed EXIT=0 and negative-control-fold.log as 1 failed EXIT=1 with the reinstated writer.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: reckon/crew/queue_landing.py is the declared path, but tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py and tests/test_the_lander_measures_the_population.py are outside the fence and only the manifest's outside_scope discloses them.\nSCORE durability: 17\nJUSTIFICATION durability: reinstating recovery_review_acceptance.record_landed_exemptions at reckon/crew/queue_landing.py:1954 makes tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:662 redden, which negative-control-fold.log shows.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/queue_landing.py:1100 follows the module's existing shape, and the writer reuses LANDED_NON_BLOCKING_REASON and findings.finding_disposition rather than restating either.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/queue_landing.py:1286 duplicates recovery_review_acceptance.record_landed_exemptions:125, the module this file imported the writer from until this commit, rather than extending the owner.\nFINDING reckon/crew/queue_landing.py:1286 non-blocking: _record_landed_exemptions is a second implementation of recovery_review_acceptance.record_landed_exemptions:125 \u2014 same loop, same writer, same reason constant, a different filter \u2014 so the two paths now disagree by construction, and its open-finding branch is unreachable at the landing because _undisposed_finding_guard (reckon/crew/queue_landing.py:1230) already refuses any run carrying an open finding with text; the defect was answered by writing nothing, which deleting the call at line 1954 would have stated outright, while the promotion path at recovery_review_acceptance.py:343 still overwrites a fold.\n",
+  "review_run_id": "r-20261108T121949009158-review-of-lander-leaves-red-run-to-coordinator-50210cdbf9ef",
+  "reviewed_base_sha": "f1627c3c88b0fd45b0b6aa56bdf518bffb704900",
+  "reviewed_head_sha": "50210cdbf9efbb48b626f2937b7c8a062cd74015",
+  "reviewed_run_id": "r-20261108T053724507984-lander-leaves-red-run-to-coordinator",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T13:14:58.348184+00:00",
+  "total": 89
+}

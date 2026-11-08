@@ -1,0 +1,132 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "Fails if a docs-only change ceases to resolve to review tier none or the repair row omits that tier; this establishes that the bypass input is exercised.",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 145
+    },
+    {
+      "failure_condition": "Fails if the tier-none promotion return is moved back before the open-finding check; node-repair-base.log observes exactly promotable-stale versus repair-owed.",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 146
+    },
+    {
+      "failure_condition": "Fails if a blocked docs-only row offers crew complete; the expected prohibition is independent of the produced command.",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 147
+    },
+    {
+      "failure_condition": "Fails if the stored unanswered finding cannot be read as wiring-1 before answering; a positive control on fixture setup, not credit for the production repair.",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 232
+    },
+    {
+      "failure_condition": "Fails if record_response does not persist an answer that unanswered_findings recognizes; reverting the fixture answer should fail this assertion but the later projection does not consume this store.",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 242
+    },
+    {
+      "failure_condition": "Compares read_pointer failure to the same pointer failure supplied to _write_json: this is a persistence receipt that can fail on lost or changed stored bytes, not an independent assertion that stale-refusal classification is repaired; no durability credit is assigned for that transition.",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 261
+    },
+    {
+      "failure_condition": "Fails if the projection of a queued classification emits a kind other than run-queued; the caller explicitly removed failure first, so this is not an end-to-end stale-refusal guard.",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 267
+    },
+    {
+      "failure_condition": "Fails if the current queue hold action ceases to name the lane; the fixture reason supplies lane allowance but the projection must actually emit it.",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 268
+    },
+    {
+      "failure_condition": "Fails if projection reintroduces wiring-1 into the action after classification has cleared failure; it will not fail merely because the upstream classifier retains stale refusals.",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 269
+    },
+    {
+      "failure_condition": "Fails if the held row uses a complete or review command, the foreign run ID, or any appended foreign action instead of exactly queue release for the independently known subject ID.",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 304
+    },
+    {
+      "failure_condition": "Fails if the real foreign run ID supplied in the adjacent live pointer and stale refusal appears in the held row action; the known-present foreign input makes this exclusion non-vacuous.",
+      "file": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "line": 305
+    }
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/obligations.py:_obligations_view -> _review_duty_item",
+    "reckon/crew/obligation_snapshot.py:1437 _review_duty_item",
+    "reckon/crew/station_subscriber.py:145 _review_duty_item"
+  ],
+  "completed_at": "2026-11-08T09:00:29Z",
+  "dispatched_at": "2026-11-08T08:46:55Z",
+  "findings": [],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/obligations.py:_obligations_view -> _review_duty_item, reckon/crew/obligation_snapshot.py:1437 _review_duty_item, reckon/crew/station_subscriber.py:145 _review_duty_item",
+    "diff": "Read commits e92d61c47a38acb31c28021745aa0ee1a4c7ac3b, d5e69d6483952216aa924a8024e9a237769422e8, aa362079544d9131e05be886001541192757940c, aadf6fcf57f803623d17db46979b306479088ca5 and 43c67c44272bc393c43692df639f0d47f92ae3ae individually; they reorder the existing review guard, strengthen two fixtures, add the tier-none regression, and record the scoped evidence fragment.",
+    "done_when": "Read the source live pointer's node.done_when and live plan s15; node-repair-base.log records the tier-none defect (1 failed, 6 passed, EXIT=1), node-repair-final.log records 7 passed and EXIT=0, and matched importer logs retain the same one failure; the plan explicitly assigns stale-refusal classification to a second node, so test :262-269 proves projection only.",
+    "goal": "The source live pointer's node.goal requires repair rather than promotion for an open blocking finding; reckon/crew/obligations.py:1634-1675 now checks the selected review before the tier-none promotion branch at :1676.",
+    "manifest": "The source manifest.md names seven commits, records complete baseline_suite and after_suite receipts matching node-repair-base.log and node-repair-final.log, and explicitly retains the separate classifier repair and unchanged importer failure under outside_scope.",
+    "write_paths": "Read the source live pointer's node.write_paths and manifest.md:3; all three paths changed between the previously reviewed head and this head fall inside that five-path grant."
+  },
+  "justifications": {
+    "durability": "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py:145-147 fails when the tier-none early return is restored, as the base log demonstrates, and :304-305 rejects foreign-run command contamination; :261 is only a persistence receipt and :262-269 guards projection rather than refusal clearing.",
+    "evidence": "node-repair-base.log and node-repair-final.log record the red-to-green tier-none case, while tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py:262 explicitly clears the refusal and therefore does not measure the separately scoped classification transition.",
+    "fit": "reckon/crew/obligations.py:1632-1704 retains the surrounding early-return idiom and existing review-selection and tier resolvers, and the added test definition at tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py:126 names behavior without a forbidden label.",
+    "goal_fidelity": "reckon/crew/obligations.py:1640-1675 emits repair-owed for selected open blocking findings before :1676 can select tier-none promotion, closing the previously reviewed bypass.",
+    "reuse": "The capability search found and opened reckon/crew/recovery_review_dispatch.py:2354, which delegates blocking disposition enumeration to repair.blocking_finding_dispositions; obligations.py:1641 reuses that owner, no production definition is added, and the added test at :126 extends the existing local synthetic-crew fixture.",
+    "scope_discipline": "The three paths in git diff 3e08d3212736626b0169dff1d4a8f16073fb6cdf..43c67c44272bc393c43692df639f0d47f92ae3ae are all declared in the source manifest.md:3 and source live pointer node.write_paths."
+  },
+  "prior_review_resolution": "The blocking tier-none bypass is repaired and has a red base control; the held-command fixture now contains a real foreign pointer and refusal; the prior non-blocking stale-refusal finding remains folded into the plan-declared classifier follow-on, and the renamed test claims projection only.",
+  "project": "reckon",
+  "review_run_id": "r-20261108T084455253568-review-of-an-obligation-never-offers-a-promotion-past-a-blocking-finding-43c67c44272b",
+  "review_scope": "Incremental review of five commits since the previously reviewed head; no full suite rerun and no implementation edits.",
+  "review_text": "VERDICT goal: The source live pointer's node.goal requires repair rather than promotion for an open blocking finding; reckon/crew/obligations.py:1634-1675 now checks the selected review before the tier-none promotion branch at :1676.\nVERDICT done_when: Read the source live pointer's node.done_when and live plan s15; node-repair-base.log records the tier-none defect (1 failed, 6 passed, EXIT=1), node-repair-final.log records 7 passed and EXIT=0, and matched importer logs retain the same one failure; the plan explicitly assigns stale-refusal classification to a second node, so test :262-269 proves projection only.\nVERDICT write_paths: Read the source live pointer's node.write_paths and manifest.md:3; all three paths changed between the previously reviewed head and this head fall inside that five-path grant.\nVERDICT manifest: The source manifest.md names seven commits, records complete baseline_suite and after_suite receipts matching node-repair-base.log and node-repair-final.log, and explicitly retains the separate classifier repair and unchanged importer failure under outside_scope.\nVERDICT diff: Read commits e92d61c47a38acb31c28021745aa0ee1a4c7ac3b, d5e69d6483952216aa924a8024e9a237769422e8, aa362079544d9131e05be886001541192757940c, aadf6fcf57f803623d17db46979b306479088ca5 and 43c67c44272bc393c43692df639f0d47f92ae3ae individually; they reorder the existing review guard, strengthen two fixtures, add the tier-none regression, and record the scoped evidence fragment.\nCALL_SITES: reckon/crew/obligations.py:_obligations_view -> _review_duty_item, reckon/crew/obligation_snapshot.py:1437 _review_duty_item, reckon/crew/station_subscriber.py:145 _review_duty_item\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:1640-1675 emits repair-owed for selected open blocking findings before :1676 can select tier-none promotion, closing the previously reviewed bypass.\nSCORE evidence: 18\nJUSTIFICATION evidence: node-repair-base.log and node-repair-final.log record the red-to-green tier-none case, while tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py:262 explicitly clears the refusal and therefore does not measure the separately scoped classification transition.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The three paths in git diff 3e08d3212736626b0169dff1d4a8f16073fb6cdf..43c67c44272bc393c43692df639f0d47f92ae3ae are all declared in the source manifest.md:3 and source live pointer node.write_paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py:145-147 fails when the tier-none early return is restored, as the base log demonstrates, and :304-305 rejects foreign-run command contamination; :261 is only a persistence receipt and :262-269 guards projection rather than refusal clearing.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/obligations.py:1632-1704 retains the surrounding early-return idiom and existing review-selection and tier resolvers, and the added test definition at tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py:126 names behavior without a forbidden label.\nSCORE reuse: 20\nJUSTIFICATION reuse: The capability search found and opened reckon/crew/recovery_review_dispatch.py:2354, which delegates blocking disposition enumeration to repair.blocking_finding_dispositions; obligations.py:1641 reuses that owner, no production definition is added, and the added test at :126 extends the existing local synthetic-crew fixture.\n",
+  "reviewed_base_sha": "3e08d3212736626b0169dff1d4a8f16073fb6cdf",
+  "reviewed_head_sha": "43c67c44272bc393c43692df639f0d47f92ae3ae",
+  "reviewed_run_id": "r-20261108T055018008499-an-obligation-never-offers-a-promotion-past-a-blocking-finding",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_observed_failure_ids": [],
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T055018008499-an-obligation-never-offers-a-promotion-past-a-blocking-finding/node-repair-final.log",
+      "revision": "43c67c44272bc393c43692df639f0d47f92ae3ae"
+    },
+    "baseline_observed_failure_ids": [
+      "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py::test_manually_reviewed_docs_change_with_open_finding_owes_repair"
+    ],
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 1,
+      "failure_ids": [
+        "tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py::test_manually_reviewed_docs_change_with_open_finding_owes_repair"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T055018008499-an-obligation-never-offers-a-promotion-past-a-blocking-finding/node-repair-base.log",
+      "revision": "3e08d3212736626b0169dff1d4a8f16073fb6cdf"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T10:13:33.015272+00:00",
+  "total": 117
+}

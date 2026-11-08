@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="doc">
+<meta name="plan-slug" content="a-refusal-comes-before-the-work">
+<meta name="plan-section" content="s2">
+<title>Every path meets the node contract</title>
+</head>
+<body>
+
+<h2 id="judge-every-node-contract-refusal-in-validate-node-summary">§2 — validate_node carries every contract refusal on every path</h2>
+
+<p><code>validate_node</code> is now the single judge of the whole node
+contract. It gained <code>repository</code> and <code>override</code>
+arguments, and it appends the negative-control finding
+(<code>negative_control_finding</code>) and the gate-population finding
+(<code>gate_population_finding</code>) to its own list beside the six
+properties it already reported. The execution-fit comparison it already made
+now honours the caller's override through <code>assess_execution_fit</code>,
+and it refuses on <code>not fit.allowed</code> rather than
+<code>fit.conflict</code>, so <code>--allow-execution-mismatch</code> survives
+the move into the shared judge.</p>
+
+<p>All three callers pass the same inputs. <code>plan_dispatch</code> passes
+the resolved lane's <code>execution_capable</code>, its execution override and
+the repository, and its three duplicated refusal blocks are deleted; it keeps
+its <code>execution_fit</code> value because that is the audit label the
+resolution persists. <code>queue_requests</code>, which a batch reaches, now
+calls <code>validate_node</code> beside <code>admission_domain_findings</code>,
+resolving the role overlay against the lane the request records so the verdict
+does not depend on which lane admission later binds.
+<code>queue_edit._contract_findings</code> passes the record's repository and
+the same resolved role.</p>
+
+<h3 id="judge-every-node-contract-refusal-in-validate-node-evidence">Evidence</h3>
+
+<table>
+<tr><th>done-when bullet</th><th>status</th></tr>
+<tr><td>Compound-goal batch entry refused, well-formed sibling stored</td><td>met</td></tr>
+<tr><td>Entry writing a check with no negative control refused</td><td>met</td></tr>
+<tr><td>Entry whose gate glob matches nothing in the repository refused</td><td>met</td></tr>
+<tr><td>Entry whose role is not execution-capable and whose measure is execution refused</td><td>met</td></tr>
+<tr><td>The single path's <code>--dry-run --repo</code> reports the same detail for each refusal</td><td>met</td></tr>
+<tr><td>A single dispatch with <code>--allow-execution-mismatch</code> is not refused and its resolution keeps the <code>execution_fit</code> label</td><td>met</td></tr>
+</table>
+
+<p>All nine tests in
+<code>tests/test_every_path_meets_the_node_contract.py</code> pass at the node
+head (<code>EXIT=0</code>), and the declared negative control — removing the
+gate-population block from <code>validate_node</code> — turns the unmatched-glob
+batch case and its dry-run pair red, so the entry queues instead of being
+refused.</p>
+
+<h3 id="judge-every-node-contract-refusal-in-validate-node-paths">Changed paths</h3>
+<ul>
+<li><code>reckon/crew/node.py</code> — <code>validate_node</code> gains <code>repository</code> and <code>override</code>, forwards the override to <code>assess_execution_fit</code>, refuses on <code>not fit.allowed</code>, and appends the negative-control and gate-population findings.</li>
+<li><code>reckon/crew/dispatch_plan.py</code> — passes the lane's <code>execution_capable</code>, the override and the repository; the three duplicated refusal blocks are removed.</li>
+<li><code>reckon/crew/dispatch.py</code> — <code>queue_requests</code> judges each entry with <code>validate_node</code> beside the admission domain, resolving the role overlay onto the recorded lane.</li>
+<li><code>reckon/crew/queue_edit.py</code> — <code>_contract_findings</code> passes the record's repository and resolved role.</li>
+<li><code>tests/test_every_path_meets_the_node_contract.py</code> — the new gate.</li>
+</ul>
+
+
+<h3 id="judge-every-node-contract-refusal-in-validate-node-negative-controls">Five negative controls</h3>
+<p>Each mutation in plan §2 was applied in turn and each reddened exactly the
+case it names, with the tree restored between runs: dropping
+<code>validate_node</code> from <code>queue_requests</code> stores the
+compound-goal entry; leaving the negative-control refusal outside
+<code>validate_node</code> stores the check-with-no-negative entry; leaving the
+gate-population refusal outside it stores the unmatched-glob entry; calling it
+without <code>execution_capable</code> stores the incapable-role entry; and
+dropping the override refuses the overridden dispatch.</p>
+
+<h3 id="judge-every-node-contract-refusal-in-validate-node-edit-override">A queued request keeps its recorded override</h3>
+<p><code>queue_edit._contract_findings</code> now reads the execution override
+the request recorded — <code>dispatch_options.execution_override</code>, the
+<code>allow_execution_mismatch</code> option a queued pointer carries, or the
+resolved <code>execution_fit.override</code> on a launched pointer — so an
+edit no longer refuses a request that was legitimately stored with
+<code>--allow-execution-mismatch</code>.</p>
+
+</body>
+</html>

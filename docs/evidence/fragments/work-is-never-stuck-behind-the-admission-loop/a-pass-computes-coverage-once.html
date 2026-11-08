@@ -1,0 +1,91 @@
+<section id="a-pass-computes-coverage-once-landing">
+  <h2>An admission pass reads a plan's review evidence once</h2>
+
+  <p><strong>What changed.</strong> Every queued request an admission pass
+  considers was judged against its own fresh reading of the same plan: its
+  review coverage, its section digests, its parsed state and its document
+  contract were each taken per request, and the dispatch gate was asked once
+  per request even when two requests asked the same question of the same
+  section. A pass with <em>n</em> queued requests on one plan paid for
+  <em>n</em> readings of that plan. In
+  <code>reckon/crew/queue_admission.py</code>, <code>plan_review_pass()</code>
+  now holds one record per plan for the length of a pass, keyed by the plan
+  file's content digest together with the identities and digests of the stored
+  review records the judgment reads &mdash; so a review stored during the pass
+  changes the key and the next decision recomputes, rather than reusing a
+  reading that has been overtaken. The dispatch-gate fallback is memoized in the
+  same record, keyed by the section the request builds and by the gate's own
+  exemption answer.</p>
+
+  <p><strong>Wait resolution has its own stage.</strong>
+  <code>admit_once</code> times <code>advance_waiting_requests</code> and
+  <code>_release_plan_review_holds</code> into <code>waits_seconds</code>, and
+  <code>_record_stage_timings</code> subtracts that figure before computing
+  <code>launch_seconds</code>. A pass that spends its time advancing waits no
+  longer reports that time as launch cost, and the verdict record carries the
+  wait figure beside the other three stages.</p>
+
+  <h3 id="a-pass-computes-nothing-landing-arms">Measured</h3>
+
+  <p>Five cases over a temporary crew home, each pinning one half of the
+  behaviour: three requests on one plan cost one coverage, one digests and one
+  state read; three uncovered requests cost two dispatch-gate reads (one for the
+  two implement requests on a shared section, one for the review request's
+  exemption); a review stored mid-pass changes the key and forces a recompute;
+  every request's verdict still matches the reading it replaces, including the
+  uncovered, review-removed and unanswered-finding cases; and a half-second wait
+  stage reports <code>waits_seconds &gt;= 0.5</code> with
+  <code>launch_seconds &lt; 0.1</code>.</p>
+
+  <table id="a-pass-computes-coverage-once-table">
+    <caption>Every arm is a log whose first lines name its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>after suite (node's test file)</td>
+        <td><code>793d216</code>, worktree</td>
+        <td>5 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>timing arm, one pass over six queued requests on one plan</td>
+        <td><code>793d216</code>, worktree</td>
+        <td>4.195 s for the pass's six launch decisions
+        (<code>waits_seconds</code> 0.002 s), <code>EXIT=0</code></td></tr>
+      <tr><td>negative control: read the plan per request</td>
+        <td><code>793d216</code> + mutation</td>
+        <td>1 failed, <code>EXIT=1</code> &mdash;
+        <code>test_a_pass_reads_one_plans_evidence_once_for_three_requests</code></td></tr>
+      <tr><td>negative control: read the dispatch gate per request</td>
+        <td><code>793d216</code> + mutation</td>
+        <td>1 failed, <code>EXIT=1</code> &mdash;
+        <code>test_a_pass_asks_the_dispatch_gate_once_per_section_and_exemption</code></td></tr>
+      <tr><td>negative control: leave review records out of the key</td>
+        <td><code>793d216</code> + mutation</td>
+        <td>1 failed, <code>EXIT=1</code> &mdash;
+        <code>test_a_review_stored_during_the_pass_makes_the_next_decision_recompute</code></td></tr>
+      <tr><td>negative control: time wait resolution inside the launch stage</td>
+        <td><code>793d216</code> + mutation</td>
+        <td>1 failed, <code>EXIT=1</code> &mdash;
+        <code>test_the_pass_times_wait_resolution_outside_launch_seconds</code></td></tr>
+      <tr><td>covering gate, head (ten admission-path files)</td>
+        <td><code>793d216</code>, worktree</td>
+        <td>1 failed, 57 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>covering gate, base (the same nine pre-existing files)</td>
+        <td><code>66f4505</code>, extracted tree</td>
+        <td>1 failed, 52 passed, <code>EXIT=1</code> &mdash; the same failure,
+        <code>test_the_log_is_trimmed_within_its_size_bound</code>, which fails
+        at the base revision too, so the delta is zero added failures and the
+        five-case difference is this node's new file</td></tr>
+      <tr><td>closest-neighbour gate, head and base (two files, serial)</td>
+        <td><code>793d216</code> / <code>66f4505</code></td>
+        <td>17 passed, <code>EXIT=0</code> on both</td></tr>
+    </tbody>
+  </table>
+
+  <p>Logs, under the run directory's <code>logs/</code>:
+  <code>test-after-node.log</code>, <code>timing-after.log</code>,
+  <code>negative-control-reading-the-plan-per-request.log</code>,
+  <code>negative-control-reading-the-dispatch-gate-per-request.log</code>,
+  <code>negative-control-leaving-review-records-out-of-the-key.log</code>,
+  <code>negative-control-timing-wait-resolution-inside-launch-seconds.log</code>,
+  <code>after-targeted.log</code>, <code>base-targeted.log</code>,
+  <code>after-core.log</code>, <code>base-core.log</code>.</p>
+</section>

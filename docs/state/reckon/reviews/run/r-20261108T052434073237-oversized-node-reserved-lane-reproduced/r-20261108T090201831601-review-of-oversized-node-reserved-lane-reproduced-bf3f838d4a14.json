@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "unarmed: the reviewed run's manifest carries baseline_suite null and after_suite null (classification.json records both null; no test file lies in its write scope), so the added-failure delta is empty by construction rather than measured.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch_picker.py:590",
+    "reckon/crew/picker/snapshot.py:1259"
+  ],
+  "completed_at": "2026-11-08T09:28:21.038Z",
+  "dispatched_at": "2026-11-08T09:09:12Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/oversized-node-reserved-lane-reproduced.html",
+      "line": "80",
+      "severity": "non-blocking",
+      "text": "the fragment cites reckon/crew_dispatch_commands.py:1604 as the caller of lane_model_selection, but that line is an unrelated dry-run comment; the call is at reckon/crew_dispatch_commands.py:1746, so a reader following the citation finds nothing."
+    },
+    {
+      "file": "tests/test_oversized_route_replay.py",
+      "line": "107",
+      "severity": "non-blocking",
+      "text": "no assertion in the suite names the stage-budget lift, so the only guard for REPLAY_STAGE_BUDGET_SECONDS is timing dependent: removing the lift reddens the suite only while a cold pick exceeds the 5 s production bound, which it did at 15.3 s and 20.9 s on this node but need not on a faster one."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T052434073237-oversized-node-reserved-lane-reproduced/logs/replay.log",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "the gate log's revision header names 0d9b46334d (the base) while its output was produced by the modified working tree, so the receipt cannot be tied to the landed head bf3f838d4a by its own header; the elapsed and pick-stage-bound lines do show the changed script ran."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production module imports or reaches the landed change, which is a script under docs/evidence plus an HTML fragment; the production sites the replay drives and I examined are reckon/crew/dispatch_picker.py:590 and reckon/crew/picker/snapshot.py:1259, both unchanged by the diff.",
+    "diff": "read commit by commit: 639b9a550f adds the stage-budget lift, the elapsed-time line and the fragment, and bf3f838d4a adds one trailing newline; 195 insertions and 16 deletions across two files, all inside the declared scope.",
+    "done_when": "the done_when asks that the replay reproduce both attempts, that both read refuse, that the first carry clive's context-fit and competence exclusions with codex reserved-lane and the second codex reserved-lane only, that its log end in a bare EXIT= line, and that the fragment name paths with line citations; logs/replay.log shows all of the first four and the fragment supplies the citations, of which one (crew_dispatch_commands.py:1604) names unrelated code.",
+    "goal": "the node goal is 'Reproduce why an oversized node did not reach the reserved lane'; replay_oversized_route.py:1020-1060 reproduces both recorded refusals and the new fragment docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/oversized-node-reserved-lane-reproduced.html records why, so the goal is met.",
+    "manifest": "read; it states 'complete', records the gate command, both logs and the pre-change red log, and its tests line differs from logs/replay.log:1 only by a trailing --check-config that the log header omits.",
+    "write_paths": "read the manifest's declared paths (the fragments directory plus this node's fragment and a figures directory); git diff 0d9b4633..bf3f838d4a touches only replay_oversized_route.py and oversized-node-reserved-lane-reproduced.html, both inside the fragments directory."
+  },
+  "justifications": {
+    "durability": "tests/test_oversized_route_replay.py:107 reddens if REPLAY_STAGE_BUDGET_SECONDS at replay_oversized_route.py:68 is removed on this node, where the cold pick ran 15.3 s and 20.9 s against the 5 s bound, but no assertion names the lift itself.",
+    "evidence": "re-run at the landed head the gate printed 'replayed: 2 attempts, refusals reproduced' and EXIT=0, while the base-revision arm in logs/replay-before.log exits 1 with 0 of 3 rows.",
+    "fit": "the added comment and constant at replay_oversized_route.py:53-68 follow the surrounding evidence-script idiom and carry no plan, ticket or version label.",
+    "goal_fidelity": "replay_oversized_route.py:1020-1060 reproduces both recorded refusals (attempt-1 to 11 of 11 rows, attempt-4 to 3 of 3) and the fragment explains the deciding inputs, which is the node goal.",
+    "reuse": "no owner for a pick-budget override exists in reckon/ or tests/ (the search for PICKER_DISPATCH_TIMEOUT_SECONDS found only direct monkeypatch.setattr callers such as tests/test_a_pick_names_its_slow_stage.py:51), and replay_oversized_route.py:1029 follows that same save/restore idiom.",
+    "scope_discipline": "both changed paths sit inside the declared directory docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop, and no production module and no plan file was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'Reproduce why an oversized node did not reach the reserved lane'; replay_oversized_route.py:1020-1060 reproduces both recorded refusals and the new fragment oversized-node-reserved-lane-reproduced.html records why, so the goal is met.\nVERDICT done_when: the done_when asks that the replay reproduce both attempts, that both read refuse, that the first carry clive's context-fit and competence exclusions with codex reserved-lane and the second codex reserved-lane only, that its log end in a bare EXIT= line, and that the fragment name paths with line citations; logs/replay.log shows all of the first four and the fragment supplies the citations, of which one (crew_dispatch_commands.py:1604) names unrelated code.\nVERDICT write_paths: read the manifest's declared paths (the fragments directory plus this run's fragment); git diff 0d9b4633..bf3f838d4a touches only replay_oversized_route.py and oversized-node-reserved-lane-reproduced.html, both inside the fragments directory.\nVERDICT manifest: read; it states 'complete', records the gate command, both logs and the pre-change red log, and its tests line differs from logs/replay.log:1 only by a trailing --check-config that the log header omits.\nVERDICT diff: read commit by commit: 639b9a550f adds the stage-budget lift, the elapsed-time line and the fragment, and bf3f838d4a adds one trailing newline; 195 insertions and 16 deletions across two files, all inside the declared scope.\nCALL_SITES: reckon/crew/dispatch_picker.py:590, reckon/crew/picker/snapshot.py:1259\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: replay_oversized_route.py:1020-1060 reproduces both recorded refusals and the fragment explains the deciding inputs, which is the node goal.\nSCORE evidence: 17\nJUSTIFICATION evidence: re-run at the landed head the gate printed 'replayed: 2 attempts, refusals reproduced' and EXIT=0, while the base-revision arm exits 1 with 0 of 3 rows.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: both changed paths sit inside the declared directory docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop, and no production module and no plan file was touched.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_oversized_route_replay.py:107 reddens if REPLAY_STAGE_BUDGET_SECONDS at replay_oversized_route.py:68 is removed on this node, where the cold pick ran 15.3 s and 20.9 s against the 5 s bound, but no assertion names the lift itself.\nSCORE fit: 17\nJUSTIFICATION fit: the added comment and constant at replay_oversized_route.py:53-68 follow the surrounding evidence-script idiom and carry no plan, ticket or version label.\nSCORE reuse: 19\nJUSTIFICATION reuse: no owner for a pick-budget override exists in reckon/ or tests/, and replay_oversized_route.py:1029 follows the same save/restore idiom the suite's monkeypatch callers use.\nFINDING docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/oversized-node-reserved-lane-reproduced.html:80 non-blocking: the fragment cites reckon/crew_dispatch_commands.py:1604 as the caller of lane_model_selection, but that line is an unrelated dry-run comment; the call is at reckon/crew_dispatch_commands.py:1746.\nFINDING tests/test_oversized_route_replay.py:107 non-blocking: no assertion in the suite names the stage-budget lift, so the only guard for REPLAY_STAGE_BUDGET_SECONDS is timing dependent and need not redden on a host whose cold pick finishes under 5 s.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T052434073237-oversized-node-reserved-lane-reproduced/logs/replay.log:2 non-blocking: the gate log's revision header names 0d9b46334d (the base) while its output came from the modified working tree, so the receipt is not tied to the landed head by its own header.",
+  "review_run_id": "r-20261108T090201831601-review-of-oversized-node-reserved-lane-reproduced-bf3f838d4a14",
+  "reviewed_base_sha": "0d9b46334d7f24ab53afe0667a5354ac2b1e5eff",
+  "reviewed_head_sha": "bf3f838d4a14a100a310bf358f6977ad3c7388f1",
+  "reviewed_run_id": "r-20261108T052434073237-oversized-node-reserved-lane-reproduced",
+  "scores": {
+    "durability": 14,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T09:23:13+00:00",
+  "total": 104
+}

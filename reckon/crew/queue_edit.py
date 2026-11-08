@@ -172,14 +172,37 @@ def _contract_findings(
     so an edit is judged under the same locks the launch will be.
     """
     from reckon.crew.queue_admission import _resolve_lane_config
-    from reckon.crew.routing import resolved_time_ceiling
+    from reckon.crew.routing import resolve_role_override, resolved_time_ceiling
 
     options = record.get("dispatch_options") or {}
+    config = _resolve_lane_config(record)
     node.manifest_path = str((record.get("node") or {}).get("manifest_path") or "")
+    lane = str(
+        record.get("backend")
+        or record.get("lane")
+        or config.get("local_backend")
+        or config.get("default_backend")
+        or ""
+    )
+    effective_backend = (
+        resolve_role_override(config, node.role, node.spec_level, lane)[1]
+        if lane
+        else {}
+    )
+    # The execution override is a decision the request's dispatch already
+    # recorded (``--allow-execution-mismatch``), so the edit judges the request
+    # under it rather than refusing a request that was legitimately stored.
     verdict = validate_node(
         node,
         locked_decisions=tuple(options.get("locked_decisions") or ()),
-        budget_ceiling=resolved_time_ceiling(_resolve_lane_config(record)),
+        budget_ceiling=resolved_time_ceiling(config),
+        execution_capable=effective_backend.get("execution_capable"),
+        override=bool(
+            options.get("execution_override")
+            or options.get("allow_execution_mismatch")
+            or (record.get("execution_fit") or {}).get("override")
+        ),
+        repository=str(record.get("repo") or "") or None,
     )
     return list(verdict.findings)
 
@@ -231,20 +254,27 @@ def _live_claim_conflict(
             continue
         theirs = _declared_scope_paths(other)
         for path in ours:
-            if path in shared:
-                continue
             claimed = next(
-                (claim for claim in theirs if runs_module._scopes_overlap(path, claim)),
+                (
+                    claim
+                    for claim in theirs
+                    if runs_module._scopes_overlap(path, claim)
+                    and not (path == claim and path in shared)
+                ),
                 None,
             )
             if claimed is None or not claim_disposition(other).binding:
                 continue
-            return ScopeConflict(
+            refusal = ScopeConflict(
                 run_id=other_id,
                 node_id=str((other.get("node") or {}).get("id") or ""),
                 candidate_path=path,
                 claimed_path=claimed,
             )
+            exclusive = runs_module._exclusive_write_pattern(shared, path)
+            if exclusive:
+                refusal.args = (f"{refusal}; exclusive pattern {exclusive!r}",)
+            return refusal
     return None
 
 
@@ -588,14 +618,19 @@ def hold(
     reason: str = "",
     project: str | None = None,
 ) -> dict[str, Any]:
-    """Pause waiting requests without losing their brief, waits or priority."""
-    from reckon.crew.queue_admission import _admit_lock
+    """Pause waiting requests without losing their brief, waits or priority.
 
-    with _admit_lock():
-        ids = _selected_requests(run_id, plan, session, project, release=False)
-        changed = [
-            _change_hold(identifier, release=False, reason=reason) for identifier in ids
-        ]
+    A hold changes one pointer through that pointer's own lock, as a
+    reprioritise does, and never takes the admission lock: a pass can hold that
+    lock for its whole length, and a steering verb that waited on it would be
+    unusable exactly when a coordinator needs to shrink the queue the pass is
+    working through. The launch re-reads the request's phase before it starts
+    the run, so a request held while a pass is deciding is not launched by it.
+    """
+    ids = _selected_requests(run_id, plan, session, project, release=False)
+    changed = [
+        _change_hold(identifier, release=False, reason=reason) for identifier in ids
+    ]
     return {"held": changed, "count": len(changed)}
 
 
@@ -607,12 +642,14 @@ def release(
     reason: str = "",
     project: str | None = None,
 ) -> dict[str, Any]:
-    """Restore held requests to their previous phase and paused starvation age."""
-    from reckon.crew.queue_admission import _admit_lock
+    """Restore held requests to their previous phase and paused starvation age.
 
-    with _admit_lock():
-        ids = _selected_requests(run_id, plan, session, project, release=True)
-        changed = [
-            _change_hold(identifier, release=True, reason=reason) for identifier in ids
-        ]
+    Like a hold, a release writes only the pointer it changes and takes no
+    admission lock, so a coordinator can return work to the queue while a pass
+    runs.
+    """
+    ids = _selected_requests(run_id, plan, session, project, release=True)
+    changed = [
+        _change_hold(identifier, release=True, reason=reason) for identifier in ids
+    ]
     return {"released": changed, "count": len(changed)}

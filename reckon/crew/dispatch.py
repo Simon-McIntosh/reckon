@@ -320,11 +320,29 @@ def queue_requests(
         node.id: str((run_ids or {}).get(node.id) or new_run_id(node.id))
         for node in nodes
     }
+    ceiling = resolved_time_ceiling(config)
     for node in nodes:
+        # The whole node contract is judged here, beside the admission domain,
+        # so a batch entry that a single dispatch would refuse is refused while
+        # it is still a request rather than surfaced later at its launch, where
+        # the refusal costs the queue position and reaches nobody. The role's
+        # overlay is resolved against the lane the request records, so the
+        # execution verdict does not depend on whatever lane admission later
+        # binds.
+        _lane_name, effective_backend = resolve_role_override(
+            config, node.role, node.spec_level, lane
+        )
         findings = admission_domain_findings(
             node, project=project, repository=repo_root
         )
         refusals, _warnings = admission_refusals_and_warnings(findings)
+        verdict = validate_node(
+            node,
+            budget_ceiling=ceiling,
+            execution_capable=effective_backend.get("execution_capable"),
+            repository=repo_root,
+        )
+        refusals.extend(verdict.findings)
         if refusals:
             raise CrewError(
                 f"node {node.id!r} is refused at queue time: "

@@ -1,0 +1,26 @@
+<section id="a-source-file-is-shared-by-default-evidence">
+  <h3>Shared-root file claims implemented; importer comparison incomplete</h3>
+  <p>The sharing policy admits exact file co-claims under declared roots, with
+  exclusive patterns taking precedence. Directory claims remain exclusive, and
+  explicit shared-file declarations keep working without roots. The project
+  declares <code>reckon/</code>, <code>tests/</code>, <code>scripts/</code> and
+  <code>skills/</code> as shared roots. Queue changes stay within claim comparisons.</p>
+  <table>
+    <thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Focused head contract</td><td>14 passed in 125.85s</td></tr>
+      <tr><td>Initial source-base negative control</td><td>3 failed, 7 passed in 63.41s</td></tr>
+      <tr><td>Importer source-base arm</td><td>66 failed, 4791 passed, 2 skipped, 4 errors in 4530.42s; interrupted at 99%</td></tr>
+      <tr><td>Importer head arm</td><td>Not run; no complete regression delta claimed</td></tr>
+      <tr><td>Ruff lint</td><td>Zero findings before and after the source change</td></tr>
+    </tbody>
+  </table>
+  <p>The initial negative control refused the second shared-root dispatch,
+  held the queued co-claim, and allowed an explicit shared file to bypass its
+  exclusive pattern. The head contract exercises the corrected outcomes,
+  both queue checks, directory boundaries and legacy declarations.</p>
+  <p>The importer receipt explicitly records <code>completed: false</code>.
+  A complete importer base/head comparison remains required before this node
+  satisfies its full measure. Source repair: <code>0b28ace43f95878e1ca437fe9d9f9a05a9aee6e5</code>;
+  expanded checks: <code>ac8a1a32898146e8848ed48cb67be001fda2170a</code>.</p>
+</section>

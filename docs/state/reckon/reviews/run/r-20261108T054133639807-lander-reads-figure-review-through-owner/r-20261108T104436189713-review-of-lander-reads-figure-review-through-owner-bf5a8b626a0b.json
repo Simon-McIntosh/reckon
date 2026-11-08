@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T11:16:29.385Z",
+  "dispatched_at": "2026-11-08T11:00:56Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "line": 187,
+      "severity": "non-blocking",
+      "text": "the figure tier asks _unreadable_figure_review_records only when _newest_figure_review returns None, so a run carrying one parseable figure record plus one unparsable figure-named file is landed by the lander while promotion's _require_no_undisposed_blocking_figure_finding refuses it on the unreadable file (it checks unreadable first, unconditionally) \u2014 the misattributed land failure this section removes, in a narrowed case. The plan prescribes this order, so it is recorded rather than repaired here."
+    },
+    {
+      "file": "tests/test_the_lander_waits_for_every_owed_review.py",
+      "line": 235,
+      "severity": "non-blocking",
+      "text": "edited outside the node's declared write paths (review_tier -> awaiting_tier, one assertion); forced by the key rename the section requires, disclosed in the manifest's outside_scope, and green in both population arms."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "The lander's entry points into the change are reckon/crew/queue_admission.py:5205 land_once() and reckon/crew/obligations.py:1612, the only reader of pointer['admission_landing']; it reads status/guard/head only, so the review_tier -> awaiting_tier rename strands no reader.",
+    "diff": "Read commit by commit against 83d5443524: 39c5048862 changes queue_landing.py (+143/-27 net across four hunks) and adds the 324-line test file with a one-line key rename in a sibling test; bf5a8b626a adds the five-line landing fragment. No commit carries a plan, sprint or ticket identifier and both carry bodies.",
+    "done_when": "The done_when names four behaviours, a negative control, an importer-population delta and ruff cleanliness, in tests/test_the_lander_reads_a_figure_review_through_its_owner.py; the manifest records gate 17 passed EXIT=0 at head 39c5048862, population base 93 passed vs head 98 passed (both EXIT=0, zero FAILED lines), and negative control 3 failed EXIT=1. Ruff is claimed rather than logged.",
+    "goal": "The node's goal is to read a figure review through its owner in the lander; reckon/crew/queue_landing.py:187 reads it through promotion_checks._newest_figure_review, :190 resolves the owner's None against _unreadable_figure_review_records, :243 judges the tier incomplete on repair.blocking_findings, and :393 files the tier as awaiting_tier with review_read_error beside a revision-only stale_head.",
+    "manifest": "Read; it records status complete, commits 39c5048862 and bf5a8b626a, the three gate logs plus reproduction and negative-control logs, and carried added evidence under evidence_inputs; its arm fields baseline_suite/after_suite are absent because the node is unarmed, so the population arms are read from gate-base-population.log and gate-head-population.log.",
+    "write_paths": "Declared scope is reckon/crew/queue_landing.py, the landing fragment and its figure directory; the diff touches those plus two test files, one required by the done_when (tests/test_the_lander_reads_a_figure_review_through_its_owner.py) and one renamed key assertion (tests/test_the_lander_waits_for_every_owed_review.py:235), both disclosed under outside_scope."
+  },
+  "justifications": {
+    "durability": "negative-control.log restores review.read_review and the list-only completeness check and reddens test_a_figure_review_with_an_undisposed_blocking_finding_holds_the_run and test_an_unparsable_figure_record_is_recorded_as_unreadable, so the added assertions name a condition under which they fail.",
+    "evidence": "gate-head-final.log names revision 39c5048862 and its command and ends 'EXIT=0' after '17 passed'; gate-base-population.log and gate-head-population.log give 93 passed and 98 passed with zero FAILED lines, and negative-control.log shows 3 failed EXIT=1 including the first two new cases; ruff cleanliness is claimed in the manifest but no ruff log is recorded.",
+    "fit": "reckon/crew/queue_landing.py:168-208 keeps the module's existing 'read through the owner, explain the divergence in the docstring' idiom, and _UnreadableFigureReviewError names the mechanism with no plan, issue or version label.",
+    "goal_fidelity": "reckon/crew/queue_landing.py:187-208 reads the figure tier through the owner, :230-250 judges it incomplete on repair.blocking_findings, and :393 files awaiting_tier \u2014 all four done-when behaviours plus the rename are present.",
+    "reuse": "reckon/crew/queue_landing.py:210-226 composes repair.blocking_findings with promotion_checks._describe_blocking_findings rather than re-deriving the severity rule, and :187/:190 extend the owner promotion_checks.py:611 and :673 already owns; a search over reckon/crew for a second figure-review reader or a second blocking-findings renderer found none to fork.",
+    "scope_discipline": "the diff touches tests/test_the_lander_reads_a_figure_review_through_its_owner.py and tests/test_the_lander_waits_for_every_owed_review.py:235 outside the declared write paths, both required and disclosed, and the product change itself is confined to reckon/crew/queue_landing.py."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261108T104436189713-review-of-lander-reads-figure-review-through-owner-bf5a8b626a0b",
+  "reviewed_base_sha": "83d5443524e8b934d1222972f15f8d90b802ae5f",
+  "reviewed_head_sha": "bf5a8b626a0be2b470171418dd8c86e79c11bd7c",
+  "reviewed_run_id": "r-20261108T054133639807-lander-reads-figure-review-through-owner",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T11:28:33.619082+00:00",
+  "total": 105,
+  "verdict_text": "VERDICT goal: the goal is to read a figure review through its owner in the lander; reckon/crew/queue_landing.py:187-191 now reads it through promotion_checks._newest_figure_review and resolves its None against _unreadable_figure_review_records.\nVERDICT done_when: the done_when's four behaviours are asserted in tests/test_the_lander_reads_a_figure_review_through_its_owner.py; the manifest records 17 passed EXIT=0 at 39c5048862, base 93 passed vs head 98 passed, and a negative control at 3 failed EXIT=1. Ruff is claimed, not logged.\nVERDICT write_paths: the declared scope is queue_landing.py plus the landing fragment; the diff also changes two test files, disclosed under outside_scope.\nVERDICT manifest: read; it names the commits, gate command, five log paths and the importer population's two arms, all of which open and reconcile with their logs.\nVERDICT diff: read commit by commit against 83d5443524 \u2014 39c5048862 is the lander change plus its new test and a one-line rename in a sibling test; bf5a8b626a is the five-line fragment.\nCALL_SITES: reckon/crew/queue_admission.py:5205, reckon/crew/obligations.py:1612\nSCORE_PLACEHOLDER\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/queue_landing.py:187-208 reads the figure tier through the owner, :230-250 judges it incomplete on repair.blocking_findings, and :393 files awaiting_tier \u2014 all four done-when behaviours plus the rename are present.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-head-final.log names revision 39c5048862 and its command and ends 'EXIT=0' after '17 passed'; gate-base-population.log and gate-head-population.log give 93 passed and 98 passed with zero FAILED lines, and negative-control.log shows 3 failed EXIT=1 including the first two new cases; ruff cleanliness is claimed in the manifest but no ruff log is recorded.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: the diff touches tests/test_the_lander_reads_a_figure_review_through_its_owner.py and tests/test_the_lander_waits_for_every_owed_review.py:235 outside the declared write paths, both required and disclosed, and the product change itself is confined to reckon/crew/queue_landing.py.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control.log restores review.read_review and the list-only completeness check and reddens test_a_figure_review_with_an_undisposed_blocking_finding_holds_the_run and test_an_unparsable_figure_record_is_recorded_as_unreadable, so the added assertions name a condition under which they fail.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/queue_landing.py:168-208 keeps the module's existing 'read through the owner, explain the divergence in the docstring' idiom, and _UnreadableFigureReviewError names the mechanism with no plan, issue or version label.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/queue_landing.py:210-226 composes repair.blocking_findings with promotion_checks._describe_blocking_findings rather than re-deriving the severity rule, and :187/:190 extend the owner promotion_checks.py:611 and :673 already owns; a search over reckon/crew for a second figure-review reader or a second blocking-findings renderer found none to fork.\nFINDING reckon/crew/queue_landing.py:187 non-blocking: the unreadable check runs only after _newest_figure_review answers None, so a run with one parseable figure record and one unparsable figure-named file is landed by the lander while promotion refuses the same run on the unreadable file.\nFINDING tests/test_the_lander_waits_for_every_owed_review.py:235 non-blocking: one asserted key was renamed outside the node's declared write paths, forced by the awaiting_tier rename and disclosed in the manifest."
+}

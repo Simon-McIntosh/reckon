@@ -232,7 +232,7 @@ def test_a_run_owing_a_figure_review_is_not_landed_on_its_code_review(
     assert result["landed"] == [], result
     landing = runs.read_pointer(RUN)["admission_landing"]
     assert landing["status"] == "awaiting-review", landing
-    assert landing["review_tier"] == queue_landing.FIGURE_REVIEW_TIER, landing
+    assert landing["awaiting_tier"] == queue_landing.FIGURE_REVIEW_TIER, landing
     assert queue_landing.recovery.same_revision(landing["head"], delivery["head"])
 
 
