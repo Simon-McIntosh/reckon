@@ -84,7 +84,6 @@ def _never_launched_pointer(
     claimed_seconds_ago: float,
     launch: str = "cli",
     launcher_host: str = LAUNCHER_HOST,
-    record_claim: bool = True,
 ) -> dict:
     """A launch that stopped between composing its claim and spawning a worker.
 
@@ -96,14 +95,16 @@ def _never_launched_pointer(
     directory = run_dir(run_id)
     directory.mkdir(parents=True, exist_ok=True)
     claimed = datetime.now(UTC) - timedelta(seconds=claimed_seconds_ago)
-    if record_claim:
-        _write_json(
-            directory / recovery_liveness.CLAIM_RECORD_NAME,
-            {
-                "run_id": run_id,
-                "claim_registered_at": claimed.strftime("%Y-%m-%dT%H:%M:%SZ"),
-            },
-        )
+    # The claim a dispatch registers before it composes anything else. Its name
+    # is written out rather than read from the module under test, so the case
+    # reports the defect in the dating, not a name the base revision lacks.
+    _write_json(
+        directory / "claim.json",
+        {
+            "run_id": run_id,
+            "claim_registered_at": claimed.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        },
+    )
     record = {
         "run_id": run_id,
         "project": PROJECT,
