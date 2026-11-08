@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T18:46:11.348Z",
+  "dispatched_at": "2026-11-08T18:36:18Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-refusal-comes-before-the-work/ask-a-brief-run-for-its-plan-link-at-dispatch.html",
+      "line": "18",
+      "severity": "non-blocking",
+      "text": "non-blocking: the paragraph still cites <code>missing_brief_discharge</code> in reckon/crew/node.py, a symbol the reviewed commits renamed to <code>brief_owner_state</code> (reckon/crew/node.py:1202); grep over reckon/, tests/ and docs/ finds the old name only here, so the fragment is the last reader-facing pointer to a function that does not exist at the head it describes."
+    },
+    {
+      "file": "docs/evidence/fragments/a-refusal-comes-before-the-work/ask-a-brief-run-for-its-plan-link-at-dispatch.html",
+      "line": "10",
+      "severity": "non-blocking",
+      "text": "non-blocking: the ledger-row row records a head arm of 7 passed at 20088ee1 but no log of that green arm exists under the run's logs/ \u2014 logs/negative_control_ledger_row.log is the only file naming tests/test_promotion_records_a_brief_runs_owner.py and it is the 4-failed red arm; I re-ran the file at the reviewed head 04e55a98 and got 7 passed, so the claim is true but unreceipted, unlike every other measure in the table."
+    },
+    {
+      "file": "tests/test_a_brief_run_names_its_plan_at_dispatch.py",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the plan's s3 done-when requires the test files importing reckon.crew.promotion_checks, reckon.crew.node or reckon.crew_dispatch_commands to add no failure against the base revision, but the armed command (logs/armed-base-suite.log, logs/armed-head-suite.log) still runs only the focus file and tests/test_brief_dispatch.py; the affected importer was measured separately, so a regression in any other importer would not be caught by this run's armed pair \u2014 the prior review's third finding stands unaddressed."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit from 8219303b to 04e55a98: 9a91f1de restores the dict return in reckon/crew/promotion_checks.py:1822 and renames the helper to brief_owner_state returning (applies, role) at reckon/crew/node.py:1202, 20088ee1 sorts the import block, and 04e55a98 adds the ledger-row paragraph to the evidence fragment; tests/test_a_brief_run_names_its_plan_at_dispatch.py:568-590 now asserts the returned block instead of None, restoring the guard that 8219303b had inverted.",
+    "done_when": "logs/armed-base-suite.log (aa134b15, 1 failed / 17 passed, EXIT=1) and logs/armed-head-suite.log (20088ee1, 20 passed, EXIT=0) are proper receipts for the armed pair, and the importer clause is measured for the file this repair touches \u2014 logs/negative_control_ledger_row.log is 4 failed with 9a91f1de reverse-applied, and I re-ran tests/test_promotion_records_a_brief_runs_owner.py at the reviewed head as 7 passed \u2014 but that green arm has no stored log.",
+    "goal": "The node goal is to refuse an implement- or test-role brief dispatch naming neither a plan link nor an unplanned reason; the delta restores the discharge block that _require_brief_owner returns at reckon/crew/promotion_checks.py:1822, so the dispatch refusal at reckon/crew_dispatch_commands.py:1868 and the landing refusal read one rule without dropping the recorded owner.",
+    "manifest": "Read the manifest; it records status complete, the delta commits, the armed pair with both revisions and log paths, the reverse-applied negative control with its four failing ids, rubric.evidence naming the mutation of each guard, and evidence_inputs that correctly describe the shared rule and the restored ledger-row value.",
+    "write_paths": "Read the node's declared paths reckon/crew_dispatch_commands.py, reckon/crew/dispatch.py, reckon/crew/node.py, reckon/crew/promotion_checks.py, tests/test_a_brief_run_names_its_plan_at_dispatch.py plus the fenced evidence fragment; the delta's four paths (the evidence fragment, reckon/crew/node.py, reckon/crew/promotion_checks.py, tests/test_a_brief_run_names_its_plan_at_dispatch.py) are all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_brief_run_names_its_plan_at_dispatch.py:568-573 asserts the returned dict against a literal, so restoring the None return reddens it, and logs/negative_control_ledger_row.log shows the reverse-applied repair reddening the plan_link, unplanned_reason, test_cli_plan_link and test_cli_unplanned_reason row cases.",
+    "evidence": "logs/armed-base-suite.log and logs/armed-head-suite.log carry revision, tree, module.__file__, measurement cwd and a bare EXIT= line, but the fragment's 7-passed head arm at 20088ee1 has no log and the armed command still omits the importer population the plan's done-when names.",
+    "fit": "reckon/crew/node.py:1202 keeps the file's mechanism-docstring style and introduces no plan or stage identifier, though reckon/crew/node.py:1262-1263 drops the tuple's first element by index, which reads less plainly than naming it.",
+    "goal_fidelity": "reckon/crew/promotion_checks.py:1820-1822 returns the plan_link/unplanned_reason block only for a run the rule asks for, which is exactly what reckon/crew/promotion.py:1500 writes onto the ledger row.",
+    "reuse": "reckon/crew/node.py:1202 is the renamed owner of the one rule both refusals already read at reckon/crew/node.py:1256 and reckon/crew/promotion_checks.py:1806, so the delta extends the existing mechanism rather than adding a second one.",
+    "scope_discipline": "git diff --stat 8219303b..04e55a98 lists only the evidence fragment, reckon/crew/node.py, reckon/crew/promotion_checks.py and the node's own test file, every one inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal, to refuse an implement- or test-role brief dispatch naming neither a plan link nor an unplanned reason; the delta restores the discharge block that _require_brief_owner returns at reckon/crew/promotion_checks.py:1822, so reckon/crew/promotion.py:1500-1501 records the owner again while reckon/crew_dispatch_commands.py:1868 keeps refusing on the same rule.\nVERDICT done_when: read the s3 done-when and the run's gates; logs/armed-base-suite.log (aa134b15, 1 failed / 17 passed, EXIT=1) and logs/armed-head-suite.log (20088ee1, 20 passed, EXIT=0) are proper receipts for the armed pair, and the affected importer is measured red at logs/negative_control_ledger_row.log (4 failed) against my re-run of the same file at 04e55a98 (7 passed, no stored log), but the armed command still omits the importer population the done-when names.\nVERDICT write_paths: read the node's five declared paths plus the fenced evidence fragment; the delta touches only the evidence fragment, reckon/crew/node.py, reckon/crew/promotion_checks.py and tests/test_a_brief_run_names_its_plan_at_dispatch.py, all inside the fence.\nVERDICT manifest: read; it records status complete, the armed pair with both revisions and their log paths, the reverse-applied negative control with four failing ids, and one rubric line per dimension.\nVERDICT diff: read commit by commit from 8219303b to 04e55a98; 9a91f1de restores the dict return and renames the helper to brief_owner_state, 20088ee1 sorts an import, and 04e55a98 adds the ledger-row paragraph, with the test asserting the returned block rather than None.\nCALL_SITES: reckon/crew_dispatch_commands.py:1868 crew_dispatch, reckon/crew/node.py:1256 brief_plan_owner_finding, reckon/crew/promotion_checks.py:2438 _landing_preconditions, reckon/crew/promotion.py:1297 and 1500 ledger.build_record\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_checks.py:1822 returns only a block the rule asked for, which is exactly what reckon/crew/promotion.py:1500 writes to the ledger row.\nSCORE evidence: 15\nJUSTIFICATION evidence: the two armed logs carry revision, tree, module.__file__, measurement cwd and a bare EXIT= line, but the fragment's 7-passed head arm has no log and the armed command still omits the importer population named by the done-when.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 8219303b..04e55a98 lists four files and every one is a declared write path.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_brief_run_names_its_plan_at_dispatch.py:568-573 asserts a literal dict, so the None return reddens it, and logs/negative_control_ledger_row.log records the reverse-applied repair reddening four row-reading cases.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/node.py:1202 follows the surrounding contract-finding style with no plan identifier, though reckon/crew/node.py:1262 indexes the tuple's second element unnamed.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/node.py:1202 is the renamed single owner read at reckon/crew/node.py:1256 and reckon/crew/promotion_checks.py:1806, so no capability is duplicated.\nFINDING docs/evidence/fragments/a-refusal-comes-before-the-work/ask-a-brief-run-for-its-plan-link-at-dispatch.html:18 non-blocking: the paragraph still cites missing_brief_discharge, a symbol the reviewed commits renamed to brief_owner_state at reckon/crew/node.py:1202, so the fragment points a reader at a function that no longer exists.\nFINDING docs/evidence/fragments/a-refusal-comes-before-the-work/ask-a-brief-run-for-its-plan-link-at-dispatch.html:11 non-blocking: the ledger-row head arm claims 7 passed at 20088ee1 with no stored green log, unlike every other measure.\nFINDING tests/test_a_brief_run_names_its_plan_at_dispatch.py:1 non-blocking: the armed command still runs only the focus file and tests/test_brief_dispatch.py, so the importer population the plan's done-when names is not part of the gate and the prior review's third finding remains unaddressed.\n",
+  "review_run_id": "r-20261108T183405470356-review-of-ask-a-brief-run-for-its-plan-link-at-dispatch-04e55a981bde",
+  "reviewed_base_sha": "8219303b042ad05b49ba832df8a07307f282cd43",
+  "reviewed_head_sha": "04e55a981bde4c7a3524ced9cdf5a33651d49f68",
+  "reviewed_run_id": "r-20261107T123111882809-ask-a-brief-run-for-its-plan-link-at-dispatch",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T18:56:24.505901+00:00",
+  "total": 109
+}
