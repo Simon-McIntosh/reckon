@@ -212,12 +212,12 @@ def test_a_dispatch_keeps_its_detail_in_the_run_directory(
         assert paid_lanes.local_lane_path() == lane_path
         assert paid_lanes.document_path() == quota_path
         record = _dispatch_one(repository, tmp_path.parent, "detail-moves", monkeypatch)
-    run_id = str(record["run_id"])
-    # A queued launch records the request it was admitted from on its pointer;
-    # that write goes through the same path as every other pointer write.
-    queue_admission._stamp_admission(
-        run_id, {"run_id": run_id, "project": PROJECT}, admitted_at="now"
-    )
+        run_id = str(record["run_id"])
+        # A queued launch records the request it was admitted from on its pointer;
+        # that write goes through the same path as every other pointer write.
+        queue_admission._stamp_admission(
+            run_id, {"run_id": run_id, "project": PROJECT}, admitted_at="now"
+        )
     assert lane_path in opened_test_documents
     assert not touched_real_documents, touched_real_documents
 
