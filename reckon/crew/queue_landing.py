@@ -1576,8 +1576,9 @@ def _land_deliveries() -> dict[str, Any]:
             repair = dispatch_merge_repair(
                 pointer, head=head, primary=primary, paths=conflicting
             )
-            guard = f"merge-conflict against primary {primary}: " + ", ".join(
-                conflicting
+            guard = (
+                f"merge-conflict: the head conflicts with the primary branch at {primary}: "
+                + ", ".join(conflicting)
             )
             _record_attempt(
                 run_id,
