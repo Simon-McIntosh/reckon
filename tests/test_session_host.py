@@ -247,11 +247,16 @@ class HostHarness:
             env=self.env(),
         )
 
-    def request(self, project: str, session: str, *, owner_checked: bool = False) -> None:
+    def request(
+        self, project: str, session: str, *, owner_checked: bool = False
+    ) -> None:
         assert self.process is not None and self.process.stdin is not None
-        line = json.dumps(
-            {"project": project, "session": session, "owner_checked": owner_checked}
-        ) + "\n"
+        line = (
+            json.dumps(
+                {"project": project, "session": session, "owner_checked": owner_checked}
+            )
+            + "\n"
+        )
         self.process.stdin.write(line.encode())
         self.process.stdin.flush()
 
