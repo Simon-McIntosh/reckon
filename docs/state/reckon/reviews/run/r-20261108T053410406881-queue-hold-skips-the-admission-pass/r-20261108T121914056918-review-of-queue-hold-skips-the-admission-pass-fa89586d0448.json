@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_a_pass_holds_is_never_stalled[held-by-gate]"
+  ],
+  "added_failures_note": "the one added id is a parallel-arm error that logs/importers-head-recheck.log shows passing when run on its own (7 passed, EXIT=0), so the change adds no reproducible failing test; the count is the set difference of the two arm logs, not a regression",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:4844",
+    "reckon/crew_run_commands.py:2640",
+    "reckon/crew_run_commands.py:2659",
+    "reckon/crew_run_commands.py:2673",
+    "reckon/mcp_crew_actions.py:313"
+  ],
+  "completed_at": "2026-11-08T12:41:50.800Z",
+  "dispatched_at": "2026-11-08T12:30:05Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "321",
+      "severity": "non-blocking",
+      "text": "non-blocking: an invalid-JSON pointer becomes current=None with phase \"\" so the launch proceeds, while runs.read_pointer raises CrewError for the same file, so the held guard fails open on exactly the pointer it cannot read."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T053410406881-queue-hold-skips-the-admission-pass/manifest.md",
+      "line": "22",
+      "severity": "non-blocking",
+      "text": "non-blocking: the manifest quotes the repair probe as 0.503 s while logs/repro-hold-returns.log prints 0.301 s, so the record does not reconcile with the log it cites; both are far under the one-second budget so the conclusion is unaffected."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read the three commits against defc4723b9e \u2014 hold and release lose the admission lock in reckon/crew/queue_edit.py, queue_admission.py:319-333 refuses a pointer whose phase is held, the new test, and the evidence fragment; every hunk serves the goal.",
+    "done_when": "the done_when names tests/test_a_queue_hold_does_not_wait_for_the_pass.py with three cases and two negative controls; logs/gate-02-head.log records 3 passed EXIT=0, and each control log records 1 failed 2 passed EXIT=1 failing exactly its own case.",
+    "goal": "the goal is \"Apply a queue hold without waiting for the admission pass\"; reckon/crew/queue_edit.py:583 hold and :607 release now write each request under runs._pointer_lock with no _admit_lock, and logs/repro-hold-returns.log shows the same probe returning in 0.301 s with the request reading held.",
+    "manifest": "read; it reports the gate at 037d4ec219, both negative controls, the importer arms at both revisions and the serial re-run of the one errored case, naming every log under its run directory.",
+    "write_paths": "the node's recorded write paths are reckon/crew/queue_edit.py and reckon/crew/queue_admission.py; the diff also adds tests/test_a_queue_hold_does_not_wait_for_the_pass.py, which the done_when text and the plan section's own write paths name but the node's recorded list omits."
+  },
+  "justifications": {
+    "durability": "tests/test_a_queue_hold_does_not_wait_for_the_pass.py:114 fails on the one-second budget when the admission lock is reinstated and :168 reddens when the pre-launch phase re-read is removed, both recorded as negative controls.",
+    "evidence": "logs/gate-02-head.log ends 3 passed EXIT=0 and logs/importers-base.log against logs/importers-head.log derive one added id that logs/importers-head-recheck.log shows passing serially at EXIT=0.",
+    "fit": "reckon/crew/queue_edit.py:449 reprioritise already writes one pointer under runs._pointer_lock and the new hold and release bodies follow that idiom, with ruff check and ruff format --check clean on all three staged paths.",
+    "goal_fidelity": "reckon/crew/queue_edit.py:603 drops the _admit_lock acquisition and writes each request inside runs._pointer_lock, so a hold applies while a pass holds the admission lock.",
+    "reuse": "the phase check extends reckon/crew/queue_admission.py:294 _launch_reread_refusal, the existing owner of the pre-launch re-read, rather than adding a parallel guard; the only overlap is a four-line json.loads of text the function has already read.",
+    "scope_discipline": "tests/test_a_queue_hold_does_not_wait_for_the_pass.py is required by the done_when yet absent from the node's recorded write paths, which named only the two source files."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is \"Apply a queue hold without waiting for the admission pass\"; reckon/crew/queue_edit.py:583 hold and :607 release now write each request under runs._pointer_lock with no _admit_lock, and logs/repro-hold-returns.log shows the same probe returning in 0.301 s with the request reading held.\nVERDICT done_when: the done_when names tests/test_a_queue_hold_does_not_wait_for_the_pass.py with three cases and two negative controls; logs/gate-02-head.log records 3 passed EXIT=0, and each control log records 1 failed 2 passed EXIT=1 failing exactly its own case.\nVERDICT write_paths: the node's recorded write paths are reckon/crew/queue_edit.py and reckon/crew/queue_admission.py; the diff also adds tests/test_a_queue_hold_does_not_wait_for_the_pass.py, which the done_when text and the plan section's own write paths name but the node's recorded list omits.\nVERDICT manifest: read; it reports the gate at 037d4ec219, both negative controls, the importer arms at both revisions and the serial re-run of the one errored case, naming every log under its run directory.\nVERDICT diff: read the three commits against defc4723b9e \u2014 hold and release lose the admission lock in reckon/crew/queue_edit.py, queue_admission.py:319-333 refuses a pointer whose phase is held, the new test, and the evidence fragment; every hunk serves the goal.\nCALL_SITES: reckon/crew/queue_admission.py:4844, reckon/crew_run_commands.py:2640, reckon/crew_run_commands.py:2659, reckon/crew_run_commands.py:2673, reckon/mcp_crew_actions.py:313\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_edit.py:603 drops the _admit_lock acquisition and writes each request inside runs._pointer_lock, so a hold applies while a pass holds the admission lock.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/gate-02-head.log ends 3 passed EXIT=0 and logs/importers-base.log against logs/importers-head.log derive one added id that logs/importers-head-recheck.log shows passing serially at EXIT=0.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: tests/test_a_queue_hold_does_not_wait_for_the_pass.py is required by the done_when yet absent from the node's recorded write paths, which named only the two source files.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_queue_hold_does_not_wait_for_the_pass.py:114 fails on the one-second budget when the admission lock is reinstated and :168 reddens when the pre-launch phase re-read is removed, both recorded as negative controls.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/queue_edit.py:449 reprioritise already writes one pointer under runs._pointer_lock and the new hold and release bodies follow that idiom, with ruff check and ruff format --check clean on all three staged paths.\nSCORE reuse: 17\nJUSTIFICATION reuse: the phase check extends reckon/crew/queue_admission.py:294 _launch_reread_refusal, the existing owner of the pre-launch re-read, rather than adding a parallel guard; the only overlap is a four-line json.loads of text the function has already read.\nFINDING reckon/crew/queue_admission.py:321 non-blocking: an invalid-JSON pointer becomes current=None with phase \"\" so the launch proceeds, while runs.read_pointer raises CrewError for the same file, so the held guard fails open on exactly the pointer it cannot read.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T053410406881-queue-hold-skips-the-admission-pass/manifest.md:22 non-blocking: the manifest quotes the repair probe as 0.503 s while logs/repro-hold-returns.log prints 0.301 s, so the record does not reconcile with the log it cites; both are far under the one-second budget so the conclusion is unaffected.",
+  "review_run_id": "r-20261108T121914056918-review-of-queue-hold-skips-the-admission-pass-fa89586d0448",
+  "reviewed_base_sha": "defc4723b9e3a2f8ef7b080ae00184809b93d508",
+  "reviewed_commits": [
+    "037d4ec219c102e9c4ce3dc060700c0299eb4eb2",
+    "25d5d2421c",
+    "fa89586d04"
+  ],
+  "reviewed_head_sha": "fa89586d04487253e3444e1ab0c7239cc29461dd",
+  "reviewed_run_id": "r-20261108T053410406881-queue-hold-skips-the-admission-pass",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T13:37:54.590740+00:00",
+  "total": 108
+}
