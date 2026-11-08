@@ -1,0 +1,72 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: logs/importers-base.log at defc4723b9e records 22 failed, 443 passed, 1 error and logs/importers-head-final.log at c7e26acf69 records 21 failed, 445 passed; every head failure id also fails at base, and the base-only ids are test_the_log_is_trimmed_within_its_size_bound and the held-until-changed basetemp error.",
+  "call_sites": [
+    "reckon/crew/queue_admission.py:4829",
+    "reckon/crew/queue_admission.py:5277",
+    "reckon/crew_run_commands.py:4505"
+  ],
+  "completed_at": "2026-11-08T12:45:48.904Z",
+  "dispatched_at": "2026-11-08T12:32:18Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T053837379010-launch-rereads-its-run/logs/negctl-pointer-removed.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "all three mutation logs record `# revision 1f3501ef2f`, but each ran the final test file from 3ab23a68bd - their tracebacks name tests/test_a_launch_rereads_the_run_it_starts.py:286, which is the delivered-manifest assertion in 3ab23a and line 287 in 1f3501 - so a reader auditing the controls is told they ran before the hook they control for."
+    },
+    {
+      "file": "tests/test_a_launch_rereads_the_run_it_starts.py",
+      "line": "184",
+      "severity": "non-blocking",
+      "text": "the file the diff edits is outside the node's declared write paths; the dispatch's done-when names it and the FENCE - SCOPE list does not, so the two halves of the node's own contract disagree and only the manifest's disclosure says which was chosen."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T053837379010-launch-rereads-its-run/nc/negctl_pass_start.py",
+      "line": "22",
+      "severity": "non-blocking",
+      "text": "`_SNAPSHOT` is filled by the wrapped runs.list_live and never read, so this arm is behaviourally identical to nc/negctl_attempt.py and the landed fragment's row at docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/launch-rereads-its-run.html:49 credits it with a distinction between pass-start and launch-time reads that it does not demonstrate."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/queue_admission.py:4829, reckon/crew/queue_admission.py:5277, reckon/crew_run_commands.py:4505",
+    "diff": "read commit by commit against defc4723b9e; four commits touching two files, the test file (37 changed lines) and a new 75-line fragment, with no product source changed.",
+    "done_when": "the done_when names tests/test_a_launch_rereads_the_run_it_starts.py with three cases and two negative controls; logs/gate-final.log records 3 passed EXIT=0 at 3ab23a68bd and the three negctl logs record 1 failed each.",
+    "goal": "the node's goal is \"Re-read the run a launch starts before starting it\"; the guard that performs it is _launch_reread_refusal at reckon/crew/queue_admission.py:294 and is unchanged from base, so this node's diff is what makes the test prove the re-read happens at the launch decision rather than at the pass's opening read.",
+    "manifest": "read; it states 3 passed, names gate-final.log and the three negative-control logs, records the wide head and base arms, and discloses the out-of-scope test path.",
+    "write_paths": "the declared fence is reckon/crew/queue_admission.py, the fragment and the figures directory; the diff lands the fragment inside it and edits tests/test_a_launch_rereads_the_run_it_starts.py, which the same dispatch's done-when names as a write path but the fence does not."
+  },
+  "justifications": {
+    "durability": "tests/test_a_launch_rereads_the_run_it_starts.py:286 compares the on-disk manifest against delivered[0] captured before the launch decision and reddens under both logs/negctl-attempt-read-* and logs/negctl-pointer-removed.log.",
+    "evidence": "logs/gate-final.log records 3 passed EXIT=0 at 3ab23a68bd and the head/base arms add no failure id, but all three logs/negctl-*.log name revision 1f3501ef2f at line 1 while their tracebacks show the 3ab23a68bd test file.",
+    "fit": "tests/test_a_launch_rereads_the_run_it_starts.py:204 monkeypatches the product's private _launch_reread_refusal, so a behaviour-preserving rename of that helper reddens the test.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:4829 calls _launch_reread_refusal at the launch decision and the landed test now reddens when that read is moved to the pass's start.",
+    "reuse": "the diff adds no definition at all, editing only the existing helper at tests/test_a_launch_rereads_the_run_it_starts.py:184, and the per-test temporary crew home is the idiom 924 test files already use.",
+    "scope_discipline": "tests/test_a_launch_rereads_the_run_it_starts.py:184 is a file the FENCE - SCOPE list does not name, though the same dispatch's done-when does."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \"Re-read the run a launch starts before starting it\"; the guard that performs it is `_launch_reread_refusal` at reckon/crew/queue_admission.py:294 and is unchanged from base, so this node's diff is what makes the test prove the re-read happens at the launch decision rather than at the pass's opening read.\nVERDICT done_when: the done_when names tests/test_a_launch_rereads_the_run_it_starts.py with three cases and two negative controls; logs/gate-final.log records \"3 passed\" EXIT=0 at 3ab23a68bd and the three logs under logs/negctl-*.log record \"1 failed, 2 deselected\" each.\nVERDICT write_paths: the declared fence is reckon/crew/queue_admission.py, the fragment and the figures directory; the diff lands the fragment inside it and edits tests/test_a_launch_rereads_the_run_it_starts.py, which the same dispatch's done-when names as a write path but the fence does not.\nVERDICT manifest: read; it states 3 passed, names gate-final.log and the three negative-control logs, records the wide head and base arms, and discloses the out-of-scope test path.\nVERDICT diff: read commit by commit against defc4723b9e; four commits touching two files, the test file (37 changed lines) and a new 75-line fragment, with no product source changed.\nCALL_SITES: reckon/crew/queue_admission.py:4829, reckon/crew/queue_admission.py:5277, reckon/crew_run_commands.py:4505\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:4829 calls _launch_reread_refusal at the launch decision and the landed test now reddens when that read is moved to the pass's start.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/gate-final.log records 3 passed EXIT=0 at 3ab23a68bd and the head/base arms add no failure id, but all three logs/negctl-*.log name revision 1f3501ef2f at line 1 while their tracebacks show the 3ab23a68bd test file.\nSCORE scope_discipline: 10\nJUSTIFICATION scope_discipline: tests/test_a_launch_rereads_the_run_it_starts.py:184 is a file the FENCE - SCOPE list does not name, though the same dispatch's done-when does.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_launch_rereads_the_run_it_starts.py:286 compares the on-disk manifest against delivered[0] captured before the launch decision and reddens under both logs/negctl-attempt-read-* and logs/negctl-pointer-removed.log.\nSCORE fit: 15\nJUSTIFICATION fit: tests/test_a_launch_rereads_the_run_it_starts.py:204 monkeypatches the product's private `_launch_reread_refusal`, so a behaviour-preserving rename of that helper reddens the test.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition at all, editing only the existing helper at tests/test_a_launch_rereads_the_run_it_starts.py:184, and the per-test temporary crew home is the idiom 924 test files already use.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T053837379010-launch-rereads-its-run/logs/negctl-pointer-removed.log:1 non-blocking: all three mutation logs record `# revision 1f3501ef2f`, but each ran the final test file from 3ab23a68bd - their tracebacks name tests/test_a_launch_rereads_the_run_it_starts.py:286, which is the delivered-manifest assertion in 3ab23a and line 287 in 1f3501 - so a reader auditing the controls is told they ran before the hook they control for.\nFINDING tests/test_a_launch_rereads_the_run_it_starts.py:184 non-blocking: the file the diff edits is outside the node's declared write paths; the dispatch's done-when names it and the FENCE - SCOPE list does not, so the two halves of the node's own contract disagree and only the manifest's disclosure says which was chosen.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T053837379010-launch-rereads-its-run/nc/negctl_pass_start.py:22 non-blocking: `_SNAPSHOT` is filled by the wrapped runs.list_live and never read, so this arm is behaviourally identical to nc/negctl_attempt.py and the landed fragment's row at docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/launch-rereads-its-run.html:49 credits it with a distinction between pass-start and launch-time reads that it does not demonstrate.\n",
+  "review_run_id": "r-20261108T122920635199-review-of-launch-rereads-its-run-9000ff29071e",
+  "reviewed_base_sha": "defc4723b9e3a2f8ef7b080ae00184809b93d508",
+  "reviewed_commits": [
+    "1f3501ef2f",
+    "3ab23a68bd",
+    "c7e26acf69",
+    "9000ff2907"
+  ],
+  "reviewed_head_sha": "9000ff29071e6329fd42bb33372cdc5835ae9e74",
+  "reviewed_run_id": "r-20261108T053837379010-launch-rereads-its-run",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 15,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 10
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T13:41:50.247603+00:00",
+  "total": 91
+}
