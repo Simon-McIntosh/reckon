@@ -24,31 +24,53 @@
 
   <p>Gate: <code>tests/test_a_red_base_matches_bare_names.py</code>, run as
   <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
-  tests/test_a_red_base_matches_bare_names.py</code> at each arm's own revision. The delta arm
-  widens to the five test files that touch the changed surface
-  (<code>_zero_added_against_a_red_base</code>, <code>_red_base_uncovered_ids</code>,
-  <code>_require_verdict_matches_exit_status</code>, <code>canonical_node_id</code>,
-  <code>gate_log_failure_ids</code>), with the new test copied into the base tree so both
-  arms run one file set. Each log names its revision, tree and literal command on the header
-  lines and ends in a bare <code>EXIT=&lt;code&gt;</code>.</p>
+  tests/test_a_red_base_matches_bare_names.py</code> at each arm's own revision. The delta
+  arm widens to every test file that mentions <code>reckon.crew.promotion_evidence</code>
+  plus the two that touch the changed <code>reckon.crew.review</code> surface
+  (<code>canonical_node_id</code>, <code>gate_log_failure_ids</code>): the eight files named
+  below, with the new test copied into the base tree so both arms run one file set. Each log
+  names its revision, tree, imported module and literal command on the header lines and ends
+  in a bare <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <p>Measured importer files — <code>promotion_evidence</code>:
+  <code>tests/test_a_ctest_gate_is_read_at_promotion.py</code>,
+  <code>tests/test_a_ctest_id_names_its_test.py</code>,
+  <code>tests/test_a_landing_refusal_names_its_remedy.py</code>,
+  <code>tests/test_a_negative_control_is_read_from_the_runner.py</code>,
+  <code>tests/test_one_resolver_answers_every_commit_citation.py</code> and the new
+  <code>tests/test_a_red_base_matches_bare_names.py</code>. Measured
+  <code>review</code>-surface files that do not import <code>promotion_evidence</code>:
+  <code>tests/test_a_failing_id_with_a_space_is_read_whole.py</code> and
+  <code>tests/test_review_node_id_canonical_form.py</code>. The roughly two hundred other
+  test files that import <code>reckon.crew.review</code> were <em>not</em> run at either arm;
+  no claim is made about them. The merged result is verified by the separately dispatched
+  test node.</p>
 
   <table>
     <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
     <tbody>
-      <tr><td>base, the new test copied in</td>
+      <tr><td>armed gate, base, the new test copied in</td>
         <td><code>3bca1c369f</code></td>
-        <td><strong>8 failed, 26 passed</strong>, exit 1 — all eight are the new file's cases;
-        the four pre-existing files (including
-        <code>test_a_ctest_id_names_its_test.py</code> and
-        <code>test_a_ctest_gate_is_read_at_promotion.py</code>) pass</td></tr>
-      <tr><td>head</td>
-        <td><code>f86c28394e</code></td>
-        <td><strong>34 passed</strong>, exit 0 — zero added failures against the base arm</td></tr>
+        <td><strong>8 failed</strong>, exit 1 — every case in the new file</td></tr>
+      <tr><td>armed gate, head</td>
+        <td><code>932fce594a</code></td>
+        <td><strong>8 passed</strong>, exit 0</td></tr>
+      <tr><td>importer and changed-surface delta, base</td>
+        <td><code>3bca1c369f</code></td>
+        <td><strong>8 failed, 38 passed</strong>, exit 1 — the eight failures are the new
+        file's; all 38 pre-existing cases pass, including the three
+        <code>promotion_evidence</code> importers this run added to the set
+        (<code>test_a_landing_refusal_names_its_remedy.py</code>,
+        <code>test_a_negative_control_is_read_from_the_runner.py</code>,
+        <code>test_one_resolver_answers_every_commit_citation.py</code>)</td></tr>
+      <tr><td>importer and changed-surface delta, head</td>
+        <td><code>932fce594a</code></td>
+        <td><strong>46 passed</strong>, exit 0 — zero added failures against the base arm</td></tr>
       <tr><td>negative control: ids compared exactly</td>
-        <td>mutated head</td>
+        <td>mutated head <code>932fce594a</code></td>
         <td><strong>1 failed</strong>, exit 1 — the bare-to-qualified case</td></tr>
       <tr><td>negative control: brackets stripped from both sides</td>
-        <td>mutated head</td>
+        <td>mutated head <code>932fce594a</code></td>
         <td><strong>1 failed</strong>, exit 1 — the bracketed-bare-name case</td></tr>
     </tbody>
   </table>
@@ -71,7 +93,8 @@
     <li><code>reckon/crew/promotion_evidence.py</code> —
       <code>_red_base_uncovered_ids</code> reads the arms and reports the uncovered head ids
       or <code>None</code>; <code>_zero_added_against_a_red_base</code> keeps its boolean;
-      the verdict refusal names the uncovered ids.</li>
+      the verdict refusal names the uncovered ids, and its docstring describes that
+      admission and those names as the code reads them.</li>
     <li><code>tests/test_a_red_base_matches_bare_names.py</code> — the six cases and the
       predicate's direct check, with the two negative controls applied against it.</li>
   </ul>
