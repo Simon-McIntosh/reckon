@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T17:54:21.102Z",
+  "dispatched_at": "2026-11-08T17:46:28Z",
+  "findings": [
+    {
+      "file": "tests/test_a_presented_head_covers_its_ancestors.py",
+      "line": 128,
+      "severity": "non-blocking",
+      "text": "test_a_manifest_commit_at_or_below_the_base_is_named passes at the dispatch base as well (logs/baseline_suite.log reads FF.F., so only cases 1, 2 and 4 are red there), because the old exact-set rule already named base and below; it preserves the rule the done_when asks for but is not itself a regression guard, so the durability of the base-boundary half rests on the head-coverage case and its negative control."
+    },
+    {
+      "file": "reckon/crew/promotion_evidence.py",
+      "line": 959,
+      "severity": "non-blocking",
+      "text": "presented_declines suppresses the whole shortfall report as soon as any presented commit is outside the manifest's list, so a promotion presenting the run's head together with one unrelated commit reports nothing about genuinely missing declared commits; the shape is carried over from the previous strict-subset condition rather than introduced here, and the docstring at :840-843 states it deliberately as the declined-revision case."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/promotion.py:564 is the one production caller, the lambda handing _require_gate_evidence to the checker list inside _require_independently, reached from every crew complete/promote path; promotion.py:2496 only re-exports the function.",
+    "diff": "Read commit by commit against 57b2c01772: 1da7bf8590 adds _commits_a_presentation_covers and rewrites the shortfall condition in promotion_evidence.py plus the new test file; 8fb399d83e adds only the landing fragment under docs/evidence/fragments/.",
+    "done_when": "The done_when asks for four cases in tests/test_a_presented_head_covers_its_ancestors.py plus a negative control and no added failures for the importing files; the file carries five tests covering all four cases and the declined-revision silence, logs/baseline_suite.log reads 3 failed 2 passed EXIT=1 at the dispatch base with the test copied in, logs/after_suite.log reads 5 passed EXIT=0 at 1da7bf8590, logs/negative_control.log reads 3 failed 2 passed EXIT=1, and the importer arms read 30 passed and 38 passed at both revisions.",
+    "goal": "The node's goal is that a presented head covers the commits beneath it; reckon/crew/promotion_evidence.py:756 adds _commits_a_presentation_covers and :954-961 replaces the exact-set subset test with declared-minus-covered, so citing the fifth of five commits reports nothing while a commit outside base..head is still named.",
+    "manifest": "Read at the run directory; status complete, the gate command recorded verbatim, both armed arms with completed true and their failure ids, the scratch-tree base arm naming module and cwd, seven log paths, and ruff recorded clean on the two staged paths.",
+    "write_paths": "The node declares reckon/crew/promotion_evidence.py, tests/test_a_presented_head_covers_its_ancestors.py, docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/cover-commits-beneath-a-presented-head.html and the figures directory; git diff 57b2c01772..8fb399d83e touches exactly the first three and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_presented_head_covers_its_ancestors.py:96 asserts no report when the head alone is presented and logs/negative_control.log reddens that same case under the restored sha-by-sha rule, so the assertion fails on the exact regression it guards rather than passing alongside any implementation.",
+    "evidence": "logs/baseline_suite.log records 3 failed 2 passed EXIT=1 at the dispatch base with module and cwd named on its header, logs/after_suite.log records 5 passed EXIT=0 at 1da7bf8590, and the importer arms are recorded rather than claimed.",
+    "fit": "reckon/crew/promotion_evidence.py:756-796 follows the module's idiom of a module-private helper taking the tree and returning a value, using subprocess.run with check=False exactly as promotion_evidence.py:65 and :191 do, and imports Iterable from collections.abc at line 9.",
+    "goal_fidelity": "reckon/crew/promotion_evidence.py:954 calls the new covered-set helper and :961 reports only resolving_declared - covered, which is exactly the goal's rule that a presented head speaks for base..it.",
+    "reuse": "No owner for enumerating commits in a base..commit range exists in reckon/crew: promotion_scope._revision_is_ancestor at promotion_scope.py:2568 answers a boolean and node.py:1576 inlines a different rev-list query, so the added helper is the first to hold the range as a set; the escape from the best existing owner is noted rather than forked behaviour.",
+    "scope_discipline": "git diff 57b2c01772..8fb399d83e lists only reckon/crew/promotion_evidence.py, tests/test_a_presented_head_covers_its_ancestors.py and the declared landing fragment, with no edit to promotion.py or the unchanged _require_commits_beyond_base."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261108T174325113516-review-of-cover-commits-beneath-a-presented-head-8fb399d83e2a",
+  "reviewed_base_sha": "57b2c017725e2d65fdd4c9dbe6f7fb874a64c9fa",
+  "reviewed_head_sha": "8fb399d83e2a1b3a65374512622e92662567e777",
+  "reviewed_run_id": "r-20261107T231454480077-cover-commits-beneath-a-presented-head",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 18,
+    "scope_discipline": 19,
+    "total": 113
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T18:15:00.318297+00:00",
+  "total": 113
+}
