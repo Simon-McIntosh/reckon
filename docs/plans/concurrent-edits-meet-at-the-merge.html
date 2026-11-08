@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="concurrent-edits-meet-at-the-merge">
+  <meta name="plan-title" content="Concurrent Edits Meet At The Merge">
+  <meta name="plan-summary" content="Source and test files are shared by default: concurrent nodes edit a file in their own worktrees and meet at the merge, which returns a conflict for repair.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="5.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S27">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;concurrent-edits-meet-at-the-merge#s2&quot;,&quot;concurrent-edits-meet-at-the-merge#s3&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <title>Concurrent Edits Meet At The Merge | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-11-08">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: file claims serialised S27 behind single modules</h2>
+    <p>Every worker runs in its own detached worktree, and <code>crew merge</code> builds the
+    landing with <code>git merge-tree</code>, refusing only the paths that really conflict
+    (<code>reckon/crew/merge.py</code>, <code>refusing_conflicts</code>). Yet dispatch, admission,
+    widening and promotion all refuse a second claim on the same file unless that file is listed in
+    <code>docs/state/&lt;project&gt;/shared-write-paths.json</code>. Every one of those checks reads
+    the list through <code>runs._shared_write_paths</code> (called from <code>dispatch_claims.py</code>
+    twice, <code>promotion_scope.py</code> twice, <code>queue_admission.py</code> twice and
+    <code>queue_edit.py</code>), so a file is exclusive unless someone has thought to declare it
+    shared.</p>
+    <p>On 7 and 8 November that default held S27's work in series behind single modules, while each
+    queued node edited a different function:</p>
+    <ul>
+      <li><code>reckon/crew/queue_admission.py</code> held five queued sections behind one
+      delivered-but-unlanded run, and later four more behind admission-loop §32;</li>
+      <li><code>reckon/crew/obligations.py</code> held the monitor plan's §13 follow-up behind an
+      unrelated §8 run, and §15 behind §13;</li>
+      <li><code>reckon/crew/dispatch.py</code> and <code>promotion.py</code> held crew-state §2 behind
+      six queued peer runs, which is why it was parked on 6 November;</li>
+      <li><code>reckon/crew/resumption.py</code> held the monitor plan's §14 behind an unrelated
+      resume change;</li>
+      <li>a run that claimed a plan's whole <code>docs/evidence/fragments/&lt;plan&gt;</code> directory
+      blocked every other node of that plan, and §32 had to be dispatched on its brief alone to
+      get past it.</li>
+    </ul>
+    <p>As immediate relief the lead had eleven crew modules added to the shared list on
+    8 November (commit <code>5cf29445c8</code>). This plan makes that the rule rather than a
+    hand-maintained exception: a source or test file is shared unless it is declared exclusive, and
+    exclusivity is kept only for paths a merge cannot reconcile.</p>
+
+    <h2 id="s2">§2 — A source or test file is shared unless it is declared exclusive</h2>
+    <section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> The project's write-sharing declaration gains a default. A file
+    path under a declared shared root (for reckon, <code>reckon/</code>, <code>tests/</code>,
+    <code>scripts/</code> and <code>skills/</code>) admits concurrent claims unless it matches a
+    declared exclusive pattern. Exclusive by default are the paths a textual merge cannot reconcile
+    or that one writer owns: <code>docs/plans/*.html</code>, cumulative evidence records under
+    <code>docs/evidence/archive/</code>, generated state under <code>docs/state/</code>, figure topic
+    directories under <code>docs/figures/</code>, and <code>pyproject.toml</code> and
+    <code>uv.lock</code>. A directory claim stays exclusive, as it is today, and a claim on a node's
+    own evidence fragment file never conflicts with a claim on another fragment file. The existing
+    explicit <code>paths</code> list keeps working, so a project that declares no roots behaves
+    exactly as now.</p>
+    <p>The answer is computed in one place, the function every claim check already calls, so
+    dispatch, admission, queue edit, widen and promotion agree. A refusal that remains names the
+    exclusive pattern that caused it.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_a_source_file_is_shared_by_default.py</code>
+    shows, with a temporary repository and crew home:</p>
+    <ul>
+      <li>two dispatches whose write paths name the same file under a shared root both succeed;</li>
+      <li>a queued request whose path another live run claims is admitted, not
+      <code>held-on-claim</code>, when the path is under a shared root;</li>
+      <li>the same two claims on <code>docs/plans/x.html</code> are refused, naming the exclusive
+      pattern;</li>
+      <li>a directory claim is still refused against any path inside it;</li>
+      <li>a project whose declaration has no shared roots refuses exactly as before.</li>
+    </ul>
+    <p>Negative control: the same test at the base revision refuses the first two cases. The test
+    files importing <code>reckon.crew.runs</code>, <code>reckon.crew.dispatch_claims</code>,
+    <code>reckon.crew.promotion_scope</code>, <code>reckon.crew.queue_admission</code> or
+    <code>reckon.crew.queue_edit</code> add no failure against base, run one arm at a time with at
+    most <code>-n 4</code>; a test that asserts the old exclusive default for a shared-root path is
+    updated to the new contract and named in the manifest. Ruff adds no findings on the staged
+    paths. Write paths: <code>reckon/crew/runs.py</code>, the five calling modules where the call
+    site must change, <code>docs/state/reckon/shared-write-paths.json</code>, and the new test.</p>
+
+    <h2 id="s3">§3 — A landing that conflicts sends its run back for a merge repair</h2>
+    <section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> Once two runs may edit one file, the second to land can meet a
+    real conflict. Today <code>crew merge</code> refuses such a head and nothing follows, so the run
+    sits delivered and unlanded until a coordinator notices. After this section, a landing refused
+    because <code>refusing_conflicts</code> named paths, whether by <code>crew complete --land</code>
+    or by the admit service's lander, records a <code>merge-conflict</code> outcome on the run
+    naming the conflicted paths and the main revision it met, and opens a repair round through
+    <code>recovery_repair_dispatch</code>. The round's advice tells the worker to merge the current
+    primary into its worktree, resolve the named paths keeping both changes' intent, re-run its own
+    gate, and deliver again. A landing never discards either side and never lands conflict
+    markers.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_a_conflicting_landing_is_repaired.py</code>
+    shows, with a temporary repository and a bare remote:</p>
+    <ul>
+      <li>two runs that edit different functions of one file both land, the second merging cleanly
+      behind the first;</li>
+      <li>two runs that edit the same lines: the first lands, and the second is refused with a
+      <code>merge-conflict</code> outcome naming the file and the main revision, and has a repair
+      round opened whose advice names the file;</li>
+      <li>after that repair delivers a head that merges main, the second lands;</li>
+      <li>no landing leaves conflict markers in the tree.</li>
+    </ul>
+    <p>Negative control: at the base revision the second, conflicting run is refused with no repair
+    round opened. The test files importing <code>reckon.crew.merge</code>,
+    <code>reckon.crew.queue_landing</code> or <code>reckon.crew_run_commands</code> add no failure
+    against base, one arm at a time with at most <code>-n 4</code>. Ruff adds no findings on the
+    staged paths. Write paths: <code>reckon/crew/merge.py</code>,
+    <code>reckon/crew/queue_landing.py</code>, <code>reckon/crew_run_commands.py</code>,
+    <code>reckon/crew/recovery_repair_dispatch.py</code> and the new test.</p>
+
+    <h2 id="s4">§4 — Parallel nodes on one module land, measured on the fleet</h2>
+    <section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> A measurement once §2 and §3 are on main and the admit service
+    has reloaded onto them. It reads the admission verdict rows in
+    <code>~/.config/reckon/crew/admission-verdicts.jsonl</code> for a 24-hour window before §2
+    landed and one after, and counts <code>held-on-claim</code> verdicts on file claims, split by
+    whether the claimed path is under a shared root. It also lists every pair of runs that held
+    concurrent claims on one file in the window after, and whether each landed cleanly, landed
+    after a merge repair, or is still open.</p>
+    <p><strong>Done when</strong> the evidence fragment
+    <code>docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html</code>
+    records both windows' counts, with the commands that produced them logged under the run
+    directory, and shows <code>held-on-claim</code> verdicts on shared-root file paths at zero in
+    the window after. Every concurrent pair is accounted for, and any pair left with conflict
+    markers or an unlanded head with no repair round fails the measure.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-cem-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-08" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §2 and §3 in parallel</h4>
+    <div class="r-fu-body">Plan authored at the lead's request on 2026-11-08 to relax file claims for parallel work. §2 and §3 are independent; §4 waits on both.</div>
+    <pre class="r-fu-prompt">/reckon-build concurrent-edits-meet-at-the-merge §2</pre>
+    </article>
+</section>
+  </main>
+</body>
+</html>
