@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-crew-process-writes-only-what-it-owns">
   <meta name="plan-title" content="A Crew Process Writes Only What It Owns">
   <meta name="plan-summary" content="A hold commits the run files it rewrote; a session host follows, and its hooks report, only its own session, and a re-armed host follows live runs at once.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="3.5">
   <meta name="plan-capability-version" content="1.0">
@@ -25,7 +25,7 @@
   <title>A Crew Process Writes Only What It Owns | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="41">
+<meta name="plan-version" content="42">
 <meta name="plan-modified" content="2026-11-08">
 </head>
 <body>
@@ -63,10 +63,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-acpwowio-001" data-status="open" data-written-by="coordinator" data-written-at="2026-11-07" data-recommends-skill="/reckon-build a-crew-process-writes-only-what-it-owns" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-acpwowio-001" data-status="resolved" data-written-by="coordinator" data-written-at="2026-11-07" data-recommends-skill="/reckon-build a-crew-process-writes-only-what-it-owns" data-resolved-at="2026-11-08T22:08:25+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Build §2 to §6</h4>
     <div class="r-fu-body"><p>§2, §3 and §4 write disjoint files and can run together. §5 waits on §3 through its declared section wait, because it reads the <code>owner_checked</code> mark that §3's guard puts on each request line. §6 waits on §5, because it reads that mark from the child entries §5 carries it into, and both write <code>reckon/crew/session_host.py</code>.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-crew-process-writes-only-what-it-owns</pre>
+    <p class="r-fu-outcome">every section landed on 8 November: a crew process writes only state it owns, a rearmed host follows its own live runs, and a running host restarts only its own session's followers; done, no followup</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -119,7 +120,7 @@
     <div class="r-comment-body"><p>review of r-20261108T173215608133-restart-only-the-hosts-own-followers over b3c2e8823c..86eefce8f5 recorded parsed at both declared paths with six scores (goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 18, reuse 20), added_failure_count 0, two non-blocking findings, and no blocking finding.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261108T173215608133-restart-only-the-hosts-own-followers" data-who="reckon-build" data-when="2026-11-08T21:30:19Z">
-    <div class="r-comment-body"><p>§6 landed — a host restarts an exited child only when its census entry carries the ownership mark or names the owner&#x27;s current session, drops and logs an unmarked child instead (project, session, pid), never signals a running one, no longer defers to a live follower started by another owner&#x27;s host, carries the child&#x27;s mark into the restart&#x27;s deferral call, and a host that cannot name its session keeps only marked children; the host cases that resolved no session as setup now mark the pair their request names, and the suite fixture clears CLAUDE_CODE_SESSION_ID beside CLAUDE_PID; node gate 7 passed EXIT=0 at 3e510296f5, base arm 4 failed / 3 passed / EXIT=1 at edc04fd259, the twelve related files at 8 failed / 65 passed on both arms, and the five declared mutations each still fail their named case</p></div>
+    <div class="r-comment-body"><p>§6 landed — a host restarts an exited child only when its census entry carries the ownership mark or names the owner's current session, drops and logs an unmarked child instead (project, session, pid), never signals a running one, no longer defers to a live follower started by another owner's host, carries the child's mark into the restart's deferral call, and a host that cannot name its session keeps only marked children; the host cases that resolved no session as setup now mark the pair their request names, and the suite fixture clears CLAUDE_CODE_SESSION_ID beside CLAUDE_PID; node gate 7 passed EXIT=0 at 3e510296f5, base arm 4 failed / 3 passed / EXIT=1 at edc04fd259, the twelve related files at 8 failed / 65 passed on both arms, and the five declared mutations each still fail their named case</p></div>
 </div>
 </section>
 </main>
