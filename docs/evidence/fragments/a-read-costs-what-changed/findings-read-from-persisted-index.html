@@ -98,9 +98,13 @@
   path, the document read or the write, or if either writer regrows a wrapper
   around the hook.</p>
 
-  <p>Negative control: deleting the persisted index before the fresh read makes
-  that first case open both records and fail; reverting the shared-cache
-  refactor makes the fourteenth case fail on the missing shared stamp.</p>
+  <p>Negative controls: deleting the persisted index before the fresh read makes
+  that first case open both records and fail. Replacing
+  <code>review_records.cache_code_stamp</code> and
+  <code>review_records.cache_document_path</code> with sentinels and requiring
+  both indexes to follow them makes the fourteenth case fail if either answers
+  from a copy of its own; restating the digest inside <code>findings.py</code>
+  reddens it, which is the drift the case exists to catch.</p>
 
   <h3 id="findings-read-from-persisted-index-importers">The importer population</h3>
 
@@ -112,39 +116,33 @@
   <code>-n 6</code>.</p>
 
   <table id="findings-read-from-persisted-index-importers-table">
-    <caption>The same 97-file population over each tree. The base arm runs an
-    archive of the base revision, which carries no <code>.git</code>, so its
-    failures are a superset: the comparison that matters is what the head arm
-    adds.</caption>
-    <thead><tr><th>arm</th><th>passed</th><th>failed</th><th>added over base</th></tr></thead>
+    <caption>The same 97-file population over each tree, run with a per-test
+    timeout under <code>-n 6</code>.</caption>
+    <thead><tr><th>arm</th><th>passed</th><th>failed</th></tr></thead>
     <tbody>
-      <tr><td>base (fba33c99)</td><td>730</td><td>40</td><td>—</td></tr>
-      <tr><td>head (9f70ba4d)</td><td>735</td><td>36</td><td>1</td></tr>
+      <tr><td>base (fba33c99)</td><td>770</td><td>39</td></tr>
+      <tr><td>head (a1e64678)</td><td>773</td><td>37</td></tr>
     </tbody>
   </table>
 
-  <p>Comparing the two arms by test id, 35 of the head arm's 36 failing ids fail at
-  the base too, and four ids the base failed pass at the head. The one id the
-  head adds is
-  <code>test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py::test_overdue_review_duty_reports_age_without_a_dispatch_command</code>
-  — a <code>pytest-timeout</code> expiry inside an xdist worker while twelve
-  pytest processes shared a node above load 80, not a test failure. Run
-  serially it passes at both arms (7 passed each, EXIT=0). No failure is
-  attributable to this change. Logs:
+  <p>An id-by-id comparison does not match the tallies, and the ids are the
+  honest reading: the head arm adds exactly one failing id and drops three. The
+  three it drops
+  (<code>test_this_repository_reads_the_same_modules_as_the_reckon_listing</code>
+  and two cases of
+  <code>test_a_matching_project_is_accepted_and_a_disagreeing_one_refused</code>)
+  need a git tree, which the base arm's archive does not carry.</p>
+
+  <p>The one it adds is
+  <code>test_overdue_review_duty_reports_age_without_a_dispatch_command</code>,
+  and the mechanism is an age assertion rather than a timeout: the case asserts
+  <code>"50m" in row["next_command"]</code> and the duty it read back said
+  <code>review overdue by 51m 2s</code>. The fixture's age crosses the
+  fifty-minute boundary while the worker waits its turn, so the case is
+  wall-clock sensitive under load and either arm can lose it. Run on its own it
+  passes at both arms — 7 passed at the head and 7 passed at the base, both
+  exiting 0 (<code>logs/importer-delta-added-id-serial.log</code>). No failure
+  in this population is attributable to the change. Population logs:
   <code>logs/importer-population-base.log</code> and
   <code>logs/importer-population-head.log</code>.</p>
-
-  <p>Correcting the line above: an id-by-id comparison of those two logs
-  reports one id the head arm adds and four it drops, not a strict subset. The
-  four it drops are tests that need a git tree, which the base arm's archive
-  does not carry. The one it adds is
-  <code>test_overdue_review_duty_reports_age_without_a_dispatch_command</code>,
-  and the head log records its cause as a pytest timeout of 300 s inside an
-  xdist worker while twelve pytest processes shared a node already above load
-  80. Run on its own it passes at both arms — 7 passed at the head and 7 passed
-  at the base, both exiting 0
-  (<code>logs/importer-delta-added-id-serial.log</code>). The count comparison
-  and the id comparison therefore disagree, and the id comparison is the honest
-  one; the single added id is a timeout under parallel load, not a failure the
-  change causes.</p>
 </section>
