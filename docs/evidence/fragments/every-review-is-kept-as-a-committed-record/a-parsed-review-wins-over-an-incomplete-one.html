@@ -25,8 +25,8 @@
           The completeness rule therefore keeps one owner; the import is local because that module reads this store.
           An incomplete record alone at its head is still selected, and the gate still refuses on it, so the change replaces "first file in sorted order" rather than the refusal.
         </li>
-        <li><code>tests/test_a_parsed_review_wins_over_an_incomplete_one.py</code> (new) &mdash; two cases over a temporary repository whose committed run directory holds the records, read through the committed caller's sorted glob.
-          The incomplete record's name sorts first, so first-match selection sees it first. The first case writes both records and asserts the promotion gate's own raising caller returns no waiver; the second writes the incomplete record alone and asserts the same caller raises with <code>no complete independent review is stored</code>.
+        <li><code>tests/test_a_parsed_review_wins_over_an_incomplete_one.py</code> (new) &mdash; three cases over a temporary repository whose committed run directory holds the records, read through the committed caller's sorted glob.
+          The incomplete record's name sorts first, so first-match selection sees it first. The first case writes both records and asserts the promotion gate's own raising caller returns no waiver; the second writes a complete record that scores every dimension but carries no <code>total</code> beside the incomplete one, so the selection has to derive the total before judging completeness, and asserts it wins with the derived total read back; the third writes the incomplete record alone and asserts the same caller raises with <code>no complete independent review is stored</code>.
         </li>
       </ul>
     </section>
@@ -44,16 +44,17 @@ E         + incomplete</code></pre>
     <section id="a-parsed-review-wins-over-an-incomplete-one-measure">
       <h2>Measure</h2>
       <ul>
-        <li>Node gate, <code>tests/test_a_parsed_review_wins_over_an_incomplete_one.py</code>: <code>2 passed</code>, <code>EXIT=0</code>.</li>
+        <li>Node gate, <code>tests/test_a_parsed_review_wins_over_an_incomplete_one.py</code>: <code>3 passed</code>, <code>EXIT=0</code>.</li>
         <li>The eight test files importing <code>reckon.crew.review_records</code>, run one arm at a time with <code>-n 4</code>: base <code>57 passed</code>, <code>EXIT=0</code>; head <code>57 passed</code>, <code>EXIT=0</code>. No added failure.</li>
         <li>Negative control, the declared mutation (the first-match selection made through the base revision's <code>_select_stored_record</code>): <code>1 failed, 1 passed</code>, <code>EXIT=1</code>, naming <code>test_a_parsed_complete_record_wins_over_an_incomplete_one</code> &mdash; the first case the declaration names.</li>
+        <li>Negative control for the unsummed case, the declared mutation (skip the total derivation in <code>_record_reads_complete</code>): <code>1 failed, 2 passed</code>, <code>EXIT=1</code>, naming <code>test_an_unsummed_complete_record_wins_after_its_total_is_derived</code>. The assertion reads <code>'incomplete' == 'parsed'</code>, so without the derivation the incomplete record wins the head.</li>
         <li><code>ruff check</code> and <code>ruff format --check</code>: no findings on <code>reckon/crew/review_records.py</code> and the new test.</li>
       </ul>
     </section>
 
     <section id="a-parsed-review-wins-over-an-incomplete-one-commits">
       <h2>Commits and records</h2>
-      <p>Code and test: <code>3ab385ed65</code>. Logs under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T221209911001-a-parsed-review-wins-over-an-incomplete-one/logs/</code>: <code>node-suite-after.log</code>, <code>review-records-importers-base.log</code>, <code>review-records-importers-after.log</code>, <code>negative-control-first-match.log</code>.</p>
+      <p>Code and test: <code>3ab385ed65</code> (selection and its first two cases), <code>9614786681</code> (the unsummed-record case). Logs under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T221209911001-a-parsed-review-wins-over-an-incomplete-one/logs/</code>: <code>node-suite-after.log</code>, <code>review-records-importers-base.log</code>, <code>review-records-importers-after.log</code>, <code>negative-control-first-match.log</code>, <code>negative-control-unsummed-record.log</code>.</p>
     </section>
   </main>
 </body>
