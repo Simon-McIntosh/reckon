@@ -9,6 +9,7 @@ from typing import Any
 
 from reckon import capability, ledger
 from reckon.crew.refusals import format_refusal
+from reckon.evidence import EXECUTABLE_SECTION_ROLES
 
 # The eight properties of the task-definition contract, in the order a reader of
 # the plan meets them. Order is part of the contract: a node that is not scoped
@@ -1181,6 +1182,91 @@ def gate_population_finding(
             + ("that pattern" if len(missing) == 1 else "those patterns")
             + "; name a population the repository has, or add the path to the "
             "node's write paths when this node creates it"
+        ),
+    }
+
+
+# ── A brief run names the plan whose product it changes ─────────────────────
+
+# The finding name for a brief implementing dispatch that names no owner. This
+# judges the call a coordinator made rather than a property of the node, so it
+# is composed here beside the other findings but is not one of the contract
+# properties and is called by the dispatch entry alone: the production callers
+# that re-dispatch, re-resolve or re-lane an existing run have no owner left to
+# choose, and must neither refuse it nor invent a value for it.
+BRIEF_PLAN_OWNER_FIELD = "brief-plan-owner"
+
+
+def brief_owner_state(
+    *,
+    brief: str,
+    plan: str,
+    role: str,
+    plan_link: str,
+    unplanned_reason: str,
+) -> tuple[bool, str]:
+    """Return whether a brief run owes a plan owner, and the role that owes it.
+
+    A brief implementing run has no plan section to move, so nothing joins its
+    product change to a plan unless the run itself names that owner, as a plan
+    link or as an unplanned reason. The first value says whether the rule asks
+    this run for an owner at all — false for a run with no brief, a run that
+    names a plan, and a role that executes no section — and the second names the
+    executing role when an owner is owed and no discharge was given, empty when
+    one was.
+
+    Two values rather than one because the callers need different facts from the
+    same rule: the dispatch refusal only asks whether an owner is owed, while
+    landing also records the discharge it accepted, and a discharge the rule
+    never asked for must not be written to the row. The dispatch refusal and the
+    landing refusal read this one rule, so they cannot come to disagree about
+    which runs owe an owner.
+    """
+    if not str(brief or "").strip():
+        return False, ""
+    if str(plan or "").strip():
+        return False, ""
+    executable = str(role or "").strip()
+    if executable not in EXECUTABLE_SECTION_ROLES:
+        return False, ""
+    if str(plan_link or "").strip() or str(unplanned_reason or "").strip():
+        return True, ""
+    return True, executable
+
+
+def brief_plan_owner_finding(
+    node: TaskNode,
+    *,
+    plan_link: str = "",
+    unplanned_reason: str = "",
+) -> dict[str, str] | None:
+    """Compose the dispatch refusal for a brief run that names no plan owner.
+
+    A brief implementing run has no plan section to move, so nothing joins its
+    product change to a plan unless the dispatch says so. Landing refuses to
+    promote one without either a plan link or an unplanned reason, and meeting
+    that refusal after the work is done costs the coordinator the whole node,
+    so the same two flags are asked for at the call that dispatches it. A plan
+    run and a non-executable role name their owner elsewhere; a brief beside a
+    plan section is briefed plan work, and the plan it names is its owner. None
+    of them needs either flag.
+    """
+    role = brief_owner_state(
+        brief=node.brief,
+        plan=node.plan,
+        role=node.role,
+        plan_link=plan_link,
+        unplanned_reason=unplanned_reason,
+    )[1]
+    if not role:
+        return None
+    return {
+        "property": BRIEF_PLAN_OWNER_FIELD,
+        "detail": (
+            f"this {role}-role brief dispatch names neither a plan link nor an "
+            "unplanned reason; pass --plan-link <slug> naming the plan whose "
+            "product it changes, or --unplanned-reason <text> stating why it "
+            "changes no plan"
         ),
     }
 
