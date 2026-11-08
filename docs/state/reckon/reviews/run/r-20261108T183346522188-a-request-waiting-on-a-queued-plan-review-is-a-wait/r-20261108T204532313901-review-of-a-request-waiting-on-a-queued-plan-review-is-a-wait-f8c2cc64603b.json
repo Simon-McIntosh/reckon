@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T20:55:37.225Z",
+  "dispatched_at": "2026-11-08T20:47:22Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": 27,
+      "severity": "non-blocking",
+      "summary": "The manifest names base revision 695f684b for the importer base arm while its own log header names b48c6123a1.",
+      "text": "non-blocking: the manifest's spec_deviation states the importer base arm ran at revision 695f684b3f6ef747f74d436236ca6c9014fd304e in a git-archive tree, but that arm's own log header (logs/importers-surface-base.log:1) reads '# revision: b48c6123a1 tree: .../base2' and the same base2 tree backs the b48c6123a1 baseline suite. The record therefore cannot be reconciled with the log it cites about which revision the 24 failed / 75 passed base figure was measured at; the two arms still agree set-for-set (24 FAILED ids on each), so the zero-delta conclusion holds, but the stated base revision is wrong."
+    },
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": 2080,
+      "severity": "non-blocking",
+      "summary": "The shared reader drops the isinstance(node, Mapping) skip the removed obligations loop had, so a malformed live pointer now raises instead of being skipped.",
+      "text": "non-blocking: the delegation in reckon/crew/obligations.py:1288 hands candidate pointers to the shared reader, and that reader does `node = pointer.get(\"node\") or {}` with no mapping check, so a live pointer whose node is a truthy non-mapping now raises AttributeError in the obligations derivation; the deleted loop at obligations.py:1276-1280 skipped such a candidate with `if not isinstance(composed, Mapping): continue`. The exposure is small because the same reader already served the dispatch lock and the preview over the same live set, so the crash mode predates this change for those callers, and no current writer produces such a pointer."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_request_waiting_on_a_queued_plan_review_is_a_wait.py:231-285 replaces obligations_module._queued_row_item with a marker and requires kind 'one-builder' from both _derivation_row and _published_snapshot_row plus two builder calls, and the recorded control (logs/negative-control-builder.log:4-6) reinstates the snapshot's own queued-awaiting-session branch and reddens exactly those two cases and the snapshot wait case, so the assertions demonstrably fail on the regression they guard.",
+    "evidence": "The node gate and the three controls are recorded and internally consistent, but the done_when's importer clause is measured over 15 of 103 files (manifest.md:27) and that record names a base revision (695f684b) its own base log contradicts (logs/importers-surface-base.log:1), so the measure is partially recorded rather than fully established.",
+    "fit": "The extension of _standing_plan_review at reckon/crew/recovery_review_dispatch.py:2060 uses keyword-only optional arguments that leave the three existing callers untouched, follows the surrounding docstring idiom, and ruff check over the three changed Python files passes clean; no plan or stage identifiers appear in the added symbols or test names.",
+    "goal_fidelity": "reckon/crew/obligations.py:1288 now resolves the awaited review through the one reader the lock and preview use, and the row still carries review_run_id at obligations.py:1322-1330, so the listed wait and the named review run survive the refactor.",
+    "reuse": "The 13-line scan deleted from reckon/crew/obligations.py:1276-1280 duplicated reckon/crew/recovery_review_dispatch.py:2060, and the change extends that owner with the session filter and caller-supplied pointer set rather than forking a second reader, so the reuse finding from the prior review is repaired at the owner.",
+    "scope_discipline": "Every path in git diff --stat b48c6123a1 f8c2cc6460 except reckon/crew/recovery_review_dispatch.py is inside the declared write paths, and that one file is the owner the coordinator's repair advice named by name, with the overrun disclosed at manifest.md:25 rather than absorbed silently."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261108T204532313901-review-of-a-request-waiting-on-a-queued-plan-review-is-a-wait-f8c2cc64603b",
+  "reviewed_base_sha": "b48c6123a1398ae84772f20d8e1eed737b7da50a",
+  "reviewed_head_sha": "f8c2cc64603b5f5dd43da1b4a6680145058f2f1a",
+  "reviewed_run_id": "r-20261108T183346522188-a-request-waiting-on-a-queued-plan-review-is-a-wait",
+  "scores": {
+    "durability": 19,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T21:04:48.338554+00:00",
+  "total": 106,
+  "verdicts": {
+    "call_sites": "Production entries confirmed at head: reckon/mcp_views.py:4573 calls obligations(); reckon/crew/obligation_snapshot.py:1621 and reckon/crew/station_obligations.py:189,270 call payload_for(); reckon/crew/obligation_snapshot.py:1472 calls obligations._queued_row_item; reckon/crew/plan_review.py:3779 and reckon/crew/recovery_review_dispatch.py:2121,2144 call _standing_plan_review positionally, so the new keyword-only arguments leave them unchanged.",
+    "diff": "Read commit by commit from b48c6123a1: 4b2851d7d7 replaces the 13-line live plan-review scan in obligations.py with a call to recovery_review_dispatch._standing_plan_review, extends that reader with keyword-only session and pointers arguments, and adds two spy tests through a monkeypatched _queued_row_item; f8c2cc6460 appends one sentence to the evidence fragment's landing paragraph.",
+    "done_when": "The done_when names the node test with both negative controls failing and logged, no importer failure added against a base arm run one arm at a time with -n 4, and ruff clean; the manifest records 7 passed (logs/repair2-after-suite.log:4, EXIT=0), three control logs each reddening only its own cases (logs/negative-control-derivation.log:1 failed/6 passed, logs/negative-control-snapshot.log:1 failed/6 passed, logs/negative-control-builder.log:3 failed/4 passed, EXIT=1 each), and the importer clause is only met over 15 of 103 files with a base revision the manifest misstates (manifest.md:27).",
+    "goal": "The node goal is to list a queued request whose plan review is already live or queued as a wait in both the obligations reading and the obligation snapshot; the gained commits keep that behaviour and repair the reuse finding, and tests/test_a_request_waiting_on_a_queued_plan_review_is_a_wait.py:165-203 drives both surfaces to the run-queued kind with review_run_id (7 passed at f8c2cc6460, logs/repair2-after-suite.log:4).",
+    "manifest": "Read; it states status complete, commits ccb435686b, b0a56e1db1, 5bc4b6be99, b48c6123a1, 4b2851d7d7, f8c2cc6460, the gate command with its 7-passed after log and 5-passed baseline log, three control logs, the reuse edit with before/after line counts, and a spec_deviation disclosing that the importer arm covered 15 of 103 files.",
+    "write_paths": "The declared paths are reckon/crew/obligations.py, reckon/crew/obligation_snapshot.py, the node test and the evidence fragment; git diff --stat b48c6123a1 f8c2cc6460 shows four paths, of which three are declared and reckon/crew/recovery_review_dispatch.py is outside the fence but was named by the coordinator's own repair advice (resume-2-advice.txt) and is disclosed in manifest.md:25."
+  }
+}
