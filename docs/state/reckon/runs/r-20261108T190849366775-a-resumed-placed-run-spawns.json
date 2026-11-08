@@ -1,0 +1,926 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 230144,
+    "effort": "high",
+    "launch": "cli",
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 230144
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "e8fa945150961d75913e2cb23a412d80c9fc00fc",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "budget_overrun": false,
+    "budget_overrun_notice": null,
+    "budget_overrun_seconds": 0,
+    "budget_overrun_tokens": 0,
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 9234822,
+      "input_tokens_cumulative": 9234822,
+      "output_tokens": 39930,
+      "output_tokens_cumulative": 39930,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 414,
+    "files": 3,
+    "removed": 4
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 1737,
+        "name": "_spawn_detached_worker",
+        "path": "reckon/crew/dispatch_launch.py"
+      },
+      "run_function": {
+        "line": 1497,
+        "name": "_spawn",
+        "path": "reckon/crew/dispatch_launch.py"
+      },
+      "window_line": 1498
+    },
+    {
+      "existing_function": {
+        "line": 1519,
+        "name": "_spawn",
+        "path": "reckon/crew/resumption.py"
+      },
+      "run_function": {
+        "line": 1497,
+        "name": "_spawn",
+        "path": "reckon/crew/dispatch_launch.py"
+      },
+      "window_line": 1521
+    },
+    {
+      "existing_function": {
+        "line": 1497,
+        "name": "_spawn",
+        "path": "reckon/crew/dispatch_launch.py"
+      },
+      "run_function": {
+        "line": 1737,
+        "name": "_spawn_detached_worker",
+        "path": "reckon/crew/dispatch_launch.py"
+      },
+      "window_line": 1738
+    },
+    {
+      "existing_function": {
+        "line": 1263,
+        "name": "_last_record_type_in",
+        "path": "reckon/crew/recovery_wait.py"
+      },
+      "run_function": {
+        "line": 1852,
+        "name": "_stream_record_facts",
+        "path": "reckon/crew/dispatch_launch.py"
+      },
+      "window_line": 1871
+    },
+    {
+      "existing_function": {
+        "line": 1340,
+        "name": "_stream_holds_assistant_record",
+        "path": "reckon/crew/recovery_wait.py"
+      },
+      "run_function": {
+        "line": 1852,
+        "name": "_stream_record_facts",
+        "path": "reckon/crew/dispatch_launch.py"
+      },
+      "window_line": 1871
+    },
+    {
+      "existing_function": {
+        "line": 354,
+        "name": "_start_watch_producer",
+        "path": "reckon/crew/dispatch_watch.py"
+      },
+      "run_function": {
+        "line": 2589,
+        "name": "_start_supervisor",
+        "path": "reckon/crew/dispatch_launch.py"
+      },
+      "window_line": 2602
+    },
+    {
+      "existing_function": {
+        "line": 3979,
+        "name": "_run_supervisor",
+        "path": "reckon/crew/dispatch_launch.py"
+      },
+      "run_function": {
+        "line": 2892,
+        "name": "record",
+        "path": "reckon/crew/dispatch_launch.py"
+      },
+      "window_line": 2899
+    },
+    {
+      "existing_function": {
+        "line": 3979,
+        "name": "_run_supervisor",
+        "path": "reckon/crew/dispatch_launch.py"
+      },
+      "run_function": {
+        "line": 3202,
+        "name": "_record_launch_abandoned_before_spawn",
+        "path": "reckon/crew/dispatch_launch.py"
+      },
+      "window_line": 3217
+    },
+    {
+      "existing_function": {
+        "line": 2096,
+        "name": "stopped_with_terminal_manifest",
+        "path": "reckon/crew/dispatch_claims.py"
+      },
+      "run_function": {
+        "line": 3281,
+        "name": "_delivered_phase",
+        "path": "reckon/crew/dispatch_launch.py"
+      },
+      "window_line": 3295
+    },
+    {
+      "existing_function": {
+        "line": 3927,
+        "name": "_reap_the_launched_worker",
+        "path": "reckon/crew/dispatch_launch.py"
+      },
+      "run_function": {
+        "line": 3641,
+        "name": "_reap_worker_on_its_terminal_manifest",
+        "path": "reckon/crew/dispatch_launch.py"
+      },
+      "window_line": 3643
+    },
+    {
+      "existing_function": {
+        "line": 3641,
+        "name": "_reap_worker_on_its_terminal_manifest",
+        "path": "reckon/crew/dispatch_launch.py"
+      },
+      "run_function": {
+        "line": 3927,
+        "name": "_reap_the_launched_worker",
+        "path": "reckon/crew/dispatch_launch.py"
+      },
+      "window_line": 3930
+    },
+    {
+      "existing_function": {
+        "line": 2892,
+        "name": "record",
+        "path": "reckon/crew/dispatch_launch.py"
+      },
+      "run_function": {
+        "line": 3979,
+        "name": "_run_supervisor",
+        "path": "reckon/crew/dispatch_launch.py"
+      },
+      "window_line": 4075
+    },
+    {
+      "existing_function": {
+        "line": 3202,
+        "name": "_record_launch_abandoned_before_spawn",
+        "path": "reckon/crew/dispatch_launch.py"
+      },
+      "run_function": {
+        "line": 3979,
+        "name": "_run_supervisor",
+        "path": "reckon/crew/dispatch_launch.py"
+      },
+      "window_line": 4039
+    },
+    {
+      "existing_function": {
+        "line": 65,
+        "name": "placed_run",
+        "path": "tests/test_a_run_not_yet_launched_is_not_refused.py"
+      },
+      "run_function": {
+        "line": 64,
+        "name": "placed_run",
+        "path": "tests/test_a_resumed_placed_run_spawns.py"
+      },
+      "window_line": 64
+    },
+    {
+      "existing_function": {
+        "line": 101,
+        "name": "_pointer",
+        "path": "tests/test_a_queued_run_launches_once.py"
+      },
+      "run_function": {
+        "line": 78,
+        "name": "_pointer",
+        "path": "tests/test_a_resumed_placed_run_spawns.py"
+      },
+      "window_line": 80
+    },
+    {
+      "existing_function": {
+        "line": 80,
+        "name": "_pointer",
+        "path": "tests/test_a_run_not_yet_launched_is_not_refused.py"
+      },
+      "run_function": {
+        "line": 78,
+        "name": "_pointer",
+        "path": "tests/test_a_resumed_placed_run_spawns.py"
+      },
+      "window_line": 78
+    },
+    {
+      "existing_function": {
+        "line": 131,
+        "name": "_spec",
+        "path": "tests/test_a_queued_run_launches_once.py"
+      },
+      "run_function": {
+        "line": 108,
+        "name": "_spec",
+        "path": "tests/test_a_resumed_placed_run_spawns.py"
+      },
+      "window_line": 114
+    },
+    {
+      "existing_function": {
+        "line": 110,
+        "name": "_spec",
+        "path": "tests/test_a_run_not_yet_launched_is_not_refused.py"
+      },
+      "run_function": {
+        "line": 108,
+        "name": "_spec",
+        "path": "tests/test_a_resumed_placed_run_spawns.py"
+      },
+      "window_line": 108
+    },
+    {
+      "existing_function": {
+        "line": 149,
+        "name": "_pointer",
+        "path": "tests/test_an_exited_review_with_a_filed_record_reads_complete.py"
+      },
+      "run_function": {
+        "line": 128,
+        "name": "_write_attempt_marker",
+        "path": "tests/test_a_resumed_placed_run_spawns.py"
+      },
+      "window_line": 131
+    },
+    {
+      "existing_function": {
+        "line": 162,
+        "name": "_prepare",
+        "path": "tests/test_a_run_not_yet_launched_is_not_refused.py"
+      },
+      "run_function": {
+        "line": 187,
+        "name": "_prepare",
+        "path": "tests/test_a_resumed_placed_run_spawns.py"
+      },
+      "window_line": 189
+    },
+    {
+      "existing_function": {
+        "line": 188,
+        "name": "test_a_placed_run_whose_worker_is_alive_is_refused",
+        "path": "tests/test_a_run_not_yet_launched_is_not_refused.py"
+      },
+      "run_function": {
+        "line": 244,
+        "name": "test_a_resumed_run_whose_previous_worker_is_alive_is_refused",
+        "path": "tests/test_a_resumed_placed_run_spawns.py"
+      },
+      "window_line": 258
+    }
+  ],
+  "commit_resolution": null,
+  "commits": [
+    "486097d6bbd9c71cea0fb1641b2fcb61c064ded4",
+    "9587a26dd7222f46f0fdc40eaca186d22bec1f41"
+  ],
+  "completed_at": "2026-11-08T19:31:35.258Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-11-08T19:12:34Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "domain_waiver": null,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "gate": "passed",
+  "gate_check": {
+    "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_resumed_placed_run_spawns.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T190849366775-a-resumed-placed-run-spawns/gate-after-suite.log"
+  },
+  "impl_move": {
+    "at_complete": 0.9236111111111112,
+    "at_dispatch": 0.8663194444444444,
+    "plan": "a-run-has-one-live-worker",
+    "verdict": "moved"
+  },
+  "lane": "clive",
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-11-08T20:09:05.084499+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": "clive",
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-11-08T19:09:05Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 16,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 0,
+    "headroom": 12,
+    "mean_context": 120000,
+    "observed_at": "2026-11-08T19:09:30Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": 16,
+      "aggregate_tokens_per_second": 91.162,
+      "detail": "",
+      "mean_tokens_per_second": 151.937,
+      "observed_at": "2026-11-08T19:09:30Z",
+      "runs": 0.6,
+      "state": "measured"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-11-08T19:31:35.258Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": false,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T190849366775-a-resumed-placed-run-spawns/manifest.md",
+  "member": "disposable-r-20261108T190849366775-a-resumed-placed-run-spawns",
+  "model_key": "flash",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_a_resumed_placed_run_spawns.py::test_a_further_resume_after_a_refused_spawn_passes_the_first_guard",
+      "tests/test_a_resumed_placed_run_spawns.py::test_a_resumed_run_whose_previous_attempt_ended_spawns",
+      "tests/test_a_resumed_placed_run_spawns.py::test_a_resumed_run_whose_previous_worker_is_probed_dead_spawns"
+    ],
+    "baseline_failure_ids": [
+      "tests/test_a_resumed_placed_run_spawns.py::test_a_further_resume_after_a_refused_spawn_passes_the_first_guard",
+      "tests/test_a_resumed_placed_run_spawns.py::test_a_resumed_run_whose_previous_attempt_ended_spawns",
+      "tests/test_a_resumed_placed_run_spawns.py::test_a_resumed_run_whose_previous_worker_is_probed_dead_spawns"
+    ],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_a_resumed_placed_run_spawns.py::test_a_further_resume_after_a_refused_spawn_passes_the_first_guard",
+      "tests/test_a_resumed_placed_run_spawns.py::test_a_resumed_run_whose_previous_attempt_ended_spawns",
+      "tests/test_a_resumed_placed_run_spawns.py::test_a_resumed_run_whose_previous_worker_is_probed_dead_spawns"
+    ],
+    "control_run_failed": true,
+    "declaration": "restore §11's _launch_refused_by, which refuses a placed-unknown reading whenever attempt receipts exist without a canonical worker record; the first, second and fifth cases fail",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T190849366775-a-resumed-placed-run-spawns/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T190849366775-a-resumed-placed-run-spawns/negative-control.log",
+    "test_paths": [
+      "tests/test_a_resumed_placed_run_spawns.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "a-resumed-placed-run-spawns",
+  "node_definition": {
+    "admission_findings": [],
+    "after": [],
+    "anchor_paths": [],
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "capability": {
+      "class": "general",
+      "requirements": {
+        "reasoning": "standard",
+        "risk": "moderate",
+        "verification": "strict"
+      },
+      "version": "1.0"
+    },
+    "compares_with": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1126,
+          "cached_input_tokens": 501491,
+          "input_tokens": 502619,
+          "output_tokens": 676,
+          "reasoning_output_tokens": 419,
+          "total_tokens": 503295,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "session_id": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6"
+    },
+    "done_when": "the defect is reproduced first in a temporary crew home and logged; tests/test_a_resumed_placed_run_spawns.py shows the five cases §12 lists with the scheduler query stubbed to answer nothing, the first four through _supervisor_spawn_worker's guard and the fifth through _prepare_attempt_records; the logged negative control restoring §11's predicate fails the first two cases and the fifth; the armed suite command, resolved per revision with promotion_records._scoped_suite_command and run literally, passes at the head judged by delta against the dispatch base with the new test copied into the base tree, with tests/test_a_queued_run_launches_once.py and tests/test_a_run_not_yet_launched_is_not_refused.py in the population at both arms; ruff check and ruff format --check add no findings on the staged paths; every gate log starts with its revision and literal command and ends in a bare EXIT= line; the test asserts the real crew home is untouched",
+    "estimated_hours": null,
+    "goal": "Make the launch predicate both guards share read the newest attempt receipts on disk when no canonical worker record exists",
+    "id": "a-resumed-placed-run-spawns",
+    "images": [],
+    "inputs": [],
+    "lane_declaration": {
+      "backend": "clive",
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-11-08T19:09:05Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 16,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 0,
+      "headroom": 12,
+      "mean_context": 120000,
+      "observed_at": "2026-11-08T19:09:30Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": 16,
+        "aggregate_tokens_per_second": 91.162,
+        "detail": "",
+        "mean_tokens_per_second": 151.937,
+        "observed_at": "2026-11-08T19:09:30Z",
+        "runs": 0.6,
+        "state": "measured"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T190849366775-a-resumed-placed-run-spawns/manifest.md",
+    "negative_control": "restore §11's _launch_refused_by, which refuses a placed-unknown reading whenever attempt receipts exist without a canonical worker record; the first, second and fifth cases fail",
+    "over_fence_reason": "",
+    "peer_scopes": {
+      "a-relaunch-never-touches-a-live-tree": [
+        "docs/evidence/fragments/a-run-has-one-live-worker/a-relaunch-never-touches-a-live-tree.html",
+        "docs/figures/a-run-has-one-live-worker/a-relaunch-never-touches-a-live-tree",
+        "reckon/crew/dispatch.py",
+        "tests/test_a_relaunch_never_touches_a_live_tree.py"
+      ],
+      "a-request-waiting-on-a-queued-plan-review-is-a-wait": [
+        "docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-request-waiting-on-a-queued-plan-review-is-a-wait.html",
+        "docs/figures/a-plan-is-reviewed-before-it-is-built/a-request-waiting-on-a-queued-plan-review-is-a-wait",
+        "reckon/crew/obligation_snapshot.py",
+        "reckon/crew/obligations.py",
+        "tests/test_a_request_waiting_on_a_queued_plan_review_is_a_wait.py"
+      ],
+      "a-review-round-is-section-scoped": [
+        "docs/evidence/fragments/a-review-gate-judges-what-it-covers/a-review-round-is-section-scoped.html",
+        "docs/figures/a-review-gate-judges-what-it-covers/a-review-round-is-section-scoped",
+        "reckon/crew/plan_review.py",
+        "reckon/crew_dispatch_commands.py",
+        "tests/test_a_review_round_is_section_scoped.py"
+      ],
+      "agree-a-receipt-with-its-log": [
+        "docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/agree-a-receipt-with-its-log.html",
+        "docs/figures/a-promotion-reads-the-evidence-it-is-given/agree-a-receipt-with-its-log",
+        "reckon/crew/promotion.py",
+        "reckon/crew/promotion_evidence.py",
+        "reckon/crew/review.py",
+        "tests/test_a_receipt_agrees_with_its_log.py"
+      ],
+      "ask-a-brief-run-for-its-plan-link-at-dispatch": [
+        "docs/evidence/fragments/a-refusal-comes-before-the-work/ask-a-brief-run-for-its-plan-link-at-dispatch.html",
+        "docs/figures/a-refusal-comes-before-the-work/ask-a-brief-run-for-its-plan-link-at-dispatch",
+        "reckon/crew/dispatch.py",
+        "reckon/crew/node.py",
+        "reckon/crew/promotion_checks.py",
+        "reckon/crew_dispatch_commands.py",
+        "tests/test_a_brief_run_names_its_plan_at_dispatch.py",
+        "tests/test_brief_dispatch.py"
+      ],
+      "coverage-reads-one-plans-reviews": [
+        "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/coverage-reads-one-plans-reviews.html",
+        "docs/figures/work-is-never-stuck-behind-the-admission-loop/coverage-reads-one-plans-reviews",
+        "reckon/crew/plan_review.py"
+      ],
+      "fence-a-dry-runs-write-paths": [
+        "reckon/crew/dispatch_plan.py",
+        "reckon/crew_dispatch_commands.py",
+        "tests/test_a_dry_run_fences_write_paths.py"
+      ],
+      "findings-read-from-persisted-index": [
+        "docs/evidence/fragments/a-read-costs-what-changed/findings-read-from-persisted-index.html",
+        "docs/figures/a-read-costs-what-changed/findings-read-from-persisted-index",
+        "reckon/crew/findings.py",
+        "reckon/crew/plan_review.py",
+        "reckon/crew/review_records.py",
+        "tests/test_findings_are_read_from_a_write_time_index.py"
+      ],
+      "keep-only-named-run-waits": [
+        "docs/evidence/fragments/a-queue-holds-the-whole-plan/keep-only-named-run-waits.html",
+        "docs/figures/a-queue-holds-the-whole-plan/keep-only-named-run-waits",
+        "reckon/crew/queue_admission.py",
+        "tests/test_a_dropped_request_strands_no_waiter.py"
+      ],
+      "read-manifest-evidence-in-written-shapes": [
+        "docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/read-manifest-evidence-in-written-shapes.html",
+        "docs/figures/a-promotion-reads-the-evidence-it-is-given/read-manifest-evidence-in-written-shapes",
+        "reckon/crew/dispatch_launch.py",
+        "reckon/crew/promotion_evidence.py",
+        "reckon/crew/reports.py",
+        "tests/test_a_manifest_is_read_in_the_shapes_workers_write.py"
+      ],
+      "restart-only-the-hosts-own-followers": [
+        "docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/restart-only-the-hosts-own-followers.html",
+        "docs/figures/a-crew-process-writes-only-what-it-owns/restart-only-the-hosts-own-followers",
+        "reckon/crew/session_host.py",
+        "tests/test_a_running_host_restarts_only_its_own_followers.py"
+      ],
+      "service-runs-mains-code": [
+        "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/service-runs-mains-code.html",
+        "docs/figures/work-is-never-stuck-behind-the-admission-loop/service-runs-mains-code",
+        "reckon/crew/fleet_supervisor.py",
+        "tests/test_a_service_runs_the_code_main_carries.py"
+      ],
+      "share-one-failure-matching-rule": [
+        "docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/share-one-failure-matching-rule.html",
+        "docs/figures/a-promotion-reads-the-evidence-it-is-given/share-one-failure-matching-rule",
+        "reckon/crew/landing_measure.py",
+        "reckon/crew/promotion_checks.py",
+        "reckon/crew/reports.py",
+        "reckon/crew/review.py",
+        "reckon/ledger.py",
+        "tests/test_every_failure_comparison_shares_one_rule.py"
+      ],
+      "the-old-event-logs-are-retired": [
+        "docs/evidence/fragments/crew-state-stays-bounded/the-old-event-logs-are-retired.html",
+        "docs/figures/crew-state-stays-bounded/the-old-event-logs-are-retired",
+        "reckon/crew/event_log_retirement.py",
+        "reckon/crew/gc.py",
+        "tests/test_the_old_event_logs_are_retired.py"
+      ]
+    },
+    "plan": "a-run-has-one-live-worker",
+    "regenerate_paths": [],
+    "requested_backend": "clive",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§12",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/dispatch_launch.py",
+      "tests/test_a_resumed_placed_run_spawns.py",
+      "docs/evidence/fragments/a-run-has-one-live-worker/a-resumed-placed-run-spawns.html",
+      "docs/figures/a-run-has-one-live-worker/a-resumed-placed-run-spawns"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": 2123323.0,
+  "outcome": "",
+  "outside_scope_paths": [],
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "lift_id": null,
+    "member": null,
+    "node": "a-resumed-placed-run-spawns",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-11-08T19:11:28.401099+00:00",
+    "score": 0.56875,
+    "session": null,
+    "source": null,
+    "state": "unknown"
+  },
+  "picker_selection": {
+    "action": "fallback",
+    "backend": null,
+    "comment": "",
+    "confidence": null,
+    "effort": null,
+    "excluded": [],
+    "fallback_reason": "timeout in pick:capability",
+    "family": null,
+    "jev_model": "~typesafe/jev-latest",
+    "latency_ms": 5000.46,
+    "model": null,
+    "offered": [],
+    "probabilities": {},
+    "stage_ms": {
+      "budget-snapshot": 2606.494,
+      "context-estimate": 27.01,
+      "records": 1878.75,
+      "verdict-inputs": 2923.006
+    }
+  },
+  "plan": "a-run-has-one-live-worker",
+  "plan_impl_at_dispatch": 0.8663194444444444,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "9587a26dd7222f46f0fdc40eaca186d22bec1f41",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "e8fa945150961d75913e2cb23a412d80c9fc00fc",
+    "reviewed_head_sha": "9587a26dd7222f46f0fdc40eaca186d22bec1f41",
+    "scores": {
+      "durability": 13,
+      "evidence": 18,
+      "fit": 18,
+      "goal_fidelity": 19,
+      "reuse": 12,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 100
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "route_mode": "shadow",
+  "run_id": "r-20261108T190849366775-a-resumed-placed-run-spawns",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§12",
+  "session": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+  "session_harness": "claude",
+  "session_id": "20b3fec4-a475-4599-8fdb-7aa4db9fd0ca",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": {
+    "added_failure_ids": [],
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_resumed_placed_run_spawns.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_digest": null,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T190849366775-a-resumed-placed-run-spawns/gate-after-suite.log",
+      "revision": "486097d6bb"
+    },
+    "baseline_measured_nothing": true,
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_resumed_placed_run_spawns.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 3,
+      "failure_ids": [
+        "tests/test_a_resumed_placed_run_spawns.py::test_a_further_resume_after_a_refused_spawn_passes_the_first_guard",
+        "tests/test_a_resumed_placed_run_spawns.py::test_a_resumed_run_whose_previous_attempt_ended_spawns",
+        "tests/test_a_resumed_placed_run_spawns.py::test_a_resumed_run_whose_previous_worker_is_probed_dead_spawns"
+      ],
+      "log_digest": null,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T190849366775-a-resumed-placed-run-spawns/gate-baseline-suite.log",
+      "revision": "e8fa945150961d75913e2cb23a412d80c9fc00fc"
+    },
+    "failure_attribution": {},
+    "status": "clean",
+    "suite_command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_resumed_placed_run_spawns.py",
+    "waiver_reason": null
+  },
+  "tests_added": 5,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 9234822,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 230144",
+    "elapsed_seconds": 1105.706,
+    "generated_tokens": 39930,
+    "generation_seconds": 618.716,
+    "input_budget_tokens": 230144,
+    "input_utilisation_pct": 62.0,
+    "machine_seconds": 486.99,
+    "peak_input_tokens": 142637,
+    "tokens_per_second": 64.54,
+    "wall_tokens_per_second": 36.11
+  },
+  "time_budget": "60m",
+  "tool_steps": 92.0,
+  "unplanned_reason": null,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "source": "coordinator",
+    "waived_runs": [
+      {
+        "backend": "clive",
+        "budget_overrun": false,
+        "budget_overrun_seconds": 0,
+        "budget_seconds": 3600,
+        "classification": "promotable",
+        "commits_beyond_base": 0,
+        "detail": "the worker manifest reports completion and an independent parsed review is attached; the run is ready for promotion",
+        "effective_phase": "complete",
+        "elapsed_seconds": 3003,
+        "exit_record": {
+          "attempt": 1,
+          "ended_during": "working",
+          "ended_pids": [],
+          "exit_code": 0,
+          "exited_at": "2026-11-08T18:44:33Z",
+          "last_record_type": "result",
+          "launched_at": "2026-11-08T18:20:16Z",
+          "recorded_by": "supervisor",
+          "removed_harness_caches": [],
+          "run_id": "r-20261108T181800262689-a-relaunch-never-touches-a-live-tree",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 8509,
+          "worker_pid": 896964
+        },
+        "external_wait": null,
+        "fleet_verdict": {
+          "detail": "",
+          "lifting_condition": null,
+          "recovery": "promote",
+          "recovery_classification": "promotable",
+          "stall_base_detail": null,
+          "stall_base_state": null,
+          "stall_pause_reason": null,
+          "stall_process_state": null,
+          "stall_quiet_seconds": null,
+          "stall_window_seconds": 900,
+          "state": "complete"
+        },
+        "interruption": null,
+        "lane": "clive",
+        "lane_cause": null,
+        "lane_ended_at": "2026-11-08T18:44:33Z",
+        "lane_event": null,
+        "lifting_condition": null,
+        "liveness_proven": true,
+        "log_age_seconds": 1529,
+        "log_fresh": false,
+        "manifest_commits": [
+          "04cdce8990905eb25262b31e362cffb1f79a7c1a",
+          "abd5eca84c"
+        ],
+        "manifest_derived": false,
+        "manifest_digest": "0778b8da5ae284d6f7782755a59667df01bfd1e577163a6b99393a6aa973f6fc",
+        "manifest_error": null,
+        "manifest_file_present": true,
+        "manifest_fresh": true,
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T181800262689-a-relaunch-never-touches-a-live-tree/manifest.md",
+        "manifest_present": true,
+        "manifest_reported_status": "complete",
+        "manifest_status": "complete",
+        "marker": null,
+        "model_key": "flash",
+        "needs_help_complete": null,
+        "next_action": "reckon crew complete --run r-20261108T181800262689-a-relaunch-never-touches-a-live-tree --gate <verdict> --commit 04cdce8990905eb25262b31e362cffb1f79a7c1a --commit abd5eca84c637a05d70ce40c1ca5a7dc4ade7161",
+        "node": "a-relaunch-never-touches-a-live-tree",
+        "phase": "complete",
+        "plan": "a-run-has-one-live-worker",
+        "process_alive": false,
+        "process_descendant_alive": null,
+        "project": "reckon",
+        "recovery": "promote",
+        "recovery_classification": "promotable",
+        "resets_at": null,
+        "review_error": null,
+        "review_present": true,
+        "review_run_id": null,
+        "review_run_phase": null,
+        "review_status": "parsed",
+        "run_id": "r-20261108T181800262689-a-relaunch-never-touches-a-live-tree",
+        "session": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+        "stored_phase": "complete",
+        "terminal_age_seconds": 1626,
+        "terminal_at": "2026-11-08T18:42:52Z",
+        "wait_age_seconds": null,
+        "wait_condition_state": null,
+        "wait_key_defect": null,
+        "wait_observed": null,
+        "wait_overdue": null,
+        "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/a-relaunch-never-touches-a-live-tree"
+      }
+    ]
+  },
+  "wall_seconds": 1141,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "ended_pids": [],
+    "exit_code": 0,
+    "exited_at": "2026-11-08T19:31:44Z",
+    "last_record_type": "result",
+    "launched_at": "2026-11-08T19:12:53Z",
+    "recorded_by": "supervisor",
+    "removed_harness_caches": [],
+    "run_id": "r-20261108T190849366775-a-resumed-placed-run-spawns",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 6317,
+    "worker_pid": 1273421
+  },
+  "worker_seconds": 1043,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
