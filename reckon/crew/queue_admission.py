@@ -1114,8 +1114,11 @@ def _claim_collision(
         (
             path
             for path in ours
-            if path not in shared_files
-            and any(runs._scopes_overlap(path, claim) for claim in theirs)
+            if any(
+                runs._scopes_overlap(path, claim)
+                and not (path == claim and path in shared_files)
+                for claim in theirs
+            )
         ),
         None,
     )
@@ -1247,8 +1250,10 @@ def _live_claim_detail(
             continue
         disposition, collision, holder = fresh
         holder_run = str(other.get("run_id") or "unknown")
+        exclusive = runs._exclusive_write_pattern(shared_files, collision)
+        pattern_reason = f"; exclusive pattern {exclusive!r}" if exclusive else ""
         return {
-            "reason": f"run {holder_run!r} holds {collision!r}: {disposition.reason}",
+            "reason": f"run {holder_run!r} holds {collision!r}: {disposition.reason}{pattern_reason}",
             "holder": {
                 "run_id": holder_run,
                 "node": str((holder.get("node") or {}).get("id") or ""),

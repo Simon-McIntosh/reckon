@@ -44,6 +44,7 @@ from reckon.crew.routing import (
     _shadow_worktree_records,
 )
 from reckon.crew.runs import (
+    _exclusive_write_pattern,
     _live_worktree_claims,
     _manifest_freshness,
     _shared_write_paths,
@@ -683,9 +684,13 @@ def _accepted_scope_exceptions(
                             {"run_id": peer_run, "claim": claim.as_posix()}
                         )
                         continue
+                    exclusive = _exclusive_write_pattern(shared_files, path)
+                    pattern_reason = (
+                        f"; exclusive pattern {exclusive!r}" if exclusive else ""
+                    )
                     raise CrewError(
                         f"run {run_id!r} cannot accept {path}: live run "
-                        f"{peer_run!r} claims {claim.as_posix()}"
+                        f"{peer_run!r} claims {claim.as_posix()}{pattern_reason}"
                     )
 
     accepted: list[dict[str, Any]] = []

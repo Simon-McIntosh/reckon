@@ -254,20 +254,27 @@ def _live_claim_conflict(
             continue
         theirs = _declared_scope_paths(other)
         for path in ours:
-            if path in shared:
-                continue
             claimed = next(
-                (claim for claim in theirs if runs_module._scopes_overlap(path, claim)),
+                (
+                    claim
+                    for claim in theirs
+                    if runs_module._scopes_overlap(path, claim)
+                    and not (path == claim and path in shared)
+                ),
                 None,
             )
             if claimed is None or not claim_disposition(other).binding:
                 continue
-            return ScopeConflict(
+            refusal = ScopeConflict(
                 run_id=other_id,
                 node_id=str((other.get("node") or {}).get("id") or ""),
                 candidate_path=path,
                 claimed_path=claimed,
             )
+            exclusive = runs_module._exclusive_write_pattern(shared, path)
+            if exclusive:
+                refusal.args = (f"{refusal}; exclusive pattern {exclusive!r}",)
+            return refusal
     return None
 
 
