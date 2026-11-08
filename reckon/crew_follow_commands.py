@@ -159,6 +159,21 @@ class _StationRegistration:
     def held(self) -> bool:
         return True if self._claim is None else self._claim.held
 
+    def prepare_reexec(self) -> None:
+        """Carry the session's claim across a replacement of this image.
+
+        The claim is the follower registration the producer path takes, so it
+        crosses the exec exactly as it does there. A session-less pane holds no
+        claim and has nothing to carry.
+        """
+        if self._claim is not None:
+            self._claim.prepare_reexec()
+
+    def cancel_reexec(self) -> None:
+        """Undo that hand-over when the replacement was refused."""
+        if self._claim is not None:
+            self._claim.cancel_reexec()
+
     def acquire(self) -> bool:
         """Take the session's claim, writing the pane's row only while held."""
         if self._claim is None:
@@ -2811,6 +2826,31 @@ def crew_host(
     )
 
 
+def _follower_reloader_for(
+    project: str,
+    registration,
+    *,
+    deadline: float | None = None,
+    owner: tuple[int, str] | None = None,
+    color: bool = False,
+):
+    """The reloader a follower polls between its rows, whichever it reads.
+
+    It is the same object for both deliveries, because a follower renders its
+    own rows: a stream follower composes them from the producer's records and a
+    station subscriber composes them from the station's rows. The caller polls
+    it through the per-wait hook at a record boundary and never through a signal
+    timer, which would re-execute with a row half-drawn.
+    """
+    return _FollowerReloader(
+        project,
+        registration,
+        deadline=deadline,
+        owner=owner,
+        color=color,
+    )
+
+
 @crew.command(name="follow")
 @click.option("--project", required=True, help="Project whose watch stream to follow.")
 @click.option(
@@ -3025,21 +3065,19 @@ def crew_follow(
         }
 
     def stream_events(registration):
-        # A subscriber reads the station's rows rather than a producer's stream
-        # file, so it has nothing to reload onto: the station is the process
-        # that carries new code. Building a reloader here would materialise its
-        # tree under the crew home on the delivery path, which is exactly what
-        # the subscriber exists to avoid.
-        reloader = (
-            None
-            if subscriber is not None
-            else _FollowerReloader(
-                project,
-                registration,
-                deadline=deadline_epoch,
-                owner=owner,
-                color=getattr(grid, "color", False),
-            )
+        # A subscriber renders every row with its own code: the station commits
+        # rows, and ``station_subscriber`` composes the sentences this process
+        # prints. A long-lived subscriber therefore keeps whatever wording it
+        # started with, including a remedy the source has since removed, so it
+        # reloads exactly as a stream follower does. The check reaches it
+        # through this per-wait hook at a row boundary and never through a
+        # signal timer, which would re-execute away from one.
+        reloader = _follower_reloader_for(
+            project,
+            registration,
+            deadline=deadline_epoch,
+            owner=owner,
+            color=getattr(grid, "color", False),
         )
 
         def poll(checkpoint) -> None:

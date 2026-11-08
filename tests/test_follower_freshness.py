@@ -180,12 +180,14 @@ def test_running_follower_reloads_without_stream_or_registration_gap(
 ) -> None:
     """A station replacement leaves the subscriber's stream whole.
 
-    The follower no longer reloads onto new code: the station is the one
-    process on a node that does, and the follower is a subscriber to the rows it
-    commits. What a reader has to be shown, then, is that a station replaced
-    mid-flight leaves the subscriber with every row written before the
-    replacement and every row written after it, once each and in order, and its
-    registration still set on its own row.
+    The station commits rows and the follower subscribes to them, so replacing
+    the station mid-flight is the case where a shared process is cycled under a
+    live reader. (The follower also replaces its own image when its source
+    checkout moves, which is a different replacement and is pinned in
+    ``test_a_follower_runs_current_code``.) What a reader has to be shown here,
+    then, is that a station replaced mid-flight leaves the subscriber with every
+    row written before the replacement and every row written after it, once each
+    and in order, and its registration still set on its own row.
     """
     from reckon.crew import station as station_module
     from reckon.crew import station_store, station_subscriber

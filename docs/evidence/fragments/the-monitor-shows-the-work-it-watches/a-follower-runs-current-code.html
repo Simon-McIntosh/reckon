@@ -1,0 +1,52 @@
+<article class="r-evidence" id="a-follower-runs-current-code">
+  <h2 id="a-follower-runs-current-code-title">A station subscriber re-executes onto its source checkout's code</h2>
+
+  <p id="a-follower-runs-current-code-what">A follower subscribed to a station renders every row with its own code: the
+  station commits rows and <code>station_subscriber</code> composes the sentences the pane prints. The
+  subscriber's delivery in <code>crew_follow_commands.crew_follow</code> therefore builds the same
+  <code>_FollowerReloader</code> the stream delivery builds, polled through the per-wait hook at a row
+  boundary and never through <code>_StampPoll</code>, whose signal handler would re-execute mid-render.
+  Driving that path also showed the station registration could not hand the session's claim across an
+  image replacement; it now delegates <code>prepare_reexec</code>/<code>cancel_reexec</code> to the
+  claim it wraps.</p>
+
+  <p id="a-follower-runs-current-code-proof"><code>tests/test_a_follower_runs_current_code.py</code>
+  enters <code>crew_follow</code>'s subscriber branch itself, with a stubbed subscriber and a stubbed
+  per-wait loop, so the reloader under test is the one that delivery builds and polls. It shows the
+  four required cases, and two more: a moved-and-trusted checkout re-executes (one recorded <code>os.execve</code>);
+  a matching stamp and an untrusted checkout do not; a follower running from a reload tree reads the
+  checkout its carried environment names rather than the tree it imports from, and materialises the
+  replacement from that checkout; and over 100 sweeps spanning three <code>checked_at</code>
+  intervals with a matching stamp the sweeps read the checkout's identity exactly 3 times (the delivery
+  reads it once more as it arms its image). The claim hand-over is observed, not merely
+  not-raised: against a stub claim the moved-checkout case records one
+  <code>prepare_reexec</code> before the exec and one <code>cancel_reexec</code> when the replacement is
+  refused, and a session-less pane takes no claim and so calls neither while still reloading.</p>
+
+  <table id="a-follower-runs-current-code-arms">
+    <thead><tr><th>arm</th><th>command</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base 1b3663ce</td><td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_follower_freshness.py</code></td><td>10 passed, EXIT=0</td></tr>
+      <tr><td>head 0f274583</td><td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_follower_runs_current_code.py tests/test_follower_freshness.py</code></td><td>16 passed, EXIT=0</td></tr>
+      <tr><td>new file at base</td><td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_follower_runs_current_code.py</code>, against the unmodified base tree</td><td>5 failed, EXIT=1</td></tr>
+    </tbody>
+  </table>
+
+  <p id="a-follower-runs-current-code-controls">Three negative controls, each applied at the head above
+  and logged under the run directory's <code>logs/</code>. Restoring <code>reloader = None</code> at the
+  subscriber delivery site makes five cases fail including the stale-stamp case, which records no exec
+  (<code>negative-control-1.log</code>: 5 failed, EXIT=1). Dropping the trust check in
+  <code>reckon/crew/follower_reload.py</code>'s poll makes the untrusted case re-execute
+  (<code>negative-control-2.log</code>: 1 failed, EXIT=1, and only that case fails). Replacing
+  <code>_StationRegistration.prepare_reexec</code>'s body with <code>pass</code> fails the moved-checkout
+  case, so the hand-over the tests count is the one the wrapper performs
+  (<code>negative-control-3.log</code>: 1 failed, EXIT=1).</p>
+
+  <p id="a-follower-runs-current-code-population">The population of test files importing
+  <code>reckon.crew_follow_commands</code> or <code>reckon.crew.follower_reload</code> was measured by the
+  coordinator, not by this node: 59 files giving 1 failed, 463 passed at <code>main</code>
+  <code>3c1351a82</code>, and 2 failed, 467 passed at <code>main</code> merged with this head
+  (<code>bf727134b</code>). The one differing id,
+  <code>tests/test_arm_lock_is_never_held_by_a_follower.py::test_stubborn_orphan_cannot_hold_arm_lock_past_bound</code>,
+  also fails when run alone on <code>main</code>, so the merge adds no failure.</p>
+</article>
