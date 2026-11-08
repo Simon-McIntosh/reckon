@@ -57,14 +57,20 @@
           <code>live_work_run</code> for each session and project pair through
           the <code>_live_view</code> seam the follower settles by, so the scan
           composes no terminal set of its own. <code>_live_projects</code>
-          collects project names only. A <code>launch-failed</code> pointer is
-          set aside inside <code>live_work_run</code>, where the work judgement
-          lives: it says a worker was never spawned, so it is a queue
-          placement and not work a pane could show.
+          collects project names only, and <code>live_work_run</code> keeps only
+          the naming of the run that brought a pair back.
           <code>SessionHost.record()</code> carries
           <code>owner_checked</code> on marked children and a
           <code>waiting_for_dispatch</code> field, true while the start-up scan
           found nothing and false once a child starts.</li>
+        <li><code>reckon/crew/station_subscriber.py</code>:
+          <code>live_work_populations</code> sets a
+          <code>launch-failed</code> pointer aside before it reads the
+          population. That function is the one statement of which runs owe a
+          pane, so the follower settling a pair, the station's reading and a
+          host on start now answer alike; a launch record names a queue
+          placement rather than a worker, so it owes no pane until the retry
+          lands.</li>
         <li><code>tests/test_session_host_plugin.py</code>: the four tests that
           asserted the wait are rewritten. Two assert that the entry point execs
           at once and passes no first request; two assert that it hands the
@@ -83,10 +89,10 @@
         <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
         tests/test_a_rearmed_host_follows_live_runs.py
         tests/test_session_host_plugin.py</code>:
-        <strong>15 passed in 42.97 s, EXIT=0</strong> at
-        <code>11a88b1bec</code>. The base arm runs the rewritten plugin
+        <strong>15 passed in 37.66 s, EXIT=0</strong> at
+        <code>480a03a25b</code>. The base arm runs the rewritten plugin
         tests against the base archive&rsquo;s own script, from that tree&rsquo;s
-        root: <strong>4 failed, 3 passed in 42.38 s, EXIT=1</strong> at
+        root: <strong>4 failed, 3 passed in 41.88 s, EXIT=1</strong> at
         <code>e5179a465f</code>, the four being
         <code>test_execs_the_host_at_once_holding_the_fifo_open</code>,
         <code>test_passes_no_first_request_to_the_host</code>,
@@ -122,6 +128,13 @@
         <code>tests/test_no_test_reaches_the_live_session_host.py</code>) at
         head: <strong>24 passed in 73.60 s, EXIT=0</strong>. Log:
         <code>neighbouring-tests.log</code>.</p>
+      <p><strong>Station and follower tests</strong> over the files that import
+        <code>station_subscriber</code>: <strong>59 passed, 1 failed</strong>.
+        The failure is pre-existing: <code>test_failed_reexec_reports_once_and_keeps_the_registration</code>
+        fails identically with the parent revision&rsquo;s
+        <code>station_subscriber.py</code> restored, and exercises the
+        follower code-stamp reloader rather than the live-work rule. Log:
+        <code>station-tests.log</code>.</p>
       <p><strong>Lint:</strong> <code>ruff check</code> and
         <code>ruff format --check</code> over the three staged Python paths.
         Delta against the base revision&rsquo;s own copies is zero findings: one
