@@ -249,7 +249,9 @@ def test_a_committing_write_commits_the_run_record_it_rewrote(
     )
 
 
-def test_a_hold_check_that_changes_no_hold_commits_nothing(home, retired_record) -> None:
+def test_a_hold_check_that_changes_no_hold_commits_nothing(
+    home, retired_record
+) -> None:
     ledger.record_hold_checks(
         PROJECT,
         [{"backend": "alpha", "held": True}],

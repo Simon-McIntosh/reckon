@@ -1,0 +1,74 @@
+<section id="commit-every-file-a-hold-rewrote-landing">
+  <h2>A hold transition commits every run file it rewrote</h2>
+
+  <p><strong>What changed.</strong> <code>reckon/ledger.py</code> keeps the
+  read-modify-write of the ledger in one internal function,
+  <code>_write_state</code>, which returns the version it advanced to together
+  with every file it changed: the aggregate envelope first, then each per-run
+  file <code>_keep_run_files_identical</code> re-encoded. The public
+  <code>write</code> keeps its signature and returns the integer version alone,
+  so no public surface was added. Both committing callers now stage that whole
+  set: <code>write</code>'s own roster-retirement branch, and
+  <code>record_hold_checks</code>, which commits under its hold-transition
+  subject. Before this, each passed only the aggregate's path, so a run file
+  whose row still carried the retired <code>follow_on_paths</code> key was
+  re-encoded on disk and left modified in the tree. The inline comment in
+  <code>record_hold_checks</code> that claimed the run rows stay byte-identical
+  now states what the code does.</p>
+
+  <p><strong>Reproduction, on the base tree before the repair.</strong> The
+  three new cases seed one of the aggregate's own <code>runs</code> rows with
+  its file still carrying the retired key — the only shape
+  <code>record_hold_checks</code> reaches, since it hands the run-file writer
+  the aggregate's rows alone — and then read <code>git status --porcelain</code>
+  over the state directory. On the unfixed tree every one of them failed with
+  exactly:</p>
+
+  <pre><code>AssertionError: assert 'M docs/state...ns/r-one.json' == ''
++ M docs/state/reckon/runs/r-one.json</code></pre>
+
+  <p>which is the defect this section names: the rewrite happened and the commit
+  did not carry it.</p>
+
+  <h3 id="commit-every-file-a-hold-rewrote-arms">Measured</h3>
+
+  <p>Every arm is a log under the run directory; each opens with its revision,
+  tree, imported module path and literal command, and closes with a bare
+  <code>EXIT=&lt;code&gt;</code> line.</p>
+
+  <table id="commit-every-file-a-hold-rewrote-arm-table">
+    <caption>The base arm runs the node's test file copied into a scratch tree
+    of the dispatch base; the head arm runs it in the node's worktree.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base arm</td>
+        <td><code>47f356ab</code>, scratch tree</td>
+        <td>3 failed, 3 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>head arm</td>
+        <td><code>4096845b</code>, node worktree</td>
+        <td><strong>6 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control 1: only the aggregate's path from
+        <code>record_hold_checks</code></td>
+        <td><code>47f356ab</code> + repair, uncommitted</td>
+        <td><code>test_opening_a_hold_commits_the_run_record_it_rewrote</code>
+        failed, <code>1 failed</code>, <code>EXIT=1</code></td></tr>
+      <tr><td>negative control 2: only the aggregate's path from
+        <code>write</code>'s commit branch</td>
+        <td><code>47f356ab</code> + repair, uncommitted</td>
+        <td><code>test_a_committing_write_commits_the_run_record_it_rewrote</code>
+        failed, <code>1 failed</code>, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>Both mutations reproduce the same dirty file the unfixed tree showed, so
+  each of the two committing callers is covered by its own case rather than one
+  case standing in for both. Ruff reports no findings and no formatting
+  difference on the two staged paths.</p>
+
+  <p>The 84 test files that import <code>reckon.ledger</code> ran as one arm at
+  the head revision with <code>-n 4</code>: 733 passed, 2 failed, 3 skipped. The
+  two failures are <code>test_brief_prompt.py</code>'s prompt-snapshot cases,
+  and they fail on the base revision too — the same two ids from the scratch
+  tree at <code>47f356ab</code> — so this change adds no failure against the
+  base.</p>
+</section>
