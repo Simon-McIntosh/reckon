@@ -1,0 +1,514 @@
+{
+  "agent": {
+    "alias": "sol61",
+    "backend": "codex",
+    "effort": "high",
+    "launch": "cli",
+    "model": "gpt-6.1-sol",
+    "sandbox": "worktree-full"
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "codex",
+  "base_sha": "3189bf2bb67125527123085a26ab933fa7777b22",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "budget_overrun": false,
+    "budget_overrun_notice": null,
+    "budget_overrun_seconds": 0,
+    "budget_overrun_tokens": 0,
+    "cost_usd": null,
+    "detail": "backend reports token usage but no headroom",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_write_input_tokens": 0,
+      "cache_write_input_tokens_cumulative": 0,
+      "cached_input_tokens": 8295552,
+      "cached_input_tokens_cumulative": 8295552,
+      "input_tokens": 8458207,
+      "input_tokens_cumulative": 8458207,
+      "output_tokens": 27848,
+      "output_tokens_cumulative": 27848,
+      "reasoning_output_tokens": 10146,
+      "reasoning_output_tokens_cumulative": 10146
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 103,
+    "files": 3,
+    "removed": 1
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 230,
+        "name": "mark_used",
+        "path": "reckon/crew/budget_reset.py"
+      },
+      "run_function": {
+        "line": 766,
+        "name": "classify_pointer",
+        "path": "reckon/crew/recovery_classification.py"
+      },
+      "window_line": 1411
+    },
+    {
+      "existing_function": {
+        "line": 1120,
+        "name": "external_wait",
+        "path": "reckon/crew/recovery_liveness.py"
+      },
+      "run_function": {
+        "line": 766,
+        "name": "classify_pointer",
+        "path": "reckon/crew/recovery_classification.py"
+      },
+      "window_line": 1084
+    }
+  ],
+  "commit_resolution": null,
+  "commits": [
+    "a67da2153641ca86f00f0315407ed68a97e85b31",
+    "8ba3da17bfdeb9bf314d2e2da16c7af6d1813fa8"
+  ],
+  "completed_at": "2026-11-08T08:06:08Z",
+  "completed_at_source": "stream_mtime",
+  "dispatched_at": "2026-11-08T07:46:34Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "domain_waiver": null,
+  "duration_measurement": {
+    "reason": "model_span_unavailable_at_promotion",
+    "status": "underivable"
+  },
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "gate": "passed",
+  "gate_check": {
+    "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_live_worker_is_never_noted_ended.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T074214362719-a-live-worker-is-never-noted-as-ended/logs/armed-head-coord.log"
+  },
+  "impl_move": {
+    "at_complete": 0.7112299465240641,
+    "at_dispatch": 0.7112299465240641,
+    "plan": "the-monitor-reads-each-fact-once",
+    "reason": "§17's declaration is ticked by the coordinator's landing beat after the merge",
+    "verdict": "waived"
+  },
+  "lane": "codex",
+  "lane_advisory": {
+    "backend": "codex",
+    "burn_multiple": 2.3793103448275863,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'codex' is projected to exhaust at 2026-11-10T23:29:35Z, which is after this node's 3600s horizon ending 2026-11-08T08:42:38.393554+00:00",
+    "horizon_ends_at": "2026-11-08T08:42:38.393554+00:00",
+    "horizon_seconds": 3600,
+    "metered": true,
+    "observed_at": "2026-11-08T07:42:36Z",
+    "precedes_horizon": false,
+    "projected_exhaustion_at": "2026-11-10T23:29:35Z",
+    "resets_at": "2026-11-14T15:28:13Z",
+    "seconds_until_reset": 546336,
+    "state": "quiet",
+    "utilisation_pct": 23.0
+  },
+  "lane_declaration": {
+    "backend": "codex",
+    "headroom": "known",
+    "metered": true,
+    "observed_at": "2026-11-08T07:42:36Z",
+    "read_at": "2026-11-08T07:42:38Z",
+    "resolved_backend": "codex",
+    "utilisation_pct": 23.0
+  },
+  "lane_reading": {
+    "age_seconds": null,
+    "binding_observed": "unknown",
+    "detail": "backend declares no lane document",
+    "generating": "unknown",
+    "headroom": "unknown",
+    "mean_context": "unknown",
+    "observed_at": null,
+    "state": "unknown",
+    "suggested_shelf_life_seconds": null,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "backend declares no lane document",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": "unknown"
+  },
+  "lane_receipt": {
+    "effective_context_window": 380000,
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-11-08T08:06:08Z",
+    "quota_state": "measured",
+    "quota_windows": [
+      {
+        "observed_at": "2026-11-08T08:06:08Z",
+        "resets_at": 1794670093,
+        "used_percent": 25.0,
+        "window_minutes": 10080
+      }
+    ],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "notional_cost_usd": "no_dated_rate",
+      "rate_basis": "no_dated_rate"
+    }
+  },
+  "lineage": null,
+  "local": false,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T074214362719-a-live-worker-is-never-noted-as-ended/manifest.md",
+  "member": "disposable-r-20261108T074214362719-a-live-worker-is-never-noted-as-ended",
+  "model_key": "sol",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_a_live_worker_is_never_noted_ended.py::test_a_process_ended_note_requires_an_exited_worker[unknown]"
+    ],
+    "baseline_failure_ids": [],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_a_live_worker_is_never_noted_ended.py::test_a_process_ended_note_requires_an_exited_worker[unknown]"
+    ],
+    "control_run_failed": true,
+    "declaration": "the same test at the base revision raises the process-ended note for a launch whose liveness is unknown",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T074214362719-a-live-worker-is-never-noted-as-ended/base-gate.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T074214362719-a-live-worker-is-never-noted-as-ended/base-gate.log",
+    "test_paths": [
+      "tests/test_a_live_worker_is_never_noted_ended.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "a-live-worker-is-never-noted-as-ended",
+  "node_definition": {
+    "after": [],
+    "anchor_paths": [],
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "capability": {
+      "class": "general",
+      "requirements": {
+        "reasoning": "standard",
+        "risk": "moderate",
+        "verification": "strict"
+      },
+      "version": "1.0"
+    },
+    "compares_with": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 587,
+          "cached_input_tokens": 669652,
+          "input_tokens": 670241,
+          "output_tokens": 2281,
+          "reasoning_output_tokens": 517,
+          "total_tokens": 672522,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "session_id": "1fb615a0-2801-4418-bbb4-c2914719e520"
+    },
+    "done_when": "tests/test_a_live_worker_is_never_noted_ended.py on a synthetic crew home shows a freshly launched run whose worker process is alive, and one whose liveness is not yet known (alive is None, process record still being written), carry no 'process ended' or 'not reported dead' text, while a run whose recorded worker process has exited does carry it; the text is chosen in reckon/crew/recovery_classification.py near line 1887 for any alive that is not True, and unknown liveness is worded as unknown; the same test at the base revision raises the note for the live and unknown launches; the test files importing reckon.crew.recovery_classification add no failure against base in matched arms; ruff check and ruff format --check add no finding on the staged paths",
+    "estimated_hours": null,
+    "goal": "Raise the process-ended note only when the run's recorded worker process is gone",
+    "id": "a-live-worker-is-never-noted-as-ended",
+    "images": [],
+    "inputs": [],
+    "lane_declaration": {
+      "backend": "codex",
+      "headroom": "known",
+      "metered": true,
+      "observed_at": "2026-11-08T07:42:36Z",
+      "read_at": "2026-11-08T07:42:38Z",
+      "resolved_backend": "codex",
+      "utilisation_pct": 23.0
+    },
+    "lane_reading": {
+      "age_seconds": null,
+      "binding_observed": "unknown",
+      "detail": "backend declares no lane document",
+      "generating": "unknown",
+      "headroom": "unknown",
+      "mean_context": "unknown",
+      "observed_at": null,
+      "state": "unknown",
+      "suggested_shelf_life_seconds": null,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "backend declares no lane document",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": "unknown"
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T074214362719-a-live-worker-is-never-noted-as-ended/manifest.md",
+    "negative_control": "the same test at the base revision raises the process-ended note for a launch whose liveness is unknown",
+    "over_fence_reason": "",
+    "plan": "the-monitor-reads-each-fact-once",
+    "regenerate_paths": [],
+    "requested_backend": "codex",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§17",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/recovery_classification.py",
+      "tests/test_a_live_worker_is_never_noted_ended.py",
+      "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-live-worker-is-never-noted-as-ended.html",
+      "docs/figures/the-monitor-reads-each-fact-once/a-live-worker-is-never-noted-as-ended"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": null,
+  "outcome": "",
+  "outside_scope_paths": [],
+  "pace": {
+    "allowance": {
+      "advisory": true,
+      "burn_multiple": 2.3746094117190664,
+      "derived": 0.10654383779976856,
+      "drain_hours": 168.0,
+      "effective_limit": 0.10654383779976856,
+      "elapsed_fraction": 0.09685803436342595,
+      "elapsed_hours": 16.27214977305556,
+      "group": "codex-sub",
+      "lift": {
+        "ends_at": "2026-11-11T09:00:01+00:00",
+        "ends_on": "time",
+        "form": "uncapped",
+        "group": "codex-sub",
+        "id": "codex-sub-1794082577-c029e5",
+        "pace_multiple": null,
+        "remaining_seconds": 263728.260817,
+        "scope": "global"
+      },
+      "lift_hold": {
+        "held": false,
+        "kind": "uncapped"
+      },
+      "limited_by": "allowance",
+      "observed_at": "2026-11-08T07:44:32+00:00",
+      "pace_multiple": 1.1,
+      "provider_ceiling": null,
+      "reason": null,
+      "remaining_budget": 0.77,
+      "remaining_windows": null,
+      "resets_at": "2026-11-14T15:28:13Z",
+      "state": "observed",
+      "utilisation": 0.23,
+      "window_minutes": 10080
+    },
+    "bar": {
+      "bar": 0.134366,
+      "decided_by": "window",
+      "margin": 0.434384,
+      "name": "a-live-worker-is-never-noted-as-ended",
+      "score": 0.56875,
+      "state": "observed",
+      "verdict": "send-metered",
+      "window_fill": 0.23
+    },
+    "clocks": {
+      "five_hour": {
+        "age_seconds": 0.739183,
+        "observed_at": "2026-11-08T07:44:32+00:00",
+        "period": "primary",
+        "resets_at": "2026-11-14T15:28:13Z",
+        "state": "observed",
+        "utilisation": 0.23,
+        "window_minutes": 10080
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "not_published",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": "codex-sub",
+    "hold": null,
+    "lane": "codex",
+    "lift_id": "codex-sub-1794082577-c029e5",
+    "member": "codex",
+    "node": "a-live-worker-is-never-noted-as-ended",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": null,
+    "recorded_at": "2026-11-08T07:44:32.739183+00:00",
+    "score": 0.56875,
+    "session": null,
+    "source": "recorded",
+    "state": "observed"
+  },
+  "picker_selection": {
+    "action": "fallback",
+    "backend": null,
+    "comment": "lead approved dispatching §16 and §17 on codex with the plan-review gate waived (2026-11-08)",
+    "confidence": null,
+    "effort": null,
+    "excluded": [],
+    "fallback_reason": "timeout in pick:capability",
+    "family": null,
+    "jev_model": "~typesafe/jev-latest",
+    "latency_ms": 5002.363,
+    "model": null,
+    "offered": [],
+    "probabilities": {},
+    "stage_ms": {
+      "budget-snapshot": 6827.178,
+      "context-estimate": 1021.647,
+      "records": 6919.406,
+      "verdict-inputs": 9774.614
+    }
+  },
+  "plan": "the-monitor-reads-each-fact-once",
+  "plan_impl_at_dispatch": 0.7112299465240641,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "8ba3da17bfdeb9bf314d2e2da16c7af6d1813fa8",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "3189bf2bb67125527123085a26ab933fa7777b22",
+    "reviewed_head_sha": "8ba3da17bfdeb9bf314d2e2da16c7af6d1813fa8",
+    "scores": {
+      "durability": 20,
+      "evidence": 20,
+      "fit": 20,
+      "goal_fidelity": 20,
+      "reuse": 20,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 120
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "route_mode": "explicit",
+  "run_id": "r-20261108T074214362719-a-live-worker-is-never-noted-as-ended",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§17",
+  "session": "1fb615a0-2801-4418-bbb4-c2914719e520",
+  "session_harness": "codex",
+  "session_id": "01a1ba20-3c3d-7b91-b0d7-937cc63cb105",
+  "session_model": "gpt-6.1-sol",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": {
+    "added_failure_ids": [],
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_live_worker_is_never_noted_ended.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_digest": null,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T074214362719-a-live-worker-is-never-noted-as-ended/logs/armed-head-coord.log",
+      "revision": "8ba3da17bfdeb9bf314d2e2da16c7af6d1813fa8"
+    },
+    "baseline_measured_nothing": true,
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_live_worker_is_never_noted_ended.py",
+      "completed": true,
+      "exit_status": 4,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_digest": null,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T074214362719-a-live-worker-is-never-noted-as-ended/logs/armed-base-coord.log",
+      "revision": "3189bf2bb67125527123085a26ab933fa7777b22"
+    },
+    "failure_attribution": {},
+    "status": "clean",
+    "suite_command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_live_worker_is_never_noted_ended.py",
+    "waiver_reason": null
+  },
+  "tests_added": 3,
+  "throughput": {
+    "cumulative_cached_input_tokens": 8295552,
+    "cumulative_input_tokens": 16753759,
+    "detail": "turn tokens recorded, but no span was supplied to rate them",
+    "generated_tokens": 37994
+  },
+  "time_budget": "60m",
+  "tool_steps": 122.0,
+  "unplanned_reason": null,
+  "unreconciled_override": null,
+  "wall_seconds": 1174,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "ended_pids": [],
+    "exit_code": 0,
+    "exited_at": "2026-11-08T08:06:14Z",
+    "last_record_type": "turn.completed",
+    "launched_at": "2026-11-08T07:47:01Z",
+    "recorded_by": "supervisor",
+    "removed_harness_caches": [
+      {
+        "bytes": 1479892,
+        "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T074214362719-a-live-worker-is-never-noted-as-ended/codex-home/cache"
+      },
+      {
+        "bytes": 28836794,
+        "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T074214362719-a-live-worker-is-never-noted-as-ended/codex-home/plugins"
+      }
+    ],
+    "run_id": "r-20261108T074214362719-a-live-worker-is-never-noted-as-ended",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 307,
+    "worker_pid": 602984
+  },
+  "worker_seconds": 1174,
+  "worker_seconds_source": "wall_fallback",
+  "worktree_retention": null
+}
