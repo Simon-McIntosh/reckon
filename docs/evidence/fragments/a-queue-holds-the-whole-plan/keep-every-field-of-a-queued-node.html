@@ -41,10 +41,16 @@
   the rebuilt node equals the dispatched one in every declared field except the
   two rewritten paths; run-directory paths are dropped while foreign ones are
   kept; a field the stored node lacks takes its default; and the operator's real
-  crew home is left untouched. Both declared negative controls were applied and
-  logged: naming the fields by hand again without <code>images</code> fails the
-  first case, and carrying the run-directory manifest path fails the second. The
-  gate passes at the head with no failures against the dispatch base, and the
-  two test files that call <code>_node_from_pointer</code> add no failures
-  against that base.
+  crew home is left untouched. Both copies are deep: mutating a nested entry of
+  <code>as_dict()["admission_findings"]</code> leaves the node unchanged, and
+  mutating one on the rebuilt node leaves the stored pointer unchanged, so
+  neither the serialised node nor the pointer record can be reached through the
+  other. Four negative controls were applied and logged: naming the fields by
+  hand again without <code>images</code> fails the first case, carrying the
+  run-directory manifest path fails the second, and making either copy shallow
+  again fails the first case on its copy assertion. The gate passes at the head
+  with no failures against the dispatch base. The two test files that call
+  <code>_node_from_pointer</code> carry 14 failures at both the base and the
+  head, identically at each — <code>validate_node</code> refusing a node with no
+  manifest path — so they add none, but they do not pass either.
 </section>
