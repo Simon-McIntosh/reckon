@@ -168,6 +168,31 @@ def automatic_conflict(run, monkeypatch):
     return result
 
 
+def deliver_repair_gate(run, *, evidence="passed"):
+    """Capture an actual repair check and vary the evidence a caller supplies."""
+    command = "git diff --check HEAD^ HEAD"
+    if evidence == "failed":
+        command = "git diff --exit-code HEAD^ HEAD"
+    checked = subprocess.run(
+        command, shell=True, cwd=run["worktree"], capture_output=True, text=True
+    )
+    assert checked.returncode == (1 if evidence == "failed" else 0)
+    revision = run["authored_head"] if evidence == "stale" else run["head"]
+    header = "" if evidence == "unbound" else f"# revision: {revision}\n"
+    logged_command = "true" if evidence == "wrong-command" else command
+    terminal = "" if evidence == "unfinished" else f"EXIT={checked.returncode}\n"
+    run["gate_log"].write_text(
+        header + f"# command: {logged_command}\n" + checked.stdout + terminal
+    )
+    fields = ""
+    if evidence != "missing":
+        log = str(run["gate_log"]) + (".absent" if evidence == "missing-log" else "")
+        fields = f"tests: {command}\ntest_logs: {json.dumps([log])}\n"
+    run["manifest"].write_text(
+        f"status: complete\ncommits: {run['authored_head']} {run['head']}\n" + fields
+    )
+
+
 @pytest.mark.parametrize("route", ["manual", "automatic"])
 def test_conflicting_delivery_opens_repair_then_lands(deliveries, monkeypatch, route):
     deliver, resumed = deliveries
@@ -251,12 +276,39 @@ def test_conflicting_delivery_opens_repair_then_lands(deliveries, monkeypatch, r
     repaired = git(worktree, "rev-parse", "HEAD")
     second["authored_head"] = second["head"]
     second["head"] = repaired
-    second["manifest"].write_text(
-        f"status: complete\ncommits: {second['authored_head']} {repaired}\n"
-    )
-    second["gate_log"].write_text("# command: true\nEXIT=0\n")
-    result = queue_landing.land_once()
-    finished = result["interrupted_landings"][0]
+    for evidence in (
+        "missing",
+        "missing-log",
+        "failed",
+        "stale",
+        "unbound",
+        "unfinished",
+        "wrong-command",
+    ):
+        deliver_repair_gate(second, evidence=evidence)
+        if route == "manual":
+            refused = _complete_land(second)
+            assert refused.exit_code != 0, (evidence, refused.output)
+            row = json.loads(refused.output)["pending_landings"][0]
+        else:
+            row = queue_landing.land_once()["interrupted_landings"][0]
+        assert row["status"] == "repair-gate-refused", (evidence, row)
+        assert "gate" in row["error"], row
+        assert pending_path.is_file()
+        assert runs.pointer_path(second["run_id"]).is_file()
+        assert git(second["origin"], "rev-parse", "main") == primary
+        assert ledger.read_bytes() == promotion_before
+        assert plan.read_bytes() == plan_before
+        assert len(resumed) == 1
+        assert_clean(repository)
+    deliver_repair_gate(second)
+    if route == "manual":
+        result = _complete_land(second)
+        assert result.exit_code == 0, result.output
+        finished = json.loads(result.output)["pending_landings"][0]
+    else:
+        result = queue_landing.land_once()
+        finished = result["interrupted_landings"][0]
     assert finished["status"] == "finished", result
     assert finished["head"] == repaired
     assert not pending_path.exists()
