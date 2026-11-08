@@ -52,6 +52,7 @@ from reckon.crew.routing import (
     _repository_tree_snapshot,
     signal_worker,
 )
+from reckon.crew.process_liveness import LivenessReading
 from reckon.crew.process_signal import _run_uses_step, signal_pending_step_client
 from reckon.crew.runs import (
     _mutate_pointer,
@@ -1902,6 +1903,25 @@ def _free_attempt_number(run_directory: Path, name: str, attempt: int) -> int:
     return number
 
 
+def _live_worker_naming(reading: LivenessReading) -> str:
+    """How a launch refusal names the worker it found.
+
+    Only the arm that read a pid this host probed as the worker's own carries
+    one, so the refusal names that pid. The session walk found the worker by the
+    session id it was started with and never read a pid, and a placed run's
+    recorded pid belongs to the scheduler client: naming either of those as a
+    pid sends a reader to a process that is not working the run, so each names
+    the thing that was actually found instead.
+    """
+    if reading.pid is not None:
+        return f"pid {reading.pid}"
+    if reading.job_id:
+        return f"job {reading.job_id}"
+    if reading.session_id:
+        return f"session {reading.session_id}"
+    return "an unrecorded process"
+
+
 def _prepare_attempt_records(
     run_directory: Path,
     *,
@@ -1927,24 +1947,28 @@ def _prepare_attempt_records(
     leaves the incumbent's pointer phase, pids and records exactly as it found
     them.
 
-    The holder is resolved by :func:`live_worker_pid`, the same read the
-    resumption refusal names a pid from, rather than through a private copy:
+    The holder is resolved by :func:`live_worker_reading`, the same read the
+    resumption refusal takes its pid from, rather than through a private copy:
     that read asks both the pointer's pid and the worker record the supervisor
     writes beside the stream, reaches a worker reparented away from both through
     the environment mark, and refuses to name a pid at all for a run this host
     did not launch. A second copy of that composition answered None for exactly
-    the reparented worker it was written to protect.
+    the reparented worker it was written to protect. The refusal names the
+    holder by the arm that found it, so a worker reached by its session is
+    named by its session rather than by a recorded pid the table no longer
+    holds.
     """
-    from reckon.crew.recovery_liveness import live_worker_pid
+    from reckon.crew.recovery_liveness import live_worker_reading
 
     try:
         record = read_pointer(run_id)
     except CrewError:
         record = {}
-    holder = live_worker_pid(record)
-    if holder is not None:
+    holder = live_worker_reading(record)
+    if holder.alive is True:
         raise CrewError(
-            f"run {run_id!r} still has a live worker (pid {holder}): a launch "
+            f"run {run_id!r} still has a live worker "
+            f"({_live_worker_naming(holder)}): a launch "
             "that started now would retire its worker record, so the run would "
             "read as halted while its worker kept working; observe or stop it "
             "before launching again"
@@ -2800,19 +2824,20 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
     # two then rewrite the manifest from their own partial views. The reading
     # is the same owner the launcher's own refusal uses, so one read answers
     # for the run.
-    from reckon.crew.recovery_liveness import live_worker_pid
+    from reckon.crew.recovery_liveness import live_worker_reading
 
     # The pointer names the attempt that was just started, so by the time the
     # supervisor runs its pid may already be this process: the launcher writes
     # it straight after the spawn. Asking about that pid would refuse every
     # launch, so the pointer's own pid is dropped and the read answers from the
     # run's worker record and its session instead.
-    holder = live_worker_pid(_without_this_supervisor(record))
-    if holder is not None:
+    holder = live_worker_reading(_without_this_supervisor(record))
+    if holder.alive is True:
         raise CrewError(
-            f"run {run_id!r} still has a live worker (pid {holder}): a launch "
-            "that started now would run a second worker beside it; observe or "
-            "stop it before launching again"
+            f"run {run_id!r} still has a live worker "
+            f"({_live_worker_naming(holder)}): a launch that started now would "
+            "run a second worker beside it; observe or stop it before launching "
+            "again"
         )
     environment = _worker_runtime_environment(
         plan.get("environment") or {},
