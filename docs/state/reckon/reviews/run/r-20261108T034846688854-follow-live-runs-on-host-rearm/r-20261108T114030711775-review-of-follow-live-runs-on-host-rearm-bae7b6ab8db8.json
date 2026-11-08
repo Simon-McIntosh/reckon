@@ -1,0 +1,43 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T12:02:53.383Z",
+  "dispatched_at": "2026-11-08T11:45:47Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/follow-live-runs-on-host-rearm.html",
+      "line": 97,
+      "severity": "non-blocking",
+      "text": "The eight negative controls are stated as applied 'at head', but negative-controls.log line 1 names revision 3590dd823216887803a0c635928cb18acd692eca, the parent of the fix 11a88b1bec, and its record was written at 11:55 against a commit made at 11:56:58. The third-case sections in that log run the pre-fix test body (their traceback still carries assertions before harness.start()), so the control that targets the launch-failed exclusion was applied where that exclusion lived in _owned_projects, not where it lives now in live_work_run. The fragment's 'at head' is therefore unsupported by the log it cites, and the moved guard has no recorded control at the landed revision."
+    },
+    {
+      "file": "tests/test_a_rearmed_host_follows_live_runs.py",
+      "line": 359,
+      "severity": "non-blocking",
+      "text": "The case docstring still says 'before the host starts it reads the launch-failed pointer as this session's live work', which is the control the diff removed; the head asserts the opposite at line 384 (`live_work_run(PROJECT, OWNER_SESSION) is None`, 'a launch record must not be judged as work'). The module docstring at line 15 carries the same stale claim, that the case 'ends by writing a working run ... and watching the follower appear', which the case does not do. A reader following either sentence is told the test checks the reverse of what it now checks."
+    },
+    {
+      "file": "reckon/crew/session_host.py",
+      "line": 333,
+      "severity": "non-blocking",
+      "text": "Setting the launch-failed pointer aside inside live_work_run makes the host's judgement diverge from the judgement the docstring at line 316 says it is identical to: the follower's settle path calls station_subscriber.population_has_live_work directly (via _population_has_live_work, reckon/crew_follow_commands.py:590), which does not exclude launch-failed, so a follower already running for a pair whose only live pointer is launch-failed will not settle while a freshly started host declines to adopt that pair. No wrong follower is started, but 'the same judgement the follower settles by' is no longer true and the two now answer differently on that phase."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261108T114030711775-review-of-follow-live-runs-on-host-rearm-bae7b6ab8db8",
+  "reviewed_base_sha": "3590dd823216887803a0c635928cb18acd692eca",
+  "reviewed_head_sha": "bae7b6ab8db87dd75a00744cd097b51d7885d04b",
+  "reviewed_run_id": "r-20261108T034846688854-follow-live-runs-on-host-rearm",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T12:37:14.893043+00:00",
+  "total": 105
+}
