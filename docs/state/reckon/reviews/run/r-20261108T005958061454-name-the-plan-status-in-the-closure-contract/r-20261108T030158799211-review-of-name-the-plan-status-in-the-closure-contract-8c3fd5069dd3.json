@@ -1,0 +1,36 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/prompts.py:778",
+    "reckon/crew/dispatch_claims.py:1213"
+  ],
+  "completed_at": "2026-11-08T03:35:55.483Z",
+  "dispatched_at": "2026-11-08T03:19:50Z",
+  "findings": [],
+  "item_verdicts": {
+    "diff": "Read commit by commit: 80bd3ae414 replaces the sentence-level offenders list with an outright refusal of the unqualified literal plus a per-mention qualifier read, adds three constants and a re import; 8c3fd5069d appends 36 lines to the evidence fragment and deletes none.",
+    "done_when": "Section 6's Done when names a negative control in which restoring the unqualified 'must not set a terminal status' fails the second assertion; logs/repair-negative-control.log reddens tests/test_crew_prompts.py:503 in both parametrisations (2 failed, 27 deselected, EXIT=1) and I reproduced the same red independently at the reviewed head.",
+    "goal": "The node goal is that the closure contract names the plan's status as the coordinator's and the manifest status as the worker's; the two commits reviewed here repair the assertion that guards the plan-status half, so the goal's own negative control holds rather than passing vacuously.",
+    "manifest": "Read; it records the repair base arm 68 passed EXIT=0 at cf6ccc8837, the head arm 68 passed EXIT=0 at 80bd3ae414, the control log, and a landing line that matches the diff.",
+    "write_paths": "The source run declares nine paths; both paths in the diff cf6ccc8837..8c3fd5069d lie inside them, tests/test_crew_prompts.py and docs/evidence/fragments/the-crew-contract-fits-one-read/name-the-plan-status-in-the-closure-contract.html."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the closure contract names the plan's status as the coordinator's and the manifest status as the worker's; the reviewed commits repair the assertion guarding the plan-status half, so the goal's negative control now fires rather than passing vacuously.\nVERDICT done_when: section 6's Done when names a negative control restoring the unqualified ban; logs/repair-negative-control.log reddens tests/test_crew_prompts.py:503 in both carriers (2 failed, 27 deselected, EXIT=1), matching the measure.\nVERDICT write_paths: both paths in cf6ccc8837..8c3fd5069d, tests/test_crew_prompts.py and docs/evidence/fragments/the-crew-contract-fits-one-read/name-the-plan-status-in-the-closure-contract.html, are inside the source run's nine declared write paths.\nVERDICT manifest: read; it records the repair base arm 68 passed EXIT=0 at cf6ccc8837 and head arm 68 passed EXIT=0 at 80bd3ae414, names the control log, and its landing line matches the diff.\nVERDICT diff: read commit by commit against cf6ccc8837; 80bd3ae414 replaces the sentence-level offenders list at tests/test_crew_prompts.py:498 with a literal refusal and a per-mention qualifier read, 8c3fd5069d appends 36 lines to the evidence fragment with zero deletions.\nCALL_SITES: reckon/crew/prompts.py:778, reckon/crew/dispatch_claims.py:1213\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/prompts.py:251 carries 'must not set the plan's terminal status' and the same block's manifest verdict at :255, and the repaired guard at tests/test_crew_prompts.py:503 makes that wording enforceable.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/repair-baseline-suite.log (68 passed, EXIT=0, cf6ccc8837) and logs/repair-head-suite.log (68 passed, EXIT=0, 80bd3ae414) are recorded and the control at logs/repair-negative-control.log reddens the named assertion, though the head arm ran at 80bd3ae414 rather than the reviewed head 8c3fd5069d, whose delta is the 36-line docs-only fragment.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat cf6ccc8837..8c3fd5069d lists only tests/test_crew_prompts.py and the evidence fragment, both inside the declared scope, and the fragment gains 36 lines without deleting any.\nSCORE durability: 20\nJUSTIFICATION durability: reinstating 'must not set a terminal status' in a scratch copy of reckon/crew/prompts.py:251 reddens tests/test_crew_prompts.py:503 in both carriers, and replacing it with 'the terminal status' reddens the per-mention check at :514, so both added assertions are live and read production output rather than a value the test supplied.\nSCORE fit: 19\nJUSTIFICATION fit: the new constants TERMINAL_STATUS, PLAN_POSSESSIVE and SECTION_POSSESSIVE at tests/test_crew_prompts.py:446-448 follow the CLOSURE_* constant idiom above them, and re.finditer is the idiom used across tests/test_css_layering.py:32 and tests/test_cited_commands_exist.py:94.\nSCORE reuse: 19\nJUSTIFICATION reuse: a search of tests/ and reckon/ for a qualifier-adjacency or finditer-based phrase guard found no owner, and the repair extends the existing test rather than adding a helper; the pre-existing _closure_block/_time_fence_block overlap at tests/test_crew_prompts.py:447 is outside this window and unchanged.\n",
+  "review_run_id": "r-20261108T030158799211-review-of-name-the-plan-status-in-the-closure-contract-8c3fd5069dd3",
+  "reviewed_base_sha": "cf6ccc88373085d0ac5025ab49e51557b4a46b9d",
+  "reviewed_head_sha": "8c3fd5069dd32dbf36c607a7a5f8b737fe76eb78",
+  "reviewed_run_id": "r-20261108T005958061454-name-the-plan-status-in-the-closure-contract",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T04:00:40.894997+00:00",
+  "total": 116
+}
