@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T00:38:40.444Z",
+  "dispatched_at": "2026-11-08T00:23:56Z",
+  "findings": [
+    {
+      "anchor": "plan.html:83",
+      "id": "done_when-1",
+      "reason": "without adding `tests/test_brief_prompt.py` to the write paths and naming the snapshot update as part of the deliverable, the node cannot satisfy its own done-when and its gate is unpassable as written.",
+      "text": "\u00a76's done-when names `tests/test_brief_prompt.py` among the suites that must pass at the head, but that file asserts `_compose() == PLAN_PROMPT_SNAPSHOT`, a byte-identical literal of the composed prompt (`tests/test_brief_prompt.py:241`, snapshot at `:249-424`), whose lines 316-322 reproduce `CONTRACT \u2014 WHO CLOSES THE NODE` verbatim; rewording `CLOSURE_AUTHORITY_CONTRACT` therefore reddens that test, and `tests/test_brief_prompt.py` is not in \u00a76's write-path list (`reckon/crew/prompts.py`, the three skill files, `tests/test_crew_prompts.py`, `tests/test_skill_contract_parity.py`), so a worker obeying the scope either leaves a failing suite or edits a file its fence withholds",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:83",
+      "id": "reasoning-1",
+      "reason": "naming which literals move (the snapshot in `test_brief_prompt.py`, and `CLOSURE_NO_SELF_CLOSE`/`CLOSURE_TERMINAL_LIMIT` in `test_crew_prompts.py`) is what stops the worker from discovering the coupling mid-node, where a mismatch reads as a defect in the reword rather than in the fixtures.",
+      "text": "the same literal makes the section's \"passes at the head\" clause read as a property of the change rather than of the snapshot: `tests/test_crew_prompts.py` also pins the exact word \"does not close its own node\" (`CLOSURE_NO_SELF_CLOSE`, `tests/test_crew_prompts.py:361`), so a reword that follows the deliverable's \"names what the worker may not close\" phrasing but drops that clause fails a file that IS in scope and that \u00a76 does not say to update",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "72773522a2dac344212a5790972da0622e37880f",
+  "plan_fingerprint": "db56dba713f3dcace96f9b56c0c00cc119381aee190a2b1d251fa40bb94e7f0c",
+  "plan_slug": "the-crew-contract-fits-one-read",
+  "plan_version": 43,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T001838740731-plan-review-of-the-crew-contract-fits-one-read",
+  "reviewed_blob_sha": "542faae5f6d85ac36a64e99f6fedfdeb88287fca",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `CLOSURE_AUTHORITY_CONTRACT` is at `reckon/crew/prompts.py:248`, the quoted \"must not set a terminal status\" at `:251`, the MANIFEST status vocabulary at `:896`, `can_land` at `:751 and :775`, the three skill mirrors at `skills/reckon-build/SKILL.md:435`, `skills/reckon-build/references/sprint-orchestration.md:519`, `skills/reckon-build/references/coordinator-reference.md:805`, `LIMIT_SKILL_FILES` at `tests/test_skill_contract_parity.py:128`, and both cited runs exist under `~/.config/reckon/crew/runs/`; `crew check --manifest` refuses a status outside `complete/blocked/failed` at `reckon/crew/reports.py:2579`. The \"near lines 756 and 775\" pointer lands 756 inside the composition's explanatory comment and 775 on the assignment that gates the block \u2014 near enough, and `can_land` is computed at 751.",
+    "done_when": "a finding \u2014 \u00a76's done-when requires `tests/test_brief_prompt.py` to pass at the head, but that file embeds a byte-identical literal of the composed prompt and is not among \u00a76's declared write paths (`plan.html:83`).",
+    "evidence_paths": "pass \u2014 \u00a76 names the test files and the message-level evidence (run ids, command output) it relies on; no gate log is placed in a scratch or node-local path, and the run manifest carries the gate logs under the crew run directory.",
+    "naming": "pass \u2014 \u00a76 introduces no symbol, file or comment carrying a plan label, stage name, ticket number or version tag; its section names are plan-internal HTML, not source.",
+    "reasoning": "a finding \u2014 the root cause matches the cited evidence, and the mechanism (reword `CLOSURE_AUTHORITY_CONTRACT`, mirror into the three skill files, add `coordinator-reference.md` to `LIMIT_SKILL_FILES`) reaches the real code path (`compose_prompt`), but the mechanism cannot produce the done-when because one test the done-when names reproduces the prompt verbatim and is outside \u00a76's write paths.",
+    "single_goal": "pass \u2014 \u00a76 names one deliverable: the closure contract stops reading as a ban on the manifest status, with its three mirrors and the two tests that measure it; the mirrors and the test-list addition are the same change, not a second goal.",
+    "wiring": "pass \u2014 \u00a76's ordering claim is carried by the plan's own data: `plan-section-depends-on` at `plan.html:24` declares `s3` waiting on `the-crew-contract-fits-one-read#s6`, and \u00a76's text states it runs before \u00a73."
+  },
+  "section_digests": {
+    "_document": "eed908f7842ee0b1ac7d733be7bef7e0450e0d1ceb43abca174831d31cdad7d5",
+    "s1": "e03f606afdb78e6b308ef1299a7b868ec09052b4842de46205b30106103e5991",
+    "s2": "698a2a8583161b33608967bafc3c61641856bd4c995bb3e303796723932345e7",
+    "s3": "55c86e04c5aae2cb268f9567ce641cae99945fa16a350c250d4170d30ed1c947",
+    "s4": "bc54d1886f4d3949bffdaf93118a6be518f17b34653992dc9521ee8e03739257",
+    "s5": "95d4a0d36eb30c97a5b87808054674881dfdefa98686eb6381ce45c0fe2e23dc",
+    "s6": "bfcf1c20620673a8c24e3d7037ff711bf9a70a9f9ee328eb4526ef816061ed3b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T00:56:01.167231+00:00",
+  "total": null
+}
