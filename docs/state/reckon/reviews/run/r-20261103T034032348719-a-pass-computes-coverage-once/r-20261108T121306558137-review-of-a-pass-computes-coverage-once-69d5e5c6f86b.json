@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/queue_admission.py:admit_once",
+    "reckon/crew/queue_admission.py:_release_plan_review_holds",
+    "reckon/crew_run_commands.py:admit_until_stopped"
+  ],
+  "completed_at": "2026-11-08T12:30:13.099Z",
+  "dispatched_at": "2026-11-08T12:19:05Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": 4118,
+      "severity": "non-blocking",
+      "text": "_stored_review_key hashes a stored review's identity, plan versions, plan fingerprint, reviewed blob, status and section_digests, but not its findings or responses. A review record edited during a pass to answer a finding changes responses only, so the key is unchanged and the memoized dispatch-gate verdict for that section and exemption answer stays stale until the pass ends; the next pass recomputes, so the window is one admission pass."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T034032348719-a-pass-computes-coverage-once/logs/after-targeted.log",
+      "line": 3,
+      "severity": "non-blocking",
+      "text": "The covering gate's command line runs ten test files, while 131 test files under tests/ import reckon.crew.queue_admission or reckon.crew.plan_review directly (156 mention them). The done-when asks that the importing test files add no failures against the base revision, so the zero-delta result is established on a subset; the manifest records the narrowing as a response to a nine-minute bound on the 155-file run."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T034032348719-a-pass-computes-coverage-once/logs/timing-after.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The done-when asks the timing arm to record one pass's launch decisions 'before and after'; only the after arm is logged (first pass 4.195 s, mean 1.440 s over six requests), so the 1,250-2,980 s launch figure the plan cites is never measured through the same instrument at the base revision."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "pass - reckon/crew/queue_admission.py:admit_once, reckon/crew/queue_admission.py:_release_plan_review_holds and reckon/crew_run_commands.py:admit_until_stopped reach the change.",
+    "diff": "pass - read both commits commit by commit: 793d2168 adds the pass cache, the plan-text digest and stored-review key and moves wait resolution into waits_seconds; 69d5e5c6 records the landing evidence.",
+    "done_when": "pass - the five cases in tests/test_a_pass_computes_coverage_once.py pass (logs/test-after-node.log: 5 passed), four negative controls each redden their named case, and the suite delta between logs/base-targeted.log and logs/after-targeted.log is zero added failures.",
+    "goal": "pass - reckon/crew/queue_admission.py:4022 adds plan_review_pass() and admit_once enters it at :4697, and :4708-4713 times the wait stage into waits_seconds.",
+    "manifest": "pass - read; status complete, the literal pytest command recorded, both suite arms recorded at exit 1 with the same pre-existing failure, and the negative-control log named.",
+    "write_paths": "pass - git diff --stat 66f4505..69d5e5c touches only the declared paths: reckon/crew/queue_admission.py, tests/test_a_pass_computes_coverage_once.py and the declared evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \"An admission pass reads each plan's review coverage once and times wait resolution as its own stage\"; reckon/crew/queue_admission.py:4022 adds plan_review_pass() and admit_once enters it at :4697, and :4708-4713 times the wait stage into waits_seconds.\nVERDICT done_when: I read the five-case done-when in docs/plans/work-is-never-stuck-behind-the-admission-loop.html:88-106; logs/test-after-node.log records 5 passed, the four negative controls each redden their named case, and the delta between logs/base-targeted.log and logs/after-targeted.log is zero added failures.\nVERDICT write_paths: the declared paths are reckon/crew/queue_admission.py, tests/test_a_pass_computes_coverage_once.py, docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-pass-computes-coverage-once.html and docs/figures/work-is-never-stuck-behind-the-admission-loop/a-pass-computes-coverage-once; git diff --stat 66f4505..69d5e5c touches the first three and nothing else.\nVERDICT manifest: read; it reports status complete, tests/test_a_pass_computes_coverage_once.py with the literal pytest command, both suite arms at exit 1 with the same pre-existing failure test_the_log_is_trimmed_within_its_size_bound, and evidence_inputs naming every arm log.\nVERDICT diff: read both commits commit by commit; 793d2168 adds a ContextVar pass cache, a plan-text digest and a stored-review key to reckon/crew/queue_admission.py and times wait resolution into waits_seconds, and 69d5e5c6 records the landing evidence fragment.\nCALL_SITES: reckon/crew/queue_admission.py:admit_once, reckon/crew/queue_admission.py:_release_plan_review_holds, reckon/crew_run_commands.py:admit_until_stopped\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:4708-4713 measures the wait stage and :5456-5457 subtracts it from launch_seconds, while the per-plan record is read through _plan_review_record at :4163.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/after-targeted.log runs ten files where 131 test files import the changed modules and logs/timing-after.log records no before arm, so two halves of the done-when are measured on a subset; the five cases and four negative controls are recorded, and I re-ran ruff check and ruff format --check on both changed paths (both exit 0, unrecorded in the manifest).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat 66f4505..69d5e5c lies inside the declared write paths, and the only behaviour added outside the pass cache is the waits_seconds field the goal names.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_pass_computes_coverage_once.py:208 asserts one coverage read and the recorded mutation that sets the cache to None reddens exactly that case (logs/negative-control-reading-the-plan-per-request.log), so the assertion has a named condition under which it fails.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/queue_admission.py's new plan_review_pass at :4022 mirrors the existing reckon/crew/plan_review.py:1508 review_read_pass context manager, and no symbol or comment carries a plan, stage or ticket identifier.\nSCORE reuse: 19\nJUSTIFICATION reuse: the pass cache composes with plan_review.review_read_pass (its key calls list_plan_reviews, already cached per pass by that owner) rather than re-implementing the store read, and a search of the crew package for a per-pass cache of plan evidence found no earlier owner.\nFINDING reckon/crew/queue_admission.py:4118 non-blocking: _stored_review_key hashes a stored review's identity, plan versions, fingerprint, reviewed blob, status and section_digests but not its findings or responses, so a review answered during a pass keeps a stale gate verdict until the next pass.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T034032348719-a-pass-computes-coverage-once/logs/after-targeted.log:3 non-blocking: the covering gate ran ten files where 131 import the changed modules, so the done-when's zero-added-failure result for the importing files rests on a subset.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261103T034032348719-a-pass-computes-coverage-once/logs/timing-after.log:1 non-blocking: the timing arm logs no before figure, so the 4.195 s after pass is not paired with a base-revision measurement through the same instrument.\n",
+  "review_run_id": "r-20261108T121306558137-review-of-a-pass-computes-coverage-once-69d5e5c6f86b",
+  "reviewed_base_sha": "66f450514ea12988e3d76b794bc2034b63e23761",
+  "reviewed_head_sha": "69d5e5c6f86b8d3c180b9af65975d623e0ffa95a",
+  "reviewed_run_id": "r-20261103T034032348719-a-pass-computes-coverage-once",
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T14:08:50.911154+00:00",
+  "total": 110
+}
