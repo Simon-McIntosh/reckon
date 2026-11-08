@@ -1686,18 +1686,29 @@ def _restore_queued(
     *,
     moment: datetime | None = None,
     guard: Mapping[str, Any] | None = None,
+    hold: Mapping[str, Any] | None = None,
 ) -> None:
     """Write a launched request back as one queued pointer carrying the failure.
 
     The restored pointer carries the same bounded back-off as a failure
     annotated in place. A discarded, promoted or removed request is never
     restored; the write checks departure under the pointer lock.
+
+    A ``hold`` names a refusal that is not a failed attempt — a claim taken in
+    the window between the pre-launch check and the launch. The request is then
+    restored carrying that hold and no failure, so the next pass launches the
+    request as soon as the claim it waits on is released rather than waiting out
+    a retry back-off.
     """
     if _discarded_since(snapshot):
         return
     restored = copy.deepcopy(dict(snapshot))
     restored["phase"] = "queued"
-    _stamp_failure(restored, failure, moment=moment or _now(), guard=guard)
+    if hold is None:
+        _stamp_failure(restored, failure, moment=moment or _now(), guard=guard)
+    else:
+        restored[RECORDED_HOLD_FIELD] = dict(hold)
+        restored["reason"] = str(hold.get("reason") or "")
     for key in (
         "pid",
         "pid_start_time",
@@ -1715,6 +1726,36 @@ def _restore_queued(
         if _retain_launched_record(current, restored):
             restored = current
         _write_pointer(run_id, restored)
+
+
+def _return_claim_refusal_to_queue(
+    snapshot: Mapping[str, Any],
+    caught: ScopeConflict,
+    *,
+    live: Sequence[Mapping[str, Any]],
+    moment: datetime,
+) -> tuple[str, str | None]:
+    """Return a launch refused on a claim to the queue, held on that claim.
+
+    A claim taken between the pre-launch check and the launch refuses the
+    launch once its pointer has been published in phase ``starting``. The
+    refusal is a hold, not a failed attempt: the request goes back to
+    ``queued`` carrying the claim that must settle, and the next pass launches
+    it once that claim is released. Left as a failure the starting pointer
+    would stay behind with no worker, which the reaper does not read as a
+    launch to clean up.
+    """
+    run_id = str(snapshot["run_id"])
+    try:
+        _restore_queued(
+            snapshot,
+            f"{type(caught).__name__}: {caught}",
+            moment=moment,
+            hold=_refusal_hold(caught, live, moment=moment),
+        )
+    except _PointerWritebackError as exc:
+        return run_id, str(exc)
+    return run_id, None
 
 
 def _record_queued_failure(
@@ -4879,6 +4920,16 @@ def admit_once(
                             readiness_cache=readiness_cache,
                         )
                         record = _require_launched_record(candidate)
+                    except ScopeConflict as rebind_refusal:
+                        # The rebind launch publishes the rebound request's
+                        # pointer before it checks claims, so a claim taken in
+                        # that window refuses it in phase ``starting`` exactly
+                        # as the first launch would have been. Same hold, same
+                        # restore: the rebound request goes back to the queue
+                        # rather than being left starting behind a failure.
+                        caught = rebind_refusal
+                        hold_only = True
+                        failure = f"{type(rebind_refusal).__name__}: {rebind_refusal}"
                     except (BudgetHold, LaneHeld, LanePaused) as fallback_hold:
                         caught = fallback_hold
                         hold_only = True
@@ -4887,6 +4938,18 @@ def admit_once(
                     except Exception as fallback_error:  # noqa: BLE001 - restore the waiting request
                         caught = fallback_error
                         failure = f"{type(fallback_error).__name__}: {fallback_error}"
+            except ScopeConflict as exc:
+                # A claim can be taken in the window between the pre-launch
+                # check and the launch, and the launch then refuses the request
+                # after publishing its pointer in phase ``starting``. That is a
+                # hold, not a failed attempt: it names the claim that must
+                # settle, and the request keeps its place in the queue until it
+                # does. Recording it as a failure would leave the starting
+                # pointer behind, where no reaper reads it as a launch to clean
+                # up and no pass re-queues it.
+                caught = exc
+                hold_only = True
+                failure = f"{type(exc).__name__}: {exc}"
             except CompetenceLimit as exc:
                 # A context-fit refusal is a fact about the lane that was
                 # asked, not about the request alone: another lane's window may
@@ -4910,6 +4973,10 @@ def admit_once(
                         failure,
                         moment=_now(),
                         guard=_dependency_guard(pointer, config_for),
+                    )
+                elif record is None and isinstance(caught, ScopeConflict):
+                    reported_id, restore_error = _return_claim_refusal_to_queue(
+                        snapshot, caught, live=live, moment=_now()
                     )
                 # The launch outcome is settled here: either the run's own
                 # pointer names the node, or the request has been written back.
@@ -4961,11 +5028,23 @@ def admit_once(
                     _report_queued_failure(pointer)
                 key = (
                     "held"
-                    if isinstance(caught, (BudgetHold, LaneHeld, LanePaused))
+                    if isinstance(
+                        caught, (BudgetHold, LaneHeld, LanePaused, ScopeConflict)
+                    )
                     else "failed"
                 )
                 detail_key = "hold_detail" if key == "held" else "failure_detail"
-                if caught is not None and isinstance(
+                if isinstance(caught, ScopeConflict):
+                    verdicts.append(
+                        _verdict_row(
+                            pointer,
+                            allowance=allowance,
+                            allowance_source=allowance_source,
+                            verdict="held-on-claim",
+                            detail=str(caught),
+                        )
+                    )
+                elif caught is not None and isinstance(
                     caught, (BudgetHold, LaneHeld, LanePaused)
                 ):
                     verdicts.append(
