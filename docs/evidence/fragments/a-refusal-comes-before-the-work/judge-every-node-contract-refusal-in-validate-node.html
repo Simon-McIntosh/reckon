@@ -62,5 +62,24 @@ refused.</p>
 <li><code>tests/test_every_path_meets_the_node_contract.py</code> — the new gate.</li>
 </ul>
 
+
+<h3 id="judge-every-node-contract-refusal-in-validate-node-negative-controls">Five negative controls</h3>
+<p>Each mutation in plan §2 was applied in turn and each reddened exactly the
+case it names, with the tree restored between runs: dropping
+<code>validate_node</code> from <code>queue_requests</code> stores the
+compound-goal entry; leaving the negative-control refusal outside
+<code>validate_node</code> stores the check-with-no-negative entry; leaving the
+gate-population refusal outside it stores the unmatched-glob entry; calling it
+without <code>execution_capable</code> stores the incapable-role entry; and
+dropping the override refuses the overridden dispatch.</p>
+
+<h3 id="judge-every-node-contract-refusal-in-validate-node-edit-override">A queued request keeps its recorded override</h3>
+<p><code>queue_edit._contract_findings</code> now reads the execution override
+the request recorded — <code>dispatch_options.execution_override</code>, the
+<code>allow_execution_mismatch</code> option a queued pointer carries, or the
+resolved <code>execution_fit.override</code> on a launched pointer — so an
+edit no longer refuses a request that was legitimately stored with
+<code>--allow-execution-mismatch</code>.</p>
+
 </body>
 </html>
