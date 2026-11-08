@@ -14,7 +14,7 @@ import ast
 import json
 import os
 from copy import deepcopy
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -168,12 +168,15 @@ def test_a_dispatch_keeps_its_detail_in_the_run_directory(
     repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """All six moved fields land in one file, and the pointer only names it."""
+    from reckon import budget as budget_module
+
     lane_path = tmp_path.parent / "l"
     quota_path = tmp_path.parent / "q"
+    observed = datetime.now(UTC).replace(microsecond=0)
     lane_path.write_text(
         json.dumps(
             {
-                "observed_at": datetime.now(UTC).replace(microsecond=0).isoformat(),
+                "observed_at": observed.isoformat(),
                 "headroom": 3,
                 "mean_context": 1000,
                 "binding_observed": False,
@@ -181,7 +184,29 @@ def test_a_dispatch_keeps_its_detail_in_the_run_directory(
         ),
         encoding="utf-8",
     )
-    quota_path.write_text(json.dumps({"accounts": []}), encoding="utf-8")
+    quota_path.write_text(
+        json.dumps(
+            {
+                "accounts": {
+                    "native": {
+                        "windows": {
+                            period: {
+                                "state": paid_lanes.OBSERVED,
+                                "utilisation": utilisation,
+                                "observed_at": observed.isoformat(),
+                                "resets_at": (observed + duration).isoformat(),
+                            }
+                            for period, utilisation, duration in (
+                                ("five_hour", 0.25, timedelta(hours=5)),
+                                ("seven_day", 0.1, timedelta(days=7)),
+                            )
+                        }
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
     real_documents = {
         Path(os.environ.get(name) or default).expanduser().absolute()
         for name, default in (
@@ -202,13 +227,24 @@ def test_a_dispatch_keeps_its_detail_in_the_run_directory(
             opened_test_documents.add(resolved)
         return original_open(path, *args, **kwargs)
 
+    def quota_windows(*_args, **_kwargs):
+        document = paid_lanes.read_document()
+        assert document is not None
+        windows = paid_lanes.document_windows(document)
+        assert "native" in windows
+        return windows
+
     with monkeypatch.context() as isolated:
         isolated.setenv(paid_lanes.LOCAL_LANE_DOCUMENT_ENV, str(lane_path))
         isolated.setenv(paid_lanes.DOCUMENT_ENV, str(quota_path))
         isolated.setitem(
             DISPATCH_CONFIG["backends"]["native"], "lane_document", str(lane_path)
         )
+        isolated.setitem(
+            DISPATCH_CONFIG["backends"]["native"], "budget_group", "test-wallet"
+        )
         isolated.setattr(Path, "open", isolated_open)
+        isolated.setattr(budget_module, "recorded_windows", quota_windows)
         assert paid_lanes.local_lane_path() == lane_path
         assert paid_lanes.document_path() == quota_path
         record = _dispatch_one(repository, tmp_path.parent, "detail-moves", monkeypatch)
@@ -219,6 +255,7 @@ def test_a_dispatch_keeps_its_detail_in_the_run_directory(
             run_id, {"run_id": run_id, "project": PROJECT}, admitted_at="now"
         )
     assert lane_path in opened_test_documents
+    assert quota_path in opened_test_documents
     assert not touched_real_documents, touched_real_documents
 
     text = pointer_path(run_id).read_text(encoding="utf-8")
@@ -226,20 +263,38 @@ def test_a_dispatch_keeps_its_detail_in_the_run_directory(
     print(f"test_dispatch_pointer_bytes={pointer_bytes}")
     pointer = json.loads(text)
     assert pointer["lane_reading"]["headroom"] == 3
-    assert pointer["pace"]["group"] is None
-    assert pointer_bytes < 12 * 1024, sorted(
-        ((name, len(json.dumps(value))) for name, value in pointer.items()),
-        key=lambda item: item[1],
-        reverse=True,
-    )[:8]
+    assert pointer["pace"]["group"] == "test-wallet"
+    assert pointer["pace"]["clocks"]["five_hour"]["utilisation"] == 0.25
     detail_path = Path(pointer["dispatch_detail"])
     assert detail_path == runs_module.dispatch_detail_path(run_id)
     assert detail_path.parent == runs_module.run_dir(run_id)
     assert detail_path.is_file()
     assert "picker_selection" not in pointer.get("dispatch_options", {})
+    detail = json.loads(detail_path.read_text(encoding="utf-8"))
     for field in DETAIL_FIELDS:
         assert field not in pointer, field
-        assert field in json.loads(detail_path.read_text(encoding="utf-8")), field
+        assert field in detail, field
+    moved = {field: detail[field] for field in DETAIL_FIELDS}
+    # Keep common metadata, including the detail path, in both files so only
+    # the six inline fields account for the size difference.
+    inline_pointer = {**pointer, **moved}
+    inline_path = tmp_path / "inline-pointer.json"
+    inline_path.write_text(
+        json.dumps(inline_pointer, indent=2, sort_keys=True, ensure_ascii=True) + "\n",
+        encoding="utf-8",
+    )
+    # Object braces belong to the shared pointer container, not to the fields.
+    moved_bytes = (
+        len(
+            json.dumps(moved, indent=2, sort_keys=True, ensure_ascii=True).encode(
+                "utf-8"
+            )
+        )
+        - 2
+    )
+    inline_bytes = inline_path.stat().st_size
+    print(f"test_inline_pointer_bytes={inline_bytes} moved_fields_bytes={moved_bytes}")
+    assert inline_bytes - pointer_bytes >= moved_bytes
 
 
 def test_live_pointer_readers_use_the_detail_accessor() -> None:
