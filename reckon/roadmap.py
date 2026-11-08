@@ -3298,7 +3298,14 @@ def section_readiness_rows(
 
     with roadmap_build_scope(resolve_coordinators=False):
         return section_verdicts_by_plan(
-            build_roadmap(project, list(inventory), [], docs_dir=docs_dir)
+            build_roadmap(
+                project,
+                list(inventory),
+                [],
+                docs_dir=docs_dir,
+                include_attempts=False,
+                readiness_only=True,
+            )
         )
 
 
@@ -3508,6 +3515,8 @@ def build_roadmap(
     review: dict[str, Any] | None = None,
     docs_dir: Path | str | None = None,
     now: datetime | None = None,
+    include_attempts: bool = True,
+    readiness_only: bool = False,
 ) -> dict[str, Any]:
     """Return pending work, execution paths, progress, blockers, and wiring findings.
 
@@ -3535,6 +3544,8 @@ def build_roadmap(
             review=review,
             docs_dir=docs_dir,
             now=now,
+            include_attempts=include_attempts,
+            readiness_only=readiness_only,
         )
     scope = _BUILT_ROADMAP.get()
     if scope is not None:
@@ -3554,6 +3565,8 @@ def _build_roadmap(
     review: dict[str, Any] | None,
     docs_dir: Path | str | None,
     now: datetime | None = None,
+    include_attempts: bool = True,
+    readiness_only: bool = False,
 ) -> dict[str, Any]:
 
     artifacts: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -3575,7 +3588,9 @@ def _build_roadmap(
         Path(docs_dir) if docs_dir is not None else _load_mounts().get(project)
     )
     liveness = (
-        sprint_liveness(project, resolved_docs) if resolved_docs is not None else {}
+        sprint_liveness(project, resolved_docs)
+        if resolved_docs is not None and not readiness_only
+        else {}
     )
     released_by_clear = plans_released_by_cleared_blockers(
         resolved_docs, project, sprints
@@ -3622,10 +3637,14 @@ def _build_roadmap(
         scope_claims, pointers
     )
     held_paths_by_section = _held_paths_by_section(scope_claims, section_runs)
-    attempts_by_plan = section_attempts_by_plan(
-        project,
-        root=resolved_docs.parent if resolved_docs is not None else None,
-        pointers=runs._list_live_records(project=project),
+    attempts_by_plan = (
+        section_attempts_by_plan(
+            project,
+            root=resolved_docs.parent if resolved_docs is not None else None,
+            pointers=runs._list_live_records(project=project),
+        )
+        if include_attempts and not readiness_only
+        else {}
     )
     findings: list[dict[str, Any]] = []
     dependency_rows: dict[str, list[dict[str, Any]]] = defaultdict(list)

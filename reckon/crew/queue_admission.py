@@ -901,7 +901,30 @@ def _checkout_code_is_trusted() -> bool:
     """
     from reckon import checkout_trust
 
-    return checkout_trust.moved_checkout_is_trustworthy(_source_root()).trusted
+    stamp = _admit_code_stamp()
+    root = _source_root()
+    dirty, _detail = checkout_trust.tracked_reckon_tree_is_dirty(root)
+    if dirty:
+        return False
+    key = (str(root), stamp)
+    remembered = _TRUSTED_CODE_STAMPS.get(key)
+    if remembered is not None:
+        return remembered
+    verdict = checkout_trust.moved_checkout_is_trustworthy(root)
+    if (
+        not verdict.dirty
+        and stamp != checkout_trust.IDENTITY_UNKNOWN
+        and not isinstance(
+            verdict.detail,
+            (checkout_trust.ImportProbeTimedOut, checkout_trust.ImportProofPending),
+        )
+    ):
+        _TRUSTED_CODE_STAMPS.clear()
+        _TRUSTED_CODE_STAMPS[key] = verdict.trusted
+    return verdict.trusted
+
+
+_TRUSTED_CODE_STAMPS: dict[tuple[str, str], bool] = {}
 
 
 def _reexec_into_current_code() -> None:
@@ -2688,36 +2711,53 @@ def _readiness_rows(
     cache: dict[str, Any],
     plan: str = "",
     refs: Iterable[str] = (),
+    *,
+    inventory_only: bool = False,
 ) -> tuple[Mapping[str, Mapping[str, Any]], Mapping[str, Mapping[str, Any]]]:
-    """Read the roadmap section verdicts and inventory a request judges by.
+    """Read only the plans a request and its declared waits name.
 
-    ``cache`` is the pass's own, so a pass that launches several requests in
-    one project derives that project's roadmap once. The entry is keyed by the
-    project, its docs directory and :func:`_plan_tree_fingerprint` inside a
-    project-wide pass. A bounded read outside the pass also keys on the plan
-    and refs asked about. A plan edited or a landing merged while the pass
-    runs misses either cache entry.
-
-    ``plan`` names the plan a dispatch is judging. Outside an admission pass
-    that read covers the plan and the plans its waits name, through
-    :func:`reckon.crew.plan_review.section_readiness_rows`, rather than the
-    whole project. Inside a pass the pass has already built the project once
-    and shares it, so the whole-project read is the one that answers.
+    A pass reuses each bounded result while its contributing files keep their
+    stat identities. An edit between requests or passes invalidates that result
+    without walking every plan in the project.
     """
-    fingerprint = _plan_tree_fingerprint(docs_dir)
-    scope = (project, str(docs_dir or ""))
-    if not _READINESS_PASS_ACTIVE.get():
-        scope += (plan, ",".join(sorted(str(ref) for ref in refs)))
-    key = "|".join((*scope, *(str(part) for part in fingerprint)))
+    refs = tuple(refs)
+    bounded_read = _BOUNDED_READ.get() or _READINESS_PASS_ACTIVE.get() or inventory_only
+    key = (
+        project,
+        str(docs_dir or ""),
+        plan if bounded_read else "",
+        tuple(sorted(map(str, refs))) if bounded_read else (),
+        inventory_only,
+    )
     cached = cache.get(key)
-    if cached is not None:
-        return cached
-    if (
-        plan
-        and docs_dir is not None
-        and _BOUNDED_READ.get()
-        and not _READINESS_PASS_ACTIVE.get()
-    ):
+    if cached is not None and docs_dir is not None:
+        rows, inventory, identities = cached
+        current = (
+            _readiness_file_identities(Path(docs_dir), inventory)
+            if bounded_read
+            else _plan_tree_fingerprint(docs_dir)
+        )
+        if identities == current:
+            return rows, inventory
+    if inventory_only and plan and docs_dir is not None:
+        from reckon.crew.plan_review import _readiness_inventory
+
+        try:
+            inventory = {
+                str(item["slug"]): item
+                for item in _readiness_inventory(
+                    project, Path(docs_dir), plan, refs=refs
+                )
+            }
+        except Exception:  # noqa: BLE001 - unreadable plan gives no ready wait
+            return {}, {}
+        cache[key] = (
+            {},
+            inventory,
+            _readiness_file_identities(Path(docs_dir), inventory),
+        )
+        return {}, inventory
+    if plan and docs_dir is not None and bounded_read:
         try:
             from reckon.crew.plan_review import section_readiness_rows
 
@@ -2726,9 +2766,15 @@ def _readiness_rows(
             )
         except Exception:  # noqa: BLE001 - the project read below carries it
             bounded, bounded_inventory = {}, {}
-        if plan in bounded:
-            cache[key] = (bounded, bounded_inventory)
-            return cache[key]
+        if plan in bounded or plan in bounded_inventory or _READINESS_PASS_ACTIVE.get():
+            cache[key] = (
+                bounded,
+                bounded_inventory,
+                _readiness_file_identities(Path(docs_dir), bounded_inventory),
+            )
+            return bounded, bounded_inventory
+    if _READINESS_PASS_ACTIVE.get():
+        return {}, {}
     rows: dict[str, Mapping[str, Any] | Any] = {}
     inventory: dict[str, Mapping[str, Any] | Any] = {}
     try:
@@ -2736,8 +2782,7 @@ def _readiness_rows(
         from reckon.mcp_discovery import _discover_project, _inventory_row
 
         if not project:
-            cache[key] = ({}, {})
-            return cache[key]
+            return {}, {}
         discovered = _discover_project(project, None)
         items = [_inventory_row(item) for item in discovered.get("inventory", [])]
         for item in items:
@@ -2750,8 +2795,26 @@ def _readiness_rows(
         rows = project_section_readiness(project, Path(docs_dir))
     except Exception:  # noqa: BLE001 - an unbuildable roadmap holds every wait
         rows, inventory = {}, {}
-    cache[key] = (rows, inventory)
+    if not bounded_read and docs_dir is not None:
+        cache[key] = (rows, inventory, _plan_tree_fingerprint(docs_dir))
     return rows, inventory
+
+
+def _readiness_file_identities(
+    docs_dir: Path, inventory: Mapping[str, Any]
+) -> tuple[tuple[str, tuple[int, int, int, int, int] | None], ...]:
+    """Stat identities of precisely the plan files that supplied a verdict."""
+    from reckon import file_memo
+
+    identities = []
+    for slug in sorted(inventory):
+        try:
+            stat = (docs_dir / "plans" / f"{slug}.html").stat()
+            identity = file_memo.signature_from_stat(stat)
+        except OSError:
+            identity = None
+        identities.append((slug, identity))
+    return tuple(identities)
 
 
 def _persisted_plan_states(project: str, docs_dir: Path) -> Mapping[str, Any]:
@@ -3349,9 +3412,10 @@ def _ref_state(
         )
         if target_docs is None:
             return PENDING
-        rows, inventory = _readiness_rows(
-            target_project, target_docs, cache, parsed.slug
-        )
+        if target_project != project or parsed.slug not in inventory:
+            rows, inventory = _readiness_rows(
+                target_project, target_docs, cache, parsed.slug
+            )
     slug, section = parsed.slug, normalize_section(parsed.stage or "")
     if section and (slug, section) in dead_sections:
         return ABANDONED
@@ -3437,11 +3501,16 @@ def resolve_waits(
     refs = section_waits_for(pointer)
     if not refs:
         return QUEUED_PHASE
+    inventory_only = not any(
+        ref.startswith((GATE_REF_PREFIX, "readiness:")) for ref in refs
+    )
     rows, inventory = _readiness_rows(
         str(pointer.get("project") or "") or _project_of_docs_dir(docs_dir),
         docs_dir,
         cache,
         str(dict(pointer.get("node") or {}).get("plan") or pointer.get("plan") or ""),
+        refs,
+        inventory_only=inventory_only,
     )
     issues: list[str] = []
     owner_project = str(pointer.get("project") or "") or _project_of_docs_dir(docs_dir)

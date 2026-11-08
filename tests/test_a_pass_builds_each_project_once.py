@@ -97,6 +97,8 @@ def _pass(
     shared: bool = True,
     project_wide: bool = True,
 ) -> tuple[int, list[str]]:
+    from reckon import mcp_discovery
+
     builds = 0
     real = plan_review.project_section_readiness
 
@@ -107,6 +109,11 @@ def _pass(
 
     with monkeypatch.context() as patch:
         patch.setattr(plan_review, "project_section_readiness", counting)
+        patch.setattr(
+            mcp_discovery,
+            "_discover_project",
+            lambda *_: pytest.fail("admission entered project discovery"),
+        )
         with (
             queue_admission.readiness_pass() if shared else nullcontext(),
             queue_admission.project_read() if project_wide else nullcontext(),
@@ -118,7 +125,7 @@ def _pass(
 
 
 @pytest.mark.parametrize("project_wide", [True, False])
-def test_waiting_requests_share_one_project_read(
+def test_waiting_requests_read_named_plans(
     project: Path, monkeypatch: pytest.MonkeyPatch, project_wide: bool
 ) -> None:
     requests = _requests(project)
@@ -128,18 +135,18 @@ def test_waiting_requests_share_one_project_read(
     builds, phases = _pass(monkeypatch, requests, project_wide=project_wide)
     assert phases == [PHASES[UPSTREAM_STATES[index % 8]] for index in range(20)]
     assert set(phases) == set(PHASES.values())
-    assert builds == 1
+    assert builds == 0
 
 
-def test_phases_match_the_request_scoped_project_reads(
+def test_phases_match_the_request_scoped_reads(
     project: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # Outside an admission pass, project reads retain their request-scoped key.
+    # A project scope outside admission still derives the same request phases.
     reference_builds, reference_phases = _pass(
         monkeypatch, _requests(project), shared=False
     )
     _, phases = _pass(monkeypatch, _requests(project))
-    assert reference_builds == 12
+    assert reference_builds == 0
     assert phases == reference_phases
 
 
