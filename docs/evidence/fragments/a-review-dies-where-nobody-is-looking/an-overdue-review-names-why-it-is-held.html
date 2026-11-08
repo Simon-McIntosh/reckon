@@ -108,6 +108,21 @@ E     's review; inspect the follower's review pass
         literal the repo warns against and is outside this node's write scope.</p>
     </section>
 
+    <section id="an-overdue-review-names-why-it-is-held-repair">
+      <h2>Repair round</h2>
+      <p>The review asked for the read-only claim to be held by a test rather than by the
+        idiom. Case one now snapshots the run's live pointer bytes before the obligations
+        derivation, reads the duty, and asserts the pointer is byte-identical afterwards: a
+        duty that merely reports a held review must not record the refusal it reports.</p>
+      <p>The declared control is <code>dry_run=False</code> inside
+        <code>review_dispatch_refusal</code>, which is the write the read-only form exists to
+        avoid. With that mutation the new assertion reddens and names what the write introduced:
+        <code>AssertionError: the obligations read rewrote the run's live pointer; it now also
+        carries ['review_dispatch']</code>. The no-refusal control still passes, so the mutation
+        moves only the writing. No production code changed: the assertion passed against the
+        existing <code>dry_run=True</code>.</p>
+    </section>
+
     <section id="an-overdue-review-names-why-it-is-held-provenance">
       <h2>Provenance</h2>
       <table>
@@ -118,6 +133,7 @@ E     's review; inspect the follower's review pass
           <tr><td>Gate logs</td><td><code>gate-base.log</code>, <code>gate-head.log</code> in the run directory; the scratch-tree arm is headed by its revision, tree, module as imported and resolved working directory, and each log ends with a bare <code>EXIT=</code> line</td></tr>
           <tr><td>Importer arm logs</td><td><code>base-arm.log</code>, <code>head-arm.log</code>, with the failure sets in <code>base-failures.txt</code> and <code>head-failures.txt</code></td></tr>
           <tr><td>Control log</td><td><code>negative-control.log</code> in the run directory, headed by the declared mutation</td></tr>
+          <tr><td>Repair control log</td><td><code>negative-control-dry-run.log</code> in the run directory, headed by the <code>dry_run=False</code> mutation</td></tr>
         </tbody>
       </table>
     </section>

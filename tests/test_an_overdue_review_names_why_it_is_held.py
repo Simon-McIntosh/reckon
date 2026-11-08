@@ -161,9 +161,20 @@ def test_an_overdue_review_names_the_undisposed_finding(
     """The duty names the refusal and the dispose command that lifts it."""
     run_id = "run-held-by-finding"
     _overdue_run(repository, tmp_path, run_id=run_id, finding=True)
+    pointer_path = runs.pointer_path(run_id)
 
     with runs.follower_claim(PROJECT, SESSION, delivery="stream"):
+        before = pointer_path.read_bytes()
         result = obligations_module.obligations(PROJECT, SESSION)
+        after = pointer_path.read_bytes()
+
+    # Reporting a held review must not itself act on it: the duty reads the
+    # refusal through the dispatch predicate's read-only form, so a reader that
+    # only reports leaves the run's live pointer byte-identical.
+    assert after == before, (
+        "the obligations read rewrote the run's live pointer; it now also "
+        f"carries {sorted(set(json.loads(after)) - set(json.loads(before)))}"
+    )
 
     duty = _duty(result)
     command = str(duty["next_command"])
