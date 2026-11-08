@@ -605,11 +605,37 @@ def _worker_host_line(facts: Any, run_directory: str | Path) -> str:
     )
 
 
+def declared_backend_search_path(backend_name: str | None) -> list[str]:
+    """Directories the flight layer declares for one backend's command.
+
+    A backend's location is a fact about the host, not about the shell that
+    happens to launch it, so these come from the resolved flight config rather
+    than from the launcher's environment. A launch inheriting an environment
+    that omits the installing directory — a host process restarted without
+    reading the shell's own startup files, say — still resolves the command.
+    Entries are returned in declaration order with home-relative ones expanded
+    and duplicates dropped; a backend that declares none returns empty.
+    """
+    if not backend_name:
+        return []
+    from reckon import flight
+
+    backends = flight.resolve().config.get("backends") or {}
+    backend = backends.get(str(backend_name)) or {}
+    declared: list[str] = []
+    for entry in backend.get("search_path") or ():
+        directory = os.path.expanduser(str(entry))
+        if directory and directory not in declared:
+            declared.append(directory)
+    return declared
+
+
 def launch_search_path(
     environment: Mapping[str, str] | None = None,
     *,
     facts: Any | None = None,
     fenced: bool = False,
+    backend_name: str | None = None,
 ) -> str:
     """Return the effective worker PATH for one launch.
 
@@ -630,6 +656,11 @@ def launch_search_path(
     reckon inherits the main checkout's shims from the worker it runs in, and
     two checkouts' shims on one path resolve to each other rather than to the
     real tool.
+
+    The directories the flight layer declares for ``backend_name`` follow every
+    inherited entry, so a launcher whose environment omits an installed
+    backend's directory still searches the one the host declares, and an
+    inherited directory that already carries the command wins.
     """
     from reckon.shim_lookup import holds_shim
 
@@ -655,7 +686,16 @@ def launch_search_path(
         and os.path.realpath(entry) not in resolved
         and not holds_shim(entry, shimmed)
     ]
-    return os.pathsep.join([*directories, *inherited_entries])
+    # The declared directories go last, so an inherited PATH that already
+    # carries a directory always wins over the flight layer's declaration.
+    inherited_resolved = {os.path.realpath(entry) for entry in inherited_entries}
+    declared_entries = [
+        entry
+        for entry in declared_backend_search_path(backend_name)
+        if os.path.realpath(entry) not in resolved
+        and os.path.realpath(entry) not in inherited_resolved
+    ]
+    return os.pathsep.join([*directories, *inherited_entries, *declared_entries])
 
 
 def _shim_names(directory: str) -> list[str]:
@@ -671,6 +711,7 @@ def _persisted_worker_environment(
     *,
     facts: Any | None = None,
     fenced: bool = False,
+    backend_name: str | None = None,
 ) -> dict[str, str]:
     """Return only the launch overlay safe to persist in a run record."""
     persisted = dict(environment or {})
@@ -692,7 +733,9 @@ def _persisted_worker_environment(
         else:
             persisted.pop("ANTHROPIC_CUSTOM_HEADERS", None)
     placement = _current_host_facts() if facts is None else facts
-    persisted["PATH"] = launch_search_path(environment, facts=placement, fenced=fenced)
+    persisted["PATH"] = launch_search_path(
+        environment, facts=placement, fenced=fenced, backend_name=backend_name
+    )
     # The worker shims on that PATH start an interpreter that can import the
     # package. A launch composed out of a composing process that runs out of a
     # reload image or any tree without a ``.venv`` has none to fall back on, so
@@ -1049,8 +1092,23 @@ def harness_command_index(argv: Any) -> int:
     return argv.index("--", 1) + 1
 
 
-def _unresolved_backend_command(binary: str, searched: str) -> str:
-    """The one refusal an unresolvable backend command produces."""
+def _unresolved_backend_command(
+    binary: str, searched: str, declared: Iterable[str] = ()
+) -> str:
+    """The one refusal an unresolvable backend command produces.
+
+    The declared search path is named separately from the PATH string it was
+    appended to, so a reader sees which directories came from the launcher's
+    own environment and which came from the flight layer's declaration.
+    """
+    if declared:
+        return (
+            f"backend command {binary!r} cannot be resolved on the PATH this "
+            f"launch would search: {searched} — nor on the backend search path "
+            f"the flight layer declares: {os.pathsep.join(declared)} — install "
+            "it or add its directory to PATH, then retry; nothing has been "
+            "launched"
+        )
     return (
         f"backend command {binary!r} cannot be resolved on the PATH this "
         f"launch would search: {searched} — install it or add its directory "
@@ -1091,10 +1149,14 @@ def preflight_launch_command(
     shape = [command] if not fence else [_backends.FENCE_BINARY, "--", command]
     binary = shape[harness_command_index(shape)]
     environment = expand_backend_environment(backend_name, backend)
-    searched = launch_search_path(environment, facts=facts)
+    searched = launch_search_path(environment, facts=facts, backend_name=backend_name)
     resolved = shutil.which(binary, path=searched) if binary else None
     if not resolved:
-        raise LaunchResolutionError(_unresolved_backend_command(binary, searched))
+        raise LaunchResolutionError(
+            _unresolved_backend_command(
+                binary, searched, declared_backend_search_path(backend_name)
+            )
+        )
     return os.path.abspath(resolved)
 
 
@@ -1124,12 +1186,18 @@ def resolve_launch_executable(
     own environment is used, which is what every construction site passes.
     """
     selected_environment = plan.environment if environment is None else environment
-    searched = launch_search_path(selected_environment, facts=facts)
+    searched = launch_search_path(
+        selected_environment, facts=facts, backend_name=plan.backend
+    )
     element = harness_command_index(plan.argv)
     binary = str(plan.argv[element]) if element < len(plan.argv) else ""
     resolved = shutil.which(binary, path=searched) if binary else None
     if not resolved:
-        raise LaunchResolutionError(_unresolved_backend_command(binary, searched))
+        raise LaunchResolutionError(
+            _unresolved_backend_command(
+                binary, searched, declared_backend_search_path(plan.backend)
+            )
+        )
     # Absolute, not canonical: a launcher installed as ``bin/codex`` symlinked
     # to ``codex.js`` must still be exec'd under the name the launch was
     # configured with, because that name is how the command's dialect is
@@ -1474,14 +1542,17 @@ def assert_routable_backends_resolvable(
         if not command:
             continue
         environment = flight.expand_backend_environment(str(name), backend)
-        path = launch_search_path(environment)
+        path = launch_search_path(environment, backend_name=str(name))
         found = shutil.which(command, path=path)
         if not found:
             raise LaunchResolutionError(
-                f"project {project!r} routes to backend {name!r} whose command "
-                f"{command!r} cannot be resolved on the PATH the launch would "
-                f"search: {path} — install it or add its directory to PATH, "
-                "then arm the watcher again; it is not armed"
+                f"project {project!r} routes to backend {name!r}: "
+                + _unresolved_backend_command(
+                    command,
+                    path,
+                    declared_backend_search_path(str(name)),
+                )
+                + "; the watcher is not armed"
             )
         resolved.append(
             {
@@ -2295,7 +2366,10 @@ def _supervisor_spec(
             "argv": list(plan.argv),
             "cwd": plan.cwd,
             "environment": _persisted_worker_environment(
-                plan.environment, facts=facts, fenced=fenced
+                plan.environment,
+                facts=facts,
+                fenced=fenced,
+                backend_name=plan.backend,
             ),
             "dialect": plan.dialect,
             "backend": plan.backend,
