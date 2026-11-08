@@ -31,6 +31,7 @@ HEAD = "a" + "0" * 39
 # before the complete record is considered.
 INCOMPLETE_NAME = "r-20261108T173448791464.json"
 PARSED_NAME = "r-20261108T180752870871.json"
+UNSUMMED_NAME = "r-20261108T190000000000.json"
 
 DIMENSIONS = review_module.REVIEW_DIMENSIONS
 
@@ -45,6 +46,25 @@ def _complete_record() -> dict:
         "scores": scores,
         "absent": [],
         "total": sum(scores.values()),
+    }
+
+
+def _unsummed_record() -> dict:
+    """A record that scores every dimension but was stored without a total.
+
+    A reviewer that scored all six dimensions may leave the sum to the reader,
+    so the store derives it on read. Selection has to see that derived total,
+    or a record the gate would accept is judged incomplete and loses to one
+    that really is.
+    """
+    scores = dict.fromkeys(DIMENSIONS, 19)
+    return {
+        "status": "parsed",
+        "reviewed_run_id": REVIEWED_RUN,
+        "review_run_id": UNSUMMED_NAME.removesuffix(".json"),
+        "reviewed_head_sha": HEAD,
+        "scores": scores,
+        "absent": [],
     }
 
 
@@ -103,6 +123,21 @@ def test_a_parsed_complete_record_wins_over_an_incomplete_one(
 ) -> None:
     _write(committed_run, INCOMPLETE_NAME, _incomplete_record())
     _write(committed_run, PARSED_NAME, _complete_record())
+
+    review, stale = _gate_review()
+
+    assert review is not None
+    assert review["status"] == "parsed"
+    assert review["total"] == 19 * len(DIMENSIONS)
+    assert stale == ""
+    assert _waiver(review, stale) is None
+
+
+def test_an_unsummed_complete_record_wins_after_its_total_is_derived(
+    committed_run: Path,
+) -> None:
+    _write(committed_run, INCOMPLETE_NAME, _incomplete_record())
+    _write(committed_run, UNSUMMED_NAME, _unsummed_record())
 
     review, stale = _gate_review()
 
