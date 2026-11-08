@@ -1,0 +1,35 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T05:53:59Z",
+  "dispatched_at": "2026-11-08T05:41:38Z",
+  "findings": [
+    {
+      "disposition": "exempted",
+      "disposition_reason": "The quota fixture stabilizes this test; the six-field move and pointer-size bound do not require a quota read.",
+      "file": "tests/test_the_first_six_fields_leave_the_live_pointer.py",
+      "id": "f8d60fdef5d",
+      "line": "229",
+      "severity": "non-blocking",
+      "text": "A missing or unreadable quota document still leaves pace.group as None, so the assertion does not prove the synthetic quota fixture was read."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source goal in prompt.txt:38 is the six-field move; the gained test at tests/test_the_first_six_fields_leave_the_live_pointer.py:171-229 isolates the pointer-size dispatch while retaining the moved-field assertions.\nVERDICT done_when: The source measure in prompt.txt:125-126 requires a sub-12 KiB test pointer and passing importers; final-pointer-measure.log reports 12217 bytes with EXIT=0 and final-head-suite.log reports 19 passed with EXIT=0.\nVERDICT write_paths: The declared scope in prompt.txt:77-90 contains the gained test and evidence fragment, and git diff from 574124107b94823f9ca378994420e5dc0a159261 to 1111c7e5e9b1e83cf76bd3a41587fd0c09ee7110 names only those paths.\nVERDICT manifest: The reviewed manifest.md baseline_suite and after_suite fields name completed 19-pass arms at f06b0edc31a30c27015b01b6ebc5afb056463ec2 and 1111c7e5e9b1e83cf76bd3a41587fd0c09ee7110, each with zero failures, and names the pointer-measure log.\nVERDICT diff: Commit 46c62c5301a48cdc7d8d92047f2c0d6dc2c8bccc adds synthetic document paths and open tracking in tests/test_the_first_six_fields_leave_the_live_pointer.py:171-229; e3d2413f07ade26782904b133323e4632670ee44 extends that guard through admission at line 218; 1111c7e5e9b1e83cf76bd3a41587fd0c09ee7110 updates the evidence fragment at line 5.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_the_first_six_fields_leave_the_live_pointer.py:228-241 keeps the isolated pointer under 12 KiB and still checks that the six moved fields are absent inline.\nSCORE evidence: 18\nJUSTIFICATION evidence: final-head-suite.log and final-pointer-measure.log record EXIT=0, 19 passed and 12217 bytes, though tests/test_the_first_six_fields_leave_the_live_pointer.py:229 does not establish that the quota fixture was read.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The gained diff changes only tests/test_the_first_six_fields_leave_the_live_pointer.py and docs/evidence/fragments/crew-state-stays-bounded/the-first-six-fields-leave-the-live-pointer.html, both declared in prompt.txt:77-90.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_the_first_six_fields_leave_the_live_pointer.py:221-228 reddens if the synthetic lane is never opened, a real document is opened through Path.open, or recorded headroom differs, while line 229 remains green if the quota document is skipped.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_the_first_six_fields_leave_the_live_pointer.py:196-211 follows the local Path.open interception pattern in tests/test_crew_routes.py:307-310 and adds no forbidden source name.\nSCORE reuse: 20\nJUSTIFICATION reuse: A capability search for Path.open interception found local test wrappers such as tests/test_crew_routes.py:307-310 but no shared owner to extend; isolated_open at tests/test_the_first_six_fields_leave_the_live_pointer.py:196 is scoped to its fixture.\nFINDING tests/test_the_first_six_fields_leave_the_live_pointer.py:229 non-blocking: A missing or unreadable quota document still leaves pace.group as None, so this assertion does not prove the synthetic quota fixture was read and cannot catch that regression.\nASSERTION tests/test_the_first_six_fields_leave_the_live_pointer.py:212: The local lane resolver would fail this check if it ignored the injected lane path.\nASSERTION tests/test_the_first_six_fields_leave_the_live_pointer.py:213: The quota resolver would fail this check if it ignored the injected quota path, though this does not show a document read.\nASSERTION tests/test_the_first_six_fields_leave_the_live_pointer.py:221: This positive control would fail if neither dispatch nor admission opened the synthetic lane through Path.open.\nASSERTION tests/test_the_first_six_fields_leave_the_live_pointer.py:222: This guard would fail if either path opened a pre-override operator document through Path.open.\nASSERTION tests/test_the_first_six_fields_leave_the_live_pointer.py:228: The headroom check would fail if dispatch discarded or replaced the synthetic lane's value of 3.\nASSERTION tests/test_the_first_six_fields_leave_the_live_pointer.py:229: The group check would fail for a non-null group but would survive skipping the quota read, because missing quota also yields None.",
+  "review_run_id": "r-20261108T053644021243-review-of-the-first-six-fields-leave-the-live-pointer-e3d2413f07ad",
+  "reviewed_base_sha": "574124107b94823f9ca378994420e5dc0a159261",
+  "reviewed_head_sha": "1111c7e5e9b1e83cf76bd3a41587fd0c09ee7110",
+  "reviewed_run_id": "r-20261107T162323087195-the-first-six-fields-leave-the-live-pointer",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T06:05:38.534898+00:00",
+  "total": 113
+}
