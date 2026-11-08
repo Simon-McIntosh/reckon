@@ -1,0 +1,50 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-08T16:11:26.648Z",
+  "dispatched_at": "2026-11-08T16:01:17Z",
+  "findings": [
+    {
+      "file": "tests/test_a_queued_run_launches_once.py",
+      "line": "255",
+      "severity": "blocking",
+      "text": "this existing test still asserts that a placed run with an unanswerable scheduler and a dead worker record is refused, which is the superseded predicate; at aaa5ea90e3f5 it fails with DID NOT RAISE CrewError, so landing the node reddens the suite until its expectation is updated."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "1949",
+      "severity": "non-blocking",
+      "text": "_record_run_directory re-implements _run_directory from reckon/crew/recovery_wait.py:1409, the owner of exactly this capability."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "1987",
+      "severity": "non-blocking",
+      "text": "_worker_record_shown_gone re-implements _worker_record_liveness from reckon/crew/recovery_liveness.py:285, and should read that owner rather than parse worker.json again."
+    },
+    {
+      "file": "docs/evidence/fragments/a-run-has-one-live-worker/a-run-not-yet-launched-is-not-refused.html",
+      "line": "34",
+      "severity": "non-blocking",
+      "text": "the head-arm bullet attributes gate-head.log to revision 1af5c0733a while that log's own header records aaa5ea90e3f5, so the fragment misstates which revision it ran at."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the launch guard refuse a placed reading of unknown liveness only when a recorded worker has not been shown gone, and reckon/crew/dispatch_launch.py:1968-2012 implements exactly that predicate.\nVERDICT done_when: the done-when names four cases through _prepare_attempt_records plus the never-launched case through _supervisor_spawn_worker, a logged negative control and the scoped suite delta; the manifest records gate-head.log 5 passed EXIT=0 at aaa5ea90e3f5 and baseline.log 3 failed 2 passed EXIT=1 at 085fa4606a, and both logs carry their revision and a bare EXIT= line.\nVERDICT write_paths: the four declared paths are dispatch_launch.py, tests/test_a_run_not_yet_launched_is_not_refused.py, the evidence fragment and a figures directory; the diff touches the first three and nothing else.\nVERDICT manifest: the source manifest is complete and internally consistent, recording both commits, five tests, the base arm, the negative control and the two out-of-scope observations; its head-arm revision citation is carried wrongly into the fragment (see finding).\nVERDICT diff: read both commits against 085fa4606a; 1af5c0733a changes _launch_refused_by to take the record and adds _record_run_directory, _record_holds_a_worker and _worker_record_shown_gone plus the new test, and aaa5ea90e3f5 adds the evidence fragment.\nCALL_SITES: reckon/crew/dispatch.py:3369 calls _prepare_attempt_records, reckon/crew/dispatch_launch.py:2534 calls _prepare_attempt_records, reckon/crew/dispatch_launch.py:4005 calls _supervisor_spawn_worker\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:1995-2012 refuses a placed-unknown reading only when _record_holds_a_worker is true and _worker_record_shown_gone is false, which is the stated goal.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-head.log and baseline.log record their revisions and EXIT codes for the resolved scoped suite, but the fragment at docs/evidence/fragments/a-run-has-one-live-worker/a-run-not-yet-launched-is-not-refused.html:34 cites revision 1af5c0733a for the log whose header reads aaa5ea90e3f5.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 085fa4606a..aaa5ea90e3 changes only reckon/crew/dispatch_launch.py, tests/test_a_run_not_yet_launched_is_not_refused.py and the declared evidence fragment.\nSCORE durability: 16\nJUSTIFICATION durability: three of the five cases in tests/test_a_run_not_yet_launched_is_not_refused.py fail at the base arm and under the restored predicate, but :231's assert pid > 0 and the record['pid'] == pid comparison both derive from the call under test rather than an independent source.\nSCORE fit: 18\nJUSTIFICATION fit: the added helpers in reckon/crew/dispatch_launch.py:1949-1996 follow the module's docstring and Mapping-based record handling, and introduce no plan or ticket identifier.\nSCORE reuse: 4\nJUSTIFICATION reuse: reckon/crew/dispatch_launch.py:1949 _record_run_directory duplicates reckon/crew/recovery_wait.py:1409 _run_directory and :1987 _worker_record_shown_gone duplicates reckon/crew/recovery_liveness.py:285 _worker_record_liveness, both owners already reachable from this module.\nFINDING tests/test_a_queued_run_launches_once.py:255 blocking: this existing test still asserts that a placed run with an unanswerable scheduler and a dead worker record is refused, which is the superseded predicate; at aaa5ea90e3f5 it fails with DID NOT RAISE CrewError, so landing the node reddens the suite until its expectation is updated.\nFINDING reckon/crew/dispatch_launch.py:1949 non-blocking: _record_run_directory re-implements _run_directory from reckon/crew/recovery_wait.py:1409, the owner of exactly this capability.\nFINDING reckon/crew/dispatch_launch.py:1987 non-blocking: _worker_record_shown_gone re-implements _worker_record_liveness from reckon/crew/recovery_liveness.py:285, and should read that owner rather than parse worker.json again.\nFINDING docs/evidence/fragments/a-run-has-one-live-worker/a-run-not-yet-launched-is-not-refused.html:34 non-blocking: the head-arm bullet attributes the gate log to revision 1af5c0733a while gate-head.log's own header records aaa5ea90e3f5, so the fragment misstates which revision it ran at.\n",
+  "review_run_id": "r-20261108T155744132588-review-of-a-run-not-yet-launched-is-not-refused-aaa5ea90e3f5",
+  "reviewed_base_sha": "085fa4606aaf1ef71f7ff22b5d578c81290b7871",
+  "reviewed_head_sha": "aaa5ea90e3f5c04dbc75ff25369d74665a8f54a3",
+  "reviewed_run_id": "r-20261108T153239733330-a-run-not-yet-launched-is-not-refused",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 4,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T16:14:27.049264+00:00",
+  "total": 93
+}

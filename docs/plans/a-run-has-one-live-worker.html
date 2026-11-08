@@ -22,12 +22,12 @@
   <meta name="plan-depends-on" content="a-crew-process-ends-with-its-owner">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-section-depends-on" content="{&quot;s7&quot;:[&quot;a-run-has-one-live-worker#s6&quot;],&quot;s9&quot;:[&quot;a-run-has-one-live-worker#s8&quot;],&quot;s10&quot;:[&quot;a-run-has-one-live-worker#s11&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <title>A Run Has One Live Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.67">
-<meta name="plan-version" content="66">
+<meta name="plan-version" content="67">
 <meta name="plan-modified" content="2026-11-08">
 <meta name="plan-commits" content="a88e6f09">
 </head>
@@ -303,6 +303,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261107T234118260466-name-the-worker-a-launch-refusal-found" data-who="reckon-build" data-when="2026-11-08T13:57:22Z">
     <div class="r-comment-body"><p>The placed-with-unknown arm is deliberate and now carried everywhere it is read. The two cases that pinned the old fall-through assert unknown instead, the first renamed for what it measures; record_process_alive and placement_job_alive state that an unqueryable scheduler on a placed record is never a licence to probe the client's pid; placement_job_alive takes its placement test from _record_is_placed so one helper owns it. Armed suite at the base revision 2c0dcf9b: 4 failed, 31 passed, the four failures being the launch-refusal cases this run introduces. At head 70cde9ed: 35 passed. Every other suite that imports process_liveness was run and adds no failure.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261108T155744132588-review-of-a-run-not-yet-launched-is-not-refused-aaa5ea90e3f5" data-who="reckon-build" data-when="2026-11-08T16:11:26.648Z">
+    <div class="r-comment-body"><p>review of r-20261108T153239733330-a-run-not-yet-launched-is-not-refused at aaa5ea90e3f5 stored parsed with scores goal_fidelity 19, evidence 16, scope_discipline 20, durability 16, fit 18, reuse 4, added_failure_count 0, and four findings (one blocking: the superseded expectation in tests/test_a_queued_run_launches_once.py:255).</p></div>
 </div>
 </section>
 </main>
