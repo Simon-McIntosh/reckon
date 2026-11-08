@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.67">
-<meta name="plan-version" content="67">
+<meta name="plan-version" content="68">
 <meta name="plan-modified" content="2026-11-08">
 <meta name="plan-commits" content="a88e6f09">
 </head>
@@ -223,6 +223,12 @@
 <div class="r-comment" data-section="_top" data-id="c-s10-reckon-instance-coverage-once" data-who="" data-when="">
     <div class="r-comment-body"><p>A second instance, in reckon, inside one admission pass (10:44:30Z to 11:08:19Z). Run <code>r-20261103T034032348719-a-pass-computes-coverage-once</code> carries two dispatch claims. <code>attempt-1-worker.json</code> records a claim at 10:50:29Z and a launch at 10:52:08Z (pid 2004857). <code>attempt-2-worker.json</code> records a claim at 10:53:40Z and a launch at 10:56:31Z (pid 2040287). The second launch's <code>supervisor.json</code> records <code>attempt: 1</code>, <code>attempt_kind: dispatch</code>. Attempt 1 then found every write path read-only and wrote a <code>blocked</code> manifest at 11:03Z. The coordinator had run <code>crew queue release --session</code> on four held requests in that window, so a release and the pass's own launch are both candidates for the two dispatches.</p></div>
 </div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261108T155744132588-review-of-a-run-not-yet-launched-is-not-refused-aaa5ea90e3f5" data-who="reckon-build" data-when="2026-11-08T16:11:26.648Z">
+    <div class="r-comment-body"><p>review of r-20261108T153239733330-a-run-not-yet-launched-is-not-refused at aaa5ea90e3f5 stored parsed with scores goal_fidelity 19, evidence 16, scope_discipline 20, durability 16, fit 18, reuse 4, added_failure_count 0, and four findings (one blocking: the superseded expectation in tests/test_a_queued_run_launches_once.py:255).</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261108T164439776699-review-of-a-run-not-yet-launched-is-not-refused-f4aa6c7dc642" data-who="reckon-build" data-when="2026-11-08T16:53:23.203Z">
+    <div class="r-comment-body"><p>Reviewed f4aa6c7dc6 against 085fa4606a: the guard does what §11 asks and the repaired predicate reddens on the recorded negative control; 0 blocking and 3 non-blocking findings, scores goal 20, evidence 15, scope 20, durability 18, fit 19, reuse 20.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-s2-second-instance" data-who="reckon-build" data-when="2026-10-08T04:05:00Z">
     <div class="r-comment-body"><p>A second instance, reported by the nova S21 coordinator: run <code>r-20261008T004354567004-cfs-edge-term-tangents</code> on codex-astra. After H200 job 1281977 completed at 05:54:42 CEST, the wait sweep resumed the run (resume 2). Its stderr reads <code>thread/resume failed: thread 01a1192e-8494-7fc0-a551-721fb3acada8 already has an active writer (code -32600)</code> at 03:56:32Z while a codex worker in the same worktree went on working. The follower then reported <em>exited with code 1 with 11 commits beyond its recorded base</em> and, a second later, <em>ended by SIGKILL</em>. The investigation should name the guard for both runs: here the backend refused the second writer, while the claude run of §1 admitted it.</p></div>
 </div>
@@ -303,9 +309,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261107T234118260466-name-the-worker-a-launch-refusal-found" data-who="reckon-build" data-when="2026-11-08T13:57:22Z">
     <div class="r-comment-body"><p>The placed-with-unknown arm is deliberate and now carried everywhere it is read. The two cases that pinned the old fall-through assert unknown instead, the first renamed for what it measures; record_process_alive and placement_job_alive state that an unqueryable scheduler on a placed record is never a licence to probe the client's pid; placement_job_alive takes its placement test from _record_is_placed so one helper owns it. Armed suite at the base revision 2c0dcf9b: 4 failed, 31 passed, the four failures being the launch-refusal cases this run introduces. At head 70cde9ed: 35 passed. Every other suite that imports process_liveness was run and adds no failure.</p></div>
-</div>
-<div class="r-comment" data-section="s11" data-id="c-run-r-20261108T155744132588-review-of-a-run-not-yet-launched-is-not-refused-aaa5ea90e3f5" data-who="reckon-build" data-when="2026-11-08T16:11:26.648Z">
-    <div class="r-comment-body"><p>review of r-20261108T153239733330-a-run-not-yet-launched-is-not-refused at aaa5ea90e3f5 stored parsed with scores goal_fidelity 19, evidence 16, scope_discipline 20, durability 16, fit 18, reuse 4, added_failure_count 0, and four findings (one blocking: the superseded expectation in tests/test_a_queued_run_launches_once.py:255).</p></div>
 </div>
 </section>
 </main>
