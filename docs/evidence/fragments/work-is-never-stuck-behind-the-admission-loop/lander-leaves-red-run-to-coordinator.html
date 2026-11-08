@@ -56,22 +56,23 @@
     command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
     <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
     <tbody>
-      <tr><td>after suite (new test file)</td>
-        <td><code>a6a0f1f</code>, worktree</td>
-        <td>11 passed, <code>EXIT=0</code></td></tr>
       <tr><td>importer gate (15 files importing
         <code>reckon.crew.queue_landing</code>, plus the new test)</td>
-        <td><code>a6a0f1f</code>, worktree</td>
+        <td><code>16b38e5</code>, worktree</td>
         <td>131 passed, 0 failed, <code>EXIT=0</code></td></tr>
       <tr><td>negative controls: one per refusing arm</td>
-        <td><code>a6a0f1f</code>, in-test mutation</td>
-        <td>5 passed, each promoting once its own arm is removed,
-        <code>EXIT=0</code></td></tr>
+        <td><code>16b38e5</code>, in-test mutation</td>
+        <td>11 cases: 6 refusing and accepting cases</td></tr>
+      <tr><td>whole guard removed (every arm)</td>
+        <td><code>16b38e5</code>, working-tree mutation</td>
+        <td>5 failed, 6 passed, <code>EXIT=1</code></td></tr>
     </tbody>
   </table>
 
-  <p>Ruff reports no finding on the staged paths and all three files are already
-  formatted. The importer gate has no base arm because the head arm has no
-  failure to attribute: 131 passed and nothing failed, so no failure is added
-  against the base revision.</p>
+  <p>Both runs are kept as logs in the run directory: the importer gate at
+  <code>16b38e5</code> in <code>gate-head.log</code>, and the whole-guard
+  mutation in <code>negative-control.log</code>. Ruff reports no finding on the
+  staged paths and all three files are already formatted. The importer gate has
+  no base arm because the head arm has no failure to attribute: 131 passed and
+  nothing failed, so no failure is added against the base revision.</p>
 </section>
