@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="314">
+<meta name="plan-version" content="315">
 <meta name="plan-modified" content="2026-11-08">
 </head>
 <body>
@@ -674,6 +674,9 @@
 <div class="r-comment" data-section="s41" data-id="c-run-r-20261105T214831970273-queue-ranking-and-readiness-build-no-coordinators" data-who="reckon-build" data-when="2026-11-05T22:39:05Z">
     <div class="r-comment-body"><p>Ranking and readiness build one coordinator-free roadmap per project; 5 focused checks pass, four mutations fail, live ranking falls from 167.606 s to 23.389 s cold and later warm calls take 3.922/4.085 s, with zero added importer failures. Full admit pass and exact base arm remain unproved. [Evidence](/reckon/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/queue-ranking-and-readiness-build-no-coordinators.html#queue-ranking-and-readiness-build-no-coordinators).</p></div>
 </div>
+<div class="r-comment" data-section="s42" data-id="c-run-r-20261108T110537751454-review-of-service-runs-mains-code-36bb5227d645" data-who="reckon-build" data-when="2026-11-08T11:23:24.928Z">
+    <div class="r-comment-body"><p>Independent review of r-20261108T054448547073-service-runs-mains-code at head 36bb5227d64512ed620faade03b1160e16fb121c against base a45a33f80bbcb472a58a2e30519037b425938026: parsed record, all six dimensions scored 0..20 (goal_fidelity 18, evidence 17, scope_discipline 15, durability 16, fit 18, reuse 19), added_failure_count 0 derived from logs/importer-base.log (7 failure ids) against logs/importer-head2.log (5 failure ids), three non-blocking findings and no blocking one; the record is stored under review-records/ in the reviewed run's directory.</p></div>
+</div>
 <div class="r-comment" data-section="s43" data-id="c-run-r-20261106T091124747862-review-of-the-bounded-readiness-read-builds-no-coordinators-9fdb1d8021b6" data-who="reckon-build" data-when="2026-11-06T09:30:20.122Z">
     <div class="r-comment-body"><p>Reviewed 9fdb1d8021 against 5816b1619a: roadmap.section_readiness_rows now enters roadmap_build_scope(resolve_coordinators=False), so the bounded per-plan readiness read resolves no plan coordinator; the node test's first arm is red at base and at the negative control and green at head, and two non-blocking findings record a narrowed importer population and an absence assertion with no in-suite positive control.</p></div>
 </div>
@@ -728,8 +731,8 @@
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261029T145111134871-review-of-a-delivered-run-reaches-a-landing-verdict-c12609ed2938" data-who="reckon-build" data-when="2026-10-29T15:00:19.489Z">
     <div class="r-comment-body"><p>§8 reviewed at c12609ed29 against base c97238c9: goal met, evidence reproducible, 0 added failures, two non-blocking findings (a tautological ledger assertion at the new test's line 260, and a surviving raw commit-entry reader at promotion_scope.py:1253).</p></div>
 </div>
-<div class="r-comment" data-section="s42" data-id="c-run-r-20261108T110537751454-review-of-service-runs-mains-code-36bb5227d645" data-who="reckon-build" data-when="2026-11-08T11:23:24.928Z">
-    <div class="r-comment-body"><p>Independent review of r-20261108T054448547073-service-runs-mains-code at head 36bb5227d64512ed620faade03b1160e16fb121c against base a45a33f80bbcb472a58a2e30519037b425938026: parsed record, all six dimensions scored 0..20 (goal_fidelity 18, evidence 17, scope_discipline 15, durability 16, fit 18, reuse 19), added_failure_count 0 derived from logs/importer-base.log (7 failure ids) against logs/importer-head2.log (5 failure ids), three non-blocking findings and no blocking one; the record is stored under review-records/ in the reviewed run&#x27;s directory.</p></div>
+<div class="r-comment" data-section="s39" data-id="c-run-r-20261108T104745074252-review-of-lander-leaves-red-run-to-coordinator-f1627c3c88b0" data-who="reckon-build" data-when="2026-11-08T11:11:30.155Z">
+    <div class="r-comment-body"><p>Review of admission-loop §39: one blocking finding (record_landed_exemptions overwrites a coordinator&#x27;s folded disposition with exempted on the next pass), reuse scored 5 for duplicating promotion_checks&#x27; failure-id readers.</p></div>
 </div>
 </section>
 </main>

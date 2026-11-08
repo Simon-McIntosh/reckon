@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run recorded no baseline_suite arm; its own head gate (gate-head.log) reports 131 passed with EXIT=0, so no failing test is added against a base it did not measure",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:_land_deliveries",
+    "reckon/crew/obligations.py:1619"
+  ],
+  "completed_at": "2026-11-08T11:11:30.155Z",
+  "dispatched_at": "2026-11-08T11:00:44Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "line": "1087",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_canonical_test_ids`, `_after_suite_arm` and `_after_suite_added_guard` duplicate the manifest suite-arm capability `promotion_checks._head_suite_failure_ids` (reckon/crew/promotion_checks.py:1995) and `_baseline_suite_failure_ids` (reckon/crew/promotion_checks.py:1955) already own in a module this file already imports, so the rule for reading a failure-id set now has two implementations that can diverge, and the peer section that consolidates failure comparison will have to reconcile this copy."
+    },
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "line": "1212",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_undisposed_finding_guard` enumerates through `findings._record_findings`, which for a code review returns the record's findings list unfiltered (reckon/crew/findings.py:170), while `record_finding_disposition` enumerates through `repair.review_findings`, which skips an entry stating no claim (reckon/crew/repair.py:133); a claimless finding ahead of a disposed one shifts the index, so the guard reads `open` for a finding index the disposition writer refuses to accept findings for."
+    },
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "line": "1907",
+      "severity": "blocking",
+      "text": "blocking: On a landing the pass calls `record_landed_exemptions`, whose `_excusable_finding_indexes` (reckon/crew/recovery_review_acceptance.py:65) returns every non-blocking finding regardless of any existing disposition, and `record_finding_disposition` overwrites the entry (reckon/crew/review_dispositions.py:497); because this change makes a disposition mandatory before landing, the `folded:<node>` a coordinator records is rewritten to `exempted:<reason>` on the very next pass and the node it names is lost."
+    },
+    {
+      "file": "tests/test_a_run_a_review_does_not_block_lands.py",
+      "line": "352",
+      "severity": "non-blocking",
+      "text": "non-blocking: The diff reverses three assertions in a file outside every declared write path, superseding the landed contract that a review's non-blocking findings do not hold the landing; the reversal is disclosed in the fragment and required by the done_when, but it changes another section's accepted behaviour without that section's coordinator."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read both commits against a6a0f1f5; 947 insertions and 22 deletions across queue_landing.py (the guard and its stamp), the new test file, the fragment, and a three-assertion update in the existing non-blocking-findings test.",
+    "done_when": "The done_when names six refusing/accepting cases and one negative control per refusing arm; tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:350-608 carries all six cases and the five parametrised controls, and the run's gate-head.log records 131 passed with EXIT=0 at 16b38e5.",
+    "goal": "The node's goal is to leave a red run to its coordinator rather than landing it; reckon/crew/queue_landing.py:1753 evaluates `_red_suite_guard` before the landing measures anything and records the existing `refused` status with the `red-suite` guard, so a run whose own evidence is red never reaches `_land`.",
+    "manifest": "Read; status complete, commits 16b38e57 and f1627c3c, tests names the 15-file importer gate, test_logs names gate-head.log (131 passed, EXIT=0) and negative-control.log (5 failed, 6 passed, EXIT=1), and all six rubric lines are present.",
+    "write_paths": "The declared scope is reckon/crew/queue_landing.py plus the landing fragment; the diff also writes tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py (named by the done_when as a write path) and modifies tests/test_a_run_a_review_does_not_block_lands.py, which neither the fence nor the done_when authorises and which the manifest discloses under evidence_inputs."
+  },
+  "justifications": {
+    "durability": "tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:599 promotes each refused case once its own arm is removed, so each assertion reddens on a reinstated regression, though no case covers a folded disposition surviving landing.",
+    "evidence": "tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:582-608 drives every refusing arm and its removal, and the manifest records the gate and its red control log with exit statuses.",
+    "fit": "reckon/crew/queue_landing.py:1253 extends the existing review stamp and reuses `_record_attempt` and `_fresh_manifest` rather than adding a status.",
+    "goal_fidelity": "reckon/crew/queue_landing.py:1753 refuses before measurement, and the refusal reaches the obligations view as landing-refused through reckon/crew/obligations.py:1619.",
+    "reuse": "reckon/crew/queue_landing.py:1087 re-implements the suite-arm readers reckon/crew/promotion_checks.py:1955 and :1995 already own in a module this file imports.",
+    "scope_discipline": "tests/test_a_run_a_review_does_not_block_lands.py:352 is modified although it is named in neither the declared write paths nor the done_when's write-path sentence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is to leave a red run to its coordinator rather than landing it; reckon/crew/queue_landing.py:1753 evaluates `_red_suite_guard` before the landing measures anything and records the existing `refused` status with the `red-suite` guard, so a run whose own evidence is red never reaches `_land`.\nVERDICT done_when: The done_when names six refusing/accepting cases and one negative control per refusing arm; tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:350-608 carries all six cases and the five parametrised controls, and the run's gate-head.log records 131 passed with EXIT=0 at 16b38e5.\nVERDICT write_paths: The declared scope is reckon/crew/queue_landing.py plus the landing fragment; the diff also writes tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py (named by the done_when as a write path) and modifies tests/test_a_run_a_review_does_not_block_lands.py, which neither the fence nor the done_when authorises and which the manifest discloses under evidence_inputs.\nVERDICT manifest: Read; status complete, commits 16b38e57 and f1627c3c, tests names the 15-file importer gate, test_logs names gate-head.log (131 passed, EXIT=0) and negative-control.log (5 failed, 6 passed, EXIT=1), and all six rubric lines are present.\nVERDICT diff: Read both commits against a6a0f1f5; 947 insertions and 22 deletions across queue_landing.py (the guard and its stamp), the new test file, the fragment, and a three-assertion update in the existing non-blocking-findings test.\nCALL_SITES: reckon/crew/queue_landing.py:_land_deliveries, reckon/crew/obligations.py:1619\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/queue_landing.py:1753 refuses before measurement, and the refusal reaches the obligations view as landing-refused through reckon/crew/obligations.py:1619.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:582-608 drives every refusing arm and its removal, and the manifest records the gate and its red control log with exit statuses.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: tests/test_a_run_a_review_does_not_block_lands.py:352 is modified although it is named in neither the declared write paths nor the done_when's write-path sentence.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:599 promotes each refused case once its own arm is removed, so each assertion reddens on a reinstated regression, though no case covers a folded disposition surviving landing.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/queue_landing.py:1253 extends the existing review stamp and reuses `_record_attempt` and `_fresh_manifest` rather than adding a status.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/queue_landing.py:1087 re-implements the suite-arm readers reckon/crew/promotion_checks.py:1955 and :1995 already own in a module this file imports.\nFINDING reckon/crew/queue_landing.py:1087 non-blocking: `_canonical_test_ids`, `_after_suite_arm` and `_after_suite_added_guard` duplicate the manifest suite-arm capability `promotion_checks._head_suite_failure_ids` (reckon/crew/promotion_checks.py:1995) and `_baseline_suite_failure_ids` (reckon/crew/promotion_checks.py:1955) already own in a module this file already imports, so the rule for reading a failure-id set now has two implementations that can diverge, and the peer section that consolidates failure comparison will have to reconcile this copy.\nFINDING reckon/crew/queue_landing.py:1212 non-blocking: `_undisposed_finding_guard` enumerates through `findings._record_findings`, which for a code review returns the record's findings list unfiltered (reckon/crew/findings.py:170), while `record_finding_disposition` enumerates through `repair.review_findings`, which skips an entry stating no claim (reckon/crew/repair.py:133); a claimless finding ahead of a disposed one shifts the index, so the guard reads `open` for a finding index the disposition writer refuses to accept findings for.\nFINDING reckon/crew/queue_landing.py:1907 blocking: On a landing the pass calls `record_landed_exemptions`, whose `_excusable_finding_indexes` (reckon/crew/recovery_review_acceptance.py:65) returns every non-blocking finding regardless of any existing disposition, and `record_finding_disposition` overwrites the entry (reckon/crew/review_dispositions.py:497); because this change makes a disposition mandatory before landing, the `folded:<node>` a coordinator records is rewritten to `exempted:<reason>` on the very next pass and the node it names is lost.\nFINDING tests/test_a_run_a_review_does_not_block_lands.py:352 non-blocking: The diff reverses three assertions in a file outside every declared write path, superseding the landed contract that a review's non-blocking findings do not hold the landing; the reversal is disclosed in the fragment and required by the done_when, but it changes another section's accepted behaviour without that section's coordinator.",
+  "review_run_id": "r-20261108T104745074252-review-of-lander-leaves-red-run-to-coordinator-f1627c3c88b0",
+  "reviewed_base_sha": "a6a0f1f57ccdcabc09a1fc00d65ef27b97db4bc1",
+  "reviewed_head_sha": "f1627c3c88b0fd45b0b6aa56bdf518bffb704900",
+  "reviewed_run_id": "r-20261108T053724507984-lander-leaves-red-run-to-coordinator",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T11:39:22.670124+00:00",
+  "total": 88
+}
