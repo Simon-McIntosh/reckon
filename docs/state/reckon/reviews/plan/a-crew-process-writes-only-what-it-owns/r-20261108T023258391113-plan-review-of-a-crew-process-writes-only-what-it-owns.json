@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T02:55:58.419Z",
+  "dispatched_at": "2026-11-08T02:43:38Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html#s2",
+      "id": "done_when-1",
+      "reason": "the gate would be green on the pre-fix tree exactly as the existing \"changes no run row\" cases are today, so the node's central measure would prove nothing.",
+      "text": "the done-when says the fixture is \"seeded with one per-run record that still carries `follow_on_paths`\" but never says that record must be one of the aggregate's own `runs` rows; `record_hold_checks` loads the aggregate (`reckon/ledger.py:3538`) and passes `payload[\"runs\"]`, set from that aggregate's rows (`:2232`), to `_keep_run_files_identical` (`:2242`), which only rewrites rows it is handed and skips a row with no file \u2014 a record seeded the way `append_run` seeds one, as a file under `runs/` and not in the aggregate's list, is never visited, so the rewrite the first case asserts cannot happen and the case passes with the unfixed code",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-crew-process-writes-only-what-it-owns.html#s2",
+      "id": "anchors_resolve-1",
+      "reason": "a \u00a72 worker told where a site is must be able to open it, and five of the seven anchors point at code the deliverable does not name, so each has to be re-found by grep before the change can be scoped.",
+      "text": "every line anchor in the deliverable is mislocated, at the plan's own base commit a7e4578 as well as at head: `write` is at `reckon/ledger.py:2075` (cited 2007, which lands inside `_keep_run_files_identical`), `_keep_run_files_identical` at `:1967` (cited 1899, a blank line), its call at `:2242` (cited 2174, the fold-refusal `raise`), the `commit=True` gate at `:2203` and its `_commit_state_write` at `:2261` (cited 2192\u20132200 and 2135\u20132139, both the fold-refusal text), and `record_hold_checks` at `:3505` (cited 3440, inside a row-repair loop); the committing-caller anchors are worse because they land in different functions \u2014 `reckon/crew_run_commands.py:3561` is the `--pretty` click option just above `def crew_verify_gate` with its `commit=True` at `:3678`, and `reckon/crew/routing.py:3006` is `_disposable_member_id` with the two `commit=True` calls at `:3054` and `:3181` (cited 3003 and 3130)",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "a7e45784a9fdd60c4472d3118360a3587245e4cd",
+  "plan_fingerprint": "904c1d8ac5ea55645ee83e79e9658626b87e16a56a2d3cd5a9da2bfa41112317",
+  "plan_slug": "a-crew-process-writes-only-what-it-owns",
+  "plan_version": 18,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T023258391113-plan-review-of-a-crew-process-writes-only-what-it-owns",
+  "reviewed_blob_sha": "a3738f943991d02903290adb55125f5f46469510",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 every ledger anchor in \u00a72 is mislocated at both the plan's base revision and head, and the three committing-caller anchors land in unrelated functions (see FINDING anchors_resolve).",
+    "done_when": "a finding \u2014 \u00a72's first case rests on a seed that is not pinned to the aggregate's `runs` list, so it can pass on the unfixed code (see FINDING done_when).",
+    "evidence_paths": "pass \u2014 logs are stated to sit under the run directory with the revision and literal command first and a bare `EXIT=` last, matching the sibling sections; no scratchpad path is named.",
+    "naming": "pass \u2014 \u00a72 introduces one internal function and no public surface, and no plan label, ticket number or version tag reaches a symbol, path or comment it asks for.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited evidence (a hold check rewrites per-run files through `_keep_run_files_identical` and commits only the aggregate path, `reckon/ledger.py:2242` \u2192 `:2261` \u2192 `:3609`), the cited inline comment does claim the run rows stay byte-identical (`:3536-3538`), `_commit_state_write` already accepts a set of paths for one commit (`:2506-2523`), and the production caller `reckon/budget.py:1911` resolves; the retired `follow_on_paths` spelling is normalised on read (`:1012-1018`), so a file carrying it is genuinely rewritten by a write that changed no run row.",
+    "single_goal": "pass \u2014 both deliverable changes serve the one goal in the heading, \"a hold transition commits every run file it rewrote\": the commit branch stops leaving run files behind, and the internal-function extraction is the mechanism that gives `record_hold_checks` the rewritten paths.",
+    "wiring": "pass \u2014 \u00a72 is self-contained, declares no depends-on/informs/gates (`data-links=\"\"` on the section, no plan-level graph), and its two write paths (`reckon/ledger.py`, `tests/test_hold_check_leaves_the_tree_clean.py`) are cited by no other section, so no missing or wrong edge."
+  },
+  "section_digests": {
+    "_document": "9603432af4f7b5bbb5297a7d3de6a82224e72420b1d6e255e6198052ad6cf21d",
+    "s1": "38e026f18d1b42b1d79978e1ed1cf6179e085908a249e5762f39a683dcc8123f",
+    "s2": "c8538fd94cdcac1ab9e4fe95886618042bfd316cc0362b60889f887e570ae09d",
+    "s3": "56ff71f47c37ed3c14aadfcbebb6d71b53e5a14b0c9333c997c4ecd0cb4987b9",
+    "s4": "e88fcf79ec58d8305f36e37d69846c8e0a1a10f1b73fc6c167c25b700165e123",
+    "s5": "572a9870049fdc7707f7041e3fb701f3760e3eefe3e41e6ea332514fd8b1228e",
+    "s6": "a427c53225aa517fb45db03544ccf7690614de1c72e444ac5611b55805c2fcf1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T03:05:33.442071+00:00",
+  "total": null
+}
