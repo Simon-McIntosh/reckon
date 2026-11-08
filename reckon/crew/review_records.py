@@ -299,7 +299,7 @@ def store_committed_review(
     return path
 
 
-def commit_record_write(project: str, path: str | Path) -> bool:
+def commit_record_write(project: str, path: str | Path | Iterable[str | Path]) -> bool:
     """Commit a write to a review record that lives in the committed tree.
 
     A disposition or an answer written to the committed record is a tracked
@@ -309,13 +309,27 @@ def commit_record_write(project: str, path: str | Path) -> bool:
     A staging write is not tracked and is left uncommitted. A project with no
     committed tree, or a path outside it, is not committed here and returns
     ``False``.
+
+    ``path`` names one file, as a disposition writes, or a set of files that
+    share the one commit: a repair rewrites a committed record and preserves
+    the as-delivered copy beside it, and the two belong to the same write.
     """
     committed = _review.committed_review_root(project)
     if committed is None:
         return False
-    try:
-        Path(path).resolve().relative_to(Path(committed).resolve())
-    except (OSError, ValueError):
+    root = Path(committed).resolve()
+    if isinstance(path, (str, Path)):
+        paths = [Path(path)]
+    else:
+        paths = [Path(item) for item in path]
+    inside: list[Path] = []
+    for item in paths:
+        try:
+            item.resolve().relative_to(root)
+        except (OSError, ValueError):
+            return False
+        inside.append(item)
+    if not inside:
         return False
     from reckon import ledger
 
@@ -324,7 +338,7 @@ def commit_record_write(project: str, path: str | Path) -> bool:
         "fix(review): commit an answer on a committed review record",
         "Commit the disposition or answer written to a committed review record "
         "so it travels with the tree rather than sitting as a modified file.",
-        Path(path),
+        inside,
         "review",
     )
     return True
