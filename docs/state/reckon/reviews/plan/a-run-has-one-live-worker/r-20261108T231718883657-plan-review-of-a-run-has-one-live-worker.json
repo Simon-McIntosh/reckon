@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T23:26:08.253Z",
+  "dispatched_at": "2026-11-08T23:18:27Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:165",
+      "id": "reasoning-1",
+      "reason": "an implementer following the key rule literally ships a reservation that frees itself one step after every resume, so the two-door guard holds only while the pointer happens to equal the key.",
+      "text": "\"One holder, one key\" requires every door to key the reservation on the last committed attempt plus one, but the resume door launches the pointer's attempt plus one in two places (reckon/crew/dispatch_launch.py:2664 in `supervised_launch`, reckoned again at reckon/crew/dispatch_sessions.py:2450 in `record_resumption`), so in the section's own window a resume winner reserves attempt 2 and then launches attempt 3, writing the pointer to 3 \u2014 past the key it holds; `_claim_may_be_reclaimed` then answers reclaimable as soon as the pointer is past the claimed number (reckon/crew/resumption.py:383\u2013384), with no liveness read, and `claim_next_attempt`'s loop re-keys to the pointer's successor on that same arm (resumption.py:407\u2013414), so the next door frees a live reservation and launches a second worker in the same worktree \u2014 the defect \u00a713 exists to prevent; the \"Freed by liveness, never by age\" constraint names only that function's age arm, so the design as specified keeps the pointer-ahead arm, and reconciling the key with the launched attempt would need reckon/crew/dispatch_sessions.py, which the section's write paths do not include.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:165",
+      "id": "done_when-1",
+      "reason": "without that case the test is green on the broken key, and the failure is paid for in a build node's worktree as two workers on one run.",
+      "text": "the new case \"a resume racing a dispatch for the same run in the window holds one reservation between them, and the second is refused\", with its control \"keying the resume on the pointer's attempt fails the resume-beside-dispatch case\", is set in a state where the pointer still equals the reserved attempt (2), so a design that keys on the last committed attempt yet launches the pointer's attempt plus one passes both the case and its control; no listed case holds a live reservation whose launch has already written the pointer past the reserved number, which is the state every completed resume creates, so the gate cannot show the freeing rule holds across it.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "f965fbd6a76db92ff286efa11d3daa51d543d672",
+  "plan_fingerprint": "c2ff070395424b43bde934a0dc1639fec361dacb6cc7f8a499a1c32c9f300735",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 99,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T231718883657-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "9ebb6b9d0c92704dfe2a6571b68f7d2c6b79a7c7",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 resumption.py:398 (`claimed = record[\"attempt\"] + 1`) and 366\u2013382 (`_claim_may_be_reclaimed`), dispatch.py's attempt computation near 2736, `_create_worktree` at 2834 ahead of the pointer writes at 3401/3417 and `_prepare_attempt_records` at 3438, `admit_once`'s in-process `dispatch(...)` at queue_admission.py:432, `_retired_attempt_ended` at dispatch_launch.py:2072, `SUPERVISOR_SURVIVAL_SECONDS`/`_confirm_supervisor_survived` at 2313/2371, `LAUNCH_WINDOW_SECONDS = 120` at recovery_vocabulary.py:55 and the in-harness liveness line at recovery_classification.py:2157 all resolve.",
+    "done_when": "a finding \u2014 no case holds a live reservation whose launch has already written the pointer past the reserved attempt, so the gate cannot show the key rule survives a resume's own launch.",
+    "evidence_paths": "pass \u2014 the reproduction runs in a temporary crew home and the gate logs land under the run directory, with the armed suite judged by delta against the dispatch base.",
+    "naming": "pass \u2014 the new constraint names mechanisms (\"last committed attempt\", \"reserved supervisor\") and carries no plan label, stage name or ticket id.",
+    "reasoning": "a finding \u2014 the \"one key\" rule keys the reservation on the last committed attempt plus one while the resume door launches the pointer's attempt plus one, so a resume's own launch moves the pointer past the key it holds and the next door frees it.",
+    "single_goal": "pass \u2014 \u00a713 carries one deliverable (a launch of an existing run id refused while another is in flight) and one test file.",
+    "wiring": "pass \u2014 \u00a713's declarations and node relationships are unchanged by this revision, and the four write paths it names (dispatch.py, dispatch_launch.py, resumption.py, tests/test_a_concurrent_launch_is_refused.py) resolve in the tree."
+  },
+  "section_digests": {
+    "_document": "eeade309f31284b9ed0684d845f9e7ae9f528f9713bcf3e0b9a1f727559e9483",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s10": "6dc41ff672ef42b279e0d66e033f19c8c35deb5c39f0efeb637f11ccedd3f7d4",
+    "s11": "beb7d054249b6e83a0d555fe9051398e9d5fb537152e967098b323eb4c3c0122",
+    "s12": "84e2cc4249fe87aae0d3fc8134f2e4808ab95216a81db6b06c7e82eec1df1031",
+    "s13": "d55ad72f5520f992802be51c97f93c50d8ba8c09b8640b35c4d9657c8df647f8",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "3a58d93f403c56db20efa76febfb2e44549d3805ff296517c27f63bc01055fb8",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "63bd79fcdd7baf06c8cc0bbc04ef21beec3605a6fdb13eed90b3ad410f8516e7",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b",
+    "s8": "1615d40635864933b3396d3d4ae7b0f94361ec3a105caa540ba761ad95bd24fe",
+    "s9": "1a571813cf821821012487f1bc0e7a9bb360370e7b12b6440683c365dba25774"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T23:31:40.429536+00:00",
+  "total": null
+}
