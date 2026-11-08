@@ -51,13 +51,17 @@
           returns the request&rsquo;s <code>owner_checked</code> mark, which is
           the only route from a request line into a child entry.
           <code>adopt_live_work</code> runs at the start of
-          <code>supervise</code>, before the record is written, and follows a
+          <code>supervise</code>, before the record is written. It follows a
           run for the owner&rsquo;s current session and for every earlier
-          session the predecessor&rsquo;s census names with the mark, through
-          the host&rsquo;s existing live-work judgement. Its adoptions are
-          marked. A terminal phase and a <code>launch-failed</code> pointer owe
-          no follower, and a pointer naming another session outside the owned
-          set is skipped. <code>SessionHost.record()</code> carries
+          session the predecessor&rsquo;s census names with the mark, asking
+          <code>live_work_run</code> for each session and project pair through
+          the <code>_live_view</code> seam the follower settles by, so the scan
+          composes no terminal set of its own. <code>_live_projects</code>
+          collects project names only. A <code>launch-failed</code> pointer is
+          set aside inside <code>live_work_run</code>, where the work judgement
+          lives: it says a worker was never spawned, so it is a queue
+          placement and not work a pane could show.
+          <code>SessionHost.record()</code> carries
           <code>owner_checked</code> on marked children and a
           <code>waiting_for_dispatch</code> field, true while the start-up scan
           found nothing and false once a child starts.</li>
@@ -79,31 +83,38 @@
         <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
         tests/test_a_rearmed_host_follows_live_runs.py
         tests/test_session_host_plugin.py</code>:
-        <strong>15 passed in 54.33 s, EXIT=0</strong> at
-        <code>ae62f5c4c3</code>, and
-        <strong>6 failed, 9 passed in 103.45 s, EXIT=1</strong> at the dispatch
-        base <code>e5179a465f</code> in a <code>git archive</code> scratch tree
-        with the new test file copied in. The six failing ids are
-        <code>test_a_live_run_of_its_owner_starts_a_follower</code>,
-        <code>test_live_runs_in_two_projects_start_a_follower_each</code>,
-        <code>test_terminal_and_foreign_pointers_start_no_follower</code>,
-        <code>test_a_host_with_no_live_run_waits_for_dispatch</code>,
-        <code>test_a_marked_request_reaches_the_census_as_a_marked_child</code>
-        and
-        <code>test_an_earlier_marked_session_is_followed_and_an_unmarked_one_is_not</code>.
+        <strong>15 passed in 42.97 s, EXIT=0</strong> at
+        <code>11a88b1bec</code>. The base arm runs the rewritten plugin
+        tests against the base archive&rsquo;s own script, from that tree&rsquo;s
+        root: <strong>4 failed, 3 passed in 42.38 s, EXIT=1</strong> at
+        <code>e5179a465f</code>, the four being
+        <code>test_execs_the_host_at_once_holding_the_fifo_open</code>,
+        <code>test_passes_no_first_request_to_the_host</code>,
+        <code>test_hands_the_owner_pair_to_the_command_it_execs</code> and
+        <code>test_hands_the_fifo_it_created_to_the_command_it_execs</code>:
+        the base script waits on its FIFO, so the recording stub never runs.
         Logs: <code>gate-after.log</code>, <code>gate-base.log</code>.</p>
-      <p><strong>Negative controls</strong> &mdash; three, each applied alone to
+      <p><strong>Negative controls</strong> &mdash; eight, each applied alone to
         <code>reckon/crew/session_host.py</code> at head and restored
         afterwards, logged in one file under the run directory
-        (<code>negative-controls.log</code>):</p>
+        (<code>negative-controls.log</code>), each failing the case the
+        section names (<strong>1 failed, EXIT=1</strong> per section):</p>
       <ul>
-        <li>the mark dropped from what <code>parse_request</code> returns: the
-          child-entry case fails (<strong>1 failed, EXIT=1</strong>);</li>
-        <li>unmarked previous children admitted: the earlier-session case starts
-          a follower for the foreign pair and fails
-          (<strong>1 failed, EXIT=1</strong>);</li>
-        <li>the start-up scan skipped: the first case starts no follower and
-          fails (<strong>1 failed, EXIT=1</strong>).</li>
+        <li>the mark dropped from what <code>parse_request</code> returns:
+          the child-entry case fails;</li>
+        <li>unmarked previous children admitted: the earlier-session case
+          starts a follower for the foreign pair and fails;</li>
+        <li>the <code>_remove_fifo</code> call dropped from
+          <code>SessionHost.stop</code>: the signalled-host case fails;</li>
+        <li>only the current session matched: the earlier-session case
+          starts no follower;</li>
+        <li>the start-up scan skipped: the first case starts no follower;</li>
+        <li>the launch record not set aside: the third case starts a
+          follower;</li>
+        <li>the session ignored in the work judgement: the third case
+          starts a follower for another session&rsquo;s run;</li>
+        <li><code>session_id</code> filtered instead of <code>session</code>:
+          the first case starts no follower.</li>
       </ul>
       <p><strong>Regression</strong> over the neighbouring host tests
         (<code>tests/test_session_host.py</code>,
