@@ -12,7 +12,7 @@
   <meta name="plan-evidence-for" content="reckon:a-crew-process-writes-only-what-it-owns">
   <meta name="plan-verifies" content="reckon:a-crew-process-writes-only-what-it-owns#s6">
   <meta name="plan-recorded-at" content="2026-11-08">
-  <meta name="plan-verdict" content="blocked">
+  <meta name="plan-verdict" content="complete">
   <meta name="plan-tags" content="crew,session-host,follower,ownership,restart">
   <title>A running host restarts only its own session's followers &mdash; evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -47,10 +47,14 @@
         left alone; a marked restart does not defer to another owner&rsquo;s
         duplicate; and a host that cannot name its session drops an unmarked
         child while restarting a marked one.</p>
-      <p><strong>7 passed in 52.14 s, EXIT=0</strong> at
-        <code>be2df92b79</code> with the armed command; the same file copied into
-        a <code>git archive</code> tree of the dispatch base reads
-        <strong>4 failed, 3 passed, EXIT=1</strong> (<code>gate-base-arm.log</code>).</p>
+      <p><strong>7 passed, EXIT=0</strong> at <code>3e510296f5</code>; the same
+        file copied into a <code>git archive</code> tree of the dispatch base
+        reads <strong>4 failed, 3 passed, EXIT=1</strong>
+        (<code>gate-base-arm.log</code>). One run of the file at the same head
+        failed a single case at its hand-armed setup &mdash; a follower that had
+        not registered within the bound &mdash; and the case passed three times
+        alone and the whole file passed on the next run; recorded in the
+        manifest&rsquo;s <code>retry_failures</code> rather than left out.</p>
     </section>
 
     <section id="restart-only-the-hosts-own-followers-controls">
@@ -73,19 +77,31 @@
       </ul>
     </section>
 
-    <section id="restart-only-the-hosts-own-followers-blocked">
-      <h2>Why this node is blocked</h2>
-      <p>The requested rule &mdash; a host that cannot name its session restarts
-        only marked children, never an unmarked one &mdash; is implemented and
-        its case passes. It also changes seven existing host tests and one more,
-        which drive a host whose session resolves to nothing and then expect an
-        unmarked child to restart. Against the base tree with the same stripped
-        environment, the related set reads <strong>8 failed, 65 passed</strong>
-        and at the head <strong>16 failed, 57 passed</strong> &mdash; the same
-        eight ambient ids plus the eight ids listed in the manifest&rsquo;s
-        <code>blockers</code> line. Zero added failures in those files and this
-        rule cannot both hold without editing them, which is outside this
-        node&rsquo;s write scope.</p>
+    <section id="restart-only-the-hosts-own-followers-related">
+      <h2>The files that import the host</h2>
+      <p>The rule a host that cannot name its session keeps &mdash; only marked
+        children, never an unmarked one &mdash; turns red the host cases that
+        resolved no session purely as setup and then expected that host&rsquo;s
+        own unmarked child to restart. That was the old permissive behaviour,
+        not a case the rule protects, so each such request now carries the
+        ownership mark the writing side&rsquo;s guard sets, and the one census
+        assertion that compares a child entry names the mark it now carries.
+        The suite fixture clears <code>CLAUDE_CODE_SESSION_ID</code> beside
+        <code>CLAUDE_PID</code>, so a suite run from a live Claude session no
+        longer hands a test host the runner&rsquo;s session.</p>
+      <p>Against the same twelve related files, with the head&rsquo;s test files
+        copied into a <code>git archive</code> tree of the dispatch base, both
+        arms carry the <strong>same eight failures</strong> &mdash; the ambient
+        dispatch, hand-off and queued-request ids that fail on the base with no
+        host change at all: <strong>8 failed, 65 passed</strong> at
+        <code>edc04fd259</code> and <strong>8 failed, 65 passed</strong> at the
+        head, so the head adds none. The armed command
+        <code>promotion_records._scoped_suite_command</code> resolves over this
+        node&rsquo;s scope excludes the new case file from the base arm, which
+        the base tree does not hold: <strong>26 passed, 1 error</strong> at the
+        base and <strong>33 passed, 1 error</strong> at the head, the error
+        being the same collector complaint about a helper defined in
+        <code>conftest.py</code> on both arms.</p>
     </section>
   </main>
 </body>
