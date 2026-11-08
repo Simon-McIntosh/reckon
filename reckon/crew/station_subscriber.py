@@ -201,10 +201,22 @@ def live_work_populations(
     ownerless pointer keeps every session's reading live, because without an
     owner nothing shows the work is not the reader's own.
     """
+    from reckon.crew.dispatch_launch import LAUNCH_FAILED_PHASE
+
     project_live = False
     unowned = False
     sessions: set[str] = set()
-    snapshot = list(pointers)
+    # A launch record says a worker was never spawned, so it is a queue
+    # placement and not work a pane could show. Every reader of this rule --
+    # a follower settling a pair, the station's reading, a host on start -- sees
+    # the same population, so the exclusion is made here rather than by each
+    # caller, and none can disagree with another about whether such a run owes
+    # a pane.
+    snapshot = [
+        pointer
+        for pointer in pointers
+        if str(pointer.get("phase") or "") != LAUNCH_FAILED_PHASE
+    ]
     # One read serves every pointer: the duties are asked of one snapshot of the
     # live directory and one ordering, so two runs in one pass cannot be judged
     # against two different views of the fleet.

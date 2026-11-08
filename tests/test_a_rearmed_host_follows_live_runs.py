@@ -12,9 +12,11 @@ The cases here drive the real ``reckon crew host`` against a temporary crew home
 and a stub follower command, because the hand-off, the census and the host's own
 stop path are what a re-arm has to get right.
 
-Every absence below is preceded by the same reader finding a known-present
-value: the terminal-and-foreign case ends by writing a working run for the
-owner's own session and watching the follower appear.
+Every absence below is paired with the same reader finding a known-present
+value, so an empty result is a statement about the judgement rather than about
+an instrument that found nothing: the terminal-and-foreign case shows the scan
+finding its own project's pointers and the judgement naming another session's
+working run.
 """
 
 from __future__ import annotations
@@ -356,10 +358,10 @@ def test_terminal_and_foreign_pointers_start_no_follower(
 ) -> None:
     """Only work the pane would still show is followed.
 
-    The control is the live-work judgement itself: before the host starts it
-    reads the launch-failed pointer as this session's live work, so the host
-    starting nothing for it is a statement about the scan's own rule rather
-    than about an instrument that found no pointers at all.
+    A launch record names a queue placement, not a worker, so the judgement
+    shared by the host, the station and the follower sets it aside; a finished
+    or interrupted run owes no pane, and another session's run is not this
+    session's work.
     """
     _write_pointer(COMPLETE_RUN, phase="complete")
     _write_pointer(INTERRUPTED_RUN, phase="interrupted")

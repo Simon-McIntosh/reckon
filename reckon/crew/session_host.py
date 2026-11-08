@@ -352,20 +352,11 @@ def live_work_run(project: str, session: str) -> str | None:
     """
     from reckon.crew import runs as runs_module
     from reckon.crew import station_subscriber
-    from reckon.crew.dispatch_launch import LAUNCH_FAILED_PHASE
 
     try:
         pointers = runs_module._list_live_records(project=project)
     except OSError:
         return None
-    # A launch record says a worker was never spawned, so it is a queue
-    # placement rather than work a pane could show. Admission requeues it; a
-    # pane opened over it would watch nothing until the retry lands.
-    pointers = [
-        pointer
-        for pointer in pointers
-        if str(pointer.get("phase") or "") != LAUNCH_FAILED_PHASE
-    ]
     if not station_subscriber.population_has_live_work(pointers, session):
         return None
     return _naming_run(pointers, session)
