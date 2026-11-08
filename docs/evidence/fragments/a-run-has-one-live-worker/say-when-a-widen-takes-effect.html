@@ -1,0 +1,34 @@
+<section class="evidence-fragment" id="say-when-a-widen-takes-effect">
+  <h3 id="say-when-a-widen-takes-effect-heading">A widen says when the paths it added take effect</h3>
+  <p id="say-when-a-widen-takes-effect-what">A running worker's mounts are fixed when its sandbox starts, so a widened
+    write claim reaches that worker only on its next attempt. The widen result listed the added paths and said
+    nothing about this, and a coordinator read its <code>ok</code> as a fence that had already moved. The result now
+    carries a <code>takes_effect</code> sentence, composed in <code>widen_takes_effect</code>
+    (<code>reckon/crew/claims.py</code>) from one liveness reading.</p>
+  <p id="say-when-a-widen-takes-effect-reading"><code>process_liveness.record_process_liveness</code> returns a
+    <code>LivenessReading</code> carrying the arm that answered: recorded pid, session walk, placed run, proven dead,
+    or unknown. <code>record_process_alive</code> keeps its <code>bool | None</code> shape by returning that reading's
+    <code>alive</code>, so the arm and the boolean are one decision rather than two. The sentence names a pid only in
+    the recorded-pid arm, names the session and no pid when the session walk found the worker, names the scheduler
+    job for a placed run and never presents the scheduler client's pid as the worker's, says the next resume or launch
+    mounts the paths on a proven death, and says only that the worker's liveness could not be read on this host when
+    the reading is unknown. Every arm ends by naming the field the launch fence is built from,
+    <code>node.write_paths</code>.</p>
+  <p id="say-when-a-widen-takes-effect-reproduced">The defect was reproduced first at the dispatch base in a temporary
+    crew home: a self-widen beside a live stand-in worker and a coordinator's widen of a stopped run each returned
+    <code>ok</code> with the added paths listed and no word on when they apply (<code>negative-control-reproduction.log</code>).</p>
+  <p id="say-when-a-widen-takes-effect-measure">The gate is
+    <code>tests/test_a_widen_says_when_it_takes_effect.py</code>. At the head revision it reports
+    <strong>11 passed, EXIT=0</strong>. At the dispatch base with the test copied in it reports
+    <strong>10 failed, 1 passed, EXIT=1</strong>; the case that passes is the fence-field guard, which asserts
+    behaviour the claim writer already had. With the declared mutation applied — the liveness read dropped, the
+    session-walk arm's recorded pid named as the worker's, and the boolean decided apart from the reading — it reports
+    <strong>4 failed, 7 passed, EXIT=1</strong>, failing the live-worker case, the session-walk case, the unknown case,
+    and the unknown arm of the boolean case.</p>
+  <ul id="say-when-a-widen-takes-effect-evidence">
+    <li>defect reproduction, base: <code>negative-control-reproduction.log</code> (both widen paths ok, no timing word)</li>
+    <li>head arm: <code>head-suite.log</code> (revision c559ad2e97, 11 passed, EXIT=0)</li>
+    <li>base arm: <code>base-suite.log</code> (revision 1b3663ce4f, 10 failed, 1 passed, EXIT=1)</li>
+    <li>negative control, declared mutation: <code>negative-control.log</code> (4 failed, EXIT=1)</li>
+  </ul>
+</section>
