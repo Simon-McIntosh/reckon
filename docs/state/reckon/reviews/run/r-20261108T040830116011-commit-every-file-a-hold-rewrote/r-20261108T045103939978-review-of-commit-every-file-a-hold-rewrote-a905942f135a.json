@@ -1,0 +1,130 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured from the reviewed run's own arms: baseline_suite (revision 47f356ab101cb46f57baabf0ae7933b5d47ff0a5, base-tree) failed 3 ids, all three of them this node's new cases, and after_suite (revision a905942f13, node worktree) failed none, so no failure present at head is absent at base. The wide arm over the 84 ledger-importing files (ledger-importers-head.log, 733 passed / 2 failed / 3 skipped) names two test_brief_prompt failures, and ledger-importers-base-brief-prompt.log shows the same two failing at the dispatch base, so they are pre-existing and not added by this node.",
+  "assertion_analysis": [
+    {
+      "condition_to_fail": "record_hold_checks commits only the aggregate's path, leaving docs/state/reckon/runs/r-one.json rewritten and unstaged; negative-control.log mutation 0 records exactly this at EXIT=1.",
+      "file": "tests/test_hold_check_leaves_the_tree_clean.py",
+      "line": 209
+    },
+    {
+      "condition_to_fail": "The hold commit carries the aggregate alone, so the rewritten run file is absent from the commit's own --name-only listing.",
+      "file": "tests/test_hold_check_leaves_the_tree_clean.py",
+      "line": 213
+    },
+    {
+      "condition_to_fail": "The committed run record was not re-encoded through normalize_outside_scope_paths, so it still spells the retired key.",
+      "file": "tests/test_hold_check_leaves_the_tree_clean.py",
+      "line": 217
+    },
+    {
+      "condition_to_fail": "write's commit=True branch stages only the aggregate, leaving the run file modified; negative-control.log mutation 1 records this failing at EXIT=1.",
+      "file": "tests/test_hold_check_leaves_the_tree_clean.py",
+      "line": 242
+    },
+    {
+      "condition_to_fail": "The roster commit stops being made at all, or is made under a different subject, so the run record never lands in a commit.",
+      "file": "tests/test_hold_check_leaves_the_tree_clean.py",
+      "line": 247
+    },
+    {
+      "condition_to_fail": "write returns without advancing the version; this is a weak monotonicity check rather than the case's guard, which is line 245.",
+      "file": "tests/test_hold_check_leaves_the_tree_clean.py",
+      "line": 241
+    },
+    {
+      "condition_to_fail": "A hold check that changes no hold still writes and commits, so HEAD moves; the case guards the changed-nothing path against the widened commit set.",
+      "file": "tests/test_hold_check_leaves_the_tree_clean.py",
+      "line": 271
+    }
+  ],
+  "base_log_revision": "47f356ab101cb46f57baabf0ae7933b5d47ff0a5",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/budget.py:1911 record_hold_checks (the hold-transition caller this section repairs)",
+    "reckon/crew/routing.py:3181 ledger.write(..., commit=True) idle-member reaping",
+    "reckon/crew/promotion_records.py:1082 ledger.write(..., commit=True) identity retirement during promotion"
+  ],
+  "completed_at": "2026-11-08T05:05:27.748Z",
+  "dispatched_at": "2026-11-08T04:53:04Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "log-header labelling or a duplicated literal; the measured result and the code are sound",
+      "recorded_at": "2026-11-08T05:26:24.598960+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "log-header labelling or a duplicated literal; the measured result and the code are sound",
+      "recorded_at": "2026-11-08T05:26:49.115343+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "log-header labelling or a duplicated literal; the measured result and the code are sound",
+      "recorded_at": "2026-11-08T05:27:22.032948+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T040830116011-commit-every-file-a-hold-rewrote/negative-control.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: mutation 1's header stamps the dispatch base revision 47f356ab while the tree it names is the head worktree carrying an uncommitted mutation, so the revision line describes code that did not run; mutation 2's own header says '(uncommitted tree)', and the two halves of one log should say it the same way, or a later reader comparing revision to tree is misled about what was measured."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T040830116011-commit-every-file-a-hold-rewrote/ledger-importers-head.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head-labelled wide arm stamps 4096845b97 rather than the final head a905942f13 (the delta is a formatting-only test reformat plus the evidence fragment, as the log states), and folds the tree, module and cwd into that one line; the run is sound but the header does not name the revision its own label claims."
+    },
+    {
+      "file": "tests/test_hold_check_leaves_the_tree_clean.py",
+      "line": "29",
+      "severity": "non-blocking",
+      "text": "non-blocking: RETIRED_KEY re-spells reckon/run_record.py:33's RETIRED_OUTSIDE_SCOPE_PATHS as the literal \"follow_on_paths\"; importing the owner's constant would keep the seed and the retire mechanism from drifting apart when the retired key is eventually dropped, and would fail loudly rather than silently stop reproducing the defect."
+    }
+  ],
+  "head_log_revision": "a905942f135a7f439580f4a5d8a40a2e46be6e18",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Read commit by commit: 4096845b97 splits write into a public wrapper (reckon/ledger.py:2075-2100) and _write_state (reckon/ledger.py:2103-2309) returning the aggregate plus each re-encoded run file, widens write's roster commit to stage that set (ledger.py:2296-2308), routes record_hold_checks through _write_state and stages the same set under its hold subject (ledger.py:3634, :3654), and corrects the stale byte-identical comment (ledger.py:3569-3574); a905942f13 adds the 74-line evidence fragment and a formatting-only reformat of one test signature.",
+    "done_when": "Section 2's done_when asks for three cases in tests/test_hold_check_leaves_the_tree_clean.py plus two negative controls; the cases are at tests/test_hold_check_leaves_the_tree_clean.py:200, :221 and :252, baseline-arm.log records all three failing on the dispatch base (3 failed, 3 passed, EXIT=1) and head-arm.log records 6 passed EXIT=0 at a905942f13, and negative-control.log carries both declared mutations each failing the case that owns its caller.",
+    "goal": "The plan's section 2 deliverable (docs/plans/a-crew-process-writes-only-what-it-owns.html:41) asks that a hold transition and write's commit branch stage every per-run file the write re-encoded; reckon/ledger.py:2308 now returns (version, rewritten) from _write_state, reckon/ledger.py:3654 passes that set to _commit_state_write under the hold subject, and reckon/ledger.py:2100 keeps write's signature and int return.",
+    "manifest": "Read; the source manifest.md records status complete, both commits, base arm 3 failed/3 passed EXIT=1, head arm 6 passed EXIT=0, the two applied mutations, and both suite blocks carry completed:true with literal absolute-path commands and log paths that exist and end in a bare EXIT= line.",
+    "write_paths": "Section 2 grants reckon/ledger.py and tests/test_hold_check_leaves_the_tree_clean.py; the diff from 47f356ab101cb46f57baabf0ae7933b5d47ff0a5 to a905942f135a7f439580f4a5d8a40a2e46be6e18 touches exactly those two plus the dispatch-declared evidence fragment docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/commit-every-file-a-hold-rewrote.html, and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_hold_check_leaves_the_tree_clean.py:209 and :242 assert an empty git status over the rewritten tree, which reddens the moment either caller stops staging the run file, and negative-control.log demonstrates that with two real mutations; only :241 (`assert returned > version`) is a weak monotonicity check that adds little beside them.",
+    "evidence": "The gate that ran is the command the done_when names and its result is recorded, not claimed: head-arm.log opens with the revision, tree, imported module path and literal command and closes EXIT=0 on 6 passed, baseline-arm.log shows the same file 3 failed/3 passed at the base, and both declared mutations are applied in negative-control.log where each fails its own case.",
+    "fit": "The change follows the module's own idiom (a private worker behind a public wrapper, docstrings in the surrounding voice, the existing _commit_state_write multi-path owner reused), carries no plan or ticket labels, and ruff check and ruff format --check are clean on both staged Python paths at a905942f13 under the repo's own configuration.",
+    "goal_fidelity": "reckon/ledger.py:2308 returns every rewritten path and both committing callers stage it (reckon/ledger.py:2296 and reckon/ledger.py:3654), which is exactly what the section's deliverable asks for, and the public write at reckon/ledger.py:2100 still returns an int so no caller outside the module changes.",
+    "reuse": "Both mechanisms the change needed already had owners and were extended rather than duplicated: _commit_state_write (reckon/ledger.py:2506) already accepted a set of paths for one commit, and _keep_run_files_identical (reckon/ledger.py:1966) already returned the snapshots of every file re-encoded, so the addition feeds the existing owner instead of introducing a second writer.",
+    "scope_discipline": "Every path in the base-to-head diff (reckon/ledger.py, tests/test_hold_check_leaves_the_tree_clean.py, the evidence fragment) is one the dispatch declared, and the change carries nothing the goal does not imply except the corrected stale comment the plan itself asks for."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The plan's section 2 deliverable (docs/plans/a-crew-process-writes-only-what-it-owns.html:41) asks that a hold transition and write's commit branch stage every per-run file the write re-encoded; reckon/ledger.py:2308 now returns (version, rewritten) from _write_state, reckon/ledger.py:3654 passes that set to _commit_state_write under the hold subject, and reckon/ledger.py:2100 keeps write's signature and int return.\nVERDICT done_when: Section 2's done_when asks for three cases in tests/test_hold_check_leaves_the_tree_clean.py plus two negative controls; the cases are at :200, :221 and :252, baseline-arm.log records all three failing on the dispatch base (3 failed, 3 passed, EXIT=1) and head-arm.log records 6 passed EXIT=0 at a905942f13, and negative-control.log carries both declared mutations each failing the case that owns its caller.\nVERDICT write_paths: Section 2 grants reckon/ledger.py and tests/test_hold_check_leaves_the_tree_clean.py; the diff from 47f356ab101cb46f57baabf0ae7933b5d47ff0a5 to a905942f135a7f439580f4a5d8a40a2e46be6e18 touches exactly those two plus the dispatch-declared evidence fragment docs/evidence/fragments/a-crew-process-writes-only-what-it-owns/commit-every-file-a-hold-rewrote.html, and nothing else.\nVERDICT manifest: Read; the source manifest.md records status complete, both commits, base arm 3 failed/3 passed EXIT=1, head arm 6 passed EXIT=0, the two applied mutations, and both suite blocks carry completed:true with literal absolute-path commands and log paths that exist and end in a bare EXIT= line.\nVERDICT diff: Read commit by commit: 4096845b97 splits write into a public wrapper (reckon/ledger.py:2075-2100) and _write_state (reckon/ledger.py:2103-2309) returning the aggregate plus each re-encoded run file, widens write's roster commit to stage that set (ledger.py:2296-2308), routes record_hold_checks through _write_state and stages the same set under its hold subject (ledger.py:3634, :3654), and corrects the stale byte-identical comment (ledger.py:3569-3574); a905942f13 adds the 74-line evidence fragment and a formatting-only reformat of one test signature.\nCALL_SITES: reckon/budget.py:1911 record_hold_checks, reckon/crew/routing.py:3181 ledger.write(..., commit=True) idle-member reaping, reckon/crew/promotion_records.py:1082 ledger.write(..., commit=True) identity retirement during promotion\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/ledger.py:2308 returns every rewritten path and both committing callers stage it (reckon/ledger.py:2296 and reckon/ledger.py:3654), which is exactly what the section's deliverable asks for, and the public write at reckon/ledger.py:2100 still returns an int so no caller outside the module changes.\nSCORE evidence: 18\nJUSTIFICATION evidence: The gate that ran is the command the done_when names and its result is recorded, not claimed: head-arm.log opens with the revision, tree, imported module path and literal command and closes EXIT=0 on 6 passed, baseline-arm.log shows the same file 3 failed/3 passed at the base, and both declared mutations are applied in negative-control.log where each fails its own case.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Every path in the base-to-head diff (reckon/ledger.py, tests/test_hold_check_leaves_the_tree_clean.py, the evidence fragment) is one the dispatch declared, and the change carries nothing the goal does not imply except the corrected stale comment the plan itself asks for.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_hold_check_leaves_the_tree_clean.py:209 and :242 assert an empty git status over the rewritten tree, which reddens the moment either caller stops staging the run file, and negative-control.log demonstrates that with two real mutations; only :241 (`assert returned > version`) is a weak monotonicity check that adds little beside them.\nSCORE fit: 18\nJUSTIFICATION fit: The change follows the module's own idiom (a private worker behind a public wrapper, docstrings in the surrounding voice, the existing _commit_state_write multi-path owner reused), carries no plan or ticket labels, and ruff check and ruff format --check are clean on both staged Python paths at a905942f13 under the repo's configuration.\nSCORE reuse: 20\nJUSTIFICATION reuse: Both mechanisms the change needed already had owners and were extended rather than duplicated: _commit_state_write (reckon/ledger.py:2506) already accepted a set of paths for one commit, and _keep_run_files_identical (reckon/ledger.py:1966) already returned the snapshots of every file re-encoded, so the addition feeds the existing owner instead of introducing a second writer.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T040830116011-commit-every-file-a-hold-rewrote/negative-control.log:1 non-blocking: mutation 1's header stamps the dispatch base revision 47f356ab while the tree it names is the head worktree carrying an uncommitted mutation, so the revision line describes code that did not run; mutation 2's own header says '(uncommitted tree)'.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T040830116011-commit-every-file-a-hold-rewrote/ledger-importers-head.log:1 non-blocking: the head-labelled wide arm stamps 4096845b97 rather than the final head a905942f13, and folds the tree, module and cwd into that one line.\nFINDING tests/test_hold_check_leaves_the_tree_clean.py:29 non-blocking: RETIRED_KEY re-spells reckon/run_record.py:33's RETIRED_OUTSIDE_SCOPE_PATHS as the literal \"follow_on_paths\" instead of importing the owner's constant.\n",
+  "review_run_id": "r-20261108T045103939978-review-of-commit-every-file-a-hold-rewrote-a905942f135a",
+  "reviewed_base_sha": "47f356ab101cb46f57baabf0ae7933b5d47ff0a5",
+  "reviewed_commits": [
+    "4096845b97",
+    "a905942f13"
+  ],
+  "reviewed_head_sha": "a905942f135a7f439580f4a5d8a40a2e46be6e18",
+  "reviewed_run_id": "r-20261108T040830116011-commit-every-file-a-hold-rewrote",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [
+    "tests/test_hold_check_leaves_the_tree_clean.py:241 compares the version write returned against the version the test itself read from load_aggregate before the call; the two sides do come from independent reads, but the assertion only tests monotonicity and would not catch a wrong value."
+  ],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T05:05:00Z",
+  "total": 115
+}
