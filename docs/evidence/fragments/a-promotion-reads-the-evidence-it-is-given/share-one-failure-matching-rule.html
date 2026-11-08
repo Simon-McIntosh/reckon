@@ -1,0 +1,48 @@
+<section id="share-one-failure-matching-rule-landing">
+  <h2>Failure comparisons share one identity rule</h2>
+  <p>The control-admission, ledger, landing-measure, review-log and retirement
+  readers now use <code>review.failure_ids_covered</code>. Retry overlap uses
+  <code>review.failure_ids_match</code>, which returns a
+  <code>FailureIdMatch</code> with <code>matched_base</code>,
+  <code>matched_head</code>, <code>unmatched_base</code> and
+  <code>unmatched_head</code>. Both functions share the same directional
+  matching implementation. Coverage accepts a bare baseline name for a qualified
+  head id; overlap accepts a bare name on either side. Qualified paths and
+  parameter brackets retain their identity.</p>
+  <p>Attribution is stored under the measured head id even when supplied as a
+  bare name, so completeness checks can account for every added id. Retirement
+  keeps canonicalisation against every recorded arm directory. The scratch-tree
+  reduction already worked at dispatch and is retained under the shared rule.</p>
+  <table>
+    <thead><tr><th>Measurement</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Dispatch base <code>3f1805b1505950734cc9e7f48e57ff545fa87384</code>,
+      new test copied into the scratch tree</td><td>10 failed, 12 passed; exit 1</td></tr>
+      <tr><td>Implementation <code>29fcc7e70f0805c5fd4859f251425984391ff275</code></td>
+      <td>22 passed; exit 0</td></tr>
+      <tr><td>Declared mutations: exact subtraction at control admission and
+      omitted scratch-directory reduction at retirement</td>
+      <td>3 failed, 19 passed; exit 1. Both control-arm cases and the
+      scratch-directory case fail.</td></tr>
+      <tr><td>Importer population, base and head</td>
+      <td>Base: no completed summary; outer bound expired; head: no completed summary; outer bound expired; FAILED-id delta unmeasured. Each arm ran once with six workers and a 120-second per-test timeout.</td></tr>
+      <tr><td>Ruff check and format delta</td><td>Zero added findings.
+      Each arm has the same three lint findings and one unformatted file,
+      <code>reckon/crew/promotion_checks.py</code>.</td></tr>
+    </tbody>
+  </table>
+  <p>The base reproduction includes <code>Failed: DID NOT RAISE CrewError</code>
+  at control admission: a control whose qualified id is already covered by a
+  bare reference name must be refused. The passing head exercises that refusal
+  directly. Each covering reader also rejects coverage from a qualified id in
+  another file. Retry tests distinguish an overlap from an unrelated test;
+  parameter and directional controls preserve the existing rule.</p>
+  <p>The focused command is <code>PYTHONPATH=. .venv/bin/python -m pytest
+  -p no:cacheprovider -q tests/test_every_failure_comparison_shares_one_rule.py</code>.
+  Logs, arm receipts, the importer census and the exact mutation driver are in
+  run <code>r-20261107T231833140800-share-one-failure-matching-rule</code>.
+  An initial importer arm expired after 1200 seconds without a summary and was repeated with a bound sized from observed throughput. The resumed comparison uses the same 485 importer files in both arms, at the dispatch base with the new test copied in and at the delivered head. Shared 120-second timeouts: unmeasured. The first focused baseline attempt exposed four test-helper calls missing
+  <code>manifest_path</code>; that scaffolding was corrected before the recorded
+  baseline above. Its original log remains available. Integration and merged-head
+  verification belong to the coordinator and its independent test node.</p>
+</section>

@@ -573,11 +573,12 @@ def added_failure_ids(
 ) -> list[str]:
     """Return failure ids present in ``after`` but absent from ``baseline``.
 
-    This is the exact set-difference arithmetic the suite-delta promotion gate
-    already computes to separate new failures from pre-existing ones. A per-
-    failure attribution reuses it here rather than defining a second, looser
-    notion of "new".
+    The shared coverage rule accepts a bare baseline name for a qualified head
+    id while keeping qualified ids from different files distinct. Per-failure
+    attribution uses the same identities as the suite-delta promotion gate.
     """
+    from reckon.crew.review import failure_ids_covered
+
     baseline_ids = (
         set(baseline.get("failure_ids") or [])
         if isinstance(baseline, Mapping)
@@ -586,7 +587,7 @@ def added_failure_ids(
     after_ids = (
         set(after.get("failure_ids") or []) if isinstance(after, Mapping) else set()
     )
-    return sorted(after_ids - baseline_ids)
+    return sorted(failure_ids_covered(baseline_ids, after_ids))
 
 
 def failure_attribution_missing_fields(
@@ -601,6 +602,8 @@ def failure_attribution_missing_fields(
     real failure the worker saw, and an entry with no candidate commit is
     prose rather than an attribution.
     """
+    from reckon.crew.review import failure_ids_covered
+
     if attribution is None:
         return []
     if not isinstance(attribution, Mapping):
@@ -611,7 +614,7 @@ def failure_attribution_missing_fields(
     missing: list[str] = []
     for failure_id, commit in attribution.items():
         label = f"{name}[{failure_id}]"
-        if str(failure_id) not in after_ids:
+        if not after_ids or failure_ids_covered({failure_id}, after_ids) == after_ids:
             missing.append(f"{label} not in after_suite.failure_ids")
         elif not str(commit or "").strip():
             missing.append(f"{label} has no candidate commit")
@@ -630,13 +633,18 @@ def new_failure_attribution(
     than treated as an attribution, so a worker cannot attribute a failure it
     did not introduce.
     """
+    from reckon.crew.review import failure_ids_covered
+
     added = set(added_failure_ids(baseline, after))
     mapping = attribution if isinstance(attribution, Mapping) else {}
-    return {
-        str(failure_id): str(commit).strip()
-        for failure_id, commit in mapping.items()
-        if str(failure_id) in added and str(commit or "").strip()
-    }
+    result: dict[str, str] = {}
+    # Keep the measured head spelling as the key, so callers can account for
+    # every added id even when the attribution names it bare.
+    for failure_id, commit in mapping.items():
+        if str(commit or "").strip():
+            for covered in added - failure_ids_covered({failure_id}, added):
+                result[covered] = str(commit).strip()
+    return result
 
 
 # ── Routing evidence (recorded at promotion) ────────────────────────────────

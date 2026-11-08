@@ -69,7 +69,7 @@ import re
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 from reckon import _store
 from reckon._store import write_atomically, write_json_atomically
@@ -2079,20 +2079,61 @@ def failure_ids_covered(base_ids: Iterable[str], head_ids: Iterable[str]) -> set
     never covers a different spelling of itself. Ids carrying no ``::`` on
     either side, such as a ctest test name, compare on the whole string.
     """
-    base = {str(test_id).strip() for test_id in base_ids if str(test_id).strip()}
     heads = {str(test_id).strip() for test_id in head_ids if str(test_id).strip()}
+    _, covered = _directional_failure_matches(base_ids, heads)
+    return heads - covered
+
+
+def _directional_failure_matches(
+    base_ids: Iterable[str], head_ids: Iterable[str]
+) -> tuple[set[str], set[str]]:
+    """Return ids on each side covered by the directional bare-name rule."""
+    base = {str(test_id).strip() for test_id in base_ids if str(test_id).strip()}
     bare_base = {test_id for test_id in base if "::" not in test_id}
-    uncovered: set[str] = set()
-    for head_id in heads:
-        if head_id in base:
+    matched_base: set[str] = set()
+    matched_head: set[str] = set()
+    for raw in head_ids:
+        head_id = str(raw).strip()
+        if not head_id:
             continue
         final_segment = head_id.rpartition("::")[2]
-        if final_segment in bare_base:
-            continue
-        if _PARAMETER_BRACKET_RE.sub("", final_segment) in bare_base:
-            continue
-        uncovered.add(head_id)
-    return uncovered
+        matches = {head_id} & base
+        matches.update(
+            {final_segment, _PARAMETER_BRACKET_RE.sub("", final_segment)} & bare_base
+        )
+        if matches:
+            matched_base.update(matches)
+            matched_head.add(head_id)
+    return matched_base, matched_head
+
+
+class FailureIdMatch(NamedTuple):
+    """Matched and unmatched failure identities on each side of a comparison."""
+
+    matched_base: set[str]
+    matched_head: set[str]
+    unmatched_base: set[str]
+    unmatched_head: set[str]
+
+
+def failure_ids_match(
+    base_ids: Iterable[str], head_ids: Iterable[str]
+) -> FailureIdMatch:
+    """Match shared test identities with a bare name on either side.
+
+    Coverage remains directional. Overlap instead accepts either side's bare
+    spelling, while different qualified paths and distinct parameter brackets
+    still identify different tests. Each result set retains its side's ids.
+    """
+    base = {str(test_id).strip() for test_id in base_ids if str(test_id).strip()}
+    head = {str(test_id).strip() for test_id in head_ids if str(test_id).strip()}
+    forward_base, forward_head = _directional_failure_matches(base, head)
+    reverse_head, reverse_base = _directional_failure_matches(head, base)
+    matched_base = forward_base | reverse_base
+    matched_head = forward_head | reverse_head
+    return FailureIdMatch(
+        matched_base, matched_head, base - matched_base, head - matched_head
+    )
 
 
 def _pytest_failure_ids(
@@ -2343,7 +2384,7 @@ def _prose_id_token(raw: str) -> str | None:
     token = raw.strip(_PROSE_EDGE_CHARS).removeprefix("[")
     if token.endswith("]") and token.count("[") < token.count("]"):
         token = token.removesuffix("]")
-    return token if "::" in token else None
+    return token if "::" in token or token.startswith("test_") else None
 
 
 def _retires_id(
@@ -2351,16 +2392,17 @@ def _retires_id(
     test_id: str,
     arm_directories: tuple[str | Path | None, ...] = (),
 ) -> bool:
-    """Whether retirement prose names a test id in full.
+    """Whether retirement prose covers a counted test identity.
 
+    A bare test name covers its qualified id through the shared coverage rule.
     The prose spelling and the counted id are compared as canonical forms
     rather than as spellings, because they are written by different hands: the
     count's id comes from a gate log, which may have been printed from another
     working directory, while the manifest names the test as the repository
     knows it. A manifest that spells the id with the working-directory prefix the
     gate log printed must still retire it, and both sides therefore reduce
-    through :func:`canonical_node_id`. Each token is compared as a whole, so a
-    shorter id is not retired by a longer one that contains it. The sentence is
+    through :func:`canonical_node_id`. Qualified tokens retain their full test
+    identity, so a longer name cannot retire a shorter one by substring. The sentence is
     split on the separators a manifest's own list fields use, so a single
     sentence retiring several ids retires each of them. Each recorded working
     directory is applied to the token as well, so a manifest that spells the id
@@ -2374,11 +2416,11 @@ def _retires_id(
         token = _prose_id_token(raw)
         if token is None:
             continue
-        if canonical_node_id(token) == target:
-            return True
-        if any(
-            canonical_node_id(token, directory) == target for directory in directories
-        ):
+        canonical_tokens = {canonical_node_id(token)}
+        canonical_tokens.update(
+            canonical_node_id(token, directory) for directory in directories
+        )
+        if not failure_ids_covered(canonical_tokens, {target}):
             return True
     return False
 
@@ -2742,7 +2784,7 @@ def added_failures_from_gate_logs(
 
     base_ids = gate_log_failure_ids(base_text, base_directory)
     head_ids = gate_log_failure_ids(head_text, head_directory)
-    added = sorted((head_ids or set()) - (base_ids or set()))
+    added = sorted(failure_ids_covered(base_ids or (), head_ids or ()))
     return len(added), added
 
 

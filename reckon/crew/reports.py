@@ -2674,7 +2674,9 @@ def audit_manifest(
                     if isinstance(after_observation, dict)
                     else set()
                 )
-                overlap = set(retry_failures) & after_ids
+                overlap = review_module.failure_ids_match(
+                    retry_failures, after_ids
+                ).matched_base
                 if overlap:
                     findings.append(
                         "retry_failures ids must differ from after_suite.failure_ids"
