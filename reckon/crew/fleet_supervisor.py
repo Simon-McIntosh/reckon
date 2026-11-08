@@ -791,7 +791,9 @@ def recorded_service_lock_inode(runtime: Path, name: str) -> int | None:
     """The inode of the lock file the recorded copy held, or None if unrecorded.
 
     A lock path whose inode differs from this names a file the running copy
-    never took: the original was removed and a new one made beside it.
+    never took: the original was removed and a new one made beside it. The
+    field is a placeholder when the inode was not known at the start, which
+    reads as unrecorded in the same way.
     """
     fields = _pid_record(runtime, name)
     try:
@@ -800,11 +802,38 @@ def recorded_service_lock_inode(runtime: Path, name: str) -> int | None:
         return None
 
 
+def recorded_service_stamp(runtime: Path, name: str) -> str | None:
+    """The code stamp recorded for a service's running copy, or None.
+
+    It is field three of the record that carries the pid, so a copy's code and
+    the pid naming it are read together: a service is not described by a pid
+    alone, and a pid alone also cannot be compared against a checkout. A record
+    written before the stamp was kept has two fields and reads as unrecorded.
+    """
+    fields = _pid_record(runtime, name)
+    try:
+        return fields[2] or None
+    except IndexError:
+        return None
+
+
 def write_service_pid(
-    runtime: Path, name: str, pid: int, inode: int | None = None
+    runtime: Path,
+    name: str,
+    pid: int,
+    inode: int | None = None,
+    stamp: str | None = None,
 ) -> None:
-    """Record a copy's pid, and the lock inode it holds when that is known."""
-    record = f"{pid}" if inode is None else f"{pid} {inode}"
+    """Record a copy's pid, the lock inode it holds, and the code it runs.
+
+    The positions are fixed so an older reader keeps reading the pid and the
+    inode it already knows, and an inode that was not known is written as a
+    placeholder rather than dropped: dropping it would shift the stamp into the
+    inode field and make every comparison read the wrong value.
+    """
+    record = f"{pid} {'-' if inode is None else inode}"
+    if stamp:
+        record += f" {stamp}"
     service_pid_path(runtime, name).write_text(record + "\n", encoding="utf-8")
 
 
@@ -1252,7 +1281,12 @@ def service_wrapper_argv(name: str, argv: Sequence[str]) -> list[str]:
 
 @dataclass
 class _ServiceState:
-    """What the supervisor knows about one declared service."""
+    """What the supervisor knows about one declared service.
+
+    ``stamp_leave_reported`` holds the pair of stamps a copy was last left
+    running on for an untrusted checkout, so a service this supervisor refuses
+    to restart says so once rather than on every adoption.
+    """
 
     argv: list[str]
     pid: int | None = None
@@ -1265,6 +1299,41 @@ class _ServiceState:
     # has not created it yet, and that is not a vanished file.
     lock_seen: bool = False
     lock_missing_reported: bool = False
+    stamp_leave_reported: tuple[str, str] | None = None
+
+
+def _checkout_trust_verdict() -> Any:
+    """Whether the checkout this module was imported from may be loaded.
+
+    The same probe the followers and the MCP take, so a service is never
+    restarted onto a tree those readers refuse, and a tree they refuse leaves
+    the running copy alone.
+    """
+    from reckon import checkout_trust
+
+    return checkout_trust.moved_checkout_is_trustworthy(_checkout_root())
+
+
+def _unknown_code_stamp() -> str:
+    """The reading the identity computation yields when a read did not answer."""
+    from reckon import checkout_trust
+
+    return checkout_trust.IDENTITY_UNKNOWN
+
+
+def _stamp_or_unknown(read: Callable[[], str]) -> str:
+    """Read a code identity, or return the unknown reading if the read failed.
+
+    A failed read is the same non-answer as the sentinel: it never on its own
+    makes a running copy a restart candidate, so a transient git failure cannot
+    turn into a service that is restarted every time the config is read.
+    """
+    from reckon import checkout_trust
+
+    try:
+        return read()
+    except (OSError, ValueError, checkout_trust.IdentityReadError):
+        return checkout_trust.IDENTITY_UNKNOWN
 
 
 class DeclaredServices:
@@ -1288,16 +1357,85 @@ class DeclaredServices:
         clock: Callable[[], float] = time.monotonic,
         log_limit: int = SERVICE_LOG_LIMIT_BYTES,
         log_keep: int = SERVICE_LOG_KEEP_BYTES,
+        code_stamp: Callable[[], str] | None = None,
+        checkout_trust: Callable[[], Any] | None = None,
+        stop_grace: float = SERVICE_STOP_GRACE_SECONDS,
     ) -> None:
         self._runtime = runtime
         self._environ = os.environ if environ is None else environ
         self._clock = clock
         self._log_limit = log_limit
         self._log_keep = log_keep
+        self._code_stamp = _source_code_stamp if code_stamp is None else code_stamp
+        self._checkout_trust = (
+            _checkout_trust_verdict if checkout_trust is None else checkout_trust
+        )
+        self._stop_grace = stop_grace
         self._states: dict[str, _ServiceState] = {}
         self._leases: dict[str, HostLease] = {}
         self._host = _short_hostname()
         self._guard = threading.Lock()
+
+    def _code_stamp_value(self) -> str:
+        """The checkout's code identity, or the unknown reading if none was taken."""
+        return _stamp_or_unknown(self._code_stamp)
+
+    def _runs_recorded_code(self, name: str, pid: int, state: _ServiceState) -> bool:
+        """Whether a running copy may be adopted, or must be replaced.
+
+        A copy whose record names the checkout's own code is adopted. One that
+        names other code is replaced, because a service that only reloads itself
+        between passes never reaches the supervisor's own restart, and a pass
+        that never ends never reaches that boundary at all. A copy recording no
+        stamp is replaced once, so its code is known from then on.
+
+        The replacement is refused when the checkout cannot be trusted: a tree
+        that may not be loaded is no reason to disturb a copy that is running,
+        and the copy is left alone with the reason logged once per pair of
+        stamps.
+        """
+        current = self._code_stamp_value()
+        if current == _unknown_code_stamp():
+            return True
+        recorded = recorded_service_stamp(self._runtime, name)
+        if not recorded or recorded == _unknown_code_stamp():
+            log(
+                f"declared service {name} (pid {pid}) records no code stamp; "
+                f"restarting it so the code it runs is known "
+                f"(checkout reads {current})"
+            )
+            return False
+        if recorded == current:
+            return True
+        trust = self._checkout_trust()
+        if not trust.trusted:
+            if state.stamp_leave_reported != (recorded, current):
+                state.stamp_leave_reported = (recorded, current)
+                log(
+                    f"declared service {name} (pid {pid}) runs code stamp "
+                    f"{recorded} while the checkout reads {current}; the "
+                    f"checkout is not trusted ({trust.detail}), so the copy "
+                    "is left running"
+                )
+            return True
+        log(
+            f"declared service {name} (pid {pid}) runs code stamp {recorded} "
+            f"while the checkout reads {current}; restarting it on the "
+            "checkout's code"
+        )
+        return False
+
+    def _start_or_backoff_locked(self, name: str, argv: Sequence[str]) -> None:
+        """Start a replacement, or schedule the retry a failed start needs.
+
+        The state was dropped by the stop that preceded this, so a start that
+        cannot run leaves the service with no in-memory state at all; the retry
+        is what keeps it in the supervisor's view rather than silently gone.
+        """
+        if self._start_locked(name, argv) is not None:
+            return
+        state = self._states.setdefault(name, _ServiceState(argv=list(argv)))
+        state.next_attempt = self._clock() + state.delay
 
     def _lease(self, name: str) -> HostLease:
         lease = self._leases.get(name)
@@ -1352,6 +1490,14 @@ class DeclaredServices:
                     lock_held(name, self._runtime)
                     or process_runs_service(pid, name, state.argv)
                 ):
+                    if not self._runs_recorded_code(name, pid, state):
+                        # The stop runs before the start so the copy's lock and
+                        # lease are free: a replacement started beside them is
+                        # refused, and a lease-holding service would wait out
+                        # the stale window for nothing.
+                        self._stop_locked(name)
+                        self._start_or_backoff_locked(name, state.argv)
+                        continue
                     state.pid = pid
                     state.owned = False
                     state.lock_seen = True
@@ -1404,6 +1550,7 @@ class DeclaredServices:
                 process.pid,
                 _lock_inode(self._runtime, name)
                 or recorded_service_lock_inode(self._runtime, name),
+                self._code_stamp_value(),
             )
         log(f"declared service {name} started as pid {process.pid}")
         state = self._states.get(name)
@@ -1467,13 +1614,31 @@ class DeclaredServices:
             return
         log(f"stopping declared service {name} (pid {pid})")
         signal_worker(pid, signal.SIGTERM, reason="fleet-service-stop")
-        deadline = time.monotonic() + SERVICE_STOP_GRACE_SECONDS
+        deadline = time.monotonic() + self._stop_grace
         while lock_held(name, self._runtime) or (
             argv is not None and process_runs_service(pid, name, argv)
         ):
             if time.monotonic() >= deadline:
                 log(f"declared service {name} did not stop; killing pid {pid}")
                 signal_worker(pid, signal.SIGKILL, reason="fleet-service-stop")
+                # A killed copy still holds its lock and answers to its pid
+                # until the kernel has run it down. Nothing is started beside
+                # it: a replacement that found the old copy alive would be
+                # refused by a lease or by the lock, and the refusal would be
+                # read as a start failure rather than as a stop still settling.
+                deadline = time.monotonic() + self._stop_grace
+                while lock_held(name, self._runtime) or (
+                    argv is not None and process_runs_service(pid, name, argv)
+                ):
+                    if time.monotonic() >= deadline:
+                        log(
+                            f"declared service {name} (pid {pid}) is still "
+                            "running after SIGKILL; no replacement is started "
+                            "while it lives"
+                        )
+                        self._collect_locked(pid)
+                        return
+                    time.sleep(SERVICE_POLL_SECONDS)
                 break
             time.sleep(SERVICE_POLL_SECONDS)
         self._collect_locked(pid)
@@ -1682,7 +1847,17 @@ def run_declared_service(
         os.close(descriptor)
         return 1
     os.set_inheritable(descriptor, True)
-    write_service_pid(runtime, name, os.getpid(), os.fstat(descriptor).st_ino)
+    # The copy records the code it is about to become, beside the pid that
+    # names it, so a supervisor adopting this copy can tell whether it carries
+    # the checkout's code. This write is the authoritative one: it happens in
+    # the process that is the service.
+    write_service_pid(
+        runtime,
+        name,
+        os.getpid(),
+        os.fstat(descriptor).st_ino,
+        _stamp_or_unknown(_source_code_stamp),
+    )
     os.execvp(argv[0], list(argv))  # noqa: S606 - replaces this image, no shell
     raise AssertionError("execvp returned")
 
@@ -2384,6 +2559,17 @@ def serve(
                     )
                     recorded_stamp = current_stamp
                     _reexec(exec_, standby=is_standby)
+                elif verdict.moved:
+                    # The checkout carries code this image does not and may not
+                    # be loaded, so neither this image nor a declared service it
+                    # runs is replaced: the refusal is recorded with its reason,
+                    # which is the whole of what a reader can act on.
+                    log(
+                        f"code stamp moved from {recorded_stamp} to "
+                        f"{current_stamp}; the checkout is not trusted "
+                        f"({verdict.detail}), so this image and the declared "
+                        "services keep running the code they started on"
+                    )
             if not is_standby:
                 station_process.ensure()
             if not readable_within(descriptor, REQUEST_WAIT_SECONDS):
