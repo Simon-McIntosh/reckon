@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:1323",
+    "reckon/crew/obligation_snapshot.py:1437",
+    "reckon/crew/station_subscriber.py:145",
+    "reckon/crew/obligations.py:2037",
+    "reckon/crew/obligations.py:2217"
+  ],
+  "completed_at": "2026-11-07T23:53:00Z",
+  "dispatched_at": "2026-11-07T23:42:38Z",
+  "findings": [
+    {
+      "file": "docs/research/monitor-storage-load-rca.html",
+      "line": "390",
+      "severity": "blocking",
+      "text": "blocking: the measured live second payload pass is 26.419 s against the brief's under-5-s done-when, and that measurement ran at 19c6b87e9102 rather than the final reviewed head."
+    },
+    {
+      "file": "reckon/crew/review_records.py",
+      "line": "1447",
+      "severity": "blocking",
+      "text": "blocking: the new signature takes indexed entry identities without revalidating the files, so a same-path in-place rewrite leaves the memo key unchanged and reckon/crew/obligations.py:1379 can serve a stale review where the prior selector revalidated it; the added test only appends a record."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "four commits from 51d53c06ac2c7db73707ba00e872c648697d4a5d to 4058ef42efd9dfec66242df59e74d9227ab45191 change six declared files, adding per-run review keys, a shared key memo, a held-tree check, tests and timing evidence.",
+    "done_when": "the source brief.md requires a live second pass under 5 s; docs/research/monitor-storage-load-rca.html:387 records 26.419 s at the first implementation commit, while logs/armed-head-repair.log records three tests passed at the reviewed head.",
+    "goal": "the source brief.md asks for indexed per-run review reads and an unchanged verdict; reckon/crew/obligations.py:1368 adds the memo but the live timing and record-rewrite behavior leave the full goal unmet.",
+    "manifest": "the source manifest.md records the four commits, base/head gate logs, 15 passing importer tests per arm, and the 26.419 s live result above its bound.",
+    "write_paths": "the source manifest.md grants the four Python paths and two document paths shown by the diff, and all six changed paths are inside that list."
+  },
+  "justifications": {
+    "durability": "tests/test_a_review_duty_reads_its_run_review_once.py:202-239 fails at base when unchanged reads recur or the new run is not selected, but it never changes an existing indexed review file in place.",
+    "evidence": "logs/negative-control-repair.log fails all three focused cases at base and logs/armed-head-repair.log passes them at head, while docs/research/monitor-storage-load-rca.html:387 measures only the earlier implementation commit at 26.419 s.",
+    "fit": "reckon/crew/obligations.py:1379 uses the existing file_memo cache idiom and reckon/crew/review_records.py:1427 extends the index owner, with no new forbidden source name.",
+    "goal_fidelity": "reckon/crew/obligations.py:1368 memoises a run's review selection, but docs/research/monitor-storage-load-rca.html:390 records a second pass above the required bound.",
+    "reuse": "the capability search found reckon/file_memo.py:358 as the bounded memo owner and reckon/crew/review_records.py:1318 as the store-index owner, and the additions extend those owners rather than copy them.",
+    "scope_discipline": "the six paths in the 51d53c06ac2c7db73707ba00e872c648697d4a5d..4058ef42efd9dfec66242df59e74d9227ab45191 diff all occur in the source manifest.md write_paths list."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source brief.md asks for indexed per-run review reads and an unchanged verdict; reckon/crew/obligations.py:1368 adds the memo but the live timing and record-rewrite behavior leave the full goal unmet.\nVERDICT done_when: the source brief.md requires a live second pass under 5 s; docs/research/monitor-storage-load-rca.html:387 records 26.419 s at the first implementation commit, while logs/armed-head-repair.log records three tests passed at the reviewed head.\nVERDICT write_paths: the source manifest.md grants the four Python paths and two document paths shown by the diff, and all six changed paths are inside that list.\nVERDICT manifest: the source manifest.md records the four commits, base/head gate logs, 15 passing importer tests per arm, and the 26.419 s live result above its bound.\nVERDICT diff: four commits from 51d53c06ac2c7db73707ba00e872c648697d4a5d to 4058ef42efd9dfec66242df59e74d9227ab45191 change six declared files, adding per-run review keys, a shared key memo, a held-tree check, tests and timing evidence.\nCALL_SITES: reckon/crew/obligation_snapshot.py:1323, reckon/crew/obligation_snapshot.py:1437, reckon/crew/station_subscriber.py:145, reckon/crew/obligations.py:2037, reckon/crew/obligations.py:2217\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:1368 memoises a run's review selection, but docs/research/monitor-storage-load-rca.html:390 records a second pass above the required bound.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/negative-control-repair.log fails all three focused cases at base and logs/armed-head-repair.log passes them at head, while docs/research/monitor-storage-load-rca.html:387 measures only the earlier implementation commit at 26.419 s.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the six paths in the 51d53c06ac2c7db73707ba00e872c648697d4a5d..4058ef42efd9dfec66242df59e74d9227ab45191 diff all occur in the source manifest.md write_paths list.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_review_duty_reads_its_run_review_once.py:202-239 fails at base when unchanged reads recur or the new run is not selected, but it never changes an existing indexed review file in place.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/obligations.py:1379 uses the existing file_memo cache idiom and reckon/crew/review_records.py:1427 extends the index owner, with no new forbidden source name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search found reckon/file_memo.py:358 as the bounded memo owner and reckon/crew/review_records.py:1318 as the store-index owner, and the additions extend those owners rather than copy them.\nFINDING docs/research/monitor-storage-load-rca.html:390 blocking: the measured live second payload pass is 26.419 s against the brief's under-5-s done-when, and that measurement ran at 19c6b87e9102 rather than the final reviewed head.\nFINDING reckon/crew/review_records.py:1447 blocking: the new signature takes indexed entry identities without revalidating the files, so a same-path in-place rewrite leaves the memo key unchanged and reckon/crew/obligations.py:1379 can serve a stale review where the prior selector revalidated it; the added test only appends a record.\n",
+  "review_run_id": "r-20261107T233820207882-review-of-a-review-duty-reads-its-run-review-once-4058ef42efd9",
+  "reviewed_base_sha": "51d53c06ac2c7db73707ba00e872c648697d4a5d",
+  "reviewed_head_sha": "4058ef42efd9dfec66242df59e74d9227ab45191",
+  "reviewed_run_id": "r-20261107T222649494833-a-review-duty-reads-its-run-review-once",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 13,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T00:07:59.205502+00:00",
+  "total": 100
+}
