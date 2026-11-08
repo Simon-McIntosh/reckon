@@ -202,7 +202,11 @@ def _built_once(
             # for the inventory it is being called to produce.
             roadmap_module.build_roadmap = original
             try:
-                with roadmap_build_scope() as scope:
+                # Neither reader in a batch, queue ordering or the wait check,
+                # reads who coordinates a critical-path link, so the build skips
+                # that resolution: it reads every run's ledger document, which
+                # was most of each entry's queue time.
+                with roadmap_build_scope(resolve_coordinators=False) as scope:
                     discovered = _discover_project(
                         str(project), Path(resolved).parent if resolved else None
                     )
