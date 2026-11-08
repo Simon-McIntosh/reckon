@@ -1529,6 +1529,13 @@ def crew_dispatch(
     ``launch`` kind.
     """
     crew_module, flight_module = _crew_modules()
+    if batch_path and dry_run:
+        # A batch queues each entry as it reads it, so a dry run of a batch
+        # would store real requests. Refused before anything is read or written.
+        raise click.UsageError(
+            "--dry-run cannot be combined with --batch: a batch queues each "
+            "entry it reads; dry-run each entry as a single dispatch instead"
+        )
     if batch_path:
         _queue_dispatch_batch(
             batch_path,
