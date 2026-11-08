@@ -58,11 +58,13 @@ except m.CrewError as exc:
 
 
 # The stop child starts a fresh interpreter and imports reckon.crew.recovery
-# before it can signal the producer; that start alone has been measured at
-# 1.75-4.01 s on a loaded node. A bound shorter than the start leaves the child
-# no room to signal, so arming ends by killing it and never delivers the stop
-# this test claims to observe.
-STOP_CHILD_ARM_BOUND_SECONDS = 12
+# before it can signal the producer, and it gets only what remains of this bound
+# after arming's own start. That start has been measured at 1.75-4.01 s, and on
+# a loaded node a spike has taken it past 12 s, so the bound carries margin well
+# beyond the measured cost: a bound shorter than the start leaves the child no
+# room to signal, and arming then ends by killing it without ever delivering the
+# stop this test claims to observe.
+STOP_CHILD_ARM_BOUND_SECONDS = 40
 # Arming may spend its whole bound blocked on the stop child, so the pipe read
 # must outlast the bound rather than race it.
 ARM_OUTPUT_SECONDS = STOP_CHILD_ARM_BOUND_SECONDS * 2
