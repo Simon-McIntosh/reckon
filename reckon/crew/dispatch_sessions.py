@@ -2090,6 +2090,13 @@ def terminate(run_id: str) -> dict[str, Any]:
         recorded_pid = record.get("pid")
         project = str(record.get("project") or "") or None
         start_time = record.get("pid_start_time")
+        # The tree is read before anything is signalled. A worker that keeps
+        # working up to the signal, or that clears its own tree while dying,
+        # is preserved only by a read that precedes it, and the saved diff is
+        # the only account of whose work the next attempt inherits.
+        record["stopped_attempt_work"] = _preserve_stopped_worktree(
+            run_directory, record
+        )
         # Resolve the run's whole tree before signalling, so the set this
         # command ends is the set it reports. A process the kernel reparented
         # away from its supervisor is reached by the run's environment mark
@@ -2185,6 +2192,10 @@ def terminate(run_id: str) -> dict[str, Any]:
             )
         record["phase"] = "stopped"
         record["stopped_at"] = _utc_now()
+        # The result a caller prints and the record it reads back both carry
+        # what happened to the tree, so neither has to be opened to know
+        # whether the stopped attempt's work was kept.
+        record["detail"] += f"; {record['stopped_attempt_work']['detail']}"
         return record
 
     return _mutate_pointer(run_id, stop)
@@ -2195,6 +2206,143 @@ def terminate(run_id: str) -> dict[str, Any]:
 # ignores SIGTERM.
 _STOP_SETTLE_SECONDS = 2.0
 _STOP_SETTLE_POLL_SECONDS = 0.02
+
+# How long one read-only git command may take over a worktree being preserved.
+# A stop must not hang on a tree whose storage has stalled: the attempt's work
+# is worth waiting for briefly, and the run still ends if it never answers.
+_STOP_WORKTREE_GIT_TIMEOUT_SECONDS = 60.0
+
+# The attempt's uncommitted work is written under this name in its run
+# directory, numbered by the attempt that held it so a later stop of a later
+# attempt cannot overwrite what an earlier one left behind.
+_STOPPED_ATTEMPT_DIFF_NAME = "stopped-attempt-{number}.diff"
+
+
+def _stopped_attempt_diff_path(run_directory: Path, attempt: int) -> Path:
+    """The first free ``stopped-attempt-<n>.diff`` at or above ``attempt``."""
+    number = max(1, attempt)
+    while (run_directory / _STOPPED_ATTEMPT_DIFF_NAME.format(number=number)).exists():
+        number += 1
+    return run_directory / _STOPPED_ATTEMPT_DIFF_NAME.format(number=number)
+
+
+def _worktree_git_read(worktree: Path, *arguments: str) -> str:
+    """One read-only git command in ``worktree``, decoded, or a CrewError."""
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(worktree), *arguments],
+            capture_output=True,
+            check=False,
+            timeout=_STOP_WORKTREE_GIT_TIMEOUT_SECONDS,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise CrewError(f"git {' '.join(arguments)} could not run: {exc}") from exc
+    if completed.returncode != 0:
+        message = completed.stderr.decode("utf-8", "replace").strip()
+        raise CrewError(
+            f"git {' '.join(arguments)} exited {completed.returncode}"
+            + (f": {message}" if message else "")
+        )
+    return completed.stdout.decode("utf-8", "replace")
+
+
+def _preserve_stopped_worktree(
+    run_directory: Path, record: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Write a stopped attempt's uncommitted work into its run directory.
+
+    The tracked changes are kept as ``git diff HEAD`` byte for byte, so the
+    file applies as a patch; the names of untracked files follow it as comment
+    lines, because their content is not in the diff and a reader needs to know
+    the tree held more than the patch carries.
+
+    Three outcomes are reported rather than raised, because the stop proceeds
+    whatever the tree does: the work was saved and where, the tree was clean so
+    nothing was written, or the tree could not be read and is named with the
+    reason. A run whose record names no worktree has none to preserve.
+    """
+    worktree = str(record.get("worktree") or "")
+    if not worktree:
+        return {
+            "state": "no-worktree",
+            "worktree": None,
+            "path": None,
+            "detail": (
+                "the run records no worktree, so no uncommitted work was saved"
+            ),
+        }
+    tree = Path(worktree)
+    try:
+        attempt = int(record.get("attempt") or 1)
+    except (TypeError, ValueError):
+        attempt = 1
+    try:
+        tracked = _worktree_git_read(tree, "diff", "HEAD")
+        untracked = [
+            line
+            for line in _worktree_git_read(
+                tree, "ls-files", "--others", "--exclude-standard"
+            ).splitlines()
+            if line.strip()
+        ]
+    except CrewError as exc:
+        return {
+            "state": "unreadable",
+            "worktree": worktree,
+            "path": None,
+            "detail": (
+                f"the worktree {worktree!r} could not be read ({exc}), so its "
+                "uncommitted work was not saved; the stop proceeded"
+            ),
+        }
+    if not tracked.strip() and not untracked:
+        return {
+            "state": "clean",
+            "worktree": worktree,
+            "path": None,
+            "detail": (
+                f"the worktree {worktree!r} held no uncommitted changes, so no "
+                "diff was written"
+            ),
+        }
+    path = _stopped_attempt_diff_path(run_directory, attempt)
+    body = tracked if tracked.strip() else ""
+    if body and not body.endswith("\n"):
+        body += "\n"
+    if untracked:
+        body += (
+            f"\n# stopped attempt {attempt}: untracked files, whose content is "
+            "not in the diff above\n"
+        )
+        body += "".join(f"#   {name}\n" for name in untracked)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(body, encoding="utf-8")
+    except OSError as exc:
+        return {
+            "state": "unreadable",
+            "worktree": worktree,
+            "path": None,
+            "detail": (
+                f"the worktree {worktree!r} could not be saved to a diff "
+                f"({exc}), so its uncommitted work was not kept; the stop "
+                "proceeded"
+            ),
+        }
+    return {
+        "state": "saved",
+        "worktree": worktree,
+        "path": str(path),
+        "detail": (
+            f"the worktree {worktree!r} held uncommitted work, saved to "
+            f"{str(path)!r} before the stop signalled"
+            + (
+                f" with {len(untracked)} untracked file name(s) beside it"
+                if untracked
+                else ""
+            )
+        ),
+    }
 
 
 def _await_run_processes_gone(
