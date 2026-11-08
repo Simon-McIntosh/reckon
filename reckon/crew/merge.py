@@ -35,7 +35,7 @@ import os
 import re
 import subprocess
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from pathlib import Path
 
 # The repository's own pre-push guard refuses a line-anchored ``co-authored-by``
@@ -685,6 +685,7 @@ def land_merge(
     retry_seconds: float = DEFAULT_RETRY_SECONDS,
     sleep=time.sleep,
     verify: Callable[[Path, str, str, str], None] | None = None,
+    release: bool = True,
 ) -> dict:
     """Land ``head`` on the checked-out branch and push it, returning a report.
 
@@ -792,7 +793,120 @@ def land_merge(
         raise MergePushOutstandingError(report, exc.detail) from exc
     report["remote_head"] = remote_head
     report["pushed"] = True
+    if release:
+        # Only a landed and pushed head frees the trees it leaves behind, so a
+        # refusal above — a conflict, a failed check, an outstanding push —
+        # reaches here with nothing released.
+        report["release"] = release_landed_worktrees(
+            repo, landed, head=head_sha
+        )
     return report
+
+
+def release_landed_worktrees(
+    repo: str | Path,
+    commit: str,
+    *,
+    head: str = "",
+    projects: Iterable[str] | None = None,
+) -> dict:
+    """Release every held worktree standing exactly at the commit a merge landed.
+
+    A run promoted on its own has already had its live pointer deleted, so the
+    tree it left behind is named by its ledger row alone. Those rows are read by
+    the one join that already answers which record holds which tree — the
+    obligations view's ``_held_worktree_records`` — rather than by a second
+    derivation kept here, and each tree is then released by the promotion's own
+    release path, judged against the commit this merge wrote rather than against
+    a checkout's ``HEAD``.
+
+    A tree is offered when its ``HEAD`` is the head this merge landed — the
+    reviewed commit itself, or a commit beneath it. A tree holding a commit the
+    merged head does not carry is work no reader has, and releasing it would
+    delete that work; a tree a live run still occupies is not in the held set at
+    all, so a peer's working tree is never a candidate.
+
+    Nothing here can fail a landing: the branch has moved and the push has been
+    confirmed before this runs, so a ledger that refuses or a release that
+    raises is reported as a withheld tree rather than raised.
+    """
+    from reckon.crew import obligations
+    from reckon.crew import promotion_release
+    from reckon.crew.routing import repository_projects
+
+    result: dict[str, list] = {"released": [], "withheld": []}
+    names = (
+        tuple(projects)
+        if projects is not None
+        else repository_projects(repo)
+    )
+    if not names:
+        return result
+    checkout = Path(repo)
+    landed = _rev_parse(checkout, commit)
+    reviewed = _rev_parse(checkout, head) if head else landed
+    for project in names:
+        try:
+            held = obligations._held_worktree_records(project)
+        except Exception as exc:  # noqa: BLE001 - a failed release never fails a merge
+            result["withheld"].append(
+                {
+                    "project": project,
+                    "worktree": "",
+                    "reason": f"the ledger could not be read: {exc}",
+                }
+            )
+            continue
+        for worktree, record in held.items():
+            try:
+                tree_head = _rev_parse(worktree, "HEAD")
+            except MergeError:
+                tree_head = ""
+            if tree_head != reviewed and not _is_ancestor(
+                checkout, tree_head, reviewed
+            ):
+                result["withheld"].append(
+                    {
+                        "project": project,
+                        "worktree": str(worktree),
+                        "reason": (
+                            f"its HEAD is {tree_head or 'unreadable'}, which the "
+                            f"landed head {reviewed} does not carry"
+                        ),
+                    }
+                )
+                continue
+            try:
+                # The ledger row names its tree and says nothing about where
+                # the run worked, so the path the held set matched is carried in
+                # and the checkout this merge wrote stands in for a recorded one.
+                release_record = {**record, "worktree": str(worktree)}
+                if not str(release_record.get("repo") or "").strip():
+                    release_record["repo"] = str(checkout)
+                release = promotion_release._release_run_workspace(
+                    release_record,
+                    integration_repo=Path(repo),
+                    integration_commit=landed,
+                )
+            except Exception as exc:  # noqa: BLE001 - as above
+                release = {
+                    "worktree_released": False,
+                    "worktree_withheld": f"the release step raised: {exc}",
+                }
+            if release.get("worktree_released"):
+                result["released"].append(str(worktree))
+            else:
+                result["withheld"].append(
+                    {
+                        "project": project,
+                        "worktree": str(worktree),
+                        "reason": str(
+                            release.get("worktree_withheld")
+                            or "the release withheld it"
+                        ),
+                    }
+                )
+    return result
 
 
 def land(
@@ -854,6 +968,10 @@ def land(
         retry_seconds=retry_seconds,
         sleep=sleep,
         verify=_refuse_a_dropped_change,
+        # The caller's own release follows this landing and reports the tree it
+        # freed; releasing here as well would report the path as the two steps
+        # before the tree is removed.
+        release=False,
     )
     report["survived"] = {
         "checked": bool(markers),
