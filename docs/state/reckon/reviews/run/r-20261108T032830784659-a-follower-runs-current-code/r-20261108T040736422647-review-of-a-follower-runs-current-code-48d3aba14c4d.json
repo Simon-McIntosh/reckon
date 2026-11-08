@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:3064 crew_follow.stream_events builds the subscriber's reloader",
+    "reckon/crew_follow_commands.py:1790 _follow_watch_lines._tick invokes on_poll between rows",
+    "reckon/crew/follower_reload.py:311 _FollowerReloader.poll performs the cadence check and re-exec"
+  ],
+  "completed_at": "2026-11-08T04:22:04.239Z",
+  "dispatched_at": "2026-11-08T04:11:10Z",
+  "findings": [
+    {
+      "file": "tests/test_a_follower_runs_current_code.py",
+      "line": "108",
+      "severity": "non-blocking",
+      "text": "non-blocking: _subscriber_reloader calls _follower_reloader_for directly instead of driving the subscriber delivery, so putting `reloader = None` back at reckon/crew_follow_commands.py:3064 leaves all five added tests green; the helper's docstring claim that a delivery that stopped building one fails here is false, and durability rests on it."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-follower-runs-current-code.html",
+      "line": "29",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states the first control restores `reloader = None` on the subscriber path and that the stale-stamp case records no exec, but logs/negative-control-1.log:25 shows the failure is `assert None is not None` inside the builder, so the recorded control demonstrates a different mutation than the one described here and in manifest.md:16."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T032830784659-a-follower-runs-current-code/manifest.md",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when requires every test file importing reckon.crew_follow_commands or reckon.crew.follower_reload to add no failure against a base arm, but 62 files match that criterion and the arms ran only tests/test_follower_freshness.py and the new file, leaving that clause of the measure unverified."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T032830784659-a-follower-runs-current-code/logs/after-suite.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T032830784659-a-follower-runs-current-code/logs/baseline-suite.log"
+  },
+  "item_aggregate": 97,
+  "item_verdicts": {
+    "diff": "Read both commits against the base: b2f79a46 replaces the conditional reloader on the subscriber delivery with a builder call at reckon/crew_follow_commands.py:3064, adds the 222-line test file, and rewrites the docstring at tests/test_a_follower_freshness.py:181; 48d3aba1 adds only the evidence fragment.",
+    "done_when": "The done_when names tests/test_a_follower_runs_current_code.py with four cases, two controls and both suite arms; the file carries all five cases and logs/after-suite.log ends EXIT=0 (15 passed) against logs/base-new-test-behavioural.log EXIT=1 (5 failed), but the clause requiring every test file importing the touched modules to add no base-arm failure was not run (2 of 62 files) and the first control was applied to the builder rather than the subscriber path.",
+    "goal": "The goal asks that a station-subscriber follower re-execute onto its source checkout's code when that code moves; reckon/crew_follow_commands.py:3064 now builds the reloader unconditionally on that delivery, and reckon/crew_follow_commands.py:1790 feeds it through the per-wait hook at a row boundary with no _StampPoll on the subscriber path.",
+    "manifest": "Read; it names commits b2f79a46 and 48d3aba1, states the head arm 15 passed and the base arm 10 passed, and claims both controls red, but its negative_control_note at line 16 describes a mutation of the subscriber path that logs/negative-control-1.log:25 shows was applied to _follower_reloader_for instead.",
+    "write_paths": "The brief grants five paths; git diff 1b3663ce..48d3aba1 changes four files and every one is inside that grant, and reckon/crew/follower_reload.py appears in no commit."
+  },
+  "justifications": {
+    "durability": "tests/test_a_follower_runs_current_code.py:108 builds the reloader through _follower_reloader_for directly, so restoring `reloader = None` at reckon/crew_follow_commands.py:3064 leaves every added test green and the regression this node exists to prevent is unguarded.",
+    "evidence": "logs/after-suite.log ends 15 passed EXIT=0 and logs/base-new-test-behavioural.log ends 5 failed EXIT=1, but logs/negative-control-1.log:25 fails on `assert None is not None` inside the test's own builder call rather than on the subscriber path the fragment claims to have restored.",
+    "fit": "reckon/crew_follow_commands.py:2814 follows the `_station_subscriber_for` builder idiom beside it, and no plan, stage or ticket identifier appears in the new symbol, comments or the two commit subjects.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:3064 removes the subscriber special case so the delivery polls the same _FollowerReloader the stream path builds, and the only poll path is the per-wait hook at reckon/crew_follow_commands.py:1790.",
+    "reuse": "a capability search over reckon/ found _FollowerReloader (reckon/crew/follower_reload.py:91) as the only reload mechanism and no prior builder; the addition wraps that owner rather than duplicating it.",
+    "scope_discipline": "git diff 1b3663ce..48d3aba1 touches only reckon/crew_follow_commands.py, tests/test_a_follower_runs_current_code.py, tests/test_follower_freshness.py and the evidence fragment, all inside the five granted paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal asks that a station-subscriber follower re-execute onto its source checkout's code when that code moves; reckon/crew_follow_commands.py:3064 now builds the reloader unconditionally on that delivery, and reckon/crew_follow_commands.py:1790 feeds it through the per-wait hook at a row boundary with no _StampPoll on the subscriber path.\nVERDICT done_when: The done_when names tests/test_a_follower_runs_current_code.py with four cases, two controls and both suite arms; the file carries all five cases and logs/after-suite.log ends EXIT=0 (15 passed) against logs/base-new-test-behavioural.log EXIT=1 (5 failed), but the clause requiring every test file importing the touched modules to add no base-arm failure was not run (2 of 62 files) and the first control was applied to the builder rather than the subscriber path.\nVERDICT write_paths: The brief grants five paths; git diff 1b3663ce..48d3aba1 changes four files and every one is inside that grant, and reckon/crew/follower_reload.py appears in no commit.\nVERDICT manifest: Read; it names commits b2f79a46 and 48d3aba1, states the head arm 15 passed and the base arm 10 passed, and claims both controls red, but its negative_control_note at line 16 describes a mutation of the subscriber path that logs/negative-control-1.log:25 shows was applied to _follower_reloader_for instead.\nVERDICT diff: Read both commits against the base: b2f79a46 replaces the conditional reloader on the subscriber delivery with a builder call at reckon/crew_follow_commands.py:3064, adds the 222-line test file, and rewrites the docstring at tests/test_a_follower_freshness.py:181; 48d3aba1 adds only the evidence fragment.\nCALL_SITES: reckon/crew_follow_commands.py:3064 crew_follow.stream_events builds the subscriber's reloader, reckon/crew_follow_commands.py:1790 _follow_watch_lines._tick invokes on_poll between rows, reckon/crew/follower_reload.py:311 _FollowerReloader.poll performs the cadence check and re-exec\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:3064 removes the subscriber special case so the delivery polls the same _FollowerReloader the stream path builds, and the only poll path is the per-wait hook at reckon/crew_follow_commands.py:1790.\nSCORE evidence: 13\nJUSTIFICATION evidence: logs/after-suite.log ends 15 passed EXIT=0 and logs/base-new-test-behavioural.log ends 5 failed EXIT=1, but logs/negative-control-1.log:25 fails on `assert None is not None` inside the test's own builder call rather than on the subscriber path the fragment claims to have restored.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 1b3663ce..48d3aba1 touches only reckon/crew_follow_commands.py, tests/test_a_follower_runs_current_code.py, tests/test_follower_freshness.py and the evidence fragment, all inside the five granted paths.\nSCORE durability: 10\nJUSTIFICATION durability: tests/test_a_follower_runs_current_code.py:108 builds the reloader through _follower_reloader_for directly, so restoring `reloader = None` at reckon/crew_follow_commands.py:3064 leaves every added test green and the regression this node exists to prevent is unguarded.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew_follow_commands.py:2814 follows the `_station_subscriber_for` builder idiom beside it, and no plan, stage or ticket identifier appears in the new symbol, comments or the two commit subjects.\nSCORE reuse: 18\nJUSTIFICATION reuse: a capability search over reckon/ found _FollowerReloader (reckon/crew/follower_reload.py:91) as the only reload mechanism and no prior builder; the addition wraps that owner rather than duplicating it.\nFINDING tests/test_a_follower_runs_current_code.py:108 non-blocking: _subscriber_reloader calls _follower_reloader_for directly instead of driving the subscriber delivery, so putting `reloader = None` back at reckon/crew_follow_commands.py:3064 leaves all five added tests green; the helper's docstring claim that a delivery that stopped building one fails here is false, and durability rests on it.\nFINDING docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-follower-runs-current-code.html:29 non-blocking: the fragment states the first control restores `reloader = None` on the subscriber path and that the stale-stamp case records no exec, but logs/negative-control-1.log:25 shows the failure is `assert None is not None` inside the builder, so the recorded control demonstrates a different mutation than the one described here and in manifest.md:16.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T032830784659-a-follower-runs-current-code/manifest.md:17 non-blocking: the done_when requires every test file importing reckon.crew_follow_commands or reckon.crew.follower_reload to add no failure against a base arm, but 62 files match that criterion and the arms ran only tests/test_follower_freshness.py and the new file, leaving that clause of the measure unverified.\n",
+  "review_run_id": "r-20261108T040736422647-review-of-a-follower-runs-current-code-48d3aba14c4d",
+  "reviewed_base_sha": "1b3663ce4fd1f45393fac81a3289ecae7c6ec4b0",
+  "reviewed_head_sha": "48d3aba14c4db3b6e8c2a6212f769951639179cb",
+  "reviewed_run_id": "r-20261108T032830784659-a-follower-runs-current-code",
+  "scores": {
+    "durability": 10,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T04:20:13.784722+00:00",
+  "total": 97,
+  "verdicts": {
+    "diff": "Read both commits against the base: b2f79a46 replaces the conditional reloader on the subscriber delivery with a builder call at reckon/crew_follow_commands.py:3064, adds the 222-line test file, and rewrites the docstring at tests/test_a_follower_freshness.py:181; 48d3aba1 adds only the evidence fragment.",
+    "done_when": "The done_when names tests/test_a_follower_runs_current_code.py with four cases, two controls and both suite arms; the file carries all five cases and logs/after-suite.log ends EXIT=0 (15 passed) against logs/base-new-test-behavioural.log EXIT=1 (5 failed), but the clause requiring every test file importing the touched modules to add no base-arm failure was not run (2 of 62 files) and the first control was applied to the builder rather than the subscriber path.",
+    "goal": "The goal asks that a station-subscriber follower re-execute onto its source checkout's code when that code moves; reckon/crew_follow_commands.py:3064 now builds the reloader unconditionally on that delivery, and reckon/crew_follow_commands.py:1790 feeds it through the per-wait hook at a row boundary with no _StampPoll on the subscriber path.",
+    "manifest": "Read; it names commits b2f79a46 and 48d3aba1, states the head arm 15 passed and the base arm 10 passed, and claims both controls red, but its negative_control_note at line 16 describes a mutation of the subscriber path that logs/negative-control-1.log:25 shows was applied to _follower_reloader_for instead.",
+    "write_paths": "The brief grants five paths; git diff 1b3663ce..48d3aba1 changes four files and every one is inside that grant, and reckon/crew/follower_reload.py appears in no commit."
+  }
+}

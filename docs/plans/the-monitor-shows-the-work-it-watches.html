@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="720">
+<meta name="plan-version" content="721">
 <meta name="plan-modified" content="2026-11-08">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1406,7 +1406,7 @@ Both cases run under the file's existing temporary crew home.</li>
     <div class="r-comment-body"><p>Reviewed r-20261107T175523420546-pane-shows-work-in-flight at head 7dc1ca45a4b6f202f9ab765a1012959a1c911479 against base 8cc3363d7340d4136ae87079d87c02124d96faea: scores goal_fidelity 11, evidence 17, scope_discipline 16, durability 18, fit 17, reuse 14 (total 93); 0 added failures over the reviewed run's own gate pair (head 487 passed EXIT=0, base 481 passed EXIT=0); three non-blocking findings — InFlightLine.emit has no production caller so nothing reaches the pane yet, IN_FLIGHT_PHASES restates FLEET_WORKING_STATES, and the test hand-writes the live view's row keys.</p></div>
 </div>
 <div class="r-comment" data-section="s117" data-id="c-run-r-20261107T175523420546-pane-shows-work-in-flight" data-who="reckon-build" data-when="2026-11-07T19:35:47.295Z">
-    <div class="r-comment-body"><p>ticker.py gains InFlightLine: one standing line naming each of the session&#x27;s working runs (node, phase, age, stream age), drawn on a 60 s cadence and on any change to the working set, never repeating identical text, silent for a peer session or an empty working set; tests/test_the_pane_shows_its_work_in_flight.py drives it with a stubbed clock and live view (6 passed), the ticker-importer population is 487 passed at head against 481 at base (zero added failures), and the negative control fails 5 of 6 with EXIT=1</p></div>
+    <div class="r-comment-body"><p>ticker.py gains InFlightLine: one standing line naming each of the session's working runs (node, phase, age, stream age), drawn on a 60 s cadence and on any change to the working set, never repeating identical text, silent for a peer session or an empty working set; tests/test_the_pane_shows_its_work_in_flight.py drives it with a stubbed clock and live view (6 passed), the ticker-importer population is 487 passed at head against 481 at base (zero added failures), and the negative control fails 5 of 6 with EXIT=1</p></div>
 </div>
 <div class="r-comment" data-section="s118" data-id="c-run-r-20261107T175829436786-settled-follower-rearms" data-who="reckon-build" data-when="2026-11-07T19:05:18.558Z">
     <div class="r-comment-body"><p>A settled follower is re-checked every tick and re-armed when its session owns work: `SessionHost.tick` asks a live view backed by `station_subscriber.population_has_live_work` over the session's live pointers, names the run in the census as `rearmed_for`, and leaves a pair owning nothing settled; gate 4 passed, base revision 4 failed, negative control 3 failed, 0 added failures across the 20 session_host-importing test files.</p></div>
@@ -2427,6 +2427,9 @@ Both cases run under the file's existing temporary crew home.</li>
 </div>
 <div class="r-comment" data-section="s99" data-id="c-run-r-20261105T131501961323-reland-the-reviewed-change-that-keeps-a-neverlaunched" data-who="reckon-build" data-when="2026-11-05T14:36:18.629Z">
     <div class="r-comment-body"><p>Re-landed the reviewed parked-request budget fix unchanged on base cd5edbd573 (patch byte-identical to git diff 98d07499d1 918894481d); elapsed now charges from launch, a never-launched pointer reports no elapsed/overrun and carries waiting_seconds (declared in LIVE_CLASSIFICATION_FIELDS); gate 23 passed at head effb92dc47 against 16 passed at base, importers 86 passed both sides, declared negative control EXIT=1 with the awaiting-upstream case failing on the overrun assertion.</p></div>
+</div>
+<div class="r-comment" data-section="s107" data-id="c-run-r-20261108T040736422647-review-of-a-follower-runs-current-code-48d3aba14c4d" data-who="reckon-build" data-when="2026-11-08T04:22:04.239Z">
+    <div class="r-comment-body"><p>review of r-20261108T032830784659-a-follower-runs-current-code at head 48d3aba14c4db3b6e8c2a6212f769951639179cb; parsed record scores goal_fidelity 19, evidence 13, scope_discipline 19, durability 10, fit 18, reuse 18, added_failure_count 0, and carries three non-blocking findings — the subscriber delivery&#x27;s reloader is not guarded by any added test, the first negative control was applied to the test&#x27;s own builder rather than the subscriber path, and the base-arm breadth clause of the done_when (62 importing test files) was not run.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
