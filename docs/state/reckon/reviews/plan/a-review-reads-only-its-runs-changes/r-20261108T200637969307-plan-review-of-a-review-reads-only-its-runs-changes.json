@@ -1,0 +1,51 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-08T20:15:24.625Z",
+  "dispatched_at": "2026-11-08T20:07:55Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-review-reads-only-its-runs-changes.html:43",
+      "id": "done_when-1",
+      "reason": "the plan must state that the fixture's merge consumes the remote-tracking ref and add a control that passing the lagging local branch fails, otherwise a node that implements the local ref passes the section's whole gate while the defect the section exists to prevent survives.",
+      "text": "the fixture holds \"a local `main` left behind the remote-tracking ref\" but none of the four assertions distinguishes the remote-tracking ref from the local branch, and the plan does not say which ref the fixture's \"merge of an integration branch\" consumes; if that merge consumes the local branch, `own_changed_paths(..., integration_ref=\"main\")` returns exactly the same path set as `origin/main` and all four assertions plus the two-dot negative control still pass, so the sentence added in this revision (\"never a local branch, which can lag behind it and let the integration branch's commits back in\") is asserted by nothing",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-review-reads-only-its-runs-changes.html:43",
+      "id": "reasoning-1",
+      "reason": "the deliverable needs the unreadable-history contract and a fixture variant asserting it, because as written the repair can silently widen the very carry it is meant to make safe.",
+      "text": "`own_changed_paths` is specified to \"return the paths changed by commits reachable from `tip` but not from `older` or `integration_ref`\" with no statement of what it returns when `git rev-list` cannot run (a tree without an `origin` remote, an unfetched or missing remote-tracking ref), whereas the neighbouring `_changed_paths_between` documents `None` as its fail-safe precisely because an uncomparable history \"cannot be shown to change no runtime source\"; with a bare `[]` on failure, `review_head_move` yields empty `paths`, `changes_runtime_source([])` is False, `touches_delivered_work` stays False, and `carry_review_forward` re-stamps the stored review onto a head whose delta was never read",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "e9f9e306b8d8c919ab000041ef644e9ed8a9756e",
+  "plan_fingerprint": "a885934b5f6cbc424128f6e952d9b80cca9c6828af2ee4d5edd9ecf04eadff14",
+  "plan_slug": "a-review-reads-only-its-runs-changes",
+  "plan_version": 11,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261108T200637969307-plan-review-of-a-review-reads-only-its-runs-changes",
+  "reviewed_blob_sha": "108a971a67f2c83c86de3637ef58e3fdf6320a3d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/clones.py:629` (`changed_paths`), `reckon/crew/recovery_review_dispatch.py:966/971` (`_changed_figure_paths`), `:1015/1039` (`_review_delivered_paths`), `:1062/1091` (`review_head_move`), `:1206/1220` (`touches_delivered_work`), `reckon/crew/routing.py:3279` (`_mentioned_repository_files`) and `reckon/crew/node.py:1576` (`rev-list HEAD ^integration_ref ^base_sha`) all resolve, and the cited evidence fragment exists (11,835 bytes) with figures that reconcile to \u00a71 (156 x 4,000 + 50,392 = 674,392).",
+    "done_when": "a finding \u2014 s3:43 plants \"a local `main` left behind the remote-tracking ref\" in the fixture but neither the four assertions nor the stated negative control ever compares against a local branch, so the section's newly added rule (\"never a local branch, which can lag behind it\") is unmeasured and a local-`main` implementation can pass.",
+    "evidence_paths": "pass \u2014 gate and command logs go under the crew run directory, and the evidence note and test file are committed repository paths, not a scratchpad or node-local tmp.",
+    "naming": "pass \u2014 symbols are named by mechanism (`own_changed_paths`, `integration_ref`), and the only literals in the prose are commit shas and section references, which are citations rather than plan labels.",
+    "reasoning": "a finding \u2014 the deliverable states a bare list return for `own_changed_paths` and its done-when exercises only a resolvable `origin/main`, so the unreadable-history path (the one the section's own cited precedent, `_changed_paths_between`, guards with a `None` fail-safe) is specified by nothing and would let `carry_review_forward` carry a stored review over a delta nobody read.",
+    "single_goal": "pass \u2014 one deliverable (the `own_changed_paths` helper plus its two named callers) with one verdict.",
+    "wiring": "pass \u2014 s3 declares no depends-on/informs/gates, and its one internal dependency (\u00a72's evidence note) is declared done at line 23 and carried by resolved followup f-arroirc-001, while open followup f-arroirc-002 carries \u00a73."
+  },
+  "section_digests": {
+    "_document": "321e3bc99119a27697d635d34e1d4b9f33d7ce216f1a7a760d22bc147ba1ccc0",
+    "s1": "3af442a13134b7c46db2d98609970c3d9e560ca12eb3deabbed535c7f74c5dca",
+    "s2": "a324bc121acb85a70e9fdcb6ec0c99aab489197974b83551dbf447fc023b56e3",
+    "s3": "d55cfc0c31e4cced16c4ac4410ca86423f9240ab84ab67b09cd85cac5d60b479"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T20:29:30.639268+00:00",
+  "total": null
+}
