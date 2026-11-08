@@ -199,6 +199,7 @@ def test_a_widen_of_a_stopped_run_says_the_next_attempt_mounts_the_paths(
     text = result["takes_effect"]
     assert "src/added-by-coordinator.py" in result["added"]
     assert "next resume or launch mounts the added paths" in text
+    assert "node.write_paths" in text
 
 
 def test_a_session_walk_worker_is_named_by_its_session_and_never_by_a_pid(
@@ -241,10 +242,15 @@ def test_an_unreadable_liveness_never_says_a_launch_mounts_the_paths(home) -> No
 
 
 def test_the_fence_field_carries_the_widened_paths_after_the_call(home) -> None:
-    """The field the sentence names is the field the launch fence reads."""
+    """The field the sentence names is the field the launch fence reads.
+
+    This guards behaviour the widening already had: the claim writer stores the
+    added paths under ``node.write_paths``, which is what a launch reads for its
+    fence. It passes at the base revision by design.
+    """
     _pointer(home, "r-widen-fence-field", pid=_absent_pid())
     result = _widen("r-widen-fence-field", "src/fence-field.py")
-    assert "node.write_paths" in result["takes_effect"]
+    assert "src/fence-field.py" in result["added"]
     reread = runs.read_pointer("r-widen-fence-field")
     fenced = (reread.get("node") or {}).get("write_paths") or ()
     assert "src/fence-field.py" in fenced
