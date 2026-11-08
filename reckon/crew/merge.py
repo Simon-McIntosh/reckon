@@ -797,9 +797,7 @@ def land_merge(
         # Only a landed and pushed head frees the trees it leaves behind, so a
         # refusal above — a conflict, a failed check, an outstanding push —
         # reaches here with nothing released.
-        report["release"] = release_landed_worktrees(
-            repo, landed, head=head_sha
-        )
+        report["release"] = release_landed_worktrees(repo, landed, head=head_sha)
     return report
 
 
@@ -830,16 +828,11 @@ def release_landed_worktrees(
     confirmed before this runs, so a ledger that refuses or a release that
     raises is reported as a withheld tree rather than raised.
     """
-    from reckon.crew import obligations
-    from reckon.crew import promotion_release
+    from reckon.crew import obligations, promotion_release
     from reckon.crew.routing import repository_projects
 
     result: dict[str, list] = {"released": [], "withheld": []}
-    names = (
-        tuple(projects)
-        if projects is not None
-        else repository_projects(repo)
-    )
+    names = tuple(projects) if projects is not None else repository_projects(repo)
     if not names:
         return result
     checkout = Path(repo)

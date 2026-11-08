@@ -30,7 +30,6 @@ from tests.helpers.landing_repository import (
     _write_origin_and_checkout,
 )
 
-
 SESSION = "session-a"
 NODE = "release-node"
 
@@ -164,9 +163,9 @@ def test_a_promoted_runs_worktree_is_released_by_a_separate_merge(
     report = json.loads(result.output)
     landed = _git(run["repository"], "rev-parse", "main")
     assert _git(run["origin"], "rev-parse", "main") == landed
-    assert str(run["worktree"].resolve()) in report["release"]["released"], (
-        report["release"]
-    )
+    assert str(run["worktree"].resolve()) in report["release"]["released"], report[
+        "release"
+    ]
     assert report["release"]["withheld"] == [], report["release"]
     assert not run["worktree"].exists()
 
