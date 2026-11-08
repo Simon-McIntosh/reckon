@@ -605,29 +605,42 @@ def _worker_host_line(facts: Any, run_directory: str | Path) -> str:
     )
 
 
-def declared_backend_search_path(backend_name: str | None) -> list[str]:
-    """Directories the flight layer declares for one backend's command.
+def declared_backend_search_path(backend: Mapping[str, Any] | None) -> list[str]:
+    """Directories a resolved backend declares for finding its command.
 
     A backend's location is a fact about the host, not about the shell that
-    happens to launch it, so these come from the resolved flight config rather
-    than from the launcher's environment. A launch inheriting an environment
-    that omits the installing directory — a host process restarted without
-    reading the shell's own startup files, say — still resolves the command.
+    happens to launch it, so the declaration is read from the backend entry the
+    caller already holds rather than from the launcher's environment. Reading it
+    from that entry is what lets a project layer's ``search_path`` apply: a
+    reader that resolved the flight config without the project would see the
+    host layer's entry and miss a directory the project supplied.
+
     Entries are returned in declaration order with home-relative ones expanded
-    and duplicates dropped; a backend that declares none returns empty.
+    and duplicates dropped; a backend declaring none returns empty.
+    """
+    declared: list[str] = []
+    for entry in (backend or {}).get("search_path") or ():
+        directory = os.path.expanduser(str(entry))
+        if directory and directory not in declared:
+            declared.append(directory)
+    return declared
+
+
+def _declared_search_path_for_backend_name(backend_name: str | None) -> list[str]:
+    """Read one backend's declared search path by name from the flight layer.
+
+    A launch path that holds no resolved backend entry — a plan built earlier
+    and carried by name — reads the host layer's declaration here. Callers
+    holding a project-resolved entry pass it to
+    :func:`declared_backend_search_path` instead, so a project layer's
+    declaration is never missed.
     """
     if not backend_name:
         return []
     from reckon import flight
 
     backends = flight.resolve().config.get("backends") or {}
-    backend = backends.get(str(backend_name)) or {}
-    declared: list[str] = []
-    for entry in backend.get("search_path") or ():
-        directory = os.path.expanduser(str(entry))
-        if directory and directory not in declared:
-            declared.append(directory)
-    return declared
+    return declared_backend_search_path(backends.get(str(backend_name)) or {})
 
 
 def launch_search_path(
@@ -635,6 +648,7 @@ def launch_search_path(
     *,
     facts: Any | None = None,
     fenced: bool = False,
+    backend: Mapping[str, Any] | None = None,
     backend_name: str | None = None,
 ) -> str:
     """Return the effective worker PATH for one launch.
@@ -657,10 +671,11 @@ def launch_search_path(
     two checkouts' shims on one path resolve to each other rather than to the
     real tool.
 
-    The directories the flight layer declares for ``backend_name`` follow every
-    inherited entry, so a launcher whose environment omits an installed
-    backend's directory still searches the one the host declares, and an
-    inherited directory that already carries the command wins.
+    The directories the resolved ``backend`` declares follow every inherited
+    entry, so a launcher whose environment omits an installed backend's
+    directory still searches the one the flight layer declares, and an
+    inherited directory that already carries the command wins. A caller holding
+    only a backend name passes ``backend_name`` and the host layer is read.
     """
     from reckon.shim_lookup import holds_shim
 
@@ -689,9 +704,14 @@ def launch_search_path(
     # The declared directories go last, so an inherited PATH that already
     # carries a directory always wins over the flight layer's declaration.
     inherited_resolved = {os.path.realpath(entry) for entry in inherited_entries}
+    declared = (
+        declared_backend_search_path(backend)
+        if backend is not None
+        else _declared_search_path_for_backend_name(backend_name)
+    )
     declared_entries = [
         entry
-        for entry in declared_backend_search_path(backend_name)
+        for entry in declared
         if os.path.realpath(entry) not in resolved
         and os.path.realpath(entry) not in inherited_resolved
     ]
@@ -1149,12 +1169,12 @@ def preflight_launch_command(
     shape = [command] if not fence else [_backends.FENCE_BINARY, "--", command]
     binary = shape[harness_command_index(shape)]
     environment = expand_backend_environment(backend_name, backend)
-    searched = launch_search_path(environment, facts=facts, backend_name=backend_name)
+    searched = launch_search_path(environment, facts=facts, backend=backend)
     resolved = shutil.which(binary, path=searched) if binary else None
     if not resolved:
         raise LaunchResolutionError(
             _unresolved_backend_command(
-                binary, searched, declared_backend_search_path(backend_name)
+                binary, searched, declared_backend_search_path(backend)
             )
         )
     return os.path.abspath(resolved)
@@ -1165,6 +1185,7 @@ def resolve_launch_executable(
     *,
     environment: Mapping[str, str] | None = None,
     facts: Any | None = None,
+    backend: Mapping[str, Any] | None = None,
 ) -> _backends.LaunchPlan:
     """Return the plan with the backend's own binary replaced by an absolute path.
 
@@ -1184,10 +1205,16 @@ def resolve_launch_executable(
 
     ``environment`` is the overlay the launch will run with; absent, the launch's
     own environment is used, which is what every construction site passes.
+    ``backend`` is the resolved backend entry when the caller holds one, so a
+    project layer's declared search path applies; without it the declaration is
+    read from the host layer by the plan's backend name.
     """
     selected_environment = plan.environment if environment is None else environment
     searched = launch_search_path(
-        selected_environment, facts=facts, backend_name=plan.backend
+        selected_environment,
+        facts=facts,
+        backend=backend,
+        backend_name=plan.backend,
     )
     element = harness_command_index(plan.argv)
     binary = str(plan.argv[element]) if element < len(plan.argv) else ""
@@ -1195,7 +1222,11 @@ def resolve_launch_executable(
     if not resolved:
         raise LaunchResolutionError(
             _unresolved_backend_command(
-                binary, searched, declared_backend_search_path(plan.backend)
+                binary,
+                searched,
+                declared_backend_search_path(backend)
+                if backend is not None
+                else _declared_search_path_for_backend_name(plan.backend),
             )
         )
     # Absolute, not canonical: a launcher installed as ``bin/codex`` symlinked
@@ -1542,7 +1573,7 @@ def assert_routable_backends_resolvable(
         if not command:
             continue
         environment = flight.expand_backend_environment(str(name), backend)
-        path = launch_search_path(environment, backend_name=str(name))
+        path = launch_search_path(environment, backend=backend)
         found = shutil.which(command, path=path)
         if not found:
             raise LaunchResolutionError(
@@ -1550,7 +1581,7 @@ def assert_routable_backends_resolvable(
                 + _unresolved_backend_command(
                     command,
                     path,
-                    declared_backend_search_path(str(name)),
+                    declared_backend_search_path(backend),
                 )
                 + "; the watcher is not armed"
             )
