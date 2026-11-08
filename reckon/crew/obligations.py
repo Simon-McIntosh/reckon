@@ -287,6 +287,11 @@ INDEX_LAG_SEEN_NAME = "index-lag-seen.json"
 #: reading the view cannot even rewrite the stat cache it reports about.
 INDEX_LAG_GIT_ENV = {"GIT_OPTIONAL_LOCKS": "0"}
 
+#: The last reading taken per main checkout, keyed on what must move for it to
+#: stop describing the checkout (the index's stat identity and HEAD), so a
+#: sweep that recomputes every session's payload does not run git per tick.
+_INDEX_LAG_READINGS: dict[str, tuple[tuple[Any, ...], dict[str, Any] | None]] = {}
+
 # The duty kinds that are listed but never hold a stop open: the work behind
 # them is already owned by a reflex that retries, so blocking would ask the
 # coordinator to act on a wait it cannot shorten.
@@ -1641,6 +1646,7 @@ def _review_tier_key(
 
 def _clear_cached_obligation_inputs() -> None:
     """Drop every memoised per-run derivation, so the next read recomputes."""
+    _INDEX_LAG_READINGS.clear()
     file_memo.clear()
 
 
@@ -2594,6 +2600,36 @@ def _record_index_lag(paths: Sequence[str], head: str, *, now: datetime) -> None
         return
 
 
+def _checkout_head_from_files(repository: Path) -> str:
+    """HEAD as the checkout records it, read from the files git maintains.
+
+    Read without running git so a caller can key a cached reading on it: the
+    station recomputes a payload on every tick, and a subprocess per tick to
+    learn that nothing moved is the cost this avoids. The detector's own head
+    still comes from ``git rev-parse``, and the tests compare the two.
+    """
+    git_dir = repository / ".git"
+    try:
+        head_text = (git_dir / "HEAD").read_text(encoding="utf-8").strip()
+    except OSError:
+        return ""
+    if not head_text.startswith("ref:"):
+        return head_text
+    try:
+        return (git_dir / head_text[4:].strip()).read_text(encoding="utf-8").strip()
+    except OSError:
+        return ""
+
+
+def _index_lag_reading_key(repository: Path) -> tuple[Any, ...]:
+    """What must move for a cached lag reading to stop describing this checkout."""
+    try:
+        index_signature: Any = file_memo.file_signature(repository / ".git" / "index")
+    except OSError:
+        index_signature = None
+    return (str(repository), index_signature, _checkout_head_from_files(repository))
+
+
 def _index_lag_notice(project: str, *, now: datetime) -> dict[str, Any] | None:
     """The notice one project's main checkout raises when its index lags HEAD.
 
@@ -2601,21 +2637,36 @@ def _index_lag_notice(project: str, *, now: datetime) -> dict[str, Any] | None:
     producer and follower of that project writes to, rather than from the
     caller's enclosing worktree. The notice is not run-scoped: it belongs to
     the project, so every session working it sees the same row.
+
+    The reading is cached against the checkout's index stat identity and HEAD,
+    and dropped when a named path stops existing: a sweep recomputes every
+    session's payload on each tick, and a git subprocess per tick to learn that
+    nothing moved is the cost that cache avoids. A write to the index or a
+    moved HEAD changes the key, so the next read re-derives.
     """
     from reckon.crew.dispatch_sections import project_mount_repository
 
     repository = project_mount_repository(project)
     if repository is None:
         return None
+    key = _index_lag_reading_key(repository)
+    cached = _INDEX_LAG_READINGS.get(key[0])
+    if cached is not None and cached[0] == key:
+        notice = cached[1]
+        if notice is None:
+            return None
+        if all((repository / path).exists() for path in notice["paths"]):
+            return dict(notice)
     paths, head = _index_lag_paths(repository)
     if not paths:
+        _INDEX_LAG_READINGS[key[0]] = (key, None)
         return None
     _record_index_lag(paths, head, now=now)
     restore = "git -C {} reset -q -- {}".format(
         shlex.quote(str(repository)),
         " ".join(shlex.quote(path) for path in paths),
     )
-    return {
+    notice = {
         "kind": INDEX_LAG_DUTY_KIND,
         "run_id": "",
         "age_seconds": 0,
@@ -2628,6 +2679,8 @@ def _index_lag_notice(project: str, *, now: datetime) -> dict[str, Any] | None:
         ),
         "next_command": restore,
     }
+    _INDEX_LAG_READINGS[key[0]] = (key, notice)
+    return dict(notice)
 
 
 def obligations(
