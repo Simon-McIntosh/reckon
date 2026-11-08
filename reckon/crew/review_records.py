@@ -293,7 +293,23 @@ def store_committed_review(
     )
     path.parent.mkdir(parents=True, exist_ok=True)
     _review._write_record(path, stored)
+    _note_findings_index(path, project=project, root=root)
     return path
+
+
+def _note_findings_index(path: Path, *, project: str, root: str | Path | None) -> None:
+    """Point the findings index at the record just written.
+
+    The index is a disposable cache of rows derived from records, so a failure
+    to refresh it costs a later reader one record read and is never a reason to
+    fail a write that has already landed.
+    """
+    from reckon.crew.findings import note_record_written
+
+    try:
+        note_record_written(path, project=project, root=root)
+    except OSError:
+        return
 
 
 def commit_record_write(project: str, path: str | Path) -> bool:
