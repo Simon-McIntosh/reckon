@@ -1,0 +1,27 @@
+<section id="a-live-worker-is-never-noted-as-ended">
+  <h3 id="a-live-worker-is-never-noted-as-ended-result">Ended wording requires an observed worker exit</h3>
+  <p>The non-terminal manifest reading in <code>reckon/crew/recovery_classification.py</code>
+  now reserves “when the process ended” and “not reported dead” for <code>alive is False</code>.
+  Unknown liveness explicitly reads “worker process liveness is unknown”. The existing
+  proven-live reading remains covered by the regression test.</p>
+  <table>
+    <thead><tr><th>Recorded liveness</th><th>Base reading</th><th>Delivered reading</th></tr></thead>
+    <tbody>
+      <tr><td>Alive worker</td><td>No ended note</td><td>No ended note</td></tr>
+      <tr><td>Unknown; worker record incomplete</td><td>Process ended; not reported dead</td><td>Liveness unknown; no ended note</td></tr>
+      <tr><td>Exited worker</td><td>Process ended; not reported dead</td><td>Process ended; not reported dead</td></tr>
+    </tbody>
+  </table>
+  <p><code>tests/test_a_live_worker_is_never_noted_ended.py</code> uses a synthetic crew home
+  and an owned child process. At base <code>3189bf2bb67125527123085a26ab933fa7777b22</code>,
+  with the new test overlaid, the result is <strong>1 failed, 2 passed</strong>: only the
+  unknown-liveness case fails, quoting the ended note. At product commit
+  <code>a67da2153641ca86f00f0315407ed68a97e85b31</code>, all <strong>3 passed</strong>.
+  The proven-live case already passes at base; the reproduced defect is the incomplete-record
+  launch named by the dispatch's negative control.</p>
+  <p>The matched population of 27 existing test files importing the classifier reports
+  <strong>241 passed, 17 warnings</strong> in each arm: <strong>0 added failures</strong>.
+  Ruff check and format check pass on both Python paths at base and head. Gate, provenance,
+  importer and lint logs are preserved in the run directory
+  <code>r-20261108T074214362719-a-live-worker-is-never-noted-as-ended</code>.</p>
+</section>
