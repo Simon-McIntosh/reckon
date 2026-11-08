@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/fleet_supervisor.py:2496 DeclaredServices(runtime, environ) in serve",
+    "reckon/crew/fleet_supervisor.py:2391 services.reload() on the reload request verb",
+    "reckon/crew/fleet_supervisor.py:1488 recorded_service_pid and _runs_recorded_code in DeclaredServices.reload",
+    "reckon/crew/fleet_supervisor.py:1854 write_service_pid in run_declared_service"
+  ],
+  "completed_at": "2026-11-08T11:23:24.928Z",
+  "dispatched_at": "2026-11-08T11:09:07Z",
+  "findings": [
+    {
+      "file": "tests/test_a_service_runs_the_code_main_carries.py",
+      "line": "322",
+      "severity": "non-blocking",
+      "text": "the assertion compares table.alive[new_pid] with \"stamp-new\", but FakeProcesses.start assigns that same value from checkout.stamp at :117, so the assertion holds whatever the code under test does and cannot catch the regression its message names; the independent check of the same claim is the recorded-stamp read at :325."
+    },
+    {
+      "file": "reckon/crew/fleet_supervisor.py",
+      "line": "1636",
+      "severity": "non-blocking",
+      "text": "the branch taken when a copy survives SIGKILL logs that no replacement is started while it lives, but reload returns into _start_or_backoff_locked at :1500 and attempts a start immediately, so the statement is untrue and no test exercises the branch (the fake process table always dies on SIGKILL)."
+    },
+    {
+      "file": "reckon/crew/fleet_supervisor.py",
+      "line": "1401",
+      "severity": "non-blocking",
+      "text": "a copy that recorded the unknown reading is treated as unrecorded and restarted, so if the service process' own identity read keeps failing while the supervisor's succeeds, each reload restarts it again; the cooldown the sentinel is meant to give covers only a failing read in the supervisor, not one in the copy."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T054448547073-service-runs-mains-code/logs/importer-head2.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T054448547073-service-runs-mains-code/logs/importer-base.log",
+    "gate": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T054448547073-service-runs-mains-code/logs/gate-service-code-stamp.log",
+    "negative_control": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T054448547073-service-runs-mains-code/logs/negative-control.log"
+  },
+  "item_aggregate": 1,
+  "item_verdicts": {
+    "null": "Read all four commits against a45a33f8; ce7a27b113 adds 200 lines to reckon/crew/fleet_supervisor.py (stamp field on the pid record, recorded_service_stamp, _runs_recorded_code, the stop-then-start branch in reload, the SIGKILL reassurance wait, untrusted-refusal logging in serve), 819ab4e826 and 437505e5ea touch only the test file (arms and formatting), and 36bb5227d6 adds only the evidence fragment."
+  },
+  "justifications": {
+    "durability": "the six arms are each falsified by a targeted mutation that reddens exactly one case (logs/negative-control.log), but tests/test_a_service_runs_the_code_main_carries.py:322 asserts a value the fake itself assigned at :117 and cannot fail.",
+    "evidence": "logs/gate-service-code-stamp.log ends '6 passed in 5.70s' then EXIT=0 at head 36bb5227d6, logs/negative-control.log ends caught=6 survived=0 EXIT=1 with one FAILED id per arm, and the importer pair differs by 0 failure ids, though that log's header names ce7a27b113 while the assertion lines it cites (328) belong to the delivered test file (325), the module itself being identical at both revisions.",
+    "fit": "reckon/crew/fleet_supervisor.py:1357-1375 extends DeclaredServices' existing injection idiom (clock, log_limit) with code_stamp, checkout_trust and stop_grace, reuses the module's log() and _pid_record reader, and introduces no plan or ticket label.",
+    "goal_fidelity": "reckon/crew/fleet_supervisor.py:1395-1425 replaces a copy whose recorded stamp differs from a trusted checkout's and leaves it alone on an untrusted one, which is the goal; the comparison runs on reload, so a service is re-checked when the supervisor starts, re-execs or is told to reload, not on each supervision tick.",
+    "reuse": "the capability search over reckon/ found the owner reckon/checkout_trust.py:948 moved_checkout_is_trustworthy, which fleet_supervisor.py:1319 calls directly, and reckon/served_code.py:840 uses the same owner; recorded_service_stamp extends the _pid_record reader family at fleet_supervisor.py:774 rather than adding a second record parser.",
+    "scope_discipline": "the diff is three files, all implied by the goal, but tests/test_a_service_runs_the_code_main_carries.py sits outside the FENCE-SCOPE list even though the done_when names it as a write path, so the declared scope and the measure disagree and the worker had to record the gap under outside_scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that each crew service runs the code main carries; reckon/crew/fleet_supervisor.py:1385-1425 now compares a running copy's recorded stamp with the checkout's own identity in DeclaredServices.reload and replaces it when they differ, so a service no longer keeps the image it started on.\nVERDICT done_when: The done_when names six arms and tests/test_a_service_runs_the_code_main_carries.py carries exactly those six cases; logs/gate-service-code-stamp.log records 6 passed EXIT=0 at head 36bb5227d6, logs/negative-control.log records caught=6 survived=0 EXIT=1 with one FAILED id per arm, and the importer pair logs/importer-base.log (7 failure ids) vs logs/importer-head2.log (5 failure ids) yields 0 added.\nVERDICT write_paths: The declared scope was reckon/crew/fleet_supervisor.py, the fragment, and the figures directory; the diff changes fleet_supervisor.py and the fragment, and adds tests/test_a_service_runs_the_code_main_carries.py, which the done_when's own 'Write paths: reckon/crew/fleet_supervisor.py and the new test' sentence names but the scope list omits; the worker recorded that omission under outside_scope.\nVERDICT manifest: Read; it records status complete, commits ce7a27b113, 819ab4e826, 437505e5ea, 36bb5227d6, the gate command and its log paths, the negative-control log as a bare path, and the outside_scope note about the test file; every claim it makes was reachable from the logs it names.\nVERDICT diff: Read all four commits against a45a33f8; ce7a27b113 adds 200 lines to reckon/crew/fleet_supervisor.py (stamp field on the pid record, recorded_service_stamp, _runs_recorded_code, the stop-then-start branch in reload, the SIGKILL reassurance wait, untrusted-refusal logging in serve), 819ab4e826 and 437505e5ea touch only the test file (arms and formatting), and 36bb5227d6 adds only the evidence fragment.\nCALL_SITES: reckon/crew/fleet_supervisor.py:2496 DeclaredServices(runtime, environ) in serve, reckon/crew/fleet_supervisor.py:2391 services.reload() on the reload request verb, reckon/crew/fleet_supervisor.py:1488 recorded_service_pid and _runs_recorded_code in DeclaredServices.reload, reckon/crew/fleet_supervisor.py:1854 write_service_pid in run_declared_service\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_supervisor.py:1395-1425 replaces a copy whose recorded stamp differs from a trusted checkout's and leaves it alone on an untrusted one, which is the goal; the comparison runs on reload, so a service is re-checked when the supervisor starts, re-execs or is told to reload, not on each supervision tick.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/gate-service-code-stamp.log ends '6 passed in 5.70s' then EXIT=0 at head 36bb5227d6, logs/negative-control.log ends caught=6 survived=0 EXIT=1 with one FAILED id per arm, and the importer pair differs by 0 failure ids, though that log's header names ce7a27b113 while the assertion lines it cites (328) belong to the delivered test file (325), the module itself being identical at both revisions.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: the diff is three files, all implied by the goal, but tests/test_a_service_runs_the_code_main_carries.py sits outside the FENCE-SCOPE list even though the done_when names it as a write path, so the declared scope and the measure disagree and the worker had to record the gap under outside_scope.\nSCORE durability: 16\nJUSTIFICATION durability: the six arms are each falsified by a targeted mutation that reddens exactly one case (logs/negative-control.log), but tests/test_a_service_runs_the_code_main_carries.py:322 asserts a value the fake itself assigned at :117 and cannot fail.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/fleet_supervisor.py:1357-1375 extends DeclaredServices' existing injection idiom (clock, log_limit) with code_stamp, checkout_trust and stop_grace, reuses the module's log() and _pid_record reader, and introduces no plan or ticket label.\nSCORE reuse: 19\nJUSTIFICATION reuse: the capability search over reckon/ found the owner reckon/checkout_trust.py:948 moved_checkout_is_trustworthy, which fleet_supervisor.py:1319 calls directly, and reckon/served_code.py:840 uses the same owner; recorded_service_stamp extends the _pid_record reader family at fleet_supervisor.py:774 rather than adding a second record parser.\nFINDING tests/test_a_service_runs_the_code_main_carries.py:322 non-blocking: the assertion compares table.alive[new_pid] with \"stamp-new\", but FakeProcesses.start assigns that same value from checkout.stamp at :117, so the assertion holds whatever the code under test does and cannot catch the regression its message names; the independent check of the same claim is the recorded-stamp read at :325.\nFINDING reckon/crew/fleet_supervisor.py:1636 non-blocking: the branch taken when a copy survives SIGKILL logs that no replacement is started while it lives, but reload returns into _start_or_backoff_locked at :1500 and attempts a start immediately, so the statement is untrue and no test exercises the branch (the fake process table always dies on SIGKILL).\nFINDING reckon/crew/fleet_supervisor.py:1401 non-blocking: a copy that recorded the unknown reading is treated as unrecorded and restarted, so if the service process' own identity read keeps failing while the supervisor's succeeds, each reload restarts it again; the cooldown the sentinel is meant to give covers only a failing read in the supervisor, not one in the copy.\n",
+  "review_run_id": "r-20261108T110537751454-review-of-service-runs-mains-code-36bb5227d645",
+  "reviewed_base_sha": "a45a33f80bbcb472a58a2e30519037b425938026",
+  "reviewed_head_sha": "36bb5227d64512ed620faade03b1160e16fb121c",
+  "reviewed_run_id": "r-20261108T054448547073-service-runs-mains-code",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T11:17:52.684436+00:00",
+  "total": 103
+}
