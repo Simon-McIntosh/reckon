@@ -138,12 +138,15 @@ def test_a_glued_suite_arm_key_is_refused(tmp_path: Path) -> None:
 
 
 def test_a_mention_of_an_arm_without_an_object_parses(tmp_path: Path) -> None:
-    """Prose naming the arm stays prose when no object follows it."""
+    """Prose naming the arm stays prose when no object follows it.
+
+    The manifest records no arm of that name, so this case turns on the mention
+    alone: a rule that refused every mention would refuse it, while the glued
+    rule requires an object after the key.
+    """
     record = _write(
         tmp_path,
-        HEADER
-        + "blockers: none. The baseline_suite arm is recorded below.\n"
-        + 'baseline_suite: {"revision": "abc", "exit_status": 0}\n',
+        HEADER + "blockers: none. The baseline_suite arm is recorded below.\n",
     )
 
     assert _parsed(record)["blockers"] == [

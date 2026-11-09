@@ -30,11 +30,20 @@
       <tr><td>Armed suite at dispatch base, new test copied into a scratch tree</td>
       <td>5 failed, 5 passed; exit 1.</td></tr>
       <tr><td>Armed suite at head</td><td>10 passed; exit 0.</td></tr>
-      <tr><td>Declared mutations: reading <code>test_logs</code> as one entry;
-      splitting <code>test_logs</code> alone; leaving <code>commits</code>
-      unsplit</td>
-      <td>3 runs, each exit 1: 2 failed / 1 failed / 1 failed respectively, each
-      naming the case the declaration predicts.</td></tr>
+      <tr><td>All six declared mutations, applied to a scratch copy of the two
+      reader modules</td>
+      <td>Six runs, each exit 1: reading every guarded list as one entry fails
+      cases 1, 2 and 3; splitting <code>test_logs</code> alone fails case 2;
+      leaving <code>commits</code> unsplit fails case 3; refusing any mention of
+      an arm fails case 7; refusing any <code>baseline_suite: {</code> regardless
+      of the word before it fails case 8; restating the field list as literals
+      fails case 10.</td></tr>
+      <tr><td>Repair round, reuse: the commit-id splitter folded into the field
+      rule</td>
+      <td><code>_split_on_whitespace</code> and its private commit pattern are
+      gone; <code>_coerce_commit_identifiers</code> splits through
+      <code>_split_entry_tokens</code>, so one rule reads a line of commit ids
+      and a line of log paths.</td></tr>
       <tr><td>Census over
       <code>~/.config/reckon/crew/runs/r-202610*/manifest.md</code> and
       <code>r-202611*/manifest.md</code>, by name, under

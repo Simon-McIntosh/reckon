@@ -969,7 +969,9 @@ def _split_entry_tokens(value: Any) -> Any:
     read. A value whose whitespace-separated tokens are each entry-shaped is
     therefore read as those tokens in order. Anything carrying a token that is
     not entry-shaped keeps its present reading, so a commit id followed by its
-    subject — or a path followed by a prose word — stays one entry.
+    subject — or a path followed by a prose word — stays one entry. The commit
+    field and every other guarded list field split here, so a line of commit ids
+    and a line of log paths are read by one rule.
     """
     if not isinstance(value, list):
         return value
@@ -1060,30 +1062,15 @@ def _coerce_commit_identifiers(value: Any) -> Any:
     identifiers written on one line (``commits: 461641d1f d50a237c7``) and is
     split into them. Read whole, that line named one commit that resolves to
     nothing, and a merge citing it was refused. An item carrying anything else,
-    such as a commit id followed by its subject, is kept as written.
+    such as a commit id followed by its subject, is kept as written. The split
+    is the one every guarded list field uses, so a commit id is read here on the
+    same terms as a path.
     """
     if isinstance(value, str):
         text = value.strip()
         if text.startswith("[") and text.endswith("]"):
-            return _split_on_whitespace(_split_bracketed_list(text))
-    return _split_on_whitespace(_coerce_list_field(value))
-
-
-_COMMIT_ID = re.compile(r"[0-9a-fA-F]{7,40}")
-
-
-def _split_on_whitespace(value: Any) -> Any:
-    """Split an item made only of whitespace-separated commit ids into them."""
-    if not isinstance(value, list):
-        return value
-    split: list[Any] = []
-    for item in value:
-        tokens = item.split() if isinstance(item, str) else []
-        if len(tokens) > 1 and all(_COMMIT_ID.fullmatch(token) for token in tokens):
-            split.extend(tokens)
-        else:
-            split.append(item)
-    return split
+            return _split_entry_tokens(_split_bracketed_list(text))
+    return _split_entry_tokens(_coerce_list_field(value))
 
 
 def _typed_suite_observation(value: Any) -> SuiteObservation | str | None:
