@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T16:37:22.354Z",
+  "dispatched_at": "2026-11-09T16:31:58Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-is-on-main-when-it-says-so.html:68",
+      "id": "reasoning-1",
+      "reason": "a worker on \u00a77 under an exact spec either blocks on the absent shared fetch or quietly duplicates it, and the drift between two copies of one fetch is the defect this plan exists to prevent.",
+      "text": "\u00a77's Deliverable says the reflex acceptance tests commits \"against the remote primary ref, through the same helper and fetch \u00a75 uses\", but \u00a75 (line 60) runs `git fetch origin <primary>` inline in `reckon/crew_run_commands.py` and names no shared fetch function; \u00a77's write paths are `reckon/crew/recovery_review_acceptance.py` and the new test, and \u00a75's are `reckon/crew/promotion.py` and `reckon/crew_run_commands.py`, so no declared write path can hold the shared fetch both sections claim to use, and \u00a77's gate is also unmet as written",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-is-on-main-when-it-says-so.html:60",
+      "id": "done_when-1",
+      "reason": "one of the two refusal causes the deliverable promises is measured by nothing, so the section can be closed with that branch unimplemented.",
+      "text": "\u00a75's Deliverable refuses when \"the helper answers no remote-tracking ref\" (the empty answer at `reckon/crew/recovery_review_dispatch.py:988`, where a tree with no remote-tracking ref returns `\"\"`), but every refusal arm in the done-when uses an unmerged head, a fast-forwarded-but-unpushed head or an unreachable remote, so an implementation that reads the empty answer as \"cannot decide, promote\" passes the whole gate",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-is-on-main-when-it-says-so.html:68",
+      "id": "done_when-2",
+      "reason": "the arm set cannot fail on the branch the deliverable names, so \u00a77 could land having implemented only the fetch-failure half and read as complete.",
+      "text": "\u00a77's Deliverable names the same two causes (\"when the fetch fails or the ref is missing\"), but its done-when has one declining arm (unreachable remote) and none in which the remote is reachable and carries no primary ref, so the missing-ref branch is untested",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "9ac9d2af9f3861d949968438320492b1fb291aca",
+  "plan_fingerprint": "4f0401a7805cf193a00996064eeb8e4b63ab39c5760402e4ffd526406efb69d6",
+  "plan_slug": "a-landing-is-on-main-when-it-says-so",
+  "plan_version": 19,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T163034925390-plan-review-of-a-landing-is-on-main-when-it-says-so",
+  "reviewed_blob_sha": "3a895e1dcfc511da5c9cb735901c0f3add7b0a7b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_integration_ref` is at `reckon/crew/recovery_review_dispatch.py:943` (\"near line 944\"), `require_promotable_head` and its `promotion.complete_dry_run` call are at `reckon/crew/merge.py:121` and `:163` (within the cited range 157\u2013180), `_commits_missing_from` is at `reckon/crew/recovery_review_acceptance.py:209` with its `\"HEAD\"` ancestry probe inside the cited 209\u2013240, and `promotion_module.complete(...)` is at `:348`.",
+    "done_when": "a finding \u2014 \u00a75 and \u00a77 both promise a refusal when the remote-tracking ref is absent, and neither done-when has an arm that exercises that branch.",
+    "evidence_paths": "pass \u2014 both sections put their gate logs under the run directory (`/home/ITER/mcintos/.config/reckon/crew/runs/<run>/`), a durable path, with no scratchpad or node-local temporary path named.",
+    "naming": "pass \u2014 the two new test files are named for the behaviour they assert (`refuses_an_unmerged_head`, `reads_the_remote_primary`) and carry no plan, stage or ticket label into source.",
+    "reasoning": "a finding \u2014 \u00a77 declares it reuses \"the same helper and fetch \u00a75 uses\", but \u00a75 puts its fetch inline in `reckon/crew_run_commands.py`, which is outside \u00a77's write paths, and neither section's write paths include a module where a shared fetch could live.",
+    "single_goal": "pass \u2014 \u00a75 carries one deliverable (plain complete refuses an unmerged head, on the remote primary ref) and \u00a77 carries one (reflex acceptance reads the remote primary ref); neither mixes a second repair into its gate.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares s6\u2192s5 and s7\u2192s5, and followups f-alomwiss-006/007/008 each drive one of the three implementable sections, so no declared dependency or dispatch path is missing."
+  },
+  "section_digests": {
+    "_document": "c3f74979bb9780a63126e7eeaad4a960272df0e9892371b22989f2a1123ccf23",
+    "s1": "05ac3d6e03690e2b89165f9f94837ea8c4512d631bcd3ac39fc8da7f82f0c09d",
+    "s2": "149e271a33a741a3e21acbc6868426506a9b7a830161a2d4facbe8b470325a6b",
+    "s3": "cdb0f79fd2bb33808cc8402e31a02d04129b676c41f969a6800c40e258ce96ba",
+    "s4": "55d76701d62b3ac97080ccfae73af492db19d104fcaf19059cad41cacd5cecbb",
+    "s5": "fa7952b19b3244bb6e6b07806449c6eb8b6a914a9ccea76fa9f5f1f58ff2e419",
+    "s6": "091ac2eae56e04d256f0dddc5fd602b6ba80a51c6d9a6b6cd665ca7cbdc49f27",
+    "s7": "a56187e7f404da96be1ef1a37e98f2d1ae23a8e13b532b980610b45cb3ef662b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T16:48:40.481126+00:00",
+  "total": null
+}
