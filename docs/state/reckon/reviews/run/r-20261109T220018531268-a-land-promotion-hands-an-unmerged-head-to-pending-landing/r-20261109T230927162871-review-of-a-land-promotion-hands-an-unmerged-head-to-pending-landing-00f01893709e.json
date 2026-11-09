@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:1288",
+    "reckon/crew/promotion.py:1940",
+    "reckon/crew/pending_landing.py:185"
+  ],
+  "completed_at": "2026-11-09T23:29:28.177Z",
+  "dispatched_at": "2026-11-09T23:17:24Z",
+  "finding_dispositions": {
+    "1": {
+      "kind": "exempted",
+      "reason": "the coordinator ran the importer arms over every promotion, promotion_records and pending_landing importer: 36 failed at base, 35 at head, 0 added (logs/importers-coordinator)",
+      "recorded_at": "2026-11-09T23:35:45.022501+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "198",
+      "severity": "non-blocking",
+      "text": "non-blocking: _keep_pointer_for_pending_landing is a second writer of the pending_landing_repair marker that reckon/crew/recovery_repair_dispatch.py:82 already writes inline; neither module exposes a shared marking function, so the two write it with different bases (the freshly read pointer here, a synthesised record there) and a change to the marker's shape must be made twice."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T220018531268-a-land-promotion-hands-an-unmerged-head-to-pending-landing/test-logs/promotion-importers.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when requires the test files importing reckon.crew.promotion to add no failure against the base revision; that arm was stopped by the harness background limit and its log carries test ids and no EXIT line, so the 128-test importer measure is unmeasured rather than passing, and the coordinator should decide whether to re-run it."
+    },
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": "313",
+      "severity": "non-blocking",
+      "text": "non-blocking: once it lands a marked pointer the pass unlinks runs.pointer_path(run_id) without checking that the pointer still belongs to the attempt the promotion marked, and because promotion marks whatever pointer is live at the moment the guard raised that pointer is usually the newer attempt's; a live attempt can therefore lose its pointer mid-flight (its worktree release is guarded in reckon/crew/merge.py:957, the pointer unlink is not)."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Production call sites are reckon/crew/promotion.py:1288 and reckon/crew/promotion.py:1940 (both inside _complete_locked, no enclosing except CrewError so the raise stops the merge), and reckon/crew/pending_landing.py:185 finish_pending_landings reached from reckon/crew_run_commands.py:3226 and reckon/crew/queue_landing.py:1705, with the mark already read by reckon/crew_run_commands.py:3217 and reckon/crew/queue_landing.py:1726.",
+    "diff": "Read commit 00f0189370 against 22cfac95 commit by commit: two code hunks in reckon/crew/promotion.py (two new helpers plus the two call sites at 1288 and 1940), one hunk in reckon/crew/pending_landing.py:232, the new test file and the evidence fragment.",
+    "done_when": "The done_when names tests/test_a_landing_record_waits_for_the_merge.py with a temporary repository and crew home; the manifest records 3 passed at the landed head (test-logs/after.log) and 1 failed/2 passed at base (test-logs/base.log), but the done_when's importer arm over the files importing reckon.crew.promotion was never run: test-logs/promotion-importers.log lists test ids and carries no EXIT line.",
+    "goal": "The node's goal is that a --land promotion whose merge did not run hands the run to the pending-landing recovery; reckon/crew/promotion.py:220 now keeps the pointer it could not remove and marks it pending_landing_repair, and reckon/crew/pending_landing.py:232 reads a live pointer so the next pass lands the reviewed head.",
+    "manifest": "Read the source manifest; it states status complete, quotes the gate command literally, records the head arm 3 passed and the base arm 1 failed/2 passed, and records the importer arm as stopped by the harness limit with no results claimed.",
+    "write_paths": "The declared write paths are reckon/crew/promotion.py, reckon/crew/promotion_records.py, reckon/crew/pending_landing.py, tests/test_a_landing_record_waits_for_the_merge.py and the evidence fragment; the diff touches four of them and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_landing_record_waits_for_the_merge.py:185 reddens whenever the mark is not written (shown at base) and :190-194 redden if the pass skips a marked live pointer, though the branch assertion at :215 is satisfied by the test's own merge.land call at :212 rather than by promotion.",
+    "evidence": "tests/test_a_landing_record_waits_for_the_merge.py:185 fails at base with 'assert None is True' (test-logs/base.log) and passes at the landed head (test-logs/after.log), but the importer arm named in the done_when is unmeasured in test-logs/promotion-importers.log.",
+    "fit": "The two helpers at reckon/crew/promotion.py:198 and :220 follow the module's pointer-lock and docstring idiom and the test module's incident docstring matches the neighbouring tests/test_an_interrupted_landing_is_finished_by_the_next_pass.py:1 convention.",
+    "goal_fidelity": "reckon/crew/promotion.py:220 defers the pointer removal to a marked pointer and reckon/crew/pending_landing.py:232 makes the pass read it, which is the handover the goal names.",
+    "reuse": "The pending-landing pass is extended rather than duplicated, but reckon/crew/recovery_repair_dispatch.py:82 already writes pending_landing_repair and the new helper at reckon/crew/promotion.py:198 re-implements the marking without giving that owner a shared function.",
+    "scope_discipline": "Every path in commit 00f0189370 is one of the four declared write paths; reckon/crew/promotion_records.py was left untouched because the existing record path already carries the promoted revision."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that a --land promotion whose merge did not run hands the run to the pending-landing recovery; reckon/crew/promotion.py:220 now keeps the pointer it could not remove and marks it pending_landing_repair, and reckon/crew/pending_landing.py:232 reads a live pointer so the next pass lands the reviewed head.\nVERDICT done_when: The done_when names tests/test_a_landing_record_waits_for_the_merge.py with a temporary repository and crew home; the manifest records 3 passed at the landed head (test-logs/after.log) and 1 failed/2 passed at base (test-logs/base.log), but the done_when's importer arm over the files importing reckon.crew.promotion was never run: test-logs/promotion-importers.log lists test ids and carries no EXIT line.\nVERDICT write_paths: The declared write paths are reckon/crew/promotion.py, reckon/crew/promotion_records.py, reckon/crew/pending_landing.py, tests/test_a_landing_record_waits_for_the_merge.py and the evidence fragment; the diff touches four of them and nothing else.\nVERDICT manifest: Read the source manifest; it states status complete, quotes the gate command literally, records the head arm 3 passed and the base arm 1 failed/2 passed, and records the importer arm as stopped by the harness limit with no results claimed.\nVERDICT diff: Read commit 00f0189370 against 22cfac95 commit by commit: two code hunks in reckon/crew/promotion.py (two new helpers plus the two call sites at 1288 and 1940), one hunk in reckon/crew/pending_landing.py:232, the new test file and the evidence fragment.\nVERDICT call_sites: Production call sites are reckon/crew/promotion.py:1288 and reckon/crew/promotion.py:1940 (both inside _complete_locked, no enclosing except CrewError so the raise stops the merge), and reckon/crew/pending_landing.py:185 finish_pending_landings reached from reckon/crew_run_commands.py:3226 and reckon/crew/queue_landing.py:1705, with the mark already read by reckon/crew_run_commands.py:3217 and reckon/crew/queue_landing.py:1726.\nCALL_SITES: reckon/crew/promotion.py:1288, reckon/crew/promotion.py:1940, reckon/crew/pending_landing.py:185\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:220 defers the pointer removal to a marked pointer and reckon/crew/pending_landing.py:232 makes the pass read it, which is the handover the goal names.\nSCORE evidence: 13\nJUSTIFICATION evidence: tests/test_a_landing_record_waits_for_the_merge.py:185 fails at base with 'assert None is True' (test-logs/base.log) and passes at the landed head (test-logs/after.log), but the importer arm named in the done_when is unmeasured in test-logs/promotion-importers.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Every path in commit 00f0189370 is one of the four declared write paths; reckon/crew/promotion_records.py was left untouched because the existing record path already carries the promoted revision.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_landing_record_waits_for_the_merge.py:185 reddens whenever the mark is not written (shown at base) and :190-194 redden if the pass skips a marked live pointer, though the branch assertion at :215 is satisfied by the test's own merge.land call at :212 rather than by promotion.\nSCORE fit: 18\nJUSTIFICATION fit: The two helpers at reckon/crew/promotion.py:198 and :220 follow the module's pointer-lock and docstring idiom and the test module's incident docstring matches the neighbouring tests/test_an_interrupted_landing_is_finished_by_the_next_pass.py:1 convention.\nSCORE reuse: 14\nJUSTIFICATION reuse: The pending-landing pass is extended rather than duplicated, but reckon/crew/recovery_repair_dispatch.py:82 already writes pending_landing_repair and the new helper at reckon/crew/promotion.py:198 re-implements the marking without giving that owner a shared function.\nFINDING reckon/crew/promotion.py:198 non-blocking: _keep_pointer_for_pending_landing is a second writer of the pending_landing_repair marker that reckon/crew/recovery_repair_dispatch.py:82 already writes inline; neither module exposes a shared marking function, so the two write it with different bases (the freshly read pointer here, a synthesised record there) and a change to the marker's shape must be made twice.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T220018531268-a-land-promotion-hands-an-unmerged-head-to-pending-landing/test-logs/promotion-importers.log:1 non-blocking: the done_when requires the test files importing reckon.crew.promotion to add no failure against the base revision; that arm was stopped by the harness background limit and its log carries test ids and no EXIT line, so the 128-test importer measure is unmeasured rather than passing, and the coordinator should decide whether to re-run it.\nFINDING reckon/crew/pending_landing.py:313 non-blocking: once it lands a marked pointer the pass unlinks runs.pointer_path(run_id) without checking that the pointer still belongs to the attempt the promotion marked, and because promotion marks whatever pointer is live at the moment the guard raised that pointer is usually the newer attempt's; a live attempt can therefore lose its pointer mid-flight (its worktree release is guarded in reckon/crew/merge.py:957, the pointer unlink is not).\n",
+  "review_run_id": "r-20261109T230927162871-review-of-a-land-promotion-hands-an-unmerged-head-to-pending-landing-00f01893709e",
+  "reviewed_base_sha": "22cfac9512b555d0bf1f638756a615ca94167c92",
+  "reviewed_head_sha": "00f01893709e121411f6d036fdba65cb6cda9e65",
+  "reviewed_run_id": "r-20261109T220018531268-a-land-promotion-hands-an-unmerged-head-to-pending-landing",
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T23:41:52.301427+00:00",
+  "total": 101
+}
