@@ -2751,6 +2751,28 @@ def dispatch(
                 "previous_run_id": str(previous.get("run_id") or ""),
             }
 
+        # The attempt's identity is written down here, with the claim, rather
+        # than only after the launch is composed. Everything from this point to
+        # the supervisor — the worktree, the prompt, the composed argv — takes
+        # seconds, and a launcher that ends inside that span runs no handler and
+        # writes nothing else, so the run would keep a claim and no attempt at
+        # all. The marker is what makes such a run name the attempt it stopped
+        # on instead of reading as one that never started.
+        _supervisor_write(
+            directory / ATTEMPT_RECORD_NAME,
+            {
+                "run_id": run_id,
+                "attempt": attempt,
+                "attempt_kind": (
+                    "shadow"
+                    if shadow_lineage
+                    else "redispatch"
+                    if lineage
+                    else "dispatch"
+                ),
+                "attempt_started_at": _utc_now(),
+            },
+        )
         dispatch_watch, session_delivery, watch_override = _arrange_dispatch_follower(
             project,
             session,
