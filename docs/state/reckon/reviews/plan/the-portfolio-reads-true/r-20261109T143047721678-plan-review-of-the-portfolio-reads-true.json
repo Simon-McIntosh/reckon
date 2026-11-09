@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T14:37:50.520Z",
+  "dispatched_at": "2026-11-09T14:32:10Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-portfolio-reads-true/r-20261109T143047721678-plan-review-of-the-portfolio-reads-true/plan.html:176",
+      "id": "done_when-1",
+      "reason": "the serve.py half of the declared change is unmeasured, so the gate can read green while one of the two named writers still leaves the stale meta on every served write.",
+      "text": "\u00a710's \"What changes\" states both state writers pass the opt-in and lists `reckon/serve.py` as a write path, but none of cases (a)-(c) drives the POST handler: (b) names `edit_plan` and (a)/(c) say only \"a state write\", so a node that wires the opt-in into `reckon/_store.py` and omits the `reckon/serve.py` half passes all three cases",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-portfolio-reads-true/r-20261109T143047721678-plan-review-of-the-portfolio-reads-true/plan.html:176",
+      "id": "done_when-2",
+      "reason": "an unnamed 99-file population is a gate that can pass while the store path regresses, exactly the shape \u00a77 avoids by naming the importers of all three modules against base.",
+      "text": "the done-when's regression population is \"every test file that imports `reckon._plan_html`\", but the section edits `reckon/_store.py` and `reckon/serve.py`, which 99 test files import; a regression exported by passing the opt-in through the store write path (for example a test asserting a `plan-impl` meta survives a store write) sits outside the named population and could not redden it",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "9ebe85abc31be4e0599c3006b6c87bbd78faba09",
+  "plan_fingerprint": "2b4d4f40ab0465f48e1e689497f82dfb8d5a86f880f93e0fe742cea809847656",
+  "plan_slug": "the-portfolio-reads-true",
+  "plan_version": 73,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T143047721678-plan-review-of-the-portfolio-reads-true",
+  "reviewed_blob_sha": "711b89b61cef1904a8cb13c89fed503053c654e6",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 verified at head: `write_state` at `reckon/_plan_html.py:2219`, the derived-impl guard at `:2281` (plan says \"near line 2281\"), the store write at `reckon/_store.py:1717` and the POST handler at `reckon/serve.py:3909` (both exact); `impl-meta-stale` exists at `reckon/doccheck.py:143`; `_set_meta_block` at `:2064` rewrites only the names given; the \"141 plans under docs/plans carry a plan-impl meta\" claim counts to exactly 141.",
+    "done_when": "a finding \u2014 \u00a710 asserts both state writers pass the opt-in, but its three cases exercise only the store path through `edit_plan` and never the `reckon/serve.py` POST handler it names as a write path; the regression population also names only `reckon._plan_html` importers while the change edits `reckon/_store.py` and `reckon/serve.py`.",
+    "evidence_paths": "pass \u2014 every log is directed under the run directory, which is durable, and the log header/footer convention (revision, literal command, bare `EXIT=`) is stated.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or version tags reach the new symbol or filename; `tests/test_a_derived_impl_drops_the_authored_meta.py` names the mechanism.",
+    "reasoning": "pass \u2014 all three checks hold. Root cause matches evidence: `write_state` builds `lifecycle_block` without `plan-impl` when `impl_source` is derived and `_set_meta_block` only rewrites names it is given, so an authored meta is never removed, and the cited measurement reproduces exactly (`a-run-has-one-live-worker` meta 0.67 vs derived 0.8579545454545454, source `declarations`). The mechanism produces the done-when: removal gated on the derived source, default and no-change paths left byte-identical (`write_state(text, read_state(text)) == text` verified True at head). Both callers are named and exist on the real write path (`_store.py:1717`, `serve.py:3909`), each with the no-change comparison the plan claims.",
+    "single_goal": "pass \u2014 \u00a710 names one deliverable (a derived impl drops the authored `plan-impl` meta) and cases (a), (b), (c) all measure that one behaviour.",
+    "wiring": "pass \u2014 \u00a710 declares no depends-on and needs none: the section it builds on (\u00a72) is already `done`, so there is no unlanded upstream to wire and no relationship pointing at the wrong node."
+  },
+  "section_digests": {
+    "_document": "01de26d9d39512375dd57910cac3fdc429fa930f716bb295f69fd8df29cdcfa1",
+    "s1": "56204248c9050844c40ac7e00bff909830602caaa4b95be87bacea51b1495a03",
+    "s10": "1b0facbae56b4cdc2b5c9177f19492975806ebdb5e31613b78cf036e1b1e0084",
+    "s2": "69b86246adb4ea89719f367ac57f43940ed14fb88c5c89408cf18a6b59911f57",
+    "s3": "5902125b920ccad233230b403ba1e4cb62c75743d8265014bc35f38e0c9915c3",
+    "s4": "9280ec81cafc36b7de1295b0f22745c6162986e93d9731a8e8b99c51d658a217",
+    "s5": "e5d24ffe43f8fdfcdb88130b1632bc368dc94fd8641f628befb77b4c1f95b435",
+    "s6": "3b386242a01bc207ce0810ef1ee5ccbd8a9d5ea78f77a5dd6fc61b2f207c53d0",
+    "s7": "b5d0f90a4e8a113321b55e0ed0aeaa0624369e3b41b03dde61dc10c9a6f8e5ef",
+    "s8": "4aa77c0b14a2d21a80398b3aaf025a91b1d30ea4d3a1d3682146ddd1571aa233",
+    "s9": "54a93d7a8c229a7e83406269881fc9089bd55e02de98bfa9288e64d664469626"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T14:49:13.779350+00:00",
+  "total": null
+}
