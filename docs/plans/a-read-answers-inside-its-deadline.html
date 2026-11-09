@@ -26,7 +26,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="570">
+<meta name="plan-version" content="571">
 <meta name="plan-modified" content="2026-11-10">
 </head>
 <body>
@@ -1480,6 +1480,9 @@
 </div>
 <div class="r-comment" data-section="s62" data-id="c-run-r-20261109T222321824272-review-of-the-model-catalogue-path-resolves-once-f26be9c313e1" data-who="reckon-build" data-when="2026-11-09T22:41:35.891Z">
     <div class="r-comment-body"><p>landing: independent review of r-20261109T220759508330-the-model-catalogue-path-resolves-once at f26be9c313e11c2d9eefd04a9c0f6fa5d30445f7 stored as a parsed record scoring goal_fidelity 20, evidence 17, scope_discipline 20, durability 19, fit 19, reuse 20, with added_failure_count 0 against both gate arms and two non-blocking findings on evidence revision labels</p></div>
+</div>
+<div class="r-comment" data-section="s62" data-id="c-run-r-20261109T220759508330-the-model-catalogue-path-resolves-once" data-who="reckon-build" data-when="2026-11-09T22:21:53.573Z">
+    <div class="r-comment-body"><p>landing: `reckon/flight.py` now resolves the model catalogue&#x27;s package-relative default once per process through a cached `_default_catalogue_path`, so 1,000 `ledger.resolve_name` calls perform 0 `pathlib.Path.resolve` calls (mutation: 1,000); the environment override is still read per call and the catalogue&#x27;s file identity is still checked per read, gate 5 passed at head against 2 at base with no added failure</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261012T225207500362-read-time-attributed-on-one-quiet-node" data-who="reckon-build" data-when="2026-10-12T23:41:04.467Z">
     <div class="r-comment-body"><p>§7 measured on one quiet node against one frozen corpus copy: base cold roadmap 101.515 s vs head 84.802 s (negative control met, base slower), head warm medians roadmap 1.683 s / audit 4.908 s / discovery 0.379 s; residual head warm time is the resource scan (rglob + per-file identify) in all three reads, and the audit re-enters it ten times per read; report carries the full attribution table, kept .prof dumps and the void-attempt record</p></div>
