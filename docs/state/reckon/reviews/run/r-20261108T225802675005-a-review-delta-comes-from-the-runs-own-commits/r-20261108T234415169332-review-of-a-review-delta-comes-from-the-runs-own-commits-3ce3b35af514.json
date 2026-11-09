@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:152",
+    "reckon/crew/recovery_review_dispatch.py:1259",
+    "reckon/crew/recovery_review_dispatch.py:2619",
+    "reckon/crew/recovery.py:257"
+  ],
+  "completed_at": "2026-11-08T23:54:26.848Z",
+  "dispatched_at": "2026-11-08T23:46:27Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "940",
+      "severity": "non-blocking",
+      "text": "non-blocking: _integration_ref falls back only to origin/HEAD, origin/main and origin/master, so a clone without a remote HEAD whose primary branch is neither (a develop-based project) answers empty and every delta reads as uncomparable; the review is then composed fresh over the whole dispatch-base range, which is the oversized-review defect this node exists to remove. Origin/HEAD covers an ordinary clone, so the exposure is narrow and the plan states the missing-ref reading explicitly."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit from 5a0bd041 to 3ce3b35af5; the two-pass rev-list helper, the remote-tracking ref resolver, the two call-site swaps and the three one-line fixture refs match the section deliverable, and no product source outside the helper and the two callers changed.",
+    "done_when": "the done_when names tests/test_a_review_reads_only_its_runs_changes.py with a merged-main fixture, a run-owned conflict-resolution fixture and a no-remote variant; all three are present and the manifest records the gate at logs/gate.log as 3 passed, EXIT=0.",
+    "goal": "the goal is that a review's delta comes from the run's own commits; reckon/clones.py:650 own_changed_paths and its two call sites at reckon/crew/recovery_review_dispatch.py:1027 and :1149 implement exactly that.",
+    "manifest": "read; it records the gate command verbatim with EXIT=0, the base arm 191 passed, the delivered arm 194 passed, the negative control 3 failed EXIT=1, all six rubric lines, and the four commit shas.",
+    "write_paths": "the manifest declares reckon/clones.py, reckon/crew/recovery_review_dispatch.py, the node test plus three coordinator-granted fixture files and the evidence fragment; git diff --stat over 5a0bd041..3ce3b35af5 names exactly those seven paths and no other."
+  },
+  "justifications": {
+    "durability": "tests/test_a_review_reads_only_its_runs_changes.py:186 asserts the path set and changes_runtime_source together against paths the fixture itself wrote, so reinstating the two-dot call or dropping the merge pass reddens it, as logs/negative_control.log shows.",
+    "evidence": "logs/gate.log ends 3 passed / EXIT=0 at 6a1d6d06b2dc, logs/baseline_suite.log 191 passed at 5a0bd041 and logs/after_suite.log 194 passed at 3ce3b35af5, and logs/negative_control.log shows 3 failed / EXIT=1 with the two-dot call restored.",
+    "fit": "the helper sits beside changed_paths and follows its run_git idiom at reckon/clones.py:650, though reckon/crew/recovery_review_dispatch.py:943 resolves its refs through raw subprocess.run rather than the module's shared git invocation.",
+    "goal_fidelity": "reckon/clones.py:650 unions the per-commit diffs of rev-list --no-merges and adds the --cc names of the run's own merges, and reckon/crew/recovery_review_dispatch.py:1149 passes the remote-tracking ref, so a merged run's delta is its own work.",
+    "reuse": "reckon/clones.py:650 extends the owner of the run-range capability rather than forking it, changed_paths keeps its two-dot signature for the landing measure, and no existing resolver for a remote-tracking primary ref was found in reckon/ (grep for symbolic-ref and refs/remotes found only HEAD-name reads in reckon/resources.py:149 and reckon/crew/merge.py:607).",
+    "scope_discipline": "git diff --stat 5a0bd041..3ce3b35af5 names only the seven declared paths, and the pre-existing ruff format finding at reckon/clones.py:536 is unchanged from the base revision, which ruff format --check confirms on both."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a review's delta comes from the run's own commits; reckon/clones.py:650 own_changed_paths and its two call sites at reckon/crew/recovery_review_dispatch.py:1027 and :1149 implement exactly that.\nVERDICT done_when: the done_when names tests/test_a_review_reads_only_its_runs_changes.py with a merged-main fixture, a run-owned conflict-resolution fixture and a no-remote variant; all three are present and the manifest records the gate at logs/gate.log as 3 passed, EXIT=0.\nVERDICT write_paths: the manifest declares reckon/clones.py, reckon/crew/recovery_review_dispatch.py, the node test plus three coordinator-granted fixture files and the evidence fragment; git diff --stat over 5a0bd041..3ce3b35af5 names exactly those seven paths and no other.\nVERDICT manifest: read; it records the gate command verbatim with EXIT=0, the base arm 191 passed, the delivered arm 194 passed, the negative control 3 failed EXIT=1, all six rubric lines, and the four commit shas.\nVERDICT diff: read commit by commit from 5a0bd041 to 3ce3b35af5; the two-pass rev-list helper, the remote-tracking ref resolver, the two call-site swaps and the three one-line fixture refs match the section deliverable, and no product source outside the helper and the two callers changed.\nCALL_SITES: reckon/crew/queue_landing.py:152, reckon/crew/recovery_review_dispatch.py:1259, reckon/crew/recovery_review_dispatch.py:2619, reckon/crew/recovery.py:257\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/clones.py:650 unions the per-commit diffs of rev-list --no-merges and adds the --cc names of the run's own merges, and reckon/crew/recovery_review_dispatch.py:1149 passes the remote-tracking ref, so a merged run's delta is its own work.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/gate.log ends 3 passed / EXIT=0 at 6a1d6d06b2dc, logs/baseline_suite.log 191 passed at 5a0bd041 and logs/after_suite.log 194 passed at 3ce3b35af5, and logs/negative_control.log shows 3 failed / EXIT=1 with the two-dot call restored.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff --stat 5a0bd041..3ce3b35af5 names only the seven declared paths, and the pre-existing ruff format finding at reckon/clones.py:536 is unchanged from the base revision, which ruff format --check confirms on both.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_review_reads_only_its_runs_changes.py:186 asserts the path set and changes_runtime_source together against paths the fixture itself wrote, so reinstating the two-dot call or dropping the merge pass reddens it, as logs/negative_control.log shows.\nSCORE fit: 18\nJUSTIFICATION fit: the helper sits beside changed_paths and follows its run_git idiom at reckon/clones.py:650, though reckon/crew/recovery_review_dispatch.py:943 resolves its refs through raw subprocess.run rather than the module's shared git invocation.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/clones.py:650 extends the owner of the run-range capability rather than forking it, changed_paths keeps its two-dot signature for the landing measure, and no existing resolver for a remote-tracking primary ref was found in reckon/ (grep for symbolic-ref and refs/remotes found only HEAD-name reads in reckon/resources.py:149 and reckon/crew/merge.py:607).\nFINDING reckon/crew/recovery_review_dispatch.py:940 non-blocking: _integration_ref falls back only to origin/HEAD, origin/main and origin/master, so a clone without a remote HEAD whose primary branch is neither (a develop-based project) answers empty and every delta reads as uncomparable; the review is then composed fresh over the whole dispatch-base range, which is the oversized-review defect this node exists to remove. Origin/HEAD covers an ordinary clone, so the exposure is narrow and the plan states the missing-ref reading explicitly.",
+  "review_run_id": "r-20261108T234415169332-review-of-a-review-delta-comes-from-the-runs-own-commits-3ce3b35af514",
+  "reviewed_base_sha": "5a0bd041014c8668d87950255779ee644f465c9d",
+  "reviewed_head_sha": "3ce3b35af514375ea3ee22ed449877db19afd1c1",
+  "reviewed_run_id": "r-20261108T225802675005-a-review-delta-comes-from-the-runs-own-commits",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-08T23:59:58.820739+00:00",
+  "total": 113
+}
