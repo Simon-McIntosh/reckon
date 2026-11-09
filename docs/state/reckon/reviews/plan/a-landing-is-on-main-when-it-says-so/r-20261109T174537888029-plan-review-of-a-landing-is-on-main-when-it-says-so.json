@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T17:52:50.100Z",
+  "dispatched_at": "2026-11-09T17:47:04Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-landing-is-on-main-when-it-says-so/r-20261109T174537888029-plan-review-of-a-landing-is-on-main-when-it-says-so/plan.html:60",
+      "id": "anchors_resolve-1",
+      "reason": "the retry is the only thing that lets this path reach GitHub from a compute node, so a worker that trusts the sentence and calls `_remote_head` as-is gets a hard refusal of every landing on those nodes, which is the failure the helper's fallback exists to prevent.",
+      "text": "\u00a75 says \"`_remote_head` already reads what the remote branch carries with `git ls-remote`, with the port-443 retry compute nodes need (`_port22_refused`, `_port443_env`)\", but `_remote_head` (`reckon/crew/merge.py:614-621`) issues a single `ls-remote` and raises `MergeError` on any failure; the port-22 detection and 443 retry sit only inside `_push_and_confirm` (`reckon/crew/merge.py:670-686`), which \u00a75 is not reusing for the read",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-landing-is-on-main-when-it-says-so/r-20261109T174537888029-plan-review-of-a-landing-is-on-main-when-it-says-so/plan.html:64",
+      "id": "reasoning-1",
+      "reason": "either the plan adds `reckon/crew/runs.py` (a shared locking module used by every pointer mutation) to the write paths, or it names that the non-blocking acquisition is a new helper in `resumption.py` opening the same `promotion-<run>` lock path; without one of those the worker's only in-scope option is to duplicate the lock path string, and the section's central mechanism is otherwise unimplementable.",
+      "text": "\u00a76 says \"a resume takes the run's promotion lock first, without blocking (`LOCK_NB`) ... If the promotion lock is held, the resume refuses rather than waits\", but `_promotion_lock` (`reckon/crew/promotion.py:161`) is `_pointer_lock(f\"promotion-{run_id}\")`, and `_pointer_lock` (`reckon/crew/runs.py:453-462`) takes a plain blocking `flock(LOCK_EX)` with no non-blocking mode; `reckon/crew/runs.py` is not among \u00a76's write paths, so as written the resume blocks until the promotion finishes instead of refusing, and the done-when arm \"a resume ... while its promotion lock is held refuses\" cannot pass",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-landing-is-on-main-when-it-says-so/r-20261109T174537888029-plan-review-of-a-landing-is-on-main-when-it-says-so/plan.html:60",
+      "id": "reasoning-2",
+      "reason": "the done-when's control (\"keying the guard on the gate alone refuses it\") forces the worker to find a role test, so a wrong choice fails \u00a75's own gate rather than reaching main, though naming `_is_review_run` would remove the search.",
+      "text": "\u00a75 scopes the refusal to \"an implementation run\" but names no field or predicate that identifies one, while the composed-review arm requires exactly that distinction; the code already re-exports `_is_review_run` (`reckon/crew/recovery.py:198`, defined in `recovery_review_delivery`), and the pointer anchor the section gives (`recovery_review_dispatch.py` near line 641) points at the review-dispatch record's `head`, not at the role",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "6542c954f08032ea36f05851345d44796c9a9c89",
+  "plan_fingerprint": "a85bf252c3deaf3dcbece342fb7a8b020ba23656215126f2fc6c70134791fa14",
+  "plan_slug": "a-landing-is-on-main-when-it-says-so",
+  "plan_version": 25,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T174537888029-plan-review-of-a-landing-is-on-main-when-it-says-so",
+  "reviewed_blob_sha": "2b33e53b27634d0c0a88e6a61b24499f1f44c667",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a75 attributes the port-443 retry to `_remote_head` in `reckon/crew/merge.py`, but that helper has none; the retry lives in `_push_and_confirm`.",
+    "done_when": "pass \u2014 every arm in both units names a case, the outcome required of it, and its own negative control, including a base-revision arm for the first case of each unit and a control for the composed-review arm.",
+    "evidence_paths": "pass \u2014 both units require gate logs under the run directory with a revision-and-command header and a trailing `EXIT=`, which survives the run.",
+    "naming": "pass \u2014 the new test names describe the behaviour they check (`test_a_plain_complete_refuses_an_unmerged_head.py`, `test_a_landing_record_waits_for_the_merge.py`), and no section carries plan labels, stage names or ticket numbers into a symbol or comment.",
+    "reasoning": "a finding \u2014 \u00a76's resume refusal is specified as a non-blocking lock, but the promotion lock it names is blocking and the module that would have to gain a non-blocking form is outside the section's write paths.",
+    "single_goal": "pass \u2014 \u00a75 delivers one refusal (with the fetch-and-ancestry function it needs) and \u00a76 one landing-record precondition; neither carries an unrelated second deliverable.",
+    "wiring": "pass \u2014 s6's depends-on s5 and s7's depends-on s5 both resolve to the unit that adds the fetch-and-ancestry function, and \u00a75's write paths (`reckon/crew/merge.py`, `reckon/crew_run_commands.py`, `reckon/crew/refusals.py`, the new test) contain everything \u00a77 says it calls."
+  },
+  "section_digests": {
+    "_document": "c3f74979bb9780a63126e7eeaad4a960272df0e9892371b22989f2a1123ccf23",
+    "s1": "05ac3d6e03690e2b89165f9f94837ea8c4512d631bcd3ac39fc8da7f82f0c09d",
+    "s2": "149e271a33a741a3e21acbc6868426506a9b7a830161a2d4facbe8b470325a6b",
+    "s3": "cdb0f79fd2bb33808cc8402e31a02d04129b676c41f969a6800c40e258ce96ba",
+    "s4": "55d76701d62b3ac97080ccfae73af492db19d104fcaf19059cad41cacd5cecbb",
+    "s5": "45d9290379a94449c2f87ab5f6a85f8e6ba0f02c53da654a3196cedb1dc2214c",
+    "s6": "6abbc5557f9465c464c9c7c254b25852509f5d58432a2a9c11a7dfb18c551b6b",
+    "s7": "84bc24f6fe1df5a54f3d90a870ad9e95b19f56858a96ed8185e04fe3006d02fb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T17:58:19.179624+00:00",
+  "total": null
+}
