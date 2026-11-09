@@ -1,0 +1,55 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T10:31:26.278Z",
+  "dispatched_at": "2026-11-09T10:22:01Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:113",
+      "id": "reasoning-1",
+      "reason": "as written the node can pass its gate on a pass the measured tick never runs, leaving the 2\u20134 minute per-project refresh it is written to shorten exactly where the sample found it.",
+      "text": "the Why's cost is the station tick's per-pointer loop (`reckon/crew/station.py:524` \u2192 `station_subscriber.live_work_populations` \u2192 `delivered_run_owes_review` per terminal pointer \u2192 `obligations._review_duty_item` \u2192 `_reflex_open_refusal` \u2192 `ledger.run_ids`), but the once-per-tick branch and the done-when's \"one obligations pass\" are satisfiable in `obligations._obligations_view` alone, and neither `reckon/crew/station_subscriber.py` nor `reckon/crew/station.py` is in \u00a715's write paths, so the node can go green while the sampled tick still makes one `ledger.run_ids` call per delivered run; the ledger-cache branch does reach the station path, but nothing in the section requires it and the test cannot tell the two fixes apart",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "bdb6f2ee3475c3f86babc8bd7f5f77c79cb29f72",
+  "plan_fingerprint": "b82bbef3ca379aa05562aa2a42b433123185e8cc771eefd292772242e0643837",
+  "plan_slug": "a-read-costs-what-changed",
+  "plan_version": 62,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T101933993882-plan-review-of-a-read-costs-what-changed",
+  "reviewed_blob_sha": "3af09f5ff430c88a0e874b376a0c4e81cf92cb44",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `obligations.py:1955` is exactly `if item[\"kind\"] == \"review-missing\" and classification == \"scoring\":`; `_reflex_owns_review` is at `obligations.py:719` and returns `bool(state.get(\"live\"))` from `runs.follower_state`; `_reflex_open_refusal` (`:779`) returns early inside `_reflex_review_window_seconds()`; `recovery_review_dispatch._open_review_refusal` is at `:2474` and calls `ledger.run_ids(project)` at `:2516`; `ledger.run_ids` (`reckon/ledger.py:1051`) calls `_load_aggregate` unconditionally, which reads the envelope per call (`reckon/_store.py:422`), so the root cause the section states holds; an older-head stored review really does yield `review=None, reviewed_head=<older>` from `select_review_for_head` (`recovery_review_subject.py:113`), which sets `review-missing` at `obligations.py:1953`.",
+    "done_when": "pass \u2014 the measure is a patched count of `ledger._load_aggregate` against a temporary crew home, the negative control (restored per-duty `run_ids`) makes the count equal the run count, the warm-up `ledger.read_records` correctly excludes the fresh-home index build (`_indexed_data` calls `_load_aggregate` at `reckon/ledger.py:1550` when the aggregate stamp is new), and every branch condition it names matches the code (see anchors_resolve).",
+    "evidence_paths": "pass \u2014 gate logs, the per-tick before/after figures and the test run all go under the run directory (`~/.config/reckon/crew/runs/<run>/`), which survives the run; no session scratchpad or node-local `/tmp` path is named.",
+    "naming": "pass \u2014 the new test is named for what it measures (`test_a_review_duty_reads_the_ledger_once_per_pass.py`), and no plan label, stage name, ticket number or version tag appears in the symbols, write paths or comments the section specifies.",
+    "reasoning": "a finding \u2014 the sampled tick runs the duties from the station's per-pointer loop in `reckon/crew/station_subscriber.py`, which is not in the write paths, while the done-when counts an \"obligations pass\"; a fix in the obligations view passes the gate without touching the sampled path.",
+    "single_goal": "pass \u2014 one deliverable: the ledger's run ids read once per pass instead of once per duty; the \"or `run_ids` served from a stat-validated cache\" clause is a second implementation of that same change, not a second change.",
+    "wiring": "pass \u2014 \u00a715 declares no section dependency, and none is needed: it edits `reckon/crew/obligations.py`, `reckon/crew/recovery_review_dispatch.py` and `reckon/ledger.py`, whose inputs are the live store and the pointer, not another section's output; the cross-plan source it cites (`a-review-dies-where-nobody-is-looking` \u00a712) is `done` and its `plan-informs` target resolves."
+  },
+  "section_digests": {
+    "_document": "fadd834561014ac70b3c356334ec429206b493af2f66b7ab5d86276b95038750",
+    "s1": "f8fb0fbbfbbc79977a59ec9d78c0d66f47803aa96db83e4d628a1dfb6b40e6c3",
+    "s10": "68fc6d75acf0741225ab448369611e4eda9f862b50d7907857c1abb24b4138e4",
+    "s11": "2a249381081ebbf2d99b7f9da3b09b1d3b87c6ada44952d6b665283e27021c40",
+    "s12": "c6c234ba14598d6a537e09000d8f5d406295ad40c3c124db34cb1b84868bb22e",
+    "s13": "5ad3b5418d98e6b0afe0d6762c6e34b89b31509e7e0c346c4b5757fc5f9bc443",
+    "s14": "3614708cc686b1aae04bdaa66c5ca55268305b0b9aa743e9b43fdfe333694c78",
+    "s15": "cba3a97dfd0c93f44a12d5934bb8709236c3ee5191363fdf0b80e0977afb4bd7",
+    "s2": "7de6c2e256fca5545163c6149c674fea249ddd1a72361b49c89ef5beaa22263d",
+    "s3": "d11cdceab942c4935f32d292e26f2111b011ca4571980a6c54ef6ae23894aadb",
+    "s4": "d14b5fa9a6b6ef26da6f95b50c43aa782fdbe679ca28020a3095af71cd579417",
+    "s5": "ba22eff9814ea16ac19404864f9a2d1ec8da449b3011fba623d0d1856b2c6ecf",
+    "s6": "b0053663cc25e5e7e15595ae342d21c4c467abe74f06c8c4db86982b276898cc",
+    "s7": "2c7c6fb207a002d2bb1e223ebf1f770570f6b06942edf9ac6647253b410a67b7",
+    "s8": "9a012c065cbd8db9e5e69070d20531b84a584582cc0bf8f45fff060b7f31f464",
+    "s9": "1404fbf63401ab3bd4204175d16adb89094eaa1f1b25160e73fd2bb9c625d0b1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T10:44:24.977058+00:00",
+  "total": null
+}
