@@ -17,7 +17,30 @@
   "plan_slug": "a-run-has-one-live-worker",
   "plan_version": 152,
   "project": "reckon",
-  "responses": {},
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "cb8059587df43f6432190a6fa67ad49f42284579",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a716 now names the exception: the dispatch door writes its marker before reserving, while the resume door reserves first and its gate is met by the earlier attempt's trace, which every resumable run holds. The resume door reserves with the record's next attempt as a floor (as _reservation_taken_by_this_process does with at_least) and launches exactly the reservation's attempt, replacing max(reservation.attempt, from_record) over a hold on the lesser.",
+      "reason": "",
+      "when": "2026-11-09T23:52:26.225995+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "cb8059587df43f6432190a6fa67ad49f42284579",
+      "commit_basis": "edit",
+      "note": "\u00a716 now names the exception: the dispatch door writes its marker before reserving, while the resume door reserves first and its gate is met by the earlier attempt's trace, which every resumable run holds. The resume door reserves with the record's next attempt as a floor (as _reservation_taken_by_this_process does with at_least) and launches exactly the reservation's attempt, replacing max(reservation.attempt, from_record) over a hold on the lesser.",
+      "reason": "",
+      "when": "2026-11-09T23:52:26.225995+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-run-has-one-live-worker/r-20261109T232220111186-plan-review-of-a-run-has-one-live-worker.json",
   "review_run_id": "r-20261109T232220111186-plan-review-of-a-run-has-one-live-worker",
   "reviewed_blob_sha": "5f9ccc30e90037d2d2663bd32167326639d5dfb6",
   "rubric": "content",
