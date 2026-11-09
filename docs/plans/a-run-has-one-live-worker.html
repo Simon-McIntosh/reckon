@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.67">
-<meta name="plan-version" content="122">
+<meta name="plan-version" content="123">
 <meta name="plan-modified" content="2026-11-09">
 <meta name="plan-commits" content="a88e6f09">
 </head>
@@ -298,6 +298,9 @@
 </div>
 <div class="r-comment" data-section="s14" data-id="c-run-r-20261109T124158266033-review-of-find-the-second-launcher-of-a-figure-finding-1f0a40bad464" data-who="reckon-build" data-when="2026-11-09T12:51:53.853Z">
     <div class="r-comment-body"><p>review of run r-20261109T121141916129-find-the-second-launcher-of-a-figure-finding at head 1f0a40bad464d21fec87e19ccb049ce29976a93e: scores goal_fidelity 13, evidence 14, scope_discipline 20, durability 12, fit 18, reuse 20; three non-blocking findings; the guard mechanism is proven, the launched door is left unresolved.</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261109T121141916129-find-the-second-launcher-of-a-figure-finding" data-who="reckon-build" data-when="2026-11-09T12:36:08.931Z">
+    <div class="r-comment-body"><p>§14 investigated and recorded read-only: the second launch of r-20261109T064500219481 came from a process outside the fleet allocation (argv[0] /usr/bin/srun vs the shim in attempts 1 and 3, dispatch_launch.py:690/:722/:1354), and the live-worker guard did run but answered LIVENESS_UNKNOWN because the pointer&#x27;s launcher_host was not the reading host (recovery_liveness.py:1362, :1219-1227), which _launch_refused_by lets through (dispatch_launch.py:2147/2149/2158); explanation 2 of the three holds, 1 is excluded by the single _create_worktree call site (dispatch.py:2545 before :2867), and 3 is excluded for the admit service by recomposing stamp 01863fb71f to a commit range containing guard commit 04cdce8990; the two-stamp negative control resolves to disjoint commit sets (84 commits vs 43, overlap 0). No code changed.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-s2-second-instance" data-who="reckon-build" data-when="2026-10-08T04:05:00Z">
     <div class="r-comment-body"><p>A second instance, reported by the nova S21 coordinator: run <code>r-20261008T004354567004-cfs-edge-term-tangents</code> on codex-astra. After H200 job 1281977 completed at 05:54:42 CEST, the wait sweep resumed the run (resume 2). Its stderr reads <code>thread/resume failed: thread 01a1192e-8494-7fc0-a551-721fb3acada8 already has an active writer (code -32600)</code> at 03:56:32Z while a codex worker in the same worktree went on working. The follower then reported <em>exited with code 1 with 11 commits beyond its recorded base</em> and, a second later, <em>ended by SIGKILL</em>. The investigation should name the guard for both runs: here the backend refused the second writer, while the claude run of §1 admitted it.</p></div>
