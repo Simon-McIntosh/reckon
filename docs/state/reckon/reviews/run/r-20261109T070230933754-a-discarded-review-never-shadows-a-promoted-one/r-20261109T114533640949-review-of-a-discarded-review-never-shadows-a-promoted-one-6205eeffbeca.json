@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1066 (the crew dispose --review guard that resolves a named record through stored_record), and :730, :947, :1288",
+    "reckon/crew/review.py:3771 (read_review reads through stored_record)",
+    "reckon/crew/review_dispositions.py:265, :364 and :471",
+    "reckon/crew/recovery_review_subject.py:113 (select_review_for_head, reached from promotion_release.py:1078, recovery_review_acceptance.py:287, queue_landing.py:177 and obligations.py:1606)",
+    "reckon/crew/promotion_checks.py:697 and reckon/crew/reports.py:1914"
+  ],
+  "completed_at": "2026-11-09T11:59:21.576Z",
+  "dispatched_at": "2026-11-09T11:47:03Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T070230933754-a-discarded-review-never-shadows-a-promoted-one/manifest.md",
+      "line": "18",
+      "severity": "non-blocking",
+      "text": "the artifacts line states EXIT=1 for logs/importers-head-arm.log, but that log carries no EXIT= capture line: its five chunk summaries (2, 19, 5, 16 and 7 failed) are its whole record of status. Its header also names revision 2af55ea38b, so the importer arm precedes 05cc4a25a2, the commit that moved the discard read onto promotion.discard_recorded, and therefore measures a tree other than the shipped one. The delta is behaviour-preserving (promotion.discard_recorded(\"\") returns False, as the deleted helper did) and the node gate was re-run at head, so this is recorded rather than held."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T070230933754-a-discarded-review-never-shadows-a-promoted-one/manifest.md",
+      "line": "16",
+      "severity": "non-blocking",
+      "text": "baseline_suite cites logs/negative-control.log with exit_status 1, but that log carries no revision/tree/command header and no terminal EXIT= line: its first line is pytest output and its last is \"3 failed, 2 passed in 4.88s\". The three FAILED ids are present, so the negative control is admissible on its own ids, but the recorded exit status is asserted rather than captured and the log cannot be tied to the base revision from its own header."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T070230933754-a-discarded-review-never-shadows-a-promoted-one/manifest.md",
+      "line": "18",
+      "severity": "non-blocking",
+      "text": "artifacts describes logs/importers-base-failing-ids.log as \"the coordinator's base run of the head-failing ids\", but that log runs two unrelated tests (test_a_decline_only_round_names_its_decision_and_what_it_left and test_the_fourth_commit_is_promoted_when_every_citation_resolves) for 2 failed / EXIT=1; the 49-id base arm is logs/importers-base-arm.log (49 failed, 190 passed, EXIT=1). A reader following the citation opens evidence for a different question."
+    },
+    {
+      "file": "docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-discarded-review-never-shadows-a-promoted-one.html",
+      "line": "24",
+      "severity": "non-blocking",
+      "text": "the fragment describes tests/test_a_discarded_review_never_shadows_a_promoted_one.py as holding \"four cases\", but the file defines five test functions: the four cases plus test_the_fixture_home_is_temporary_and_the_real_store_is_untouched. The fragment's own Measure line reports 5 passed, so the two statements disagree on the same page."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a stored review at a head never selects a discarded review run's record while another stands at that head, figure rubric included; reckon/crew/review_records.py:519 applies promotion.discard_recorded in _select_stored_record and :1049 applies it in _filed_match, and tests/test_a_discarded_review_never_shadows_a_promoted_one.py drives stored_record(..., rubric=\"figure\") to the promoted parsed record through that same rule.\nVERDICT done_when: the done_when names the node's own test file, a negative control, the importer arms and ruff; the file now holds the three paired cases plus a lone-record case and an isolation case, logs/after-arm.log at revision 05cc4a25a2 records \"5 passed\" with EXIT=0, my own re-run of that file at head 6205eeffbeca also records \"5 passed\" EXIT=0, and logs/negative-control.log records 3 failed / 2 passed with the base selection applied in place; the importer arms yield 49 identical failure ids at head and base, but logs/importers-head-arm.log's header names revision 2af55ea38b, which precedes the commit that changed the shipped code.\nVERDICT write_paths: the declared write paths are reckon/crew/review_records.py, reckon/crew/review.py, the new test file and its evidence fragment; git diff 2af55ea38b..6205eeffbeca changes reckon/crew/review_records.py, tests/test_a_discarded_review_never_shadows_a_promoted_one.py and docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-discarded-review-never-shadows-a-promoted-one.html, all inside the declared set, and leaves reckon/crew/review.py untouched.\nVERDICT manifest: read manifest.md; it names commits 3a82333421, 2af55ea38b, 05cc4a25a2 and 6205eeffbeca, the after arm at 5 passed, the negative control at 3 failed / 2 passed, and the importer arms at 49 ids each; its artifacts line asserts EXIT=1 for logs/importers-head-arm.log, which carries no EXIT capture, and describes logs/importers-base-failing-ids.log as the base run of the head-failing ids though it holds two unrelated ids.\nVERDICT diff: read commit by commit from 2af55ea38b; 05cc4a25a2 deletes the duplicated _review_run_was_discarded helper and calls promotion.discard_recorded at reckon/crew/review_records.py:519 and :1049, extends the rule to _filed_match, and adds the misfiled-record test case; 6205eeffbe updates the evidence fragment. Every hunk is inside the goal.\nCALL_SITES: reckon/crew_run_commands.py:1066, reckon/crew/review.py:3771, reckon/crew/review_dispositions.py:265, reckon/crew/review_dispositions.py:471, reckon/crew/recovery_review_subject.py:113, reckon/crew/promotion_checks.py:697\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/review_records.py:519 and :1049 apply the discard rule to both selection paths, including the misfiled-record path the earlier review found unfiltered.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/after-arm.log records 5 passed and EXIT=0 at revision 05cc4a25a2 and the negative control records its three failing ids, but the negative-control log carries no header or EXIT line and the importer arm ran at 2af55ea38b rather than the shipped revision.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 2af55ea38b..6205eeffbeca touches only reckon/crew/review_records.py, the new test and its evidence fragment, all inside the declared write set, and review.py is left untouched because reckon/crew_run_commands.py:1066 already routes through stored_record.\nSCORE durability: 19\nJUSTIFICATION durability: with the discard filter removed the three paired cases fail as logs/negative-control.log records, and tests/test_a_discarded_review_never_shadows_a_promoted_one.py::test_a_lone_unparsed_record_still_resolves reddens if the lone-record fallback at reckon/crew/review_records.py:526 is dropped.\nSCORE fit: 18\nJUSTIFICATION fit: the call-time import of promotion and the docstring wording follow the existing pattern at reckon/crew/review_records.py:431-442, and no added name carries a plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change deletes the duplicate helper it had added and calls promotion.discard_recorded at reckon/crew/promotion.py:1994, the owner of the discard rule.\nFINDING manifest.md:18 non-blocking: the artifacts line asserts EXIT=1 for logs/importers-head-arm.log, which carries no EXIT capture, and that arm ran at revision 2af55ea38b, before the code commit it is cited to support.\nFINDING manifest.md:16 non-blocking: baseline_suite cites logs/negative-control.log with exit_status 1, but the log has no header and no terminal EXIT line, so the status is asserted rather than recorded.\nFINDING manifest.md:18 non-blocking: logs/importers-base-failing-ids.log is described as the base run of the head-failing ids, but it holds two unrelated ids; the 49-id base arm is logs/importers-base-arm.log.\nFINDING docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-discarded-review-never-shadows-a-promoted-one.html:24 non-blocking: the fragment says the test file holds four cases, but it defines five test functions, and the same page reports 5 passed.\n",
+  "review_run_id": "r-20261109T114533640949-review-of-a-discarded-review-never-shadows-a-promoted-one-6205eeffbeca",
+  "reviewed_base_sha": "2af55ea38b939aa3c9ed3ea9fee0ab2bbcfa8bc8",
+  "reviewed_head_sha": "6205eeffbeca6c3379b8191e476f6eb008cd294f",
+  "reviewed_run_id": "r-20261109T070230933754-a-discarded-review-never-shadows-a-promoted-one",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T11:57:00+00:00",
+  "total": 109
+}

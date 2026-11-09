@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.97">
-<meta name="plan-version" content="206">
+<meta name="plan-version" content="207">
 <meta name="plan-modified" content="2026-11-09">
 </head>
 <body>
@@ -589,6 +589,12 @@
 <div class="r-comment" data-section="s26" data-id="c-run-r-20261108T232244736898-a-committed-review-record-can-be-repaired" data-who="reckon-build" data-when="2026-11-09T01:07:46Z">
     <div class="r-comment-body"><p>`crew repair --review` repairs a record at the run's committed location `docs/state/&lt;project&gt;/reviews/run/&lt;run&gt;/` as well as the host review-records directory, refuses a path under neither, and commits the rewrite through `commit_record_write` with the as-delivered copy kept outside the reader's `*.json` glob. A committed record's project is read from its own path when the run has no live pointer and no resolvable ledger row, so the repair needs no `--project`. Node gate 3 passed EXIT=0; under the declared directory mutation 2 failed / 1 passed EXIT=1, and under a no-op repair the status assertion fails with `'incomplete' == 'unparsed'`.</p></div>
 </div>
+<div class="r-comment" data-section="s27" data-id="c-run-r-20261109T101449571257-review-of-a-discarded-review-never-shadows-a-promoted-one-2af55ea38b93" data-who="reckon-build" data-when="2026-11-09T10:25:14.981Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261109T070230933754-a-discarded-review-never-shadows-a-promoted-one at head 2af55ea38b939aa3c9ed3ea9fee0ab2bbcfa8bc8 from base 82722a1163ff767c6ec18a3fb18eadcf6fae1f71: parsed record, scores goal_fidelity 17 / evidence 17 / scope_discipline 20 / durability 19 / fit 18 / reuse 4, added_failure_count 0, three non-blocking findings (discard-marker helper duplicates promotion.discard_recorded; _filed_match still bypasses the discard filter; manifest cites a nonexistent importer base log)</p></div>
+</div>
+<div class="r-comment" data-section="s27" data-id="c-run-r-20261109T114533640949-review-of-a-discarded-review-never-shadows-a-promoted-one-6205eeffbeca" data-who="reckon-build" data-when="2026-11-09T11:59:21.576Z">
+    <div class="r-comment-body"><p>An independent review of run r-20261109T070230933754-a-discarded-review-never-shadows-a-promoted-one was attached covering only the commits gained since its earlier review at 2af55ea38b, namely 05cc4a25a2 (the duplicated discard helper deleted in favour of promotion.discard_recorded, the same rule extended to the misfiled-record lookup, and a fourth test case) and 6205eeffbe (evidence fragment); six dimensions scored with a total of 109 and four non-blocking findings on the manifest&#x27;s evidence citations and one fragment statement; the record carries reviewed_base_sha 2af55ea38b and reviewed_head_sha 6205eeffbeca with added_failure_count 0.</p></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261006T140311245358-review-of-review-records-have-a-committed-root" data-who="reckon-build" data-when="2026-10-06T14:10:37.516Z">
     <div class="r-comment-body"><p>Independent review of run r-20261006T134946510136-review-records-have-a-committed-root (reckon:every-review-is-kept-as-a-committed-record §3) stored a parsed record at both fence paths — scores goal_fidelity 20, evidence 16, scope_discipline 20, durability 16, fit 20, reuse 20 (total 112), reviewed_base_sha 3c7a3f36a and reviewed_head_sha 2e05df719, added_failure_count null (the reviewed manifest carries no baseline_suite/after_suite arm) — with two follow-on findings: review_path's committed branch defaults a missing review_run_id to reviewed_run_id where its sibling plan_review_path refuses, and run_record_times' live-pointer fallback is untested. No blocking finding; the node's committed-store mechanism is correct and its declared guard fires.</p></div>
 </div>
@@ -801,9 +807,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261103T083142255959-finish-the-remaining-reviewrecord-recurrence-fold" data-who="reckon-build" data-when="2026-11-05T11:22:27.992Z">
     <div class="r-comment-body"><p>Added tests/test_review_finding_recurrence.py, a synthesised-store gate that computes both consecutive-review recurrence shares per finding type from the stored responses and asserts the plan-review view reports the same fold; the 7-13 October window gives duplicate_owner 42 findings, any 16 (38.1%), acted 9 (21.4%) against the whole-history 83.3% and 41.9%; head arm 4 passed EXIT=0, base arm 4 passed EXIT=0 (0 added), negative control 3 failed 1 passed EXIT=1.</p></div>
-</div>
-<div class="r-comment" data-section="s27" data-id="c-run-r-20261109T101449571257-review-of-a-discarded-review-never-shadows-a-promoted-one-2af55ea38b93" data-who="reckon-build" data-when="2026-11-09T10:25:14.981Z">
-    <div class="r-comment-body"><p>Independent review of run r-20261109T070230933754-a-discarded-review-never-shadows-a-promoted-one at head 2af55ea38b939aa3c9ed3ea9fee0ab2bbcfa8bc8 from base 82722a1163ff767c6ec18a3fb18eadcf6fae1f71: parsed record, scores goal_fidelity 17 / evidence 17 / scope_discipline 20 / durability 19 / fit 18 / reuse 4, added_failure_count 0, three non-blocking findings (discard-marker helper duplicates promotion.discard_recorded; _filed_match still bypasses the discard filter; manifest cites a nonexistent importer base log)</p></div>
 </div>
 </section>
 </main>
