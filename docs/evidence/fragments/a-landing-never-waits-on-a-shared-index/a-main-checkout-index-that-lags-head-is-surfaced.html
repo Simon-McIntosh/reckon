@@ -28,6 +28,24 @@ derivation on the snapshot's read path), so it is listed without holding a
 coordinator stop open. The two copies are held together by
 <code>tests/test_queued_work_shows_where_held_work_shows.py::test_a_queued_run_never_holds_a_coordinator_stop_open</code>.</p>
 
+<p id="a-main-checkout-index-that-lags-head-is-surfaced-snapshot">The notice
+travels to the published snapshot as well as the derivation. The stop hook's
+prompt path reads a session's published payload and loads no derivation
+module, so a notice that stopped at the derivation would never reach it: the
+payload appends the derivation's own detector, and a case publishes a snapshot
+and reads it back through the hook's own vocabulary. Dropping that append
+leaves the snapshot case as the only failing one, which is how the case is
+known to be load-bearing rather than incidental.
+
+Reading is cached per main checkout against the index's stat identity and the
+head the checkout records in <code>.git/HEAD</code> and its ref, and a cached
+notice is dropped as soon as a path it names stops existing. Without it the
+station's steady-state case failed: a second tick with nothing moved ran one
+git subprocess the first tick had not. The head in the key is read from files
+rather than by running git, which is what keeps the key free; the notice's own
+head still comes from <code>git rev-parse HEAD</code>, and the test asserts it
+against the checkout's own answer rather than against the detector's.</p>
+
 <table id="a-main-checkout-index-that-lags-head-is-surfaced-arms">
   <caption>Each log names its revision, tree, the module as imported and the
   command on its header lines, and ends in a bare
@@ -35,45 +53,57 @@ coordinator stop open. The two copies are held together by
   <code>-n 4</code>.</caption>
   <thead><tr><th>arm</th><th>result</th><th>log</th></tr></thead>
   <tbody>
-    <tr><td>gate, this node's test file at the head revision</td>
-      <td>5 passed; <code>EXIT=0</code></td><td><code>gate-head.log</code></td></tr>
-    <tr><td>base module substituted for the head revision, same test file</td>
-      <td>5 failed; <code>EXIT=1</code></td><td><code>base-arm.log</code></td></tr>
+    <tr><td>gate, this node's test file at the head revision, with the
+      station's steady-state case beside it</td>
+      <td>7 passed; <code>EXIT=0</code></td><td><code>gate-head.log</code></td></tr>
+    <tr><td>base modules substituted for the head revision, same test file</td>
+      <td>6 failed; <code>EXIT=1</code></td><td><code>base-arm.log</code></td></tr>
     <tr><td>negative control: the detector returns before reading the checkout</td>
       <td>1 failed (<code>test_a_lagging_index_is_a_notice_naming_the_restore</code>),
       the index still lacking the path; <code>EXIT=1</code></td>
       <td><code>negative-control.log</code></td></tr>
-    <tr><td>importers of <code>reckon.crew.obligations</code> at the head
-      revision, 82 files</td>
-      <td>37 failed, 455 passed; <code>EXIT=1</code></td>
-      <td><code>importers-head-rerun.log</code></td></tr>
-    <tr><td>importers at the base revision, 81 files (the new test does not
-      exist there)</td>
-      <td>37 failed, 450 passed; <code>EXIT=1</code></td>
-      <td><code>importers-base.log</code></td></tr>
-    <tr><td>first head run of the same arm</td>
-      <td>38 failed, 454 passed; <code>EXIT=1</code></td>
-      <td><code>importers-head.log</code></td></tr>
+    <tr><td>negative control: the payload no longer appends the notice</td>
+      <td>1 failed (<code>test_a_published_snapshot_carries_the_notice_to_the_prompt_path</code>),
+      5 passed; <code>EXIT=1</code></td>
+      <td><code>negative-control-snapshot.log</code></td></tr>
+    <tr><td>importers of <code>reckon.crew.obligations</code> and the prompt
+      hook at the head revision, 59 files</td>
+      <td>8 failed, 318 passed; <code>EXIT=1</code>, every id in the base
+      arm's failure set</td>
+      <td><code>importers-head-obligations.log</code></td></tr>
+    <tr><td>importers of <code>reckon.crew.obligation_snapshot</code>, 46
+      files</td>
+      <td>11 failed, 225 passed, 5 errors; <code>EXIT=1</code></td>
+      <td><code>importers-head-snapshot.log</code></td></tr>
+    <tr><td>importers of <code>reckon.velocity</code>, 19 files</td>
+      <td>1 failed, 151 passed; <code>EXIT=1</code></td>
+      <td><code>importers-head-velocity.log</code></td></tr>
   </tbody>
 </table>
 
-<p id="a-main-checkout-index-that-lags-head-is-surfaced-delta">The head and base
-failure identities are the same set: no importer test is added by this change.
-The first head run carried one extra id,
-<code>test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py::test_overdue_review_duty_reports_age_without_a_dispatch_command</code>,
-which asserts the fixture's backdated age renders as <code>50m</code> and read
-<code>51m 16s</code> because more than a minute passed between the fixture's
-write and the read under a loaded four-worker run. It passes alone and did not
-recur in the rerun, and it is recorded in the manifest as outside this node's
-scope. Ruff check and <code>ruff format --check</code> add no finding on the
-three changed Python paths: the base revision of
-<code>reckon/crew/obligations.py</code> carried one check finding, and
-<code>reckon/hooks/coordinator_obligations.py</code> carries the same two
-pre-existing <code>S105</code> findings at both revisions.</p>
+<p id="a-main-checkout-index-that-lags-head-is-surfaced-delta">Every failure in
+the obligations arm is a member of the base arm's failure set. Two ids outside
+that set were measured rather than assumed:
+<code>test_skipped_record_reaches_the_checklist.py::test_a_skipped_record_is_named_in_the_prompt_checklist</code>
+fails with the base modules substituted as well, and
+<code>test_a_worktree_release_is_whole.py::test_no_removal_site_still_deletes_with_git_worktree_remove</code>
+names <code>landing_measure.py::base_checkout</code>, in files this change does
+not touch at all (<code>git diff</code> against the base revision is empty for
+both). The snapshot arm's five errors are
+<code>pytest-timeout</code> failures at 300 s in
+<code>test_the_held_worktree_read_is_bounded.py</code>, under three arms run
+one after another on a loaded node; the same cases passed at this code earlier
+in the round. Ruff check and <code>ruff format --check</code> add no finding on
+the changed paths: <code>reckon/velocity.py</code> carries the same three
+format hunks before and after, and both other modules are clean.</p>
 
 <p id="a-main-checkout-index-that-lags-head-is-surfaced-commits">Commits
-<code>86ce945f6aa3751b42eebe11c418b3cf54d69fa3</code> (the notice and its test)
-and <code>8922d86027271228aba5b8587edd0a3ad758ba66</code> (the hook's mirrored
-vocabulary). Logs and the run manifest are under
+<code>86ce945f6aa3751b42eebe11c418b3cf54d69fa3</code> (the notice and its test),
+<code>8922d86027271228aba5b8587edd0a3ad758ba66</code> (the hook's mirrored
+vocabulary), <code>5f4590af661932ace4aef4109a0dea543c8e4790</code> (the landing
+record), <code>2dde27309d2763d3e11834ba90f272a53aef8154</code> (the snapshot
+carry, the shared git runner and the head comparison) and
+<code>80ab84d875e67c9a0cf5dea2145fa56d53925bba</code> (the cached reading).
+Logs and the run manifest are under
 <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T221135803822-a-main-checkout-index-that-lags-head-is-surfaced</code>.</p>
 </article>
