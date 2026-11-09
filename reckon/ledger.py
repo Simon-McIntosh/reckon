@@ -1099,17 +1099,21 @@ def run_ids(project: str, root: str | Path | None = None) -> set[str]:
 
     The read is served from the run index :func:`load` keeps wherever that index
     is current, so a caller that runs once per delivered run per station tick
-    pays no aggregate parse at all rather than one per call. A ledger the index
-    does not cover falls back to the aggregate and the run documents, which is
-    the same read this made before the index existed and still answers a ledger
-    no reader has indexed yet. A run file whose own record the index could not
-    decode still counts by its name, because membership and not the row's
-    contents is what this answers.
+    pays no aggregate parse at all rather than one per call. An index that no
+    longer describes the ledger is refreshed through :func:`load` once, so the
+    rest of that tick is answered from it; a ledger no reader has indexed yet
+    is read from the aggregate and the run documents, which is the same read
+    this made before the index existed. A run file whose own record the index
+    could not decode still counts by its name, because membership and not the
+    row's contents is what this answers.
     """
     current = _indexed_run_ids(project, root)
     if current is not None:
         return current
-    data, _version = _load_aggregate(project, root)
+    if _run_index_path(project, root).is_file():
+        data, _version = load(project, root, headers_only=True)
+    else:
+        data, _version = _load_aggregate(project, root)
     return {
         str(record["run_id"])
         for record in data["runs"]
