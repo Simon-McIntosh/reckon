@@ -2319,7 +2319,12 @@ def probe_availability(
     and reports its exit status. That spawns a process, so it happens only when
     asked for; otherwise authentication is reported as unprobed.
 
-    ``command_found`` reports only that the launcher exists on PATH. A backend
+    ``command_found`` reports that the launcher exists on the process PATH or on
+    the search path the backend declares in the flight layer. A directory
+    declared only in a project's own layer is searched too, because the entry
+    read here is the resolved one, so the report and a launch agree about a
+    backend the launcher's environment would miss. ``command_source`` names
+    which search held it: ``"PATH"`` or the declared directory. A backend
     can also declare ``endpoints_document`` — a document publishing the endpoints
     its lane currently serves — and ``serving`` is read from that document, so a
     lane whose wrapper exists but lists no live endpoint is distinguishable from
@@ -2339,6 +2344,7 @@ def probe_availability(
                 "command": None,
                 "command_found": True,
                 "command_path": None,
+                "command_source": None,
                 "authenticated": None,
                 "detail": "in-harness backend needs no external command",
                 **_probe_serving(backend),
@@ -2347,11 +2353,20 @@ def probe_availability(
             continue
         command = backend.get("command")
         located = shutil.which(command) if command else None
+        source: str | None = "PATH" if located is not None else None
+        declared: list[str] = []
+        if command:
+            from reckon.crew.dispatch_launch import declared_backend_search_path
+
+            declared = declared_backend_search_path(backend)
+            if located is None:
+                located, source = _locate_declared_command(command, declared)
         entry: dict[str, Any] = {
             "launch": launch,
             "command": command,
             "command_found": located is not None,
             "command_path": located,
+            "command_source": source,
             "authenticated": None,
             "detail": "",
         }
@@ -2367,12 +2382,33 @@ def probe_availability(
         elif not command:
             entry["detail"] = "backend declares launch: cli but no command"
         elif located is None:
-            entry["detail"] = f"'{command}' is not on PATH"
+            entry["detail"] = (
+                f"'{command}' is not on PATH or the declared search path "
+                f"({os.pathsep.join(declared)})"
+                if declared
+                else f"'{command}' is not on PATH"
+            )
         else:
             entry.update(_probe_auth(backend, probe_auth=probe_auth))
             entry.update(_probe_catalog(backend))
         report[name] = entry
     return report
+
+
+def _locate_declared_command(
+    command: str, declared: Iterable[str]
+) -> tuple[str | None, str | None]:
+    """Locate a command in the declared directories, naming the one that held it.
+
+    The process PATH is searched before this, so only a command it misses
+    reaches here; the returned source is ``"PATH"`` never, and the declared
+    directory makes the finding distinguishable from one the launcher resolved.
+    """
+    for directory in declared:
+        candidate = os.path.join(directory, command)
+        if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+            return candidate, directory
+    return None, None
 
 
 def _probe_serving(backend: Mapping[str, Any]) -> dict[str, Any]:
