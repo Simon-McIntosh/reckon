@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-title" content="The store-index lookup test builds once on every run">
+  <meta name="plan-summary" content="The review-reader tests confine XDG_RUNTIME_DIR to their own tmp tree, so the node-local persisted store index cannot be reused across runs and the build-once case passes 50 consecutive runs at one fixed basetemp.">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s66">
+  <meta name="plan-recorded-at" content="2026-11-09">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="review,gate-log,tests,evidence">
+  <title>The store-index lookup test builds once on every run | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-store-index-lookup-test-builds-once" data-reckon="landed" data-when="2026-11-09">
+  <h2 id="the-store-index-lookup-test-builds-once-title">The store-index lookup test builds once on every run</h2>
+  <p id="the-store-index-lookup-test-builds-once-cause"><strong>Cause.</strong>
+  <code>_store_indexes</code> starts a process from the index another process
+  persisted for the same store directory (<code>reckon/crew/review_records.py</code>),
+  and that document lives under <code>XDG_RUNTIME_DIR</code> keyed by the store's
+  resolved path. The fixture pinned <code>RECKON_HOME</code> but left the runtime
+  directory ambient, and pytest reuses a numbered basetemp path across sessions,
+  so a second run at the same <code>--basetemp</code> found the first run's
+  document, served the lookup from it and never called
+  <code>_build_store_indexes</code> — <code>assert 0 == 1</code> at line 248.
+  Reproduced deterministically at one fixed path: run 1 <code>6 passed</code>,
+  run 2 <code>1 failed</code> (<code>repro-1.log</code>, <code>repro-2.log</code>
+  in the run directory). The document the failing run read names that exact
+  store: <code>…/bt-repro/test_the_review_run_lookup_ser0/config/crew/reviews/reads-committed-first</code>
+  with one entry for <code>r-review-run</code>
+  (<code>evidence/persisted-store-index-repro.json</code>). Distinct basetemps
+  never reach the defect.</p>
+  <p id="the-store-index-lookup-test-builds-once-change"><strong>Change.</strong>
+  The <code>root</code> fixture in
+  <code>tests/test_reviews_read_the_committed_store_first.py</code> sets
+  <code>XDG_RUNTIME_DIR</code> to <code>tmp_path / "run"</code>, so every case in
+  the file starts with an empty persisted cache and the index is built once per
+  run. Production's cross-process reuse is untouched; the same idiom already
+  isolates the sibling <code>tests/test_the_review_store_index_re_reads_only_what_changed.py</code>.</p>
+  <p id="the-store-index-lookup-test-builds-once-measure"><strong>Measure.</strong>
+  On the repaired tree, 50 consecutive runs at one fixed <code>--basetemp</code>
+  (<code>$TMPDIR/bt-gate</code>): <code>failures=0 of 50</code>,
+  <code>EXIT=0</code>, each run logged with its revision and command and ending
+  in <code>EXIT=</code> (<code>gate/gate.log</code>, <code>gate/gate-run-01.log</code> …
+  <code>gate/gate-run-50.log</code>). The importer arm over the 15 test files
+  touching <code>reckon.crew.review_records</code>: 113 passed, <code>EXIT=0</code>
+  head (<code>importers-after.log</code>) and 113 passed, <code>EXIT=0</code> at
+  the base revision (<code>importers-base.log</code>) — no added failure. Ruff
+  check and <code>ruff format --check</code> are clean on the staged path.</p>
+  <p id="the-store-index-lookup-test-builds-once-control"><strong>Negative control.</strong>
+  Declared mutation: on the unfixed fixture the same fixed-basetemp loop fails at
+  least once in 50. Applied by removing the <code>XDG_RUNTIME_DIR</code> line and
+  rerunning the identical loop at one fixed path: <code>failures=49 of 50</code>,
+  <code>EXIT=49</code>, naming
+  <code>test_the_review_run_lookup_serves_from_the_store_index</code> with
+  <code>assert 0 == 1</code> — a failing id the head arm never fails
+  (<code>negative/negative.log</code>, <code>negative/negative-run-02.log</code>).</p>
+</article>
+</body>
+</html>
