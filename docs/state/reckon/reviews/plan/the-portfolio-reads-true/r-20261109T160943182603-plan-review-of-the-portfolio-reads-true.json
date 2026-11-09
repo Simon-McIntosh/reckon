@@ -1,0 +1,41 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T16:18:38.226Z",
+  "dispatched_at": "2026-11-09T16:11:41Z",
+  "findings": [],
+  "plan_commit": "9d73e32f1c67a6b8f18036d932ee6f4734508750",
+  "plan_fingerprint": "f3cfcca6f542187f0c29fb8c2af7d71f0ee513feb35fc2692f860448888b866c",
+  "plan_slug": "the-portfolio-reads-true",
+  "plan_version": 79,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T160943182603-plan-review-of-the-portfolio-reads-true",
+  "reviewed_blob_sha": "7416e29a0a396a54f2b7917848997357ff56ba04",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every citation was opened and resolves: `reckon/_plan_html.py` `write_state` at :2219 with the derived-impl gate at :2278\u20132287 (\"near line 2281\"), `_set_meta_block` at :2064, `reckon/_store.py` :1717 and :2448, `reckon/serve.py` :3909, `reckon/tags.py` :123 (`read_state`) and :130 (`write_state`), and `reckon/archive.py` :132 passing `{\"archived\": \"1\"}`.",
+    "done_when": "pass \u2014 \u00a710 lists six cases (a)\u2013(f), with (a), (d), (e) and (f) each declared to fail at the dispatch base, so the guard firing is measured rather than inferred from a suite that passes either way; (b) and (c) are keep-guards and correctly claim no base failure.",
+    "evidence_paths": "pass \u2014 \"Every log under the run directory\" places gate logs under the run's durable directory, and no case names a node-local or scratch path.",
+    "naming": "pass \u2014 the section, the new test filename (`test_a_derived_impl_drops_the_authored_meta.py`) and the cited symbols describe the mechanism, and no plan label, stage name, ticket number or version tag is carried into them.",
+    "reasoning": "pass \u2014 (i) the cited measurement reproduces exactly: `docs/plans/a-run-has-one-live-worker.html` carries `plan-impl` 0.67 while `read_state` derives 0.8579545\u2026 (`declarations`, 14/16 declared done), and the stated cause is confirmed in code \u2014 `write_state` omits `plan-impl` whenever `impl_source` is `computed`/`declarations` and `_set_meta_block` rewrites only the names it is given, so an authored meta is never updated or removed; (ii) the mechanism produces the done-when \u2014 removing the meta under an opt-in satisfies (a)/(d)/(e)/(f), and case (b)'s byte-identity holds: the no-change comparisons in `_store.py:1728-1755` and `serve.py:3913` skip the disk write on an unchanged parsed state, and the cited file round-trips byte-identically today; (iii) every named writer is a real production path, the enumeration matches all `write_state` call sites (`archive.py:132` is the sole partial-state caller, correctly excluded), and `backfill_tags_from_preimage` is reached in production from `reckon/project_setup_commands.py:603`.",
+    "single_goal": "pass \u2014 one deliverable: a `write_state` opt-in that removes a derived plan's authored `plan-impl` meta, driven through the four full-state writers.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `s10: [\"the-portfolio-reads-true#s2\"]`, \u00a72 is `done`, and the only other declared wait (`s6: [#s8]`) and each gate's required evidence resolve."
+  },
+  "section_digests": {
+    "_document": "01de26d9d39512375dd57910cac3fdc429fa930f716bb295f69fd8df29cdcfa1",
+    "s1": "56204248c9050844c40ac7e00bff909830602caaa4b95be87bacea51b1495a03",
+    "s10": "0001946b15877859ad74e8adaefd6070db89fc99dffcfbec7e8132dc4b3aa2c4",
+    "s2": "69b86246adb4ea89719f367ac57f43940ed14fb88c5c89408cf18a6b59911f57",
+    "s3": "5902125b920ccad233230b403ba1e4cb62c75743d8265014bc35f38e0c9915c3",
+    "s4": "9280ec81cafc36b7de1295b0f22745c6162986e93d9731a8e8b99c51d658a217",
+    "s5": "e5d24ffe43f8fdfcdb88130b1632bc368dc94fd8641f628befb77b4c1f95b435",
+    "s6": "3b386242a01bc207ce0810ef1ee5ccbd8a9d5ea78f77a5dd6fc61b2f207c53d0",
+    "s7": "b5d0f90a4e8a113321b55e0ed0aeaa0624369e3b41b03dde61dc10c9a6f8e5ef",
+    "s8": "4aa77c0b14a2d21a80398b3aaf025a91b1d30ea4d3a1d3682146ddd1571aa233",
+    "s9": "54a93d7a8c229a7e83406269881fc9089bd55e02de98bfa9288e64d664469626"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T16:25:48.475538+00:00",
+  "total": null
+}
