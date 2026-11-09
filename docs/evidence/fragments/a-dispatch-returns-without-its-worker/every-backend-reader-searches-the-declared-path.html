@@ -16,7 +16,7 @@
     <header>
       <p class="eyebrow">Execution evidence &middot; fragment</p>
       <h1>Every backend reader searches the declared path</h1>
-      <p class="lead">A search path declared only in a project's own flight layer, <code>docs/state/&lt;project&gt;/flight.yaml</code>, was honoured by the pre-flight and by no reader after it. The launch plan carried the backend by name, so composition read the host layer and refused a directory the pre-flight had accepted, and the persisted worker PATH never saw the declaration at all. The directories are now resolved once, when the plan is built from the project-resolved backend entry, and every later reader takes them from the plan: the executable resolution, the placement's scheduler lookup, the persisted worker environment, the supervisor spec a resume composes, and the run record a later attempt reads them back from.</p>
+      <p class="lead">A search path declared only in a project's own flight layer, <code>docs/state/&lt;project&gt;/flight.yaml</code>, was honoured by the pre-flight and by no reader after it. The launch plan carried the backend by name, so composition read the host layer and refused a directory the pre-flight had accepted, and the persisted worker PATH never saw the declaration at all. The directories are now resolved once, when the plan is built from the project-resolved backend entry, and every later reader takes them from the launch's own run record: the executable resolution, the placement's scheduler lookup, the persisted worker environment, the supervisor spec a resume composes, and the record a lane change rewrites.</p>
     </header>
 
     <section id="every-backend-reader-searches-the-declared-path-what-changed">
@@ -25,8 +25,8 @@
         <li><code>reckon/_backends.py</code>: <code>LaunchPlan</code> carries <code>backend_search_path</code>, the directories its backend declares, resolved at plan build by <code>backend_search_directories()</code> from the backend entry the composer already holds. That entry is the project-resolved one every construction site passes, so a directory a project layer declares is resolved here rather than re-derived later. <code>as_dict()</code> carries the list so a lane-change preview names what it resolved.</li>
         <li><code>reckon/crew/dispatch_launch.py</code>: <code>declared_backend_search_path()</code> now delegates the expansion to <code>_backends.backend_search_directories</code>, so a plan and a reader resolve a declaration by one rule. <code>launch_search_path()</code> takes the plan's resolved directories and prefers them over reading the flight layers again. <code>resolve_launch_executable()</code>, <code>resolve_backend_placement()</code> and <code>_persisted_worker_environment()</code> all read them from the plan, and <code>_supervisor_spec()</code> writes them into the worker's persisted PATH.</li>
         <li><code>reckon/crew/dispatch.py</code>: the cli launch branch records <code>backend_search_path</code> on the run, so a resume reads what this launch searched rather than what the layers declare when the later attempt runs. The in-harness branch composes no plan and is unchanged.</li>
-        <li><code>reckon/crew/dispatch_sessions.py</code>: <code>_backend_settings()</code> reads the recorded directories back into the rebuilt backend. Its rebuild from the record's own command copies only the harness identity and the lane's window, so it would otherwise drop the declaration from every resumed attempt.</li>
-        <li><code>tests/test_every_backend_reader_searches_the_declared_path.py</code> (new): a temporary host layer declaring no search path, a temporary project layer declaring one, and a stub <code>clive</code> in a directory absent from PATH.</li>
+        <li><code>reckon/crew/dispatch_sessions.py</code>: <code>_backend_settings()</code> reads the recorded directories back into the rebuilt backend. Its rebuild from the record's own command copies only the harness identity and the lane's window, so it would otherwise drop the declaration from every resumed attempt. The lane-change move records the destination plan's directories, and clears the field with <code>None</code> when the destination composes no plan.</li>
+        <li><code>tests/test_every_backend_reader_searches_the_declared_path.py</code> (new): every case drives the production path that writes the record, rather than constructing one. The first launch is a real <code>crew.dispatch</code> with a stand-in launcher; the resume case reads that launch's own live pointer back; the lane-change case moves the same run twice through <code>change_lane</code>.</li>
       </ul>
     </section>
 
@@ -35,15 +35,19 @@
       <table>
         <thead><tr><th>Check</th><th>Result</th><th>Log</th></tr></thead>
         <tbody>
-          <tr><td>Node test at <code>cbdcb66391</code>, both cases</td><td>2 passed, <code>EXIT=0</code></td><td><code>logs/after-node-tests.log</code></td></tr>
-          <tr><td>Declared mutation: a <code>LaunchPlan</code> without the resolved directories</td><td>2 failed, <code>EXIT=1</code>; both cases refuse with <code>LaunchResolutionError</code> naming the searched PATH, which holds no declared directory</td><td><code>logs/negative-control.log</code></td></tr>
+          <tr><td>Node test at <code>366129aaca</code>, all three cases</td><td>3 passed, <code>EXIT=0</code></td><td><code>logs/repair-node-tests.log</code></td></tr>
+          <tr><td>Declared mutation: a <code>LaunchPlan</code> without the resolved directories, plus the launch-record write removed</td><td>2 failed, <code>EXIT=1</code>; the first launch and the resume refuse with <code>LaunchResolutionError</code> naming the searched PATH, which holds no declared directory</td><td><code>logs/negative-control-launch-record.log</code></td></tr>
+          <tr><td>Mutation: the lane-change destination write and the planless-lane clear removed</td><td>1 failed, 2 passed, <code>EXIT=1</code>; the lane-change case fails on the unrecorded destination directories</td><td><code>logs/negative-control-lane-change.log</code></td></tr>
+          <tr><td>Importer population of the three modules at <code>366129aaca</code></td><td>Same 13 failed / 1536 passed / 7 errors as the base arm; the sets differ only by two load-sensitive stop-before-spawn ids that pass in isolation at both revisions</td><td><code>logs/head-importers.log</code></td></tr>
         </tbody>
       </table>
     </section>
 
     <section id="every-backend-reader-searches-the-declared-path-cases">
-      <h2>The two cases</h2>
-      <p>The first launch composes a plan from the project-resolved backend entry, the way <code>dispatch.py</code> does. The stub resolves to the declared directory, the plan carries it, and the supervisor spec's persisted PATH holds it. The second case builds the run record a launch writes, rebuilds the backend from it with <code>_backend_settings()</code>, and composes the resumed plan and its supervisor spec. The host layer reachable by name declares nothing in either case, so a reader that resolved the layers again would find no directory at all &mdash; the resumed PATH carries it only because the record was read back.</p>
+      <h2>The three cases</h2>
+      <p>The first launch runs <code>crew.dispatch</code> against a project layer that alone declares the stub's directory, with a launcher standing in for the harness. The returned record carries the directory, and the composed argv resolves the stub through it.</p>
+      <p>The resume case reads the live pointer that launch wrote, asserts the host layer reachable by name declares nothing, and rebuilds the backend from the record with <code>_backend_settings()</code>. The rebuild from the record's own command drops every key it does not copy, so the resumed plan and its supervisor PATH carry the directory only because the record was read back.</p>
+      <p>The lane-change case takes the same dispatched run, moves it to a backend whose declaration lives in the host layer, and asserts the record now names that destination's directory; it then moves the run to an in-harness backend, which composes no plan, and asserts the field is cleared to <code>None</code> rather than carrying the previous lane's directories.</p>
     </section>
   </main>
 </body>
