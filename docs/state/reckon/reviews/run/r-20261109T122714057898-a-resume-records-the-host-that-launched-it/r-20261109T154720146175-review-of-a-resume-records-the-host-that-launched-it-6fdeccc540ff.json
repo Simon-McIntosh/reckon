@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/resumption.py:1797 (record_resumption call on the resume path)",
+    "reckon/crew/queue_admission.py:admit_once -> reckon/crew/dispatch.py:3083 (admitted launch record)",
+    "reckon/crew/recovery_liveness.py:1219 (_launched_on_this_host)",
+    "reckon/crew/claims.py:433",
+    "reckon/crew/watch_unit.py:255",
+    "reckon/hooks/worker_message_guard.py:120",
+    "reckon/crew/runs.py:400 (_stamp_pointer_launch_host carry-forward)"
+  ],
+  "completed_at": "2026-11-09T16:00:28.835Z",
+  "dispatched_at": "2026-11-09T15:51:52Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "log-header revision label only; the landing re-runs the node test at base and head with its own headers",
+      "recorded_at": "2026-11-09T16:02:58.905664+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T122714057898-a-resume-records-the-host-that-launched-it/logs/negative-control.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the log's revision header names 036243a793 while the code under test is the head tree with the declared mutation applied, and its own 3-failed/1-passed result contradicts a base-tree run (which fails all four), so a reader of the receipt would conclude the base tree passed the queued-launch case."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read commit by commit against 036243a793; ce2635c018 adds 8 lines of production code across two modules plus a 267-line test, and 6fdeccc540 adds only the 93-line evidence fragment, so the reviewed head's code is identical to the gate's revision.",
+    "done_when": "the done_when requires a new tests/test_a_resume_records_the_host_that_launched_it.py with a temp crew home, a patched host name, a base-revision arm and a stamp-every-write control; the manifest records all of them and logs/head-arm.log ends \"4 passed in 11.81s / EXIT=0\" at revision ce2635c018, with logs/base-arm.log \"4 failed / EXIT=1\" at 036243a793.",
+    "goal": "the node's goal is that each attempt record the host that launched it; the diff puts launcher_host on the resume attempt record at reckon/crew/dispatch_sessions.py:2477 and on the launch record at reckon/crew/dispatch.py:3083, which attach_launch_identity merges over the queued pointer at reckon/crew/dispatch.py:3590.",
+    "manifest": "read at the reviewed run's manifest.md; it states four cases green at head and all four red at base, names logs/head-arm.log, logs/base-arm.log and logs/negative-control.log, and I opened each and confirmed the summary lines it quotes.",
+    "write_paths": "the manifest declares reckon/crew/dispatch_sessions.py, reckon/crew/dispatch.py, the new test, and the evidence fragment; the diff against 036243a793 touches exactly those four files and nothing else."
+  },
+  "justifications": {
+    "durability": "all four cases in tests/test_a_resume_records_the_host_that_launched_it.py fail at the base tree with the defect's own messages, and the assertion at line 202 is never shown red on its own because line 199 fires first in both red arms.",
+    "evidence": "logs/base-arm.log carries all four intended failures with their reasons and logs/negative-control.log ends EXIT=1 with three of the four ids red, but logs/negative-control.log:1 labels the run 036243a793 while the mutated code is the head tree.",
+    "fit": "the additions read socket.gethostname() as reckon/crew/runs.py:429 already does and follow the surrounding comment idiom, and the runs.py pointer-writer docstring's \"records it once\" no longer matches a resume that overrides the host.",
+    "goal_fidelity": "reckon/crew/dispatch_sessions.py:2477 writes the resuming host into the attempt record and reckon/crew/dispatch.py:3083 writes the launching host into the record the merge applies, which are the two writes the goal names.",
+    "reuse": "no second helper was added; the change feeds the existing key that reckon/crew/runs.py:400 and recovery_liveness.py:1219 already own, and the search for an existing \"host of the writing machine\" helper found only that pointer writer and _reading_host.",
+    "scope_discipline": "every path in the two commits is one of the four the manifest declares, and the production edit is confined to the two named modules."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that each attempt record the host that launched it; the diff puts launcher_host on the resume attempt record at reckon/crew/dispatch_sessions.py:2477 and on the launch record at reckon/crew/dispatch.py:3083, which attach_launch_identity merges over the queued pointer at reckon/crew/dispatch.py:3590.\nVERDICT done_when: the done_when requires a new tests/test_a_resume_records_the_host_that_launched_it.py with a temp crew home, a patched host name, a base-revision arm and a stamp-every-write control; the manifest records all of them and logs/head-arm.log ends \"4 passed in 11.81s / EXIT=0\" at revision ce2635c018, with logs/base-arm.log \"4 failed / EXIT=1\" at 036243a793.\nVERDICT write_paths: the manifest declares reckon/crew/dispatch_sessions.py, reckon/crew/dispatch.py, the new test, and the evidence fragment; the diff against 036243a793 touches exactly those four files and nothing else.\nVERDICT manifest: read at the reviewed run's manifest.md; it states four cases green at head and all four red at base, names logs/head-arm.log, logs/base-arm.log and logs/negative-control.log, and I opened each and confirmed the summary lines it quotes.\nVERDICT diff: read commit by commit against 036243a793; ce2635c018 adds 8 lines of production code across two modules plus a 267-line test, and 6fdeccc540 adds only the 93-line evidence fragment, so the reviewed head's code is identical to the gate's revision.\nCALL_SITES: reckon/crew/resumption.py:1797 (record_resumption call on the resume path), reckon/crew/queue_admission.py:admit_once -> reckon/crew/dispatch.py:3083 (admitted launch record), reckon/crew/recovery_liveness.py:1219 (_launched_on_this_host), reckon/crew/claims.py:433, reckon/crew/watch_unit.py:255, reckon/hooks/worker_message_guard.py:120, reckon/crew/runs.py:400 (_stamp_pointer_launch_host carry-forward)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_sessions.py:2477 writes the resuming host into the attempt record and reckon/crew/dispatch.py:3083 writes the launching host into the record the merge applies, which are the two writes the goal names.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/base-arm.log carries all four intended failures with their reasons and logs/negative-control.log ends EXIT=1 with three of the four ids red, but logs/negative-control.log:1 labels the run 036243a793 while the mutated code is the head tree.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the two commits is one of the four the manifest declares, and the production edit is confined to the two named modules.\nSCORE durability: 18\nJUSTIFICATION durability: all four cases in tests/test_a_resume_records_the_host_that_launched_it.py fail at the base tree with the defect's own messages, and the assertion at line 202 is never shown red on its own because line 199 fires first in both red arms.\nSCORE fit: 18\nJUSTIFICATION fit: the additions read socket.gethostname() as reckon/crew/runs.py:429 already does and follow the surrounding comment idiom, and the runs.py pointer-writer docstring's \"records it once\" no longer matches a resume that overrides the host.\nSCORE reuse: 18\nJUSTIFICATION reuse: no second helper was added; the change feeds the existing key that reckon/crew/runs.py:400 and recovery_liveness.py:1219 already own, and the search for an existing \"host of the writing machine\" helper found only that pointer writer and _reading_host.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T122714057898-a-resume-records-the-host-that-launched-it/logs/negative-control.log:1 non-blocking: the log's revision header names 036243a793 while the code under test is the head tree with the declared mutation applied, and its own 3-failed/1-passed result contradicts a base-tree run (which fails all four), so a reader of the receipt would conclude the base tree passed the queued-launch case.",
+  "review_run_id": "r-20261109T154720146175-review-of-a-resume-records-the-host-that-launched-it-6fdeccc540ff",
+  "reviewed_base_sha": "036243a793c2812a2070a39ccdacc6a5e72467b0",
+  "reviewed_head_sha": "6fdeccc540ffc11a4319ac653e346c930439ee59",
+  "reviewed_run_id": "r-20261109T122714057898-a-resume-records-the-host-that-launched-it",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T16:21:18.242620+00:00",
+  "total": 107
+}
