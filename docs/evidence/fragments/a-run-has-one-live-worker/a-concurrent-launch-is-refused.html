@@ -32,4 +32,77 @@
   handover reddens that case; reverting the sibling case's widened refusal wording reddens
   its own. The suite of 24 cases passes at head, and the one red at the repair base is that
   sibling case, which read the older refusal wording.</p>
+
+  <h4 id="a-concurrent-launch-is-refused-door-map">Door map and the six remaining failures</h4>
+  <table>
+    <thead>
+      <tr><th>door</th><th>attempt computed</th><th>attempt.json / pointer written</th><th>who reserves</th><th>supervisor</th><th>supervisor exits</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>dispatch CLI</td>
+        <td><code>dispatch.py</code>: <code>attempt = reservation.attempt</code> before the worktree; the reservation key is the newest <code>attempt-&lt;n&gt;-exit/worker</code> receipt plus one, or 1 with none</td>
+        <td><code>_prepare_attempt_records</code> writes <code>attempt.json</code> inside <code>supervised_launch</code>; the pointer is written by <code>record_dispatch</code> before the spawn and again by the supervisor</td>
+        <td>the dispatch process, before <code>_create_worktree</code></td>
+        <td><code>_start_supervisor</code> starts a detached supervisor (or the fleet batch step) and returns its pid</td>
+        <td>when the worker it supervises ends, or on the survival wait's failure</td>
+      </tr>
+      <tr>
+        <td>dispatch, caller-supplied launcher</td>
+        <td>same reservation, same key</td>
+        <td>same <code>_prepare_attempt_records</code>; pointer written by the dispatch process</td>
+        <td>the dispatch process</td>
+        <td><strong>none</strong>: the launcher stands in for it and returns synchronously</td>
+        <td>the launcher returns at once; no process records the reservation's end</td>
+      </tr>
+      <tr>
+        <td>admit (queue admission)</td>
+        <td>calls <code>dispatch()</code> in-process, so the decision is the dispatch CLI's</td>
+        <td>same, written by the long-lived admitting process</td>
+        <td>the admitting service process</td>
+        <td>a detached supervisor, as the dispatch CLI</td>
+        <td>when the worker ends; the admitting process outlives it</td>
+      </tr>
+      <tr>
+        <td>resume CLI</td>
+        <td><code>resumption._resume</code> reserves first; the launched attempt is <code>max(reservation.attempt, pointer.attempt + 1)</code></td>
+        <td><code>attempt.json</code> from <code>_prepare_attempt_records</code>; the pointer from <code>record_resumption(attempt=reservation.attempt)</code></td>
+        <td>the resume process</td>
+        <td>a detached supervisor, through <code>_spawn</code> &rarr; <code>supervised_launch</code></td>
+        <td>when the worker ends</td>
+      </tr>
+      <tr>
+        <td>resume through the launcher</td>
+        <td>same reservation, same key</td>
+        <td>attempt.json written by <code>supervised_launch</code>; pointer by <code>record_resumption</code> in the resume process</td>
+        <td>the resume process</td>
+        <td><strong>none</strong>: the seam returns synchronously</td>
+        <td>the seam returns; nothing records the end</td>
+      </tr>
+      <tr>
+        <td>in-harness</td>
+        <td>the pointer's attempt plus one, as before</td>
+        <td>the harness records both</td>
+        <td>no reservation; refused while a CLI launch holds one</td>
+        <td>none: the worker is a child of the coordinator's own process</td>
+        <td>with its turn</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Six failures at head, each against its door and step:</p>
+  <ol>
+    <li><code>test_a_second_resume_records_the_third_attempt</code> — resume CLI. The reservation key is computed from the receipts alone, so on a run whose first attempt left no receipt it is 1 while the launched attempt is 2. <code>record_resumption</code> then writes the pointer's attempt as the reservation's (1), and the supervisor's <code>_publish_stored_phase</code> declines to publish the ended phase because <code>_record_is_this_attempt</code> sees another attempt's pointer. The rule that breaks: the launched attempt is carried from the reservation, but the pointer is not.</li>
+    <li><code>test_a_shortlived_launcher_leaves_a_worker_that_survives_and_completes</code> — dispatch, no run directory. <code>_spawn</code> reaches <code>_spawn_detached_worker</code> because the stream is <code>worker.log</code>, so no reservation is taken and no reservation rule applies. The session leader this door returns is still alive five seconds after a worker that sleeps one. Nothing in the reservation path explains it; it needs a reproduction before a fix is designed.</li>
+    <li><code>test_a_group_stop_after_the_spawn_is_recorded_as_that_stops_exit</code> — dispatch CLI. The worker reports itself through its scratch marker before the supervisor has written <code>worker.json</code>. The reservation adds work to the launching process between the spawn ack and the survival wait, and the record lands after the marker. The rule that breaks: no reservation rule does; the ordering of the worker record against the spawn's first observable effect does.</li>
+    <li>The three <code>test_worker_env_export</code> cases — dispatch CLI and in-harness. The dispatch call passes <code>reservation=</code> to <code>_start_supervisor</code>, and the tests' stand-in takes three positional arguments, so it raises <code>TypeError: got an unexpected keyword argument 'reservation'</code>. The rule that breaks: the door's handover is expressed as a keyword on a seam that pre-dates it.</li>
+  </ol>
+
+  <h4 id="a-concurrent-launch-is-refused-design">Smallest design that passes all six</h4>
+  <ol>
+    <li><strong>Hand the reservation over after the start, not through it.</strong> Call <code>_start_supervisor(spec_path, directory, run_id)</code> as before and record the returned pid with <code>record_reservation_supervisor(reservation, pid)</code> in the calling door. The reservation still names the supervisor (the first finding stays answered), every three-argument seam keeps working, and the handover's <code>reservation=</code> keyword disappears. This clears the three <code>test_worker_env_export</code> failures.</li>
+    <li><strong>Record the attempt that was launched.</strong> Pass the same number the spec carries to <code>record_resumption</code> (<code>max(reservation.attempt, pointer + 1)</code>, exactly as <code>supervised_launch</code> derives it) so the pointer names the attempt the supervisor started and the phase is published. This clears <code>test_a_second_resume_records_the_third_attempt</code>.</li>
+    <li><strong>Give a synchronous launcher an end.</strong> When the seam branch returns, the launch it stood in for is over: release the reservation there, or record the seam's pid, so a run launched through a seam is not held by the process that called it. This is what makes rule 2 safe and is the rule the deliverable already states (&ldquo;freed by its launch's own end&rdquo;).</li>
+    <li><strong>Leave the two timing failures to measurement first.</strong> Write <code>worker.json</code> before the survival wait in the supervisor's own path (it is already written immediately after <code>Popen</code>; move it ahead of any work that follows the spawn), and reproduce the detached-worker case before changing it. Neither should alter a §13 case, and both must be measured against the base arm before being claimed.</li>
+  </ol>
 </section>
