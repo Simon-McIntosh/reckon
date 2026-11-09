@@ -1,0 +1,66 @@
+<section id="the-model-catalogue-path-resolves-once-landing">
+  <h2>The catalogue's package-relative path resolves once per process</h2>
+
+  <p><strong>What changed.</strong> <code>flight.model_catalogue_path</code>
+  resolved <code>Path(__file__)</code> through <code>realpath</code> on every
+  call, and <code>ledger.resolve_name</code> calls it once per name it
+  normalises, so a single held-worktree read paid tens of thousands of
+  resolutions for one file that cannot move while the process runs. The
+  package-relative default now comes from a cached helper
+  (<code>_default_catalogue_path</code>, <code>functools.cache</code>), so it is
+  resolved on the first call and reused for the life of the process. A code
+  change replaces the process, from an image that carries its own catalogue
+  beside the package.</p>
+
+  <p><strong>What did not change.</strong> <code>RECKON_MODEL_CATALOGUE</code> is
+  still read on every call, so an override set after the first call takes effect
+  on the next one, and <code>resolve_name</code> still compares the catalogue's
+  file identity (<code>st_mtime_ns</code>, <code>st_ctime_ns</code>,
+  <code>st_size</code>, <code>st_ino</code>), so a catalogue edited between two
+  reads is read again. No caller changed.</p>
+
+  <h3 id="the-model-catalogue-path-resolves-once-measured">Measured</h3>
+
+  <p>The first case warms the path once, then counts
+  <code>pathlib.Path.resolve</code> calls during 1,000
+  <code>ledger.resolve_name</code> calls: <strong>0</strong>, against 1,000 for
+  the negative control. The second case sets <code>RECKON_MODEL_CATALOGUE</code>
+  between two calls and observes the returned path change. The third rewrites a
+  temporary catalogue between two <code>resolve_name</code> calls and observes
+  the answer move from <code>("temp", "first")</code> to
+  <code>("temp", "second")</code>, so the file-identity check still governs.</p>
+
+  <table id="the-model-catalogue-path-resolves-once-arms">
+    <caption>Every arm is a log whose first lines name its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision and tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>gate, base</td>
+        <td><code>22cfac95</code>, extracted tree (the new test is absent there,
+        so the arm resolves to the reload-image test alone)</td>
+        <td>2 passed, 0 failed, <code>EXIT=0</code></td></tr>
+      <tr><td>gate, head</td>
+        <td><code>a93bda94</code>, worktree</td>
+        <td><strong>5 passed</strong>, 0 failed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control</td>
+        <td><code>a93bda94</code> + the declared mutation: resolve
+        <code>Path(__file__)</code> on every call again</td>
+        <td>1 failed, <code>EXIT=1</code> &mdash;
+        <code>test_a_thousand_reads_resolve_no_path</code>, counted 1,000
+        resolutions against the expected 0</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>No added failure.</strong> The base arm's two passes are a subset
+  of the head arm's five (three new cases, and the reload-image test unchanged
+  across the two), so the delta is zero and no failure id moved.</p>
+
+  <p><strong>One correction found while measuring.</strong> The first negative
+  control run passed when it had to fail. The documented cause was the suite's
+  autouse catalogue-isolation fixture, which points
+  <code>RECKON_MODEL_CATALOGUE</code> at an absent path for every test outside
+  its catalogue-subject set, so <em>no</em> override-free measurement was
+  possible: the case never reached the code it measures. The case now clears
+  that variable before warming, and the mutation then reports the full 1,000
+  resolutions.</p>
+</section>

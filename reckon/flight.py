@@ -37,6 +37,7 @@ import time
 from collections.abc import Callable, Iterable, Iterator, Mapping, MutableMapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from functools import cache
 from pathlib import Path
 from types import UnionType
 from typing import Any, Union, get_args, get_origin
@@ -284,6 +285,23 @@ def shipped_defaults_path() -> Path:
     return Path(__file__).resolve().parent / "schema" / "flight-defaults.yaml"
 
 
+@cache
+def _default_catalogue_path() -> Path:
+    """The package-relative catalogue, resolved once and then reused.
+
+    This module's own file does not move while the process runs, and a code
+    change replaces the process from an image that carries its own catalogue
+    beside the package, so one resolution per process is enough.
+    """
+    return (
+        Path(__file__).resolve().parent.parent
+        / "docs"
+        / "state"
+        / "reckon"
+        / "model-catalogue.yaml"
+    )
+
+
 def model_catalogue_path() -> Path:
     """Path to the model catalogue, versioned data in the reckon checkout.
 
@@ -298,17 +316,15 @@ def model_catalogue_path() -> Path:
     A missing file means no catalogue layer, and the resolved values are then
     exactly what the host layer supplies; a wheel install, which carries no
     ``docs/``, resolves as it did before the catalogue existed.
+
+    The package-relative default is resolved once per process. The environment
+    override is still read on every call, so one set after the first call takes
+    effect on the next.
     """
     override = os.environ.get("RECKON_MODEL_CATALOGUE")
     if override:
         return Path(override)
-    return (
-        Path(__file__).resolve().parent.parent
-        / "docs"
-        / "state"
-        / "reckon"
-        / "model-catalogue.yaml"
-    )
+    return _default_catalogue_path()
 
 
 # The operator-home files a dialect's harness reads at startup. reckon owns the
