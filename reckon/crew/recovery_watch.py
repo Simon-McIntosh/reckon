@@ -3309,7 +3309,7 @@ def watch_ticker(
         handed: set[str] = set()
         while True:
             try:
-                with runs._producer_tick():
+                with runs._producer_tick(), _classification_input_tick():
                     if not runs.renew_watch_host_lease(project):
                         return
                     # An unlinked seat record is rewritten before anything else, so a
@@ -3728,6 +3728,7 @@ from .recovery_liveness import (  # noqa: E402
     local_liveness,
 )
 from .recovery_memo import (  # noqa: E402
+    _classification_input_tick,
     _classification_inputs,
     _classification_key,
     _file_identity,

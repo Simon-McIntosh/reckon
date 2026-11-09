@@ -1,0 +1,26 @@
+<section id="tick-computes-each-runs-inputs-once">
+  <h3>Classification inputs are shared within each producer tick</h3>
+  <p>A context-local memo keyed by run id holds the complete classification input identities for one
+  producer tick. The change token, publication reuse key and classifier read the same memo through
+  <code>_classification_inputs</code>. The context resets on every exit, including an interrupted tick,
+  and preserves the per-file identities that detect a review rewritten in place.</p>
+  <table>
+    <thead><tr><th>Measure over 40 live runs with committed reviews</th><th>Base</th><th>Head</th></tr></thead>
+    <tbody>
+      <tr><td>Opening tick: review-input identity calls</td><td>240 (6 per run)</td><td>40 (1 per run)</td></tr>
+      <tr><td>Next tick after an in-place review rewrite</td><td>162 (39 runs at 4, rewritten run at 6)</td><td>40 (1 per run)</td></tr>
+      <tr><td>Head keys changed by the rewrite</td><td>Control assertions fail</td><td>Only the rewritten run</td></tr>
+    </tbody>
+  </table>
+  <p>The regression patches every loaded binding of <code>_review_input_identities</code>, including
+  the recovery facade, and asserts each read includes the run's committed record. Its rewrite keeps
+  the record inode and directory identity unchanged. The unmodified base product fails both cases;
+  the focused head probe passes both. Implementation commit: <code>75eca569075d1826af28addbd581ad9a2394c56b</code>.</p>
+  <p>The 126-file importer comparison ran sequentially with four workers and a 60-second per-test
+  timeout. Base: 12 failed, 964 passed. Head: 16 failed, 960 passed. Four head-only failure ids remain
+  outside this node's test write scope and are recorded in the manifest. The broader gate is unmet,
+  so the node is blocked pending coordinator adjudication; no outside-scope failure was triaged or changed.
+  Ruff reports the same six findings at base and head, and formatting passes for all changed Python paths.</p>
+  <p>Production sampling after integration remains the coordinator's check: one main-thread sample
+  every 2 seconds for 120 seconds against the previously recorded heartbeat profile.</p>
+</section>

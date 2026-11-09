@@ -6,6 +6,7 @@ import hashlib
 import json
 import re
 import time
+from contextvars import ContextVar
 from pathlib import Path
 from typing import Any, Iterator, Mapping, Sequence
 
@@ -456,6 +457,21 @@ def _directory_identity(path: Path) -> str:
     return f"{info.st_dev}:{info.st_ino}:{info.st_size}:{info.st_mtime_ns}:{info.st_ctime_ns}"
 
 
+_TICK_CLASSIFICATION_INPUTS: ContextVar[dict[str, dict[str, str]] | None] = ContextVar(
+    "tick_classification_inputs", default=None
+)
+
+
+@contextlib.contextmanager
+def _classification_input_tick() -> Iterator[None]:
+    """Share each run's file identities only for the duration of one tick."""
+    token = _TICK_CLASSIFICATION_INPUTS.set({})
+    try:
+        yield
+    finally:
+        _TICK_CLASSIFICATION_INPUTS.reset(token)
+
+
 def _classification_inputs(record: Mapping[str, Any], log: Path) -> dict[str, str]:
     """Every file one classification reads, with its identity.
 
@@ -465,8 +481,11 @@ def _classification_inputs(record: Mapping[str, Any], log: Path) -> dict[str, st
     so the key describes the reads that were actually made rather than a
     separately maintained list of them.
     """
-    identities: dict[str, str] = {}
     run_id = str(record.get("run_id") or "")
+    tick_inputs = _TICK_CLASSIFICATION_INPUTS.get()
+    if run_id and tick_inputs is not None and run_id in tick_inputs:
+        return tick_inputs[run_id]
+    identities: dict[str, str] = {}
     if run_id:
         pointer = runs.pointer_path(run_id)
         identities[str(pointer)] = _file_identity(pointer)
@@ -486,6 +505,8 @@ def _classification_inputs(record: Mapping[str, Any], log: Path) -> dict[str, st
     # review of code the run no longer holds.
     repository = _review_tree(record)
     identities[f"git-head:{repository}"] = _worktree_head_identity(repository)
+    if run_id and tick_inputs is not None:
+        tick_inputs[run_id] = identities
     return identities
 
 
