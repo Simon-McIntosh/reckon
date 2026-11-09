@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.97">
-<meta name="plan-version" content="203">
+<meta name="plan-version" content="204">
 <meta name="plan-modified" content="2026-11-09">
 </head>
 <body>
@@ -562,7 +562,10 @@
     <div class="r-comment-body"><p>Reviewed r-20261109T050437514521-promoting-a-review-keeps-its-dispositions at head 554f0af953 against base 37995ffee7: goal fidelity 18, evidence 15, scope discipline 19, durability 19, fit 18, reuse 5; added failures 0; three non-blocking findings (a delivered-record selection duplicated from reckon/crew/review.py:3279, and two defects in the run's own evidence record).</p></div>
 </div>
 <div class="r-comment" data-section="s24" data-id="c-run-r-20261109T071123363361-review-of-promoting-a-review-keeps-its-dispositions-57affd7fc43b" data-who="reckon-build" data-when="2026-11-09T07:23:56.687Z">
-    <div class="r-comment-body"><p>The gained commit 57affd7fc43b3f6b106eaf4603705cafe09ab239 deletes _delivered_copies_of_record and turns review._records_naming_this_review into the one identity rule both the disposition writer and the filing read, so a disposition still survives a review run&#x27;s promotion and the reuse finding of the 554f0af9 review is answered; scores 109/120 with two non-blocking evidence findings on the run&#x27;s measurement_module/measurement_cwd fields and the negative control log&#x27;s provenance headers.</p></div>
+    <div class="r-comment-body"><p>The gained commit 57affd7fc43b3f6b106eaf4603705cafe09ab239 deletes _delivered_copies_of_record and turns review._records_naming_this_review into the one identity rule both the disposition writer and the filing read, so a disposition still survives a review run's promotion and the reuse finding of the 554f0af9 review is answered; scores 109/120 with two non-blocking evidence findings on the run's measurement_module/measurement_cwd fields and the negative control log's provenance headers.</p></div>
+</div>
+<div class="r-comment" data-section="s24" data-id="c-run-r-20261109T050437514521-promoting-a-review-keeps-its-dispositions" data-who="reckon-build" data-when="2026-11-09T07:06:13Z">
+    <div class="r-comment-body"><p>Review dispositions are written into every delivered copy of the record inside the reviewed run&#x27;s review-records directory as well as into the store copy, so the filing promotion runs (file_delivered_run_review_report -&gt; store_review) carries a finding and a sub-floor dimension into the committed record instead of overwriting them. Which files belong to the review is decided in one place, review._records_naming_this_review, which both the filing and the disposition writer call. Gate 1 passed EXIT=0 at head 57affd7f against 1 failed EXIT=1 at base, negative control red on the same case, importer population 211 passed EXIT=0 at head against 210 passed EXIT=0 at base with 0 failures added.</p></div>
 </div>
 <div class="r-comment" data-section="s25" data-id="c-run-r-20261108T223033265909-review-of-a-parsed-review-wins-over-an-incomplete-one-8269033355d3" data-who="reckon-build" data-when="2026-11-08T22:40:49.975Z">
     <div class="r-comment-body"><p>an independent review of 8269033355d3 is stored as a parsed record scoring all six dimensions (112/120), reviewed_base_sha bb23ab6e26a40b663a20e878cb3ea9f8095d31d7 and reviewed_head_sha 8269033355d3f427f12d940e1a4cd5caf7b52501 carried beside it, added_failure_count 0 derived from the reviewed run's baseline_suite and after_suite logs, with one non-blocking finding</p></div>
