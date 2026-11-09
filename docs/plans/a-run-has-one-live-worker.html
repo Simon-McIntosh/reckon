@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.67">
-<meta name="plan-version" content="107">
+<meta name="plan-version" content="108">
 <meta name="plan-modified" content="2026-11-09">
 <meta name="plan-commits" content="a88e6f09">
 </head>
@@ -240,7 +240,7 @@
     </article>
 <article class="r-fu" data-id="f-arolw-013" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="coordinator" data-written-at="2026-11-08" data-recommends-skill="/reckon-build a-run-has-one-live-worker §13" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Build §13</h4>
-    <div class="r-fu-body"><p>§13 closes the concurrent-launch window §12 opened. Every CLI relaunch of an existing run id, dispatch and resume alike, takes a reservation keyed once on the attempt the ledger computes, before the worktree is touched, and one of two racing doors holds it. Every door launches exactly the attempt it reserved, including <code>record_resumption</code>, which today re-derives the pointer's attempt plus one. A reservation is freed by its launch's own end, never by age or by comparing the pointer with its key. An in-harness relaunch takes no reservation and is refused while one is held. It writes <code>reckon/crew/dispatch.py</code>, <code>reckon/crew/dispatch_launch.py</code>, <code>reckon/crew/dispatch_sessions.py</code>, <code>reckon/crew/resumption.py</code> and the new test <code>tests/test_a_concurrent_launch_is_refused.py</code>.</p></div>
+    <div class="r-fu-body"><p>§13 closes the concurrent-launch window §12 opened. Every CLI relaunch of an existing run id, dispatch and resume alike, takes a reservation before the worktree is touched, keyed once on the newest attempt receipt in the run's own directory plus one, never on the ledger or the node's newest run, and one of two racing doors holds it. Every door launches exactly the attempt it reserved, including <code>record_resumption</code>, which today re-derives the pointer's attempt plus one. A reservation is freed by its launch's own end, never by age or by comparing the pointer with its key. A first launch under a fresh run id takes none, and an in-harness relaunch takes none and is refused while one is held. It writes <code>reckon/crew/dispatch.py</code>, <code>reckon/crew/dispatch_launch.py</code>, <code>reckon/crew/dispatch_sessions.py</code>, <code>reckon/crew/resumption.py</code> and the new test <code>tests/test_a_concurrent_launch_is_refused.py</code>.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-run-has-one-live-worker §13</pre>
     </article>
 </section>
