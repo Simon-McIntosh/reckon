@@ -18,6 +18,13 @@
   neither arm, and names the shape each arm takes by calling
   <code>ledger.suite_observation_missing_fields</code> rather than restating its
   fields.</p>
+  <p><code>reports._coerce_commit_identifiers</code> drops a parenthesised path
+  list written beside a sha before the comma reader sees it, so a line pairing
+  each commit with the paths it touched reads as the commits themselves. The
+  group is kept when what remains is not wholly entry-shaped, which leaves a
+  commit id followed by its subject one entry. Several identifiers on one line
+  are split by the guarded-list rule every such field shares, so the commits
+  field is split exactly once.</p>
   <table>
     <thead><tr><th>Measurement</th><th>Result</th></tr></thead>
     <tbody>
@@ -48,12 +55,15 @@
       <code>~/.config/reckon/crew/runs/r-202610*/manifest.md</code> and
       <code>r-202611*/manifest.md</code>, by name, under
       <code>timeout 600</code></td>
-      <td>14,874 read by both arms, neither timed out. Base refused 174; the new
-      reader refused 174, and refused none the base parsed. 14,694 manifests
-      change reading, of which 14,694 are <code>orientation_write_paths</code>
-      now typed as a list; entry counts grow for 554 <code>test_logs</code>
-      lines, 63 <code>changed_paths</code> lines and 1 <code>commits</code>
-      line.</td></tr>
+      <td>Neither arm timed out. The re-run reads 14,045 manifests with the
+      dispatch base and 14,919 with the head reader, the difference being runs
+      that appeared between the two reads. Both refuse 174 and the head refuses
+      none the base parsed, so the refusals are unchanged. 13,866 manifests
+      change reading for <code>orientation_write_paths</code> being typed as a
+      list; entry counts grow for 524 <code>test_logs</code> lines and 63
+      <code>changed_paths</code> lines. The cited commits line now reads
+      <code>['1cc3d749ee842880163760e7a8cb5121cc168ab4', '00cef9d6c']</code>
+      against the base's three fragments.</td></tr>
       <tr><td>Commits lines holding a token that is not entry-shaped</td>
       <td>3,982 manifests, measured before the rule was widened.</td></tr>
       <tr><td>Glued-arm scan over 17,437 <code>manifest.md*</code> variants</td>
@@ -63,14 +73,30 @@
       <td>Both arms 1 failed / 167 passed; the single failure is
       <code>test_only_the_shared_parser_calls_fromisoformat</code>, present at
       the base and outside this node's scope. Zero added.</td></tr>
+      <tr><td>The reader at the repair's base <code>05f47941ee</code> and at the
+      head that answers the re-review, with the head test file copied into a
+      scratch tree of the base</td>
+      <td>Base 1 failed / 10 passed, exit 1: the case carrying the live
+      <code>commits</code> line fails, because the sha and its parenthesised
+      paths still arrive as fragments. Head 11 passed, exit 0.</td></tr>
+      <tr><td>The head tree with the reader change reverted and the test kept
+      at head</td>
+      <td>1 failed / 10 passed, exit 1, failing the same case — the assertion
+      turns on the reader change and nothing else.</td></tr>
+      <tr><td>Two controls aimed at that case, added to the six declared ones</td>
+      <td>Each exits 1 failing only that case: a reader that splits only a
+      value made wholly of hex ids leaves the line one entry; a reader that
+      comma-splits without dropping the group leaves
+      <code>'(reckon/crew/dispatch.py'</code> and
+      <code>'tests/test_routing_picker_key.py)'</code> as entries.</td></tr>
       <tr><td>Ruff check and format on the staged paths</td>
       <td>No added findings; the two remaining <code>dispatch_launch.py</code>
       findings are present at the base.</td></tr>
     </tbody>
   </table>
-  <p>The one <code>commits</code> line whose entry count grows carries a sha
-  followed by parenthesised paths on one line; its shas are now read separately
-  and the parenthetical fragments drop as unresolvable, where the whole line was
-  dropped silently before. Logs and census arm outputs are in run
-  <code>r-20261107T233013473203-read-manifest-evidence-in-written-shapes</code>.</p>
+  <p>One live <code>commits</code> line pairs each sha with parenthesised
+  paths; its shas are now read as the commits and the path list is dropped as
+  the annotation it is, where before the sha kept a lead-in and the paths
+  arrived as entries no resolver can read. Logs and census arm outputs are in
+  run <code>r-20261107T233013473203-read-manifest-evidence-in-written-shapes</code>.</p>
 </section>
