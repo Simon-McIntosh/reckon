@@ -267,7 +267,9 @@ def test_two_doors_reading_one_attempt_launch_only_once(
     # Either door may answer first: the process-local claim says a resume is
     # already launching, and the attempt reservation says an attempt is in
     # flight. Both mean the second door must not start a worker.
-    assert "in flight" in refusal or "already has a resume launching" in refusal, refusal
+    assert "in flight" in refusal or "already has a resume launching" in refusal, (
+        refusal
+    )
     kept = resumption.refused_advice_path(TWO_DOOR_RUN)
     assert kept.read_text(encoding="utf-8").strip() == "a second coordinator's answer"
 
