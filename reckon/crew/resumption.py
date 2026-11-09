@@ -1773,6 +1773,12 @@ def _resume(
                     stderr_path=stderr_path,
                     prompt_path=advice_path,
                 )
+                # A seam that starts nothing this process can outlive returns
+                # from its launch, so the reservation must not be left standing
+                # against this door. A launcher that reached the run's own
+                # supervisor has recorded it, and that supervisor keeps the
+                # hold.
+                release_launch_reservation(reservation, only_when_unspawned=True)
         except BaseException:
             # A launch that ended before it held the session recorded no attempt
             # of its own, so nothing will drop the in-flight marker this door

@@ -2204,13 +2204,71 @@ def run_holds_an_attempt_record(run_directory: Path) -> bool:
 
 
 def launch_reservation_key(run_directory: Path) -> int:
-    """The attempt a relaunch takes: the newest receipt's number plus one."""
+    """The attempt a relaunch takes: the newest record's number plus one.
+
+    A run can hold an attempt that was never retired into ``attempt-N`` receipts
+    — a launch that wrote its canonical ``worker.json`` or ``exit.json`` and
+    ended before a later attempt archived them. Reading only the retired names
+    would hand a relaunch the number that attempt already took, so the canonical
+    records are read too, by the attempt they carry. A canonical record written
+    before the attempt field existed is the run's first attempt, which is how
+    every other reader of those records takes one that names no attempt.
+    """
     numbers = attempt_receipt_numbers(run_directory)
-    return numbers[-1] + 1 if numbers else 1
+    for name in (WORKER_RECORD_NAME, EXIT_RECORD_NAME):
+        try:
+            payload = json.loads((run_directory / name).read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(payload, Mapping):
+            continue
+        number = payload.get("attempt") or 1
+        if isinstance(number, int) and not isinstance(number, bool):
+            numbers.append(number)
+        elif isinstance(number, str) and number.isdigit():
+            numbers.append(int(number))
+    return max(numbers) + 1 if numbers else 1
 
 
 def launch_reservation_path(run_directory: Path, attempt: int) -> Path:
     return run_directory / f"attempt-{attempt}{RESERVATION_SUFFIX}"
+
+
+def _reservation_taken_by_this_process(
+    run_directory: Path,
+) -> LaunchReservation | None:
+    """The live reservation this process owns, so a launch can adopt its own.
+
+    A door that reserves an attempt and then launches through a seam that does
+    not carry the reservation must still have the supervisor recorded on the
+    reservation it took, or the hold names the door and is freed only when the
+    door exits. Only an unrecorded reservation this very process took is
+    adopted; another process's hold is never taken over.
+    """
+    try:
+        names = [path.name for path in run_directory.iterdir()]
+    except OSError:
+        return None
+    pid = os.getpid()
+    for name in sorted(names):
+        match = _RESERVATION_PATTERN.match(name)
+        if match is None:
+            continue
+        path = run_directory / name
+        payload = _read_reservation(path)
+        if not isinstance(payload, Mapping):
+            continue
+        if payload.get("supervisor_pid") is not None:
+            continue
+        if payload.get("pid") != pid:
+            continue
+        return LaunchReservation(
+            run_id=str(payload.get("run_id") or run_directory.name),
+            attempt=int(match.group(1)),
+            path=path,
+            kind=str(payload.get("kind") or ""),
+        )
+    return None
 
 
 def _read_reservation(path: Path) -> Mapping[str, Any] | None:
@@ -2912,21 +2970,23 @@ def supervised_launch(
     stream_name = Path(log_path).name
     attempt_kind = "lane-change" if stream_name.startswith("lane-change-") else "resume"
     attempt_started_at = _utc_now()
+    if reservation is None:
+        # A door that reserved the attempt and then launched through a seam that
+        # does not carry the reservation leaves it on disk unclaimed. That
+        # reservation was taken by this process for this launch, so it is
+        # adopted here and the supervisor is recorded on it: the hold then
+        # follows the worker rather than the door that took it.
+        reservation = _reservation_taken_by_this_process(run_directory)
     if reservation is None and run_holds_an_attempt_record(run_directory):
         reservation = reserve_launch_attempt(
             run_directory, run_directory.name, kind=attempt_kind
         )
     if attempt is None:
-        # The reservation decides exclusion; the run's own record decides the
-        # number a launch that reserved against an empty directory starts. A
-        # run whose earlier attempt left no receipt still moves to the attempt
-        # after the one its record names.
+        # A launch starts exactly the attempt its door reserved; a launch whose
+        # door reserved nothing takes the attempt after the one the run's own
+        # record names.
         from_record = int(record.get("attempt") or 1) + 1
-        attempt = (
-            max(reservation.attempt, from_record)
-            if reservation is not None
-            else from_record
-        )
+        attempt = reservation.attempt if reservation is not None else from_record
     try:
         _prepare_attempt_records(
             run_directory,

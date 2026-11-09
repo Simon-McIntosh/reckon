@@ -2818,7 +2818,9 @@ def dispatch(
         # An in-harness relaunch takes none and is refused while a CLI launch
         # of the run holds one, because nothing on disk records its own end.
         from reckon.crew.dispatch_launch import (
+            record_reservation_supervisor as _record_reservation_supervisor,
             refuse_held_launch,
+            release_launch_reservation as _release_launch_reservation,
             reserve_launch_attempt,
             run_holds_an_attempt_record,
         )
@@ -3486,8 +3488,14 @@ def dispatch(
                     _require_fleet_gate_open()
                     _refuse_a_discarded_launch(run_id)
                     spawned_pid = _start_supervisor(
-                        spec_path, directory, run_id, reservation=reservation
+                        spec_path, directory, run_id
                     )
+                    if reservation is not None:
+                        # The supervisor only becomes the hold once it exists:
+                        # from here the reservation is freed by its exit, not by
+                        # this dispatching process, which returns while the
+                        # worker it started runs on.
+                        _record_reservation_supervisor(reservation, spawned_pid)
                 else:
                     _require_fleet_gate_open()
                     _refuse_a_discarded_launch(run_id)
@@ -3497,6 +3505,14 @@ def dispatch(
                         stderr_path=stderr_path,
                         prompt_path=prompt_path,
                     )
+                    if reservation is not None:
+                        # A caller-supplied launcher returns from the launch it
+                        # stood in for, and nothing on disk records the end of
+                        # whatever it started, so the reservation is released
+                        # here rather than held by this dispatch's own exit.
+                        _release_launch_reservation(
+                            reservation, only_when_unspawned=True
+                        )
             except OSError as exc:
                 raise CrewError(
                     format_refusal("D22", f"the worker launch could not start: {exc}")

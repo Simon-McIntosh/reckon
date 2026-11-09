@@ -213,6 +213,39 @@ def test_a_fresh_run_keys_at_one(tmp_path: Path) -> None:
     assert dispatch_launch_module.launch_reservation_key(tmp_path / "absent") == 1
 
 
+def test_an_attempt_never_retired_into_receipts_still_takes_the_next_number(
+    home: Path,
+) -> None:
+    """A first attempt that left only canonical records has still taken one.
+
+    The run ends without a later launch archiving ``worker.json`` into an
+    ``attempt-1-worker.json`` receipt, so a key read from the retired names
+    alone would hand the relaunch the number that attempt already used and the
+    reserved and launched attempts would disagree.
+    """
+    runs_module._write_json(
+        home / "worker.json", {"run_id": RUN_ID, "attempt": 1, "pid": _dead_pid()}
+    )
+    assert dispatch_launch_module.launch_reservation_key(home) == 2
+    reservation = dispatch_launch_module.reserve_launch_attempt(
+        home, RUN_ID, kind="dispatch"
+    )
+    assert reservation.attempt == 2
+    dispatch_launch_module.release_launch_reservation(reservation)
+
+
+def test_a_record_written_before_the_attempt_field_is_the_first_attempt(
+    home: Path,
+) -> None:
+    runs_module._write_json(
+        home / "worker.json", {"run_id": RUN_ID, "pid": _dead_pid()}
+    )
+    runs_module._write_json(
+        home / "exit.json", {"run_id": RUN_ID, "worker_pid": _dead_pid()}
+    )
+    assert dispatch_launch_module.launch_reservation_key(home) == 2
+
+
 # ── one holder, one key ─────────────────────────────────────────────────────
 
 
@@ -551,37 +584,65 @@ def _window_run(home_root: Path, worktree: Path) -> None:
     )
 
 
+def _hold_a_live_supervisor(monkeypatch: pytest.MonkeyPatch) -> subprocess.Popen:
+    """Make a CLI launch record a supervisor that outlives the dispatch."""
+    supervisor = _live_child()
+    monkeypatch.setattr(
+        dispatch_launch_module,
+        "_spawn_detached_supervisor",
+        lambda argv, stderr_path: supervisor.pid,
+    )
+    monkeypatch.setattr(
+        dispatch_launch_module,
+        "_confirm_supervisor_survived",
+        lambda pid, run_directory, run_id: None,
+    )
+    return supervisor
+
+
 def test_the_window_is_refused_before_the_worktree_is_touched(
-    repo_context: tuple[Path, Path], tmp_path: Path
+    repo_context: tuple[Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _config_home, repo = repo_context
     tree, _head, _note = _stand_in_tree(repo)
     _window_run(tmp_path, tree)
 
-    _dispatch(repo, tmp_path / "manifests" / "first.md")
-    # The first dispatch re-cut the stand-in tree, as a relaunch does; the file
-    # this case protects is written into the tree the live launch now holds.
-    marker = tree / "live-marker.txt"
-    marker.write_text("in progress\n", encoding="utf-8")
-    before = _snapshot(tree)
-    head_before = _git(tree, "rev-parse", "HEAD")
-
-    calls: list[str] = []
-    original = dispatch_module._create_worktree
-
-    def spy(*arguments, **keywords):
-        calls.append("cut")
-        return original(*arguments, **keywords)
-
-    dispatch_module._create_worktree = spy
+    supervisor = _hold_a_live_supervisor(monkeypatch)
     try:
-        refused = _refused(
-            lambda: _dispatch(repo, tmp_path / "manifests" / "second.md")
-        )
-    finally:
-        dispatch_module._create_worktree = original
+        _dispatch(repo, tmp_path / "manifests" / "first.md", launcher=None)
+        # The first dispatch re-cut the stand-in tree, as a relaunch does; the
+        # file this case protects is written into the tree the live launch now
+        # holds.
+        marker = tree / "live-marker.txt"
+        marker.write_text("in progress\n", encoding="utf-8")
+        before = _snapshot(tree)
+        head_before = _git(tree, "rev-parse", "HEAD")
 
-    assert "attempt 2" in str(refused) and IN_FLIGHT in str(refused)
+        calls: list[str] = []
+        original = dispatch_module._create_worktree
+
+        def spy(*arguments, **keywords):
+            calls.append("cut")
+            return original(*arguments, **keywords)
+
+        dispatch_module._create_worktree = spy
+        try:
+            refused = _refused(
+                lambda: _dispatch(repo, tmp_path / "manifests" / "second.md")
+            )
+        finally:
+            dispatch_module._create_worktree = original
+    finally:
+        _stop(supervisor)
+
+    # Two guards defend this window and which one speaks depends on how far the
+    # first launch had got: the reservation while the worker is still unrecorded,
+    # the live-worker guard once it is. Both refuse before the tree is touched.
+    assert "attempt 2" in str(refused) and (
+        IN_FLIGHT in str(refused) or "live worker" in str(refused)
+    ), str(refused)
     assert calls == [], "the refused launch cut the worktree"
     assert _snapshot(tree) == before, "the refused launch touched the live tree"
     assert _git(tree, "rev-parse", "HEAD") == head_before
@@ -589,33 +650,42 @@ def test_the_window_is_refused_before_the_worktree_is_touched(
 
 
 def test_an_in_harness_relaunch_is_refused_while_a_cli_launch_holds_one(
-    repo_context: tuple[Path, Path], tmp_path: Path
+    repo_context: tuple[Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _config_home, repo = repo_context
     tree, _head, _note = _stand_in_tree(repo)
     _window_run(tmp_path, tree)
-    _dispatch(repo, tmp_path / "manifests" / "cli.md")
 
-    calls: list[str] = []
-    original = dispatch_module._create_worktree
-
-    def spy(*arguments, **keywords):
-        calls.append("cut")
-        return original(*arguments, **keywords)
-
-    dispatch_module._create_worktree = spy
+    supervisor = _hold_a_live_supervisor(monkeypatch)
     try:
-        refused = _refused(
-            lambda: _dispatch(
-                repo,
-                tmp_path / "manifests" / "harness.md",
-                config=HARNESS_CONFIG,
-            )
-        )
-    finally:
-        dispatch_module._create_worktree = original
+        _dispatch(repo, tmp_path / "manifests" / "cli.md", launcher=None)
 
-    assert "attempt 2" in str(refused) and IN_FLIGHT in str(refused)
+        calls: list[str] = []
+        original = dispatch_module._create_worktree
+
+        def spy(*arguments, **keywords):
+            calls.append("cut")
+            return original(*arguments, **keywords)
+
+        dispatch_module._create_worktree = spy
+        try:
+            refused = _refused(
+                lambda: _dispatch(
+                    repo,
+                    tmp_path / "manifests" / "harness.md",
+                    config=HARNESS_CONFIG,
+                )
+            )
+        finally:
+            dispatch_module._create_worktree = original
+    finally:
+        _stop(supervisor)
+
+    assert "attempt 2" in str(refused) and (
+        IN_FLIGHT in str(refused) or "live worker" in str(refused)
+    ), str(refused)
     assert calls == [], "the in-harness relaunch cut the worktree"
 
 
