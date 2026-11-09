@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-09T01:41:34.591Z",
+  "dispatched_at": "2026-11-09T01:34:59Z",
+  "findings": [
+    {
+      "claim": "_release asserts the request launched but never reads the launched prompt, so deleting the in-memory re-derivation at reckon/crew/queue_admission.py:4662 leaves every case green while a released-and-launched-in-one-pass request runs the stale done-when, which is the defect this node exists to prevent.",
+      "file": "tests/test_a_released_request_takes_the_sections_current_contract.py",
+      "id": "f028663fed6",
+      "line": 208,
+      "severity": "non-blocking",
+      "text": "_release asserts the request launched but never reads the launched prompt, so deleting the in-memory re-derivation at reckon/crew/queue_admission.py:4662 leaves every case green while a released-and-launched-in-one-pass request runs the stale done-when, which is the defect this node exists to prevent."
+    },
+    {
+      "claim": "`recorded[\"new\"] == _digest(after)` compares the record against the stored value the code itself wrote, so it holds whatever value the code wrote; the independent guard is line 233 and this line adds no coverage.",
+      "file": "tests/test_a_released_request_takes_the_sections_current_contract.py",
+      "id": "f41be23ce6d",
+      "line": 237,
+      "severity": "non-blocking",
+      "text": "`recorded[\"new\"] == _digest(after)` compares the record against the stored value the code itself wrote, so it holds whatever value the code wrote; the independent guard is line 233 and this line adds no coverage."
+    },
+    {
+      "claim": "_node_from_pointer runs before the section_derived check, so every plan-review-held pointer pays a full TaskNode rebuild and can raise inside the unguarded release loop even when the request carries no mark; test the marks first.",
+      "file": "reckon/crew/queue_admission.py",
+      "id": "f3bd6be8272",
+      "line": 4565,
+      "severity": "non-blocking",
+      "text": "_node_from_pointer runs before the section_derived check, so every plan-review-held pointer pays a full TaskNode rebuild and can raise inside the unguarded release loop even when the request carries no mark; test the marks first."
+    },
+    {
+      "claim": "the bare `except Exception` around the whole re-derivation releases the request with its stored fields and records nothing, so a refactor break disables this node's entire behaviour silently on exactly the path it protects.",
+      "file": "reckon/crew/dispatch_batch.py",
+      "id": "f7944dd3f35",
+      "line": 415,
+      "severity": "non-blocking",
+      "text": "the bare `except Exception` around the whole re-derivation releases the request with its stored fields and records nothing, so a refactor break disables this node's entire behaviour silently on exactly the path it protects."
+    },
+    {
+      "claim": "section_field_digest is a second spelling of the canonical-JSON sha256 the repository already has at reckon/crew/plan_review.py:424, differing in separators and default handling, so two records can now carry digests no shared reader can compare.",
+      "file": "reckon/crew/dispatch_batch.py",
+      "id": "f1db45af3d6",
+      "line": 359,
+      "severity": "non-blocking",
+      "text": "section_field_digest is a second spelling of the canonical-JSON sha256 the repository already has at reckon/crew/plan_review.py:424, differing in separators and default handling, so two records can now carry digests no shared reader can compare."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to re-derive a held request's section-supplied fields at release while keeping supplied and edited fields; reckon/crew/dispatch_batch.py:374 (section_derivation) and reckon/crew/queue_admission.py:4545 (_section_rederivation) land exactly that.\nVERDICT done_when: the done-when names tests/test_a_released_request_takes_the_sections_current_contract.py, the pointer's old/new digests and a logged negative control; logs/gate-head.log records 4 passed at 6b5e2d2baf and logs/negative-control.log records EXIT=1 at the declared mutation.\nVERDICT write_paths: the node declared reckon/crew/queue_admission.py, reckon/crew/dispatch_batch.py, reckon/crew/queue_edit.py, the new test and its evidence fragment; `git diff --stat 29b47d2cb8..6b5e2d2baf` changes exactly those five paths and nothing else.\nVERDICT manifest: read; it records 4 passed at head, the negative control at EXIT=1, importer arms at base (108 failed, 412 passed) and head (109 failed, 416 passed), and the per-dimension rubric self-check.\nVERDICT diff: read commit by commit (b88fe72093 the change, 6b5e2d2baf the evidence fragment); the mark is stamped by dispatch_batch.py:525 on the stored node, cleared by queue_edit.py:441, and applied at release by queue_admission.py:4578.\nCALL_SITES: reckon/crew/queue_admission.py:4963 (_release_plan_review_holds from admit_once), reckon/crew/queue_admission.py:5291 and :5307 (_launch_queued, which rebuilds the node at :399 from the released pointer), reckon/crew/dispatch_batch.py:464 (_entry_node), reckon/crew/queue_edit.py:441 (queue_edit.edit)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:4545 re-derives only the marked fields, reckon/crew/queue_edit.py:441 clears a mark for every field it sets, and the launch at queue_admission.py:399 rebuilds the node from the released pointer.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/gate-head.log records 4 passed and logs/negative-control.log records EXIT=1 at the declared mutation, but the done-when's \"launches with the new done-when\" is asserted only on the pointer (tests/test_a_released_request_takes_the_sections_current_contract.py:232), never on the launched prompt.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all five changed paths in `git diff --stat 29b47d2cb8..6b5e2d2baf` are inside the node's declared write paths and nothing outside them moves.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_released_request_takes_the_sections_current_contract.py:233 reddens on the declared revert (logs/negative-control.log), but deleting the in-memory apply at reckon/crew/queue_admission.py:4662 leaves the suite green while the same-pass launch rebuilds the stale node.\nSCORE fit: 17\nJUSTIFICATION fit: the helpers follow the surrounding style of reckon/crew/dispatch_batch.py:396 and carry no plan or ticket label, though reckon/crew/queue_edit.py:443 clears a time_budget mark that reckon/crew/dispatch_batch.py:374 never sets.\nSCORE reuse: 16\nJUSTIFICATION reuse: section_derivation extends the one owner that reads a section's fields (dispatch_batch._entry_node), but section_field_digest (dispatch_batch.py:359) is a second canonical-JSON sha256 beside plan_review._digest (reckon/crew/plan_review.py:424), with different encoding parameters and no shared owner.\nFINDING tests/test_a_released_request_takes_the_sections_current_contract.py:208 non-blocking: _release asserts the request launched but never reads the launched prompt, so deleting the in-memory re-derivation at reckon/crew/queue_admission.py:4662 leaves every case green while a released-and-launched-in-one-pass request runs the stale done-when, which is the defect this node exists to prevent.\nFINDING tests/test_a_released_request_takes_the_sections_current_contract.py:237 non-blocking: `recorded[\"new\"] == _digest(after)` compares the record against the stored value the code itself wrote, so it holds whatever value the code wrote; the independent guard is line 233 and this line adds no coverage.\nFINDING reckon/crew/queue_admission.py:4565 non-blocking: _node_from_pointer runs before the section_derived check, so every plan-review-held pointer pays a full TaskNode rebuild and can raise inside the unguarded release loop even when the request carries no mark; test the marks first.\nFINDING reckon/crew/dispatch_batch.py:415 non-blocking: the bare `except Exception` around the whole re-derivation releases the request with its stored fields and records nothing, so a refactor break disables this node's entire behaviour silently on exactly the path it protects.\nFINDING reckon/crew/dispatch_batch.py:359 non-blocking: section_field_digest is a second spelling of the canonical-JSON sha256 the repository already has at reckon/crew/plan_review.py:424, differing in separators and default handling, so two records can now carry digests no shared reader can compare.\n",
+  "review_run_id": "r-20261109T013333105895-review-of-a-released-request-takes-the-sections-current-contract-6b5e2d2baff2",
+  "reviewed_base_sha": "29b47d2cb8dc87054d1ba97457c8cfbe48f10544",
+  "reviewed_head_sha": "6b5e2d2baff25f4d1ace2921f8009ade8ccba9e5",
+  "reviewed_run_id": "r-20261108T232332477115-a-released-request-takes-the-sections-current-contract",
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T01:47:39.020385+00:00",
+  "total": 101
+}
