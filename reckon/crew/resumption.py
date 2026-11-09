@@ -97,6 +97,7 @@ from reckon.crew.recovery_liveness import (
 )
 from reckon.crew.runs import (
     AS_DELIVERED_SUFFIX,
+    PointerLockHeldError,
     _manifest_for_repair,
     _manifest_mtime_ns,
     _pointer_lock,
@@ -208,23 +209,51 @@ def launch_in_flight(record: Mapping[str, Any]) -> bool:
     return record_process_alive(marker) is True
 
 
+def promotion_lock_name(run_id: str) -> str:
+    """The lock a promotion holds for the whole of a run's promotion.
+
+    Promotion takes this lock before the run's own pointer lock, so a resume
+    takes it first here, in the same order, and the two can never hold what the
+    other waits for.
+    """
+    return f"promotion-{run_id}"
+
+
 def mark_resume_launching(run_id: str) -> None:
     """Record that this process has begun a resume of the run.
 
     A run with no live pointer has nothing to carry the mark and nothing that
     could read it back, so there is nothing to write and no refusal to warn of.
+
+    The run's promotion lock is taken first, without waiting. A promotion holds
+    it while it rewrites and removes the pointer, so a resume that meets it
+    refuses instead of writing a pointer under the promotion; a resume that
+    takes it first is finished before any promotion can start, because the
+    promotion acquires the same lock. Taking it before the pointer lock — the
+    order promotion uses — is what keeps the pair from deadlocking.
     """
-    with _pointer_lock(run_id):
-        try:
-            current = read_pointer(run_id)
-        except CrewError:
-            return
-        current[RESUME_LAUNCH_IN_FLIGHT] = {
-            "pid": os.getpid(),
-            "pid_start_time": process_start_time(os.getpid()),
-            "at": _utc_now(),
-        }
-        _write_json(pointer_path(run_id), current)
+    try:
+        with (
+            _pointer_lock(promotion_lock_name(run_id), blocking=False),
+            _pointer_lock(run_id),
+        ):
+            try:
+                current = read_pointer(run_id)
+            except CrewError:
+                return
+            current[RESUME_LAUNCH_IN_FLIGHT] = {
+                "pid": os.getpid(),
+                "pid_start_time": process_start_time(os.getpid()),
+                "at": _utc_now(),
+            }
+            _write_json(pointer_path(run_id), current)
+    except PointerLockHeldError:
+        raise CrewError(
+            f"cannot resume {run_id!r}: it is being promoted, so its pointer "
+            "and worktree are the promotion's to rewrite; the resume is "
+            "refused rather than waiting, and the run can be resumed once "
+            "the promotion finishes"
+        ) from None
 
 
 def clear_resume_launching(run_id: str) -> None:
