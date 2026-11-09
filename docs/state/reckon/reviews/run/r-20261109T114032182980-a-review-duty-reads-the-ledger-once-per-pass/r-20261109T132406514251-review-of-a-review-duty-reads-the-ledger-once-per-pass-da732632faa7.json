@@ -1,0 +1,32 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-09T13:34:08.777Z",
+  "dispatched_at": "2026-11-09T13:27:20Z",
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": 1439,
+      "severity": "non-blocking",
+      "text": "The header read now counts a run file whose stored record could not be decoded, which is the stated reason _index_membership exists (the union at 1051-1067 drops _index_payload's old payload IS NOT NULL filter), but no assertion writes an undecodable record: restoring 'payload IS NOT NULL' to the headers_only projection leaves all three gate cases green. The commit's central claim that the membership and header reads cannot disagree about such a file is therefore untested."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that ledger.run_ids is served from the ledger's stat-validated cache; reckon/ledger.py:1133-1160 still serves it from _indexed_run_ids and the delta changes only the ownership of the index prologue and union, so the goal remains met.\nVERDICT done_when: read the done_when at prompt.txt:111-112 and the gate at tests/test_a_review_duty_reads_the_ledger_once_per_pass.py:262-319; the gate still asserts _open_review_refusal for every run, at most one _load_aggregate after a warm-up read, and no read on a later direct run_ids, and the two added cases also exercise the currency check and refresh branch.\nVERDICT write_paths: read the declared scope at prompt.txt:80-84; the delta touches reckon/ledger.py, tests/test_a_review_duty_reads_the_ledger_once_per_pass.py and docs/evidence/fragments/a-read-costs-what-changed/a-review-duty-reads-the-ledger-once-per-pass.html, all inside it.\nVERDICT manifest: read; it records all six commits, the gate at logs/after-node-gate.log (3 passed, EXIT=0), three negative-control logs, both importer arms (140 and 143 passed) and literal suite commands, with status complete.\nVERDICT diff: read commit by commit from 96208686 to da732632; 7b214035ba extracts _index_membership and _open_current_index and adds two currency cases, da732632fa only rewrites the fragment's claims, and the head tree is clean.\nCALL_SITES: reckon/crew/obligations.py:693, reckon/crew/recovery_review_dispatch.py:2539, reckon/crew/recovery_watch.py:1889, reckon/crew/review_lifecycle.py:414, reckon/crew/recovery_repair_dispatch.py:904, reckon/run_store.py:430, reckon/capabilities.py:1642, reckon/mcp_views.py:1933\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1133-1160 keeps run_ids served from the stat-validated index and the delta only moves the shared prologue into _open_current_index without changing the answer.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_review_duty_reads_the_ledger_once_per_pass.py:262-319 runs 3 passed at head (log logs/after-node-gate.log) and logs/negative-control-currency.log and logs/negative-control-refresh.log each show the two new cases red on a reinstated defect; the manifest does not record the done_when's ruff clause, which I verified clean on both staged Python paths.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff 96208686..da732632 lies inside the three declared write paths, and no plan, figure or shared state was touched.\nSCORE durability: 16\nJUSTIFICATION durability: the two added cases at tests/test_a_review_duty_reads_the_ledger_once_per_pass.py:303 and 315 fail on both the pre-existing currency-check regression and the aggregate-fallback regression (both control logs), but the undecodable-record union at reckon/ledger.py:1439 has no assertion.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/ledger.py:1051 and 1076 follow the surrounding docstring register and read-only sqlite pattern of _last_good_index_data, and neither new name is one the naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/ledger.py:1051 and 1076 extend the two owners that already held the union (_index_payload:1439) and the prologue (_last_good_index_data:1500) rather than restating them, closing the duplication the previous review recorded.\nFINDING reckon/ledger.py:1439 non-blocking: the header read's inclusion of an undecodable run file is untested, so re-adding 'payload IS NOT NULL' to the headers_only projection would leave all three gate cases green.",
+  "review_run_id": "r-20261109T132406514251-review-of-a-review-duty-reads-the-ledger-once-per-pass-da732632faa7",
+  "reviewed_base_sha": "96208686a6041dca94f598fbd4c84e59c6fc4391",
+  "reviewed_head_sha": "da732632faa7b3758ac3ce4a967e7d37705c6d0e",
+  "reviewed_run_id": "r-20261109T114032182980-a-review-duty-reads-the-ledger-once-per-pass",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T13:45:21.179687+00:00",
+  "total": 111
+}
