@@ -1,0 +1,65 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_follow_commands.py:3182 (_follow_watch_lines driven by the follower's own consumer loop)",
+    "reckon/cli.py:335 (re-export binding the follower launcher consumes)"
+  ],
+  "completed_at": "2026-11-09T14:55:44.112Z",
+  "dispatched_at": "2026-11-09T14:48:53Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking: docstring wording, a residual driver override, or pre-refactor control logs; the landing re-runs the node test at base (no fix, red) and head (green)",
+      "recorded_at": "2026-11-09T14:59:33.169154+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking: docstring wording, a residual driver override, or pre-refactor control logs; the landing re-runs the node test at base (no fix, red) and head (green)",
+      "recorded_at": "2026-11-09T14:59:47.966430+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "non-blocking: docstring wording, a residual driver override, or pre-refactor control logs; the landing re-runs the node test at base (no fix, red) and head (green)",
+      "recorded_at": "2026-11-09T15:00:03.212263+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_follower_sweep_runs_off_its_delivery_thread.py",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: the module docstring names ``_Clock`` as one of the harness pieces imported from tests/test_follow_sweep_cadence, but line 27 imports only Follower_session, _Follower and _line, so the sentence points at an import that does not exist and misdescribes what the file takes from the cadence suite."
+    },
+    {
+      "file": "tests/test_a_follower_sweep_runs_off_its_delivery_thread.py",
+      "line": "56",
+      "severity": "non-blocking",
+      "text": "non-blocking: _HeldSweepFollower.start restates the body of the parent driver at tests/test_follow_sweep_cadence.py:_Follower.start to add the one `lifetime=` argument, so the driver the reuse repair was meant to share is still duplicated and a change to the parent's driver will not reach these cases."
+    },
+    {
+      "file": "tests/test_a_follower_sweep_runs_off_its_delivery_thread.py",
+      "line": "132",
+      "severity": "non-blocking",
+      "text": "non-blocking: the durability evidence in negative-control-inline-sweep-no-guard.log and negative-control-no-single-flight-guard.log was produced against the pre-refactor file \u2014 the traceback names tests.test_a_follower_sweep_runs_off_its_delivery_thread._Follower at line 257, a class and line that no longer exist at 90d48cc0b3 \u2014 so the controls have not been re-shown against the harness the node now ships."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: section 26's goal is \"A follower's review sweep runs off its delivery thread under a single-flight guard\"; this delta leaves that intact and only folds the arming's two deadline readings at reckon/crew_follow_commands.py:1687-1694 into one test, with _sweep_on_cadence still starting a daemon thread and never joining it.\nVERDICT done_when: the done_when requires a held sweep that still delivers rows, no second sweep on a cadence, importer arms adding no failure, and a clean ruff delta on staged paths; gate-after.log records 3 passed at 90d48cc0b3, importer-arm-head.log 543 passed/13 failed at 60df7e95c7 against importer-arm-base.log 542/14 at cf73cde40a, and negative-control-revert-fold.log shows the ruff delta is now zero with SIM114 returning on revert.\nVERDICT write_paths: the declared paths are reckon/crew_follow_commands.py, reckon/crew/resumption.py, tests/test_a_follower_sweep_runs_off_its_delivery_thread.py and the evidence fragment; the three delta commits touch the follow-commands module, the test and the fragment, and resumption.py is correctly untouched.\nVERDICT manifest: read; it records commits fd7a491e66, 60df7e95c7 and 90d48cc0b3, the 3-passed gate, the 64-file importer arms and four negative-control logs, and its retry_failures names the single head-only importer id; its evidence_inputs sentence claiming the cases import _Clock, _line and _Follower does not match the import at tests/test_a_follower_sweep_runs_off_its_delivery_thread.py:27.\nVERDICT diff: read the three commits against 679da74e17 \u2014 fd7a491e66 folds the two deadline readings into one if deadline_passed or span_passed at reckon/crew_follow_commands.py:1687-1694, 60df7e95c7 replaces the local harness with an extension of tests/test_follow_sweep_cadence.py at tests/test_a_follower_sweep_runs_off_its_delivery_thread.py:27-79, and 90d48cc0b3 adds only the importer-arm and lint paragraphs to the evidence fragment.\nCALL_SITES: reckon/crew_follow_commands.py:3182 (_follow_watch_lines driven by the follower's own consumer loop), reckon/cli.py:335 (re-export binding the follower launcher consumes)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:1687-1694 computes both deadline readings and sets the flag once, which preserves the behaviour section 26 names without moving the sweep back onto the delivery thread.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-after.log and importer-arm-head.log record the gate and the widened 64-file population, and negative-control-revert-fold.log shows SIM114 returning on revert so the ruff clause now holds, but the head-only importer id rests on a load attribution the base arm never reproduced.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three commits touch only reckon/crew_follow_commands.py, tests/test_a_follower_sweep_runs_off_its_delivery_thread.py and the declared evidence fragment, all inside the four declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_follower_sweep_runs_off_its_delivery_thread.py:132, :163 and :170 redden under the recorded controls ([0.0, 10.0] against [0.0]; 0 emissions against 1), but those control logs were produced against the pre-refactor harness.\nSCORE fit: 15\nJUSTIFICATION fit: the fold at reckon/crew_follow_commands.py:1686-1694 matches the surrounding idiom, but the module docstring at tests/test_a_follower_sweep_runs_off_its_delivery_thread.py:13 names _Clock as imported while :27 imports only Follower_session, _Follower and _line.\nSCORE reuse: 16\nJUSTIFICATION reuse: tests/test_a_follower_sweep_runs_off_its_delivery_thread.py:27 now imports the harness owned by tests/test_follow_sweep_cadence.py:33-200 instead of restating it, but :56 re-implements that owner's start() driver to add one lifetime argument, leaving the driver in two copies.\nFINDING tests/test_a_follower_sweep_runs_off_its_delivery_thread.py:13 non-blocking: the module docstring names _Clock as one of the harness pieces imported from tests/test_follow_sweep_cadence, but line 27 imports only Follower_session, _Follower and _line, so the sentence points at an import that does not exist and misdescribes what the file takes from the cadence suite.\nFINDING tests/test_a_follower_sweep_runs_off_its_delivery_thread.py:56 non-blocking: _HeldSweepFollower.start restates the body of the parent driver at tests/test_follow_sweep_cadence.py:_Follower.start to add the one lifetime= argument, so the driver the reuse repair was meant to share is still duplicated and a change to the parent's driver will not reach these cases.\nFINDING tests/test_a_follower_sweep_runs_off_its_delivery_thread.py:132 non-blocking: the durability evidence in negative-control-inline-sweep-no-guard.log and negative-control-no-single-flight-guard.log was produced against the pre-refactor file \u2014 the traceback names tests.test_a_follower_sweep_runs_off_its_delivery_thread._Follower at line 257, a class and line that no longer exist at 90d48cc0b3 \u2014 so the controls have not been re-shown against the harness the node now ships.\n",
+  "review_run_id": "r-20261109T144708863425-review-of-a-follower-sweep-runs-off-its-delivery-thread-90d48cc0b3a5",
+  "reviewed_base_sha": "679da74e17a7c4c7c2168a52043225454146ecd3",
+  "reviewed_head_sha": "90d48cc0b3a516f6f51a4becc55d00beb2f9664e",
+  "reviewed_run_id": "r-20261109T121831256216-a-follower-sweep-runs-off-its-delivery-thread",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T15:03:56.390677+00:00",
+  "total": 102
+}
