@@ -33,14 +33,16 @@
     <section id="every-backend-reader-searches-the-declared-path-gate">
       <h2>The gate</h2>
       <table>
-        <thead><tr><th>Check</th><th>Result</th><th>Log</th></tr></thead>
+        <thead><tr><th>Check</th><th>Its own summary line</th><th>Log</th></tr></thead>
         <tbody>
-          <tr><td>Node test at <code>366129aaca</code>, all three cases</td><td>3 passed, <code>EXIT=0</code></td><td><code>logs/repair-node-tests.log</code></td></tr>
-          <tr><td>Declared mutation: a <code>LaunchPlan</code> without the resolved directories, plus the launch-record write removed</td><td>2 failed, <code>EXIT=1</code>; the first launch and the resume refuse with <code>LaunchResolutionError</code> naming the searched PATH, which holds no declared directory</td><td><code>logs/negative-control-launch-record.log</code></td></tr>
-          <tr><td>Mutation: the lane-change destination write and the planless-lane clear removed</td><td>1 failed, 2 passed, <code>EXIT=1</code>; the lane-change case fails on the unrecorded destination directories</td><td><code>logs/negative-control-lane-change.log</code></td></tr>
-          <tr><td>Importer population of the three modules at <code>366129aaca</code></td><td>Same 13 failed / 1536 passed / 7 errors as the base arm; the sets differ only by two load-sensitive stop-before-spawn ids that pass in isolation at both revisions</td><td><code>logs/head-importers.log</code></td></tr>
+          <tr><td>Node test at <code>3f398aa922</code>, all three cases</td><td><code>3 passed in 6.62s</code> &middot; <code>EXIT=0</code></td><td><code>logs/repair-node-tests.log</code></td></tr>
+          <tr><td>Declared mutation: a <code>LaunchPlan</code> without the resolved directories, plus the launch-record write removed</td><td><code>2 failed, 1 passed in 8.92s</code> &middot; <code>EXIT=1</code></td><td><code>logs/negative-control-launch-record.log</code></td></tr>
+          <tr><td>Mutation: the lane-change destination write and the planless-lane clear removed</td><td><code>1 failed, 2 passed in 7.59s</code> &middot; <code>EXIT=1</code></td><td><code>logs/negative-control-lane-change.log</code></td></tr>
+          <tr><td>Importer population, base arm at <code>a7ba0d27c2</code></td><td><code>17 failed, 1538 passed, 1 skipped, 11 warnings, 1 error in 570.78s (0:09:30)</code> &middot; <code>EXIT=1</code></td><td><code>logs/baseline-importers.log</code></td></tr>
+          <tr><td>Importer population, after arm at <code>3f398aa922</code></td><td><code>15 failed, 1540 passed, 1 skipped, 10 warnings, 1 error in 575.92s (0:09:35)</code> &middot; <code>EXIT=1</code></td><td><code>logs/head-importers.log</code></td></tr>
         </tbody>
       </table>
+      <p>The two arms ran one after the other, each at <code>-n 4</code>, and the after arm adds no failure id: every id failing at the head also fails at the base, and two base ids pass at the head. The disputed stop test was also run serially three times at each arm &mdash; <code>1 passed</code> and <code>EXIT=0</code> in all six runs (<code>logs/base-stop-group-stop-run-{1,2,3}.log</code>, <code>logs/head-stop-group-stop-run-{1,2,3}.log</code>) &mdash; so its appearance under load is contention, not a regression.</p>
     </section>
 
     <section id="every-backend-reader-searches-the-declared-path-cases">
