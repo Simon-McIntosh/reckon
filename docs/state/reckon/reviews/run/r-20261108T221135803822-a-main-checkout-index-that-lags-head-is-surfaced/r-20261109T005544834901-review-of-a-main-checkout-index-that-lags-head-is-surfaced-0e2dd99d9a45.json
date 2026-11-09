@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/obligations.py:2990",
+    "reckon/crew/obligation_snapshot.py:1493",
+    "reckon/crew/station_obligations.py:189",
+    "reckon/crew/station_obligations.py:270",
+    "reckon/hooks/coordinator_obligations.py:248",
+    "reckon/mcp_views.py:4573"
+  ],
+  "completed_at": "2026-11-09T01:03:33.749Z",
+  "dispatched_at": "2026-11-09T00:56:39Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the key's head component comes from git_head._head_identity, which owns HEAD reading; a case moving HEAD alone would strengthen the guard but changes no behaviour shipped here",
+      "recorded_at": "2026-11-09T01:06:05.809333+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 2625,
+      "severity": "non-blocking",
+      "text": "the head component of the cache key is not held by any case: every test builds a fresh checkout or moves only the index, so a key reduced to (repository, index signature) leaves all eight cases green while a cached silence survives a commit that makes the lag real. The logged control at logs/negative-control-repair.log drops the head and the index together, so it cannot distinguish a key that still moves on HEAD from one that does not. A case that commits between two reads would redden on that regression; folding it into a node answers the same class of gap the previous review raised at this line."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read the two commits against ae1a0ca3: 109d624554 replaces _checkout_head_from_files with git_head._head_identity and _git_directory, makes an unreadable identity cache nothing, and adds test_the_offered_restore_ends_the_notice; 0e2dd99d9a records the repair, the new arm counts and the third control in the node's evidence fragment.",
+    "done_when": "the done_when names tests/test_a_landing_leaves_the_index_at_head.py with its four cases, a one-line log, an ignored untracked path raising nothing, a logged negative control, an untouched real crew home, no added importer failure and clean ruff; logs/gate-head.log records 8 passed EXIT=0 at 109d624554 and the added-failure set computed from the manifest's baseline_suite and after_suite is empty.",
+    "goal": "the node's goal is to surface a main-checkout index that lacks a path HEAD and the working tree both hold as a notice with the path-limited restore; this round keeps that notice keyed on the checkout's own state through reckon/crew/obligations.py:2604 and carries the repair into the test at tests/test_a_landing_leaves_the_index_at_head.py:192.",
+    "manifest": "read; it records gate 8 passed EXIT=0 at 109d624554, base-module arm 7 failed, three negative controls at 1 failed each, three importer arms, and 0 added failures, and each of those figures reconciles with the log it cites.",
+    "write_paths": "read the dispatch FENCE \u2014 SCOPE for this review and the source manifest's declared paths; every one of the three paths in the diff from ae1a0ca3 to 0e2dd99d is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_landing_leaves_the_index_at_head.py:210 is a real guard and negative-control-repair.log shows it red on a key that ignores the index, but no case moves HEAD between two reads, so the head component at reckon/crew/obligations.py:2625 is unguarded and the logged mutation drops both components at once.",
+    "evidence": "logs/gate-head.log records 8 passed at 109d624554 ending EXIT=0, logs/base-arm.log 7 failed EXIT=1, logs/negative-control-repair.log 1 failed EXIT=1 on the new case, and the two suite records in the manifest reconcile: the after arm's 8 ids against the baseline's 37 yield added_failure_count 0, as recomputed from the manifest's own JSON.",
+    "fit": "the module now imports _git_directory and _head_identity from reckon/git_head.py, the idiom reckon/change_streams.py:16 and reckon/checkout_trust.py:44 already follow, and the comments at reckon/crew/obligations.py:2605-2617 state the mechanism with no plan, ticket or version identifier.",
+    "goal_fidelity": "reckon/crew/obligations.py:2604 keeps the notice reading keyed on the checkout's own state and replaces the forked head reader with git_head._head_identity at :2615, so the notice the goal asks for keeps being raised (and stops being raised once the index is repaired) without changing what it reports.",
+    "reuse": "the round removes the fork the previous review scored 5: reckon/crew/obligations.py:2615 now calls git_head._head_identity, the module that owns reading HEAD as files, instead of re-implementing it, and reuses file_memo.file_signature for the index identity.",
+    "scope_discipline": "the diff from ae1a0ca3 to 0e2dd99d touches exactly reckon/crew/obligations.py, tests/test_a_landing_leaves_the_index_at_head.py and the node's own evidence fragment, the three paths the dispatch names, and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to surface a main-checkout index lacking a path HEAD and the working tree both hold as a notice with the path-limited restore; reckon/crew/obligations.py:2604 keys the reading on the checkout's own state and :2615 now takes the head from git_head._head_identity.\nVERDICT done_when: the done_when names tests/test_a_landing_leaves_the_index_at_head.py and its four cases; logs/gate-head.log records 8 passed EXIT=0 at 109d624554, logs/base-arm.log 7 failed EXIT=1, and the manifest's own suite records yield an empty added-failure set.\nVERDICT write_paths: read the source manifest's declared paths; the three files in the diff from ae1a0ca3 to 0e2dd99d \u2014 obligations.py, the test file and the node's evidence fragment \u2014 are all inside them.\nVERDICT manifest: read; gate 8 passed, base arm 7 failed, three negative controls at 1 failed each, three importer arms, 0 added failures, and every figure reconciles with the log it cites.\nVERDICT diff: read the two commits against ae1a0ca3; 109d624554 swaps the forked head reader for the owner and adds the repair case, 0e2dd99d9a records both in the evidence fragment with the updated arm counts.\nCALL_SITES: reckon/crew/obligations.py:2990, reckon/crew/obligation_snapshot.py:1493, reckon/crew/station_obligations.py:189, reckon/crew/station_obligations.py:270, reckon/hooks/coordinator_obligations.py:248, reckon/mcp_views.py:4573\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:2604 keeps the notice keyed on the checkout's own state and :2615 takes the head from the owner, so the notice is still raised when the index lags and stops when it is repaired.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/gate-head.log ends 8 passed EXIT=0 at 109d624554 and the after arm's 8 ids against the baseline's 37 give added_failure_count 0 on the manifest's own records.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff ae1a0ca3..0e2dd99d touches only reckon/crew/obligations.py, tests/test_a_landing_leaves_the_index_at_head.py and docs/evidence/fragments/a-landing-never-waits-on-a-shared-index/a-main-checkout-index-that-lags-head-is-surfaced.html.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_landing_leaves_the_index_at_head.py:210 reddens on a key that ignores the index, as logs/negative-control-repair.log shows, but no case moves HEAD between two reads so reckon/crew/obligations.py:2625's head component is untested.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/obligations.py:64 imports _git_directory and _head_identity from reckon/git_head.py, the same idiom reckon/change_streams.py:16 and reckon/checkout_trust.py:44 use, and the comments name the mechanism only.\nSCORE reuse: 20\nJUSTIFICATION reuse: the forked _checkout_head_from_files the previous review scored 5 is gone; reckon/crew/obligations.py:2615 calls git_head._head_identity and :2621 reuses file_memo.file_signature.\nFINDING reckon/crew/obligations.py:2625 non-blocking: the head component of the cache key is held by no case, so a key reduced to (repository, index signature) keeps all eight cases green while a cached silence survives a commit that makes the lag real, and the logged control drops head and index together so it cannot tell the two apart.\n",
+  "review_run_id": "r-20261109T005544834901-review-of-a-main-checkout-index-that-lags-head-is-surfaced-0e2dd99d9a45",
+  "reviewed_base_sha": "ae1a0ca34e5165269a7314b2536954b5ef5e9be9",
+  "reviewed_head_sha": "0e2dd99d9a451926a14d6e80c16973ac34fe9e98",
+  "reviewed_run_id": "r-20261108T221135803822-a-main-checkout-index-that-lags-head-is-surfaced",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T01:09:03.893449+00:00",
+  "total": 113
+}
