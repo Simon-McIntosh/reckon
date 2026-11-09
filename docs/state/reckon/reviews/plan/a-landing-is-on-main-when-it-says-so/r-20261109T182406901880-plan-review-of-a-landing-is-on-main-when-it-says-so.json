@@ -1,0 +1,55 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T18:30:54.745Z",
+  "dispatched_at": "2026-11-09T18:25:38Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-is-on-main-when-it-says-so.html:64",
+      "id": "reasoning-1",
+      "reason": "a worker implementing the Deliverable as written would mark the pointer and still watch the landing pass skip the run, and the plan gives no instruction to make `finish_pending_landings` read the pointer for a record without `merge_conflict`, so the sentence asserting the existing recovery already does the work must be corrected (or the read change stated) before the node is dispatched.",
+      "text": "\u00a76's Deliverable states that \"`pending_landing.finish_pending_landings` \u2026 already finishes a promoted run whose head is not on the primary branch on the next landing pass\", and its first done-when arm requires that \"the next `finish_pending_landings` pass lands the head on the branch\" once the pointer is marked `pending_landing_repair`; but in `reckon/crew/pending_landing.py:226-234` the pointer is read only when the record carries `merge_conflict` (`conflict = record.get(\"merge_conflict\") or {}` / `if conflict: pointer = runs.read_pointer(run_id)`), so for \u00a76's measured case \u2014 no merge ran, so the record has no `merge_conflict` \u2014 `pointer` stays `None` and the skip `if run_id in live and not (pointer or {}).get(\"pending_landing_repair\"): continue` fires regardless of the mark; the same guard at line 309 also never sees the mark for the same reason. Marking the pointer alone therefore leaves the run skipped, which is the base behaviour \u00a76's own negative control describes",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-is-on-main-when-it-says-so.html:64",
+      "id": "anchors_resolve-1",
+      "reason": "the order the argument needs is correct and reproducible at promotion.py:335-337 and again at `_remove_promoted_pointer` (line 1898, under `_complete_locked` from line 1105), so correcting the pointer to line 335 would leave the mechanism and the node's work unchanged.",
+      "text": "\u00a76's deadlock argument cites \"`with _promotion_lock(run_id), _pointer_lock(run_id)`, near line 2072\" as \"the order promotion uses\", but `reckon/crew/promotion.py:2072` is inside `discard` (defined at line 2046), and promotion's own acquisition is `with _promotion_lock(run_id), _promotion_host_lease(run_id):` followed by an inner `with _pointer_lock(run_id):` at lines 335-337",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "fb8c7733b6342cd73c06c54dfc89a6e1506141f2",
+  "plan_fingerprint": "c5672bfdc17e2dd072a2dfd5a9235c97ac6014dfb4f6e89ad79d9d2943eed6b2",
+  "plan_slug": "a-landing-is-on-main-when-it-says-so",
+  "plan_version": 27,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T182406901880-plan-review-of-a-landing-is-on-main-when-it-says-so",
+  "reviewed_blob_sha": "d2d83bcbbda393caa1c14b6b4b2ba52b138a9e41",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 every cited file and line resolves and the `D24` chronology resolves (`612314cf88` is a merge dated 2026-11-09T16:16:34+01:00, `D24` absent at its first parent `477b817c3c` and present at the merge), but the parenthetical offered as evidence for promotion's lock order, \"near line 2072\", names `discard`, not promotion.",
+    "done_when": "pass \u2014 the three arms are each observable on a temporary repository and crew home (pointer marked `pending_landing_repair`; a resume refused with the pointer unchanged; an undisturbed promotion landing), and the two declared negative controls (`run ... changed while promotion ran` leaving a passed row beside an unmarked pointer, and a base-revision resume proceeding under a held promotion lock) are both true of the base revision as \u00a76 states them.",
+    "evidence_paths": "pass \u2014 gate logs sit under the run directory (`~/.config/reckon/crew/runs/<run>/`), which survives the run, and no scratchpad or node-local `/tmp` path is named.",
+    "naming": "pass \u2014 the only new identifier is the state value `pending_landing_repair`, which is data emitted at a state transition rather than a plan or stage label, and the new test filename names the mechanism it proves.",
+    "reasoning": "a finding \u2014 the stated root cause matches the cited evidence and the caller is named (`crew complete` routes `--land`, `promotion.py:1898` calls `_remove_promoted_pointer`), but the mechanism \u00a76 relies on to finish the interrupted landing does not fire for the shape \u00a76 targets.",
+    "single_goal": "pass \u2014 both mechanisms serve one verdict, that a `--land` promotion and a resume of the same run cannot interleave and the landing record follows the merge rather than preceding it; the resident cause in the Why is the concurrent resume, so the non-blocking promotion lock is the cause-side half of the same goal, not a second deliverable.",
+    "wiring": "pass \u2014 `plan-section-depends-on` carries `s6: [\"a-landing-is-on-main-when-it-says-so#s5\"]`, s5 is `implementable` and names `promotion.py` as a shared write path, and \u00a76's followup f-alomwiss-006 is open and recommends `/reckon-build \u2026 \u00a76`; no other dependency is needed, since \u00a76 adds no refusal family and reuses \u00a72's landed mechanism."
+  },
+  "section_digests": {
+    "_document": "c3f74979bb9780a63126e7eeaad4a960272df0e9892371b22989f2a1123ccf23",
+    "s1": "05ac3d6e03690e2b89165f9f94837ea8c4512d631bcd3ac39fc8da7f82f0c09d",
+    "s2": "149e271a33a741a3e21acbc6868426506a9b7a830161a2d4facbe8b470325a6b",
+    "s3": "cdb0f79fd2bb33808cc8402e31a02d04129b676c41f969a6800c40e258ce96ba",
+    "s4": "55d76701d62b3ac97080ccfae73af492db19d104fcaf19059cad41cacd5cecbb",
+    "s5": "21c36d0c92510ecabc472d79ecac52805626f4c009836573a6cafa61914b290c",
+    "s6": "d38fb05adc787a42e25d01b450eec9060da8fc6db1f1f14ea0a9f8756dad00c8",
+    "s7": "84bc24f6fe1df5a54f3d90a870ad9e95b19f56858a96ed8185e04fe3006d02fb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T18:37:41.627176+00:00",
+  "total": null
+}
