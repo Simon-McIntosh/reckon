@@ -21,12 +21,42 @@ The independent obligations publisher holds its sweep lock during this
 synchronous-tick measurement, using the existing producer fixture.</p>
 <p>The negative control at base
 <code>0a50d367fc7e69a5d957323c24f045f181bf3d22</code> fails the final count
-assertion with <code>assert 11 == 1</code>. The head probe passes with one
-listing and five stopped-review receipts. Logs and exact commands are retained
-in the node run directory alongside the manifest. The importer comparison and
-any unmet validation conditions are recorded there; this fragment does not
-claim an importing-suite pass.</p>
-<p>Scoped lint adds zero findings: four existing watcher findings are unchanged,
-and every changed Python file passes the format check. The coordinator owns
-the live producer sampling after landing and the merged-head verification.</p>
+assertion with <code>assert 11 == 1</code>. The head passes with one listing and
+five stopped-review receipts. The signal-attribution test double accepts the
+new optional keyword context; its assertions about the signal refusal remain
+unchanged.</p>
+<h4 id="delivered-review-stop-reads-the-tick-pointers-stability">Watcher stability</h4>
+<p>Both watcher cases ran three times at each revision in interleaved,
+sequential commands, with a 60-second per-test timeout. Both revisions were
+extracted into node-local trees, and every log records the imported module and
+working directory.</p>
+<table>
+<thead><tr><th>Case</th><th>Base results</th><th>Head results</th></tr></thead>
+<tbody>
+<tr><td>Single-event watcher</td><td>3 passed, 0 failed</td><td>3 passed, 0 failed</td></tr>
+<tr><td>Streaming watcher</td><td>1 passed, 2 failed</td><td>0 passed, 3 failed</td></tr>
+</tbody>
+</table>
+<p>The streaming failure occurs at the unchanged base, and the single-event
+failure does not reproduce in these probes. Neither is reproducibly head-only,
+so the watcher test file is unchanged.</p>
+<h4 id="delivered-review-stop-reads-the-tick-pointers-importers">Importing-test comparison</h4>
+<p>The resumed comparison covers the same 71 existing importing test files at
+each revision, one arm at a time with four workers and the 60-second per-test
+bound. Both arms report the same six failing IDs: <strong>zero added
+failures</strong>. The exact summaries are:</p>
+<table>
+<thead><tr><th>Revision</th><th>Runner summary</th></tr></thead>
+<tbody>
+<tr><td>Base</td><td>6 failed, 570 passed, 26 warnings in 207.26s (0:03:27)</td></tr>
+<tr><td>Head</td><td>6 failed, 570 passed, 26 warnings in 216.99s (0:03:36)</td></tr>
+</tbody>
+</table>
+<p>The manifest retains the failure IDs, full commands, six stability logs,
+negative control and widened scoped-gate receipts. The known failures remain
+visible and enabled. Lint and formatting add no findings: four existing watcher
+lint diagnostics and one already-unformatted signal-attribution test file are
+unchanged as findings.</p>
+<p>The coordinator owns the live producer sampling after landing and the
+merged-head verification.</p>
 </section>
