@@ -1055,22 +1055,49 @@ def _refuse_glued_suite_arm_key(fields: dict[str, Any], *, path: str | None) -> 
                 )
 
 
+_PARENTHESISED_GROUP = re.compile(r"\([^)]*\)")
+
+
+def _without_parenthesised_path_list(value: Any) -> Any:
+    """Drop a parenthesised path list written beside a commit id.
+
+    A worker pairs each commit with the paths it touched — ``<sha> (a.py,
+    b.py), <sha> (c.html)``. The comma reader splits inside the group, so the
+    id keeps a lead-in and the paths arrive as entries no resolver can read.
+    The group is an annotation rather than evidence, so it is dropped when every
+    piece of what remains is entry-shaped. Anything else, such as a commit id
+    followed by its subject, is kept as written.
+    """
+    if isinstance(value, str):
+        if "(" not in value:
+            return value
+        stripped = _PARENTHESISED_GROUP.sub(" ", value)
+        for piece in stripped.split(","):
+            tokens = piece.split()
+            if tokens and not all(
+                _looks_like_a_list_entry_token(token) for token in tokens
+            ):
+                return value
+        return stripped
+    if isinstance(value, list):
+        return [_without_parenthesised_path_list(item) for item in value]
+    return value
+
+
 def _coerce_commit_identifiers(value: Any) -> Any:
     """Type commit identifiers without interpreting their spelling as numbers.
 
-    An item made only of hex commit ids separated by whitespace is several
-    identifiers written on one line (``commits: 461641d1f d50a237c7``) and is
-    split into them. Read whole, that line named one commit that resolves to
-    nothing, and a merge citing it was refused. An item carrying anything else,
-    such as a commit id followed by its subject, is kept as written. The split
-    is the one every guarded list field uses, so a commit id is read here on the
-    same terms as a path.
+    A comma- or newline-separated value is read as its items, and a bracketed
+    list as its elements. A parenthesised path list beside the id is dropped
+    first, because the comma reader would otherwise split inside it. Splitting
+    several identifiers written on one line is left to the guarded-list rule
+    that every such field shares, so the commits field is split once.
     """
     if isinstance(value, str):
         text = value.strip()
         if text.startswith("[") and text.endswith("]"):
-            return _split_entry_tokens(_split_bracketed_list(text))
-    return _split_entry_tokens(_coerce_list_field(value))
+            return _split_bracketed_list(text)
+    return _coerce_list_field(_without_parenthesised_path_list(value))
 
 
 def _typed_suite_observation(value: Any) -> SuiteObservation | str | None:

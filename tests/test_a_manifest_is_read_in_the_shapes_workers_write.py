@@ -120,6 +120,31 @@ def test_a_commit_beside_its_subject_stays_one_entry(tmp_path: Path) -> None:
     assert _parsed(record)["commits"] == ["1f74899e3f docs(plan): declare the receipt"]
 
 
+def test_a_commit_paired_with_its_path_list_reads_as_the_commits(
+    tmp_path: Path,
+) -> None:
+    """A sha's parenthesised path list is an annotation, so the shas are kept.
+
+    The line is copied from a live run whose shas a promotion must resolve. A
+    hex-only splitter leaves the whole line one entry, and a split that keeps
+    the parenthetical leaves path fragments no resolver can read.
+    """
+    record = _write(
+        tmp_path,
+        HEADER
+        + "commits: 1cc3d749ee842880163760e7a8cb5121cc168ab4 "
+        + "(reckon/crew/dispatch.py, tests/test_routing_picker_key.py), "
+        + "00cef9d6c (docs/evidence/fragments/one-typesafe-model-picker/"
+        + "dry-run-picker-is-comparable.html)\n",
+    )
+
+    commits = _parsed(record)["commits"]
+    assert commits == [
+        "1cc3d749ee842880163760e7a8cb5121cc168ab4",
+        "00cef9d6c",
+    ]
+
+
 def test_a_glued_suite_arm_key_is_refused(tmp_path: Path) -> None:
     """A missing newline that folds an arm into prose refuses at the parse."""
     record = _write(
