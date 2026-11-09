@@ -24,7 +24,7 @@
   <title>A Landing Never Waits On A Shared Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="23">
 <meta name="plan-modified" content="2026-11-09">
 </head>
 <body>
@@ -124,7 +124,10 @@
     <div class="r-comment-body"><p>Review of r-20261108T221135803822-a-main-checkout-index-that-lags-head-is-surfaced from 5f4590af661932ace4aef4109a0dea543c8e4790 to ae1a0ca34e5165269a7314b2536954b5ef5e9be9: the repair round closes two of the three findings (the notice now reaches the published snapshot the prompt hook reads, and the detector uses reckon.velocity.run_git with GIT_OPTIONAL_LOCKS=0) and the third (the head assertion compared against the checkout's own HEAD), scoring 93/120 with reuse at 5 because the round adds a second HEAD-from-files reader beside reckon/git_head.py, and with no added importer failure against the base arm.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261109T005544834901-review-of-a-main-checkout-index-that-lags-head-is-surfaced-0e2dd99d9a45" data-who="reckon-build" data-when="2026-11-09T01:03:33.749Z">
-    <div class="r-comment-body"><p>The incremental review of r-20261108T221135803822-a-main-checkout-index-that-lags-head-is-surfaced from ae1a0ca34e to 0e2dd99d9a is recorded as parsed: goal_fidelity 19, evidence 19, scope_discipline 20, durability 16, fit 19, reuse 20, with 0 added failures, one non-blocking finding that the head component of the reading key has no case moving HEAD between two reads, and the previous round&#x27;s reuse finding closed because obligations.py now imports git_head._head_identity instead of forking it</p></div>
+    <div class="r-comment-body"><p>The incremental review of r-20261108T221135803822-a-main-checkout-index-that-lags-head-is-surfaced from ae1a0ca34e to 0e2dd99d9a is recorded as parsed: goal_fidelity 19, evidence 19, scope_discipline 20, durability 16, fit 19, reuse 20, with 0 added failures, one non-blocking finding that the head component of the reading key has no case moving HEAD between two reads, and the previous round's reuse finding closed because obligations.py now imports git_head._head_identity instead of forking it</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261108T221135803822-a-main-checkout-index-that-lags-head-is-surfaced" data-who="reckon-build" data-when="2026-11-09T00:50:34Z">
+    <div class="r-comment-body"><p>The obligations view reports a project&#x27;s main checkout whose index stages a path HEAD and the working tree both hold, as a project-scoped notice naming the paths and the path-limited restore, logged once per distinct lag under the crew home and carried into the published snapshot the prompt hook reads; the kind is non-blocking in both vocabularies, the git reads go through reckon.velocity.run_git with GIT_OPTIONAL_LOCKS=0, the reading is cached against the index&#x27;s stat identity and git_head&#x27;s head identity so a steady tick runs no subprocess and a repaired index stops raising the notice, and every importer arm adds no failure against the base.</p></div>
 </div>
 </section>
 </main>
