@@ -1,0 +1,85 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "baseline_suite (a7ba0d27c2) and the comparable head importer arm (414dae0712, logs/head-importers.log) each read 13 failed / 1536 passed / 7 errors; the two ids head-only are tests/test_stop_before_spawn_spawns_nothing.py cases that pass 3/3 in isolation at both revisions (logs/base- and logs/head-stop-before-spawn-isolated.log), so no added failure is attributable to the change. The manifest's after_suite names the node test alone, whose 0 failures also supports a count of 0.",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/_backends.py:2481 launch_plan resolves backend_search_directories",
+    "reckon/crew/dispatch.py:3233 dispatch composes and resolves the cli plan",
+    "reckon/crew/dispatch.py:3305 dispatch records the directories on the run",
+    "reckon/crew/dispatch_sessions.py:1341 resume composes the resumed plan",
+    "reckon/crew/dispatch_sessions.py:1858 change_lane composes the destination plan",
+    "reckon/crew/dispatch_sessions.py:2052 change_lane records the destination directories",
+    "reckon/crew/dispatch_launch.py:2475 _supervisor_spec writes the worker PATH",
+    "reckon/crew/dispatch_launch.py:1350 apply_backend_placement searches the scheduler on the plan directories"
+  ],
+  "completed_at": "2026-11-09T03:01:54.185Z",
+  "dispatched_at": "2026-11-09T02:50:50Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "3305",
+      "severity": "non-blocking",
+      "text": "non-blocking: the launch-record write of backend_search_path has no test, because the resume case constructs the record dict itself, so deleting this line leaves both cases green while every resume loses the project-layer declaration."
+    },
+    {
+      "file": "reckon/crew/dispatch_sessions.py",
+      "line": "2052",
+      "severity": "non-blocking",
+      "text": "non-blocking: the lane-change write of backend_search_path, and its None clear at :2065, are exercised by no test, so a lane change that stopped recording the destination directories would not redden either case."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T015956373666-every-backend-reader-searches-the-declared-path/manifest.md",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "non-blocking: after_suite names only the node test while baseline_suite names the 133-file importer set, so the added-failure pair promotion reads compares two different populations; the comparable head arm is logs/head-importers.log and both arms read 13 failed."
+    },
+    {
+      "file": "docs/evidence/fragments/a-dispatch-returns-without-its-worker/every-backend-reader-searches-the-declared-path.html",
+      "line": "38",
+      "severity": "non-blocking",
+      "text": "non-blocking: the delivered fragment says the node test ran at cbdcb66391 while the log it cites, logs/after-node-tests.log, is headed revision 414dae0712."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T015956373666-every-backend-reader-searches-the-declared-path/logs/head-importers.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T015956373666-every-backend-reader-searches-the-declared-path/logs/baseline-importers.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "Read commit by commit: cbdcb66391 moves the expansion into reckon/_backends.py:394-414 and threads it through dispatch_launch.py, dispatch.py and dispatch_sessions.py, and 414dae0712 adds the lane-change record write and the evidence fragment.",
+    "done_when": "The done_when names two cases and two negative controls; tests/test_every_backend_reader_searches_the_declared_path.py:121-164 asserts the first launch and the resume, logs/after-node-tests.log records \"2 passed\" EXIT=0 at 414dae0712, and logs/negative-control.log records \"2 failed\" EXIT=1 under the declared mutation.",
+    "goal": "The node goal is that a search path declared only in a project's own flight layer reaches every reader after the pre-flight; reckon/_backends.py:435 now carries the directories on LaunchPlan and reckon/crew/dispatch_launch.py:1224-1228 reads them in resolve_launch_executable.",
+    "manifest": "The manifest records commits cbdcb66391 and 414dae0712 with status complete and logs for both arms, but its after_suite at manifest.md:17 names only the node test, so the comparable importer arm it also ran stays in test_logs (logs/head-importers.log) outside the field promotion reads.",
+    "write_paths": "The manifest declares six paths and git diff a7ba0d27c2..414dae0712 changes exactly those six, with no file outside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_every_backend_reader_searches_the_declared_path.py:127-164 reddens under the declared mutation, but the record writer at reckon/crew/dispatch.py:3305 and the lane-change writer at reckon/crew/dispatch_sessions.py:2052 are never exercised because the resume case builds the record itself.",
+    "evidence": "logs/after-node-tests.log and logs/negative-control.log substantiate the two cases and the declared mutation, but manifest.md:17 records the node test alone as after_suite rather than the comparable importer arm at logs/head-importers.log.",
+    "fit": "reckon/crew/dispatch_launch.py:609-620 delegates the expansion to the new owner instead of repeating it, and the added names describe the mechanism with no plan or ticket identifier.",
+    "goal_fidelity": "reckon/_backends.py:435 resolves the directories once at plan build and reckon/crew/dispatch_launch.py:1224-1228, :761 and :2475 read them from the plan, so a project-layer declaration reaches the executable, the scheduler lookup and the persisted worker PATH.",
+    "reuse": "the capability search over reckon/ for an existing search_path expander found only the previous dispatch_launch.declared_backend_search_path, which this change makes delegate to reckon/_backends.py:394 rather than fork.",
+    "scope_discipline": "git diff a7ba0d27c2..414dae0712 touches only reckon/_backends.py, reckon/crew/dispatch_launch.py, reckon/crew/dispatch_sessions.py, reckon/crew/dispatch.py, the new test and the declared evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that a search path declared only in a project's own flight layer reaches every reader after the pre-flight; reckon/_backends.py:435 now carries the directories on LaunchPlan and reckon/crew/dispatch_launch.py:1224-1228 reads them in resolve_launch_executable.\nVERDICT done_when: The done_when names two cases and two negative controls; tests/test_every_backend_reader_searches_the_declared_path.py:121-164 asserts the first launch and the resume, logs/after-node-tests.log records \"2 passed\" EXIT=0 at 414dae0712, and logs/negative-control.log records \"2 failed\" EXIT=1 under the declared mutation.\nVERDICT write_paths: The manifest declares six paths and git diff a7ba0d27c2..414dae0712 changes exactly those six, with no file outside the fence.\nVERDICT manifest: The manifest records commits cbdcb66391 and 414dae0712 with status complete and logs for both arms, but its after_suite at manifest.md:17 names only the node test, so the comparable importer arm it also ran stays in test_logs (logs/head-importers.log) outside the field promotion reads.\nVERDICT diff: Read commit by commit: cbdcb66391 moves the expansion into reckon/_backends.py:394-414 and threads it through dispatch_launch.py, dispatch.py and dispatch_sessions.py, and 414dae0712 adds the lane-change record write and the evidence fragment.\nCALL_SITES: reckon/_backends.py:2481 launch_plan resolves backend_search_directories, reckon/crew/dispatch.py:3233 dispatch composes and resolves the cli plan, reckon/crew/dispatch.py:3305 dispatch records the directories on the run, reckon/crew/dispatch_sessions.py:1341 resume composes the resumed plan, reckon/crew/dispatch_sessions.py:1858 change_lane composes the destination plan, reckon/crew/dispatch_sessions.py:2052 change_lane records the destination directories, reckon/crew/dispatch_launch.py:2475 _supervisor_spec writes the worker PATH, reckon/crew/dispatch_launch.py:1350 apply_backend_placement searches the scheduler on the plan directories\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_backends.py:435 resolves the directories once at plan build and reckon/crew/dispatch_launch.py:1224-1228, :761 and :2475 read them from the plan, so a project-layer declaration reaches the executable, the scheduler lookup and the persisted worker PATH.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/after-node-tests.log and logs/negative-control.log substantiate the two cases and the declared mutation, but manifest.md:17 records the node test alone as after_suite rather than the comparable importer arm at logs/head-importers.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff a7ba0d27c2..414dae0712 touches only reckon/_backends.py, reckon/crew/dispatch_launch.py, reckon/crew/dispatch_sessions.py, reckon/crew/dispatch.py, the new test and the declared evidence fragment.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_every_backend_reader_searches_the_declared_path.py:127-164 reddens under the declared mutation, but the record writer at reckon/crew/dispatch.py:3305 and the lane-change writer at reckon/crew/dispatch_sessions.py:2052 are never exercised because the resume case builds the record itself.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/dispatch_launch.py:609-620 delegates the expansion to the new owner instead of repeating it, and the added names describe the mechanism with no plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search over reckon/ for an existing search_path expander found only the previous dispatch_launch.declared_backend_search_path, which this change makes delegate to reckon/_backends.py:394 rather than fork.\nFINDING reckon/crew/dispatch.py:3305 non-blocking: the launch-record write of backend_search_path has no test, because the resume case constructs the record dict itself, so deleting this line leaves both cases green while every resume loses the project-layer declaration.\nFINDING reckon/crew/dispatch_sessions.py:2052 non-blocking: the lane-change write of backend_search_path, and its None clear at :2065, are exercised by no test, so a lane change that stopped recording the destination directories would not redden either case.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T015956373666-every-backend-reader-searches-the-declared-path/manifest.md:17 non-blocking: after_suite names only the node test while baseline_suite names the 133-file importer set, so the added-failure pair promotion reads compares two different populations; the comparable head arm is logs/head-importers.log and both arms read 13 failed.\nFINDING docs/evidence/fragments/a-dispatch-returns-without-its-worker/every-backend-reader-searches-the-declared-path.html:38 non-blocking: the delivered fragment says the node test ran at cbdcb66391 while the log it cites, logs/after-node-tests.log, is headed revision 414dae0712.\n",
+  "review_run_id": "r-20261109T024817189664-review-of-every-backend-reader-searches-the-declared-path-414dae0712c9",
+  "reviewed_base_sha": "a7ba0d27c2b332ba655036115fb92e1026b243cc",
+  "reviewed_head_sha": "414dae0712c9c6f6d3dfe2de9cda0bbe99601efe",
+  "reviewed_run_id": "r-20261109T015956373666-every-backend-reader-searches-the-declared-path",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T03:13:37.632013+00:00",
+  "total": 108
+}
