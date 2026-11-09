@@ -9,146 +9,68 @@ with a sweep that blocks on an event the test holds: rows keep arriving, the
 loop keeps ticking, and a cadence that comes due during the held sweep starts
 no second sweep.
 
-The clock is the test's own and the sleeper is a no-op, so a pass costs no wall
-time and the cadence boundaries are exact. The stream is a plain temporary
-file and the crew home is a temporary directory, so nothing outside the test's
-own tree is read or written.
+The clock, the stream, the row collector and the stop are the cadence suite's
+own harness, imported rather than restated: ``_Clock``, ``_line`` and
+``_Follower`` from ``tests.test_follow_sweep_cadence`` drive a follower exactly
+as those cases do. Two things are added here — a sweep the case holds until it
+releases it, and an arming lifetime, so both branches the gate used to take are
+driven through one driver.
 """
 
 from __future__ import annotations
 
-import json
 import threading
-import time
-from collections.abc import Callable
-from pathlib import Path
 
 import pytest
 
 from reckon import cli
-from reckon.crew import runs
+from tests.test_follow_sweep_cadence import Follower_session, _Follower, _line
 
-FOLLOWER_SESSION = "s1"
-PROJECT = "proj"
-
-
-class _Clock:
-    """A monotonic stand-in the test advances by hand."""
-
-    def __init__(self, start: float = 0.0) -> None:
-        self._t = float(start)
-
-    def __call__(self) -> float:
-        return self._t
-
-    def advance(self, seconds: float) -> None:
-        self._t += seconds
+# How long the held sweep may block before the case gives up on it. Generous:
+# a case that releases late is still a case that measured something, while one
+# that never releases would otherwise hang the run.
+SWEEP_HOLD_SECONDS = 10.0
 
 
-def _line(run_id: str) -> str:
-    """One carried transition line: a limit reset reaches the pane as a row.
+class _HeldSweepFollower(_Follower):
+    """The cadence suite's follower, with its sweep held on an event.
 
-    What the row says does not matter here. It is a line the follower's own row
-    path delivers, so it is a delivery the sweep can either hold back or not.
-    """
-    return (
-        json.dumps(
-            {
-                "run_id": run_id,
-                "from_state": "working",
-                "to_state": "limit-reset",
-                "session": FOLLOWER_SESSION,
-                "node": "n1",
-                "event": "transition",
-                "working": 1,
-                "blocked": 0,
-                "unpromoted": 0,
-            }
-        )
-        + "\n"
-    )
-
-
-@pytest.fixture()
-def crew_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """A temporary crew home, so the follower writes nothing of the operator's."""
-    home = tmp_path / "config"
-    home.mkdir()
-    monkeypatch.setenv("RECKON_HOME", str(home))
-    return home
-
-
-class _Follower:
-    """Drive one follower against an injected stream, clock, and sweep.
-
-    The follower blocks reading the stream, so it runs in its own thread. The
-    test hands it lines and time, and holds the sweep on an event when a case
-    needs a sweep that does not return.
+    ``_Follower`` already owns the temporary stream, the injected clock, the
+    row collector and the stop; this adds the held sweep and the arming
+    lifetime the cadence cases do not pass.
     """
 
-    CADENCE = 10.0
-    POLL = 0.01
-
-    def __init__(
-        self,
-        tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
-        *,
-        held: Callable[[str], dict] | None = None,
-        lifetime: float | None = None,
-    ) -> None:
-        self.clock = _Clock(0.0)
-        self.stop = threading.Event()
-        self.emitted: list[dict] = []
-        self.sweep_moments: list[float] = []
+    def __init__(self, tmp_path, monkeypatch, *, lifetime: float | None = None):
+        super().__init__(tmp_path, monkeypatch, sweep=None)
+        self._lifetime = lifetime
         self.started = threading.Event()
         self.release = threading.Event()
-        self.stream_path = tmp_path / "watch-stream.jsonl"
-        self.stream_path.touch()
-        self._held = held
-        self._lifetime = lifetime
-        self._thread: threading.Thread | None = None
-
-        monkeypatch.setattr(runs, "producer_live", lambda name: name == PROJECT)
-        monkeypatch.setattr(
-            runs,
-            "watch_stream_cursor",
-            lambda name: {
-                "stream_path": str(self.stream_path),
-                "offset": 0,
-                "baseline": [],
-                "producer": {},
-            },
-        )
-
-    def _sleeper(self, seconds: float) -> None:
-        # The test owns time; a real sleep would let the loop pace itself.
-        return None
 
     def _sweep(self, project: str) -> dict:
         """The sweep entry point the follower calls, counted on every pass."""
         self.sweep_moments.append(self.clock())
         self.started.set()
-        if self._held is not None:
-            self.release.wait(10.0)
-            return self._held(project)
+        self.release.wait(SWEEP_HOLD_SECONDS)
         return {"resumed": [], "skipped": []}
 
-    def start(self) -> _Follower:
+    def start(self) -> _HeldSweepFollower:
+        """Start the arming, handing the loop this case's lifetime.
+
+        The parent's driver with one argument added, because a lifetime is the
+        one thing its call site does not offer.
+        """
+
         def reader() -> None:
-            kwargs: dict = {}
-            if self._lifetime is not None:
-                kwargs["lifetime"] = self._lifetime
             for event in cli._follow_watch_lines(
-                PROJECT,
-                session=FOLLOWER_SESSION,
+                self.project,
+                session=Follower_session,
                 poll_interval=self.POLL,
                 sleeper=self._sleeper,
                 stop=self.stop,
                 sweep=self._sweep,
-                sweep_interval=self.CADENCE,
+                sweep_interval=self.cadence,
                 clock=self.clock,
-                **kwargs,
+                lifetime=self._lifetime,
             ):
                 if event.get("event") in {"attached", "reattached"}:
                     continue
@@ -158,32 +80,19 @@ class _Follower:
         self._thread.start()
         return self
 
-    def append(self, *lines: str) -> None:
-        with self.stream_path.open("a", encoding="utf-8") as handle:
-            handle.write("".join(lines))
-            handle.flush()
-
-    def wait_for(self, predicate: Callable[[], bool], timeout: float = 5.0) -> bool:
-        deadline = time.monotonic() + timeout
-        while not predicate():
-            if time.monotonic() >= deadline:
-                return False
-            time.sleep(0.002)
-        return True
-
-    def wait_sweeps(self, count: int) -> int:
-        self.wait_for(lambda: len(self.sweep_moments) >= count)
-        return len(self.sweep_moments)
-
-    def wait_emissions(self, count: int) -> int:
-        self.wait_for(lambda: len(self.emitted) >= count)
-        return len(self.emitted)
-
     def stop_and_join(self, timeout: float = 15.0) -> None:
+        # Release the held sweep first, or the follower's pass never returns
+        # and the join is what the case measures instead of the guard.
         self.release.set()
-        self.stop.set()
-        self._thread.join(timeout=timeout)
-        assert not self._thread.is_alive(), "a stopped follower must return"
+        super().stop_and_join(timeout)
+
+
+@pytest.fixture()
+def crew_home(tmp_path, monkeypatch) -> None:
+    """A temporary crew home, so the follower writes nothing of the operator's."""
+    home = tmp_path / "config"
+    home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(home))
 
 
 @pytest.mark.parametrize(
@@ -202,12 +111,7 @@ def test_a_held_sweep_leaves_the_delivery_thread_free(
     gate used to take: the fresh arming that ran the sweep inline and the arming
     with a deadline that joined it.
     """
-    follower = _Follower(
-        tmp_path,
-        monkeypatch,
-        held=lambda project: {"resumed": [], "skipped": []},
-        lifetime=lifetime,
-    ).start()
+    follower = _HeldSweepFollower(tmp_path, monkeypatch, lifetime=lifetime).start()
     try:
         assert follower.wait_sweeps(1) == 1, "the attach sweep starts"
         assert follower.started.is_set(), "the sweep is held inside its pass"
@@ -242,9 +146,7 @@ def test_a_cadence_during_a_held_sweep_starts_no_second_sweep(
     the sweep entry point the follower calls: the held pass stays the only one
     until it returns, and the cadence is honoured again after it does.
     """
-    follower = _Follower(
-        tmp_path, monkeypatch, held=lambda project: {"resumed": [], "skipped": []}
-    ).start()
+    follower = _HeldSweepFollower(tmp_path, monkeypatch).start()
     try:
         assert follower.wait_sweeps(1) == 1, "the attach sweep starts"
 
