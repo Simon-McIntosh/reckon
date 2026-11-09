@@ -108,7 +108,10 @@ def _is_run_review_node(record: Mapping[str, Any]) -> bool:
 
 
 def _declared_head_keyed_record(
-    record: Mapping[str, Any], project: str
+    record: Mapping[str, Any],
+    project: str,
+    *,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> tuple[Path, str] | None:
     """The head-keyed record path a review declares, and the head it spells.
 
@@ -118,7 +121,7 @@ def _declared_head_keyed_record(
     A review declaring only the legacy path names no head, which is exactly the
     ambiguity a delivered record cannot be told apart under.
     """
-    for path in _review_store_record_paths(record, project):
+    for path in _review_store_record_paths(record, project, pointers=pointers):
         _, head = _review_record_subject(path)
         if head:
             return path, head
@@ -380,7 +383,12 @@ def _with_derived_total(body: Mapping[str, Any]) -> Mapping[str, Any]:
     return review_module._derive_landed_total(body)
 
 
-def _review_delivery_verdict(record: Mapping[str, Any], project: str) -> dict[str, Any]:
+def _review_delivery_verdict(
+    record: Mapping[str, Any],
+    project: str,
+    *,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
+) -> dict[str, Any]:
     """The single evaluation of the conditions a review's delivery depends on.
 
     A run review is dispatched to read one revision, and the record that
@@ -406,7 +414,7 @@ def _review_delivery_verdict(record: Mapping[str, Any], project: str) -> dict[st
     one naming the head when a run review declares no head-keyed path at all, a
     run this sees only as having stored nothing.
     """
-    declared = _declared_head_keyed_record(record, project)
+    declared = _declared_head_keyed_record(record, project, pointers=pointers)
     if declared is None:
         return {
             "delivered": False,
@@ -500,7 +508,10 @@ def _review_delivery_verdict(record: Mapping[str, Any], project: str) -> dict[st
 
 
 def _delivered_review_record(
-    record: Mapping[str, Any], project: str
+    record: Mapping[str, Any],
+    project: str,
+    *,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> tuple[float, Path] | None:
     """The stored review record a reviewer wrote and when it landed, or None.
 
@@ -511,7 +522,7 @@ def _delivered_review_record(
     every branch names it one way; this reader returns it as a ``Path``, which
     is what its callers open.
     """
-    verdict = _review_delivery_verdict(record, project)
+    verdict = _review_delivery_verdict(record, project, pointers=pointers)
     if not verdict["delivered"]:
         return None
     return verdict["mtime"], Path(verdict["path"])
@@ -534,7 +545,11 @@ def review_delivery_refusal(
     return verdict
 
 
-def review_delivered(record: Mapping[str, Any]) -> dict[str, Any] | None:
+def review_delivered(
+    record: Mapping[str, Any],
+    *,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
+) -> dict[str, Any] | None:
     """The facts of a review run's delivery, or None while it has not delivered.
 
     A review delivers when the record it was minted to store parses and its own
@@ -544,7 +559,8 @@ def review_delivered(record: Mapping[str, Any]) -> dict[str, Any] | None:
     measuring a grace reads the later of the two rather than guessing which
     write finished last. Public because more than the watcher asks whether a
     review is done: the fact is a property of the run, and any reader with the
-    record can ask it.
+    record can ask it. A caller holding the live pointers passes that reading
+    through to the subject resolver instead of listing the fleet again.
     """
     if not _is_review_run(record):
         return None
@@ -553,7 +569,7 @@ def review_delivered(record: Mapping[str, Any]) -> dict[str, Any] | None:
     manifest_time = _complete_manifest_write_time(manifest_path)
     if manifest_time is None:
         return None
-    stored = _delivered_review_record(record, project)
+    stored = _delivered_review_record(record, project, pointers=pointers)
     if stored is None:
         return None
     record_time, record_path = stored
@@ -585,7 +601,7 @@ def _stop_delivered_reviews(
     """
     stopped: list[dict[str, Any]] = []
     for pointer in pointers:
-        delivered = review_delivered(pointer)
+        delivered = review_delivered(pointer, pointers=pointers)
         if not delivered:
             continue
         if str(pointer.get("phase") or "") in _TERMINAL_RUN_PHASES:
