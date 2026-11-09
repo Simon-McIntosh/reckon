@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-dispatch-returns-without-its-worker">
+  <meta name="plan-evidence-for" content="a-dispatch-returns-without-its-worker">
+  <title>A launch claim has one reader | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A launch claim has one reader</h1>
+      <p class="lead">A run's <code>claim.json</code> was parsed by two callers: the launch
+      read the registration instant for its worker receipt, and the admission pass read the
+      whole record, each validating the run id against the same file. The two copies were
+      free to drift about which shapes they refuse. The claim now has one path-taking reader
+      in the module that writes it, and both callers reach it.</p>
+    </header>
+
+    <section id="a-launch-claim-has-one-reader-measure">
+      <h2>Measure</h2>
+      <p><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+      tests/test_a_launch_claim_has_one_reader.py</code> &mdash; 8 passed, 0 failed. The
+      cases drive both callers over a well-formed claim, a claim naming another run, an
+      unreadable file and an absent file, and assert the two agree on each: a claim is read
+      or it is not, and when read both name the same registration instant. A fifth case
+      pins the path-taking contract, showing the record comes from the directory named and
+      never from a re-resolved run directory.</p>
+      <p>The existing coverage passes unchanged:
+      <code>tests/test_claim_grace_follows_live_launches.py</code> and
+      <code>tests/test_a_launch_span_is_dated_and_bounded.py</code> &mdash; 9 passed.</p>
+      <p><strong>Negative control.</strong> Restoring the local parse in
+      <code>_claim_registration_for_worker</code> with a different validation rule &mdash;
+      the file read with no run-id match &mdash; ran red: 2 failed, 6 passed, and the
+      failure includes
+      <code>test_both_callers_agree_on_every_claim_shape[another-run]</code>. The log is
+      <code>logs/negative-control.log</code> under the run directory.</p>
+    </section>
+
+    <section id="a-launch-claim-has-one-reader-importer">
+      <h2>Importer arms</h2>
+      <p>Every test file importing <code>reckon.crew.dispatch_launch</code> or
+      <code>reckon.crew.dispatch_claims</code> was run at <code>-n 4</code> with a 60 s
+      per-test bound. At head, 65 files: 672 passed, 19 failed, 1 skipped. At the base
+      revision <code>d43afd40</code>, the same set less the test this change adds (absent
+      at base, so dropped): 64 files, 664 passed, 19 failed, 1 skipped. The failing ids are
+      the same 19 on both arms &mdash; zero added, zero removed. Those failures are
+      pre-existing on the base revision and outside this node's scope.</p>
+    </section>
+
+    <section id="a-launch-claim-has-one-reader-paths">
+      <h2>Where the change lives</h2>
+      <ul>
+        <li><code>reckon/crew/dispatch_claims.py</code> &mdash; <code>read_claim(run_directory,
+        run_id)</code>, beside the claim's publisher, does the read and the validation;
+        <code>read_launch_claim(run_id)</code> delegates with <code>run_dir(run_id)</code>.</li>
+        <li><code>reckon/crew/dispatch_launch.py</code> &mdash;
+        <code>_claim_registration_for_worker</code> is a projection of the shared reader and
+        no longer opens the file; a grep of the module for <code>claim.json</code> finds
+        nothing.</li>
+        <li><code>reckon/crew/recovery_liveness.py</code> &mdash; the docstring names
+        <code>dispatch_claims</code> as the owner of the read.</li>
+        <li><code>tests/test_a_launch_claim_has_one_reader.py</code> &mdash; the agreement
+        cases above.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

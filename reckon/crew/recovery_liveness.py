@@ -752,10 +752,10 @@ def _claim_registered_seconds(record: Mapping[str, Any]) -> float | None:
     stopped before its supervisor existed, and the instant it names is the
     earliest moment the run can be dated from.
 
-    The read belongs to the module that composes the launch, and it is taken
-    there rather than repeated here: that reader validates the claim against the
-    run it names, and a second copy would be free to drift from it about the
-    same file.
+    The read belongs to ``reckon.crew.dispatch_claims``, beside the claim's
+    writer, and every caller reaches that one reader: it validates the claim
+    against the run it names, and a second copy here would be free to drift from
+    it about the same file.
     """
     # Imported here rather than at module scope: the launch module reaches into
     # this one for liveness readings, so a module-scope import would be a cycle.
