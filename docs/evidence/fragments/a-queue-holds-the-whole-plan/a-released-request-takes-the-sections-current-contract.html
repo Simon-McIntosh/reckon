@@ -21,16 +21,28 @@
   mark from the start.</p>
 
   <p>A release that cannot read the section is refused rather than released on
-  the stored fields: the request stays <code>held</code> and the pointer records
-  the reason under <code>section_rederivation_refused</code>. Releasing on the
-  stored fields would put the request back on the text the plan has left behind,
-  which is the disagreement the re-derivation exists to remove. The marks are
-  read before the pointer is rebuilt into a node, so a request whose fields the
-  dispatcher supplied pays no rebuild and cannot fail in the release loop.</p>
+  the stored fields: the request stays <code>held</code> and the reason goes
+  into the hold record the plan-review hold already owns
+  (<code>queue_hold.detail</code>), which the release removes along with the
+  hold. Releasing on the stored fields would put the request back on the text
+  the plan has left behind, which is the disagreement the re-derivation exists
+  to remove. The catch is at the per-request boundary and covers any exception,
+  not only the refusal the plan reader raises, so one unreadable section holds
+  that one request instead of aborting the admission pass for every project.
+  The marks are read before the pointer is rebuilt into a node, so a request
+  whose fields the dispatcher supplied pays no rebuild and cannot fail in the
+  release loop.</p>
+
+  <p>Both digests are taken by digesting text through the plan reader's one
+  canonical function — the old one from the stored field, not from the mark
+  recorded beside it — and only fields whose text actually moved are recorded
+  under <code>section_rederivation</code>. A mark written under an earlier
+  spelling of an unchanged value therefore reports no change, and is brought up
+  to the current digest without inventing a re-derivation.</p>
 
   <h3 id="a-released-request-takes-the-sections-current-contract-measured">Measured</h3>
 
-  <p>Four cases in
+  <p>Seven cases in
   <code>tests/test_a_released_request_takes_the_sections_current_contract.py</code>
   run against a synthesised mounted project under <code>RECKON_HOME</code> with
   <code>plan_review_gate</code> set to <code>enforce</code>, so the plan change
@@ -46,16 +58,24 @@
   <code>crew queue edit</code> survives it. In the fourth, the plan document is
   removed after the review is stored: the pass releases nothing, launches
   nothing, leaves the request <code>held</code> on its stored done-when, and
-  records a refusal naming the plan.</p>
+  names the refusal in its hold. In the fifth, the plan reader raises a
+  <code>RuntimeError</code>: the pass still returns its verdicts, and that one
+  request stays held with the failure named. In the sixth, a mark written in an
+  earlier spelling sits over text that has not moved, and the release records no
+  re-derivation. The seventh asserts the operator's crew home is untouched.</p>
 
-  <p>The negative control is logged at
-  <code>logs/negative-control.log</code> in the run directory: deleting the
-  in-memory re-derivation the pass launches from leaves the launched node on the
-  stored fields, and the first case fails on the launched prompt with
-  <code>assert 'pytest -q tests/test_new.py reports 5 passed' in '…'</code>,
-  <code>EXIT=1</code>. The five cases pass at the head. Every test file
-  importing <code>reckon.crew.queue_admission</code> runs at the base revision
-  and at the head in one arm at a time with <code>-n 4</code>; the two arms are
-  compared by delta and the logs sit under <code>logs/</code> in the run
-  directory.</p>
+  <p>Three negative controls are logged at
+  <code>logs/negative-control.log</code> in the run directory, each with its
+  command and <code>EXIT=1</code>. Deleting the in-memory re-derivation the pass
+  launches from leaves the launched node on the stored fields, and the first
+  case fails on the launched prompt. Narrowing the per-request catch back to the
+  plan reader's refusal lets a <code>RuntimeError</code> escape the release
+  loop, and the reader-failure case raises out of <code>admit_once</code>.
+  Taking the old digest from the stored mark instead of re-digesting the stored
+  field makes an unchanged value report a change, and the stale-mark case fails
+  on the recorded <code>section_rederivation</code>. The seven cases pass at the
+  head. Every test file importing <code>reckon.crew.queue_admission</code> runs
+  at the base revision and at the head in one arm at a time with
+  <code>-n 4</code>; the two arms are compared by delta and the logs sit under
+  <code>logs/</code> in the run directory.</p>
 </section>
