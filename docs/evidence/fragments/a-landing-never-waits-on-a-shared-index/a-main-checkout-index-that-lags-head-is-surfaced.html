@@ -38,42 +38,56 @@ leaves the snapshot case as the only failing one, which is how the case is
 known to be load-bearing rather than incidental.
 
 Reading is cached per main checkout against the index's stat identity and the
-head the checkout records in <code>.git/HEAD</code> and its ref, and a cached
-notice is dropped as soon as a path it names stops existing. Without it the
-station's steady-state case failed: a second tick with nothing moved ran one
-git subprocess the first tick had not. The head in the key is read from files
-rather than by running git, which is what keeps the key free; the notice's own
-head still comes from <code>git rev-parse HEAD</code>, and the test asserts it
-against the checkout's own answer rather than against the detector's.</p>
+checkout's head identity, and a cached notice is dropped as soon as a path it
+names stops existing. Without the cache the station's steady-state case failed:
+a second tick with nothing moved ran one git subprocess the first tick had not.
+The head identity is <code>git_head._head_identity</code>, the reader the
+follower's per-second freshness check already uses, so the key moves whenever
+the resolved commit does — including through a linked worktree's
+<code>.git</code> pointer and through packed refs — without spawning git. A
+reading whose identity cannot be read is not cached at all, because an
+unreadable identity is not a stable one. The notice's own head still comes
+from <code>git rev-parse HEAD</code>, and the test asserts it against the
+checkout's own answer rather than against the detector's.
+
+A further case runs the restore the notice prints and requires the very next
+read to be silent, and appends nothing to the log: the cache is only safe if
+it moves on the index write the repair makes. Its control is a key that
+ignores the head and the index, which goes on serving the notice the repair
+had already made wrong.</p>
 
 <table id="a-main-checkout-index-that-lags-head-is-surfaced-arms">
   <caption>Each log names its revision, tree, the module as imported and the
   command on its header lines, and ends in a bare
-  <code>EXIT=&lt;code&gt;</code>. Both importer arms ran one at a time, at
+  <code>EXIT=&lt;code&gt;</code>. All three importer arms ran one at a time, at
   <code>-n 4</code>.</caption>
   <thead><tr><th>arm</th><th>result</th><th>log</th></tr></thead>
   <tbody>
     <tr><td>gate, this node's test file at the head revision, with the
       station's steady-state case beside it</td>
-      <td>7 passed; <code>EXIT=0</code></td><td><code>gate-head.log</code></td></tr>
+      <td>8 passed; <code>EXIT=0</code></td><td><code>gate-head.log</code></td></tr>
     <tr><td>base modules substituted for the head revision, same test file</td>
-      <td>6 failed; <code>EXIT=1</code></td><td><code>base-arm.log</code></td></tr>
+      <td>7 failed; <code>EXIT=1</code></td><td><code>base-arm.log</code></td></tr>
     <tr><td>negative control: the detector returns before reading the checkout</td>
       <td>1 failed (<code>test_a_lagging_index_is_a_notice_naming_the_restore</code>),
       the index still lacking the path; <code>EXIT=1</code></td>
       <td><code>negative-control.log</code></td></tr>
     <tr><td>negative control: the payload no longer appends the notice</td>
       <td>1 failed (<code>test_a_published_snapshot_carries_the_notice_to_the_prompt_path</code>),
-      5 passed; <code>EXIT=1</code></td>
+      6 passed; <code>EXIT=1</code></td>
       <td><code>negative-control-snapshot.log</code></td></tr>
+    <tr><td>negative control: the reading key ignores the head and the index</td>
+      <td>1 failed (<code>test_the_offered_restore_ends_the_notice</code>), the
+      repaired checkout still served its stale notice; <code>EXIT=1</code></td>
+      <td><code>negative-control-repair.log</code></td></tr>
     <tr><td>importers of <code>reckon.crew.obligations</code> and the prompt
       hook at the head revision, 59 files</td>
-      <td>8 failed, 318 passed; <code>EXIT=1</code>, every id in the base
+      <td>8 failed, 319 passed; <code>EXIT=1</code>, every id in the base
       arm's failure set</td>
       <td><code>importers-head-obligations.log</code></td></tr>
     <tr><td>importers of <code>reckon.crew.obligation_snapshot</code>, 46
       files</td>
-      <td>11 failed, 225 passed, 5 errors; <code>EXIT=1</code></td>
+      <td>11 failed, 231 passed; <code>EXIT=1</code></td>
       <td><code>importers-head-snapshot.log</code></td></tr>
     <tr><td>importers of <code>reckon.velocity</code>, 19 files</td>
       <td>1 failed, 151 passed; <code>EXIT=1</code></td>
@@ -89,11 +103,11 @@ fails with the base modules substituted as well, and
 <code>test_a_worktree_release_is_whole.py::test_no_removal_site_still_deletes_with_git_worktree_remove</code>
 names <code>landing_measure.py::base_checkout</code>, in files this change does
 not touch at all (<code>git diff</code> against the base revision is empty for
-both). The snapshot arm's five errors are
-<code>pytest-timeout</code> failures at 300 s in
-<code>test_the_held_worktree_read_is_bounded.py</code>, under three arms run
-one after another on a loaded node; the same cases passed at this code earlier
-in the round. Ruff check and <code>ruff format --check</code> add no finding on
+both). An earlier pass of this same arm carried five
+<code>pytest-timeout</code> errors at 300 s in
+<code>test_the_held_worktree_read_is_bounded.py</code>; this pass has none, at
+unchanged code for those tests, which is what identifies them as load rather
+than regression. Ruff check and <code>ruff format --check</code> add no finding on
 the changed paths: <code>reckon/velocity.py</code> carries the same three
 format hunks before and after, and both other modules are clean.</p>
 
@@ -103,7 +117,9 @@ format hunks before and after, and both other modules are clean.</p>
 vocabulary), <code>5f4590af661932ace4aef4109a0dea543c8e4790</code> (the landing
 record), <code>2dde27309d2763d3e11834ba90f272a53aef8154</code> (the snapshot
 carry, the shared git runner and the head comparison) and
-<code>80ab84d875e67c9a0cf5dea2145fa56d53925bba</code> (the cached reading).
+<code>80ab84d875e67c9a0cf5dea2145fa56d53925bba</code> (the cached reading) and
+<code>109d62455417e0d705e8d1e79d011bf2b7bf8129</code> (the shared head
+identity, its repair case and that case's control).
 Logs and the run manifest are under
 <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T221135803822-a-main-checkout-index-that-lags-head-is-surfaced</code>.</p>
 </article>
